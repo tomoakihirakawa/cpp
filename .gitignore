@@ -1,0 +1,26 @@
+include/*.gch
+include/*~
+include/.vscode
+include/.DS_Store
+include/.cmake
+include/workspace.code-workspace
+.vscode
+*~
+obj/*
+# builds/build*
+builds/build*test*
+builds/build_opencl_trash
+builds/build_test*
+builds/*/*.gif
+builds/build_pybind11*
+builds/*/.vscode
+builds/*/.DS_Store
+builds/*/trash
+builds/*/*~
+builds/*/Makefile*
+builds/*/#*
+builds/*/CMake*
+builds/*/make*
+builds/*/*ninja*
+builds/workspace.code-workspace
+builds/*/workspace.code-workspace

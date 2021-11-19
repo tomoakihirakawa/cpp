@@ -1,0 +1,2053 @@
+
+// できるだけカプセル化することが，今後の変更を最小に抑えてくれる．
+// この観点から幾何学関連の操作（面の抽出や三角分割など）は，bemには持ち込まない．
+#ifndef BEM_H
+#define BEM_H
+#pragma once
+
+#include "InterpolationRBF.hpp"
+#include "Network.hpp"
+#include "svd.hpp"
+
+namespace BEM
+{
+	using V_d = std::vector<double>;
+	using V_i = std::vector<int>;
+	using VV_d = std::vector<V_d>;
+	using VVV_d = std::vector<VV_d>;
+
+	using netFp = networkFace *;
+
+	using netP = networkPoint;
+	using netPp = networkPoint *;
+	using V_netPp = std::vector<networkPoint *>;
+	using VV_netPp = std::vector<V_netPp>;
+
+	using netF = networkFace;
+	using V_netFp = std::vector<netF *>;
+
+	using V_Netp = std::vector<Network *>;
+
+	/*DN_detail
+
+
+  DNは，`Network *`を以下の種類に分けて保存・整理しておくためのクラス．
+
+  * Base
+  * Corner
+  * Dirichlet
+  * Neumann
+
+  DN_detail*/
+	/*DN_code*/
+	class DN
+	{
+		using Netp = Network *;
+		using V_Netp = std::vector<Netp>;
+		using VV_Netp = std::vector<V_Netp>;
+
+	public:
+		int Bindex = -2;
+		int Cindex = -1;
+		int Dindex = 0;
+		int Nindex = 1;
+
+		V_Netp B, D, N, C;
+
+		DN() : B(0), D(0), N(0), C(0){};
+		~DN(){};
+
+		void clear()
+		{
+			this->B.clear();
+			this->D.clear();
+			this->N.clear();
+			this->C.clear();
+		};
+
+		void set(const int i, const Netp &net)
+		{
+			if (i == Dindex)
+				network::add(this->D, net);
+			else if (i == Nindex)
+				network::add(this->N, net);
+			else if (i == Cindex)
+				network::add(this->C, net);
+			else if (i == Bindex)
+				network::add(this->B, net);
+			else
+				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+		};
+
+		void set(const int i, const V_Netp &nets)
+		{
+			for (const auto &net : nets)
+				this->set(i, net);
+		};
+
+		void setB(const V_Netp &nets) { set(Bindex, nets); };
+		void setC(const V_Netp &nets) { set(Cindex, nets); };
+		void setD(const V_Netp &nets) { set(Dindex, nets); };
+		void setN(const V_Netp &nets) { set(Nindex, nets); };
+		void setB(const Netp &nets) { set(Bindex, {nets}); };
+		void setC(const Netp &nets) { set(Cindex, {nets}); };
+		void setD(const Netp &nets) { set(Dindex, {nets}); };
+		void setN(const Netp &nets) { set(Nindex, {nets}); };
+
+		V_Netp getAll() const
+		{
+			VV_Netp tmp = {this->B, this->C, this->D, this->N};
+			return DeleteDuplicates(Flatten(tmp));
+		}
+
+		V_Netp get(int i)
+		{
+			if (i == Dindex)
+				return this->D;
+			else if (i == Nindex)
+				return this->N;
+			else if (i == Cindex)
+				return this->C;
+			else if (i == Bindex)
+				return this->B;
+			else
+				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+		};
+
+		int index(const Netp net) const
+		{
+			if (MemberQ(this->D, net))
+				return this->Dindex;
+			else if (MemberQ(this->N, net))
+				return this->Nindex;
+			else if (MemberQ(this->C, net))
+				return this->Cindex;
+			else if (MemberQ(this->B, net))
+				return this->Bindex;
+			else
+				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+		};
+
+		int index(const netPp &p) const { return this->index(p->getNetwork()); };
+		int isD(const netPp &p) const { return MemberQ(this->D, p->getNetwork()); };
+		int isN(const netPp &p) const { return MemberQ(this->N, p->getNetwork()); };
+		int isC(const netPp &p) const { return MemberQ(this->C, p->getNetwork()); };
+		int isB(const netPp &p) const { return MemberQ(this->B, p->getNetwork()); };
+	};
+	/*DN_code*/
+
+	V_Netp TakeBaseNetwork(V_Netp nets_IN)
+	{
+		V_Netp ret;
+		for (auto &n : nets_IN)
+			if (n->isB())
+				ret.emplace_back(n);
+		return ret;
+	};
+	//////////////////////////////////////
+	using map_P_Vd = std::map<netPp, V_d>;
+	using map_P_d = std::map<netPp, double>;
+
+	// using uo_map_P_d = std::unordered_map<netP *, double>;
+	// using uo_map_P_Vd = std::unordered_map<netP *, V_d>;
+
+	//----------------------------------------------------------------
+	V_netPp searchPoints(const int depth, const netPp p, const V_Netp &nets = {})
+	{
+		depth_searcher<networkPoint> S(depth);
+		S.clear();
+		S.set(p);
+		for (const auto &n : nets)
+			S.addNetwork(n);
+
+		//これはsearch(true)であるべき．微分は自身の値があった方が精度がいい
+		S.search(true);
+		return ToVector(S.getObjectsUO());
+	};
+	//----------------------------------------------------------------
+	V_netFp searchFaces(const int depths, const netPp p, const V_Netp &nets = {})
+	{
+		V_netFp fs({});
+		for (const auto &p : searchPoints(depths, p, nets))
+			for (const auto &f : p->getFaces())
+				if (MemberQ(nets, f->getNetwork()))
+					fs.emplace_back(f);
+		return DeleteDuplicates(fs);
+	};
+	////////////////////////////////////////////////////////////////////////////////////////
+	V_netPp searchPoints(const V_i &depths, const netPp p, const V_netPp &refp, const V_Netp &nets = {})
+	{
+		V_netPp ret;
+		depth_searcher<networkPoint> S;
+		for (int d = depths[0]; d <= depths[1]; d++)
+		{
+			// depth_searcher<networkPoint> S(d);
+			S.clear();
+			S.setDepth(d);
+			S.set(p);
+			for (const auto &n : nets)
+				S.addNetwork(n);
+
+			S.search(true); // must be true
+
+			ret = Intersection(refp, S.getObjects());
+
+			if (ret.size() > 1)
+				return ret;
+
+			if (d == depths[1])
+			{
+				std::cout << message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not search enough points, depth = " + std::to_string(S.depth)) << std::endl;
+				// Print(depths, red);
+				// mk_vtu("./vtu/can_not_search_enough_points_getReachedLines.vtu", S.getReachedLines());
+				// mk_vtu("./vtu/can_not_search_enough_points_getEnteredLines.vtu", S.getEnteredLines());
+				// mk_vtu("./vtu/can_not_search_enough_points.vtu", {S.getObjects()});
+				// mk_vtu("./vtu/can_not_search_enough_points_refp.vtu", {refp});
+				// mk_vtu("./vtu/can_not_search_enough_points_ret.vtu", {ret});
+				// std::cout << "p->getNeighbors() = " << p->getNeighbors() << std::endl;
+				// std::cout << "p->getLines() = " << p->getLines() << std::endl;
+				// std::cout << "S.getReachedLines().size() = " << S.getReachedLines().size() << std::endl;
+				// std::cout << "S.getEnteredLines().size() = " << S.getEnteredLines().size() << std::endl;
+				// std::cout << "S.getObjects().size() = " << S.getObjects().size() << std::endl;
+				// std::cout << "S.getObjects_().size() = " << S.getObjects_().size() << std::endl;
+				// std::cout << "S.getNetworks().size() = " << S.getNetworks().size() << std::endl;
+				// std::cout << nets << std::endl;
+				// for (auto n : nets)
+				//   std::cout << n->getName() << std::endl;
+			}
+		}
+		// throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not search enough points");
+		return {};
+	};
+	//////////////////
+	class takeToDepth
+	{
+	public:
+		VV_d X;
+		V_d V;
+		VV_d VV;
+		V_netPp points;
+		netPp origin;
+
+		V_netPp takefirstpoints(const V_netPp &ps, const int maxnum = 0)
+		{
+			V_netPp ret = {};
+			int count = 0;
+			for (const auto p : ps)
+			{
+				ret.emplace_back(p);
+				if (maxnum != 0 && ++count >= maxnum)
+					break;
+			}
+			return ret;
+		};
+
+		takeToDepth(const V_i &depths, const netPp p, const V_netPp &P, const V_Netp &nets = {}, const int maxnum = 0)
+			: X({}), V({}), VV({}), points({}), origin(p)
+		{
+			auto tmp = searchPoints(depths, p, P, nets);
+			sortByDistance(tmp, origin);
+			if (maxnum != 0)
+				this->points = takefirstpoints(tmp, maxnum);
+			else
+				this->points = tmp;
+
+			for (const auto &q : P)
+				if (MemberQ(this->points, q))
+				{
+					this->X.emplace_back(q->getX());
+				}
+		};
+		takeToDepth(const V_i &depths, const netPp p, const map_P_d &P_d, const V_Netp &nets = {}, const int maxnum = 0)
+			: X({}), V({}), VV({}), points({}), origin(p)
+		{
+			auto tmp = searchPoints(depths, p, TakeFirst(P_d), nets);
+			sortByDistance(tmp, origin);
+			if (maxnum != 0)
+				this->points = takefirstpoints(tmp, maxnum);
+			else
+				this->points = tmp;
+
+			for (const auto &[q, d] : P_d)
+				if (MemberQ(this->points, q))
+				{
+					this->X.emplace_back(q->getX());
+					this->V.emplace_back(d);
+				}
+		};
+		takeToDepth(const V_i &depths, const netPp p, const map_P_Vd &P_V, const V_Netp &nets = {}, const int maxnum = 0)
+			: X({}), V({}), VV({}), points({}), origin(p)
+		{
+			auto tmp = searchPoints(depths, p, TakeFirst(P_V), nets);
+			sortByDistance(tmp, origin);
+			if (maxnum != 0)
+				this->points = takefirstpoints(tmp, maxnum);
+			else
+				this->points = tmp;
+
+			for (const auto &[q, v] : P_V)
+				if (MemberQ(this->points, q))
+				{
+					this->X.emplace_back(q->getX());
+					this->VV.emplace_back(v);
+				}
+		};
+		// takeToDepth(const V_i &depths, const netPp p, const uo_map_P_Vd &P_V, const V_Netp &nets = {}, const int maxnum = 0)
+		//     : X({}), V({}), VV({}), points({}), origin(p)
+		// {
+		//   auto tmp = searchPoints(depths, p, TakeFirst(P_V), nets);
+		//   sortByDistance(tmp, origin);
+		//   if (maxnum != 0)
+		//     this->points = takefirstpoints(tmp, maxnum);
+		//   else
+		//     this->points = tmp;
+
+		//   for (const auto &[q, v] : P_V)
+		//     if (MemberQ(this->points, q))
+		//     {
+		//       this->X.emplace_back(q->getX());
+		//       this->VV.emplace_back(v);
+		//     }
+		// };
+	};
+
+	/////////////////////////////////////////////////////////////////
+	// #include "CompGrid.hpp"
+
+	///////////////////////////////////////////////////////////////////
+	/// USE LIKE Dot( N(ab), sample )
+	V_d N(const V_d &ab) { return {ab[0], ab[1], 1. - (ab[0] + ab[1])}; };
+
+	V_d dNd_(const int i)
+	{
+		switch (i)
+		{
+		case 0:
+			return {1., 0., -1.};
+		case 1:
+			return {0., 1., -1.};
+		default:
+			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "0 or 1"));
+			return {0., 0., 0.};
+		}
+	};
+
+	VV_d dNd_() { return {{1., 0., -1.}, {0., 1., -1.}}; };
+
+	//--------------------
+	VV_d M(const netFp &f)
+	{
+		auto xyzs = obj3D::extractX(f->getPoints());
+		auto dXds0 = Dot(dNd_(0), xyzs);
+		auto dXds1 = Dot(dNd_(1), xyzs);
+		return {dXds0 / Norm(dXds0) /*s*/,
+				dXds1 / Norm(dXds1) /*m*/,
+				f->getNormal() / Norm(f->getNormal()) /*n*/};
+	};
+	//--------------------
+	/*global velocity*/
+	V_d vG(const netFp &f, const V_d &Phi, const double phin)
+	{
+		return Dot(Inverse(M(f)), {Dot(dNd_(0), Phi),
+								   Dot(dNd_(1), Phi),
+								   phin} /*local velocity*/);
+	};
+	//--------------------
+	V_d meanvG(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets, const V_netFp &faces = {})
+	{
+		Print("meanvG");
+		VV_d VvG = {};
+		V_netPp ps;
+		V_d Phi;
+		bool found = false;
+		V_d phiphin0, phiphin1, phiphin2;
+		for (const auto &f : p->getFaces())
+		{ // need to check
+			ps = f->getPoints();
+			Print(ps);
+			if (faces.empty() || MemberQ(faces, f))
+				if (ps.size() == 3 && AllMemberQ(P_phiphin, ps) && MemberQ(nets, f->getNetwork()))
+				{
+					phiphin0 = P_phiphin[ps[0]];
+					phiphin1 = P_phiphin[ps[1]];
+					phiphin2 = P_phiphin[ps[2]];
+
+					Phi = {phiphin0[0], phiphin1[0], phiphin2[0]};
+					double phin = (phiphin0[1] + phiphin1[1] + phiphin2[1]) / 3.;
+					VvG.emplace_back(vG(f, Phi, phin));
+					found = true;
+				}
+			Print(VvG);
+		}
+		if (VvG.empty())
+			return {};
+		else
+			return Mean(VvG);
+	};
+	///////////////////
+
+	V_d parameterize(const V_netPp &points, const netPp &p)
+	{
+		if (p == points[0])
+			return {1., 0., 0.};
+		else if (p == points[1])
+			return {0., 1., 0.};
+		else if (p == points[2])
+			return {0., 0., 1.};
+
+		Print(__PRETTY_FUNCTION__);
+		abort();
+
+		return {};
+	};
+	/////////////////
+	class searchPoints_X_phi_phin
+	{
+	public:
+		VV_d X;
+		V_d phi;
+		V_d phin;
+		V_netPp points;
+		//
+		searchPoints_X_phi_phin(const V_i &depths, const netPp p, const map_P_Vd &sampleP_phiphin, const V_Netp &nets = {})
+			: X({}), phi({}), phin({}), points({})
+		{
+			this->points = searchPoints(depths, p, TakeFirst(sampleP_phiphin), nets);
+			for (const auto &[q, phiphin] : sampleP_phiphin)
+				if (MemberQ(this->points, q))
+				{
+					this->X.emplace_back(q->getX());
+					this->phi.emplace_back(phiphin[0]);
+					this->phin.emplace_back(phiphin[1]);
+				}
+		};
+	};
+	//----------------------------------------------------------------
+	V_d AverageNearNeighbors_phiphin(const netPp p, const map_P_Vd &sampleP_phiphin, const V_Netp &nets)
+	{
+		if (p->getLines().empty())
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+		takeToDepth s({5, 10}, p, sampleP_phiphin, nets, 40);
+		auto phiphin = Transpose(s.VV);
+		return {Mean(phiphin[0]), Mean(phiphin[1])};
+	};
+	//----------------------------------------------------------
+	V_d InterpolationRBF_phiphin(const netPp p, const map_P_Vd &P_phiphin, const V_Netp &nets, const int num = 40)
+	{
+		if (p->getLines().empty())
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+		takeToDepth s({5, 10}, p, P_phiphin, nets, num);
+		auto phiphin = Transpose(s.VV);
+		auto interp0 = InterpolationRBF(s.X, phiphin[0], p->getX());
+		auto interp1 = InterpolationRBF(s.X, phiphin[1], p->getX());
+		return {interp0(p->getX()), interp1(p->getX())};
+	};
+
+	double InterpolationRBF_phin(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets, const int num = 40)
+	{
+		if (p->getLines().empty())
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+		// takeToDepth s({4, 10}, p, P_phiphin, nets);
+		takeToDepth s({5, 10}, p, P_phiphin, nets, num);
+		auto interp = InterpolationRBF(s.X, Transpose(s.VV)[1] /*phiphin*/, p->getX());
+		return interp(p->getX());
+	};
+
+	double InterpolationRBF_phi(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets, const int num = 40)
+	{
+		Print(message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ""));
+		if (p->getLines().empty())
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+		// takeToDepth s({4, 10}, p, P_phiphin, nets);
+		takeToDepth s({5, 10}, p, P_phiphin, nets, num);
+
+		auto phiphin = Transpose(s.VV);
+		auto interp = InterpolationRBF(s.X, phiphin[0], p->getX());
+		return interp(p->getX());
+	};
+	double InterpolationRBF_phi(const netPp p, map_P_Vd &P_phiphin, Network *net)
+	{
+		std::vector<Network *> nets = {net};
+		return InterpolationRBF_phi(p, P_phiphin, nets);
+	};
+	//----------------------------------------------------------
+	// V_d IDW_phiphin(const netPp p, const map_P_Vd &sampleP_phiphin, const V_Netp &nets, const double powerIDW = 2.)
+	// {
+	// 	if (p->getLines().empty())
+	// 	{
+	// 		// return {0., 0.};
+	// 		mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	// 	}
+	// 	takeToDepth s({5, 10}, p, sampleP_phiphin, nets, 30);
+	// 	auto phiphin = Transpose(s.VV);
+	// 	auto interp0 = InterpolationIDW(s.X, phiphin[0], powerIDW);
+	// 	auto interp1 = InterpolationIDW(s.X, phiphin[1], powerIDW);
+	// 	return {interp0(p->getX()), interp1(p->getX())};
+	// };
+	// double IDW_phi(const netPp p, const map_P_Vd &sampleP_phiphin, const V_Netp &nets, const double powerIDW = 2.)
+	// {
+	// 	if (p->getLines().empty())
+	// 	{
+	// 		// return {0., 0.};
+	// 		mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	// 	}
+	// 	takeToDepth s({5, 10}, p, sampleP_phiphin, nets, 30);
+	// 	auto phiphin = Transpose(s.VV);
+	// 	auto interp0 = InterpolationIDW(s.X, phiphin[0], powerIDW);
+	// 	return interp0(p->getX());
+	// };
+	// double IDW_phin(const netPp p, const map_P_Vd &sampleP_phiphin, const V_Netp &nets, const double powerIDW = 2.)
+	// {
+	// 	if (p->getLines().empty())
+	// 	{
+	// 		// return {0., 0.};
+	// 		mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	// 	}
+	// 	takeToDepth s({5, 10}, p, sampleP_phiphin, nets, 30);
+	// 	auto phiphin = Transpose(s.VV);
+	// 	auto interp0 = InterpolationIDW(s.X, phiphin[1], powerIDW);
+	// 	return interp0(p->getX());
+	// };
+	// //-----------------------------------------------------------
+	// // ここで，phinがつかわれるので，BIEでphinが得られていない外部の点のnablaPhiは，ランダムで正しくない.
+	// V_d InterpolationRBFvG(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets)
+	// {
+	// 	if (p->getLines().empty())
+	// 	{
+	// 		// return {0., 0.};
+	// 		mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	// 	}
+
+	// 	takeToDepth s({6, 10}, p, P_phiphin, nets, 40);
+
+	// 	auto phiphin = Transpose(s.VV);
+	// 	auto interp = InterpolationRBF(s.X, phiphin[0], p->getX());
+	// 	auto normal = p->getNormalFromSameBC();
+	// 	auto v = interp.grad(p->getX());
+
+	// 	return v + (-Dot(v, normal) + P_phiphin[p][1]) * normal;
+	// };
+	////
+	// V_d InterpolationRBFvG(const netPp p, uo_map_P_Vd &P_phiphin, const V_Netp &nets)
+	// {
+	//   if (p->getLines().empty())
+	//   {
+	//     // return {0., 0.};
+	//     mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	//     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	//   }
+
+	//   takeToDepth s({6, 10}, p, P_phiphin, nets, 40);
+
+	//   auto phiphin = Transpose(s.VV);
+	//   auto interp = InterpolationRBF(s.X, phiphin[0], p->getX());
+	//   auto normal = p->getNormalFromSameBC();
+	//   auto v = interp.nabla(p->getX());
+
+	//   return v + (-Dot(v, normal) + P_phiphin[p][1]) * normal;
+	// };
+
+	// V_d InterpolationIDWvG(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets, const double pp)
+	// {
+	// 	if (p->getLines().empty())
+	// 	{
+	// 		// return {0., 0.};
+	// 		mk_vtu("./vtu/p->getLines().empty()).vtu", {{p}});
+	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty())");
+	// 	}
+
+	// 	takeToDepth s({2, 5}, p, P_phiphin, nets);
+	// 	auto phiphin = Transpose(s.VV);
+	// 	auto interp = InterpolationIDW(s.X, phiphin[0], pp);
+	// 	auto normal = p->getNormalFromSameBC();
+	// 	auto v = interp.nabla(p->getX());
+	// 	return v + (-Dot(v, normal) + P_phiphin[p][1]) * normal;
+	// };
+
+	// ///////////////////
+
+	// /////---------
+	// V_d global_velocity(const netPp p, map_P_Vd &P_phiphin, const V_Netp &nets, const V_netFp &faces = {})
+	// {
+	// 	auto vg = meanvG(p, P_phiphin, nets, faces);
+	// 	if (vg.empty())
+	// 		return InterpolationRBFvG(p, P_phiphin, nets);
+	// 	else
+	// 		return vg;
+	// };
+
+	// //////////////////
+
+	// map_P_d DphiDtRBF(map_P_Vd &P_phiphin, const V_netFp &Faces, const V_Netp &nets)
+	// {
+	// 	Print("DphiDtRBF", red);
+	// 	map_P_d ret;
+	// 	V_d u = {0., 0., 0.};
+	// 	for (const auto &p : TakeFirst(P_phiphin))
+	// 	{
+	// 		u = InterpolationRBFvG(p, P_phiphin, {p->getNetwork()});
+	// 		ret[p] = Dot(u, u) / 2. - p->getX()[2];
+	// 	}
+	// 	return ret;
+	// };
+
+	// map_P_Vd nablaPhiRBF(map_P_Vd &P_phiphin, std::vector<Network *> nets = {})
+	// {
+	// 	map_P_Vd ret;
+	// 	for (const auto &p : TakeFirst(P_phiphin))
+	// 		ret[p] = InterpolationRBFvG(p, P_phiphin, {p->getNetwork()});
+	// 	return ret;
+	// };
+
+	// map_P_Vd nablaPhiRBF(map_P_Vd &P_phiphin, Network *net)
+	// {
+	// 	return nablaPhiRBF(P_phiphin, std::vector<Network *>{net});
+	// };
+
+	////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+
+	bool isConverged(std::map<netP *, V_d> &new_igign, std::map<netP *, V_d> &pre_igign, const V_netPp &ps, const double conv)
+	{
+		V_d tmp, pre;
+		double t;
+		for (const auto &p : ps)
+		{
+			pre = pre_igign[p];
+			tmp = new_igign[p];
+			if ((t = std::abs(tmp[0])) > 1E-20)
+				if (std::abs(tmp[0] - pre[0]) / t > conv)
+					return false;
+
+			if ((t = std::abs(tmp[1])) > 1E-20)
+				if (std::abs(tmp[1] - pre[1]) / t > conv)
+					return false;
+		}
+		return true;
+	};
+	/* ------------------------------------------------------ */
+	bool isConverged(std::unordered_map<netP *, Tdd> &new_igign, std::unordered_map<netP *, Tdd> &pre_igign, const V_netPp &ps, const double conv)
+	{
+		Tdd tmp, pre;
+		double t;
+		for (const auto &p : ps)
+		{
+			pre = pre_igign[p];
+			tmp = new_igign[p];
+			if ((t = std::abs(std::get<0>(tmp))) > 1E-20)
+				if (std::abs(std::get<0>(tmp) - std::get<0>(pre)) / t > conv)
+					return false;
+
+			if ((t = std::abs(std::get<1>(tmp))) > 1E-20)
+				if (std::abs(std::get<1>(tmp) - std::get<1>(pre)) / t > conv)
+					return false;
+		}
+		return true;
+	};
+
+	const V_d zeros(2, 0.);
+	/* ------------------ 三角形面の2次のラグランジュ補間 ------------------ */
+	VVV_d GWGWfrom0to1 =
+		{
+			VV_d{},
+			GaussianQuadratureWeights(1, 0., 1.),
+			GaussianQuadratureWeights(2, 0., 1.),
+			GaussianQuadratureWeights(3, 0., 1.),
+			GaussianQuadratureWeights(4, 0., 1.),
+			GaussianQuadratureWeights(5, 0., 1.),
+			GaussianQuadratureWeights(6, 0., 1.),
+			GaussianQuadratureWeights(7, 0., 1.),
+			GaussianQuadratureWeights(8, 0., 1.),
+			GaussianQuadratureWeights(9, 0., 1.),
+			GaussianQuadratureWeights(10, 0., 1.),
+			GaussianQuadratureWeights(11, 0., 1.),
+			GaussianQuadratureWeights(12, 0., 1.),
+			GaussianQuadratureWeights(13, 0., 1.),
+			GaussianQuadratureWeights(14, 0., 1.),
+			GaussianQuadratureWeights(15, 0., 1.),
+			GaussianQuadratureWeights(16, 0., 1.),
+			GaussianQuadratureWeights(17, 0., 1.),
+			GaussianQuadratureWeights(18, 0., 1.),
+			GaussianQuadratureWeights(19, 0., 1.),
+			GaussianQuadratureWeights(20, 0., 1.),
+			GaussianQuadratureWeights(21, 0., 1.),
+			GaussianQuadratureWeights(22, 0., 1.),
+			GaussianQuadratureWeights(23, 0., 1.),
+			GaussianQuadratureWeights(24, 0., 1.),
+			GaussianQuadratureWeights(25, 0., 1.),
+			GaussianQuadratureWeights(26, 0., 1.)};
+
+	class checkSurfaceInterp
+	{
+		// たぶん範囲を間違っている
+	public:
+		double area;
+		double solution_intgration_out;
+		double solution_intgration_in;
+		double solution_intgration_surface;
+		double solution_intgration_surface_simplified;
+		double solution_intgration_surface_simplified_small;
+		double solution_intgration_surface_simplified_face;
+		V_d solution_intgration_suface_from_eps_1;
+		double r_1_intgration_surface;
+		double r_1_intgration_surface_face;
+		checkSurfaceInterp(interpolationTriangle *intp,
+						   const netPp origin,
+						   const V_netFp &fs,
+						   int gausspoints,
+						   int Npoints = 12,
+						   bool checkSing = false)
+			: area(0.),
+			  solution_intgration_out(0.),
+			  solution_intgration_in(0.),
+			  solution_intgration_surface(0.),
+			  solution_intgration_surface_simplified(0.),
+			  solution_intgration_surface_simplified_face(0.),
+			  solution_intgration_suface_from_eps_1(100, 0.),
+			  r_1_intgration_surface(0.),
+			  r_1_intgration_surface_face(0.),
+			  solution_intgration_surface_simplified_small(0.)
+		{
+			/* ---------------------- 原点の決定 -------------------------------- */
+			V_netPp ps;
+			V_d in_point = {0., 0., 0.};
+			V_d out_point = {1E+3, 1E+3, 1E+3};
+			/* ------------------------------------------------------ */
+			V_d a(3, 0.);
+			double weight = 0;
+			V_d X(3, 0.);
+			V_d r(3, 0.);
+			V_d grad_phi(3, 0.);
+			double t0, t1, J, w0, w1;
+			double x_sing_t0 = 1 / 2.;
+			auto beta = 4.;
+			/* ------------------------------------------------------ */
+			// VVV_d check;
+			auto originface = origin->getFaces()[0];
+			intp->set(obj3D::extractX((originface)->get12Points(origin)));
+			V_d oFace = (*intp)(0.5, 0.5);
+			auto gwgw = GWGWfrom0to1[gausspoints];
+			auto sing_gwgw = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta), InvSg(1., x_sing_t0, beta));
+			for (const auto &f : fs)
+			{
+				if (Npoints == 12)
+					ps = f->get12Points(origin);
+				else if (Npoints == 6)
+					ps = f->get6Points(origin);
+
+				// check.emplace_back(obj3D::extractX(ps));
+				intp->set(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+				// bool isSingular = (checkSing && ps.size() > 6 && ps[4] == origin);
+				bool isSingular = (originface == f);
+				for (const auto &x0w0 : isSingular ? sing_gwgw : gwgw)
+				{
+					t0 = isSingular ? Sg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[0];
+					w0 = isSingular ? x0w0[1] * DSg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[1];
+					for (const auto &x1w1 : isSingular ? sing_gwgw : gwgw)
+					{
+						t1 = isSingular ? Sg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[0];
+						w1 = isSingular ? x1w1[1] * DSg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[1];
+						// t1 = x1w1[0];
+						// w1 = x1w1[1];
+						// t1 = x1w1[0];
+						J = intp->J(t0, t1);
+						X = (*intp)(t0, t1);
+						weight = w0 * w1;
+						/* ------------------------------------------------------ */
+						area += J * weight;
+						/* ------------------------------------------------------ */
+						r = X - in_point;
+						grad_phi = -r / pow(Norm(r), 3);
+						solution_intgration_in += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+						/* ------------------------------------------------------ */
+						r = X - out_point;
+						grad_phi = -r / pow(Norm(r), 3);
+						solution_intgration_out += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+						/* ------------------------------------------------------ */
+						// r = X - originX;
+						// grad_phi = -r / pow(Norm(r), 3);
+						// solution_intgration_surface += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+						/* ------------------------------------------------------ */
+						r = X - origin->getX();
+						solution_intgration_surface_simplified += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
+						/* ------------------------------------------------------ */
+						r = X - oFace;
+						solution_intgration_surface_simplified_face += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
+						/* ------------------------------------------------------ */
+						r = X - origin->getX();
+						r_1_intgration_surface += 1. / Norm(r) * J * weight;
+						/* ------------------------------------------------------ */
+						r = X - oFace;
+						r_1_intgration_surface_face += 1. / Norm(r) * J * weight;
+					}
+				}
+			}
+
+			// std::cout << check << std::endl;
+			// std::cin.ignore();
+			/* ------------------------------------------------------ */
+			std::cout << "origin->getLines().size() = " << origin->getLines().size() << std::endl;
+			std::cout << "gausspoints =" << gausspoints << ", checkSing =" << checkSing << ", beta =" << beta << std::endl;
+			int k = gausspoints;
+			std::cout << "面積 " << k << " = " << area
+					  << ", 誤差=" << area / (4. * M_PI * 0.1 * 0.1) - 1 << std::endl;
+			//
+			auto tmp = solution_intgration_in;
+			std::cout << "ガウス in " << k << " = " << tmp
+					  << ", 誤差=" << tmp / (-4. * M_PI) - 1 << std::endl;
+			//
+			tmp = solution_intgration_out;
+			std::cout << "ガウス out " << k << " = " << tmp << std::endl;
+			//
+			// tmp = solution_intgration_surface;
+			// std::cout << Red << "ガウス surface " << k << " = " << tmp
+			// 		  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+			//
+			tmp = solution_intgration_surface_simplified;
+			std::cout << Magenta << "ガウス surface ある節点を原点とした場合" << k << " = " << tmp
+					  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+
+			tmp = solution_intgration_surface_simplified_face;
+			std::cout << Magenta << "ガウス surface ある面上の点を原点とした場合" << k << " = " << tmp
+					  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+
+			// std::cout << Green << "solution_intgration_surface_simplified_small = " << solution_intgration_surface_simplified_small << reset << std::endl;
+
+			// auto Vtmp = solution_intgration_suface_from_eps_1;
+			// std::cout << Green << "ガウス surface" << k << " = " << Vtmp
+			//           << ", 誤差=" << Vtmp / (-2. * M_PI) - 1. << reset << std::endl;
+
+			// Vtmp = minimazing_value;
+			// std::cout << green << "minimazing_value" << k << " = " << minimazing_value << std::endl;
+			//
+			tmp = r_1_intgration_surface;
+			std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
+			tmp = r_1_intgration_surface_face;
+			std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
+		}
+	};
+
+	double checkSurfaceAreaQuadIDW(const V_netFp &fs, int gausspoints, bool checkSing = false)
+	{
+		//    \ \            ^
+		//     7  0  6       |<-(t0=1.5)
+		//   8  3   5  11    |<-(t0=1)
+		//     1  4  2       |<-(t0=0)
+		//      9  10  \     |
+		//           \  \
+	//         (t1=1)(t1=0)
+		double ret = 0.;
+		V_netPp ps;
+		for (const auto &f : fs)
+		{
+			auto origin = f->getPoints()[0];
+			//!この積分範囲はしゅうせする必要がない
+			interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(f->get12Points(origin)) /*get12Points()で得られた点*/);
+			// interpolationTriangleQuadByFixedRangeCenter intp(obj3D::extractX(f->get6Points(origin)) /*get12Points()で得られた点*/);
+			// interpolationLagLinear intp(obj3D::extractX(f->getPoints(origin)) /*get12Points()で得られた点*/);
+			if (checkSing)
+			{
+				//! IG
+				double x0, x1, w0, w1;
+				double x_sing_t0 = 0.;
+				auto beta_t0 = 2.;
+				auto gwgw_t0 = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta_t0), InvSg(1., x_sing_t0, beta_t0));
+				for (const auto &x0w0 : gwgw_t0)
+				{
+					x0 = Sg(x0w0[0], x_sing_t0, beta_t0);
+					w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_t0);
+					for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
+					{
+						ret += intp.J(x0, x1w1[0]) * w0 * x1w1[1];
+					}
+				}
+			}
+			else
+			{
+				for (const auto &x0w0 : GWGWfrom0to1[gausspoints])
+				{
+					for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
+					{
+						ret += intp.J(x0w0[0], x1w1[0]) * x0w0[1] * x1w1[1];
+					}
+				}
+			}
+		}
+		return ret;
+	};
+
+// #define use_old_p_igign_Quad_IDW
+#ifdef use_old_p_igign_Quad_IDW
+	void p_igign_Quad_IDW(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	{
+		//    \ \            ^
+		//     7  0  6       |<-(t0=1.5)
+		//   8  3   5  11    |<-(t0=1)
+		//     1  4  2       |<-(t0=0)
+		//      9  10  \     |
+		//           \  \
+	//         (t1=1)(t1=0)
+
+		for (auto &[p, igign] : new_igign_OUT)
+			igign = zeros;
+		//!この積分範囲はしゅうせする必要がない
+		interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+		double common, nr;
+		// 0から1/2に変えよう
+		//  ここの積分の整理から始めよう
+		if (ps[4] == origin)
+		{
+			//! IG
+			double x_sing_t0 = 0.;
+			auto beta_t0 = 2.;
+			auto gwgw_t0 = GaussianQuadratureWeights(i, InvSg(0., x_sing_t0, beta_t0), InvSg(1., x_sing_t0, beta_t0));
+			double x0, x1, w0, w1;
+			for (const auto &x0w0 : gwgw_t0)
+			{
+				x0 = Sg(x0w0[0], x_sing_t0, beta_t0);
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_t0);
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					x1 = x1w1[0];
+					w1 = x1w1[1];
+					{
+						common = intp.J(x0, x1) * w0 * w1;
+						r = intp(x0, x1) - A;
+						nr = Norm(r);
+						IGIGn[0] = common / nr;
+						IGIGn[1] = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+						N = intp.N(x0, x1);
+						for (auto k = 0; k < ps.size(); k++)
+							new_igign_OUT[ps[k]] += IGIGn * N[k];
+					}
+				}
+			}
+		}
+		else
+		{
+			for (const auto &x0w0 : GWGWfrom0to1[i])
+			{
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					common = intp.J(x0w0[0], x1w1[0]) * x0w0[1] * x1w1[1];
+					r = intp(x0w0[0], x1w1[0]) - A;
+					nr = Norm(r);
+					IGIGn[0] = common / nr;
+					IGIGn[1] = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0w0[0], x1w1[0]))) * common;
+					N = intp.N(x0w0[0], x1w1[0]);
+					for (auto k = 0; k < ps.size(); k++)
+						new_igign_OUT[ps[k]] += IGIGn * N[k];
+				}
+			}
+		}
+	};
+#else
+	void p_igign_Quad_IDW(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	{
+		//    \ \            ^
+		//     7  0  6       |<-(t0=1.5)
+		//   8  3   5  11    |<-(t0=1)
+		//     1  4  2       |<-(t0=0)
+		//      9  10  \     |
+		//           \  \
+		//         (t1=1)(t1=0)
+		for (auto &[p, igign] : new_igign_OUT)
+		{
+			igign[0] = 0.;
+			igign[1] = 0.;
+		}
+		interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+		double common, nr, weight;
+		V_d cross;
+		if (ps[4] == origin)
+		{
+			auto beta_IG = 2.;
+			double x_sing_t0 = 0.;
+			auto gwgw_IG = GaussianQuadratureWeights(i, InvSg(0., x_sing_t0, beta_IG), InvSg(1., x_sing_t0, beta_IG));
+			double x0, x1, w0, w1;
+			for (const auto &x0w0 : gwgw_IG)
+			{
+				x0 = Sg(x0w0[0], x_sing_t0, beta_IG);
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_IG);
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					x1 = x1w1[0];
+					w1 = x1w1[1];
+					{
+						cross = intp.cross(x0, x1);
+						r = intp(x0, x1) - A;
+						nr = Norm(r);
+						IGIGn[0] = 1 / nr * Norm(cross) * w0 * w1;
+						IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * w0 * w1;
+						N = intp.N(x0, x1);
+						for (auto k = 0; k < ps.size(); k++)
+							new_igign_OUT[ps[k]] += IGIGn * N[k];
+					}
+				}
+			}
+		}
+		else
+		{
+			for (const auto &x0w0 : GWGWfrom0to1[i])
+			{
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					cross = intp.cross(x0w0[0], x1w1[0]);
+					r = intp(x0w0[0], x1w1[0]) - A;
+					nr = Norm(r);
+					IGIGn[0] = Norm(cross) / nr * x0w0[1] * x1w1[1];
+					IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * x0w0[1] * x1w1[1];
+					N = intp.N(x0w0[0], x1w1[0]);
+					for (auto k = 0; k < ps.size(); k++)
+						new_igign_OUT[ps[k]] += IGIGn * N[k];
+				}
+			}
+		}
+	};
+
+	/* -------------------------- 面 ------------------------- */
+
+	void p_igign(const netFp &f /*積分する面を構成する点*/,
+				 const netFp origin_f,
+				 double t0, double t1, const int i,
+				 std::map<netP *, V_d> &new_igign_OUT, const V_netPp &ps)
+	{
+		for (auto &[p, igign] : new_igign_OUT)
+			igign = zeros;
+
+		// interpolationTriangle *intp;
+		// if (ps.size() == 3)
+		// 	intp = new interpolationTriangleLinearByFixedRange();
+		// else if (ps.size() == 6)
+		// 	intp = new interpolationTriangleQuadByFixedRangeCenter();
+		// else if (ps.size() == 12)
+		// 	intp = new interpolationCenterTriangleQuadIDW12();
+		// else
+		// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+		auto intp = new interpolationTriangleLinearByFixedRange();
+
+		intp->set(obj3D::extractX(origin_f->getPoints()));
+		V_d A = (*intp)(t0, t1);
+		intp->set(obj3D::extractX(ps));
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.);
+		double nr, weight;
+		V_d cross;
+// #define quadrature_for_singular
+#ifdef quadrature_for_singular
+
+		if (f == origin_f)
+		{
+			auto b = 2.;
+			double t0_sing = 0.5;
+			auto gwgw_IG = GaussianQuadratureWeights(i, InvSg(0., t0_sing, b), InvSg(1., t0_sing, b));
+			double x0, x1, w0, w1;
+			for (const auto &x0w0 : gwgw_IG)
+			{
+				x0 = Sg(x0w0[0], t0_sing, b);
+				w0 = x0w0[1] * DSg(x0w0[0], t0_sing, b);
+				for (const auto &x1w1 : gwgw_IG)
+				{
+					x1 = Sg(x1w1[0], t0_sing, b);
+					w1 = x1w1[1] * DSg(x1w1[0], t0_sing, b);
+					{
+						cross = intp->cross(x0, x1);
+						r = (*intp)(x0, x1) - A;
+						nr = Norm(r);
+						IGIGn[0] = Norm(cross) / nr * w0 * w1;
+						IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * w0 * w1;
+						N = intp->N(x0, x1);
+						for (auto k = 0; k < ps.size(); k++)
+							new_igign_OUT[ps[k]] += IGIGn * N[k];
+					}
+				}
+			}
+		}
+		else
+#endif
+		{
+			for (const auto &x0w0 : GWGWfrom0to1[i])
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					cross = intp->cross(x0w0[0], x1w1[0]);
+					r = (*intp)(x0w0[0], x1w1[0]) - A;
+					nr = Norm(r);
+					IGIGn[0] = Norm(cross) / nr * x0w0[1] * x1w1[1];
+					IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * x0w0[1] * x1w1[1];
+					N = intp->N(x0w0[0], x1w1[0]);
+					for (auto k = 0; k < ps.size(); k++)
+						new_igign_OUT[ps[k]] += IGIGn * N[k];
+				}
+		}
+		delete intp;
+	};
+
+#endif
+	/* ------------------ 三角形面の2次のラグランジュ補間 ------------------ */
+	void p_igign_Quad(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	{
+		//! shape function vector of gaussian points
+		//! __GWGW__ = {xi, h * (1. - xi), w_xi * w_h * (1. - xi), w_xi * w_h /*1-xiなし*/}}
+		//! __GWGW__ = {xi, h, w_xi * w_h}
+		// /Users/tomoaki/Dropbox/markdown/cpp/builds/build_quadrature/main.cpp
+		// を見た下さい
+		//! あるoriginに対して，各点の影響力igignを計算する．
+		//! 影響力係数は全てのFaceそれぞれについて計算するが(origin A v.s. Faces)，
+		//! FaceはPoint座標の関数なので，結果はPoints各点の影響力として表され，係数行列として出てくる．
+		//! Face達を構成するPoint達は，2次以上の場合，重複していることがある．重複している場合は，影響力を加算していくことで考慮される．
+		for (auto &[p, igign] : new_igign_OUT)
+			igign = zeros;
+		interpolationTriangleQuadByFixedRangeCenter intp(obj3D::extractX(ps));
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+		double common, nr;
+		// 0から1/2に変えよう
+		//  ここの積分の整理から始めよう
+		if (ps[4] == origin)
+		{
+			//! IG
+			double x_sing_t0 = 0.;
+			auto beta_t0 = 2.;
+			auto gwgw_t0 = GaussianQuadratureWeights(i, InvSg(0., x_sing_t0, beta_t0), InvSg(1., x_sing_t0, beta_t0));
+			double x0, x1, w0, w1;
+			for (const auto &x0w0 : gwgw_t0)
+			{
+				x0 = Sg(x0w0[0], x_sing_t0, beta_t0);
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_t0);
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					x1 = x1w1[0];
+					w1 = x1w1[1];
+					{
+						common = intp.J(x0, x1) * w0 * w1;
+						r = intp(x0, x1) - A;
+						nr = Norm(r);
+						IGIGn[0] = common / nr;
+						IGIGn[1] = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+						N = intp.N(x0, x1);
+						for (auto k = 0; k < ps.size(); k++)
+							new_igign_OUT[ps[k]] += IGIGn * N[k];
+					}
+				}
+			}
+		}
+		else
+		{
+			for (const auto &x0w0 : GWGWfrom0to1[i])
+			{
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					common = intp.J(x0w0[0], x1w1[0]) * x0w0[1] * x1w1[1];
+					r = intp(x0w0[0], x1w1[0]) - A;
+					nr = Norm(r);
+					IGIGn[0] = common / nr;
+					IGIGn[1] = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0w0[0], x1w1[0]))) * common;
+					N = intp.N(x0w0[0], x1w1[0]);
+					for (auto k = 0; k < ps.size(); k++)
+						new_igign_OUT[ps[k]] += IGIGn * N[k];
+				}
+			}
+		}
+	};
+
+	/* ---------------------- 三角形面の線形補間 --------------------- */
+
+	void p_igign_Linear(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	{
+		// for (auto i = 0; i < 3; i++)
+		// 	new_igign_OUT[ps[i]] = zeros;
+		// V_d r(3, 0.), N(3, 0.), IGIGn(2, 0.), A = origin->getX();
+		// double x0, x1, nr, tmp;
+		// interpolationLagLinear intp(obj3D::extractX(ps));
+		// for (const auto &a_b_1ab_w : __GWGW__[i]) {
+		// 	x0 = a_b_1ab_w[0];
+		// 	x1 = a_b_1ab_w[1];
+		// 	x1 *= (1 - x0);
+		// 	tmp = intp.J(x0, x1) * (1 - x0) * a_b_1ab_w[2] /*変数変換した重みは[2]*/;
+		// 	//
+		// 	r = intp(x0, x1) - A;
+		// 	nr = Norm(r);
+		// 	IGIGn[0] = tmp / nr;
+		// 	IGIGn[1] = -Dot(r / pow(nr, 3.), intp.normal_cross(x0, x1)) * tmp;
+		// 	N = intp.N(x0, x1);
+		// 	for (auto i = 0; i < 3; i++)
+		// 		new_igign_OUT[ps[i]] += IGIGn * N[i];
+		// }
+		for (auto &[p, igign] : new_igign_OUT)
+			igign = zeros;
+		interpolationTriangleLinearByFixedRange intp(obj3D::extractX(ps));
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+		auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		double common, nr;
+		double x0, x1, w0, w1;
+		bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+		double beta = 2.;
+		double x_sing = 1.; //! linearの場合はx_sing = 1.
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeights(15, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : gw)
+		{
+			if (isSingular)
+			{
+				x0 = Sg(x0w0[0], x_sing, beta);
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing, beta);
+			}
+			else
+			{
+				x0 = x0w0[0];
+				w0 = x0w0[1];
+			}
+			for (const auto &x1w1 : gw)
+			{
+				x1 = x1w1[0];
+				w1 = x1w1[1];
+				///////
+				common = intp.J(x0, x1) * w0 * w1;
+				r = intp(x0, x1) - A;
+				nr = Norm(r);
+				IGIGn[0] = common / nr;
+				IGIGn[1] = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+				N = intp.N(x0, x1);
+				for (auto k = 0; k < ps.size(); k++)
+					new_igign_OUT[ps[k]] += IGIGn * N[k];
+			}
+		}
+	};
+	//
+	// void p_igign_Linear(networkPoint *const p0,
+	// 					networkPoint *const p1,
+	// 					networkPoint *const p2,
+	// 					const netPp origin,
+	// 					const int i,
+	// 					std::unordered_map<netP *, Tdd> &new_igign_OUT)
+	// {
+	// 	// Tdd zeros = {0, 0};
+	// 	// for (auto &[p, igign] : new_igign_OUT)
+	// 	// 	igign = zeros;
+
+	// 	// タプルに対応させる．
+	// 	interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+	// 	Tdd IGIGn;
+	// 	Tddd r, N, A = origin->getXtuple();
+	// 	//
+	// 	// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+
+	// 	// if (p0 == origin || p1 == origin || p2 == origin)
+	// 	// 	gw = GaussianQuadratureWeights(15, 0., 1.);
+	// 	auto gw = __GWGW__[i + 1];
+	// 	double common, nr;
+	// 	double x0, x1, w0, w1;
+	// 	// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+	// 	bool isSingular = (p0 == origin); //!linearの場合は0
+	// 	double beta = 2.;
+	// 	double x_sing = 1.; //!linearの場合はx_sing = 1.
+	// 	auto &new_igign_OUTp0 = new_igign_OUT[p0];
+	// 	auto &new_igign_OUTp1 = new_igign_OUT[p1];
+	// 	auto &new_igign_OUTp2 = new_igign_OUT[p2];
+	// 	for (const auto &x0w0 : isSingular ? GaussianQuadratureWeights(15, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : gw)
+	// 	{
+	// 		if (isSingular)
+	// 		{
+	// 			x0 = Sg(x0w0[0], x_sing, beta);
+	// 			w0 = x0w0[1] * DSg(x0w0[0], x_sing, beta);
+	// 		}
+	// 		else
+	// 		{
+	// 			x0 = x0w0[0];
+	// 			w0 = x0w0[1];
+	// 		}
+	// 		for (const auto &x1w1 : gw)
+	// 		{
+	// 			x1 = x1w1[0];
+	// 			w1 = x1w1[1];
+	// 			///////
+	// 			common = intp.J(x0, x1) * w0 * w1;
+	// 			r = intp(x0, x1) - A;
+	// 			nr = Norm(r);
+	// 			std::get<0>(IGIGn) = common / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+	// 			N = intp.N(x0, x1);
+	// 			new_igign_OUTp0 += IGIGn * std::get<0>(N);
+	// 			new_igign_OUTp1 += IGIGn * std::get<1>(N);
+	// 			new_igign_OUTp2 += IGIGn * std::get<2>(N);
+	// 		}
+	// 	}
+	// };
+	//昔の
+	void p_igign_Linear(networkPoint *p0,
+						networkPoint *p1,
+						networkPoint *p2,
+						const netPp origin,
+						const int i,
+						std::unordered_map<netP *, Tdd> &new_igign_OUT)
+	{
+		// Tdd zeros = {0, 0};
+		// for (auto &[p, igign] : new_igign_OUT)
+		// 	igign = zeros;
+
+		// タプルに対応させる．
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		Tdd IGIGn;
+		Tddd r, N, A = origin->getXtuple();
+		//
+		auto gw = GaussianQuadratureWeights(i, 0., 1.);
+
+		// if (p0 == origin || p1 == origin || p2 == origin)
+		// 	gw = GaussianQuadratureWeights(15, 0., 1.);
+		double common, nr;
+		double x0, x1, w0, w1;
+		// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+		bool isSingular = (p0 == origin); //! linearの場合は0
+		double beta = 2.;
+		double x_sing = 1.; //! linearの場合はx_sing = 1.
+		auto &new_igign_OUTp0 = new_igign_OUT[p0];
+		auto &new_igign_OUTp1 = new_igign_OUT[p1];
+		auto &new_igign_OUTp2 = new_igign_OUT[p2];
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeights(15, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : gw)
+		{
+			if (isSingular)
+			{
+				x0 = Sg(x0w0[0], x_sing, beta);
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing, beta);
+			}
+			else
+			{
+				x0 = x0w0[0];
+				w0 = x0w0[1];
+			}
+			for (const auto &x1w1 : gw)
+			{
+				x1 = x1w1[0];
+				w1 = x1w1[1];
+				///////
+				common = intp.J(x0, x1) * w0 * w1;
+				r = intp(x0, x1) - A;
+				nr = Norm(r);
+				std::get<0>(IGIGn) = common / nr;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+				N = intp.N(x0, x1);
+				new_igign_OUTp0 += IGIGn * std::get<0>(N);
+				new_igign_OUTp1 += IGIGn * std::get<1>(N);
+				new_igign_OUTp2 += IGIGn * std::get<2>(N);
+			}
+		}
+	};
+	/* ------------------------------------------------------ */
+	//* ------------------------------------------------------ */
+	//#          RBF  面における方程式を点上で作成                  */
+	//* ------------------------------------------------------ */
+	void p_igign_Quad_IDW_RBF(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	{
+		//    \ \            ^
+		//     7  0  6       |<-(t0=1.5)
+		//   8  3   5  11    |<-(t0=1)
+		//     1  4  2       |<-(t0=0)
+		//      9  10  \     |
+		//           \  \
+		//         (t1=1)(t1=0)
+		for (auto &[p, igign] : new_igign_OUT)
+			igign = zeros;
+		//!この積分範囲はしゅうせする必要がない
+		interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+		double common, nr, weight;
+		V_d cross;
+		if (ps[4] == origin)
+		{
+			double s = (double)(origin->getFaces()).size();
+			// こういう，一度だけ！見たいな場合の処理が面倒．
+			//! ------------------------------------------------------ */
+			//!                 RBFを使って補間関数を作成                 */
+			//! ------------------------------------------------------ */
+			VV_d xyz = {};
+			VV_d param = {};
+			V_netPp points = {};
+			// for (const auto &tup : origin->getNeighbors_Depth2_OnPolarAsTuple2())
+			for (const auto &tup : origin->getNeighbors_Depth2_OnPolarAsTuple())
+			{
+				auto [t0, t1, X, p] = tup;
+				points.emplace_back(p);
+				param.emplace_back(V_d{t0, t1});
+				xyz.emplace_back(X);
+			}
+			points.emplace_back(origin);
+			param.emplace_back(V_d{0, 0});
+			xyz.emplace_back(origin->getX());
+			auto intp = InterpolationVectorRBF(param, xyz);
+			//! ------------------------------------------------------ */
+			int gausspoints = 6;
+			auto gwgw_polar = GaussianQuadratureWeights(gausspoints, 0., M_PI);
+			auto beta = 1.;
+			auto x_sing_t0 = 0.;
+			auto gwgw_r = GaussianQuadratureWeights(gausspoints, InvSg(-1., x_sing_t0, beta), InvSg(1., x_sing_t0, beta));
+			double x0, x1, w0, w1;
+			for (const auto &x0w0 : gwgw_r)
+			{
+				x0 = Sg(x0w0[0], x_sing_t0, beta); // r
+				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta);
+				for (const auto &x1w1 : gwgw_polar)
+				{
+					x1 = x1w1[0];
+					w1 = x1w1[1];
+
+					auto X0 = x0 * cos(x1);
+					auto X1 = x0 * sin(x1);
+					{
+						r = intp({X0, X1}) - A;
+						nr = Norm(r);
+						IGIGn[0] = 1. / nr * intp.J(X0, X1) * x0 * (w0 * w1) / s;
+						IGIGn[1] = -Dot(r / pow(nr, 3.), intp.cross(X0, X1)) * x0 * (w0 * w1) / s;
+						// このNは未だ決まらない．愛想パラメトリックだからこそ決まっていたもの．
+						// RBFの場合，サンプルをまず与えて，Fの逆行列をもとめてから初めてわかる．．．．
+						//!仮にアイソパラメトリックでやってみよう
+						N = intp.N(X0, X1);
+						for (auto k = 0; k < points.size(); k++)
+						{
+							if (new_igign_OUT.find(points[k]) == new_igign_OUT.end())
+								new_igign_OUT[points[k]] = {0., 0.};
+
+							new_igign_OUT[points[k]] += IGIGn * N[k]; //面の数で割った
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			for (const auto &x0w0 : GWGWfrom0to1[i])
+			{
+				for (const auto &x1w1 : GWGWfrom0to1[i])
+				{
+					cross = intp.cross(x0w0[0], x1w1[0]);
+					r = intp(x0w0[0], x1w1[0]) - A;
+					nr = Norm(r);
+					IGIGn[0] = Norm(cross) / nr * x0w0[1] * x1w1[1];
+					IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * x0w0[1] * x1w1[1];
+					N = intp.N(x0w0[0], x1w1[0]);
+					for (auto k = 0; k < ps.size(); k++)
+						new_igign_OUT[ps[k]] += IGIGn * N[k];
+				}
+			}
+		}
+	};
+	//* ------------------------------------------------------ */
+	//#                 RBF 各点んで方程式を作る場合              */
+	//* ------------------------------------------------------ */
+	std::map<netP *, V_d> calc_P_IGIGn_RBF(const netFp &f, const netPp origin)
+	{
+		/*
+		 * 点を原点とした場合の境界積分方程式の一部：IGIGnを計算する
+		 */
+		V_netPp ps = f->get12Points(origin); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
+		V_i nGWGW = {6 + 1, 8 + 1, 10 + 1, 12 + 1};
+		double conv = 1E-2;
+		V_d zeros(2, 0.);
+		std::map<netPp, V_d> pre_igign;
+		for (const auto &p : ps)
+			pre_igign[p] = zeros;
+		std::map<netPp, V_d> new_igign = pre_igign;
+		p_igign_Quad_IDW_RBF(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+		for (auto i = 1; i < nGWGW.size(); i++)
+		{
+			p_igign_Quad_IDW_RBF(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+			if (isConverged(new_igign, pre_igign, ps, conv))
+				return new_igign;
+			else
+				pre_igign = new_igign; // replace and try again
+		}
+		return new_igign;
+	};
+
+	//* ------------------------------------------------------ */
+	//%               面における方程式を点上で作成                  */
+	//* ------------------------------------------------------ */
+	std::map<netP *, V_d> calc_P_IGIGn(const netFp &f, const netPp origin)
+	{
+		/* code */
+		/**
+		 * 点を原点とした場合の境界積分方程式の一部：IGIGnを計算する
+		 */
+		/* --------------------- 線形か2次かを決める --------------------- */
+		/* ---------------- 引数に与えられた面を，点を使って表現し直す --------------- */
+		V_netPp ps = f->getPoints(origin);
+		// V_netPp ps = f->get6Points(origin);
+		// V_netPp ps = f->get12Points(origin); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
+		/* ------------------------ 順番を調整 ----------------------- */
+		// if (ps.size() == 3) {
+		// 	if (MemberQ(ps, origin)) {
+		// 		if (ps[1] == origin)
+		// 			ps = {ps[1] /*Origin*/, ps[2], ps[0]};
+		// 		if (ps[2] == origin)
+		// 			ps = {ps[2] /*Origin*/, ps[0], ps[1]};
+		// 	}
+		// } else if (ps.size() == 6) {
+		// 	if (MemberQ(ps, origin)) {
+		// 		//! {ps[0], ps[1], ps[2], ps[3], ps[4]/*O*//*ここがxi=0の座標のはず*/, ps[5]}
+		// 		if (ps[5] == origin)
+		// 			ps = {ps[1], ps[2], ps[0], ps[4], ps[5] /*O ここがxi=0の座標のはず*/, ps[3]};
+		// 		else if (ps[3] == origin)
+		// 			ps = {ps[2], ps[0], ps[1], ps[5], ps[3] /*O ここがxi=0の座標のはず*/, ps[4]};
+		// 	}
+		// }
+		/* ------------------------------------------------------ */
+		// V_i nGWGW = {6, 8, 10, 12};
+		V_i nGWGW = {5};
+		double conv = 1E-2;
+		V_d zeros(2, 0.);
+		std::map<netPp, V_d> pre_igign;
+		for (const auto &p : ps)
+			pre_igign[p] = zeros;
+		std::map<netPp, V_d> new_igign = pre_igign;
+		if (ps.size() == 3)
+		{
+			p_igign_Linear(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+			new_igign = pre_igign;
+			for (auto i = 1; i < nGWGW.size(); i++)
+			{
+				p_igign_Linear(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+				if (isConverged(new_igign, pre_igign, ps, conv))
+					return new_igign;
+				else
+					pre_igign = new_igign; // replace and try again
+			}
+		}
+		else if (ps.size() == 6)
+		{
+			p_igign_Quad(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+			new_igign = pre_igign;
+			for (auto i = 1; i < nGWGW.size(); i++)
+			{
+				p_igign_Quad(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+				if (isConverged(new_igign, pre_igign, ps, conv))
+					return new_igign;
+				else
+					pre_igign = new_igign; // replace and try again
+			}
+		}
+		else if (ps.size() == 12)
+		{
+			p_igign_Quad_IDW(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+			new_igign = pre_igign;
+			for (auto i = 1; i < nGWGW.size(); i++)
+			{
+				p_igign_Quad_IDW(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+				if (isConverged(new_igign, pre_igign, ps, conv))
+					return new_igign;
+				else
+					pre_igign = new_igign; // replace and try again
+			}
+		}
+		else
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+		return new_igign;
+	};
+	/* ------------------------------------------------------ */
+	std::unordered_map<netP *, Tdd> calc_P_IGIGnTuple(const netFp &f, const netPp origin)
+	{
+		V_netPp ps = f->getPoints(origin);
+		Tdd zeros = {0, 0};
+		std::unordered_map<netPp, Tdd> igign = {{ps[0], zeros}, {ps[1], zeros}, {ps[2], zeros}};
+		p_igign_Linear(ps[0], ps[1], ps[2], origin, 5., /*出力結果*/ igign); //!まず計算
+		return igign;
+	};
+	/* ------------------------------------------------------ */
+	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkPoint *const origin)
+	{
+		//おそらくIgIgnの計算精度に大きく関わるため，
+		auto [p0, p1, p2] = f->getPointsTuple(origin);
+		Tdd p0igign = {0, 0};
+		Tdd p1igign = {0, 0};
+		Tdd p2igign = {0, 0};
+		int i = 6;
+
+		double mean_len = 5. * Max(extLength(origin->getLines()));
+		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p1->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p2->getXtuple() - origin->getXtuple()) < mean_len)
+			i = 14;
+		// タプルに対応させる．
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
+		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalTuple(), p1->getNormalTuple(), p2->getNormalTuple()});
+		Tdd IGIGn;
+		Tddd r, N, A = origin->getXtuple();
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		double common, nr;
+		double x0, x1, w0, w1;
+		// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+		bool isSingular = (p0 == origin); //! linearの場合は0
+		double beta = 2.;
+		double x_sing = 1.; //! linearの場合はx_sing = 1.
+		auto GW = __GW__Tuple[i];
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
+		{
+			if (isSingular)
+			{
+				x0 = Sg(std::get<0>(x0w0), x_sing, beta);
+				w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+			}
+			else
+			{
+				x0 = std::get<0>(x0w0);
+				w0 = std::get<1>(x0w0);
+			}
+			for (const auto &x1w1 : GW)
+			{
+				x1 = std::get<0>(x1w1);
+				w1 = std::get<1>(x1w1);
+				/* ------------------------------ */
+				common = intp.J(x0, x1) * w0 * w1;
+				r = intp(x0, x1) - A;
+				nr = Norm(r);
+				std::get<0>(IGIGn) = common / nr;
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+				N = intp.N(x0, x1);
+				p0igign += IGIGn * std::get<0>(N);
+				p1igign += IGIGn * std::get<1>(N);
+				p2igign += IGIGn * std::get<2>(N);
+			}
+		}
+		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+	};
+
+	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkFace *const origin_f)
+	{
+		// auto [P0, P1, P2] = f->getPointsTuple();
+		// auto [p0, p1, p2] = (P0->CORNER) ? f->getPointsTuple(P0) : ((P1->CORNER) ? f->getPointsTuple(P1) : f->getPointsTuple(P2));
+		auto [p0, p1, p2] = f->getPointsTuple();
+		Tdd p0igign = {0, 0};
+		Tdd p1igign = {0, 0};
+		Tdd p2igign = {0, 0};
+		int i = 6;
+
+		// double mean_len = 5. * Max(extLength(origin_f->getLines()));
+		// if (Norm(p0->getXtuple() - origin_f->getXtuple()) < mean_len ||
+		// 	Norm(p1->getXtuple() - origin_f->getXtuple()) < mean_len ||
+		// 	Norm(p2->getXtuple() - origin_f->getXtuple()) < mean_len)
+		// 	i = 14;
+		// タプルに対応させる．
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		// Tddd A = intp(0.25, 0.25);
+		Tddd A = origin_f->getXtuple(); // p0->getXtuple() + p1->getXtuple() + p2->getXtuple();
+		// std::cout << "A_ = " << A_ << ", A = " << A << ", intp.N(x0, x1)" << intp.N(0.5, 0.5) << std::endl;
+		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
+		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalTuple(), p1->getNormalTuple(), p2->getNormalTuple()});
+		Tdd IGIGn;
+		Tddd r, N; // origin_f->getXtuple();
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		double common, nr;
+		double x0, x1, w0, w1;
+		// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+		bool isSingular = false; //(f == origin_f); //! linearの場合は0
+		double beta = 2.;
+		double x_sing = 0.5; //! linearの場合はx_sing = 1.
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW__Tuple[i])
+		{
+			if (isSingular)
+			{
+				x0 = Sg(std::get<0>(x0w0), x_sing, beta);
+				w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+			}
+			else
+			{
+				x0 = std::get<0>(x0w0);
+				w0 = std::get<1>(x0w0);
+			}
+			for (const auto &x1w1 : __GW__Tuple[i])
+			{
+				x1 = std::get<0>(x1w1);
+				w1 = std::get<1>(x1w1);
+				/* ------------------------------ */
+				common = intp.J(x0, x1) * w0 * w1;
+				r = intp(x0, x1) - A;
+				nr = Norm(r);
+				std::get<0>(IGIGn) = common / nr;
+				//! Dombre2019ならこっち
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+				N = intp.N(x0, x1);
+				p0igign += IGIGn * std::get<0>(N);
+				p1igign += IGIGn * std::get<1>(N);
+				p2igign += IGIGn * std::get<2>(N);
+			}
+		}
+		// if (!isFinite(p0igign) || !isFinite(p1igign) || !isFinite(p2igign))
+		// {
+		// 	std::cout << "origin = " << origin << std::endl;
+		// 	std::cout << "f = " << f << ", f->getPoints() = " << f->getPoints() << std::endl;
+		// 	std::cout << "origin_f = " << origin_f << "origin_f->getPoints() = " << origin_f->getPoints() << std::endl;
+		// 	std::cout << "[p0, p1, p2] = " << p0 << ", " << p1 << ", " << p2 << std::endl;
+		// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+		// }
+		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+	};
+
+	// /* ------------------------------------------------------ */
+	// std::unordered_map<netP *, Tdd> calc_P_IGIGnTuple(const netFp &f, const netPp origin)
+	// {
+	// 	V_netPp ps = f->getPoints(origin);
+	// 	V_i nGWGW = {4};
+	// 	double conv = 1E-2;
+	// 	Tdd zeros = {0, 0};
+	// 	std::unordered_map<netPp, Tdd> pre_igign;
+	// 	pre_igign.reserve(ps.size());
+	// 	for (const auto &p : ps)
+	// 		pre_igign[p] = zeros;
+
+	// 	std::unordered_map<netPp, Tdd> new_igign = pre_igign;
+
+	// 	p_igign_Linear(ps[0], ps[1], ps[2], origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+	// 	new_igign = pre_igign;
+	// 	for (auto i = 1; i < nGWGW.size(); i++)
+	// 	{
+	// 		p_igign_Linear(ps[0], ps[1], ps[2], origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+	// 		if (isConverged(new_igign, pre_igign, ps, conv))
+	// 			return new_igign;
+	// 		else
+	// 			pre_igign = new_igign; //replace and try again
+	// 	}
+	// 	return new_igign;
+	// };
+	//* ------------------------------------------------------ */
+	//!               面における方程式を面上で作成                  */
+	//* ------------------------------------------------------ */
+	std::map<netP *, V_d> calc_P_IGIGn(const netFp &f /*積分面*/,
+									   const netFp origin_f /*原点のある面*/,
+									   double t0, double t1 /*原点の位置を指定するパラメタ座標*/,
+									   int points_number)
+	{
+		/**
+		 * 面を原点とした場合の境界積分方程式の一部：IGIGnを計算する
+		 */
+		// 明日はリメッシュについて考察．
+		// まとめる．論文を読む．
+		V_i gps = {8};
+		if (f == origin_f)
+			gps = {18};
+		double conv = 1E-3;
+		V_d zeros(2, 0.);
+		std::map<netPp, V_d> pre_igign;
+		V_netPp ps;
+		/* ------------------------------------------------------ */
+		if (points_number == 3)
+			ps = f->getPoints(); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
+		else if (points_number == 6)
+			ps = f->get6Points();
+		else if (points_number == 12)
+			ps = f->get12Points();
+		//
+		for (const auto &p : ps)
+			pre_igign[p] = zeros;
+		//
+		p_igign(f, origin_f, t0, t1, gps[0], /*出力結果*/ pre_igign, ps); //!まず計算
+		//
+		std::map<netPp, V_d> new_igign = pre_igign;
+		for (auto i = 1; i < gps.size(); i++)
+		{
+			p_igign(f, origin_f, t0, t1, gps[i], /*出力結果*/ new_igign, ps); //!次に計算
+			if (isConverged(new_igign, pre_igign, ps, conv))
+				return new_igign;
+			else
+				pre_igign = new_igign; // replace and try again
+		}
+		return new_igign;
+	};
+
+	///////////////////////////////////
+
+	// namespace BEM
+	////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////
+
+	using map_P_d = std::map<netP *, double>;
+	using map_P_Vd = std::map<netP *, V_d>;
+	using map_F_P_Vd = std::map<netF *, map_P_Vd>;
+	using map_P_P_Vd = std::map<netP *, map_P_Vd>;
+	using map_P_F_P_Vd = std::map<netP *, map_F_P_Vd>;
+
+	////////////////////////////////////////////////////////////////////////////////
+	// template <typename T>
+	// std::vector<T *> takeB(const std::vector<T *> &nets)
+	// {
+	//   std::vector<T *> ret({});
+	//   for (const auto &n : nets)
+	//     if (n->isB())
+	//       ret.emplace_back(n);
+	//   return DeleteDuplicates(ret);
+	// };
+	// template <typename T>
+	// std::vector<T *> takeC(const std::vector<T *> &nets)
+	// {
+	//   std::vector<T *> ret({});
+	//   for (const auto &n : nets)
+	//     if (n->isC())
+	//       ret.emplace_back(n);
+	//   return DeleteDuplicates(ret);
+	// };
+	// template <typename T>
+	// std::vector<T *> takeN(const std::vector<T *> &nets)
+	// {
+	//   std::vector<T *> ret({});
+	//   for (const auto &n : nets)
+	//     if (n->isN())
+	//       ret.emplace_back(n);
+	//   return DeleteDuplicates(ret);
+	// };
+	// template <typename T>
+	// std::vector<T *> takeD(const std::vector<T *> &nets)
+	// {
+	//   std::vector<T *> ret({});
+	//   for (const auto &n : nets)
+	//     if (n->isD())
+	//       ret.emplace_back(n);
+	//   return DeleteDuplicates(ret);
+	// };
+	// V_Netp takeNetworks(const V_netPp &ps)
+	// {
+	//   V_Netp ret({});
+	//   for (auto &p : ps)
+	//     network::add(ret, p->getNetwork());
+	//   return ret;
+	// };
+	///////
+
+	class networkSampler
+	{
+	public:
+		V_Netp nets_for_C_phin;
+		V_Netp nets_for_N_phin;
+		V_Netp nets_for_D_phin;
+		V_Netp nets_for_C_phi;
+		V_Netp nets_for_N_phi;
+		V_Netp nets_for_D_phi;
+		V_Netp nets_for_C_nabla;
+		V_Netp nets_for_N_nabla;
+		V_Netp nets_for_D_nabla;
+
+		networkSampler(const V_Netp &all_networks)
+		{
+			initialize(all_networks);
+		};
+
+		void initialize(const V_Netp &all_networks)
+		{
+			nets_for_C_phin = takeN(all_networks);
+			nets_for_D_phin = takeD(all_networks);
+			nets_for_N_phin = Join(takeC(all_networks), takeN(all_networks));
+
+			nets_for_C_phi = all_networks;
+			nets_for_D_phi = Join(takeC(all_networks), takeD(all_networks));
+			nets_for_N_phi = Join(takeC(all_networks), takeN(all_networks));
+
+			nets_for_C_nabla = Join(takeC(all_networks), takeN(all_networks));
+			nets_for_D_nabla = takeD(all_networks);
+			nets_for_N_nabla = Join(takeC(all_networks), takeN(all_networks));
+		};
+
+		V_Netp net4nabla(const netPp p)
+		{
+			if (p->isC())
+				return nets_for_C_nabla;
+			else if (p->isD())
+				return nets_for_D_nabla;
+			else
+				return nets_for_N_nabla;
+		};
+
+		V_Netp net4phin(const netPp p)
+		{
+			if (p->isC())
+				return nets_for_C_phin;
+			else if (p->isD())
+				return nets_for_D_phin;
+			else
+				return nets_for_N_phin;
+		};
+
+		V_Netp net4phi(const netPp p)
+		{
+			if (p->isC())
+				return nets_for_C_phi;
+			else if (p->isD())
+				return nets_for_D_phi;
+			else
+				return nets_for_N_phi;
+		};
+	};
+
+	// V_Netp getReferenceNetwork(const netPp p, const V_Netp &all_networks)
+	// {
+	//   V_Netp nets;
+	//   if (p->isC())
+	//     nets = takeN(all_networks);
+	//   else if (p->isD())
+	//     nets = Join(takeC(all_networks), takeD(all_networks));
+	//   else
+	//     nets = Join(takeC(all_networks), takeN(all_networks));
+	//   return nets;
+	// };
+
+	// V_Netp getReferenceNetwork(const netPp p, const V_netPp &ps)
+	// {
+	//   return getReferenceNetwork(p, takeNetworks(ps));
+	// };
+
+	double SolidAngleDN(const netPp p)
+	{
+#define use_solidangle
+// #define do_not_use_solidangle
+#ifdef use_solidangle
+		if (isFlat(p))
+			return 2. * M_PI;
+		auto s = p->getSolidAngle();
+		if (p->isD())
+		{
+			return 2. * M_PI;
+			// return (Between(s, {0.5*2.*M_PI, 1.5*2.*M_PI})) ? s : 2. * M_PI;
+		}
+		else if (p->isC())
+			return (Between(s, {0.3 * M_PI, 1.7 * M_PI})) ? s : M_PI;
+		else
+			return (Between(s, {M_PI / 4., 2. * M_PI})) ? s : 2. * M_PI;
+#elif defined(do_not_use_solidangle)
+		if (isFlat(p))
+			return 2. * M_PI;
+
+		if (p->isD())
+			return 2. * M_PI;
+		else if (p->isC())
+			return M_PI;
+		else
+			return 2. * M_PI;
+#else
+		// if (p->isD())
+		//   return 2. * M_PI;
+		// else if (p->isC())
+		//   return M_PI;
+		// else
+		//   return 2. * M_PI;
+
+		if (isFlat(p))
+			return 2. * M_PI;
+
+		auto s = p->getSolidAngle();
+		if (p->isD())
+			return 2. * M_PI;
+		else if (p->isC())
+			return M_PI;
+		else
+			return (Between(s, {0.7 * M_PI, 1.3 * M_PI})) ? s : 2. * M_PI;
+#endif
+	};
+	////////////////////////////////////////////////////
+	////////////////////////////////////////////////////
+
+	// #include "calcDerivatives.hpp"
+	// 	/////////////////////////////////////////////////////////
+	// 	/*calc_phiphin_detail
+	//   毎回のルンゲクッタの初期値となるphiphinを`P_phiphin`として返す．
+	//   その値は`known_P_phiphin`を元に作成する．
+	// calc_phiphin_detail*/
+	// 	/*calc_phiphin_code*/
+	// 	class calc_phiphin
+	// 	{
+	// 	public:
+	// 		double dt;
+	// 		calc_phiphin() : dt(0){};
+	// 		~calc_phiphin(){};
+	// 		//-------------------------------------
+	// 		//シミュレーションの初回はこれ
+	// 		void init(map_P_Vd &P_phiphin, //毎回のルンゲクッタの初期値となるphiphin
+	// 				  map_P_Vd &known_P_phiphin,
+	// 				  BEM::CompGrid &cpg)
+	// 		{
+	// 			Print("init");
+	// 			this->dt = 1E-10;
+	// 			for (const auto &p : cpg.InnerOuterP)
+	// 			{
+	// 				auto it = known_P_phiphin.find(p);
+	// 				if (it != known_P_phiphin.end())
+	// 					P_phiphin[p] = it->second;
+	// 				else
+	// 					P_phiphin[p] = {0., 0.};
+	// 			}
+	// 		};
+	// 		//-------------------------------------
+	// 		//シミュレーションの初回以外のRKの初めはこれ
+	// 		void noninit(map_P_Vd &P_phiphin, //毎回のルンゲクッタの初期値となるphiphin
+	// 					 map_P_Vd &known_P_phiphin,
+	// 					 BEM::CompGrid &cpg)
+	// 		{
+	// 			try
+	// 			{
+	// 				Print("noninit");
+	// 				this->dt = 0.1;
+	// 				/*角点のnはNeumann境界条件の法線ベクトルとなるよう修正*/
+	// 				/*内部点の代入*/
+
+	// 				// V_Netp all_networks = takeNetworks(TakeFirst(known_P_phiphin));
+
+	// 				networkSampler netsamp(takeNetworks(TakeFirst(known_P_phiphin)));
+
+	// 				for (const auto &p : cpg.InnerP)
+	// 				{ //OuterPのphiphinは内部の値から見積もられるので時間発展はいらない
+	// 					if (/*nets.isD(p)*/ p->isD())
+	// 					{ /*Dirichlet*/
+	// 						// Print(__LINE__,Blue);
+	// 						auto it = known_P_phiphin.find(p);
+	// 						if (it != known_P_phiphin.end())
+	// 							P_phiphin[p] = it->second; //{(it->second)[0], 1E+30};
+	// 						else
+	// 						{
+	// 							mk_vtu("./vtu/new_point.vtu", {{p}});
+	// 							throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Dirichlet条件の水粒子が内部に新たに入ってくることはありえない");
+	// 							// Print(__LINE__,_Blue);
+	// 							// P_phiphin[p] = {BEM::InterpolationRBF_phi(p, known_P_phiphin, netsamp.net4phi(p)), 1E+30};
+	// 							//P_phiphin[p] = BEM::IDW_phiphin(p, known_P_phiphin, all_networks,3);
+	// 						}
+	// 					}
+	// 					else if (/*nets.isN(p)*/ p->isN())
+	// 					{ /*Neumann*/
+	// 						// Print(__LINE__,Red);
+	// 						P_phiphin[p] = {1E+30, p->phi_n()};
+	// 					}
+	// 				}
+	// 				/*外部点の代入*/
+	// 				for (const auto &p : cpg.OuterP)
+	// 				{
+	// 					if (/*nets.isD(p)*/ p->isD())
+	// 					{ /*Dirichlet*/
+	// 						P_phiphin[p] = {0., 0.};
+	// 					}
+	// 					else if (/*nets.isN(p)*/ p->isN())
+	// 					{ /*Neumann*/
+	// 						P_phiphin[p] = {0., p->phi_n()};
+	// 					}
+	// 				}
+	// 				Print("noninit done");
+	// 			}
+	// 			catch (const error_message &e)
+	// 			{
+	// 				e.print();
+	// 				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	// 			};
+	// 		};
+	// 	};
+	/*calc_phiphin_code*/
+	/////////////////////////////////////////////////////////
+
+} // namespace BEM
+#endif
