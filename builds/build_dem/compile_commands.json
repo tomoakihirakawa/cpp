@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_dem",
+  "command": "g++-11 -I../../include -I../../../include -include /Users/tomoaki/Dropbox/markdown/cpp/builds/../include/fundamental.hpp -std=c++17 -fuse-ld=gold -Og -fopenmp -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.14 -std=gnu++17 -o CMakeFiles/main.dir/main.cpp.o -c /Users/tomoaki/Dropbox/markdown/cpp/builds/build_dem/main.cpp",
+  "file": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_dem/main.cpp"
+}
+]

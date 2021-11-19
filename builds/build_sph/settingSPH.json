@@ -1,0 +1,42 @@
+{
+    "initial_surface_height": 0.792,
+    "C_CFL_velocity": 0.05,
+    "C_CFL_accel": 0.25,
+    "max_dt": 0.001,
+    "particle_spacing": 0.008,
+    "xbounds": [
+        0.663,
+        0.801
+    ],
+    "ybounds": [
+        -0.071,
+        0.071
+    ],
+    "zbounds": [
+        0.504,
+        0.796
+    ],
+    "buckets_xbounds": [
+        -0.9,
+        0.9
+    ],
+    "buckets_ybounds": [
+        -0.14,
+        0.14
+    ],
+    "buckets_zbounds": [
+        0.4,
+        1.8
+    ],
+    "C_SML": 0.9,
+    "kNS_SML": 7,
+    "mu": 0.001005,
+    "C_Tait": 24.433333333333334,
+    "C_artificial_viscousity_alpha": 1,
+    "C_artificial_viscousity_beta": 0.0,
+    "preparation_max_dt": 0.0001,
+    "preparation_time": 1.0,
+    "preparation_time_step": 10,
+    "preparation_C_artificial_viscousity_alpha": 1,
+    "preparation_C_artificial_viscousity_beta": 0.2
+}

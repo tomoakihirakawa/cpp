@@ -1,0 +1,8 @@
+{
+    "name": "tank",
+    "objfile": "../../obj/bem_tank9.obj",
+    "radius": 0.05,
+    "output_vtu_file_name": "tank",
+    "output_pvd_file_name": "tank",
+    "output_directory": "/Users/tomoaki/BEM/BEM_amp030_Dombre2019_move1"
+}

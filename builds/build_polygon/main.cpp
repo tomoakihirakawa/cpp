@@ -1,0 +1,126 @@
+#define convex_check
+
+#if defined(convex_check)
+
+#include "GNUPLOT.hpp"
+#include "fundamental.hpp"
+
+using V_d = std::vector<double>;
+using VV_d = std::vector<std::vector<double>>;
+using VV_i = std::vector<std::vector<int>>;
+
+int main()
+{
+  // プロット
+  GNUPLOT plot;
+
+  for (auto i = -10; i < 10; i++)
+  {
+    VV_d tab = {{-3.14159, 0., 0},
+                {-2.0944, -3.6276, 0},
+                {2.61799, -4.5345, 0},
+                {6.28319, (double)i, 0}};
+
+    // tab = Reverse(tab);
+
+    plot.Set({{"key", ""}, {"title", (geometry::isConvexPolygon(tab)) ? "'convex'" : "'concave'"}});
+    plot.SaveSplotData({Join(tab, {*tab.begin()})}, {{"w", "l"}});
+    plot.plot3d();
+    std::cin.ignore();
+  }
+};
+
+#else
+
+#include "GNUPLOT.hpp"
+
+#include "fundamental.hpp"
+
+using V_d = std::vector<double>;
+using VV_d = std::vector<std::vector<double>>;
+using VV_i = std::vector<std::vector<int>>;
+
+int main()
+{
+
+  VV_d tab = {{-3.14159, 0., 0},
+              {-2.0944, -3.6276, 0},
+              {2.61799, -4.5345, 0},
+              {6.28319, 0, 0},
+              {9.42478, 0, 0},
+              {12., 0, 0},
+              {13., 0, 0},
+              {15., 0, 0},
+              {15., -1, 0},
+              {15., -2, 0},
+              {4.18879, -7.2552, 0},
+              {-3.66519, -6.3483, 0},
+              {-6.28319, 0, 0},
+              {-2.61799, 4.5345, 0},
+              {2.0944, 3.6276, 0},
+              {3.14159, 0., 0},
+              {0., 0., 0},
+              {0.523599, 0.9069, 0},
+              {-1.0472, 1.8138, 0}};
+
+  std::reverse(tab.begin(), tab.end());
+
+  // VV_d tab = {{0, 0, 0},
+  //             {1, 0, 0},
+  //             {2, 0, 0},
+  //             {1.5, 0.5, 0},
+  //             {1, 1, 0},
+  //             {1.25, 1, 0},
+  //             {2, 1, 0},
+  //             {1.8, 1.2, 0},
+  //             {1.6, 1.2, 0},
+  //             {1.5, 1.2, 0},
+  //             {1., 1.5, 0},
+  //             {.9, 1.5, 0},
+  //             {.55, .6, 0},
+  //             {.5, .6, 0},
+  //             {0, 2, 0},
+  //             {0, 1.5, 0},
+  //             {0, 1, 0},
+  //             {0, 0.5, 0}}; //ccw
+
+  // VV_d tab = {{0, 0, 0},
+  //             {1, 0, 0},
+  //             {2, 0, 0},
+  //             {1.5, 0.4, 0},
+  //             {1, 1, 0}};
+
+  // VV_d tab = {{0, 0, 0},
+  //             {2, 0, 0},
+  //             {2., 1.5, 0},
+  //             {1, 1, 0}};
+
+  geometry::polygon poly(tab);
+
+  std::cout << poly.getInteriorAngles(poly.getActivePoints(), {0., 0., 1.}) << std::endl;
+  std::cout << poly.isConvexPolygon(poly.getActivePoints(), {0., 0., 1.}) << std::endl;
+
+  VV_i indices = poly.triangulate({0, 0, 1.}, 100.);
+
+  std::cout << "三角形の番号: " << indices << std::endl;
+  std::cout << "各点の面積: " << geometry::extractAreas(poly.points) << std::endl;
+
+  // プロット
+  GNUPLOT plot;
+  plot.Set({{"key", ""}, {"title", "'triangulate({0,0,1.})'"}});
+  int i = 0;
+  for (const auto &index : indices)
+  {
+    plot.SaveVectorData({{tab[index[0]], tab[index[1]] - tab[index[0]]}},
+                        {{"lw", "2"}, {"lc", std::to_string(i)}, {"title", std::to_string(i)}});
+    plot.SaveVectorData({{tab[index[1]], tab[index[2]] - tab[index[1]]}},
+                        {{"lw", "2"}, {"lc", std::to_string(i)}, {"title", std::to_string(i)}});
+    plot.SaveVectorData({{tab[index[2]], tab[index[0]] - tab[index[2]]}},
+                        {{"lw", "2"}, {"lc", std::to_string(i)}, {"title", std::to_string(i)}});
+    i++;
+  }
+  plot.Plot3D_All();
+  std::cin.ignore();
+}
+
+#endif

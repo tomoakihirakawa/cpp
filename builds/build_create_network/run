@@ -1,0 +1,8 @@
+# /bin/bash
+
+sudo rm -r ./vtu
+mkdir ./vtu
+sh clean
+cmake ../
+make
+./main
