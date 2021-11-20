@@ -1,0 +1,8 @@
+#! bin/bash
+
+rm ./ExpandFile
+rm ./cmake_install.cmake
+rm ./CMakeCache.txt
+rm -r ./CMakeFiles
+rm ./Makefile
+ 

@@ -1,0 +1,198 @@
+#ifndef Mathematica_H
+#define Mathematica_H
+
+template <class T>
+std::vector<std::vector<T>> Transpose(const std::vector<std::vector<T>> &mat)
+{
+  std::vector<std::vector<T>> ans(mat[0].size(), std::vector<T>(mat.size()));
+  for (size_t i = 0; i < mat.size(); i++)
+    for (size_t j = 0; j < mat[i].size(); j++)
+      ans[j][i] = mat[i][j];
+  return ans;
+};
+
+VVV_d Transpose(const std::vector<VV_d> &mat)
+{
+  VVV_d ans(mat[0][0].size(), VV_d(mat[0].size(), V_d(mat.size())));
+  for (size_t i = 0; i < mat.size(); i++)
+    for (size_t j = 0; j < mat[i].size(); j++)
+      for (size_t k = 0; k < mat[i][j].size(); k++)
+        ans[k][j][i] = mat[i][j][k];
+  return ans;
+};
+
+VV_d TensorProduct(const V_d &vec1, const V_d &vec2)
+{
+  VV_d ret(vec1.size(), V_d(vec2.size()));
+  for (size_t m = 0; m < vec1.size(); m++)
+    for (size_t j = 0; j < vec2.size(); j++)
+      ret[m][j] = vec1[m] * vec2[j];
+  return ret;
+};
+
+VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2)
+{
+  VVV_d ret(vec1.size(), VV_d(vec2.size(), V_d(2, 0)));
+  for (size_t m = 0; m < vec1.size(); m++)
+    for (size_t j = 0; j < vec2.size(); j++)
+      ret[m][j] = {vec1[m], vec2[j]};
+  return ret;
+};
+
+template <class T>
+T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2)
+{
+  return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0.);
+};
+//// for pointer
+template <class T>
+T Dot(const std::vector<T *> &vec1, const std::vector<T *> &vec2)
+{
+#if defined debug_fundamental
+  if (vec1.size() == 2 && vec2.size() == 3)
+  {
+    /*この場合は，vec1の３要素目を0パディングする*/
+  }
+  else if (vec1.size() != vec2.size())
+  {
+    std::cout << Red << "Dot: vectors have different sizes" << reset << std::endl;
+    std::cout << Red << std::setprecision(5) << vec1 << reset << std::endl;
+    std::cout << Red << std::setprecision(5) << vec2 << reset << std::endl;
+    abort();
+  }
+#endif
+
+  T ans(0.);
+  for (size_t i = 0; i < vec1.size(); i++)
+    ans += *vec1[i] * *vec2[i];
+  return ans;
+};
+template <class T>
+std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec)
+{
+  std::vector<T> ans(mat.size());
+  for (size_t i = 0; i < mat.size(); i++)
+    ans[i] = Dot(mat[i], vec);
+  return ans;
+};
+template <class T>
+std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat)
+{
+  return Dot(Transpose(mat), vec);
+};
+template <class T>
+std::vector<std::vector<T>> Dot(const std::vector<std::vector<T>> &mat1, const std::vector<std::vector<T>> &mat2)
+{
+  if (mat1[0].size() != mat2.size())
+  {
+    std::cout << __func__ << ": passed variables have dimensions that can not be computed" << std::endl;
+    abort();
+  }
+  std::vector<std::vector<T>> ans(mat1.size(), std::vector<T>(mat2[0].size(), 0.));
+  for (size_t x = 0; x < mat1.size(); x++)
+    for (size_t y = 0; y < mat2[0].size(); y++)
+      for (size_t j = 0; j < mat2.size(); j++)
+        ans[x][y] += mat1[x][j] * mat2[j][y];
+  return ans;
+};
+double Rot(const V_d vec1, const V_d vec2)
+{
+  return vec1[0] * vec2[1] - vec1[1] * vec2[0];
+};
+std::vector<V_d> Inv(const std::vector<V_d> &mat)
+{
+  std::vector<V_d> ans(mat.size(), V_d(mat[0].size(), 0.));
+  double det = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+  ans[1][1] = mat[0][0] / det;
+  ans[0][1] = -mat[0][1] / det;
+  ans[1][0] = -mat[1][0] / det;
+  ans[0][0] = mat[1][1] / det;
+  return ans;
+};
+//==========================================================
+// vector operators
+template <class T>
+std::vector<T> Cross(const std::vector<T> &A)
+{
+  return {-A[1], A[0]};
+};
+template <class T>
+std::vector<T> Cross(const std::vector<T> &A, const std::vector<T> &X)
+{
+  if (A.size() == 3)
+    return {A[1] * X[2] - A[2] * X[1],
+            A[2] * X[0] - A[0] * X[2],
+            A[0] * X[1] - A[1] * X[0]};
+  else if (A.size() == 2)
+    return Cross(std::vector<T>{A[0], A[1], 0.}, std::vector<T>{X[0], X[1], 0.});
+  else
+  {
+    throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Invalid Vector is passed"));
+  }
+};
+//==========================================================
+V_d log10(const V_d &vec)
+{
+  V_d ret(vec.size());
+  for (size_t i = 0; i < vec.size(); i++)
+    ret[i] = log10(vec[i]);
+  return ret;
+};
+V_d log(const V_d &vec)
+{
+  V_d ret(vec.size());
+  for (size_t i = 0; i < vec.size(); i++)
+    ret[i] = std::log(vec[i]);
+  return ret;
+};
+template <class T>
+T Norm(const std::vector<T> &vec)
+{
+  return sqrt(std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.));
+};
+template <class T>
+T Abs(const V_d &vec)
+{
+  T tmp(0);
+  for (size_t i = 0; i < vec.size(); i++)
+    tmp += vec[i] * vec[i];
+  return sqrt(tmp);
+};
+//==========================================================
+double MyVectorAngle(const V_d &x, const V_d &b, const V_d &z)
+{
+  // this can distingish ccw(positive) or cw(negative)
+  auto Y = Cross(z, x); //右手系
+  return atan2(Dot(b, Y / Norm(Y)), Dot(b, x / Norm(x)));
+};
+double MyVectorAngle(const V_d &x, const V_d &b)
+{
+  // cannot distingish ccw(positive) or cw(negative)
+  return MyVectorAngle(x, b, Cross(x, b));
+};
+template <class T>
+T VectorAngle(const std::vector<T> &X1, const std::vector<T> &X2, const std::vector<T> &X0)
+{
+  if (X1.size() > 1)
+  {
+    return atan2(Norm(Cross(X1 - X0, X2 - X0)), Dot(X1 - X0, X2 - X0));
+  }
+  else
+  {
+    throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, " size is invalid"));
+    return 0.;
+  }
+};
+template <class T>
+T VectorAngle(const std::vector<T> &X1, const std::vector<T> &X2)
+{
+  return VectorAngle(X1, X2, {0., 0.});
+};
+template <class T>
+T VectorAngleDirected(const std::vector<T> &X1, const std::vector<T> &X2)
+{
+  T a = VectorAngle(X1, X2, {0., 0.});
+  return (a < 0) ? (M_2_PI - a) : a;
+};
+
+#endif

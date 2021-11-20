@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>webgl</title>
+    <meta charset="utf-8" />
+    <script src="./fundamental.js"></script>
+    <script>
+        var initialtime = new Date();
+
+        var Module = {
+            onRuntimeInitialized: () => {
+                console.log({ 'ロードにかかった時間 ミリ秒': (new Date() - initialtime) });
+                Module.isInitialized = true;
+                console.log(Module.divide(10, 2));
+                console.log(Module.Flatten([[10, 2]]));
+                return false;
+            },
+            isInitialized: false
+        }
+    </script>
+
+</head>
+
+<body>
+
+    <script>
+        const sleep = msec => new Promise(resolve => setTimeout(resolve, msec));
+
+        let test = async () => {
+            while (!Module["isInitialized"]) {
+                await sleep(3);
+                console.log(Module["isInitialized"]);
+                console.log({ 'ロードにかかった時間 ミリ秒': (new Date() - initialtime) });
+            };
+        };
+        test();
+    </script>
+
+</body>
+
+
+
+</html>

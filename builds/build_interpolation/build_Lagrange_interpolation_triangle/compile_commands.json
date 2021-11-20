@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_interpolation/build_Lagrange_interpolation_triangle",
+  "command": "g++-11 -I../../../include -I../../../../include -include /Users/tomoaki/Dropbox/markdown/cpp/builds/../include/fundamental.hpp -std=c++17 -fuse-ld=gold -O2 -fopenmp -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk -std=gnu++17 -o CMakeFiles/main.dir/main.cpp.o -c /Users/tomoaki/Dropbox/markdown/cpp/builds/build_interpolation/build_Lagrange_interpolation_triangle/main.cpp",
+  "file": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_interpolation/build_Lagrange_interpolation_triangle/main.cpp"
+}
+]
