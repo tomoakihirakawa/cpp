@@ -1751,14 +1751,14 @@ EISP:
 				{
 					if (!p->isFreeFalling)
 					{
-						// p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
-						// 									p,
-						// 									p->radius_SPH,
-						// 									(step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
-						// 									(step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
-						p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
-															 p,
-															 p->radius_SPH);
+						p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
+															p,
+															p->radius_SPH,
+															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
+															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
+						// p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
+						// 									 p,
+						// 									 p->radius_SPH);
 					}
 					else
 						p->lap_U *= 0;

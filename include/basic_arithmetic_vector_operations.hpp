@@ -232,6 +232,14 @@ T6d operator/(const double u, T6d v)
 /* ------------------------------------------------------ */
 /*                    タプルダブル4                         */
 /* ------------------------------------------------------ */
+T4d operator-(T4d v)
+{
+	std::get<0>(v) = -std::get<0>(v);
+	std::get<1>(v) = -std::get<1>(v);
+	std::get<2>(v) = -std::get<2>(v);
+	std::get<3>(v) = -std::get<3>(v);
+	return v;
+};
 T4d operator-(T4d v, const T4d &u)
 {
 	std::get<0>(v) -= std::get<0>(u);
@@ -319,6 +327,71 @@ T4d operator/(T4d v, const double u)
 	std::get<1>(v) /= u;
 	std::get<2>(v) /= u;
 	std::get<3>(v) /= u;
+	return v;
+};
+/* ------------------------------------------------------ */
+T4d &operator-=(T4d &v, const double u)
+{
+	std::get<0>(v) -= u;
+	std::get<1>(v) -= u;
+	std::get<2>(v) -= u;
+	std::get<3>(v) -= u;
+	return v;
+};
+T4d &operator+=(T4d &v, const double u)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	std::get<3>(v) += u;
+	return v;
+};
+T4d &operator*=(T4d &v, const double u)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	std::get<3>(v) *= u;
+	return v;
+};
+T4d &operator/=(T4d &v, const double u)
+{
+	std::get<0>(v) /= u;
+	std::get<1>(v) /= u;
+	std::get<2>(v) /= u;
+	std::get<3>(v) /= u;
+	return v;
+}; /* ------------------------------------------------------ */
+T4d &operator-=(T4d &v, const T4d &u)
+{
+	std::get<0>(v) -= std::get<0>(u);
+	std::get<1>(v) -= std::get<1>(u);
+	std::get<2>(v) -= std::get<2>(u);
+	std::get<3>(v) -= std::get<3>(u);
+	return v;
+};
+T4d &operator+=(T4d &v, const T4d &u)
+{
+	std::get<0>(v) += std::get<0>(u);
+	std::get<1>(v) += std::get<1>(u);
+	std::get<2>(v) += std::get<2>(u);
+	std::get<3>(v) += std::get<3>(u);
+	return v;
+};
+T4d &operator*=(T4d &v, const T4d &u)
+{
+	std::get<0>(v) *= std::get<0>(u);
+	std::get<1>(v) *= std::get<1>(u);
+	std::get<2>(v) *= std::get<2>(u);
+	std::get<3>(v) *= std::get<3>(u);
+	return v;
+};
+T4d &operator/=(T4d &v, const T4d &u)
+{
+	std::get<0>(v) /= std::get<0>(u);
+	std::get<1>(v) /= std::get<1>(u);
+	std::get<2>(v) /= std::get<2>(u);
+	std::get<3>(v) /= std::get<3>(u);
 	return v;
 };
 /* ------------------------------------------------------ */

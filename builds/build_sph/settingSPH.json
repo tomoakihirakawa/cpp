@@ -17,7 +17,7 @@
         0.796
     ],
     "buckets_xbounds": [
-        -0.9,
+        0.0,
         0.9
     ],
     "buckets_ybounds": [
@@ -26,7 +26,7 @@
     ],
     "buckets_zbounds": [
         0.4,
-        1.8
+        1.2
     ],
     "C_SML": 0.8,
     "kNS_SML": 7,
@@ -34,9 +34,9 @@
     "C_Tait": 24.433333333333334,
     "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.0,
-    "preparation_max_dt": 1e-05,
+    "preparation_max_dt": 5e-05,
     "preparation_time": 1.0,
-    "preparation_time_step": 100,
-    "preparation_C_artificial_viscousity_alpha": 1,
-    "preparation_C_artificial_viscousity_beta": 0.2
+    "preparation_time_step": 10,
+    "preparation_C_artificial_viscousity_alpha": 0.3,
+    "preparation_C_artificial_viscousity_beta": 0.3
 }

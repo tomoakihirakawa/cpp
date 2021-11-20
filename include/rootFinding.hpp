@@ -8,21 +8,48 @@ using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
 
-struct NewtonRaphson
+template <typename T>
+struct NewtonRaphson_Common
 {
-	V_d X;
-	V_d dX; // tmp
-	NewtonRaphson(const V_d &Xinit) : X(Xinit), dX(Xinit){};
+	T X;
+	T dX; // tmp
+	NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit){};
+};
+
+template <typename T>
+struct NewtonRaphson : public NewtonRaphson_Common<T>
+{
+	NewtonRaphson(const T &Xinit) : NewtonRaphson_Common<T>(Xinit){};
+};
+
+template <>
+struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d>
+{
+	NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit){};
 	void update(const V_d &F, const VV_d &dFdx)
 	{
 		ludcmp lu(dFdx);
 		lu.solve(-F, dX);
 		X += dX;
 	};
-	void update(const T6d &F, const T6dT6d &dFdx)
+};
+
+template <>
+struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d>
+{
+	NewtonRaphson(const T4d &Xinit) : NewtonRaphson_Common<T4d>(Xinit)
 	{
-		this->update(std::vector({std::get<0>(F), std::get<1>(F), std::get<2>(F) std::get<3>(F), std::get<4>(F), std::get<5>(F)}),
-					 std::vector({std::get<0>(dFdx), std::get<1>(dFdx), std::get<2>(dFdx) std::get<3>(dFdx), std::get<4>(dFdx), std::get<5>(dFdx)}));
+		this->ans = V_d{0., 0., 0., 0.};
+	};
+	V_d ans;
+	void update(const T4d &F, const T4T4d &dFdx)
+	{
+		ludcmp lu(ToVector(dFdx));
+		lu.solve(ToVector(-F), ans);
+		std::get<0>(X) += ans[0];
+		std::get<1>(X) += ans[1];
+		std::get<2>(X) += ans[2];
+		std::get<3>(X) += ans[3];
 	};
 };
 

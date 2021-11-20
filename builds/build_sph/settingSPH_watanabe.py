@@ -21,9 +21,9 @@ data = {
     "zbounds": [500/1000 + particle_spacing/2, 500/1000+H + particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-0.9, 0.9],
+    "buckets_xbounds": [0., 0.9],
     "buckets_ybounds": [-.14, .14],
-    "buckets_zbounds": [0.4, 1.8],
+    "buckets_zbounds": [0.4, 1.2],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
     "C_SML": .8,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影響しない
     "kNS_SML": 7,  # k-nearest search. dxを決めるための近傍粒子数
@@ -35,11 +35,11 @@ data = {
     "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.00001,
+    "preparation_max_dt": 0.00005,
     "preparation_time": 1.,
-    "preparation_time_step": 100,
-    "preparation_C_artificial_viscousity_alpha": 1,
-    "preparation_C_artificial_viscousity_beta": 0.2,
+    "preparation_time_step": 10,
+    "preparation_C_artificial_viscousity_alpha": 0.3,
+    "preparation_C_artificial_viscousity_beta": 0.3,
     # -------------------------------------------------------- #
 }
 

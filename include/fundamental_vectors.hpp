@@ -19,11 +19,14 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 using Tdd = std::tuple<double, double>;
 using Tddd = std::tuple<double, double, double>;
 using T4d = std::tuple<double, double, double, double>;
+using T6d = std::tuple<double, double, double, double, double, double>;
 using Tiii = std::tuple<int, int, int>;
 using T2Tdd = std::tuple<Tdd, Tdd>;
 using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
+using T4T4d = std::tuple<T4d, T4d, T4d, T4d>;
 using T6Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd, Tddd>;
+using T6T6d = std::tuple<T6d, T6d, T6d, T6d, T6d, T6d>;
 /* ------------------------------------------------------ */
 // //vector x matrix
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -544,6 +547,9 @@ std::unordered_set<T *> ToUnorderedSet(const std::vector<T *> &v)
 /*                     タプルのベクトル演算                  */
 /* ------------------------------------------------------ */
 std::vector<double> ToVector(const Tddd &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
+std::vector<double> ToVector(const T4d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v)}; };
+std::vector<double> ToVector(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v),
+													 std::get<3>(v), std::get<4>(v), std::get<5>(v)}; };
 VV_d ToVector(const std::vector<Tddd> &v)
 {
 	VV_d ret(v.size(), {0, 0, 0});
@@ -551,17 +557,33 @@ VV_d ToVector(const std::vector<Tddd> &v)
 		ret[i] = ToVector(v[i]);
 	return ret;
 };
+VV_d ToVector(const T4T4d &v)
+{
+	return {ToVector(std::get<0>(v)),
+			ToVector(std::get<1>(v)),
+			ToVector(std::get<2>(v)),
+			ToVector(std::get<3>(v))};
+};
+VV_d ToVector(const T6T6d &v)
+{
+	return {ToVector(std::get<0>(v)),
+			ToVector(std::get<1>(v)),
+			ToVector(std::get<2>(v)),
+			ToVector(std::get<3>(v)),
+			ToVector(std::get<4>(v)),
+			ToVector(std::get<5>(v))};
+};
 T6d ToT6d(const Tddd tmp)
 {
 	return {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
 };
-std::vector<double> ToVector(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v)}; };
 Tddd ToTddd(const V_d &v) { return {v[0], v[1], v[2]}; };
 Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
 // std::vector<double> ToVector(const Tdd &v) { return {std::get<0>(v), std::get<1>(v)}; };
 double Norm(const T4d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t) + std::get<3>(t) * std::get<3>(t)); };
 double Norm(const Tddd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t)); };
 double Norm(const Tdd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t)); };
+T4d Normalize(const T4d &X) { return X / Norm(X); };
 Tddd Normalize(const Tddd &X) { return X / Norm(X); };
 Tdd Normalize(const Tdd &X) { return X / Norm(X); };
 double Dot(const T6d &v, const T6d &u)
