@@ -1,8 +1,0 @@
-#! bin/bash
-
-rm ./test
-rm ./cmake_install.cmake
-rm ./CMakeCache.txt
-rm -r ./CMakeFiles
-rm ./Makefile
- 

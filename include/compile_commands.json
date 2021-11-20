@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/Users/tomoaki/Dropbox/markdown/cpp/include",
-  "command": "g++-10 -I/Users/tomoaki/Dropbox/markdown/cpp/builds/include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../../include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../../../include -Og -fopenmp -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.14 -std=gnu++17 -o CMakeFiles/main.dir/main.cpp.o -c /Users/tomoaki/Dropbox/markdown/cpp/builds/main.cpp",
-  "file": "/Users/tomoaki/Dropbox/markdown/cpp/builds/main.cpp"
-}
-]

@@ -1,8 +1,0 @@
-{
-    "name": "water",
-    "objfile": "../../obj/bem_water16.obj",
-    "radius": 0.05,
-    "output_vtu_file_name": "water",
-    "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/BEM/BEM_amp030_Dombre2019_move1"
-}
