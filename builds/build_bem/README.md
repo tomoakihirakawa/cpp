@@ -39,3 +39,5 @@ $ sh clean
 
 ## mergeの条件
 
+
+![](name-of-giphy.gif)
