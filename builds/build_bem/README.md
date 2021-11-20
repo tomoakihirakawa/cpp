@@ -40,4 +40,4 @@ $ sh clean
 ## mergeの条件
 
 
-![](anim.gif)
+![](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_bem/anim.gif)
