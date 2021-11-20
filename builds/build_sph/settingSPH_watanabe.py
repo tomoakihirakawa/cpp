@@ -32,12 +32,12 @@ data = {
     # -------------------------------------------------------- #
     "C_Tait": 1466/60.,  # テイトの式
     # ---------------------- 人口粘性係数 ---------------------- #
-    "C_artificial_viscousity_alpha": 1,
+    "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
     "preparation_max_dt": 0.00001,
     "preparation_time": 1.,
-    "preparation_time_step": 10,
+    "preparation_time_step": 100,
     "preparation_C_artificial_viscousity_alpha": 1,
     "preparation_C_artificial_viscousity_beta": 0.2,
     # -------------------------------------------------------- #

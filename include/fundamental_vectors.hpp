@@ -874,6 +874,7 @@ struct Quaternion
 	double a, b, c, d;
 	Tddd v;
 	T4d q;
+
 	// cos(q/2) + (ux*i + uy*j+ uz*k) * sin(q/2)
 	Quaternion() : a(1), b(0), c(0), d(0), v({0, 0, 0}), q({1, 0, 0, 0}){};
 	Quaternion(const double aIN, const double bIN, const double cIN, const double dIN) : a(aIN),
@@ -954,6 +955,11 @@ struct Quaternion
 	/* ------------------------------------------------------ */
 
 	const T4d &operator()() const { return q; }
+
+	Quaternion approxNextQuaternion(const Tddd &w, const double dt) const
+	{
+		return Quaternion(this->q + this->d_dt(w * dt)());
+	};
 
 	Quaternion d_dt(const Tddd &w /*angular velocity*/) const
 	{
@@ -1048,8 +1054,6 @@ double Norm(const Quaternion &A)
 {
 	return Norm(A());
 };
-
-//==========================================================
 /* ------------------------------------------------------ */
 double MyVectorAngle(const V_d &v0, const V_d &v1, const V_d &frontdir /*右手系のzとなる*/)
 {
