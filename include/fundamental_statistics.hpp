@@ -9,16 +9,7 @@ using V_d = std::vector<double>;
 using V_i = std::vector<int>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
-
-template <class T>
-double Mean(const std::vector<T> &v)
-{
-	if (v.empty())
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
-	else if (v.size() == 1)
-		return v[0];
-	return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
-};
+/* ------------------------------------------------------ */
 V_d Mean(const VV_d &v)
 {
 	if (v.empty())
@@ -49,7 +40,7 @@ public:
 	V_i count;			  //角瓶の中にあるデータの数
 	V_i cumulative_count; //角瓶の中にあるデータの数を初めから累積してった結果
 	int data_size;		  //全dataの長さ
-	int sturges;		  //dataの数に応じてbinの幅を決める
+	int sturges;		  // dataの数に応じてbinの幅を決める
 	double bin_width;
 	VV_d bins;
 	V_i diff;

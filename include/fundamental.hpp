@@ -610,9 +610,17 @@ double Sum(const V_d::iterator first, const V_d::iterator second) { return std::
 double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include "basic_arithmetic_vector_operations.hpp"
+
+
+double Mean(const V_d &v)
+{
+	if (v.empty())
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
+	else if (v.size() == 1)
+		return v[0];
+	return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
+};
 
 V_d Sum(const VV_d &v)
 {
@@ -3319,6 +3327,27 @@ Tdd Total(const T3Tdd &v)
 {
 	return {std::get<0>(std::get<0>(v)) + std::get<0>(std::get<1>(v)) + std::get<0>(std::get<2>(v)),
 			std::get<1>(std::get<0>(v)) + std::get<1>(std::get<1>(v)) + std::get<1>(std::get<2>(v))};
+};
+Tddd Total(const std::vector<Tddd> &V)
+{
+	Tddd ret = {0, 0, 0};
+	for (const auto &v : V)
+		ret += v;
+	return ret;
+};
+T4d Total(const std::vector<T4d> &V)
+{
+	T4d ret = {0, 0, 0, 0};
+	for (const auto &v : V)
+		ret += v;
+	return ret;
+};
+T6d Total(const std::vector<T6d> &V)
+{
+	T6d ret = {0, 0, 0, 0, 0, 0};
+	for (const auto &v : V)
+		ret += v;
+	return ret;
 };
 /* ------------------------------------------------------ */
 // b% ------------------- タプルからparticlize ------------------ */

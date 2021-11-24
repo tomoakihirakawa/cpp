@@ -34,12 +34,13 @@ struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d>
 	};
 };
 
+/* ------------------------------------------------------ */
 template <>
 struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d>
 {
 	NewtonRaphson(const T4d &Xinit) : NewtonRaphson_Common<T4d>(Xinit)
 	{
-		this->ans = V_d{0., 0., 0., 0.};
+		this->ans = V_d(4, 0.);
 	};
 	V_d ans;
 	void update(const T4d &F, const T4T4d &dFdx)
@@ -50,6 +51,27 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d>
 		std::get<1>(X) += ans[1];
 		std::get<2>(X) += ans[2];
 		std::get<3>(X) += ans[3];
+	};
+};
+template <>
+struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d>
+{
+	NewtonRaphson(const T7d &Xinit) : NewtonRaphson_Common<T7d>(Xinit)
+	{
+		this->ans = V_d(7, 0.);
+	};
+	V_d ans;
+	void update(const T7d &F, const T7T7d &dFdx)
+	{
+		ludcmp lu(ToVector(dFdx));
+		lu.solve(ToVector(-F), ans);
+		std::get<0>(X) += ans[0];
+		std::get<1>(X) += ans[1];
+		std::get<2>(X) += ans[2];
+		std::get<3>(X) += ans[3];
+		std::get<4>(X) += ans[4];
+		std::get<5>(X) += ans[5];
+		std::get<6>(X) += ans[6];
 	};
 };
 

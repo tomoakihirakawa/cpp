@@ -10,8 +10,248 @@
 using Tdd = std::tuple<double, double>;
 using Tddd = std::tuple<double, double, double>;
 using T6d = std::tuple<double, double, double, double, double, double>;
+using T7d = std::tuple<double, double, double, double, double, double, double>;
 using T2Tddd = std::tuple<Tddd, Tddd>;
 using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
+/* ------------------------------------------------------ */
+/*                    タプルダブル7                         */
+/* ------------------------------------------------------ */
+T7d operator-(T7d v)
+{
+	std::get<0>(v) *= -1;
+	std::get<1>(v) *= -1;
+	std::get<2>(v) *= -1;
+	std::get<3>(v) *= -1;
+	std::get<4>(v) *= -1;
+	std::get<5>(v) *= -1;
+	std::get<6>(v) *= -1;
+	return v;
+};
+/* ------------------------------------------------------ */
+T7d &operator-=(T7d &v, const double u)
+{
+	std::get<0>(v) -= u;
+	std::get<1>(v) -= u;
+	std::get<2>(v) -= u;
+	std::get<3>(v) -= u;
+	std::get<4>(v) -= u;
+	std::get<5>(v) -= u;
+	std::get<6>(v) -= u;
+	return v;
+};
+T7d &operator+=(T7d &v, const double u)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	std::get<3>(v) += u;
+	std::get<4>(v) += u;
+	std::get<5>(v) += u;
+	std::get<6>(v) += u;
+	return v;
+};
+T7d &operator*=(T7d &v, const double u)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	std::get<3>(v) *= u;
+	std::get<4>(v) *= u;
+	std::get<5>(v) *= u;
+	std::get<6>(v) *= u;
+	return v;
+};
+T7d &operator/=(T7d &v, const double u)
+{
+	std::get<0>(v) /= u;
+	std::get<1>(v) /= u;
+	std::get<2>(v) /= u;
+	std::get<3>(v) /= u;
+	std::get<4>(v) /= u;
+	std::get<5>(v) /= u;
+	std::get<6>(v) /= u;
+	return v;
+}; /* ------------------------------------------------------ */
+T7d &operator-=(T7d &v, const T7d &u)
+{
+	std::get<0>(v) -= std::get<0>(u);
+	std::get<1>(v) -= std::get<1>(u);
+	std::get<2>(v) -= std::get<2>(u);
+	std::get<3>(v) -= std::get<3>(u);
+	std::get<4>(v) -= std::get<4>(u);
+	std::get<5>(v) -= std::get<5>(u);
+	std::get<6>(v) -= std::get<6>(u);
+	return v;
+};
+T7d &operator+=(T7d &v, const T7d &u)
+{
+	std::get<0>(v) += std::get<0>(u);
+	std::get<1>(v) += std::get<1>(u);
+	std::get<2>(v) += std::get<2>(u);
+	std::get<3>(v) += std::get<3>(u);
+	std::get<4>(v) += std::get<4>(u);
+	std::get<5>(v) += std::get<5>(u);
+	std::get<6>(v) += std::get<6>(u);
+	return v;
+};
+T7d &operator*=(T7d &v, const T7d &u)
+{
+	std::get<0>(v) *= std::get<0>(u);
+	std::get<1>(v) *= std::get<1>(u);
+	std::get<2>(v) *= std::get<2>(u);
+	std::get<3>(v) *= std::get<3>(u);
+	std::get<4>(v) *= std::get<4>(u);
+	std::get<5>(v) *= std::get<5>(u);
+	std::get<6>(v) *= std::get<6>(u);
+	return v;
+};
+T7d &operator/=(T7d &v, const T7d &u)
+{
+	std::get<0>(v) /= std::get<0>(u);
+	std::get<1>(v) /= std::get<1>(u);
+	std::get<2>(v) /= std::get<2>(u);
+	std::get<3>(v) /= std::get<3>(u);
+	std::get<4>(v) /= std::get<4>(u);
+	std::get<5>(v) /= std::get<5>(u);
+	std::get<6>(v) /= std::get<6>(u);
+	return v;
+};
+/* ------------------------------------------------------ */
+T7d operator-(T7d v, const T7d &u)
+{
+	std::get<0>(v) -= std::get<0>(u);
+	std::get<1>(v) -= std::get<1>(u);
+	std::get<2>(v) -= std::get<2>(u);
+	std::get<3>(v) -= std::get<3>(u);
+	std::get<4>(v) -= std::get<4>(u);
+	std::get<5>(v) -= std::get<5>(u);
+	std::get<6>(v) -= std::get<6>(u);
+	return v;
+};
+T7d operator+(T7d v, const T7d &u)
+{
+	std::get<0>(v) += std::get<0>(u);
+	std::get<1>(v) += std::get<1>(u);
+	std::get<2>(v) += std::get<2>(u);
+	std::get<3>(v) += std::get<3>(u);
+	std::get<4>(v) += std::get<4>(u);
+	std::get<5>(v) += std::get<5>(u);
+	std::get<6>(v) += std::get<6>(u);
+	return v;
+};
+T7d operator*(T7d v, const T7d &u)
+{
+	std::get<0>(v) *= std::get<0>(u);
+	std::get<1>(v) *= std::get<1>(u);
+	std::get<2>(v) *= std::get<2>(u);
+	std::get<3>(v) *= std::get<3>(u);
+	std::get<4>(v) *= std::get<4>(u);
+	std::get<5>(v) *= std::get<5>(u);
+	std::get<6>(v) *= std::get<6>(u);
+	return v;
+};
+T7d operator/(T7d v, const T7d &u)
+{
+	std::get<0>(v) /= std::get<0>(u);
+	std::get<1>(v) /= std::get<1>(u);
+	std::get<2>(v) /= std::get<2>(u);
+	std::get<3>(v) /= std::get<3>(u);
+	std::get<4>(v) /= std::get<4>(u);
+	std::get<5>(v) /= std::get<5>(u);
+	std::get<6>(v) /= std::get<6>(u);
+	return v;
+};
+/* ------------------------------------------------------ */
+T7d operator-(T7d v, const double u)
+{
+	std::get<0>(v) -= u;
+	std::get<1>(v) -= u;
+	std::get<2>(v) -= u;
+	std::get<3>(v) -= u;
+	std::get<4>(v) -= u;
+	std::get<5>(v) -= u;
+	std::get<6>(v) -= u;
+	return v;
+};
+T7d operator+(T7d v, const double u)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	std::get<3>(v) += u;
+	std::get<4>(v) += u;
+	std::get<5>(v) += u;
+	std::get<6>(v) += u;
+	return v;
+};
+T7d operator*(T7d v, const double u)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	std::get<3>(v) *= u;
+	std::get<4>(v) *= u;
+	std::get<5>(v) *= u;
+	std::get<6>(v) *= u;
+	return v;
+};
+T7d operator/(T7d v, const double u)
+{
+	std::get<0>(v) /= u;
+	std::get<1>(v) /= u;
+	std::get<2>(v) /= u;
+	std::get<3>(v) /= u;
+	std::get<4>(v) /= u;
+	std::get<5>(v) /= u;
+	std::get<6>(v) /= u;
+	return v;
+};
+/* ------------------------------------------------------ */
+T7d operator-(const double u, T7d v)
+{
+	std::get<0>(v) = u - std::get<0>(v);
+	std::get<1>(v) = u - std::get<1>(v);
+	std::get<2>(v) = u - std::get<2>(v);
+	std::get<3>(v) = u - std::get<3>(v);
+	std::get<4>(v) = u - std::get<4>(v);
+	std::get<5>(v) = u - std::get<5>(v);
+	std::get<6>(v) = u - std::get<6>(v);
+	return v;
+};
+T7d operator+(const double u, T7d v)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	std::get<3>(v) += u;
+	std::get<4>(v) += u;
+	std::get<5>(v) += u;
+	std::get<6>(v) += u;
+	return v;
+};
+T7d operator*(const double u, T7d v)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	std::get<3>(v) *= u;
+	std::get<4>(v) *= u;
+	std::get<5>(v) *= u;
+	std::get<6>(v) *= u;
+	return v;
+};
+T7d operator/(const double u, T7d v)
+{
+	std::get<0>(v) = u / std::get<0>(v);
+	std::get<1>(v) = u / std::get<1>(v);
+	std::get<2>(v) = u / std::get<2>(v);
+	std::get<3>(v) = u / std::get<3>(v);
+	std::get<4>(v) = u / std::get<4>(v);
+	std::get<5>(v) = u / std::get<5>(v);
+	std::get<6>(v) = u / std::get<6>(v);
+	return v;
+};
+
 /* ------------------------------------------------------ */
 /*                    タプルダブル6                         */
 /* ------------------------------------------------------ */
