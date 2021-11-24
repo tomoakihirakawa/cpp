@@ -237,6 +237,44 @@ struct Fusion
         magTransMat = transMat;
     };
 
+    Quaternion updateStandard(const Tddd &A, const Tddd &M_IN, const Tddd &W, const double t, const double alpha)
+    {
+        Tddd M = M_IN;
+        Tddd M0_ = M0;
+        if (this->activateOffsetM)
+        {
+            M -= this->offsetM;
+            M0_ -= this->offsetM;
+        }
+        auto dt = std::abs(t - std::get<0>(time_Q0));
+        auto W0 = std::get<4>(time_Q0);
+        auto Q0 = std::get<1>(time_Q0)();
+        //@ １つ過去の結果より現在のクォータニオンを予測
+        Quaternion approx_Q(Q0 + Q0.d_dt((W + W0) / 2. * dt)());
+
+        NR.X = Q0;
+        for (auto i = 0; i < 50; ++i)
+        {
+            NR.update(DDq_norm_f(NR.X, A, M, G0, M0_, this->magTransMat),
+                      D2D2q_norm_f(NR.X, A, M, G0, M0_, this->magTransMat)); /*initial X is updated*/
+            NR.X = Normalize(NR.X);
+            if (Norm(NR.dX) < 1E-9)
+                break;
+        }
+
+        Quaternion ans(alpha * NR.X + (1. - alpha) * approx_Q());
+
+        time_Q3 = time_Q2;
+        time_Q2 = time_Q1;
+        time_Q1 = time_Q0;
+        std::get<0>(time_Q0) = t;
+        std::get<1>(time_Q0).set(ans);
+        std::get<2>(time_Q0) = A;
+        std::get<3>(time_Q0) = M;
+        std::get<4>(time_Q0) = W;
+        std::get<5>(time_Q0) = A - ans.Rs(G0);
+        return ans;
+    };
     Quaternion solveForQuaternion(const Tddd &A, const Tddd &M_IN, const Tddd &W, const double t = 0.)
     {
         /* ------------------------------------------------------ */
