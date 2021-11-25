@@ -239,26 +239,33 @@ struct Fusion
 
     Quaternion updateStandard(const Tddd &A, const Tddd &M_IN, const Tddd &W, const double t, const double alpha)
     {
-        Tddd M = M_IN;
-        Tddd M0_ = M0;
+        /*
+            alphaは，加速度と磁気から予測した姿勢の重み
+            (1-alpha)は，ジャイロと１ステップ前の姿勢から予測された現在の姿勢の重み
+        */
+        Tddd M = M_IN; //現在の磁気ベクトル
+        Tddd M0_ = M0; //初期の磁気ベクトル
         if (this->activateOffsetM)
         {
+            // 磁気センサーの補正
             M -= this->offsetM;
             M0_ -= this->offsetM;
         }
+
         auto dt = std::abs(t - std::get<0>(time_Q0));
         auto W0 = std::get<4>(time_Q0);
-        auto Q0 = std::get<1>(time_Q0)();
-        //@ １つ過去の結果より現在のクォータニオンを予測
-        Quaternion approx_Q(Q0 + Q0.d_dt((W + W0) / 2. * dt)());
+        auto Q0 = std::get<1>(time_Q0);
 
-        NR.X = Q0;
+        // １つ過去の結果より現在のクォータニオンを予測
+        Quaternion approx_Q(Q0 + Q0.d_dt((W + W0) / 2. * dt));
+
+        NR.X = Q0();
         for (auto i = 0; i < 50; ++i)
         {
             NR.update(DDq_norm_f(NR.X, A, M, G0, M0_, this->magTransMat),
                       D2D2q_norm_f(NR.X, A, M, G0, M0_, this->magTransMat)); /*initial X is updated*/
             NR.X = Normalize(NR.X);
-            if (Norm(NR.dX) < 1E-9)
+            if (Norm(NR.dX) < 1E-5)
                 break;
         }
 

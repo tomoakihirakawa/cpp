@@ -11,6 +11,7 @@
 #include "../../include/Network.hpp"
 #include "../../include/rootFinding.hpp"
 #include "../../include/fusion.hpp"
+#include "../../include/minMaxOfFunctions.hpp"
 /* ------------------------------------------------------ */
 PYBIND11_MODULE(fundamental, m)
 {
@@ -232,6 +233,11 @@ PYBIND11_MODULE(fundamental, m)
 		.def_readwrite("bin_width", &Histogram::bin_width)
 		.def_readwrite("diff", &Histogram::diff);
 	/* ------------------------------------------------------ */
+	pybind11::class_<GradientMethod>(m, "GradientMethod")
+		.def(pybind11::init<const VV_d &>())
+		.def("solve", pybind11::overload_cast<const V_d &, const V_d &, const double>(&GradientMethod::solve))
+		.def("solveCG", pybind11::overload_cast<const V_d &, const V_d &, const double>(&GradientMethod::solveCG));
+	/* ------------------------------------------------------ */
 	pybind11::class_<NewtonRaphson<V_d>>(m, "NewtonRaphson")
 		.def(pybind11::init<const V_d &>())
 		.def("update", &NewtonRaphson<V_d>::update)
@@ -239,6 +245,7 @@ PYBIND11_MODULE(fundamental, m)
 		.def_readwrite("dX", &NewtonRaphson<V_d>::dX);
 	pybind11::class_<Fusion>(m, "Fusion")
 		.def(pybind11::init<const Tddd &, const Tddd &>())
+		.def("updateStandardcd", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double, const double>(&Fusion::updateStandard))
 		.def("solveForQuaternion", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double>(&Fusion::solveForQuaternion))
 		.def("solveForQuaternionModified", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double>(&Fusion::solveForQuaternionModified))
 		.def("history", &Fusion::history)
