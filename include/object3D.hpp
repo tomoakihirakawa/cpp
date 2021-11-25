@@ -137,7 +137,7 @@ struct object3D
 	geometry::CoordinateBounds bounds;
 	//
 	V_d getX() const { return {std::get<0>(this->X), std::get<1>(this->X), std::get<2>(this->X)}; };
-	geometry::CoordinateBounds getBounds() const { return this->bounds; };
+	const geometry::CoordinateBounds &getBounds() const { return this->bounds; };
 	double getScale() const
 	{
 		return Norm(Tddd{std::get<1>(std::get<0>(this->bounds.bounds)) - std::get<0>(std::get<0>(this->bounds.bounds)),

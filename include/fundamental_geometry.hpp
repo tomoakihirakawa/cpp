@@ -54,11 +54,11 @@ namespace geometry
 		Sphere(const Tddd &XIN, const double radiusIN = 0.) : X(XIN), radius(radiusIN){};
 	};
 	/* ------------------------------------------------------ */
-	//structをわざわざ作るのは，T3Tddではなく，coordinateboundsとして意味を具体的にした状態で持ち回りたいから．それだけ．
+	// structをわざわざ作るのは，T3Tddではなく，coordinateboundsとして意味を具体的にした状態で持ち回りたいから．それだけ．
 	struct CoordinateBounds
 	{
 		T3Tdd bounds;
-		T3Tdd operator()() { return this->bounds; };
+		const T3Tdd &operator()() const { return this->bounds; };
 		CoordinateBounds() : bounds({{0, 0}, {0, 0}, {0, 0}}){};
 		CoordinateBounds(const geometry::CoordinateBounds &bs) : bounds(bs.bounds){};
 		CoordinateBounds(const Tddd &X)
@@ -77,7 +77,7 @@ namespace geometry
 		};
 		CoordinateBounds(const T3Tddd &X)
 		{
-			//networkPointのsetBoundsで使われる
+			// networkPointのsetBoundsで使われる
 			auto [Xs, Ys, Zs] = Transpose(X);
 			this->bounds = {{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}};
 		};
@@ -212,7 +212,7 @@ Tddd Normal(const geometry::Triangle &triangle) { return Normalize(Cross(std::ge
 double NormalDistance(const geometry::Triangle &T, const Tddd &X) { return Norm(Dot(Normal(T), T.center - X)); };
 Tddd vectorToTriangle(const geometry::Triangle &T, const Tddd &a)
 {
-	//aからTまでの最短ベクトル
+	// aからTまでの最短ベクトル
 	auto n = Normal(T);
 	return n * Dot(n, std::get<0>(T.X) - a);
 };
@@ -495,7 +495,7 @@ int isPointingTriangle(const V_d &p0, const V_d &p1, const V_d &p2,
 	auto d = factorOfVectorToReachTriangle(p0, p1, p2, a, b);
 
 	if (!std::isfinite(d))
-		return false; //nan
+		return false; // nan
 
 	V_d ps = a + (b - a) * d;
 
@@ -706,9 +706,9 @@ namespace geometry
 	class Point_Line
 	{
 	public:
-		double t; //parameter of v from p_line0
-		V_d x;	  //coordinate of point
-		V_d v;	  //vector of line
+		double t; // parameter of v from p_line0
+		V_d x;	  // coordinate of point
+		V_d v;	  // vector of line
 		double d2line;
 		double d2line_segment;
 		Point_Line(const V_d &p, const V_d &p_line0, const V_d &p_line1)
@@ -774,16 +774,16 @@ namespace geometry
 		return true;
 	};
 	/*ccw angle
-  *       *
-  *     / | \
-  *    *  |  *
-  *   /  \|/  \ 
-  *  *----*----*
-  *   \2 1|1 3/
-  *    \  |  /
-  *     \3|2/
-  *       *
-  */
+	 *       *
+	 *     / | \
+	 *    *  |  *
+	 *   /  \|/  \
+	 *  *----*----*
+	 *   \2 1|1 3/
+	 *    \  |  /
+	 *     \3|2/
+	 *       *
+	 */
 	// angle_sets = {{a1,a2,a3},{b1,b2,b3},...}
 	// bool isInConvexPolygon(const VV_d &angle_sets)
 	// {
@@ -873,8 +873,8 @@ namespace geometry
 	};
 	//-------------------------
 	/*polygon_detail
-    多角形クラス
-    polygon_detail*/
+	多角形クラス
+	polygon_detail*/
 	/*polygon_code*/
 	class polygon
 	{
@@ -945,12 +945,12 @@ namespace geometry
 		bool isSmallAngle(const point *p0, const point *p1, const point *p2, const double smallangle)
 		{
 			if (std::abs(MyVectorAngle(p1->X - p0->X, p2->X - p1->X) /*前後の線からなる多角形の外角*/) < smallangle)
-				return true; //too small
+				return true; // too small
 			return false;
 		};
 
 		/*
-     */
+		 */
 
 		bool getPointsMeetCondition(const V_pp &ps, const double smallangle_IN, point *&select_p, int &current_index)
 		{
@@ -1066,13 +1066,13 @@ namespace geometry
 				if (!isfinite(AB) && !isfinite(CD))
 					throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "both is not finite");
 				else if (!isfinite(AB))
-					return {{ps[1], ps[2], ps[3]}, {ps[3], ps[0], ps[1]}}; //CD
+					return {{ps[1], ps[2], ps[3]}, {ps[3], ps[0], ps[1]}}; // CD
 				else if (!isfinite(CD))
-					return {{ps[0], ps[1], ps[2]}, {ps[2], ps[3], ps[0]}}; //AB
+					return {{ps[0], ps[1], ps[2]}, {ps[2], ps[3], ps[0]}}; // AB
 				else if (Max(AB) > Max(CD))
-					return {{ps[1], ps[2], ps[3]}, {ps[3], ps[0], ps[1]}}; //CD
+					return {{ps[1], ps[2], ps[3]}, {ps[3], ps[0], ps[1]}}; // CD
 				else
-					return {{ps[0], ps[1], ps[2]}, {ps[2], ps[3], ps[0]}}; //AB
+					return {{ps[0], ps[1], ps[2]}, {ps[2], ps[3], ps[0]}}; // AB
 			}
 			catch (const error_message &e)
 			{
@@ -1095,9 +1095,9 @@ namespace geometry
 		///////////////////////////////////////////////////
 
 		/*polygon::triangulate_detail
-      多角形の三角形分割．外角が`smallangle`よりも狭い三角形は対象にしない．
-      もし該当がなければ，`smallangle`を徐々に小さくしながら該当があるまで何回か繰り返す．
-      polygon::triangulate_detail*/
+	  多角形の三角形分割．外角が`smallangle`よりも狭い三角形は対象にしない．
+	  もし該当がなければ，`smallangle`を徐々に小さくしながら該当があるまで何回か繰り返す．
+	  polygon::triangulate_detail*/
 		/*polygon::triangulate_code*/
 		// #define debug_triangle
 
@@ -1261,9 +1261,9 @@ namespace geometry
 			}
 		};
 		/*polygon::triangulate_detail
-      多角形の三角形分割．外角が`smallangle`よりも狭い三角形は対象にしない．
-      もし該当がなければ，`smallangle`を徐々に小さくしながら該当があるまで何回か繰り返す．
-      polygon::triangulate_detail*/
+	  多角形の三角形分割．外角が`smallangle`よりも狭い三角形は対象にしない．
+	  もし該当がなければ，`smallangle`を徐々に小さくしながら該当があるまで何回か繰り返す．
+	  polygon::triangulate_detail*/
 		/*polygon::triangulate_code*/
 		VV_i triangulate(/*const V_d& normal, */ double smallangle_IN = 0.)
 		{
@@ -1359,7 +1359,7 @@ namespace geometry
 
 	double SolidAngle(const V_d &org, const VV_d &ps)
 	{
-		//ccw
+		// ccw
 		double ret(0);
 		geometry::spherical_polygon poly(org, ps);
 		for (const auto &ind : poly.triangulate(1E-5))

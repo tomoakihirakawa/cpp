@@ -1067,7 +1067,7 @@ struct derivatives
 
 			p->U_update_BEM = p->U_BEM;
 			//! tensionが強いと角でとがるようなエラーがでる．
-			double K = 0.2;
+			double K = 0.1;
 			p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			/* ------------------------------------------------------ */
 			if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
@@ -1916,16 +1916,8 @@ int main()
 		{
 			//!体積を保存するようにリメッシュする必要があるだろう．
 			auto radius = Mean(extLength(water.getLines()));
-			Buckets<networkFace> B(obj.getBounds(), radius);
-			for (const auto &f : obj.getFaces())
-			{
-				f->clearParametricPoints();
-				f->particlize(radius / 3., {-radius / 2});
-			}
-			for (const auto &f : obj.getFaces())
-				for (const auto &p : f->getParametricPoints())
-					B.add(p->getXtuple(), f);
-			setBoundaryConditions(water, B);
+			obj.makeBucketFaces(radius);
+			setBoundaryConditions(water, obj.BucketFaces);
 			remesh(water);
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
@@ -1949,10 +1941,10 @@ int main()
 			double dt;
 			if (time_step < 2)
 				dt = 0.001;
-			else if (min_dt < 0.005 / 2.)
+			else if (min_dt < 0.005)
 				dt = min_dt;
 			else
-				dt = 0.005 / 2.;
+				dt = 0.005;
 			Print("===========================================================================");
 			Print("time_step :" + Red + std::to_string(time_step) + reset);
 			Print("real time :" + Red + std::to_string(real_time) + reset);

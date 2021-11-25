@@ -2638,6 +2638,21 @@ netL *unlink(netP *obj, netP *obj_)
 class Network : public object3D
 {
 public:
+	Buckets<networkFace> BucketFaces;
+	Buckets<networkPoint> BucketPoints;
+	void makeBucketFaces(const double spacing)
+	{
+		this->BucketFaces.set(this->bounds(), spacing);
+		for (const auto &f : this->Faces)
+		{
+			f->clearParametricPoints();
+			f->particlize(spacing / 3., {0.});
+			for (const auto &p : f->getParametricPoints())
+				this->BucketFaces.add(p->getXtuple(), f);
+		}
+	};
+
+public:
 	T6d forced_velocity;
 	T6d forced_acceleration;
 
@@ -2979,7 +2994,9 @@ public:
 		  acceleration({0., 0., 0., 0., 0., 0.}),
 		  velocity({0., 0., 0., 0., 0., 0.}),
 		  mass(0.),
-		  center_of_mass({0., 0., 0.}){};
+		  center_of_mass({0., 0., 0.}),
+		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.){};
 	// Network(Network &water, Network &obj, const std::string &name_IN);
 	Network(const V_Netp &base_nets, const std::string &name_IN);
 	~Network();
@@ -2996,7 +3013,9 @@ public:
 		  acceleration({0., 0., 0., 0., 0., 0.}),
 		  velocity({0., 0., 0., 0., 0., 0.}),
 		  mass(0.),
-		  center_of_mass({0., 0., 0.})
+		  center_of_mass({0., 0., 0.}),
+		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
 	{
 		std::vector<std::vector<std::string>> read_line;
 		Load(filename, read_line, {"    ", "   ", "  ", " "});
@@ -4654,7 +4673,9 @@ inline Network::Network(const V_Netp &base_nets, const std::string &name_IN = "n
 	  acceleration({0., 0., 0., 0., 0., 0.}),
 	  velocity({0., 0., 0., 0., 0., 0.}),
 	  mass(0.),
-	  center_of_mass({0., 0., 0.})
+	  center_of_mass({0., 0., 0.}),
+	  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+	  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
 {
 #ifdef BEM
 	this->setCornerNeumann();
