@@ -1916,7 +1916,9 @@ int main()
 		{
 			//!体積を保存するようにリメッシュする必要があるだろう．
 			auto radius = Mean(extLength(water.getLines()));
+			Print("makeBucketFaces", Green);
 			obj.makeBucketFaces(radius);
+			Print("setBoundaryConditions", Green);
 			setBoundaryConditions(water, obj.BucketFaces);
 			remesh(water);
 			// b# ------------------------------------------------------ */
@@ -1941,10 +1943,10 @@ int main()
 			double dt;
 			if (time_step < 2)
 				dt = 0.001;
-			else if (min_dt < 0.005)
+			else if (min_dt < 0.01)
 				dt = min_dt;
 			else
-				dt = 0.005;
+				dt = 0.01;
 			Print("===========================================================================");
 			Print("time_step :" + Red + std::to_string(time_step) + reset);
 			Print("real time :" + Red + std::to_string(real_time) + reset);

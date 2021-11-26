@@ -147,13 +147,9 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
 {
 	for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius /*depth*/))
 		if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
-		{
 			if (this != q)
-			{
 				if (intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Sphere(this->getXtuple(), q->radius)).isIntersecting)
 					this->ContactPoints.emplace(q);
-			}
-		}
 };
 // radiusのしていがある場合は，その半径内の点を取得する．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
@@ -162,15 +158,9 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
 {
 	for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius /*depth*/))
 		if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
-		{
 			if (this != q)
-			{
 				if (Norm(this->getXtuple() - q->getXtuple()) <= radius)
-				{
 					this->ContactPoints.emplace(q);
-				}
-			}
-		}
 };
 inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
 										   const int limit_depth,
@@ -179,15 +169,25 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
 {
 	for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), limit_depth, limit_num))
 		if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
-		{
 			if (this != q)
-			{
 				if (Norm(this->getXtuple() - q->getXtuple()) <= radius)
-				{
 					this->ContactPoints.emplace(q);
-				}
-			}
-		}
+};
+// radiusのしていがある場合は，その半径内の点を取得する．
+inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoint>> &Bs,
+										   const double radius,
+										   const bool include_self_network = true)
+{
+	for (const auto &B : Bs)
+		addContactPoints(B, radius, include_self_network);
+};
+inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoint>> &Bs,
+										   const int limit_depth,
+										   const int limit_num,
+										   const bool include_self_network = true)
+{
+	for (const auto &B : Bs)
+		addContactPoints(B, limit_depth, limit_num, include_self_network);
 };
 // inline void networkPoint::saveContactPoints(const Buckets<networkPoint> &B, double radius = 1E-40, bool exclude_self = false)
 // {

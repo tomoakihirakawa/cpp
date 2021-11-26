@@ -612,7 +612,6 @@ double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); }
 
 #include "basic_arithmetic_vector_operations.hpp"
 
-
 double Mean(const V_d &v)
 {
 	if (v.empty())
@@ -3448,13 +3447,36 @@ struct BaseBuckets
 			this->xbounds = std::get<0>(this->bounds);
 			this->ybounds = std::get<1>(this->bounds);
 			this->zbounds = std::get<2>(this->bounds);
-			this->xsize = (int)((std::get<1>(this->xbounds) - std::get<0>(this->xbounds)) / this->dL);
-			this->ysize = (int)((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
-			this->zsize = (int)((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
+			this->xsize = std::ceil((std::get<1>(this->xbounds) - std::get<0>(this->xbounds)) / this->dL);
+			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
+			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
 			this->dn = {xsize, ysize, zsize};
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
-																							   std::vector</*z*/ std::unordered_set<T *>>(zsize)));
+																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
+		}
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << reset << std::endl;
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+		};
+	};
+	void resize(const T3Tdd &boundingboxIN, const double dL_IN)
+	{
+		try
+		{
+			this->bounds = boundingboxIN;
+			this->dL = dL_IN;
+			this->xbounds = std::get<0>(this->bounds);
+			this->ybounds = std::get<1>(this->bounds);
+			this->zbounds = std::get<2>(this->bounds);
+			this->xsize = std::ceil((std::get<1>(this->xbounds) - std::get<0>(this->xbounds)) / this->dL);
+			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
+			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
+			this->dn = {xsize, ysize, zsize};
+			this->buckets.resize(xsize,
+								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
+																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
 		}
 		catch (std::exception &e)
 		{
@@ -3541,10 +3563,11 @@ struct BaseBuckets
 	/* ------------------------------------------------------ */
 	void clear()
 	{
-		for (auto &vvu_b : this->buckets)
-			for (auto &vu_b : vvu_b)
-				for (auto &u_b : vu_b)
-					u_b.clear();
+		this->buckets.clear();
+		// for (auto &vvu_b : this->buckets)
+		// 	for (auto &vu_b : vvu_b)
+		// 		for (auto &u_b : vu_b)
+		// 			u_b.clear();
 	};
 	//@ 2021年11月9日さらに早くするために，
 	//@ std::vector<std::vector<T *>> getObjects(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const

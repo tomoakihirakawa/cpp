@@ -265,7 +265,7 @@ struct Fusion
             NR.update(DDq_norm_f(NR.X, A, M, G0, M0_, this->magTransMat),
                       D2D2q_norm_f(NR.X, A, M, G0, M0_, this->magTransMat)); /*initial X is updated*/
             NR.X = Normalize(NR.X);
-            if (Norm(NR.dX) < 1E-5)
+            if (Norm(NR.dX) < 1E-10)
                 break;
         }
 

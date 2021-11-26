@@ -245,7 +245,7 @@ PYBIND11_MODULE(fundamental, m)
 		.def_readwrite("dX", &NewtonRaphson<V_d>::dX);
 	pybind11::class_<Fusion>(m, "Fusion")
 		.def(pybind11::init<const Tddd &, const Tddd &>())
-		.def("updateStandardcd", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double, const double>(&Fusion::updateStandard))
+		.def("updateStandard", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double, const double>(&Fusion::updateStandard))
 		.def("solveForQuaternion", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double>(&Fusion::solveForQuaternion))
 		.def("solveForQuaternionModified", pybind11::overload_cast<const Tddd &, const Tddd &, const Tddd &, const double>(&Fusion::solveForQuaternionModified))
 		.def("history", &Fusion::history)

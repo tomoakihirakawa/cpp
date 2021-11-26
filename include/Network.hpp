@@ -511,8 +511,15 @@ struct Buckets<networkPoint> : public BaseBuckets<networkPoint>
 	void add(const Tddd &x, networkPoint *const p)
 	{
 		auto [i, j, k] = this->indices(x);
+		// std::cout << i << ", " << j << ", " << k << ", isInside(i, j, k) = " << isInside(i, j, k) << std::endl;
 		if (isInside(i, j, k))
+		{
+			// std::cout << "this->buckets = " << this->buckets.size() << std::endl;
+			// std::cout << "this->buckets[i] = " << this->buckets[i].size() << std::endl;
+			// std::cout << "this->buckets[i][j] = " << this->buckets[i][j].size() << std::endl;
+			// std::cout << "this->buckets[i][j][k] = " << this->buckets[i][j][k].size() << std::endl;
 			this->buckets[i][j][k].emplace(p);
+		}
 	};
 };
 /* ------------------------------------------------------ */
@@ -817,9 +824,11 @@ public:
 	void clearContactFaces() { this->ContactFaces.clear(); };
 	void addContactFaces(const Buckets<networkFace> &B, bool); //自身と同じfaceを含まない
 	//
-	void addContactPoints(const Buckets<networkPoint> &B, const bool);											   //自身と同じnetのpointを含み得る
-	void addContactPoints(const Buckets<networkPoint> &B, const double radius, const bool);						   //自身と同じnetのpointを含み得る
-	void addContactPoints(const Buckets<networkPoint> &B, const int limit_depth, const int limit_num, const bool); //自身と同じnetのpointを含み得る
+	void addContactPoints(const Buckets<networkPoint> &B, const bool);															//自身と同じnetのpointを含み得る
+	void addContactPoints(const Buckets<networkPoint> &B, const double radius, const bool);										//自身と同じnetのpointを含み得る
+	void addContactPoints(const Buckets<networkPoint> &B, const int limit_depth, const int limit_num, const bool);				//自身と同じnetのpointを含み得る
+	void addContactPoints(const std::vector<Buckets<networkPoint>> &B, const double radius, const bool);						//自身と同じnetのpointを含み得る
+	void addContactPoints(const std::vector<Buckets<networkPoint>> &B, const int limit_depth, const int limit_num, const bool); //自身と同じnetのpointを含み得る
 
 	//
 	std::unordered_set<networkPoint *> getContactPoints() const { return this->ContactPoints; };
@@ -2637,19 +2646,57 @@ netL *unlink(netP *obj, netP *obj_)
 // binary_searchを使えば，重複しないように保存する作業の時間が短縮される．
 class Network : public object3D
 {
-public:
+private:
 	Buckets<networkFace> BucketFaces;
+	Buckets<networkPoint> BucketParametricPoints;
 	Buckets<networkPoint> BucketPoints;
+
+public:
 	void makeBucketFaces(const double spacing)
 	{
+		this->setBounds();
+		this->BucketFaces.clear(); //こうしたら良くなった
 		this->BucketFaces.set(this->bounds(), spacing);
-		for (const auto &f : this->Faces)
+		// std::cout << "this->bounds() = " << this->bounds() << std::endl;
+		// std::cout << "spacing = " << spacing << std::endl;
+		// std::cout << "particlize" << std::endl;
+		for (const auto &f : this->getFaces())
 		{
 			f->clearParametricPoints();
 			f->particlize(spacing / 3., {0.});
 			for (const auto &p : f->getParametricPoints())
 				this->BucketFaces.add(p->getXtuple(), f);
 		}
+	};
+	const Buckets<networkPoint> &getBucketPoints() const { return BucketPoints; };
+	const Buckets<networkPoint> &getBucketParametricPoints() const { return BucketParametricPoints; };
+
+	void makeBucketPoints(const double spacing)
+	{
+// #define DEBUG_makeBucketPoints
+#ifdef DEBUG_makeBucketPoints
+		Print("setBounds", Red);
+#endif
+		this->setBounds();
+#ifdef DEBUG_makeBucketPoints
+		Print("this->BucketPoints.resize", Red);
+		// std::cout << this->bounds() << std::endl;
+		// std::cin.ignore();
+#endif
+		this->BucketPoints.resize(this->bounds(), spacing);
+#ifdef DEBUG_makeBucketPoints
+		Print("this->BucketPoints.add", Red);
+#endif
+		this->BucketPoints.add(this->getPoints());
+#ifdef DEBUG_makeBucketPoints
+		Print("makeBucketPoints is done", Red);
+#endif
+	};
+	void makeBucketParametricPoints(const double spacing)
+	{
+		this->setBounds();
+		this->BucketParametricPoints.resize(this->bounds(), spacing);
+		this->BucketParametricPoints.add(this->getParametricPoints());
 	};
 
 public:
@@ -2996,7 +3043,8 @@ public:
 		  mass(0.),
 		  center_of_mass({0., 0., 0.}),
 		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
-		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.){};
+		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.){};
 	// Network(Network &water, Network &obj, const std::string &name_IN);
 	Network(const V_Netp &base_nets, const std::string &name_IN);
 	~Network();
@@ -3015,7 +3063,8 @@ public:
 		  mass(0.),
 		  center_of_mass({0., 0., 0.}),
 		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
-		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
+		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
 	{
 		std::vector<std::vector<std::string>> read_line;
 		Load(filename, read_line, {"    ", "   ", "  ", " "});
@@ -4675,7 +4724,8 @@ inline Network::Network(const V_Netp &base_nets, const std::string &name_IN = "n
 	  mass(0.),
 	  center_of_mass({0., 0., 0.}),
 	  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
-	  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
+	  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+	  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
 {
 #ifdef BEM
 	this->setCornerNeumann();

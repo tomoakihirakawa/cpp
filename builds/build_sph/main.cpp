@@ -1352,8 +1352,6 @@ EISP:
 		for (const auto &p : net->getPoints())
 			p->mu_SPH = mu;
 		/* ------------------------------------------------------ */
-		Buckets<networkPoint> B_water({buckets_xbounds, buckets_ybounds, buckets_zbounds} /*net->getBounds() + tank->getBounds()*/, particle_spacing / 2);
-		Buckets<networkPoint> B_all({buckets_xbounds, buckets_ybounds, buckets_zbounds} /*net->getBounds() + tank->getBounds()*/, particle_spacing / 2);
 		//@ ------------------------------------------------------------------- */
 		//@ ------------------------------------------------------------------- */
 		//@                               メインループ                            */
@@ -1361,10 +1359,13 @@ EISP:
 		//@ ------------------------------------------------------------------- */
 		for (auto step = 0; step < 20000; step++)
 		{
-			if (step == 0 || step == preparation_time_step)
-				std::swap(tank, tank_init);
 
-			//
+			if (step == 0 || step == preparation_time_step)
+			{
+				std::swap(tank, tank_init);
+				tank->makeBucketParametricPoints(particle_spacing / 2.);
+			}
+
 			water_points = net->getPoints();
 
 #if defined(EISPH)
@@ -1375,7 +1376,6 @@ EISP:
 					p->pressure_SPH = density * g * (initial_surface_height - std::get<2>(p->getXtuple()));
 				}
 #endif
-
 			//! いらない粒子は決して計算を始める
 			std::cout << Magenta << "step :" << step << std::endl;
 			std::cout << Blue << "----------- 粒子数の情報 ---------" << std::endl;
@@ -1392,40 +1392,11 @@ EISP:
 				std::cout << "消去粒子数: " << count << reset << std::endl;
 				water_points = net->getPoints();
 			}
-			// /* ------------------------------------------------------ */
-			// net->setBounds();
-			// for (const auto &p : water_points)
-			// {
-			// 	p->contactP.clear();  //!BFSを使って再び取得することを省略する
-			// 	p->neighborP.clear(); //!BFSを使って再び取得することを省略する
-			// }
 			//% ------------------------------------------------------ */
 			//%                         バケットの生成                   */
 			//% ------------------------------------------------------ */
 			Print("バケットの生成", Green);
-			// 点の保存
-
-#pragma omp sections
-			{
-#pragma omp section
-				{
-					B_water.clear();
-					B_water.add(net->getPoints());
-				}
-#pragma omp section
-				{
-					B_all.clear();
-					B_all.add(net->getPoints());
-					B_all.add(tank->getParametricPoints());
-				}
-			}
-
-			// Buckets<networkPoint> B_water({{-0.6, 0.6}, {-0.6, 0.6}, {-0.5, 0.5}} /*net->getBounds() + tank->getBounds()*/, particle_spacing / 2.);
-			// B_water.add(net->getPoints());
-			// Buckets<networkPoint> B_all({{-0.6, 0.6}, {-0.6, 0.6}, {-0.5, 0.5}} /*net->getBounds() + tank->getBounds()*/, particle_spacing / 2.);
-			// B_all.add(net->getPoints());
-			// B_all.add(tank->getParametricPoints());
-			//
+			net->makeBucketPoints(particle_spacing / 2.);
 			std::cout << Green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			//% ------------------------------------------------------ */
 			//%                      近傍粒子の取得                      */
@@ -1468,7 +1439,7 @@ EISP:
 #pragma omp single nowait
 #endif
 				{
-					auto VP = TakeExcept(Flatten(B_water.getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
+					auto VP = TakeExcept(Flatten(net->getBucketPoints().getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
 					/* ------------------------------------------------------ */
 					if (!VP.empty())
 					{
@@ -1522,7 +1493,8 @@ EISP:
 #endif
 				{
 					//@ unlimiteを使う2021/11/10
-					p->addContactPoints(B_all, p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(tank->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
 				}
 
 				// チェック
@@ -1677,7 +1649,7 @@ EISP:
 				//@ ------------------------------------------------------ */
 				//@                 ダミー粒子を更新する関数                   */
 				//@ ------------------------------------------------------ */
-				auto updateDummyPressure = [&B_water, dummy_points]()
+				auto updateDummyPressure = [&net, dummy_points]()
 				{
 					Print("ダミー粒子（鏡映関係を使う）の圧力を計算．WCSPHなら圧力の評価の\"後\"．EISPHなら圧力の評価の\"前\"", Green);
 #ifdef _OPENMP
@@ -1689,10 +1661,10 @@ EISP:
 #endif
 					{
 						//ダミー粒子は，反対側にある粒子と同じ物性値（圧力，質量，密度）を持つ．（see Nomeritae(2016)）
-						p->pressure_SPH = dummy_pressure_Asai(B_water, p, 2);
+						p->pressure_SPH = dummy_pressure_Asai(net->getBucketPoints(), p, 2);
 					}
 				};
-				auto updateDummy_U_tmpU_mass_rho = [&B_water, &dummy_points]()
+				auto updateDummy_U_tmpU_mass_rho = [&net, &dummy_points]()
 				{
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1702,11 +1674,11 @@ EISP:
 #pragma omp single nowait
 #endif
 					{
-						auto ps = Flatten(B_water.getObjects(oppositeX(cp), 4 /*深さ最大*/, 1 /*これだけとったら終わり*/));
+						auto ps = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), 4 /*深さ最大*/, 1 /*これだけとったら終わり*/));
 						if (!ps.empty())
 						{
 							// 逆になっていない
-							auto tmp = Flatten(B_water.getObjects(oppositeX(cp), ps[0]->radius_SPH));
+							auto tmp = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), ps[0]->radius_SPH));
 							auto [U, tmp_U, mass, density] = U_tmpU_mass_density_SPH_IDW(ToUnorderedSet(tmp), oppositeX(cp), 2);
 							//流速をゼロとする場合
 							// cp->U_SPH = {0, 0, 0};
