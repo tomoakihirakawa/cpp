@@ -412,34 +412,6 @@ getLines_detail*/
 	/* ------------------------------------------------------ */
 	void setLines(const V_netLp &ls) { this->Lines = ls; };
 	const V_netLp &getLines() const { return this->Lines; };
-	// std::tuple<networkLine *, networkLine *, networkLine *> getLinesTuple(const networkLine *const l) const
-	// {
-	// 	if (this->Lines[2] == l)
-	// 		return {this->Lines[2], this->Lines[0], this->Lines[1]};
-	// 	else if (this->Lines[1] == l)
-	// 		return {this->Lines[1], this->Lines[2], this->Lines[0]};
-	// 	else
-	// 		return {this->Lines[0], this->Lines[1], this->Lines[2]};
-	// };
-	// V_netLp getLinesExcept(netL *l) const
-	// {
-	//   V_netLp ret(0);
-	//   if (l != nullptr)
-	//   {
-	//     for (const auto &line : this->Lines)
-	//       if (line != l)
-	//         ret.emplace_back(line);
-	//   }
-	//   return ret;
-	// };
-	// V_netLp getLines(const bool TorF) const
-	// {
-	//   V_netLp ret(0);
-	//   for (const auto &line : this->Lines)
-	//     if (line->status == TorF)
-	//       ret.emplace_back(line);
-	//   return ret;
-	// }
 	V_netLp getLines_toggle(const bool TorF) const
 	{
 		V_netLp ret(0);
@@ -468,16 +440,6 @@ getNeighbors_detail*/
 			ret[i++] = (*l)(obj);
 		return ret;
 	};
-	//
-	// std::vector<T *> getNeighborsExcept(const T *obj, const T *exceptobj) const
-	// {
-	//   std::vector<T *> ret(0);
-	//   T *tmp;
-	//   for (const auto &l : this->Lines)
-	//     if (exceptobj != (tmp = (*l)(obj)))
-	//       ret.emplace_back(tmp);
-	//   return ret;
-	// };
 	/*getNeighbors_code*/
 
 	netL *getLineBetween(const T *obj, const T *p) const
@@ -511,9 +473,9 @@ struct Buckets<networkPoint> : public BaseBuckets<networkPoint>
 	void add(const Tddd &x, networkPoint *const p)
 	{
 		auto [i, j, k] = this->indices(x);
-		// std::cout << i << ", " << j << ", " << k << ", isInside(i, j, k) = " << isInside(i, j, k) << std::endl;
 		if (isInside(i, j, k))
 		{
+			// std::cout << i << ", " << j << ", " << k << ", isInside(i, j, k) = " << isInside(i, j, k) << std::endl;
 			// std::cout << "this->buckets = " << this->buckets.size() << std::endl;
 			// std::cout << "this->buckets[i] = " << this->buckets[i].size() << std::endl;
 			// std::cout << "this->buckets[i][j] = " << this->buckets[i][j].size() << std::endl;
@@ -812,6 +774,20 @@ public:
 private:
 	networkLine *xline;
 	networkFace *xface;
+	// b% ------------------------------------------------------ */
+	// b%       面に対する鏡像位置の粒子．一つの面に対して一点決まる　        */
+	// b% ------------------------------------------------------ */
+	std::unordered_map<networkFace *, networkPoint *> map_Face_MirrorPoint;
+	void makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance);
+	void clearMirroredPoints()
+	{
+		for (const auto &[f, p] : this->map_Face_MirrorPoint)
+			delete p;
+		this->map_Face_MirrorPoint.clear();
+	};
+	//% ------------------------------------------------------ */
+	//%                      接触の判別用　                      */
+	//% ------------------------------------------------------ */
 	std::unordered_set<networkFace *> ContactFaces;
 	std::unordered_set<networkPoint *> ContactPoints;
 	std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
@@ -860,7 +836,6 @@ public:
 		for (const auto &VP : VVP)
 			this->addContactPoints(VP);
 	};
-	/* ------------------------------------------------------ */
 	void addContactPoints(const std::unordered_set<networkPoint *> &P)
 	{
 		for (const auto &p : P)
@@ -1009,6 +984,7 @@ public:
 	// コンタクトポイントをpointとface上で作成，完成させる．
 	// 次にRBFを使った力の計算をその点を使って行えるようにする．
 	//--------------------
+	//コンストラクタ
 	// networkPoint(Network *network_IN, const V_d &xyz_IN, networkLine *line_IN = nullptr, networkFace *face_IN = nullptr);
 	networkPoint(Network *network_IN,
 				 Network *storage_IN,
@@ -1162,48 +1138,6 @@ public:
 	double getSolidAngle(bool TorF);
 	double getSolidAngle(const V_netFp &faces);
 	/*SolidAngle_detail_code*/
-
-	// std::vector<std::tuple<networkFace *, Tddd>> getVectorsToFaces()
-	// {
-	// 	Tddd tension = {0, 0, 0};
-	// 	double area = 0.;
-	// 	double Area_tot = 0.;
-	// 	auto p_next_X = p->getXtuple() + p->U_BEM * dt;
-	// 	auto p_current_X = p->getXtuple();
-	// 	// なぜ面に依存した張力によって補正すべきなのか？
-	// 	// 線ではだめ，
-	// 	for (const auto &f : p->getFaces())
-	// 	{
-	// 		if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
-	// 		{
-	// 			Tddd f_next_X = {0, 0, 0};
-	// 			Tddd f_current_X = {0, 0, 0};
-	// 			auto [fp0, fp1, fp2] = f->getPointsTuple();
-	// 			auto fp0_next_X = fp0->getXtuple() + fp0->U_BEM * dt;
-	// 			auto fp1_next_X = fp1->getXtuple() + fp1->U_BEM * dt;
-	// 			auto fp2_next_X = fp2->getXtuple() + fp2->U_BEM * dt;
-	// 			f_next_X = fp0_next_X / 3. + fp1_next_X / 3. + fp2_next_X / 3.;
-	// 			area = TriangleArea(T3Tddd{fp0_next_X, fp1_next_X, fp2_next_X});
-	// 			Area_tot += area;
-	// 			f_current_X += fp0->getXtuple();
-	// 			f_current_X += fp1->getXtuple();
-	// 			f_current_X += fp2->getXtuple();
-	// 			f_current_X /= 3.;
-	// 			{
-	// 				// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
-	// 				// auto v = f_next_X - p_next_X;
-	// 				// auto dist = Norm(v);
-	// 				// auto k = dist / dt;
-	// 				// // k += k / 5. * k / 5. * k / 5.;
-	// 				// tension += k * Normalize(v) * f->getAngle(p) / Theta_tot;
-	// 				/* ------------------------------------------------------ */
-	// 				// tension += (area / dt) * Normalize(f_next_X - p_next_X);
-	// 				tension += (area / dt) * (f_next_X - p_next_X);
-	// 			}
-	// 		}
-	// 	}
-	// 	tension /= Area_tot;
-	// };
 };
 
 //@ ------------------------ 抽出用関数 ----------------------- */
@@ -1272,11 +1206,7 @@ std::vector<Tdd> extPhiphin(const V_netPp &ps)
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
 /*networkPoint_code*/
-double distance(const networkPoint *p0, const networkPoint *p1)
-{
-	return Norm(p0->getX() - p1->getX());
-};
-////
+double distance(const networkPoint *p0, const networkPoint *p1) { return Norm(p0->getX() - p1->getX()); };
 netL *getLineConnected(const networkPoint *obj, const networkPoint *p)
 {
 	for (const auto &l : obj->networkObject::getLines())
@@ -1284,7 +1214,6 @@ netL *getLineConnected(const networkPoint *obj, const networkPoint *p)
 			return l;
 	return nullptr;
 };
-/////
 netL *link(netP *obj, netP *obj_, Network *net)
 {
 	try
@@ -1373,26 +1302,6 @@ public:
 	bool isDirichlet() const { return this->Dirichlet; };
 	bool isNeumann() const { return this->Neumann; };
 	/* ------------------------------------------------------ */
-	// T6d force;
-	// T6d inertia;
-	// T6d velocity;
-	// T6d acceleration;
-	// double mass;
-	// /* ------------------------------------------------------ */
-	// T6d &F = this->force;
-	// T6d &I = this->inertia;
-	// T6d &A = this->acceleration;
-	// T6d &V = this->velocity;
-	// /* ------------------------------------------------------ */
-	// double density;
-	// double volume;
-	// double radius;
-	// /* ------------------------------------------------------ */
-	// Tddd Fxyz() const { return {std::get<0>(this->force), std::get<1>(this->force), std::get<2>(this->force)}; };
-	// Tddd Txyz() const { return {std::get<3>(this->force), std::get<4>(this->force), std::get<5>(this->force)}; };
-	// Tddd Vxyz() const { return {std::get<0>(this->velocity), std::get<1>(this->velocity), std::get<2>(this->velocity)}; };
-	// Tddd Wxyz() const { return {std::get<3>(this->velocity), std::get<4>(this->velocity), std::get<5>(this->velocity)}; };
-	// /* ------------------------------------------------------ */
 	T6d force;
 	V_d inertia;  //={mass,mass,mass,rotational_of_inertia}
 	V_d velocity; //={vx,vy,vz,angular_vx,angular_vy,angular_vz}
@@ -1452,20 +1361,12 @@ public:
 		if (it != this->map_Net_ContactPoints.end())
 			return it->second;
 		else
-		{
 			return {};
-		}
 	};
 	void clearContactPoints()
 	{
 		this->ContactPoints.clear();
-		// this->map_Net_ContactPoints.clear();
-		for (auto &[a, b] : this->map_Net_ContactPoints)
-		{
-			auto s = b.size();
-			b.clear();
-			b.reserve(s);
-		}
+		this->map_Net_ContactPoints.clear();
 	};
 	void addContactPoints(networkPoint *const p)
 	{
@@ -2496,60 +2397,6 @@ inline void Buckets<networkPoint>::add(const std::unordered_set<networkPoint *> 
 		add(p->getXtuple(), p);
 };
 /* ------------------------------------------------------ */
-////////////////////////////////////////////////////////////////////////
-/*link_detail
-2つの`netowrkObject`のもつLinesに対して働くもので，
-
-- 共通する`networkLine`を2つの`netowrkObject`が持っていれば，共通のLineを返す．
-- 片方だけがあるLineを通してもう片方を参照できるような状況の場合は，参照できない方にもそのLineを通して参照できるようにする．
-- 両者互いに参照ができない場合，参照できるように新たな`networkLine`を作成する．
-
-より細かいnetworkLineとnetworkObjectの接続そのものを扱う場合は，EraseまたはAddを使うことにする．
-link_detail*/
-/*link_code*/
-// netL *link(netP *obj, netP *obj_, Network *net)
-// {
-//   if (obj_ == obj)
-//     throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "a point is trying to link itself!"));
-
-//   if (!obj_ /*if nullptr*/)
-//     return nullptr;
-
-//   auto line = obj->getLineBetween(obj_);
-//   auto line_ = obj_->getLineBetween(obj);
-//   if (line && line_)
-//   {
-//     if (line == line_)
-//     {
-//       return line;
-//     }
-//     else
-//     {
-//       throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Points are linked but by differrent lines"));
-//     }
-//   }
-//   else if (!line && line_)
-//   {
-//     //Print("only the other side was linked",red);
-//     obj->Add(line_);
-//     return line_; // only the other side was linked
-//   }
-//   else if (line && !line_)
-//   {
-//     //Print("only the other side was linked",red);
-//     obj_->Add(line);
-//     return line; // only the other side was linked
-//   }
-//   else
-//   { //(!line && !line_)
-//     //Print("new netL",Red);
-//     auto newline = new networkLine(net, obj, obj_);
-//     obj->Lines.emplace_back(newline);
-//     obj_->Lines.emplace_back(newline);
-//     return newline;
-//   }
-// };
-
 std::vector<netL *> link(const V_netPp &obj, Network *net)
 {
 	try
@@ -2572,9 +2419,6 @@ std::vector<netL *> link(const V_netPp &obj, Network *net)
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "duplication found!");
 	}
 };
-
-/*link_code*/
-/*unlink_code*/
 netL *unlink(netP *obj, netP *obj_)
 {
 	if (obj_ == obj)
@@ -2600,38 +2444,7 @@ netL *unlink(netP *obj, netP *obj_)
 		return nullptr;
 	}
 };
-// ///////////////////////////
-// netL *unlink(netF *obj, netF *obj_)
-// {
-//   if (obj_ == obj)
-//   {
-//     Print("a point is trying to link itself!", Red);
-//     return NULL;
-//   }
 
-//   if (!obj_ /*if NULL*/)
-//   {
-//     return NULL;
-//   }
-
-//   auto line = obj->getLineBetween(obj_);
-//   auto line_ = obj_->getLineBetween(obj);
-
-//   if (line && line_)
-//   {
-//     network::erase(line->Faces, obj);
-//     network::erase(line->Faces, obj_);
-//     network::erase(obj->Lines, line);
-//     network::erase(obj_->Lines, line);
-//     return line;
-//   }
-//   else
-//   {
-//     std::cout << Red << obj << " and " << obj_ << " are not linked" << reset << std::endl;
-//     return nullptr;
-//   }
-// };
-/*unlink_code*/
 /////////////////////////////////////////////////////////////////////
 #include "searcher.hpp"
 //////////////////////////////////////////////////////////////////////
@@ -2652,14 +2465,14 @@ private:
 	Buckets<networkPoint> BucketPoints;
 
 public:
+	const Buckets<networkFace> &getBucketFaces() const { return BucketFaces; };
+	const Buckets<networkPoint> &getBucketPoints() const { return BucketPoints; };
+	const Buckets<networkPoint> &getBucketParametricPoints() const { return BucketParametricPoints; };
 	void makeBucketFaces(const double spacing)
 	{
 		this->setBounds();
 		this->BucketFaces.clear(); //こうしたら良くなった
 		this->BucketFaces.set(this->bounds(), spacing);
-		// std::cout << "this->bounds() = " << this->bounds() << std::endl;
-		// std::cout << "spacing = " << spacing << std::endl;
-		// std::cout << "particlize" << std::endl;
 		for (const auto &f : this->getFaces())
 		{
 			f->clearParametricPoints();
@@ -2668,35 +2481,27 @@ public:
 				this->BucketFaces.add(p->getXtuple(), f);
 		}
 	};
-	const Buckets<networkPoint> &getBucketPoints() const { return BucketPoints; };
-	const Buckets<networkPoint> &getBucketParametricPoints() const { return BucketParametricPoints; };
 
 	void makeBucketPoints(const double spacing)
 	{
-// #define DEBUG_makeBucketPoints
-#ifdef DEBUG_makeBucketPoints
-		Print("setBounds", Red);
-#endif
 		this->setBounds();
-#ifdef DEBUG_makeBucketPoints
-		Print("this->BucketPoints.resize", Red);
-		// std::cout << this->bounds() << std::endl;
-		// std::cin.ignore();
-#endif
 		this->BucketPoints.resize(this->bounds(), spacing);
-#ifdef DEBUG_makeBucketPoints
-		Print("this->BucketPoints.add", Red);
-#endif
 		this->BucketPoints.add(this->getPoints());
-#ifdef DEBUG_makeBucketPoints
-		Print("makeBucketPoints is done", Red);
-#endif
 	};
 	void makeBucketParametricPoints(const double spacing)
 	{
 		this->setBounds();
 		this->BucketParametricPoints.resize(this->bounds(), spacing);
 		this->BucketParametricPoints.add(this->getParametricPoints());
+	};
+	void makeBucketParametricPoints(const T3Tdd &bounds, const double spacing)
+	{
+		this->BucketParametricPoints.resize(bounds, spacing);
+		this->BucketParametricPoints.add(this->getParametricPoints());
+	};
+	void clearBucketParametricPoints()
+	{
+		this->BucketParametricPoints.clear();
 	};
 
 public:
@@ -3029,7 +2834,7 @@ public:
 	// 	};
 	// #endif
 	//-------------------------
-	// Networkコンストラクタ1
+	//% Networkコンストラクタ1
 	Network(const std::string &name_IN = "no_name")
 		: object3D(geometry::CoordinateBounds({0, 0, 0})),
 		  name(name_IN),
@@ -3045,7 +2850,6 @@ public:
 		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
 		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
 		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.){};
-	// Network(Network &water, Network &obj, const std::string &name_IN);
 	Network(const V_Netp &base_nets, const std::string &name_IN);
 	~Network();
 	//
@@ -3083,7 +2887,7 @@ public:
 
 	std::string getName() { return this->name; };
 	V_netPp linkXPoints(Network &water, Network &obj);
-	//=======================================
+	/* ------------------------------------------------------ */
 	void generateNetwork(const VV_d &v_IN, const VV_i &f_v_IN = {})
 	{
 		/*
@@ -3112,29 +2916,6 @@ public:
 		Print("Network has been generated", Magenta);
 		this->displayStates();
 	};
-	// void generateNetwork(const VV_d &v_IN, const VV_i &f_v_IN, const V_netPp &xPoints)
-	// {
-	//   Print("generate network", Red);
-	//   Print(__PRETTY_FUNCTION__, red);
-	//   if (v_IN.size() == xPoints.size())
-	//     Print(CHECK + " verticies, xPoints and networks size\n", Red);
-
-	//   Points = DeleteDuplicates(xPoints);
-
-	//   //    setFaces(f_v_IN);//indexの書き換えも可能だがする必要は今のところない
-	//   //     for(size_t i=0; i<this->Points.size(); i++){
-	//   //       Points[i]->network = networks[i];
-	//   // //      Points[i]->xPoint = xPoints[i];
-	//   //     }
-
-	//   for (const auto &l : getLines())
-	//     l->network = this;
-
-	//   Points = DeleteDuplicates(Points);
-	//   setBounds();
-	//   Print("Network has been generated", Magenta);
-	//   displayStates();
-	// };
 	/* ------------------------------------------------------ */
 	void displayStates()
 	{
@@ -3197,29 +2978,6 @@ public:
 			p->X = Dot(RotationMatrix(theta, axis), p->getXtuple());
 		setBounds();
 	};
-	// void rotate(const T4d &theta_axis)
-	// {
-	// 	auto theta = std::get<0>(theta_axis);
-	// 	Tddd axis = {std::get<1>(theta_axis), std::get<2>(theta_axis), std::get<3>(theta_axis)};
-	// 	for (auto &p : this->getPoints())
-	// 		p->setX(Dot(RotationMatrix(theta, axis), p->getXtuple()));
-	// 	setBounds();
-	// };
-	// void rotate(const T3Tddd &rotational_matrix)
-	// {
-	// 	for (auto &p : this->getPoints())
-	// 		p->setX(p->getXtuple() + Dot(rotational_matrix, p->getXtuple() - this->center_of_mass));
-	// 	setBounds();
-	// };
-
-	// void rotate(const Tddd &theta_xyz /*固定空間xyz軸に対する回転*/)
-	// {
-	// 	auto theta = std::get<0>(theta_axis);
-	// 	V_d axis = {std::get<1>(theta_axis), std::get<2>(theta_axis), std::get<3>(theta_axis)};
-	// 	for (auto &p : this->getPoints())
-	// 		p->setX(Dot(RotationMatrix(theta, axis), p->getX()));
-	// 	setBounds();
-	// };
 	/* ------------------------------------------------------ */
 	/*             ネットワークの姿勢に関する変数とメソッド          */
 	/* ------------------------------------------------------ */
@@ -3237,22 +2995,6 @@ public:
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		}
 	};
-	// void rotate(const Quaternion &Q, const V_d &barycenter = {0., 0., 0.})
-	// {
-	// 	try
-	// 	{
-	// 		for (auto &p : this->getPoints())
-	// 		{
-	// 			p->X = Q.Rv(p->X - Tddd{barycenter[0], barycenter[1], barycenter[2]}) + Tddd{barycenter[0], barycenter[1], barycenter[2]};
-	// 		}
-	// 		setBounds();
-	// 	}
-	// 	catch (std::exception &e)
-	// 	{
-	// 		std::cerr << e.what() << reset << std::endl;
-	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-	// 	};
-	// };
 	void scale(const double ratio, const Tddd &center = {0, 0, 0})
 	{
 
@@ -3283,44 +3025,6 @@ public:
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		};
 	};
-	// void scale(const double ratio)
-	// {
-	// 	try
-	// 	{
-	// 		V_d center_ = getMeanLocation();
-	// 		Tddd center = {center_[0], center_[1], center_[2]};
-	// 		for (auto &p : this->getPoints())
-	// 		{
-	// 			p->X = center + (p->X - center) * ratio;
-	// 		}
-	// 		setBounds();
-	// 	}
-	// 	catch (std::exception &e)
-	// 	{
-	// 		std::cerr << e.what() << reset << std::endl;
-	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-	// 	};
-	// };
-	// void scale(const V_d &ratio)
-	// {
-	// 	try
-	// 	{
-	// 		V_d center_ = getMeanLocation();
-	// 		Tddd center = {center_[0], center_[1], center_[2]};
-	// 		Tddd ratio_ = {ratio[0], ratio[1], ratio[2]};
-	// 		for (auto &p : this->getPoints())
-	// 		{
-	// 			p->X = center + (p->X - center) * ratio_;
-	// 		}
-
-	// 		setBounds();
-	// 	}
-	// 	catch (std::exception &e)
-	// 	{
-	// 		std::cerr << e.what() << reset << std::endl;
-	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-	// 	};
-	// };
 	void translate(const V_d &direction)
 	{
 		try
@@ -3358,7 +3062,6 @@ public:
 		for (auto &p : this->getPoints())
 			p->initialX = p->X;
 	};
-	//======================================
 
 	void reverseNormal()
 	{
@@ -3367,92 +3070,7 @@ public:
 			f->reverseNormal();
 		}
 	};
-
-	//======================================
-	// get point
-	// V_netPp getPointsRoundPathFrom(netP *startpoint, int lineindex = 0)
-	// {
-	//   setLinesStatus(true);
-	//   V_netPp ret;
-	//   netP *point, *prepoint, *newpoint;
-	//   networkLine *line;
-	//   V_netLp lines;
-	//   int counter = 0;
-	//   point = startpoint;
-	//   while (true)
-	//   {
-
-	//     if (counter == 0)
-	//     {
-	//       line = startpoint->getLines()[lineindex];
-	//       line->status = false;
-	//       newpoint = (*line)(startpoint);
-	//     }
-	//     else
-	//     {
-	//       lines = point->getLines(true);
-	//       if (lines.empty())
-	//         return ret; //dead end
-	//       lines[0]->status = false;
-	//       newpoint = (*lines[0])(point);
-	//     }
-
-	//     if (newpoint == startpoint || counter == 1000)
-	//       return ret;
-
-	//     point = newpoint;
-	//     ret.emplace_back(newpoint);
-	//     counter++;
-	//   }
-	// };
-	// std::vector<V_netPp> getNearPoints(double distance)
-	// {
-	// 	std::vector<V_netPp> ret(0);
-	// 	V_netPp tmp(0);
-	// 	network::setStatus(this->Points, true);
-	// 	//    setPointsStatus(true);
-	// 	for (const auto &p : Points)
-	// 	{
-	// 		p->isStatus(false); //pの検索を今後行わない
-	// 		for (const auto &q : Points)
-	// 		{
-	// 			if (q->isStatus(true))
-	// 			{
-	// 				// if (distance > Norm(p->xyz - q->xyz))
-	// 				// 	tmp.emplace_back(p);
-	// 				if (distance > Norm(p->X - q->X))
-	// 					tmp.emplace_back(p);
-	// 			}
-	// 		}
-	// 		if (!tmp.empty())
-	// 		{
-	// 			tmp.emplace_back(p);
-	// 			ret.emplace_back(tmp);
-	// 			tmp.clear();
-	// 		}
-	// 	}
-	// 	return ret;
-	// };
-	// netP *getNearestPoints(const V_d &xyz)
-	// {
-	// 	netP *ret;
-	// 	double distance = 1E+30;
-	// 	for (const auto &p : this->getPoints())
-	// 	{
-	// 		// if (distance > Norm(p->xyz - xyz))
-	// 		// {
-	// 		// 	distance = Norm(p->xyz - xyz);
-	// 		// 	ret = p;
-	// 		// }
-	// 		Tddd X = {xyz[0], xyz[1], xyz[2]};
-	// 		if (distance > Norm(p->X - X))
-	// 		{
-	// 			distance = Norm(p->X - X);
-	// 			ret = p;
-	// 		}
-	// 	}
-	// 	return ret;
-	// };
+	/* ------------------------------------------------------ */
 	netF *getNearestFace(const V_d &xyz)
 	{
 		netF *ret;
@@ -3478,15 +3096,6 @@ public:
 		}
 		return ret;
 	};
-	// std::unordered_set<networkPoint *> getPoints(const V_i &f_v)
-	// {
-	// 	V_netPp ret(f_v.size());
-	// 	int i = 0;
-	// 	for (const auto &f : f_v)
-	// 		ret[i++] = Points[f];
-	// 	return ret;
-	// };
-	//-------------------------
 	Tddd getMeanX() const
 	{
 		Tddd ret = {0, 0, 0};
@@ -3569,14 +3178,6 @@ public:
 		return ret;
 	};
 
-	// V_netLp getLines(bool TorF) const
-	// {
-	//   V_netLp ret(0);
-	//   for (const auto &ps : Points)
-	//     for (const auto &line : ps->getLines(TorF))
-	//       ret.emplace_back(line);
-	//   return DeleteDuplicates(ret);
-	// };
 	V_netLp getLinesIntxn() const
 	{
 		V_netLp ret(0);
@@ -3704,17 +3305,6 @@ private:
 		};
 	};
 
-private:
-	// void setFaces(const VV_i &f_v_IN,
-	// 			  const V_i &overlapMap)
-	// {
-	// 	auto f_v = f_v_IN;
-	// 	for (auto &f : f_v)
-	// 		for (auto &ind : f)
-	// 			ind = overlapMap[ind]; //上書き
-	// 	setFaces(f_v);
-	// };
-	/* ------------------------------------------------------ */
 public:
 	V_netPp getXPoints()
 	{
@@ -3954,136 +3544,9 @@ inline V_netPp networkFace::getXPoints() const
 	ret.emplace_back(Ps[1]);
 	return ret;
 };
-////////////////////////////////////////////////////////////////////////
-//この点の削除によって消される点と面を全て取り出す．
-class DeletionCandidates
-{
-public:
-	V_netPp points; //この点は与えられた点としか繋がっていなかった
-	V_netFp faces;
-	V_netLp lines;
-
-	DeletionCandidates(const DeletionCandidates &dc) : points(dc.points), faces(dc.faces), lines(dc.lines){};
-	DeletionCandidates(const DeletionCandidates *dc) : points(dc->points), faces(dc->faces), lines(dc->lines){};
-	//ある面または点に対して，削除候補を計算する
-	DeletionCandidates() : points({}), faces({}), lines({}){};
-	void check(networkFace *f_IN);
-	void check(networkPoint *p_IN);
-	template <typename T>
-	void check_re(T *p_IN);
-
-	void show()
-	{
-		Print(this->points);
-		Print(this->faces);
-		Print(this->lines);
-	};
-};
-///////////////////////////////////
-///////////// 外部関数 /////////////
-///////////////////////////////////
-bool operator==(const DeletionCandidates &dc0, const DeletionCandidates &dc1)
-{
-	if (Intersection(dc0.points, dc1.points).size() == dc0.points.size() && Intersection(dc0.faces, dc1.faces).size() == dc0.faces.size() && Intersection(dc0.lines, dc1.lines).size() == dc0.lines.size())
-		return true;
-	else
-		return false;
-};
-bool operator!=(const DeletionCandidates &dc0, const DeletionCandidates &dc1) { return dc0 == dc1 ? false : true; };
-DeletionCandidates &operator+=(DeletionCandidates &dc0, const DeletionCandidates &dc1)
-{
-	network::add(dc0.points, dc1.points);
-	network::add(dc0.faces, dc1.faces);
-	network::add(dc0.lines, dc1.lines);
-	return dc0;
-};
-DeletionCandidates operator+(const DeletionCandidates &dc0, const DeletionCandidates &dc1)
-{
-	DeletionCandidates ret(dc0);
-	network::add(ret.points, dc1.points);
-	network::add(ret.faces, dc1.faces);
-	network::add(ret.lines, dc1.lines);
-	return ret;
-};
-//孤立した者たちも探す必要がある
-/////////////////////////
-inline void DeletionCandidates::check(networkFace *f_IN)
-{
-	network::add(this->faces, f_IN);
-	//この点と唯一接続している点は削除候補．それを繋げる線も削除候補
-	V_netFp tmp({});
-	netFp n;
-	for (const auto &l : f_IN->networkObject::getLines())
-		if ((n = (*l)(f_IN)) && (tmp = n->getNeighbors()).size() == 1 && MemberQ(this->faces, tmp[0]))
-		{
-			network::add(this->faces, tmp[0]);
-			network::add(this->lines, l);
-		}
-};
-////////////////////////
-inline void DeletionCandidates::check(networkPoint *p_IN)
-{
-	network::add(this->points, p_IN);
-	//この点と唯一接続している点は削除候補．それを繋げる線も削除候補
-	V_netPp tmp({});
-	netPp n;
-	for (const auto &l : p_IN->networkObject::getLines())
-	{
-		if ((n = (*l)(p_IN)) && (tmp = n->getNeighbors()).size() == 1 && MemberQ(this->points, tmp[0]))
-		{
-			network::add(this->points, tmp[0]);
-		}
-		network::add(this->lines, l);
-	}
-	//この点を頂点に持つ面は削除候補
-	network::add(this->faces, p_IN->getFaces());
-};
-/////////////////////
-template <typename T>
-inline void DeletionCandidates::check_re(T *p_IN)
-{
-	this->check(p_IN);
-	auto before = (*this);
-	int counter = 0;
-	do
-	{
-		before = (*this);
-		//////////
-		auto fs = this->faces;
-		for (auto &f : fs)
-		{
-			bool found = false;
-			DeletionCandidates tmpdc;
-			tmpdc.check(f);
-			if (Intersection(tmpdc.points, this->points).size() != tmpdc.points.size())
-				found = true;
-			if (Intersection(tmpdc.faces, this->faces).size() != tmpdc.faces.size())
-				found = true;
-			if (Intersection(tmpdc.lines, this->lines).size() != tmpdc.lines.size())
-				found = true;
-
-			if (found)
-				(*this) += tmpdc;
-		}
-
-		auto ps = this->points;
-		for (auto &p : ps)
-		{
-			bool found = false;
-			DeletionCandidates tmpdc;
-			tmpdc.check(p);
-			if (Intersection(tmpdc.points, this->points).size() != tmpdc.points.size())
-				found = true;
-			if (Intersection(tmpdc.faces, this->faces).size() != tmpdc.faces.size())
-				found = true;
-			if (Intersection(tmpdc.lines, this->lines).size() != tmpdc.lines.size())
-				found = true;
-
-			if (found)
-				(*this) += tmpdc;
-		}
-	} while (before != this && counter++ < 10000);
-};
+//@ ------------------------------------------------------ */
+//@                          外部関数                       */
+//@ ------------------------------------------------------ */
 ///////////////////////
 /*networkFace::Delete_detail
 ##### networkFace::Delete()
@@ -4504,49 +3967,6 @@ public:
 	};
 };
 ///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-// template <class net = Network>
-// class NetworkObj : public net, public LoadObj
-// {
-// public:
-// 	NetworkObj(const std::string &filename, const std::string &name_IN = "no_name") : net(name_IN), LoadObj()
-// 	{
-// 		std::vector<std::vector<std::string>> read_line;
-// 		Load(filename, read_line, {"    ", "   ", "  ", " "});
-// 		this->load(read_line);
-
-// 		int i = 0;
-// 		auto xyz = this->v;
-// 		double pn = RandomReal({-1., 1.}) > 0 ? 1. : -1;
-// 		double rand = pn * RandomReal({0.5, 1.}) * 1E-13;
-// 		for (const auto &w : this->v)
-// 			xyz[i++] = {w[0] + rand, w[2] + rand, w[1] + rand};
-// 		net::generateNetwork(xyz, this->f_v);
-// 	};
-// };
-
-// class NetworkObj : public Network, public LoadObj
-// {
-// public:
-// 	NetworkObj(const std::string &filename, const std::string &name_IN = "no_name") : Network(name_IN), LoadObj()
-
-// 	{
-// 		std::vector<std::vector<std::string>> read_line;
-// 		Load(filename, read_line, {"    ", "   ", "  ", " "});
-// 		this->load(read_line);
-
-// 		int i = 0;
-// 		auto xyz = this->v;
-// 		double pn = RandomReal({-1., 1.}) > 0 ? 1. : -1;
-// 		double rand = pn * RandomReal({0.5, 1.}) * 1E-13;
-// 		for (const auto &w : this->v)
-// 			xyz[i++] = {w[0] + rand, w[2] + rand, w[1] + rand};
-// 		Network::generateNetwork(xyz, this->f_v);
-// 	};
-// };
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 inline void Network::setXPoints(Network &target, Network *interactionNet)
 {
 	Print("このオブジェクトの範囲外の面は，比較対象に含めない．線がcrossできる面だけを抜き取る", Red);

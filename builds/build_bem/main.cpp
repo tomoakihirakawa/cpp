@@ -46,7 +46,7 @@ networkLine *longerLine(networkLine *line_IN, double ratio = 1.01)
 
 std::string home_dir = std::getenv("HOME");
 /* ------------------------------------------------------ */
-double move_amplitude = 0.35;
+double move_amplitude = 0.30;
 Tddd translation(const double t)
 {
 	double s = M_PI / 2.;
@@ -1776,22 +1776,30 @@ void remesh(Network &water)
 	if (count == 10)
 		std::cout << "remesh too much" << std::endl;
 };
-//////////////////////////////////////////////////////////////////////////////////////////////////
-void setBoundaryConditions(Network &water, const Buckets<networkFace> &B)
+// b! ------------------------------------------------------ */
+// b! ------------------------------------------------------ */
+// b! ------------------------------------------------------ */
+void setBoundaryConditions(Network &water, const std::vector<Network *> &objects)
 {
+
 	auto radius = Mean(extLength(water.getLines()));
+
+	Print("makeBucketFaces", Green);
+	for (const auto &obj : objects)
+		obj->makeBucketFaces(radius);
 	// b% -------------------------------------------------------- */
 	// b%            境界条件（角点・ディリクレ・ノイマン）の決定         */
 	// b% -------------------------------------------------------- */
 	// b% step1 衝突の判定
 	//!!! 衝突の判定がよくエラーが出る箇所
-	for (const auto &p : water.getPoints())
-	{
-		//!ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-		p->clearContactFaces();
-		p->radius = 1. * radius;	  // Mean(extLength(p->getLines()));
-		p->addContactFaces(B, false); /**shadowあり*/
-	}
+	for (const auto &obj : objects)
+		for (const auto &p : water.getPoints())
+		{
+			//!ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
+			p->clearContactFaces();
+			p->radius = 1. * radius;						  // Mean(extLength(p->getLines()));
+			p->addContactFaces(obj->getBucketFaces(), false); /**shadowあり*/
+		}
 	// b% step2 面の境界条件を決定
 	/*面Aの点が接触している面Bを取得．A,B面が向き合っていればノイマン*/
 	for (const auto &f : water.getFaces())
@@ -1869,7 +1877,9 @@ void setBoundaryConditions(Network &water, const Buckets<networkFace> &B)
 			std::get<0>(f->phiphin) = std::get<0>(phiphin);
 	}
 };
-//////////////////////////////////////////////////////////////////////////////////////////////////
+// b! ------------------------------------------------------ */
+// b! ------------------------------------------------------ */
+// b! ------------------------------------------------------ */
 int main()
 {
 	try
@@ -1915,11 +1925,8 @@ int main()
 		for (time_step = 0; time_step < 10000; time_step++)
 		{
 			//!体積を保存するようにリメッシュする必要があるだろう．
-			auto radius = Mean(extLength(water.getLines()));
-			Print("makeBucketFaces", Green);
-			obj.makeBucketFaces(radius);
-			Print("setBoundaryConditions", Green);
-			setBoundaryConditions(water, obj.BucketFaces);
+			// auto radius = Mean(extLength(water.getLines()));
+			setBoundaryConditions(water, {&obj});
 			remesh(water);
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
@@ -1972,19 +1979,9 @@ int main()
 				std::cout << "RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
 				obj.velocity = forced_velocity(RK_time); // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
 				// b% -------------------------------------------------------- */
-				// b%            境界条件（角点・ディリクレ・ノイマン）の決定         */
+				// b%            境界条件（角点・ディリクレ・ノイマン）の決定               */
 				// b% -------------------------------------------------------- */
-				auto radius = Mean(extLength(water.getLines()));
-				Buckets<networkFace> B(obj.getBounds(), radius);
-				for (const auto &f : obj.getFaces())
-				{
-					f->clearParametricPoints();
-					f->particlize(radius / 3., {-radius / 2});
-				}
-				for (const auto &f : obj.getFaces())
-					for (const auto &p : f->getParametricPoints())
-						B.add(p->getXtuple(), f);
-				setBoundaryConditions(water, B);
+				setBoundaryConditions(water, {&obj});
 				// b* ------------------------------------------------------ */
 				// b*           　境界値問題を解く-> {Φ,Φn}が決まる              */
 				// b* ------------------------------------------------------ */

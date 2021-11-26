@@ -1363,6 +1363,8 @@ EISP:
 			if (step == 0 || step == preparation_time_step)
 			{
 				std::swap(tank, tank_init);
+				tank->clearBucketParametricPoints();
+				tank_init->clearBucketParametricPoints();
 				tank->makeBucketParametricPoints(particle_spacing / 2.);
 			}
 
@@ -1413,23 +1415,6 @@ EISP:
 			}
 			// 各流体粒子の近傍点を取得し保存
 			{
-				// std::cout << Green << "まず100点くらい周囲の点を取得してみて，radius_SPHを作成" << reset << std::endl;
-				// for (const auto &p : net->getPoints())
-				// {
-				// 	auto VVP = B_water.getObjects(p->getXtuple(), 30 /*深さ上限*/, 20 /*粒子数上限*/);
-				// 	// std::cout << "VVP.size() = " << VVP.size() << std::endl;
-				// 	auto VP = Flatten(VVP);
-				// 	// std::cout << "VP.size() = " << VP.size() << std::endl;
-				// 	auto bounds = geometry::CoordinateBounds(extXtuple(VP));
-				// 	double n = (double)VP.size();
-				// 	// double approx_dx = 2. * std::pow(bounds.getVolume() / n / (4 / 3 * M_PI), 1 / 3.);
-				// 	// p->radius_SPH = 2. * approx_dx;
-				// 	double approx_dx = std::pow(bounds.getVolume() / n, 1 / 3.);
-				// 	// double max_radius_SPH = 5. * particle_spacing;
-				// 	p->radius_SPH = C_SML * approx_dx; //(. * approx_dx > max_radius_SPH) ? max_radius_SPH : 2. * approx_dx;
-				// 									   // std::cout << "p->radius_SPH = " << p->radius_SPH << std::endl;
-				// }
-
 				std::cout << Green << "平滑化距離の計算" << reset << std::endl;
 #ifdef _OPENMP
 #pragma omp parallel

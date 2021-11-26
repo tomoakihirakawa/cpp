@@ -3451,6 +3451,7 @@ struct BaseBuckets
 			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
 			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
 			this->dn = {xsize, ysize, zsize};
+			this->buckets.clear();
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
 																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
@@ -3474,6 +3475,7 @@ struct BaseBuckets
 			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
 			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
 			this->dn = {xsize, ysize, zsize};
+			this->buckets.clear();
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
 																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
@@ -3596,10 +3598,10 @@ struct BaseBuckets
 				{
 					i = i0 + d;
 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					i = i0 - d;
 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 			for (auto i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; i++)
 			{
@@ -3607,19 +3609,19 @@ struct BaseBuckets
 				{
 					j = j0 + d;
 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					j = j0 - d;
 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 				for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; j++)
 				{
 					k = k0 + d;
 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					k = k0 - d;
 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 			}
 			tot += ret.size();
@@ -3653,10 +3655,10 @@ struct BaseBuckets
 				{
 					i = i0 + d;
 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					i = i0 - d;
 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 			for (auto i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; i++)
 			{
@@ -3664,19 +3666,19 @@ struct BaseBuckets
 				{
 					j = j0 + d;
 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					j = j0 - d;
 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 				for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; j++)
 				{
 					k = k0 + d;
 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 					k = k0 - d;
 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 			}
 			tot += r.size();
@@ -3863,7 +3865,7 @@ struct Buckets : public BaseBuckets<T>
 // 		try
 // 		{
 // 			auto [i, j, k] = this->indices(x);
-// 			if (isInside(i, j, k) && !std::binary_search(this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend(), p))
+// 			if (isInside(i, j, k) && !std::binary_search(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end(), p))
 // 				this->buckets[i][j][k].insert(std::lower_bound(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end(), p), p);
 // 		}
 // 		catch (error_message &e)
@@ -3899,10 +3901,10 @@ struct Buckets : public BaseBuckets<T>
 // 				{
 // 					i = i0 + d;
 // 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 					i = i0 - d;
 // 					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 				}
 // 			for (auto i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; i++)
 // 			{
@@ -3910,19 +3912,19 @@ struct Buckets : public BaseBuckets<T>
 // 				{
 // 					j = j0 + d;
 // 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 					j = j0 - d;
 // 					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 				}
 // 				for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; j++)
 // 				{
 // 					k = k0 + d;
 // 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 					k = k0 - d;
 // 					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-// 						r.insert(r.begin(), this->buckets[i][j][k].cbegin(), this->buckets[i][j][k].cend());
+// 						r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 // 				}
 // 			}
 // 			tot += r.size();

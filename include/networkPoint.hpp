@@ -5,6 +5,24 @@
 #include "Network.hpp"
 #include "InterpolationRBF.hpp"
 
+/* ------------------------------------------------------ */
+inline void networkPoint::makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance)
+{
+	this->map_Face_MirrorPoint.clear();
+	for (const auto &f : DeleteDuplicates(Flatten(B_face.getObjects(this->getXtuple(), mirroring_distance))))
+	{
+		if (!(f->getNetwork() == this->getNetwork()))
+		{
+			auto [p0, p1, p2] = f->getPointsTuple();
+			if (intersection(geometry::Sphere(this->getXtuple(), this->radius),
+							 geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()))
+					.isIntersecting)
+				this->map_Face_MirrorPoint[f] = new networkPoint(this->getNetwork(), this->getStorage(), this->getXtuple());
+		}
+	}
+};
+
+/* ------------------------------------------------------ */
 inline Tddd networkPoint::normalDirichletFace() const
 {
 	//接触面としての法線方向を計算する良い方法が必要．
@@ -40,7 +58,6 @@ inline Tddd networkPoint::normalNeumannFace() const
 
 inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const double pw1 = 1.) const
 {
-
 	//接触面としての法線方向を計算する良い方法が必要．
 	double len = this->radius;
 	Tddd n = {0, 0, 0};
@@ -90,6 +107,9 @@ inline Tddd networkPoint::reflect(const Tddd &v) const
 */
 inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool include_self_network = true)
 {
+	/*
+	 b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
+	*/
 	//!まずは，衝突があり得そうな面を多めに保存する．
 	std::unordered_set<networkFace *> tmpContactFaces;
 	for (const auto &f : DeleteDuplicates(Flatten(B.getObjects(this->getXtuple(), 2. * this->radius))))
@@ -97,7 +117,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 		if (!(!include_self_network && (f->getNetwork() == this->getNetwork())))
 		{
 			auto [p0, p1, p2] = f->getPointsTuple();
-			if (intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple())).isIntersecting)
+			if (intersection(geometry::Sphere(this->getXtuple(), this->radius),
+							 geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()))
+					.isIntersecting)
 				tmpContactFaces.emplace(f);
 		}
 	}
@@ -189,66 +211,6 @@ inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoin
 	for (const auto &B : Bs)
 		addContactPoints(B, limit_depth, limit_num, include_self_network);
 };
-// inline void networkPoint::saveContactPoints(const Buckets<networkPoint> &B, double radius = 1E-40, bool exclude_self = false)
-// {
-// 	if (radius <= 1E-30)
-// 		radius = this->radius;
-
-// 	for (const auto &q : DeleteDuplicates(Flatten(B.getObjects(this->getXtuple(), 2. * radius /*depth*/))))
-// 		if (!(exclude_self && (q->getNetwork() == this->getNetwork())))
-// 		{
-// 			if (this != q)
-// 			{
-// 				auto ixn = intersection(geometry::Sphere(this->getXtuple(), this->radius),
-// 										geometry::Sphere(this->getXtuple(), q->radius));
-// 				if (ixn.isIntersecting)
-// 					this->ContactPoints.emplace_back(q);
-// 			}
-// 		}
-// };
-
-// inline V_netFp networkPoint::getFacesSort() const
-// {
-//     V_netFp ret;
-//     auto this_ls = this->getLines();
-//     auto first_l = this_ls[0];
-//     auto next_l = first_l;
-//     ///////
-//     netFp next_f = nullptr;
-//     netLp next_l;
-//     // first try
-//     for (const auto &current_f : next_l->getFaces())
-//     {
-//         auto tmp_l = current_f->getLine(next_l, -1);
-//         if (MemberQ(this_ls, tmp_l))
-//         {
-//             ret.emplace_back(current_f);
-//             next_l = tmp_l;
-//             next_f = current_f;
-//             break;
-//         }
-//     }
-//     //////
-//     if (next_f)
-//     {
-//         do
-//         {
-//             for (const auto &current_f : next_l->getFacesExcept(next_f))
-//             {
-//                 auto tmp_l = current_f->getLine(next_l, -1);
-//                 if (network::erase(this_ls, tmp_l))
-//                 {
-//                     ret.emplace_back(current_f);
-//                     next_l = tmp_l;
-//                     next_f = current_f;
-//                     break;
-//                 }
-//             }
-//         } while ()
-//     }
-//     else
-//         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot find line at first try");
-// };
 
 //追加2021/06/18
 V_netFp networkPoint::getFacesSort() const
