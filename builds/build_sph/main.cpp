@@ -1327,19 +1327,19 @@ int main()
 
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
 
-/*
-WCSPH:
-元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
-これは．Monaghan(1994)から始まったもの．
-WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
+		/*
+		WCSPH:
+		元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
+		これは．Monaghan(1994)から始まったもの．
+		WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
 
-EISP:
+		EISP:
 
-*/
-//@ WCSPH/EISPH
-#define WCSPH
+		*/
+		//@ WCSPH/EISPH
+		// #define WCSPH
 
-		// #define EISPH
+#define EISPH
 
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1391,13 +1391,17 @@ EISP:
 						delete p;
 						count++;
 					}
-				std::cout << "消去粒子数: " << count << reset << std::endl;
+				if (count > 0)
+					std::cout << Red << "消去粒子数: " << count << reset << std::endl;
+				else
+					std::cout << Blue << "消去粒子数: " << count << reset << std::endl;
 				water_points = net->getPoints();
 			}
 			//% ------------------------------------------------------ */
 			//%                         バケットの生成                   */
 			//% ------------------------------------------------------ */
 			Print("バケットの生成", Green);
+			std::cout << "net->getLocationsTuple() = " << net->getLocationsTuple() << std::endl;
 			net->makeBucketPoints(particle_spacing / 2.);
 			std::cout << Green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			//% ------------------------------------------------------ */
@@ -1659,26 +1663,28 @@ EISP:
 #pragma omp single nowait
 #endif
 					{
-						auto ps = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), 4 /*深さ最大*/, 1 /*これだけとったら終わり*/));
+						auto ps = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), 5 /*深さ最大*/, 1 /*これだけとったら終わり*/));
 						if (!ps.empty())
 						{
 							// 逆になっていない
-							auto tmp = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), ps[0]->radius_SPH));
+							// auto tmp = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), ps[0]->radius_SPH));
+							auto tmp = ps;
 							auto [U, tmp_U, mass, density] = U_tmpU_mass_density_SPH_IDW(ToUnorderedSet(tmp), oppositeX(cp), 2);
 							//流速をゼロとする場合
 							// cp->U_SPH = {0, 0, 0};
 							//フリースリップ条件
-							cp->U_SPH = cp->reflect(U);
-							cp->tmp_U_SPH = cp->reflect(tmp_U);
+							// cp->U_SPH = cp->reflect(U);
+							// cp->tmp_U_SPH = cp->reflect(tmp_U);
 							//ノースリップ条件
-							// cp->U_SPH = -U;
-							// cp->mass = mass;
+							cp->U_SPH = -U;
+							cp->tmp_U_SPH = -tmp_U;
 							cp->setDensity_ConstantVolume(density);
 						}
 						else
 						{
 							cp->U_SPH = {0, 0, 0};
 							cp->tmp_U_SPH = {0, 0, 0};
+							cp->setDensity_ConstantVolume(1000.);
 							// cp->mass = 1E-10;
 							// cp->volume = 1E-10;
 							// cp->density = 1E-10;
@@ -1708,14 +1714,18 @@ EISP:
 				{
 					if (!p->isFreeFalling)
 					{
+#ifdef WCSPH
+
 						p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
 															p,
 															p->radius_SPH,
 															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
 															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
-						// p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
-						// 									 p,
-						// 									 p->radius_SPH);
+#elif defined(EISPH)
+						p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
+															 p,
+															 p->radius_SPH);
+#endif
 					}
 					else
 						p->lap_U *= 0;

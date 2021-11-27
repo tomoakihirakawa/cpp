@@ -778,6 +778,8 @@ private:
 	// b%       面に対する鏡像位置の粒子．一つの面に対して一点決まる　        */
 	// b% ------------------------------------------------------ */
 	std::unordered_map<networkFace *, networkPoint *> map_Face_MirrorPoint;
+
+public:
 	void makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance);
 	void clearMirroredPoints()
 	{
@@ -788,6 +790,7 @@ private:
 	//% ------------------------------------------------------ */
 	//%                      接触の判別用　                      */
 	//% ------------------------------------------------------ */
+private:
 	std::unordered_set<networkFace *> ContactFaces;
 	std::unordered_set<networkPoint *> ContactPoints;
 	std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
@@ -1715,7 +1718,7 @@ public:
 			if (!isFinite(normal))
 			{
 				std::cout << "Lines = " << this->Lines << std::endl;
-				std::cout << "線が更新されておらずエラーになる可能性がある" << normal << std::endl;
+				std::cout << "線が更新されておらずエラーになる可能性がある．normal = " << normal << std::endl;
 				std::cout << "全ての線が更新されている必要があるため" << std::endl;
 
 				/*
@@ -1742,6 +1745,16 @@ public:
 				std::cout << "Points = " << this->Points << std::endl;
 				std::cout << "abc = " << abc << std::endl;
 				std::cout << "normal = " << normal << std::endl;
+				/*
+				TriangleNormalは，内部で，
+				Normalize(Cross((b - a), (c - a)));の計算をしている．
+				Cross((b - a), (c - a))
+				Cross(A, X)
+				X = {0,0,0}なら
+				return {std::get<1>(A) * std::get<2>(X) - std::get<2>(A) * std::get<1>(X),
+						std::get<2>(A) * std::get<0>(X) - std::get<0>(A) * std::get<2>(X),
+						std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)};
+				*/
 				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not finite");
 			}
 			else
@@ -2459,6 +2472,21 @@ netL *unlink(netP *obj, netP *obj_)
 // binary_searchを使えば，重複しないように保存する作業の時間が短縮される．
 class Network : public object3D
 {
+public:
+	//% ------------------------------------------------------ */
+	void makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance)
+	{
+		auto points = this->getPoints();
+		for (const auto &p : points)
+			p->makeMirroredPoints(B_face, mirroring_distance);
+	};
+	void clearMirroredPoints()
+	{
+		auto points = this->getPoints();
+		for (const auto &p : points)
+			p->clearMirroredPoints();
+	};
+	//% ------------------------------------------------------ */
 private:
 	Buckets<networkFace> BucketFaces;
 	Buckets<networkPoint> BucketParametricPoints;

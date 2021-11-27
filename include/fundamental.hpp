@@ -3475,6 +3475,11 @@ struct BaseBuckets
 			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
 			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
 			this->dn = {xsize, ysize, zsize};
+
+			std::cout << "１バケット幅 = " << this->dL << std::endl;
+			std::cout << "バウンド = " << this->bounds << std::endl;
+			std::cout << "サイズ = " << this->dn << std::endl;
+
 			this->buckets.clear();
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,

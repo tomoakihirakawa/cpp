@@ -313,6 +313,13 @@ struct intersection
 	double distance;
 	bool isIntersecting;
 	double eps = 1E-10;
+	int index_intersection_type;
+	/*
+	0: not intersecting
+	1: intersecting with a sphere
+	2: intersecting with a line
+	3: intersecting with a triangle
+	*/
 	/* ------------------------------------------------------ */
 	intersection(const geometry::Sphere &sphere0, const geometry::Sphere &sphere1) : X({0, 0, 0}), distance(0), isIntersecting(false)
 	{
@@ -323,11 +330,13 @@ struct intersection
 			this->X = sphere0.X + (sphere0.radius - overlap / 2.) * Normalize(sphere1.X - sphere0.X);
 			this->distance = Norm(this->X - sphere0.X);
 			this->isIntersecting = (overlap >= 0);
+			this->index_intersection_type = 1;
 			return;
 		}
 		else
 		{
 			this->isIntersecting = false;
+			this->index_intersection_type = 0;
 			return;
 		}
 	};
@@ -346,6 +355,7 @@ struct intersection
 				{
 					//干渉する最も近い点は，線上にある
 					this->isIntersecting = true;
+					this->index_intersection_type = 2;
 					return;
 				}
 				else
@@ -357,6 +367,7 @@ struct intersection
 						this->isIntersecting = true;
 						this->distance = intx0.distance;
 						this->X = intx0.X;
+						this->index_intersection_type = 1;
 						return;
 					}
 					intersection intx1(sphere, geometry::Sphere(std::get<1>(line.X)));
@@ -365,21 +376,25 @@ struct intersection
 						this->isIntersecting = true;
 						this->distance = intx1.distance;
 						this->X = intx1.X;
+						this->index_intersection_type = 1;
 						return;
 					}
 					this->isIntersecting = false;
+					this->index_intersection_type = 0;
 					return;
 				}
 			}
 			else
 			{
 				this->isIntersecting = false;
+				this->index_intersection_type = 0;
 				return;
 			}
 		}
 		else
 		{
 			this->isIntersecting = false;
+			this->index_intersection_type = 0;
 			return;
 		}
 	};
@@ -405,6 +420,7 @@ struct intersection
 				if ((-eps <= t0 && t0 <= 1. + eps) && (-eps <= t1 && t1 <= 1. + eps) && (t0 + t1 <= 1. + eps))
 				{ //干渉する最も近い点は，三角形の面内にある．
 					this->isIntersecting = true;
+					this->index_intersection_type = 3;
 					return;
 				}
 				else
@@ -415,6 +431,7 @@ struct intersection
 						this->isIntersecting = true;
 						this->distance = intx0.distance;
 						this->X = intx0.X;
+						this->index_intersection_type = intx0.index_intersection_type;
 						return;
 					}
 					intersection intx1(sphere, geometry::Line(std::get<1>(triangle.X), std::get<2>(triangle.X)));
@@ -423,6 +440,7 @@ struct intersection
 						this->isIntersecting = true;
 						this->distance = intx1.distance;
 						this->X = intx1.X;
+						this->index_intersection_type = intx1.index_intersection_type;
 						return;
 					}
 					intersection intx2(sphere, geometry::Line(std::get<2>(triangle.X), std::get<0>(triangle.X)));
@@ -431,20 +449,24 @@ struct intersection
 						this->isIntersecting = true;
 						this->distance = intx2.distance;
 						this->X = intx2.X;
+						this->index_intersection_type = intx2.index_intersection_type;
 						return;
 					}
 					this->isIntersecting = false;
+					this->index_intersection_type = 0;
 				}
 			}
 			else
 			{
 				this->isIntersecting = false;
+				this->index_intersection_type = 0;
 				return;
 			}
 		}
 		else
 		{
 			this->isIntersecting = false;
+			this->index_intersection_type = 0;
 			return;
 		}
 	};

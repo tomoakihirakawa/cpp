@@ -8,17 +8,44 @@
 /* ------------------------------------------------------ */
 inline void networkPoint::makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance)
 {
+	/*
+		! 衝突判定のためのmirroring_distanceは，影響半径の半分程度でいい．
+		! それより大きくてもそのミラー粒子は流体粒子の影響半径に入らない．
+		! また，ミラー粒子が流体粒子と同じネットワークにあると，Networkから全粒子を抽出する時に混ざった状態になり困ることがありそうなので，
+		! ミラー粒子は，衝突した面のネットワークに保存することにする．
+
+		b! SPHにおいてミラーリングした粒子を参照する際の，注意：
+		! まず流体の方向を向いている面だけを抜き出し，それらの面でミラーリングされた影響半径内の粒子を取り出す．
+
+
+		x	|   (x)
+			|  (o)
+			|/      (*)   OUT    |
+			/------------------- V
+		  o          *    IN
+
+	点
+	   (x)  |   x
+	   (o)  |<--o
+  (*)       | / |    *   IN
+			----V--------------  A
+	   (o)     (o)  (*)   OUT    |
+			   (x)
+   (x)
+	*/
 	this->map_Face_MirrorPoint.clear();
 	for (const auto &f : DeleteDuplicates(Flatten(B_face.getObjects(this->getXtuple(), mirroring_distance))))
 	{
-		if (!(f->getNetwork() == this->getNetwork()))
-		{
-			auto [p0, p1, p2] = f->getPointsTuple();
-			if (intersection(geometry::Sphere(this->getXtuple(), this->radius),
-							 geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()))
-					.isIntersecting)
-				this->map_Face_MirrorPoint[f] = new networkPoint(this->getNetwork(), this->getStorage(), this->getXtuple());
-		}
+		if (f->getNetwork() != this->getNetwork())
+			if (Dot(f->getXtuple() - this->getXtuple(), f->getNormalTuple()) < 0 /*面と点が向き合っているかどうか*/)
+			{
+				auto [p0, p1, p2] = f->getPointsTuple();
+				auto ITX = intersection(geometry::Sphere(this->getXtuple(), mirroring_distance), geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()));
+				if (ITX.isIntersecting)
+					this->map_Face_MirrorPoint[f] = new networkPoint(f->getNetwork(),
+																	 f->getStorage(),
+																	 2. * (ITX.X - this->getXtuple()) + this->getXtuple());
+			}
 	}
 };
 
