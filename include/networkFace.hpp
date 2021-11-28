@@ -48,7 +48,8 @@ inline networkFace::networkFace(const netFp f)
 	  acceleration(3, 0.),
 	  velocity(6, 0.),
 	  mass(0.),
-	  center_of_mass(3, 0.)
+	  center_of_mass(3, 0.),
+	  map_Net_ContactPoints({{nullptr, {}}})
 {
 	this->Dirichlet = f->Dirichlet;
 	this->Neumann = f->Neumann;

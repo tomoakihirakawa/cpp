@@ -990,6 +990,7 @@ inline networkPoint::networkPoint(Network *network_IN,
 	  density(0.),
 	  volume(0.),
 	  radius(1.),
+	  map_Net_ContactPoints({{nullptr, {}}}),
 /* ------------------------------------------------------ */
 #ifdef BEM
 	  phiphin({0., 0.}),
@@ -1027,6 +1028,7 @@ inline networkPoint::networkPoint(Network *network_IN,
 	this->a_viscosity = 0.;
 	this->mu_SPH = 0.001005;
 	this->DUDt_SPH = {0., 0., 0.};
+	this->DPDt_SPH = 0.;
 	this->DrhoDt_SPH = 0.;
 	this->density = 0.;
 	this->lap_U = {0., 0., 0.};

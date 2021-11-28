@@ -811,18 +811,29 @@ public:
 
 	//
 	std::unordered_set<networkPoint *> getContactPoints() const { return this->ContactPoints; };
-	std::unordered_set<networkPoint *> getContactPoints(Network *const net) const
+	const std::unordered_set<networkPoint *> &getContactPoints(Network *const net) const
 	{
 		auto it = this->map_Net_ContactPoints.find(net);
 		if (it != this->map_Net_ContactPoints.end())
 			return it->second;
 		else
-			return {};
+			return this->map_Net_ContactPoints.at(nullptr);
+	};
+	std::unordered_set<networkPoint *> getContactPoints(const std::vector<Network *> &net) const
+	{
+		std::unordered_set<networkPoint *> ret;
+		for (const auto &n : net)
+		{
+			auto tmp = this->getContactPoints(n);
+			ret.insert(tmp.begin(), tmp.end());
+		}
+		return ret;
 	};
 	void clearContactPoints()
 	{
 		this->ContactPoints.clear();
 		this->map_Net_ContactPoints.clear();
+		this->map_Net_ContactPoints[nullptr] = {};
 	};
 	void addContactPoints(networkPoint *const p)
 	{
@@ -1358,18 +1369,29 @@ public:
 	//!                          接触の判別                      */
 	//! ------------------------------------------------------ */
 	const std::unordered_set<networkPoint *> &getContactPoints() const { return this->ContactPoints; };
-	const std::unordered_set<networkPoint *> getContactPoints(Network *const net) const
+	const std::unordered_set<networkPoint *> &getContactPoints(Network *const net) const
 	{
 		auto it = this->map_Net_ContactPoints.find(net);
 		if (it != this->map_Net_ContactPoints.end())
 			return it->second;
 		else
-			return {};
+			return this->map_Net_ContactPoints.at(nullptr);
+	};
+	const std::unordered_set<networkPoint *> getContactPoints(const std::vector<Network *> &nets) const
+	{
+		std::unordered_set<networkPoint *> ret;
+		for (const auto &n : nets)
+		{
+			auto points = getContactPoints(n);
+			ret.insert(points.begin(), points.end());
+		}
+		return ret;
 	};
 	void clearContactPoints()
 	{
 		this->ContactPoints.clear();
 		this->map_Net_ContactPoints.clear();
+		this->map_Net_ContactPoints[nullptr] = {};
 	};
 	void addContactPoints(networkPoint *const p)
 	{

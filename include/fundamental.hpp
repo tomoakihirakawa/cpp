@@ -3580,7 +3580,9 @@ struct BaseBuckets
 	//@ std::vector<std::vector<T *>> getObjects(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const
 	//@ を改良
 	/* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
-	std::unordered_set<T *> getObjects_unorderedset(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const
+	std::unordered_set<T *> getObjects_unorderedset(const Tddd &x,
+													const int limit_depth /*limit depth*/,
+													const int limit_number = 100000) const
 	{
 		std::unordered_set<T *> ret;
 		// ret.reserve(limit_depth);
@@ -3591,8 +3593,7 @@ struct BaseBuckets
 		// auto &r = *ret.rbegin();
 		if (isInside(i0, j0, k0))
 			ret.insert(this->buckets[i0][j0][k0].begin(), this->buckets[i0][j0][k0].end());
-		int tot = ret.size();
-		if (tot >= limit_number)
+		if (ret.size() >= limit_number)
 			return ret;
 		/* ------------------------------------------------------ */
 		int i, j, k;
@@ -3629,13 +3630,14 @@ struct BaseBuckets
 						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
 				}
 			}
-			tot += ret.size();
-			if (tot >= limit_number)
+			if (ret.size() >= limit_number)
 				return ret;
 		}
 		return ret;
 	}; /* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
-	std::vector<std::vector<T *>> getObjects(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const
+	std::vector<std::vector<T *>> getObjects(const Tddd &x,
+											 const int limit_depth /*limit depth*/,
+											 const int limit_number = 100000) const
 	{
 		std::vector<std::vector<T *>> ret(1);
 		// ret.reserve(limit_depth);

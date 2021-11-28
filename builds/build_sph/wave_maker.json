@@ -1,6 +1,6 @@
 {
-    "name": "tank",
-    "objfile": "../../obj/wave_tank_10cm250cm.obj",
+    "name": "wave_maker",
+    "objfile": "../../obj/wave_maker_10cm250cm.obj",
     "rotate": [
         1.5707963267948966,
         1,

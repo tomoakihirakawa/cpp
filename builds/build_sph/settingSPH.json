@@ -1,42 +1,44 @@
 {
-    "initial_surface_height": 0.792,
+    "initial_surface_height": 0.3,
     "C_CFL_velocity": 0.04,
     "C_CFL_accel": 0.25,
-    "max_dt": 0.0005,
+    "max_dt": 0.002,
     "particle_spacing": 0.008,
     "xbounds": [
-        0.663,
-        0.801
+        0.004,
+        0.096
     ],
     "ybounds": [
-        -0.071,
-        0.071
+        -0.046,
+        0.046
     ],
     "zbounds": [
-        0.504,
-        0.796
+        0.004,
+        0.304
     ],
     "buckets_xbounds": [
-        0.0,
-        0.9
+        -0.5,
+        1.0
     ],
     "buckets_ybounds": [
-        -0.14,
-        0.14
+        -0.1,
+        0.1
     ],
     "buckets_zbounds": [
-        0.4,
-        1.2
+        0.0,
+        0.5
     ],
-    "C_SML": 0.8,
+    "C_SML": 0.7,
     "kNS_SML": 7,
     "mu": 0.001005,
     "C_Tait": 24.433333333333334,
     "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.0,
-    "preparation_max_dt": 5e-05,
+    "preparation_max_dt": 0.0001,
     "preparation_time": 1.0,
-    "preparation_time_step": 10,
-    "preparation_C_artificial_viscousity_alpha": 0.3,
-    "preparation_C_artificial_viscousity_beta": 0.3
+    "preparation_time_step": 100,
+    "preparation_C_artificial_viscousity_alpha": 0.2,
+    "preparation_C_artificial_viscousity_beta": 0.2,
+    "total_volume": 0.0025391999999999997,
+    "volume_of_a_particle": 5472
 }

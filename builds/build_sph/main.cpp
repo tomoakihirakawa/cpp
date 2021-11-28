@@ -1218,6 +1218,47 @@ int main()
 	std::cout << Green << "Enterを押してください" << std::endl;
 	std::cin.ignore();
 
+	auto generate_network_from_file = [](const std::ifstream &ifs)
+	{
+		Network *tank = nullptr;
+		// JSON object_JSON(std::ifstream("./tank.json"));
+		JSON object_JSON(ifs);
+		auto file_directory = object_JSON["objfile"][0];
+		auto name = object_JSON["name"][0];
+		tank = new Network(file_directory, name);
+		if (object_JSON.find("rotate"))
+		{
+			auto theta_angle = stod(object_JSON["rotate"]);
+			tank->rotate(theta_angle[0], {theta_angle[1], theta_angle[2], theta_angle[3]});
+		}
+		if (object_JSON.find("scale"))
+		{
+			auto scale = stod(object_JSON["scale"]);
+			tank->scale(scale[0], {scale[1], scale[2], scale[3]});
+		}
+		mk_vtu(output_dir + "/" + name + ".vtu", tank->getFaces());
+		const V_d depth_list = stod(object_JSON["depth_list"]);
+		double volume_of_a_particle = stod(object_JSON["volume_of_a_particle"])[0];
+		double density = stod(object_JSON["density"])[0];
+		for (const auto &f : tank->getFaces())
+		{
+			f->clearParametricPoints();
+			for (const auto &p : f->particlize(particle_spacing, depth_list))
+			{
+				// for (const auto [xyz, t0, t1, depth, h_] : particlizeInfo(f, particle_spacing /*粒子間隔*/, depth_list))
+				// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
+				// p->initialX = xyz;
+				p->setDensityVolume(density, volume_of_a_particle);
+				p->radius_SPH = C_SML * std::pow(volume_of_a_particle, 1 / 3.);
+				//以下はparticlize_infoから入手できる．
+				p->normal_SPH = f->getNormalTuple();
+				p->face_org = f;
+				// p->particlize_info = {f, t0, t1, depth, h_};
+			}
+		}
+		return tank;
+	};
+
 	try
 	{
 		/* ----------------- networkPointの生成，配置 ----------------- */
@@ -1250,81 +1291,10 @@ int main()
 			std::cout << Grid({Vtot, Mtot, p->volume, p->mass, p->radius_SPH, p->radius, particle_spacing}) << std::endl;
 		}
 		//! --------------------------------------------- */
-		Network *tank_init = nullptr;
-		{
-			JSON tank_json(std::ifstream("./tank_init.json"));
-			tank_init = new Network(tank_json["objfile"][0], tank_json["name"][0]);
-			const V_d depth_list = stod(tank_json["depth_list"]);
-			// auto tank = new NetworkObj("./obj/tank2.obj", "tank");
-			if (tank_json.find("rotate"))
-			{
-				auto theta_angle = stod(tank_json["rotate"]);
-				tank_init->rotate(theta_angle[0], {theta_angle[1], theta_angle[2], theta_angle[3]});
-			}
-			if (tank_json.find("scale"))
-			{
-				auto scale = stod(tank_json["scale"]);
-				tank_init->scale(scale[0], {scale[1], scale[2], scale[3]});
-			}
-			mk_vtu(output_dir + "/tank_init_faces.vtu", tank_init->getFaces());
-			//! ------------------------ surface ------------------------ */
-			// auto wall_dummy = new Network;
-			for (const auto &f : tank_init->getFaces())
-			{
-				f->clearParametricPoints();
-				for (const auto &p : f->particlize(particle_spacing, depth_list))
-				{
-					// for (const auto [xyz, t0, t1, depth, h_] : particlizeInfo(f, particle_spacing /*粒子間隔*/, depth_list))
-					// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
-					// p->initialX = xyz;
-					p->setDensityVolume(density, volume);
-					p->radius_SPH = C_SML * std::pow(volume, 1 / 3.);
-					//以下はparticlize_infoから入手できる．
-					p->normal_SPH = f->getNormalTuple();
-					p->face_org = f;
-					p->pressure_SPH = density * g * (initial_surface_height - std::get<2>(p->getXtuple()));
-					// p->particlize_info = {f, t0, t1, depth, h_};
-				}
-			}
-		}
+		Network *wave_maker = generate_network_from_file(std::ifstream("./wave_maker.json"));
+		Network *tank_init = generate_network_from_file(std::ifstream("./tank_init.json"));
+		Network *tank = generate_network_from_file(std::ifstream("./tank.json"));
 		//! --------------------------------------------- */
-		Network *tank = nullptr;
-		{
-			JSON tank_json(std::ifstream("./tank.json"));
-			tank = new Network(tank_json["objfile"][0], tank_json["name"][0]);
-			const V_d depth_list = stod(tank_json["depth_list"]);
-			// auto tank = new NetworkObj("./obj/tank2.obj", "tank");
-			if (tank_json.find("rotate"))
-			{
-				auto theta_angle = stod(tank_json["rotate"]);
-				tank->rotate(theta_angle[0], {theta_angle[1], theta_angle[2], theta_angle[3]});
-			}
-			if (tank_json.find("scale"))
-			{
-				auto scale = stod(tank_json["scale"]);
-				tank->scale(scale[0], {scale[1], scale[2], scale[3]});
-			}
-			mk_vtu(output_dir + "/tank_faces.vtu", tank->getFaces());
-			//! ------------------------ surface ------------------------ */
-			// auto wall_dummy = new Network;
-			for (const auto &f : tank->getFaces())
-			{
-				f->clearParametricPoints();
-				for (const auto &p : f->particlize(particle_spacing, depth_list))
-				{
-					// for (const auto [xyz, t0, t1, depth, h_] : particlizeInfo(f, particle_spacing /*粒子間隔*/, depth_list))
-					// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
-					// p->initialX = xyz;
-					p->setDensityVolume(density, volume);
-					p->radius_SPH = C_SML * std::pow(volume, 1 / 3.);
-					//以下はparticlize_infoから入手できる．
-					p->normal_SPH = f->getNormalTuple();
-					p->face_org = f;
-					// p->particlize_info = {f, t0, t1, depth, h_};
-				}
-			}
-		}
-
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
 
 		/*
@@ -1359,7 +1329,11 @@ int main()
 		//@ ------------------------------------------------------------------- */
 		for (auto step = 0; step < 20000; step++)
 		{
-
+			if (step == 0)
+			{
+				wave_maker->clearBucketParametricPoints();
+				wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
+			}
 			if (step == 0 || step == preparation_time_step)
 			{
 				std::swap(tank, tank_init);
@@ -1407,7 +1381,8 @@ int main()
 			//% ------------------------------------------------------ */
 			//%                      近傍粒子の取得                      */
 			//% ------------------------------------------------------ */
-			for (const auto &n : V_Netp{net, tank})
+			V_Netp rigid_bodies = {tank, wave_maker};
+			for (const auto &n : Join(rigid_bodies, {net}))
 			{
 				for (const auto &p : n->getPoints())
 				{
@@ -1484,6 +1459,7 @@ int main()
 					//@ unlimiteを使う2021/11/10
 					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.2);
 					p->addContactPoints(tank->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(wave_maker->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
 				}
 
 				// チェック
@@ -1558,7 +1534,7 @@ int main()
 			// 表示させてチェック
 			std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			Print("法線方向を計算", Green);
-			auto tank_param_points = tank->getParametricPoints();
+			// auto tank_param_points = tank->getParametricPoints();
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1601,20 +1577,13 @@ int main()
 #endif
 			}
 			/* ------------------------------------------------------ */
-			for (const auto &p : water_points)
-			{
-				p->lap_U = {0, 0, 0};
-				p->gradP_SPH = {0, 0, 0};
-				// p->isFreeFalling = true;
-				// p->pressure_SPH = 0.;
-			}
-			for (const auto &p : tank_param_points)
-			{
-				p->lap_U = {0, 0, 0};
-				p->gradP_SPH = {0, 0, 0};
-				p->isFreeFalling = true;
-				// p->pressure_SPH = 0.;
-			}
+			for (const auto &n : Join(rigid_bodies, {net}))
+				for (const auto &p : n->getPoints())
+				{
+					p->lap_U = {0, 0, 0};
+					p->gradP_SPH = {0, 0, 0};
+					p->isFreeFalling = true;
+				}
 			//! ====================================================================================== */
 			//! フラクショナルステップ1
 			//! ====================================================================================== */
@@ -1628,7 +1597,7 @@ int main()
 				Print("接触するダミー粒子を抜き出す", Green);
 				dummy_points.clear();
 				for (const auto &wp : water_points)
-					for (const auto &cp : wp->getContactPoints(tank))
+					for (const auto &cp : wp->getContactPoints(rigid_bodies))
 						dummy_points.emplace(cp);
 				std::cout << "ダミー粒子の数：" << dummy_points.size() << std::endl;
 				//
@@ -1663,21 +1632,19 @@ int main()
 #pragma omp single nowait
 #endif
 					{
-						auto ps = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), 5 /*深さ最大*/, 1 /*これだけとったら終わり*/));
+						// auto p_at_Y = B_water.getObjects_unorderedset(Y, 8 /*深さ最大*/, 1 /*自身を含めるので２点*/);
+						auto ps = net->getBucketPoints().getObjects_unorderedset(oppositeX(cp), 8 /*深さ最大*/, 1 /*これだけとったら終わり*/);
 						if (!ps.empty())
 						{
-							// 逆になっていない
-							// auto tmp = Flatten((net->getBucketPoints()).getObjects(oppositeX(cp), ps[0]->radius_SPH));
-							auto tmp = ps;
-							auto [U, tmp_U, mass, density] = U_tmpU_mass_density_SPH_IDW(ToUnorderedSet(tmp), oppositeX(cp), 2);
+							auto [U, tmp_U, mass, density] = U_tmpU_mass_density_SPH_IDW(ps, oppositeX(cp), 2);
 							//流速をゼロとする場合
 							// cp->U_SPH = {0, 0, 0};
 							//フリースリップ条件
-							// cp->U_SPH = cp->reflect(U);
-							// cp->tmp_U_SPH = cp->reflect(tmp_U);
+							cp->U_SPH = cp->reflect(U);
+							cp->tmp_U_SPH = cp->reflect(tmp_U);
 							//ノースリップ条件
-							cp->U_SPH = -U;
-							cp->tmp_U_SPH = -tmp_U;
+							// cp->U_SPH = -U;
+							// cp->tmp_U_SPH = -tmp_U;
 							cp->setDensity_ConstantVolume(density);
 						}
 						else
@@ -1696,7 +1663,7 @@ int main()
 				//! ------------------------------------------------------ */
 
 				Print("ラプラシアンUの計算の前にダミー粒子の流速を計算", Green);
-				std::cout << "tank->getParametricPoints().size() = " << tank_param_points.size() << std::endl;
+				// std::cout << "tank->getParametricPoints().size() = " << tank_param_points.size() << std::endl;
 				updateDummy_U_tmpU_mass_rho(); //! ダミー
 
 				std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
@@ -1846,6 +1813,7 @@ int main()
 				*/
 				Print("EISPH: 1. DUDtを後で計算するために∇Pを計算", Red);
 				Print("EISPH: 1.1 ダミー粒子（鏡映関係を使う）の圧力を計算済みの状態で，流体粒子（pressure_EISPH_Hosseini2007）", Red);
+				//この場合，ルンゲクッタステップ毎に圧力を初期値に戻す必要がある．EISPHの圧力計算は初期の圧力を使うため．
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1854,20 +1822,40 @@ int main()
 #pragma omp single nowait
 #endif
 				{
-					// if (p->isSurface)
-					// 	p->pressure_SPH_ = 0;
-					// else
-					// 	p->pressure_SPH_ = pressure_EISPH_Hosseini2007(p->getContactPoints(),
-					// 												   p,
-					// 												   p->radius_SPH,
-					// 												   dt); //仮の密度で計算してみる．
-
-					p->DPDt_SPH = DPDt_EISPH_Hosseini2007(p->getContactPoints(),
-														  p,
-														  p->radius_SPH,
-														  dt); //仮の密度で計算してみる．
+					p->pressure_SPH = P_RK_pressure[p]->getXinit();
 				}
 
+				/* ------------------------------------------------------ */
+
+				// #define use_RK_for_pressure
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+				for (const auto &p : water_points)
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+				{
+#ifdef use_RK_for_pressure
+					// $ ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
+					// if (dt > 1E-40)
+					p->DPDt_SPH = DPDt_EISPH_Hosseini2007(p->getContactPoints(), p, p->radius_SPH, dt);
+					// std::cout << "dt = " << dt << ", DPDt = " << p->DPDt_SPH << std::endl;
+					// $ ----------------------------------------------------------------- */
+#else
+					//@ ------------------ 圧力の計算にルンゲクッタを使わない場合 ----------------- */
+					if (p->isSurface)
+						p->pressure_SPH_ = 0;
+					else
+						p->pressure_SPH_ = pressure_EISPH_Hosseini2007(p->getContactPoints(), p, p->radius_SPH, dt);
+
+						//@ ----------------------------------------------------------------- */
+#endif
+				}
+
+#ifdef use_RK_for_pressure
+				// b$ ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1880,6 +1868,13 @@ int main()
 					rk->push(p->DPDt_SPH);
 					p->pressure_SPH = rk->getX();
 				}
+				// $ ---------------------------------------------------------------- */
+#else
+				//@ ------------------ 圧力の計算にルンゲクッタを使わない場合 ----------------- */
+				for (const auto &p : water_points)
+					p->pressure_SPH = p->pressure_SPH_;
+					//@ ------------------------------------------------------------------- */
+#endif
 				// DPDtを計算できればRKを支える．
 				// 	Pを計算した後に，密度は仮の密度から一定の値に戻す必要がある．
 				//! ------------------------------------------------------ */

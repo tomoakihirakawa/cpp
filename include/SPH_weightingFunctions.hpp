@@ -553,24 +553,29 @@ std::tuple<Tddd, Tddd, double, double> U_tmpU_mass_density_SPH_IDW(const std::un
 // };
 // //
 double dummy_pressure_Asai(const Buckets<networkPoint> &B_water,
-                           const networkPoint *p,
-                           const double power = 1)
+                           const networkPoint *dummy_p /*dummy point*/,
+                           const double power = 2)
 {
     // ダミー粒子のみ使える関数
-    auto [f, t0, t1, d, dx] = p->particlize_info;
-    auto Y = oppositeX(p->particlize_info);
-    auto X = p->getXtuple();
-    auto p_at_Y = Flatten(B_water.getObjects(Y, 4 /*深さ最大*/, 2 /*自身を含めるので２点*/));
-    auto normal_vector_YtoX = Dot(f->getXtuple(), X - Y) * f->getXtuple();
+    auto [f, t0, t1, d, dx] = dummy_p->particlize_info;
+    auto Y = oppositeX(dummy_p->particlize_info);
+    auto X = dummy_p->getXtuple();
+    auto p_at_Y = B_water.getObjects_unorderedset(Y, 8 /*深さ最大*/, 1);
+    // double sign = Normalize(Dot(f->getXtuple() - Y, f->getNormalTuple()) * f->getNormalTuple()); // Y->F (+ or -)
     Tddd gravity = {0., 0., -9.81};
-    double pressure = 0, total = 0;
-    double norm, nu, tmp;
+    double pressure = 0, total = 0, norm, nu, tmp, pn;
+    Tddd accel = {0, 0, 0};
     if (!p_at_Y.empty())
     {
         for (const auto &q : p_at_Y)
         {
+            // ここを修正
+            // 重み付き平均した反対位置OXと壁との距離を確認し
+            // OX->
             nu = q->mu_SPH / q->density;
-            tmp = (q->pressure_SPH + /*修正*/ q->density * Dot(nu * q->lap_U + gravity, normal_vector_YtoX));
+            pn = q->density * Dot(nu * q->lap_U + gravity - accel, f->getNormalTuple());
+            tmp = q->pressure_SPH + /*修正*/ pn * Dot(X - q->getXtuple(), f->getNormalTuple());
+            // tmp = (q->pressure_SPH);
             norm = Norm(X - q->getXtuple());
             if (norm < 1E-15)
                 return tmp;
@@ -579,6 +584,7 @@ double dummy_pressure_Asai(const Buckets<networkPoint> &B_water,
             pressure += w * tmp;
         }
         pressure /= total;
+        return pressure;
     }
     return pressure;
 };
