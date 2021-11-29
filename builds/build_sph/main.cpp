@@ -1296,20 +1296,20 @@ int main()
 		Network *tank = generate_network_from_file(std::ifstream("./tank.json"));
 		//! --------------------------------------------- */
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
+		mk_vtu(output_dir + "/wave_maker_points.vtu", {wave_maker->getPoints()});
 
-		/*
-		WCSPH:
-		元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
-		これは．Monaghan(1994)から始まったもの．
-		WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
+/*
+WCSPH:
+元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
+これは．Monaghan(1994)から始まったもの．
+WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
 
-		EISP:
+EISP:
 
-		*/
-		//@ WCSPH/EISPH
-		// #define WCSPH
-
-#define EISPH
+*/
+//@ WCSPH/EISPH
+#define WCSPH
+		// #define EISPH
 
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1352,7 +1352,7 @@ int main()
 					p->pressure_SPH = density * g * (initial_surface_height - std::get<2>(p->getXtuple()));
 				}
 #endif
-			//! いらない粒子は決して計算を始める
+			//! いらない粒子は消して計算を始める
 			std::cout << Magenta << "step :" << step << std::endl;
 			std::cout << Blue << "----------- 粒子数の情報 ---------" << std::endl;
 			std::cout << Grid({"fluid particles", "last dummy_points"}) << std::endl;
@@ -1378,9 +1378,9 @@ int main()
 			std::cout << "net->getLocationsTuple() = " << net->getLocationsTuple() << std::endl;
 			net->makeBucketPoints(particle_spacing / 2.);
 			std::cout << Green << "Elapsed time: " << Red << watch() << reset << " s\n";
-			//% ------------------------------------------------------ */
-			//%                      近傍粒子の取得                      */
-			//% ------------------------------------------------------ */
+			// b% ------------------------------------------------------ */
+			// b%                      近傍粒子の取得                      */
+			// b% ------------------------------------------------------ */
 			V_Netp rigid_bodies = {tank, wave_maker};
 			for (const auto &n : Join(rigid_bodies, {net}))
 			{
@@ -1393,6 +1393,7 @@ int main()
 					f->clearContactPoints();
 			}
 			// 各流体粒子の近傍点を取得し保存
+			//% ---------------------- 平滑化距離の計算 ---------------------- */
 			{
 				std::cout << Green << "平滑化距離の計算" << reset << std::endl;
 #ifdef _OPENMP
@@ -1435,19 +1436,8 @@ int main()
 					// }
 					/* ------------------------------------------------------ */
 				}
-
+				//% --------------- p->radius_SPHの範囲だけ点を取得 --------------- */
 				std::cout << Green << "p->radius_SPHの範囲だけ点を取得" << reset << std::endl;
-				// #ifdef _OPENMP
-				// #pragma omp parallel
-				// #endif
-				// 				for (auto it = water_points.begin(); it != water_points.end(); ++it)
-				// #ifdef _OPENMP
-				// #pragma omp single nowait
-				// #endif
-				// 				{
-				// 					(*it)->addContactPoints(B_all, (*it)->getXtuple(), (*it)->radius_SPH * 1.1);
-				// 				}
-
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1458,8 +1448,10 @@ int main()
 				{
 					//@ unlimiteを使う2021/11/10
 					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.2);
-					p->addContactPoints(tank->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
 					p->addContactPoints(wave_maker->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(tank->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					// 物体だけで法線方向は決められない．
+					// 流体と物体が接する面をまず検知し，次に
 				}
 
 				// チェック
@@ -1510,6 +1502,8 @@ int main()
 			{
 				// if (!dummy_points.empty())
 				// 	output_dummy(output_dir + "/dummy_points" + std::to_string(count) + ".vtu", dummy_points);
+				mk_vtu(output_dir + "/contact_dummy_point.vtu", {net->getContactPointsOfPoints(rigid_bodies)});
+				/* ------------------------------------------------------ */
 				std::string filename = "points" + std::to_string(count) + ".vtu";
 				output(output_dir + "/" + filename, water_points);
 				waterPVD.push(filename, real_time);
@@ -1549,7 +1543,8 @@ int main()
 				{
 					// 2021年10月7日水面のチェックの範囲を狭くした
 					p->interpolated_normal_SPH = -normal(p->getContactPoints(), p, p->radius_SPH);
-					p->isSurface = std::none_of(p->getContactPoints().begin(), p->getContactPoints().end(), [p](const auto &q)
+					p->isSurface = std::none_of(p->getContactPoints().begin(), p->getContactPoints().end(),
+												[p](const auto &q)
 												{ return (q != p &&
 														  (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.3) &&
 														  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.)); });
@@ -1596,9 +1591,7 @@ int main()
 				//* ------------------------------------------------------------ */
 				Print("接触するダミー粒子を抜き出す", Green);
 				dummy_points.clear();
-				for (const auto &wp : water_points)
-					for (const auto &cp : wp->getContactPoints(rigid_bodies))
-						dummy_points.emplace(cp);
+				dummy_points = net->getContactPointsOfPoints(rigid_bodies);
 				std::cout << "ダミー粒子の数：" << dummy_points.size() << std::endl;
 				//
 

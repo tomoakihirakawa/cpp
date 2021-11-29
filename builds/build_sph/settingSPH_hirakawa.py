@@ -7,7 +7,7 @@ import math
 density = 1000.
 graity = 9.81
 
-H = 300/1000
+H = 100/1000
 particle_spacing = 0.008
 data = {
     "density": density,
@@ -27,7 +27,7 @@ data = {
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
     "buckets_xbounds": [-0.5, 1.],
     "buckets_ybounds": [-.1, .1],
-    "buckets_zbounds": [0., .5],
+    "buckets_zbounds": [-.5, .5],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
     "C_SML": .7,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 7,  # k-nearest search. dxを決めるための近傍粒子数

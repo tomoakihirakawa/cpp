@@ -2495,6 +2495,29 @@ netL *unlink(netP *obj, netP *obj_)
 class Network : public object3D
 {
 public:
+	//! ------------------------------------------------------ */
+	//!                          接触の判別                      */
+	//! ------------------------------------------------------ */
+	std::unordered_set<networkPoint *> getContactPointsOfPoints() const
+	{
+		std::unordered_set<networkPoint *> ret;
+		for (const auto &p : this->getPoints())
+			ret.insert(begin(p->getContactPoints()), end(p->getContactPoints()));
+		return ret;
+	};
+	std::unordered_set<networkPoint *> getContactPointsOfPoints(const std::vector<Network *> &nets) const
+	{
+		/*
+		getContactPointsOfPointsは，自身の保有するPointsが接した点を返す．
+		Pointsの保有するmap_Net_ContactPointsから指定されたNetworkのPointsを抽出している．
+		*/
+		std::unordered_set<networkPoint *> ret;
+		for (const auto &p : this->getPoints())
+			ret.insert(begin(p->getContactPoints(nets)), end(p->getContactPoints(nets)));
+		return ret;
+	};
+
+public:
 	//% ------------------------------------------------------ */
 	void makeMirroredPoints(const Buckets<networkFace> &B_face, const double mirroring_distance)
 	{
@@ -2543,6 +2566,7 @@ public:
 		this->setBounds();
 		this->BucketParametricPoints.resize(this->bounds(), spacing);
 		this->BucketParametricPoints.add(this->getParametricPoints());
+		std::cout << "this->getParametricPoints().size()=" << this->getParametricPoints().size() << std::endl;
 	};
 	void makeBucketParametricPoints(const T3Tdd &bounds, const double spacing)
 	{
