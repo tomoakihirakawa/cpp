@@ -2547,11 +2547,8 @@ public:
 		this->BucketFaces.clear(); //こうしたら良くなった
 		this->BucketFaces.set(this->bounds(), spacing);
 		for (const auto &f : this->getFaces())
-		{
-			auto [p0, p1, p2] = f->getPointsTuple();
-			for (const auto [xyz, t0t1] : triangleIntoPoints(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()}, spacing / 3.))
+			for (const auto [xyz, t0t1] : triangleIntoPoints(f->getX_Vertices(), spacing / 3.))
 				this->BucketFaces.add(xyz, f);
-		}
 	};
 
 	void makeBucketPoints(const double spacing)
