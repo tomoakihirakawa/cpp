@@ -1038,7 +1038,7 @@ double Median(std::vector<double> scores)
 //! ------------------------- 出力 ------------------------ */
 //! ------------------------------------------------------ */
 uomap_P_d P_density, P_radius_SPH, P_pressure_SPH, P_div_U, P_isSurface;
-uomap_P_d P_ContactPointsSize, P_density_interpolated_SPH, P_DrhoDt_SPH, P_ContactDummyPointsSize;
+uomap_P_d P_ContactPointSize, P_ContactFaceSize, P_density_interpolated_SPH, P_DrhoDt_SPH, P_ContactDummyPointsSize;
 uomap_P_Tddd P_grad_P, P_lap_U, P_U_SPH, P_DUDt, P_interpolated_normal_SPH, P_tmp_U_SPH, P_X;
 void output(const std::string &name, const std::unordered_set<networkPoint *> &points)
 {
@@ -1102,7 +1102,8 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 			// P_tmp_U_SPH[p] = p->tmp_U_SPH;
 
 			auto ps = p->getContactPoints();
-			P_ContactPointsSize[p] = (double)ps.size();
+			P_ContactPointSize[p] = (double)ps.size();
+			P_ContactFaceSize[p] = (double)(p->getContactFaces().size());
 			P_ContactDummyPointsSize[p] = (double)std::count_if(ps.begin(), ps.end(), [p](const auto q)
 																{ return p->getNetwork() != q->getNetwork(); });
 		}
@@ -1127,8 +1128,8 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 				{"U", P_U_SPH},
 				// {"tmp_U", P_tmp_U_SPH},
 				{"DUDt", P_DUDt},
-				// {"interpolated_normal", P_interpolated_normal_SPH},
-				{"contact points size", P_ContactPointsSize},
+				{"contact face size", P_ContactFaceSize},
+				{"contact point size", P_ContactPointSize},
 				{"contact dummy points size", P_ContactDummyPointsSize},
 				// {"density_interpolated_SPH", P_density_interpolated_SPH},
 				{"DρDt_SPH", P_DrhoDt_SPH}});
@@ -1460,6 +1461,17 @@ EISP:
 			}
 			std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			//! 近傍粒子探査が終わったら時間ステップを決めることができる
+			// b$ ------------------------------------------------------ */
+			// b$                        面との接触を確認                   */
+			// b$ ------------------------------------------------------ */
+			for (const auto &n : rigid_bodies)
+				for (const auto &p : net->getPoints())
+				{
+					p->clearContactFaces();
+					p->radius = p->radius_SPH;						// Mean(extLength(p->getLines()));
+					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
+				}
+			/* ------------------------------------------------------ */
 			Print("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
 			//! ------------------------------------------------------ */
 			auto p_V = (*std::min_element(water_points.begin(), water_points.end(),
