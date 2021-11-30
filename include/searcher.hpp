@@ -259,7 +259,7 @@ template <>
 class searcher<networkFace> : public searcherCommon<networkFace>
 {
 public:
-	VVV_d path;
+	std::vector<T2Tddd> path;
 	searcher() : searcherCommon<networkFace>(){};
 
 	/*search_detail
@@ -335,7 +335,7 @@ search_detail*/
 										// this->netObjs.emplace_back(P);
 										this->netObjs.insert(std::lower_bound(this->netObjs.begin(), this->netObjs.end(), P), P);
 										netObjsThisDepth.emplace_back(P);
-										path.push_back({Mean(p->getLocations()), Mean(P->getLocations())});
+										path.push_back({Mean(p->getLocationsTuple()), Mean(P->getLocationsTuple())});
 										/* ------------------------------------------------------ */
 										this->netObjsUO.emplace(P);
 										netObjsThisDepthUO.emplace(P);

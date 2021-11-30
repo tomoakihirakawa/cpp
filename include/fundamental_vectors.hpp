@@ -1130,6 +1130,39 @@ double Norm(const Quaternion &A)
 	return Norm(A());
 };
 /* ------------------------------------------------------ */
+double MyVectorAngle(const Tddd &v0, const Tddd &v1, const Tddd &frontdir /*右手系のzとなる*/)
+{
+	//      /|
+	//     / |
+	//    /  |y
+	//   /   |
+	//  /q___|
+	//     x
+	// q = atan2(double y, double x), q = [-pi, pi]
+	//
+	//
+	// this can distingish ccw(positive) or cw(negative)
+
+	// auto Y = Cross(frontdir, v0); //右手系
+	// return atan2(Dot(v1, Y / Norm(Y)), Dot(v1, v0 / Norm(v0)));
+
+	// V_d z = Cross(v0/*x*/, v1);
+	// V_d z = frontdir;
+	auto z = frontdir / Norm(frontdir);
+	auto y = Cross(z, v0 /*x*/);
+	y = y / Norm(y);
+	auto x = v0 / Norm(v0);
+	// {x,y,z}右手系
+
+	//      /|
+	//     / |
+	//  v0/  |Dot(v1,y)
+	//   /   |
+	//  /q___|
+	//     Dot(v1,v0/Norm(v0)
+
+	return std::atan2(Dot(v1, y), Dot(v1, x));
+};
 double MyVectorAngle(const V_d &v0, const V_d &v1, const V_d &frontdir /*右手系のzとなる*/)
 {
 	//      /|

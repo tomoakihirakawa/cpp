@@ -1661,7 +1661,7 @@ public:
 		double len = 0, v;
 		for (const auto &l : Lines)
 		{
-			v = Norm(l->getPoints()[1]->X - l->getPoints()[0]->X);
+			v = Norm(std::get<1>(l->getPointsTuple())->X - std::get<0>(l->getPointsTuple())->X);
 			if (v > len)
 			{
 				len = v;
@@ -1833,10 +1833,23 @@ public:
 	{
 		try
 		{
-			for (auto i = 0; i < 3; i++)
-				if ((l->getPoints()[0] == this->Points[i] /*back*/ && l->getPoints()[1] == this->Points[(i + 1) % 3] /*front*/) ||
-					(l->getPoints()[1] == this->Points[i] /*back*/ && l->getPoints()[0] == this->Points[(i + 1) % 3] /*front*/))
-					return {i, (i + 1) % 3, (i + 2) % 3};
+			// for (auto i = 0; i < 3; i++)
+			// 	if ((l->getPoints()[0] == this->Points[i] /*back*/ && std::get<1>(l->getPoints()) == this->Points[(i + 1) % 3] /*front*/) ||
+			// 		(std::get<1>(l->getPoints()) == this->Points[i] /*back*/ && l->getPoints()[0] == this->Points[(i + 1) % 3] /*front*/))
+			// 		return {i, (i + 1) % 3, (i + 2) % 3};
+
+			auto p0 = std::get<0>(l->getPointsTuple());
+			auto p1 = std::get<0>(l->getPointsTuple());
+			if ((p0 == std::get<0>(this->PointsTuple) /*back*/ && p1 == std::get<1>(this->PointsTuple) /*front*/) ||
+				(p1 == std::get<0>(this->PointsTuple) /*back*/ && p0 == std::get<1>(this->PointsTuple) /*front*/))
+				return {0, 1, 2};
+			else if ((p0 == std::get<1>(this->PointsTuple) /*back*/ && p1 == std::get<2>(this->PointsTuple) /*front*/) ||
+					 (p1 == std::get<1>(this->PointsTuple) /*back*/ && p0 == std::get<2>(this->PointsTuple) /*front*/))
+				return {1, 2, 0};
+			else if ((p0 == std::get<2>(this->PointsTuple) /*back*/ && p1 == std::get<0>(this->PointsTuple) /*front*/) ||
+					 (p1 == std::get<2>(this->PointsTuple) /*back*/ && p0 == std::get<0>(this->PointsTuple) /*front*/))
+				return {2, 0, 1};
+
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		}
 		catch (std::exception &e)
@@ -1848,7 +1861,7 @@ public:
 			ss << "FaceのgetPoints()は，lineから毎回間接的に取得することはやめて，setBoundsの際に保存するように変更しました" << std::endl;
 			ss << "input line l = " << l << std::endl;
 			ss << "l->Points = " << l->getPoints() << std::endl;
-			ss << "this face->Points = " << this->Points << std::endl;
+			// ss << "this face->Points = " << this->Points << std::endl;
 			ss << "this face->Lines = " << this->Lines << std::endl;
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
 		};
@@ -1858,11 +1871,11 @@ public:
 	{
 		try
 		{
-			if (p == this->Points[0])
+			if (p == std::get<0>(this->PointsTuple))
 				return {0, 1, 2};
-			else if (p == this->Points[1])
+			else if (p == std::get<1>(this->PointsTuple))
 				return {1, 2, 0};
-			else if (p == this->Points[2])
+			else if (p == std::get<2>(this->PointsTuple))
 				return {2, 0, 1};
 			// for (auto i = 0; i < 3; i++)
 			// 	if (p == this->Points[i])
@@ -1877,7 +1890,7 @@ public:
 			ss << "setBoundsを忘れていませんか？ 面の線を変更した際などは，setBoundsを忘れないように" << std::endl;
 			ss << "FaceのgetPoints()は，lineから毎回間接的に取得することはやめて，setBoundsの際に保存するように変更しました" << std::endl;
 			ss << "input point p = " << p << std::endl;
-			ss << "this face->Points = " << this->Points << std::endl;
+			// ss << "this face->Points = " << this->PointsTuple << std::endl;
 			ss << "this face->Lines = " << this->Lines << std::endl;
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
 		};
@@ -1917,11 +1930,20 @@ public:
 	};
 	double getAngle(const networkPoint *p) const
 	{
-		if (p == this->Points[0])
+		// if (p == std::get<0>(this->PointsTuple))
+		// 	return this->angles[0];
+		// else if (p == std::get<1>(this->PointsTuple))
+		// 	return this->angles[1];
+		// else if (p == std::get<2>(this->PointsTuple))
+		// 	return this->angles[2];
+		// else
+		// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point is not found");
+
+		if (p == std::get<0>(this->PointsTuple))
 			return this->angles[0];
-		else if (p == this->Points[1])
+		else if (p == std::get<1>(this->PointsTuple))
 			return this->angles[1];
-		else if (p == this->Points[2])
+		else if (p == std::get<2>(this->PointsTuple))
 			return this->angles[2];
 		else
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point is not found");
@@ -1971,9 +1993,9 @@ public:
 		if (this->Lines[0] == l)
 			return this->Points;
 		else if (this->Lines[1] == l)
-			return {this->Points[1], this->Points[2], this->Points[0]};
+			return {std::get<1>(this->PointsTuple), std::get<2>(this->PointsTuple), std::get<0>(this->PointsTuple)};
 		else
-			return {this->Points[2], this->Points[0], this->Points[1]};
+			return {std::get<2>(this->PointsTuple), std::get<0>(this->PointsTuple), std::get<1>(this->PointsTuple)};
 	};
 	/* ------------------------------------------------------ */
 	//% タプル
@@ -2050,9 +2072,9 @@ public:
 		return {getPointsTuple(l), getLinesTuple(l)};
 	};
 	/* ------------------------------------------------------ */
-	netP *getPointFront(const netL *l) const { return getPoints(l)[1]; };
-	netP *getPointBack(const netL *l) const { return getPoints(l)[0]; };
-	netP *getPointOpposite(const netL *l) const { return getPoints(l)[2]; };
+	netP *getPointFront(const netL *l) const { return std::get<1>(getPointsTuple(l)); };
+	netP *getPointBack(const netL *l) const { return std::get<0>(getPointsTuple(l)); };
+	netP *getPointOpposite(const netL *l) const { return std::get<2>(getPointsTuple(l)); };
 	/* ------------------------------------------------------ */
 	netL *getLineFront(const networkPoint *p) const { return getLinesFrom(p)[0]; };
 	netL *getLineBack(const networkPoint *p) const { return getLinesFrom(p)[2]; };
@@ -2097,12 +2119,12 @@ public:
 	//線を通して点を取得するかどうか選べるように，getPointsThroughLines関数を作るべきだろう
 	V_netPp getPoints(const networkPoint *p) const
 	{
-		if (p == this->Points[0])
+		if (p == std::get<0>(this->PointsTuple))
 			return this->Points;
-		if (p == this->Points[1])
-			return {this->Points[1], this->Points[2], this->Points[0]};
-		if (p == this->Points[2])
-			return {this->Points[2], this->Points[0], this->Points[1]};
+		if (p == std::get<1>(this->PointsTuple))
+			return {std::get<1>(this->PointsTuple), std::get<2>(this->PointsTuple), std::get<0>(this->PointsTuple)};
+		if (p == std::get<2>(this->PointsTuple))
+			return {std::get<2>(this->PointsTuple), std::get<0>(this->PointsTuple), std::get<1>(this->PointsTuple)};
 		else
 			return this->Points;
 	};
@@ -2112,11 +2134,11 @@ public:
 	{
 		try
 		{
-			if (p == this->Points[0])
+			if (p == std::get<0>(this->PointsTuple))
 				return this->Lines;
-			else if (p == this->Points[1])
+			else if (p == std::get<1>(this->PointsTuple))
 				return RotateLeft(this->Lines, 1);
-			else if (p == this->Points[2])
+			else if (p == std::get<2>(this->PointsTuple))
 				return RotateLeft(this->Lines, 2);
 			else
 				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -2134,9 +2156,9 @@ public:
 	//---------------------
 	V_netPp get6Points(netPp origin = nullptr) const
 	{
-		if (origin == nullptr || !MemberQ(this->Points, origin))
+		if (origin == nullptr || !MemberQ(this->PointsTuple, origin))
 		{
-			origin = this->Points[0];
+			origin = std::get<0>(this->PointsTuple);
 		}
 
 		// pが与えられた時は，この面の点として存在するかをまずチェックする．
@@ -2153,14 +2175,14 @@ public:
 		try
 		{
 			V_netPp ret(6, nullptr);
-			auto ps = this->getPoints();
-			auto l = this->getLinesFrom(ps[0]);
+			auto ps = this->getPointsTuple();
+			auto l = this->getLinesFrom(std::get<0>(ps));
 			ret[2] = (*l[0])(this)->getPointOpposite(l[0]);
 			ret[0] = (*l[1])(this)->getPointOpposite(l[1]);
 			ret[1] = (*l[2])(this)->getPointOpposite(l[2]);
-			ret[4] = ps[0];
-			ret[5] = ps[1];
-			ret[3] = ps[2];
+			ret[4] = std::get<0>(ps);
+			ret[5] = std::get<1>(ps);
+			ret[3] = std::get<2>(ps);
 			if (ret[5] == origin)
 				return {ret[1], ret[2], ret[0], ret[4], ret[5], ret[3]};
 			else if (ret[3] == origin)
@@ -2201,9 +2223,9 @@ public:
 	{
 		try
 		{
-			if (p == nullptr || !MemberQ(this->Points, p))
+			if (p == nullptr || !MemberQ(this->PointsTuple, p))
 			{
-				p = this->Points[0];
+				p = std::get<0>(this->PointsTuple);
 			}
 			auto ls = this->getLinesFrom(p);
 			/*              0
@@ -2231,9 +2253,9 @@ public:
 	{
 		try
 		{
-			if (p == nullptr || !MemberQ(this->Points, p))
+			if (p == nullptr || !MemberQ(this->PointsTuple, p))
 			{
-				p = this->Points[0];
+				p = std::get<0>(this->PointsTuple);
 			}
 			auto ls = this->getLinesFrom(p);
 			/*              0
@@ -2257,9 +2279,9 @@ public:
 	{
 		try
 		{
-			if (p == nullptr || !MemberQ(this->Points, p))
+			if (p == nullptr || !MemberQ(this->PointsTuple, p))
 			{
-				p = this->Points[0];
+				p = std::get<0>(this->PointsTuple);
 			}
 			auto ps = this->getFour6Points(p);
 			/*
@@ -2287,21 +2309,23 @@ public:
 	Tddd getMeanX() const { return Mean(getLocationsTuple()); };
 	VV_d getLocations() const
 	{
-		V_netPp Points = getPoints();
-		VV_d ret(Points.size());
-		int i(0);
+		// V_netPp Points = getPoints();
+		// VV_d ret(Points.size());
+		// int i(0);
+		// // for (const auto &p : Points)
+		// // 	ret[i++] = p->xyz;
 		// for (const auto &p : Points)
-		// 	ret[i++] = p->xyz;
-		for (const auto &p : Points)
-			ret[i++] = {std::get<0>(p->X), std::get<1>(p->X), std::get<2>(p->X)};
-		return ret;
+		// 	ret[i++] = {std::get<0>(p->X), std::get<1>(p->X), std::get<2>(p->X)};
+		// return ret;
+		return {ToVector(std::get<0>(this->PointsTuple)->getXtuple()),
+				ToVector(std::get<1>(this->PointsTuple)->getXtuple()),
+				ToVector(std::get<2>(this->PointsTuple)->getXtuple())};
 	};
 	T3Tddd getLocationsTuple() const
 	{
-		V_netPp ps = getPoints();
-		return {ps[0]->getXtuple(),
-				ps[1]->getXtuple(),
-				ps[2]->getXtuple()};
+		return {std::get<0>(this->PointsTuple)->getXtuple(),
+				std::get<1>(this->PointsTuple)->getXtuple(),
+				std::get<2>(this->PointsTuple)->getXtuple()};
 	};
 	T3Tddd getX_Vertices() const
 	{
@@ -2311,11 +2335,13 @@ public:
 	};
 	//-------------------------
 	//つぎつぎと入社して，線との交点をかえし面の切り取りに使う，最終位置を返す//改善が必要
-	netL *getCrossLine(const V_d &s, const V_d &vec)
+	netL *getCrossLine(const Tddd &s, const Tddd &vec)
 	{
-		V_d n = getNormal(), theta(0);
-		for (const auto &v : this->getLocations())
-			theta.emplace_back(MyVectorAngle(vec /*基準とするベクトル*/, v - s /*対象となるベクトル*/, n /*回転方向を決める法線ベクトル*/));
+		Tddd n = getNormalTuple();
+		auto [v0, v1, v2] = this->getLocationsTuple();
+		V_d theta = {MyVectorAngle(vec /*基準とするベクトル*/, v0 - s /*対象となるベクトル*/, n /*回転方向を決める法線ベクトル*/),
+					 MyVectorAngle(vec /*基準とするベクトル*/, v1 - s /*対象となるベクトル*/, n /*回転方向を決める法線ベクトル*/),
+					 MyVectorAngle(vec /*基準とするベクトル*/, v2 - s /*対象となるベクトル*/, n /*回転方向を決める法線ベクトル*/)};
 
 		double ccwAngle = 2. * M_PI, cwAngle = -2. * M_PI;
 		int ccwIndex = 0, cwIndex = 0;
@@ -2335,8 +2361,8 @@ public:
 		auto Points = getPoints();
 		// V_d ccwp = Points[ccwIndex]->xyz;
 		// V_d cwp = Points[cwIndex]->xyz;
-		V_d ccwp = {std::get<0>(Points[ccwIndex]->X), std::get<1>(Points[ccwIndex]->X), std::get<2>(Points[ccwIndex]->X)};
-		V_d cwp = {std::get<0>(Points[cwIndex]->X), std::get<1>(Points[cwIndex]->X), std::get<2>(Points[cwIndex]->X)};
+		Tddd ccwp = {std::get<0>(Points[ccwIndex]->X), std::get<1>(Points[ccwIndex]->X), std::get<2>(Points[ccwIndex]->X)};
+		Tddd cwp = {std::get<0>(Points[cwIndex]->X), std::get<1>(Points[cwIndex]->X), std::get<2>(Points[cwIndex]->X)};
 		double c = MyVectorAngle(vec, ccwp - cwp, n);
 		double r = Norm(ccwp - s) * sin(c - ccwAngle) / sin(c);
 		std::cout << Red << "c:" << c / M_PI * 180 << reset << std::endl;
@@ -3868,7 +3894,7 @@ inline Network::~Network()
 				// auto tmp = this->Points;
 				// tmp[0]->Delete();
 				//
-				// this->Points[0]->Delete();
+				// std::get<0>(this->PointsTuple)->Delete();
 				(*this->Points.begin())->Delete();
 			}
 			if (counter > maxloop)

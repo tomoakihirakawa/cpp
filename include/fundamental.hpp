@@ -539,6 +539,23 @@ bool MemberQ(const std::vector<T *> &list, const T *form) { return (std::find(li
 template <class T>
 bool MemberQ(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
 
+template <class T>
+bool MemberQ(const std::tuple<T, T, T> &list, const T &form)
+{
+	if (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form)
+		return true;
+	else
+		return false;
+};
+
+template <class T>
+bool MemberQ(const std::tuple<T, T> &list, const T &form)
+{
+	if (std::get<0>(list) == form || std::get<1>(list) == form)
+		return true;
+	else
+		return false;
+};
 // template <class T>
 // bool MemberQ(const std::vector<T> &list, const T &form) { return std::binary_search(list.cbegin(), list.cend(), form); };
 // template <class T>
