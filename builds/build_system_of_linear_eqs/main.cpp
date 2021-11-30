@@ -1,15 +1,16 @@
 #include "GNUPLOT.hpp"
 #include "minMaxOfFunctions.hpp"
 
-int main() {
+int main()
+{
 	VV_d A = {{4., 1.}, {1., 3.}};
-	GradientDescent gd(A);
+	GradientMethod gd(A);
 	{
 		TimeWatch tm;
 		auto x = gd.solve({1., 2.});
 		Print(x);
 		Print(gd.count);
-		std::cout << tm.get()[0].count() << std::endl;
+		std::cout << tm.get() << std::endl;
 	}
 
 	{
@@ -17,6 +18,6 @@ int main() {
 		auto x = gd.solveCG({1., 2.});
 		Print(x);
 		Print(gd.count);
-		std::cout << tm.get()[0].count() << std::endl;
+		std::cout << tm.get() << std::endl;
 	}
 };

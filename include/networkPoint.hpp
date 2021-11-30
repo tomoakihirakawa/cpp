@@ -175,19 +175,29 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 		|  |
 		|  *
 		*/
-		for (const auto &q : this->getNeighbors())
+		if (this->Lines.empty())
 		{
-			auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
-			auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace);
-			if (180. / M_PI * angle < 60. || Norm(thisPointToFace) > this->radius)
-			{
-				shadowed = true;
-				break;
-			}
-		}
-		if (Dot(f->getNormalTuple(), this->getNormalTuple()) < 0. /*少なくとも向き合っていなければいけない*/)
-			if (!shadowed)
+			// b$ 点が面を有していない場合（SPH用）
+			if (Dot(f->getNormalTuple(), thisPointToFace /* <--この点からfまでのベクトルを向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
 				this->ContactFaces.emplace(f);
+		}
+		else
+		{
+			//$ 点が面を有している場合（境界要素法用）
+			for (const auto &q : this->getNeighbors())
+			{
+				auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
+				auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace);
+				if (180. / M_PI * angle < 60. || Norm(thisPointToFace) > this->radius)
+				{
+					shadowed = true;
+					break;
+				}
+			}
+			if (!shadowed)
+				if (Dot(f->getNormalTuple(), this->getNormalTuple() /* <--メッシュの場合は法線方向を向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
+					this->ContactFaces.emplace(f);
+		}
 	}
 };
 //点なのに，sphereでインターセクションをチェックするのは効率的ではない．

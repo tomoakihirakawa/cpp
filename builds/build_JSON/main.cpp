@@ -4,10 +4,10 @@
 
 #include "fundamental.hpp"
 
-//2021/03/31JSONとして導入した
-// class myJSON {
-// 	using V_S = std::vector<std::string>;
-// 	std::map<std::string, V_S> map_S_S;
+// 2021/03/31JSONとして導入した
+//  class myJSON {
+//  	using V_S = std::vector<std::string>;
+//  	std::map<std::string, V_S> map_S_S;
 
 //    public:
 // 	myJSON(const std::string& str_IN) : map_S_S() {
@@ -118,7 +118,7 @@
 // 2021/09/16
 int main()
 {
-	//sample.jsonを文字として読み込み，表見
+	// sample.jsonを文字として読み込み表示
 	{
 		std::string filename = "./sample.json";
 		std::ifstream istrm(filename);
@@ -152,6 +152,9 @@ int main()
 		std::cout << stod(json["translate"]) << std::endl;
 		std::cout << stod(json["scale"]) << std::endl;
 		std::cout << stod(json["rotation"]) << std::endl;
+		std::cout << stob(json["extra_cheese"]) << std::endl;
+		std::cout << stob(json["delivery"]) << std::endl;
+		std::cout << stob(json["phone"]) << std::endl;
 	}
 
 	{
@@ -163,5 +166,8 @@ int main()
 		std::cout << stod(json["translate"]) << std::endl;
 		std::cout << stod(json["scale"]) << std::endl;
 		std::cout << stod(json["rotation"]) << std::endl;
+		std::cout << stob(json["extra_cheese"]) << std::endl;
+		std::cout << stob(json["delivery"]) << std::endl;
+		std::cout << stob(json["phone"]) << std::endl;
 	}
 }

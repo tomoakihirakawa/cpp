@@ -435,6 +435,8 @@ getNeighbors_detail*/
 	std::vector<T *> getNeighbors(const T *obj) const
 	{
 		std::vector<T *> ret(this->Lines.size());
+		if (ret.empty())
+			return {};
 		int i = 0;
 		for (const auto &l : this->Lines)
 			ret[i++] = (*l)(obj);
@@ -1419,7 +1421,7 @@ public:
 	void reverseNormal()
 	{
 		std::reverse(this->Lines.begin(), this->Lines.end());
-		this->setBounds();
+		this->setBounds(); // setBoundsは，setPointsFromCurrentLines()を実行する．
 	};
 	/* ------------------------------------------------------ */
 	Tddd mirror(const Tddd &v) const
@@ -2532,6 +2534,10 @@ public:
 			p->clearMirroredPoints();
 	};
 	//% ------------------------------------------------------ */
+
+	// b$ ------------------------------------------------------ */
+	// b$            バケツ．Faces,Points,ParametricPoints         */
+	// b$ ------------------------------------------------------ */
 private:
 	Buckets<networkFace> BucketFaces;
 	Buckets<networkPoint> BucketParametricPoints;
@@ -2541,6 +2547,7 @@ public:
 	const Buckets<networkFace> &getBucketFaces() const { return BucketFaces; };
 	const Buckets<networkPoint> &getBucketPoints() const { return BucketPoints; };
 	const Buckets<networkPoint> &getBucketParametricPoints() const { return BucketParametricPoints; };
+
 	void makeBucketFaces(const double spacing)
 	{
 		this->setBounds();
@@ -2573,7 +2580,7 @@ public:
 	{
 		this->BucketParametricPoints.clear();
 	};
-
+	// b$ ------------------------------------------------------ */
 public:
 	T6d forced_velocity;
 	T6d forced_acceleration;
@@ -3135,10 +3142,8 @@ public:
 
 	void reverseNormal()
 	{
-		for (auto f : this->Faces)
-		{
+		for (auto &f : this->Faces)
 			f->reverseNormal();
-		}
 	};
 	/* ------------------------------------------------------ */
 	netF *getNearestFace(const V_d &xyz)

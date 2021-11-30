@@ -228,6 +228,16 @@ VVV_i stoi(const std::vector<std::vector<V_s>> &vec)
 		ret.emplace_back(stoi(v));
 	return ret;
 };
+std::vector<bool> stob(const V_s &vec)
+{
+	std::vector<bool> ret(vec.size());
+	std::transform(vec.begin(), vec.end(), ret.begin(), [](const std::string &str)
+				   { 
+					   bool b;
+					   std::istringstream(str) >> std::boolalpha >> b;
+					   return b; });
+	return ret;
+};
 V_d stod(const V_s &vec)
 {
 	V_d ret(vec.size());

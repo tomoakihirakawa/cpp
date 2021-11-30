@@ -220,7 +220,8 @@ PYBIND11_MODULE(fundamental, m)
 		.def("Rroll", &Quaternion::Rroll)
 		.def("set", pybind11::overload_cast<const Quaternion &>(&Quaternion::set))
 		.def("set", pybind11::overload_cast<const T4d &>(&Quaternion::set))
-		.def("d_dt", &Quaternion::d_dt);
+		.def("d_dt", &Quaternion::d_dt)
+		.def("conjugate", &Quaternion::conjugate);
 	/* ------------------------------------------------------ */
 	pybind11::class_<Histogram>(m, "Histogram")
 		.def(pybind11::init<const V_d &>())

@@ -1227,15 +1227,24 @@ int main()
 		auto file_directory = object_JSON["objfile"][0];
 		auto name = object_JSON["name"][0];
 		tank = new Network(file_directory, name);
+		std::cout << name << std::endl;
 		if (object_JSON.find("rotate"))
 		{
+			std::cout << "rotate" << std::endl;
 			auto theta_angle = stod(object_JSON["rotate"]);
 			tank->rotate(theta_angle[0], {theta_angle[1], theta_angle[2], theta_angle[3]});
 		}
 		if (object_JSON.find("scale"))
 		{
+			std::cout << "scale" << std::endl;
 			auto scale = stod(object_JSON["scale"]);
 			tank->scale(scale[0], {scale[1], scale[2], scale[3]});
+		}
+		if (object_JSON.find("reverseNormal"))
+		{
+			std::cout << "reverseNormal" << std::endl;
+			if (stob(object_JSON["reverseNormal"])[0])
+				tank->reverseNormal();
 		}
 		mk_vtu(output_dir + "/" + name + ".vtu", tank->getFaces());
 		const V_d depth_list = stod(object_JSON["depth_list"]);
@@ -1334,6 +1343,7 @@ EISP:
 			{
 				wave_maker->clearBucketParametricPoints();
 				wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
+				wave_maker->makeBucketFaces(particle_spacing / 2.);
 			}
 			if (step == 0 || step == preparation_time_step)
 			{
@@ -1341,6 +1351,7 @@ EISP:
 				tank->clearBucketParametricPoints();
 				tank_init->clearBucketParametricPoints();
 				tank->makeBucketParametricPoints(particle_spacing / 2.);
+				tank->makeBucketFaces(particle_spacing / 2.);
 			}
 
 			water_points = net->getPoints();
@@ -1464,13 +1475,13 @@ EISP:
 			// b$ ------------------------------------------------------ */
 			// b$                        面との接触を確認                   */
 			// b$ ------------------------------------------------------ */
-			for (const auto &n : rigid_bodies)
-				for (const auto &p : net->getPoints())
-				{
-					p->clearContactFaces();
-					p->radius = p->radius_SPH;						// Mean(extLength(p->getLines()));
+			for (const auto &p : net->getPoints())
+			{
+				p->clearContactFaces();
+				p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));
+				for (const auto &n : rigid_bodies)
 					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
-				}
+			}
 			/* ------------------------------------------------------ */
 			Print("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
 			//! ------------------------------------------------------ */

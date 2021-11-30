@@ -88,6 +88,19 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<T *> &v)
 	return stream;
 };
 
+std::ostream &operator<<(std::ostream &stream, const std::vector<bool> &v)
+{
+	stream << "{";
+	if (!v.empty())
+	{
+		for (size_t i = 0; i < v.size() - 1; i++)
+			stream << v[i] << ",";
+		stream << *v.rbegin();
+	}
+	stream << "}";
+	return stream;
+};
+
 std::ostream &operator<<(std::ostream &stream, const std::vector<int> &v)
 {
 	stream << "{";
@@ -1012,6 +1025,11 @@ struct Quaternion
 	/* ------------------------------------------------------ */
 
 	const T4d &operator()() const { return q; }
+
+	Quaternion conjugate() const
+	{
+		return Quaternion(T4d{a, -b, -c, -d});
+	};
 
 	Quaternion approxNextQuaternion(const Tddd &w, const double dt) const
 	{
