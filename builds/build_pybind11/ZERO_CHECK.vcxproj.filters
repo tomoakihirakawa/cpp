@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3947000c1c7a53dd9cedd826932f01ad\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{010C8384-2D2A-337F-89A1-4D9F15B321E8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

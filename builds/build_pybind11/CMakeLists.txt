@@ -1,11 +1,15 @@
 # CMakeのバージョンを設定
+
 cmake_minimum_required(VERSION 3.11)
 # プロジェクト名と使用する言語を設定
 project(my_pybind11 CXX)
+
 # set(CMAKE_CXX_COMPILER /usr/local/bin/g++-10)
+
 
 # message(${CMAKE_SOURCE_DIR}) set (CMAKE_MODULE_PATH
 # "${CMAKE_SOURCE_DIR}/CMake") include(cotire)
+
 
 if(APPLE)
   # set(CMAKE_CXX_COMPILER g++-10)
@@ -35,5 +39,6 @@ else()
   set(PYBIND11_CPP_STANDARD -std=c++17)
   set(CMAKE_CXX_FLAGS "-Ofast -std=c++17")
   add_subdirectory(pybind11)
+
   pybind11_add_module(fundamental SHARED fundamental.cpp)
 endif()

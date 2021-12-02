@@ -45,7 +45,6 @@
                 <source_path>../../include/networkLine.hpp</source_path>
                 <source_path>../../include/networkPoint.hpp</source_path>
                 <source_path>../../include/NetworkUtility.hpp</source_path>
-                <source_path>../../include/newNetwork.hpp</source_path>
                 <source_path>../../include/object3D.hpp</source_path>
                 <source_path>../../include/rootFinding.hpp</source_path>
                 <source_path>../../include/searcher.hpp</source_path>
@@ -54,6 +53,8 @@
                 <source_path>../../include/GNUPLOT.hpp</source_path>
                 <source_path>../../include/SPH_weightingFunctions.hpp</source_path>
                 <source_path>../../include/kernelFunctions.hpp</source_path>
+                <source_path>../../include</source_path>
+                <source_path>./</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

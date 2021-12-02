@@ -35,10 +35,17 @@ namespace geometry
 		double thickness;
 		Tddd center;
 		T3Tddd X;
+		Tddd normal;
 		Triangle(const T3Tddd &XIN, double thicknessIN = 0)
-			: X(XIN), thickness(thicknessIN), center(Mean(XIN)){};
+			: X(XIN), thickness(thicknessIN), center(Mean(XIN))
+		{
+			normal = Normalize(Cross(std::get<1>(X) - std::get<0>(X), std::get<2>(X) - std::get<0>(X)));
+		};
 		Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN, double thicknessIN = 0)
-			: X({X0IN, X1IN, X2IN}), thickness(thicknessIN), center((X0IN + X1IN) / 2.){};
+			: X({X0IN, X1IN, X2IN}), thickness(thicknessIN), center((X0IN + X1IN) / 2.)
+		{
+			normal = Normalize(Cross(std::get<1>(X) - std::get<0>(X), std::get<2>(X) - std::get<0>(X)));
+		};
 	};
 	/* ------------------------------------------------------ */
 	struct Point
@@ -208,7 +215,10 @@ bool IntersectQ(const geometry::CoordinateBounds &b0, const geometry::Coordinate
 			 (std::get<1>(b0z) < std::get<0>(b1z) && std::get<1>(b0z) < std::get<1>(b1z) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
 };
 /* ------------------------------------------------------ */
-Tddd Normal(const geometry::Triangle &triangle) { return Normalize(Cross(std::get<1>(triangle.X) - std::get<0>(triangle.X), std::get<2>(triangle.X) - std::get<0>(triangle.X))); };
+const Tddd &Normal(const geometry::Triangle &triangle)
+{
+	return triangle.normal;
+};
 double NormalDistance(const geometry::Triangle &T, const Tddd &X) { return Norm(Dot(Normal(T), T.center - X)); };
 Tddd vectorToTriangle(const geometry::Triangle &T, const Tddd &a)
 {
@@ -309,7 +319,7 @@ int IntersectQ(const geometry::Line &line, const geometry::Triangle &triangle)
 /* ------------------------------------------------------ */
 struct intersection
 {
-	Tddd X;
+	Tddd X; //接触した物体の最も近い座標
 	double distance;
 	bool isIntersecting;
 	double eps = 1E-10;
@@ -321,7 +331,7 @@ struct intersection
 	3: intersecting with a triangle
 	*/
 	/* ------------------------------------------------------ */
-	intersection(const geometry::Sphere &sphere0, const geometry::Sphere &sphere1) : X({0, 0, 0}), distance(0), isIntersecting(false)
+	intersection(const geometry::Sphere &sphere0, const geometry::Sphere &sphere1) : X({0, 0, 0}), distance(1E+40), isIntersecting(false)
 	{
 		if (IntersectQ(geometry::CoordinateBounds(sphere0), geometry::CoordinateBounds(sphere1)))
 		{
@@ -335,19 +345,31 @@ struct intersection
 		}
 		else
 		{
+			this->distance = 1E+40;
 			this->isIntersecting = false;
 			this->index_intersection_type = 0;
 			return;
 		}
 	};
 	/* ------------------------------------------------------ */
-	intersection(const geometry::Sphere &sphere, const geometry::Line &line) : X({0, 0, 0}), distance(0), isIntersecting(false)
+	intersection(const geometry::Sphere &sphere, const geometry::Line &line) : X({0, 0, 0}), distance(1E+40), isIntersecting(false)
 	{
 		if (IntersectQ(geometry::CoordinateBounds(sphere), geometry::CoordinateBounds(line)))
 		{
 			Tddd X0X1 = std::get<1>(line.X) - std::get<0>(line.X);
-			double t = Dot(sphere.X - std::get<1 /*1です*/>(line.X), X0X1) / Dot(X0X1, X0X1);
-			this->X = std::get<0>(line.X) * t + std::get<1>(line.X) * (1. - t);
+
+			//
+			// Dot(C - sphere.X, X0X1) = 0        (1)
+			// C = std::get<0>(line.X) + X0X1 * t (2)
+			//
+			// Dot(std::get<0>(line.X) + X0X1 * t - sphere.X, X0X1) = 0
+			// -> Dot(std::get<0>(line.X) - sphere.X, X0X1) + Dot(X0X1 * t , X0X1) = 0
+			// -> Dot(X0X1 , X0X1) * t = - Dot(std::get<0>(line.X) - sphere.X, X0X1)
+			// -> t = - Dot(std::get<0>(line.X) - sphere.X, X0X1)/Dot(X0X1 , X0X1)
+			//
+
+			double t = -Dot(std::get<0>(line.X) - sphere.X, X0X1) / Dot(X0X1, X0X1);
+			this->X = std::get<0>(line.X) + X0X1 * t;
 			this->distance = Norm(this->X - sphere.X);
 			if (this->distance <= sphere.radius /*may hit*/)
 			{
@@ -362,7 +384,9 @@ struct intersection
 				{
 					//干渉する最も近い点は，端点である可能性をチェック
 					intersection intx0(sphere, geometry::Sphere(std::get<0>(line.X)));
-					if (intx0.isIntersecting)
+					intersection intx1(sphere, geometry::Sphere(std::get<1>(line.X)));
+
+					if (intx0.isIntersecting && intx1.distance > intx0.distance)
 					{
 						this->isIntersecting = true;
 						this->distance = intx0.distance;
@@ -370,8 +394,7 @@ struct intersection
 						this->index_intersection_type = 1;
 						return;
 					}
-					intersection intx1(sphere, geometry::Sphere(std::get<1>(line.X)));
-					if (intx1.isIntersecting)
+					else if (intx1.isIntersecting && intx0.distance > intx1.distance)
 					{
 						this->isIntersecting = true;
 						this->distance = intx1.distance;
@@ -379,13 +402,18 @@ struct intersection
 						this->index_intersection_type = 1;
 						return;
 					}
-					this->isIntersecting = false;
-					this->index_intersection_type = 0;
-					return;
+					else
+					{
+						this->distance = 1E+40;
+						this->isIntersecting = false;
+						this->index_intersection_type = 0;
+						return;
+					}
 				}
 			}
 			else
 			{
+				this->distance = 1E+40;
 				this->isIntersecting = false;
 				this->index_intersection_type = 0;
 				return;
@@ -393,14 +421,16 @@ struct intersection
 		}
 		else
 		{
+			this->distance = 1E+40;
 			this->isIntersecting = false;
 			this->index_intersection_type = 0;
 			return;
 		}
 	};
 	/* ------------------------------------------------------ */
-	intersection(const geometry::Sphere &sphere, const geometry::Triangle &triangle) : X({0, 0, 0}), distance(0), isIntersecting(false)
+	intersection(const geometry::Sphere &sphere, const geometry::Triangle &triangle) : X({0, 0, 0}), distance(1E+40), isIntersecting(false)
 	{
+		// エラーの原因は初期値を返しているのかもしれない
 		// まずは，coordinateboundsをチェックする．
 		if (IntersectQ(geometry::CoordinateBounds(sphere), geometry::CoordinateBounds(triangle)))
 		{
@@ -426,16 +456,17 @@ struct intersection
 				else
 				{
 					intersection intx0(sphere, geometry::Line(std::get<0>(triangle.X), std::get<1>(triangle.X)));
-					if (intx0.isIntersecting)
+					intersection intx1(sphere, geometry::Line(std::get<1>(triangle.X), std::get<2>(triangle.X)));
+					intersection intx2(sphere, geometry::Line(std::get<2>(triangle.X), std::get<0>(triangle.X)));
+
+					if (intx1.distance >= intx0.distance && intx2.distance >= intx0.distance && intx0.isIntersecting)
 					{
 						this->isIntersecting = true;
 						this->distance = intx0.distance;
 						this->X = intx0.X;
 						this->index_intersection_type = intx0.index_intersection_type;
-						return;
 					}
-					intersection intx1(sphere, geometry::Line(std::get<1>(triangle.X), std::get<2>(triangle.X)));
-					if (intx1.isIntersecting)
+					else if (intx0.distance >= intx1.distance && intx2.distance >= intx1.distance && intx1.isIntersecting)
 					{
 						this->isIntersecting = true;
 						this->distance = intx1.distance;
@@ -443,8 +474,7 @@ struct intersection
 						this->index_intersection_type = intx1.index_intersection_type;
 						return;
 					}
-					intersection intx2(sphere, geometry::Line(std::get<2>(triangle.X), std::get<0>(triangle.X)));
-					if (intx2.isIntersecting)
+					else if (intx1.distance >= intx2.distance && intx0.distance >= intx2.distance && intx2.isIntersecting)
 					{
 						this->isIntersecting = true;
 						this->distance = intx2.distance;
@@ -452,12 +482,17 @@ struct intersection
 						this->index_intersection_type = intx2.index_intersection_type;
 						return;
 					}
-					this->isIntersecting = false;
-					this->index_intersection_type = 0;
+					else
+					{
+						this->distance = 1E+40;
+						this->isIntersecting = false;
+						this->index_intersection_type = 0;
+					}
 				}
 			}
 			else
 			{
+				this->distance = 1E+40;
 				this->isIntersecting = false;
 				this->index_intersection_type = 0;
 				return;
@@ -465,6 +500,7 @@ struct intersection
 		}
 		else
 		{
+			this->distance = 1E+40;
 			this->isIntersecting = false;
 			this->index_intersection_type = 0;
 			return;

@@ -4,6 +4,44 @@
 
 #include "Network.hpp"
 #include "InterpolationRBF.hpp"
+//% ------------------------------------------------------ */
+//%                         反射点の計算                     */
+//% ------------------------------------------------------ */
+Tddd getClosestFacePoint(const networkPoint *p,
+						 const std::unordered_set<networkFace *> &boundary_face,
+						 const double mirroring_distance)
+{
+	Tddd ret = {1E+40, 1E+40, 1E+40}; //反射点を返す
+	auto sphere = geometry::Sphere(p->getXtuple(), mirroring_distance);
+	for (const auto &f : boundary_face)
+	{
+		auto ITX = intersection(sphere, geometry::Triangle(f->getX_Vertices()));
+		if (ITX.isIntersecting)
+			if (Norm(ret) > Norm(ITX.X - p->getXtuple()))
+				ret = ITX.X - p->getXtuple();
+	}
+	return ret;
+};
+std::unordered_map<networkPoint *, Tddd> getMap_PointToClosestFacePoint(const std::unordered_set<networkPoint *> &dummy_points,
+																		const std::unordered_set<networkFace *> &boundary_face,
+																		const double mirroring_distance)
+{
+	std::unordered_map<networkPoint *, Tddd> ret; //反射点を返す
+	for (const auto &p : dummy_points)
+	{
+		Tddd pToX = getClosestFacePoint(p, boundary_face, mirroring_distance);
+		if (Norm(pToX) < 1E+20)
+		{
+			auto it = ret.find(p);
+			if (it == ret.end())
+				ret[p] = pToX;
+			else if (Norm(it->second) > Norm(pToX))
+				ret[p] = pToX;
+		}
+	}
+	return ret;
+};
+
 /* ------------------------- extract ----------------------------- */
 V_d extLength(const std::unordered_set<networkLine *> &ls)
 {

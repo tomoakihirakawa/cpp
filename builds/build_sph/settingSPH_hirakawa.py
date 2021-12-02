@@ -41,7 +41,7 @@ data = {
     # ------------------------ 準備時間 ------------------------ #
     "preparation_max_dt": 0.0001,
     "preparation_time": 1.,
-    "preparation_time_step": 100,
+    "preparation_time_step": 10,
     "preparation_C_artificial_viscousity_alpha": 0.2,
     "preparation_C_artificial_viscousity_beta": 0.2,
     # -------------------------------------------------------- #

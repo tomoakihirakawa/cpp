@@ -552,6 +552,47 @@ std::tuple<Tddd, Tddd, double, double> U_tmpU_mass_density_SPH_IDW(const std::un
 //     return {U, mass, density};
 // };
 // //
+double dummy_pressure_Asai_Modified(const Buckets<networkPoint> &B_water,
+                                    const networkPoint *dummy_p /*dummy point*/,
+                                    const std::unordered_set<networkFace *> &boundary_face,
+                                    const double mirroring_distance,
+                                    const double power = 2)
+{
+
+    Tddd closestX = getClosestFacePoint(dummy_p, boundary_face, mirroring_distance);
+    // ダミー粒子のみ使える関数
+    auto [f, t0, t1, d, dx] = dummy_p->particlize_info;
+    auto X = dummy_p->getXtuple();
+    auto Y = X + 2. * (closestX - X); // oppositeX(dummy_p->particlize_info);
+    auto p_at_Y = B_water.getObjects_unorderedset(Y, 8 /*深さ最大*/, 1);
+    // double sign = Normalize(Dot(f->getXtuple() - Y, f->getNormalTuple()) * f->getNormalTuple()); // Y->F (+ or -)
+    Tddd gravity = {0., 0., -9.81};
+    double pressure = 0, total = 0, norm, nu, tmp, pn;
+    Tddd accel = {0, 0, 0};
+    if (!p_at_Y.empty())
+    {
+        for (const auto &q : p_at_Y)
+        {
+            // ここを修正
+            // 重み付き平均した反対位置OXと壁との距離を確認し
+            // OX->
+            nu = q->mu_SPH / q->density;
+            pn = q->density * Dot(nu * q->lap_U + gravity - accel, f->getNormalTuple());
+            tmp = q->pressure_SPH + /*修正*/ pn * Dot(X - q->getXtuple(), f->getNormalTuple());
+            // tmp = (q->pressure_SPH);
+            norm = Norm(X - q->getXtuple());
+            if (norm < 1E-15)
+                return tmp;
+            auto w = std::pow(1. / norm, power);
+            total += w;
+            pressure += w * tmp;
+        }
+        pressure /= total;
+        return pressure;
+    }
+    return pressure;
+};
+
 double dummy_pressure_Asai(const Buckets<networkPoint> &B_water,
                            const networkPoint *dummy_p /*dummy point*/,
                            const double power = 2)
@@ -588,7 +629,6 @@ double dummy_pressure_Asai(const Buckets<networkPoint> &B_water,
     }
     return pressure;
 };
-
 //
 Tddd velocity_SPH_IDW(const std::unordered_set<networkPoint *> &ps,
                       const Tddd &X,
@@ -683,6 +723,26 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
 //#                          圧力勾配                       */
 //#                         grad(P)                        */
 //# ------------------------------------------------------ */
+Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
+                                          const networkPoint *const a,
+                                          const double h,
+                                          const int order = 3)
+{
+    //密度の演算子の作用下に入れ込んだMonaghan1992の方法
+    Tddd ret = {0, 0, 0}, W;
+    for (const auto &p : ps)
+    {
+        if (p != a)
+            W = grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+        else
+            W = {0, 0, 0};
+
+        for (const auto &[f, intX] : p->getContactFaces())
+            W += grad_kernel_Bspline5(a->getXtuple() + 2. * (intX - a->getXtuple()), a->getXtuple(), h);
+        ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
+    }
+    return ret * a->density;
+};
 Tddd grad_P_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
                          const networkPoint *const a,
                          const double h,
@@ -731,6 +791,51 @@ Tddd laplacian_U_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
         }
     double nu = a->mu_SPH / a->density;
     return -ret / nu;
+};
+
+// b!New
+Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
+                                                const networkPoint *const a,
+                                                const double h,
+                                                const int order = 2)
+{
+    // nu*laplacian(U)を計算する
+    Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, Uij, Xij, W;
+    double nu_i, nu_j;
+    for (const auto &p : ps)
+    {
+        if (p != a)
+        {
+            Uij = a->U_SPH - p->U_SPH;
+            Xij = a->getXtuple() - p->getXtuple();
+            nu_i = p->mu_SPH / p->density;
+            nu_j = a->mu_SPH / a->density;
+
+            // b! 要修正
+            W = grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h);
+
+            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W;
+            tmp /= ((p->density + a->density) * Dot(Xij, Xij));
+            ret += tmp;
+        }
+
+        W = {0, 0, 0};
+        for (const auto &[f, intX] : p->getContactFaces())
+        {
+            Uij = a->U_SPH; // - p->U_SPH;ゼロとしてみる
+            Xij = a->getXtuple() - p->getXtuple();
+            nu_i = p->mu_SPH / p->density;
+            nu_j = a->mu_SPH / a->density;
+
+            // b! 要修正
+            W += grad_kernel_Bspline5(a->getXtuple(), a->getXtuple() + 2. * (intX - a->getXtuple()), h);
+
+            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W;
+            tmp /= ((p->density + a->density) * Dot(Xij, Xij));
+            ret += tmp;
+        }
+    }
+    return ret / (a->mu_SPH / a->density);
 };
 
 Tddd laplacian_U_ShaoAndLo2003(const std::unordered_set<networkPoint *> &ps,

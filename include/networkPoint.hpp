@@ -94,7 +94,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 	if (!this->getContactFaces().empty())
 	{
 		std::unordered_set<networkFace *> contactfaces;
-		for (auto &f : this->getContactFaces())
+		for (auto &[f, _] : this->getContactFaces())
 		{
 			bool duplicate = false;
 			for (auto &cface : contactfaces)
@@ -130,6 +130,7 @@ inline Tddd networkPoint::reflect(const Tddd &v) const
 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 };
 /*
+
 @ addContactPointsは，引数として半径が与えられない場合，各点のradiusが成す球として，互いの重なりを調べ，重なった点はContactPointsに保存する．
 */
 inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool include_self_network = true)
@@ -137,58 +138,54 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 	/*
 	 b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
 	*/
-	//!まずは，衝突があり得そうな面を多めに保存する．
-	std::unordered_set<networkFace *> tmpContactFaces;
-	for (const auto &f : DeleteDuplicates(Flatten(B.getObjects(this->getXtuple(), 2. * this->radius))))
-	{
+	// b!まずは，衝突があり得そうな面を多めに保存する．
+	std::unordered_map<networkFace *, Tddd> tmpContactFaces;
+	for (const auto &f : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius))
 		if (!(!include_self_network && (f->getNetwork() == this->getNetwork())))
 		{
-			auto [p0, p1, p2] = f->getPointsTuple();
-			if (intersection(geometry::Sphere(this->getXtuple(), this->radius),
-							 geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()))
-					.isIntersecting)
-				tmpContactFaces.emplace(f);
+			auto intxn = intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(f->getX_Vertices()));
+			if (intxn.isIntersecting)
+				tmpContactFaces[f] = intxn.X;
 		}
-	}
-	//!各面について衝突があり得るか詳しく調べて判断する．
-	for (const auto &f : tmpContactFaces)
+	// b!各面について衝突があり得るか詳しく調べて判断する．
+	for (const auto &[f, intxnX] : tmpContactFaces)
 	{
-		auto shadowed = false;
 		//@ 周りの点に隠れて面が見えない状況の場合，その面とは接し得ないので，考慮しない．
-		auto [p0, p1, p2] = f->getPointsTuple();
+		// auto [p0, p1, p2] = f->getPointsTuple();
 		// BEMのために導入したもの．周辺の点の方向にある面には衝突し得ないため，無視する．
 		// ただし修正面の方向をむくせんを抜き出す必要がある．
-		auto n = f->getNormalTuple();
-		Tddd thisPointToFace = vectorToTriangle(f, this->getXtuple());
-		/*
-			 |
-		Face |<---thisPointToFace---- thisPoint
-			 |
-		*/
-		/*
-		_____________________
-		|       \  A
-		| shadow \ |
-		|      60 \|
-		|  q<------*--------q
-		|  |
-		|  |
-		|  *
-		*/
+		// auto n = f->getNormalTuple();
+		auto thisPointToFace = intxnX - this->getXtuple();
 		if (this->Lines.empty())
 		{
 			// b$ 点が面を有していない場合（SPH用）
 			if (Dot(f->getNormalTuple(), thisPointToFace /* <--この点からfまでのベクトルを向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
-				this->ContactFaces.emplace(f);
+				this->ContactFaces[f] = intxnX;
 		}
 		else
 		{
+			/*
+				 |
+			Face |<---thisPointToFace---- thisPoint
+				 |
+			*/
+			/*
+			_____________________
+			|       \  A
+			| shadow \ |
+			|      60 \|
+			|  q<------*--------q
+			|  |
+			|  |
+			|  *
+			*/
 			//$ 点が面を有している場合（境界要素法用）
+			auto shadowed = false;
 			for (const auto &q : this->getNeighbors())
 			{
 				auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
-				auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace);
-				if (180. / M_PI * angle < 60. || Norm(thisPointToFace) > this->radius)
+				auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace) * 180. / M_PI;
+				if (angle < 60. || Norm(thisPointToFace) > this->radius)
 				{
 					shadowed = true;
 					break;
@@ -196,7 +193,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 			}
 			if (!shadowed)
 				if (Dot(f->getNormalTuple(), this->getNormalTuple() /* <--メッシュの場合は法線方向を向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
-					this->ContactFaces.emplace(f);
+					this->ContactFaces[f] = intxnX;
 		}
 	}
 };

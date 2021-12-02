@@ -2,11 +2,15 @@ from math import pi
 import json
 import math
 
+density = 1000.
+graity = 9.81
+
 # edge_length = 2.*0.05
 
 H = 292/1000
 particle_spacing = 0.008
 data = {
+    "density": density,
     # -------------------------------------------------------- #
     "initial_surface_height": 0.792,
     # ---------------- 時間間隔dtに関する設定値 ----------------- #
@@ -43,15 +47,30 @@ data = {
     # -------------------------------------------------------- #
 }
 
-f = open("./settingSPH.json", 'w')
-json.dump(data, f, ensure_ascii=True, indent=4)
-f.close()
+
+total_volume = 1
+total_volume *= abs(data["xbounds"][1]-data["xbounds"][0])
+total_volume *= abs(data["ybounds"][1]-data["ybounds"][0])
+total_volume *= abs(data["zbounds"][1]-data["zbounds"][0])
+print("体積", total_volume)
+data.update({"total_volume": total_volume})
+
 
 xlen = data["xbounds"][1]-data["xbounds"][0]
 ylen = data["ybounds"][1]-data["ybounds"][0]
 zlen = data["zbounds"][1]-data["zbounds"][0]
 dx = data["particle_spacing"]
-print("粒子点数", (round(xlen/dx+1)*round(ylen/dx+1)*round(zlen/dx+1)))
+total_particle = (round(xlen/dx+1)*round(ylen/dx+1)*round(zlen/dx+1))
+volume_of_a_particle = total_volume/total_particle
+data.update({"volume_of_a_particle": total_particle})
+print("粒子点数", total_particle)
+print("各粒子体積", volume_of_a_particle)
+
+
+f = open("./settingSPH.json", 'w')
+json.dump(data, f, ensure_ascii=True, indent=4)
+f.close()
+
 print("rho*g*h = ", 1000.*9.81*H)
 
 #! -------------------------------------------------------- #
@@ -67,8 +86,9 @@ data = {
                    -particle_spacing/2.*3.,
                    -particle_spacing/2.*5.,
                    -particle_spacing/2.*7.,
-                   -particle_spacing/2.*9.,
-                   -particle_spacing/2.*11.]
+                   -particle_spacing/2.*9.],
+    "volume_of_a_particle": volume_of_a_particle,
+    "density": density
 
 }
 
@@ -90,8 +110,9 @@ data = {
                    -particle_spacing/2.*3.,
                    -particle_spacing/2.*5.,
                    -particle_spacing/2.*7.,
-                   -particle_spacing/2.*9.,
-                   -particle_spacing/2.*11.]
+                   -particle_spacing/2.*9.],
+    "volume_of_a_particle": volume_of_a_particle,
+    "density": density
 
 }
 

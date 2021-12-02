@@ -252,20 +252,31 @@ struct Fusion
             M0_ -= this->offsetM;
         }
 
+        if (true)
+        {
+            // 磁気センサーの補正
+            M = Normalize(M);
+            M0_ = Normalize(M0_);
+        }
+
         auto dt = std::abs(t - std::get<0>(time_Q0));
         auto W0 = std::get<4>(time_Q0);
         auto Q0 = std::get<1>(time_Q0);
+        auto Q1 = std::get<1>(time_Q1);
+        auto Q2 = std::get<1>(time_Q2);
+        auto Q3 = std::get<1>(time_Q3);
 
         // １つ過去の結果より現在のクォータニオンを予測
         Quaternion approx_Q(Q0 + Q0.d_dt((W + W0) / 2. * dt));
+        // Quaternion approx_Q(Q0);
 
-        NR.X = Q0();
-        for (auto i = 0; i < 50; ++i)
+        NR.X = Normalize(Q0() + Q1() + Q2() + Q3());
+        for (auto i = 0; i < 40; ++i)
         {
             NR.update(DDq_norm_f(NR.X, A, M, G0, M0_, this->magTransMat),
                       D2D2q_norm_f(NR.X, A, M, G0, M0_, this->magTransMat)); /*initial X is updated*/
             NR.X = Normalize(NR.X);
-            if (Norm(NR.dX) < 1E-10)
+            if (Norm(NR.dX) < 1E-6)
                 break;
         }
 
@@ -499,6 +510,11 @@ struct Fusion
                 InterpolationLagrange(historyM())(t),
                 InterpolationLagrange(historyW())(t),
                 InterpolationLagrange(historyAbody())(t)};
+    };
+
+    Quaternion interpQ(const double t) const
+    {
+        return Quaternion(InterpolationLagrange(historyQ_tuple())(t));
     };
 
     T4d interpQtuple(const double t) const

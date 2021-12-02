@@ -3661,7 +3661,13 @@ struct BaseBuckets
 				return ret;
 		}
 		return ret;
-	}; /* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
+	};
+	std::unordered_set<T *> getObjects_unorderedset(const Tddd &x, const double smoothing_length, const int limit_number = 100000) const
+	{
+		int depth = std::ceil(smoothing_length / this->dL);
+		return getObjects_unorderedset(x, depth, limit_number);
+	};
+	/* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
 	std::vector<std::vector<T *>> getObjects(const Tddd &x,
 											 const int limit_depth /*limit depth*/,
 											 const int limit_number = 100000) const
