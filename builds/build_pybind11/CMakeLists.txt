@@ -39,6 +39,10 @@ else()
 
   pybind11_add_module(fundamental SHARED fundamental.cpp)
 
-  # メモ sudo apt install python3.6-dev
+  # メモ
+  #
+  # sudo apt install python3.9-dev
+  #
+  # ln -s /usr/lib/python3.9 /usr/include/python3.9
 
 endif()
