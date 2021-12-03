@@ -197,6 +197,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 		}
 	}
 };
+
 //点なのに，sphereでインターセクションをチェックするのは効率的ではない．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint> &B,
 										   const bool include_self_network = true)
