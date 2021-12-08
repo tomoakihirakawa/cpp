@@ -724,7 +724,7 @@ bool myIsfinite(const double v)
 
 bool isFinite(const double v, const double eps = 1E+50)
 {
-	if (v < -eps || v > eps)
+	if (v < -eps || v > eps || v != v)
 		return false;
 	else
 		return true;

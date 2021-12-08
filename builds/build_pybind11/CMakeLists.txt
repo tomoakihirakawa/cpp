@@ -17,7 +17,7 @@ if(APPLE)
   # ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp") set(CMAKE_CXX_FLAGS_DEBUG
   # "-Og -H") set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
 
-  set(PYBIND11_CPP_STANDARD -std=c++17)
+  set(-DCMAKE_CXX_STANDARD=17)
   # set(CMAKE_CXX_FLAGS "-Wall -Wextra -Ofast")
   set(CMAKE_CXX_FLAGS "-Ofast -std=c++17")
   add_subdirectory(pybind11)
@@ -44,5 +44,8 @@ else()
   # sudo apt install python3.9-dev
   #
   # ln -s /usr/lib/python3.9 /usr/include/python3.9
-
+  #
+  # git clone https://github.com/pybind/pybind11.git
+  #
+  # リアルタイムプロットがうまくいかない，使っているpythonバージョンを変えてみる
 endif()

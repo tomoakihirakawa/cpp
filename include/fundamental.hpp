@@ -3084,6 +3084,26 @@ std::vector<Type> RotateLeft(const std::vector<Type> &vecs, const int n)
 	std::rotate(ret.begin(), ret.begin() + n, ret.end());
 	return ret;
 }
+T3Tddd RotateLeft(const T3Tddd &vecs, int n)
+{ // 2021/12/05
+	n = n % 3;
+	if (n == 0)
+		return {std::get<0>(vecs), std::get<1>(vecs), std::get<2>(vecs)};
+	else if (n == 1)
+		return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+	else
+		return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+}
+T3Tddd RotateRight(const T3Tddd &vecs, int n)
+{ // 2021/12/05
+	n = n % 3;
+	if (n == 0)
+		return {std::get<0>(vecs), std::get<1>(vecs), std::get<2>(vecs)};
+	else if (n == 1)
+		return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+	else
+		return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+}
 template <class Type>
 std::vector<Type> RotateRight(const std::vector<Type> &vecs, const int n)
 { // 2021/04/07
@@ -3439,6 +3459,7 @@ struct BaseBuckets
 	Tiii dn;
 	// std::vector</*x*/ std::vector</*y*/ std::vector</*z*/ std::vector<T *>>>> buckets;
 	std::vector</*x*/ std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>> buckets;
+	std::unordered_set<T *> all_stored_objects;
 	/*
 	bucketsベクトルは，unordered_setで重複を認めないが，他のベクトルには，同じオブジェクトが入っていてもよい．
 	例えば，鏡像関係を作りたい場合，他のバケット位置に，同じオブジェクトを入れておけばいい．
@@ -3479,6 +3500,7 @@ struct BaseBuckets
 			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
 			this->dn = {xsize, ysize, zsize};
 			this->buckets.clear();
+			this->all_stored_objects.clear();
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
 																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
@@ -3508,6 +3530,7 @@ struct BaseBuckets
 			std::cout << "サイズ = " << this->dn << std::endl;
 
 			this->buckets.clear();
+			this->all_stored_objects.clear();
 			this->buckets.resize(xsize,
 								 std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>(ysize,
 																							   std::vector</*z*/ std::unordered_set<T *>>(zsize, std::unordered_set<T *>{})));
@@ -3518,6 +3541,12 @@ struct BaseBuckets
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		};
 	};
+
+	const std::unordered_set<T *> &getAll() const
+	{
+		return this->all_stored_objects;
+	};
+
 	// x座標を内包するバケツのインデックスを返す
 	void indices(const Tddd &x, int &i, int &j, int &k) const
 	{
@@ -3555,7 +3584,10 @@ struct BaseBuckets
 		try
 		{
 			if (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize))
+			{
 				this->buckets[i][j][k].emplace(p);
+				this->all_stored_objects.emplace(p);
+			}
 		}
 		catch (std::exception &e)
 		{
@@ -3588,7 +3620,10 @@ struct BaseBuckets
 	// 	};
 	// };
 	//座標を入力し，バケツを指定する．
-	std::vector<T *> getAllBuckets() const { return this->buckets; };
+	std::vector<T *> getAllBuckets() const
+	{
+		return this->buckets;
+	};
 	std::vector<T *> getBucket(const Tddd &x) const
 	{
 		Tiii i = this->indices(x);
@@ -3598,6 +3633,7 @@ struct BaseBuckets
 	void clear()
 	{
 		this->buckets.clear();
+		this->all_stored_objects.clear();
 		// for (auto &vvu_b : this->buckets)
 		// 	for (auto &vu_b : vvu_b)
 		// 		for (auto &u_b : vu_b)

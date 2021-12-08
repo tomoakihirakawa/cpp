@@ -922,6 +922,162 @@ Tdd operator/(const double u, Tdd v)
 	return v;
 };
 /* ------------------------------------------------------ */
+/*                     行列T3Tddd                          */
+/* ------------------------------------------------------ */
+// Tddd operator-(Tddd v)
+// {
+// 	std::get<0>(v) = -std::get<0>(v);
+// 	std::get<1>(v) = -std::get<1>(v);
+// 	std::get<2>(v) = -std::get<2>(v);
+// 	return v;
+// };
+// /* ------------------------------------------------------ */
+T3Tddd &operator-=(T3Tddd &v, const T3Tddd &u)
+{
+	std::get<0>(v) -= std::get<0>(u);
+	std::get<1>(v) -= std::get<1>(u);
+	std::get<2>(v) -= std::get<2>(u);
+	return v;
+};
+T3Tddd &operator-=(T3Tddd &v, const double d)
+{
+	std::get<0>(v) -= d;
+	std::get<1>(v) -= d;
+	std::get<2>(v) -= d;
+	return v;
+};
+T3Tddd &operator+=(T3Tddd &v, const T3Tddd &u)
+{
+	std::get<0>(v) += std::get<0>(u);
+	std::get<1>(v) += std::get<1>(u);
+	std::get<2>(v) += std::get<2>(u);
+	return v;
+};
+T3Tddd &operator+=(T3Tddd &v, const double d)
+{
+	std::get<0>(v) += d;
+	std::get<1>(v) += d;
+	std::get<2>(v) += d;
+	return v;
+};
+T3Tddd &operator*=(T3Tddd &v, const T3Tddd &u)
+{
+	std::get<0>(v) *= std::get<0>(u);
+	std::get<1>(v) *= std::get<1>(u);
+	std::get<2>(v) *= std::get<2>(u);
+	return v;
+};
+T3Tddd &operator*=(T3Tddd &v, const double d)
+{
+	std::get<0>(v) *= d;
+	std::get<1>(v) *= d;
+	std::get<2>(v) *= d;
+	return v;
+};
+T3Tddd &operator/=(T3Tddd &v, const T3Tddd &u)
+{
+	std::get<0>(v) /= std::get<0>(u);
+	std::get<1>(v) /= std::get<1>(u);
+	std::get<2>(v) /= std::get<2>(u);
+	return v;
+};
+T3Tddd &operator/=(T3Tddd &v, const double d)
+{
+	std::get<0>(v) /= d;
+	std::get<1>(v) /= d;
+	std::get<2>(v) /= d;
+	return v;
+};
+/* ------------------------------------------------------ */
+T3Tddd operator-(T3Tddd v, const T3Tddd &u)
+{
+	std::get<0>(v) -= std::get<0>(u);
+	std::get<1>(v) -= std::get<1>(u);
+	std::get<2>(v) -= std::get<2>(u);
+	return v;
+};
+T3Tddd operator+(T3Tddd v, const T3Tddd &u)
+{
+	std::get<0>(v) += std::get<0>(u);
+	std::get<1>(v) += std::get<1>(u);
+	std::get<2>(v) += std::get<2>(u);
+	return v;
+};
+T3Tddd operator*(T3Tddd v, const T3Tddd &u)
+{
+	std::get<0>(v) *= std::get<0>(u);
+	std::get<1>(v) *= std::get<1>(u);
+	std::get<2>(v) *= std::get<2>(u);
+	return v;
+};
+T3Tddd operator/(T3Tddd v, const T3Tddd &u)
+{
+	std::get<0>(v) /= std::get<0>(u);
+	std::get<1>(v) /= std::get<1>(u);
+	std::get<2>(v) /= std::get<2>(u);
+	return v;
+};
+/* ------------------------------------------------------ */
+T3Tddd operator-(T3Tddd v, const double u)
+{
+	std::get<0>(v) -= u;
+	std::get<1>(v) -= u;
+	std::get<2>(v) -= u;
+	return v;
+};
+T3Tddd operator+(T3Tddd v, const double u)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	return v;
+};
+T3Tddd operator*(T3Tddd v, const double u)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	return v;
+};
+T3Tddd operator/(T3Tddd v, const double u)
+{
+	std::get<0>(v) /= u;
+	std::get<1>(v) /= u;
+	std::get<2>(v) /= u;
+	return v;
+};
+/* ------------------------------------------------------ */
+T3Tddd operator-(const double u, T3Tddd v)
+{
+	std::get<0>(v) = u - std::get<0>(v);
+	std::get<1>(v) = u - std::get<1>(v);
+	std::get<2>(v) = u - std::get<2>(v);
+	return v;
+};
+T3Tddd operator+(const double u, T3Tddd v)
+{
+	std::get<0>(v) += u;
+	std::get<1>(v) += u;
+	std::get<2>(v) += u;
+	return v;
+};
+T3Tddd operator*(const double u, T3Tddd v)
+{
+	std::get<0>(v) *= u;
+	std::get<1>(v) *= u;
+	std::get<2>(v) *= u;
+	return v;
+};
+T3Tddd operator/(const double u, T3Tddd v)
+{
+	std::get<0>(v) = u / std::get<0>(v);
+	std::get<1>(v) = u / std::get<1>(v);
+	std::get<2>(v) = u / std::get<2>(v);
+	return v;
+};
+
+/* ------------------------------------------------------ */
+/* ------------------------------------------------------ */
 /* ------------------------------------------------------ */
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(std::vector<T> ret)

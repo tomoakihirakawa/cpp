@@ -558,7 +558,6 @@ double dummy_pressure_Asai_Modified(const Buckets<networkPoint> &B_water,
                                     const double mirroring_distance,
                                     const double power = 2)
 {
-
     Tddd closestX = getClosestFacePoint(dummy_p, boundary_face, mirroring_distance);
     // ダミー粒子のみ使える関数
     auto [f, t0, t1, d, dx] = dummy_p->particlize_info;
@@ -679,14 +678,129 @@ Tddd normal(const std::unordered_set<networkPoint *> &ps,
             ret += grad_kernel_Bspline3(p->getXtuple(), a->getXtuple(), h);
     return Normalize(ret);
 };
+/* ------------------------------------------------------ */
+struct IntersectionsSphereTrianglesLines
+{
+    std::unordered_set<networkFace *> faces;
+    std::vector<T2Tddd> lines;
+    IntersectionsSphereTrianglesLines(const std::unordered_set<networkFace *> &F) : faces({}), lines({})
+    {
+        addFacesAndLines(F);
+    };
+    IntersectionsSphereTrianglesLines(const std::unordered_map<networkFace *, Tddd> &F)
+    {
+        // b! この構造体は，まず与えられた面と，その面同士の交線を作成する．
+        // b! 次にgetでは，面または交線が，与えられた点と正対する場合にその位置を返す．
+        std::unordered_set<networkFace *> FF;
+        for (const auto &[f, _] : F)
+            FF.emplace(f);
+        addFacesAndLines(FF);
+    };
+    void addFacesAndLines(const std::unordered_set<networkFace *> &F)
+    {
+        // 保存はunordered_setで
+        for (const auto &f : F)
+            this->faces.emplace(f);
+
+        // ベクトル化
+        std::vector<networkFace *> FACES;
+        for (const auto &f : this->faces)
+            FACES.emplace_back(f);
+
+        T3Tddd fi, fj;
+        for (auto i = 0; i < FACES.size(); ++i)
+        {
+            fi = FACES[i]->getX_Vertices();
+            fi += 0.1 * (T3Tddd{std::get<0>(fi) - Mean(fi),
+                                std::get<1>(fi) - Mean(fi),
+                                std::get<2>(fi) - Mean(fi)});
+            for (auto j = i; j < FACES.size(); ++j)
+            {
+                fj = FACES[j]->getX_Vertices();
+                fj += 0.1 * (T3Tddd{std::get<0>(fj) - Mean(fj),
+                                    std::get<1>(fj) - Mean(fj),
+                                    std::get<2>(fj) - Mean(fj)});
+                auto intxn = IntersectionTriangles(fi, fj);
+                if (intxn.isIntersecting)
+                    lines.emplace_back(intxn.L);
+            }
+        }
+    };
+
+    std::vector<std::tuple<Tddd, Tddd>> X_Y;
+    std::vector<std::tuple<Tddd, Tddd>> get(const networkPoint *p, const double h)
+    {
+        X_Y.clear();
+        // b! 次にgetでは，面または交線が，与えられた点と正対する場合にその位置を返す．
+        //! 面との干渉
+        for (const auto &f : this->faces)
+        {
+            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
+            if (intxn.isIntersecting)
+                X_Y.emplace_back(std::tuple<Tddd, Tddd>{intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+        }
+        //! 線との干渉
+        for (const auto &L : this->lines)
+        {
+            auto intxn = IntersectionSphereLine(p->getXtuple(), h, L);
+            if (intxn.isIntersecting)
+                X_Y.emplace_back(std::tuple<Tddd, Tddd>{intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+        }
+        return X_Y;
+    };
+};
+#define free_slip_boundary_condition
+#define boundary_gurd
+
+#if defined(boundary_gurd)
+double boundary_gurd_value(const double distance, const double h)
+{
+    double additional = tanh((2. * M_PI) / (h / 8.) * (-distance + (h / 8.)) - M_PI) + 1.;
+    return 1.; // + additional;
+};
+#endif
+
 //@ ------------------------------------------------------ */
 //@                         速度の発散                       */
 //@                          div(U)                        */
 //@ ------------------------------------------------------ */
+double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
+                              const networkPoint *const a,
+                              const double h)
+{
+    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
+    double ret = 0;
+    Tddd n, U;
+    for (const auto &p : ps)
+    {
+        if (p != a)
+            ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(p, h))
+        {
+            n = Normalize(p->getXtuple() - X);
+#if defined(free_slip_boundary_condition)
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+#elif defined(no_slip_boundary_condition)
+            U = -p->U_SPH;
+#else
+            U = -n * Dot(p->U_SPH, n);
+#endif
+            ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline5(Y, a->getXtuple(), h))
+#if defined(boundary_gurd)
+                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+#else
+                ;
+#endif
+        }
+        // b%$------------------------------------------------------ */
+    }
+    return ret / a->density;
+};
+
 double div_U(const std::unordered_set<networkPoint *> &ps,
              const networkPoint *const a,
-             const double h,
-             const int order = 3)
+             const double h)
 {
     //* これはシンプルに勾配計算の改良版である．
     double ret = 0;
@@ -698,6 +812,44 @@ double div_U(const std::unordered_set<networkPoint *> &ps,
     return ret / a->density;
 };
 //
+double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
+                                  const networkPoint *const a,
+                                  const double h,
+                                  const int order = 3)
+{
+    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
+    //* これはシンプルに勾配計算の改良版である．
+    double ret = 0;
+    Tddd U, n;
+    for (const auto &p : ps)
+    {
+        if (p != a)
+        {
+            ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h));
+        }
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(p, h))
+        {
+            n = Normalize(p->getXtuple() - X);
+#if defined(free_slip_boundary_condition)
+            U = p->tmp_U_SPH - 2 * n * Dot(p->tmp_U_SPH, n);
+#elif defined(no_slip_boundary_condition)
+            U = -p->tmp_U_SPH;
+#else
+            U = -n * Dot(p->tmp_U_SPH, n);
+#endif
+            ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), Y, h))
+#if defined(boundary_gurd)
+                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+#else
+                ;
+#endif
+        }
+        // b%$------------------------------------------------------ */
+    }
+
+    return ret / a->density;
+};
 double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
                  const networkPoint *const a,
                  const double h,
@@ -723,26 +875,65 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
 //#                          圧力勾配                       */
 //#                         grad(P)                        */
 //# ------------------------------------------------------ */
+// Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
+//                                           const networkPoint *const a,
+//                                           const double h,
+//                                           const int order = 3)
+// {
+//     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
+//     Tddd ret = {0, 0, 0}, W;
+//     for (const auto &p : ps)
+//     {
+//         if (p != a)
+//             W = grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+//         else
+//             W = {0, 0, 0};
+
+//         for (const auto &[f, intX] : p->getContactFaces())
+//             W += grad_kernel_Bspline5(a->getXtuple() + 2. * (intX - a->getXtuple()), a->getXtuple(), h);
+//         ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
+//     }
+//     return ret * a->density;
+// };
+
 Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
                                           const networkPoint *const a,
-                                          const double h,
-                                          const int order = 3)
+                                          const double h)
 {
     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
     Tddd ret = {0, 0, 0}, W;
+    double nu, pn, tmp;
+    Tddd accel = {0, 0, 0}, n;
+    Tddd gravity = {0., 0., -9.81};
+    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     for (const auto &p : ps)
     {
         if (p != a)
+        {
             W = grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
-        else
-            W = {0, 0, 0};
-
-        for (const auto &[f, intX] : p->getContactFaces())
-            W += grad_kernel_Bspline5(a->getXtuple() + 2. * (intX - a->getXtuple()), a->getXtuple(), h);
-        ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
+            ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
+        }
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(p, h))
+        {
+            n = Normalize(p->getXtuple() - X);
+            W = grad_kernel_Bspline5(Y, a->getXtuple(), h); // *(1. + log(Norm(X - p->getXtuple()) < h / 6 ? (h / 6) / Norm(X - p->getXtuple()) : 1.));
+            nu = p->mu_SPH / p->density;
+            pn = p->density * Dot(nu * p->lap_U + gravity - accel, n);
+            tmp = p->pressure_SPH + /*修正*/ pn * Dot(Y - p->getXtuple(), n);
+            ret += p->mass * (tmp / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W
+#if defined(boundary_gurd)
+                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+#else
+                ;
+#endif
+        }
+        // b%$------------------------------------------------------ */
     }
+
     return ret * a->density;
 };
+
 Tddd grad_P_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
                          const networkPoint *const a,
                          const double h,
@@ -761,12 +952,74 @@ Tddd grad_P_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
 //%                          粘性項                         */
 //%                       laplacian(U)                     */
 //% ------------------------------------------------------ */
+Tddd laplacian_U_Monaghan1992(const networkPoint *const p,
+                              const Tddd &X,
+                              const Tddd &U,
+                              const networkPoint *const a,
+                              const double h,
+                              const double alpha = 0.1,
+                              const double beta = 0.1)
+{
+    auto Uij = a->U_SPH - U;
+    auto rij = a->getXtuple() - X;
+    auto dot_rij_rij = Dot(rij, rij);
+    auto dot_Uij_rij = Dot(Uij, rij);
+    double Cs = 1466., PIij, div_U, m;
+    if (dot_Uij_rij < 0)
+    {
+        m = h / 3. * dot_Uij_rij / dot_rij_rij /*hを消せばUの発散となっている*/;
+        PIij = (-alpha * Cs * m + beta * m * m) / ((p->density + a->density) / 2.);
+        return p->mass * PIij * grad_kernel_Bspline5(X, a->getXtuple(), h);
+    }
+    return {0, 0, 0};
+};
+Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
+                                               const networkPoint *const a,
+                                               const double h,
+                                               const double alpha = 0.1,
+                                               const double beta = 0.1)
+{
+    /*
+    kernel_Bspline5の定義はwij=w(|p-a|)としている．
+    */
+    //人工粘性
+    //まず，nu*laplacian(U)を計算する
+    Tddd ret = {0, 0, 0}, n, U;
+    double Cs = 1466.;
+    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
+    for (const auto &p : ps)
+    {
+        if (p != a)
+            ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(p, h))
+        {
+            n = Normalize(p->getXtuple() - X);
+#if defined(free_slip_boundary_condition)
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+#elif defined(no_slip_boundary_condition)
+            U = -p->U_SPH;
+#else
+            U = -n * Dot(p->U_SPH, n);
+#endif
+            ret += laplacian_U_Monaghan1992(p, Y, U, a, h, alpha, beta)
+#if defined(boundary_gurd)
+                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+#else
+                ;
+#endif
+        }
+        // b$ ------------------------------------------------------ */
+    }
+    double nu = a->mu_SPH / a->density;
+    return -ret / nu;
+};
+
 Tddd laplacian_U_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
                               const networkPoint *const a,
                               const double h,
                               const double alpha = 0.1,
-                              const double beta = 0.1,
-                              const int order = 3)
+                              const double beta = 0.1)
 {
     /*
     kernel_Bspline5の定義はwij=w(|p-a|)としている．
@@ -777,63 +1030,64 @@ Tddd laplacian_U_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
     double Cs = 1466., PIij, div_U, dot_rij_rij, dot_Uij_rij, m;
     for (const auto &p : ps)
         if (p != a)
-        {
-            Uij = a->U_SPH - p->U_SPH;
-            rij = a->getXtuple() - p->getXtuple();
-            dot_rij_rij = Dot(rij, rij);
-            dot_Uij_rij = Dot(Uij, rij);
-            if (dot_Uij_rij < 0)
-            {
-                m = h / 3. * dot_Uij_rij / dot_rij_rij /*hを消せばUの発散となっている*/;
-                PIij = (-alpha * Cs * m + beta * m * m) / ((p->density + a->density) / 2.);
-                ret += p->mass * PIij * grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
-            }
-        }
+            ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
     double nu = a->mu_SPH / a->density;
     return -ret / nu;
 };
 
 // b!New
+Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X)
+{
+    auto Uij = a->U_SPH - p->U_SPH;
+    auto Xij = a->getXtuple() - p->getXtuple();
+    auto nu_i = p->mu_SPH / p->density;
+    auto nu_j = a->mu_SPH / a->density;
+    auto W = grad_kernel_Bspline5(a->getXtuple(),
+                                  p->getXtuple(), h);
+    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij));
+};
+Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X, const Tddd &U)
+{
+    auto Uij = a->U_SPH - U;
+    auto Xij = a->getXtuple() - p->getXtuple();
+    auto nu_i = p->mu_SPH / p->density;
+    auto nu_j = a->mu_SPH / a->density;
+    auto W = grad_kernel_Bspline5(a->getXtuple(),
+                                  p->getXtuple(), h);
+    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij));
+};
 Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
                                                 const networkPoint *const a,
                                                 const double h,
                                                 const int order = 2)
 {
     // nu*laplacian(U)を計算する
-    Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, Uij, Xij, W;
+    Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, U, n;
     double nu_i, nu_j;
+    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     for (const auto &p : ps)
     {
         if (p != a)
+            ret += laplacian_U_ShaoAndLo2003(a, p, h, p->getXtuple());
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(p, h))
         {
-            Uij = a->U_SPH - p->U_SPH;
-            Xij = a->getXtuple() - p->getXtuple();
-            nu_i = p->mu_SPH / p->density;
-            nu_j = a->mu_SPH / a->density;
-
-            // b! 要修正
-            W = grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h);
-
-            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W;
-            tmp /= ((p->density + a->density) * Dot(Xij, Xij));
-            ret += tmp;
+            n = Normalize(p->getXtuple() - X);
+#if defined(free_slip_boundary_condition)
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+#elif defined(no_slip_boundary_condition)
+            U = -p->U_SPH;
+#else
+            U = -n * Dot(p->U_SPH, n);
+#endif
+            ret += laplacian_U_ShaoAndLo2003(a, p, h, Y, U)
+#if defined(boundary_gurd)
+                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+#else
+                ;
+#endif
         }
-
-        W = {0, 0, 0};
-        for (const auto &[f, intX] : p->getContactFaces())
-        {
-            Uij = a->U_SPH; // - p->U_SPH;ゼロとしてみる
-            Xij = a->getXtuple() - p->getXtuple();
-            nu_i = p->mu_SPH / p->density;
-            nu_j = a->mu_SPH / a->density;
-
-            // b! 要修正
-            W += grad_kernel_Bspline5(a->getXtuple(), a->getXtuple() + 2. * (intX - a->getXtuple()), h);
-
-            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W;
-            tmp /= ((p->density + a->density) * Dot(Xij, Xij));
-            ret += tmp;
-        }
+        // b$ ------------------------------------------------------ */
     }
     return ret / (a->mu_SPH / a->density);
 };
@@ -861,6 +1115,47 @@ Tddd laplacian_U_ShaoAndLo2003(const std::unordered_set<networkPoint *> &ps,
 };
 
 /* ------------------------------------------------------ */
+double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
+                                                    const networkPoint *const i,
+                                                    const double h,
+                                                    const double dt)
+{
+    if (dt < 1E-40)
+        return i->pressure_SPH;
+    // [1] Nomeritae, E. Daly, S. Grimaldi, and H. H. Bui, “Explicit incompressible SPH algorithm for free-surface flow modelling: A comparison with weakly compressible schemes,” Adv. Water Resour., vol. 97, pp. 156–167, Nov. 2016.
+    Tddd Xij;
+    double tmp, total_Aij = 0, total_Aij_Pj = 0, Aij;
+    auto INTXN = IntersectionsSphereTrianglesLines(i->getContactFaces());
+    for (const auto &j : ps)
+    {
+        if (j != i)
+        {
+            Xij = i->getXtuple() - j->getXtuple();
+            tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), j->getXtuple(), h)) / Dot(Xij, Xij);
+            total_Aij += Aij;
+            total_Aij_Pj += Aij * j->pressure_SPH;
+        }
+
+        // b$ ------------------------ ポリゴン ------------------------ */
+        for (const auto &[X, Y] : INTXN.get(j, h))
+        {
+            Xij = i->getXtuple() - Y;
+            tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), Y, h)) / Dot(Xij, Xij)
+#if defined(boundary_gurd)
+                  * boundary_gurd_value(Norm(Y - j->getXtuple()), h);
+#else
+                ;
+#endif
+            total_Aij += Aij;
+            total_Aij_Pj += Aij * j->pressure_SPH;
+        }
+        // b$ ------------------------------------------------------ */
+    }
+    double Bi = i->div_U / dt;
+    return (Bi + total_Aij_Pj) / total_Aij;
+};
 
 double pressure_EISPH_Hosseini2007(const std::unordered_set<networkPoint *> &ps,
                                    const networkPoint *const i,

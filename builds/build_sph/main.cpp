@@ -1210,6 +1210,8 @@ const double preparation_C_artificial_viscousity_beta = stod(settingSPH["prepara
 //@ ------------------------------------------------------------- */
 PVDWriter waterPVD(output_dir + "/water.pvd");
 PVDWriter oppositeXPVD(output_dir + "/oppositeX.pvd");
+PVDWriter contact_faces_PVD(output_dir + "/contact_faces.pvd");
+PVDWriter reflectPVD(output_dir + "/reflectX.pvd");
 //* ------------------------------------------------------ */
 //*                           メイン                        */
 //* ------------------------------------------------------ */
@@ -1310,18 +1312,20 @@ int main()
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
 		V_Netp rigid_bodies = {tank, wave_maker};
 
-		/*
-		WCSPH:
-		元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
-		これは．Monaghan(1994)から始まったもの．
-		WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
+/*
+WCSPH:
+元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
+これは．Monaghan(1994)から始まったもの．
+WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
 
-		EISP:
+EISP:
 
-		*/
-		//@ WCSPH/EISPH
-		// #define WCSPH
-#define EISPH
+*/
+//@ WCSPH/EISPH
+#define WCSPH
+		// #define EISPH
+
+#define apply_polygon_boundary
 
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1346,6 +1350,7 @@ int main()
 				wave_maker->clearBucketParametricPoints();
 				wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
 				wave_maker->makeBucketFaces(particle_spacing / 2.);
+				mk_vtu(output_dir + "/wave_maker_parametric_points.vtu", {wave_maker->getParametricPoints()});
 			}
 			if (step == 0 || step == preparation_time_step)
 			{
@@ -1354,6 +1359,7 @@ int main()
 				tank_init->clearBucketParametricPoints();
 				tank->makeBucketParametricPoints(particle_spacing / 2.);
 				tank->makeBucketFaces(particle_spacing / 2.);
+				mk_vtu(output_dir + "/tank_parametric_points.vtu", {tank->getParametricPoints()});
 				rigid_bodies = {tank, wave_maker};
 			}
 			/* ------------------------------------------------------ */
@@ -1361,7 +1367,7 @@ int main()
 
 #if defined(EISPH)
 			//準備時間は，圧力を静水圧に固定する
-			if (step <= preparation_time_step)
+			if (step <= 2)
 				for (const auto &p : water_points)
 				{
 					p->pressure_SPH = density * g * (initial_surface_height - std::get<2>(p->getXtuple()));
@@ -1418,36 +1424,36 @@ int main()
 #pragma omp single nowait
 #endif
 				{
-					auto VP = TakeExcept(Flatten(net->getBucketPoints().getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
-					/* ------------------------------------------------------ */
-					if (!VP.empty())
-					{
-						auto mean = Mean(Distance(p, VP));
-						if (mean > 1.25 * particle_spacing)
-							p->radius_SPH = C_SML * 1.25 * particle_spacing;
-						else if (mean < 0.75 * particle_spacing)
-							p->radius_SPH = C_SML * 0.75 * particle_spacing;
-						else
-							p->radius_SPH = C_SML * mean;
-						p->isFreeFalling = false;
-					}
-					else
-					{
-						p->radius_SPH = C_SML * 0.75 * particle_spacing;
-						p->isFreeFalling = true;
-					}
-					/* ------------------------------------------------------ */
-					// 初期の粒子間隔を使う．
+					std::vector<networkPoint *> VP = TakeExcept(Flatten(net->getBucketPoints().getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
+					// /* ------------------------------------------------------ */
 					// if (!VP.empty())
 					// {
-					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	auto mean = Mean(Distance(p, VP));
+					// 	if (mean > 1.25 * particle_spacing)
+					// 		p->radius_SPH = C_SML * 1.25 * particle_spacing;
+					// 	else if (mean < 0.75 * particle_spacing)
+					// 		p->radius_SPH = C_SML * 0.75 * particle_spacing;
+					// 	else
+					// 		p->radius_SPH = C_SML * mean;
 					// 	p->isFreeFalling = false;
 					// }
 					// else
 					// {
-					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	p->radius_SPH = C_SML * 0.75 * particle_spacing;
 					// 	p->isFreeFalling = true;
 					// }
+					/* ------------------------------------------------------ */
+					// 初期の粒子間隔を使う．
+					if (!VP.empty())
+					{
+						p->radius_SPH = C_SML * particle_spacing;
+						p->isFreeFalling = false;
+					}
+					else
+					{
+						p->radius_SPH = C_SML * particle_spacing;
+						p->isFreeFalling = true;
+					}
 					/* ------------------------------------------------------ */
 				}
 				//% --------------- p->radius_SPHの範囲だけ点を取得 --------------- */
@@ -1461,9 +1467,12 @@ int main()
 #endif
 				{
 					//@ unlimiteを使う2021/11/10
-					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.1);
+#ifndef apply_polygon_boundary
 					for (const auto &n : rigid_bodies)
-						p->addContactPoints(n->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+						p->addContactPoints(n->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.1);
+#endif
+
 					// 物体だけで法線方向は決められない．
 					// 流体と物体が接する面をまず検知し，次に
 				}
@@ -1475,24 +1484,33 @@ int main()
 			std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			//! 近傍粒子探査が終わったら時間ステップを決めることができる
 			// temp ------------------------------------------------------ */
-
-			// /* ------------------------------------------------------ */
-			// // uomap_P_Tddd P_X;
-			// auto faces = net->getContactFacesOfPoints();
-			// // for (const auto &p : dummy_points)
-			// // {
-			// // 	auto X = getClosestFacePoint(p, faces, 4. * 0.08);
-			// // 	if (!(Norm(X) > 1E+40))
-			// // 		P_X[p] = X - p->getXtuple();
-			// // }
-			// // auto example_P = (*net->getPoints().begin());
-			// uomap_P_Tddd P_X = getMap_PointToClosestFacePoint(dummy_points, faces, 5. * 0.08);
-			// // std::vector<Tddd> example_reflectXs;
-			// // for (const auto &[p, X] : example_P_reflectX)
-			// // 	example_reflectXs.emplace_back(X);
-			// mk_vtu(output_dir + "/example_reflectXs.vtu", {dummy_points}, {{"oppositeX", P_X}});
-			// mk_vtu(output_dir + "/example_boundary_faces.vtu", faces);
-
+			std::vector<Tddd> oppositeX, reflectX;
+			// b$ ------------------------------------------------------ */
+			// b$                        面との接触を確認                   */
+			// b$ ------------------------------------------------------ */
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+			for (const auto &p : net->getPoints())
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+			{
+				p->clearContactFaces();
+				p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
+				for (const auto &n : rigid_bodies)
+					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
+			}
+			for (const auto &p : net->getPoints())
+			{
+				auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+				for (const auto &[X, Y] : INTXN.get(p, 2. * p->radius_SPH))
+				{
+					reflectX.emplace_back(X);
+					oppositeX.emplace_back(Y);
+				};
+			}
+			// mk_vtu(output_dir + "/reflectX_line.vtu", {reflectX_line});
 			// temp ------------------------------------------------------ */
 			/* ------------------------------------------------------ */
 			Print("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
@@ -1544,13 +1562,29 @@ int main()
 				waterPVD.push(filename, real_time);
 				waterPVD.output();
 				/* ------------------------------------------------------ */
-				mk_vtu(output_dir + "/contact_boundary_faces.vtu", net->getContactFacesOfPointsFirst());
-				{
-					std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
-					mk_vtu(output_dir + "/" + filename, {net->getOppositeXFromContactFacesOfPoints()});
-					oppositeXPVD.push(filename, real_time);
-					oppositeXPVD.output();
-				}
+				//! メモリーリークに注意
+				// {
+				// 	std::string filename = "contact_boundary_faces" + std::to_string(count) + ".vtu";
+				// 	mk_vtu(output_dir + "/" + filename, net->getContactFacesOfPoints());
+				// 	contact_faces_PVD.push(filename, real_time);
+				// 	contact_faces_PVD.output();
+				// }
+
+				// {
+				// 	std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
+				// 	mk_vtu(output_dir + "/oppositeX.vtu", {oppositeX});
+				// 	mk_vtu(output_dir + "/" + filename, {oppositeX});
+				// 	oppositeXPVD.push(filename, real_time);
+				// 	oppositeXPVD.output();
+				// }
+				// {
+				// 	std::string filename = "reflectX" + std::to_string(count) + ".vtu";
+				// 	mk_vtu(output_dir + "/reflectX.vtu", {reflectX});
+				// 	mk_vtu(output_dir + "/" + filename, {reflectX});
+				// 	reflectPVD.push(filename, real_time);
+				// 	reflectPVD.output();
+				// }
+
 				/* ------------------------------------------------------ */
 				Print("出力");
 				count++;
@@ -1587,11 +1621,32 @@ int main()
 				{
 					// 2021年10月7日水面のチェックの範囲を狭くした
 					p->interpolated_normal_SPH = -normal(p->getContactPoints(), p, p->radius_SPH);
+
+#ifndef apply_polygon_boundary
 					p->isSurface = std::none_of(p->getContactPoints().begin(), p->getContactPoints().end(),
 												[p](const auto &q)
 												{ return (q != p &&
-														  (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.3) &&
+														  (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.2) &&
 														  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.)); });
+#else
+					bool no_particle = std::none_of(p->getContactPoints().begin(), p->getContactPoints().end(),
+													[p](const auto &q)
+													{ return (q != p &&
+															  (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.2) &&
+															  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.)); });
+					bool no_face = std::none_of(p->getContactFaces().begin(), p->getContactFaces().end(),
+												[p](const auto f)
+												{
+													auto INTXN = IntersectionSphereTriangle(p->getXtuple(), p->radius_SPH / 2.5, f->getX_Vertices());
+													// bool found_face_in_dir = ((Norm(X - p->getXtuple()) < p->radius_SPH / 1.2) &&
+													// 						  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(X - p->getXtuple())) < M_PI / 3.));
+
+													// bool found_face_in_dir_close = ((Norm(X - p->getXtuple()) < p->radius_SPH / 3.) &&
+													// 								(MyVectorAngle(p->interpolated_normal_SPH, Normalize(X - p->getXtuple())) < M_PI / 2.));
+													return INTXN.isIntersecting;
+												});
+					p->isSurface = no_particle && no_face;
+#endif
 				}
 			}
 			std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
@@ -1633,10 +1688,14 @@ int main()
 				//* ------------------------------------------------------------ */
 				// substep          壁面粒子またはダミー粒子の流速を設定               */
 				//* ------------------------------------------------------------ */
+#ifndef apply_polygon_boundary
 				Print("接触するダミー粒子を抜き出す", Green);
 				dummy_points.clear();
 				dummy_points = net->getContactPointsOfPoints(rigid_bodies);
 				std::cout << "ダミー粒子の数：" << dummy_points.size() << std::endl;
+#else
+				std::cout << "ポリゴン壁を使う．ダミー粒子は使わない" << std::endl;
+#endif
 				//! ------------------------------------------------------ */
 				//! ------------------------------------------------------ */
 				//@ ------------------------------------------------------ */
@@ -1644,17 +1703,7 @@ int main()
 				//@ ------------------------------------------------------ */
 				auto updateDummyPressure = [&net, dummy_points, &rigid_bodies]()
 				{
-					// b$ ------------------------------------------------------ */
-					// b$                        面との接触を確認                   */
-					// b$ ------------------------------------------------------ */
-					for (const auto &p : net->getPoints())
-					{
-						p->clearContactFaces();
-						p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));
-						for (const auto &n : rigid_bodies)
-							p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
-					}
-
+#ifndef apply_polygon_boundary
 					Print("ダミー粒子（鏡映関係を使う）の圧力を計算．WCSPHなら圧力の評価の\"後\"．EISPHなら圧力の評価の\"前\"", Green);
 					auto faces = net->getContactFacesOfPointsFirst();
 #ifdef _OPENMP
@@ -1673,20 +1722,11 @@ int main()
 																	   4. * 0.08,
 																	   2);
 					}
+#endif
 				};
 				auto updateDummy_U_tmpU_mass_rho = [&net, &dummy_points, &rigid_bodies]()
 				{
-					// b$ ------------------------------------------------------ */
-					// b$                        面との接触を確認                   */
-					// b$ ------------------------------------------------------ */
-					for (const auto &p : net->getPoints())
-					{
-						p->clearContactFaces();
-						p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));
-						for (const auto &n : rigid_bodies)
-							p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
-					}
-
+#ifndef apply_polygon_boundary
 					auto faces = net->getContactFacesOfPointsFirst();
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1724,7 +1764,9 @@ int main()
 							// cp->setDensity(density);
 						}
 					}
+#endif
 				};
+
 				//! ------------------------------------------------------ */
 				//! ------------------------------------------------------ */
 
@@ -1733,11 +1775,29 @@ int main()
 				updateDummy_U_tmpU_mass_rho(); //! ダミー
 
 				std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
+				// b$ ------------------------------------------------------ */
+#ifdef apply_polygon_boundary
+				// b$ ------------------------------------------------------ */
+				// b$                        面との接触を確認                   */
+				// b$ ------------------------------------------------------ */
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+				for (const auto &p : water_points)
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+				{
+					p->clearContactFaces();
+					p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
+					for (const auto &n : rigid_bodies)
+						p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
+				}
+#endif
+				// b$ ------------------------------------------------------ */
 				//@ -------------------------------------------------------------- */
 				// step1          　　_　  流体粒子のラプラシアンをまず計算   　  　_      _      */
 				//@ -------------------------------------------------------------- */
-#define apply_polygon_boundary // b! <====================================
-
 				Print("流体粒子のラプラシアンをまず計算", Green);
 #ifdef _OPENMP
 #pragma omp parallel
@@ -1752,11 +1812,11 @@ int main()
 #ifdef WCSPH
 
 #ifdef apply_polygon_boundary
-						p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
-															p,
-															p->radius_SPH,
-															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
-															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
+						p->lap_U = laplacian_U_Monaghan1992_polygon_boundary(p->getContactPoints(net),
+																			 p,
+																			 p->radius_SPH,
+																			 (step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
+																			 (step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
 #else
 						p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
 															p,
@@ -1768,12 +1828,9 @@ int main()
 #elif defined(EISPH)
 
 #ifdef apply_polygon_boundary
-						// p->lap_U = laplacian_U_ShaoAndLo2003_polygon_boundary(p->getContactPoints(p->getNetwork()),
-						// 													  p,
-						// 													  p->radius_SPH);
-						p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
-															 p,
-															 p->radius_SPH);
+						p->lap_U = laplacian_U_ShaoAndLo2003_polygon_boundary(p->getContactPoints(net),
+																			  p,
+																			  p->radius_SPH);
 #else
 						p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(),
 															 p,
@@ -1808,7 +1865,11 @@ int main()
 #pragma omp single nowait
 #endif
 				{
+#ifdef apply_polygon_boundary
+					p->div_U = div_U_polygon_boundary(p->getContactPoints(net), p, p->radius_SPH);
+#else
 					p->div_U = div_U(p->getContactPoints(), p, p->radius_SPH);
+#endif
 					p->DrhoDt_SPH = -p->density * p->div_U;
 				}
 #endif
@@ -1838,7 +1899,12 @@ int main()
 #pragma omp single nowait
 #endif
 				{
+#ifdef apply_polygon_boundary
+					p->div_U = div_tmp_U_polygon_boundary(p->getContactPoints(net), p, p->radius_SPH);
+#else
 					p->div_U = div_tmp_U(p->getContactPoints(), p, p->radius_SPH);
+#endif
+
 					// 発散ありの場なので，密度は変化している．これの状態で求めた発散より密度を変化させて，
 					// 圧力の計算に用いれば，単純な方法よりもよりソレノイダルに戻す方向に働くはず．
 					// p->tmp_density = p->density + (-p->density * p->div_U) * dt;
@@ -1926,24 +1992,29 @@ int main()
 #endif
 				{
 #ifdef use_RK_for_pressure
-					// $ ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
+					//% ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
 					// if (dt > 1E-40)
 					p->DPDt_SPH = DPDt_EISPH_Hosseini2007(p->getContactPoints(), p, p->radius_SPH, dt);
 					// std::cout << "dt = " << dt << ", DPDt = " << p->DPDt_SPH << std::endl;
-					// $ ----------------------------------------------------------------- */
+					//% ----------------------------------------------------------------- */
 #else
 					//@ ------------------ 圧力の計算にルンゲクッタを使わない場合 ----------------- */
 					if (p->isSurface)
 						p->pressure_SPH_ = 0;
 					else
+					{
+#ifdef apply_polygon_boundary
+						p->pressure_SPH_ = pressure_EISPH_Hosseini2007_polygon_boundary(p->getContactPoints(net), p, p->radius_SPH, dt);
+#else
 						p->pressure_SPH_ = pressure_EISPH_Hosseini2007(p->getContactPoints(), p, p->radius_SPH, dt);
-
-						//@ ----------------------------------------------------------------- */
+#endif
+					}
+					//@ ----------------------------------------------------------------- */
 #endif
 				}
 
 #ifdef use_RK_for_pressure
-				// b$ ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
+				// b% ------------------ 圧力の計算にルンゲクッタを使う場合 ----------------- */
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1956,7 +2027,7 @@ int main()
 					rk->push(p->DPDt_SPH);
 					p->pressure_SPH = rk->getX();
 				}
-				// $ ---------------------------------------------------------------- */
+				// % ---------------------------------------------------------------- */
 #else
 				//@ ------------------ 圧力の計算にルンゲクッタを使わない場合 ----------------- */
 				for (const auto &p : water_points)
@@ -1984,7 +2055,9 @@ int main()
 #endif
 				{
 #ifdef apply_polygon_boundary
-					p->gradP_SPH = grad_P_Monaghan1992_polygon_boundary(p->getContactPoints(p->getNetwork()), p, p->radius_SPH);
+					p->gradP_SPH = grad_P_Monaghan1992_polygon_boundary(p->getContactPoints(net),
+																		p,
+																		p->radius_SPH);
 #else
 					p->gradP_SPH = grad_P_Monaghan1992(p->getContactPoints(), p, p->radius_SPH);
 #endif

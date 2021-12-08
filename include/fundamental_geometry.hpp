@@ -19,7 +19,6 @@ using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 /*
 M. Meyer, M. Desbrun, P. Schröder, and A. H. Barr, “Discrete Differential-Geometry Operators for Triangulated 2-Manifolds BT  - Visualization and Mathematics III,” Vis. Math. III, pp. 35–57, 2003.
 */
-
 namespace geometry
 {
 	/* ------------------------------------------------------ */
@@ -214,6 +213,236 @@ bool IntersectQ(const geometry::CoordinateBounds &b0, const geometry::Coordinate
 			 (std::get<1>(b0y) < std::get<0>(b1y) && std::get<1>(b0y) < std::get<1>(b1y) /*1のyの最大最小が，0のyの最大よりも大きい*/) ||
 			 (std::get<1>(b0z) < std::get<0>(b1z) && std::get<1>(b0z) < std::get<1>(b1z) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
 };
+struct IntersectionSphereLine
+{
+	double distance;
+	Tddd X;
+	bool isIntersecting;
+	// double eps = 1E-12;
+	IntersectionSphereLine(const Tddd &center, double radius, const T2Tddd &AB)
+		: distance(1E+40), isIntersecting(false)
+	{
+		auto [p0, p1] = AB;
+		auto p01 = p0 - p1;
+		auto t = -Dot(p1 - center, p01) / Dot(p01, p01);
+		this->X = p01 * t + p1;
+		this->distance = Norm(this->X - center);
+		if (this->distance <= radius /*may hit*/)
+		{
+			if (0. <= t && t <= 1.)
+				this->isIntersecting = true; //干渉する最も近い点は，線上にある
+		}
+	}
+};
+/* ------------------------------------------------------ */
+struct IntersectionTriangles
+{
+	/*
+	チェック
+		/Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/三角形と三角形の干渉.nb
+	*/
+	T3Tddd P0, P1;
+	T2Tddd L;
+	bool isIntersecting;
+	double eps = 1E-10;
+	double a0, b0, a1, b1, min0, max0, min1, max1, deno0, deno1;
+	double I10InT, I11InT, I00InT, I01InT;
+	Tddd I00, I01, I10, I11;
+	double lmitMin(const double a0, const double b0) const
+	{
+		Tddd ret = {0., 0., 0.};
+		if (std::abs(1 - a0) > eps)
+		{
+			if ((1 - a0) > 0)
+				std::get<0>(ret) = -b0 / (1 - a0);
+			else
+				std::get<0>(ret) = (1 - b0) / (1 - a0);
+		}
+
+		if (std::abs(-a0) > eps)
+		{
+			if (-a0 > 0)
+				std::get<1>(ret) = b0 / a0;
+			else
+				std::get<1>(ret) = -(1 - b0) / a0;
+		}
+		return Max(ret);
+	};
+
+	double lmitMax(const double a0, const double b0) const
+	{
+		Tddd ret = {1., 1., 1.};
+		if (std::abs(1 - a0) > eps)
+		{
+			if ((1 - a0) > 0)
+				std::get<0>(ret) = (1 - b0) / (1 - a0);
+			else
+				std::get<0>(ret) = -b0 / (1 - a0);
+		}
+
+		if (std::abs(-a0) > eps)
+		{
+			if (-a0 > 0)
+				std::get<1>(ret) = -(1 - b0) / a0;
+			else
+				std::get<1>(ret) = b0 / a0;
+		}
+		return Min(ret); //この内最も小さいものが，上限となる
+	};
+
+	IntersectionTriangles(const T3Tddd &P0_IN, const T3Tddd &P1_IN) : P0(P0_IN), P1(P1_IN), isIntersecting(false)
+	{
+		// if (IntersectQ(geometry::CoordinateBounds(P0), geometry::CoordinateBounds(P0)))
+		// 	return;
+		auto [p00, p01, p02] = P0;
+		auto [p10, p11, p12] = P1;
+		auto normalP0 = Normalize(Cross(p01 - p00, p02 - p00));
+		auto normalP1 = Normalize(Cross(p11 - p10, p12 - p10));
+		if (std::abs(std::abs(Dot(normalP0, normalP1)) - 1) < eps)
+		{
+			// Print("干渉線を定義することはできない");
+			// Print("線を共有するような場合はありえる");
+			return;
+		}
+		deno0 = Dot(normalP1, p01 - p02);
+		deno1 = Dot(normalP0, p11 - p12);
+
+		if (std::abs(deno0) < eps)
+			for (auto i = 1; i < 3; ++i)
+			{
+				P0 = RotateLeft(P0, i);
+				p00 = std::get<0>(P0);
+				p01 = std::get<1>(P0);
+				p02 = std::get<2>(P0);
+				deno0 = Dot(normalP1, p01 - p02);
+				if (!(std::abs(deno0) < eps))
+					break;
+				if (i == 2)
+					throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+			}
+
+		if (std::abs(deno1) < eps)
+			for (auto i = 1; i < 3; ++i)
+			{
+				P1 = RotateLeft(P1, i);
+				p10 = std::get<0>(P1);
+				p11 = std::get<1>(P1);
+				p12 = std::get<2>(P1);
+				deno1 = Dot(normalP0, p11 - p12);
+				if (!(std::abs(deno1) < eps))
+					break;
+				if (i == 2)
+					throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+			}
+
+		a0 = Dot(normalP1, p00 - p02) / deno0;
+		b0 = Dot(normalP1, p12 - p02) / deno0;
+		a1 = Dot(normalP0, p10 - p12) / deno1;
+		b1 = Dot(normalP0, p02 - p12) / deno1;
+
+		min0 = lmitMin(a0, b0);
+		max0 = lmitMax(a0, b0);
+		min1 = lmitMin(a1, b1);
+		max1 = lmitMax(a1, b1);
+
+		auto t = min0;
+		I00 = Dot({t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}, P0);
+		t = max0;
+		I01 = Dot({t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}, P0);
+		t = min1;
+		I10 = Dot({t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}, P1);
+		t = max1;
+		I11 = Dot({t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}, P1);
+
+		auto tmp = (I10 - I00) / (I01 - I00);
+		I10InT = isFinite(std::get<0>(tmp)) ? std::get<0>(tmp) : (isFinite(std::get<1>(tmp)) ? std::get<1>(tmp) : std::get<2>(tmp));
+		auto I10IsInside = Between(I10InT, {0, 1});
+
+		tmp = (I11 - I00) / (I01 - I00);
+		I11InT = isFinite(std::get<0>(tmp)) ? std::get<0>(tmp) : (isFinite(std::get<1>(tmp)) ? std::get<1>(tmp) : std::get<2>(tmp));
+		auto I11IsInside = Between(I11InT, {0, 1});
+
+		tmp = (I00 - I10) / (I11 - I10);
+		I00InT = isFinite(std::get<0>(tmp)) ? std::get<0>(tmp) : (isFinite(std::get<1>(tmp)) ? std::get<1>(tmp) : std::get<2>(tmp));
+		auto I00IsInside = Between(I00InT, {0, 1});
+
+		tmp = (I01 - I10) / (I11 - I10);
+		I01InT = isFinite(std::get<0>(tmp)) ? std::get<0>(tmp) : (isFinite(std::get<1>(tmp)) ? std::get<1>(tmp) : std::get<2>(tmp));
+		auto I01IsInside = Between(I01InT, {0, 1});
+
+		if (I10IsInside)
+		{
+			if (I11IsInside && Norm(I10 - I11) > eps)
+			{
+				L = {I10, I11};
+				isIntersecting = true;
+			}
+			if (I01IsInside && Norm(I10 - I01) > eps)
+			{
+				L = {I10, I01};
+				isIntersecting = true;
+			}
+			if (I00IsInside && Norm(I10 - I00) > eps)
+			{
+				L = {I10, I00};
+				isIntersecting = true;
+			}
+		}
+		if (I11IsInside)
+		{
+			if (I00IsInside && Norm(I11 - I00) > eps)
+			{
+				L = {I11, I00};
+				isIntersecting = true;
+			}
+			if (I01IsInside && Norm(I11 - I01) > eps)
+			{
+				L = {I11, I01};
+				isIntersecting = true;
+			}
+		}
+		if (I00IsInside && I01IsInside && Norm(I00 - I01) > eps)
+		{
+			L = {I00, I01};
+			isIntersecting = true;
+		}
+	};
+};
+/* ------------------------------------------------------ */
+struct IntersectionSphereTriangle
+{
+	double scale, t0, t1;
+	Tddd X;
+	double eps = 1E-13;
+	T3Tddd P;
+	bool isIntersecting;
+	IntersectionSphereTriangle(const Tddd &center, const double radius, const T3Tddd &P_IN)
+		: X({0, 0, 0}),
+		  scale(0),
+		  P(P_IN),
+		  isIntersecting(false)
+	{
+		auto [p0, p1, p2] = P;
+		auto n = Normalize(Cross(p1 - p0, p2 - p0));
+		auto [nx, ny, nz] = n;
+		auto [p02x, p02y, p02z] = p0 - p2;
+		auto [p12x, p12y, p12z] = p1 - p2;
+		double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
+		if (std::abs(determ) < eps)
+			return;
+		T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+					  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+					  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
+		auto ans = Dot(center - p2, mat / determ);
+		this->t0 = std::get<0>(ans);
+		this->t1 = std::get<1>(ans);
+		this->scale = std::get<2>(ans);
+		this->X = scale * n + center;
+		if (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))
+			isIntersecting = true;
+	};
+};
+
 /* ------------------------------------------------------ */
 const Tddd &Normal(const geometry::Triangle &triangle)
 {
@@ -317,6 +546,7 @@ int IntersectQ(const geometry::Line &line, const geometry::Triangle &triangle)
 		return 2; /*a,bは面と交差していないが，かなり惜しい*/
 };
 /* ------------------------------------------------------ */
+//@ 全接触情報を返す
 struct intersection
 {
 	Tddd X; //接触した物体の最も近い座標
@@ -458,13 +688,13 @@ struct intersection
 					intersection intx0(sphere, geometry::Line(std::get<0>(triangle.X), std::get<1>(triangle.X)));
 					intersection intx1(sphere, geometry::Line(std::get<1>(triangle.X), std::get<2>(triangle.X)));
 					intersection intx2(sphere, geometry::Line(std::get<2>(triangle.X), std::get<0>(triangle.X)));
-
 					if (intx1.distance >= intx0.distance && intx2.distance >= intx0.distance && intx0.isIntersecting)
 					{
 						this->isIntersecting = true;
 						this->distance = intx0.distance;
 						this->X = intx0.X;
 						this->index_intersection_type = intx0.index_intersection_type;
+						return;
 					}
 					else if (intx0.distance >= intx1.distance && intx2.distance >= intx1.distance && intx1.isIntersecting)
 					{

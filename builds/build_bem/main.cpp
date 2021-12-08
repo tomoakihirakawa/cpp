@@ -92,7 +92,7 @@ std::unordered_set<networkFace *> DeleteDuplicates_FacingContanctFaces(networkPo
 {
 	/* -------------------- contactfaces -------------------- */
 	std::unordered_set<networkFace *> contactfaces;
-	for (auto &[f, _] : p->getContactFaces())
+	for (auto &f : p->getContactFaces())
 	{
 		bool duplicate = false;
 		for (auto &cface : contactfaces)
@@ -149,7 +149,7 @@ std::unordered_set<networkFace *> facingFace(const networkFace *const f)
 	//! さらに，この面と向き合っているかどうかの判定し除外する必要がある．それが以下．
 	std::unordered_set<networkFace *> ret;
 	for (const auto &q : f->getPoints())
-		for (const auto &[F, _] : q->getContactFaces())
+		for (const auto &F : q->getContactFaces())
 		{
 			auto angle = MyVectorAngle(f->getNormalTuple(), F->getNormalTuple());
 			if ((M_PI - angle) / M_PI * 180. < 30.)
@@ -609,7 +609,7 @@ struct values_for_overdetermined_interpolation
 			this->X.emplace_back(q->getX());
 			this->Phi.emplace_back(std::get<0>(q->phiphin));
 			this->Phi_n_of_X.emplace_back(std::get<1>(q->phiphin));
-			for (auto &[f, _] : q->getContactFaces())
+			for (auto &f : q->getContactFaces())
 			{
 				bool duplicate = false;
 				for (auto &cface : contactfaces)
@@ -942,7 +942,7 @@ struct derivatives
 				//! Uの修正
 				if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
 				{
-					for (const auto &[f, _] : p->getContactFaces())
+					for (const auto &f : p->getContactFaces())
 					{
 						auto n = f->getNormalTuple();
 						p->U_BEM -= Dot(p->U_BEM, n) * n;
@@ -1011,7 +1011,7 @@ struct derivatives
 
 			if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
 			{
-				for (const auto &[f, _] : p->getContactFaces())
+				for (const auto &f : p->getContactFaces())
 				{
 					auto n = f->getNormalTuple();
 					p->U_BEM -= Dot(p->U_BEM, n) * n;
@@ -1030,19 +1030,11 @@ struct derivatives
 			{
 				if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
 				{
-					Tddd f_next_X = {0, 0, 0};
-					Tddd f_current_X = {0, 0, 0};
-					auto [fp0, fp1, fp2] = f->getPointsTuple();
-					auto fp0_next_X = fp0->getXtuple() + fp0->U_BEM * dt;
-					auto fp1_next_X = fp1->getXtuple() + fp1->U_BEM * dt;
-					auto fp2_next_X = fp2->getXtuple() + fp2->U_BEM * dt;
-					f_next_X = fp0_next_X / 3. + fp1_next_X / 3. + fp2_next_X / 3.;
-					area = TriangleArea(T3Tddd{fp0_next_X, fp1_next_X, fp2_next_X});
+
+					auto [p0, p1, p2] = f->getPointsTuple();
+					T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0->U_BEM, p1->U_BEM, p2->U_BEM} * dt;
+					area = TriangleArea(f_next_X);
 					Area_tot += area;
-					f_current_X += fp0->getXtuple();
-					f_current_X += fp1->getXtuple();
-					f_current_X += fp2->getXtuple();
-					f_current_X /= 3.;
 					{
 						// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
 						// auto v = f_next_X - p_next_X;
@@ -1052,7 +1044,7 @@ struct derivatives
 						// tension += k * Normalize(v) * f->getAngle(p) / Theta_tot;
 						/* ------------------------------------------------------ */
 						// tension += (area / dt) * Normalize(f_next_X - p_next_X);
-						tension += (area / dt) * (f_next_X - p_next_X);
+						tension += (area / dt) * (Mean(f_next_X) - p_next_X);
 					}
 				}
 			}
@@ -1072,7 +1064,7 @@ struct derivatives
 			/* ------------------------------------------------------ */
 			if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
 			{
-				for (const auto &[f, _] : p->getContactFaces())
+				for (const auto &f : p->getContactFaces())
 				{
 					auto n = f->getNormalTuple();
 					p->U_BEM -= Dot(p->U_BEM, n) * n;
@@ -2091,8 +2083,8 @@ int main()
 						P_ContactFaces[p] = (double)p->getContactFaces().size();
 						P_Intxn_length[p] = extLength(takeIntxn(p->getLines()));
 						P_BC[p] = p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.));
-						if (!p->getContactFaces().empty())
-							P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - p->getXtuple();
+						// if (!p->getContactFaces().empty())
+						// 	P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - p->getXtuple();
 						P_radius[p] = p->radius;
 						// P_ishit[p] = (double)(!p->getContactFaces().empty());
 						P_ishit[p] = (double)(p->getStatus());

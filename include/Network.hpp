@@ -793,7 +793,7 @@ public:
 	//%                      接触の判別用　                      */
 	//% ------------------------------------------------------ */
 private:
-	std::unordered_map<networkFace *, Tddd> ContactFaces;
+	std::unordered_set<networkFace *> ContactFaces;
 	std::unordered_set<networkPoint *> ContactPoints;
 	std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
 
@@ -801,7 +801,7 @@ public:
 	//% ------------------------------------------------------ */
 	//%                          接触の判別                      */
 	//% ------------------------------------------------------ */
-	std::unordered_map<networkFace *, Tddd> getContactFaces() const { return this->ContactFaces; };
+	std::unordered_set<networkFace *> getContactFaces() const { return this->ContactFaces; };
 	void clearContactFaces() { this->ContactFaces.clear(); };
 	void addContactFaces(const Buckets<networkFace> &B, bool); //自身と同じfaceを含まない
 	//
@@ -2435,6 +2435,13 @@ public:
 };
 /*networkFace_code*/
 //@ ------------------------ 抽出用関数など ----------------------- */
+std::vector<Tddd> extX(const std::unordered_set<networkFace *> &fs)
+{
+	std::vector<Tddd> ret;
+	for (const auto &f : fs)
+		ret.emplace_back(f->getXtuple());
+	return ret;
+};
 std::vector<Tddd> extNormals(const V_netFp &ps)
 {
 	std::vector<Tddd> ret;
@@ -2526,33 +2533,9 @@ public:
 	//! ------------------------------------------------------ */
 	//!                          接触の判別                      */
 	//! ------------------------------------------------------ */
-	std::unordered_set<networkFace *> getContactFacesOfPointsFirst() const
+	std::unordered_set<networkFace *> getContactFacesOfPoints() const
 	{
 		std::unordered_set<networkFace *> ret;
-		for (const auto &p : this->getPoints())
-			for (const auto &[f, _] : p->getContactFaces())
-				ret.emplace(f);
-		return ret;
-	};
-	std::vector<Tddd> getContactFacesOfPointsSecond() const
-	{
-		std::vector<Tddd> ret;
-		for (const auto &p : this->getPoints())
-			for (const auto &[_, X] : p->getContactFaces())
-				ret.emplace_back(X);
-		return ret;
-	};
-	std::vector<Tddd> getOppositeXFromContactFacesOfPoints() const
-	{
-		std::vector<Tddd> ret;
-		for (const auto &p : this->getPoints())
-			for (const auto &[_, X] : p->getContactFaces())
-				ret.emplace_back(p->getXtuple() + 2. * (X - p->getXtuple()));
-		return ret;
-	};
-	std::unordered_map<networkFace *, Tddd> getContactFacesOfPoints() const
-	{
-		std::unordered_map<networkFace *, Tddd> ret;
 		for (const auto &p : this->getPoints())
 			ret.insert(begin(p->getContactFaces()), end(p->getContactFaces()));
 		return ret;
