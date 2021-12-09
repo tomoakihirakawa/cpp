@@ -1460,47 +1460,47 @@ int main()
 				{
 					std::vector<networkPoint *> VP = TakeExcept(Flatten(net->getBucketPoints().getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
 					// /* ------------------------------------------------------ */
-					if (!VP.empty())
-					{
-						auto mean = Mean(Distance(p, VP));
-
-						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
-						V_d distances;
-						for (const auto &[X, Y] : INTXN.get(p, mean))
-							distances.emplace_back(Norm(Y - p->getXtuple()));
-						for (const auto &q : VP)
-							distances.emplace_back(Norm(q->getXtuple() - p->getXtuple()));
-						std::sort(distances.begin(), distances.end());
-
-						if (distances.size() > 5)
-							distances = V_d(distances.begin(), distances.begin() + 5);
-						mean = Mean(distances);
-
-						if (mean > 1.1 * particle_spacing)
-							p->radius_SPH = p->radius_SPH / 2. + C_SML * 1.1 * particle_spacing / 2.;
-						else if (mean < 0.9 * particle_spacing)
-							p->radius_SPH = p->radius_SPH / 2. + C_SML * 0.9 * particle_spacing / 2.;
-						else
-							p->radius_SPH = p->radius_SPH / 2. + C_SML * mean / 2.;
-						p->isFreeFalling = false;
-					}
-					else
-					{
-						p->radius_SPH = p->radius_SPH / 2. + C_SML * particle_spacing / 2.;
-						p->isFreeFalling = true;
-					}
-					/* ------------------------------------------------------ */
-					// 初期の粒子間隔を使う．
 					// if (!VP.empty())
 					// {
-					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	auto mean = Mean(Distance(p, VP));
+
+					// 	auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+					// 	V_d distances;
+					// 	for (const auto &[X, Y] : INTXN.get(p, mean))
+					// 		distances.emplace_back(Norm(Y - p->getXtuple()));
+					// 	for (const auto &q : VP)
+					// 		distances.emplace_back(Norm(q->getXtuple() - p->getXtuple()));
+					// 	std::sort(distances.begin(), distances.end());
+
+					// 	if (distances.size() > 5)
+					// 		distances = V_d(distances.begin(), distances.begin() + 5);
+					// 	mean = Mean(distances);
+
+					// 	if (mean > 1.1 * particle_spacing)
+					// 		p->radius_SPH = p->radius_SPH / 2. + C_SML * 1.1 * particle_spacing / 2.;
+					// 	else if (mean < 0.9 * particle_spacing)
+					// 		p->radius_SPH = p->radius_SPH / 2. + C_SML * 0.9 * particle_spacing / 2.;
+					// 	else
+					// 		p->radius_SPH = p->radius_SPH / 2. + C_SML * mean / 2.;
 					// 	p->isFreeFalling = false;
 					// }
 					// else
 					// {
-					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	p->radius_SPH = p->radius_SPH / 2. + C_SML * particle_spacing / 2.;
 					// 	p->isFreeFalling = true;
 					// }
+					/* ------------------------------------------------------ */
+					// 初期の粒子間隔を使う．
+					if (!VP.empty())
+					{
+						p->radius_SPH = C_SML * particle_spacing;
+						p->isFreeFalling = false;
+					}
+					else
+					{
+						p->radius_SPH = C_SML * particle_spacing;
+						p->isFreeFalling = true;
+					}
 					/* ------------------------------------------------------ */
 				}
 				//% --------------- p->radius_SPHの範囲だけ点を取得 --------------- */
