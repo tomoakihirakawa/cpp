@@ -207,7 +207,7 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
 	}
 	fprintf(fp, "</DataArray>\n");
 };
-//map Tddd
+// map Tddd
 template <class T>
 void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &Name, const std::unordered_map<T, Tddd> &map_p_v)
 {
@@ -247,7 +247,7 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 	};
 };
-//map double
+// map double
 template <class T>
 void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &Name, const std::unordered_map<T, double> &map_p_v)
 {
@@ -376,7 +376,7 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points)
 					std::cout << red << "|";
 #endif
 					fprintf(fp, "<Points>\n");
-					{ //x,y,z: 3 components
+					{ // x,y,z: 3 components
 						fprintf(fp, "<DataArray NumberOfComponents='3' type='Float32' Name='Position' format='ascii'>\n");
 						V_d xyz(3, 0.);
 						// for (const auto &xyz : VV_points)
@@ -488,7 +488,7 @@ void mk_vtu(const std::string &filename,
 						std::cout << red << "|";
 #endif
 						fprintf(fp, "<Points>\n");
-						{ //x,y,z: 3 components
+						{ // x,y,z: 3 components
 							fprintf(fp, "<DataArray NumberOfComponents='3' type='Float32' Name='Position' format='ascii'>\n");
 							V_d xyz(3, 0.);
 							for (const auto &V_points : VV_points)
@@ -621,7 +621,7 @@ void mk_vtu(const std::string &filename,
 
 	for (const auto &vv : vvp)
 		for (const auto &v : vv)
-			v->Delete();
+			delete v;
 };
 void mk_vtu(const std::string &filename,
 			const std::vector<std::vector<Tddd>> &vvv_IN,
@@ -642,7 +642,7 @@ void mk_vtu(const std::string &filename,
 
 	for (const auto &vv : vvp)
 		for (const auto &v : vv)
-			v->Delete();
+			delete v;
 };
 
 	/*DataArray_code*/

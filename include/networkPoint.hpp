@@ -145,27 +145,11 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 		// for (const auto &f : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius))
 		for (const auto &f : B.getAll())
 		{
-			// auto intxn = intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(f->getX_Vertices()));
 			auto [p0, p1, p2] = f->getX_Vertices();
 			auto intxn = IntersectionSphereTriangle(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
-			auto [l0, l1, l2] = f->getLinesTuple();
-			auto intxnL0 = IntersectionSphereLine(this->getXtuple(), 2. * this->radius, l0->getLocationsTuple());
-			auto intxnL1 = IntersectionSphereLine(this->getXtuple(), 2. * this->radius, l1->getLocationsTuple());
-			auto intxnL2 = IntersectionSphereLine(this->getXtuple(), 2. * this->radius, l2->getLocationsTuple());
-			if (intxn.isIntersecting && intxn.scale < 0 /*面の法線方向とは逆向き*/)
-				tmpContactFaces[f] = intxn.X;
-			else if (intxnL0.isIntersecting && intxnL0.distance <= 2. * this->radius)
-				tmpContactFaces[f] = intxnL0.X;
-			else if (intxnL1.isIntersecting && intxnL1.distance <= 2. * this->radius)
-				tmpContactFaces[f] = intxnL1.X;
-			else if (intxnL2.isIntersecting && intxnL2.distance <= 2. * this->radius)
-				tmpContactFaces[f] = intxnL2.X;
-			else if (Norm(p0 - this->getXtuple()) <= 2. * this->radius)
-				tmpContactFaces[f] = p0;
-			else if (Norm(p1 - this->getXtuple()) <= 2. * this->radius)
-				tmpContactFaces[f] = p1;
-			else if (Norm(p2 - this->getXtuple()) <= 2. * this->radius)
-				tmpContactFaces[f] = p2;
+			auto X = intxn.getNearestX();
+			if (Norm(X - this->getXtuple()) < 2. * this->radius)
+				tmpContactFaces[f] = X;
 		}
 		// b!各面について衝突があり得るか詳しく調べて判断する．
 		for (const auto &[f, intxnX] : tmpContactFaces)

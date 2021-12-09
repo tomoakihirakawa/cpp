@@ -218,20 +218,15 @@ struct IntersectionSphereLine
 	double distance;
 	Tddd X;
 	bool isIntersecting;
-	// double eps = 1E-12;
 	IntersectionSphereLine(const Tddd &center, double radius, const T2Tddd &AB)
-		: distance(1E+40), isIntersecting(false)
+		: isIntersecting(false)
 	{
-		auto [p0, p1] = AB;
-		auto p01 = p0 - p1;
-		auto t = -Dot(p1 - center, p01) / Dot(p01, p01);
-		this->X = p01 * t + p1;
+		auto p01 = std::get<0>(AB) - std::get<1>(AB);
+		auto t = -Dot(std::get<1>(AB) - center, p01) / Dot(p01, p01);
+		this->X = p01 * t + std::get<1>(AB);
 		this->distance = Norm(this->X - center);
-		if (this->distance <= radius /*may hit*/)
-		{
-			if (0. <= t && t <= 1.)
-				this->isIntersecting = true; //干渉する最も近い点は，線上にある
-		}
+		if (this->distance <= radius /*may hit*/ && 0. <= t && t <= 1.)
+			this->isIntersecting = true; //干渉する最も近い点は，線上にある
 	}
 };
 /* ------------------------------------------------------ */
@@ -416,11 +411,13 @@ struct IntersectionSphereTriangle
 	double eps = 1E-13;
 	T3Tddd P;
 	bool isIntersecting;
-	IntersectionSphereTriangle(const Tddd &center, const double radius, const T3Tddd &P_IN)
+	Tddd center;
+	IntersectionSphereTriangle(const Tddd &centerIN, const double radius, const T3Tddd &P_IN)
 		: X({0, 0, 0}),
 		  scale(0),
 		  P(P_IN),
-		  isIntersecting(false)
+		  isIntersecting(false),
+		  center(centerIN)
 	{
 		auto [p0, p1, p2] = P;
 		auto n = Normalize(Cross(p1 - p0, p2 - p0));
@@ -440,6 +437,55 @@ struct IntersectionSphereTriangle
 		this->X = scale * n + center;
 		if (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))
 			isIntersecting = true;
+	};
+	Tddd getNearestX() const
+	{
+		if (this->isIntersecting)
+			return this->X;
+		else
+		{
+			Tddd X_ = {1E+50, 1E+50, 1E+50};
+			double mindistance = 1E+50;
+			auto intxnL0 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<0>(P), std::get<1>(P)});
+			auto intxnL1 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<1>(P), std::get<2>(P)});
+			auto intxnL2 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<2>(P), std::get<0>(P)});
+			if (intxnL0.isIntersecting)
+			{
+				X_ = intxnL0.X;
+				mindistance = Norm(X_ - center);
+			}
+			if (intxnL1.isIntersecting)
+			{
+				if (Norm(intxnL1.X - center) < mindistance)
+				{
+					X_ = intxnL1.X;
+					mindistance = Norm(X_ - center);
+				}
+			}
+			if (intxnL2.isIntersecting)
+			{
+				if (Norm(intxnL2.X - center) < mindistance)
+				{
+					X_ = intxnL2.X;
+					mindistance = Norm(X_ - center);
+				}
+			}
+			if (Norm(std::get<0>(P) - center) < mindistance)
+			{
+				X_ = std::get<0>(P);
+				mindistance = Norm(X_ - center);
+			}
+			if (Norm(std::get<1>(P) - center) < mindistance)
+			{
+				X_ = std::get<1>(P);
+				mindistance = Norm(X_ - center);
+			}
+			if (Norm(std::get<2>(P) - center) < mindistance)
+			{
+				X_ = std::get<2>(P);
+			}
+			return X_;
+		}
 	};
 };
 

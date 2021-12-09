@@ -682,7 +682,7 @@ Tddd normal(const std::unordered_set<networkPoint *> &ps,
 struct IntersectionsSphereTrianglesLines
 {
     std::unordered_set<networkFace *> faces;
-    std::vector<T2Tddd> lines;
+    std::vector<std::tuple<networkFace *, networkFace *, T2Tddd>> lines;
     IntersectionsSphereTrianglesLines(const std::unordered_set<networkFace *> &F) : faces({}), lines({})
     {
         addFacesAndLines(F);
@@ -692,6 +692,7 @@ struct IntersectionsSphereTrianglesLines
         // b! この構造体は，まず与えられた面と，その面同士の交線を作成する．
         // b! 次にgetでは，面または交線が，与えられた点と正対する場合にその位置を返す．
         std::unordered_set<networkFace *> FF;
+        FF.reserve(F.size());
         for (const auto &[f, _] : F)
             FF.emplace(f);
         addFacesAndLines(FF);
@@ -699,13 +700,12 @@ struct IntersectionsSphereTrianglesLines
     void addFacesAndLines(const std::unordered_set<networkFace *> &F)
     {
         // 保存はunordered_setで
+        this->faces.reserve(F.size());
         for (const auto &f : F)
             this->faces.emplace(f);
 
         // ベクトル化
-        std::vector<networkFace *> FACES;
-        for (const auto &f : this->faces)
-            FACES.emplace_back(f);
+        std::vector<networkFace *> FACES(this->faces.begin(), this->faces.end());
 
         T3Tddd fi, fj;
         for (auto i = 0; i < FACES.size(); ++i)
@@ -722,12 +722,13 @@ struct IntersectionsSphereTrianglesLines
                                     std::get<2>(fj) - Mean(fj)});
                 auto intxn = IntersectionTriangles(fi, fj);
                 if (intxn.isIntersecting)
-                    lines.emplace_back(intxn.L);
+                    lines.push_back({FACES[i], FACES[j], intxn.L});
             }
         }
     };
 
     std::vector<std::tuple<Tddd, Tddd>> X_Y;
+    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd>> F_F_X_Y;
     std::vector<std::tuple<Tddd, Tddd>> get(const networkPoint *p, const double h)
     {
         X_Y.clear();
@@ -737,26 +738,46 @@ struct IntersectionsSphereTrianglesLines
         {
             auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
             if (intxn.isIntersecting)
-                X_Y.emplace_back(std::tuple<Tddd, Tddd>{intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+                X_Y.push_back({intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
         }
         //! 線との干渉
-        for (const auto &L : this->lines)
+        for (const auto &[F0, F1, L] : this->lines)
         {
             auto intxn = IntersectionSphereLine(p->getXtuple(), h, L);
             if (intxn.isIntersecting)
-                X_Y.emplace_back(std::tuple<Tddd, Tddd>{intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+                X_Y.push_back({intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
         }
         return X_Y;
     };
+    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd>> getFFXY(const networkPoint *p, const double h)
+    {
+        F_F_X_Y.clear();
+        // b! 次にgetでは，面または交線が，与えられた点と正対する場合にその位置を返す．
+        //! 面との干渉
+        for (const auto &f : this->faces)
+        {
+            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
+            if (intxn.isIntersecting)
+                F_F_X_Y.push_back({f, nullptr, intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+        }
+        //! 線との干渉
+        for (const auto &[F0, F1, L] : this->lines)
+        {
+            auto intxn = IntersectionSphereLine(p->getXtuple(), h, L);
+            if (intxn.isIntersecting)
+                F_F_X_Y.push_back({F0, F1, intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+        }
+        return F_F_X_Y;
+    };
 };
 #define free_slip_boundary_condition
-#define boundary_gurd
+// #define boundary_gurd
 
 #if defined(boundary_gurd)
 double boundary_gurd_value(const double distance, const double h)
 {
     double additional = tanh((2. * M_PI) / (h / 8.) * (-distance + (h / 8.)) - M_PI) + 1.;
-    return 1.; // + additional;
+    return 1. + additional;
 };
 #endif
 
@@ -770,21 +791,32 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
 {
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     double ret = 0;
-    Tddd n, U;
+    Tddd n, U, velocity;
     for (const auto &p : ps)
     {
         if (p != a)
             ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[X, Y] : INTXN.get(p, h))
+        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
         {
-            n = Normalize(p->getXtuple() - X);
+            if (F1)
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+            }
+            else
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+            }
 #if defined(free_slip_boundary_condition)
-            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
-            U = -p->U_SPH;
+            U = -p->U_SPH + Dot(velocity, n) * n;
 #else
-            U = -n * Dot(p->U_SPH, n);
+            U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
             ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline5(Y, a->getXtuple(), h))
 #if defined(boundary_gurd)
@@ -820,7 +852,7 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     //* これはシンプルに勾配計算の改良版である．
     double ret = 0;
-    Tddd U, n;
+    Tddd U, n, velocity;
     for (const auto &p : ps)
     {
         if (p != a)
@@ -828,15 +860,27 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
             ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h));
         }
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[X, Y] : INTXN.get(p, h))
+        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
         {
+            if (F1)
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+            }
+            else
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+            }
             n = Normalize(p->getXtuple() - X);
 #if defined(free_slip_boundary_condition)
-            U = p->tmp_U_SPH - 2 * n * Dot(p->tmp_U_SPH, n);
+            U = p->tmp_U_SPH - 2 * n * Dot(p->tmp_U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
-            U = -p->tmp_U_SPH;
+            U = -p->tmp_U_SPH + Dot(velocity, n) * n;
 #else
-            U = -n * Dot(p->tmp_U_SPH, n);
+            U = -n * Dot(p->tmp_U_SPH, n) + Dot(velocity, n) * n;
 #endif
             ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), Y, h))
 #if defined(boundary_gurd)
@@ -902,10 +946,10 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
 {
     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
     Tddd ret = {0, 0, 0}, W;
-    double nu, pn, tmp;
     Tddd accel = {0, 0, 0}, n;
     Tddd gravity = {0., 0., -9.81};
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
+    double pressure;
     for (const auto &p : ps)
     {
         if (p != a)
@@ -914,14 +958,23 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
             ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
         }
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[X, Y] : INTXN.get(p, h))
+        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
         {
-            n = Normalize(p->getXtuple() - X);
-            W = grad_kernel_Bspline5(Y, a->getXtuple(), h); // *(1. + log(Norm(X - p->getXtuple()) < h / 6 ? (h / 6) / Norm(X - p->getXtuple()) : 1.));
-            nu = p->mu_SPH / p->density;
-            pn = p->density * Dot(nu * p->lap_U + gravity - accel, n);
-            tmp = p->pressure_SPH + /*修正*/ pn * Dot(Y - p->getXtuple(), n);
-            ret += p->mass * (tmp / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W
+            if (F1)
+            {
+                std::get<0>(accel) = std::get<0>(F0->getNetwork()->acceleration + F1->getNetwork()->acceleration);
+                std::get<1>(accel) = std::get<1>(F0->getNetwork()->acceleration + F1->getNetwork()->acceleration);
+                std::get<2>(accel) = std::get<2>(F0->getNetwork()->acceleration + F1->getNetwork()->acceleration);
+            }
+            else
+            {
+                std::get<0>(accel) = std::get<0>(F0->getNetwork()->acceleration);
+                std::get<1>(accel) = std::get<1>(F0->getNetwork()->acceleration);
+                std::get<2>(accel) = std::get<2>(F0->getNetwork()->acceleration);
+            }
+            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
+            // pressure = p->pressure_SPH;
+            ret += p->mass * (pressure / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * grad_kernel_Bspline5(Y, a->getXtuple(), h)
 #if defined(boundary_gurd)
                    * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
 #else
@@ -984,7 +1037,7 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
     */
     //人工粘性
     //まず，nu*laplacian(U)を計算する
-    Tddd ret = {0, 0, 0}, n, U;
+    Tddd ret = {0, 0, 0}, n, U, velocity;
     double Cs = 1466.;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     for (const auto &p : ps)
@@ -992,15 +1045,26 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
         if (p != a)
             ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[X, Y] : INTXN.get(p, h))
+        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
         {
-            n = Normalize(p->getXtuple() - X);
+            if (F1)
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+            }
+            else
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+            }
 #if defined(free_slip_boundary_condition)
-            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
-            U = -p->U_SPH;
+            U = -p->U_SPH + Dot(velocity, n) * n;
 #else
-            U = -n * Dot(p->U_SPH, n);
+            U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
             ret += laplacian_U_Monaghan1992(p, Y, U, a, h, alpha, beta)
 #if defined(boundary_gurd)
@@ -1062,7 +1126,7 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
                                                 const int order = 2)
 {
     // nu*laplacian(U)を計算する
-    Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, U, n;
+    Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, U, n, velocity;
     double nu_i, nu_j;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     for (const auto &p : ps)
@@ -1070,15 +1134,27 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
         if (p != a)
             ret += laplacian_U_ShaoAndLo2003(a, p, h, p->getXtuple());
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[X, Y] : INTXN.get(p, h))
+        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
         {
-            n = Normalize(p->getXtuple() - X);
+            if (F1)
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+            }
+            else
+            {
+                std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
+                std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
+                std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+            }
+
 #if defined(free_slip_boundary_condition)
-            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n);
+            U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
-            U = -p->U_SPH;
+            U = -p->U_SPH + Dot(velocity, n) * n;
 #else
-            U = -n * Dot(p->U_SPH, n);
+            U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
             ret += laplacian_U_ShaoAndLo2003(a, p, h, Y, U)
 #if defined(boundary_gurd)

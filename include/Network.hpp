@@ -1329,6 +1329,7 @@ public:
 	V_d &A = this->acceleration;
 	V_d &V = this->velocity;
 	/* ------------------------------------------------------ */
+
 	V_d center_of_mass;
 #ifdef BEM
 	Tdd phiphin;

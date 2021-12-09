@@ -1212,6 +1212,7 @@ PVDWriter waterPVD(output_dir + "/water.pvd");
 PVDWriter oppositeXPVD(output_dir + "/oppositeX.pvd");
 PVDWriter contact_faces_PVD(output_dir + "/contact_faces.pvd");
 PVDWriter reflectPVD(output_dir + "/reflectX.pvd");
+PVDWriter wave_makerPVD(output_dir + "/wave_maker.pvd");
 //* ------------------------------------------------------ */
 //*                           メイン                        */
 //* ------------------------------------------------------ */
@@ -1269,6 +1270,7 @@ int main()
 				// p->particlize_info = {f, t0, t1, depth, h_};
 			}
 		}
+		tank->resetInitialX();
 		return tank;
 	};
 
@@ -1312,18 +1314,18 @@ int main()
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
 		V_Netp rigid_bodies = {tank, wave_maker};
 
-/*
-WCSPH:
-元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
-これは．Monaghan(1994)から始まったもの．
-WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
+		/*
+		WCSPH:
+		元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
+		これは．Monaghan(1994)から始まったもの．
+		WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
 
-EISP:
+		EISP:
 
-*/
-//@ WCSPH/EISPH
-#define WCSPH
-		// #define EISPH
+		*/
+		//@ WCSPH/EISPH
+		// #define WCSPH
+#define EISPH
 
 #define apply_polygon_boundary
 
@@ -1348,8 +1350,8 @@ EISP:
 			if (step == 0)
 			{
 				wave_maker->clearBucketParametricPoints();
-				wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
-				wave_maker->makeBucketFaces(particle_spacing / 2.);
+				wave_maker->makeBucketParametricPoints(particle_spacing / 3.);
+				wave_maker->makeBucketFaces(particle_spacing / 3.);
 				mk_vtu(output_dir + "/wave_maker_parametric_points.vtu", {wave_maker->getParametricPoints()});
 			}
 			if (step == 0 || step == preparation_time_step)
@@ -1357,8 +1359,8 @@ EISP:
 				std::swap(tank, tank_init);
 				tank->clearBucketParametricPoints();
 				tank_init->clearBucketParametricPoints();
-				tank->makeBucketParametricPoints(particle_spacing / 2.);
-				tank->makeBucketFaces(particle_spacing / 2.);
+				tank->makeBucketParametricPoints(particle_spacing / 3.);
+				tank->makeBucketFaces(particle_spacing / 3.);
 				mk_vtu(output_dir + "/tank_parametric_points.vtu", {tank->getParametricPoints()});
 				rigid_bodies = {tank, wave_maker};
 			}
@@ -1413,6 +1415,32 @@ EISP:
 					f->clearContactPoints();
 			}
 			// 各流体粒子の近傍点を取得し保存
+			std::vector<Tddd> oppositeX, reflectX;
+			// b$ ------------------------------------------------------ */
+			// b$                        面との接触を確認                   */
+			// b$ ------------------------------------------------------ */
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+			for (const auto &p : net->getPoints())
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+			{
+				p->clearContactFaces();
+				p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
+				for (const auto &n : rigid_bodies)
+					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
+			}
+			for (const auto &p : net->getPoints())
+			{
+				auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+				for (const auto &[X, Y] : INTXN.get(p, 2. * p->radius_SPH))
+				{
+					reflectX.emplace_back(X);
+					oppositeX.emplace_back(Y);
+				};
+			}
 			//% ---------------------- 平滑化距離の計算 ---------------------- */
 			{
 				std::cout << Green << "平滑化距離の計算" << reset << std::endl;
@@ -1426,34 +1454,47 @@ EISP:
 				{
 					std::vector<networkPoint *> VP = TakeExcept(Flatten(net->getBucketPoints().getObjects(p->getXtuple(), 5 /*深さ上限*/, kNS_SML /*粒子数上限*/)), p);
 					// /* ------------------------------------------------------ */
-					// if (!VP.empty())
-					// {
-					// 	auto mean = Mean(Distance(p, VP));
-					// 	if (mean > 1.25 * particle_spacing)
-					// 		p->radius_SPH = C_SML * 1.25 * particle_spacing;
-					// 	else if (mean < 0.75 * particle_spacing)
-					// 		p->radius_SPH = C_SML * 0.75 * particle_spacing;
-					// 	else
-					// 		p->radius_SPH = C_SML * mean;
-					// 	p->isFreeFalling = false;
-					// }
-					// else
-					// {
-					// 	p->radius_SPH = C_SML * 0.75 * particle_spacing;
-					// 	p->isFreeFalling = true;
-					// }
-					/* ------------------------------------------------------ */
-					// 初期の粒子間隔を使う．
 					if (!VP.empty())
 					{
-						p->radius_SPH = C_SML * particle_spacing;
+						auto mean = Mean(Distance(p, VP));
+
+						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+						V_d distances;
+						for (const auto &[X, Y] : INTXN.get(p, mean))
+							distances.emplace_back(Norm(Y - p->getXtuple()));
+						for (const auto &q : VP)
+							distances.emplace_back(Norm(q->getXtuple() - p->getXtuple()));
+						std::sort(distances.begin(), distances.end());
+
+						if (distances.size() > 5)
+							distances = V_d(distances.begin(), distances.begin() + 5);
+						mean = Mean(distances);
+
+						if (mean > 1.1 * particle_spacing)
+							p->radius_SPH = p->radius_SPH / 2. + C_SML * 1.1 * particle_spacing / 2.;
+						else if (mean < 0.9 * particle_spacing)
+							p->radius_SPH = p->radius_SPH / 2. + C_SML * 0.9 * particle_spacing / 2.;
+						else
+							p->radius_SPH = p->radius_SPH / 2. + C_SML * mean / 2.;
 						p->isFreeFalling = false;
 					}
 					else
 					{
-						p->radius_SPH = C_SML * particle_spacing;
+						p->radius_SPH = p->radius_SPH / 2. + C_SML * particle_spacing / 2.;
 						p->isFreeFalling = true;
 					}
+					/* ------------------------------------------------------ */
+					// 初期の粒子間隔を使う．
+					// if (!VP.empty())
+					// {
+					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	p->isFreeFalling = false;
+					// }
+					// else
+					// {
+					// 	p->radius_SPH = C_SML * particle_spacing;
+					// 	p->isFreeFalling = true;
+					// }
 					/* ------------------------------------------------------ */
 				}
 				//% --------------- p->radius_SPHの範囲だけ点を取得 --------------- */
@@ -1483,35 +1524,6 @@ EISP:
 			}
 			std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
 			//! 近傍粒子探査が終わったら時間ステップを決めることができる
-			// temp ------------------------------------------------------ */
-			std::vector<Tddd> oppositeX, reflectX;
-			// b$ ------------------------------------------------------ */
-			// b$                        面との接触を確認                   */
-			// b$ ------------------------------------------------------ */
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-			for (const auto &p : net->getPoints())
-#ifdef _OPENMP
-#pragma omp single nowait
-#endif
-			{
-				p->clearContactFaces();
-				p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
-				for (const auto &n : rigid_bodies)
-					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
-			}
-			for (const auto &p : net->getPoints())
-			{
-				auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
-				for (const auto &[X, Y] : INTXN.get(p, 2. * p->radius_SPH))
-				{
-					reflectX.emplace_back(X);
-					oppositeX.emplace_back(Y);
-				};
-			}
-			// mk_vtu(output_dir + "/reflectX_line.vtu", {reflectX_line});
-			// temp ------------------------------------------------------ */
 			/* ------------------------------------------------------ */
 			Print("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
 			//! ------------------------------------------------------ */
@@ -1563,27 +1575,34 @@ EISP:
 				waterPVD.output();
 				/* ------------------------------------------------------ */
 				//! メモリーリークに注意
-				// {
-				// 	std::string filename = "contact_boundary_faces" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/" + filename, net->getContactFacesOfPoints());
-				// 	contact_faces_PVD.push(filename, real_time);
-				// 	contact_faces_PVD.output();
-				// }
+				{
+					std::string filename = "wave_maker" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/" + filename, wave_maker->getFaces());
+					wave_makerPVD.push(filename, real_time);
+					wave_makerPVD.output();
+				}
 
-				// {
-				// 	std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/oppositeX.vtu", {oppositeX});
-				// 	mk_vtu(output_dir + "/" + filename, {oppositeX});
-				// 	oppositeXPVD.push(filename, real_time);
-				// 	oppositeXPVD.output();
-				// }
-				// {
-				// 	std::string filename = "reflectX" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/reflectX.vtu", {reflectX});
-				// 	mk_vtu(output_dir + "/" + filename, {reflectX});
-				// 	reflectPVD.push(filename, real_time);
-				// 	reflectPVD.output();
-				// }
+				{
+					std::string filename = "contact_boundary_faces" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/" + filename, net->getContactFacesOfPoints());
+					contact_faces_PVD.push(filename, real_time);
+					contact_faces_PVD.output();
+				}
+
+				{
+					std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/oppositeX.vtu", {oppositeX});
+					mk_vtu(output_dir + "/" + filename, {oppositeX});
+					oppositeXPVD.push(filename, real_time);
+					oppositeXPVD.output();
+				}
+				{
+					std::string filename = "reflectX" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/reflectX.vtu", {reflectX});
+					mk_vtu(output_dir + "/" + filename, {reflectX});
+					reflectPVD.push(filename, real_time);
+					reflectPVD.output();
+				}
 
 				/* ------------------------------------------------------ */
 				Print("出力");
@@ -1685,6 +1704,17 @@ EISP:
 			{
 				dt = P_RK_X[*water_points.begin()]->getdt();
 				std::cout << "dt = " << dt << std::endl;
+				/* ------------------------------------------------------ */
+				{
+					double t = real_time;
+					double T = 670. / 1000.;
+					double A = 2. / 100.;
+					double w = 2. * M_PI / T;
+					wave_maker->acceleration = {-A * w * w * sin(w * t), 0, 0, 0, 0, 0};
+					wave_maker->velocity = {A * w * cos(w * t), 0, 0, 0, 0, 0};
+					wave_maker->translateFromInitialX({A * sin(w * t), 0, 0});
+				}
+				/* ------------------------------------------------------ */
 				//* ------------------------------------------------------------ */
 				// substep          壁面粒子またはダミー粒子の流速を設定               */
 				//* ------------------------------------------------------------ */
