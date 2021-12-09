@@ -1250,6 +1250,12 @@ int main()
 			if (stob(object_JSON["reverseNormal"])[0])
 				tank->reverseNormal();
 		}
+		if (object_JSON.find("translate"))
+		{
+			std::cout << "translate" << std::endl;
+			V_d tmp = stod(object_JSON["translate"]);
+			tank->translate({tmp[0], tmp[1], tmp[2]});
+		}
 		mk_vtu(output_dir + "/" + name + ".vtu", tank->getFaces());
 		const V_d depth_list = stod(object_JSON["depth_list"]);
 		double volume_of_a_particle = stod(object_JSON["volume_of_a_particle"])[0];
@@ -1650,20 +1656,20 @@ int main()
 #else
 					bool no_particle = std::none_of(p->getContactPoints().begin(), p->getContactPoints().end(),
 													[p](const auto &q)
-													{ return (q != p &&
-															  (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.2) &&
-															  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.)); });
+													{
+														return (q != p && (Norm(q->getXtuple() - p->getXtuple()) < p->radius_SPH / 1.2) &&
+																(MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.));
+													});
+
 					bool no_face = std::none_of(p->getContactFaces().begin(), p->getContactFaces().end(),
 												[p](const auto f)
 												{
 													auto INTXN = IntersectionSphereTriangle(p->getXtuple(), p->radius_SPH / 2.5, f->getX_Vertices());
-													// bool found_face_in_dir = ((Norm(X - p->getXtuple()) < p->radius_SPH / 1.2) &&
-													// 						  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(X - p->getXtuple())) < M_PI / 3.));
-
-													// bool found_face_in_dir_close = ((Norm(X - p->getXtuple()) < p->radius_SPH / 3.) &&
-													// 								(MyVectorAngle(p->interpolated_normal_SPH, Normalize(X - p->getXtuple())) < M_PI / 2.));
-													return INTXN.isIntersecting;
+													return (INTXN.isIntersecting &&
+															(Norm(INTXN.X - p->getXtuple()) < p->radius_SPH / 1.2) &&
+															(MyVectorAngle(p->interpolated_normal_SPH, Normalize(INTXN.X - p->getXtuple())) < M_PI / 3.));
 												});
+
 					p->isSurface = no_particle && no_face;
 #endif
 				}
@@ -1707,8 +1713,8 @@ int main()
 				/* ------------------------------------------------------ */
 				{
 					double t = real_time;
-					double T = 670. / 1000.;
-					double A = 2. / 100.;
+					double T = 1.;
+					double A = 1. / 100.;
 					double w = 2. * M_PI / T;
 					wave_maker->acceleration = {-A * w * w * sin(w * t), 0, 0, 0, 0, 0};
 					wave_maker->velocity = {A * w * cos(w * t), 0, 0, 0, 0, 0};

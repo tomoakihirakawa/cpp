@@ -3143,15 +3143,15 @@ public:
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		};
 	};
-	void translate(const V_d &direction)
+	void translate(const Tddd &direction)
 	{
 		try
 		{
 			for (auto &p : this->getPoints())
 			{
-				std::get<0>(p->X) += direction[0];
-				std::get<1>(p->X) += direction[1];
-				std::get<2>(p->X) += direction[2];
+				std::get<0>(p->X) += std::get<0>(direction);
+				std::get<1>(p->X) += std::get<1>(direction);
+				std::get<2>(p->X) += std::get<2>(direction);
 			}
 			setBounds();
 		}

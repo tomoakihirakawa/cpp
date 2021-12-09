@@ -774,10 +774,15 @@ struct IntersectionsSphereTrianglesLines
 // #define boundary_gurd
 
 #if defined(boundary_gurd)
-double boundary_gurd_value(const double distance, const double h)
+double boundary_gurd_value(const networkPoint *p, const double distance, const double h)
 {
     double additional = tanh((2. * M_PI) / (h / 8.) * (-distance + (h / 8.)) - M_PI) + 1.;
-    return 1. + additional;
+    // if (p->isSurface)
+    //     return 1. + 20. * additional;
+    if ((h / 8.) > distance)
+        return 1. + (h / 8.) / distance;
+    else
+        return 1.;
 };
 #endif
 
@@ -804,12 +809,14 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple());
             }
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
@@ -820,7 +827,7 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
 #endif
             ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline5(Y, a->getXtuple(), h))
 #if defined(boundary_gurd)
-                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+                   * boundary_gurd_value(a, Norm(Y - a->getXtuple()), h);
 #else
                 ;
 #endif
@@ -867,14 +874,15 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple());
             }
-            n = Normalize(p->getXtuple() - X);
 #if defined(free_slip_boundary_condition)
             U = p->tmp_U_SPH - 2 * n * Dot(p->tmp_U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
@@ -884,7 +892,7 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
 #endif
             ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), Y, h))
 #if defined(boundary_gurd)
-                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+                   * boundary_gurd_value(a, Norm(Y - a->getXtuple()), h);
 #else
                 ;
 #endif
@@ -972,11 +980,11 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
                 std::get<1>(accel) = std::get<1>(F0->getNetwork()->acceleration);
                 std::get<2>(accel) = std::get<2>(F0->getNetwork()->acceleration);
             }
-            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
+            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, p->getXtuple() - Y));
             // pressure = p->pressure_SPH;
             ret += p->mass * (pressure / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * grad_kernel_Bspline5(Y, a->getXtuple(), h)
 #if defined(boundary_gurd)
-                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+                   * boundary_gurd_value(a, Norm(Y - a->getXtuple()), h);
 #else
                 ;
 #endif
@@ -1052,12 +1060,14 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple());
             }
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
@@ -1068,7 +1078,7 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
 #endif
             ret += laplacian_U_Monaghan1992(p, Y, U, a, h, alpha, beta)
 #if defined(boundary_gurd)
-                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+                   * boundary_gurd_value(a, Norm(Y - a->getXtuple()), h);
 #else
                 ;
 #endif
@@ -1141,14 +1151,15 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
+                n = Normalize(F0->getNormalTuple());
             }
-
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
@@ -1158,7 +1169,7 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
 #endif
             ret += laplacian_U_ShaoAndLo2003(a, p, h, Y, U)
 #if defined(boundary_gurd)
-                   * boundary_gurd_value(Norm(Y - p->getXtuple()), h);
+                   * boundary_gurd_value(a, Norm(Y - a->getXtuple()), h);
 #else
                 ;
 #endif
@@ -1220,7 +1231,7 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
             Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), Y, h)) / Dot(Xij, Xij)
 #if defined(boundary_gurd)
-                  * boundary_gurd_value(Norm(Y - j->getXtuple()), h);
+                  * boundary_gurd_value(i, Norm(Y - i->getXtuple()), h);
 #else
                 ;
 #endif

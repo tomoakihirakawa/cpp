@@ -7,27 +7,27 @@ import math
 density = 1000.
 graity = 9.81
 
-H = 300/1000
-particle_spacing = 0.008
+H = 150/1000
+particle_spacing = 0.007
 data = {
     "density": density,
     # -------------------------------------------------------- #
     "initial_surface_height": H,
     # ---------------- 時間間隔dtに関する設定値 ----------------- #
     # 最初のstep==0の場合はdt=1E-10とする
-    "C_CFL_velocity": 0.1,  # dt = C_CFL_velocity*h/Max(U)
+    "C_CFL_velocity": 0.2,  # dt = C_CFL_velocity*h/Max(U)
     "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
     "max_dt": 0.001,  # 1/1500(speed of sound) = 0.0006666666666666666
     # ------------------ 粒子配置に関する設定値 ------------------ #
     "particle_spacing": particle_spacing,
-    "xbounds": [0 + particle_spacing/2, .5 - particle_spacing/2],
-    "ybounds": [-0.05 + particle_spacing/2, 0.05 - particle_spacing/2],
+    "xbounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
+    "ybounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
     "zbounds": [particle_spacing/2, H + particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-.5, 1.],
-    "buckets_ybounds": [-.1, .1],
-    "buckets_zbounds": [0, .5],
+    "buckets_xbounds": [-.3, .3],
+    "buckets_ybounds": [-.3, .3],
+    "buckets_zbounds": [0, .25],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
     "C_SML": .8,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
@@ -79,8 +79,8 @@ print("rho*g*h = ", 1000.*9.81*H)
 
 data = {
     "name": "wave_maker",
-    "objfile": "../../obj/wave_maker_10cm250cm.obj",
-    "rotate": [math.pi/2., 1, 0, 0],
+    "objfile": "../../obj/tank/sloshing_tank.obj",
+    # "rotate": [0, 1, 0, 0],
     "reverseNormal": True,
     # "scale": [0, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
     "depth_list": [-particle_spacing/2.,
@@ -99,10 +99,11 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/wave_tank_10cm50cm.obj",
+    "objfile": "../../obj/cube0.obj",
+    "translate": [1., 1., 1.],
     "rotate": [math.pi/2., 1, 0, 0],
     "reverseNormal": True,
-    # "scale": [0, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
     "depth_list": [-particle_spacing/2.,
                    -particle_spacing/2.*3.],
     "volume_of_a_particle": volume_of_a_particle,
@@ -120,10 +121,11 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/wave_tank_10cm50cm.obj",
+    "objfile": "../../obj/cube0.obj",
     "rotate": [math.pi/2., 1, 0, 0],
+    "translate": [1., 1., 1.],
     "reverseNormal": True,
-    # "scale": [0, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
     "depth_list": [-particle_spacing/2.,
                    -particle_spacing/2.*3.],
     "volume_of_a_particle": volume_of_a_particle,
