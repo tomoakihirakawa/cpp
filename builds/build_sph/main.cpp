@@ -1037,7 +1037,7 @@ double Median(std::vector<double> scores)
 //! ------------------------------------------------------ */
 //! ------------------------- 出力 ------------------------ */
 //! ------------------------------------------------------ */
-uomap_P_d P_density, P_radius_SPH, P_pressure_SPH, P_div_U, P_isSurface;
+uomap_P_d P_density, P_radius_SPH, P_pressure_SPH, P_div_U, P_isSurface, P_ContactMirroedPointsSize;
 uomap_P_d P_ContactPointSize, P_ContactFaceSize, P_density_interpolated_SPH, P_DrhoDt_SPH, P_ContactDummyPointsSize;
 uomap_P_Tddd P_grad_P, P_lap_U, P_U_SPH, P_DUDt, P_interpolated_normal_SPH, P_tmp_U_SPH, P_X;
 void output(const std::string &name, const std::unordered_set<networkPoint *> &points)
@@ -1104,6 +1104,9 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 			auto ps = p->getContactPoints();
 			P_ContactPointSize[p] = (double)ps.size();
 			P_ContactFaceSize[p] = (double)(p->getContactFaces().size());
+
+			auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+			P_ContactMirroedPointsSize[p] = (double)(INTXN.get(p, p->radius_SPH).size());
 			P_ContactDummyPointsSize[p] = (double)std::count_if(ps.begin(), ps.end(), [p](const auto q)
 																{ return p->getNetwork() != q->getNetwork(); });
 		}
@@ -1130,6 +1133,7 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 				{"DUDt", P_DUDt},
 				{"contact face size", P_ContactFaceSize},
 				{"contact point size", P_ContactPointSize},
+				{"contact mirrored points size", P_ContactMirroedPointsSize},
 				{"contact dummy points size", P_ContactDummyPointsSize},
 				// {"density_interpolated_SPH", P_density_interpolated_SPH},
 				{"DρDt_SPH", P_DrhoDt_SPH}});
@@ -1320,21 +1324,19 @@ int main()
 		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
 		V_Netp rigid_bodies = {tank, wave_maker};
 
-		/*
-		WCSPH:
-		元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
-		これは．Monaghan(1994)から始まったもの．
-		WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
+/*
+WCSPH:
+元々，圧縮性流体に対する解析手法だったSPHを，非圧縮性に適用できるように改良したものをWeakly Compressible SPH(WCSPH)と呼ぶ．
+これは．Monaghan(1994)から始まったもの．
+WCSPHでは，密度をTaitの式に代入してから，圧力は陽に計算する．不自然な圧力振動が生じることが知られている．
 
-		EISP:
+EISP:
 
-		*/
-		//@ WCSPH/EISPH
-		// #define WCSPH
+*/
+//@ WCSPH/EISPH
+// #define WCSPH
 #define EISPH
-
 #define apply_polygon_boundary
-
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
 		int count = 0;
@@ -1714,7 +1716,7 @@ int main()
 				{
 					double t = real_time;
 					double T = 1.;
-					double A = 1. / 100.;
+					double A = 10. / 1000.;
 					double w = 2. * M_PI / T;
 					wave_maker->acceleration = {-A * w * w * sin(w * t), 0, 0, 0, 0, 0};
 					wave_maker->velocity = {A * w * cos(w * t), 0, 0, 0, 0, 0};

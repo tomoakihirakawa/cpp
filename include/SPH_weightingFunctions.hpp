@@ -699,6 +699,7 @@ struct IntersectionsSphereTrianglesLines
     };
     void addFacesAndLines(const std::unordered_set<networkFace *> &F)
     {
+        // まずは広めに取得
         // 保存はunordered_setで
         this->faces.reserve(F.size());
         for (const auto &f : F)
@@ -708,27 +709,32 @@ struct IntersectionsSphereTrianglesLines
         std::vector<networkFace *> FACES(this->faces.begin(), this->faces.end());
 
         T3Tddd fi, fj;
+        double minangle = 0.1;
+        //線を作り出す．しかし，あ
         for (auto i = 0; i < FACES.size(); ++i)
         {
             fi = FACES[i]->getX_Vertices();
-            fi += 0.1 * (T3Tddd{std::get<0>(fi) - Mean(fi),
-                                std::get<1>(fi) - Mean(fi),
-                                std::get<2>(fi) - Mean(fi)});
+            fi += 0.01 * (T3Tddd{std::get<0>(fi) - Mean(fi),
+                                 std::get<1>(fi) - Mean(fi),
+                                 std::get<2>(fi) - Mean(fi)});
             for (auto j = i; j < FACES.size(); ++j)
             {
-                fj = FACES[j]->getX_Vertices();
-                fj += 0.1 * (T3Tddd{std::get<0>(fj) - Mean(fj),
-                                    std::get<1>(fj) - Mean(fj),
-                                    std::get<2>(fj) - Mean(fj)});
-                auto intxn = IntersectionTriangles(fi, fj);
-                if (intxn.isIntersecting)
-                    lines.push_back({FACES[i], FACES[j], intxn.L});
+                if (MyVectorAngle(FACES[j]->getNormalTuple(), FACES[i]->getNormalTuple()) / M_PI * 180. > minangle)
+                {
+                    fj = FACES[j]->getX_Vertices();
+                    fj += 0.01 * (T3Tddd{std::get<0>(fj) - Mean(fj),
+                                         std::get<1>(fj) - Mean(fj),
+                                         std::get<2>(fj) - Mean(fj)});
+                    auto intxn = IntersectionTriangles(fi, fj);
+                    if (intxn.isIntersecting)
+                        lines.push_back({FACES[i], FACES[j], intxn.L});
+                }
             }
         }
     };
 
     std::vector<std::tuple<Tddd, Tddd>> X_Y;
-    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd>> F_F_X_Y;
+    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd, Tddd>> F_F_X_Y_N;
     std::vector<std::tuple<Tddd, Tddd>> get(const networkPoint *p, const double h)
     {
         X_Y.clear();
@@ -749,38 +755,57 @@ struct IntersectionsSphereTrianglesLines
         }
         return X_Y;
     };
-    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd>> getFFXY(const networkPoint *p, const double h)
+
+    bool isDuplication(const Tddd &n) const
     {
-        F_F_X_Y.clear();
+        return std::any_of(this->F_F_X_Y_N.begin(), this->F_F_X_Y_N.end(),
+                           [n](const auto &f_f_x_y_n)
+                           {
+                               return (MyVectorAngle(n, std::get<0>(f_f_x_y_n)->getNormalTuple()) / M_PI * 180. < 1E-2);
+                           });
+    };
+
+    std::vector<std::tuple<networkFace *, networkFace *, Tddd, Tddd, Tddd>> getFFXYN(const networkPoint *p, const double h)
+    {
+        F_F_X_Y_N.clear();
         // b! 次にgetでは，面または交線が，与えられた点と正対する場合にその位置を返す．
         //! 面との干渉
+        Tddd n;
         for (const auto &f : this->faces)
         {
             auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
-            if (intxn.isIntersecting)
-                F_F_X_Y.push_back({f, nullptr, intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+            n = f->getNormalTuple();
+            if (intxn.isIntersecting && !isDuplication(n))
+                F_F_X_Y_N.push_back({f,
+                                     nullptr,
+                                     intxn.X,
+                                     p->getXtuple() + 2. * (intxn.X - p->getXtuple()),
+                                     n});
         }
         //! 線との干渉
         for (const auto &[F0, F1, L] : this->lines)
         {
             auto intxn = IntersectionSphereLine(p->getXtuple(), h, L);
-            if (intxn.isIntersecting)
-                F_F_X_Y.push_back({F0, F1, intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
+            n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
+            if (intxn.isIntersecting && !isDuplication(n))
+                F_F_X_Y_N.push_back({F0,
+                                     F1,
+                                     intxn.X,
+                                     p->getXtuple() + 2. * (intxn.X - p->getXtuple()),
+                                     n});
         }
-        return F_F_X_Y;
+        return F_F_X_Y_N;
     };
 };
 #define free_slip_boundary_condition
-// #define boundary_gurd
+#define boundary_gurd
 
 #if defined(boundary_gurd)
 double boundary_gurd_value(const networkPoint *p, const double distance, const double h)
 {
-    double additional = tanh((2. * M_PI) / (h / 8.) * (-distance + (h / 8.)) - M_PI) + 1.;
-    // if (p->isSurface)
-    //     return 1. + 20. * additional;
-    if ((h / 8.) > distance)
-        return 1. + (h / 8.) / distance;
+    double additional = tanh((2. * M_PI) / (h / 6.) * (-distance + (h / 6.)) - M_PI) + 1.;
+    if ((h / 6.) > distance)
+        return 1. + 5. * additional;
     else
         return 1.;
 };
@@ -802,26 +827,28 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
         if (p != a)
             ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
+        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
+                n = N;
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple());
+                n = N;
             }
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
             U = -p->U_SPH + Dot(velocity, n) * n;
+#elif defined(zero_boundary_condition)
+            U = {0, 0, 0};
 #else
             U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
@@ -867,26 +894,28 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
             ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h));
         }
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
+        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
+                n = N;
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple());
+                n = N;
             }
 #if defined(free_slip_boundary_condition)
             U = p->tmp_U_SPH - 2 * n * Dot(p->tmp_U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
             U = -p->tmp_U_SPH + Dot(velocity, n) * n;
+#elif defined(zero_boundary_condition)
+            U = {0, 0, 0};
 #else
             U = -n * Dot(p->tmp_U_SPH, n) + Dot(velocity, n) * n;
 #endif
@@ -966,7 +995,7 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
             ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
         }
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
+        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
             {
@@ -980,7 +1009,7 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
                 std::get<1>(accel) = std::get<1>(F0->getNetwork()->acceleration);
                 std::get<2>(accel) = std::get<2>(F0->getNetwork()->acceleration);
             }
-            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, p->getXtuple() - Y));
+            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
             // pressure = p->pressure_SPH;
             ret += p->mass * (pressure / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * grad_kernel_Bspline5(Y, a->getXtuple(), h)
 #if defined(boundary_gurd)
@@ -1053,26 +1082,28 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
         if (p != a)
             ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
+        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
+                n = N;
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple());
+                n = N;
             }
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
             U = -p->U_SPH + Dot(velocity, n) * n;
+#elif defined(zero_boundary_condition)
+            U = {0, 0, 0};
 #else
             U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
@@ -1144,26 +1175,28 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
         if (p != a)
             ret += laplacian_U_ShaoAndLo2003(a, p, h, p->getXtuple());
         // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y] : INTXN.getFFXY(p, h))
+        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity + F1->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple() + F1->getNormalTuple());
+                n = N;
             }
             else
             {
                 std::get<0>(velocity) = std::get<0>(F0->getNetwork()->velocity);
                 std::get<1>(velocity) = std::get<1>(F0->getNetwork()->velocity);
                 std::get<2>(velocity) = std::get<2>(F0->getNetwork()->velocity);
-                n = Normalize(F0->getNormalTuple());
+                n = N;
             }
 #if defined(free_slip_boundary_condition)
             U = p->U_SPH - 2 * n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #elif defined(no_slip_boundary_condition)
             U = -p->U_SPH + Dot(velocity, n) * n;
+#elif defined(zero_boundary_condition)
+            U = {0, 0, 0};
 #else
             U = -n * Dot(p->U_SPH, n) + Dot(velocity, n) * n;
 #endif
