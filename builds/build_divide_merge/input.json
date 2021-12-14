@@ -1,7 +1,7 @@
 {
-  "name": "water_sawai_250x250mm",
+  "name": "tank_sawai_254x254mm",
   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/water_sawai_250x250mm.obj",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/tank_sawai_254x254mm.obj",
   "remesh": 10.0
 }
 
