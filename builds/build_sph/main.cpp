@@ -2216,7 +2216,19 @@ EISP:
 						*/
 						// p->DUDt_SPH = -p->gradP_SPH / p->density + (p->tmp_U_SPH - p->U_SPH) / dt;
 						double nu = p->mu_SPH / p->density;
+
 						p->DUDt_SPH = -p->gradP_SPH / p->density + nu * p->lap_U + gravity;
+						/* ------------------------- 修正 ------------------------- */
+						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+						for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, p->radius_SPH))
+						{
+							if (Norm(X) < p->radius_SPH / 8.)
+								if (Dot(p->DUDt_SPH /*力の方向*/, N) < 0 /*力の方向が逆の場合，つまり壁方向に進んでいる．この場合*/)
+									p->DUDt_SPH -= 0.1 * Dot(p->DUDt_SPH, N) * N; //-gra(P)で力がかかるので符号は逆に
+								else
+									p->DUDt_SPH += 0.05 * Dot(p->DUDt_SPH, N) * N;
+						}
+						/* ------------------------------------------------------ */
 						rk->push(p->DUDt_SPH);
 						p->U_SPH = rk->getX();
 					}

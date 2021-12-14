@@ -22,6 +22,7 @@ data = {
     "name": "water",
     "objfile": "../../obj/tank/sawai/water_sawai_250x250mm15.obj",
     "radius": 0.01,
+    # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "water",  # 拡張子はいらない
     "output_pvd_file_name": "water",  # 拡張子はいらない
@@ -38,6 +39,7 @@ data = {
     "name": "tank",
     "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm15.obj",
     "radius": 0.01,
+    # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "tank",  # 拡張子はいらない
     "output_pvd_file_name": "tank",  # 拡張子はいらない

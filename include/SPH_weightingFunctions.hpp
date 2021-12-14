@@ -1188,16 +1188,6 @@ Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint
         }
         // b%$------------------------------------------------------ */
     }
-
-    for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(a, h))
-    {
-        if (Norm(X) < h / 8.)
-            if (Dot(-ret /*力の方向*/, N) < 0 /*力の方向が逆の場合，つまり壁方向に進んでいる．この場合*/)
-                ret -= 0.1 * Dot(ret, N) * N; //-gra(P)で力がかかるので符号は逆に
-            else
-                ret += 0.1 * Dot(ret, N) * N;
-    }
-
     return ret * a->density;
 };
 

@@ -52,11 +52,11 @@ Tddd translation(const double t)
 	double s = M_PI / 2.;
 	double k = M_PI / 1.;
 	/* ------------------------------------------------------ */
-	// Tddd move_dir = {cos(k * t), sin(k * t), 0.};
-	// return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
-	/* ------------------------------------------------------ */
-	Tddd move_dir = Normalize(Tddd{1., 1., 0.});
+	Tddd move_dir = {cos(k * t), sin(k * t), 0.};
 	return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
+	/* ------------------------------------------------------ */
+	// Tddd move_dir = Normalize(Tddd{1., 1., 0.});
+	// return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
 };
 
 T6d forced_velocity(const double t)
@@ -65,16 +65,16 @@ T6d forced_velocity(const double t)
 	double a = move_amplitude;
 	double k = M_PI / 1.;
 	/* ------------------------------------------------------ */
-	// T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
-	// T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
-	// // /* |U|*n_p . n_surface = phin <-- given
-	// auto tmp = (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
-	// tmp += move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * ddt_move_dir;
-	// return tmp;
+	T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
+	T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
+	// /* |U|*n_p . n_surface = phin <-- given
+	auto tmp = (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
+	tmp += move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * ddt_move_dir;
+	return tmp;
 	/* ------------------------------------------------------ */
-	Tddd tmp = Normalize(Tddd{1., 1., 0.});
-	T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
-	return (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
+	// Tddd tmp = Normalize(Tddd{1., 1., 0.});
+	// T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
+	// return (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
 };
 /* ------------------------------------------------------ */
 double phin(networkFace *f)
