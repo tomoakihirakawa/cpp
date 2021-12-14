@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": "../../include"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"MicroPython.executeButton": [
+			{
+				"text": "▶",
+				"tooltip": "Run",
+				"alignment": "left",
+				"command": "extension.executeFile",
+				"priority": 3.5
+			}
+		],
+		"MicroPython.syncButton": [
+			{
+				"text": "$(sync)",
+				"tooltip": "sync",
+				"alignment": "left",
+				"command": "extension.execute",
+				"priority": 4
+			}
+		],
+		"workbench.colorCustomizations": {
+			"editorCursor.foreground": "#ff00dd",
+			"terminalCursor.foreground": "#ff81e4",
+			"editor.background": "#000010",
+			"editorIndentGuide.activeBackground": "#fff204",
+			"editorIndentGuide.background": "#ffffff4c",
+			"editor.selectionHighlightBackground": "#ff040483",
+			"editor.lineHighlightBackground": "#00000000",
+			"editor.lineHighlightBorder": "#ffc800",
+			"activityBar.background": "#41262B",
+			"titleBar.activeBackground": "#5B353C",
+			"titleBar.activeForeground": "#FCF9FA"
+		},
+		"files.associations": {
+			"*.html": "html",
+			"array": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp",
+			"string": "cpp"
+		}
+	}
+}

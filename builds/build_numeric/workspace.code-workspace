@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"html.format.wrapLineLength": 200,
+		"editor.wordWrapColumn": 200,
+		"editor.wordWrap": "wordWrapColumn"
+	}
+}

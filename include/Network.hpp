@@ -616,6 +616,7 @@ public:
 	Tddd pre_U_SPH;
 	Tddd mu_lap_rho_g_SPH;
 	Tddd interpolated_normal_SPH;
+	Tddd cg_neighboring_particles_SPH;
 	// ダミー粒子としての情報
 	/* ------------------- 多段の時間発展スキームのため ------------------- */
 	Tddd DUDt_SPH;
@@ -989,10 +990,46 @@ public:
 			if (k_end > B.zsize)
 				k_end = B.zsize;
 			//この方法は，B.Bucketsの長さがそれぞれ一定であることを想定している．
+			// for (i0 = i_start; i0 < i_end; ++i0)
+			// 	for (j0 = j_start; j0 < j_end; ++j0)
+			// 		for (k0 = k_start; k0 < k_end; ++k0)
+			// 		{
+			// this->addContactPoints(B.buckets[i0][j0][k0]);
+			// 		}
+
+			//@修正
 			for (i0 = i_start; i0 < i_end; ++i0)
 				for (j0 = j_start; j0 < j_end; ++j0)
 					for (k0 = k_start; k0 < k_end; ++k0)
-						this->addContactPoints(B.buckets[i0][j0][k0]);
+					{
+						this->ContactPoints.insert(B.buckets[i0][j0][k0].begin(), B.buckets[i0][j0][k0].end());
+						for (auto it = B.buckets[i0][j0][k0].begin(); it != B.buckets[i0][j0][k0].end(); ++it)
+							this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
+					}
+
+			// for (auto it_i = B.buckets.begin() + i_start; it_i != B.buckets.begin() + i_end; ++it_i)
+			// 	for (auto it_j = (*it_i).begin() + j_start; it_j != (*it_i).begin() + j_end; ++it_j)
+			// 		for (auto it_k = (*it_j).begin() + k_start; it_k != (*it_j).begin() + k_end; ++it_k)
+			// 		{
+			// 			this->ContactPoints.insert((*it_k).begin(), (*it_k).end());
+			// 			for (auto it = (*it_k).begin(); it != (*it_k).end(); ++it)
+			// 				this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
+			// 		}
+
+			// auto it_i = B.buckets.begin();
+			// auto it_j = (*it_i).begin();
+			// auto it_k = (*it_j).begin();
+			// auto it = (*it_k).begin();
+			// for (it_i = B.buckets.begin() + i_start; it_i != B.buckets.begin() + i_end; ++it_i)
+			// 	for (it_j = (*it_i).begin() + j_start; it_j != (*it_i).begin() + j_end; ++it_j)
+			// 		for (it_k = (*it_j).begin() + k_start; it_k != (*it_j).begin() + k_end; ++it_k)
+			// 		{
+			// 			for (it = (*it_k).begin(); it != (*it_k).end(); ++it)
+			// 			{
+			// 				this->ContactPoints.emplace(*it);
+			// 				this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
+			// 			}
+			// 		}
 		}
 	};
 	//% ------------------------------------------------------ */
@@ -1318,19 +1355,23 @@ public:
 	bool isDirichlet() const { return this->Dirichlet; };
 	bool isNeumann() const { return this->Neumann; };
 	/* ------------------------------------------------------ */
-	T6d force;
-	V_d inertia;  //={mass,mass,mass,rotational_of_inertia}
-	V_d velocity; //={vx,vy,vz,angular_vx,angular_vy,angular_vz}
-	V_d acceleration;
-	double mass;
+	// T6d force;
+	// T6d inertia;
+	// T6d acceleration;
+	// double mass;
 	/* ------------------------------------------------------ */
-	T6d &F = this->force;
-	V_d &I = this->inertia;
-	V_d &A = this->acceleration;
-	V_d &V = this->velocity;
-	/* ------------------------------------------------------ */
+	//! 固定された空間座標におけるベクトルであることを頭に入れておくこと．
+	//! 回転，移動をする物体の座標系ではないので，固定座標にとって，回転前後でinertiaは書き換える必要がある．
+	//! inertiaの慣性モーメントはそのまま固定座標における回転行列をかけて，更新すればいい
+	// T6d &I = this->inertia;
+	// T6d &F = this->force;
+	// T6d &A = this->acceleration;
+	// T6d &V = this->velocity;
 
-	V_d center_of_mass;
+	// V_d center_of_mass;
+
+	Tddd normalVelocityRigidBody(const Tddd &X) const;
+
 #ifdef BEM
 	Tdd phiphin;
 #endif
@@ -2644,6 +2685,16 @@ public:
 	/* ------------------------------------------------------ */
 	Tddd center_of_mass;
 	/* ------------------------------------------------------ */
+	Tddd velocityRigidBody(const Tddd &X) const
+	{
+		return Tddd{std::get<0>(this->velocity),
+					std::get<1>(this->velocity),
+					std::get<2>(this->velocity)} +
+			   Cross({std::get<3>(this->velocity),
+					  std::get<4>(this->velocity),
+					  std::get<5>(this->velocity)},
+					 X - this->center_of_mass);
+	};
 	// calcPhysicalProperties試作．
 	void calcPhysicalProperties()
 	{

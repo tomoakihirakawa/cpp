@@ -8,26 +8,26 @@ density = 1000.
 graity = 9.81
 
 H = 150/1000
-particle_spacing = 0.008
+particle_spacing = 0.01
 data = {
     "density": density,
     # -------------------------------------------------------- #
     "initial_surface_height": H,
     # ---------------- 時間間隔dtに関する設定値 ----------------- #
     # 最初のstep==0の場合はdt=1E-10とする
-    "C_CFL_velocity": 0.1,  # dt = C_CFL_velocity*h/Max(U)
+    "C_CFL_velocity": 0.04,  # dt = C_CFL_velocity*h/Max(U)
     "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
-    "max_dt": 0.001,  # 1/1500(speed of sound) = 0.0006666666666666666
+    "max_dt": 0.0005,  # 1/1500(speed of sound) = 0.0006666666666666666
     # ------------------ 粒子配置に関する設定値 ------------------ #
     "particle_spacing": particle_spacing,
     "xbounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
     "ybounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
-    "zbounds": [particle_spacing/2, H + particle_spacing/2],
+    "zbounds": [particle_spacing/2, H - particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-.3, .3],
-    "buckets_ybounds": [-.3, .3],
-    "buckets_zbounds": [0, .25],
+    "buckets_xbounds": [-.15, .15],
+    "buckets_ybounds": [-.15, .15],
+    "buckets_zbounds": [0, .40],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
     "C_SML": .9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
@@ -35,13 +35,13 @@ data = {
     "mu": 0.001005,
     # -------------------------------------------------------- #
     "C_Tait": 1466/60.,  # テイトの式
-    # ---------------------- 人口粘性係数 ---------------------- #
-    "C_artificial_viscousity_alpha": 0.05,
+    # ---------------------- 人口粘性係数 ---------------------- 
+    "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.0001,
+    "preparation_max_dt": 0.00005,
     "preparation_time": 1.,
-    "preparation_time_step": 10,
+    "preparation_time_step": 100,
     "preparation_C_artificial_viscousity_alpha": 0.2,
     "preparation_C_artificial_viscousity_beta": 0.2,
     # -------------------------------------------------------- #

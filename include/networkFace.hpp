@@ -4,19 +4,20 @@
 
 #include "Network.hpp"
 #include "NetworkUtility.hpp"
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+inline Tddd networkFace::normalVelocityRigidBody(const Tddd &X) const
+{
+	return this->normal * Dot(this->normal, this->network->velocityRigidBody(X));
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // コンストラクタ
 inline networkFace::networkFace(Network *network_IN, Network *storage_IN, const V_netLp &Lines_IN)
 	: object3D(geometry::CoordinateBounds(Flatten(extractXtuple(Lines_IN)))),
 	  networkObject(network_IN, Lines_IN),
-	  XPoints(0),
-	  /* ------------------------------------------------------ */
-	  force({0., 0., 0., 0., 0., 0.}),
-	  inertia(6, 0.),
-	  acceleration(3, 0.),
-	  velocity(6, 0.),
-	  mass(0.),
-	  center_of_mass(3, 0.)
+	  XPoints(0)
 {
 #ifdef DEM
 	this->contactP = {};
@@ -43,12 +44,12 @@ inline networkFace::networkFace(const netFp f)
 	  networkObject(f),
 	  XPoints(0),
 	  /* ------------------------------------------------------ */
-	  force({0., 0., 0., 0., 0., 0.}),
-	  inertia(6, 0.),
-	  acceleration(3, 0.),
-	  velocity(6, 0.),
-	  mass(0.),
-	  center_of_mass(3, 0.),
+	  //   force({0., 0., 0., 0., 0., 0.}),
+	  //   inertia(6, 0.),
+	  //   acceleration(3, 0.),
+	  //   velocity(6, 0.),
+	  //   mass(0.),
+	  //   center_of_mass(3, 0.),
 	  map_Net_ContactPoints({{nullptr, {}}})
 {
 	this->Dirichlet = f->Dirichlet;
@@ -62,7 +63,6 @@ inline networkFace::networkFace(const netFp f)
 	this->network = f->getNetwork();
 	this->storage = f->getStorage();
 	this->storage->add(this);
-	this->force = f->force;
 	this->Points = f->getPoints();
 	this->PointsTuple = f->getPointsTuple();
 	this->Lines = f->getLines();

@@ -1131,6 +1131,9 @@ inline networkPoint::networkPoint(Network *network_IN,
 	this->interpolated_normal_SPH = {0., 0., 0.};
 	this->pn_is_set = false;
 	this->radius_SPH = 0.;
+	this->pressure_SPH = 0.;
+	this->pressure_SPH_ = 0.;
+	this->isSurface = false;
 #endif
 
 	this->Dirichlet = false;

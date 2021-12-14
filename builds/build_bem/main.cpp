@@ -2033,8 +2033,8 @@ int main()
 				std::replace(s.begin(), s.end(), '{', '[');
 				std::replace(s.begin(), s.end(), '}', ']');
 				std::cout << "{" << s << "}" << std::endl;
-				if (*hist.data.rbegin() > 5)
-					throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "length > 5");
+				// if (*hist.data.rbegin() > 5)
+				// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "length > 5");
 
 				int ii = 0;
 				derivatives ders(Points, dt);

@@ -1,7 +1,7 @@
 {
-  "name": "tank_watanabe",
-  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/watanabe2021/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/watanabe2021/tank_watanabe.obj",
+  "name": "water_sawai_250x250mm",
+  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/water_sawai_250x250mm.obj",
   "remesh": 10.0
 }
 

@@ -606,6 +606,7 @@ T6d ToT6d(const Tddd tmp)
 	return {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
 };
 Tddd ToTddd(const V_d &v) { return {v[0], v[1], v[2]}; };
+Tddd ToTddd(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
 Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
 // std::vector<double> ToVector(const Tdd &v) { return {std::get<0>(v), std::get<1>(v)}; };
 double Norm(const T4d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t) + std::get<3>(t) * std::get<3>(t)); };

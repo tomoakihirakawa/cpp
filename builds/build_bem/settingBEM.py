@@ -20,8 +20,8 @@ output_directory = home+"/BEM/BEM_amp035_Dombre2019_move1"
 
 data = {
     "name": "water",
-    "objfile": "../../obj/bem_water16.obj",
-    "radius": 0.05,
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm15.obj",
+    "radius": 0.01,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "water",  # 拡張子はいらない
     "output_pvd_file_name": "water",  # 拡張子はいらない
@@ -36,8 +36,8 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/bem_tank6.obj",
-    "radius": 0.05,
+    "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm15.obj",
+    "radius": 0.01,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "tank",  # 拡張子はいらない
     "output_pvd_file_name": "tank",  # 拡張子はいらない
