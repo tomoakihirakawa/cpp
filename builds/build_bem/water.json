@@ -1,8 +1,8 @@
 {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm15.obj",
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm18.obj",
     "radius": 0.01,
     "output_vtu_file_name": "water",
     "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/BEM/BEM_amp035_Dombre2019_move1"
+    "output_directory": "/Users/tomoaki/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_respect_Dirichlet_on_CORNER_EMT_K1d0_without_remeshing"
 }

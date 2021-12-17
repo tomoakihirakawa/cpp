@@ -1039,7 +1039,7 @@ double Median(std::vector<double> scores)
 //! ------------------------------------------------------ */
 uomap_P_d P_density, P_radius_SPH, P_pressure_SPH, P_div_U, P_isSurface, P_ContactMirroedPointsSize;
 uomap_P_d P_ContactPointSize, P_ContactFaceSize, P_density_interpolated_SPH, P_DrhoDt_SPH, P_ContactDummyPointsSize;
-uomap_P_Tddd P_grad_P, P_lap_U, P_U_SPH, P_DUDt, P_interpolated_normal_SPH, P_tmp_U_SPH, P_X, P_normal_SPH, P_cg_SPH;
+uomap_P_Tddd P_grad_P, P_lap_U, P_U_SPH, P_DUDt, P_interpolated_normal_SPH, P_tmp_U_SPH, P_X, P_normal_SPH, P_cg_SPH, P_repulsive;
 void output(const std::string &name, const std::unordered_set<networkPoint *> &points)
 {
 	auto s = points.size();
@@ -1111,6 +1111,23 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 			P_ContactMirroedPointsSize[p] = (double)(INTXN.get(p, p->radius_SPH).size());
 			P_ContactDummyPointsSize[p] = (double)std::count_if(ps.begin(), ps.end(), [p](const auto q)
 																{ return p->getNetwork() != q->getNetwork(); });
+
+			P_repulsive[p] = {0, 0, 0};
+			for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, p->radius_SPH))
+			{
+				Tddd velocity = {0, 0, 0};
+				if (F1)
+					velocity = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->velocity), F0->getNormalTuple()) + F1->getNormalTuple() * Dot(ToTddd(F1->getNetwork()->velocity), F1->getNormalTuple());
+				else
+					velocity = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->velocity), F0->getNormalTuple());
+				if (Norm(X - p->getXtuple()) < p->radius_SPH / 6.)
+					if (Dot(velocity - p->U_SPH /*相対速度*/, N) < 0 /*力の方向が逆の場合，つまり壁方向に進んでいる．この場合*/)
+					{
+						auto dir = -Normalize(Dot(velocity - p->U_SPH /*相対速度*/, N) * N);
+						auto a = 1 - Norm(X - p->getXtuple()) / (p->radius_SPH / 6.);
+						P_repulsive[p] += dir * 10 * (1 + (p->radius_SPH / 6. - Norm(X - p->getXtuple())) / (p->radius_SPH / 6.));
+					}
+			}
 		}
 		std::cout << "data is made" << std::endl;
 	}
@@ -1134,6 +1151,7 @@ void output(const std::string &name, const std::unordered_set<networkPoint *> &p
 				{"normal_SPH", P_normal_SPH},
 				{"center of mass", P_cg_SPH},
 				{"DUDt", P_DUDt},
+				{"repulsive force", P_repulsive},
 				{"contact face size", P_ContactFaceSize},
 				{"contact point size", P_ContactPointSize},
 				{"contact mirrored points size", P_ContactMirroedPointsSize},
@@ -1338,8 +1356,8 @@ EISP:
 
 */
 //@ WCSPH/EISPH
-// #define WCSPH
-#define EISPH
+#define WCSPH
+// #define EISPH
 #define apply_polygon_boundary
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1718,13 +1736,14 @@ EISP:
 				dt = P_RK_X[*water_points.begin()]->getdt();
 				std::cout << "dt = " << dt << std::endl;
 				/* ------------------------------------------------------ */
-				double start_move = .01;
+				double start_move = 0.01;
 				if (real_time >= start_move)
 				{
 					double t = real_time - start_move;
-					double T = 1.;
-					double A = 0.0;
-					double w = 2. * M_PI / T;
+					double h = 0.1;
+					double L = 0.25;
+					double w = std::sqrt(M_PI * 9.8 / L * tanh(M_PI * h / L));
+					double A = 0.01;
 					wave_maker->acceleration = {-A * w * w * sin(w * t), 0, 0, 0, 0, 0};
 					wave_maker->velocity = {A * w * cos(w * t), 0, 0, 0, 0, 0};
 					wave_maker->translateFromInitialX({A * sin(w * t), 0, 0});
@@ -2220,13 +2239,20 @@ EISP:
 						p->DUDt_SPH = -p->gradP_SPH / p->density + nu * p->lap_U + gravity;
 						/* ------------------------- 修正 ------------------------- */
 						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
+						double critical_distance = p->radius_SPH / (3. * C_SML) / 2.;
 						for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, p->radius_SPH))
 						{
-							if (Norm(X) < p->radius_SPH / 8.)
-								if (Dot(p->DUDt_SPH /*力の方向*/, N) < 0 /*力の方向が逆の場合，つまり壁方向に進んでいる．この場合*/)
-									p->DUDt_SPH -= 0.1 * Dot(p->DUDt_SPH, N) * N; //-gra(P)で力がかかるので符号は逆に
-								else
-									p->DUDt_SPH += 0.05 * Dot(p->DUDt_SPH, N) * N;
+							Tddd velocity = {0, 0, 0};
+							if (F1)
+								velocity = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->velocity), F0->getNormalTuple()) + F1->getNormalTuple() * Dot(ToTddd(F1->getNetwork()->velocity), F1->getNormalTuple());
+							else
+								velocity = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->velocity), F0->getNormalTuple());
+
+							if (Norm(X - p->getXtuple()) < critical_distance)
+							{
+								// auto dir = -Normalize(Dot(velocity - p->U_SPH /*相対速度*/, N) * N);
+								p->DUDt_SPH += N * 100 * (1. - Norm(X - p->getXtuple()) / critical_distance);
+							}
 						}
 						/* ------------------------------------------------------ */
 						rk->push(p->DUDt_SPH);

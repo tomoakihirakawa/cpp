@@ -7,8 +7,8 @@ import math
 density = 1000.
 graity = 9.81
 
-H = 150/1000
-particle_spacing = 0.01
+H = 100/1000
+particle_spacing = 0.007
 data = {
     "density": density,
     # -------------------------------------------------------- #
@@ -25,11 +25,12 @@ data = {
     "zbounds": [particle_spacing/2, H - particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-.15, .15],
-    "buckets_ybounds": [-.15, .15],
+    "buckets_xbounds": [-.3, .3],
+    "buckets_ybounds": [-.3, .3],
     "buckets_zbounds": [0, .40],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
-    "C_SML": .9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    "C_SML": 16/15.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    # "C_SML": 0.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
     # -------------------------------------------------------- #
     "mu": 0.001005,
@@ -39,7 +40,7 @@ data = {
     "C_artificial_viscousity_alpha": 0.03,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.00005,
+    "preparation_max_dt": 0.0001,
     "preparation_time": 1.,
     "preparation_time_step": 100,
     "preparation_C_artificial_viscousity_alpha": 0.2,
