@@ -1089,7 +1089,7 @@ struct derivatives
 
 			// p->U_update_BEM = p->U_BEM;
 			//! tensionが強いと角でとがるようなエラーがでる．
-			double K = 1.;
+			double K = 0.5;
 			p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			// p->U_update_BEM = p->U_BEM - p->U_tangential_BEM + Norm(p->U_tangential_BEM) * Normalize(tension); // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			/* ------------------------------------------------------ */
@@ -1712,7 +1712,6 @@ void remesh(Network &water)
 	water.setBounds();
 	double mean_length = Mean(extLength(water.getLines()));
 	bool isfound = false, ismerged = false;
-	;
 	int count = 0;
 	double lim_degree = 5.;
 	do

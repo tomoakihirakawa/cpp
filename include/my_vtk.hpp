@@ -93,7 +93,7 @@ public:
 		fprintf(fp, "  <Collection>\n");
 		for (auto i = 0; i < times.size(); i++)
 		{
-			fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%lf\"/>", this->vtu_names[i].c_str(), this->times[i]);
+			fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%lf\" volume=\"0.01\"/>", this->vtu_names[i].c_str(), this->times[i]);
 			fprintf(fp, "\n");
 		}
 		fprintf(fp, "  </Collection>\n");

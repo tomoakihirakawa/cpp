@@ -2559,6 +2559,7 @@ netL *unlink(netP *obj, netP *obj_)
 
 /////////////////////////////////////////////////////////////////////
 #include "searcher.hpp"
+#include "InterpolationRBF.hpp"
 //////////////////////////////////////////////////////////////////////
 /* Networkは持っているPointsから情報を取り出すメソッドを提供する*/
 //*  @-@-@ */
@@ -2572,6 +2573,29 @@ netL *unlink(netP *obj, netP *obj_)
 class Network : public object3D
 {
 public:
+	/* ------------------------------------------------------ */
+	/*                          体積の計算                      */
+	/* ------------------------------------------------------ */
+	double getVolume()
+	{
+		double x0, x1, w0, w1, ret = 0;
+		for (const auto &f : getFaces())
+		{
+			interpolationTriangleLinearByFixedRange3D intp(f->getX_Vertices());
+			for (const auto &x0w0 : __GW4__Tuple)
+			{
+				x0 = std::get<0>(x0w0);
+				w0 = std::get<1>(x0w0);
+				for (const auto &x1w1 : __GW4__Tuple)
+				{
+					x1 = std::get<0>(x1w1);
+					w1 = std::get<1>(x1w1);
+					ret += w0 * w1 * Dot(intp(x0, x1), f->getNormalTuple());
+				}
+			}
+		}
+		return ret;
+	};
 	//! ------------------------------------------------------ */
 	//!                          接触の判別                      */
 	//! ------------------------------------------------------ */
@@ -3356,12 +3380,12 @@ public:
 	};
 	//======================================
 	/*setXPoints_detail
-`setXPoints`は，thisとtargetの`networkFace`と`networkLine`の干渉を検知して，干渉点として`networkPoint`を新たに作成する．
+	`setXPoints`は，thisとtargetの`networkFace`と`networkLine`の干渉を検知して，干渉点として`networkPoint`を新たに作成する．
 
-- 干渉点`networkPoint`は，干渉した`networkFace`と`networkLine`の`XPoints`に`push`される．
-- 干渉点として作成される`networkPoint`には，`xline`と`xface`が与えられる．これらは，デフォルトで`xline=nullptr`，`xface=nullptr`となっている．
+	- 干渉点`networkPoint`は，干渉した`networkFace`と`networkLine`の`XPoints`に`push`される．
+	- 干渉点として作成される`networkPoint`には，`xline`と`xface`が与えられる．これらは，デフォルトで`xline=nullptr`，`xface=nullptr`となっている．
 
-setXPoints_detail*/
+	setXPoints_detail*/
 	/*setXPoints_code*/
 	void setXPoints(Network &target, Network *interactionNet);
 	/*setXPoints_code*/

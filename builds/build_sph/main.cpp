@@ -1356,8 +1356,8 @@ EISP:
 
 */
 //@ WCSPH/EISPH
-#define WCSPH
-// #define EISPH
+// #define WCSPH
+#define EISPH
 #define apply_polygon_boundary
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1375,7 +1375,7 @@ EISP:
 		//@                               メインループ                            */
 		//@ ------------------------------------------------------------------- */
 		//@ ------------------------------------------------------------------- */
-		for (auto step = 0; step < 20000; step++)
+		for (auto step = 0; step < 100000; step++)
 		{
 			if (step == 0)
 			{
@@ -1736,17 +1736,17 @@ EISP:
 				dt = P_RK_X[*water_points.begin()]->getdt();
 				std::cout << "dt = " << dt << std::endl;
 				/* ------------------------------------------------------ */
-				double start_move = 0.01;
+				double start_move = 0.05;
 				if (real_time >= start_move)
 				{
 					double t = real_time - start_move;
 					double h = 0.1;
 					double L = 0.25;
 					double w = std::sqrt(M_PI * 9.8 / L * tanh(M_PI * h / L));
-					double A = 0.01;
-					wave_maker->acceleration = {-A * w * w * sin(w * t), 0, 0, 0, 0, 0};
-					wave_maker->velocity = {A * w * cos(w * t), 0, 0, 0, 0, 0};
-					wave_maker->translateFromInitialX({A * sin(w * t), 0, 0});
+					double A = 0.005;
+					wave_maker->acceleration = {-A * w * w * cos(w * t), 0, 0, 0, 0, 0};
+					wave_maker->velocity = {-A * w * sin(w * t), 0, 0, 0, 0, 0};
+					wave_maker->translateFromInitialX({A * (cos(w * t) - 1), 0, 0});
 				}
 				/* ------------------------------------------------------ */
 				//* ------------------------------------------------------------ */
@@ -2251,7 +2251,7 @@ EISP:
 							if (Norm(X - p->getXtuple()) < critical_distance)
 							{
 								// auto dir = -Normalize(Dot(velocity - p->U_SPH /*相対速度*/, N) * N);
-								p->DUDt_SPH += N * 100 * (1. - Norm(X - p->getXtuple()) / critical_distance);
+								p->DUDt_SPH += N * 50 * (1. - Norm(X - p->getXtuple()) / critical_distance);
 							}
 						}
 						/* ------------------------------------------------------ */
