@@ -178,6 +178,13 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 				auto intxn = IntersectionSphereTriangle(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
 				if (intxn.isIntersecting && intxn.scale < 0 /*面の法線方向とは逆向き*/)
 					tmpContactFaces[f] = intxn.X;
+				else
+				{
+					auto X = intxn.getNearestX();
+					auto norm = Norm(X - this->getXtuple());
+					if (norm < 2. * this->radius && Dot(X - this->getXtuple(), f->getNormalTuple()) < 0.)
+						tmpContactFaces[f] = X;
+				}
 			}
 		// b!各面について衝突があり得るか詳しく調べて判断する．
 		for (const auto &[f, intxnX] : tmpContactFaces)
@@ -889,6 +896,15 @@ inline Tddd networkPoint::getNormalAreaAveraged() const
 	Tddd normal = {0., 0., 0.};
 	for (const auto &f : this->getFaces())
 		normal += f->getArea() * f->getNormalTuple();
+	return Normalize(normal);
+};
+inline Tddd networkPoint::getNormalDirichletAreaAveraged() const
+{
+	//角度の重みを掛けた法線ベクトルを足し合わせる
+	Tddd normal = {0., 0., 0.};
+	for (const auto &f : this->getFaces())
+		if (f->Dirichlet)
+			normal += f->getArea() * f->getNormalTuple();
 	return Normalize(normal);
 };
 inline V_d networkPoint::getNormal() const

@@ -169,5 +169,9 @@ int main()
 		std::cout << stob(json["extra_cheese"]) << std::endl;
 		std::cout << stob(json["delivery"]) << std::endl;
 		std::cout << stob(json["phone"]) << std::endl;
+
+		std::ofstream os("./output.json");
+		os << json;
+		os.close();
 	}
 }

@@ -6,67 +6,67 @@
 //値にかかる重みをベクトルとして出力する関数
 //値を未知変数とする，離散化された方程式を作成する際には，未知変数の重みを抜き出す必要がある
 //その際に便利である
-V_d W_Bspline(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double h, const int order = 3)
-{
-    if (order == 3)
-    {
-        for (auto i = 0; i < X.size(); i++)
-            dX[i] = kernel_Bspline3(X[i], a, h) * dX[i];
-    }
-    else
-    {
-        for (auto i = 0; i < X.size(); i++)
-            dX[i] = kernel_Bspline5(X[i], a, h) * dX[i];
-    }
-    return dX;
-};
+// V_d W_Bspline(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double h, const int order = 3)
+// {
+//     if (order == 3)
+//     {
+//         for (auto i = 0; i < X.size(); i++)
+//             dX[i] = kernel_Bspline3(X[i], a, h) * dX[i];
+//     }
+//     else
+//     {
+//         for (auto i = 0; i < X.size(); i++)
+//             dX[i] = kernel_Bspline5(X[i], a, h) * dX[i];
+//     }
+//     return dX;
+// };
 /* ------------------------------------------------------ */
 /*                     grad 勾配を計算する際は，             */
 /* ------------------------------------------------------ */
-VV_d W_grad_Bspine(VV_d X /*出力する*/, const V_d &dX, const V_d &a, const double h, const int order = 3)
-{
-    V_d zeros(3, 0.);
-    if (order == 3)
-    {
-        for (auto i = 0; i < X.size(); i++)
-        {
-            if (Norm(X[i] - a) > 1E-10)
-            {
-                X[i] = grad_kernel_Bspline3(X[i], a, h) * dX[i];
-                // X[i] = grad_kernel_Bspline3(X[i], a, e) * dX[i];
-            }
-            else
-                X[i] = zeros;
-        }
-    }
-    else
-    {
-        for (auto i = 0; i < X.size(); i++)
-        {
-            if (Norm(X[i] - a) > 1E-10)
-            {
-                X[i] = grad_kernel_Bspline5(X[i], a, h) * dX[i];
-                // X[i] = grad_kernel_Bspline3(X[i], a, e) * dX[i];
-            }
-            else
-                X[i] = zeros;
-        }
-    }
-    return X;
-};
-//
-size_t findIndexOfClosestElement(const VV_d &X, const V_d &a)
-{
-    double min_r = 1E+100;
-    size_t i_a;
-    for (auto i = 0; i < X.size(); i++)
-        if (Norm(X[i] - a) < min_r)
-        {
-            i_a = i;
-            min_r = Norm(X[i] - a);
-        }
-    return i_a;
-};
+// VV_d W_grad_Bspine(VV_d X /*出力する*/, const V_d &dX, const V_d &a, const double h, const int order = 3)
+// {
+//     V_d zeros(3, 0.);
+//     if (order == 3)
+//     {
+//         for (auto i = 0; i < X.size(); i++)
+//         {
+//             if (Norm(X[i] - a) > 1E-10)
+//             {
+//                 X[i] = grad_kernel_Bspline3(X[i], a, h) * dX[i];
+//                 // X[i] = grad_kernel_Bspline3(X[i], a, e) * dX[i];
+//             }
+//             else
+//                 X[i] = zeros;
+//         }
+//     }
+//     else
+//     {
+//         for (auto i = 0; i < X.size(); i++)
+//         {
+//             if (Norm(X[i] - a) > 1E-10)
+//             {
+//                 X[i] = grad_kernel_Bspline5(X[i], a, h) * dX[i];
+//                 // X[i] = grad_kernel_Bspline3(X[i], a, e) * dX[i];
+//             }
+//             else
+//                 X[i] = zeros;
+//         }
+//     }
+//     return X;
+// };
+// //
+// size_t findIndexOfClosestElement(const VV_d &X, const V_d &a)
+// {
+//     double min_r = 1E+100;
+//     size_t i_a;
+//     for (auto i = 0; i < X.size(); i++)
+//         if (Norm(X[i] - a) < min_r)
+//         {
+//             i_a = i;
+//             min_r = Norm(X[i] - a);
+//         }
+//     return i_a;
+// };
 //! Dot(値の列,W_grad_Bspine3(X,dX,a,h))
 //計算は，
 // Dot({v0,v1,v2},{{dwdx0,dwdy0,dwdz0},{dwdx1,dwdy1,dwdz1},{dwdx2,dwdy2,dwdz2}})={dwdx0 v0+dwdx1 v1+dwdx2 v2,dwdy0 v0+dwdy1 v1+dwdy2 v2,dwdz0 v0+dwdz1 v1+dwdz2 v2}
@@ -75,54 +75,54 @@ size_t findIndexOfClosestElement(const VV_d &X, const V_d &a)
 /*                divergence 発散を計算する際は，  　        */
 /* ------------------------------------------------------ */
 //! Sum(ElementWiseDot(ベクトル値の列,W_grad_Bspine3(X,dX,a,h)))とする
-V_d ElementWiseDot(const VV_d &V, const VV_d &W)
-{
-    V_d ret(V.size(), 0.);
-    for (auto i = 0; i < V.size(); i++)
-        ret[i] = Dot(V[i], W[i]);
-    return ret;
-};
+// V_d ElementWiseDot(const VV_d &V, const VV_d &W)
+// {
+//     V_d ret(V.size(), 0.);
+//     for (auto i = 0; i < V.size(); i++)
+//         ret[i] = Dot(V[i], W[i]);
+//     return ret;
+// };
 /* ------------------------------------------------------ */
 /*                     ラプラシアンの計算方法          　     */
 /* ------------------------------------------------------ */
 //! Dot(W_laplacian_Bspine3(X, dX, a, h), V);
-V_d W_laplacian_Bspine3(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e)
-{
-    V_d r;
-    double rr = 0;
-    for (auto i = 0; i < X.size(); i++)
-    {
-        r = X[i] - a;
-        rr = Dot(r, r);
-        if (rr > 1E-10)
-            dX[i] = Dot(r, grad_kernel_Bspline3(X[i], a, e)) / rr * dX[i];
-        else
-            dX[i] = 0.;
-    }
-    return dX;
-};
-V_d W_laplacian_Bspine5(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e)
-{
-    V_d r;
-    double rr = 0;
-    for (auto i = 0; i < X.size(); i++)
-    {
-        r = X[i] - a;
-        rr = Dot(r, r);
-        if (rr > 1E-10)
-            dX[i] = Dot(r, grad_kernel_Bspline5(X[i], a, e)) / rr * dX[i];
-        else
-            dX[i] = 0.;
-    }
-    return dX;
-};
-V_d W_laplacian_Bspine(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e, const int order = 3)
-{
-    if (order == 3)
-        return W_laplacian_Bspine3(X, dX, a, e);
-    else
-        return W_laplacian_Bspine5(X, dX, a, e);
-};
+// V_d W_laplacian_Bspine3(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e)
+// {
+//     V_d r;
+//     double rr = 0;
+//     for (auto i = 0; i < X.size(); i++)
+//     {
+//         r = X[i] - a;
+//         rr = Dot(r, r);
+//         if (rr > 1E-10)
+//             dX[i] = Dot(r, grad_kernel_Bspline3(X[i], a, e)) / rr * dX[i];
+//         else
+//             dX[i] = 0.;
+//     }
+//     return dX;
+// };
+// V_d W_laplacian_Bspine5(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e)
+// {
+//     V_d r;
+//     double rr = 0;
+//     for (auto i = 0; i < X.size(); i++)
+//     {
+//         r = X[i] - a;
+//         rr = Dot(r, r);
+//         if (rr > 1E-10)
+//             dX[i] = Dot(r, grad_kernel_Bspline5(X[i], a, e)) / rr * dX[i];
+//         else
+//             dX[i] = 0.;
+//     }
+//     return dX;
+// };
+// V_d W_laplacian_Bspine(const VV_d &X, V_d dX /*出力する*/, const V_d &a, const double e, const int order = 3)
+// {
+//     if (order == 3)
+//         return W_laplacian_Bspine3(X, dX, a, e);
+//     else
+//         return W_laplacian_Bspine5(X, dX, a, e);
+// };
 /* ------------------------------------------------------ */
 /*                         改良した核関数                   */
 /* ------------------------------------------------------ */
@@ -158,36 +158,36 @@ V_d W_laplacian_Bspine(const VV_d &X, V_d dX /*出力する*/, const V_d &a, con
 //     return ret;
 // };
 // 2021/07/29以降
-V_d W_Artificial_Viscosity_Bspine_Monaghan1992(const VV_d &X,
-                                               const V_d &mass,
-                                               const V_d &rho,
-                                               const VV_d &U,
-                                               const V_d &a, const double h, const int order = 3)
-{
-    // Xにはaが必ず含まれている，まずは，aをXから探す．
-    int i_a = findIndexOfClosestElement(X, a);
+// V_d W_Artificial_Viscosity_Bspine_Monaghan1992(const VV_d &X,
+//                                                const V_d &mass,
+//                                                const V_d &rho,
+//                                                const VV_d &U,
+//                                                const V_d &a, const double h, const int order = 3)
+// {
+//     // Xにはaが必ず含まれている，まずは，aをXから探す．
+//     int i_a = findIndexOfClosestElement(X, a);
 
-    V_d ret(3, 0.), Uij(3, 0.), rij(3, 0.), grad(3, 0.);
-    double alpha = 0.02;
-    double cij = 1466.;
-    double PIij, div;
-    for (auto i = 0; i < X.size(); i++)
-    {
-        if (i_a != i)
-        {
-            Uij = U[i_a] - U[i];
-            rij = X[i_a] - X[i];
-            if (Dot(Uij, rij) < 0)
-            {
-                div = Dot(Uij, rij) / Dot(rij, rij);
-                PIij = -alpha * cij * h * div / ((rho[i] + rho[i_a]) / 2.);
-                grad = (order == 3 ? grad_kernel_Bspline3(X[i], a, h) : grad_kernel_Bspline5(X[i], a, h));
-                ret += (mass[i] * PIij) * grad;
-            }
-        }
-    }
-    return ret;
-};
+//     V_d ret(3, 0.), Uij(3, 0.), rij(3, 0.), grad(3, 0.);
+//     double alpha = 0.02;
+//     double cij = 1466.;
+//     double PIij, div;
+//     for (auto i = 0; i < X.size(); i++)
+//     {
+//         if (i_a != i)
+//         {
+//             Uij = U[i_a] - U[i];
+//             rij = X[i_a] - X[i];
+//             if (Dot(Uij, rij) < 0)
+//             {
+//                 div = Dot(Uij, rij) / Dot(rij, rij);
+//                 PIij = -alpha * cij * h * div / ((rho[i] + rho[i_a]) / 2.);
+//                 grad = (order == 3 ? grad_kernel_Bspline3(X[i], a, h) : grad_kernel_Bspline5(X[i], a, h));
+//                 ret += (mass[i] * PIij) * grad;
+//             }
+//         }
+//     }
+//     return ret;
+// };
 
 //
 // VV_d W_grad_Bspine_Monaghan1992_dividedByDensity(const VV_d &X,
@@ -212,214 +212,214 @@ V_d W_Artificial_Viscosity_Bspine_Monaghan1992(const VV_d &X,
 // 	ret[i_a] /= (rho_a * rho_a);
 // 	return ret;
 // };
-VV_d W_grad_Bspine_Monaghan1992_dividedByDensity(const VV_d &X,
-                                                 const V_d &mass,
-                                                 const V_d &rho,
-                                                 const V_d &a,
-                                                 const double h,
-                                                 const int order = 3)
-{
-    int i_a = findIndexOfClosestElement(X, a);
-    VV_d W_grad = W_grad_Bspine(X, mass / rho, a, h, order); // return
-    W_grad[i_a] = {0., 0., 0.};
-    // increment用
-    for (auto i = 0; i < X.size(); i++)
-        if (i_a != i)
-        {
-            W_grad[i] = W_grad[i] / rho[i];
-            W_grad[i_a] += W_grad[i] / rho[i_a];
-        }
-    return W_grad;
-};
+// VV_d W_grad_Bspine_Monaghan1992_dividedByDensity(const VV_d &X,
+//                                                  const V_d &mass,
+//                                                  const V_d &rho,
+//                                                  const V_d &a,
+//                                                  const double h,
+//                                                  const int order = 3)
+// {
+//     int i_a = findIndexOfClosestElement(X, a);
+//     VV_d W_grad = W_grad_Bspine(X, mass / rho, a, h, order); // return
+//     W_grad[i_a] = {0., 0., 0.};
+//     // increment用
+//     for (auto i = 0; i < X.size(); i++)
+//         if (i_a != i)
+//         {
+//             W_grad[i] = W_grad[i] / rho[i];
+//             W_grad[i_a] += W_grad[i] / rho[i_a];
+//         }
+//     return W_grad;
+// };
+// //
+// VV_d W_grad_Bspine_Monaghan1992(const VV_d &X, const V_d &dX, const V_d &a, const double e, const int order = 3)
+// {
+//     VV_d ret(X.size(), V_d(3, 0.));
+//     V_d tot(a.size(), 0.), tmp(a.size(), 0.);
+//     int i_a = 0;
+//     double min_r = 1E+100, nr;
+//     for (auto i = 0; i < X.size(); i++)
+//     {
+//         nr = Norm(X[i] - a);
+//         if (nr > 1E-10)
+//         {
+//             tmp = (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e)) * dX[i];
+//             ret[i] = tmp;
+//             tot -= tmp;
+//         }
+//         if (nr < min_r)
+//         {
+//             i_a = i;
+//             min_r = nr;
+//         }
+//     }
+//     ret[i_a] = tot;
+//     return -ret;
+// };
+
+// V_d W_laplacian_Bspine_Brookshaw1985(const VV_d &X, const V_d &dX, const V_d &a, const double e, const int order = 3)
+// {
+//     V_d ret(X.size(), 0.), r;
+//     double tot = 0., tmp = 0., nr = 0., min_r = 1E+100;
+//     int i_a = 0;
+//     for (auto i = 0; i < X.size(); i++)
+//     {
+//         nr = Norm(r = (X[i] - a));
+//         if (nr > 1E-10)
+//         {
+//             tmp = 2. * Dot(r / std::pow(nr, 2.), (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e))) * dX[i];
+//             ret[i] = tmp;
+//             tot -= tmp;
+//         }
+//         if (nr < min_r)
+//         {
+//             i_a = i;
+//             min_r = nr;
+//         }
+//     }
+//     ret[i_a] = tot;
+//     return -ret;
+//     // eq.(91) D. J. Price, “Smoothed particle hydrodynamics and magnetohydrodynamics,” J. Comput. Phys., vol. 231, no. 3, pp. 759–794, 2012.
+// };
+
 //
-VV_d W_grad_Bspine_Monaghan1992(const VV_d &X, const V_d &dX, const V_d &a, const double e, const int order = 3)
-{
-    VV_d ret(X.size(), V_d(3, 0.));
-    V_d tot(a.size(), 0.), tmp(a.size(), 0.);
-    int i_a = 0;
-    double min_r = 1E+100, nr;
-    for (auto i = 0; i < X.size(); i++)
-    {
-        nr = Norm(X[i] - a);
-        if (nr > 1E-10)
-        {
-            tmp = (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e)) * dX[i];
-            ret[i] = tmp;
-            tot -= tmp;
-        }
-        if (nr < min_r)
-        {
-            i_a = i;
-            min_r = nr;
-        }
-    }
-    ret[i_a] = tot;
-    return -ret;
-};
+// V_d W_grad_Bspine_Monaghan1992_STD(const VV_d &X,
+//                                    const V_d &mass,
+//                                    const V_d &rho,
+//                                    const V_d &a, const double e, const int order = 3) {
+// 	V_d nr(X.size(), 0.), r(X.size(), 0.);
+// 	double tot = 0., tmp = 0., min_r = 1E+100;
+// 	int i_a = 0;
+// 	for (auto i = 0; i < X.size(); i++) {
+// 		nr[i] = Norm(r[i] = (X[i] - a));
+// 		if (nr[i] < min_r) {
+// 			i_a = i;
+// 			min_r = nr;
+// 		}
+// 	}
+// 	auto rho_a = rho[i_a];
+// 	V_d ret(X.size(), 0.);
+// 	for (auto i = 0; i < X.size(); i++) {
+// 		if (i_a != i) {
+// 			auto grad = (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e));
+// 			ret[i] = std::pow(rho[i], 2.) * grad;
+// 			ret[i_a] += mass[i] * grad;
+// 		}
+// 	}
+// 	ret[i_a] /= (rho_a * rho_a);
+// 	return ret;
+// };
 
-V_d W_laplacian_Bspine_Brookshaw1985(const VV_d &X, const V_d &dX, const V_d &a, const double e, const int order = 3)
-{
-    V_d ret(X.size(), 0.), r;
-    double tot = 0., tmp = 0., nr = 0., min_r = 1E+100;
-    int i_a = 0;
-    for (auto i = 0; i < X.size(); i++)
-    {
-        nr = Norm(r = (X[i] - a));
-        if (nr > 1E-10)
-        {
-            tmp = 2. * Dot(r / std::pow(nr, 2.), (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e))) * dX[i];
-            ret[i] = tmp;
-            tot -= tmp;
-        }
-        if (nr < min_r)
-        {
-            i_a = i;
-            min_r = nr;
-        }
-    }
-    ret[i_a] = tot;
-    return -ret;
-    // eq.(91) D. J. Price, “Smoothed particle hydrodynamics and magnetohydrodynamics,” J. Comput. Phys., vol. 231, no. 3, pp. 759–794, 2012.
-};
+// VV_d ElementWiseProduct(VV_d V, const V_d &W)
+// {
+// 	for (auto i = 0; i < V.size(); i++)
+// 		V[i] = V[i] * W[i];
+// 	return V;
+// };
 
-    //
-    // V_d W_grad_Bspine_Monaghan1992_STD(const VV_d &X,
-    //                                    const V_d &mass,
-    //                                    const V_d &rho,
-    //                                    const V_d &a, const double e, const int order = 3) {
-    // 	V_d nr(X.size(), 0.), r(X.size(), 0.);
-    // 	double tot = 0., tmp = 0., min_r = 1E+100;
-    // 	int i_a = 0;
-    // 	for (auto i = 0; i < X.size(); i++) {
-    // 		nr[i] = Norm(r[i] = (X[i] - a));
-    // 		if (nr[i] < min_r) {
-    // 			i_a = i;
-    // 			min_r = nr;
-    // 		}
-    // 	}
-    // 	auto rho_a = rho[i_a];
-    // 	V_d ret(X.size(), 0.);
-    // 	for (auto i = 0; i < X.size(); i++) {
-    // 		if (i_a != i) {
-    // 			auto grad = (order == 3 ? grad_kernel_Bspline3(X[i], a, e) : grad_kernel_Bspline5(X[i], a, e));
-    // 			ret[i] = std::pow(rho[i], 2.) * grad;
-    // 			ret[i_a] += mass[i] * grad;
-    // 		}
-    // 	}
-    // 	ret[i_a] /= (rho_a * rho_a);
-    // 	return ret;
-    // };
+// V_d ElementWiseAdd(V_d V, const V_d &W)
+// {
+// 	for (auto i = 0; i < V.size(); i++)
+// 		V[i] = V[i] + W[i];
+// 	return V;
+// };
+//-----------------------------------------------------------------------------------------
+// class InterpolationVectorSPH {
+// 	/* -------------- 各positionでサンプリングしたスカラーの補間 ------------- */
+//    private:
+// 	VV_d X;  //position
+// 	V_d dX;  //volume
+// 	VV_d Values;
+// 	int sample_size;
+// 	std::function<double(V_d, V_d)> kernel;
+// 	std::function<V_d(V_d, V_d)> grad_kernel;
+// 	double sml;
 
-    // VV_d ElementWiseProduct(VV_d V, const V_d &W)
-    // {
-    // 	for (auto i = 0; i < V.size(); i++)
-    // 		V[i] = V[i] * W[i];
-    // 	return V;
-    // };
+//    public:
+// 	InterpolationVectorSPH(const VV_d &X_IN, const VV_d &Values_IN, const V_d &dX_IN, double h)
+// 	    : X(X_IN), Values(Values_IN), dX(dX_IN), sample_size(X_IN[0].size()) {
+// 		if (X.size() != Values.size()) throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ""));
+// 		this->sml = h;
+// 		this->kernel = [this](const V_d &x, const V_d &a) { return kernel_Bspline3(x, a, this->sml); };
+// 		this->grad_kernel = [this](const V_d &x, const V_d &a) { return grad_kernel_Bspline3(x, a, this->sml); };
+// 		// std::cout << "this->sml = " << this->sml << std::endl;
+// 	};
+// 	~InterpolationVectorSPH(){};
+// 	/* ------------------------ メソッド ------------------------ */
+// 	V_d operator()(const V_d &a) const {
+// 		return Dot(this->Values, W_SPH(kernel, X, dX, a));
+// 	};
+// 	V_d grad(const V_d &a) const {
+// 		return ElementWiseDot(this->Values, grad_W_SPH(grad_kernel, X, dX, a));
+// 	};
+// 	double div(const V_d &a) const {
+// 		return Sum(this->grad(a));
+// 	};
+// 	V_d laplacian(const V_d &a) const {
+// 		return Dot(this->Values, laplacian_W_SPH(grad_kernel, X, dX, a));
+// 	};
+// 	V_d laplacian_mod(const V_d &a) const {
+// 		//!計算力学の定石p.262 (13.8)
+// 		//!非圧縮性流体に対しては，下のタイプが使われる
+// 		V_d ret(a.size(), 0.), r(a.size(), 0.);
+// 		auto V = (*this)(a);
+// 		double abs_r = 0;
+// 		for (auto j = 0; j < this->X.size(); j++) {
+// 			if (abs_r = Norm(r = a - X[j]) > 1E-14 /*自身の和はとらない*/)
+// 				ret += (V - Values[j]) / pow(abs_r, 2) * Dot(r, grad_kernel(X[j], a)) * dX[j] /*各要素毎の積が計算されるようになっている*/;
+// 		}
+// 		return 2. * ret;
+// 	};
+// };
+// class InterpolationSPH {
+// 	/* -------------- 各positionでサンプリングしたスカラーの補間 ------------- */
+//    private:
+// 	VV_d X;  //position
+// 	V_d dX;  //volume
+// 	V_d Values;
+// 	int sample_size;
+// 	std::function<double(V_d, V_d)> kernel;
+// 	std::function<V_d(V_d, V_d)> grad_kernel;
+// 	double sml;
 
-    // V_d ElementWiseAdd(V_d V, const V_d &W)
-    // {
-    // 	for (auto i = 0; i < V.size(); i++)
-    // 		V[i] = V[i] + W[i];
-    // 	return V;
-    // };
-    //-----------------------------------------------------------------------------------------
-    // class InterpolationVectorSPH {
-    // 	/* -------------- 各positionでサンプリングしたスカラーの補間 ------------- */
-    //    private:
-    // 	VV_d X;  //position
-    // 	V_d dX;  //volume
-    // 	VV_d Values;
-    // 	int sample_size;
-    // 	std::function<double(V_d, V_d)> kernel;
-    // 	std::function<V_d(V_d, V_d)> grad_kernel;
-    // 	double sml;
-
-    //    public:
-    // 	InterpolationVectorSPH(const VV_d &X_IN, const VV_d &Values_IN, const V_d &dX_IN, double h)
-    // 	    : X(X_IN), Values(Values_IN), dX(dX_IN), sample_size(X_IN[0].size()) {
-    // 		if (X.size() != Values.size()) throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ""));
-    // 		this->sml = h;
-    // 		this->kernel = [this](const V_d &x, const V_d &a) { return kernel_Bspline3(x, a, this->sml); };
-    // 		this->grad_kernel = [this](const V_d &x, const V_d &a) { return grad_kernel_Bspline3(x, a, this->sml); };
-    // 		// std::cout << "this->sml = " << this->sml << std::endl;
-    // 	};
-    // 	~InterpolationVectorSPH(){};
-    // 	/* ------------------------ メソッド ------------------------ */
-    // 	V_d operator()(const V_d &a) const {
-    // 		return Dot(this->Values, W_SPH(kernel, X, dX, a));
-    // 	};
-    // 	V_d grad(const V_d &a) const {
-    // 		return ElementWiseDot(this->Values, grad_W_SPH(grad_kernel, X, dX, a));
-    // 	};
-    // 	double div(const V_d &a) const {
-    // 		return Sum(this->grad(a));
-    // 	};
-    // 	V_d laplacian(const V_d &a) const {
-    // 		return Dot(this->Values, laplacian_W_SPH(grad_kernel, X, dX, a));
-    // 	};
-    // 	V_d laplacian_mod(const V_d &a) const {
-    // 		//!計算力学の定石p.262 (13.8)
-    // 		//!非圧縮性流体に対しては，下のタイプが使われる
-    // 		V_d ret(a.size(), 0.), r(a.size(), 0.);
-    // 		auto V = (*this)(a);
-    // 		double abs_r = 0;
-    // 		for (auto j = 0; j < this->X.size(); j++) {
-    // 			if (abs_r = Norm(r = a - X[j]) > 1E-14 /*自身の和はとらない*/)
-    // 				ret += (V - Values[j]) / pow(abs_r, 2) * Dot(r, grad_kernel(X[j], a)) * dX[j] /*各要素毎の積が計算されるようになっている*/;
-    // 		}
-    // 		return 2. * ret;
-    // 	};
-    // };
-    // class InterpolationSPH {
-    // 	/* -------------- 各positionでサンプリングしたスカラーの補間 ------------- */
-    //    private:
-    // 	VV_d X;  //position
-    // 	V_d dX;  //volume
-    // 	V_d Values;
-    // 	int sample_size;
-    // 	std::function<double(V_d, V_d)> kernel;
-    // 	std::function<V_d(V_d, V_d)> grad_kernel;
-    // 	double sml;
-
-    //    public:
-    // 	InterpolationSPH(const VV_d &X_IN, const V_d &Values_IN, const V_d &dX_IN, double h)
-    // 	    : X(X_IN), Values(Values_IN), dX(dX_IN), sample_size(X_IN[0].size()) {
-    // 		if (X.size() != Values.size())
-    // 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ""));
-    // 		this->sml = h;  //!factorを3.3とした，計算力学の定石p.270
-    // 		this->kernel = [this](const V_d &x, const V_d &a) { return kernel_Bspline3(x, a, this->sml / 2.); };
-    // 		this->grad_kernel = [this](const V_d &x, const V_d &a) { return grad_kernel_Bspline3(x, a, this->sml / 2.); };
-    // 		// std::cout << "this->sml = " << this->sml << std::endl;
-    // 	};
-    // 	~InterpolationSPH(){};
-    // 	/* ------------------------ メソッド ------------------------ */
-    // 	double operator()(const V_d &a) const {
-    // 		double ret(0.);
-    // 		for (auto i = 0; i < this->X.size(); i++) {
-    // 			ret += this->Values[i] * kernel(X[i], a) * dX[i];
-    // 		}
-    // 		return ret;
-    // 	};
-    // 	V_d grad(const V_d &a) const {
-    // 		//!粒子法p.25 (2.89)
-    // 		V_d ret(a.size(), 0.);
-    // 		for (auto j = 0; j < this->X.size(); j++)
-    // 			if (Norm(X[j] - a) > 1E-12 /*自身の和はとらない*/)
-    // 				ret += Values[j] * grad_kernel(X[j], a) * dX[j] /*各要素毎の積が計算されるようになっている*/;
-    // 		return ret;
-    // 	};
-    // 	V_d laplacian(const V_d &a) const {
-    // 		V_d ret(a.size(), 0.);
-    // 		auto V = (*this)(a);
-    // 		for (auto i = 0; i < this->X.size(); i++) {
-    // 			auto r = a - X[i];
-    // 			if (Norm(r) > 1E-14 /*自身の和はとらない*/)
-    // 				ret += 2. * (V - this->Values[i]) / pow(Norm(r), 2) * Dot(r, this->grad_kernel(a, X[i]) /*|a-X[i]|がでる*/) * dX[i] /*各要素毎の積が計算されるようになっている*/;
-    // 		}
-    // 		return ret;
-    // 	};
-    // };
+//    public:
+// 	InterpolationSPH(const VV_d &X_IN, const V_d &Values_IN, const V_d &dX_IN, double h)
+// 	    : X(X_IN), Values(Values_IN), dX(dX_IN), sample_size(X_IN[0].size()) {
+// 		if (X.size() != Values.size())
+// 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ""));
+// 		this->sml = h;  //!factorを3.3とした，計算力学の定石p.270
+// 		this->kernel = [this](const V_d &x, const V_d &a) { return kernel_Bspline3(x, a, this->sml / 2.); };
+// 		this->grad_kernel = [this](const V_d &x, const V_d &a) { return grad_kernel_Bspline3(x, a, this->sml / 2.); };
+// 		// std::cout << "this->sml = " << this->sml << std::endl;
+// 	};
+// 	~InterpolationSPH(){};
+// 	/* ------------------------ メソッド ------------------------ */
+// 	double operator()(const V_d &a) const {
+// 		double ret(0.);
+// 		for (auto i = 0; i < this->X.size(); i++) {
+// 			ret += this->Values[i] * kernel(X[i], a) * dX[i];
+// 		}
+// 		return ret;
+// 	};
+// 	V_d grad(const V_d &a) const {
+// 		//!粒子法p.25 (2.89)
+// 		V_d ret(a.size(), 0.);
+// 		for (auto j = 0; j < this->X.size(); j++)
+// 			if (Norm(X[j] - a) > 1E-12 /*自身の和はとらない*/)
+// 				ret += Values[j] * grad_kernel(X[j], a) * dX[j] /*各要素毎の積が計算されるようになっている*/;
+// 		return ret;
+// 	};
+// 	V_d laplacian(const V_d &a) const {
+// 		V_d ret(a.size(), 0.);
+// 		auto V = (*this)(a);
+// 		for (auto i = 0; i < this->X.size(); i++) {
+// 			auto r = a - X[i];
+// 			if (Norm(r) > 1E-14 /*自身の和はとらない*/)
+// 				ret += 2. * (V - this->Values[i]) / pow(Norm(r), 2) * Dot(r, this->grad_kernel(a, X[i]) /*|a-X[i]|がでる*/) * dX[i] /*各要素毎の積が計算されるようになっている*/;
+// 		}
+// 		return ret;
+// 	};
+// };
 
 #endif
 
@@ -844,22 +844,9 @@ struct IntersectionsSphereTrianglesLines
     };
 };
 
-// #define boundary_gurd
+#define use_space_potential_particle
 
-#if defined(boundary_gurd)
-double boundary_gurd_value(const networkPoint *p, const double distance, const double h)
-{
-    double CSML = 1.;
-    double critical_distance = h / (3. * CSML) * 0.8; // = dx
-    double additional = tanh((2. * M_PI) / critical_distance * (-distance + critical_distance) - M_PI) + 1.;
-    if (critical_distance >= distance)
-        return additional;
-    else
-        return 0.;
-};
-#endif
-
-// #define use_space_potential_particle
+constexpr auto grad_kernel_Bspline = grad_kernel_Bspline5;
 
 Tddd getVectorToSPP(const networkPoint *const p)
 {
@@ -906,17 +893,19 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
                               const double dt)
 {
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
-    double ret = 0;
+    double ret = 0, tmp = 0;
     Tddd n, U, velocity, SSP_X, mirroedSSP_X, toSSP;
     for (const auto &p : ps)
     {
         if (p != a)
-            ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
+            ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h));
 #if defined(use_space_potential_particle)
-        if (p->isSurface)
+        if (p->isSurface && p == a)
         {
             //水面上部
-            ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline5(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h));
+            tmp = p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h));
+            if (isFinite(tmp))
+                ret += tmp;
         }
 #endif
         // b$ ------------------------ ポリゴン ------------------------ */
@@ -936,14 +925,13 @@ double div_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
             U = mirroredVelocity(p->U_SPH, n, velocity);
 #if defined(use_space_potential_particle)
             if (p->isSurface)
-                ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline5(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h));
+            {
+                tmp = p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h));
+                if (isFinite(tmp))
+                    ret += tmp;
+            }
 #endif
-#if defined(boundary_gurd)
-            if (Dot(U, n) > 0)
-                U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y + Dot(U, n) * n * dt - (p->getXtuple() + Dot(p->U_SPH, n) * n * dt)), h);
-                // U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y - p->getXtuple()), h);
-#endif
-            ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline5(Y, a->getXtuple(), h));
+            ret += p->mass * Dot(U - a->U_SPH, grad_kernel_Bspline(Y, a->getXtuple(), h));
         }
         // b%$------------------------------------------------------ */
     }
@@ -958,9 +946,7 @@ double div_U(const std::unordered_set<networkPoint *> &ps,
     double ret = 0;
     for (const auto &p : ps)
         if (p != a)
-            ret += p->mass *
-                   Dot(p->U_SPH - a->U_SPH,
-                       grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
+            ret += p->mass * Dot(p->U_SPH - a->U_SPH, grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h));
     return ret / a->density;
 };
 //
@@ -971,20 +957,22 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
 {
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     //* これはシンプルに勾配計算の改良版である．
-    double ret = 0;
+    double ret = 0, tmp = 0;
     Tddd U, n, velocity;
     for (const auto &p : ps)
     {
         if (p != a)
         {
-            ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h));
+            ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h));
         }
 #if defined(use_space_potential_particle)
-        if (p->isSurface)
+        if (p->isSurface && p == a)
         {
-            ret += p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(),
-                                                                                   p->getXtuple() + getVectorToSPP(p),
-                                                                                   h));
+            tmp = p->mass * Dot(p->tmp_U_SPH - a->tmp_U_SPH, grad_kernel_Bspline(a->getXtuple(),
+                                                                                 p->getXtuple() + getVectorToSPP(p),
+                                                                                 h));
+            if (isFinite(tmp))
+                ret += tmp;
         }
 #endif
         // b$ ------------------------ ポリゴン ------------------------ */
@@ -1004,15 +992,15 @@ double div_tmp_U_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
             U = mirroredVelocity(p->U_SPH, n, velocity);
 #if defined(use_space_potential_particle)
             if (p->isSurface)
-                ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(),
-                                                                            Y + Reflect(getVectorToSPP(p), n),
-                                                                            h));
+            {
+                tmp = p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline(a->getXtuple(),
+                                                                          Y + Reflect(getVectorToSPP(p), n),
+                                                                          h));
+                if (isFinite(tmp))
+                    ret += tmp;
+            }
 #endif
-#if defined(boundary_gurd)
-            if (Dot(U, n) > 0)
-                U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y + Dot(U, n) * n * dt - (p->getXtuple() + Dot(p->U_SPH, n) * n * dt)), h);
-#endif
-            ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline5(a->getXtuple(), Y, h));
+            ret += p->mass * Dot(U - a->tmp_U_SPH, grad_kernel_Bspline(a->getXtuple(), Y, h));
         }
         // b%$------------------------------------------------------ */
     }
@@ -1028,7 +1016,7 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
     // for (const auto &p : ps)
     //     if (p != a)
     //         ret += p->volume *
-    //                Dot(p->tmp_U_SPH, grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h));
+    //                Dot(p->tmp_U_SPH, grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h));
     // return ret;
     /* ------------------------------------------------------ */
     //* これはシンプルに勾配計算の改良版である．
@@ -1037,7 +1025,7 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
         if (p != a)
             ret += p->mass *
                    Dot(p->tmp_U_SPH - a->tmp_U_SPH,
-                       grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h));
+                       grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h));
     return ret / a->density;
 };
 //# ------------------------------------------------------ */
@@ -1054,12 +1042,12 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
 //     for (const auto &p : ps)
 //     {
 //         if (p != a)
-//             W = grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+//             W = grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
 //         else
 //             W = {0, 0, 0};
 
 //         for (const auto &[f, intX] : p->getContactFaces())
-//             W += grad_kernel_Bspline5(a->getXtuple() + 2. * (intX - a->getXtuple()), a->getXtuple(), h);
+//             W += grad_kernel_Bspline(a->getXtuple() + 2. * (intX - a->getXtuple()), a->getXtuple(), h);
 //         ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * W;
 //     }
 //     return ret * a->density;
@@ -1070,24 +1058,24 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
                                           const double h)
 {
     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
-    Tddd ret = {0, 0, 0};
+    Tddd ret = {0, 0, 0}, tmp;
     Tddd accel = {0, 0, 0};
     Tddd gravity = {0., 0., -9.81}, n, SSP_X, mirroedSSP_X, toSSP;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
-    double pressure;
+    double pressure, density2;
     double a_pressure_density2 = a->pressure_SPH / std::pow(a->density, 2);
     for (const auto &p : ps)
     {
+        density2 = std::pow(p->density, 2);
         if (p != a)
-            ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+            ret += p->mass * (p->pressure_SPH / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
 
 #if defined(use_space_potential_particle)
-        if (p->isSurface)
+        if (p->isSurface && p == a)
         {
-            ret += p->mass * (0. /*SPPの圧力は0*/ / std::pow(p->density, 2) + a_pressure_density2) *
-                   grad_kernel_Bspline5(p->getXtuple() + getVectorToSPP(p),
-                                        a->getXtuple(),
-                                        h);
+            tmp = p->mass * (0. /*SPPの圧力は0*/ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h);
+            if (isFinite(tmp))
+                ret += tmp;
         }
 #endif
 
@@ -1106,19 +1094,13 @@ Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint 
                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple());
             }
             pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
-#if defined(boundary_gurd)
-            ret += p->mass * (pressure / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(Y, a->getXtuple(), h) *
-                   (1. + boundary_gurd_value(p, Norm(Y - p->getXtuple()), h));
-#else
-            ret += p->mass * (pressure / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(Y, a->getXtuple(), h);
-#endif
+            ret += p->mass * (pressure / density2 + a_pressure_density2) * grad_kernel_Bspline(Y, a->getXtuple(), h);
 #if defined(use_space_potential_particle)
-            if (p->isSurface)
+            if (p->isSurface && isFinite(p->cg_neighboring_particles_SPH))
             {
-                ret += p->mass * (0 / std::pow(p->density, 2) + a_pressure_density2) *
-                       grad_kernel_Bspline5(Y + Reflect(getVectorToSPP(p), n),
-                                            a->getXtuple(),
-                                            h);
+                tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h);
+                if (isFinite(tmp))
+                    ret += tmp;
             }
 #endif
         }
@@ -1133,26 +1115,27 @@ Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint
                                            const double h)
 {
     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
-    Tddd ret = {0, 0, 0};
+    Tddd ret = {0, 0, 0}, tmp;
     Tddd accel = {0, 0, 0};
     Tddd gravity = {0., 0., -9.81}, n;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     //
     //
-    double pressure;
+    double pressure, density2;
     double a_pressure_density2 = a->pressure_SPH_ / std::pow(a->density, 2);
     for (const auto &p : ps)
     {
+        density2 = std::pow(p->density, 2);
         if (p != a)
-            ret += p->mass * (p->pressure_SPH_ / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
-
-#if defined(use_space_potential_particle)
-        if (p->isSurface)
         {
-            ret += p->mass * (0. /*SPPの圧力は0*/ / std::pow(p->density, 2) + a_pressure_density2) *
-                   grad_kernel_Bspline5(p->getXtuple() + getVectorToSPP(p),
-                                        a->getXtuple(),
-                                        h);
+            ret += p->mass * (p->pressure_SPH_ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
+        }
+#if defined(use_space_potential_particle)
+        if (p->isSurface && p == a)
+        {
+            tmp = p->mass * (0. /*SPPの圧力は0*/ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h);
+            if (isFinite(tmp))
+                ret += tmp;
         }
 #endif
 
@@ -1171,19 +1154,15 @@ Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint
                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple());
             }
             pressure = (p->pressure_SPH_ + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
-#if defined(boundary_gurd)
-            ret += p->mass * (pressure / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(Y, a->getXtuple(), h) *
-                   (1 + boundary_gurd_value(p, Norm(Y - p->getXtuple()), h));
-#else
-            ret += p->mass * (pressure / std::pow(p->density, 2) + a_pressure_density2) * grad_kernel_Bspline5(Y, a->getXtuple(), h);
-#endif
+            ret += p->mass * (pressure / density2 + a_pressure_density2) * grad_kernel_Bspline(Y, a->getXtuple(), h);
 
 #if defined(use_space_potential_particle)
             if (p->isSurface)
-                ret += p->mass * (0 / std::pow(p->density, 2) + a_pressure_density2) *
-                       grad_kernel_Bspline5(Y + Reflect(getVectorToSPP(p), n),
-                                            a->getXtuple(),
-                                            h);
+            {
+                tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h);
+                if (isFinite(tmp))
+                    ret += tmp;
+            }
 #endif
         }
         // b%$------------------------------------------------------ */
@@ -1200,9 +1179,7 @@ Tddd grad_P_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
     Tddd ret = {0, 0, 0};
     for (const auto &p : ps)
         if (p != a)
-            ret += p->mass *
-                   (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) *
-                   grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+            ret += p->mass * (p->pressure_SPH / std::pow(p->density, 2) + a->pressure_SPH / std::pow(a->density, 2)) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
     return ret * a->density;
 };
 
@@ -1217,7 +1194,7 @@ Tddd grad_P_Monaghan1992_(const std::unordered_set<networkPoint *> &ps,
         if (p != a)
             ret += p->mass *
                    (p->pressure_SPH_ / std::pow(p->density, 2) + a->pressure_SPH_ / std::pow(a->density, 2)) *
-                   grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
+                   grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
     return ret * a->density;
 };
 
@@ -1242,7 +1219,7 @@ Tddd laplacian_U_Monaghan1992(const networkPoint *const p,
     {
         m = h / 3. * dot_Uij_rij / dot_rij_rij /*hを消せばUの発散となっている*/;
         PIij = (-alpha * Cs * m + beta * m * m) / ((p->density + a->density) / 2.);
-        return p->mass * PIij * grad_kernel_Bspline5(X, a->getXtuple(), h);
+        return p->mass * PIij * grad_kernel_Bspline(X, a->getXtuple(), h);
     }
     return {0, 0, 0};
 };
@@ -1258,7 +1235,7 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
     */
     //人工粘性
     //まず，nu*laplacian(U)を計算する
-    Tddd ret = {0, 0, 0}, n, U, velocity;
+    Tddd ret = {0, 0, 0}, tmp, n, U, velocity;
     double Cs = 1466.;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
 
@@ -1267,8 +1244,12 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
         if (p != a)
             ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
 #if defined(use_space_potential_particle)
-        if (p->isSurface)
-            ret += laplacian_U_Monaghan1992(p, p->getXtuple() + getVectorToSPP(p), p->U_SPH, a, h, alpha, beta);
+        if (p->isSurface && p == a)
+        {
+            tmp = laplacian_U_Monaghan1992(p, p->getXtuple() + getVectorToSPP(p), p->U_SPH, a, h, alpha, beta);
+            if (isFinite(tmp))
+                ret += tmp;
+        }
 #endif
         // b$ ------------------------ ポリゴン ------------------------ */
         for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
@@ -1287,12 +1268,12 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
             U = mirroredVelocity(p->U_SPH, n, velocity);
 #if defined(use_space_potential_particle)
             if (p->isSurface)
-                ret += laplacian_U_Monaghan1992(p, Y + Reflect(getVectorToSPP(p), n), U, a, h, alpha, beta);
-#endif
-#if defined(boundary_gurd)
-            if (Dot(U, n) > 0)
-                U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y + Dot(U, n) * n * dt - (p->getXtuple() + Dot(p->U_SPH, n) * n * dt)), h);
-                // U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y - p->getXtuple()), h);
+            {
+                tmp = laplacian_U_Monaghan1992(p, Y + Reflect(getVectorToSPP(p), n), U, a, h, alpha, beta);
+                if (isFinite(tmp))
+                    ret += tmp;
+            }
+
 #endif
             ret += laplacian_U_Monaghan1992(p, Y, U, a, h, alpha, beta);
         }
@@ -1329,8 +1310,8 @@ Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, dou
     auto Xij = a->getXtuple() - p->getXtuple();
     auto nu_i = p->mu_SPH / p->density;
     auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij));
+    auto W = grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h);
+    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X)
 {
@@ -1338,8 +1319,8 @@ Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, dou
     auto Xij = a->getXtuple() - X;
     auto nu_i = p->mu_SPH / p->density;
     auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline5(a->getXtuple(), X, h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij));
+    auto W = grad_kernel_Bspline(a->getXtuple(), X, h);
+    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X, const Tddd &U)
 {
@@ -1347,8 +1328,8 @@ Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, dou
     auto Xij = a->getXtuple() - X;
     auto nu_i = p->mu_SPH / p->density;
     auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline5(a->getXtuple(), X, h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij));
+    auto W = grad_kernel_Bspline(a->getXtuple(), X, h);
+    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 
 Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
@@ -1372,8 +1353,12 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
         if (p != a)
             ret += laplacian_U_ShaoAndLo2003(a, p, h);
 #if defined(use_space_potential_particle)
-        if (p->isSurface)
-            ret += laplacian_U_ShaoAndLo2003(a, p, h, p->getXtuple() + getVectorToSPP(p));
+        if (p->isSurface && p == a)
+        {
+            tmp = laplacian_U_ShaoAndLo2003(a, p, h, p->getXtuple() + getVectorToSPP(p));
+            if (isFinite(tmp))
+                ret += tmp;
+        }
 #endif
         // b$ ------------------------ ポリゴン ------------------------ */
         for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
@@ -1392,11 +1377,11 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
             U = mirroredVelocity(p->U_SPH, n, velocity);
 #if defined(use_space_potential_particle)
             if (p->isSurface)
-                ret += laplacian_U_ShaoAndLo2003(a, p, h, Y + Reflect(getVectorToSPP(p), n), U);
-#endif
-#if defined(boundary_gurd)
-            if (Dot(U, n) > 0)
-                U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y + Dot(U, n) * n * dt - (p->getXtuple() + Dot(p->U_SPH, n) * n * dt)), h);
+            {
+                tmp = laplacian_U_ShaoAndLo2003(a, p, h, Y + Reflect(getVectorToSPP(p), n), U);
+                if (isFinite(tmp))
+                    ret += tmp;
+            }
 #endif
             ret += laplacian_U_ShaoAndLo2003(a, p, h, Y, U);
         }
@@ -1420,7 +1405,7 @@ Tddd laplacian_U_ShaoAndLo2003(const std::unordered_set<networkPoint *> &ps,
             Xij = a->getXtuple() - p->getXtuple();
             nu_i = p->mu_SPH / p->density;
             nu_j = a->mu_SPH / a->density;
-            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * grad_kernel_Bspline5(a->getXtuple(), p->getXtuple(), h);
+            tmp = p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h);
             tmp /= ((p->density + a->density) * Dot(Xij, Xij));
             ret += tmp;
         }
@@ -1433,7 +1418,7 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
                                                     const double h,
                                                     const double dt)
 {
-    if (dt < 1E-40)
+    if (dt < 1E-13)
         return i->pressure_SPH;
     // [1] Nomeritae, E. Daly, S. Grimaldi, and H. H. Bui, “Explicit incompressible SPH algorithm for free-surface flow modelling: A comparison with weakly compressible schemes,” Adv. Water Resour., vol. 97, pp. 156–167, Nov. 2016.
     Tddd Xij, accel, gravity = {0, 0, -9.81}, n, U, velocity;
@@ -1445,20 +1430,23 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
         {
             Xij = i->getXtuple() - j->getXtuple();
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
-            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), j->getXtuple(), h)) / Dot(Xij, Xij);
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), j->getXtuple(), h)) / Dot(Xij, Xij);
             total_Aij += Aij;
             total_Aij_Pj += Aij * j->pressure_SPH;
         }
 #if defined(use_space_potential_particle)
-        if (j->isSurface)
+        if (j->isSurface && j == i)
         {
             pressure = 0.;
             auto Y = j->getXtuple() + getVectorToSPP(j);
             Xij = i->getXtuple() - Y;
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
-            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), Y, h)) / Dot(Xij, Xij);
-            total_Aij += Aij;
-            total_Aij_Pj += Aij * pressure;
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), Y, h)) / Dot(Xij, Xij);
+            if (isFinite(Aij))
+            {
+                total_Aij += Aij;
+                total_Aij_Pj += Aij * pressure;
+            }
         }
 #endif
         // b$ ------------------------ ポリゴン ------------------------ */
@@ -1483,10 +1471,7 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
             pressure = (j->pressure_SPH + /*修正*/ j->density * Dot(j->mu_SPH / j->density * j->lap_U + gravity - accel, Y - j->getXtuple()));
             Xij = i->getXtuple() - Y;
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
-            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), Y, h)) / Dot(Xij, Xij);
-#if defined(boundary_gurd)
-            Aij *= (1 + boundary_gurd_value(j, Norm(Y - j->getXtuple()), h));
-#endif
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), Y, h)) / Dot(Xij, Xij);
             total_Aij += Aij;
             total_Aij_Pj += Aij * pressure;
 
@@ -1496,17 +1481,23 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
                 pressure = 0;
                 Xij = i->getXtuple() - (Y + Reflect(getVectorToSPP(j), n));
                 tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
-                Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), Y + Reflect(getVectorToSPP(j), n), h)) / Dot(Xij, Xij);
-                total_Aij += Aij;
-                total_Aij_Pj += Aij * pressure;
+                Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), Y + Reflect(getVectorToSPP(j), n), h)) / Dot(Xij, Xij);
+                if (isFinite(Aij))
+                {
+                    total_Aij += Aij;
+                    total_Aij_Pj += Aij * pressure;
+                }
             }
 #endif
         }
-
         // b$ ------------------------------------------------------ */
     }
     double Bi = i->div_U / dt;
-    return (Bi + total_Aij_Pj) / total_Aij;
+    tmp = (Bi + total_Aij_Pj) / total_Aij;
+    if (isFinite(tmp))
+        return tmp;
+    else
+        return 0.; //この場合は，周辺の粒子がゼロで，total_Aijが0ということなので，圧力はゼロで構わない．
 };
 
 double pressure_EISPH_Hosseini2007(const std::unordered_set<networkPoint *> &ps,
@@ -1524,7 +1515,7 @@ double pressure_EISPH_Hosseini2007(const std::unordered_set<networkPoint *> &ps,
         {
             Xij = i->getXtuple() - j->getXtuple();
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
-            Aij = tmp * Dot(Xij, grad_kernel_Bspline5(i->getXtuple(), j->getXtuple(), h)) / Dot(Xij, Xij);
+            Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), j->getXtuple(), h)) / Dot(Xij, Xij);
             total_Aij += Aij;
             total_Aij_Pj += Aij * j->pressure_SPH;
         }
@@ -1561,7 +1552,7 @@ Tddd laplacian_Brookshaw1985(const std::unordered_set<networkPoint *> &ps,
         if (p != a)
         {
             r = p->getXtuple() - a->getXtuple();
-            tmp = 2. * Dot(r / std::pow(Norm(r), 2), p->volume * grad_kernel_Bspline5(p->getXtuple(), a->getXtuple(), e));
+            tmp = 2. * Dot(r / std::pow(Norm(r), 2), p->volume * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), e));
             ret -= tmp * p->U_SPH;
             tot += tmp;
         }

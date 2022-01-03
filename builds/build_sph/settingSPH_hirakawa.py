@@ -8,16 +8,16 @@ density = 1000.
 graity = 9.81
 
 H = 100/1000
-particle_spacing = 0.007
+particle_spacing = 0.008
 data = {
     "density": density,
     # -------------------------------------------------------- #
     "initial_surface_height": H,
     # ---------------- 時間間隔dtに関する設定値 ----------------- #
     # 最初のstep==0の場合はdt=1E-10とする
-    "C_CFL_velocity": 0.2,  # dt = C_CFL_velocity*h/Max(U)
+    "C_CFL_velocity": 0.04,  # dt = C_CFL_velocity*h/Max(U)
     "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
-    "max_dt": 0.001,  # 1/1500(speed of sound) = 0.0006666666666666666
+    "max_dt": 0.005,  # 1/1500(speed of sound) = 0.0006666666666666666
     # ------------------ 粒子配置に関する設定値 ------------------ #
     "particle_spacing": particle_spacing,
     "xbounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
@@ -29,8 +29,7 @@ data = {
     "buckets_ybounds": [-.3, .3],
     "buckets_zbounds": [0, .40],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
-    "C_SML": 1.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    # "C_SML": 0.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    "C_SML": 3.*.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
     # -------------------------------------------------------- #
     "mu": 0.001005,
@@ -42,7 +41,7 @@ data = {
     # ------------------------ 準備時間 ------------------------ #
     "preparation_max_dt": 0.0001,
     "preparation_time": 1.,
-    "preparation_time_step": 500,
+    "preparation_time_step": 10,
     "preparation_C_artificial_viscousity_alpha": 0.3,
     "preparation_C_artificial_viscousity_beta": 0.3,
     # -------------------------------------------------------- #

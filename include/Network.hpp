@@ -802,7 +802,7 @@ public:
 	//% ------------------------------------------------------ */
 	//%                          接触の判別                      */
 	//% ------------------------------------------------------ */
-	std::unordered_set<networkFace *> getContactFaces() const { return this->ContactFaces; };
+	const std::unordered_set<networkFace *>& getContactFaces() const { return this->ContactFaces; };
 	void clearContactFaces() { this->ContactFaces.clear(); };
 	void addContactFaces(const Buckets<networkFace> &B, bool); //自身と同じfaceを含まない
 	//
@@ -1180,6 +1180,7 @@ public:
 	V_d getNormal() const override;
 	Tddd getNormalTuple() const;
 	Tddd getNormalAreaAveraged() const;
+	Tddd getNormalDirichletAreaAveraged() const;
 	void Delete();
 	//--------------
 

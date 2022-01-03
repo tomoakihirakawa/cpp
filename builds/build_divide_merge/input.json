@@ -1,9 +1,16 @@
 {
-  "name": "tank_sawai_254x254mm",
-  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/tank_sawai_254x254mm.obj",
-  "remesh": 10.0
+  "name": "tank",
+  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/tank.obj",
+  "remesh": 15.0
 }
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sloshing_with_pole/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sloshing_with_pole/water.obj",
+//   "remesh": 15.0
+// }
 
 // {
 //   "name": "bem_water",

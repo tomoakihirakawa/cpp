@@ -23,8 +23,8 @@ auto creteOBJ = [](std::ofstream &ofs, Network &net)
 		auto X = p->getX();
 		ofs << "v "
 			<< X[0] << " "
-			<< X[1] << " "
-			<< X[2] << std::endl;
+			<< X[2] << " "
+			<< X[1] << std::endl;
 	}
 	ofs << std::endl;
 
@@ -33,8 +33,8 @@ auto creteOBJ = [](std::ofstream &ofs, Network &net)
 		auto ps = f->getPoints();
 		ofs << "f "
 			<< P_i[ps[0]] << " "
-			<< P_i[ps[1]] << " "
-			<< P_i[ps[2]] << std::endl;
+			<< P_i[ps[2]] << " "
+			<< P_i[ps[1]] << std::endl;
 	}
 };
 //* ------------------------------------------------------ */
@@ -60,7 +60,7 @@ int main()
 	//* ------------------------------------------------------ */
 	//*                          線の分割                        */
 	//* ------------------------------------------------------ */
-	for (auto count = 0; count < 20; ++count)
+	for (auto count = 0; count < 25; ++count)
 	{
 		//! ------------------------------------------------------ */
 		mk_vtu(json["outputdir"][0] + name + std::to_string(count) + ".vtu", net.getFaces());

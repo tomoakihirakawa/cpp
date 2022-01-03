@@ -1305,12 +1305,8 @@ struct ludcmp_parallel
 		const double TINY = 1.0e-40;
 		int i, imax, j;
 		double big, temp;
-		// V_d vv(n);
 		d = 1.0;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-		for (auto i = 0; i < n; i++)
+		for (auto i = 0; i < n; ++i)
 		{
 			big = 0.0;
 			for (const auto &lu_i_j : lu[i])
@@ -1321,26 +1317,18 @@ struct ludcmp_parallel
 			vv[i] /= big;
 		}
 		/* ------------------------------------------------------ */
-		// for (auto k = 0; k < n; k++)
-		// {
 		int k = 0;
 		for (auto &lu_k : lu)
 		{
-			// auto &lu_k = lu[k];
 			big = 0.0;
 			for (i = k; i < n; ++i)
-			{
-				temp = vv[i] * std::abs(lu[i][k]);
-				if (temp > big)
+				if ((temp = vv[i] * std::abs(lu[i][k])) > big)
 				{
 					big = temp;
 					imax = i;
 				}
-			}
 			if (k != imax)
 			{
-				// for (auto j = 0; j < n; ++j)
-				// 	std::swap(lu[imax][j], lu_k[j]);
 				lu_k.swap(lu[imax]);
 				d = -d;
 				vv[imax] = vv[k];
@@ -1358,6 +1346,7 @@ struct ludcmp_parallel
 				for (auto j = k + 1; j < n; ++j)
 					lu[i][j] -= temp * lu_k[j];
 			}
+
 			k++;
 		}
 	};
@@ -2747,6 +2736,7 @@ std::map<std::string, V_S> parseJSON(const std::string &str_IN)
 
 	return map_S_S;
 };
+
 struct JSON
 {
 	using V_S = std::vector<std::string>;
@@ -2801,7 +2791,44 @@ struct JSON
 	// 		return {};
 	// };
 };
-////////////////////////////////////////////////////////////////////////////
+
+std::ofstream &operator<<(std::ofstream &stream, const JSON &json)
+{
+	stream << "{\n";
+	auto count = 0;
+	for (const auto &[key, v] : json.map_S_S)
+	{
+		count++;
+		if (v.size() == 1)
+		{
+			stream << "    "
+				   << "\"" << key << "\":"
+				   << " "
+				   << "\"" << v[0] << "\"";
+		}
+		else
+		{
+			stream << "    "
+				   << "\"" << key << "\":"
+				   << " "
+				   << "[";
+			for (auto i = 0; i < v.size(); i++)
+			{
+				stream << "\"" << v[i] << "\"";
+				if (i != v.size() - 1)
+					stream << ",";
+			}
+			stream << "]";
+		}
+		if (json.map_S_S.size() != count)
+			stream << ",\n";
+		else
+			stream << "\n";
+	}
+	stream << "}";
+	return stream;
+};
+
 //============================================================
 //========================= Load  ============================
 //============================================================

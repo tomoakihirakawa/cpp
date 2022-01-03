@@ -1,6 +1,6 @@
 #!/bin/bash
 
-name='tomoaki@10.0.1.9:/home/tomoaki'
+name='tomoaki@10.0.1.3:/home/tomoaki'
 rsync --update -vr --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/*.txt ${name}/research/cpp/builds/
 # rsync --update -vr --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/*.txt ${name}/research/cpp/builds/build_sph/
 rsync --update -vr --exclude "CMake*" --exclude "main" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/obj/* ${name}/research/cpp/obj/

@@ -46,20 +46,25 @@ networkLine *longerLine(networkLine *line_IN, double ratio = 1.01)
 
 std::string home_dir = std::getenv("HOME");
 
+// #define experiment_Li2002
 #define experiment_sawai
 /* ------------------------------------------------------ */
-double move_amplitude = 0.01;
+double move_amplitude = .01;
 Tddd translation(const double t)
 {
 	double s = M_PI / 2.;
 	double k = M_PI / 1.;
-#ifdef experiment_sawai
 	auto h = 0.25;
-	auto g = 9.8;
+	auto g = 9.81;
+#ifdef experiment_sawai
 	auto L = 0.25;
 	auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
 	Tddd move_dir = {1., 0., 0.};
 	return move_amplitude * sin(w * t) * move_dir;
+#elif defined(experiment_Li2002)
+	//使わない
+	Tddd move_dir = {1., 0., 0.};
+	return move_dir;
 #else
 	/* ------------------------------------------------------ */
 	Tddd move_dir = {cos(k * t), sin(k * t), 0.};
@@ -75,13 +80,21 @@ T6d forced_velocity(const double t)
 	double s = M_PI / 2.;
 	double a = move_amplitude;
 	double k = M_PI / 1.;
+	auto g = 9.8;
+	T6d move_dir = {1., 0., 0., 0, 0, 0};
 #ifdef experiment_sawai
 	auto h = 0.25;
-	auto g = 9.8;
 	auto L = 0.25;
 	auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
-	T6d move_dir = {1., 0., 0., 0, 0, 0};
 	return move_amplitude * w * cos(w * t) * move_dir;
+#elif defined(experiment_Li2002)
+	double h = 0.3048;
+	double H = 0.45 * h;
+	double x = 0;
+	double c = std::sqrt(g * (H + h));
+	double eta = H * std::pow(1. / cosh(std::sqrt(3. * H / (4. * std::pow(h, 3))) * (x - c * t)), 2.);
+	double u = c * eta / (h + eta);
+	return u * move_dir;
 #else
 	/* ------------------------------------------------------ */
 	T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
@@ -171,9 +184,9 @@ std::unordered_set<networkFace *> facingFace(const networkFace *const f)
 	for (const auto &q : f->getPoints())
 		for (const auto &F : q->getContactFaces())
 		{
-			auto angle = MyVectorAngle(f->getNormalTuple(), F->getNormalTuple());
-			if ((M_PI - angle) / M_PI * 180. < 30.)
-				ret.emplace(F);
+			// auto angle = MyVectorAngle(f->getNormalTuple(), -F->getNormalTuple());
+			// if ((angle / M_PI * 180. < 60.) || ((M_PI - angle) / M_PI * 180. < 60.))
+			ret.emplace(F);
 		}
 	return ret;
 };
@@ -1081,6 +1094,15 @@ struct derivatives
 			tension /= Area_tot;
 			if (!p->CORNER)
 				tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
+			else
+			{
+				tension -= Dot(tension, p->getNormalDirichletAreaAveraged()) * p->getNormalDirichletAreaAveraged();
+				for (const auto &f : p->getFaces())
+					if (f->Neumann)
+						tension -= Dot(tension, f->getNormalTuple()) * f->getNormalTuple();
+				if (p->getSolidAngle() < M_PI * 4 / 4)
+					tension *= p->getSolidAngle() / (M_PI * 4 / 4);
+			}
 
 			Tddd dumping;
 			if (!p->CORNER)
@@ -1089,7 +1111,7 @@ struct derivatives
 
 			// p->U_update_BEM = p->U_BEM;
 			//! tensionが強いと角でとがるようなエラーがでる．
-			double K = 0.5;
+			double K = .5;
 			p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			// p->U_update_BEM = p->U_BEM - p->U_tangential_BEM + Norm(p->U_tangential_BEM) * Normalize(tension); // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			/* ------------------------------------------------------ */
@@ -1706,9 +1728,48 @@ Tdd phiphin_from_points_faces(const networkLine *const l)
 	return phiphin_from_points(l) / 2. + phiphin_from_faces(l) / 2.;
 };
 
+void remesh_flip(Network &water)
+{
+	std::cout << "remeshing" << std::endl;
+	water.setBounds();
+	double mean_length = Mean(extLength(water.getLines()));
+	bool isfound = false, ismerged = false;
+	int count = 0;
+	double lim_degree = 15.;
+	do
+	{
+		// なくなるまでやるか？
+		isfound = false;
+		ismerged = false;
+		auto points = water.getPoints();
+		V_netPp ps;
+		for (const auto &p : RandomSample(ToVector(points)))
+		{
+			//! ------------------------------------------------------ */
+			//!             辺の長さが長すぎるまたは短すぎる場合             */
+			//! ------------------------------------------------------ */
+			for (const auto &l : RandomSample(p->getLines()))
+			{
+				auto [p0, p1] = l->getPointsTuple();
+				if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
+				{
+					l->flipIfBetter(lim_degree);
+					// isfound = true;
+					if (ismerged || isfound)
+						break;
+				}
+			}
+			if (ismerged || isfound)
+				break;
+		}
+	} while ((ismerged || isfound) && count++ < 1000);
+	if (count == 10)
+		std::cout << "remesh too much" << std::endl;
+};
+/* ------------------------------------------------------ */
 void remesh(Network &water)
 {
-	std::cout << "remesh" << std::endl;
+	std::cout << "remeshing" << std::endl;
 	water.setBounds();
 	double mean_length = Mean(extLength(water.getLines()));
 	bool isfound = false, ismerged = false;
@@ -1825,18 +1886,19 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 
 	Print("makeBucketFaces", Green);
 	for (const auto &obj : objects)
-		obj->makeBucketFaces(radius);
+		obj->makeBucketFaces(radius / 3.);
 	// b% -------------------------------------------------------- */
 	// b%            境界条件（角点・ディリクレ・ノイマン）の決定         */
 	// b% -------------------------------------------------------- */
 	// b% step1 衝突の判定
+	for (const auto &p : water.getPoints())
+		p->clearContactFaces();
 	//!!! 衝突の判定がよくエラーが出る箇所
 	for (const auto &obj : objects)
 		for (const auto &p : water.getPoints())
 		{
 			//!ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-			p->clearContactFaces();
-			p->radius = 1. * radius;						  // Mean(extLength(p->getLines()));
+			p->radius = 2. * radius;						  // Mean(extLength(p->getLines()));
 			p->addContactFaces(obj->getBucketFaces(), false); /**shadowあり*/
 		}
 	// b% step2 面の境界条件を決定
@@ -1844,9 +1906,37 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 	for (const auto &f : water.getFaces())
 	{
 		// auto isDirichlet = facingFace(f).empty();
-		auto isDirichlet = !closest_facingFace(f); // nullptrならDirichlet
-		f->Neumann = !isDirichlet;
-		f->Dirichlet = isDirichlet;
+		// auto isDirichlet = !closest_facingFace(f); // nullptrならDirichlet
+		auto [p0, p1, p2] = f->getPointsTuple();
+		auto faces_p0 = p0->getContactFaces();
+		auto faces_p1 = p1->getContactFaces();
+		auto faces_p2 = p2->getContactFaces();
+
+		bool isNeumann = (std::any_of(faces_p0.begin(), faces_p0.end(), [&f](const auto &F)
+									  {										 
+										auto angle = MyVectorAngle(f->getNormalTuple(), -F->getNormalTuple());
+										if ((angle / M_PI * 180. < 40.) || ((M_PI - angle) / M_PI * 180. < 40.))
+										return true;
+										else
+										return false; }) &&
+						  std::any_of(faces_p1.begin(), faces_p1.end(), [&f](const auto &F)
+									  {										 
+										auto angle = MyVectorAngle(f->getNormalTuple(), -F->getNormalTuple());
+										if ((angle / M_PI * 180. < 40.) || ((M_PI - angle) / M_PI * 180. < 40.))
+										return true;
+										else
+										return false; }) &&
+						  std::any_of(faces_p2.begin(), faces_p2.end(), [&f](const auto &F)
+									  {										 
+										auto angle = MyVectorAngle(f->getNormalTuple(), -F->getNormalTuple());
+										if ((angle / M_PI * 180. < 40.) || ((M_PI - angle) / M_PI * 180. < 40.))
+										return true;
+										else
+										return false; }));
+
+		f->Neumann = isNeumann; //(!faces_p0.empty()) && (!faces_p1.empty()) && (!faces_p2.empty());
+
+		f->Dirichlet = !f->Neumann;
 	}
 	// b% step3 線の境界条件を決定
 	for (const auto &l : water.getLines())
@@ -1872,6 +1962,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 									 { return f->Neumann; });
 		bool isDirichlet = std::all_of(faces.begin(), faces.end(), [](const auto &f)
 									   { return f->Dirichlet; });
+
 		if (isNeumann)
 			p->setN();
 		else if (isDirichlet)
@@ -1881,7 +1972,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 	}
 	//% ------------------------------------------------------ */
 	// b* ------------------------------------------------------ */
-	// b*       　    ノイマン境界の点や面にはΦnを与える               */
+	// b*       　    ノイマン境界の点や面にはΦnを与える                  */
 	// b* ------------------------------------------------------ */
 	std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << reset << std::endl;
 	for (const auto &p : water.getPoints())
@@ -1925,23 +2016,39 @@ int main()
 	{
 		// b* -------------------- メッシュ・設定の読み込み -------------------- */
 		//  b! ------------------------------------------------------ */
-		Print("------------------- ./tank.json -----------------");
-		std::ifstream obj0_str("./tank.json");
-		JSON json0(obj0_str);
+		Print("------------------- ./wavemaker.json -----------------");
+		JSON json0(std::ifstream("./wavemaker.json"));
 		Print("------------------------------------");
-		Network obj(json0["objfile"][0], json0["name"][0]);
-		for (auto &p : obj.getPoints())
+		Network wavemaker(json0["objfile"][0], json0["name"][0]);
+		for (auto &p : wavemaker.getPoints())
 			p->radius = stod(json0["radius"])[0];
 		Print("------------------------------------");
-		modify(obj, json0);
+		modify(wavemaker, json0);
 		Print("------------------------------------");
-		std::string tank_output_directory = json0["output_directory"][0];
+		std::string wavemaker_output_directory = json0["output_directory"][0];
+		std::filesystem::create_directories(wavemaker_output_directory);
+		std::string wavemaker_output_pvd_file_name = json0["output_pvd_file_name"][0];
+		PVDWriter wavemakerPVD(wavemaker_output_directory + "/" + wavemaker_output_pvd_file_name + ".pvd");
+		std::string wavemaker_output_vtu_file_name = json0["output_vtu_file_name"][0];
+		// std::system("ls -l" + wavemaker_output_directory);
+		std::filesystem::copy_file("wavemaker.json", wavemaker_output_directory + "/wavemaker.json", std::filesystem::copy_options::overwrite_existing);
+		//  b! ------------------------------------------------------ */
+		Print("------------------- ./wavetank.json -----------------");
+		JSON json2(std::ifstream("./wavetank.json"));
+		Print("------------------------------------");
+		Network tank(json2["objfile"][0], json2["name"][0]);
+		for (auto &p : tank.getPoints())
+			p->radius = stod(json2["radius"])[0];
+		Print("------------------------------------");
+		modify(tank, json2);
+		Print("------------------------------------");
+		std::string tank_output_directory = json2["output_directory"][0];
 		std::filesystem::create_directories(tank_output_directory);
-		std::string tank_output_pvd_file_name = json0["output_pvd_file_name"][0];
+		std::string tank_output_pvd_file_name = json2["output_pvd_file_name"][0];
 		PVDWriter tankPVD(tank_output_directory + "/" + tank_output_pvd_file_name + ".pvd");
-		std::string tank_output_vtu_file_name = json0["output_vtu_file_name"][0];
+		std::string tank_output_vtu_file_name = json2["output_vtu_file_name"][0];
 		// std::system("ls -l" + tank_output_directory);
-		std::filesystem::copy_file("tank.json", tank_output_directory + "/tank.json", std::filesystem::copy_options::overwrite_existing);
+		std::filesystem::copy_file("tank.json", tank_output_directory + "/wavetank.json", std::filesystem::copy_options::overwrite_existing);
 		// b! ------------------------------------------------------ */
 		Print("------------------- ./water.json -----------------");
 		std::ifstream obj1_str("./water.json");
@@ -1958,6 +2065,8 @@ int main()
 		// std::system("ls -l" + water_output_directory);
 		std::filesystem::copy_file("water.json", water_output_directory + "/water.json", std::filesystem::copy_options::overwrite_existing);
 		// b! ------------------------------------------------------ */
+		// std::vector<Network *> structures = {&wavemaker, &tank};
+		std::vector<Network *> structures = {&wavemaker};
 		//  b* ------------------------------------------------------ */
 		//  b*                         メインループ                     */
 		//  b* ------------------------------------------------------ */
@@ -1965,8 +2074,9 @@ int main()
 		{
 			//!体積を保存するようにリメッシュする必要があるだろう．
 			// auto radius = Mean(extLength(water.getLines()));
-			setBoundaryConditions(water, {&obj});
+			setBoundaryConditions(water, structures);
 			// remesh(water);
+			remesh_flip(water);
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
 			// b# ------------------------------------------------------ */
@@ -2011,16 +2121,17 @@ int main()
 				P_RK_phi[p] = (new RungeKutta_(dt, real_time, std::get<0>(p->phiphin), 4));
 				P_RK_X[p] = (new RungeKutta_(dt, real_time, p->getXtuple(), 4));
 			}
+			auto wavemaker_RK_integrate_X = (new RungeKutta_(dt, real_time, Tddd{0, 0, 0}, 4));
 			do
 			{
 				//! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
 				auto RK_time = P_RK_phi[*Points.begin()]->gett(); //%各ルンゲクッタの時刻を使う
 				std::cout << "RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
-				obj.velocity = forced_velocity(RK_time); // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+				wavemaker.velocity = forced_velocity(RK_time); // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
 				// b% -------------------------------------------------------- */
 				// b%            境界条件（角点・ディリクレ・ノイマン）の決定               */
 				// b% -------------------------------------------------------- */
-				setBoundaryConditions(water, {&obj});
+				setBoundaryConditions(water, structures);
 				// b* ------------------------------------------------------ */
 				// b*           　境界値問題を解く-> {Φ,Φn}が決まる              */
 				// b* ------------------------------------------------------ */
@@ -2051,20 +2162,26 @@ int main()
 						p->setXSingle(rk->getX());
 					}
 				}
+				wavemaker_RK_integrate_X->push(ToTddd(wavemaker.velocity));
+				wavemaker.translateFromInitialX(wavemaker_RK_integrate_X->getX());
+				/* ------------------------------------------------------ */
 				std::cout << Green << "setBounds" << reset << std::endl;
 				water.setBounds();
 				std::cout << Green << "real_timeを取得" << reset << std::endl;
 				real_time = P_RK_phi[*Points.begin()]->gett();
-				std::cout << Green << "translation(real_time) = " << translation(real_time) << reset << std::endl;
-				obj.translateFromInitialX(translation(real_time));
+				//
+				// std::cout << Green << "translation(real_time) = " << translation(real_time) << reset << std::endl;
+				// wavemaker.translateFromInitialX(translation(real_time));
 			} while (!(P_RK_phi[*Points.begin()]->finished));
+
+			wavemaker.resetInitialX();
 
 			for (const auto &p : Points)
 			{
 				delete P_RK_phi[p];
 				delete P_RK_X[p];
 			}
-
+			delete wavemaker_RK_integrate_X;
 			// b* ------------------------- 出力 ------------------------- */
 			{
 
@@ -2188,9 +2305,15 @@ int main()
 					//壁面
 					{
 						auto filename = tank_output_vtu_file_name + std::to_string(time_step) + ".vtu";
-						mk_vtu(tank_output_directory + "/" + filename, obj.getFaces());
+						mk_vtu(tank_output_directory + "/" + filename, tank.getFaces());
 						tankPVD.push(filename, real_time);
 						tankPVD.output();
+					}
+					{
+						auto filename = wavemaker_output_vtu_file_name + std::to_string(time_step) + ".vtu";
+						mk_vtu(wavemaker_output_directory + "/" + filename, wavemaker.getFaces());
+						wavemakerPVD.push(filename, real_time);
+						wavemakerPVD.output();
 					}
 				}
 				catch (std::exception &e)
