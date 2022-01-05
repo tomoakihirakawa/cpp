@@ -802,7 +802,7 @@ public:
 	//% ------------------------------------------------------ */
 	//%                          接触の判別                      */
 	//% ------------------------------------------------------ */
-	const std::unordered_set<networkFace *>& getContactFaces() const { return this->ContactFaces; };
+	const std::unordered_set<networkFace *> &getContactFaces() const { return this->ContactFaces; };
 	void clearContactFaces() { this->ContactFaces.clear(); };
 	void addContactFaces(const Buckets<networkFace> &B, bool); //自身と同じfaceを含まない
 	//
@@ -4051,11 +4051,11 @@ public:
 		double scalex = scale[0], scaley = scale[1], x, y, z = scale[2];
 		V_d xy;
 		double pn = RandomReal({-1., 1.}) > 0 ? 1. : -1;
-		double rand = pn * RandomReal({0.5, 1.}) * 1E-20;
+		// double rand = pn * RandomReal({0.5, 1.}) * 1E-20;
 		for (auto &w : v)
 		{
-			w[0] = w[0] * scalex / (2. * Nx + 1.) + scalex * rand;
-			w[1] = w[1] * scaley / (2. * Ny + 1.) + scaley * rand;
+			w[0] = w[0] * scalex / (2. * Nx + 1.); // + scalex * rand;
+			w[1] = w[1] * scaley / (2. * Ny + 1.); // + scaley * rand;
 			//      w[2] = w[2] + .2*cos(3*M_PI*w[0]/scalex)*sin(4*M_PI*w[1]/scaley);
 			w[2] = w[2] + waveheight({w[0], w[1]});
 		};

@@ -141,11 +141,11 @@ double kernel_Bspline5(const double r, double h)
     if (q <= 3.)
     {
         if (2. < q)
-            return (1. / (M_PI * h * h * h) / 120.) * std::pow(3. - q, 5);
+            return std::pow(3. - q, 5) / (M_PI * h * h * h * 120.);
         else if (1. <= q)
-            return (1. / (M_PI * h * h * h) / 120.) * (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5));
+            return (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5)) / (M_PI * h * h * h * 120.);
         else
-            return (1. / (M_PI * h * h * h) / 120.) * (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5) + 15 * std::pow(1. - q, 5));
+            return (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5) + 15 * std::pow(1. - q, 5)) / (M_PI * h * h * h * 120.);
     }
     else
         return 0.;
@@ -158,11 +158,11 @@ double D_kernel_Bspline5(const double r, double h)
     if (q <= 3.)
     {
         if (2. < q)
-            return (1. / (M_PI * h * h * h) / 120.) * ((-5) * std::pow(3. - q, 4));
+            return ((-5) * std::pow(3. - q, 4)) / (M_PI * h * h * h * 120.);
         else if (1. <= q)
-            return (1. / (M_PI * h * h * h) / 120.) * ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4));
+            return ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4)) / (M_PI * h * h * h * 120.);
         else
-            return (1. / (M_PI * h * h * h) / 120.) * ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4) - 75 * std::pow(1 - q, 4));
+            return ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4) - 75 * std::pow(1 - q, 4)) / (M_PI * h * h * h * 120.);
     }
     else
         return 0.;
@@ -173,12 +173,20 @@ double kernel_Bspline3(const Tddd &x, const Tddd &a, const double h) { return ke
 double D_kernel_Bspline3(const V_d &x, const V_d &a, const double h) { return D_kernel_Bspline3(Norm(x - a), h); };
 double D2_kernel_Bspline3(const V_d &x, const V_d &a, const double h) { return D2_kernel_Bspline3(Norm(x - a), h); };
 // V_d grad_kernel_Bspline3(const V_d &x, const V_d &a, const double h) { return -(x - a) / Norm(x - a) / h * D_kernel_Bspline3(Norm(x - a), h); };
-Tddd grad_kernel_Bspline3(const Tddd &x, const Tddd &a, const double h) { return -(x - a) / Norm(x - a) / h * D_kernel_Bspline3(Norm(x - a), h); };
+Tddd grad_kernel_Bspline3(const Tddd &x, const Tddd &a, const double h)
+{
+    double r = Norm(x - a);
+    return -(x - a) / r / (h / 2.) * D_kernel_Bspline3(r, h);
+};
 //
 double kernel_Bspline5(const V_d &x, const V_d &a, const double h) { return kernel_Bspline5(Norm(x - a), h); };
 double kernel_Bspline5(const Tddd &x, const Tddd &a, const double h) { return kernel_Bspline5(Norm(x - a), h); };
 double D_kernel_Bspline5(const V_d &x, const V_d &a, const double h) { return D_kernel_Bspline5(Norm(x - a), h); };
 // V_d grad_kernel_Bspline5(const V_d &x, const V_d &a, const double h) { return -(x - a) / Norm(x - a) / h * D_kernel_Bspline5(Norm(x - a), h); };
-Tddd grad_kernel_Bspline5(const Tddd &x, const Tddd &a, const double h) { return -(x - a) / Norm(x - a) / h * D_kernel_Bspline5(Norm(x - a), h); };
+Tddd grad_kernel_Bspline5(const Tddd &x, const Tddd &a, const double h)
+{
+    double r = Norm(x - a);
+    return -(x - a) / r / (h / 3.) * D_kernel_Bspline5(r, h);
+};
 
 #endif

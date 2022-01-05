@@ -32,9 +32,8 @@ void mk_pvd(const std::string &filename, const std::map<std::string, double> &ma
 	fclose(fp);
 }
 
-class vtu_set
+struct vtu_set
 {
-public:
 	V_str vtu_names;
 	V_d times;
 	int index;
@@ -62,7 +61,9 @@ public:
 		this->times.emplace_back(time);
 	};
 
-	void push(const std::string &name /*mapのkey*/, const std::string &vtu_name, const double time)
+	void push(const std::string &name /*mapのkey,pvdの名前*/,
+			  const std::string &vtu_name,
+			  const double time)
 	{
 		if (this->vtu_sets.find(name) == vtu_sets.end())
 		{
@@ -613,7 +614,8 @@ void mk_vtu(const std::string &filename,
 	{
 		V_netPp ps({});
 		for (const auto &v : vv)
-			ps.emplace_back(new networkPoint(&net, &net, {v[0], v[1], v[2]}));
+			if (isFinite(v))
+				ps.emplace_back(new networkPoint(&net, &net, {v[0], v[1], v[2]}));
 		vvp.emplace_back(ps);
 	}
 
@@ -634,7 +636,8 @@ void mk_vtu(const std::string &filename,
 	{
 		V_netPp ps({});
 		for (const auto &v : vv)
-			ps.emplace_back(new networkPoint(&net, &net, {std::get<0>(v), std::get<1>(v), std::get<2>(v)}));
+			if (isFinite(v))
+				ps.emplace_back(new networkPoint(&net, &net, {std::get<0>(v), std::get<1>(v), std::get<2>(v)}));
 		vvp.emplace_back(ps);
 	}
 

@@ -1199,7 +1199,7 @@ int order = 5;
 JSON settingSPH("./settingSPH.json");
 // JSON water_json(std::ifstream("./water.json"));
 //@ ----------------------- 粒子の初期配置条件 ---------------------- */
-double particle_spacing = stod(settingSPH["particle_spacing"])[0]; //粒子間隔        //*=20[ptcl/meter]
+const double particle_spacing = stod(settingSPH["particle_spacing"])[0]; //粒子間隔        //*=20[ptcl/meter]
 V_d xbounds = stod(settingSPH["xbounds"]);
 V_d ybounds = stod(settingSPH["ybounds"]);
 V_d zbounds = stod(settingSPH["zbounds"]);
@@ -1209,7 +1209,10 @@ Tdd buckets_ybounds = ToTdd(stod(settingSPH["buckets_ybounds"]));
 Tdd buckets_zbounds = ToTdd(stod(settingSPH["buckets_zbounds"]));
 geometry::CoordinateBounds bucketsBounds({buckets_xbounds, buckets_ybounds, buckets_zbounds});
 //
-const double C_SML = stod(settingSPH["C_SML"])[0];
+
+const double C_SML_h = stod(settingSPH["C_SML_h"])[0];
+const double C_SML_sigma = stod(settingSPH["C_SML_sigma"])[0];
+const double C_SML = C_SML_h * C_SML_sigma;
 //
 const double C_CFL_velocity = stod(settingSPH["C_CFL_velocity"])[0];
 const double C_CFL_accel = stod(settingSPH["C_CFL_accel"])[0];
@@ -1295,14 +1298,17 @@ int main()
 				// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
 				// p->initialX = xyz;
 				p->setDensityVolume(density, volume_of_a_particle);
-				p->radius_SPH = C_SML * std::pow(volume_of_a_particle, 1 / 3.);
+				p->radius_SPH = C_SML * particle_spacing;
+				// p->radius_SPH = C_SML * std::pow(volume_of_a_particle, 1 / 3.);
 				//以下はparticlize_infoから入手できる．
 				p->normal_SPH = f->getNormalTuple();
 				p->face_org = f;
 				// p->particlize_info = {f, t0, t1, depth, h_};
 			}
 		}
+		tank->setBounds();
 		tank->resetInitialX();
+		tank->setBounds();
 		return tank;
 	};
 
@@ -1328,8 +1334,9 @@ int main()
 		for (const auto &p : net->getPoints())
 		{
 			p->initialX = p->getXtuple();
-			p->setDensityVolume(density, volume);			  //質量(mass)は関数内部で自動で決められる
-			p->radius_SPH = C_SML * std::pow(volume, 1 / 3.); //平滑化半径（"距離"は曖昧さがあるので使わない）
+			p->setDensityVolume(density, volume); //質量(mass)は関数内部で自動で決められる
+			p->radius_SPH = C_SML * particle_spacing;
+			// p->radius_SPH = C_SML * std::pow(volume, 1 / 3.); //平滑化半径（"距離"は曖昧さがあるので使わない）
 			p->pressure_SPH = density * g * (initial_surface_height - std::get<2>(p->getXtuple()));
 		}
 		{
@@ -1446,7 +1453,7 @@ EISP:
 					f->clearContactPoints();
 			}
 			// 各流体粒子の近傍点を取得し保存
-			std::vector<Tddd> oppositeX, reflectX, SPP_X;
+			std::vector<Tddd> oppositeX = {}, reflectX = {}, SPP_X = {};
 			// b$ ------------------------------------------------------ */
 			// b$                        面との接触を確認                   */
 			// b$ ------------------------------------------------------ */
@@ -1463,15 +1470,21 @@ EISP:
 				for (const auto &n : rigid_bodies)
 					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
 			}
+
+			//
 			for (const auto &p : net->getPoints())
 			{
 				auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
-				for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, 2. * p->radius_SPH))
+				for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, p->radius_SPH))
 				{
-					reflectX.emplace_back(X);
-					oppositeX.emplace_back(Y);
-					if (p->isSurface)
-						SPP_X.push_back(Y + Reflect(getVectorToSPP(p), N));
+					if (isFinite(X))
+						reflectX.emplace_back(X);
+					if (isFinite(Y))
+					{
+						oppositeX.emplace_back(Y);
+						if (p->isSurface)
+							SPP_X.push_back(Y + Reflect(getVectorToSPP(p), N));
+					}
 				};
 				if (p->isSurface)
 					SPP_X.push_back(p->getXtuple() + getVectorToSPP(p));
@@ -1570,7 +1583,7 @@ EISP:
 											  return A < B;
 										  }));
 
-			auto min_relative_velocity = (p_V->radius_SPH / 3.) / Norm(p_V->U_SPH);
+			auto min_relative_velocity = (p_V->radius_SPH / C_SML_sigma) / Norm(p_V->U_SPH);
 
 			for (const auto &p : water_points)
 			{
@@ -1612,8 +1625,8 @@ EISP:
 					U += Dot(U, n) * n * boundary_gurd_value(p, Norm(Y - p->getXtuple()), p->radius_SPH);
 #endif
 					if (isFinite(U))
-						if (min_relative_velocity < (p->radius_SPH / 3.) / Norm(U))
-							min_relative_velocity = (p->radius_SPH / 3.) / Norm(U);
+						if (min_relative_velocity < (p->radius_SPH / C_SML_sigma) / Norm(U))
+							min_relative_velocity = (p->radius_SPH / C_SML_sigma) / Norm(U);
 				}
 				// b%$------------------------------------------------------ */
 			}
@@ -1626,7 +1639,7 @@ EISP:
 												  return false;
 											  return A < B;
 										  }));
-			auto min_relative_accel = std::sqrt((p_A->radius_SPH / 3.) / Norm(p_A->DUDt_SPH));
+			auto min_relative_accel = std::sqrt((p_A->radius_SPH / C_SML_sigma) / Norm(p_A->DUDt_SPH));
 			std::cout << Red << "----------- 時間ステップdt ---------" << std::endl;
 
 			Tddd dt_candidates;
@@ -1662,34 +1675,34 @@ EISP:
 					wave_makerPVD.output();
 				}
 
-				// {
-				// 	std::string filename = "contact_boundary_faces" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/" + filename, net->getContactFacesOfPoints());
-				// 	contact_faces_PVD.push(filename, real_time);
-				// 	contact_faces_PVD.output();
-				// }
+				{
+					std::string filename = "contact_boundary_faces" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/" + filename, net->getContactFacesOfPoints());
+					contact_faces_PVD.push(filename, real_time);
+					contact_faces_PVD.output();
+				}
 
-				// {
-				// 	std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/oppositeX.vtu", {oppositeX});
-				// 	mk_vtu(output_dir + "/" + filename, {oppositeX});
-				// 	oppositeXPVD.push(filename, real_time);
-				// 	oppositeXPVD.output();
-				// }
-				// {
-				// 	std::string filename = "reflectX" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/reflectX.vtu", {reflectX});
-				// 	mk_vtu(output_dir + "/" + filename, {reflectX});
-				// 	reflectPVD.push(filename, real_time);
-				// 	reflectPVD.output();
-				// }
-				// {
-				// 	std::string filename = "SPP_X" + std::to_string(count) + ".vtu";
-				// 	mk_vtu(output_dir + "/SPP_X.vtu", {SPP_X});
-				// 	mk_vtu(output_dir + "/" + filename, {SPP_X});
-				// 	SPP_PVD.push(filename, real_time);
-				// 	SPP_PVD.output();
-				// }
+				{
+					std::string filename = "oppositeX" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/oppositeX.vtu", {oppositeX});
+					mk_vtu(output_dir + "/" + filename, {oppositeX});
+					oppositeXPVD.push(filename, real_time);
+					oppositeXPVD.output();
+				}
+				{
+					std::string filename = "reflectX" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/reflectX.vtu", {reflectX});
+					mk_vtu(output_dir + "/" + filename, {reflectX});
+					reflectPVD.push(filename, real_time);
+					reflectPVD.output();
+				}
+				{
+					std::string filename = "SPP_X" + std::to_string(count) + ".vtu";
+					mk_vtu(output_dir + "/SPP_X.vtu", {SPP_X});
+					mk_vtu(output_dir + "/" + filename, {SPP_X});
+					SPP_PVD.push(filename, real_time);
+					SPP_PVD.output();
+				}
 
 				/* ------------------------------------------------------ */
 				Print("出力");
@@ -1737,7 +1750,7 @@ EISP:
 				dt = P_RK_X[*water_points.begin()]->getdt();
 				std::cout << "dt = " << dt << std::endl;
 				/* ------------------------------------------------------ */
-				double start_move = 0.05;
+				double start_move = 0.1;
 				if (real_time >= start_move)
 				{
 					double t = real_time - start_move;
@@ -1770,7 +1783,7 @@ EISP:
 				{
 #ifndef apply_polygon_boundary
 					Print("ダミー粒子（鏡映関係を使う）の圧力を計算．WCSPHなら圧力の評価の\"後\"．EISPHなら圧力の評価の\"前\"", Green);
-					auto faces = net->getContactFacesOfPointsFirst();
+					auto faces = net->getContactFacesOfPoints();
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1792,7 +1805,7 @@ EISP:
 				auto updateDummy_U_tmpU_mass_rho = [&net, &dummy_points, &rigid_bodies]()
 				{
 #ifndef apply_polygon_boundary
-					auto faces = net->getContactFacesOfPointsFirst();
+					auto faces = net->getContactFacesOfPoints();
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1930,6 +1943,7 @@ EISP:
 						p->lap_U = laplacian_U_Monaghan1992_polygon_boundary(p->getContactPoints(net),
 																			 p,
 																			 p->radius_SPH,
+																			 C_SML_sigma,
 																			 dt,
 																			 (step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
 																			 (step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
@@ -1937,6 +1951,7 @@ EISP:
 						p->lap_U = laplacian_U_Monaghan1992(p->getContactPoints(),
 															p,
 															p->radius_SPH,
+															C_SML_sigma,
 															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_alpha : C_artificial_viscousity_alpha,
 															(step <= preparation_time_step) ? preparation_C_artificial_viscousity_beta : C_artificial_viscousity_beta);
 #endif
@@ -2271,13 +2286,13 @@ EISP:
 
 						p->DUDt_SPH = -p->gradP_SPH / p->density + nu * p->lap_U + gravity;
 						/* ------------------------- 修正 ------------------------- */
+
 						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
 						/*
 						 * p->radius_SPH = C_SML * particle_spacing なので，
 						 * p->radius_SPH / C_SML / 2.はparticle_spacingの半分程度となる．
 						 */
-						double critical_distance = (p->radius_SPH / C_SML /*粒子間隔*/) / 2.;
-
+						double critical_distance = (p->radius_SPH / C_SML /*粒子間隔*/) / 3.;
 						for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, p->radius_SPH))
 						{
 							Tddd velocity = {0, 0, 0};
@@ -2288,14 +2303,19 @@ EISP:
 
 							if (Norm(X - p->getXtuple()) < critical_distance)
 							{
-								p->DUDt_SPH += N * 50 * (1. - Norm(X - p->getXtuple()) / critical_distance);
-#ifdef EISPH
-								auto relative_normal_velocity = Dot(p->U_SPH - velocity /*相対速度*/, N) * N;
-								if (Dot(p->U_SPH - velocity /*相対速度*/, N) < 0 /*相対速度が壁向き*/)
-									p->DUDt_SPH -= 100. * relative_normal_velocity * (1. - Norm(X - p->getXtuple()) / critical_distance);
+								auto d = Norm(X - p->getXtuple());
+#ifdef WCSPH
+								p->DUDt_SPH = N * 0. * ((std::tanh(2 * (critical_distance - M_PI / 2. * d) / critical_distance) + 1.) / 2.);
+#elif defined(EISPH)
+								p->DUDt_SPH = N * 10000. * ((std::tanh(2 * (critical_distance - M_PI / 2. * d) / critical_distance) + 1.) / 2.);
+								// p->DUDt_SPH += N * 2 * (critical_distance - Norm(X - p->getXtuple()) / critical_distance);
+								// auto relative_normal_velocity = Dot(p->U_SPH - velocity /*相対速度*/, N) * N;
+								// if (Dot(p->U_SPH - velocity /*相対速度*/, N) < 0 /*相対速度が壁向き*/)
+								// 	p->DUDt_SPH -= 100. * relative_normal_velocity * (1. - Norm(X - p->getXtuple()) / critical_distance);
 #endif
 							}
 						}
+
 						/* ------------------------------------------------------ */
 						rk->push(p->DUDt_SPH);
 						p->U_SPH = rk->getX();
@@ -2331,6 +2351,9 @@ EISP:
 #endif
 				delete P_RK_U[p];
 				delete P_RK_X[p];
+#if defined(EISPH)
+				delete P_RK_pressure[p];
+#endif
 			}
 
 			for (const auto &p : water_points)

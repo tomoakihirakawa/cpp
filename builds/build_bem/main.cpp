@@ -6,6 +6,7 @@ double real_time = 0;
 
 #include "GNUPLOT.hpp"
 #include "Network.hpp"
+#include "minMaxOfFunctions.hpp"
 #include "integrationOfODE.hpp"
 #include <filesystem>
 
@@ -86,7 +87,7 @@ T6d forced_velocity(const double t)
 	auto h = 0.25;
 	auto L = 0.25;
 	auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
-	return move_amplitude * w * cos(w * t) * move_dir;
+	return -move_amplitude * w * sin(w * t) * move_dir;
 #elif defined(experiment_Li2002)
 	double h = 0.3048;
 	double H = 0.45 * h;
@@ -1063,12 +1064,17 @@ struct derivatives
 			}
 
 			Tddd tension = {0, 0, 0};
-			double area = 0.;
-			double Area_tot = 0.;
 			auto p_next_X = p->getXtuple() + p->U_BEM * dt;
 			auto p_current_X = p->getXtuple();
+
+#define area_averaged_tension
+#ifdef area_averaged_tension
+			double area = 0.;
+			double Area_tot = 0.;
 			// なぜ面に依存した張力によって補正すべきなのか？
 			// 線ではだめ，
+			V_d Areas;
+			std::vector<Tddd> Vecs;
 			for (const auto &f : p->getFaces())
 			{
 				if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
@@ -1077,6 +1083,8 @@ struct derivatives
 					auto [p0, p1, p2] = f->getPointsTuple();
 					T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0->U_BEM, p1->U_BEM, p2->U_BEM} * dt;
 					area = TriangleArea(f_next_X);
+					if (p0->CORNER || p1->CORNER || p2->CORNER)
+						area *= 2;
 					Area_tot += area;
 					{
 						// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
@@ -1088,10 +1096,55 @@ struct derivatives
 						/* ------------------------------------------------------ */
 						// tension += (area / dt) * Normalize(f_next_X - p_next_X);
 						tension += (area / dt) * (Mean(f_next_X) - p_next_X);
+						Areas.emplace_back(area);
+						Vecs.emplace_back(Mean(f_next_X) - p_next_X);
 					}
 				}
 			}
-			tension /= Area_tot;
+			tension = {0, 0, 0};
+			auto meanA = Mean(Areas);
+			V_d weight;
+			for (auto i = 0; i < Vecs.size(); i++)
+			{
+				double w = (meanA + Areas[i]) / 2.;
+				tension += w * Vecs[i] / dt;
+				weight.emplace_back(w);
+			}
+			// tension /= Area_tot;
+			tension /= Total(weight);
+#elif defined(edge_length_averaged_tension)
+			double length = 0.;
+			int num = 0;
+			double Length_tot = 0.;
+			// なぜ面に依存した張力によって補正すべきなのか？
+			// 線ではだめ，
+			for (const auto &f : p->getFaces())
+			{
+				if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
+				{
+
+					auto [p0, p1, p2] = f->getPointsTuple();
+					T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0->U_BEM, p1->U_BEM, p2->U_BEM} * dt;
+					length = Norm((Mean(f_next_X) - p_next_X));
+					Length_tot += length;
+
+					{
+						// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
+						// auto v = f_next_X - p_next_X;
+						// auto dist = Norm(v);
+						// auto k = dist / dt;
+						// // k += k / 5. * k / 5. * k / 5.;
+						// tension += k * Normalize(v) * f->getAngle(p) / Theta_tot;
+						/* ------------------------------------------------------ */
+						// tension += (area / dt) * Normalize(f_next_X - p_next_X);
+						tension += (1 / dt) * (Mean(f_next_X) - p_next_X);
+						num++;
+					}
+				}
+			}
+			tension /= num;
+#endif
+
 			if (!p->CORNER)
 				tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
 			else
@@ -1502,7 +1555,8 @@ void solveBVP(const std::unordered_set<networkPoint *> &PointsIN, const std::uno
 	 * Dot(mat_ukn,phiORphin) = Dot(mat_kn,knowns)
 	 * => phiORphin = Dot(mat_ukn^-1, Dot(mat_kn,knowns))
 	 */
-	V_d knowns = V_d(pair_PF.size()); //! ok
+	V_d knowns = V_d(pair_PF.size());	//! ok
+	V_d unknowns = V_d(pair_PF.size()); //! ok
 	//! Pointsの順番と合わせてとるように注意
 	// for (auto i = 0; i < Points.size(); i++)
 	// 	knowns[i] = Points[i]->phiphin[Points[i]->Neumann ? 1 /*phin*/ : 0 /*phi*/];
@@ -1513,16 +1567,28 @@ void solveBVP(const std::unordered_set<networkPoint *> &PointsIN, const std::uno
 		if (f)
 		{
 			if (f->Neumann)
+			{
 				knowns[i] = std::get<1>(f->phiphin);
+				unknowns[i] = std::get<0>(f->phiphin);
+			}
 			else
+			{
 				knowns[i] = std::get<0>(f->phiphin);
+				unknowns[i] = std::get<1>(f->phiphin);
+			}
 		}
 		else
 		{
 			if (p->Neumann)
+			{
 				knowns[i] = std::get<1>(p->phiphin);
+				unknowns[i] = std::get<0>(p->phiphin);
+			}
 			else
+			{
 				knowns[i] = std::get<0>(p->phiphin);
+				unknowns[i] = std::get<1>(p->phiphin);
+			}
 		}
 	}
 	std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
@@ -1534,6 +1600,7 @@ void solveBVP(const std::unordered_set<networkPoint *> &PointsIN, const std::uno
 #if defined(solve_equations_on_all_points) || defined(solve_equations_on_all_points_RBF) || defined(solve_equations_on_all_points_rigid_mode)
 	//* 未知変数の計算
 	std::cout << "LU decomposition" << std::endl;
+
 	ludcmp_parallel lu(mat_ukn /*未知の行列係数（左辺）*/);
 	lu.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 #else

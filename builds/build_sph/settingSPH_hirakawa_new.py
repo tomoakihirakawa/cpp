@@ -7,8 +7,8 @@ import math
 density = 1000.
 graity = 9.81
 
-H = 100/1000
-particle_spacing = 0.009
+H = 200/1000
+particle_spacing = 0.008
 data = {
     "density": density,
     # -------------------------------------------------------- #
@@ -17,44 +17,43 @@ data = {
     # 最初のstep==0の場合はdt=1E-10とする
     "C_CFL_velocity": 0.04,  # dt = C_CFL_velocity*h/Max(U)
     "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
-    "max_dt": 0.0005,  # 1/1500(speed of sound) = 0.0006666666666666666
+    "max_dt": 0.005,  # 1/1500(speed of sound) = 0.0006666666666666666
     # ------------------ 粒子配置に関する設定値 ------------------ #
     "particle_spacing": particle_spacing,
-    "xbounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
-    "ybounds": [-0.125 + particle_spacing/2, 0.125 - particle_spacing/2],
-    "zbounds": [particle_spacing/2, H - particle_spacing/2],
+    "xbounds": [-0.05 + particle_spacing/2, 0.05 - particle_spacing/2],
+    "ybounds": [-0.05 + particle_spacing/2, 0.05 - particle_spacing/2],
+    "zbounds": [0.22+particle_spacing/2, 0.22+H - particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-.15, .15],
-    "buckets_ybounds": [-.15, .15],
-    "buckets_zbounds": [0, .5],
+    "buckets_xbounds": [-.3, .3],
+    "buckets_ybounds": [-.3, .3],
+    "buckets_zbounds": [0, .40],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
-    "C_SML_sigma": 2.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    "C_SML_h": 1.09,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    # "C_SML": 3.*.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    "C_SML": 2.*1.09,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
     # -------------------------------------------------------- #
     "mu": 0.001005,
     # -------------------------------------------------------- #
-    "C_Tait": 13,  # テイトの式
+    "C_Tait": 1466/60.,  # テイトの式
     # ---------------------- 人口粘性係数 ---------------------- 
     "C_artificial_viscousity_alpha": 0.02,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.00001,
+    "preparation_max_dt": 0.0001,
     "preparation_time": 1.,
     "preparation_time_step": 100,
-    "preparation_C_artificial_viscousity_alpha": 0.03,
-    "preparation_C_artificial_viscousity_beta": 0,
+    "preparation_C_artificial_viscousity_alpha": 0.2,
+    "preparation_C_artificial_viscousity_beta": 0.2,
     # -------------------------------------------------------- #
 }
 
 total_volume = 1
-total_volume *= abs(data["xbounds"][1]-data["xbounds"][0]+ particle_spacing)
-total_volume *= abs(data["ybounds"][1]-data["ybounds"][0]+ particle_spacing)
-total_volume *= abs(data["zbounds"][1]-data["zbounds"][0]+ particle_spacing)
+total_volume *= abs(data["xbounds"][1]-data["xbounds"][0])
+total_volume *= abs(data["ybounds"][1]-data["ybounds"][0])
+total_volume *= abs(data["zbounds"][1]-data["zbounds"][0])
 print("体積", total_volume)
 data.update({"total_volume": total_volume})
+
 
 xlen = data["xbounds"][1]-data["xbounds"][0]
 ylen = data["ybounds"][1]-data["ybounds"][0]
@@ -98,13 +97,12 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    "translate": [1., 1., 1.],
-    "rotate": [math.pi/2., 1, 0, 0],
+    "objfile": "../../obj/camel.obj",
+    # "translate": [1., 1., 1.],
+    # "rotate": [math.pi/2., 1, 0, 0],
     "reverseNormal": True,
-    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
+    "scale": [0.005, 0.005, 0.005, 0.005],  # モデルがmm単位なのでメートルに変換,
+    "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density
 }
@@ -120,13 +118,12 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    "rotate": [math.pi/2., 1, 0, 0],
-    "translate": [1., 1., 1.],
+    "objfile": "../../obj/camel.obj",
+    # "rotate": [math.pi/2., 1, 0, 0],
+    # "translate": [1., 1., 1.],
     "reverseNormal": True,
-    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
+    "scale": [0.005, 0.005, 0.005, 0.005],  # モデルがmm単位なのでメートルに変換,
+    "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density
 

@@ -18,7 +18,7 @@ public:
 	V_d solve(const V_d &b, const V_d &x_init = {}, double eps = 1E-5)
 	{
 		V_d x(b.size());
-		for (auto i = 0; i < b.size(); i++)
+		for (auto i = 0; i < b.size(); ++i)
 		{
 			if (i >= x_init.size())
 				x[i] = 0.;

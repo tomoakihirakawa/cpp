@@ -844,9 +844,9 @@ struct IntersectionsSphereTrianglesLines
     };
 };
 
-#define use_space_potential_particle
+// #define use_space_potential_particle
 
-constexpr auto grad_kernel_Bspline = grad_kernel_Bspline5;
+constexpr auto grad_kernel_Bspline = grad_kernel_Bspline3;
 
 Tddd getVectorToSPP(const networkPoint *const p)
 {
@@ -1030,7 +1030,7 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
 };
 //# ------------------------------------------------------ */
 //#                          圧力勾配                       */
-//#                         grad(P)                        */
+//#                         grad(P)                        *
 //# ------------------------------------------------------ */
 // Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
 //                                           const networkPoint *const a,
@@ -1207,6 +1207,7 @@ Tddd laplacian_U_Monaghan1992(const networkPoint *const p,
                               const Tddd &U,
                               const networkPoint *const a,
                               const double h,
+                              const double sigma,
                               const double alpha = 0.1,
                               const double beta = 0.1)
 {
@@ -1217,7 +1218,7 @@ Tddd laplacian_U_Monaghan1992(const networkPoint *const p,
     double Cs = 1466., PIij, div_U, m;
     if (dot_Uij_rij < 0)
     {
-        m = h / 3. * dot_Uij_rij / dot_rij_rij /*hを消せばUの発散となっている*/;
+        m = h / sigma * dot_Uij_rij / dot_rij_rij /*hを消せばUの発散となっている*/;
         PIij = (-alpha * Cs * m + beta * m * m) / ((p->density + a->density) / 2.);
         return p->mass * PIij * grad_kernel_Bspline(X, a->getXtuple(), h);
     }
@@ -1226,6 +1227,7 @@ Tddd laplacian_U_Monaghan1992(const networkPoint *const p,
 Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
                                                const networkPoint *const a,
                                                const double h,
+                                               const double sigma,
                                                const double dt,
                                                const double alpha = 0.1,
                                                const double beta = 0.1)
@@ -1242,11 +1244,11 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
     for (const auto &p : ps)
     {
         if (p != a)
-            ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);
+            ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, sigma, alpha, beta);
 #if defined(use_space_potential_particle)
         if (p->isSurface && p == a)
         {
-            tmp = laplacian_U_Monaghan1992(p, p->getXtuple() + getVectorToSPP(p), p->U_SPH, a, h, alpha, beta);
+            tmp = laplacian_U_Monaghan1992(p, p->getXtuple() + getVectorToSPP(p), p->U_SPH, a, h, sigma, alpha, beta);
             if (isFinite(tmp))
                 ret += tmp;
         }
@@ -1269,13 +1271,13 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
 #if defined(use_space_potential_particle)
             if (p->isSurface)
             {
-                tmp = laplacian_U_Monaghan1992(p, Y + Reflect(getVectorToSPP(p), n), U, a, h, alpha, beta);
+                tmp = laplacian_U_Monaghan1992(p, Y + Reflect(getVectorToSPP(p), n), U, a, h, sigma, alpha, beta);
                 if (isFinite(tmp))
                     ret += tmp;
             }
 
 #endif
-            ret += laplacian_U_Monaghan1992(p, Y, U, a, h, alpha, beta);
+            ret += laplacian_U_Monaghan1992(p, Y, U, a, h, sigma, alpha, beta);
         }
         // b$ ------------------------------------------------------ */
     }
@@ -1286,6 +1288,7 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
 Tddd laplacian_U_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
                               const networkPoint *const a,
                               const double h,
+                              const double sigma,
                               const double alpha = 0.1,
                               const double beta = 0.1)
 {

@@ -1,0 +1,9 @@
+{
+    "name": "wavetank",
+    "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
+    "radius": 0.01,
+    "reverseNormal": true,
+    "output_vtu_file_name": "wavetank",
+    "output_pvd_file_name": "wavetank",
+    "output_directory": "/Users/tomoaki/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_EMT_K1d0_without_remeshing"
+}
