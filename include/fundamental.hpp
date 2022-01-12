@@ -1342,10 +1342,20 @@ struct ludcmp_parallel
 #endif
 			for (auto i = k + 1; i < n; ++i)
 			{
-				auto temp = lu[i][k] /= lu_k[k];
+				lu[i][k] /= lu_k[k];
 				for (auto j = k + 1; j < n; ++j)
-					lu[i][j] -= temp * lu_k[j];
+					lu[i][j] -= lu[i][k] * lu_k[j];
 			}
+
+			// #ifdef _OPENMP
+			// #pragma omp parallel for
+			// #endif
+			// 			for (auto i = k + 1; i < n; ++i)
+			// 			{
+			// 				auto temp = lu[i][k] /= lu_k[k];
+			// 				for (auto j = k + 1; j < n; ++j)
+			// 					lu[i][j] -= temp * lu_k[j];
+			// 			}
 
 			k++;
 		}
@@ -1519,19 +1529,16 @@ struct ludcmp
 		}
 	};
 
-	void solve(const V_d &b, V_d &x)
+	void solve(const V_d &b, V_d &x) const
 	{
 		int i, ii = 0, ip, j;
 		double sum;
 		if (b.size() != n || x.size() != n)
 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "サイズが違います"));
 
-		// for (i=0;i<n;i++)
-		//   x[i] = b[i];
-
 		x = b;
 
-		for (i = 0; i < n; i++)
+		for (i = 0; i < n; ++i)
 		{
 			ip = indx[i];
 			sum = x[ip];
@@ -2827,6 +2834,67 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json)
 	}
 	stream << "}";
 	return stream;
+};
+/* ------------------------------------------------------ */
+
+struct JSONoutput
+{
+	std::map<std::string, std::vector<double>> map_S_D;
+	std::map<std::string, std::vector<int>> map_S_I;
+	std::map<std::string, std::vector<std::string>> map_S_S;
+	JSONoutput(){};
+
+	void push(std::string s, double D)
+	{
+		if (this->map_S_D.find(s) != this->map_S_D.end())
+			this->map_S_D[s].emplace_back(D);
+		else
+			this->map_S_D[s] = {D};
+	};
+	void push(std::string s, int I)
+	{
+		if (this->map_S_I.find(s) != this->map_S_I.end())
+			this->map_S_I[s].emplace_back(I);
+		else
+			this->map_S_I[s] = {I};
+	};
+	void push(std::string s, std::string S)
+	{
+		if (this->map_S_S.find(s) != this->map_S_S.end())
+			this->map_S_S[s].emplace_back(S);
+		else
+			this->map_S_S[s] = {S};
+	};
+
+	void output(std::ofstream &os)
+	{
+		os << "{" << std::endl;
+		{
+			int size = this->map_S_D.size();
+			int i = 0;
+			for (const auto &[key, V] : this->map_S_D)
+			{
+				os << "\"" << key << "\":[";
+				for (auto j = 0; j < V.size(); ++j)
+					os << V[j] << (j != V.size() - 1 ? "," : "]");
+				if (i++ != size - 1)
+					os << ",\n";
+			}
+		}
+		{
+			int size = this->map_S_I.size();
+			int i = 0;
+			for (const auto &[key, V] : this->map_S_I)
+			{
+				os << "\"" << key << "\":[";
+				for (auto j = 0; j < V.size(); ++j)
+					os << V[j] << (j != V.size() - 1 ? "," : "]");
+				if (i++ != size - 1)
+					os << ",\n";
+			}
+		}
+		os << "\n}" << std::endl;
+	};
 };
 
 //============================================================

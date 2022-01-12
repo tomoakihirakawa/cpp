@@ -1101,6 +1101,7 @@ inline networkPoint::networkPoint(Network *network_IN,
 /* ------------------------------------------------------ */
 #ifdef BEM
 	  phiphin({0., 0.}),
+	  phiphin_t({0., 0.}),
 	  grad_phi_BEM({0., 0., 0.}),
 	  U_BEM({0., 0., 0.}),
 	  U_update_BEM({0., 0., 0.}),
@@ -1109,6 +1110,7 @@ inline networkPoint::networkPoint(Network *network_IN,
 	  U_normal_BEM({0., 0., 0.}),
 	  laplacian_U_BEM({0., 0., 0.}),
 	  normal_BEM({0., 0., 0.}),
+	  pressure_BEM(0.),
 #endif
 	  /* ------------------------------------------------------ */
 	  particlize_info({nullptr, {nullptr, nullptr, nullptr}, {0., 0.}, 0., 0.})
@@ -1135,6 +1137,7 @@ inline networkPoint::networkPoint(Network *network_IN,
 	this->a_viscosity = 0.;
 	this->mu_SPH = 0.001005;
 	this->DUDt_SPH = {0., 0., 0.};
+	this->repulsive_force_SPH = {0., 0., 0.};
 	this->DPDt_SPH = 0.;
 	this->DrhoDt_SPH = 0.;
 	this->density = 0.;

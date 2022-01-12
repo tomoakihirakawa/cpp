@@ -174,4 +174,17 @@ int main()
 		os << json;
 		os.close();
 	}
+
+	JSONoutput jsonout;
+
+	jsonout.push("time", 1);
+	jsonout.push("time", 1);
+	jsonout.push("time", 1);
+	jsonout.push("time", 1);
+	jsonout.push("volume", 1);
+	jsonout.push("volume", 1);
+	jsonout.push("volume", 1);
+	std::ofstream os("./output2.json");
+	jsonout.output(os);
+	os.close();
 }

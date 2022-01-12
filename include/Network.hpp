@@ -620,6 +620,7 @@ public:
 	// ダミー粒子としての情報
 	/* ------------------- 多段の時間発展スキームのため ------------------- */
 	Tddd DUDt_SPH;
+	Tddd repulsive_force_SPH;
 	double DrhoDt_SPH;
 	//
 	int index;
@@ -692,6 +693,7 @@ public:
 public:
 	double phi_n();
 	Tdd phiphin;
+	Tdd phiphin_t;
 	std::unordered_map<networkFace *, Tdd> multiple_phiphin;
 	V_d nabla_phi() const;
 	V_d getNormalFromSameBC();
@@ -704,7 +706,7 @@ public:
 	Tddd U_normal_BEM;
 	Tddd laplacian_U_BEM;
 	Tddd normal_BEM;
-	Tddd pressure_BEM;
+	double pressure_BEM;
 	double kappa_BEM;
 	// double DphiDt;
 	//
@@ -715,8 +717,7 @@ public:
 	double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const
 	{
 		//重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
-		return Dot(Normalize(this->getXtuple() - g_center),
-				   this->getXtuple() - offset);
+		return Dot(Normalize(this->getXtuple() - g_center), this->getXtuple() - offset);
 	};
 
 	double DphiDt(const double pressure /*zero if on atmosfere*/,
@@ -725,13 +726,11 @@ public:
 	{
 		// offsetは平均の水面位置
 		double gamma = 72.75 * 1E-3; //[N/m] 水20度
-		double gravity = 9.80665;	 // [m/s2]
-		double density = 997.;		 // [kg/m3]
-		double dphidt = -Dot(this->U_BEM, this->U_BEM) / 2.;
-		dphidt -= gamma / density * this->kappa_BEM;
-		dphidt -= gravity * height(offset, g_center);
-		dphidt -= pressure / density;
-		return dphidt + Dot(this->U_BEM, this->U_BEM);
+		double g = 9.81;			 // [m/s2]
+		double rho = 1000.;			 // [kg/m3]
+		double dphidt = Dot(this->U_BEM, this->U_BEM) / 2. - g * height(offset, g_center) - pressure / rho;
+		// dphidt -= gamma / rho * this->kappa_BEM;
+		return dphidt;
 	};
 
 	double DphiDt_EMT(const Tddd &U_modified,
@@ -2595,7 +2594,7 @@ public:
 				}
 			}
 		}
-		return ret;
+		return ret / 3.;
 	};
 	//! ------------------------------------------------------ */
 	//!                          接触の判別                      */

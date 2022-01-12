@@ -81,9 +81,11 @@ data = {
     "objfile": "../../obj/tank/sloshing_tank.obj",
     # "rotate": [0, 1, 0, 0],
     "reverseNormal": True,
-    # "scale": [0, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
+
+    "scale": [1, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "translate": [0, 0, 10],  # モデルがmm単位なのでメートルに変換,
+
+    "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density
 }
@@ -98,13 +100,10 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    "translate": [1., 1., 1.],
-    "rotate": [math.pi/2., 1, 0, 0],
-    "reverseNormal": True,
-    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
+    "objfile": "../../obj/watanabe2021/tank_for_dambreak_experiment_Koshizuka_Moyce15.obj",
+    "rotate": [2*math.pi, 1, 0, 0],
+    "scale": [1/1000, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density
 }
@@ -120,13 +119,10 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    "rotate": [math.pi/2., 1, 0, 0],
-    "translate": [1., 1., 1.],
-    "reverseNormal": True,
-    "scale": [0.1, 0.1, 0.1, 0.1],  # モデルがmm単位なのでメートルに変換,
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
+    "objfile": "../../obj/watanabe2021/tank_for_dambreak_experiment_Koshizuka_Moyce_init15.obj",
+    # "rotate": [math.pi/2., 1, 0, 0],
+    "scale": [1/1000, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density
 

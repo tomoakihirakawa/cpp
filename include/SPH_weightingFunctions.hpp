@@ -844,9 +844,9 @@ struct IntersectionsSphereTrianglesLines
     };
 };
 
-// #define use_space_potential_particle
+#define use_space_potential_particle
 
-constexpr auto grad_kernel_Bspline = grad_kernel_Bspline3;
+constexpr auto grad_kernel_Bspline = grad_kernel_Bspline5;
 
 Tddd getVectorToSPP(const networkPoint *const p)
 {
@@ -1053,62 +1053,62 @@ double div_tmp_U(const std::unordered_set<networkPoint *> &ps,
 //     return ret * a->density;
 // };
 
-Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
-                                          const networkPoint *const a,
-                                          const double h)
-{
-    //密度の演算子の作用下に入れ込んだMonaghan1992の方法
-    Tddd ret = {0, 0, 0}, tmp;
-    Tddd accel = {0, 0, 0};
-    Tddd gravity = {0., 0., -9.81}, n, SSP_X, mirroedSSP_X, toSSP;
-    auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
-    double pressure, density2;
-    double a_pressure_density2 = a->pressure_SPH / std::pow(a->density, 2);
-    for (const auto &p : ps)
-    {
-        density2 = std::pow(p->density, 2);
-        if (p != a)
-            ret += p->mass * (p->pressure_SPH / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
+// Tddd grad_P_Monaghan1992_polygon_boundary(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
+//                                           const networkPoint *const a,
+//                                           const double h)
+// {
+//     //密度の演算子の作用下に入れ込んだMonaghan1992の方法
+//     Tddd ret = {0, 0, 0}, tmp;
+//     Tddd accel = {0, 0, 0};
+//     Tddd gravity = {0., 0., -9.81}, n, SSP_X, mirroedSSP_X, toSSP;
+//     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
+//     double pressure, density2;
+//     double a_pressure_density2 = a->pressure_SPH / std::pow(a->density, 2);
+//     for (const auto &p : ps)
+//     {
+//         density2 = std::pow(p->density, 2);
+//         if (p != a)
+//             ret += p->mass * (p->pressure_SPH / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
 
-#if defined(use_space_potential_particle)
-        if (p->isSurface && p == a)
-        {
-            tmp = p->mass * (0. /*SPPの圧力は0*/ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h);
-            if (isFinite(tmp))
-                ret += tmp;
-        }
-#endif
+// #if defined(use_space_potential_particle)
+//         if (p->isSurface && p == a)
+//         {
+//             tmp = p->mass * (0. /*SPPの圧力は0*/ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple() + getVectorToSPP(p), a->getXtuple(), h);
+//             if (isFinite(tmp))
+//                 ret += tmp;
+//         }
+// #endif
 
-        // b$ ------------------------ ポリゴン ------------------------ */
-        for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
-        {
-            if (F1)
-            {
-                n = N;
-                accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple()) +
-                        F1->getNormalTuple() * Dot(ToTddd(F1->getNetwork()->acceleration), F1->getNormalTuple());
-            }
-            else
-            {
-                n = N;
-                accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple());
-            }
-            pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
-            ret += p->mass * (pressure / density2 + a_pressure_density2) * grad_kernel_Bspline(Y, a->getXtuple(), h);
-#if defined(use_space_potential_particle)
-            if (p->isSurface && isFinite(p->cg_neighboring_particles_SPH))
-            {
-                tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h);
-                if (isFinite(tmp))
-                    ret += tmp;
-            }
-#endif
-        }
-        // b%$------------------------------------------------------ */
-    }
+//         // b$ ------------------------ ポリゴン ------------------------ */
+//         for (const auto &[F0, F1, X/*壁までの距離*/, Y/*ゴースト粒子までの距離*/, N] : INTXN.getFFXYN(p, h))
+//         {
+//             if (F1)
+//             {
+//                 n = N;
+//                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple()) +
+//                         F1->getNormalTuple() * Dot(ToTddd(F1->getNetwork()->acceleration), F1->getNormalTuple());
+//             }
+//             else
+//             {
+//                 n = N;
+//                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple());
+//             }
+//             pressure = (p->pressure_SPH + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
+//             ret += p->mass * (pressure / density2 + a_pressure_density2) * grad_kernel_Bspline(Y, a->getXtuple(), h);
+// #if defined(use_space_potential_particle)
+//             if (p->isSurface && isFinite(p->cg_neighboring_particles_SPH))
+//             {
+//                 tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h);
+//                 if (isFinite(tmp))
+//                     ret += tmp;
+//             }
+// #endif
+//         }
+//         // b%$------------------------------------------------------ */
+//     }
 
-    return ret * a->density;
-};
+//     return ret * a->density;
+// };
 
 Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint *> &ps /*流体だけを渡す*/,
                                            const networkPoint *const a,
@@ -1121,15 +1121,14 @@ Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
     //
     //
+
     double pressure, density2;
     double a_pressure_density2 = a->pressure_SPH_ / std::pow(a->density, 2);
     for (const auto &p : ps)
     {
         density2 = std::pow(p->density, 2);
         if (p != a)
-        {
             ret += p->mass * (p->pressure_SPH_ / density2 + a_pressure_density2) * grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
-        }
 #if defined(use_space_potential_particle)
         if (p->isSurface && p == a)
         {
@@ -1143,23 +1142,16 @@ Tddd grad_P_Monaghan1992_polygon_boundary_(const std::unordered_set<networkPoint
         for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(p, h))
         {
             if (F1)
-            {
-                n = N;
                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple()) +
                         F1->getNormalTuple() * Dot(ToTddd(F1->getNetwork()->acceleration), F1->getNormalTuple());
-            }
             else
-            {
-                n = N;
                 accel = F0->getNormalTuple() * Dot(ToTddd(F0->getNetwork()->acceleration), F0->getNormalTuple());
-            }
             pressure = (p->pressure_SPH_ + /*修正*/ p->density * Dot(p->mu_SPH / p->density * p->lap_U + gravity - accel, Y - p->getXtuple()));
             ret += p->mass * (pressure / density2 + a_pressure_density2) * grad_kernel_Bspline(Y, a->getXtuple(), h);
-
 #if defined(use_space_potential_particle)
             if (p->isSurface)
             {
-                tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), n), a->getXtuple(), h);
+                tmp = p->mass * (0 / density2 + a_pressure_density2) * grad_kernel_Bspline(Y + Reflect(getVectorToSPP(p), N), a->getXtuple(), h);
                 if (isFinite(tmp))
                     ret += tmp;
             }
@@ -1311,28 +1303,22 @@ Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, dou
 {
     auto Uij = a->U_SPH - p->U_SPH;
     auto Xij = a->getXtuple() - p->getXtuple();
-    auto nu_i = p->mu_SPH / p->density;
-    auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
+    auto nu = p->mu_SPH / p->density + a->mu_SPH / a->density;
+    return (p->mass * 8 * nu * Dot(Uij, Xij) * grad_kernel_Bspline(a->getXtuple(), p->getXtuple(), h)) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X)
 {
     auto Uij = a->U_SPH - p->U_SPH;
     auto Xij = a->getXtuple() - X;
-    auto nu_i = p->mu_SPH / p->density;
-    auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline(a->getXtuple(), X, h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
+    auto nu = p->mu_SPH / p->density + a->mu_SPH / a->density;
+    return (p->mass * 8 * nu * Dot(Uij, Xij) * grad_kernel_Bspline(a->getXtuple(), X, h)) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 Tddd laplacian_U_ShaoAndLo2003(const networkPoint *a, const networkPoint *p, double h, const Tddd &X, const Tddd &U)
 {
     auto Uij = a->U_SPH - U;
     auto Xij = a->getXtuple() - X;
-    auto nu_i = p->mu_SPH / p->density;
-    auto nu_j = a->mu_SPH / a->density;
-    auto W = grad_kernel_Bspline(a->getXtuple(), X, h);
-    return (p->mass * 8 * (nu_i + nu_j) * Dot(Uij, Xij) * W) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
+    auto nu = p->mu_SPH / p->density + a->mu_SPH / a->density;
+    return (p->mass * 8 * nu * Dot(Uij, Xij) * grad_kernel_Bspline(a->getXtuple(), X, h)) / ((p->density + a->density) * Dot(Xij, Xij) + std::pow(1E-4 * h, 2));
 };
 
 Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<networkPoint *> &ps,
@@ -1421,6 +1407,12 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
                                                     const double h,
                                                     const double dt)
 {
+#ifndef use_space_potential_particle
+    if (i->isSurface)
+        return 0;
+#endif
+    if (ps.size() < 2)
+        return 0;
     if (dt < 1E-13)
         return i->pressure_SPH;
     // [1] Nomeritae, E. Daly, S. Grimaldi, and H. H. Bui, “Explicit incompressible SPH algorithm for free-surface flow modelling: A comparison with weakly compressible schemes,” Adv. Water Resour., vol. 97, pp. 156–167, Nov. 2016.

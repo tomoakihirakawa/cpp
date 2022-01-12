@@ -21,7 +21,7 @@ output_directory = home+"/BEM/sloshing_with_pole/BEM_dt0d01_Xdir_H0d10_L0d25_A0d
 # output_directory = home+"/BEM/test"
 data = {
     "name": "water",
-    "objfile": "../../obj/tank/sloshing_with_pole/water13.obj",
+    "objfile": "../../obj/tank/sloshing_with_pole/water12.obj",
     "radius": 0.01,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #

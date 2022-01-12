@@ -1,8 +1,18 @@
 {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm18.obj",
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm12.obj",
     "radius": 0.01,
+    "translation": [
+        0,
+        0,
+        0.2
+    ],
+    "scale": [
+        0.5,
+        0.5,
+        0.5
+    ],
     "output_vtu_file_name": "water",
     "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_EMT_K1d0_without_remeshing"
+    "output_directory": "/Users/tomoaki/BEM/waterfall/test"
 }

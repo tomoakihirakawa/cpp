@@ -1565,7 +1565,7 @@ namespace BEM
 		Tdd p0igign = {0, 0};
 		Tdd p1igign = {0, 0};
 		Tdd p2igign = {0, 0};
-		int i = 6;
+		int i = 8;
 
 		double mean_len = 5. * Max(extLength(origin->getLines()));
 		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||

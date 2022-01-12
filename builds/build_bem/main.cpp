@@ -50,34 +50,10 @@ std::string home_dir = std::getenv("HOME");
 // #define experiment_Li2002
 #define experiment_sawai
 /* ------------------------------------------------------ */
-double move_amplitude = .01;
-Tddd translation(const double t)
-{
-	double s = M_PI / 2.;
-	double k = M_PI / 1.;
-	auto h = 0.25;
-	auto g = 9.81;
-#ifdef experiment_sawai
-	auto L = 0.25;
-	auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
-	Tddd move_dir = {1., 0., 0.};
-	return move_amplitude * sin(w * t) * move_dir;
-#elif defined(experiment_Li2002)
-	//使わない
-	Tddd move_dir = {1., 0., 0.};
-	return move_dir;
-#else
-	/* ------------------------------------------------------ */
-	Tddd move_dir = {cos(k * t), sin(k * t), 0.};
-	return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
-	/* ------------------------------------------------------ */
-	// Tddd move_dir = Normalize(Tddd{1., 1., 0.});
-	// return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
-#endif
-};
 
-T6d forced_velocity(const double t)
+namespace forced_motion
 {
+	double move_amplitude = .01;
 	double s = M_PI / 2.;
 	double a = move_amplitude;
 	double k = M_PI / 1.;
@@ -86,40 +62,73 @@ T6d forced_velocity(const double t)
 #ifdef experiment_sawai
 	auto h = 0.25;
 	auto L = 0.25;
-	auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
-	return -move_amplitude * w * sin(w * t) * move_dir;
 #elif defined(experiment_Li2002)
 	double h = 0.3048;
-	double H = 0.45 * h;
+	double H = 0.4 * h;
 	double x = 0;
 	double c = std::sqrt(g * (H + h));
-	double eta = H * std::pow(1. / cosh(std::sqrt(3. * H / (4. * std::pow(h, 3))) * (x - c * t)), 2.);
-	double u = c * eta / (h + eta);
-	return u * move_dir;
-#else
-	/* ------------------------------------------------------ */
-	T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
-	T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
-	// /* |U|*n_p . n_surface = phin <-- given
-	auto tmp = (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
-	tmp += move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * ddt_move_dir;
-	return tmp;
-	/* ------------------------------------------------------ */
-	// Tddd tmp = Normalize(Tddd{1., 1., 0.});
-	// T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
-	// return (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
 #endif
-};
+	Tddd translation(const double t)
+	{
+#ifdef experiment_sawai
+		auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
+		Tddd move_dir = {1., 0., 0.};
+		return move_amplitude * sin(w * t) * move_dir;
+#elif defined(experiment_Li2002)
+		//使わない
+		Tddd move_dir = {1., 0., 0.};
+		return move_dir;
+#else
+		/* ------------------------------------------------------ */
+		Tddd move_dir = {cos(k * t), sin(k * t), 0.};
+		return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
+		/* ------------------------------------------------------ */
+		// Tddd move_dir = Normalize(Tddd{1., 1., 0.});
+		// return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
+#endif
+	};
+
+	T6d velocity(const double t)
+	{
+#ifdef experiment_sawai
+		auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
+		return -move_amplitude * w * sin(w * t) * move_dir;
+#elif defined(experiment_Li2002)
+		double eta = H * std::pow(1. / cosh(std::sqrt(3. * H / (4. * std::pow(h, 3))) * (x - c * t)), 2.);
+		double u = c * eta / (h + eta);
+		return u * move_dir;
+#else
+		/* ------------------------------------------------------ */
+		T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
+		T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
+		// /* |U|*n_p . n_surface = phin <-- given
+		auto tmp = (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
+		tmp += move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * ddt_move_dir;
+		return tmp;
+		/* ------------------------------------------------------ */
+		// Tddd tmp = Normalize(Tddd{1., 1., 0.});
+		// T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
+		// return (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
+#endif
+	};
+
+	T6d acceleration(const double t)
+	{
+#ifdef experiment_sawai
+		auto w = std::sqrt(M_PI * g / L * tanh(M_PI * h / L));
+		return -move_amplitude * w * w * cos(w * t) * move_dir;
+#elif defined(experiment_Li2002)
+		auto u = (2 * std::sqrt(3) * pow(c, 2) * h * H * std::sqrt(H / pow(h, 3)) * std::sinh(std::sqrt(3) * std::sqrt(H / pow(h, 3)) * (-(c * t) + x)));
+		u /= pow(h + 2 * H + h * std::cosh(std::sqrt(3) * std::sqrt(H / pow(h, 3)) * (-(c * t) + x)), 2);
+		return u * move_dir;
+#endif
+	};
+}
+
 /* ------------------------------------------------------ */
-double phin(networkFace *f)
+double phin(const networkFace *const f)
 {
-	auto normal = f->getNormalTuple();
-	return Dot(f->getNetwork()->velocity,
-			   T6d{
-				   std::get<0>(normal),
-				   std::get<1>(normal),
-				   std::get<2>(normal),
-				   0, 0, 0});
+	return Dot(f->getNetwork()->velocity, ToT6d(f->getNormalTuple()));
 };
 
 std::unordered_set<networkFace *> DeleteDuplicates_FacingContanctFaces(networkPoint *p)
@@ -208,36 +217,63 @@ netFp closest_facingFace(const networkFace *const f_IN)
 	return closest_face;
 };
 /* ------------------------------------------------------ */
-double phin_from_Neumann_surface(networkPoint *const p)
+std::unordered_map<networkFace *, networkFace *> getNearestContactFacesOfSurroundedNeumannFace(const networkPoint *const p)
 {
-	std::unordered_set<networkFace *> suraceNeumann;
-	/*
-	@ 周辺面のうちNeumann面を抜き出し，それぞれに対してclosest_facingFaceを取得する．
-	@ 次に，面それぞれの速度を計算し，点の法線方向速度を計算する．
-	*/
+	std::unordered_map<networkFace *, networkFace *> structure_face;
+
+	//@ 点の隣接面のうちNeumann面を抜き出し，それぞれに対してclosest_facingFaceを取得する．
+
 	for (const auto &F : p->getFaces())
 		if (F->Neumann)
-		{
-			auto cf = closest_facingFace(F);
-			if (cf)
-				suraceNeumann.emplace(cf);
-			else
-				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Fはノイマンなのになぜfacing faceがないのか?");
-		}
-	if (suraceNeumann.empty())
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
+			structure_face[F] = closest_facingFace(F);
+	return structure_face;
+};
+/* ------------------------------------------------------ */
+double phin_from_Neumann_surface(const networkPoint *const p)
+{
+	/*
+	 * 面積平均に変更した
+	 */
+	//@ 点の隣接面のうちNeumann面を抜き出し，それぞれに対してclosest_facingFaceを取得する．
+	//@ 次に，面それぞれの速度を計算し，点の法線方向速度を計算する．
 	double ret = 0.;
-	for (auto &f : suraceNeumann)
+	double A = 0, Atot = 0;
+	for (auto &[sF, cF] : getNearestContactFacesOfSurroundedNeumannFace(p) /*この点に隣接する流体面それぞれが最も近くで接している構造物の面*/)
 	{
-		auto n_face = f->getNormalTuple();
-		auto n_point = p->getNormalAreaAveraged();
-		auto U_normal_of_face = Dot(f->getNetwork()->velocity, ToT6d(n_face)) * n_face;
-		// auto divide = Dot(n_face, n_point);
-		ret += Dot(U_normal_of_face, n_point);
+		auto n_cF = cF->getNormalTuple();
+		auto n_sF = sF->getNormalTuple();
+		A = sF->getArea();
+		Atot += A;
+		auto Un = Dot(cF->getNetwork()->velocity, ToT6d(n_cF)) * Dot(n_sF, n_cF);
+		// ret += A * Dot(U, p->getNormalAreaAveraged());
+		ret += A * Un;
 	}
-	return ret / (double)suraceNeumann.size();
+	return ret / Atot;
 }
+/* ------------------------------------------------------ */
+double accel_normal_from_Neumann_surface(const networkPoint *const p)
+{
+	/*
+	 * 面積平均に変更した
+	 */
+	//@ 点の隣接面のうちNeumann面を抜き出し，それぞれに対してclosest_facingFaceを取得する．
+	//@ 次に，面それぞれの速度を計算し，点の法線方向速度を計算する．
+	double ret = 0.;
+	double A = 0, Atot = 0;
+	for (auto &[sF, cF] : getNearestContactFacesOfSurroundedNeumannFace(p) /*この点に隣接する流体面それぞれが最も近くで接している構造物の面*/)
+	{
+		auto n_cF = cF->getNormalTuple();
+		auto n_sF = sF->getNormalTuple();
+		A = sF->getArea();
+		Atot += A;
+		auto A_n = Dot(cF->getNetwork()->acceleration, ToT6d(n_cF));
+		auto Accel_normal = A_n * Dot(n_sF, n_cF);
+		// ret += A * Dot(U, p->getNormalAreaAveraged());
+		ret += A * Accel_normal;
+	}
+	return ret / Atot;
+}
+
 /* ------------------------------------------------------ */
 double phin_contact(const netFp f_IN)
 {
@@ -704,35 +740,77 @@ struct values_for_overdetermined_interpolation
 // #define respect_Neumann_on_CORNER
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
+Tddd gradTangential_LinearElement(const Tddd &V, const networkFace *const f)
+{
+	auto [X0, X1, X2] = f->getX_Vertices();
+	return Cross(f->getNormalTuple(),
+				 std::get<0>(V) * (X2 - X1) +
+					 std::get<1>(V) * (X0 - X2) +
+					 std::get<2>(V) * (X1 - X0)) /
+		   (2 * f->getArea());
+};
+
 Tddd grad_phi_tangential(const networkFace *const f)
 {
 	auto [p0, p1, p2] = f->getPointsTuple();
-	auto A = f->getArea();
-	auto n = f->getNormalTuple();
-	auto X0 = p0->getXtuple();
-	auto X1 = p1->getXtuple();
-	auto X2 = p2->getXtuple();
 	auto p0_phi = std::get<0>(p0->phiphin);
 	auto p1_phi = std::get<0>(p1->phiphin);
 	auto p2_phi = std::get<0>(p2->phiphin);
-	// return (
-	// 		   (p2_phi - p1_phi) * Cross(n, X1 - X0) +
-	// 		   (p0_phi - p1_phi) * Cross(n, X2 - X1)) /
-	// 	   (2 * A);
-	// return Cross(n, (p1_phi - p2_phi) * X0 + (p2_phi - p0_phi) * X1 + (p0_phi - p1_phi) * X2) / (2 * A);
-	return Cross(n, p0_phi * (X2 - X1) +
-						p1_phi * (X0 - X2) +
-						p2_phi * (X1 - X0)) /
-		   (2 * A);
+	return gradTangential_LinearElement({p0_phi, p1_phi, p2_phi}, f);
 };
+T3Tddd grad_U_tangential_LinearElement(const networkFace *const f)
+{
+	auto [p0, p1, p2] = f->getPointsTuple();
+	//
+	return {gradTangential_LinearElement({std::get<0>(p0->U_BEM), std::get<0>(p1->U_BEM), std::get<0>(p2->U_BEM)}, f),
+			gradTangential_LinearElement({std::get<1>(p0->U_BEM), std::get<1>(p1->U_BEM), std::get<1>(p2->U_BEM)}, f),
+			gradTangential_LinearElement({std::get<2>(p0->U_BEM), std::get<2>(p1->U_BEM), std::get<2>(p2->U_BEM)}, f)};
+};
+
+T3Tddd grad_U_LinearElement(const networkPoint *const p)
+{
+	T3Tddd tmp = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	double Atot = 0;
+	for (const auto &f : p->getFaces())
+	{
+		tmp += f->getArea() * grad_U_tangential_LinearElement(f);
+		Atot += f->getArea();
+	}
+	tmp /= Atot;
+	Tddd s0 = Normalize((p->getNeighbors())[0]->getXtuple() - p->getXtuple());
+	Tddd s1 = Normalize(Cross(p->getNormalTuple(), s0));
+	//
+	Tddd V0 = Dot(tmp, s0);
+	Tddd V1 = Dot(tmp, s1);
+	Tddd V2 = {std::get<2>(V0), std::get<2>(V1), -std::get<0>(V0) - std::get<1>(V1)};
+	return T3Tddd{V0, V1, V2};
+};
+
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
+
+int minDepthToCORNER(networkPoint *p, const int depthlimit)
+{
+	int depth = 0;
+	for (const auto &VP : BFS(p, depthlimit))
+	{
+		depth++;
+		for (const auto &P : VP)
+		{
+			if (P->CORNER)
+				return depth;
+		};
+	}
+	return depthlimit;
+};
+
 struct derivatives
 {
 	// #define derivatives_debug
 	// public:
-	uomap_P_Tddd P_tension, P_gradPhi, P_gradPhi_tangential, P_phin_vector, P_dxdt, P_dxdt_mod, P_laplacian;
-	uomap_P_d P_DphiDt, P_kappa, P_pressure, P_aphiat;
+	uomap_P_Tddd P_tension, P_gradPhi, P_gradPhi_tangential, P_phin_vector, P_dxdt, P_dxdt_mod, P_laplacian, P_U_dot_gradgrad_U;
+	uomap_P_d P_DphiDt, P_kappa, P_pressure, P_aphiat, P_aphiant, P_minDepthToCORNER;
+	double mean_surface_height_from_zero = 0;
 	~derivatives(){
 		// std::cout << "derivatives 破棄" << std::endl;
 	};
@@ -755,11 +833,24 @@ struct derivatives
 			this->P_dxdt_mod[p] = {0, 0, 0}; //流速
 			this->P_DphiDt[p] = 0.;
 			this->P_aphiat[p] = 0.;
+			this->P_aphiant[p] = 0.;
 			this->P_pressure[p] = 0.;
+			this->P_U_dot_gradgrad_U[p] = {0., 0., 0.};
 			this->P_kappa[p] = 0.;
 			this->P_laplacian[p] = {0, 0, 0};
 			this->P_tension[p] = {0, 0, 0};
+			this->P_minDepthToCORNER[p] = 0.;
 		}
+		int c = 0;
+		for (const auto &p : Points)
+		{
+			if (p->Dirichlet)
+			{
+				mean_surface_height_from_zero += p->height();
+				c++;
+			}
+		}
+		mean_surface_height_from_zero /= c;
 		auto pointsbegin = Points.begin();
 #ifdef _OPENMP
 #pragma omp parallel
@@ -787,7 +878,7 @@ struct derivatives
 			// 	p->getX());
 			// auto n = Normalize(interpNormals(p->getX()));
 
-			V_netPp ps = Flatten(BFS(p, 4));
+			V_netPp ps = Flatten(BFS(p, 3));
 			auto interpNormals = InterpolationVectorRBF(ToVector(extX(ps)), ToVector(extNormals(ps)), p->getX());
 
 			//!衝突
@@ -985,14 +1076,12 @@ struct derivatives
 				p->U_BEM = p->grad_phi_BEM;
 				//! Uの修正
 				if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
-				{
-					for (const auto &f : p->getContactFaces())
+					for (const auto &F : p->getContactFaces())
 					{
-						auto n = f->getNormalTuple();
-						p->U_BEM -= Dot(p->U_BEM, n) * n;
-						p->U_BEM += phin(f) * n;
+						auto N = F->getNormalTuple();
+						p->U_BEM -= Dot(p->U_BEM, N) * N;
+						p->U_BEM += Dot(F->getNetwork()->velocity, ToT6d(N)) * N;
 					}
-				}
 				p->U_tangential_BEM = p->U_BEM - Dot(p->U_BEM, n) * n;
 				p->U_normal_BEM = Dot(p->U_BEM, n) * n;
 			}
@@ -1021,9 +1110,23 @@ struct derivatives
 		std::cout << "DphiDtを計算" << std::endl;
 #endif
 		double gamma = 72.75 * 1E-3; //[N/m] 水20度
-		double gravity = 9.80665;	 // [m/s2]
-		double density = 997.;		 // [kg/m3]
+		double gravity = 9.81;		 // [m/s2]
+		double density = 1000.;		 // [kg/m3]
 		double nu = 0.01005 / density;
+
+		int depthlimit = 5;
+		for (auto it = Points.begin(); it != Points.end(); ++it)
+		{
+			auto p = *it;
+			P_minDepthToCORNER[p] = 0.;
+		};
+
+		for (auto it = Points.begin(); it != Points.end(); ++it)
+		{
+			auto p = *it;
+			P_minDepthToCORNER[p] = (double)minDepthToCORNER(p, depthlimit);
+		};
+
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -1067,6 +1170,8 @@ struct derivatives
 			auto p_next_X = p->getXtuple() + p->U_BEM * dt;
 			auto p_current_X = p->getXtuple();
 
+			double beta = 1.;
+
 #define area_averaged_tension
 #ifdef area_averaged_tension
 			double area = 0.;
@@ -1083,8 +1188,23 @@ struct derivatives
 					auto [p0, p1, p2] = f->getPointsTuple();
 					T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0->U_BEM, p1->U_BEM, p2->U_BEM} * dt;
 					area = TriangleArea(f_next_X);
-					if (p0->CORNER || p1->CORNER || p2->CORNER)
-						area *= 2;
+
+					double depth = P_minDepthToCORNER[p0];
+					double mult = 1;
+					if (beta > 0)
+					{
+						if (depth < depthlimit)
+							mult += std::pow(depthlimit - depth, beta);
+
+						depth = P_minDepthToCORNER[p1];
+						if (depth < depthlimit)
+							mult += std::pow(depthlimit - depth, beta);
+
+						depth = P_minDepthToCORNER[p2];
+						if (depth < depthlimit)
+							mult += std::pow(depthlimit - depth, beta);
+					}
+					area *= mult;
 					Area_tot += area;
 					{
 						// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
@@ -1102,16 +1222,11 @@ struct derivatives
 				}
 			}
 			tension = {0, 0, 0};
-			auto meanA = Mean(Areas);
-			V_d weight;
 			for (auto i = 0; i < Vecs.size(); i++)
 			{
-				double w = (meanA + Areas[i]) / 2.;
-				tension += w * Vecs[i] / dt;
-				weight.emplace_back(w);
+				tension += Areas[i] * Vecs[i] / dt;
 			}
-			// tension /= Area_tot;
-			tension /= Total(weight);
+			tension /= Total(Areas);
 #elif defined(edge_length_averaged_tension)
 			double length = 0.;
 			int num = 0;
@@ -1145,26 +1260,27 @@ struct derivatives
 			tension /= num;
 #endif
 
-			if (!p->CORNER)
-				tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
-			else
+			tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
+
+			if (p->CORNER)
 			{
-				tension -= Dot(tension, p->getNormalDirichletAreaAveraged()) * p->getNormalDirichletAreaAveraged();
+				// tension -= Dot(tension, p->getNormalDirichletAreaAveraged()) * p->getNormalDirichletAreaAveraged();
 				for (const auto &f : p->getFaces())
-					if (f->Neumann)
-						tension -= Dot(tension, f->getNormalTuple()) * f->getNormalTuple();
+					tension -= Dot(tension, f->getNormalTuple()) * f->getNormalTuple();
 				if (p->getSolidAngle() < M_PI * 4 / 4)
 					tension *= p->getSolidAngle() / (M_PI * 4 / 4);
 			}
+			// else
+			// 	tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
 
-			Tddd dumping;
-			if (!p->CORNER)
-				dumping -= p->U_tangential_BEM;
+			// Tddd dumping;
+			// if (!p->CORNER)
+			// 	dumping -= p->U_tangential_BEM;
 			P_tension[p] = tension;
 
 			// p->U_update_BEM = p->U_BEM;
 			//! tensionが強いと角でとがるようなエラーがでる．
-			double K = .5;
+			double K = 0.5;
 			p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			// p->U_update_BEM = p->U_BEM - p->U_tangential_BEM + Norm(p->U_tangential_BEM) * Normalize(tension); // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			/* ------------------------------------------------------ */
@@ -1184,18 +1300,32 @@ struct derivatives
 			this->P_dxdt[p] = p->U_update_BEM; //流速
 			// //!この場合マイナスでないと，上の部分が半たんする
 			auto DphiDt = p->DphiDt_EMT(p->U_update_BEM, 0.);
-			auto DphiDt_true = p->DphiDt(0.);
-
 			//!!ノイマンの場合はこれでDphiDtは計算できませんよ！！！
-			this->P_DphiDt[p] = DphiDt; //全ての場所でこっちがまず求まる
-			double Vphi_Vphi = Dot(p->U_BEM, p->U_BEM);
-			auto aphiat = DphiDt_true - Vphi_Vphi;
-			this->P_aphiat[p] = aphiat;
-			this->P_pressure[p] = 10000. * (-1 / 2. * Vphi_Vphi - gravity * (std::get<2>(p->getXtuple())) - aphiat);
-			//ここで圧力の項が抜けているが，これは全く流速に関係ないことに気づく．
-			//なぜなら，表面上のどこでも同じだけ増加に寄与する大気圧は，
-			// grad phiの計算によって，定数のため相殺されるからだ．
+			this->P_DphiDt[p] = DphiDt; // update用
+
+			if (p->Neumann)
+			{
+				std::get<1>(p->phiphin_t) = accel_normal_from_Neumann_surface(p) - Dot(p->getNormalTuple(), Dot(p->U_BEM, grad_U_LinearElement(p)));
+				/*
+				∇U=∇∇f={{fxx, fyx, fzx},
+						{fxy, fyy, fzy},
+						{fxz, fyz, fzz}}
+				なので，∇∇f=∇∇f^T
+				*/
+			}
+			else
+				std::get<0>(p->phiphin_t) = p->DphiDt(0.) - Dot(p->U_BEM, p->U_BEM); //!!ノイマンの場合はこれでDphiDtは計算できませんよ！！！
+
+			this->P_aphiat[p] = std::get<0>(p->phiphin_t);	//!!ノイマンの場合はこれでDphiDtは計算できませんよ！！！
+			this->P_aphiant[p] = std::get<1>(p->phiphin_t); //!!ノイマンの場合はこれでDphiDtは計算できませんよ！！！
+
+			this->P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
+			this->P_pressure[p] = p->pressure_BEM; // 10000. * (-1 / 2. * Vphi_Vphi - gravity * (std::get<2>(p->getXtuple())) - aphiat);
+												   //ここで圧力の項が抜けているが，これは全く流速に関係ないことに気づく．
+												   //なぜなら，表面上のどこでも同じだけ増加に寄与する大気圧は，
+												   // grad phiの計算によって，定数のため相殺されるからだ．
 		}
+
 #ifdef derivatives_debug
 		std::cout << "derivatives終了" << std::endl;
 #endif
@@ -1321,264 +1451,263 @@ void addIGn(std::map<std::pair<netP *, netF *>, Tdd> &PF_phiphin, const netFp F_
 	}
 }
 
-void solveBVP(const std::unordered_set<networkPoint *> &PointsIN, const std::unordered_set<networkFace *> &FacesIN)
+struct solveBVP
 {
-	auto Points = ToVector(PointsIN);
-	auto Faces = ToVector(FacesIN);
-	using map_P_Vd = std::map<netP *, V_d>;
-
-	// for (auto it = PointsIN.begin(); it != PointsIN.end();++it)
-	// {
-	// 	// std::cout << "曲率の計算" << std::endl;
-	// 	auto p = *it;
-	// 	if (!isFinite(p->phiphin))
-	// 	{
-	// 		std::cout << "p->phiphinはfiniteではない！！" << std::endl;
-	// 		std::cout << "p->phiphin = " << p->phiphin << std::endl;
-	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-	// 	}
-	// }
-
-	// #ifdef solve_equations_on_all_points_rigid_mode
-	//* ------------------------------------------------------ */
-	//%                     各点で方程式を作る場合                */
-	//* ------------------------------------------------------ */
-	std::cout << "各点で方程式を作る場合" << std::endl;
-	map_pairPF_pairPF_Tdd P_P_IGIGn; //途中でreverseしているので注意
-	int ii = 0;
-	for (const auto &pO : Points)
+	std::vector<networkPoint *> Points;
+	std::vector<networkFace *> Faces;
+	ludcmp_parallel *lu;
+	VV_d mat_ukn;
+	VV_d mat_kn;
+	V_d knowns;
+	V_d unknowns;
+	std::vector<std::pair<networkPoint *, networkFace *>> pair_PF;
+	solveBVP(const std::unordered_set<networkPoint *> &PointsIN,
+			 const std::unordered_set<networkFace *> &FacesIN)
+		: Points(ToVector(PointsIN)), Faces(ToVector(FacesIN))
 	{
+		using map_P_Vd = std::map<netP *, V_d>;
+
+		// for (auto it = PointsIN.begin(); it != PointsIN.end();++it)
+		// {
+		// 	// std::cout << "曲率の計算" << std::endl;
+		// 	auto p = *it;
+		// 	if (!isFinite(p->phiphin))
+		// 	{
+		// 		std::cout << "p->phiphinはfiniteではない！！" << std::endl;
+		// 		std::cout << "p->phiphin = " << p->phiphin << std::endl;
+		// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+		// 	}
+		// }
+
+		// #ifdef solve_equations_on_all_points_rigid_mode
+		//* ------------------------------------------------------ */
+		//%                     各点で方程式を作る場合                */
+		//* ------------------------------------------------------ */
+		std::cout << "各点で方程式を作る場合" << std::endl;
+		map_pairPF_pairPF_Tdd P_P_IGIGn; //途中でreverseしているので注意
+		int ii = 0;
+		for (const auto &pO : Points)
+		{
 #ifdef respect_Dirichlet_on_CORNER
-		if (false)
-			if (pO->CORNER)
-				for (const auto &fO : pO->getFaces())
-					P_P_IGIGn[{nullptr, fO}] = {}; //! P_P_IGIGn[row][col] = {IG,IGn}
-		P_P_IGIGn[{pO, nullptr}] = {};			   //! P_P_IGIGn[row][col] = {IG,IGn}
+			if (false)
+				if (pO->CORNER)
+					for (const auto &fO : pO->getFaces())
+						P_P_IGIGn[{nullptr, fO}] = {}; //! P_P_IGIGn[row][col] = {IG,IGn}
+			P_P_IGIGn[{pO, nullptr}] = {};			   //! P_P_IGIGn[row][col] = {IG,IGn}
 #else
-		P_P_IGIGn[{pO, nullptr}] = {}; //! P_P_IGIGn[row][col] = {IG,IGn}
+			P_P_IGIGn[{pO, nullptr}] = {}; //! P_P_IGIGn[row][col] = {IG,IGn}
 #endif
-	}
+		}
 #ifdef _OPENMP
-	std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
+		std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
 #pragma omp parallel
 #endif
-	// for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end();++it)
+		// for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end();++it)
 
-	for (auto &[pairPF, P_igign] : P_P_IGIGn)
-	{
+		for (auto &[pairPF, P_igign] : P_P_IGIGn)
+		{
 #ifdef _OPENMP
 #pragma omp single nowait
 #endif
-		{
-			auto [pO, fO] = pairPF;
-			// #ifdef respect_Dirichlet_on_CORNER
-			// 			if (fO)
-			// 			{
-			// 				//! 角点が和となることはやめようか．
-			// 				//@ 角点の面が該当するが，角点自身の行の方程式は該当しない．すでに方程式は与えている．
-			// 				//* ------------------------------------------------------ */
-			// 				//*                    面上で方程式を作る場合                  */
-			// 				//* ------------------------------------------------------ */
-			// 				for (const auto &integrating_f : Faces)
-			// 				{
-			// 					for (const auto &[p, igign] : BEM::calc_P_IGIGnLinearTuple(integrating_f, fO))
-			// 					{
-			// 						//@ 面の頂点pOとpが一致した場合，pOはpOの周辺面のΦの面積平均で表されるので，igignに面積比をかける．
-			// 						//@ { p, nullptr }はないので，分配する．Φ[{ p, nullptr }]= (Af0*Φ[{ p, f0 }]+Af1*Φ[{ p, f1 }]+Af2*Φ[{ p, f2 }])/A_totのように考える
-			// 						addIG(P_igign, p, igign);
-			// 						if (integrating_f != fO)
-			// 						{
-			// 							addIGn(P_igign, p, igign);
-			// 							//@ 対角成分は，リジッドモード法を使って計算できる
-			// 							// addIGn(P_igign, fO, -igign);
-			// 							// やはり， nullptr,Fが必要なのでは？
-			// 						}
-			// 					}
-			// 				}
-			// 			}
-			// 			else
-			// #endif
 			{
-				//* ------------------------------------------------------ */
-				//*                     点で方程式を作る場合                  */
-				//* ------------------------------------------------------ */
-				for (const auto &integrating_f : Faces)
+				auto [pO, fO] = pairPF;
+				// #ifdef respect_Dirichlet_on_CORNER
+				// 			if (fO)
+				// 			{
+				// 				//! 角点が和となることはやめようか．
+				// 				//@ 角点の面が該当するが，角点自身の行の方程式は該当しない．すでに方程式は与えている．
+				// 				//* ------------------------------------------------------ */
+				// 				//*                    面上で方程式を作る場合                  */
+				// 				//* ------------------------------------------------------ */
+				// 				for (const auto &integrating_f : Faces)
+				// 				{
+				// 					for (const auto &[p, igign] : BEM::calc_P_IGIGnLinearTuple(integrating_f, fO))
+				// 					{
+				// 						//@ 面の頂点pOとpが一致した場合，pOはpOの周辺面のΦの面積平均で表されるので，igignに面積比をかける．
+				// 						//@ { p, nullptr }はないので，分配する．Φ[{ p, nullptr }]= (Af0*Φ[{ p, f0 }]+Af1*Φ[{ p, f1 }]+Af2*Φ[{ p, f2 }])/A_totのように考える
+				// 						addIG(P_igign, p, igign);
+				// 						if (integrating_f != fO)
+				// 						{
+				// 							addIGn(P_igign, p, igign);
+				// 							//@ 対角成分は，リジッドモード法を使って計算できる
+				// 							// addIGn(P_igign, fO, -igign);
+				// 							// やはり， nullptr,Fが必要なのでは？
+				// 						}
+				// 					}
+				// 				}
+				// 			}
+				// 			else
+				// #endif
 				{
-					for (const auto &[p, igign] : BEM::calc_P_IGIGnLinearTuple(integrating_f, pO))
+					//* ------------------------------------------------------ */
+					//*                     点で方程式を作る場合                  */
+					//* ------------------------------------------------------ */
+					for (const auto &integrating_f : Faces)
 					{
-						addIG(P_igign, p, igign);
-						if (p != pO)
+						for (const auto &[p, igign] : BEM::calc_P_IGIGnLinearTuple(integrating_f, pO))
 						{
-							addIGn(P_igign, p, igign);
-							//@ 対角成分は，リジッドモード法を使って計算できる
-							addIGn(P_igign, pO, -igign);
+							addIG(P_igign, p, igign);
+							if (p != pO)
+							{
+								addIGn(P_igign, p, igign);
+								//@ 対角成分は，リジッドモード法を使って計算できる
+								addIGn(P_igign, pO, -igign);
+							}
 						}
 					}
 				}
 			}
 		}
-	}
 
-	// 面に与えるので，
-	// 	multiple_phiphinはには面の値をいれるといい．
-	// 	1 / 3の値
-	// 	φnにはすなおにノイマン条件
-	// 角点のΦnは周囲のディリクレ面から計算する．
+		// 面に与えるので，
+		// 	multiple_phiphinはには面の値をいれるといい．
+		// 	1 / 3の値
+		// 	φnにはすなおにノイマン条件
+		// 角点のΦnは周囲のディリクレ面から計算する．
 
 #ifdef respect_Dirichlet_on_CORNER
-	for (auto &[pairPF, P_igign] : P_P_IGIGn)
-	{
-		auto [pO, fO] = pairPF;
-		if (fO)
+		for (auto &[pairPF, P_igign] : P_P_IGIGn)
 		{
-			for (const auto &P : fO->getPoints())
-				if (P_igign.count({P, nullptr}))
-					std::get<1>(P_igign[{P, nullptr}]) -= -2. * M_PI / 6.;
-				else
-					P_igign[{P, nullptr}] = {0, 2. * M_PI / 6.};
-			//
-			if (P_igign.count({nullptr, fO}))
-				std::get<1>(P_igign[{nullptr, fO}]) -= -2. * M_PI / 2.;
-			else
-				P_igign[{nullptr, fO}] = {0, 2. * M_PI / 2.};
-		}
-	}
-#endif
-
-	// for (const auto& p : corner_points) {
-	// 	P_P_IGIGn[{p, nullptr}].clear();
-	// 	auto& igign = P_P_IGIGn[{p, nullptr}][{p, nullptr}];
-	// 	auto Atot = Total(extractAreas(p->getFaces()));
-	// 	for (const auto& f : p->getFaces())
-	// 	{
-	// 		P_P_IGIGn[{p, nullptr}][{p, f}] = { 0,f->getArea() / Atot };
-	// 	}
-	// 	P_P_IGIGn[{p, nullptr}][{p, nullptr}] = { 0,-1 };
-	// }
-	// for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end();++it)
-	// {
-	// 	auto neighbor_f = std::get<1>(it->first);
-	// 	if (neighbor_f) {
-	// 		auto origin = std::get<0>(it->first);
-	// 		auto& P_igign = it->second;/*P_Tdd*/
-	// 		auto [p0, p1, p2] = neighbor_f->getPointsTuple();
-	// 		std::get<1>(P_igign[{p0, nullptr}]) -= -2. * M_PI / 3;
-	// 		std::get<1>(P_igign[{p1, nullptr}]) -= -2. * M_PI / 3;
-	// 		std::get<1>(P_igign[{p2, nullptr}]) -= -2. * M_PI / 3;
-	// 		std::get<1>(P_igign[{origin, neighbor_f}]) -= -2. * M_PI / 2;
-	// 	}
-	// }
-	std::cout << "並列化 DONE" << std::endl;
-
-	std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
-	std::cout << "未知変数の係数行列は左，既知変数の係数行列は右" << std::endl;
-
-	for (auto &[_, p_igign] : P_P_IGIGn)
-	{ // each row
-		for (auto &[pairPF, igign] : p_igign)
-		{ // each column
-			// この入れ替えが，左辺と右辺の入れ替えを意味する
-			// igign[0]が左辺，未知となる
-			// igign[1]が右辺，既知となる
-			// CORNERの点はDとして計算している
 			auto [pO, fO] = pairPF;
 			if (fO)
 			{
-				if (fO->Neumann)
-				{ /*Neumann*/
-					igign = {-std::get<1>(igign), -std::get<0>(igign)};
-				}
+				for (const auto &P : fO->getPoints())
+					if (P_igign.count({P, nullptr}))
+						std::get<1>(P_igign[{P, nullptr}]) -= -2. * M_PI / 6.;
+					else
+						P_igign[{P, nullptr}] = {0, 2. * M_PI / 6.};
+				//
+				if (P_igign.count({nullptr, fO}))
+					std::get<1>(P_igign[{nullptr, fO}]) -= -2. * M_PI / 2.;
+				else
+					P_igign[{nullptr, fO}] = {0, 2. * M_PI / 2.};
 			}
-			else
-			{
-				if (pO->Neumann)
-				{ /*Neumann*/
-					igign = {-std::get<1>(igign), -std::get<0>(igign)};
+		}
+#endif
+
+		// for (const auto& p : corner_points) {
+		// 	P_P_IGIGn[{p, nullptr}].clear();
+		// 	auto& igign = P_P_IGIGn[{p, nullptr}][{p, nullptr}];
+		// 	auto Atot = Total(extractAreas(p->getFaces()));
+		// 	for (const auto& f : p->getFaces())
+		// 	{
+		// 		P_P_IGIGn[{p, nullptr}][{p, f}] = { 0,f->getArea() / Atot };
+		// 	}
+		// 	P_P_IGIGn[{p, nullptr}][{p, nullptr}] = { 0,-1 };
+		// }
+		// for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end();++it)
+		// {
+		// 	auto neighbor_f = std::get<1>(it->first);
+		// 	if (neighbor_f) {
+		// 		auto origin = std::get<0>(it->first);
+		// 		auto& P_igign = it->second;/*P_Tdd*/
+		// 		auto [p0, p1, p2] = neighbor_f->getPointsTuple();
+		// 		std::get<1>(P_igign[{p0, nullptr}]) -= -2. * M_PI / 3;
+		// 		std::get<1>(P_igign[{p1, nullptr}]) -= -2. * M_PI / 3;
+		// 		std::get<1>(P_igign[{p2, nullptr}]) -= -2. * M_PI / 3;
+		// 		std::get<1>(P_igign[{origin, neighbor_f}]) -= -2. * M_PI / 2;
+		// 	}
+		// }
+		std::cout << "並列化 DONE" << std::endl;
+
+		std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
+		std::cout << "未知変数の係数行列は左，既知変数の係数行列は右" << std::endl;
+
+		for (auto &[_, p_igign] : P_P_IGIGn)
+		{ // each row
+			for (auto &[pairPF, igign] : p_igign)
+			{ // each column
+				// この入れ替えが，左辺と右辺の入れ替えを意味する
+				// igign[0]が左辺，未知となる
+				// igign[1]が右辺，既知となる
+				// CORNERの点はDとして計算している
+				auto [pO, fO] = pairPF;
+				if (fO)
+				{
+					if (fO->Neumann)
+					{ /*Neumann*/
+						igign = {-std::get<1>(igign), -std::get<0>(igign)};
+					}
+				}
+				else
+				{
+					if (pO->Neumann)
+					{ /*Neumann*/
+						igign = {-std::get<1>(igign), -std::get<0>(igign)};
+					}
 				}
 			}
 		}
-	}
 
-	/**
-	 * 変数ベクトル knowns について:
-	 * 境界条件をisD(),isN()で確認し，
-	 * isD()=true ->　P_igign[p][0]がknown
-	 * isN()=true ->　P_igign[p][1]がknown
-	 * となる
-	 */
-	//! Pointsの順番と合わせてとるように注意
-	/* ------------------------------------------------------ */
-	// <-- Points size -->
-	// {{},{},{},{},{}} . {<--  face size -->} = {<-- point size -->}
+		/**
+		 * 変数ベクトル knowns について:
+		 * 境界条件をisD(),isN()で確認し，
+		 * isD()=true ->　P_igign[p][0]がknown
+		 * isN()=true ->　P_igign[p][1]がknown
+		 * となる
+		 */
+		//! Pointsの順番と合わせてとるように注意
+		/* ------------------------------------------------------ */
+		// <-- Points size -->
+		// {{},{},{},{},{}} . {<--  face size -->} = {<-- point size -->}
 
-	// V_d knowns = V_d(Points.size()); //!ok
-	//方程式の数は，pointsだけある
-	VV_d mat_ukn(P_P_IGIGn.size(), V_d(P_P_IGIGn.size(), 0.)); //! ok
-	VV_d mat_kn(P_P_IGIGn.size(), V_d(P_P_IGIGn.size(), 0.));  //! ok
+		// V_d knowns = V_d(Points.size()); //!ok
+		//方程式の数は，pointsだけある
+		mat_ukn = VV_d(P_P_IGIGn.size(), V_d(P_P_IGIGn.size(), 0.)); //! ok
+		mat_kn = VV_d(P_P_IGIGn.size(), V_d(P_P_IGIGn.size(), 0.));	 //! ok
 
-	// 順番を間違えないようにベクトルを作成
-	std::vector<std::pair<networkPoint *, networkFace *>> pair_PF(P_P_IGIGn.size());
-	auto i = 0;
-	for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end(); ++it)
-		pair_PF[i++] = it->first;
+		// 順番を間違えないようにベクトルを作成
+		pair_PF = std::vector<std::pair<networkPoint *, networkFace *>>(P_P_IGIGn.size());
+		auto i = 0;
+		for (auto it = P_P_IGIGn.begin(); it != P_P_IGIGn.end(); ++it)
+			pair_PF[i++] = it->first;
 
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-	for (auto i = 0; i < pair_PF.size(); i++)
-	{
-		auto tmp = P_P_IGIGn.at(pair_PF[i]);
-		for (auto j = 0; j < pair_PF.size(); j++)
+		for (auto i = 0; i < pair_PF.size(); i++)
 		{
-			if (tmp.find(pair_PF[j]) != tmp.end())
+			auto tmp = P_P_IGIGn.at(pair_PF[i]);
+			for (auto j = 0; j < pair_PF.size(); j++)
 			{
-				auto igign = tmp.at(pair_PF[j]);
-				mat_ukn[i][j] = std::get<0>(igign); //左辺，phinがwaterのunknown->IG
-				mat_kn[i][j] = std::get<1>(igign);	//右辺
+				if (tmp.find(pair_PF[j]) != tmp.end())
+				{
+					auto igign = tmp.at(pair_PF[j]);
+					mat_ukn[i][j] = std::get<0>(igign); //左辺，phinがwaterのunknown->IG
+					mat_kn[i][j] = std::get<1>(igign);	//右辺
+				}
 			}
 		}
-	}
 
-	if (!isFinite(mat_ukn))
-	{
-		std::cout << "mat_ukn = " << mat_ukn << std::endl;
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
-	}
-
-	if (!isFinite(mat_kn))
-	{
-		std::cout << "mat_kn = " << mat_ukn << std::endl;
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
-	}
-
-	/**
-	 * Dot(mat_ukn,phiORphin) = Dot(mat_kn,knowns)
-	 * => phiORphin = Dot(mat_ukn^-1, Dot(mat_kn,knowns))
-	 */
-	V_d knowns = V_d(pair_PF.size());	//! ok
-	V_d unknowns = V_d(pair_PF.size()); //! ok
-	//! Pointsの順番と合わせてとるように注意
-	// for (auto i = 0; i < Points.size(); i++)
-	// 	knowns[i] = Points[i]->phiphin[Points[i]->Neumann ? 1 /*phin*/ : 0 /*phi*/];
-
-	for (auto i = 0; i < pair_PF.size(); i++)
-	{
-		auto [p, f] = pair_PF[i];
-		if (f)
+		if (!isFinite(mat_ukn))
 		{
-			if (f->Neumann)
-			{
-				knowns[i] = std::get<1>(f->phiphin);
-				unknowns[i] = std::get<0>(f->phiphin);
-			}
-			else
-			{
-				knowns[i] = std::get<0>(f->phiphin);
-				unknowns[i] = std::get<1>(f->phiphin);
-			}
+			std::cout << "mat_ukn = " << mat_ukn << std::endl;
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
 		}
-		else
+
+		if (!isFinite(mat_kn))
 		{
+			std::cout << "mat_kn = " << mat_ukn << std::endl;
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
+		}
+
+		/**
+		 * Dot(mat_ukn,phiORphin) = Dot(mat_kn,knowns)
+		 * => phiORphin = Dot(mat_ukn^-1, Dot(mat_kn,knowns))
+		 */
+		knowns = V_d(pair_PF.size());	//! ok
+		unknowns = V_d(pair_PF.size()); //! ok
+		//! Pointsの順番と合わせてとるように注意
+		// for (auto i = 0; i < Points.size(); i++)
+		// 	knowns[i] = Points[i]->phiphin[Points[i]->Neumann ? 1 /*phin*/ : 0 /*phi*/];
+
+		// b* ------------------------------------------------------ */
+		// b*                          phiphi                        */
+		// b* ------------------------------------------------------ */
+
+		for (auto i = 0; i < pair_PF.size(); i++)
+		{
+			auto [p, f] = pair_PF[i];
 			if (p->Neumann)
 			{
 				knowns[i] = std::get<1>(p->phiphin);
@@ -1590,88 +1719,79 @@ void solveBVP(const std::unordered_set<networkPoint *> &PointsIN, const std::uno
 				unknowns[i] = std::get<1>(p->phiphin);
 			}
 		}
-	}
-	std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
+		std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
 
-	/* ------------------------------------------------------ */
-	V_d phiORphin(knowns.size());
-	std::cout << "phiORphin.size()= " << phiORphin.size() << std::endl;
-	std::cout << "  mat_kn.size() = " << mat_kn.size() << std::endl;
+		/* ------------------------------------------------------ */
+		V_d phiORphin(knowns.size());
+		std::cout << "phiORphin.size()= " << phiORphin.size() << std::endl;
+		std::cout << "  mat_kn.size() = " << mat_kn.size() << std::endl;
 #if defined(solve_equations_on_all_points) || defined(solve_equations_on_all_points_RBF) || defined(solve_equations_on_all_points_rigid_mode)
-	//* 未知変数の計算
-	std::cout << "LU decomposition" << std::endl;
+		//* 未知変数の計算
+		std::cout << "LU decomposition" << std::endl;
 
-	ludcmp_parallel lu(mat_ukn /*未知の行列係数（左辺）*/);
-	lu.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+		this->lu = new ludcmp_parallel(mat_ukn /*未知の行列係数（左辺）*/);
+		this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+
+		// GradientMethod gm(mat_ukn);
+		// gm.solveCG(Dot(mat_kn, knowns));
+
 #else
-	//* 未知変数の計算
-	std::cout << "SVD decomposition" << std::endl;
-	SVD svd(mat_ukn);
-	svd.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+		//* 未知変数の計算
+		std::cout << "SVD decomposition" << std::endl;
+		SVD svd(mat_ukn);
+		svd.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 #endif
-	i = 0;
-	for (auto i = 0; i < pair_PF.size(); i++)
-	{
-		auto p = std::get<0>(pair_PF[i]);
-		auto f = std::get<1>(pair_PF[i]);
-		if (f)
+		i = 0;
+		for (auto i = 0; i < pair_PF.size(); i++)
 		{
-			if (f->Neumann)
-				std::get<0>(f->phiphin) = phiORphin[i];
-			else
-				std::get<1>(f->phiphin) = phiORphin[i];
-		}
-		else
-		{
+			auto p = std::get<0>(pair_PF[i]);
+			auto f = std::get<1>(pair_PF[i]);
+
 			if (p->Neumann)
 				std::get<0>(p->phiphin) = phiORphin[i];
 			else
 				std::get<1>(p->phiphin) = phiORphin[i];
 		}
-	}
 
-	if (!isFinite(phiORphin))
+		if (!isFinite(phiORphin))
+		{
+			std::cout << "phiORphin = " << phiORphin << std::endl;
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
+		}
+	};
+
+	~solveBVP() { delete this->lu; };
+
+	// b* ------------------------------------------------------ */
+	// b*                         phiphin_t                       */
+	// b* ------------------------------------------------------ */
+
+	void solveForPhiPhin_t() const
 	{
-		std::cout << "phiORphin = " << phiORphin << std::endl;
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "解なし");
-	}
-
-	// #ifdef respect_Dirichlet_on_CORNER
-	// 	for (const auto& p : Points)
-	// 		if (p->CORNER && p->Neumann) {
-	// 			Tdd phiphin = { 0,0 };
-	// 			for (const auto& f : p->getFaces())
-	// 				phiphin += f->getArea() * f->phiphin;
-	// 			phiphin /= Total(p->getFaceAreas());
-	// 			std::get<0>(p->phiphin) = std::get<0>(phiphin);
-	// 		}
-	// 		else if (p->CORNER && p->Dirichlet) {
-	// 			Tdd phiphin = { 0,0 };
-	// 			for (const auto& f : p->getFaces())
-	// 				phiphin += f->getArea() * f->phiphin;
-	// 			phiphin /= Total(p->getFaceAreas());
-	// 			std::get<1>(p->phiphin) = std::get<1>(phiphin);
-	// 		}
-	// #endif
-
-	// とりあえず平均とする．
-	// for (const auto& p : Points)
-	// 	if (!p->multiple_phiphin.empty()) {
-	// 		double phi = 0, phin = 0;
-	// 		for (const auto& [F, phiphin] : p->multiple_phiphin)
-	// 			phi += std::get<0>(phiphin);
-	// 		std::get<0>(p->phiphin) = phi / (double)(p->multiple_phiphin.size());
-	// 		double A_tot = 0;
-	// 		for (const auto& [F, phiphin] : p->multiple_phiphin) {
-	// 			auto A = F->getArea();
-	// 			A_tot += A;
-	// 			phin += std::get<1>(phiphin) * A;
-	// 		}
-	// 		std::get<1>(p->phiphin) = phin / A_tot;
-	// 	}
-
-	// for (auto i = 0; i < Points.size(); i++)
-	// 	Points[i]->phiphin[Points[i]->Neumann ? 0 /*phi*/ : 1 /*Dの場合phinが解として得られている*/] = phiORphin[i] /*解*/;
+		V_d knowns(pair_PF.size());
+		V_d phiORphin(pair_PF.size());
+		for (auto i = 0; i < this->pair_PF.size(); i++)
+		{
+			auto [p, f] = this->pair_PF[i];
+			if (p->Neumann)
+				knowns[i] = std::get<1>(p->phiphin_t);
+			else
+				knowns[i] = std::get<0>(p->phiphin_t);
+		}
+		this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+		/* ------------------------------------------------------ */
+		auto g = 9.81, rho = 1000.;
+		for (auto i = 0; i < this->pair_PF.size(); i++)
+		{
+			auto [p, f] = this->pair_PF[i];
+			if (p->Neumann)
+				std::get<0>(p->phiphin_t) = phiORphin[i];
+			else
+				std::get<1>(p->phiphin_t) = phiORphin[i];
+			p->pressure_BEM = -std::get<0>(p->phiphin_t) - g * p->height() - Dot(p->U_BEM, p->U_BEM) / 2.;
+			p->pressure_BEM *= rho;
+		}
+	};
 };
 
 /* ------------------------------------------------------ */
@@ -1693,14 +1813,14 @@ V_d laplacianV(const netPp p)
 	return intp.laplacian(p->getX());
 };
 
-V_d meanX(const V_netPp ps)
+V_d meanX(const std::unordered_set<networkPoint *> &ps)
 {
 	V_d ret(3, 0.);
 	for (const auto &p : ps)
 		ret += p->getX();
 	return ret / ((double)(ps.size()));
 };
-void normalizePhi(const V_netPp ps)
+void normalizePhi(const std::unordered_set<networkPoint *> &ps)
 {
 	double ret = 0.;
 	for (const auto &p : ps)
@@ -2041,6 +2161,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 	// b* ------------------------------------------------------ */
 	// b*       　    ノイマン境界の点や面にはΦnを与える                  */
 	// b* ------------------------------------------------------ */
+	// b! 点
 	std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << reset << std::endl;
 	for (const auto &p : water.getPoints())
 	{
@@ -2057,12 +2178,13 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 					std::cout << "Dirichlet" << std::endl;
 				if (p->CORNER)
 					std::cout << "CORNER" << std::endl;
-				std::cout << "forced_velocity(t) = " << forced_velocity(real_time) << std::endl;
+				std::cout << "forced_velocity(t) = " << forced_motion::velocity(real_time) << std::endl;
 				std::cout << "p->phiphin = " << p->phiphin << std::endl;
 				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 			}
 		}
 	}
+	// b! 面
 	std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << reset << std::endl;
 	for (const auto &f : water.getFaces())
 	{
@@ -2132,8 +2254,10 @@ int main()
 		// std::system("ls -l" + water_output_directory);
 		std::filesystem::copy_file("water.json", water_output_directory + "/water.json", std::filesystem::copy_options::overwrite_existing);
 		// b! ------------------------------------------------------ */
-		// std::vector<Network *> structures = {&wavemaker, &tank};
-		std::vector<Network *> structures = {&wavemaker};
+		std::vector<Network *> structures = {&wavemaker, &tank};
+		// std::vector<Network *> structures = {&wavemaker};
+		/* ------------------------------------------------------ */
+		JSONoutput jsonout;
 		//  b* ------------------------------------------------------ */
 		//  b*                         メインループ                     */
 		//  b* ------------------------------------------------------ */
@@ -2144,6 +2268,9 @@ int main()
 			setBoundaryConditions(water, structures);
 			// remesh(water);
 			remesh_flip(water);
+			if (time_step == 0)
+				for (auto i = 0; i < 10; i++)
+					remesh_flip(water);
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
 			// b# ------------------------------------------------------ */
@@ -2152,25 +2279,27 @@ int main()
 			// mk_vtu(output_directory + "/Points.vtu", {water.getPoints()});
 			const auto Faces = water.getFaces();
 			// mk_vtu(water_output_directory + "/Faces.vtu", { water.getFaces() });
+
 			auto p = (*std::min_element(Points.begin(), Points.end(),
 										[](auto a, auto b)
 										{
-											auto A = Min(extLength(a->getLines())) / Norm(a->U_BEM);
-											auto B = Min(extLength(b->getLines())) / Norm(b->U_BEM);
+											auto A = Min(Distance(TakeExcept(Flatten(BFS(a, 3)), a), a)) / (Norm(a->U_BEM) + 1E-10);
+											auto B = Min(Distance(TakeExcept(Flatten(BFS(b, 3)), b), b)) / (Norm(b->U_BEM) + 1E-10);
 											if (!isFinite(A))
 												return false;
 											return A < B;
 										}));
 
-			double min_dt = Min(extLength(p->getLines())) / Norm(p->U_BEM) / 2.;
+			double min_dt = Min(Distance(TakeExcept(Flatten(BFS(p, 3)), p), p)) / (Norm(p->U_BEM) + 1E-10) / 2.;
 			double dt;
-			if (time_step < 2)
+			if (time_step < 10)
 				dt = 0.001;
-			else if (min_dt < 0.01)
+			else if (min_dt < 0.005)
 				dt = min_dt;
 			else
-				dt = 0.01;
+				dt = 0.005;
 			Print("===========================================================================");
+			Print("       dt :" + Red + std::to_string(dt) + reset);
 			Print("time_step :" + Red + std::to_string(time_step) + reset);
 			Print("real time :" + Red + std::to_string(real_time) + reset);
 			Print("---------------------------------------------------------------------------");
@@ -2194,7 +2323,8 @@ int main()
 				//! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
 				auto RK_time = P_RK_phi[*Points.begin()]->gett(); //%各ルンゲクッタの時刻を使う
 				std::cout << "RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
-				wavemaker.velocity = forced_velocity(RK_time); // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+				wavemaker.velocity = forced_motion::velocity(RK_time);		   // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+				wavemaker.acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
 				// b% -------------------------------------------------------- */
 				// b%            境界条件（角点・ディリクレ・ノイマン）の決定               */
 				// b% -------------------------------------------------------- */
@@ -2203,12 +2333,17 @@ int main()
 				// b*           　境界値問題を解く-> {Φ,Φn}が決まる              */
 				// b* ------------------------------------------------------ */
 				std::cout << Green << "境界値問題を解く-> {Φ,Φn}が決まる" << reset << std::endl;
-				solveBVP(Points, Faces);
+				solveBVP BVP(Points, Faces);
 				// b* ------------------------------------------------------ */
 				// b*                    微分∇ΦやDUDtを計算                    */
 				// b* ------------------------------------------------------ */
 				std::cout << Green << "微分∇ΦやDUDtを計算" << reset << std::endl;
 				derivatives ders(Points, dt);
+				// b* ------------------------------------------------------ */
+				// b*           　境界値問題を解く-> {Φt,Φtn}が決まる              */
+				// b* ------------------------------------------------------ */
+				std::cout << Green << "境界値問題を解く-> {Φt,Φtn}が決まる" << reset << std::endl;
+				BVP.solveForPhiPhin_t();
 				// b* ------------------------------------------------------ */
 				// b*                 ディリクレ境界ではΦを時間積分               */
 				// b* ------------------------------------------------------ */
@@ -2249,8 +2384,15 @@ int main()
 				delete P_RK_X[p];
 			}
 			delete wavemaker_RK_integrate_X;
+			//
+			normalizePhi(wavemaker.getPoints());
 			// b* ------------------------- 出力 ------------------------- */
 			{
+				jsonout.push("time", real_time);
+				jsonout.push("volume", water.getVolume());
+				std::ofstream os("./output.json");
+				jsonout.output(os);
+				os.close();
 
 				auto hist = Histogram(extLength(water.getLines()));
 				std::stringstream ss;
@@ -2283,9 +2425,14 @@ int main()
 				auto P_dxdt_mod = ders.P_dxdt_mod;
 				auto P_DphiDt = ders.P_DphiDt;
 				auto P_aphiat = ders.P_aphiat;
+				auto P_aphiant = ders.P_aphiant;
 				auto P_pressure = ders.P_pressure;
+				auto P_U_dot_gradgrad_U = ders.P_U_dot_gradgrad_U;
 				auto P_kappa = ders.P_kappa;
 				auto P_laplacian = ders.P_laplacian;
+				uomap_P_Tddd P_accel_body;
+				uomap_P_Tddd P_velocity_body;
+				uomap_P_d P_minDepthToCORNER;
 				/* ------------------------------------------------------ */
 				Print("圧力の計算", Magenta);
 				uomap_P_Vd P_lines_length, P_Intxn_length;
@@ -2297,6 +2444,9 @@ int main()
 				{
 					for (const auto &p : water.getPoints())
 					{
+						P_accel_body[p] = p->getNormalAreaAveraged() * phin_from_Neumann_surface(p);
+						P_velocity_body[p] = p->getNormalAreaAveraged() * accel_normal_from_Neumann_surface(p);
+
 						P_U_BEM[p] = p->U_BEM;
 						P_solidangleBIE[p] = p->getSolidAngle();
 						P_U_normal_BEM[p] = p->U_normal_BEM;
@@ -2313,6 +2463,7 @@ int main()
 						P_Intxn_size[p] = (double)takeIntxn(p->getLines()).size();
 						P_ContactFaces[p] = (double)p->getContactFaces().size();
 						P_Intxn_length[p] = extLength(takeIntxn(p->getLines()));
+						P_minDepthToCORNER[p] = 6. - minDepthToCORNER(p, 6);
 						P_BC[p] = p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.));
 						// if (!p->getContactFaces().empty())
 						// 	P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - p->getXtuple();
@@ -2331,6 +2482,9 @@ int main()
 				{
 					// phiのアップデートがされていない
 					VV_VarForOutput data = {
+						{"accel_body", P_accel_body},
+						{"velocity_body", P_velocity_body},
+						{"minDepthToCORNER", P_minDepthToCORNER},
 						{"U_BEM", P_U_BEM},
 						{"U_normal_BEM", P_U_normal_BEM},
 						{"U_tangential_BEM", P_U_tangential_BEM},
@@ -2341,8 +2495,8 @@ int main()
 						{"phin_vector", P_phin_vector},
 						{"grad_phi_tangential", P_gradPhi_tangential},
 						{"height", P_height},
-						{"phi", P_phi},
-						{"phin", P_phin},
+						{"φ", P_phi},
+						{"φn", P_phin},
 						{"solidangle", P_solidangleBIE},
 						{"normal", P_normal},
 						{"normal_BEM", P_normal_BEM},
@@ -2356,9 +2510,11 @@ int main()
 						{"radius", P_radius},
 						{"state", P_state},
 						{"tension", ders.P_tension},
-						{"DphiDt", P_DphiDt},
-						{"aphiat", P_aphiat},
+						{"DφDt", P_DphiDt},
+						{"φt", P_aphiat},
+						{"φnt", P_aphiant},
 						{"pressure", P_pressure},
+						{"U.∇U", P_U_dot_gradgrad_U},
 						{"vector to mirrorPosition", P_mirrorPosition},
 						{"is hit", P_ishit},
 						{"is_multiple_phiphin", P_is_multiple_phiphin}};

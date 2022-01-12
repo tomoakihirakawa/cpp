@@ -1,10 +1,10 @@
 #!/bin/bash
 
 name='student@158.215.135.161:/home/student'
-rsync -vr --exclude "CMake*" --exclude "main" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/obj/* ${name}/research3/cpp/obj/
-rsync -vr --exclude "CMake*" --exclude "main" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/build_sph/* ${name}/research3/cpp/builds/build_sph/
-rsync -vr --exclude "CMake*" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/include/* ${name}/research3/cpp/include/
-rsync -vr --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/CMakeLists.txt ${name}/research3/cpp/builds/
+rsync -vr --exclude "CMake*" --exclude "main" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/obj/* ${name}/research5/cpp/obj/
+rsync -vr --exclude "CMake*" --exclude "main" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/build_sph/* ${name}/research5/cpp/builds/build_sph/
+rsync -vr --exclude "CMake*" --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/include/* ${name}/research5/cpp/include/
+rsync -vr --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/CMakeLists.txt ${name}/research5/cpp/builds/
 
 # rsync --update -vr --exclude "*.vtu" /Users/tomoaki/Dropbox/markdown/cpp/builds/*.txt ${name}/research/cpp/builds/
 
