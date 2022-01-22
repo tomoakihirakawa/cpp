@@ -17,12 +17,37 @@ home = expanduser("~")
 #! -------------------------------------------------------- #
 
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
-output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_EMT_K1d0_without_remeshing"
 # output_directory = home+"/BEM/test"
+settingBEM = {
+    "beta": 0.,
+    "K": .2,
+    "max_dt": 0.02,
+    "mesh": 22,
+    "stop_remesh_time": 100.
+}
+
+#! -------------------------------------------------------- #
+
+output_directory = home + "/BEM/Sawai" \
+                        + "_K" + str(settingBEM["K"])\
+                        + "_beta" + str(settingBEM["beta"])\
+                        + "_max_dt" + str(settingBEM["max_dt"])\
+                        + "_Mesh" + str(settingBEM["mesh"]) \
+                        + "_stopremesh" + str(settingBEM["stop_remesh_time"])
+
+settingBEM["output_directory"] = output_directory
+
+
+f = open("./settingBEM.json", 'w')
+json.dump(settingBEM, f, ensure_ascii=True, indent=4)
+f.close()
+
+#! -------------------------------------------------------- #
 data = {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm18.obj",
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm"+str(settingBEM["mesh"])+".obj",
     "radius": 0.01,
+    "rotate": [math.pi/2., 1, 0, 0],
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "water",  # 拡張子はいらない
@@ -55,9 +80,10 @@ f.close()
 #! -------------------------------------------------------- #
 
 data = {
-    "name": "tank",
+    "name": "wavemaker",
     "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
     "radius": 0.01,
+    "ignore": False,
     # "reverseNormal": True,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
@@ -76,6 +102,7 @@ data = {
     "name": "wavetank",
     "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
     "radius": 0.01,
+    "ignore": True,
     "reverseNormal": True,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #

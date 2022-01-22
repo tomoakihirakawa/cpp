@@ -1,9 +1,16 @@
 {
   "name": "tank",
-  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/tank.obj",
-  "remesh": 15.0
+  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/tank.obj",
+  "remesh": 30.0
 }
+
+// {
+//   "name": "tank",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/Li2002_h0_0d3048_shorttank/tank.obj",
+//   "remesh": 15.0
+// }
 
 // {
 //   "name": "water",

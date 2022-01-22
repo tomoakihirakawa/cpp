@@ -575,6 +575,12 @@ VV_d ToVector(const std::vector<Tddd> &v)
 		ret[i] = ToVector(v[i]);
 	return ret;
 };
+VV_d ToVector(const T3Tddd &v)
+{
+	return {ToVector(std::get<0>(v)),
+			ToVector(std::get<1>(v)),
+			ToVector(std::get<2>(v))};
+};
 VV_d ToVector(const T4T4d &v)
 {
 	return {ToVector(std::get<0>(v)),

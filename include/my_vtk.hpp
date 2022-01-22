@@ -284,6 +284,7 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
 using uomap_P_Vd = std::unordered_map<networkPoint *, std::vector<double>>;
 using uomap_P_Tddd = std::unordered_map<networkPoint *, Tddd>;
 using uomap_P_d = std::unordered_map<networkPoint *, double>;
+using uomap_F_d = std::unordered_map<networkFace *, double>;
 using VarForOutput = std::variant<std::string, int, uomap_P_Vd, uomap_P_Tddd, uomap_P_d>;
 using V_VarForOutput = std::vector<VarForOutput>;
 using VV_VarForOutput = std::vector<V_VarForOutput>;

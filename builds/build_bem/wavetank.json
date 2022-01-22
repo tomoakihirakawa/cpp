@@ -2,8 +2,9 @@
     "name": "wavetank",
     "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
     "radius": 0.01,
+    "ignore": true,
     "reverseNormal": true,
     "output_vtu_file_name": "wavetank",
     "output_pvd_file_name": "wavetank",
-    "output_directory": "/Users/tomoaki/BEM/waterfall/test"
+    "output_directory": "/Users/tomoaki/K1.0_beta0.5"
 }

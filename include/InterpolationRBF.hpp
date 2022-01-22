@@ -1563,6 +1563,97 @@ struct interpolationTriangleLinearByFixedRange3D
 		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
 	};
 };
+////////////////////////////////////////////////////////////////////////
+struct interpolationTriangleQuadByFixedRange3D
+{
+	T6Tddd s; // sample points
+	interpolationTriangleQuadByFixedRange3D(const T6Tddd &s_IN) : s(s_IN){};
+	T6d N(const double &t0, const double &t1) const
+	{
+		return {t0 * (-1 + 2 * t0),
+				(-1 + t0) * t1 * (1 + 2 * (-1 + t0) * t1),
+				(-1 + t0) * (1 + 2 * t0 * (-1 + t1) - 2 * t1) * (-1 + t1),
+				-4 * (-1 + t0) * t0 * t1,
+				-4 * std::pow(-1 + t0, 2) * (-1 + t1) * t1,
+				4 * (-1 + t0) * t0 * (-1 + t1)};
+	};
+	T6d dNdt0(const double &x0, const double &x1) const
+	{
+		return {
+			0,
+			(-1 + x0) * (1 + 4 * (-1 + x0) * x1),
+			(-1 + x0) * (3 + 4 * x0 * (-1 + x1) - 4 * x1),
+			-4 * (-1 + x0) * x0,
+			4 * std::pow(-1 + x0, 2) * (1 - 2 * x1),
+			4 * (-1 + x0) * x0};
+	};
+	T6d dNdt1(const double &x0, const double &x1) const
+	{
+		return {
+			-1 + 4 * x0,
+			x1 * (1 + 4 * (-1 + x0) * x1),
+			(3 + 4 * x0 * (-1 + x1) - 4 * x1) * (-1 + x1),
+			(4 - 8 * x0) * x1,
+			-8 * (-1 + x0) * (-1 + x1) * x1,
+			4 * (-1 + 2 * x0) * (-1 + x1)};
+	};
+	/* ------------------------------------------------------ */
+	Tddd operator()(const double t0, const double t1) const { return Dot(this->N(t0, t1), this->s); };
+	Tddd dXdt0(const double t0, const double t1) const { return Dot(this->dNdt0(t0, t1), this->s); };
+	Tddd dXdt1(const double t0, const double t1) const { return Dot(this->dNdt1(t0, t1), this->s); };
+	T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
+	double J(const double t0, const double t1) const
+	{
+		Tddd dxdt0 = this->dXdt0(t0, t1);
+		Tddd dxdt1 = this->dXdt1(t0, t1);
+		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
+	};
+};
+struct interpolationTriangleQuadByFixedRange3D_Center
+{
+	T6Tddd s; // sample points
+	interpolationTriangleQuadByFixedRange3D_Center(const T6Tddd &s_IN) : s(s_IN){};
+	T6d N(const double &t0, const double &t1) const
+	{
+		return {((-1 + t0) * t0) / 2.,
+				(t0 * (1 + t0 * (-1 + t1)) * (-1 + t1)) / 2.,
+				(t0 * t1 * (-1 + t0 * t1)) / 2.,
+				t0 * (1 + t0 * (-1 + t1)),
+				-((1 + t0 * (-1 + t1)) * (-1 + t0 * t1)),
+				t0 - std::pow(t0, 2) * t1};
+	};
+	T6d dNdt0(const double &t0, const double &t1) const
+	{
+		return {-0.5 + t0,
+				((1 + 2 * t0 * (-1 + t1)) * (-1 + t1)) / 2.,
+				(t1 * (-1 + 2 * t0 * t1)) / 2.,
+				1 + 2 * t0 * (-1 + t1),
+				-1 - 2 * t0 * (-1 + t1) * t1,
+				1 - 2 * t0 * t1};
+	};
+	T6d dNdt1(const double &t0, const double &t1) const
+	{
+		return {0,
+				(t0 * (1 + 2 * t0 * (-1 + t1))) / 2.,
+				(t0 * (-1 + 2 * t0 * t1)) / 2.,
+				std::pow(t0, 2),
+				std::pow(t0, 2) * (1 - 2 * t1),
+				-std::pow(t0, 2)};
+	};
+	/* ------------------------------------------------------ */
+	Tddd operator()(const double t0, const double t1) const { return Dot(this->N(t0, t1), this->s); };
+	Tddd dXdt0(const double t0, const double t1) const { return Dot(this->dNdt0(t0, t1), this->s); };
+	Tddd dXdt1(const double t0, const double t1) const { return Dot(this->dNdt1(t0, t1), this->s); };
+	T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
+	double J(const double t0, const double t1) const
+	{
+		Tddd dxdt0 = this->dXdt0(t0, t1);
+		Tddd dxdt1 = this->dXdt1(t0, t1);
+		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
+	};
+};
 /////////////////////////////////////////////////////////////////////////
 class interpolationTriangle
 {

@@ -36,6 +36,37 @@ struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d>
 
 /* ------------------------------------------------------ */
 template <>
+struct NewtonRaphson<double> : public NewtonRaphson_Common<double>
+{
+	NewtonRaphson(const double Xinit) : NewtonRaphson_Common<double>(Xinit)
+	{
+		this->ans = 0.;
+	};
+	double ans;
+	void update(const double F, const double dFdx)
+	{
+		dX = F / (-dFdx);
+		X += dX;
+	};
+};
+template <>
+struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd>
+{
+	NewtonRaphson(const Tddd &Xinit) : NewtonRaphson_Common<Tddd>(Xinit)
+	{
+		this->ans = V_d(3, 0.);
+	};
+	V_d ans;
+	void update(const Tddd &F, const T3Tddd &dFdx)
+	{
+		ludcmp lu(ToVector(dFdx));
+		lu.solve(ToVector(-F), ans);
+		std::get<0>(X) += (std::get<0>(dX) = ans[0]);
+		std::get<1>(X) += (std::get<1>(dX) = ans[1]);
+		std::get<2>(X) += (std::get<2>(dX) = ans[2]);
+	};
+};
+template <>
 struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d>
 {
 	NewtonRaphson(const T4d &Xinit) : NewtonRaphson_Common<T4d>(Xinit)
@@ -47,10 +78,10 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d>
 	{
 		ludcmp lu(ToVector(dFdx));
 		lu.solve(ToVector(-F), ans);
-		std::get<0>(X) += ans[0];
-		std::get<1>(X) += ans[1];
-		std::get<2>(X) += ans[2];
-		std::get<3>(X) += ans[3];
+		std::get<0>(X) += (std::get<0>(dX) = ans[0]);
+		std::get<1>(X) += (std::get<1>(dX) = ans[1]);
+		std::get<2>(X) += (std::get<2>(dX) = ans[2]);
+		std::get<3>(X) += (std::get<3>(dX) = ans[3]);
 	};
 };
 template <>
@@ -65,13 +96,13 @@ struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d>
 	{
 		ludcmp lu(ToVector(dFdx));
 		lu.solve(ToVector(-F), ans);
-		std::get<0>(X) += ans[0];
-		std::get<1>(X) += ans[1];
-		std::get<2>(X) += ans[2];
-		std::get<3>(X) += ans[3];
-		std::get<4>(X) += ans[4];
-		std::get<5>(X) += ans[5];
-		std::get<6>(X) += ans[6];
+		std::get<0>(X) += (std::get<0>(dX) = ans[0]);
+		std::get<1>(X) += (std::get<1>(dX) = ans[1]);
+		std::get<2>(X) += (std::get<2>(dX) = ans[2]);
+		std::get<3>(X) += (std::get<3>(dX) = ans[3]);
+		std::get<4>(X) += (std::get<4>(dX) = ans[4]);
+		std::get<5>(X) += (std::get<5>(dX) = ans[5]);
+		std::get<6>(X) += (std::get<6>(dX) = ans[6]);
 	};
 };
 

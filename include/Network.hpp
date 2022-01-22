@@ -699,10 +699,10 @@ public:
 	V_d getNormalFromSameBC();
 
 	Tddd grad_phi_BEM;
-	Tddd U_BEM;
+	Tddd U_BEM, U_BEM_last;
 	Tddd U_update_BEM; // EMTによってシフトさせた流速，法線方向成分はU_BEMと一致させる必要がある．
 	Tddd U_mod_BEM;
-	Tddd U_tangential_BEM;
+	Tddd U_tangential_BEM, U_tangential_BEM_last;
 	Tddd U_normal_BEM;
 	Tddd laplacian_U_BEM;
 	Tddd normal_BEM;
@@ -1180,6 +1180,7 @@ public:
 	Tddd getNormalTuple() const;
 	Tddd getNormalAreaAveraged() const;
 	Tddd getNormalDirichletAreaAveraged() const;
+	Tddd getNormalNeumannAreaAveraged() const;
 	void Delete();
 	//--------------
 
@@ -1354,6 +1355,7 @@ public:
 	bool Neumann;
 	bool isDirichlet() const { return this->Dirichlet; };
 	bool isNeumann() const { return this->Neumann; };
+	int minDepthToCORNER;
 	/* ------------------------------------------------------ */
 	// T6d force;
 	// T6d inertia;
@@ -1370,7 +1372,8 @@ public:
 
 	// V_d center_of_mass;
 
-	Tddd normalVelocityRigidBody(const Tddd &X) const;
+	Tddd
+	normalVelocityRigidBody(const Tddd &X) const;
 
 #ifdef BEM
 	Tdd phiphin;
@@ -2291,7 +2294,7 @@ public:
 		};
 	};
 
-	std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(netPp p) const
+	std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(const networkPoint *p) const
 	{
 		try
 		{
@@ -2573,6 +2576,7 @@ netL *unlink(netP *obj, netP *obj_)
 class Network : public object3D
 {
 public:
+	bool IGNORE;
 	/* ------------------------------------------------------ */
 	/*                          体積の計算                      */
 	/* ------------------------------------------------------ */
@@ -3042,7 +3046,8 @@ public:
 		  center_of_mass({0., 0., 0.}),
 		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
 		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
-		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.){};
+		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  IGNORE(false){};
 	Network(const V_Netp &base_nets, const std::string &name_IN);
 	~Network();
 	//
@@ -3061,7 +3066,8 @@ public:
 		  center_of_mass({0., 0., 0.}),
 		  BucketFaces(geometry::CoordinateBounds({0., 0., 0.}), 1.),
 		  BucketPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
-		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.)
+		  BucketParametricPoints(geometry::CoordinateBounds({0., 0., 0.}), 1.),
+		  IGNORE(false)
 	{
 		std::vector<std::vector<std::string>> read_line;
 		Load(filename, read_line, {"    ", "   ", "  ", " "});

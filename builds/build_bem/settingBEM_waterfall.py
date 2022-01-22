@@ -21,9 +21,10 @@ output_directory = home + "/BEM/waterfall/test"
 # output_directory = home+"/BEM/test"
 data = {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm12.obj",
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm18.obj",
     "radius": 0.01,
     "translation": [0, 0, 0.2],
+    "rotate": [math.pi/2., 1, 0, 0],
     "scale": [.5, 0.5, .5],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "water",  # 拡張子はいらない
@@ -41,7 +42,7 @@ f.close()
 #     "name": "tank",
 #     "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
 #     "radius": 0.01,
-#     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
+#     # "sxze": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
 #     # -------------------------------------------------------- #
 #     "output_vtu_file_name": "tank",  # 拡張子はいらない
 #     "output_pvd_file_name": "tank",  # 拡張子はいらない

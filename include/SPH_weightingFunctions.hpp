@@ -1230,7 +1230,6 @@ Tddd laplacian_U_Monaghan1992_polygon_boundary(const std::unordered_set<networkP
     //人工粘性
     //まず，nu*laplacian(U)を計算する
     Tddd ret = {0, 0, 0}, tmp, n, U, velocity;
-    double Cs = 1466.;
     auto INTXN = IntersectionsSphereTrianglesLines(a->getContactFaces());
 
     for (const auto &p : ps)
@@ -1290,7 +1289,7 @@ Tddd laplacian_U_Monaghan1992(const std::unordered_set<networkPoint *> &ps,
     //人工粘性
     //まず，nu*laplacian(U)を計算する
     Tddd ret = {0, 0, 0}, Uij, rij, grad;
-    double Cs = 1466., PIij, div_U, dot_rij_rij, dot_Uij_rij, m;
+    double PIij, div_U, dot_rij_rij, dot_Uij_rij, m;
     for (const auto &p : ps)
         if (p != a)
             ret += laplacian_U_Monaghan1992(p, p->getXtuple(), p->U_SPH, a, h, alpha, beta);

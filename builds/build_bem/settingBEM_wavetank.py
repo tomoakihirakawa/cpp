@@ -19,9 +19,10 @@ home = expanduser("~")
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
 # output_directory = home+"/BEM/BEM_dt0d01_wavemake_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_respect_Dirichlet_on_CORNER_EMT_K0d5_without_remeshing"
 
-mesh = "23"
+mesh = "20"
 folder = "../../obj/tank/Li2002_h0_0d3048_shorttank"
-output_directory = home+"/BEM/Li2002_h0_0d3048_shortank/BEM_dt0d01_wavemake_H_0d45_EMT_K1d0_water"+mesh
+output_directory = home + \
+    "/BEM/Li2002_h0_0d3048_shortank/BEM_dt0d01_wavemake_H_0d45_EMT_K1d0_water"+mesh
 # output_directory = home+"/BEM/test"
 data = {
     "name": "water",
@@ -41,10 +42,11 @@ f.close()
 #! -------------------------------------------------------- #
 
 data = {
-    "name": "tank",
+    "name": "wavemaker",
     "objfile": folder+"/wavemaker.obj",
     "radius": 0.01,
     "reverseNormal": True,
+    "ignore": False,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "wavemaker",  # 拡張子はいらない
@@ -59,10 +61,11 @@ f.close()
 #! -------------------------------------------------------- #
 
 data = {
-    "name": "tank",
+    "name": "wavetank",
     "objfile": folder+"/wavetank.obj",
     "radius": 0.01,
     "reverseNormal": True,
+    "ignore": False,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "wavetank",  # 拡張子はいらない

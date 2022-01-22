@@ -146,10 +146,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 		for (const auto &f : B.getAll())
 		{
 			auto [p0, p1, p2] = f->getX_Vertices();
-			auto intxn = IntersectionSphereTriangle(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
-			auto X = intxn.getNearestX();
-			if (Norm(X - this->getXtuple()) < 2. * this->radius)
-				tmpContactFaces[f] = X;
+			auto intxn = IntersectionSphereTriangle_(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
+			if (Norm(intxn.X - this->getXtuple()) < 2. * this->radius)
+				tmpContactFaces[f] = intxn.X;
 		}
 		// b!各面について衝突があり得るか詳しく調べて判断する．
 		for (const auto &[f, intxnX] : tmpContactFaces)
@@ -175,16 +174,11 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace> &B, bool in
 				// auto intxn = intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(f->getX_Vertices()));
 
 				// 完全に正対している面のみを取得.斜めに見る面は取得しない．
-				auto intxn = IntersectionSphereTriangle(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
-				if (intxn.isIntersecting && intxn.scale < 0 /*面の法線方向とは逆向き*/)
-					tmpContactFaces[f] = intxn.X;
-				else
-				{
-					auto X = intxn.getNearestX();
-					auto norm = Norm(X - this->getXtuple());
-					if (norm < 2. * this->radius && Dot(X - this->getXtuple(), f->getNormalTuple()) < 0.)
-						tmpContactFaces[f] = X;
-				}
+				auto intxn = IntersectionSphereTriangle_(this->getXtuple(), 2. * this->radius, f->getX_Vertices());
+				Tddd r = intxn.X - this->getXtuple();
+				if (Norm(r) < 2. * this->radius)
+					if ((intxn.isIntersectingInsideTriangle && intxn.scale < 0 /*面の法線方向とは逆向き*/) || Dot(r, f->getNormalTuple()) < 0.)
+						tmpContactFaces[f] = intxn.X;
 			}
 		// b!各面について衝突があり得るか詳しく調べて判断する．
 		for (const auto &[f, intxnX] : tmpContactFaces)
@@ -907,6 +901,15 @@ inline Tddd networkPoint::getNormalDirichletAreaAveraged() const
 			normal += f->getArea() * f->getNormalTuple();
 	return Normalize(normal);
 };
+inline Tddd networkPoint::getNormalNeumannAreaAveraged() const
+{
+	//角度の重みを掛けた法線ベクトルを足し合わせる
+	Tddd normal = {0., 0., 0.};
+	for (const auto &f : this->getFaces())
+		if (f->Neumann)
+			normal += f->getArea() * f->getNormalTuple();
+	return Normalize(normal);
+};
 inline V_d networkPoint::getNormal() const
 {
 	//角度の重みを掛けた法線ベクトルを足し合わせる
@@ -1104,9 +1107,11 @@ inline networkPoint::networkPoint(Network *network_IN,
 	  phiphin_t({0., 0.}),
 	  grad_phi_BEM({0., 0., 0.}),
 	  U_BEM({0., 0., 0.}),
+	  U_BEM_last({0., 0., 0.}),
 	  U_update_BEM({0., 0., 0.}),
 	  U_mod_BEM({0., 0., 0.}),
 	  U_tangential_BEM({0., 0., 0.}),
+	  U_tangential_BEM_last({0., 0., 0.}),
 	  U_normal_BEM({0., 0., 0.}),
 	  laplacian_U_BEM({0., 0., 0.}),
 	  normal_BEM({0., 0., 0.}),

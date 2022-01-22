@@ -1,18 +1,14 @@
 {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm12.obj",
+    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm19.obj",
     "radius": 0.01,
-    "translation": [
+    "rotate": [
+        1.5707963267948966,
+        1,
         0,
-        0,
-        0.2
-    ],
-    "scale": [
-        0.5,
-        0.5,
-        0.5
+        0
     ],
     "output_vtu_file_name": "water",
     "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/BEM/waterfall/test"
+    "output_directory": "/Users/tomoaki/K1.0_beta0.5"
 }

@@ -1,5 +1,6 @@
 #include "GNUPLOT.hpp"
 #include "fundamental.hpp"
+#include "rootFinding.hpp"
 
 // #define simple_test
 #ifdef simple_test
@@ -48,39 +49,63 @@ int main()
 };
 #else
 
-class NewtonRaphson
-{
-public:
-	V_d X;
-	V_d dX; //tmp
-	NewtonRaphson(const V_d &Xinit) : X(Xinit), dX(Xinit){};
-	void update(const V_d &F, const VV_d &dFdx)
-	{
-		ludcmp lu(dFdx);
-		lu.solve(-F, dX);
-		X += dX;
-	};
-};
+// class NewtonRaphson
+// {
+// public:
+// 	V_d X;
+// 	V_d dX; // tmp
+// 	NewtonRaphson(const V_d &Xinit) : X(Xinit), dX(Xinit){};
+// 	void update(const V_d &F, const VV_d &dFdx)
+// 	{
+// 		ludcmp lu(dFdx);
+// 		lu.solve(-F, dX);
+// 		X += dX;
+// 	};
+// };
 
-V_d F(const V_d &X)
+double f(const double x)
 {
-	return {sin(X[0]), cos(X[1]), sin(X[2])};
+	return sin(x);
 }
-VV_d dFdx(const V_d &X)
+double dfdx(const double x)
 {
-	return {{cos(X[0]), 0, 0},
-			{0, -sin(X[1]), 0},
-			{0, 0, cos(X[2])}};
+	return cos(x);
+}
+
+Tddd F(const Tddd &X)
+{
+	return {sin(std::get<0>(X)), cos(std::get<1>(X)), sin(std::get<2>(X))};
+}
+T3Tddd dFdx(const Tddd &X)
+{
+	return {{cos(std::get<0>(X)), 0, 0},
+			{0, -sin(std::get<1>(X)), 0},
+			{0, 0, cos(std::get<2>(X))}};
 }
 
 int main()
 {
-	NewtonRaphson nr({1., 1., 1.});
-	/* ----------------------- 多次元の場合 ----------------------- */
-	for (auto i = 0; i < 10; i++)
+	/* ----------------------- 1次元の場合 ----------------------- */
+	std::cout << "1次元の場合" << std::endl;
 	{
-		nr.update(F(nr.X), dFdx(nr.X));
-		Print(Norm(nr.dX), red);
+		NewtonRaphson nr(4.2);
+		for (auto i = 0; i < 10; i++)
+		{
+			nr.update(f(nr.X), dfdx(nr.X));
+			Print(Norm(nr.dX), red);
+			Print(Norm(nr.X), red);
+		}
+	}
+	/* ----------------------- 多次元の場合 ----------------------- */
+	std::cout << "多次元の場合" << std::endl;
+	{
+		NewtonRaphson nr(Tddd{1., 1., 1.});
+		for (auto i = 0; i < 10; i++)
+		{
+			nr.update(F(nr.X), dFdx(nr.X));
+			Print(Norm(nr.dX), red);
+			Print(Norm(nr.X), red);
+		}
 	}
 };
 #endif

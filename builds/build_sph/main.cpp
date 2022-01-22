@@ -1354,8 +1354,8 @@ EISP:
 
 */
 //@ WCSPH/EISPH
-// #define WCSPH
-#define EISPH
+#define WCSPH
+// #define EISPH
 #define apply_polygon_boundary
 		/* ------------------------------------------------------ */
 		double dt = max_dt;

@@ -1694,6 +1694,97 @@ namespace BEM
 		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
 	};
 
+	/* ------------------------------------------------------ */
+	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple(const networkFace *const f, const networkPoint *const origin)
+	{
+		//おそらくIgIgnの計算精度に大きく関わるため，
+		// auto [p0, p1, p2] = f->getPointsTuple(origin);
+
+		// Tdd p0igign = {0, 0};
+		// Tdd p1igign = {0, 0};
+		// Tdd p2igign = {0, 0};
+
+		auto [p0, p1, p2, p3, p4, p5] = f->get6PointsTuple(origin);
+		Tdd p0igign = {0, 0};
+		Tdd p1igign = {0, 0};
+		Tdd p2igign = {0, 0};
+		Tdd p3igign = {0, 0};
+		Tdd p4igign = {0, 0};
+		Tdd p5igign = {0, 0};
+
+		int i = 5;
+
+		double mean_len = 5. * Max(extLength(origin->getLines()));
+		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p1->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p2->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p3->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p4->getXtuple() - origin->getXtuple()) < mean_len ||
+			Norm(p5->getXtuple() - origin->getXtuple()) < mean_len)
+			i = 14;
+		// タプルに対応させる．
+		// interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		interpolationTriangleQuadByFixedRange3D_Center intp(
+			T6Tddd{p0->getXtuple(),
+				   p1->getXtuple(),
+				   p2->getXtuple(),
+				   p3->getXtuple(),
+				   p4->getXtuple(),
+				   p5->getXtuple()});
+
+		Tdd IGIGn;
+		Tddd r, A = origin->getXtuple();
+		T6d N;
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+		double common, nr;
+		double x0, x1, w0, w1;
+		// bool isSingular = false;		  //(ps[0] == origin);  //!linearの場合は0
+		bool isSingular = (p4 == origin); //! linearの場合は0
+		double beta = 2.;
+		double x_sing = 1.; //! linearの場合はx_sing = 1.
+		auto GW = __GW__Tuple[i];
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
+		{
+			if (isSingular)
+			{
+				x0 = Sg(std::get<0>(x0w0), x_sing, beta);
+				w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+			}
+			else
+			{
+				x0 = std::get<0>(x0w0);
+				w0 = std::get<1>(x0w0);
+			}
+			for (const auto &x1w1 : GW)
+			{
+				x1 = std::get<0>(x1w1);
+				w1 = std::get<1>(x1w1);
+				/* ------------------------------ */
+				common = intp.J(x0, x1) * w0 * w1;
+				r = intp(x0, x1) - A;
+				nr = Norm(r);
+				std::get<0>(IGIGn) = common / nr;
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
+				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+				N = intp.N(x0, x1);
+				p0igign += IGIGn * std::get<0>(N);
+				p1igign += IGIGn * std::get<1>(N);
+				p2igign += IGIGn * std::get<2>(N);
+				p3igign += IGIGn * std::get<3>(N);
+				p4igign += IGIGn * std::get<4>(N);
+				p5igign += IGIGn * std::get<5>(N);
+			}
+		}
+		return {{p0, p0igign},
+				{p1, p1igign},
+				{p2, p2igign},
+				{p3, p3igign},
+				{p4, p4igign},
+				{p5, p5igign}};
+	};
+
 	// /* ------------------------------------------------------ */
 	// std::unordered_map<netP *, Tdd> calc_P_IGIGnTuple(const netFp &f, const netPp origin)
 	// {

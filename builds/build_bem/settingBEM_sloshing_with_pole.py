@@ -17,11 +17,12 @@ home = expanduser("~")
 #! -------------------------------------------------------- #
 
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
-output_directory = home+"/BEM/sloshing_with_pole/BEM_dt0d01_Xdir_H0d10_L0d25_A0d01_ww1_1d0_EMT_K0d5"
+output_directory = home + \
+    "/BEM/sloshing_with_pole/BEM_dt0d01_Xdir_H0d10_L0d25_A0d01_ww1_1d0_EMT_K0d5"
 # output_directory = home+"/BEM/test"
 data = {
     "name": "water",
-    "objfile": "../../obj/tank/sloshing_with_pole/water12.obj",
+    "objfile": "../../obj/tank/sloshing_with_pole/water14.obj",
     "radius": 0.01,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
@@ -55,9 +56,11 @@ f.close()
 #! -------------------------------------------------------- #
 
 data = {
-    "name": "tank",
-    "objfile": "../../obj/tank/sloshing_with_pole/tank10.obj",
+    "name": "wavemaker",
+    "objfile": "../../obj/tank/sloshing_with_pole/tank13.obj",
+    "ignore": False,
     "radius": 0.01,
+    "center_of_mass": [0, 0, 0],
     # "reverseNormal": True,
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
@@ -75,8 +78,10 @@ f.close()
 data = {
     "name": "wavetank",
     "objfile": "../../obj/tank/sloshing_with_pole/tank.obj",
+    "ignore": True,
     "radius": 0.01,
     "reverseNormal": True,
+    "center_of_mass": [0, 0, 0],
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "wavetank",  # 拡張子はいらない

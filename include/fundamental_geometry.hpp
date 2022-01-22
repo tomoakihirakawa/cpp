@@ -404,6 +404,113 @@ struct IntersectionTriangles
 	};
 };
 /* ------------------------------------------------------ */
+struct IntersectionSphereTriangle_
+{
+	double scale, t0, t1;
+	Tddd X;
+	double eps = 1E-13;
+	T3Tddd P;
+	bool isIntersecting;
+	bool isIntersectingInsideTriangle;
+	bool isIntersectingEdgeTriangle;
+	Tddd center;
+	double distance;
+	IntersectionSphereTriangle_(const Tddd &centerIN, const double radius, const T3Tddd &P_IN)
+		: X({1E+50, 1E+50, 1E+50}),
+		  scale(1E+50),
+		  P(P_IN),
+		  isIntersecting(false),
+		  isIntersectingInsideTriangle(false),
+		  isIntersectingEdgeTriangle(false),
+		  center(centerIN),
+		  distance(1E+50)
+	{
+		auto [p0, p1, p2] = P;
+		auto n = Normalize(Cross(p1 - p0, p2 - p0));
+		auto [nx, ny, nz] = n;
+		auto [p02x, p02y, p02z] = p0 - p2;
+		auto [p12x, p12y, p12z] = p1 - p2;
+		double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
+		if (std::abs(determ) < eps)
+			return;
+		T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+					  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+					  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
+		auto ans = Dot(center - p2, mat / determ);
+		this->t0 = std::get<0>(ans);
+		this->t1 = std::get<1>(ans);
+		this->scale = std::get<2>(ans);
+		this->X = scale * n + center;
+		if (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))
+		{
+			isIntersecting = true;
+			isIntersectingInsideTriangle = true;
+			isIntersectingEdgeTriangle = false;
+			distance = std::abs(scale);
+		}
+		else
+		{
+			Tddd X_ = {1E+50, 1E+50, 1E+50};
+			auto intxnL0 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<0>(P), std::get<1>(P)});
+			auto intxnL1 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<1>(P), std::get<2>(P)});
+			auto intxnL2 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<2>(P), std::get<0>(P)});
+			if (intxnL0.isIntersecting)
+			{
+				X_ = intxnL0.X;
+				distance = Norm(X_ - center);
+				isIntersecting = true;
+				isIntersectingInsideTriangle = false;
+				isIntersectingEdgeTriangle = true;
+			}
+			if (intxnL1.isIntersecting)
+			{
+				if (Norm(intxnL1.X - center) < distance)
+				{
+					X_ = intxnL1.X;
+					distance = Norm(X_ - center);
+					isIntersecting = true;
+					isIntersectingInsideTriangle = false;
+					isIntersectingEdgeTriangle = true;
+				}
+			}
+			if (intxnL2.isIntersecting)
+			{
+				if (Norm(intxnL2.X - center) < distance)
+				{
+					X_ = intxnL2.X;
+					distance = Norm(X_ - center);
+					isIntersecting = true;
+					isIntersectingInsideTriangle = false;
+					isIntersectingEdgeTriangle = true;
+				}
+			}
+			if (Norm(std::get<0>(P) - center) < distance)
+			{
+				X_ = std::get<0>(P);
+				distance = Norm(X_ - center);
+				isIntersecting = true;
+				isIntersectingInsideTriangle = false;
+				isIntersectingEdgeTriangle = true;
+			}
+			if (Norm(std::get<1>(P) - center) < distance)
+			{
+				X_ = std::get<1>(P);
+				distance = Norm(X_ - center);
+				isIntersecting = true;
+				isIntersectingInsideTriangle = false;
+				isIntersectingEdgeTriangle = true;
+			}
+			if (Norm(std::get<2>(P) - center) < distance)
+			{
+				X_ = std::get<2>(P);
+				isIntersecting = true;
+				isIntersectingInsideTriangle = false;
+				isIntersectingEdgeTriangle = true;
+			}
+			this->X = X_;
+		}
+	};
+};
 struct IntersectionSphereTriangle
 {
 	double scale, t0, t1;
