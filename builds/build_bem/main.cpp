@@ -52,9 +52,9 @@ std::string home_dir = std::getenv("HOME");
 
 // #define experiment_Li2002
 
-#define experiment_sawai
+// #define experiment_sawai
 
-// #define XueAndLin2011_large_amplitude
+#define XueAndLin2011_large_amplitude
 /* ------------------------------------------------------ */
 
 namespace forced_motion
@@ -67,7 +67,7 @@ namespace forced_motion
 	auto g = 9.81;
 	T6d move_dir = {1., 0., 0., 0, 0, 0};
 #if defined(experiment_sawai)
-	auto h = 0.25;
+	auto h = 0.1;
 	auto L = 0.25;
 #elif defined(experiment_Li2002)
 	double h = 0.3048;
@@ -329,7 +329,7 @@ double phin_from_Neumann_surface(const networkPoint *const p)
 		Wtot = 0;
 		for (const auto &[f, X] : tmpContactFaces)
 		{
-			double w = 1. / Norm(X - p->getXtuple());
+			double w = 1.; // / Norm(X - p->getXtuple());
 			Wtot += w;
 			Tddd nj = f->getNormalTuple();
 			double m_ij = Dot(nj, p->getNormalAreaAveraged());
@@ -591,7 +591,7 @@ T3Tddd grad_U_LinearElement(const networkPoint *const p)
 	return T3Tddd{V0, V1, V2};
 };
 // b* ------------------------------------------------------ */
-// #define respect_Dirichlet_on_CORNER
+#define respect_Dirichlet_on_CORNER
 // #define SIMPLE_RBF
 // #define ENHANCED_RBF
 // #define AngleWeighted
@@ -1628,7 +1628,7 @@ void remesh_flip(Network &water)
 	// 	std::cout << "remesh too much" << std::endl;
 };
 /* ------------------------------------------------------ */
-void remesh(Network &water)
+void remesh(Network &water, bool force = false, int max_count = 5000)
 {
 	std::cout << "remeshing" << std::endl;
 	water.setBounds();
@@ -1674,57 +1674,65 @@ void remesh(Network &water)
 				auto [p0, p1] = l->getPointsTuple();
 				if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
 				{
-					l->flipIfBetter(5.);
-					//@ ------------------------------------------------------ */
-					// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
+					// if (force)
 					// {
-					// 	//@ case 1
-					// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
-					// 	//@ case2 lの面全体を考慮
-					// 	// Tdd phiphin = phiphin_from_faces(l);
-					// 	//@ case3 lの点だけを考慮
-					// 	// Tdd phiphin = phiphin_from_points(l);
-					// 	//@ case4 lの面全体を考慮
-					// 	Tdd phiphin = phiphin_from_points_faces(l);
-					// 	/* ------------------------------------------------------ */
-					// 	auto q = l->divide();
-					// 	q->phiphin = phiphin;
-					// 	isfound = true;
-					// 	break;
+					// 	isfound = l->flipIfTopologicalyBetter(lim_degree);
 					// }
-					//@ ------------------------------------------------------ */
-					if (l->length() < mean_length / 6.)
+					// else
 					{
-						/*
-						b!マージの原則：マージによってノイマン面は変形してはいけない．
-						*/
-						//@ case1
-						// Tdd phiphin = phiphin_from_faces_IDW(l);
-						//@ case2 lの面全体を考慮
-						// Tdd phiphin = phiphin_from_faces(l);
-						//@ case3 lの点だけを考慮
-						// Tdd phiphin = phiphin_from_points(l);
-						//@ case4 lの面全体を考慮平均
-						// Tdd phiphin = phiphin_from_points_faces(l);
+						// isfound = l->flipIfTopologicalyBetter(lim_degree);
+						isfound = l->flipIfBetter(lim_degree);
+						//@ ------------------------------------------------------ */
+						// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
+						// {
+						// 	//@ case 1
+						// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
+						// 	//@ case2 lの面全体を考慮
+						// 	// Tdd phiphin = phiphin_from_faces(l);
+						// 	//@ case3 lの点だけを考慮
+						// 	// Tdd phiphin = phiphin_from_points(l);
+						// 	//@ case4 lの面全体を考慮
+						// 	Tdd phiphin = phiphin_from_points_faces(l);
+						// 	/* ------------------------------------------------------ */
+						// 	auto q = l->divide();
+						// 	q->phiphin = phiphin;
+						// 	isfound = true;
+						// 	break;
+						// }
+						//@ ------------------------------------------------------ */
+						if (l->length() < mean_length / 6.)
+						{
+							/*
+							b!マージの原則：マージによってノイマン面は変形してはいけない．
+							*/
+							//@ case1
+							// Tdd phiphin = phiphin_from_faces_IDW(l);
+							//@ case2 lの面全体を考慮
+							// Tdd phiphin = phiphin_from_faces(l);
+							//@ case3 lの点だけを考慮
+							// Tdd phiphin = phiphin_from_points(l);
+							//@ case4 lの面全体を考慮平均
+							// Tdd phiphin = phiphin_from_points_faces(l);
 
-						/* ------------------------------------------------------ */
-						//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
-						auto [p0, p1] = l->getPointsTuple();
-						Tdd phiphin = (p0->phiphin + p1->phiphin) / 2.;
-						auto p0X = p0->getXtuple();
-						auto p0Top1 = p1->getXtuple() - p0X;
-						for (const auto &f : p0->getFaces())
-							if (f->Neumann)
-								p0Top1 -= Dot(p0Top1, f->getNormalTuple()) * f->getNormalTuple();
-						/* ------------------------------------------------------ */
-						auto q = l->merge();
-						q->phiphin = phiphin;
-						//
-						//@case5
-						q->setX(p0X + p0Top1);
-						/* ------------------------------------------------------ */
-						ismerged = true;
-						break;
+							/* ------------------------------------------------------ */
+							//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
+							auto [p0, p1] = l->getPointsTuple();
+							Tdd phiphin = (p0->phiphin + p1->phiphin) / 2.;
+							auto p0X = p0->getXtuple();
+							auto p0Top1 = p1->getXtuple() - p0X;
+							for (const auto &f : p0->getFaces())
+								if (f->Neumann)
+									p0Top1 -= Dot(p0Top1, f->getNormalTuple()) * f->getNormalTuple();
+							/* ------------------------------------------------------ */
+							auto q = l->merge();
+							q->phiphin = phiphin;
+							//
+							//@case5
+							q->setX(p0X + p0Top1);
+							/* ------------------------------------------------------ */
+							ismerged = true;
+							break;
+						}
 					}
 					if (ismerged || isfound)
 						break;
@@ -1733,9 +1741,7 @@ void remesh(Network &water)
 			if (ismerged || isfound)
 				break;
 		}
-	} while ((ismerged || isfound) && count++ < 500);
-	if (count == 10)
-		std::cout << "remesh too much" << std::endl;
+	} while ((ismerged || isfound) && count++ < 10000);
 };
 // b! ------------------------------------------------------ */
 // b! ------------------------------------------------------ */
@@ -1888,8 +1894,13 @@ int main()
 		double beta = stod(json["beta"][0]);
 		double max_dt = stod(json["max_dt"][0]);
 		double stop_remesh_time = 1E+10;
+		double force_remesh_time = 0;
 		if (json.find("stop_remesh_time"))
 			stop_remesh_time = stod(json["stop_remesh_time"][0]);
+
+		if (json.find("force_remesh_time"))
+			force_remesh_time = stod(json["force_remesh_time"][0]);
+
 		std::filesystem::create_directories(settingBEM_output_directory);
 		std::filesystem::copy_file("settingBEM.json", settingBEM_output_directory + "/settingBEM.json", std::filesystem::copy_options::overwrite_existing);
 		//  b! ------------------------------------------------------ */
@@ -1958,17 +1969,14 @@ int main()
 			// auto radius = Mean(extLength(water.getLines()));
 			setBoundaryConditions(water, structures);
 
-			if (real_time < stop_remesh_time)
+			if (real_time < force_remesh_time)
+			{
+				//トポロジカルな修正
+				remesh(water, true);
+			}
+			else if (real_time < stop_remesh_time)
 			{
 				remesh(water);
-				if (time_step == 0)
-					for (auto i = 0; i < 10; i++)
-						remesh(water);
-			}
-			else
-			{
-				K = 0;
-				beta = 0;
 			}
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
@@ -2017,8 +2025,7 @@ int main()
 			// b@ ------------------------------------------------------ */
 			// b@        初期値問題を解く（時間微分方程式を数値積分する）           */
 			// b@ ------------------------------------------------------ */
-			std::map<netPp, RungeKutta_<double> *>
-				P_RK_phi;
+			std::map<netPp, RungeKutta_<double> *> P_RK_phi;
 			std::map<netPp, RungeKutta_<Tddd> *> P_RK_X, P_RK_X_body;
 			// 面ベースで境界条件を判断する
 			/* ------------------------------------------------------ */

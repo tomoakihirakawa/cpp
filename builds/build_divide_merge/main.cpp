@@ -47,6 +47,7 @@ int main()
 	JSON json(std::ifstream("./input.json"));
 	Network net(json["objfile"][0], json["name"][0]);
 	auto name = json["name"][0];
+	auto remesh = json["remesh"][0];
 	net.displayStates();
 
 	double lim_len = .2;
@@ -60,7 +61,7 @@ int main()
 	//* ------------------------------------------------------ */
 	//*                          線の分割                        */
 	//* ------------------------------------------------------ */
-	for (auto count = 0; count < 25; ++count)
+	for (auto count = 0; count <= remesh; ++count)
 	{
 		//! ------------------------------------------------------ */
 		mk_vtu(json["outputdir"][0] + name + std::to_string(count) + ".vtu", net.getFaces());

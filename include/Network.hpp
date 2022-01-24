@@ -211,6 +211,7 @@ public:
 	bool flip();
 	bool flipIfIllegal();
 	bool flipIfBetter(const double);
+	bool flipIfTopologicalyBetter(const double);
 	void divideIfIllegal();
 	bool isFlat(const double) const;
 	bool islegal() const;
@@ -2583,18 +2584,19 @@ public:
 	double getVolume()
 	{
 		double x0, x1, w0, w1, ret = 0;
+		auto GW = __GW__Tuple[5];
 		for (const auto &f : getFaces())
 		{
 			interpolationTriangleLinearByFixedRange3D intp(f->getX_Vertices());
-			for (const auto &x0w0 : __GW4__Tuple)
+			for (const auto &x0w0 : GW)
 			{
 				x0 = std::get<0>(x0w0);
 				w0 = std::get<1>(x0w0);
-				for (const auto &x1w1 : __GW4__Tuple)
+				for (const auto &x1w1 : GW)
 				{
 					x1 = std::get<0>(x1w1);
 					w1 = std::get<1>(x1w1);
-					ret += w0 * w1 * Dot(intp(x0, x1), f->getNormalTuple());
+					ret += w0 * w1 * Dot(intp(x0, x1), intp.cross(x0, x1));
 				}
 			}
 		}
