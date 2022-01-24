@@ -1969,13 +1969,13 @@ int main()
 			// auto radius = Mean(extLength(water.getLines()));
 			setBoundaryConditions(water, structures);
 
-			if (real_time < force_remesh_time)
+			if (real_time < stop_remesh_time)
 			{
-				//トポロジカルな修正
-				remesh(water, true);
-			}
-			else if (real_time < stop_remesh_time)
-			{
+				if (real_time < force_remesh_time)
+				{
+					//トポロジカルな修正
+					remesh(water, true);
+				}
 				remesh(water);
 			}
 			// b# ------------------------------------------------------ */
