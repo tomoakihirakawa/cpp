@@ -1728,76 +1728,77 @@ void remesh(Network &water, bool force = false, int max_count = 1000)
 				{
 					isfound = l->flip();
 				}
-				else if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)) &&
-						 (/*Dirichlet-CORNERの線に関しては関与しない*/ !(!l->CORNER && ((p0->CORNER && p1->Dirichlet) || (p0->Dirichlet && p1->CORNER)))))
-				{
-					if (force && !l->CORNER)
+				else if (!l->CORNER && (p0->Dirichlet ) && (p0->CORNER || p1->CORNER))
+					if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)) &&
+						(/*Dirichlet-CORNERの線に関しては関与しない*/ !(!l->CORNER && ((p0->CORNER && p1->Dirichlet) || (p0->Dirichlet && p1->CORNER)))))
 					{
-						isfound = l->flipIfTopologicalyBetter(lim_degree);
-						// break;
-					}
-					else if (!l->CORNER)
-					{
-						isfound = l->flipIfBetter(lim_degree);
-						// break;
-					}
+						if (force && !l->CORNER)
+						{
+							isfound = l->flipIfTopologicalyBetter(lim_degree);
+							// break;
+						}
+						else if (!l->CORNER)
+						{
+							isfound = l->flipIfBetter(lim_degree);
+							// break;
+						}
 
-					//@ ------------------------------------------------------ */
-					// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
-					// {
-					// 	//@ case 1
-					// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
-					// 	//@ case2 lの面全体を考慮
-					// 	// Tdd phiphin = phiphin_from_faces(l);
-					// 	//@ case3 lの点だけを考慮
-					// 	// Tdd phiphin = phiphin_from_points(l);
-					// 	//@ case4 lの面全体を考慮
-					// 	Tdd phiphin = phiphin_from_points_faces(l);
-					// 	/* ------------------------------------------------------ */
-					// 	auto q = l->divide();
-					// 	q->phiphin = phiphin;
-					// 	isfound = true;
-					// 	break;
-					// }
-					//@ ------------------------------------------------------ */
-					if (l->length() < mean_length / 15.)
-					{
-						/*
-						b!マージの原則：マージによってノイマン面は変形してはいけない．
-						*/
-						//@ case1
-						// Tdd phiphin = phiphin_from_faces_IDW(l);
-						//@ case2 lの面全体を考慮
-						// Tdd phiphin = phiphin_from_faces(l);
-						//@ case3 lの点だけを考慮
-						// Tdd phiphin = phiphin_from_points(l);
-						//@ case4 lの面全体を考慮平均
-						// Tdd phiphin = phiphin_from_points_faces(l);
+						//@ ------------------------------------------------------ */
+						// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
+						// {
+						// 	//@ case 1
+						// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
+						// 	//@ case2 lの面全体を考慮
+						// 	// Tdd phiphin = phiphin_from_faces(l);
+						// 	//@ case3 lの点だけを考慮
+						// 	// Tdd phiphin = phiphin_from_points(l);
+						// 	//@ case4 lの面全体を考慮
+						// 	Tdd phiphin = phiphin_from_points_faces(l);
+						// 	/* ------------------------------------------------------ */
+						// 	auto q = l->divide();
+						// 	q->phiphin = phiphin;
+						// 	isfound = true;
+						// 	break;
+						// }
+						//@ ------------------------------------------------------ */
+						if (l->length() < mean_length / 15.)
+						{
+							/*
+							b!マージの原則：マージによってノイマン面は変形してはいけない．
+							*/
+							//@ case1
+							// Tdd phiphin = phiphin_from_faces_IDW(l);
+							//@ case2 lの面全体を考慮
+							// Tdd phiphin = phiphin_from_faces(l);
+							//@ case3 lの点だけを考慮
+							// Tdd phiphin = phiphin_from_points(l);
+							//@ case4 lの面全体を考慮平均
+							// Tdd phiphin = phiphin_from_points_faces(l);
 
-						/* ------------------------------------------------------ */
-						//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
-						auto [a, b] = l->getPointsTuple();
-						if (a->CORNER)
-							b = a;
-						else if (b->CORNER)
-							a = b;
-						Tdd phiphin = (a->phiphin + b->phiphin) / 2.;
-						Tddd V = (a->getXtuple() + b->getXtuple()) / 2. - a->getXtuple();
-						for (const auto &f : a->getContactFaces())
-							V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
-						for (const auto &f : b->getContactFaces())
-							V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
-						Tddd X = V + a->getXtuple();
-						auto q = l->merge();
-						q->phiphin = phiphin;
-						q->setX(X);
-						/* ------------------------------------------------------ */
-						ismerged = true;
-						break;
+							/* ------------------------------------------------------ */
+							//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
+							auto [a, b] = l->getPointsTuple();
+							if (a->CORNER)
+								b = a;
+							else if (b->CORNER)
+								a = b;
+							Tdd phiphin = (a->phiphin + b->phiphin) / 2.;
+							Tddd V = (a->getXtuple() + b->getXtuple()) / 2. - a->getXtuple();
+							for (const auto &f : a->getContactFaces())
+								V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+							for (const auto &f : b->getContactFaces())
+								V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+							Tddd X = V + a->getXtuple();
+							auto q = l->merge();
+							q->phiphin = phiphin;
+							q->setX(X);
+							/* ------------------------------------------------------ */
+							ismerged = true;
+							break;
+						}
+						if (ismerged || isfound)
+							break;
 					}
-					if (ismerged || isfound)
-						break;
-				}
 			}
 			if (ismerged || isfound)
 				break;
