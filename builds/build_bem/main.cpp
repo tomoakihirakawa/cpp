@@ -1665,7 +1665,7 @@ Tdd phiphin_from_points_faces(const networkLine *const l)
 };
 
 /* ------------------------------------------------------ */
-void remesh(Network &water, bool force = false, int max_count = 500)
+void remesh(Network &water, bool force = false, int max_count = 1000)
 {
 	std::cout << "remeshing" << std::endl;
 	water.setBounds();
