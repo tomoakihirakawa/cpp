@@ -1577,25 +1577,23 @@ struct interpolationTriangleQuadByFixedRange3D
 				-4 * std::pow(-1 + t0, 2) * (-1 + t1) * t1,
 				4 * (-1 + t0) * t0 * (-1 + t1)};
 	};
-	T6d dNdt0(const double &x0, const double &x1) const
+	T6d dNdt0(const double &t0, const double &t1) const
 	{
-		return {
-			0,
-			(-1 + x0) * (1 + 4 * (-1 + x0) * x1),
-			(-1 + x0) * (3 + 4 * x0 * (-1 + x1) - 4 * x1),
-			-4 * (-1 + x0) * x0,
-			4 * std::pow(-1 + x0, 2) * (1 - 2 * x1),
-			4 * (-1 + x0) * x0};
+		return {-1 + 4 * t0,
+				2 * (-1 + t0) * std::pow(t1, 2) + t1 * (1 + 2 * (-1 + t0) * t1),
+				(1 + 2 * t0 * (-1 + t1) - 2 * t1) * (-1 + t1) + 2 * (-1 + t0) * std::pow(-1 + t1, 2),
+				-4 * (-1 + t0) * t1 - 4 * t0 * t1,
+				-8 * (-1 + t0) * (-1 + t1) * t1,
+				4 * (-1 + t0) * (-1 + t1) + 4 * t0 * (-1 + t1)};
 	};
-	T6d dNdt1(const double &x0, const double &x1) const
+	T6d dNdt1(const double &t0, const double &t1) const
 	{
-		return {
-			-1 + 4 * x0,
-			x1 * (1 + 4 * (-1 + x0) * x1),
-			(3 + 4 * x0 * (-1 + x1) - 4 * x1) * (-1 + x1),
-			(4 - 8 * x0) * x1,
-			-8 * (-1 + x0) * (-1 + x1) * x1,
-			4 * (-1 + 2 * x0) * (-1 + x1)};
+		return {0,
+				2 * std::pow(-1 + t0, 2) * t1 + (-1 + t0) * (1 + 2 * (-1 + t0) * t1),
+				(-1 + t0) * (1 + 2 * t0 * (-1 + t1) - 2 * t1) + (-1 + t0) * (-2 + 2 * t0) * (-1 + t1),
+				-4 * (-1 + t0) * t0,
+				-4 * std::pow(-1 + t0, 2) * (-1 + t1) - 4 * std::pow(-1 + t0, 2) * t1,
+				4 * (-1 + t0) * t0};
 	};
 	/* ------------------------------------------------------ */
 	Tddd operator()(const double t0, const double t1) const { return Dot(this->N(t0, t1), this->s); };

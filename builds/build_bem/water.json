@@ -10,5 +10,5 @@
     ],
     "output_vtu_file_name": "water",
     "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/K1.0_beta0.5"
+    "output_directory": "/Users/tomoaki/BEM/Sawai_K0.5_beta0.0_max_dt0.02_Mesh19_stopremesh100.0"
 }

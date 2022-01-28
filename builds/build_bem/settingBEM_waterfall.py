@@ -16,12 +16,54 @@ home = expanduser("~")
 
 #! -------------------------------------------------------- #
 
-# output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
-output_directory = home + "/BEM/waterfall/test"
-# output_directory = home+"/BEM/test"
+# # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
+# output_directory = home + "/BEM/waterfall/test"
+# # output_directory = home+"/BEM/test"
+# data = {
+#     "name": "water",
+#     "objfile": "../../obj/tank/sawai/water_sawai_250x250mm20.obj",
+#     "radius": 0.01,
+#     "K": 0.2,
+#     "translation": [0, 0, 0.2],
+#     "rotate": [math.pi/2., 1, 0, 0],
+#     "scale": [.5, 0.5, .5],  # モデルがmm単位なのでメートルに変換,
+#     # -------------------------------------------------------- #
+#     "output_vtu_file_name": "water",  # 拡張子はいらない
+#     "output_pvd_file_name": "water",  # 拡張子はいらない
+#     "output_directory": output_directory,
+# }
+
+# f = open("./water.json", 'w')
+# json.dump(data, f, ensure_ascii=True, indent=4)
+# f.close()
+
+
+settingBEM = {
+    "beta": 0.,
+    "K": 1.,
+    "max_dt": 0.02,
+    "mesh": 20,
+    "stop_remesh_time": 100.,
+    "force_remesh_time": 0.1
+}
+
+
+mesh = settingBEM["mesh"]
+
+output_directory = home + "/BEM/waterfall/" \
+                        + "_K" + str(settingBEM["K"])\
+                        + "_beta" + str(settingBEM["beta"])\
+                        + "_max_dt" + str(settingBEM["max_dt"])\
+                        + "_Mesh" + str(settingBEM["mesh"]) \
+                        + "_stopremesh" + str(settingBEM["stop_remesh_time"])
+
+
+folder = "../../obj/tank/sawai/"
+
+
 data = {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm18.obj",
+    "objfile": folder+"/water_sawai_250x250mm"+str(mesh)+".obj",
     "radius": 0.01,
     "translation": [0, 0, 0.2],
     "rotate": [math.pi/2., 1, 0, 0],
@@ -32,9 +74,11 @@ data = {
     "output_directory": output_directory,
 }
 
+
 f = open("./water.json", 'w')
 json.dump(data, f, ensure_ascii=True, indent=4)
 f.close()
+
 
 #! -------------------------------------------------------- #
 

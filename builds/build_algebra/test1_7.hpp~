@@ -1,0 +1,512 @@
+class test1_7{
+  using V_double = std::vector<double>;
+  using VV_double = std::vector<std::vector<double>>;
+  using VVV_double = std::vector<std::vector<std::vector<double>>>;
+public:
+  
+  template <class T>
+  bool AnyStatusTrue(const std::vector<T*>& obj){
+    for(const auto& o:obj)
+      if(o->getStatus())
+	return true;
+    return false;
+  };
+
+  template <class T>
+  bool AllStatusTrue(const std::vector<T*>& obj){
+    for(const auto& o:obj)
+      if(!o->getStatus())
+	return false;
+    return true;
+  };
+  
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CHECK
+  test1_7(){
+    Print("**************** test1_7 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({6,6},{1.133,1.13,1/2.},.2);
+    GNUPLOT plot;   
+    //============================
+    for(auto i=0; i<16; i++){
+      plot.Set({{"style","arrow 1 nohead lc \"blue\" lw .5"}});
+      plot.Set({{"style","arrow 2 nohead lc \"magenta\" lw .5 dt 2"}});    
+      plot.Set({{"style","arrow 3 nohead lc \"red\" lw .5 dt 2"}});
+      plot.Set({{"style","arrow 4 nohead lc \"green\" lw 2 dt 2"}});
+      plot.Set({{"style","arrow 5 nohead lc \"orange\" lw 3 dt 2"}});
+      plot.Set({{"style","arrow 10 nohead lc \"red\" lw .5"}});            
+      plot.Set({{"key",""}});
+      
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});
+      
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  obj.divide(longline);
+      }
+      for(const auto& l:obj3D::takeInsideOfBounds(water.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  water.divide(longline);
+      }
+
+      // obj.displayStates();
+      // water.displayStates();      
+      Network corssNetwork(obj,water);
+      network::setStatus(corssNetwork.Points,true);
+      // VV_double bounds = {{-0.6,0.6},{-0.6,0.6},{-.1,.9}};
+      // {
+      //   VVV_double VVV;      
+      // 	pushVectorData(VVV,obj3D::takeInsideOfBounds(obj.Faces,bounds));	
+      // 	plot.SaveVectorData(VVV,{{"arrowstyle","2"},{"notitle",""}});
+      // }
+
+      // {
+      //   VVV_double VVV;      
+      // 	pushVectorData(VVV,
+      // 		       takeIfIntersect(obj3D::takeInsideOfBounds(obj.Faces,bounds)[0]->getNeighbors_AvoidIntersection_recursive(),false)
+      // 		       );	
+      // 	plot.SaveVectorData(VVV,{{"arrowstyle","1"},{"notitle",""}});
+      // }
+
+      if(false){//干渉している箇所をプロット
+	Network corssNetwork(obj,water);	
+	auto save = [this, &plot](Network& obj){
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& ps:f->getPointsCutFaces()){
+	    
+			  Print(ps,Green);
+			  auto s = ps.size();
+	    
+			  for(const auto& routeP:f->getPointsCutFaces()){
+
+			    if(AnyStatusTrue(routeP)){
+			      VVV_double VVV;
+			      for(const auto& index: triangulate(routeP,f->getNormal()) ){
+				VVV.push_back({routeP[index[0]]->getX(),routeP[index[1]]->getX()-routeP[index[0]]->getX()});
+				VVV.push_back({routeP[index[1]]->getX(),routeP[index[2]]->getX()-routeP[index[1]]->getX()});
+				VVV.push_back({routeP[index[2]]->getX(),routeP[index[0]]->getX()-routeP[index[2]]->getX()});		
+			      }
+			      plot.SaveVectorData(VVV,{{"arrowstyle","2"},{"notitle",""}});
+			    }
+			  }
+			}	  
+		      }
+		    };
+      
+	network::setStatus(obj.Points,true);
+	save(obj);
+
+	network::setStatus(water.Points,true);
+	save(water);
+      }
+
+      
+      if(false){//obj.Points[0]から繋がる干渉している箇所をプロット
+	Network corssNetwork(obj,water);      
+	auto save = [this, &plot](Network& obj){
+		      network::setStatus(obj.Points[0]->getNeighbors_AvoidCross_recursive(),true);		      
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& ps:f->getPointsCutFaces()){
+	    
+			  Print(ps,Green);
+			  auto s = ps.size();
+	    
+			  for(const auto& routeP:f->getPointsCutFaces()){
+			    if(AnyStatusTrue(routeP)){
+			      VVV_double VVV;
+			      for(const auto& index: triangulate(routeP,f->getNormal()) ){
+				VVV.push_back({routeP[index[0]]->getX(),routeP[index[1]]->getX()-routeP[index[0]]->getX()});
+				VVV.push_back({routeP[index[1]]->getX(),routeP[index[2]]->getX()-routeP[index[1]]->getX()});
+				VVV.push_back({routeP[index[2]]->getX(),routeP[index[0]]->getX()-routeP[index[2]]->getX()});		
+			      }
+			      plot.SaveVectorData(VVV,{{"arrowstyle","2"},{"notitle",""}});
+			    }
+			  }
+			}	  
+		      }
+		    };
+      
+
+	save(obj);
+
+	save(water);
+      }
+
+      if(false){//制限の流れを確認
+	Network corssNetwork(obj,water);      
+	auto save = [this, &plot](Network& obj){
+		      plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1 dt 2"}});
+		      plot.Set({{"style","arrow 2 nohead lc \"red\" lw 1 dt 1"}});
+		      plot.Set({{"style","arrow 3 nohead lc \"magenta\" lw 1 dt 2"}});
+		      plot.Set({{"style","arrow 4 nohead lc \"orange\" lw 1 dt 1"}});      		      		      
+		      //-----------------
+		      VVV_double VVV0;
+		      auto faces = obj3D::takeInsideOfBounds(obj.Faces,{{-0.55,0.55},{-0.55,0.55},{0.05,1.5}});
+		      pushVectorData(VVV0,faces);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+		      VVV_double VVV1;
+		      auto face = network::takeNearest(faces,{0,0,0.2});
+		      pushVectorData(VVV1,face);
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      VVV_double VVV2;
+		      pushVectorData(VVV2,network::takeIfStatus(face->getNeighbors_AvoidIntersection_recursive(),true));
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      auto startP = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      auto ps = startP->getNeighbors_AvoidCross_recursive();
+		      network::setStatus(ps,true);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX((ps)),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});		      
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      VVV_double VVV;
+		      network::setStatus(obj.Points,false);		      
+		      network::setStatus(ps,true);
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& routeP:f->getPointsCutFaces()){
+			  if(AllStatusTrue(routeP)){
+			    for(const auto& ind: triangulate(routeP,f->getNormal()) ){
+			      VVV.push_back({routeP[ind[0]]->getX(),routeP[ind[1]]->getX()-routeP[ind[0]]->getX()});
+			      VVV.push_back({routeP[ind[1]]->getX(),routeP[ind[2]]->getX()-routeP[ind[1]]->getX()});
+			      VVV.push_back({routeP[ind[2]]->getX(),routeP[ind[0]]->getX()-routeP[ind[2]]->getX()});		
+			    }
+			  }
+			}
+		      }
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX(ps),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});
+		      plot.SaveVectorData(VVV,{{"arrowstyle","4"},{"title",""}});
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      
+		    };
+      
+	save(obj);
+	save(water);
+      }
+
+      if(false){//制限の流れを確認
+	Network corssNetwork(obj,water);
+	network::setStatus(corssNetwork.Points,false);	
+	auto save = [this, &plot](Network& obj, Network& obj2){
+		      //plot.Set({{"xrange","[0.1:0.55]"},{"yrange","[0.1:-0.55]"},{"zrange","[0.:1.]"}});		      
+		      plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1 dt 2"}});
+		      plot.Set({{"style","arrow 2 nohead lc \"red\" lw 1 dt 1"}});
+		      plot.Set({{"style","arrow 3 nohead lc \"magenta\" lw 3 dt 2"}});
+		      plot.Set({{"style","arrow 4 nohead lc \"orange\" lw 1 dt 1"}});
+		      plot.Set({{"style","arrow 5 nohead lc \"web-blue\" lw 1 dt 1"}});      		      		      		      
+		      //-----------------
+		      VVV_double VVV0;
+		      auto faces = obj3D::takeInsideOfBounds(obj.Faces,{{-0.55,0.55},{-0.55,0.55},{0.05,1.5}});
+		      pushVectorData(VVV0,faces);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+
+		      VVV_double YYY0;
+		      auto faces1 = obj3D::takeInsideOfBounds(obj2.Faces,{{-0.55,0.55},{-0.55,0.55},{0.05,1.5}});
+		      pushVectorData(YYY0,faces1);
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+		      VVV_double VVV1;
+		      auto face = network::takeNearest(faces,{0,0,0.2});
+		      pushVectorData(VVV1,face);
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      VVV_double YYY1;
+		      auto face1 = network::takeNearest(faces1,{0,0,0.2});
+		      pushVectorData(YYY1,face1);
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      VVV_double VVV2;
+		      pushVectorData(VVV2,network::takeIfStatus(face->getNeighbors_AvoidIntersection_recursive(),true));
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+
+		      VVV_double YYY2;
+		      pushVectorData(YYY2,network::takeIfStatus(face1->getNeighbors_AvoidIntersection_recursive(),true));
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------		      
+		      auto startP = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      auto ps = startP->getNeighbors_AvoidCross_recursive();
+		      network::setStatus(ps,true);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX((ps)),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});		      					      
+		      
+		      auto startP2 = network::takeNearest(obj3D::takeInsideOfBounds(obj2.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      auto ps2 = startP2->getNeighbors_AvoidCross_recursive();
+		      network::setStatus(ps2,true);
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX((ps2)),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"green\""}});
+		      plot.SaveData({startP2->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"sea-green\""}});		      			
+		      
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      VVV_double VVV, VVV_route;
+		      // network::setStatus(obj.Points,false); 
+		      // network::setStatus(ps,true);
+
+		      startP = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      network::setStatus(startP->getNeighbors_AvoidCross_recursive(),true);
+
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& routeP:f->getPointsCutFacesInside()){			  
+			  plot.SaveData(obj3D::extractX(routeP),{{"w","lp"},{"notitle",""},{"lw","3"},{"lc","1"},{"pt","7"},{"loop",""}});	
+			}
+		      }
+		      
+		      // for(const auto& f:network::takeIfIntersect(obj.Faces)){
+		      // 	for(const auto& routeP:f->getPointsCutFaces()){			  
+		      // 	  if(AllStatusTrue(routeP)){
+		      // 	    for(const auto& ind: triangulate(routeP,f->getNormal()) ){
+		      // 	      VVV.push_back({routeP[ind[0]]->getX(),routeP[ind[1]]->getX()-routeP[ind[0]]->getX()});
+		      // 	      VVV.push_back({routeP[ind[1]]->getX(),routeP[ind[2]]->getX()-routeP[ind[1]]->getX()});
+		      // 	      VVV.push_back({routeP[ind[2]]->getX(),routeP[ind[0]]->getX()-routeP[ind[2]]->getX()});		
+		      // 	    }
+		      // 	  }
+		      // 	}
+		      // }
+
+		      VVV_double YYY;
+		      network::setStatus(obj.Points,false);		      
+		      network::setStatus(ps,true);
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& routeP:f->getPointsCutFacesInside()){
+			  if(true){
+			    for(const auto& ind: triangulate(routeP,f->getNormal()) ){
+			      YYY.push_back({routeP[ind[0]]->getX(),routeP[ind[1]]->getX()-routeP[ind[0]]->getX()});
+			      YYY.push_back({routeP[ind[1]]->getX(),routeP[ind[2]]->getX()-routeP[ind[1]]->getX()});
+			      YYY.push_back({routeP[ind[2]]->getX(),routeP[ind[0]]->getX()-routeP[ind[2]]->getX()});		
+			    }
+			  }
+			}
+		      }
+
+
+		      // int counter=0;
+		      // for(const auto& f:obj.Faces){
+		      // 	for(const auto& xyz:obj3D::extractX(f->getPointsCutFaces()))
+		      // 	  plot.SaveData(xyz,{{"w","lp"},{"notitle",""},{"lc",std::to_string(counter)},{"pt",std::to_string(counter)}});	
+		      // 	counter++;								
+		      // }
+		      
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX(ps),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});
+		      plot.SaveVectorData(VVV,{{"arrowstyle","4"},{"title","VVV"}});
+
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX(ps2),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"green\""}});
+		      plot.SaveData({startP2->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"sea-green\""}});
+		      plot.SaveVectorData(YYY,{{"arrowstyle","5"},{"title","YYY"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      
+		    };
+	save(obj,water);
+      }
+
+      if(true){//制限の流れを確認
+	Network corssNetwork(obj,water);
+	network::setStatus(corssNetwork.Points,false);	
+	auto save = [this, &plot](Network& obj, Network& obj2){
+		      //plot.Set({{"xrange","[0.1:0.55]"},{"yrange","[0.1:-0.55]"},{"zrange","[0.:1.]"}});		      
+		      plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1 dt 2"}});
+		      plot.Set({{"style","arrow 2 nohead lc \"red\" lw 1 dt 1"}});
+		      plot.Set({{"style","arrow 3 nohead lc \"magenta\" lw 3 dt 2"}});
+		      plot.Set({{"style","arrow 4 nohead lc \"orange\" lw 1 dt 1"}});
+		      plot.Set({{"style","arrow 5 nohead lc \"web-blue\" lw 1 dt 1"}});      		      		      		      
+		      //-----------------
+		      VVV_double VVV0;
+		      auto faces = obj3D::takeInsideOfBounds(obj.Faces,{{-0.55,0.55},{-0.55,0.55},{0.05,1.5}});
+		      pushVectorData(VVV0,faces);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+
+		      VVV_double YYY0;
+		      auto faces1 = obj3D::takeInsideOfBounds(obj2.Faces,{{-0.55,0.55},{-0.55,0.55},{0.05,1.5}});
+		      pushVectorData(YYY0,faces1);
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+		      VVV_double VVV1;
+		      auto face = network::takeNearest(faces,{0,0,0.2});
+		      pushVectorData(VVV1,face);
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      VVV_double YYY1;
+		      auto face1 = network::takeNearest(faces1,{0,0,0.2});
+		      pushVectorData(YYY1,face1);
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+
+		      VVV_double VVV2;
+		      pushVectorData(VVV2,network::takeIfStatus(face->getNeighbors_AvoidIntersection_recursive(),true));
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+
+		      VVV_double YYY2;
+		      pushVectorData(YYY2,network::takeIfStatus(face1->getNeighbors_AvoidIntersection_recursive(),true));
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------		      
+		      auto startP = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      auto ps = startP->getNeighbors_AvoidCross_recursive();
+		      network::setStatus(ps,true);
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX((ps)),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});		      					      
+		      
+		      auto startP2 = network::takeNearest(obj3D::takeInsideOfBounds(obj2.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      auto ps2 = startP2->getNeighbors_AvoidCross_recursive();
+		      network::setStatus(ps2,true);
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX((ps2)),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"green\""}});
+		      plot.SaveData({startP2->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"sea-green\""}});		      			
+		      
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      //------------------
+		      VVV_double VVV, VVV_route;
+		      // network::setStatus(obj.Points,false); 
+		      // network::setStatus(ps,true);
+
+		      startP = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,{{-0.55,0.55},{-0.55,0.55},{0.1,1.}}),{0,0,0});
+		      network::setStatus(startP->getNeighbors_AvoidCross_recursive(),true);
+
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& routeP:f->getPointsCutFacesInside()){			  
+			  plot.SaveData(obj3D::extractX(routeP),{{"w","lp"},{"notitle",""},{"lw","3"},{"lc","1"},{"pt","7"},{"loop",""}});	
+			}
+		      }
+		      
+		      // for(const auto& f:network::takeIfIntersect(obj.Faces)){
+		      // 	for(const auto& routeP:f->getPointsCutFaces()){			  
+		      // 	  if(AllStatusTrue(routeP)){
+		      // 	    for(const auto& ind: triangulate(routeP,f->getNormal()) ){
+		      // 	      VVV.push_back({routeP[ind[0]]->getX(),routeP[ind[1]]->getX()-routeP[ind[0]]->getX()});
+		      // 	      VVV.push_back({routeP[ind[1]]->getX(),routeP[ind[2]]->getX()-routeP[ind[1]]->getX()});
+		      // 	      VVV.push_back({routeP[ind[2]]->getX(),routeP[ind[0]]->getX()-routeP[ind[2]]->getX()});		
+		      // 	    }
+		      // 	  }
+		      // 	}
+		      // }
+
+		      VVV_double YYY;
+		      network::setStatus(obj.Points,false);		      
+		      network::setStatus(ps,true);
+		      for(const auto& f:network::takeIfIntersect(obj.Faces)){
+			for(const auto& routeP:f->getPointsCutFacesInside()){
+			  if(true){
+			    for(const auto& ind: triangulate(routeP,f->getNormal()) ){
+			      YYY.push_back({routeP[ind[0]]->getX(),routeP[ind[1]]->getX()-routeP[ind[0]]->getX()});
+			      YYY.push_back({routeP[ind[1]]->getX(),routeP[ind[2]]->getX()-routeP[ind[1]]->getX()});
+			      YYY.push_back({routeP[ind[2]]->getX(),routeP[ind[0]]->getX()-routeP[ind[2]]->getX()});		
+			    }
+			  }
+			}
+		      }
+
+
+		      // int counter=0;
+		      // for(const auto& f:obj.Faces){
+		      // 	for(const auto& xyz:obj3D::extractX(f->getPointsCutFaces()))
+		      // 	  plot.SaveData(xyz,{{"w","lp"},{"notitle",""},{"lc",std::to_string(counter)},{"pt",std::to_string(counter)}});	
+		      // 	counter++;								
+		      // }
+		      
+		      plot.SaveVectorData(VVV0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(VVV1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(VVV2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX(ps),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"pink\""}});
+		      plot.SaveData({startP->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"red\""}});
+		      plot.SaveVectorData(VVV,{{"arrowstyle","4"},{"title","VVV"}});
+
+		      plot.SaveVectorData(YYY0,{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+		      plot.SaveVectorData(YYY1,{{"arrowstyle","2"},{"title","takeNearest"}});
+		      plot.SaveVectorData(YYY2,{{"arrowstyle","3"},{"title","getNeighbors_AvoidIntersection_recursive"}});
+		      plot.SaveData(obj3D::extractX(ps2),{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"green\""}});
+		      plot.SaveData({startP2->getX()},{{"title","true"},{"pt","7"},{"ps","2"},{"lc","\"sea-green\""}});
+		      plot.SaveVectorData(YYY,{{"arrowstyle","5"},{"title","YYY"}});
+
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      
+		    };
+	save(obj,water);
+      }
+
+      if(false){//制限の流れを確認
+	Network corssNetwork(obj,water);
+	auto save = [this, &plot](Network& obj, Network& obj2){
+		      
+		      for(const auto& f:obj.Faces)
+			for(const auto& xyz:obj3D::extractX(f->getPointsOnLinesDivided()))
+			  plot.SaveData(xyz,{{"w","l"},{"notitle",""}});					
+
+		      for(const auto& f:obj2.Faces)
+			for(const auto& xyz:obj3D::extractX(f->getPointsOnLinesDivided()))
+			  plot.SaveData(xyz,{{"w","l"},{"notitle",""}});		      
+		      
+		      plot.plot3d();std::cin.ignore();plot.Clear();
+		      
+		    };
+	save(obj,water);
+      }
+      
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+    }
+  };
+  ~test1_7(){Print(CHECK+" test1_7",Red);};
+};

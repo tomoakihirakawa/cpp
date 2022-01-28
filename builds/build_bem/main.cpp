@@ -1,3 +1,6 @@
+#define BEM
+#define use_lapack
+
 int time_step;
 
 double real_time = 0;
@@ -52,14 +55,14 @@ std::string home_dir = std::getenv("HOME");
 
 // #define experiment_Li2002
 
-// #define experiment_sawai
+#define experiment_sawai
 
-#define XueAndLin2011_large_amplitude
+// #define XueAndLin2011_large_amplitude
 /* ------------------------------------------------------ */
 
 namespace forced_motion
 {
-	double start = 0.3;
+	double start = 0.1;
 	double move_amplitude = .005;
 	double s = M_PI / 2.;
 	double a = move_amplitude;
@@ -71,7 +74,7 @@ namespace forced_motion
 	auto L = 0.25;
 #elif defined(experiment_Li2002)
 	double h = 0.3048;
-	double H = 0.6 * h;
+	double H = 0.4 * h;
 	double x = 0;
 	double c = std::sqrt(g * (H + h));
 #endif
@@ -281,6 +284,17 @@ std::unordered_map<networkFace *, networkFace *> getNearestContactFacesOfSurroun
 		if (F->Neumann)
 			structure_face[F] = closest_facingFace(F);
 	return structure_face;
+};
+std::tuple<networkFace *, Tddd> getNearestContactFacesX(const networkPoint *const p, const Tddd &O)
+{
+	std::tuple<networkFace *, Tddd> ret = {nullptr, {1E+50, 1E+50, 1E+50}};
+	if (!p->getContactFaces().empty())
+	{
+		for (const auto &[f, X] : getContactFacesX(p))
+			if (Norm(std::get<1>(ret) - O) > Norm(X - O))
+				ret = {f, X};
+	}
+	return ret;
 };
 std::tuple<networkFace *, Tddd> getNearestContactFacesX(const networkPoint *const p)
 {
@@ -597,7 +611,7 @@ T3Tddd grad_U_LinearElement(const networkPoint *const p)
 // #define AngleWeighted
 #define Dombre2019
 // #define Dombre2019_2
-Tddd grad_phi_BEM(const networkPoint *const p)
+T3Tddd grad_phi_BEM(const networkPoint *const p)
 {
 	/* ------------------------------------------------------ */
 	Tddd grad = {0, 0, 0};
@@ -681,7 +695,8 @@ Tddd grad_phi_BEM(const networkPoint *const p)
 #if defined(respect_Dirichlet_on_CORNER)
 	grad_tangential /= TotalArea_for_phi;
 	grad_normal /= TotalArea_for_phin;
-	grad = grad_tangential + grad_normal;
+	grad = grad_normal;
+	grad += grad_tangential;
 #else
 	grad /= TotalArea;
 #endif
@@ -702,7 +717,7 @@ Tddd grad_phi_BEM(const networkPoint *const p)
 			grad += Dot(V, nf) * nf;
 		}
 
-	return grad;
+	return {grad_tangential, grad_normal, grad};
 };
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
@@ -824,7 +839,26 @@ struct derivatives
 #ifdef derivatives_debug
 			std::cout << "流速の計算" << std::endl;
 #endif
-			p->U_BEM = grad_phi_BEM(p);
+			auto grad_N_S_full = grad_phi_BEM(p);
+			p->U_BEM = std::get<2>(grad_N_S_full);
+			p->U_tangential_BEM = std::get<1>(grad_N_S_full);
+			p->U_normal_BEM = std::get<0>(grad_N_S_full);
+			//! bテンションの前に実行する必要がある．
+			if ((p->Neumann || p->CORNER) && !p->getContactFaces().empty())
+			{
+				for (const auto &[f, X] : getContactFacesX(p))
+				{
+					auto nf = f->getNormalTuple();
+					auto V = local_forced_velocity(f->getNetwork(), X);
+					p->U_BEM -= Dot(p->U_BEM, nf) * nf;
+					p->U_BEM += Dot(V, nf) * nf;
+					p->U_tangential_BEM -= Dot(p->U_tangential_BEM, nf) * nf;
+					p->U_tangential_BEM += Dot(V, nf) * nf;
+					p->U_normal_BEM -= Dot(p->U_normal_BEM, nf) * nf;
+					p->U_normal_BEM += Dot(V, nf) * nf;
+				}
+			}
+			//! b ------------------------------------------------------ */
 		}
 		/* ------------------------------------------------------ */
 #ifdef derivatives_debug
@@ -854,6 +888,152 @@ struct derivatives
 		double density = 1000.;		 // [kg/m3]
 		double nu = 0.01005 / density;
 
+		for (const auto &p : Points)
+		{
+			p->grid_tension *= 0.;
+			p->grid_tension_ *= 0.;
+		}
+
+		for (auto kk = 0; kk < 30; ++kk)
+		{
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+			for (auto it = Points.begin(); it != Points.end(); ++it)
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+			{
+				auto p = *it;
+				this->P_kappa[p] = p->kappa_BEM;
+				this->P_gradPhi[p] = p->U_BEM;
+				this->P_laplacian[p] = p->laplacian_U_BEM;
+
+				//!この微分は何のために評価したのか？
+				//! ルンゲクッタは，この微分の値，grad phiとDphiDtを複数使って，DxDtとDphiDtの積分精度を向上させる
+				// this->P_dxdt[p] = p->U_BEM; //流速
+				// double fact = 1 + tanh(time_step / 2. - 3.);
+				// auto nondim gamma* = gamma/g/rhp/L^2 = 0.007275 * 1E-3
+				// auto c = (1 / 2. + tanh(real_time / 3. - 3.) / 2.);
+
+				auto lap_tang = nu * p->laplacian_U_BEM - Dot(nu * p->laplacian_U_BEM, p->normal_BEM) * p->normal_BEM;
+				// auto lap_tang = 100. * nu * p->laplacian_U_BEM;
+				p->U_mod_BEM = p->U_BEM - lap_tang;
+				// p->U_BEM = p->U_mod_BEM;
+				this->P_dxdt_mod[p] = p->U_mod_BEM; //流速
+
+				// p->U_tangential_BEM = p->U_BEM - Dot(p->U_BEM, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
+				// p->U_normal_BEM = Dot(p->U_BEM, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
+				this->P_gradPhi_tangential[p] = p->U_tangential_BEM;
+				this->P_phin_vector[p] = p->U_normal_BEM;
+				/* ------------------------------------------------------ */
+				Tddd tension = {0, 0, 0};
+				auto p_next_X = p->getXtuple() + p->U_BEM * dt + p->grid_tension * dt;
+				auto p_current_X = p->getXtuple();
+
+#define area_averaged_tension
+#ifdef area_averaged_tension
+				double area = 0.;
+				double Area_tot = 0.;
+				// なぜ面に依存した張力によって補正すべきなのか？
+				// 線ではだめ，
+				V_d Areas;
+				std::vector<Tddd> Vecs;
+				for (const auto &f : p->getFaces())
+				{
+					if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
+					{
+
+						auto [p0, p1, p2] = f->getPointsTuple();
+
+						auto p0_U = p0->grid_tension + p0->U_BEM;
+						auto p1_U = p1->grid_tension + p1->U_BEM;
+						auto p2_U = p2->grid_tension + p2->U_BEM;
+
+						if ((p0->Neumann || p0->CORNER) && !p0->getContactFaces().empty())
+							for (const auto &[f, X] : getContactFacesX(p0))
+							{
+								auto nf = f->getNormalTuple();
+								auto V = local_forced_velocity(f->getNetwork(), X);
+								p0_U -= Dot(p0_U, nf) * nf;
+								p0_U += Dot(V, nf) * nf;
+							}
+						if ((p1->Neumann || p1->CORNER) && !p1->getContactFaces().empty())
+							for (const auto &[f, X] : getContactFacesX(p1))
+							{
+								auto nf = f->getNormalTuple();
+								auto V = local_forced_velocity(f->getNetwork(), X);
+								p1_U -= Dot(p1_U, nf) * nf;
+								p1_U += Dot(V, nf) * nf;
+							}
+						if ((p2->Neumann || p2->CORNER) && !p2->getContactFaces().empty())
+							for (const auto &[f, X] : getContactFacesX(p2))
+							{
+								auto nf = f->getNormalTuple();
+								auto V = local_forced_velocity(f->getNetwork(), X);
+								p2_U -= Dot(p2_U, nf) * nf;
+								p2_U += Dot(V, nf) * nf;
+							}
+
+						T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0_U, p1_U, p2_U} * dt;
+						area = TriangleArea(f_next_X);
+
+						double mult = 1;
+						if (beta > 1E-5)
+						{
+							auto depth = f->minDepthToCORNER;
+							if (depth < depthlimit)
+								mult += std::pow(depthlimit - depth, beta);
+						}
+						area *= mult;
+						Area_tot += area;
+						{
+							// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
+							// auto v = f_next_X - p_next_X;
+							// auto dist = Norm(v);
+							// auto k = dist / dt;
+							// // k += k / 5. * k / 5. * k / 5.;
+							// tension += k * Normalize(v) * f->getAngle(p) / Theta_tot;
+							/* ------------------------------------------------------ */
+							// tension += (area / dt) * Normalize(f_next_X - p_next_X);
+							// tension += (area / dt) * (Mean(f_next_X) - p_next_X);
+							Areas.emplace_back(area);
+							Vecs.emplace_back(Mean(f_next_X) - p_next_X);
+						}
+					}
+				}
+				tension = {0, 0, 0};
+				for (auto i = 0; i < Vecs.size(); i++)
+				{
+					tension += Areas[i] * Vecs[i] / dt;
+				}
+				tension /= Total(Areas);
+#endif
+
+				tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
+
+				if (p->Neumann)
+					tension -= Dot(tension, p->getNormalNeumannAreaAveraged()) * p->getNormalNeumannAreaAveraged();
+
+				if (p->CORNER)
+				{
+					tension -= Dot(tension, p->getNormalDirichletAreaAveraged()) * p->getNormalDirichletAreaAveraged();
+					for (const auto &f : p->getFaces())
+						tension -= Dot(tension, f->getNormalTuple()) * f->getNormalTuple();
+
+					for (const auto &[f, X] : getContactFacesX(p))
+					{
+						auto nf = f->getNormalTuple();
+						tension -= Dot(tension, nf) * nf;
+					}
+				}
+
+				p->grid_tension_ = (p->grid_tension + K * tension) / 2.;
+			}
+			for (const auto &p : Points)
+				p->grid_tension = p->grid_tension_;
+		}
+		/* ------------------------------------------------------ */
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -862,114 +1042,20 @@ struct derivatives
 #pragma omp single nowait
 #endif
 		{
+			// auto C = 4. * M_PI / 8.;
+			// if (p->getSolidAngle() < C)
+			// 	tension *= std::pow(p->getSolidAngle() / C, 2);
+			// if (p->getSolidAngle() > (4. * M_PI - C))
+			// 	tension *= std::pow((4. * M_PI - p->getSolidAngle()) / C, 2);
 			auto p = *it;
-			this->P_kappa[p] = p->kappa_BEM;
-			this->P_gradPhi[p] = p->U_BEM;
-			this->P_laplacian[p] = p->laplacian_U_BEM;
-
-			//!この微分は何のために評価したのか？
-			//! ルンゲクッタは，この微分の値，grad phiとDphiDtを複数使って，DxDtとDphiDtの積分精度を向上させる
-			// this->P_dxdt[p] = p->U_BEM; //流速
-			// double fact = 1 + tanh(time_step / 2. - 3.);
-			// auto nondim gamma* = gamma/g/rhp/L^2 = 0.007275 * 1E-3
-			// auto c = (1 / 2. + tanh(real_time / 3. - 3.) / 2.);
-
-			auto lap_tang = nu * p->laplacian_U_BEM - Dot(nu * p->laplacian_U_BEM, p->normal_BEM) * p->normal_BEM;
-			// auto lap_tang = 100. * nu * p->laplacian_U_BEM;
-			p->U_mod_BEM = p->U_BEM - lap_tang;
-			// p->U_BEM = p->U_mod_BEM;
-			this->P_dxdt_mod[p] = p->U_mod_BEM; //流速
-
-			p->U_tangential_BEM = p->U_BEM - Dot(p->U_BEM, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
-			p->U_normal_BEM = Dot(p->U_BEM, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
-			this->P_gradPhi_tangential[p] = p->U_tangential_BEM;
-			this->P_phin_vector[p] = p->U_normal_BEM;
-			/* ------------------------------------------------------ */
-			Tddd tension = {0, 0, 0};
-			auto p_next_X = p->getXtuple() + p->U_BEM * dt;
-			auto p_current_X = p->getXtuple();
-
-#define area_averaged_tension
-#ifdef area_averaged_tension
-			double area = 0.;
-			double Area_tot = 0.;
-			// なぜ面に依存した張力によって補正すべきなのか？
-			// 線ではだめ，
-			V_d Areas;
-			std::vector<Tddd> Vecs;
-			for (const auto &f : p->getFaces())
-			{
-				if ((p->CORNER && f->Dirichlet) || (!p->CORNER))
-				{
-
-					auto [p0, p1, p2] = f->getPointsTuple();
-					T3Tddd f_next_X = f->getX_Vertices() + T3Tddd{p0->U_BEM, p1->U_BEM, p2->U_BEM} * dt;
-					area = TriangleArea(f_next_X);
-
-					double mult = 1;
-					if (beta > 1E-5)
-					{
-						auto depth = f->minDepthToCORNER;
-						if (depth < depthlimit)
-							mult += std::pow(depthlimit - depth, beta);
-					}
-					area *= mult;
-					Area_tot += area;
-					{
-						// auto v = (f_next_X + f_current_X) / 2 - (p_next_X + p_current_X) / 2;
-						// auto v = f_next_X - p_next_X;
-						// auto dist = Norm(v);
-						// auto k = dist / dt;
-						// // k += k / 5. * k / 5. * k / 5.;
-						// tension += k * Normalize(v) * f->getAngle(p) / Theta_tot;
-						/* ------------------------------------------------------ */
-						// tension += (area / dt) * Normalize(f_next_X - p_next_X);
-						tension += (area / dt) * (Mean(f_next_X) - p_next_X);
-						Areas.emplace_back(area);
-						Vecs.emplace_back(Mean(f_next_X) - p_next_X);
-					}
-				}
-			}
-			tension = {0, 0, 0};
-			for (auto i = 0; i < Vecs.size(); i++)
-			{
-				tension += Areas[i] * Vecs[i] / dt;
-			}
-			tension /= Total(Areas);
-#endif
-
-			tension -= Dot(tension, p->getNormalAreaAveraged()) * p->getNormalAreaAveraged();
-
-			if (p->Neumann || p->CORNER)
-				tension -= Dot(tension, p->getNormalNeumannAreaAveraged()) * p->getNormalNeumannAreaAveraged();
-
-			if (p->CORNER)
-			{
-				tension -= Dot(tension, p->getNormalDirichletAreaAveraged()) * p->getNormalDirichletAreaAveraged();
-				for (const auto &f : p->getFaces())
-					tension -= Dot(tension, f->getNormalTuple()) * f->getNormalTuple();
-
-				for (const auto &[f, X] : getContactFacesX(p))
-				{
-					auto nf = f->getNormalTuple();
-					tension -= Dot(tension, nf) * nf;
-				}
-
-				auto C = 4. * M_PI / 4.;
-				if (p->getSolidAngle() < C)
-					tension *= std::pow(p->getSolidAngle() / C, 2);
-				if (p->getSolidAngle() > (4. * M_PI - C))
-					tension *= std::pow((4. * M_PI - p->getSolidAngle()) / C, 2);
-			}
-
-			P_tension[p] = tension;
+			P_tension[p] = p->grid_tension;
 
 			// p->U_update_BEM = p->U_BEM;
 			//! tensionが強いと角でとがるようなエラーがでる．
 
-			// p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
+			p->U_update_BEM = p->U_BEM + p->grid_tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 
-			p->U_update_BEM = p->U_BEM + K * tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
+			// p->U_update_BEM = p->U_normal_BEM + p->grid_tension; // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 
 			// p->U_update_BEM = p->U_BEM - p->U_tangential_BEM + Norm(p->U_tangential_BEM) * Normalize(tension); // p->U_normal_BEM + tangent; //要修正．EMTをプログラム
 			/* ------------------------------------------------------ */
@@ -1154,7 +1240,11 @@ struct solveBVP
 {
 	std::vector<networkPoint *> Points;
 	std::vector<networkFace *> Faces;
+#if defined(use_lapack)
+	lapack_lu *lu;
+#else
 	ludcmp_parallel *lu;
+#endif
 	VV_d mat_ukn;
 	VV_d mat_kn;
 	V_d knowns;
@@ -1417,9 +1507,15 @@ struct solveBVP
 		std::cout << "  mat_kn.size() = " << mat_kn.size() << std::endl;
 #if defined(solve_equations_on_all_points) || defined(solve_equations_on_all_points_RBF) || defined(solve_equations_on_all_points_rigid_mode)
 		//* 未知変数の計算
-		std::cout << "LU decomposition" << std::endl;
-
+#if defined(use_lapack)
+		std::cout << "lapack lu decomposition" << std::endl;
+		this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
+#else
+		std::cout << "parallel lu decomposition" << std::endl;
 		this->lu = new ludcmp_parallel(mat_ukn /*未知の行列係数（左辺）*/);
+#endif
+
+		std::cout << "try to solve" << std::endl;
 		this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 
 		// GradientMethod gm(mat_ukn);
@@ -1568,67 +1664,8 @@ Tdd phiphin_from_points_faces(const networkLine *const l)
 	return phiphin_from_points(l) / 2. + phiphin_from_faces(l) / 2.;
 };
 
-void remesh_flip(Network &water)
-{
-	std::cout << "remeshing" << std::endl;
-	water.setBounds();
-	double mean_length = Mean(extLength(water.getLines()));
-	bool isfound = false, ismerged = false;
-	int count = 0;
-	double lim_degree = 15.;
-	do
-	{
-		// なくなるまでやるか？
-		isfound = false;
-		ismerged = false;
-		auto points = water.getPoints();
-		V_netPp ps;
-		for (const auto &p : RandomSample(ToVector(points)))
-		{
-			//* ------------------------------------------------------ */
-			//*                立体角が小さすぎる場合merge                 */
-			//* ------------------------------------------------------ */
-			p->sortLinesByLength();
-			auto l = p->getLines()[0];
-			if (l->length() < mean_length / 20.)
-			{
-				//@ case 1
-				// Tdd phiphin = phiphin_from_faces_IDW(l);
-				//@ case2 lの面全体を考慮
-				// Tdd phiphin = phiphin_from_faces(l);
-				//@ case3 lの点だけを考慮
-				// Tdd phiphin = phiphin_from_points(l);
-				//@ case4 lの面全体を考慮
-				Tdd phiphin = phiphin_from_points_faces(l);
-				/* ------------------------------------------------------ */
-				auto q = l->merge();
-				q->phiphin = phiphin;
-				ismerged = true;
-				break;
-			}
-			//! ------------------------------------------------------ */
-			//!             辺の長さが長すぎるまたは短すぎる場合             */
-			//! ------------------------------------------------------ */
-			for (const auto &l : RandomSample(p->getLines()))
-			{
-				auto [p0, p1] = l->getPointsTuple();
-				if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
-				{
-					l->flipIfBetter(lim_degree);
-					// isfound = true;
-					if (ismerged || isfound)
-						break;
-				}
-			}
-			if (ismerged || isfound)
-				break;
-		}
-	} while ((ismerged || isfound) && count++ < 2000);
-	// if (count == 10)
-	// 	std::cout << "remesh too much" << std::endl;
-};
 /* ------------------------------------------------------ */
-void remesh(Network &water, bool force = false, int max_count = 5000)
+void remesh(Network &water, bool force = false, int max_count = 500)
 {
 	std::cout << "remeshing" << std::endl;
 	water.setBounds();
@@ -1648,23 +1685,38 @@ void remesh(Network &water, bool force = false, int max_count = 5000)
 			//* ------------------------------------------------------ */
 			//*                立体角が小さすぎる場合merge                 */
 			//* ------------------------------------------------------ */
-			if (p->getSolidAngle() < 4 * M_PI / 20. || (4 * M_PI - p->getSolidAngle()) < 4 * M_PI / 20.)
+			if (p->getSolidAngle() < 4 * M_PI / 50. || (4 * M_PI - p->getSolidAngle()) < 4 * M_PI / 50.)
 			{
 				p->sortLinesByLength();
 				auto l = p->getLines()[0];
-				//@ case 1
-				// Tdd phiphin = phiphin_from_faces_IDW(l);
-				//@ case2 lの面全体を考慮
-				// Tdd phiphin = phiphin_from_faces(l);
-				//@ case3 lの点だけを考慮
-				// Tdd phiphin = phiphin_from_points(l);
-				//@ case4 lの面全体を考慮
-				Tdd phiphin = phiphin_from_points_faces(l);
-				/* ------------------------------------------------------ */
-				auto q = l->merge();
-				q->phiphin = phiphin;
-				ismerged = true;
-				break;
+				if (!l->CORNER)
+				{
+					//@ case 1
+					// Tdd phiphin = phiphin_from_faces_IDW(l);
+					//@ case2 lの面全体を考慮
+					// Tdd phiphin = phiphin_from_faces(l);
+					//@ case3 lの点だけを考慮
+					// Tdd phiphin = phiphin_from_points(l);
+					//@ case4 lの面全体を考慮
+					Tdd phiphin = phiphin_from_points_faces(l);
+					/* ------------------------------------------------------ */
+					// auto [a, b] = l->getPointsTuple();
+					// if (a->CORNER)
+					// 	b = a;
+					// else if (b->CORNER)
+					// 	a = b;
+					// Tddd V = (a->getXtuple() + b->getXtuple()) / 2. - a->getXtuple();
+					// for (const auto &f : a->getContactFaces())
+					// 	V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+					// for (const auto &f : b->getContactFaces())
+					// 	V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+					// Tddd X = V + a->getXtuple();
+					// auto q = l->merge();
+					// q->phiphin = phiphin;
+					// q->setX(X);
+					// ismerged = true;
+					// break;
+				}
 			}
 			//! ------------------------------------------------------ */
 			//!             辺の長さが長すぎるまたは短すぎる場合             */
@@ -1672,67 +1724,76 @@ void remesh(Network &water, bool force = false, int max_count = 5000)
 			for (const auto &l : RandomSample(p->getLines()))
 			{
 				auto [p0, p1] = l->getPointsTuple();
-				if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
+				if (!l->CORNER && p0->CORNER && p1->CORNER)
 				{
-					// if (force)
-					// {
-					// 	isfound = l->flipIfTopologicalyBetter(lim_degree);
-					// }
-					// else
+					isfound = l->flip();
+				}
+				else if (!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)) &&
+						 (/*Dirichlet-CORNERの線に関しては関与しない*/ !(!l->CORNER && ((p0->CORNER && p1->Dirichlet) || (p0->Dirichlet && p1->CORNER)))))
+				{
+					if (force && !l->CORNER)
 					{
-						// isfound = l->flipIfTopologicalyBetter(lim_degree);
+						isfound = l->flipIfTopologicalyBetter(lim_degree);
+						// break;
+					}
+					else if (!l->CORNER)
+					{
 						isfound = l->flipIfBetter(lim_degree);
-						//@ ------------------------------------------------------ */
-						// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
-						// {
-						// 	//@ case 1
-						// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
-						// 	//@ case2 lの面全体を考慮
-						// 	// Tdd phiphin = phiphin_from_faces(l);
-						// 	//@ case3 lの点だけを考慮
-						// 	// Tdd phiphin = phiphin_from_points(l);
-						// 	//@ case4 lの面全体を考慮
-						// 	Tdd phiphin = phiphin_from_points_faces(l);
-						// 	/* ------------------------------------------------------ */
-						// 	auto q = l->divide();
-						// 	q->phiphin = phiphin;
-						// 	isfound = true;
-						// 	break;
-						// }
-						//@ ------------------------------------------------------ */
-						if (l->length() < mean_length / 6.)
-						{
-							/*
-							b!マージの原則：マージによってノイマン面は変形してはいけない．
-							*/
-							//@ case1
-							// Tdd phiphin = phiphin_from_faces_IDW(l);
-							//@ case2 lの面全体を考慮
-							// Tdd phiphin = phiphin_from_faces(l);
-							//@ case3 lの点だけを考慮
-							// Tdd phiphin = phiphin_from_points(l);
-							//@ case4 lの面全体を考慮平均
-							// Tdd phiphin = phiphin_from_points_faces(l);
+						// break;
+					}
 
-							/* ------------------------------------------------------ */
-							//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
-							auto [p0, p1] = l->getPointsTuple();
-							Tdd phiphin = (p0->phiphin + p1->phiphin) / 2.;
-							auto p0X = p0->getXtuple();
-							auto p0Top1 = p1->getXtuple() - p0X;
-							for (const auto &f : p0->getFaces())
-								if (f->Neumann)
-									p0Top1 -= Dot(p0Top1, f->getNormalTuple()) * f->getNormalTuple();
-							/* ------------------------------------------------------ */
-							auto q = l->merge();
-							q->phiphin = phiphin;
-							//
-							//@case5
-							q->setX(p0X + p0Top1);
-							/* ------------------------------------------------------ */
-							ismerged = true;
-							break;
-						}
+					//@ ------------------------------------------------------ */
+					// if (l->length() > mean_length * 3. / 2. /*長すぎる*/)
+					// {
+					// 	//@ case 1
+					// 	// Tdd phiphin = phiphin_from_faces_IDW(l);
+					// 	//@ case2 lの面全体を考慮
+					// 	// Tdd phiphin = phiphin_from_faces(l);
+					// 	//@ case3 lの点だけを考慮
+					// 	// Tdd phiphin = phiphin_from_points(l);
+					// 	//@ case4 lの面全体を考慮
+					// 	Tdd phiphin = phiphin_from_points_faces(l);
+					// 	/* ------------------------------------------------------ */
+					// 	auto q = l->divide();
+					// 	q->phiphin = phiphin;
+					// 	isfound = true;
+					// 	break;
+					// }
+					//@ ------------------------------------------------------ */
+					if (l->length() < mean_length / 15.)
+					{
+						/*
+						b!マージの原則：マージによってノイマン面は変形してはいけない．
+						*/
+						//@ case1
+						// Tdd phiphin = phiphin_from_faces_IDW(l);
+						//@ case2 lの面全体を考慮
+						// Tdd phiphin = phiphin_from_faces(l);
+						//@ case3 lの点だけを考慮
+						// Tdd phiphin = phiphin_from_points(l);
+						//@ case4 lの面全体を考慮平均
+						// Tdd phiphin = phiphin_from_points_faces(l);
+
+						/* ------------------------------------------------------ */
+						//@ case5 ２点の平均，移動位置は，ノイマンを崩さない方向：ノイマン面の法線方向成分には移動しない．
+						auto [a, b] = l->getPointsTuple();
+						if (a->CORNER)
+							b = a;
+						else if (b->CORNER)
+							a = b;
+						Tdd phiphin = (a->phiphin + b->phiphin) / 2.;
+						Tddd V = (a->getXtuple() + b->getXtuple()) / 2. - a->getXtuple();
+						for (const auto &f : a->getContactFaces())
+							V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+						for (const auto &f : b->getContactFaces())
+							V -= f->getNormalTuple() * Dot(V, f->getNormalTuple());
+						Tddd X = V + a->getXtuple();
+						auto q = l->merge();
+						q->phiphin = phiphin;
+						q->setX(X);
+						/* ------------------------------------------------------ */
+						ismerged = true;
+						break;
 					}
 					if (ismerged || isfound)
 						break;
@@ -1741,7 +1802,7 @@ void remesh(Network &water, bool force = false, int max_count = 5000)
 			if (ismerged || isfound)
 				break;
 		}
-	} while ((ismerged || isfound) && count++ < 10000);
+	} while ((ismerged || isfound) && count++ < max_count);
 };
 // b! ------------------------------------------------------ */
 // b! ------------------------------------------------------ */
@@ -1969,7 +2030,8 @@ int main()
 			// auto radius = Mean(extLength(water.getLines()));
 			setBoundaryConditions(water, structures);
 
-			if (real_time < stop_remesh_time)
+			// b* ------------------------------------------------------ */
+			if (real_time < stop_remesh_time && time_step > 0)
 			{
 				if (real_time < force_remesh_time)
 				{
@@ -1978,6 +2040,7 @@ int main()
 				}
 				remesh(water);
 			}
+
 			// b# ------------------------------------------------------ */
 			// b#                       刻み時間の決定                     */
 			// b# ------------------------------------------------------ */
@@ -2009,8 +2072,6 @@ int main()
 			Print("time_step :" + Red + std::to_string(time_step) + reset);
 			Print("real time :" + Red + std::to_string(real_time) + reset);
 			Print("---------------------------------------------------------------------------");
-			if (min_dt < 1E-10)
-				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "dt is too small");
 
 			int depthlimit = 9;
 #ifdef _OPENMP

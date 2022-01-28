@@ -1,0 +1,27 @@
+#include "svd.hpp"
+#include "fundamental.hpp"
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+int main()
+{
+  MatDoub A = {{56.0, 75.0, 53.0},
+               {52.0, 71.0, 10.0},          
+               //               {53.0, 34.0, 3.4},
+               {99.0, 73.0, 22.0}};
+
+  VecDoub b = VecDoub(A.size(), 3.);
+
+  VecDoub solution = {1., 1., 1.};
+
+  SVD svd(A);
+  svd.solve(b, solution);
+
+  for (auto &a : A)
+    Print(Dot(a, solution), blue);
+
+  Print(solution, Red);
+  Print(svd.u);
+  Print(svd.w);
+  Print(svd.v);
+}

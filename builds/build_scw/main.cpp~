@@ -1,0 +1,11 @@
+//#include "fundamental.hpp"
+int main()
+{
+  //"/Users/tomoaki/Dropbox/research/scw_3d/workshop/fortran/sym/sym_direct/results/50_6/2d0000EP00_1d0000EP02/1d0000000EM03/0d0000000EP00_2d0005030EP00/data.dat";
+  //"/Users/tomoaki/Dropbox/research/scw_3d/workshop/fortran/sym/sym_direct/results/50_6/2d0000EP00_1d0000EP02/1d0000000EM03/0d0000000EP00_2d0005030EP00/data.dat";
+
+  fopen();
+
+  
+
+}

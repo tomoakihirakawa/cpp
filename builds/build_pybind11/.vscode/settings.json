@@ -1,0 +1,6 @@
+{
+    "python.pythonPath": "/usr/local/bin/python3",
+    "prettier.printWidth": 200,
+    "editor.wordWrapColumn": 200,
+    "cmake.sourceDirectory": "${workspaceFolder}/pybind11"
+}

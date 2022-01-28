@@ -1,0 +1,191 @@
+#include "GNUPLOT.hpp"
+#include "fundamental.hpp"
+
+// class derivativeImprover{
+// protected:
+//   double _dt;
+//   std::vector<double> _dx;
+//   double improved;  
+//   bool finished;
+// public:
+//   double dt, dx;
+  
+//   derivativeImprover(const double& dt_IN)
+//     :_dx(0), _dt(dt_IN), dt(0),  dx(0){};
+//   ~derivativeImprover(){};
+  
+//   void Clear(){
+//     finished=false;
+//     _dx.clear();
+//   };
+  
+//   double getImproved(){
+//     if(finished)
+//       return improved;
+//     else
+//       std::cout << "improver has not finished" << std::endl;    
+//     return 0;
+//   };
+
+//   virtual bool improve(const double& dxdt_IN) = 0;
+  
+//   void displayStatus(){
+//     std::cout << "step : " << Red << this->_dx.size() << reset << std::endl;    
+//     std::cout << "dt : " << red << this->dt << reset << std::endl;
+//     std::cout << "dx : " << red << this->dx << reset << std::endl;
+//   };
+  
+//   void pushFront_dx(const double& v){
+//     _dx.insert(_dx.begin(),v);
+//   };
+  
+// };
+// ///////////////
+// struct RK2 : derivativeImprover{
+//   RK2(const double& dt_IN):derivativeImprover(dt_IN){};
+//   bool improve(const double& dxdt_IN)override{
+//     pushFront_dx(dxdt_IN*_dt);
+//     switch(_dx.size()){
+//     case 1 :// -> {f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt);
+//       return finished = false;
+//     case 2 :// -> {f3, f2, f1(t,v(t))}
+//       dx = (dt = 0.);
+//       improved = (_dx[0] + _dx[1])/2.;
+//       return finished = true;     
+//     default :
+//       return false;
+//     }
+//   };
+// };
+// struct RK3 : derivativeImprover{
+//   RK3(const double& dt_IN):derivativeImprover(dt_IN){};
+//   bool improve(const double& dxdt_IN)override{
+//     pushFront_dx(dxdt_IN*_dt);
+//     switch(_dx.size()){
+//     case 1 :// -> {f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt/2.);      
+//       return finished = false;
+//     case 2 :// -> {f2, f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt);
+//       return finished = false;
+//     case 3 :// -> {f3, f2, f1(t,v(t))}
+//       dx = (dt = 0.);
+//       improved = (_dx[0] + 4.*_dx[1] + _dx[2])/6.;
+//       return finished = true;     
+//     default :
+//       return false;
+//     }
+//   };
+// };
+// struct RK4 : derivativeImprover{
+//   RK4(const double& dt_IN):derivativeImprover(dt_IN){};
+//   bool improve(const double& dxdt_IN)override{
+//     pushFront_dx(dxdt_IN*_dt);
+//     switch(_dx.size()){
+//     case 1 :// -> {f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt/2.);      
+//       return finished = false;
+//     case 2 :// -> {f2, f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt/2.);      
+//       return finished = false;
+//     case 3 :// -> {f3, f2, f1(t,v(t))}
+//       dx = dxdt_IN * (dt = _dt);      
+//       return finished = false;
+//     case 4 :// -> dxdt[1][] = {f4, f3, f2, f1(t,v(t))}
+//       dx = (dt = 0.);      
+//       improved = (_dx[0] + 2.*_dx[1] + 2.*_dx[2] + _dx[3])/6.;
+//       return finished = true;     
+//     default :
+//       return false;
+//     }
+//   };
+// };
+//////////////////
+double dydt(double y, double t){
+  return sin(t)*sin(t)*y;
+};
+
+int main(){
+
+  std::vector<std::vector<double>> ansRK2, ansRK3, ansRK4;  
+  std::vector<std::vector<double>> exact;
+
+  double y0 = 2;
+  double dt = 1.;
+  double t_end = 10;
+
+  {
+    RK2 rk(dt);
+    double y = y0;
+    double t = 0.;
+    for(auto j=0; j<100; j++){      
+      ansRK2.push_back({t,y});
+      while(true){
+	bool finish = rk.improve(dydt(y+rk.dx, t+rk.dt));
+	rk.displayStatus();
+	if(finish)
+	  break;
+      }    
+      y += rk.getImproved();
+      t += dt;
+      rk.Clear();
+      Print(y,Magenta);
+      if(t>t_end) break;
+    }
+  }
+  {
+    RK3 rk(dt);
+    double y = y0;
+    double t = 0.;
+    for(auto j=0; j<100; j++){
+      ansRK3.push_back({t,y});
+      while(true){
+	bool finish = rk.improve(dydt(y+rk.dx, t+rk.dt));
+	rk.displayStatus();
+	if(finish)
+	  break;
+      }    
+      y += rk.getImproved();
+      t += dt;
+      rk.Clear();
+      Print(y,Magenta);
+      if(t>t_end) break;
+    }
+  }
+  {
+    RK4 rk(dt);
+    double y = y0;
+    double t = 0.;
+    for(auto j=0; j<100; j++){
+      ansRK4.push_back({t,y});
+      while(true){
+	bool finish = rk.improve(dydt(y+rk.dx, t+rk.dt));
+	rk.displayStatus();
+	if(finish)
+	  break;
+      }    
+      y += rk.getImproved();
+      t += dt;
+      rk.Clear();
+      Print(y,Magenta);
+      if(t>t_end) break;      
+    }
+  }
+  
+  for(auto j=0; j<1000; j++){
+    double t=j*0.05;
+    if(t>t_end) break;    
+    exact.push_back({t,y0*exp((2*t-sin(2.*t))/4.)});
+  };
+
+
+  GNUPLOT plot;
+  plot.Set({{"key","left"}});
+  plot.SaveData(exact,{{"lc",plot.rgb({255,0,0})},{"w","l"},{"lw","4"},{"title","exact"}});  
+  plot.SaveData(ansRK4,  {{"lc",plot.rgb({205,0,205})},{"w","lp"},{"lw","2"},{"title","RK4"}});  
+  plot.SaveData(ansRK3,  {{"lc",plot.rgb({0,205,205})},{"w","lp"},{"lw","2"},{"title","RK3"}});
+  plot.SaveData(ansRK2,  {{"lc",plot.rgb({205,205,0})},{"w","lp"},{"lw","2"},{"title","RK2"}});
+  plot.Plot2D();
+  std::cin.ignore();
+};

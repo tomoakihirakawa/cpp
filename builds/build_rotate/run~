@@ -1,0 +1,10 @@
+#! bin/bash
+
+sh ./clean
+cmake -G Ninja ./
+
+#cmake --build ./
+### or
+ninja
+
+./out

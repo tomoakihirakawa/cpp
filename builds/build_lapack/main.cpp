@@ -1,86 +1,67 @@
-#include <iostream>
-#include <fstream>
+// LAPACK test code
+// compile with: g++ main.cpp -llapack -lblas -o testprog
 
+// #include <iostream>
+// #include <vector>
 
-using namespace std;
+// using namespace std;
 
-// dgeev_ is a symbol in the LAPACK library files
-extern "C" {
-extern int dgeev_(char*,char*,int*,double*,int*,double*, double*, double*, int*, double*, int*, double*, int*, int*);
-}
+// extern "C" void dgetrf_(int *dim1, int *dim2, double *a, int *lda, int *ipiv, int *info);
+// extern "C" void dgetrs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA, int *IPIV, double *B, int *LDB, int *INFO);
 
-int main(int argc, char** argv){
+// int main()
+// {
+//   char trans = 'N';
+//   int dim = 2;
+//   int nrhs = 1;
+//   int LDA = dim;
+//   int LDB = dim;
+//   int info;
 
-  // check for an argument
-  if (argc<2){
-    cout << "Usage: " << argv[0] << " " << " filename" << endl;
-    return -1;
-  }
+//   vector<double> a, b;
 
-  int n,m;
-  double *data;
+//   a.push_back(1);
+//   a.push_back(0);
+//   a.push_back(0);
+//   a.push_back(1);
 
-  // read in a text file that contains a real matrix stored in column major format
-  // but read it into row major format
-  ifstream fin(argv[1]);
-  if (!fin.is_open()){
-    cout << "Failed to open " << argv[1] << endl;
-    return -1;
-  }
-  fin >> n >> m;  // n is the number of rows, m the number of columns
-  data = new double[n*m];
-  for (int i=0;i<n;i++){
-    for (int j=0;j<m;j++){
-      fin >> data[j*n+i];
-    }
-  }
-  if (fin.fail() || fin.eof()){
-    cout << "Error while reading " << argv[1] << endl;
-    return -1;
-  }
-  fin.close();
+//   b.push_back(2);
+//   b.push_back(0);
 
-  // check that matrix is square
-  if (n != m){
-    cout << "Matrix is not square" <<endl;
-    return -1;
-  }
+//   int ipiv[3];
 
-  // allocate data
-  char Nchar='N';
-  double *eigReal=new double[n];
-  double *eigImag=new double[n];
-  double *vl,*vr;
-  int one=1;
-  int lwork=6*n;
-  double *work=new double[lwork];
-  int info;
+//   dgetrf_(&dim, &dim, &*a.begin(), &LDA, ipiv, &info);
+//   dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, ipiv, &*b.begin(), &LDB, &info);
 
-  // calculate eigenvalues using the DGEEV subroutine
-  dgeev_(&Nchar,&Nchar,&n,data,&n,eigReal,eigImag,
-        vl,&one,vr,&one,
-        work,&lwork,&info);
+//   std::cout << "solution is:";
+//   std::cout << "[" << b[0] << ", " << b[1] << ", "
+//             << "]" << std::endl;
+//   std::cout << "Info = " << info << std::endl;
 
+//   return (0);
+// }
+/* ------------------------------------------------------ */
+// LAPACK test code
+// compile with: g++ main.cpp -llapack -lblas -o testprog
 
-  // check for errors
-  if (info!=0){
-    cout << "Error: dgeev returned error code " << info << endl;
-    return -1;
-  }
+#include <fundamental.hpp>
 
-  // output eigenvalues to stdout
-  cout << "--- Eigenvalues ---" << endl;
-  for (int i=0;i<n;i++){
-    cout << "( " << eigReal[i] << " , " << eigImag[i] << " )\n";
-  }
-  cout << endl;
-
-  // deallocate
-  delete [] data;
-  delete [] eigReal;
-  delete [] eigImag;
-  delete [] work;
-
-
-  return 0;
-}
+int main()
+{
+  std::vector<std::vector<double>> a({{1.4, 1.2, 3.0, 4.3},
+                                      {1.5, 4.5, 2.0, 1.2},
+                                      {5.2, 0.5, 7.0, 4.2},
+                                      {2.0, 7.0, 1.0, 2.2}});
+  std::vector<double> b({2, 1.4, 4, 1}), ans(3);
+  /* ------------------------------------------------------ */
+  lapack_lu la(a);
+  la.solve(b, ans);
+  std::cout << "solution is:";
+  std::cout << ans << std::endl;
+  /* ------------------------------------------------------ */
+  ludcmp lu(a);
+  lu.solve(b, ans);
+  std::cout << "solution is:";
+  std::cout << ans << std::endl;
+  /* ------------------------------------------------------ */
+};

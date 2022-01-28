@@ -1,0 +1,27 @@
+
+A2VI = (array)=>{
+    let vec = new Module.VectorInteger;
+    for(let i=0; i<array.length; i++)
+	vec.push_back(array[i]);
+    return vec;
+};
+
+A2VD = (array)=>{
+    let vec = new Module.VectorDouble;
+    for(let i=0; i<array.length; i++)
+	vec.push_back(array[i]);
+    return vec;
+};
+
+
+setA2V = (vec, array) =>{
+    vec.resize(0,0);
+    array.forEach(a=>vec.push_back(a));
+};
+
+getVec = (vec) =>{
+    let ret = new Array(vec.size());
+    for(let i=0; i<vec.size(); i++)
+	ret[i] = vec.get(i);
+    return ret;
+};

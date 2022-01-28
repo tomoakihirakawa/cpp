@@ -1,0 +1,1 @@
+g++-11 -include /Users/tomoaki/Dropbox/markdown/cpp/builds/../include/fundamental.hpp -std=c++17 -fuse-ld=gold -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/main.dir/main.cpp.o -o main 

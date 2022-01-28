@@ -1,0 +1,53 @@
+#include <iostream>
+#include <string>
+
+class exception_info{
+public:
+  int line;
+  std::string func;
+  
+  exception_info(const int line_, const std::string& func_){
+    line = line_;
+    func = func_;
+  };
+  
+  std::string what(){
+    return std::to_string(this->line) + " " + this->func;
+  };
+  
+};
+
+void func(int i)
+{
+  if(i==0){
+
+    throw(exception_info(__LINE__,__PRETTY_FUNCTION__));
+    
+  }else if(i==2){
+
+    throw(exception_info(__LINE__,__PRETTY_FUNCTION__));
+    
+  }else{
+    
+    throw(10);
+    
+  }
+  
+}
+
+
+int main(){
+
+  try{
+    func(0);    
+  }
+
+  catch (exception_info e){
+    std::cerr << e.what() << std::endl;
+  }
+
+  catch (int e) {
+    std::cerr << e << std::endl;
+  }
+  
+}

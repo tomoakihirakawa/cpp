@@ -19,21 +19,41 @@ home = expanduser("~")
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
 # output_directory = home+"/BEM/BEM_dt0d01_wavemake_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_respect_Dirichlet_on_CORNER_EMT_K0d5_without_remeshing"
 
-mesh = "20"
+settingBEM = {
+    "beta": 0.,
+    "K": 1.,
+    "max_dt": 0.02,
+    "mesh": 24,
+    "stop_remesh_time": 100.,
+    "force_remesh_time": 0.1
+}
+
+
+mesh = settingBEM["mesh"]
+
+output_directory = home + "/BEM/Li2002_h0_0d3048_shorttank" \
+                        + "_K" + str(settingBEM["K"])\
+                        + "_beta" + str(settingBEM["beta"])\
+                        + "_max_dt" + str(settingBEM["max_dt"])\
+                        + "_Mesh" + str(settingBEM["mesh"]) \
+                        + "_stopremesh" + str(settingBEM["stop_remesh_time"])
+
+
 folder = "../../obj/tank/Li2002_h0_0d3048_shorttank"
-output_directory = home + \
-    "/BEM/Li2002_h0_0d3048_shortank/BEM_dt0d01_wavemake_H_0d45_EMT_K1d0_water"+mesh
-# output_directory = home+"/BEM/test"
+
+
 data = {
     "name": "water",
-    "objfile": folder+"/water"+mesh+".obj",
+    "objfile": folder+"/water"+str(mesh)+".obj",
     "radius": 0.01,
+    # "rotate": [math.pi/2., 1, 0, 0],
     # "scale": [0.001, 0.001, 0.001, 0.001],  # モデルがmm単位なのでメートルに変換,
     # -------------------------------------------------------- #
     "output_vtu_file_name": "water",  # 拡張子はいらない
     "output_pvd_file_name": "water",  # 拡張子はいらない
     "output_directory": output_directory,
 }
+
 
 f = open("./water.json", 'w')
 json.dump(data, f, ensure_ascii=True, indent=4)

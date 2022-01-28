@@ -1,0 +1,64 @@
+networkPoint* getSharedPoint(const networkLine* line0, const networkLine* line1){
+  for(const auto& p0:line0->Points)
+    for(const auto& p1:line1->Points)
+      if(p0==p1)
+	return p0;
+  return NULL;
+};
+std::vector<crossPoint*> getCrossInfos(networkPoint* point){
+  std::vector<crossPoint*> ret;
+  for(const auto& l:point->Lines)
+    for(const auto& info:l->xPoints)
+      ret.emplace_back(info);
+  return ret;
+};
+std::vector<crossPoint*> getCrossInfos(std::vector<networkPoint*> points){
+  std::vector<crossPoint*> ret;
+  for(const auto& p:points)  
+    for(const auto& l:p->Lines)
+      for(const auto& info:l->xPoints)
+	ret.emplace_back(info);
+  return DeleteDuplicates(ret);
+};
+void adjust(networkPoint* point){
+  auto infos=getCrossInfos(point);
+  if(infos.size()>1){
+    std::vector<std::vector<std::vector<double>>> vecs;
+    for(const auto& info:infos)
+      vecs.push_back({(*(info->line))(point)->xyz,info->xyz});
+    point->xyz = midPointOfLines(vecs);      
+  }else if(infos.size()==1){
+    auto a = ((*(infos[0]->line))(point)->xyz);
+    auto v = (infos[0]->xyz) - a;
+    point->xyz = a + v*2.;
+  }
+};
+void adjust(const std::vector<networkPoint*>& points){
+  for(const auto& p:points)
+    adjust(p);
+};
+
+struct trinalgulerElement{
+  std::vector<std::vector<double>> sample;  
+  interpolate3d(const std::vector<std::vector<double>>& sample_IN):sample(sample_IN){};  
+  std::vector<double> operator()(const double& t0, const double& t1){
+    return Dot({t0, t1, 1.-(t0+t1)},this->sample);
+  };
+};
+
+double calculateIG(const std::vector<double>& a){
+  auto gw = GaussianQuadratureWeights(5,-1.,1.);
+
+  double ret=0;
+  for(const auto& tw0:gw)
+    for(const auto& tw1:gw){
+      auto v = tw1*(1-tw0[0]);
+
+      auto r = interpX(tw0[0],v[0]) - a;
+      auto n_detJ = interpX(tw0[0],v[0],),interpX(tw0[0],v[0]);
+	
+      ret += tw0[1] * v[1] * Dot(r/pow(Norm(r),3), n_detJ)*N;
+    }
+  
+  return ret;
+};

@@ -701,6 +701,8 @@ public:
 
 	Tddd grad_phi_BEM;
 	Tddd U_BEM, U_BEM_last;
+	Tddd grid_tension;
+	Tddd grid_tension_;
 	Tddd U_update_BEM; // EMTによってシフトさせた流速，法線方向成分はU_BEMと一致させる必要がある．
 	Tddd U_mod_BEM;
 	Tddd U_tangential_BEM, U_tangential_BEM_last;
@@ -1351,6 +1353,12 @@ networkFace_detail*/
 class networkFace : public networkObject<networkFace>, public object3D
 {
 public:
+	bool isMember(const networkPoint *const p_IN) const
+	{
+		return (std::get<0>(this->PointsTuple) == p_IN ||
+				std::get<1>(this->PointsTuple) == p_IN ||
+				std::get<2>(this->PointsTuple) == p_IN);
+	};
 	/* ------------------------------------------------------ */
 	bool Dirichlet;
 	bool Neumann;
@@ -2060,7 +2068,7 @@ public:
 	T_PPP getPointsTuple(const networkLine *const l) const
 	{
 		if (this->Lines[0] == l)
-			return this->PointsTuple;
+			return this->PointsTuple; // back,front.oppsite
 		else if (this->Lines[1] == l)
 			return {std::get<1>(this->PointsTuple), std::get<2>(this->PointsTuple), std::get<0>(this->PointsTuple)};
 		else
@@ -2958,8 +2966,10 @@ public:
 	// void sortFaces() { std::sort(this->Faces.begin(), this->Faces.end()); };
 
 	// 2021/08/10追加
-	bool isMember(networkPoint *p_IN) const { return (this->Points.find(p_IN) != this->Points.end()); };
-	bool isMember(networkFace *f_IN) const { return (this->Faces.find(f_IN) != this->Faces.end()); };
+	// bool isMember(const networkPoint *const p_IN) const { return (this->Points.find(p_IN) != this->Points.end()); };
+	bool isMember(networkPoint *const &p_IN) const { return (this->Points.find(p_IN) != this->Points.end()); };
+	// bool isMember(const networkFace *const f_IN) const { return (this->Faces.find(f_IN) != this->Faces.end()); };
+	bool isMember(networkFace *const &f_IN) const { return (this->Faces.find(f_IN) != this->Faces.end()); };
 	//
 	void add(netPp const p_IN) { this->Points.emplace(p_IN); };
 	void add(netFp const f_IN) { this->Faces.emplace(f_IN); };

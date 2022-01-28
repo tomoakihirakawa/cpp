@@ -1209,7 +1209,7 @@ namespace geometry
 										  ps[(s + i + 1) % s] - ps[i], normal);
 			if (!isFinite(angle))
 				return false;
-			if (angle < 0.)
+			if (angle <= 1E-13)
 				return false; //符号が変わったらfalse
 		}
 		return true;

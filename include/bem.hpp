@@ -377,7 +377,7 @@ namespace BEM
 					VvG.emplace_back(vG(f, Phi, phin));
 					found = true;
 				}
-			Print(VvG);
+			// Print(VvG);
 		}
 		if (VvG.empty())
 			return {};
@@ -1565,13 +1565,13 @@ namespace BEM
 		Tdd p0igign = {0, 0};
 		Tdd p1igign = {0, 0};
 		Tdd p2igign = {0, 0};
-		int i = 8;
+		int i = 6;
 
-		double mean_len = 5. * Max(extLength(origin->getLines()));
+		double mean_len = 10. * Max(extLength(origin->getLines()));
 		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||
 			Norm(p1->getXtuple() - origin->getXtuple()) < mean_len ||
 			Norm(p2->getXtuple() - origin->getXtuple()) < mean_len)
-			i = 14;
+			i = 13;
 		// タプルに対応させる．
 		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
 		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
@@ -1587,7 +1587,7 @@ namespace BEM
 		double beta = 2.;
 		double x_sing = 1.; //! linearの場合はx_sing = 1.
 		auto GW = __GW__Tuple[i];
-		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(i, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
 		{
 			if (isSingular)
 			{
@@ -1628,13 +1628,13 @@ namespace BEM
 		Tdd p0igign = {0, 0};
 		Tdd p1igign = {0, 0};
 		Tdd p2igign = {0, 0};
-		int i = 6;
+		int i = 5;
 
-		// double mean_len = 5. * Max(extLength(origin_f->getLines()));
-		// if (Norm(p0->getXtuple() - origin_f->getXtuple()) < mean_len ||
-		// 	Norm(p1->getXtuple() - origin_f->getXtuple()) < mean_len ||
-		// 	Norm(p2->getXtuple() - origin_f->getXtuple()) < mean_len)
-		// 	i = 14;
+		double mean_len = 5. * Max(extLength(origin_f->getLines()));
+		if (Norm(p0->getXtuple() - origin_f->getXtuple()) < mean_len ||
+			Norm(p1->getXtuple() - origin_f->getXtuple()) < mean_len ||
+			Norm(p2->getXtuple() - origin_f->getXtuple()) < mean_len)
+			i = 14;
 		// タプルに対応させる．
 		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
 		// Tddd A = intp(0.25, 0.25);
@@ -1652,7 +1652,7 @@ namespace BEM
 		bool isSingular = false; //(f == origin_f); //! linearの場合は0
 		double beta = 2.;
 		double x_sing = 0.5; //! linearの場合はx_sing = 1.
-		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW__Tuple[i])
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(i, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW__Tuple[i])
 		{
 			if (isSingular)
 			{
@@ -1697,40 +1697,38 @@ namespace BEM
 	/* ------------------------------------------------------ */
 	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple(const networkFace *const f, const networkPoint *const origin)
 	{
-		//おそらくIgIgnの計算精度に大きく関わるため，
-		// auto [p0, p1, p2] = f->getPointsTuple(origin);
 
-		// Tdd p0igign = {0, 0};
-		// Tdd p1igign = {0, 0};
-		// Tdd p2igign = {0, 0};
-
-		auto [p0, p1, p2, p3, p4, p5] = f->get6PointsTuple(origin);
+		auto [p0, p1, p2] = f->getPointsTuple(origin);
 		Tdd p0igign = {0, 0};
 		Tdd p1igign = {0, 0};
 		Tdd p2igign = {0, 0};
-		Tdd p3igign = {0, 0};
-		Tdd p4igign = {0, 0};
-		Tdd p5igign = {0, 0};
 
-		int i = 5;
+		Tdd p01igign = {0, 0};
+		Tdd p12igign = {0, 0};
+		Tdd p20igign = {0, 0};
 
-		double mean_len = 5. * Max(extLength(origin->getLines()));
-		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p1->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p2->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p3->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p4->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p5->getXtuple() - origin->getXtuple()) < mean_len)
-			i = 14;
-		// タプルに対応させる．
-		// interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
-		interpolationTriangleQuadByFixedRange3D_Center intp(
+		int i = 6;
+
+		/*
+			0*
+		f0  / \  f2
+		   /   \
+		 1*-----*2
+			 f1
+		*/
+		auto l0 = p0->getLineBetween(p1);
+		auto l1 = p1->getLineBetween(p2);
+		auto l2 = p2->getLineBetween(p0);
+		auto [f0p0, f0p1, f0p2] = (*l0)(f)->getPointsTuple();
+		auto [f1p0, f1p1, f1p2] = (*l1)(f)->getPointsTuple();
+		auto [f2p0, f2p1, f2p2] = (*l2)(f)->getPointsTuple();
+		interpolationTriangleQuadByFixedRange3D intp(
 			T6Tddd{p0->getXtuple(),
 				   p1->getXtuple(),
 				   p2->getXtuple(),
-				   p3->getXtuple(),
-				   p4->getXtuple(),
-				   p5->getXtuple()});
+				   (p0->getXtuple() + p1->getXtuple()) / 2.,
+				   (p1->getXtuple() + p2->getXtuple()) / 2.,
+				   (p2->getXtuple() + p0->getXtuple()) / 2.});
 
 		Tdd IGIGn;
 		Tddd r, A = origin->getXtuple();
@@ -1740,11 +1738,11 @@ namespace BEM
 		double common, nr;
 		double x0, x1, w0, w1;
 		// bool isSingular = false;		  //(ps[0] == origin);  //!linearの場合は0
-		bool isSingular = (p4 == origin); //! linearの場合は0
+		bool isSingular = (p0 == origin); //! linearの場合は0
 		double beta = 2.;
 		double x_sing = 1.; //! linearの場合はx_sing = 1.
 		auto GW = __GW__Tuple[i];
-		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(14, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
+		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(6, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
 		{
 			if (isSingular)
 			{
@@ -1772,17 +1770,57 @@ namespace BEM
 				p0igign += IGIGn * std::get<0>(N);
 				p1igign += IGIGn * std::get<1>(N);
 				p2igign += IGIGn * std::get<2>(N);
-				p3igign += IGIGn * std::get<3>(N);
-				p4igign += IGIGn * std::get<4>(N);
-				p5igign += IGIGn * std::get<5>(N);
+				p01igign += IGIGn * std::get<3>(N);
+				p12igign += IGIGn * std::get<4>(N);
+				p20igign += IGIGn * std::get<5>(N);
 			}
 		}
-		return {{p0, p0igign},
-				{p1, p1igign},
-				{p2, p2igign},
-				{p3, p3igign},
-				{p4, p4igign},
-				{p5, p5igign}};
+
+		auto tmp = (p01igign + p12igign + p20igign) / 2. / 3.;
+
+		return {
+			// f
+			{p0, p0igign + tmp},
+			{p1, p1igign + tmp},
+			{p2, p2igign + tmp},
+
+			// f0
+			{f0p0, p01igign / 2. / 3.},
+			{f0p1, p01igign / 2. / 3.},
+			{f0p2, p01igign / 2. / 3.},
+
+			// f1
+			{f1p0, p12igign / 2. / 3.},
+			{f1p1, p12igign / 2. / 3.},
+			{f1p2, p12igign / 2. / 3.},
+
+			// f2
+			{f2p0, p20igign / 2. / 3.},
+			{f2p1, p20igign / 2. / 3.},
+			{f2p2, p20igign / 2. / 3.}};
+
+		// auto tmp = (p01igign / 9. + p12igign / 9. + p20igign / 9.);
+
+		// return {
+		// 	// f
+		// 	{p0, p0igign + p01igign / 6. + p20igign / 6. + tmp},
+		// 	{p1, p1igign + p01igign / 6. + p12igign / 6. + tmp},
+		// 	{p2, p2igign + p12igign / 6. + p20igign / 6. + tmp},
+
+		// 	// f0
+		// 	{f0p0, p01igign / 9.},
+		// 	{f0p1, p01igign / 9.},
+		// 	{f0p2, p01igign / 9.},
+
+		// 	// f1
+		// 	{f1p0, p12igign / 9.},
+		// 	{f1p1, p12igign / 9.},
+		// 	{f1p2, p12igign / 9.},
+
+		// 	// f2
+		// 	{f2p0, p20igign / 9.},
+		// 	{f2p1, p20igign / 9.},
+		// 	{f2p2, p20igign / 9.}};
 	};
 
 	// /* ------------------------------------------------------ */

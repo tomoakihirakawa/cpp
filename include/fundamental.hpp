@@ -447,15 +447,27 @@ VV_d Import(const std::string &fname)
 //==========================================================
 // 20200716
 template <typename T>
-void Print(const T &v_IN)
+void Print(const T *const v_IN)
 {
 	std::cout << v_IN << std::endl;
 };
 template <typename T>
-void Print(const std::vector<T> &v_IN)
+void Print(const T &v_IN)
 {
 	std::cout << v_IN << std::endl;
 };
+// void Print(const std::string &v_IN)
+// {
+// 	std::cout << v_IN << std::endl;
+// };
+// void Print(const std::vector<double> &v_IN)
+// {
+// 	std::cout << v_IN << std::endl;
+// };
+// void Print(const std::vector<int> &v_IN)
+// {
+// 	std::cout << v_IN << std::endl;
+// };
 template <typename T>
 void Print(const T &v_IN, const std::string &color)
 {
@@ -1471,6 +1483,52 @@ struct ludcmp_parallel
 	// 		x[i] -= r[i];
 	// };
 };
+
+// #ifdef use_lapack
+
+extern "C" void dgetrf_(int *dim1, int *dim2, double *a, int *lda, int *ipiv, int *info);
+extern "C" void dgetrs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA, int *IPIV, double *B, int *LDB, int *INFO);
+
+struct lapack_lu
+{
+	int dim;
+	std::vector<double> a;
+	char trans = 'T';
+	int nrhs = 1, LDA, LDB, info;
+	std::vector<int> ipiv;
+	~lapack_lu(){};
+	lapack_lu(const std::vector<std::vector<double>> &aIN)
+		: a(Flatten(aIN)),
+		  dim(aIN.size()),
+		  LDB(dim),
+		  LDA(dim),
+		  ipiv(dim)
+	{
+		dgetrf_(&dim, &dim, &*a.begin(), &LDA, &*ipiv.begin(), &info);
+	};
+
+	void solve(const std::vector<double> &rhd, std::vector<double> &b)
+	{
+		try
+		{
+			b = rhd;
+			dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, &*ipiv.begin(), &*b.begin(), &LDB, &info);
+		}
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << reset << std::endl;
+			std::stringstream ss;
+			ss << "LDB:" << LDB;
+			ss << "\nLDA:" << LDA;
+			ss << "\nipiv:" << ipiv;
+			// ss << "\na:" << a;
+			ss << "\nb:" << b;
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+		};
+	};
+};
+
+// #endif
 
 struct ludcmp
 {

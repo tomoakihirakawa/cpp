@@ -1,0 +1,20 @@
+
+--------------------------------------------------------------------------
+
+# これが元々のファイル
+
+次のようにファイルに入力しておく
+
+Expand(/Users/tomoaki/Dropbox/markdown/cpp/builds/build_expander/read.md)
+    ExpandFile(/Users/tomoaki/Dropbox/markdown/cpp/builds/build_expander/read.md)
+        ExpandFile(/Users/tomoaki/Dropbox/markdown/cpp/builds/build_expander/read.md)
+
+
+```{shell}
+./main read.md read_after.md
+```
+
+と実行してみる．
+
+--------------------------------------------------------------------------
+

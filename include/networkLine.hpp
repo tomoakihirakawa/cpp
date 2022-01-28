@@ -1706,41 +1706,37 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat = 1.)
 	//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
 	if (this->isFlat(min_degree_to_flat) && !islegal() && !isIntxn())
 	{
-		auto [p0, p1] = this->getPointsTuple();
-
+		// auto [p0, p2] = this->getPointsTuple();
 		auto f0f1 = this->getFaces();
-		int s0 = p0->getLines().size();
-		int s1 = p1->getLines().size();
-		int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
-		int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
-		int s_mean = (s0 + s1 + s2 + s3) / 4.;
-		int v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-
-		// auto diff_line_num0 = std::abs((int)(p0->getLines().size() - p1->getLines().size()));
-		// auto fs = this->getFaces();
-		// auto diff_area0 = std::abs(fs[0]->getArea() - fs[1]->getArea());
-		this->flip(); // flipはflipが成功した場合trueを返す．convexでない場合flipされない場合がある
-		// まだ不正な線のままで，点の数が違いすぎる場合戻す．
-		if (!islegal() && !isIntxn())
+		auto [f0pb, f0pf, f0po] = f0f1[0]->getPointsTuple(this);
+		auto [f1pb, f1pf, f1po] = f0f1[1]->getPointsTuple(this);
+		double diffAinit = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
+		double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
+		double diff = (diffAnext - diffAinit) / (f0f1[0]->getArea() + f0f1[1]->getArea());
+		/*
+			f0po *------* f0pf,f1pb
+				  |   /  |
+		f0pb,f1pf *------* f1po
+		*/
+		int s0 = f0pb->getLines().size();
+		int s1 = f0pf->getLines().size();
+		int s2 = f0po->getLines().size();
+		int s3 = f1po->getLines().size();
+		double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
+		double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+		double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+		double c = 0.;
+		/*
+		@ <-----------(-c)------------ (c) --------------
+		@ <----flip-----|--- topology --|----- none -----
+		*/
+		if (diff < -c)
 		{
-			auto f0f1 = this->getFaces();
-			auto [p0, p1] = this->getPointsTuple();
-			int s0 = p0->getLines().size();
-			int s1 = p1->getLines().size();
-			int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
-			int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
-			int s_mean = (s0 + s1 + s2 + s3) / 4.;
-			int v_init2 = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-			// auto fs = this->getFaces();
-			// auto diff_area1 = std::abs(fs[0]->getArea() - fs[1]->getArea());
-			// 悪くても面積さが小さくなりえるので，面積で判断するのは難しそう．
-			if (v_init2 > v_init)
-			{
-				this->flip();
-				return false;
-			}
+			this->flip();
+			return true;
 		}
-		return true;
+		else
+			return false;
 	}
 	else
 		return false;
@@ -1751,39 +1747,40 @@ inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_to_fla
 	//@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
 	//@ フリップ前後の両方で不正な辺と判定された場合，
 	//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
-	if (this->isFlat(min_degree_to_flat) && !isIntxn())
+	try
 	{
-		auto [p0, p1] = this->getPointsTuple();
-		auto f0f1 = this->getFaces();
-		int s0 = p0->getLines().size();
-		int s1 = p1->getLines().size();
-		int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
-		int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
-		// double s_mean = (s0 + s1 + s2 + s3) / 4.;
-		double s_mean = 6.;
-		double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-		this->flip(); // flipはflipが成功した場合trueを返す．convexでない場合flipされない場合がある
-		// まだ不正な線のままで，点の数が違いすぎる場合戻す．
+		//@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
+		//@ フリップ前後の両方で不正な辺と判定された場合，
+		//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
+		if (this->isFlat(min_degree_to_flat) && !isIntxn())
 		{
 			auto [p0, p1] = this->getPointsTuple();
+
 			auto f0f1 = this->getFaces();
 			int s0 = p0->getLines().size();
 			int s1 = p1->getLines().size();
 			int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
 			int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
-			// double s_mean = (s0 + s1 + s2 + s3) / 4.;
-			double s_mean = 6.;
-			double v_init2 = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-			if (v_init2 > v_init)
+			double s_mean = 6.; //(s0 + s1 + s2 + s3) / 4.;
+			double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+			double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+			// flipはflipが成功した場合trueを返す．convexでない場合flipされない場合がある
+			if (v_init > v_next || (s2 <= 3 || s3 <= 3))
 			{
 				this->flip();
-				return false;
+				return true;
 			}
+			else
+				return false;
 		}
-		return true;
+		else
+			return false;
 	}
-	else
-		return false;
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << reset << std::endl;
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	};
 };
 
 // inline bool networkLine::flipIfBetter()

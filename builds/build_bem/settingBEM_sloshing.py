@@ -19,12 +19,12 @@ home = expanduser("~")
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
 # output_directory = home+"/BEM/test"
 settingBEM = {
-    "beta": 0.5,
-    "K": 1.5,
-    "max_dt": 0.02,
-    "mesh": 22,
+    "beta": 0.,
+    "K": .5,
+    "max_dt": 0.05,
+    "mesh": 19,
     "stop_remesh_time": 100.,
-    "force_remesh_time": 0.3
+    "force_remesh_time": 0.
 }
 
 #! -------------------------------------------------------- #

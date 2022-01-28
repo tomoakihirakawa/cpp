@@ -19,7 +19,7 @@ home = expanduser("~")
 # output_directory = home+"/BEM/BEM_dt0d01_sloshing_Xdir_H0d10_L0d25_A0d01_ww1_1d0_using_Dombre2019_EMT_K0d0"
 # output_directory = home+"/BEM/test"
 settingBEM = {
-    "beta": .5,  # 拡張子はいらない
+    "beta": 0.,  # 拡張子はいらない
     "K": 1.,  # 拡張子はいらない
     "max_dt": 0.02,  # 拡張子はいらない
     "mesh": 26,

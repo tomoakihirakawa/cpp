@@ -1116,6 +1116,8 @@ inline networkPoint::networkPoint(Network *network_IN,
 	  laplacian_U_BEM({0., 0., 0.}),
 	  normal_BEM({0., 0., 0.}),
 	  pressure_BEM(0.),
+	  grid_tension({0., 0., 0.}),
+	  grid_tension_({0., 0., 0.}),
 #endif
 	  /* ------------------------------------------------------ */
 	  particlize_info({nullptr, {nullptr, nullptr, nullptr}, {0., 0.}, 0., 0.})

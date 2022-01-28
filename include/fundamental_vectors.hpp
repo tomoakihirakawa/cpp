@@ -393,9 +393,9 @@ template <typename T>
 std::vector<T> Flatten(const std::vector<std::vector<T>> &mat)
 {
 	std::vector<T> ret;
+	ret.reserve(mat.size() * mat[0].size());
 	for (const auto &m : mat)
-		for (const auto &n : m)
-			ret.emplace_back(n);
+		ret.insert(ret.end(), m.begin(), m.end());
 	return ret;
 };
 template <typename T>

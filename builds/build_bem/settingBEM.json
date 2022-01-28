@@ -1,5 +1,9 @@
 {
-  "beta": 0.5,
-  "K": 1.0,
-  "output_directory": "/Users/tomoaki/K1.0_beta0.5"
+    "beta": 0.0,
+    "K": 0.5,
+    "max_dt": 0.02,
+    "mesh": 19,
+    "stop_remesh_time": 100.0,
+    "force_remesh_time": 0.0,
+    "output_directory": "/Users/tomoaki/BEM/Sawai_K0.5_beta0.0_max_dt0.02_Mesh19_stopremesh100.0"
 }

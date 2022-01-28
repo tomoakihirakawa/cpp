@@ -1,0 +1,1136 @@
+//#define cehck_setCrossInfos
+
+#include "GNUPLOT.hpp"
+
+
+// GNUPLOT plot_divide;
+// #define PLOT_DIVIDE
+
+#include "Network.hpp"
+
+// std::vector<networkLine*> getLines(const std::vector<crossPoint*>& infos){
+//   std::vector<networkLine*> ret(infos.size());
+//   for(auto i=0; i<infos.size();i++)
+//     ret[i] = infos[i]->line;
+//   return ret;
+// };
+
+
+std::vector<std::vector<double>> getLocations(const std::vector<networkPoint*> points){
+  std::vector<std::vector<double>> ret(points.size(),std::vector<double>(3));
+  for(auto i=0; i<points.size(); i++)
+    ret[i] = points[i]->xyz;
+  return ret;
+};
+std::vector<std::vector<std::vector<double>>> getLocation(const std::vector<networkLine*> lines){
+  std::vector<std::vector<std::vector<double>>> ret;
+  for(auto i=0; i<lines.size();i++)
+    ret[i] = lines[i]->getLocations();
+  return ret;
+};
+// networkPoint* getSharedPoint(const networkLine* line0, const networkLine* line1){
+//   for(const auto& p0:line0->Points)
+//     for(const auto& p1:line1->Points)
+//       if(p0==p1)
+// 	return p0;
+//   return NULL;
+// };
+// std::vector<crossPoint*> getCrossInfos(networkPoint* point){
+//   std::vector<crossPoint*> ret;
+//   for(const auto& l:point->Lines)
+//     for(const auto& info:l->xPoints)
+//       ret.emplace_back(info);
+//   return ret;
+// };
+// std::vector<crossPoint*> getCrossInfos(std::vector<networkPoint*> points){
+//   std::vector<crossPoint*> ret;
+//   for(const auto& p:points)  
+//     for(const auto& l:p->Lines)
+//       for(const auto& info:l->xPoints)
+// 	ret.emplace_back(info);
+//   return DeleteDuplicates(ret);
+// };
+// void adjust(networkPoint* point){
+//   auto infos=getCrossInfos(point);
+//   if(infos.size()>1){
+//     std::vector<std::vector<std::vector<double>>> vecs;
+//     for(const auto& info:infos)
+//       vecs.push_back({(*(info->line))(point)->xyz,info->xyz});
+//     point->xyz = midPointOfLines(vecs);      
+//   }else if(infos.size()==1){
+//     auto a = ((*(infos[0]->line))(point)->xyz);
+//     auto v = (infos[0]->xyz) - a;
+//     point->xyz = a + v*2.;
+//   }
+// };
+// void adjust(const std::vector<networkPoint*>& points){
+//   for(const auto& p:points)
+//     adjust(p);
+// };
+
+// struct trinalgulerElement{
+//   std::vector<std::vector<double>> sample;  
+//   interpolate3d(const std::vector<std::vector<double>>& sample_IN):sample(sample_IN){};  
+//   std::vector<double> operator()(const double& t0, const double& t1){
+//     return Dot({t0, t1, 1.-(t0+t1)},this->sample);
+//   };
+// };
+
+// double calculateIG(const std::vector<double>& a){
+//   auto gw = GaussianQuadratureWeights(5,-1.,1.);
+
+//   double ret=0;
+//   for(const auto& tw0:gw)
+//     for(const auto& tw1:gw){
+//       auto v = tw1*(1-tw0[0]);
+
+//       auto r = interpX(tw0[0],v[0]) - a;
+//       auto n_detJ = interpX(tw0[0],v[0],),interpX(tw0[0],v[0]);
+	
+//       ret += tw0[1] * v[1] * Dot(r/pow(Norm(r),3), n_detJ)*N;
+//     }
+  
+//   return ret;
+// };
+
+networkLine* longerLine(networkLine* line_IN, double ratio=1.01){
+  networkLine *ret=line_IN;
+  double len=(Norm(line_IN->Points[1]->xyz - line_IN->Points[0]->xyz)), v;
+  for(const auto& p:line_IN->Points)
+    for(const auto& l:p->Lines){
+      if(l!=line_IN){/*omit comparison with line_IN line self*/
+	v = Norm(l->Points[1]->xyz - l->Points[0]->xyz);
+	if(v > ratio*len){
+	  len = v;	
+	  ret = l;	
+	}}
+    }
+  return ret;
+};
+
+// template <class T>
+// std::vector<std::vector<T>> routing(const std::vector<T>& R, std::vector<T> R2){
+//   std::vector<T> ret, ret2;	
+//   bool fin=false, alldone = false, fin2 = false;
+
+//   for(const auto& r:R){
+//     if(r==*R2.begin())
+//       break;    
+//     if(r==*R2.rbegin()){
+//       std::reverse(R2.begin(),R2.end());
+//       break;
+//     }
+//   }
+	  
+//   for(auto it = R.begin(); it!=R.end(); it++){
+    
+//     if(!fin)
+//       ret.emplace_back(*it);    
+
+//     if(!fin && *R2.begin()==*it){
+//       for(auto it_ = R2.begin()+1; it_!=R2.end()-1; it_++){	      
+// 	ret.emplace_back(*it_);	      
+//       }
+//       fin = true;
+//     }
+
+//     if(fin && !fin2){
+//       for(auto it_ = it; it_!=R.end(); it_++){
+// 	ret2.emplace_back(*it_);
+// 	if(*R2.rbegin()==*it_){
+// 	  for(auto rit = R2.rbegin()+1; rit!=R2.rend()-1; rit++){
+// 	    ret2.emplace_back(*rit);
+// 	  }
+// 	  break;
+// 	}
+//       }
+//       fin2 = true;
+//     }
+	  
+//     if(fin && *R2.rbegin()==*it){
+//       for(auto it_ = it; it_!=R.end(); it_++){
+// 	ret.emplace_back(*it_);
+//       }
+//       break;
+//     }	  
+//   }
+
+//   return std::vector<std::vector<T>>{ret,ret2};
+// };
+//================================================
+#include "test1.hpp"
+//================================================
+class test1_2{
+public:
+  double length(std::vector<std::vector<double>> vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  
+  test1_2(){
+    Print("**************** test1_2 **************** ",Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({3,3},{1.12,1.15,1/2.},.0);  
+    GNUPLOT plot;
+    //============================
+    for(auto i=0; i<10; i++)
+      for(const auto& l:obj.getLines())
+	if(longerLine(l) && length(l)>(1.5-i/10.)){
+	  obj.divide(l);
+	}
+	
+    //=========== plot ===========
+    plot.Set({{"xrange","[-.8:.8]"},{"yrange","[-.8:.8]"},{"zrange","[0:1.2]"}});
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc 2 lw 1"}});
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    for(auto i=0; i<50; i++){//ここが増えるとより多くcrossをチェックするため，crossの周辺だけをより細かくする
+    
+      plot.Set({{"key",""},{"title","\"divide "+std::to_string(i)+"\""}});
+      Network corssNetwork(obj,water);    
+      int counter=0;
+
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& p:water.getPoints())
+      // 	vecvec.push_back({p->xyz, p->getNormal()});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }    
+
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& f:water.Faces)
+      // 	vecvec.push_back({f->getMeanLocation(), f->getNormal()});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }
+
+      // for(const auto& p:water.getPoints()){
+      // 	double x = p->xyz[0];
+      // 	double y = p->xyz[1];
+      // 	p->xyz += {0,0,cos(M_PI*(x*y)+i/4.)/30.};
+      // }
+      
+      plot.SaveVectorData(getVectorData(water.getFaces()),{{"arrowstyle","1"},{"title","water"}});      
+      //      plot.SaveVectorData(getVectorData(obj.getLines()),{{"arrowstyle","2"},{"title","obj"}});          
+      //      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+      //      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});    
+
+
+      // plot.SaveData(getData(water.Points[50]->getNeighbors_recursive())
+      // 		    ,{{"ps","3"},{"w","p"},{"lc","\"red\""},{"pt","7"},{"notitle",""}});    
+
+      // {
+      // 	std::vector<std::vector<std::vector<double>>> vecvec; 		
+      // 	for(const auto& p:water.Points[0]->getNeighbors_recursive()){
+      // 	  for(const auto& l:p->getLines()){
+      // 	    pushVectorData(vecvec,l);
+      // 	  }
+      // 	}
+      // 	plot.SaveVectorData(vecvec,{{"lw","2"},{"notitle",""}});
+      // }
+      
+      {
+      	std::vector<std::vector<std::vector<double>>> vecvec; 		
+      	for(const auto& p:obj.Points[0]->getNeighbors_recursive()){
+      	  for(const auto& l:p->getLines()){
+      	    pushVectorData(vecvec,l);
+      	  }
+      	}
+      	plot.SaveVectorData(vecvec,{{"lw","2"},{"notitle",""}});
+      }
+
+      //      Print(getData(water.Points[50]->getNeighbors_recursive()),Red);
+
+      
+      // setStatus(water.getNeighborsIncludeCross(water.getNearestPoints(water.getMeanLocation())),false);
+      // plot.SaveData(getLocations(water.getPoints(true)),
+      // 		    {{"w","p"},{"lc","\"black\""},{"pt","7"},{"title","cross points"}});
+    
+      plot.Plot3D_All();
+      std::cin.ignore();
+      plot.Clear();
+    }
+  };
+  ~test1_2(){Print(CHECK+" test1_2",Red);};
+};
+//================================================
+class test1_3{
+public:
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CEHCK
+  test1_3(){
+    Print("**************** test1_3 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({3,3},{1.12,1.15,1/2.},.0);  
+    GNUPLOT plot;
+    //============================
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    std::vector<std::vector<std::vector<double>>> VVV;
+    for(auto i=0; i<20; i++){
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});      	  
+      auto L = obj.getLines();      
+      pushVectorData(VVV,L);	    
+
+      for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.)){
+	  obj.divide(longline);
+	}
+      }
+      
+      plot.SaveVectorData(VVV,{{"arrowstyle","1"},{"notitle",""}});
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+      VVV.clear();
+    }
+  };
+  ~test1_3(){Print(CHECK+" test1_3",Red);};
+};
+//================================================
+class test1_4{
+public:
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CEHCK
+  test1_4(){
+    Print("**************** test1_4 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({3,3},{1.1,1.1,1/2.},.0);
+    GNUPLOT plot;
+    //============================
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc \"magenata\" lw 1"}});    
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    for(auto i=0; i<14; i++){
+      Network corssNetwork(obj,water);          
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});      	  
+      
+      {
+	std::vector<std::vector<std::vector<double>>> VVV;      
+	std::vector<networkLine*> L;
+	for(const auto& p:obj.Points[0]->getNeighbors_AvoidCross_recursive())
+	  for(const auto& l:p->getLines())
+	    L.emplace_back(l);
+	pushVectorData(VVV,DeleteDuplicates(L));
+	plot.SaveVectorData(VVV,{{"arrowstyle","1"},{"notitle",""}});
+	for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	  auto longline = longerLine(l);
+	  if(length(longline)>(1.-i/15.))
+	    obj.divide(longline);
+	}
+      }
+
+      {
+	std::vector<std::vector<std::vector<double>>> VVV;      
+	std::vector<networkLine*> L;
+	for(const auto& p:water.Points[0]->getNeighbors_AvoidCross_recursive())
+	  for(const auto& l:p->getLines())
+	    L.emplace_back(l);
+	pushVectorData(VVV,DeleteDuplicates(L));
+	plot.SaveVectorData(VVV,{{"arrowstyle","2"},{"notitle",""}});
+
+	for(const auto& l:takeInsideOfBounds(water.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	  auto longline = longerLine(l);
+	  if(length(longline)>(1.-i/15.))
+	    water.divide(longline);
+	}	
+      }
+      
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+      
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+    }
+  };
+  ~test1_4(){Print(CHECK+" test1_4",Red);};
+};
+//================================================
+class test1_5{
+public:
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CEHCK
+  test1_5(){
+    Print("**************** test1_5 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.1,1.1,1/2.},.0);
+    GNUPLOT plot;
+    //============================
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc \"magenata\" lw 1"}});    
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    plot.Set({{"key",""}});    
+    for(auto i=0; i<16; i++){
+      Network corssNetwork(obj,water);          
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});      	  
+      
+      {
+	std::vector<std::vector<std::vector<double>>> VVV;      
+	std::vector<networkLine*> L;
+	for(const auto& p:obj.Points[0]->getNeighbors_AvoidCross_recursive())
+	  for(const auto& l:p->getLines())
+	    L.emplace_back(l);
+	pushVectorData(VVV,DeleteDuplicates(L));
+	plot.SaveVectorData(VVV,{{"arrowstyle","1"},{"title","obj"}});
+	for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	  auto longline = longerLine(l);
+	  if(length(longline)>(1.-i/15.))
+	    obj.divide(longline);
+	}
+      }
+      
+      {
+	std::vector<std::vector<std::vector<double>>> VVV;      
+	std::vector<networkLine*> L;
+	for(const auto& p:water.Points[0]->getNeighbors_AvoidCross_recursive())
+	  for(const auto& l:p->getLines())
+	    L.emplace_back(l);
+	pushVectorData(VVV,DeleteDuplicates(L));
+	plot.SaveVectorData(VVV,{{"arrowstyle","2"},{"title","water"}});
+
+	for(const auto& l:takeInsideOfBounds(water.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	  auto longline = longerLine(l);
+	  if(length(longline)>(1.-i/15.))
+	    water.divide(longline);
+	}	
+      }
+      
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+      
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+    }
+  };
+  ~test1_5(){Print(CHECK+" test1_5",Red);};
+};
+//================================================
+template<class T>
+std::vector<std::vector<int>> triangulate(const std::vector<T*>& objects, const std::vector<double>& normal){
+  geometry::polygon poly(obj3D::extractX(objects));
+  return poly.triangulate(normal);
+};
+
+class test1_6{
+  using VVV_double = std::vector<std::vector<std::vector<double>>>;
+public:
+  template <class T>
+  std::vector<T*> takeIfIntersect(std::vector<T*> obj){
+    std::vector<T*> ret;
+    for(const auto& f:obj){if(f->intersectQ()){ret.emplace_back(f);}}	
+    return ret;
+  };
+
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CHECK
+  test1_6(){
+    Print("**************** test1_6 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.1,1.1,1/2.},.2);
+    GNUPLOT plot;
+    //============================
+    for(auto i=0; i<16; i++){
+      plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+      plot.Set({{"style","arrow 2 nohead lc \"magenta\" lw 1"}});    
+      plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+      plot.Set({{"style","arrow 4 nohead lc \"green\" lw 2 dt 2"}});
+      plot.Set({{"style","arrow 5 nohead lc \"orange\" lw 3 dt 2"}});
+      plot.Set({{"style","arrow 10 nohead lc \"red\" lw .5"}});            
+      plot.Set({{"key",""}});
+      
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});
+      
+      for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  obj.divide(longline);
+      }
+      for(const auto& l:takeInsideOfBounds(water.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  water.divide(longline);
+      }
+
+      obj.displayStates();
+      water.displayStates();      
+      Network corssNetwork(obj,water);
+      
+      {
+      	for(const auto& f:takeIfIntersect(obj.Faces)){
+      	  for(const auto& ps:f->getRoutes()){
+	    
+	    VVV_double VVV;		  
+	    Print(ps,Green);
+	    auto s = ps.size();
+	    
+	    // for(auto i=0; i<s; i++){
+	    //   VVV.push_back({ps[i]->getX(),ps[(i+1)%s]->getX() - ps[i]->getX()});
+	    //   Print(f->parameterize(ps[i]->getX()),Red);
+	    // }
+	    // plot.SaveVectorData(VVV,{{"notitle","getARoute2()"}});	
+
+
+	    for(const auto& route:f->getRoutes()){
+	      VVV.clear();
+	      auto indices = triangulate(route,f->getNormal());
+	      for(const auto& index:indices){
+		VVV.push_back({route[index[0]]->getX(),route[index[1]]->getX()-route[index[0]]->getX()});
+		VVV.push_back({route[index[1]]->getX(),route[index[2]]->getX()-route[index[1]]->getX()});	      
+	      }
+	      plot.SaveVectorData(VVV,{{"lw",".5"},{"notitle",""}});
+	    }
+	  }	  
+      	}
+      }
+            
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"title","corssNetwork"}});
+      
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+    }
+  };
+  ~test1_6(){Print(CHECK+" test1_6",Red);};
+};
+//================================================
+class test1_7{
+  using VVV_double = std::vector<std::vector<std::vector<double>>>;
+public:
+  template <class T>
+  std::vector<T*> takeIfIntersect(std::vector<T*> obj){
+    std::vector<T*> ret;
+    for(const auto& f:obj){if(f->intersectQ()){ret.emplace_back(f);}}	
+    return ret;
+  };
+  double length(const std::vector<std::vector<double>>& vv){  
+    return Norm(vv[0]-vv[1]);
+  };
+  double length(const networkLine* l){  
+    return length(l->getLocations());
+  };
+  // SECURE DIVIDING CHECK
+  test1_7(){
+    Print("**************** test1_7 ****************", Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.1,1.1,1/2.},.2);
+    GNUPLOT plot;
+    //============================
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw .1"}});
+    plot.Set({{"style","arrow 2 nohead lc \"magenta\" lw 1"}});    
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    plot.Set({{"style","arrow 4 nohead lc \"green\" lw 2 dt 2"}});
+    plot.Set({{"style","arrow 5 nohead lc \"orange\" lw 3 dt 2"}});
+    plot.Set({{"style","arrow 10 nohead lc \"red\" lw .5"}});            
+    plot.Set({{"key",""}});
+
+    for(auto i=0; i<16; i++){
+      
+      Print(obj.Points.size(),Red);
+      plot.Set({{"title","\""+std::to_string(i)+"\""}});
+      
+      for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  obj.divide(longline);
+      }
+      for(const auto& l:takeInsideOfBounds(water.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}})){
+	auto longline = longerLine(l);
+	if(length(longline)>(1.-i/15.))
+	  water.divide(longline);
+      }
+
+      obj.displayStates();
+      water.displayStates();      
+      Network corssNetwork(obj,water);
+      
+      {
+      	for(const auto& f:takeIfIntersect(obj.Faces)){
+      	  for(const auto& ps:f->getRoutes()){
+	    
+	    VVV_double VVV;		  
+	    Print(ps,Green);
+	    auto s = ps.size();
+	    
+	    // for(auto i=0; i<s; i++){
+	    //   VVV.push_back({ps[i]->getX(),ps[(i+1)%s]->getX() - ps[i]->getX()});
+	    //   Print(f->parameterize(ps[i]->getX()),Red);
+	    // }
+	    // plot.SaveVectorData(VVV,{{"notitle","getARoute2()"}});	
+
+	    for(const auto& route:f->getRoutes()){
+	      VVV.clear();
+	      auto indices = triangulate(route,f->getNormal());
+	      for(const auto& index:indices){
+		VVV.push_back({route[index[0]]->getX(),route[index[1]]->getX()-route[index[0]]->getX()});
+		VVV.push_back({route[index[1]]->getX(),route[index[2]]->getX()-route[index[1]]->getX()});
+		VVV.push_back({route[index[2]]->getX(),route[index[0]]->getX()-route[index[2]]->getX()});		
+	      }
+	      plot.SaveVectorData(VVV,{{"arrowstyle","1"},{"notitle",""}});
+	    }
+
+	    
+	    
+	  }	  
+      	}
+      }
+            
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"title","corssNetwork"}});
+      
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();      
+    }
+  };
+  ~test1_7(){Print(CHECK+" test1_7",Red);};
+};
+//================================================
+// class test1_4{
+// public:
+//   double length(std::vector<std::vector<double>> vv){  
+//     return Norm(vv[0]-vv[1]);
+//   };
+//   double length(const networkLine* l){  
+//     return length(l->getLocations());
+//   };
+
+//   test1_4(){
+//     Print("**************** test1_4 ****************", Red);
+//     NetworkObj obj("./obj/tank.obj");
+//     NetworkW water({3,3},{1.12,1.15,1/2.},.0);  
+//     GNUPLOT plot;
+//     //============================
+//     plot_divide.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+//     for(auto i=0; i<13; i++){
+//       for(const auto& l:takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+// 	if(longerLine(l) && length(longerLine(l))>(1.5-i/10.)){
+// 	  auto line = longerLine(l);
+// 	  {
+// 	    std::vector<std::vector<std::vector<double>>> VVV; 		
+
+// 	    for(const auto& p:obj.Points[0]->getNeighbors_recursive()){
+// 	      for(const auto& l:p->getLines()){
+// 	    	pushVectorData(VVV,l);
+// 	      }
+// 	    }
+	    
+// 	    plot_divide.Set({{"title","\""+std::to_string(i)+"\""}});      
+// 	    plot_divide.SaveVectorData(VVV,{{"arrowstyle","1"},{"notitle",""}});
+// 	    plot_divide.plot3d();		
+// 	    //std::cin.ignore();
+// 	    plot_divide.Clear();        
+// 	  }
+	  
+// 	  obj.divide(line);
+// 	}
+//   }
+//     //=========== plot ===========
+//     plot.Set({{"xrange","[-.8:.8]"},{"yrange","[-.8:.8]"},{"zrange","[0:1.2]"}});
+//     plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+//     plot.Set({{"style","arrow 2 nohead lc 2 lw 1"}});
+//     plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+//     for(auto i=0; i<50; i++){//ここが増えるとより多くcrossをチェックするため，crossの周辺だけをより細かくする
+    
+//       plot.Set({{"key",""},{"title","\"divide "+std::to_string(i)+"\""}});
+//       Network corssNetwork(obj,water);    
+//       int counter=0;
+
+//       // {
+//       //   std::vector<std::vector<std::vector<double>>> vecvec; 
+//       //   for(const auto& p:water.getPoints())
+//       // 	vecvec.push_back({p->xyz, p->getNormal()});
+//       //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+//       // }    
+
+//       // {
+//       //   std::vector<std::vector<std::vector<double>>> vecvec; 
+//       //   for(const auto& f:water.Faces)
+//       // 	vecvec.push_back({f->getMeanLocation(), f->getNormal()});
+//       //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+//       // }
+
+//       // for(const auto& p:water.getPoints()){
+//       // 	double x = p->xyz[0];
+//       // 	double y = p->xyz[1];
+//       // 	p->xyz += {0,0,cos(M_PI*(x*y)+i/4.)/30.};
+//       // }
+      
+//       plot.SaveVectorData(getVectorData(water.getFaces()),{{"arrowstyle","1"},{"title","water"}});      
+//       //      plot.SaveVectorData(getVectorData(obj.getLines()),{{"arrowstyle","2"},{"title","obj"}});          
+//       //      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+//       //      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});    
+
+
+//       // plot.SaveData(getData(water.Points[50]->getNeighbors_recursive())
+//       // 		    ,{{"ps","3"},{"w","p"},{"lc","\"red\""},{"pt","7"},{"notitle",""}});    
+
+//       // {
+//       // 	std::vector<std::vector<std::vector<double>>> vecvec; 		
+//       // 	for(const auto& p:water.Points[0]->getNeighbors_recursive()){
+//       // 	  for(const auto& l:p->getLines()){
+//       // 	    pushVectorData(vecvec,l);
+//       // 	  }
+//       // 	}
+//       // 	plot.SaveVectorData(vecvec,{{"lw","2"},{"notitle",""}});
+//       // }
+      
+//       {
+//       	std::vector<std::vector<std::vector<double>>> vecvec; 		
+//       	for(const auto& p:obj.Points[0]->getNeighbors_recursive()){
+//       	  for(const auto& l:p->getLines()){
+//       	    pushVectorData(vecvec,l);
+//       	  }
+//       	}
+//       	plot.SaveVectorData(vecvec,{{"lw","2"},{"notitle",""}});
+//       }
+
+//       //      Print(getData(water.Points[50]->getNeighbors_recursive()),Red);
+
+      
+//       // network_vector::setStatus(water.getNeighborsIncludeCross(water.getNearestPoints(water.getMeanLocation())),false);
+//       // plot.SaveData(getLocations(water.getPoints(true)),
+//       // 		    {{"w","p"},{"lc","\"black\""},{"pt","7"},{"title","cross points"}});
+    
+//       plot.Plot3D_All();
+//       std::cin.ignore();
+//       plot.Clear();
+//     }
+//   };
+//   ~test1_4(){Print(CHECK+" test1_4",Red);};
+// };
+//================================================
+class test2{
+public:
+  test2(){
+    NetworkObj obj("./obj/tank.obj");
+    obj.rotate(2*M_PI, {1.,0.,0.});
+    NetworkW water({1,1},{1.17,1.15,1/2.},.3);
+    GNUPLOT plot;
+    //=========== plot ===========
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc 2 lw 1"}});
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    for(auto i=0; i<8; i++){//ここが増えるとより多くcrossをチェックするため，crossの周辺だけをより細かくする
+      plot.Set({{"key",""},{"title","\"divide "+std::to_string(i)+"\""}});
+      Network corssNetwork(obj,water);
+    
+      plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","1"},{"title","water"}});      
+      plot.SaveVectorData(getVectorData(obj.getLines()),{{"arrowstyle","2"},{"title","obj"}});          
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});    
+      plot.SaveData(water.getMeanLocation(), {{"pt","20"},{"lc","0"},{"ps","3"},{"title","中心点"}});    
+      plot.SaveData(water.getNearestPoints(water.getMeanLocation())->xyz,{{"pt","20"},{"lc","10"},{"ps","3"},{"title","中央付近の点"}});
+    
+      plot.Plot3D_All();
+      //std::cin.ignore();
+      plot.Clear();
+      //======== divide =======
+      for(const auto& line:water.getLines())
+	if(line->penetrateQ())
+	  water.divide(longerLine(line));
+
+      //for(auto dummy:std::vector<int>{1,1,1,1}){
+      //   for(const auto& line:obj.getLines())
+      // 	if(!line->crossinfos.empty())
+      // 	  obj.divide(line->longerLine());
+      // }
+      //-----------------------
+      obj.clearXPoints();
+      water.clearXPoints();    
+      obj.setXPoints(water);
+      water.setXPoints(obj);    
+      //-----------------------
+      // water.setLinkedPointsIncludeCross(water.getNearestPoints(water.getMeanLocation()),false);
+      // for(const auto& p:water.Points)
+      //   if(p->status)
+      // 	p->Delete();
+
+      bool found;
+      network::setStatus(water.getNeighborsIncludeCross(water.getNearestPoints(water.getMeanLocation())),false);
+      for(const auto& f:water.Faces){
+	found = false;
+	for(const auto& l:f->Lines)
+	  if(!l->status){
+	    found = true;
+	    break;
+	  }
+	if(!found && !f->penetratedQ())
+	  f->Delete();
+      }
+    
+    }
+  };
+  ~test2(){Print(CHECK+" test2",Red);};
+};
+//================================================
+std::vector<networkFace*> getIntersectingFaces(const std::vector<networkFace*>& faces,
+					       std::vector<double> a, std::vector<double> b){
+  std::vector<networkFace*> ret;
+  std::vector<std::vector<double>> locs;
+  double ratio = 1E-6;
+  for(const auto& face:faces){
+    locs = (1.+ratio)*(face->getLocations())-ratio*(face->getMeanLocation());//少し広げた頂点      
+    if(isIntersectingSurface(locs, std::vector<std::vector<double>>{a,b}) == 3){
+      ret.emplace_back(face);
+    }
+  }
+  return ret;  
+};
+class test3{
+public:
+  test3(){   
+    NetworkObj obj("./obj/teddy.obj");
+    GNUPLOT plot;
+    plot.Set({{"style","arrow 1 nohead lc 1 lw .1"}});
+
+    std::vector<std::vector<std::vector<double>>> objvec;
+    for(const auto& line:obj.getLines()){
+      auto ab = line->getLocations();
+      objvec.push_back({ab[0],ab[1]-ab[0]});
+    }
+  
+    std::vector<double> a={0.,20.,0.}, b={0.,0.,0};
+    auto face = getIntersectingFaces(obj.Faces,a,b)[0];
+  
+    std::vector<double> hitP = pOnSurface(face->getLocations(),{a,b});
+  
+    plot.SaveData(hitP,{{"lw","5"},{"lt","5"},{"lc","6"}});  
+
+    for(auto k=1; k<100; k++){
+      plot.Clear();
+      plot.SaveVectorData({{a,b-a}});
+      plot.SaveData(hitP,{{"lw","5"},{"lt","5"},{"lc","6"}});
+      plot.SaveVectorData(objvec,{{"arrowstyle","1"}});
+
+      plot.Set({{"cbrange","[0:1000]"}});    
+      auto Rmat = RotationMatrix(2.*1*M_PI/100.,face->getNormal());
+      std::vector<double> vvv = 500.*Dot(Rmat, face->getLocations()[0]-hitP);
+      //    networkLine* line = face->getCrossLine(hitP, vvv);
+      pathInfo info = face->getPathInfo(hitP, vvv);
+
+      int l=0;
+    
+      while(l<k){
+	info = info.face[1]->getPathInfo(info);
+	plot.SaveVectorData({{info.xyz[0],info.xyz[2]-info.xyz[0],{double(l++)}}},{{"lw","5"},{"lc","palette"}});
+	if(info.face[1]==NULL)
+	  break;
+      }    
+
+      if(k%10==0){
+	plot.Plot3D_All();
+	//std::cin.ignore();
+      }
+    }
+  };
+  ~test3(){Print(CHECK+" test3",Red);};
+};
+//================================================
+class test4{
+public:
+  using V_double = std::vector<double>;
+  using VV_double = std::vector<V_double>;
+  using VVV_double = std::vector<VV_double>;
+  
+  VV_double gw;
+  virtual V_double N(const double& a, const double& b){
+    return {a, b, 1.-(a+b)};
+  };
+  virtual V_double X(networkFace* f, const double& a, const double& b){
+    return Dot({a, b, 1.-(a+b)},f->getLocations());
+  };
+  virtual V_double dXds(networkFace* f, const double& a, const double& b, const int& i){
+    switch(i){
+    case 0:
+      return Dot({1, b, -(1+b)}, f->getLocations());
+    case 1:
+      return Dot({a, 1, -(a+1)}, f->getLocations());
+    default:
+      Print(ERROR+" dxds takes 0 or 1 ",Red);
+      return {0.};
+    }
+  };
+
+  virtual double IGn(networkFace* f, const double& a, const double& b, networkPoint* origin){
+    double ret=0;
+    V_double v, r;
+    for(const auto& tw0:gw)
+      for(const auto& tw1:gw){
+	v = tw1*(1-tw0[0]);
+	r = X(f, tw0[0],v[0])-origin->xyz;
+	for(const auto& n:N(tw0[0],v[0]))
+	  ret -= Dot(r/pow(Norm(r),3), Cross(dXds(f, tw0[0],v[0],0),dXds(f, tw0[0],v[0],1))) * n * tw0[1] * v[1];
+      }
+    return ret;
+  };
+
+  virtual double IG(networkFace* f, const double& a, const double& b, networkPoint* origin){
+    double ret=0, detJ;
+    V_double v, r;
+    for(const auto& tw0:gw)
+      for(const auto& tw1:gw){
+	v = tw1*(1-tw0[0]);
+	r = X(f, tw0[0],v[0]) - origin->xyz;
+	detJ = Dot({0.,0.,1.},Cross(dXds(f, tw0[0],v[0],0),dXds(f, tw0[0],v[0],1)));
+	for(const auto& n:N(tw0[0],v[0]))
+	  ret += 1./Norm(r) * detJ * n * tw0[1] * v[1];
+      }
+    return ret;
+  };
+  
+  test4(){
+    Print("**************** test4 **************** ",Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.12,1.15,1/2.},.0);  
+    GNUPLOT plot;
+    //=========== plot ===========
+    plot.Set({{"xrange","[-.8:.8]"},{"yrange","[-.8:.8]"},{"zrange","[0:1.2]"}});
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc 2 lw 1"}});
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    for(auto i=0; i<50; i++){//ここが増えるとより多くcrossをチェックするため，crossの周辺だけをより細かくする
+    
+      plot.Set({{"key",""},{"title","\"divide "+std::to_string(i)+"\""}});
+      Network corssNetwork(obj,water);    
+      int counter=0;
+
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& p:water.getPoints())
+      // 	vecvec.push_back({p->xyz, p->getNormal()});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }  
+      
+      // {
+      // 	V_double cross;
+      // 	VVV_double tmp;
+      // 	double s = 4;
+      //   for(const auto& f:water.Faces){
+      // 	  for(auto i=0; i<(int)(s+1); i++){
+      // 	    for(auto j=0; j<(int)(s+1)-i; j++){
+      // 	      cross = Cross(dXds(f, i/s, j/s, 0),dXds(f, i/s, j/s, 1));
+      // 	      tmp = {{ X(f, i/s, j/s), cross/Norm(cross)/5. }};
+      // 	      plot.SaveVectorData(tmp, {{"notitle",""},{"lc", plot.rgb(235.*V_double{i/s, j/s, 1.-(i+j)/s})}});
+      // 	    }
+      // 	  }
+      // 	}
+      // }
+      
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& f:water.Faces[5])
+      // 	  vecvec.push_back({f->X(.5,.5), f->dXds(.5,.5,1)});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }
+
+      for(const auto& p:water.getPoints()){
+	double x = p->xyz[0];
+	double y = p->xyz[1];
+	p->xyz += {0,0,cos(M_PI*(x*y)+i/4.)/30.};
+      }    
+      plot.SaveVectorData(getVectorData(water.getFaces()),{{"arrowstyle","1"},{"title","water"}});      
+      plot.SaveVectorData(getVectorData(obj.getLines()),{{"arrowstyle","2"},{"title","obj"}});          
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});    
+
+      network::setStatus(water.getNeighborsIncludeCross(water.getNearestPoints(water.getMeanLocation())),false);
+      plot.SaveData(getLocations(water.getPoints(true)),
+		    {{"w","p"},{"lc","\"black\""},{"pt","7"},{"title","cross points"}});
+    
+      plot.Plot3D_All();
+      std::cin.ignore();
+      plot.Clear();
+    }
+  };
+  ~test4(){Print(CHECK+" test4",Red);};
+};
+//================================================
+class test5{
+public:
+  using V_double = std::vector<double>;
+  using VV_double = std::vector<V_double>;
+  using VVV_double = std::vector<VV_double>;
+  
+  VV_double gw;
+  virtual V_double N(const double& a, const double& b){
+    return {a, b, 1.-(a+b)};
+  };
+  virtual V_double X(networkFace* f, const double& a, const double& b){
+    return Dot({a, b, 1.-(a+b)},f->getLocations());
+  };
+  virtual V_double dXds(networkFace* f, const double& a, const double& b, const int& i){
+    switch(i){
+    case 0:
+      return Dot({1, b, -(1+b)}, f->getLocations());
+    case 1:
+      return Dot({a, 1, -(a+1)}, f->getLocations());
+    default:
+      Print(ERROR+" dxds takes 0 or 1 ",Red);
+      return {0.};
+    }
+  };
+
+  virtual double IGn(networkFace* f, networkPoint* origin){
+    double ret=0;
+    V_double v, r;
+    for(const auto& tw0:gw)
+      for(const auto& tw1:gw){
+	v = tw1*(1-tw0[0]);
+	r = X(f, tw0[0],v[0])-origin->xyz;
+	for(const auto& n:N(tw0[0],v[0]))
+	  ret -= Dot(r/pow(Norm(r),3), Cross(dXds(f, tw0[0],v[0],0),dXds(f, tw0[0],v[0],1))) * n * tw0[1] * v[1];
+      }
+    return ret;
+  };
+  virtual double IG(networkFace* f, networkPoint* origin){
+    double ret=0, detJ;
+    V_double v, r;
+    for(const auto& tw0:gw)
+      for(const auto& tw1:gw){
+	v = tw1*(1-tw0[0]);
+	r = X(f, tw0[0],v[0]) - origin->xyz;
+	detJ = Dot({0.,0.,1.},Cross(dXds(f, tw0[0],v[0],0),dXds(f, tw0[0],v[0],1)));
+	for(const auto& n:N(tw0[0],v[0]))
+	  ret += 1./Norm(r) * detJ * n * tw0[1] * v[1];
+      }
+    return ret;
+  };
+  void calculateIG(networkPoint* p, networkPoint* origin){
+    p->IG = 0;
+    for(const auto& f:p->getFaces()){
+      p->IG += this->IG(f, origin);
+    };    
+  };
+  void calculateIGn(networkPoint* p, networkPoint* origin){
+    p->IGn = (p==origin) ? -2*M_PI : 0;
+    for(const auto& f:p->getFaces()){
+      p->IGn += this->IGn(f, origin);
+    };    
+  };
+  
+  test5(){
+    gw = GaussianQuadratureWeights(5,-1.,1.);    
+    Print("**************** test5 **************** ",Red);
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.12,1.15,1/2.},.2);  
+    GNUPLOT plot;
+    //=========== plot ===========
+    plot.Set({{"xrange","[-.8:.8]"},{"yrange","[-.8:.8]"},{"zrange","[0:1.2]"}});
+    plot.Set({{"style","arrow 1 nohead lc \"blue\" lw 1"}});
+    plot.Set({{"style","arrow 2 nohead lc 2 lw 1"}});
+    plot.Set({{"style","arrow 3 nohead lc \"red\" lw 2"}});
+    for(auto i=0; i<50; i++){//ここが増えるとより多くcrossをチェックするため，crossの周辺だけをより細かくする
+    
+      plot.Set({{"key",""},{"title","\"divide "+std::to_string(i)+"\""}});
+      Network corssNetwork(obj,water);    
+      int counter=0;
+
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& p:water.getPoints())
+      // 	vecvec.push_back({p->xyz, p->getNormal()});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }  
+      
+      {
+      	V_double cross;
+      	VVV_double tmp;
+      	double s = 4;
+        for(const auto& f:water.Faces){
+      	  for(auto i=0; i<(int)(s+1); i++){
+      	    for(auto j=0; j<(int)(s+1)-i; j++){
+      	      cross = Cross(dXds(f, i/s, j/s, 0),dXds(f, i/s, j/s, 1));
+      	      tmp = {{ X(f, i/s, j/s), cross/Norm(cross)/5. }};
+      	      plot.SaveVectorData(tmp, {{"notitle",""},{"lc", plot.rgb(235.*V_double{i/s, j/s, 1.-(i+j)/s})}});
+      	    }
+      	  }
+      	}
+      }
+      
+      // {
+      //   std::vector<std::vector<std::vector<double>>> vecvec; 
+      //   for(const auto& f:water.Faces[5])
+      // 	  vecvec.push_back({f->X(.5,.5), f->dXds(.5,.5,1)});
+      //   plot.SaveVectorData(vecvec,{{"notitle",""}});      
+      // }
+
+      for(const auto& p:water.getPoints()){
+	double x = p->xyz[0];
+	double y = p->xyz[1];
+	p->xyz += {0,0,cos(M_PI*(x*y)+i/4.)/30.};
+      }
+      
+      plot.SaveVectorData(getVectorData(water.getFaces()),{{"arrowstyle","1"},{"title","water"}});      
+      plot.SaveVectorData(getVectorData(obj.getLines()),{{"arrowstyle","2"},{"title","obj"}});          
+      plot.SaveVectorData(getVectorData(corssNetwork.getLines()),{{"arrowstyle","3"},{"title","corssNetwork"}});
+      plot.SaveData(corssNetwork.getLocations(),{{"w","p"},{"lc","\"magenta\""},{"pt","7"},{"title","cross points"}});    
+
+      network::setStatus(water.getNeighborsIncludeCross(water.getNearestPoints(water.getMeanLocation())),false);
+      plot.SaveData(getLocations(water.getPoints(true)),
+		    {{"w","p"},{"lc","\"black\""},{"pt","7"},{"title","cross points"}});
+    
+      plot.Plot3D_All();
+      std::cin.ignore();
+      plot.Clear();
+    }
+  };
+  ~test5(){Print(CHECK+" test5",Red);};
+};
+//================================================
+int main(){  
+  // auto a = new test1();
+  // delete a;
+  // auto a2 = new test1_2();
+  // delete a2;  
+  // auto a3 = new test1_3();
+  // delete a3;  
+  // auto a4 = new test1_4();
+  // delete a4;  
+  // auto a5 = new test1_5();
+  // delete a5;  
+  // auto a6 = new test1_6();
+  // delete a6;
+  auto a7 = new test1_7();
+  delete a7;
+  
+  // test2* b = new test2();
+  // delete b;
+  // test3* c = new test3();
+  // delete c;
+  // test4* d = new test4();
+  // delete d;
+  // test5* e = new test5();
+  // delete e;
+  
+  return 0;      
+};

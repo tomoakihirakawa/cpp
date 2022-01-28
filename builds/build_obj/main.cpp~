@@ -1,0 +1,241 @@
+#include "lu.hpp"
+#include "InterpolationRBF.hpp"
+
+#include "fundamental_vectors.hpp"
+
+#include <iostream>
+#include <string>
+#include <cmath>
+
+#include "GNUPLOT.hpp"
+
+#include <algorithm>
+
+double RBFscale(const VV_d& sample){
+  V_d r;
+  for(auto i=0; i<sample.size(); i++)
+    for(auto j=i+1; j<sample.size(); j++)
+      r.push_back(Norm(sample[i]-sample[j]));
+  
+  std::sort(r.begin(), r.end(), [](double lhs, double rhs) {return lhs < rhs;});
+
+  auto s = 1+(int)((double)r.size()/10.);
+  V_d v(s);
+  for(auto i=0; i<s; i++)
+    v[i] = r[i];
+  
+  return Mean(v);
+  
+};
+
+
+double func(double x, double y){
+  double r = sqrt(x*x + y*y);
+  return 10.*sin(r);  
+};
+
+double func2(double x, double y, double z){
+  double r = sqrt(x*x + y*y + z*z);
+  return 10.*sin(r);  
+};
+
+V_d dfunc(double x, double y, double z){
+  double r = sqrt(x*x + y*y + z*z);
+  return {10.*cos(r)*x/r,10.*cos(r)*y/r,10.*cos(r)*z/r};
+};
+
+
+
+
+int main(){
+
+  using V_d = std::vector<double>;
+  VV_d xyz={};
+
+  //サンプルデータの作成
+  
+  int max = 20;
+  for(auto i=0; i<max; i++){
+    for(auto j=0; j<max; j++){
+      if((rand()%(i+j+1))%1==0){
+        double len = (max-1.);
+        double x = 3.*M_PI*(i-len/2.)/len;
+        double y = 3.*M_PI*(j-len/2.)/len;
+        xyz.push_back({0,0,0,0});
+        auto& V = (*xyz.rbegin());
+        V[0] = x;
+        V[1] = y;
+        V[2] = func(x,y);
+        V[3] = func2(x,y,func(x,y));
+      }
+    }
+  }
+  
+  auto vx = Transpose(xyz)[0];
+  auto vy = Transpose(xyz)[1];
+  auto vz = Transpose(xyz)[2];
+  auto vv = Transpose(xyz)[3];
+  
+  //サンプルデータを基に補間
+  try{
+    
+    GNUPLOT plt;
+    plt.Set({{"key",""},{"contour","base"},{"zrange","[-11.:11.]"}});
+
+    for(auto l=0; l<1; l++){
+      int max = 30;  
+      VVV_d xyzRBF={};
+      VVV_d xyzExact={};
+
+      VVV_d gradRBF={};
+      VVV_d gradExact={};
+    
+      auto eps = RBFscale(xyz)/10.;
+      
+      InterpolationRBF interp(Transpose(VV_d{vx,vy}), vz);
+      InterpolationRBF interp_v(Transpose(VV_d{vx,vy,vz}), vv);
+      
+      for(auto i=0; i<max; i++){
+
+        VV_d xyzRBF_row={};
+        VV_d xyzExact_row={};      
+      
+        for(auto j=0; j<max; j++){      
+
+        
+          double len = (max-1.);
+          double x = 3.*M_PI*(i-len/2.)/len;
+          double y = 3.*M_PI*(j-len/2.)/len;
+          double z = interp({x,y});
+          double v = interp_v({x,y,z});
+          //          double r = sqrt(x*x + y*y);        
+                
+          auto vec = interp_v.nabla({x,y,z});
+          gradRBF.push_back( { {x,y,z}, vec } );
+          gradExact.push_back( { {x,y,z}, dfunc(x,y,z) } );
+        
+        
+        }
+      
+        xyzRBF.push_back(xyzRBF_row);
+        xyzExact.push_back(xyzExact_row);      
+      
+      }
+      RBFscale(xyz);
+
+      // plt.SaveSplotData(xyzRBF,{{"w","l"},{"lc","'blue'"},{"title",std::to_string(RBFscale(xyz)*(l+1.))}});
+      // plt.SaveSplotData(xyzExact,{{"w","l"},{"lc","'magenta'"},{"title","exact"+std::to_string(l)}});    
+      plt.SaveVectorData(gradRBF,{{"lc","'web-blue'"},{"title",std::to_string(l)}});
+      plt.SaveVectorData(gradExact,{{"lc","'red'"},{"title","exact"+std::to_string(l)}});    
+    }
+
+    plt.SaveData(xyz,{{"pt","7"},{"w","p"},{"lc","'blue'"}});  
+
+    plt.plot3d();
+    std::cin.ignore();
+
+  }
+  catch(error_message e)
+    {
+      std::cout << e.what() << reset << std::endl;
+    };
+}
+
+
+
+
+// int main(){
+
+//   using V_d = std::vector<double>;
+//   VV_d xyz={};
+
+//   //サンプルデータの作成
+  
+//   int max = 20;
+//   for(auto i=0; i<max; i++){
+//     for(auto j=0; j<max; j++){
+//       if((rand()%(i+j+1))%3==0){
+//         double len = (max-1.);
+//         double x = 8.*M_PI*(i-len/2.)/len;
+//         double y = 8.*M_PI*(j-len/2.)/len;
+//         xyz.push_back({0,0,0});
+//         auto& V = (*xyz.rbegin());
+//         V[0] = x;
+//         V[1] = y;
+
+//         V[2] = func(x,y);
+//       }
+//     }
+//   }
+  
+//   auto vx = Transpose(xyz)[0];
+//   auto vy = Transpose(xyz)[1];
+//   auto vz = Transpose(xyz)[2];
+
+//   //サンプルデータを基に補間
+//   try{
+    
+//     GNUPLOT plt;
+//     plt.Set({{"key",""},{"contour","base"},{"zrange","[-1.5:1.5]"}});
+
+//     for(auto l=0; l<1; l++){
+//       int max = 60;  
+//       VVV_d xyzRBF={};
+//       VVV_d xyzExact={};
+
+//       VVV_d gradRBF={};
+//       VVV_d gradExact={};
+    
+//       auto eps = RBFscale(xyz)/10.;
+      
+//       InterpolationRBF interp(Transpose(VV_d{vx,vy}), vz);
+    
+//       for(auto i=0; i<max; i++){
+
+//         VV_d xyzRBF_row={};
+//         VV_d xyzExact_row={};      
+      
+//         for(auto j=0; j<max; j++){      
+
+        
+//           double len = (max-1.);
+//           double x = 8.*M_PI*(i-len/2.)/len;
+//           double y = 8.*M_PI*(j-len/2.)/len;
+//           double z = interp({x,y});
+//           double r = sqrt(x*x + y*y);        
+        
+//           //          xyzRBF_row.push_back( {x,y,(z-sin(r))/sin(r)} );
+//           xyzRBF_row.push_back( {x,y,z} );
+//           xyzExact_row.push_back( {x,y,func(x,y)} );
+        
+//           auto vec = interp.nabla({x,y});
+//           vec.push_back(0.);
+//           gradRBF.push_back( { {x,y,0.}, vec } );
+//           gradExact.push_back( { {x,y,0.}, dfunc(x,y) } );
+        
+        
+//         }
+      
+//         xyzRBF.push_back(xyzRBF_row);
+//         xyzExact.push_back(xyzExact_row);      
+      
+//       }
+//       RBFscale(xyz);
+
+//       plt.SaveSplotData(xyzRBF,{{"w","l"},{"lc","'blue'"},{"title",std::to_string(RBFscale(xyz)*(l+1.))}});
+//       plt.SaveSplotData(xyzExact,{{"w","l"},{"lc","'magenta'"},{"title","exact"+std::to_string(l)}});    
+//       plt.SaveVectorData(gradRBF,{{"lc","'web-blue'"},{"title",std::to_string(l)}});
+//       plt.SaveVectorData(gradExact,{{"lc","'red'"},{"title","exact"+std::to_string(l)}});    
+//     }
+
+//     plt.SaveData(xyz,{{"pt","7"},{"w","p"},{"lc","'blue'"}});  
+
+//     plt.plot3d();
+//     std::cin.ignore();
+
+//   }
+//   catch(error_message e)
+//     {
+//       std::cout << e.what() << reset << std::endl;
+//     };
+// }

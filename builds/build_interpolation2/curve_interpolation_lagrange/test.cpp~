@@ -1,0 +1,35 @@
+#include "GNUPLOT.hpp"
+#include "fundamental.hpp"
+
+std::string rgb2hex(int r, int g, int b, bool with_head=true)
+{
+  std::stringstream ss;
+  if (with_head)
+    ss << "#";
+  ss << std::hex << (r << 16 | g << 8 | b );
+  return ss.str();
+}
+
+int main(){
+  std::vector<double> a = {1,1,1};
+  std::vector<double> b = {0,1,1};
+  std::vector<double> c = {0,0,-1};
+
+  GNUPLOT plot;
+  plot.SaveData({a,b,c,a},{{"w","l"},{"lw","2"}});
+
+  std::vector<double> t;
+  int s = 50;
+  for(auto i=0; i<s; i++)
+    for(auto j=0; j<s-i; j++){
+      t={i/(s-1.),
+      	 1-(i+j)/(s-1.),
+      	 j/(s-1.)};
+
+      plot.SaveData(Dot(t,{a,b,c}),{{"pt","7"},{"w","p"},{"lc",plot.rgb((255*i/(s-1)),(255*j/(s-1)),150)}});
+      
+    }
+  
+  plot.Plot3D();
+  std::cin.ignore();  
+};

@@ -2,35 +2,36 @@
 cmake_minimum_required(VERSION 3.11)
 # プロジェクト名と使用する言語を設定
 project(network_bem CXX)
-# set(CMAKE_CXX_COMPILER /usr/local/bin/g++-10)
 
 # message(${CMAKE_SOURCE_DIR}) set (CMAKE_MODULE_PATH
 # "${CMAKE_SOURCE_DIR}/CMake") include(cotire)
 
+# ##############################################################################
 if(APPLE)
   set(CMAKE_CXX_COMPILER g++-11)
   message(STATUS ">> Apple")
-  # set(CMAKE_CXX_FLAGS "-Ofast -fopenmp")
-  set(CMAKE_CXX_FLAGS
-      "-include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp -std=c++17 -fuse-ld=gold"
-  )
-  set(CMAKE_CXX_FLAGS_DEBUG "-Og -fopenmp")
+  # set(CMAKE_CXX_FLAGS "-Ofast -fopenmp") set(CMAKE_CXX_FLAGS " -llapack -lblas
+  # -lgfortran -include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp
+  # -std=c++17 -fuse-ld=gold" )
+  set(CMAKE_CXX_FLAGS " -llapack -lblas -std=c++17 -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS_DEBUG "-Og")
   set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
+  # ############################################################################
 elseif(LINUX)
   set(CMAKE_CXX_COMPILER g++-11)
   message(STATUS ">> Linux")
-  set(CMAKE_CXX_FLAGS
-      "-include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp -std=c++17")
-  set(CMAKE_CXX_FLAGS_DEBUG "-std=c++17")
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -std=c++17")
+  set(CMAKE_CXX_FLAGS " -llapack -lblas -std=c++17 -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS_DEBUG "-Og")
+  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
+  # ############################################################################
 else()
-  set(CMAKE_CXX_COMPILER g++-11)
+  set(CMAKE_CXX_COMPILER /usr/bin/g++-11)
   message(STATUS ">> Not Linux")
-  set(CMAKE_CXX_FLAGS
-      "-include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp -std=c++17")
+  set(CMAKE_CXX_FLAGS " -llapack -std=c++17 -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
   set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
 endif()
+# ##############################################################################
 
 # if(UNIX OR APPLE)
 execute_process(
@@ -79,6 +80,14 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_executable(main main.cpp)
 # cotire(main)
+
+# if(APPLE)
+
+# else() # * ------------------------------------------------------ */
+# find_package(BLAS) find_package(LAPACK) if(LAPACK_FOUND AND BLAS_FOUND)
+# set(lapackblas_libraries "${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}") endif()
+# target_link_libraries(main PUBLIC ${lapackblas_libraries}) # *
+# ------------------------------------------------------ */ endif()
 
 target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/../include)
 target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/../../include)

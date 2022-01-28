@@ -1,9 +1,16 @@
 {
-  "name": "water",
-  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/water.obj",
+  "name": "water_sawai_250x250mm",
+  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/water_sawai_250x250mm.obj",
   "remesh": 30.0
 }
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/XueAndLin2011/water.obj",
+//   "remesh": 30.0
+// }
 
 // {
 //   "name": "tank",

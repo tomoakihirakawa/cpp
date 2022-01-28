@@ -1,0 +1,7 @@
+{
+    "editor.wordWrapColumn": 200,
+    "files.associations": {
+        "*.html": "html",
+        "algorithm": "cpp"
+    }
+}

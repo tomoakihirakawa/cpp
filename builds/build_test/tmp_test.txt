@@ -1,0 +1,55 @@
+total 848
+#include "fundamental.h"
+
+int main(int argc, char** argv){
+  std::string filename_org = argv[1];
+  std::string filename = "tmp_" + filename_org;
+  std::ifstream in_strm(filename_org);
+  std::ofstream out_strm(filename);
+  //////////////
+  if(!in_strm){
+      std::cout << Red << filename_org << " can not be opened" << reset << std::endl;
+      abort();
+    }
+  if(!out_strm){
+      std::cout << Red << filename << " can not be opened" << reset << std::endl;
+      abort();
+    }
+  ///////////////  
+  while(!in_strm.eof())// loop until the end of file 
+    {
+      std::string read;
+      std::getline(in_strm,read);
+
+      if(read.find("ExpandFile(")!=std::string::npos && read.find(")")!=std::string::npos){
+        std::string file = StringSplit(read,{"ExpandFile(\"","\")"})[0];
+
+	std::ifstream ifs(file);
+	if(!ifs)
+	  {
+	    std::cout << Red << file << " can not be opened" << reset << std::endl;
+	    abort();
+	  }	
+	std::string content( (std::istreambuf_iterator<char>(ifs) ),
+			     (std::istreambuf_iterator<char>()    ) );
+	
+	out_strm << content << std::endl;	
+      }else{
+	out_strm << read << std::endl;	  
+      }
+    }
+  in_strm.close();
+  out_strm.close();  
+  
+  return 0;
+}
+
+-rw-r--r--@  1 tomoaki  staff   13034  5 28 13:34 CMakeCache.txt
+drwxr-xr-x@ 12 tomoaki  staff     384  5 28 13:36 CMakeFiles
+-rw-r--r--@  1 tomoaki  staff    4972  5 28 13:34 Makefile
+-rwxr-xr-x@  1 tomoaki  staff  397028  5 28 13:36 a.out
+-rw-r--r--@  1 tomoaki  staff    1382  5 25 14:05 cmake_install.cmake
+-rwxrwxrwx@  1 tomoaki  staff      54  3 23 11:07 makerun~
+-rwxrwxrwx@  1 tomoaki  staff      62  3 23 11:11 run
+-rw-r--r--@  1 tomoaki  staff       0  5 28 13:38 test.txt
+
