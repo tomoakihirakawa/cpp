@@ -6,6 +6,7 @@
 #include "NetworkUtility.hpp"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 inline Tddd networkFace::normalVelocityRigidBody(const Tddd &X) const
 {
 	return this->normal * Dot(this->normal, this->network->velocityRigidBody(X));
@@ -17,7 +18,8 @@ inline Tddd networkFace::normalVelocityRigidBody(const Tddd &X) const
 inline networkFace::networkFace(Network *network_IN, Network *storage_IN, const V_netLp &Lines_IN)
 	: object3D(geometry::CoordinateBounds(Flatten(extractXtuple(Lines_IN)))),
 	  networkObject(network_IN, Lines_IN),
-	  XPoints(0)
+	  XPoints(0),
+	  grid_pull_factor({1., 0.})
 {
 #ifdef DEM
 	this->contactP = {};
@@ -44,6 +46,10 @@ inline networkFace::networkFace(const netFp f)
 	  networkObject(f),
 	  XPoints(0),
 	  /* ------------------------------------------------------ */
+	  interp_from_p0({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+	  interp_from_p1({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+	  interp_from_p2({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+	  /* ------------------------------------------------------ */
 	  //   force({0., 0., 0., 0., 0., 0.}),
 	  //   inertia(6, 0.),
 	  //   acceleration(3, 0.),
@@ -52,6 +58,7 @@ inline networkFace::networkFace(const netFp f)
 	  //   center_of_mass(3, 0.),
 	  map_Net_ContactPoints({{nullptr, {}}})
 {
+	this->grid_pull_factor = f->grid_pull_factor;
 	this->Dirichlet = f->Dirichlet;
 	this->Neumann = f->Neumann;
 	/* ------------------------------------------------------ */

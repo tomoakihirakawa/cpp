@@ -187,4 +187,12 @@ int main()
 	std::ofstream os("./output2.json");
 	jsonout.output(os);
 	os.close();
+
+	/* ------------------------------------------------------ */
+
+	// 内容表示方法
+	std::cout << "内容表示方法" << std::endl;
+	JSON json(std::ifstream("./sample.json"));
+	for (auto &[key, value] : json())
+		std::cout << key << ", " << value << std::endl;
 }

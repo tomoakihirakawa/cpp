@@ -1,11 +1,11 @@
 {
     "name": "wave_maker",
     "objfile": "../../obj/tank/sloshing_tank.obj",
-    "reverseNormal": true,
     "depth_list": [
-        -0.004,
-        -0.012
+        -0.005,
+        -0.015
     ],
-    "volume_of_a_particle": 4.516608187134503e-07,
+    "volume_of_a_particle": 7.91015625e-07,
+    "ignore": false,
     "density": 1000.0
 }

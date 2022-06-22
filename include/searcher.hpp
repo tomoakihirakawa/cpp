@@ -45,19 +45,19 @@ protected:
 
 public:
 	////////// 並列化のための新しい関数 //////////////////
-	bool doIKU(const netLp l) const
-	{
-		return (std::binary_search(this->enteredLines.cbegin(), this->enteredLines.cend(), l) ||
-				std::binary_search(this->enteredLines_.cbegin(), this->enteredLines_.cend(), l));
-		// return (std::find(this->enteredLines.cbegin(), this->enteredLines.cend(), l) != list.cend())
-		// MemberQ(this->enteredLines, l) || MemberQ(this->enteredLines_, l));
-	};
-	bool doIKU(const T *p) const
-	{
-		return (std::binary_search(this->netObjs.cbegin(), this->netObjs.cend(), p) ||
-				std::binary_search(this->netObjs_.cbegin(), this->netObjs_.cend(), p));
-		// return (MemberQ(this->netObjs, p) || MemberQ(this->netObjs_, p) || MemberQ(this->netObjs__, p));
-	};
+	// bool doIKU(const netLp l) const
+	// {
+	// 	return (std::binary_search(this->enteredLines.cbegin(), this->enteredLines.cend(), l) ||
+	// 			std::binary_search(this->enteredLines_.cbegin(), this->enteredLines_.cend(), l));
+	// 	// return (std::find(this->enteredLines.cbegin(), this->enteredLines.cend(), l) != list.cend())
+	// 	// MemberQ(this->enteredLines, l) || MemberQ(this->enteredLines_, l));
+	// };
+	// bool doIKU(const T *p) const
+	// {
+	// 	return (std::binary_search(this->netObjs.cbegin(), this->netObjs.cend(), p) ||
+	// 			std::binary_search(this->netObjs_.cbegin(), this->netObjs_.cend(), p));
+	// 	// return (MemberQ(this->netObjs, p) || MemberQ(this->netObjs_, p) || MemberQ(this->netObjs__, p));
+	// };
 
 	//////////////////////////////////////////////////
 	int depth;
@@ -166,8 +166,8 @@ search_detail*/
 		initSearch();
 		this->depth = 0;
 
-		for (const auto &obj : this->getObjects())
-			obj->remember(this);
+		// for (const auto &obj : this->getObjects())
+		// 	obj->remember(this);
 
 		V_netPp nextP = netObjs /*{this->startObj}*/, checkP;
 		this->netObjsAtDepth.emplace_back(nextP);
@@ -274,8 +274,8 @@ search_detail*/
 		initSearch();
 		this->depth = 0;
 
-		for (const auto &obj : this->getObjects())
-			obj->remember(this);
+		// for (const auto &obj : this->getObjects())
+		// 	obj->remember(this);
 
 		std::vector<networkFace *> nextP = netObjs /*{this->startObj}*/, checkP;
 		this->netObjsAtDepth.emplace_back(nextP);
@@ -377,73 +377,73 @@ search_detail*/
 /*searcher_code*/
 //////////////////////////////////////////////////////////////////////
 /*searcher_applicatioins_code*/
-///////////////////////////////////////////////////////////////////
-// searcher9
-template <class T>
-class searcher9 : public searcher<T>
-{
-	/*searcher9_detail
-	  内部から進み干渉点までを取得
-	  networksに含まない物は取らない
-	  内側の面を入手できないか?
-	  searcher9_detail*/
-public:
-	searcher9() : searcher<T>(){};
-	searcher9(T *obj) : searcher<T>(obj){};
+// ///////////////////////////////////////////////////////////////////
+// // searcher9
+// template <class T>
+// class searcher9 : public searcher<T>
+// {
+// 	/*searcher9_detail
+// 	  内部から進み干渉点までを取得
+// 	  networksに含まない物は取らない
+// 	  内側の面を入手できないか?
+// 	  searcher9_detail*/
+// public:
+// 	searcher9() : searcher<T>(){};
+// 	searcher9(T *obj) : searcher<T>(obj){};
 
-	bool condEnterLine(const T *p, const netLp l) override
-	{
-#ifdef debug_searcher_networkFace
-		std::cout << __PRETTY_FUNCTION__ << std::endl;
-		std::cout << "l = " << l << std::endl;
-		if (!l)
-			return false;
-		std::cout << "p = " << p << std::endl;
-		if (!p)
-			return false;
-		std::cout << "(*l)(p) = " << (*l)(p) << std::endl;
-		if (!(*l)(p))
-			return false;
+// 	bool condEnterLine(const T *p, const netLp l) override
+// 	{
+// #ifdef debug_searcher_networkFace
+// 		std::cout << __PRETTY_FUNCTION__ << std::endl;
+// 		std::cout << "l = " << l << std::endl;
+// 		if (!l)
+// 			return false;
+// 		std::cout << "p = " << p << std::endl;
+// 		if (!p)
+// 			return false;
+// 		std::cout << "(*l)(p) = " << (*l)(p) << std::endl;
+// 		if (!(*l)(p))
+// 			return false;
 
-		Print("searcherに保存されているメンバーネットワークでなければならい");
-#endif
-		if ((*l)(p) != nullptr && MemberQ(this->networks, (*l)(p)->getNetwork()))
-		{
-#ifdef debug_searcher_networkFace
-			Print("searcherは到達しないが，貫通する線を通った点は，netObjs__に特別に保存する");
-#endif
-			if (l->penetrateQ())
-			{
-				this->penetrateLines.emplace_back(l);
-				if (!(*l)(p)->intersectQ())
-					this->netObjs__.emplace_back((*l)(p));
-			}
+// 		Print("searcherに保存されているメンバーネットワークでなければならい");
+// #endif
+// 		if ((*l)(p) != nullptr && MemberQ(this->networks, (*l)(p)->getNetwork()))
+// 		{
+// #ifdef debug_searcher_networkFace
+// 			Print("searcherは到達しないが，貫通する線を通った点は，netObjs__に特別に保存する");
+// #endif
+// 			if (l->penetrateQ())
+// 			{
+// 				this->penetrateLines.emplace_back(l);
+// 				if (!(*l)(p)->intersectQ())
+// 					this->netObjs__.emplace_back((*l)(p));
+// 			}
 
-#ifdef debug_searcher_networkFace
-			Print("干渉する線は通らない");
-#endif
-			if (!l->penetrateQ())
-			{
-				if ((*l)(p)->intersectQ())
-					return true;
+// #ifdef debug_searcher_networkFace
+// 			Print("干渉する線は通らない");
+// #endif
+// 			if (!l->penetrateQ())
+// 			{
+// 				if ((*l)(p)->intersectQ())
+// 					return true;
 
-				if (!p->intersectQ())
-					return true;
-			}
-		}
-		return false;
-	}
+// 				if (!p->intersectQ())
+// 					return true;
+// 			}
+// 		}
+// 		return false;
+// 	}
 
-	bool condGetObject(const netLp l, const T *P) override
-	{
-		if (P->intersectQ())
-			return true;
-		else
-			return false;
-	};
-};
-// searcher9
-///////////////////////////////////////////////////////////////////
+// 	bool condGetObject(const netLp l, const T *P) override
+// 	{
+// 		if (P->intersectQ())
+// 			return true;
+// 		else
+// 			return false;
+// 	};
+// };
+// // searcher9
+// ///////////////////////////////////////////////////////////////////
 // searcherIntxn
 class searcherIntxn : public searcher<networkFace>
 {
@@ -560,7 +560,7 @@ public:
 	};
 };
 //////////////////////////////////////////
-VV_netPp BFS(const netPp startObj, const int depth, const V_Netp &nets = {})
+VV_netPp BFS(networkPoint *startObj, const int depth, const V_Netp &nets = {})
 {
 	BreadthFirstSearcher<networkPoint> bfs(depth);
 	bfs.set(startObj);

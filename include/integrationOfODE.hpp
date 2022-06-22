@@ -38,21 +38,100 @@ public:
 		std::cout << "dX : " << red << this->dX << reset << std::endl;
 	};
 	int steps;
+	int current_step;
+	RungeKuttaCommon(){};
 	RungeKuttaCommon(const double dt_IN, const double t0, const T &X0 /*initial value*/, int stepsIN)
-		: dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN){};
+		: dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN), current_step(0){};
 	~RungeKuttaCommon(){};
 
-	T getXinit() { return this->Xinit; };
+	void initialize(const double dt_IN, const double t0, const T &X0 /*initial value*/, int stepsIN)
+	{
+		this->dt_fixed = dt_IN;
+		this->dt = 0;
+		this->t_init = t0;
+		this->Xinit = X0;
+		this->_dX = {};
+		this->dX = X0;
+		this->steps = stepsIN;
+		this->current_step = 0;
+	};
 
-	T getX() { return this->Xinit + this->dX; };
+	T getXinit() const { return this->Xinit; };
 
-	T getdX() { return this->dX; };
-	double gett() { return this->t_init + this->dt; };
-	double getdt() { return this->dt; };
+	T getX() const { return this->Xinit + this->dX; };
+
+	T getdX() const { return this->dX; };
+	double gett() const { return this->t_init + this->dt; };
+	double getTime() const { return this->t_init + this->dt; };
+	double getNextTime() const { return this->t_init + this->getdt(); };
+	double getdt() const
+	{
+		// 次の計算は，t+dtを狙って計算することになる．
+		// ここでのdtを返す
+		if (this->steps == 1)
+			return dt_fixed; //!何もプッシュしていない初期状態
+		else if (this->steps == 2)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dt_fixed;
+			case 1:
+				return dt_fixed / 2.; //!何もプッシュしていない初期状態
+			default:
+				return dt_fixed;
+			}
+		}
+		else if (this->steps == 3)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dt_fixed / 2.;
+			case 1:
+				return dt_fixed;
+			case 2:
+				return dt_fixed / 6.;
+			default:
+				return dt_fixed;
+			}
+		}
+		else if (this->steps == 4)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dt_fixed / 2.;
+			case 1: // -> {f2, f1(t,v(t))}
+				return dt_fixed / 2.;
+			case 2: // -> {f2, f1(t,v(t))}
+				return dt_fixed;
+			case 3: // -> {f2, f1(t,v(t))}
+				return dt_fixed / 6.;
+			default:
+				return dt_fixed;
+			}
+		}
+		else
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+	};
+
 	bool push(const T &dXdt_IN)
 	{
 		_dX.insert(_dX.begin(), dXdt_IN * dt_fixed);
-		if (this->steps == 2)
+		current_step++;
+		if (this->steps == 1)
+		{
+			switch (_dX.size())
+			{
+			case 1: // -> {f1(t,v(t))}
+				dX = dXdt_IN * (dt = dt_fixed);
+				return this->finished = true;
+			default:
+				throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+			}
+		}
+		else if (this->steps == 2)
 		{
 			switch (_dX.size())
 			{
@@ -111,6 +190,105 @@ public:
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
 		}
 	};
+
+	/* ------------------------------------------------------ */
+	/*            微分を与えて，次の時刻に使うべきXを返す            */
+	/* ------------------------------------------------------ */
+	T getX(const T &dXdt_IN) const
+	{
+		if (this->steps == 1)
+			return this->Xinit + dXdt_IN * dt_fixed; //!何もプッシュしていない初期状態
+		else if (this->steps == 2)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return this->Xinit + dXdt_IN * dt_fixed;
+			default:
+				return this->Xinit + (_dX[0] + dXdt_IN * dt_fixed) / 2.;
+			}
+		}
+		else if (this->steps == 3)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return this->Xinit + dXdt_IN * dt_fixed / 2.;
+			case 1: // -> {f2, f1(t,v(t))}
+				return this->Xinit + dXdt_IN * dt_fixed;
+			default:
+				return this->Xinit + (_dX[0] + 4. * _dX[1] + dXdt_IN * dt_fixed) / 6.;
+			}
+		}
+		else if (this->steps == 4)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return this->Xinit + dXdt_IN * dt_fixed / 2.;
+			case 1: // -> {f2, f1(t,v(t))}
+				return this->Xinit + dXdt_IN * dt_fixed / 2.;
+			case 2: // -> {f3, f2, f1(t,v(t))}
+				return this->Xinit + dXdt_IN * dt_fixed;
+			default: // -> {f3, f2, f1(t,v(t))}
+				return this->Xinit + (_dX[0] + 2. * _dX[1] + 2. * _dX[2] + dXdt_IN * dt_fixed) / 6.;
+			}
+		}
+		else
+		{
+			std::stringstream ss;
+			ss << std::to_string(this->steps);
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．steps=" + ss.str());
+		}
+	};
+
+	T getdXdt(const T &dXdt_IN) const
+	{
+		if (this->steps == 1)
+			return dXdt_IN; //!何もプッシュしていない初期状態
+		else if (this->steps == 2)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dXdt_IN * dt_fixed;
+			default:
+				return (_dX[0] / dt_fixed + dXdt_IN);
+			}
+		}
+		else if (this->steps == 3)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dXdt_IN;
+			case 1: // -> {f2, f1(t,v(t))}
+				return dXdt_IN;
+			default:
+				return (_dX[0] / dt_fixed + 4. * _dX[1] / dt_fixed + dXdt_IN) / 6.;
+			}
+		}
+		else if (this->steps == 4)
+		{
+			switch (_dX.size())
+			{
+			case 0: //!何もプッシュしていない初期状態
+				return dXdt_IN;
+			case 1: // -> {f2, f1(t,v(t))}
+				return dXdt_IN;
+			case 2: // -> {f3, f2, f1(t,v(t))}
+				return dXdt_IN;
+			default: // -> {f3, f2, f1(t,v(t))}
+				return (_dX[0] / dt_fixed + 2. * _dX[1] / dt_fixed + 2. * _dX[2] / dt_fixed + dXdt_IN) / 6.;
+			}
+		}
+		else
+		{
+			std::stringstream ss;
+			ss << std::to_string(this->steps);
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．steps=" + ss.str());
+		}
+	};
 };
 
 template <typename T>
@@ -118,6 +296,7 @@ struct RungeKutta_ : public RungeKuttaCommon<T>
 {
 	RungeKutta_(const double dt_IN, const double t0, const T &X0 /*initial value*/, int stepsIN)
 		: RungeKuttaCommon<T>(dt_IN, t0, X0, stepsIN){};
+	RungeKutta_() : RungeKuttaCommon<T>(){};
 };
 template <>
 struct RungeKutta_<std::vector<double>> : public RungeKuttaCommon<std::vector<double>>
@@ -127,6 +306,7 @@ struct RungeKutta_<std::vector<double>> : public RungeKuttaCommon<std::vector<do
 	{
 		this->dX = V_d(X0.size(), 0.);
 	};
+	RungeKutta_() : RungeKuttaCommon<std::vector<double>>(){};
 };
 template <>
 struct RungeKutta_<double> : public RungeKuttaCommon<double>
@@ -136,6 +316,7 @@ struct RungeKutta_<double> : public RungeKuttaCommon<double>
 	{
 		this->dX = 0.;
 	};
+	RungeKutta_() : RungeKuttaCommon<double>(){};
 };
 template <>
 struct RungeKutta_<Tddd> : public RungeKuttaCommon<Tddd>
@@ -145,6 +326,27 @@ struct RungeKutta_<Tddd> : public RungeKuttaCommon<Tddd>
 	{
 		this->dX = {0, 0, 0};
 	};
+	RungeKutta_() : RungeKuttaCommon<Tddd>(){};
+};
+template <>
+struct RungeKutta_<T4d> : public RungeKuttaCommon<T4d>
+{
+	RungeKutta_<T4d>(const double dt_IN, const double t0, const T4d &X0 /*initial value*/, int stepsIN)
+		: RungeKuttaCommon<T4d>(dt_IN, t0, X0, stepsIN)
+	{
+		this->dX = {0, 0, 0, 0};
+	};
+	RungeKutta_() : RungeKuttaCommon<T4d>(){};
+};
+template <>
+struct RungeKutta_<T6d> : public RungeKuttaCommon<T6d>
+{
+	RungeKutta_<T6d>(const double dt_IN, const double t0, const T6d &X0 /*initial value*/, int stepsIN)
+		: RungeKuttaCommon<T6d>(dt_IN, t0, X0, stepsIN)
+	{
+		this->dX = {0, 0, 0, 0, 0, 0};
+	};
+	RungeKutta_() : RungeKuttaCommon<T6d>(){};
 };
 /* ------------------------------------------------------ */
 class RungeKutta
@@ -295,7 +497,7 @@ public:
 		_dx.clear();
 	};
 
-	//!dxです
+	//! dxです
 	double getImproved()
 	{
 		if (finished)

@@ -24,11 +24,10 @@ V_d Mean(const VV_d &v)
 };
 double Variance(const V_d &v)
 {
-	int N = v.size();
 	double ret(0);
 	for (const auto &w : v)
-		ret = ret + w * w;
-	return ret / N - pow(Mean(v), 2.);
+		ret += w * w;
+	return ret / (v.size()) - std::pow(Mean(v), 2.);
 };
 /* ------------------------------------------------------ */
 // 2021/08/06追加

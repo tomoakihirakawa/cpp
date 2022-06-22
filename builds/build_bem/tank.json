@@ -1,6 +1,6 @@
 {
     "name": "tank",
-    "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
+    "objfile": "../../obj/sloshing_tank/tank_sawai_254x254mm5.obj",
     "radius": 0.01,
     "output_vtu_file_name": "tank",
     "output_pvd_file_name": "tank",

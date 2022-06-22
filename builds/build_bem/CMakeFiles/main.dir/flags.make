@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../../include
 
-CXX_FLAGS =  -llapack -lblas -std=c++17 -fuse-ld=gold -Ofast -fopenmp -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=gnu++17
+CXX_FLAGS =  -llapack -lblas -std=c++17 -fuse-ld=gold -framework OpenCL -Ofast -fopenmp -march=native -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk -std=gnu++17
 

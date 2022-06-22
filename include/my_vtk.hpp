@@ -180,14 +180,6 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
 		if (map_p_v.find(p) != map_p_v.end())
 		{
 			auto vec = map_p_v[p];
-			// if (NumberOfComponents > vec.size())
-			// {
-			//   std::stringstream ss;
-			//   ss << "Name = " << Name << "\n";
-			//   ss << "NumberOfComponents = " << NumberOfComponents << "\n";
-			//   ss << "vec = " << vec << "\n";
-			//   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "NumberOfComponents > vec.size()\n" + ss.str());
-			// }
 			for (auto i = 0; i < NumberOfComponents; i++)
 			{
 				if (i < vec.size())
@@ -438,6 +430,97 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points)
 	fclose(fp);
 }
 /* ------------------------------------------------------ */
+void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points)
+{
+	const int N = 4;
+	try
+	{
+#if defined(debug_mk_vtu)
+		std::cout << Magenta << filename << reset;
+		std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << reset << " ";
+#endif
+		V_netPp Points;
+#if defined(debug_mk_vtu)
+		std::cout << red << "|";
+#endif
+		FILE *fp;
+		fp = fopen(filename.c_str(), "wb");
+		if (fp == NULL)
+			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, filename + " can not be opened\nMake sure you have the output directory!");
+		else
+		{
+#if defined(debug_mk_vtu)
+			std::cout << red << "|";
+#endif
+			fprintf(fp, "<?xml version='1.0' encoding='UTF-8'?>\n");
+			fprintf(fp, "<VTKFile xmlns='VTK' byte_order='LittleEndian' version='0.1' type='UnstructuredGrid'>\n");
+			{
+#if defined(debug_mk_vtu)
+				std::cout << red << "|";
+#endif
+				fprintf(fp, "<UnstructuredGrid>\n");
+				{
+#if defined(debug_mk_vtu)
+					std::cout << red << "|";
+#endif
+					fprintf(fp, "<Piece NumberOfCells='%d' NumberOfPoints='%d'>\n", (int)VV_points.size(), N * (int)VV_points.size());
+					{
+#if defined(debug_mk_vtu)
+						std::cout << red << "|";
+#endif
+						fprintf(fp, "<Points>\n");
+						{ // x,y,z: 3 components
+							fprintf(fp, "<DataArray NumberOfComponents='3' type='Float32' Name='Position' format='ascii'>\n");
+							for (const auto &T8Tddds : VV_points)
+							{
+								auto [X0, X1, X2, X3] = T8Tddds;
+								fprintf(fp, "%f %f %f\n", std::get<0>(X0), std::get<1>(X0), std::get<2>(X0));
+								fprintf(fp, "%f %f %f\n", std::get<0>(X1), std::get<1>(X1), std::get<2>(X1));
+								fprintf(fp, "%f %f %f\n", std::get<0>(X2), std::get<1>(X2), std::get<2>(X2));
+								fprintf(fp, "%f %f %f\n", std::get<0>(X3), std::get<1>(X3), std::get<2>(X3));
+							}
+							fprintf(fp, "</DataArray>\n");
+						}
+						fprintf(fp, "</Points>\n");
+
+#if defined(debug_mk_vtu)
+						std::cout << red << "|";
+#endif
+						fprintf(fp, "<Cells>\n");
+						{
+							fprintf(fp, "<DataArray type='Int32' Name='connectivity' format='ascii'>\n");
+							for (auto i = 0; i < VV_points.size(); ++i)
+								fprintf(fp, "%d %d %d %d\n", N * i, N * i + 1, N * i + 2, N * i + 3);
+							fprintf(fp, "</DataArray>\n");
+							fprintf(fp, "<DataArray type='Int32' Name='offsets' format='ascii'>\n");
+							for (auto i = 0; i < VV_points.size(); ++i)
+								fprintf(fp, "%d\n", N * (i + 1));
+							fprintf(fp, "</DataArray>\n");
+							fprintf(fp, "<DataArray type='UInt8' Name='types' format='ascii'>\n");
+							for (const auto &f : VV_points)
+								fprintf(fp, "9\n");
+							fprintf(fp, "</DataArray>\n");
+						}
+						fprintf(fp, "</Cells>\n");
+					}
+					fprintf(fp, "</Piece>\n");
+				}
+				fprintf(fp, "</UnstructuredGrid>\n");
+			}
+			fprintf(fp, "</VTKFile>\n");
+#if defined(debug_mk_vtu)
+			std::cout << Red << "|" << reset << std::endl;
+#endif
+		}
+		fclose(fp);
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << reset << std::endl;
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	};
+};
+/* ------------------------------------------------------ */
 void mk_vtu(const std::string &filename,
 			const VV_netPp &VV_points,
 			const VV_VarForOutput &VV_name_comp_mapPVd = {})
@@ -602,8 +685,6 @@ void mk_vtu(const std::string &filename,
 }
 /*DataArray_code*/
 
-////////////////////
-
 void mk_vtu(const std::string &filename,
 			const VVV_d &vvv_IN,
 			const VV_VarForOutput &VV_name_comp_mapPVd = {})
@@ -649,6 +730,25 @@ void mk_vtu(const std::string &filename,
 			delete v;
 };
 
+void mk_vtu(const std::string &filename,
+			const std::vector<Tddd> &vv,
+			const VV_VarForOutput &VV_name_comp_mapPVd = {})
+{
+	Network net;
+
+	VV_netPp vvp({});
+	V_netPp ps({});
+	for (const auto &v : vv)
+		if (isFinite(v))
+			ps.emplace_back(new networkPoint(&net, &net, {std::get<0>(v), std::get<1>(v), std::get<2>(v)}));
+	vvp.emplace_back(ps);
+
+	mk_vtu(filename, vvp, VV_name_comp_mapPVd);
+
+	for (const auto &vv : vvp)
+		for (const auto &v : vv)
+			delete v;
+};
 	/*DataArray_code*/
 
 #endif

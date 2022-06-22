@@ -12,34 +12,35 @@ bool refine(netLp l, double len)
 	}
 	return false;
 };
-/* ------------------------------------------------------ */
-auto creteOBJ = [](std::ofstream &ofs, Network &net)
-{
-	std::map<netPp, int> P_i;
-	int i = 0;
-	for (const auto &p : net.getPoints())
-	{
-		P_i[p] = ++i;
-		auto X = p->getX();
-		ofs << "v "
-			<< X[0] << " "
-			<< X[2] << " "
-			<< X[1] << std::endl;
-	}
-	ofs << std::endl;
+	/* ------------------------------------------------------ */
+	// auto creteOBJ = [](std::ofstream &ofs, Network &net)
+	// {
+	// 	std::map<netPp, int> P_i;
+	// 	int i = 0;
+	// 	for (const auto &p : net.getPoints())
+	// 	{
+	// 		P_i[p] = ++i;
+	// 		auto X = p->getX();
+	// 		ofs << "v "
+	// 			<< X[0] << " "
+	// 			<< X[1] << " "
+	// 			<< X[2] << std::endl;
+	// 	}
+	// 	ofs << std::endl;
 
-	for (const auto &f : net.getFaces())
-	{
-		auto ps = f->getPoints();
-		ofs << "f "
-			<< P_i[ps[0]] << " "
-			<< P_i[ps[2]] << " "
-			<< P_i[ps[1]] << std::endl;
-	}
-};
-//* ------------------------------------------------------ */
-//*                           メイン                        */
-//* ------------------------------------------------------ */
+	// 	for (const auto &f : net.getFaces())
+	// 	{
+	// 		auto ps = f->getPoints();
+	// 		ofs << "f "
+	// 			<< P_i[ps[0]] << " "
+	// 			<< P_i[ps[1]] << " "
+	// 			<< P_i[ps[2]] << std::endl;
+	// 	}
+	// };
+	//* ------------------------------------------------------ */
+	//*                           メイン                        */
+	//* ------------------------------------------------------ */
+
 #define bem
 #if defined(bem)
 int main()
@@ -47,7 +48,7 @@ int main()
 	JSON json(std::ifstream("./input.json"));
 	Network net(json["objfile"][0], json["name"][0]);
 	auto name = json["name"][0];
-	auto remesh = json["remesh"][0];
+	int remesh = stoi(json["remesh"])[0];
 	net.displayStates();
 
 	double lim_len = .2;
@@ -81,76 +82,89 @@ int main()
 		//* | 0 | 1 | 2 |[3]| 4 |   diff, mid_interval
 		//! 0   1   2  [3]  4   5   interval, cumulative_count
 		/* ------------------------*/
+
 		for (auto j = 0; j < h.diff.size(); ++j)
 			if (h.cumulative_count[j + 1] / h.data_size >= 0.6 && h.diff[j] >= h.diff[num == 0 ? j : num])
 				num = j;
-		std::cout << "num " << num << std::endl;
-		std::cout << h.interval[num] << std::endl;
+		// std::cout << "num " << num << std::endl;
+		// std::cout << h.interval[num] << std::endl;
+		bool found_flip = false;
+		bool found_divide = false;
+		V_netLp lines;
+		V_netPp neighbors_of_p;
+		int COUNT = 0;
 		if (!num == 0)
 		{
-			bool found = false;
+			found_flip = false;
+			found_divide = false;
+			COUNT = 0;
 			do
 			{
-				found = false;
-				auto lines = net.getLines();
+				found_flip = false;
+				found_divide = false;
+				lines = net.getLines();
 				sortByLength(lines);
 				for (const auto &l : Reverse(lines))
 				{
-					std::cout << l->length() << ", " << h.interval[num + 1] << std::endl;
+					// std::cout << l->length() << ", " << h.interval[num + 1] << std::endl;
+					/* ------------------------------------------------------ */
 					if (l->length() >= h.interval[num])
 					{
 						auto p = l->divide();
-						found = true;
-						for (auto &ps : BFS(p, 3))
-							for (auto &q : ps)
-							{
-								for (auto &l : q->getLines())
-								{
-									double lim_degree = 1.; // degree
-									auto fs = l->getFaces();
-									// if (MyVectorAngle(fs[0]->getNormal(), fs[1]->getNormal()) / M_PI * 180. < lim_degree)
-									// 	l->flipIfIllegal();
-									/* ------------------------------------------------------ */
-									found = l->flipIfBetter();
-									// if (MyVectorAngle(fs[0]->getNormalTuple(), fs[1]->getNormalTuple()) / M_PI * 180. < lim_degree)
-									// {
-									// 	if (!l->islegal())
-									// 	{
-									// 		found = true;
-									// 		// 平らな三角形通しの場合のみflipで対応すべき
-									// 		// auto [Pa, Pb] = l->getPointsTuple();
-									// 		// auto diff_size_points = std::abs((int)(Pa->getLines().size() - Pb->getLines().size()));
-									// 		// auto fs = l->getFaces();
-									// 		auto diff_area = std::abs(fs[0]->getArea() - fs[1]->getArea());
-									// 		l->flip();
-									// 		// まだ不正な線のままで，点の数が違いすぎる場合戻す．
-									// 		if (!l->islegal())
-									// 		{
-									// 			// auto [Pa, Pb] = l->getPointsTuple();
-									// 			// if (std::abs((int)(Pa->getLines().size() - Pb->getLines().size())) > diff_size_points)
-									// 			// 	l->flip();
-									// 			auto fs = l->getFaces();
-									// 			if (std::abs(std::abs(fs[0]->getArea() - fs[1]->getArea())) > diff_area)
-									// 				l->flip();
-									// 		}
-									// 	}
-									// }
-									if (found)
-										break;
-								}
-								if (found)
-									break;
-							}
-						if (found)
-							break;
+						found_divide = true;
+						// neighbors_of_p = Flatten(BFS(p, 5));
 					}
+					else
+						break;
+					/* -------------------------------- */
+					// for (const auto &l : extractLines(l->getPoints()))
+					// {
+					// 	found_flip = l->flipIfTopologicalyBetter(.1);
+					// 	if (!found_flip)
+					// 		found_flip = l->flipIfBetter(.1);
+					// 	if (found_flip)
+					// 	{
+					// 		auto [p, p1] = l->getPointsTuple();
+					// 		neighbors_of_p = Reverse(Flatten(BFS(p, 4)));
+					// 		AreaWeightedSmoothingPreserveShape(neighbors_of_p);
+					// 		AreaWeightedSmoothingPreserveShape(neighbors_of_p);
+					// 		AreaWeightedSmoothingPreserveShape(neighbors_of_p);
+					// 		AreaWeightedSmoothingPreserveShape(neighbors_of_p);
+					// 	}
+					// }
 				}
-				for (auto &p : net.getPoints())
-					LaplacianSmoothingIfFlat(p);
-				for (auto &p : net.getPoints())
-					LaplacianSmoothingIfFlat(p);
-			} while (found);
+				std::cout << "COUNT = " << COUNT << std::endl;
+			} while (found_divide && COUNT++ < 10);
 		}
+		// flipIf(net, true);
+		/*
+		! 注意
+		@ 強い制限のため，湾曲した境界面上を点は移動することができない．
+		@ しかし，円筒の内面などは滑らかにしたいができない．
+		@ 湾曲した面の辺をフリップしてしまうと，そのまま動かなくなる．これは面の法線方向を変化させるような平滑化を禁止しているためで，フリップにはその制限がかかっていないためである．
+		*/
+
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		for (const auto &l : net.getLines())
+			l->flipIfTopologicalyBetter(1E-4, 1E-4);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+
+		for (const auto &l : net.getLines())
+			l->flipIfBetter(1E-3);
+
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
+		AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-6);
 	}
 }
 #elif defined(sphare)

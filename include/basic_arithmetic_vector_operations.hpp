@@ -7,6 +7,8 @@
 #include <vector>
 #include <tuple>
 
+using Tii = std::tuple<int, int>;
+using Tiii = std::tuple<int, int, int>;
 using Tdd = std::tuple<double, double>;
 using Tddd = std::tuple<double, double, double>;
 using T6d = std::tuple<double, double, double, double, double, double>;
@@ -760,6 +762,31 @@ Tddd operator/(Tddd v, const double u)
 	return v;
 };
 /* ------------------------------------------------------ */
+std::vector<Tddd> operator-(std::vector<Tddd> V, const double u)
+{
+	for (auto &v : V)
+		v -= u;
+	return V;
+};
+std::vector<Tddd> operator+(std::vector<Tddd> V, const double u)
+{
+	for (auto &v : V)
+		v += u;
+	return V;
+};
+std::vector<Tddd> operator*(std::vector<Tddd> V, const double u)
+{
+	for (auto &v : V)
+		v *= u;
+	return V;
+};
+std::vector<Tddd> operator/(std::vector<Tddd> V, const double u)
+{
+	for (auto &v : V)
+		v /= u;
+	return V;
+};
+/* ------------------------------------------------------ */
 Tddd operator-(const double u, Tddd v)
 {
 	std::get<0>(v) = u - std::get<0>(v);
@@ -1075,7 +1102,31 @@ T3Tddd operator/(const double u, T3Tddd v)
 	std::get<2>(v) = u / std::get<2>(v);
 	return v;
 };
-
+/* ------------------------------------------------------ */
+std::vector<Tddd> operator-(std::vector<Tddd> V, const Tddd &u)
+{
+	for (auto &v : V)
+		v -= u;
+	return V;
+};
+std::vector<Tddd> operator+(std::vector<Tddd> V, const Tddd &u)
+{
+	for (auto &v : V)
+		v += u;
+	return V;
+};
+std::vector<Tddd> operator*(std::vector<Tddd> V, const Tddd &u)
+{
+	for (auto &v : V)
+		v *= u;
+	return V;
+};
+std::vector<Tddd> operator/(std::vector<Tddd> V, const Tddd &u)
+{
+	for (auto &v : V)
+		v /= u;
+	return V;
+};
 /* ------------------------------------------------------ */
 /* ------------------------------------------------------ */
 /* ------------------------------------------------------ */
@@ -1463,4 +1514,114 @@ std::vector<std::vector<T>> &operator+=(std::vector<std::vector<T>> &v, const st
 {
 	return (v = v + w);
 };
+/* ------------------------------------------------------ */
+/* ------------------------------------------------------ */
+
+namespace std
+{
+	namespace
+	{
+
+		// Code from boost
+		// Reciprocal of the golden ratio helps spread entropy
+		//     and handles duplicates.
+		// See Mike Seymour in magic-numbers-in-boosthash-combine:
+		//     https://stackoverflow.com/questions/4948780
+
+		template <class T>
+		inline void hash_combine(std::size_t &seed, T const &v)
+		{
+			seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
+
+		// Recursive template code derived from Matthieu M.
+		template <class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
+		struct HashValueImpl
+		{
+			static void apply(size_t &seed, Tuple const &tuple)
+			{
+				HashValueImpl<Tuple, Index - 1>::apply(seed, tuple);
+				hash_combine(seed, get<Index>(tuple));
+			}
+		};
+
+		template <class Tuple>
+		struct HashValueImpl<Tuple, 0>
+		{
+			static void apply(size_t &seed, Tuple const &tuple)
+			{
+				hash_combine(seed, get<0>(tuple));
+			}
+		};
+	}
+
+	template <typename... TT>
+	struct hash<std::tuple<TT...>>
+	{
+		size_t
+		operator()(std::tuple<TT...> const &tt) const
+		{
+			size_t seed = 0;
+			HashValueImpl<std::tuple<TT...>>::apply(seed, tt);
+			return seed;
+		}
+	};
+}
+
+std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> operator*(const double din, const std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> &v)
+{
+	auto ret = v;
+	for (auto &[ii, dd] : ret)
+		dd *= din;
+	return ret;
+};
+
+std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> operator*(const std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> &v,
+																			   const double din)
+{
+	auto ret = v;
+	for (auto &[ii, dd] : ret)
+		dd *= din;
+	return ret;
+};
+
+std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> operator/(const double din, const std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> &v)
+{
+	auto ret = v;
+	double m = 1. / din;
+	for (auto &[ii, dd] : ret)
+		dd *= m;
+	return ret;
+};
+
+std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> operator/(const std::unordered_map<std::tuple<int, int>, std::tuple<double, double>> &v,
+																			   const double din)
+{
+	auto ret = v;
+	double m = 1. / din;
+	for (auto &[ii, dd] : ret)
+		dd *= m;
+	return ret;
+};
+
+std::unordered_map<Tii, Tdd> &operator+=(std::unordered_map<Tii, Tdd> &ii_dd, const std::unordered_map<Tii, Tdd> &jj_dd)
+{
+	std::unordered_map<Tii, Tdd>::iterator it;
+	for (auto &[jj, dd] : jj_dd)
+		if ((it = ii_dd.find(jj)) != ii_dd.end())
+			it->second += dd;
+		else
+			ii_dd[jj] = dd;
+	return ii_dd;
+};
+
+	// std::unordered_map<Tii, Tddd> &operator+=(std::unordered_map<Tii, Tddd> &ii_dd, const std::unordered_map<Tii, Tddd> &jj_dd)
+	// {
+	// 	std::unordered_map<Tii, Tddd>::const_iterator it;
+	// 	for (auto &[ii, dd] : ii_dd)
+	// 		if ((it = jj_dd.find(ii)) != jj_dd.end())
+	// 			dd += it->second;
+	// 	return ii_dd;
+	// };
+
 #endif

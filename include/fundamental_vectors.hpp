@@ -663,16 +663,43 @@ double Dot(const Tddd &v, const Tddd &u)
 			std::get<1>(v) * std::get<1>(u) +
 			std::get<2>(v) * std::get<2>(u));
 };
+
 double Dot(const Tdd &v, const Tdd &u)
 {
 	return (std::get<0>(v) * std::get<0>(u) + std::get<1>(v) * std::get<1>(u));
 };
+
+Tdd Dot(const Tdd &t, const T2Tdd &u)
+{
+	return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
+			std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u))};
+};
+
+Tddd Dot(const Tdd &t, const T2Tddd &u)
+{
+	return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
+			std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u)),
+			std::get<0>(t) * std::get<2>(std::get<0>(u)) + std::get<1>(t) * std::get<2>(std::get<1>(u))};
+};
+
 Tddd Dot(const T3Tddd &A, const Tddd &v)
 {
 	return {Dot(std::get<0>(A), v),
 			Dot(std::get<1>(A), v),
 			Dot(std::get<2>(A), v)};
 };
+
+/*
+In[12]:= Dot[{t0,t1,t2},{{X0x,X0y},{X1x,X1y},{X2x,X2y}}]
+Out[12]= {t0 X0x+t1 X1x+t2 X2x,
+		  t0 X0y+t1 X1y+t2 X2y
+*/
+Tdd Dot(const Tddd &v, const T3Tdd &A)
+{
+	return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
+			std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v)};
+};
+
 Tddd Dot(const Tddd &v, const T3Tddd &A)
 {
 	return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
@@ -686,6 +713,12 @@ Tddd Cross(const Tddd &A, const Tddd &X)
 			std::get<2>(A) * std::get<0>(X) - std::get<0>(A) * std::get<2>(X),
 			std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)};
 };
+
+Tddd Cross(const Tdd &A, const Tdd &X)
+{
+	return {0., 0., std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)};
+};
+
 T2Tdd Transpose(const T2Tdd &A)
 {
 	return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))},
@@ -703,6 +736,28 @@ T3Tddd Transpose(const T3Tddd &A)
 			{std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A))},
 			{std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A)), std::get<2>(std::get<2>(A))}};
 };
+
+std::tuple<V_d, V_d> Transpose(const std::vector<Tdd> &V_Tdd)
+{
+	V_d v0(V_Tdd.size()), v1(V_Tdd.size());
+	for (auto i = 0; i < V_Tdd.size(); ++i)
+	{
+		v0[i] = std::get<0>(V_Tdd[i]);
+		v1[i] = std::get<1>(V_Tdd[i]);
+	}
+	return {v0, v1};
+};
+std::tuple<V_d, V_d, V_d> Transpose(const std::vector<Tddd> &V_Tdd)
+{
+	V_d v0(V_Tdd.size()), v1(V_Tdd.size()), v2(V_Tdd.size());
+	for (auto i = 0; i < V_Tdd.size(); ++i)
+	{
+		v0[i] = std::get<0>(V_Tdd[i]);
+		v1[i] = std::get<1>(V_Tdd[i]);
+		v2[i] = std::get<2>(V_Tdd[i]);
+	}
+	return {v0, v1, v2};
+};
 /* ------------------------------------------------------ */
 
 // bool isfinite(const V_d &v_IN)
@@ -716,20 +771,20 @@ T3Tddd Transpose(const T3Tddd &A)
 bool isfinite(const V_d &v_IN)
 {
 	for (const auto &v : v_IN)
-		if (v < -1E+50 || v > 1E+50)
+		if (v < -1E+20 || v > 1E+20)
 			return false;
 	return true;
 };
 
 bool myIsfinite(const double v)
 {
-	if (v < -1E+50 || v > 1E+50)
+	if (v < -1E+20 || v > 1E+20)
 		return false;
 	else
 		return true;
 };
 
-bool isFinite(const double v, const double eps = 1E+50)
+bool isFinite(const double v, const double eps = 1E+20)
 {
 	if (v < -eps || v > eps || v != v)
 		return false;
@@ -757,26 +812,30 @@ bool isFinite(const Tdd &v)
 {
 	if (isFinite(std::get<0>(v)) && isFinite(std::get<1>(v)))
 		return true;
-	return false;
+	else
+		return false;
 };
 bool isFinite(const T4d &v)
 {
 	if (isFinite(std::get<0>(v)) && isFinite(std::get<1>(v)) && isFinite(std::get<2>(v)) && isFinite(std::get<3>(v)))
 		return true;
-	return false;
+	else
+		return false;
 };
-bool isFinite(const Tddd &v)
+bool isFinite(const Tddd &v, const double eps = 1E+20)
 {
-	if (isFinite(std::get<0>(v)) && isFinite(std::get<1>(v)) && isFinite(std::get<2>(v)))
+	if (isFinite(std::get<0>(v), eps) && isFinite(std::get<1>(v), eps) && isFinite(std::get<2>(v), eps))
 		return true;
-	return false;
+	else
+		return false;
 };
 bool isFinite(const T3Tddd &V)
 {
 	auto [X, Y, Z] = V;
 	if (isFinite(X) && isFinite(Y) && isFinite(Z))
 		return true;
-	return false;
+	else
+		return false;
 };
 /* ------------------------------------------------------ */
 double Mean(const Tdd &X) { return (std::get<0>(X) + std::get<1>(X)) / 2.; };
@@ -924,6 +983,14 @@ template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::
 T Norm(const T x) { return std::abs(x); };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Norm(const std::vector<T> &vec) { return std::sqrt(std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.)); };
+//
+double Norm(const std::vector<Tddd> &vec)
+{
+	double ret = 0;
+	for (const auto &v : vec)
+		ret += Dot(v, v);
+	return std::sqrt(ret);
+};
 /* ------------------------------------------------------ */
 V_d Normalize(const V_d X) { return X / Norm(X); };
 double Norm3d(const V_d &vec)
@@ -1059,10 +1126,10 @@ struct Quaternion
 					= -W/(w0^2 + w1^2 + w2^2)
 		*/
 
-		return Quaternion((-this->b * std::get<0>(w) - this->c * std::get<1>(w) - this->d * std::get<2>(w)) / 2., /*{0,-w0,-w1,-w2}.{a,b,c,d}/2*/
-						  (this->a * std::get<0>(w) - this->d * std::get<1>(w) + this->c * std::get<2>(w)) / 2.,  /*{w0,0,w2,-w1}.{a,b,c,d}/2*/
-						  (this->d * std::get<0>(w) + this->a * std::get<1>(w) - this->b * std::get<2>(w)) / 2.,  /*{w1,-w2,0,w0}.{a,b,c,d}/2*/
-						  (-this->c * std::get<0>(w) + this->b * std::get<1>(w) + this->a * std::get<2>(w)) / 2. /*{w2,w1,-w0,0}.{a,b,c,d}/2*/);
+		return Quaternion((-this->b * std::get<0>(w) - this->c * std::get<1>(w) - this->d * std::get<2>(w)) * 0.5, /*{0,-w0,-w1,-w2}.{a,b,c,d}/2*/
+						  (this->a * std::get<0>(w) - this->d * std::get<1>(w) + this->c * std::get<2>(w)) * 0.5,  /*{w0,0,w2,-w1}.{a,b,c,d}/2*/
+						  (this->d * std::get<0>(w) + this->a * std::get<1>(w) - this->b * std::get<2>(w)) * 0.5,  /*{w1,-w2,0,w0}.{a,b,c,d}/2*/
+						  (-this->c * std::get<0>(w) + this->b * std::get<1>(w) + this->a * std::get<2>(w)) * 0.5 /*{w2,w1,-w0,0}.{a,b,c,d}/2*/);
 	};
 
 	void set(const T4d &qIN)
@@ -1304,6 +1371,15 @@ double TriangleArea(const V_d &a, const V_d &b, const V_d &c)
 	auto s = 0.5 * (A + B + C);
 	return std::sqrt(s * (s - A) * (s - B) * (s - C));
 };
+double TriangleArea(const Tddd &a, const Tddd &b, const Tddd &c)
+{
+	auto A = Norm(a - c);
+	auto B = Norm(b - a);
+	auto C = Norm(c - b);
+	// this->area = std::abs(Norm(c) / Dot(a, b));
+	auto s = 0.5 * (A + B + C);
+	return std::sqrt(s * (s - A) * (s - B) * (s - C));
+};
 double TriangleArea(const T3Tddd &abc)
 {
 	auto [a, b, c] = abc;
@@ -1354,6 +1430,11 @@ Tddd TriangleNormal(const T3Tddd &abc)
 {
 	auto [a, b, c] = abc;
 	return Normalize(Cross((b - a), (c - a)));
+};
+
+bool isFlat(const Tddd &a, const Tddd &b, const double lim_rad)
+{
+	return Dot(Normalize(a), Normalize(b)) > cos(lim_rad); // if this satisfied which means falt
 };
 
 //多角形の頂点における隣り合う辺が作る面積を計算する．法線と逆の場合はマイナス．範囲は[pi,-pi]

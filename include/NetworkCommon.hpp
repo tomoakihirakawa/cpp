@@ -63,7 +63,7 @@ namespace network
 		return false;
 	};
 	//-------------------------------
-	//TakeExceptで置き換える
+	// TakeExceptで置き換える
 	// template <typename T>
 	// std::vector<bool> erase(std::vector<T *> &P, const std::vector<T *> &p)
 	// {
@@ -124,7 +124,7 @@ namespace network
 
 	/*
 replaceは，Fに接続しているoldLをFから剥ぎ取り，newObjに付け替える．
-oldObjはFの代わりにnewFに接続しなおす．    
+oldObjはFの代わりにnewFに接続しなおす．
    */
 	// template <typename L, typename T>
 	// bool replace(T *this_, std::vector<L *> &this_V_L, L *oldL, L *newL, T *newF = nullptr)
@@ -192,7 +192,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 			inseted = false;
 			for (auto it = ret.begin(); it != ret.end(); ++it)
 			{
-				if (Norm(P->getX() - p->getX()) < Norm(P->getX() - (*it)->getX()))
+				if (Norm(P->getXtuple() - p->getXtuple()) < Norm(P->getXtuple() - (*it)->getXtuple()))
 				{
 					ret.insert(it, p);
 					inseted = true;
@@ -292,7 +292,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 	//-----------------------
 	// vectorの中から特定のものを抜き出す関数
 	template <class T>
-	T *takeNearest(const std::vector<T *> &objs, const V_d &xyz)
+	T *takeNearest(const std::vector<T *> &objs, const Tddd &xyz)
 	{
 		if (objs.empty())
 		{
@@ -303,7 +303,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 		double min = 1E+30, dist;
 		for (const auto &obj : objs)
 		{
-			dist = Norm(obj->getX() - xyz);
+			dist = Norm(obj->getXtuple() - xyz);
 			if (min > dist)
 			{
 				ret = obj;
@@ -313,7 +313,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 		return ret;
 	};
 	template <class T>
-	T *takeNearest(const std::unordered_set<T *> &objs, const V_d &xyz)
+	T *takeNearest(const std::unordered_set<T *> &objs, const Tddd &xyz)
 	{
 		if (objs.empty())
 		{
@@ -324,7 +324,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 		double min = 1E+30, dist;
 		for (const auto &obj : objs)
 		{
-			dist = Norm(obj->getX() - xyz);
+			dist = Norm(obj->getXtuple() - xyz);
 			if (min > dist)
 			{
 				ret = obj;
@@ -387,20 +387,20 @@ bool isEdge(const T *l)
 };
 ///////////////////////////////////////////////////////////
 template <typename T>
-bool isEdgePoint(const T *p)
+bool isEdgePoint(const T *const p)
 {
 	try
 	{
 		auto lines = p->getLines();
 		if (lines.empty())
-			return true; //this is edge
+			return true; // this is edge
 		for (const auto &l : lines)
 			if (l == nullptr)
-				return true; //this is edge
-		//Print("周囲の全ての線が面を2つ保持している場合，false");
+				return true; // this is edge
+		// Print("周囲の全ての線が面を2つ保持している場合，false");
 		for (const auto &l : lines)
 			if (l->getFaces().size() != 2)
-				return true; //this is edge
+				return true; // this is edge
 		return false;
 	}
 	catch (std::exception &e)

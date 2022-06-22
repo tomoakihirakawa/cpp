@@ -103,6 +103,7 @@ data = {
     "objfile": "../../obj/watanabe2021/tank_for_dambreak_experiment_Koshizuka_Moyce15.obj",
     "rotate": [2*math.pi, 1, 0, 0],
     "scale": [1/1000, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    "translate": [-.3, 0, 0],
     "depth_list": [-particle_spacing/2.],
     "volume_of_a_particle": volume_of_a_particle,
     "density": density

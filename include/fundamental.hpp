@@ -42,6 +42,15 @@ using T4d = std::tuple<double, double, double, double>;
 using T5d = std::tuple<double, double, double, double, double>;
 using T6d = std::tuple<double, double, double, double, double, double>;
 using T7d = std::tuple<double, double, double, double, double, double, double>;
+
+double real_sph(const int l, const int m, const double theta, const double psi)
+{
+	return std::sph_legendre(std::abs(l), std::abs(l), theta) * std::cos(psi);
+};
+double real_sph_scale_ommited(const int l, const int m, const double theta, const double psi)
+{
+	return real_sph(l, m, theta, psi) / std::sqrt((2. * std::abs(l) + 1.) / (4. * M_PI));
+};
 /* ------------------------------------------------------ */
 /*              表示方法に関するライブラリ                     */
 /* ------------------------------------------------------ */
@@ -496,6 +505,13 @@ T Min(const std::vector<std::vector<T>> &v)
 	}
 	return ret;
 };
+
+Tdd MinMax(const std::vector<double> &v)
+{
+	auto it = std::minmax_element(std::begin(v), std::end(v));
+	return {*it.first, *it.second};
+};
+
 template <class T>
 T Max(const std::vector<T> &v) { return *std::max_element(std::begin(v), std::end(v)); };
 template <class T>
@@ -543,6 +559,17 @@ int Count(const std::vector<T *> &list, const T *const v)
 };
 /* ------------------------------------------------------ */
 template <class T>
+bool MemberQ(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p)
+{
+	return (std::get<0>(Ps) == p ||
+			std::get<1>(Ps) == p ||
+			std::get<2>(Ps) == p ||
+			std::get<3>(Ps) == p ||
+			std::get<4>(Ps) == p ||
+			std::get<5>(Ps) == p);
+};
+
+template <class T>
 bool MemberQ(const std::vector<T> &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
 template <class T>
 bool MemberQ(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
@@ -577,6 +604,13 @@ bool MemberQ(const std::tuple<T, T> &list, const T &form)
 	else
 		return false;
 };
+
+template <class T>
+bool MemberQ(const std::unordered_set<T> &list, const T &form)
+{
+	return list.contains(form);
+};
+
 // template <class T>
 // bool MemberQ(const std::vector<T> &list, const T &form) { return std::binary_search(list.cbegin(), list.cend(), form); };
 // template <class T>
@@ -607,6 +641,27 @@ std::vector<T> TakeExcept(const std::vector<T> &list, const std::vector<T> &form
 			ret.emplace_back(l);
 	return ret;
 };
+//
+template <typename T>
+std::unordered_set<T> TakeExcept(const std::unordered_set<T> &list, const T &form)
+{
+	std::unordered_set<T> ret;
+	ret.reserve(list.size());
+	for (const auto &l : list)
+		if (l != form)
+			ret.emplace_back(l);
+	return ret;
+};
+template <typename T>
+std::unordered_set<T> TakeExcept(const std::unordered_set<T> &list, const std::vector<T> &form)
+{
+	std::unordered_set<T> ret;
+	ret.reserve(list.size());
+	for (const auto &l : list)
+		if (!MemberQ(form, l))
+			ret.emplace(l);
+	return ret;
+};
 template <typename T>
 std::vector<T> TakeExceptIndex(const std::vector<T> &list, const int index)
 {
@@ -633,7 +688,6 @@ std::vector<T> TakeExceptIndecies(const std::vector<T> &list, const V_i &form)
 	}
 	return ret;
 };
-////////
 template <class T>
 bool AnyMemberQ(const std::vector<T> &list, const std::vector<T> &form)
 { // Mathematica like
@@ -666,7 +720,8 @@ double Mean(const V_d &v)
 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
 	else if (v.size() == 1)
 		return v[0];
-	return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
+	else
+		return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
 };
 
 V_d Sum(const VV_d &v)
@@ -693,6 +748,14 @@ V_d Total(const VV_d &v)
 	for (const auto &u : v)
 		ret += u;
 	return ret;
+};
+
+double RMS(const V_d &v)
+{
+	double ret(0);
+	for (const auto &u : v)
+		ret += u * u;
+	return std::sqrt(ret);
 };
 template <typename T>
 std::vector<T> RandomSample(std::vector<T> ret /*copy may change*/, const int n = 0)
@@ -752,11 +815,12 @@ struct Timer
 class TimeWatch
 {
 public:
-	std::chrono::time_point<std::chrono::high_resolution_clock> start;
-	std::chrono::time_point<std::chrono::high_resolution_clock> lasttime;
+	// std::chrono::time_point<std::chrono::high_resolution_clock> start;
+	std::chrono::time_point<std::chrono::system_clock> start;
+	std::chrono::time_point<std::chrono::system_clock> lasttime;
 	TimeWatch()
 	{
-		this->start = std::chrono::high_resolution_clock::now();
+		this->start = std::chrono::system_clock::now();
 		this->lasttime = start;
 	};
 	//!一つ目は，前回からの経過時間，二つ目は作成した時間からの経過時間
@@ -764,7 +828,7 @@ public:
 	std::vector<double> get()
 	{
 		auto tmp = this->lasttime;
-		this->lasttime = std::chrono::high_resolution_clock::now();
+		this->lasttime = std::chrono::system_clock::now();
 		// return {this->lasttime - tmp, this->lasttime - this->start};
 		return {(std::chrono::duration<double>(this->lasttime - tmp)).count(),
 				(std::chrono::duration<double>(this->lasttime - this->start)).count()};
@@ -772,7 +836,7 @@ public:
 	std::vector<double> operator()()
 	{
 		auto tmp = this->lasttime;
-		this->lasttime = std::chrono::high_resolution_clock::now();
+		this->lasttime = std::chrono::system_clock::now();
 		// return {this->lasttime - tmp, this->lasttime - this->start};
 		return {(std::chrono::duration<double>(this->lasttime - tmp)).count(),
 				(std::chrono::duration<double>(this->lasttime - this->start)).count()};
@@ -937,6 +1001,12 @@ void linspace(const std::vector<V_d> &mat, const V_i size, V_d &O_X)
 	}
 };
 ////////// Join has been modified on 20200411
+template <typename T>
+std::unordered_set<T> Join(std::unordered_set<T> ret, const std::unordered_set<T> &b)
+{
+	ret.insert(b.begin(), b.end());
+	return ret;
+};
 template <typename T>
 std::vector<T> Join(std::vector<T> ret, const std::vector<T> &b)
 {
@@ -1296,6 +1366,7 @@ double D_Bspline(const double h, const V_d &q, const int i, const int K)
 {
 	return (K - 1.) * (1. / (q[i + K - 1] - q[i]) * Bspline(h, q, i, K - 1) - 1. / (q[i + K] - q[i + 1]) * Bspline(h, q, i + 1, K - 1));
 };
+
 double D_Bspline(const double h, const V_d &q, const int i, const int K, const int n)
 {
 	if (K == 1 && n > 0)
@@ -1313,6 +1384,16 @@ double D_Bspline(const double h, const V_d &q, const int i, const int K, const i
 		};
 	};
 };
+
+V_d D_Bspline(const double h, const V_d &q, const int K)
+{
+	// {B_0(h),B_1(h),B_2(h),B_3(h),.......}
+	V_d ret(q.size() - K);
+	for (auto i = 0; i < q.size() - K; i++)
+		ret[i] = D_Bspline(h, q, i, K);
+	return ret;
+};
+
 /* ------------------------------------------------------ */
 struct ludcmp_parallel
 {
@@ -1486,15 +1567,29 @@ struct ludcmp_parallel
 
 // #ifdef use_lapack
 
-extern "C" void dgetrf_(int *dim1, int *dim2, double *a, int *lda, int *ipiv, int *info);
-extern "C" void dgetrs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA, int *IPIV, double *B, int *LDB, int *INFO);
+extern "C" void dgetrf_(const int *dim1,
+						const int *dim2,
+						double *a,
+						const int *lda,
+						int *ipiv,
+						int *info);
+extern "C" void dgetrs_(const char *TRANS,
+						const int *N,
+						const int *NRHS,
+						const double *A,
+						const int *LDA,
+						const int *IPIV,
+						double *B,
+						const int *LDB,
+						int *INFO);
 
 struct lapack_lu
 {
-	int dim;
+	const int dim;
 	std::vector<double> a;
-	char trans = 'T';
-	int nrhs = 1, LDA, LDB, info;
+	const char trans = 'T';
+	const int nrhs = 1, LDA, LDB;
+	int info;
 	std::vector<int> ipiv;
 	~lapack_lu(){};
 	lapack_lu(const std::vector<std::vector<double>> &aIN)
@@ -1509,14 +1604,11 @@ struct lapack_lu
 
 	void solve(const std::vector<double> &rhd, std::vector<double> &b)
 	{
-		try
+		b = rhd;
+		dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, &*ipiv.begin(), &*b.begin(), &LDB, &info);
+		if (info)
 		{
-			b = rhd;
-			dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, &*ipiv.begin(), &*b.begin(), &LDB, &info);
-		}
-		catch (std::exception &e)
-		{
-			std::cerr << e.what() << reset << std::endl;
+			// std::cerr << e.what() << reset << std::endl;
 			std::stringstream ss;
 			ss << "LDB:" << LDB;
 			ss << "\nLDA:" << LDA;
@@ -1693,6 +1785,17 @@ struct ludcmp
 	// 	for (i = 0; i < n; i++)
 	// 		x[i] -= r[i];
 	// };
+};
+
+T3Tddd Inverse(const T3Tddd &mat)
+{
+	auto [x00, x01, x02] = std::get<0>(mat);
+	auto [x10, x11, x12] = std::get<1>(mat);
+	auto [x20, x21, x22] = std::get<2>(mat);
+	double det = -x02 * x11 * x20 + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22;
+	return {Tddd{-x12 * x21 + x11 * x22, x02 * x21 - x01 * x22, -x02 * x11 + x01 * x12} / det,
+			Tddd{x12 * x20 - x10 * x22, -x02 * x20 + x00 * x22, x02 * x10 - x00 * x12} / det,
+			Tddd{-x11 * x20 + x10 * x21, x01 * x20 - x00 * x21, -x01 * x10 + x00 * x11} / det};
 };
 
 VV_d Inverse(const VV_d &mat)
@@ -2811,12 +2914,21 @@ std::map<std::string, V_S> parseJSON(const std::string &str_IN)
 	return map_S_S;
 };
 
+/* ------------------------------------------------------ */
+
 struct JSON
 {
 	using V_S = std::vector<std::string>;
-
 	std::map<std::string, V_S> map_S_S;
+
 	// JSON(const std::string &str_IN) : map_S_S() { this->parse(str_IN); };
+
+	JSON(){};
+	JSON &operator=(const JSON &other)
+	{
+		this->map_S_S = other.map_S_S;
+		return *this;
+	};
 	JSON(const std::ifstream &istrm) : map_S_S()
 	{
 		if (!istrm.is_open())
@@ -2847,7 +2959,7 @@ struct JSON
 		return this->map_S_S;
 	};
 
-	V_S &operator[](const std::string &key)
+	V_S &operator[](const std::string &key) /*変更を許す*/
 	{
 		return this->map_S_S[key];
 	};
@@ -2865,6 +2977,8 @@ struct JSON
 	// 		return {};
 	// };
 };
+
+/* ------------------------------------------------------ */
 
 std::ofstream &operator<<(std::ofstream &stream, const JSON &json)
 {
@@ -2906,11 +3020,27 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json)
 
 struct JSONoutput
 {
+	std::map<std::string, T6d> map_S_T6d;
+	std::map<std::string, Tddd> map_S_Tddd;
 	std::map<std::string, std::vector<double>> map_S_D;
 	std::map<std::string, std::vector<int>> map_S_I;
 	std::map<std::string, std::vector<std::string>> map_S_S;
 	JSONoutput(){};
 
+	void push(std::string s, const T6d D)
+	{
+		if (this->map_S_T6d.find(s) != this->map_S_T6d.end())
+			this->map_S_T6d[s] = D;
+		else
+			this->map_S_T6d[s] = {D};
+	};
+	void push(std::string s, const Tddd D)
+	{
+		if (this->map_S_Tddd.find(s) != this->map_S_Tddd.end())
+			this->map_S_Tddd[s] = D;
+		else
+			this->map_S_Tddd[s] = {D};
+	};
 	void push(std::string s, double D)
 	{
 		if (this->map_S_D.find(s) != this->map_S_D.end())
@@ -2937,13 +3067,44 @@ struct JSONoutput
 	{
 		os << "{" << std::endl;
 		{
+			int size = this->map_S_T6d.size();
+			int i = 0;
+			for (const auto &[key, V] : this->map_S_T6d)
+			{
+				auto [V0, V1, V2, V3, V4, V5] = V;
+				os << "\"" << key << "\":[";
+				os << std::setprecision(15) << V0 << ", "
+				   << std::setprecision(15) << V1 << ", "
+				   << std::setprecision(15) << V2 << ", "
+				   << std::setprecision(15) << V3 << ", "
+				   << std::setprecision(15) << V4 << ", "
+				   << std::setprecision(15) << V5 << "]";
+				if (i++ != size - 1)
+					os << ",\n";
+			}
+		}
+		{
+			int size = this->map_S_Tddd.size();
+			int i = 0;
+			for (const auto &[key, V] : this->map_S_Tddd)
+			{
+				auto [V0, V1, V2] = V;
+				os << "\"" << key << "\":[";
+				os << std::setprecision(15) << V0 << ", "
+				   << std::setprecision(15) << V1 << ", "
+				   << std::setprecision(15) << V2 << "]";
+				if (i++ != size - 1)
+					os << ",\n";
+			}
+		}
+		{
 			int size = this->map_S_D.size();
 			int i = 0;
 			for (const auto &[key, V] : this->map_S_D)
 			{
 				os << "\"" << key << "\":[";
 				for (auto j = 0; j < V.size(); ++j)
-					os << V[j] << (j != V.size() - 1 ? "," : "]");
+					os << std::setprecision(15) << V[j] << (j != V.size() - 1 ? "," : "]");
 				if (i++ != size - 1)
 					os << ",\n";
 			}
@@ -3246,11 +3407,26 @@ std::vector<Type> RotateLeft(const std::vector<Type> &vecs, const int n)
 	std::rotate(ret.begin(), ret.begin() + n, ret.end());
 	return ret;
 }
+template <class T>
+std::tuple<T, T, T> Reverse(const std::tuple<T, T, T> &vecs)
+{ // 2022年3月21日
+	return {std::get<2>(vecs), std::get<1>(vecs), std::get<0>(vecs)};
+};
+Tddd RotateLeft(const Tddd &vecs, int n)
+{ // 2021/12/05
+	n = n % 3;
+	if (n == 0)
+		return vecs;
+	else if (n == 1)
+		return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+	else
+		return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+}
 T3Tddd RotateLeft(const T3Tddd &vecs, int n)
 { // 2021/12/05
 	n = n % 3;
 	if (n == 0)
-		return {std::get<0>(vecs), std::get<1>(vecs), std::get<2>(vecs)};
+		return vecs;
 	else if (n == 1)
 		return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
 	else
@@ -3260,7 +3436,17 @@ T3Tddd RotateRight(const T3Tddd &vecs, int n)
 { // 2021/12/05
 	n = n % 3;
 	if (n == 0)
-		return {std::get<0>(vecs), std::get<1>(vecs), std::get<2>(vecs)};
+		return vecs;
+	else if (n == 1)
+		return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+	else
+		return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+}
+Tddd RotateRight(const Tddd &vecs, int n)
+{ // 2021/12/05
+	n = n % 3;
+	if (n == 0)
+		return vecs;
 	else if (n == 1)
 		return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
 	else
@@ -3522,6 +3708,11 @@ using Tiii = std::tuple<int, int, int>;
 using T2Tdd = std::tuple<Tdd, Tdd>;
 using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
+using T4Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd>;
+using T5Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd>;
+using T6Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd, Tddd>;
+using T7Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd>;
+using T8Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd>;
 /* ------------------------------------------------------ */
 double Total(const Tddd &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v); };
 double Total(const Tdd &v) { return std::get<0>(v) + std::get<1>(v); };
@@ -3618,6 +3809,7 @@ struct BaseBuckets
 	Tdd zbounds;
 	int xsize, ysize, zsize;
 	T3Tdd bounds;
+	Tddd center;
 	Tiii dn;
 	// std::vector</*x*/ std::vector</*y*/ std::vector</*z*/ std::vector<T *>>>> buckets;
 	std::vector</*x*/ std::vector</*y*/ std::vector</*z*/ std::unordered_set<T *>>>> buckets;
@@ -3627,7 +3819,6 @@ struct BaseBuckets
 	例えば，鏡像関係を作りたい場合，他のバケット位置に，同じオブジェクトを入れておけばいい．
 	*/
 	double dL;
-
 	double bucketVolume() const
 	{
 		return std::pow(this->dL, 3.);
@@ -3657,6 +3848,7 @@ struct BaseBuckets
 			this->xbounds = std::get<0>(this->bounds);
 			this->ybounds = std::get<1>(this->bounds);
 			this->zbounds = std::get<2>(this->bounds);
+			this->center = {Mean(this->xbounds), Mean(this->ybounds), Mean(this->zbounds)};
 			this->xsize = std::ceil((std::get<1>(this->xbounds) - std::get<0>(this->xbounds)) / this->dL);
 			this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
 			this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
@@ -3718,6 +3910,14 @@ struct BaseBuckets
 	};
 	Tiii indices(const Tddd &x) const
 	{
+		// intのキャストはゼロ方向へ実数を切り捨てた結果を返す
+		/*
+		 0.**    1.**  2.**   3.**  <= X-minX というわけで，(int)によって正しくセルのインデックスに変換できる
+		<-dL-> <-dL-> <-dL-> <-dL->
+		*-----*------*------*------*
+		|  0  |   1  |   2  |   3  |
+		*-----*------*------*------*
+		*/
 		return {(int)((std::get<0>(x) - std::get<0>(this->xbounds)) / this->dL),
 				(int)((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL),
 				(int)((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL)};
@@ -3727,6 +3927,12 @@ struct BaseBuckets
 		return {i * this->dL + std::get<0>(this->xbounds) /*min*/,
 				j * this->dL + std::get<0>(this->ybounds) /*min*/,
 				k * this->dL + std::get<0>(this->zbounds) /*min*/};
+	};
+	Tddd indices2X_center(const int i, const int j, const int k) const
+	{
+		return {this->dL * (i + 0.5) + std::get<0>(this->xbounds) /*min*/,
+				this->dL * (j + 0.5) + std::get<0>(this->ybounds) /*min*/,
+				this->dL * (k + 0.5) + std::get<0>(this->zbounds) /*min*/};
 	};
 	//インデックスがboundsに収まっているかどうか
 	bool isInside(const int i, const int j, const int k) const
@@ -3740,9 +3946,7 @@ struct BaseBuckets
 	};
 	void add(const Tddd &x, T *const p)
 	{
-		int i = (int)((std::get<0>(x) - std::get<0>(this->xbounds)) / this->dL);
-		int j = (int)((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL);
-		int k = (int)((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL);
+		auto [i, j, k] = indices(x);
 		try
 		{
 			if (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize))
@@ -3762,29 +3966,50 @@ struct BaseBuckets
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
 		};
 	};
-	// void add(const Tddd &x, T *const p)
-	// {
-	// 	auto [i, j, k] = this->indices(x);
-	// 	try
-	// 	{
-	// 		if (isInside(i, j, k))
-	// 			this->buckets[i][j][k].emplace(p);
-	// 	}
-	// 	catch (std::exception &e)
-	// 	{
-	// 		std::cerr << e.what() << reset << std::endl;
-	// 		std::stringstream ss;
-	// 		ss << "[i,j,k] = "
-	// 		   << "[" << i << "," << j << "," << k << "]" << std::endl;
-	// 		ss << "[xsize,ysize,zsize] = "
-	// 		   << "[" << xsize << "," << ysize << "," << zsize << "]" << std::endl;
-	// 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-	// 	};
-	// };
 	//座標を入力し，バケツを指定する．
 	std::vector<T *> getAllBuckets() const
 	{
 		return this->buckets;
+	};
+	std::vector<T4Tddd> getT4Tddd() const
+	{
+		std::vector<T4Tddd> ret;
+		for (auto k = 0; k < this->zsize; ++k)
+			for (auto j = 0; j < this->ysize; ++j)
+				for (auto i = 0; i < this->xsize; ++i)
+				{
+					Tddd X0 = {(i * this->dL + std::get<0>(this->xbounds)),
+							   (j * this->dL + std::get<0>(this->ybounds)),
+							   (k * this->dL + std::get<0>(this->zbounds))};
+					Tddd X1 = {((i + 1) * this->dL + std::get<0>(this->xbounds)),
+							   (j * this->dL + std::get<0>(this->ybounds)),
+							   (k * this->dL + std::get<0>(this->zbounds))};
+					Tddd X2 = {((i + 1) * this->dL + std::get<0>(this->xbounds)),
+							   ((j + 1) * this->dL + std::get<0>(this->ybounds)),
+							   (k * this->dL + std::get<0>(this->zbounds))};
+					Tddd X3 = {(i * this->dL + std::get<0>(this->xbounds)),
+							   ((j + 1) * this->dL + std::get<0>(this->ybounds)),
+							   (k * this->dL + std::get<0>(this->zbounds))};
+					Tddd X4 = {(i * this->dL + std::get<0>(this->xbounds)),
+							   (j * this->dL + std::get<0>(this->ybounds)),
+							   ((k + 1) * this->dL + std::get<0>(this->zbounds))};
+					Tddd X5 = {((i + 1) * this->dL + std::get<0>(this->xbounds)),
+							   (j * this->dL + std::get<0>(this->ybounds)),
+							   ((k + 1) * this->dL + std::get<0>(this->zbounds))};
+					Tddd X6 = {((i + 1) * this->dL + std::get<0>(this->xbounds)),
+							   ((j + 1) * this->dL + std::get<0>(this->ybounds)),
+							   ((k + 1) * this->dL + std::get<0>(this->zbounds))};
+					Tddd X7 = {(i * this->dL + std::get<0>(this->xbounds)),
+							   ((j + 1) * this->dL + std::get<0>(this->ybounds)),
+							   ((k + 1) * this->dL + std::get<0>(this->zbounds))};
+					ret.push_back({X0, X1, X2, X3});
+					ret.push_back({X0, X1, X5, X4});
+					ret.push_back({X1, X2, X6, X5});
+					ret.push_back({X0, X4, X7, X3});
+					ret.push_back({X2, X3, X7, X6});
+					ret.push_back({X4, X5, X6, X7});
+				}
+		return ret;
 	};
 	std::vector<T *> getBucket(const Tddd &x) const
 	{
@@ -3805,6 +4030,14 @@ struct BaseBuckets
 	//@ std::vector<std::vector<T *>> getObjects(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const
 	//@ を改良
 	/* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
+
+	int min_index_x(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
+	int max_index_x(const int i, const int d) const { return (i + d > this->xsize - 1 ? this->xsize - 1 : i + d); };
+	int min_index_y(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
+	int max_index_y(const int i, const int d) const { return (i + d > this->ysize - 1 ? this->ysize - 1 : i + d); };
+	int min_index_z(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
+	int max_index_z(const int i, const int d) const { return (i + d > this->zsize - 1 ? this->zsize - 1 : i + d); };
+
 	std::unordered_set<T *> getObjects_unorderedset(const Tddd &x,
 													const int limit_depth /*limit depth*/,
 													const int limit_number = 100000) const
@@ -3821,38 +4054,49 @@ struct BaseBuckets
 		if (ret.size() >= limit_number)
 			return ret;
 		/* ------------------------------------------------------ */
-		int i, j, k;
-		for (auto d = 1; d < limit_depth; d++)
+		int i, j, k, j_min, j_max, k_min, k_max, i_min_1, i_max_1, j_min_1, j_max_1, i0_m_d, i0_p_d, j0_m_d, j0_p_d, k0_m_d, k0_p_d;
+		for (auto d = 1; d <= limit_depth; ++d)
 		{
-			for (auto j = (j0 - d < 0 ? 0 : j0 - d); j <= j0 + d && j < this->ysize; j++)
-				for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; k++)
+			j_min = min_index_y(j0, d);
+			j_max = max_index_y(j0, d);
+			k_min = min_index_z(k0, d);
+			k_max = max_index_z(k0, d);
+			j_min_1 = min_index_y(j0, d - 1);
+			j_max_1 = max_index_y(j0, d - 1);
+			i0_m_d = i0 - d;
+			i0_p_d = i0 + d;
+			for (auto j = j_min; j <= j_max /*need equal (=)*/; ++j)
+				for (auto k = k_min; k <= k_max; ++k)
 				{
-					i = i0 + d;
-					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-					i = i0 - d;
-					if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
+					if (i0_m_d >= 0 && i0_m_d < this->xsize)
+						ret.insert(std::begin(this->buckets[i0_m_d][j][k]), std::end(this->buckets[i0_m_d][j][k]));
+					if (i0_p_d >= 0 && i0_p_d < this->xsize)
+						ret.insert(std::begin(this->buckets[i0_p_d][j][k]), std::end(this->buckets[i0_p_d][j][k]));
 				}
-			for (auto i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; i++)
+			i_min_1 = min_index_x(i0, d - 1);
+			i_max_1 = max_index_x(i0, d - 1);
+			//
+			j0_m_d = j0 - d;
+			j0_p_d = j0 + d;
+			//
+			k0_m_d = k0 - d;
+			k0_p_d = k0 + d;
+			//
+			for (auto i = i_min_1; i <= i_max_1; ++i)
 			{
-				for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; k++)
+				for (auto k = k_min; k <= k_max; ++k)
 				{
-					j = j0 + d;
-					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-					j = j0 - d;
-					if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
+					if (j0_m_d >= 0 && j0_m_d < this->ysize)
+						ret.insert(std::begin(this->buckets[i][j0_m_d][k]), std::end(this->buckets[i][j0_m_d][k]));
+					if (j0_p_d >= 0 && j0_p_d < this->ysize)
+						ret.insert(std::begin(this->buckets[i][j0_p_d][k]), std::end(this->buckets[i][j0_p_d][k]));
 				}
-				for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; j++)
+				for (auto j = j_min_1; j <= j_max_1; ++j)
 				{
-					k = k0 + d;
-					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-					k = k0 - d;
-					if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-						ret.insert(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
+					if (k0_m_d >= 0 && k0_m_d < this->zsize)
+						ret.insert(std::begin(this->buckets[i][j][k0_m_d]), std::end(this->buckets[i][j][k0_m_d]));
+					if (k0_p_d >= 0 && k0_p_d < this->zsize)
+						ret.insert(std::begin(this->buckets[i][j][k0_p_d]), std::end(this->buckets[i][j][k0_p_d]));
 				}
 			}
 			if (ret.size() >= limit_number)
@@ -4225,6 +4469,7 @@ struct LoadObj
 	V_d eachMin;
 
 	VV_d v_complex;
+	std::vector<Tddd> v_complex_tuple;
 	std::vector<std::vector<float>> s_complex;
 	VV_i f_v_complex; //これのstd::vector<int>が１面 -> 3頂点を指定
 
@@ -4240,19 +4485,19 @@ struct LoadObj
 		//物体全体の最大最小範囲の外で偏っている場合をチェック
 		for (auto k = 0; k < 3; k++)
 			if ((eachMax[k] < a[k] && eachMax[k] < b[k]) || (eachMin[k] > a[k] && eachMin[k] > b[k]))
-			{
 				return {};
-			}
 		std::vector<int> check0123(f_v_complex.size(), 0);
 		int i = 0;
 		for (const auto &f : f_v_complex)
 		{
 			//上以外
-			V_d mean = Mean(VV_d{v_complex[f[0]], v_complex[f[1]], v_complex[f[2]]});
-			check0123[i] = isIntersectingSurface(v_complex[f[0]] + (v_complex[f[0]] - mean) * 1E-10,
-												 v_complex[f[1]] + (v_complex[f[1]] - mean) * 1E-10,
-												 v_complex[f[2]] + (v_complex[f[2]] - mean) * 1E-10,
-												 a, b);
+			auto mean = v_complex_tuple[f[0]] + v_complex_tuple[f[1]] + v_complex_tuple[f[2]];
+			mean /= 3.;
+			check0123[i] = isIntersectingSurface(v_complex_tuple[f[0]] + (v_complex_tuple[f[0]] - mean) * 1E-10,
+												 v_complex_tuple[f[1]] + (v_complex_tuple[f[1]] - mean) * 1E-10,
+												 v_complex_tuple[f[2]] + (v_complex_tuple[f[2]] - mean) * 1E-10,
+												 Tddd{a[0], a[1], a[2]},
+												 Tddd{b[0], b[1], b[2]});
 
 			if (check0123[i] == 3)
 			{
@@ -4286,10 +4531,7 @@ struct LoadObj
 			}
 	};
 
-	std::vector<int> checkAllIntersection(const VV_d &ab)
-	{
-		return checkAllIntersection(ab[0], ab[1]);
-	}
+	std::vector<int> checkAllIntersection(const VV_d &ab) { return checkAllIntersection(ab[0], ab[1]); }
 
 	V_d surface(int i, double t0, double t1)
 	{
@@ -4319,12 +4561,14 @@ struct LoadObj
 		if (s.empty())
 		{
 			v_complex.clear();
+			v_complex_tuple.clear();
 			f_v_complex.clear();
 			for (const auto &Ind : f_v)
 			{
 				for (const auto &i : Ind)
 				{
 					v_complex.emplace_back(v[i]);
+					v_complex_tuple.emplace_back(Tddd{v[i][0], v[i][0], v[i][0]});
 				}
 				tri_int = {j, j + 1, j + 2};
 				f_v_complex.emplace_back(tri_int);
@@ -4334,6 +4578,7 @@ struct LoadObj
 		else
 		{
 			v_complex.clear();
+			v_complex_tuple.clear();
 			s_complex.clear();
 			f_v_complex.clear();
 			for (const auto &Ind : f_v)
@@ -4343,6 +4588,7 @@ struct LoadObj
 				for (const auto &i : Ind)
 				{
 					v_complex.emplace_back(v[i]);
+					v_complex_tuple.emplace_back(Tddd{v[i][0], v[i][0], v[i][0]});
 					s_complex.emplace_back(tmp);
 				}
 				tri_int = {j, j + 1, j + 2};
@@ -4379,9 +4625,7 @@ struct LoadObj
 				{
 					V_s v_t_vn = StringSplit(l, {"/"});
 					if (v_t_vn.size() == 1)
-					{
 						f_v_tmp.emplace_back(stoi(v_t_vn[0]) - 1);
-					}
 					else if (v_t_vn.size() == 2)
 					{
 						f_v_tmp.emplace_back(stoi(v_t_vn[0]) - 1);

@@ -1,9 +1,75 @@
 {
-  "name": "water_sawai_250x250mm",
-  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
-  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/water_sawai_250x250mm.obj",
-  "remesh": 30.0
+  "name": "water",
+  "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/FloatingWind1/",
+  "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/FloatingWind1/water.obj",
+  "remesh": 300
 }
+
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/Li2002/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/Li2002/water.obj",
+//   "remesh": 100
+// }
+
+
+// {
+//   "name": "tank",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank/tank.obj",
+//   "remesh": 500
+// }
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank_sphere/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank_sphere/water.obj",
+//   "remesh": 500
+// }
+
+
+// {
+//   "name": "tank",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank_torus/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/sloshing_tank_torus/tank.obj",
+//   "remesh": 500
+// }
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/Li2002/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/Li2002/water.obj",
+//   "remesh": 500
+// }
+
+// {
+//   "name": "water",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta20deg_depth6cm/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta20deg_depth6cm/water.obj",
+//   "remesh": 500
+// }
+
+// {
+//   "name": "theta10deg_depth6cm",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta10deg_depth6cm/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta10deg_depth6cm/water.obj",
+//   "remesh": 30.0
+// }
+
+// {
+//   "name": "theta10deg_depth6cm",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta10deg_depth6cm/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/MachReflection/theta10deg_depth6cm/water.obj",
+//   "remesh": 30.0
+// }
+
+// {
+//   "name": "water_sawai_250x250mm",
+//   "outputdir": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/sawai/",
+//   "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tank/water_sawai_250x250mm.obj",
+//   "remesh": 30.0
+// }
 
 // {
 //   "name": "water",

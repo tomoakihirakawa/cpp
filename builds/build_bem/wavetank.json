@@ -1,10 +1,19 @@
 {
     "name": "wavetank",
-    "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
-    "radius": 0.01,
-    "ignore": true,
-    "reverseNormal": true,
+    "objfile": "../../obj//Goring1979/wavetank.obj",
+    "type": "RigidBody",
+    "ignore": false,
     "output_vtu_file_name": "wavetank",
     "output_pvd_file_name": "wavetank",
-    "output_directory": "/Users/tomoaki/BEM/Sawai_K0.5_beta0.0_max_dt0.02_Mesh19_stopremesh100.0"
+    "mass": 1e+50,
+    "COM": [
+        0,
+        0,
+        0
+    ],
+    "MOI": [
+        1e+50,
+        1e+50,
+        1e+50
+    ]
 }

@@ -139,6 +139,7 @@
 		"html.format.wrapAttributes": "aligned-multiple",
 		"prettier.printWidth": 200,
 		"editor.wordWrapColumn": 200,
-		"html.format.wrapLineLength": 200
+		"html.format.wrapLineLength": 200,
+		"editor.formatOnSave": true
 	}
 }

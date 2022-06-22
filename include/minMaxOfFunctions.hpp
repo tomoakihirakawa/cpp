@@ -3,6 +3,7 @@
 #pragma once
 
 #include "fundamental.hpp"
+#include <functional>
 
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
@@ -43,6 +44,8 @@ public:
 		std::cout << "count = " << count << ", norm = " << norm << std::endl;
 		return x;
 	};
+
+	/* ------------------------------------------------------ */
 
 	V_d solveCG(const V_d &b, const V_d &x_init = {}, double eps = 1E-5)
 	{
@@ -87,6 +90,51 @@ public:
 		};
 		std::cout << "count = " << count << ", norm = " << norm << std::endl;
 		return x;
+	};
+	/* ------------------------------------------------------ */
+	GradientMethod(){};
+	V_d minimize(const std::function<double(V_d)> &F,
+				 const std::function<V_d(V_d)> &dF,
+				 V_d Xinit,
+				 double initial_step = 1E-12,
+				 int max_loop = 100)
+	{
+		V_d X = Xinit, X_last = Xinit, m(X.size(), 0.);
+		double s = initial_step;
+		for (auto i = 0; i < max_loop; ++i)
+		{
+			X_last = X;
+			double min = 1E+10;
+			int size = 50;
+			double d, f, S, extend = 2;
+			for (auto k = 0; k < size; ++k)
+			{
+				d = 2. * extend * s / (size - 1);
+				S = d * k - extend * s;
+				f = F(X_last + S * m);
+				if (k == 0 || min >= f)
+				{
+					min = f;
+					s = S;
+				}
+			}
+			X = X_last + s * m;
+			/* ------------------------------------------------------ */
+			auto dF_X = dF(X);
+			auto dF_Xlast = dF(X_last);
+			double a = -Dot(dF_X, dF_X - dF_Xlast) / Dot(dF_Xlast, dF_Xlast);
+			// double a = -Dot(dF_X, dF_X - dF_Xlast) / Dot(m, dF_X - dF_Xlast);
+			/* ------------------------------------------------------ */
+			m = dF(X) + a * m;
+			// std::cout << "s = " << s << std::endl;
+			std::cout << "i = " << i << std::endl;
+			std::cout << "X = " << X << std::endl;
+			std::cout << "F(X) = " << F(X) << std::endl;
+			std::cout << "Norm(m) = " << Norm(m) << std::endl;
+			if (Norm(m) < 1E-8)
+				break;
+		};
+		return X;
 	};
 };
 

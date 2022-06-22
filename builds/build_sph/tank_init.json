@@ -13,9 +13,15 @@
         0,
         0
     ],
-    "depth_list": [
-        -0.004
+    "translate": [
+        0,
+        0,
+        -0.3
     ],
-    "volume_of_a_particle": 4.516608187134503e-07,
+    "ignore": true,
+    "depth_list": [
+        -0.005
+    ],
+    "volume_of_a_particle": 7.91015625e-07,
     "density": 1000.0
 }

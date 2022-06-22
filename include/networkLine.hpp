@@ -290,7 +290,7 @@ bool isConsistent(const networkLine *const l)
 //%                          辺の分割                        */
 //% ------------------------------------------------------ */
 // #define debug_divide
-inline netPp networkLine::divide(const V_d &midX)
+inline netPp networkLine::divide(const Tddd &midX)
 {
 #if defined(debug_divide)
 	std::cout << Blue << "divide | ";
@@ -398,7 +398,7 @@ inline netPp networkLine::divide(const V_d &midX)
 				// std::cout << ColorFunction(c++) << "|" << reset;
 				newP = new networkPoint(this->getNetwork() /*属性*/,
 										this->getNetwork() /*sotorage*/,
-										midX.empty() ? (fP->getXtuple() + bP->getXtuple()) / 2. : Tddd{midX[0], midX[1], midX[2]});
+										isFinite(midX) ? midX : (fP->getXtuple() + bP->getXtuple()) / 2.);
 				newDivL = new networkLine(this->getNetwork(), newP, fP);
 
 				/*          /     \
@@ -1432,10 +1432,14 @@ inline bool networkLine::flip()
 
 		/*ここが間違っていたconcaveの場合，拒否する*/
 		//凹凸包かどうかのチェックは，チェックできなかった場合falseを返す．チェックできなかった場合もflipさせないためには，!isConvexPolygonとしなければならない
-		if (!geometry::isConvexPolygon({Aps[1]->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
-		{
-			return false;
-		}
+		// if (!geometry::isConvexPolygon({Aps[1]->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
+		// {
+		// 	return false;
+		// }
+		// if (!geometry::isConvexPolygon({Aps[1]->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
+		// {
+		// 	return false;
+		// }
 
 		//  std::cout << ColorFunction(c++) << "|" << reset;
 		//                     Aps[2]
@@ -1688,49 +1692,110 @@ inline bool networkLine::flipIfIllegal()
 		return false;
 };
 
-inline bool networkLine::isFlat(const double minangle = 1.) const
+inline bool networkLine::isFlat(const double minangle = M_PI / 180.) const
 {
 	auto fs = this->getFaces();
 	if (fs.size() != 2)
 		return false;
-	else if (MyVectorAngle(fs[0]->getNormalTuple(), fs[1]->getNormalTuple()) / M_PI * 180. > minangle)
-		return false;
-	else
+	else if (Dot(fs[0]->getNormalTuple(), fs[1]->getNormalTuple()) > cos(minangle))
 		return true;
+	else
+		return false;
 };
 
-inline bool networkLine::flipIfBetter(const double min_degree_to_flat = 1.)
+inline bool networkLine::canflip(const double min_inner_angle = M_PI / 180.) const
+{
+	/*
+	現在の最小角度よりも大きかったらtrue．
+	そうでなくとも，指定されたmin_inner_angleよりも角度が大きくなればそれでもtrueを返す
+	*/
+	auto f0f1 = this->getFaces();
+	auto [f0pb, f0pf, f0po] = f0f1[0]->getPointsTuple(this);
+	auto [f1pb, f1pf, f1po] = f0f1[1]->getPointsTuple(this);
+	auto c_n0 = f0f1[0]->getNormalTuple();
+	auto c_n1 = f0f1[1]->getNormalTuple();
+	bool isfiniteangles = (isFinite(TriangleAngles(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()})) &&
+						   isFinite(TriangleAngles(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()})));
+	bool isfiniteareas = (isFinite(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()})) &&
+						  isFinite(TriangleArea(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()})));
+	auto n0 = TriangleNormal(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()});
+	auto n1 = TriangleNormal(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()});
+	bool isfinitenormal = (isFinite(n0) && isFinite(n1));
+	bool isPositive = (Dot(c_n0, n0) > 0. && Dot(c_n0, n1) > 0.);
+	bool currentMin = Min(Tdd{Min(f0f1[0]->getAngles()), Min(f0f1[1]->getAngles())});
+	double min0 = Min(TriangleAngles(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}));
+	double min1 = Min(TriangleAngles(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
+	bool notTooSmall0 = (min0 > min_inner_angle) || min0 > currentMin;
+	bool notTooSmall1 = (min1 > min_inner_angle) || min1 > currentMin;
+	return (isfiniteangles && isfiniteareas && isfinitenormal && notTooSmall1 && notTooSmall0 && isPositive);
+};
+
+inline bool networkLine::flipIfBetter(const double min_degree_to_flat = M_PI / 180.,
+									  const double min_inner_angle = M_PI / 180.)
 {
 	//@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
 	//@ フリップ前後の両方で不正な辺と判定された場合，
 	//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
+	if (!canflip(min_inner_angle))
+		return false;
 	if (this->isFlat(min_degree_to_flat) && !islegal() && !isIntxn())
 	{
 		// auto [p0, p2] = this->getPointsTuple();
 		auto f0f1 = this->getFaces();
 		auto [f0pb, f0pf, f0po] = f0f1[0]->getPointsTuple(this);
 		auto [f1pb, f1pf, f1po] = f0f1[1]->getPointsTuple(this);
-		double diffAinit = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
-		double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
-		double diff = (diffAnext - diffAinit) / (f0f1[0]->getArea() + f0f1[1]->getArea());
+		// 面積の減少
+		// double diffAinit = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
+		// double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
+		// double diff = (diffAnext - diffAinit) / (f0f1[0]->getArea() + f0f1[1]->getArea());
 		/*
 			f0po *------* f0pf,f1pb
 				  |   /  |
 		f0pb,f1pf *------* f1po
 		*/
+
+		double min_init = Min(TriangleAngles(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}));
+		auto tmp_angle = Min(TriangleAngles(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
+		if (min_init > tmp_angle)
+			min_init = tmp_angle;
+
+		double min_later = Min(TriangleAngles(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}));
+		tmp_angle = Min(TriangleAngles(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
+		if (min_later > tmp_angle)
+			min_later = tmp_angle;
+		//
+		// int s0 = f0pb->getLines().size();
+		// int s1 = f0pf->getLines().size();
+		// int s2 = f0po->getLines().size();
+		// int s3 = f1po->getLines().size();
+		// double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
+		// double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+		// double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+		// double c = 0.;
 		int s0 = f0pb->getLines().size();
 		int s1 = f0pf->getLines().size();
-		int s2 = f0po->getLines().size();
-		int s3 = f1po->getLines().size();
-		double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
-		double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-		double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
-		double c = 0.;
+		// int s2 = f0po->getLines().size();
+		// int s3 = f1po->getLines().size();
+		// double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
+		// double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+		// double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+
+		int next_s0 = s0 - 1;
+		int next_s1 = s1 - 1;
+		// int next_s2 = s2 + 1;
+		// int next_s3 = s3 + 1;
 		/*
-		@ <-----------(-c)------------ (c) --------------
-		@ <----flip-----|--- topology --|----- none -----
+		@ <-------------(-c)------------ (c) --------------
+		@ <---- flip -----|--- topology --|----- none -----
 		*/
-		if (diff < -c)
+		// if (min_init < min_later)
+		// if (std::abs(min_init - min_later) < M_PI / 180. * 5)
+		// {
+		// 	this->flipIfTopologicalyBetter(min_degree_to_flat);
+		// 	return true;
+		// }
+		// else
+		if (min_init <= min_later && !(next_s0 <= 4 && next_s1 <= 4))
 		{
 			this->flip();
 			return true;
@@ -1742,30 +1807,51 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat = 1.)
 		return false;
 };
 
-inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_to_flat = 1.)
+inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_of_line = M_PI / 180., const double min_degree_of_face = M_PI / 180, const int s_meanIN = 6)
 {
 	//@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
 	//@ フリップ前後の両方で不正な辺と判定された場合，
 	//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
 	try
 	{
+		if (!canflip(min_degree_of_face) /*flipした後の三角形の最小角度*/)
+			return false;
 		//@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
 		//@ フリップ前後の両方で不正な辺と判定された場合，
 		//@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
-		if (this->isFlat(min_degree_to_flat) && !isIntxn())
+		if (this->isFlat(min_degree_of_line) && !isIntxn())
 		{
 			auto [p0, p1] = this->getPointsTuple();
-
 			auto f0f1 = this->getFaces();
 			int s0 = p0->getLines().size();
 			int s1 = p1->getLines().size();
-			int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
-			int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
-			double s_mean = 6.; //(s0 + s1 + s2 + s3) / 4.;
+			auto p2 = f0f1[0]->getPointOpposite(this);
+			auto p3 = f0f1[1]->getPointOpposite(this);
+			int s2 = p2->getLines().size();
+			int s3 = p3->getLines().size();
+			double s_mean = s_meanIN; //(s0 + s1 + s2 + s3) / 4.;
 			double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-			double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+			double v_next = std::pow(s0 - s_mean - 1, 2) + std::pow(s1 - s_mean - 1, 2) + std::pow(s2 - s_mean + 1, 2) + std::pow(s3 - s_mean + 1, 2);
 			// flipはflipが成功した場合trueを返す．convexでない場合flipされない場合がある
-			if (v_init > v_next || (s2 <= 3 || s3 <= 3))
+
+			// if (p2->CORNER && !p3->CORNER)
+			// {
+			// 	if (s2 <= 5)
+			// 	{
+			// 		this->flip();
+			// 		return true;
+			// 	}
+			// }
+			// else if (!p2->CORNER && p3->CORNER)
+			// {
+			// 	if (s3 <= 5)
+			// 	{
+			// 		this->flip();
+			// 		return true;
+			// 	}
+			// }
+
+			if (v_init > v_next || (s2 <= 4 || s3 <= 4) || (s0 >= 8 || s1 >= 8))
 			{
 				this->flip();
 				return true;

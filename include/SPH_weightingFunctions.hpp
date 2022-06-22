@@ -668,6 +668,9 @@ double density_SPH(const std::unordered_set<networkPoint *> &ps,
             ret += p->density * p->volume * kernel_Bspline5(p->getXtuple(), a->getXtuple(), h);
     return ret;
 };
+
+constexpr auto grad_kernel_Bspline = grad_kernel_Bspline5;
+
 Tddd normal(const std::unordered_set<networkPoint *> &ps,
             const networkPoint *const a,
             const double h)
@@ -675,7 +678,7 @@ Tddd normal(const std::unordered_set<networkPoint *> &ps,
     Tddd ret = {0, 0, 0};
     for (const auto &p : ps)
         if (p != a)
-            ret += grad_kernel_Bspline3(p->getXtuple(), a->getXtuple(), h);
+            ret += grad_kernel_Bspline(p->getXtuple(), a->getXtuple(), h);
     return Normalize(ret);
 };
 
@@ -691,7 +694,7 @@ Tddd normal(const std::vector<Tddd> &Xs,
         distance = Norm(x - a->getXtuple());
         if (!distance < 1E-10 && distance < h)
         {
-            ret += grad_kernel_Bspline3(x, a->getXtuple(), h);
+            ret += grad_kernel_Bspline(x, a->getXtuple(), h);
             count++;
         }
     }
@@ -749,7 +752,7 @@ struct IntersectionsSphereTrianglesLines
         //線を作り出す．しかし，あ
         for (auto i = 0; i < FACES.size(); ++i)
         {
-            fi = FACES[i]->getX_Vertices();
+            fi = FACES[i]->getXVertices();
             fi += 0.01 * (T3Tddd{std::get<0>(fi) - Mean(fi),
                                  std::get<1>(fi) - Mean(fi),
                                  std::get<2>(fi) - Mean(fi)});
@@ -757,7 +760,7 @@ struct IntersectionsSphereTrianglesLines
             {
                 if (MyVectorAngle(FACES[j]->getNormalTuple(), FACES[i]->getNormalTuple()) / M_PI * 180. > minangle)
                 {
-                    fj = FACES[j]->getX_Vertices();
+                    fj = FACES[j]->getXVertices();
                     fj += 0.01 * (T3Tddd{std::get<0>(fj) - Mean(fj),
                                          std::get<1>(fj) - Mean(fj),
                                          std::get<2>(fj) - Mean(fj)});
@@ -778,7 +781,7 @@ struct IntersectionsSphereTrianglesLines
         //! 面との干渉
         for (const auto &f : this->faces)
         {
-            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
+            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getXVertices());
             if (intxn.isIntersecting)
                 X_Y.push_back({intxn.X, p->getXtuple() + 2. * (intxn.X - p->getXtuple())});
         }
@@ -794,10 +797,13 @@ struct IntersectionsSphereTrianglesLines
 
     bool isDuplication(const Tddd &n) const
     {
-        return std::any_of(this->F_F_X_Y_N.begin(), this->F_F_X_Y_N.end(),
+        return std::any_of(std::begin(this->F_F_X_Y_N),
+                           std::end(this->F_F_X_Y_N),
                            [n](const auto &f_f_x_y_n)
                            {
-                               return (MyVectorAngle(n, std::get<0>(f_f_x_y_n)->getNormalTuple()) / M_PI * 180. < 1E-2);
+                               return isFlat(n,
+                                             std::get<0>(f_f_x_y_n)->getNormalTuple(),
+                                             M_PI * 180. * 1E-2);
                            });
     };
 
@@ -819,7 +825,7 @@ struct IntersectionsSphereTrianglesLines
         Tddd n;
         for (const auto &f : this->faces)
         {
-            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getX_Vertices());
+            auto intxn = IntersectionSphereTriangle(p->getXtuple(), h, f->getXVertices());
             n = f->getNormalTuple();
             if (intxn.isIntersecting && !isDuplication(n))
                 F_F_X_Y_N.push_back({f,
@@ -845,8 +851,6 @@ struct IntersectionsSphereTrianglesLines
 };
 
 #define use_space_potential_particle
-
-constexpr auto grad_kernel_Bspline = grad_kernel_Bspline5;
 
 Tddd getVectorToSPP(const networkPoint *const p)
 {
@@ -1380,8 +1384,7 @@ Tddd laplacian_U_ShaoAndLo2003_polygon_boundary(const std::unordered_set<network
 
 Tddd laplacian_U_ShaoAndLo2003(const std::unordered_set<networkPoint *> &ps,
                                const networkPoint *const a,
-                               const double h,
-                               const int order = 2)
+                               const double h)
 {
     // nu*laplacian(U)を計算する
     Tddd ret = {0, 0, 0}, tmp = {0, 0, 0}, Uij, Xij;
@@ -1462,17 +1465,17 @@ double pressure_EISPH_Hosseini2007_polygon_boundary(const std::unordered_set<net
             }
 
             U = mirroredVelocity(j->U_SPH, n, velocity);
-            pressure = (j->pressure_SPH + /*修正*/ j->density * Dot(j->mu_SPH / j->density * j->lap_U + gravity - accel, Y - j->getXtuple()));
+            pressure = (j->pressure_SPH + /*Asaiの修正*/ j->density * Dot(j->mu_SPH / j->density * j->lap_U + gravity - accel, Y - j->getXtuple()));
             Xij = i->getXtuple() - Y;
             tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
             Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), Y, h)) / Dot(Xij, Xij);
             total_Aij += Aij;
             total_Aij_Pj += Aij * pressure;
-
 #if defined(use_space_potential_particle)
             if (j->isSurface)
             {
                 pressure = 0;
+                // pressure = (j->pressure_SPH + /*Asaiの修正*/ j->density * Dot(j->mu_SPH / j->density * j->lap_U + gravity - accel, Y - j->getXtuple()));
                 Xij = i->getXtuple() - (Y + Reflect(getVectorToSPP(j), n));
                 tmp = j->mass * 8. / std::pow(j->density + i->density, 2);
                 Aij = tmp * Dot(Xij, grad_kernel_Bspline(i->getXtuple(), Y + Reflect(getVectorToSPP(j), n), h)) / Dot(Xij, Xij);

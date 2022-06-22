@@ -1,14 +1,7 @@
 {
     "name": "water",
-    "objfile": "../../obj/tank/sawai/water_sawai_250x250mm19.obj",
-    "radius": 0.01,
-    "rotate": [
-        1.5707963267948966,
-        1,
-        0,
-        0
-    ],
+    "objfile": "../../obj//Goring1979/water150_refined.obj",
+    "type": "Fluid",
     "output_vtu_file_name": "water",
-    "output_pvd_file_name": "water",
-    "output_directory": "/Users/tomoaki/BEM/Sawai_K0.5_beta0.0_max_dt0.02_Mesh19_stopremesh100.0"
+    "output_pvd_file_name": "water"
 }

@@ -19,6 +19,15 @@ using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 /*
 M. Meyer, M. Desbrun, P. Schröder, and A. H. Barr, “Discrete Differential-Geometry Operators for Triangulated 2-Manifolds BT  - Visualization and Mathematics III,” Vis. Math. III, pp. 35–57, 2003.
 */
+
+Tddd ToSphericalCoodrinates(const Tddd &xyz)
+{
+	double r = Norm(xyz);
+	return {r,
+			std::atan(std::get<2>(xyz) / r),
+			std::atan2(std::get<1>(xyz), std::get<0>(xyz))};
+};
+
 namespace geometry
 {
 	/* ------------------------------------------------------ */
@@ -31,20 +40,20 @@ namespace geometry
 	/* ------------------------------------------------------ */
 	struct Triangle
 	{
-		double thickness;
-		Tddd center;
 		T3Tddd X;
+		Tddd center;
+		double thickness;
 		Tddd normal;
 		Triangle(const T3Tddd &XIN, double thicknessIN = 0)
-			: X(XIN), thickness(thicknessIN), center(Mean(XIN))
-		{
-			normal = Normalize(Cross(std::get<1>(X) - std::get<0>(X), std::get<2>(X) - std::get<0>(X)));
-		};
+			: X(XIN),
+			  thickness(thicknessIN),
+			  center(Mean(XIN)),
+			  normal(Normalize(Cross(std::get<1>(X) - std::get<0>(X), std::get<2>(X) - std::get<0>(X)))){};
 		Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN, double thicknessIN = 0)
-			: X({X0IN, X1IN, X2IN}), thickness(thicknessIN), center((X0IN + X1IN) / 2.)
-		{
-			normal = Normalize(Cross(std::get<1>(X) - std::get<0>(X), std::get<2>(X) - std::get<0>(X)));
-		};
+			: X({X0IN, X1IN, X2IN}),
+			  thickness(thicknessIN),
+			  center((X0IN + X1IN + X2IN) / 3.),
+			  normal(Normalize(Cross(X1IN - X0IN, X2IN - X0IN))){};
 	};
 	/* ------------------------------------------------------ */
 	struct Point
@@ -65,22 +74,17 @@ namespace geometry
 	{
 		T3Tdd bounds;
 		const T3Tdd &operator()() const { return this->bounds; };
+		Tdd getXMinMax() const { return std::get<0>(this->bounds); };
+		Tdd getYMinMax() const { return std::get<1>(this->bounds); };
+		Tdd getZMinMax() const { return std::get<2>(this->bounds); };
 		CoordinateBounds() : bounds({{0, 0}, {0, 0}, {0, 0}}){};
 		CoordinateBounds(const geometry::CoordinateBounds &bs) : bounds(bs.bounds){};
-		CoordinateBounds(const Tddd &X)
-		{
-			this->bounds = {{std::get<0>(X), std::get<0>(X)},
-							{std::get<1>(X), std::get<1>(X)},
-							{std::get<2>(X), std::get<2>(X)}};
-		};
-		CoordinateBounds(const T3Tdd minmax)
-		{
-			this->bounds = minmax;
-		};
+		CoordinateBounds(const Tddd &X) : bounds({{std::get<0>(X), std::get<0>(X)},
+												  {std::get<1>(X), std::get<1>(X)},
+												  {std::get<2>(X), std::get<2>(X)}}){};
+		CoordinateBounds(const T3Tdd minmax) : bounds(minmax){};
 		CoordinateBounds(const double minX, const double maxX, const double minY, const double maxY, const double minZ, const double maxZ)
-		{
-			this->bounds = {{minX, maxX}, {minY, maxY}, {minZ, maxZ}};
-		};
+			: bounds({{minX, maxX}, {minY, maxY}, {minZ, maxZ}}){};
 		CoordinateBounds(const T3Tddd &X)
 		{
 			// networkPointのsetBoundsで使われる
@@ -213,20 +217,30 @@ bool IntersectQ(const geometry::CoordinateBounds &b0, const geometry::Coordinate
 			 (std::get<1>(b0y) < std::get<0>(b1y) && std::get<1>(b0y) < std::get<1>(b1y) /*1のyの最大最小が，0のyの最大よりも大きい*/) ||
 			 (std::get<1>(b0z) < std::get<0>(b1z) && std::get<1>(b0z) < std::get<1>(b1z) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
 };
+/* ------------------------------------------------------ */
 struct IntersectionSphereLine
 {
-	double distance;
+	/* X = p1to0 *t + p1，であることから，
+	t = 0, X=p1
+	t = 1, X=p0
+	となる*/
+	Tddd p01;
+	double t;
 	Tddd X;
+	double distance;
 	bool isIntersecting;
 	IntersectionSphereLine(const Tddd &center, double radius, const T2Tddd &AB)
-		: isIntersecting(false)
+		: p01(std::get<0>(AB) - std::get<1>(AB)),
+		  t(-Dot(std::get<1>(AB) - center, p01) / Dot(p01, p01)),
+		  X(p01 * t + std::get<1>(AB)),
+		  distance(Norm(this->X - center)),
+		  isIntersecting((this->distance <= radius /*may hit*/ && 0. <= t && t <= 1.))
 	{
-		auto p01 = std::get<0>(AB) - std::get<1>(AB);
-		auto t = -Dot(std::get<1>(AB) - center, p01) / Dot(p01, p01);
-		this->X = p01 * t + std::get<1>(AB);
-		this->distance = Norm(this->X - center);
-		if (this->distance <= radius /*may hit*/ && 0. <= t && t <= 1.)
-			this->isIntersecting = true; //干渉する最も近い点は，線上にある
+		// auto t = -Dot(std::get<1>(AB) - center, p01) / Dot(p01, p01);
+		// this->X = p01 * t + std::get<1>(AB);
+		// this->distance = Norm(this->X - center);
+		// if (this->distance <= radius /*may hit*/ && 0. <= t && t <= 1.)
+		// 	this->isIntersecting = true; //干渉する最も近い点は，線上にある
 	}
 };
 /* ------------------------------------------------------ */
@@ -285,14 +299,28 @@ struct IntersectionTriangles
 		return Min(ret); //この内最も小さいものが，上限となる
 	};
 
-	IntersectionTriangles(const T3Tddd &P0_IN, const T3Tddd &P1_IN) : P0(P0_IN), P1(P1_IN), isIntersecting(false)
+	Tddd p00, p01, p02;
+	Tddd p10, p11, p12;
+	Tddd normalP0, normalP1;
+	IntersectionTriangles(const T3Tddd &P0_IN, const T3Tddd &P1_IN)
+		: P0(P0_IN),
+		  P1(P1_IN),
+		  isIntersecting(false),
+		  p00(std::get<0>(P0)),
+		  p01(std::get<1>(P0)),
+		  p02(std::get<2>(P0)),
+		  p10(std::get<0>(P1)),
+		  p11(std::get<1>(P1)),
+		  p12(std::get<2>(P1)),
+		  normalP0(Normalize(Cross(p01 - p00, p02 - p00))),
+		  normalP1(Normalize(Cross(p11 - p10, p12 - p10)))
 	{
 		// if (IntersectQ(geometry::CoordinateBounds(P0), geometry::CoordinateBounds(P0)))
 		// 	return;
-		auto [p00, p01, p02] = P0;
-		auto [p10, p11, p12] = P1;
-		auto normalP0 = Normalize(Cross(p01 - p00, p02 - p00));
-		auto normalP1 = Normalize(Cross(p11 - p10, p12 - p10));
+		// auto [p00, p01, p02] = P0;
+		// auto [p10, p11, p12] = P1;
+		// auto normalP0 = Normalize(Cross(p01 - p00, p02 - p00));
+		// auto normalP1 = Normalize(Cross(p11 - p10, p12 - p10));
 		if (std::abs(std::abs(Dot(normalP0, normalP1)) - 1) < eps)
 		{
 			// Print("干渉線を定義することはできない");
@@ -406,37 +434,62 @@ struct IntersectionTriangles
 /* ------------------------------------------------------ */
 struct IntersectionSphereTriangle_
 {
-	double scale, t0, t1;
-	Tddd X;
-	double eps = 1E-13;
+	Tddd center;
+	double eps = 1E-14;
 	T3Tddd P;
 	bool isIntersecting;
 	bool isIntersectingInsideTriangle;
 	bool isIntersectingEdgeTriangle;
-	Tddd center;
 	double distance;
+	Tddd p0, p1, p2;
+	Tddd n;
+	double nx, ny, nz;
+	double p02x, p02y, p02z, p12x, p12y, p12z;
+	double determ;
+	T3Tddd mat;
+	Tddd ans;
+	double scale, t0, t1;
+	Tddd X;
 	IntersectionSphereTriangle_(const Tddd &centerIN, const double radius, const T3Tddd &P_IN)
-		: X({1E+50, 1E+50, 1E+50}),
-		  scale(1E+50),
+		: center(centerIN),
+		  scale(1E+80),
 		  P(P_IN),
+		  p0(std::get<0>(P_IN)),
+		  p1(std::get<1>(P_IN)),
+		  p2(std::get<2>(P_IN)),
+		  n(Normalize(Cross(p1 - p0, p2 - p0))),
+		  nx(std::get<0>(n)),
+		  ny(std::get<1>(n)),
+		  nz(std::get<2>(n)),
+		  p02x(std::get<0>(p0 - p2)),
+		  p02y(std::get<1>(p0 - p2)),
+		  p02z(std::get<2>(p0 - p2)),
+		  p12x(std::get<0>(p1 - p2)),
+		  p12y(std::get<1>(p1 - p2)),
+		  p12z(std::get<2>(p1 - p2)),
+		  determ(-(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z),
+		  mat({{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+			   {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+			   {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}),
+		  ans(Dot(center - p2, mat / determ)),
 		  isIntersecting(false),
 		  isIntersectingInsideTriangle(false),
 		  isIntersectingEdgeTriangle(false),
-		  center(centerIN),
-		  distance(1E+50)
+		  distance(1E+80),
+		  X({1E+100, 1E+100, 1E+100})
 	{
-		auto [p0, p1, p2] = P;
-		auto n = Normalize(Cross(p1 - p0, p2 - p0));
-		auto [nx, ny, nz] = n;
-		auto [p02x, p02y, p02z] = p0 - p2;
-		auto [p12x, p12y, p12z] = p1 - p2;
-		double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
+		// auto [p0, p1, p2] = P;
+		// auto n = Normalize(Cross(p1 - p0, p2 - p0));
+		// auto [nx, ny, nz] = n;
+		// auto [p02x, p02y, p02z] = p0 - p2;
+		// auto [p12x, p12y, p12z] = p1 - p2;
+		// double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
 		if (std::abs(determ) < eps)
 			return;
-		T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
-					  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
-					  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
-		auto ans = Dot(center - p2, mat / determ);
+		// T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+		// 			  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+		// 			  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
+		// auto ans = Dot(center - p2, mat / determ);
 		this->t0 = std::get<0>(ans);
 		this->t1 = std::get<1>(ans);
 		this->scale = std::get<2>(ans);
@@ -450,12 +503,22 @@ struct IntersectionSphereTriangle_
 		}
 		else
 		{
-			Tddd X_ = {1E+50, 1E+50, 1E+50};
-			auto intxnL0 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<0>(P), std::get<1>(P)});
-			auto intxnL1 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<1>(P), std::get<2>(P)});
-			auto intxnL2 = IntersectionSphereLine(center, 1E+50, T2Tddd{std::get<2>(P), std::get<0>(P)});
+			Tddd X_ = {1E+80, 1E+80, 1E+80};
+			/*
+					  p0
+					  * t0 =1
+					 / \
+					/   \
+			t1=1   *-----*
+				 p1       p2
+			*/
+			auto intxnL0 = IntersectionSphereLine(center, 1E+80, T2Tddd{std::get<0>(P), std::get<1>(P)});
+			auto intxnL1 = IntersectionSphereLine(center, 1E+80, T2Tddd{std::get<1>(P), std::get<2>(P)});
+			auto intxnL2 = IntersectionSphereLine(center, 1E+80, T2Tddd{std::get<2>(P), std::get<0>(P)});
 			if (intxnL0.isIntersecting)
 			{
+				this->t0 = intxnL0.t;
+				this->t1 = 1 - intxnL0.t;
 				X_ = intxnL0.X;
 				distance = Norm(X_ - center);
 				isIntersecting = true;
@@ -466,6 +529,8 @@ struct IntersectionSphereTriangle_
 			{
 				if (Norm(intxnL1.X - center) < distance)
 				{
+					this->t0 = 0.;
+					this->t1 = intxnL1.t;
 					X_ = intxnL1.X;
 					distance = Norm(X_ - center);
 					isIntersecting = true;
@@ -477,6 +542,8 @@ struct IntersectionSphereTriangle_
 			{
 				if (Norm(intxnL2.X - center) < distance)
 				{
+					this->t0 = 1 - intxnL2.t;
+					this->t1 = 0;
 					X_ = intxnL2.X;
 					distance = Norm(X_ - center);
 					isIntersecting = true;
@@ -511,40 +578,69 @@ struct IntersectionSphereTriangle_
 		}
 	};
 };
+
 struct IntersectionSphereTriangle
 {
-	double scale, t0, t1;
-	Tddd X;
-	double eps = 1E-13;
-	T3Tddd P;
-	bool isIntersecting;
-	Tddd center;
+	const double eps = 1E-13;
+	const T3Tddd P;
+	const Tddd center;
+	//
+	const Tddd p0, p1, p2;
+	const Tddd n;
+	const double nx, ny, nz;
+	const double p02x, p02y, p02z, p12x, p12y, p12z;
+	const double determ;
+	const T3Tddd mat;
+	const Tddd ans;
+	const double t0, t1, scale;
+	const Tddd X;
+	const bool isIntersecting;
 	IntersectionSphereTriangle(const Tddd &centerIN, const double radius, const T3Tddd &P_IN)
-		: X({0, 0, 0}),
-		  scale(0),
-		  P(P_IN),
-		  isIntersecting(false),
-		  center(centerIN)
-	{
-		auto [p0, p1, p2] = P;
-		auto n = Normalize(Cross(p1 - p0, p2 - p0));
-		auto [nx, ny, nz] = n;
-		auto [p02x, p02y, p02z] = p0 - p2;
-		auto [p12x, p12y, p12z] = p1 - p2;
-		double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
-		if (std::abs(determ) < eps)
-			return;
-		T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
-					  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
-					  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
-		auto ans = Dot(center - p2, mat / determ);
-		this->t0 = std::get<0>(ans);
-		this->t1 = std::get<1>(ans);
-		this->scale = std::get<2>(ans);
-		this->X = scale * n + center;
-		if (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))
-			isIntersecting = true;
-	};
+		: P(P_IN),
+		  center(centerIN),
+		  p0(std::get<0>(P_IN)),
+		  p1(std::get<1>(P_IN)),
+		  p2(std::get<2>(P_IN)),
+		  n(Normalize(Cross(p1 - p0, p2 - p0))),
+		  nx(std::get<0>(n)),
+		  ny(std::get<1>(n)),
+		  nz(std::get<2>(n)),
+		  p02x(std::get<0>(p0 - p2)),
+		  p02y(std::get<1>(p0 - p2)),
+		  p02z(std::get<2>(p0 - p2)),
+		  p12x(std::get<0>(p1 - p2)),
+		  p12y(std::get<1>(p1 - p2)),
+		  p12z(std::get<2>(p1 - p2)),
+		  determ(-(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z),
+		  mat({{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+			   {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+			   {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}),
+		  ans(Dot(center - p2, mat / determ)),
+		  t0(std::get<0>(ans)),
+		  t1(std::get<1>(ans)),
+		  scale(std::get<2>(ans)),
+		  X(scale * n + center),
+		  isIntersecting((std::abs(determ) > eps) &&
+						 (std::abs(scale) <= radius &&
+						  (0 <= t0 && t0 <= 1) &&
+						  (0 <= t1 && t1 <= 1) &&
+						  (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))){
+			  // auto [p02x, p02y, p02z] = p0 - p2;
+			  // auto [p12x, p12y, p12z] = p1 - p2;
+			  // double determ = -(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z;
+			  // if (std::abs(determ) < eps)
+			  // 	return;
+			  // T3Tddd mat = {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+			  // 			  {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+			  // 			  {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}};
+			  // auto ans = Dot(center - p2, mat / determ);
+			  // this->t0 = std::get<0>(ans);
+			  // this->t1 = std::get<1>(ans);
+			  // this->scale = std::get<2>(ans);
+			  // this->X = scale * n + center;
+			  // if (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))
+			  // 	isIntersecting = true;
+		  };
 	Tddd getNearestX() const
 	{
 		if (this->isIntersecting)
@@ -616,7 +712,8 @@ int IntersectQ(const geometry::Sphere &sphere, const geometry::Triangle &triangl
 		return true;
 };
 /* ------------------------------------------------------ */
-double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
+// double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
+double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::acos(Dot(V1, V2) / (Norm(V1) * Norm(V2))); };
 Tddd Angles(const geometry::Triangle &triangle)
 {
 	auto [a, b, c] = triangle.X;
@@ -914,14 +1011,14 @@ V_d vectorToTriangle(const V_d &p0, const V_d &p1, const V_d &p2, const V_d &a)
 	return n * Dot(n, p0 - a);
 };
 // line a to b
-double factorOfVectorToReachTriangle(const V_d &p0, const V_d &p1, const V_d &p2, const V_d &a, const V_d &b)
+double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b)
 {
 	//オーダーが匹敵する物を選ぶ
 	double log_b_a = log10(Norm(b - a));
 	double diff0 = std::abs(log10(Norm(p0 - a) - log_b_a));
 	double diff1 = std::abs(log10(Norm(p1 - a) - log_b_a));
 	double diff2 = std::abs(log10(Norm(p2 - a) - log_b_a));
-	V_d n = TriangleNormal(p0, p1, p2);
+	auto n = TriangleNormal(p0, p1, p2);
 	if (diff0 < diff1 && diff0 < diff2)
 		return Dot(p0 - a, n) / Dot(b - a, n);
 	else if (diff1 < diff0 && diff1 < diff2)
@@ -930,41 +1027,40 @@ double factorOfVectorToReachTriangle(const V_d &p0, const V_d &p1, const V_d &p2
 		return Dot(p2 - a, n) / Dot(b - a, n);
 };
 ///////////////////////////////////////////////////////////
-int isPointingTriangle(const V_d &p0, const V_d &p1, const V_d &p2,
-					   const V_d &a, const V_d &b)
-{
-	auto d = factorOfVectorToReachTriangle(p0, p1, p2, a, b);
+// int isPointingTrianglee(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b)
+// {
+// 	auto d = factorOfVectorToReachTriangle(p0, p1, p2, a, b);
 
-	if (!std::isfinite(d))
-		return false; // nan
+// 	if (!std::isfinite(d))
+// 		return false; // nan
 
-	V_d ps = a + (b - a) * d;
+// 	V_d ps = a + (b - a) * d;
 
-	// double e = 1E-20;
-	// //ポリゴン頂点の最大最小でチェック
-	// if (((p0[0] - e > ps[0] && p1[0] - e > ps[0] && p2[0] - e > ps[0]) || (p0[0] + e < ps[0] && p1[0] + e < ps[0] && p2[0] + e < ps[0])) ||
-	//     ((p0[1] - e > ps[1] && p1[1] - e > ps[1] && p2[1] - e > ps[1]) || (p0[1] + e < ps[1] && p1[1] + e < ps[1] && p2[1] + e < ps[1])) ||
-	//     ((p0[2] - e > ps[2] && p1[2] - e > ps[2] && p2[2] - e > ps[2]) || (p0[2] + e < ps[2] && p1[2] + e < ps[2] && p2[2] + e < ps[2])))
-	//   return false;/*面の最大最小範囲にすら入れていない*/
+// 	// double e = 1E-20;
+// 	// //ポリゴン頂点の最大最小でチェック
+// 	// if (((p0[0] - e > ps[0] && p1[0] - e > ps[0] && p2[0] - e > ps[0]) || (p0[0] + e < ps[0] && p1[0] + e < ps[0] && p2[0] + e < ps[0])) ||
+// 	//     ((p0[1] - e > ps[1] && p1[1] - e > ps[1] && p2[1] - e > ps[1]) || (p0[1] + e < ps[1] && p1[1] + e < ps[1] && p2[1] + e < ps[1])) ||
+// 	//     ((p0[2] - e > ps[2] && p1[2] - e > ps[2] && p2[2] - e > ps[2]) || (p0[2] + e < ps[2] && p1[2] + e < ps[2] && p2[2] + e < ps[2])))
+// 	//   return false;/*面の最大最小範囲にすら入れていない*/
 
-	auto ps_p0 = p0 - ps;
-	auto ps_p1 = p1 - ps;
-	auto ps_p2 = p2 - ps;
+// 	auto ps_p0 = p0 - ps;
+// 	auto ps_p1 = p1 - ps;
+// 	auto ps_p2 = p2 - ps;
 
-	ps_p0 = ps_p0 / Norm(ps_p0);
-	ps_p1 = ps_p1 / Norm(ps_p1);
-	ps_p2 = ps_p2 / Norm(ps_p2);
+// 	ps_p0 = ps_p0 / Norm(ps_p0);
+// 	ps_p1 = ps_p1 / Norm(ps_p1);
+// 	ps_p2 = ps_p2 / Norm(ps_p2);
 
-	V_d n = TriangleNormal(p0, p1, p2);
-	if (Dot(Cross(ps_p0, ps_p1), n) >= 0. &&
-		Dot(Cross(ps_p1, ps_p2), n) >= 0. &&
-		Dot(Cross(ps_p2, ps_p0), n) >= 0.)
-		return true;
-	else
-		return false;
-};
+// 	V_d n = TriangleNormal(p0, p1, p2);
+// 	if (Dot(Cross(ps_p0, ps_p1), n) >= 0. &&
+// 		Dot(Cross(ps_p1, ps_p2), n) >= 0. &&
+// 		Dot(Cross(ps_p2, ps_p0), n) >= 0.)
+// 		return true;
+// 	else
+// 		return false;
+// };
 /* ------------------------------------------------------ */
-int isIntersectingSurface(const V_d &p0, const V_d &p1, const V_d &p2, const V_d &a, const V_d &b)
+int isIntersectingSurface(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b)
 {
 	/* 0:頂点の最大最小の範囲の外で，片方にa,bgがある */
 	/* 1:拡大した面には入れているが，多角形の頂点の最大最小範囲にすら入れていない */
@@ -979,12 +1075,12 @@ int isIntersectingSurface(const V_d &p0, const V_d &p1, const V_d &p2, const V_d
 	// 	(p0[2] + e < a[2] && p1[2] + e < a[2] && p2[2] + e < a[2] && p0[2] + e < b[2] && p1[2] + e < b[2] && p2[2] + e < b[2]))
 	// 	return 0;
 
-	if ((p0[0] > a[0] && p1[0] > a[0] && p2[0] > a[0] && p0[0] > b[0] && p1[0] > b[0] && p2[0] > b[0]) ||
-		(p0[0] < a[0] && p1[0] < a[0] && p2[0] < a[0] && p0[0] < b[0] && p1[0] < b[0] && p2[0] < b[0]) ||
-		(p0[1] > a[1] && p1[1] > a[1] && p2[1] > a[1] && p0[1] > b[1] && p1[1] > b[1] && p2[1] > b[1]) ||
-		(p0[1] < a[1] && p1[1] < a[1] && p2[1] < a[1] && p0[1] < b[1] && p1[1] < b[1] && p2[1] < b[1]) ||
-		(p0[2] > a[2] && p1[2] > a[2] && p2[2] > a[2] && p0[2] > b[2] && p1[2] > b[2] && p2[2] > b[2]) ||
-		(p0[2] < a[2] && p1[2] < a[2] && p2[2] < a[2] && p0[2] < b[2] && p1[2] < b[2] && p2[2] < b[2]))
+	if ((std::get<0>(p0) > std::get<0>(a) && std::get<0>(p1) > std::get<0>(a) && std::get<0>(p2) > std::get<0>(a) && std::get<0>(p0) > std::get<0>(b) && std::get<0>(p1) > std::get<0>(b) && std::get<0>(p2) > std::get<0>(b)) ||
+		(std::get<0>(p0) < std::get<0>(a) && std::get<0>(p1) < std::get<0>(a) && std::get<0>(p2) < std::get<0>(a) && std::get<0>(p0) < std::get<0>(b) && std::get<0>(p1) < std::get<0>(b) && std::get<0>(p2) < std::get<0>(b)) ||
+		(std::get<1>(p0) > std::get<1>(a) && std::get<1>(p1) > std::get<1>(a) && std::get<1>(p2) > std::get<1>(a) && std::get<1>(p0) > std::get<1>(b) && std::get<1>(p1) > std::get<1>(b) && std::get<1>(p2) > std::get<1>(b)) ||
+		(std::get<1>(p0) < std::get<1>(a) && std::get<1>(p1) < std::get<1>(a) && std::get<1>(p2) < std::get<1>(a) && std::get<1>(p0) < std::get<1>(b) && std::get<1>(p1) < std::get<1>(b) && std::get<1>(p2) < std::get<1>(b)) ||
+		(std::get<2>(p0) > std::get<2>(a) && std::get<2>(p1) > std::get<2>(a) && std::get<2>(p2) > std::get<2>(a) && std::get<2>(p0) > std::get<2>(b) && std::get<2>(p1) > std::get<2>(b) && std::get<2>(p2) > std::get<2>(b)) ||
+		(std::get<2>(p0) < std::get<2>(a) && std::get<2>(p1) < std::get<2>(a) && std::get<2>(p2) < std::get<2>(a) && std::get<2>(p0) < std::get<2>(b) && std::get<2>(p1) < std::get<2>(b) && std::get<2>(p2) < std::get<2>(b)))
 		return 0;
 	double e = 1E-11; //これを1E-14とすることで，干渉のチェックが行われるようになる場合があった．
 
@@ -992,14 +1088,14 @@ int isIntersectingSurface(const V_d &p0, const V_d &p1, const V_d &p2, const V_d
 	if (d < 0. || d > 1.)
 		return 0; /*面に到達できていない*/
 
-	V_d b_a = b - a;
-	V_d n = TriangleNormal(p0, p1, p2);
-	V_d ps = a + (b_a)*d;
+	auto b_a = b - a;
+	auto n = TriangleNormal(p0, p1, p2);
+	auto ps = a + (b_a)*d;
 
 	//ポリゴン頂点の最大最小でチェック
-	if (((p0[0] - e > ps[0] && p1[0] - e > ps[0] && p2[0] - e > ps[0]) || (p0[0] + e < ps[0] && p1[0] + e < ps[0] && p2[0] + e < ps[0])) ||
-		((p0[1] - e > ps[1] && p1[1] - e > ps[1] && p2[1] - e > ps[1]) || (p0[1] + e < ps[1] && p1[1] + e < ps[1] && p2[1] + e < ps[1])) ||
-		((p0[2] - e > ps[2] && p1[2] - e > ps[2] && p2[2] - e > ps[2]) || (p0[2] + e < ps[2] && p1[2] + e < ps[2] && p2[2] + e < ps[2])))
+	if (((std::get<0>(p0) - e > std::get<0>(ps) && std::get<0>(p1) - e > std::get<0>(ps) && std::get<0>(p2) - e > std::get<0>(ps)) || (std::get<0>(p0) + e < std::get<0>(ps) && std::get<0>(p1) + e < std::get<0>(ps) && std::get<0>(p2) + e < std::get<0>(ps))) ||
+		((std::get<1>(p0) - e > std::get<1>(ps) && std::get<1>(p1) - e > std::get<1>(ps) && std::get<1>(p2) - e > std::get<1>(ps)) || (std::get<1>(p0) + e < std::get<1>(ps) && std::get<1>(p1) + e < std::get<1>(ps) && std::get<1>(p2) + e < std::get<1>(ps))) ||
+		((std::get<2>(p0) - e > std::get<2>(ps) && std::get<2>(p1) - e > std::get<2>(ps) && std::get<2>(p2) - e > std::get<2>(ps)) || (std::get<2>(p0) + e < std::get<2>(ps) && std::get<2>(p1) + e < std::get<2>(ps) && std::get<2>(p2) + e < std::get<2>(ps))))
 		return 1; /*面の最大最小範囲にすら入れていない*/
 
 	auto ps_p0 = p0 - ps;
@@ -1059,88 +1155,89 @@ Tddd pOnSurfaceTuple(const T3Tddd &p0p1p2, const T2Tddd &ab)
 						   std::get<1>(ab));
 }
 
-int isIntersectingSurface(const VV_d &p0p1p2, const VV_d &ab)
+int isIntersectingSurface(const T3Tddd &p0p1p2, const T2Tddd &ab)
 {
-	if (p0p1p2.size() != 3)
-		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point size = " + std::to_string(p0p1p2.size()));
+	// if (p0p1p2.size() != 3)
+	// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point size = " + std::to_string(p0p1p2.size()));
 
-	return isIntersectingSurface(p0p1p2[0],
-								 p0p1p2[1],
-								 p0p1p2[2],
-								 ab[0], ab[1]);
+	return isIntersectingSurface(std::get<0>(p0p1p2),
+								 std::get<1>(p0p1p2),
+								 std::get<2>(p0p1p2),
+								 std::get<0>(ab),
+								 std::get<1>(ab));
 };
 /* ------------------------------------------------------ */
-class intersectionTriangleLine
-{
-public:
-	V_d X;
-	V_d normal;
-	V_d vecA2X;
-	V_d vecX2B;
-	V_d vecX2B_;
-	bool isIntersect;
-	int indexOfTriangle;
-	// Vnewの方向を変更
-	// Xonの位置を計算
-	intersectionTriangleLine(const V_d &p0,
-							 const V_d &p1,
-							 const V_d &p2,
-							 const V_d &A,
-							 const V_d &B)
-		: X({}), normal({}), vecA2X({}), vecX2B({}), vecX2B_({}), isIntersect(false), indexOfTriangle(0)
-	{
-		if (isIntersectingSurface(p0, p1, p2, A, B) == 3 /*三角形と干渉した場合*/)
-		{
-			this->normal = TriangleNormal(p0, p1, p2);
-			this->X = pOnSurface(p0, p1, p2, A, B);
-			this->vecA2X = this->X - A;
-			this->vecX2B = B - this->X;
-			this->vecX2B_ = this->reflect(this->vecX2B, this->normal);
-			this->isIntersect = true;
-		}
-	};
-	////////////
-	intersectionTriangleLine(const VVV_d &p0p1p2s,
-							 const V_d &A,
-							 const V_d &B,
-							 const V_i &exceptIndices = {})
-		: X({}), normal({}), vecA2X({}), vecX2B({}), vecX2B_({}), isIntersect(false), indexOfTriangle(0)
-	{
-		double closest_distFromWall = 1E+100;
-		double normal_distA2X;
-		for (auto i = 0; i < p0p1p2s.size(); i++)
-		{
-			if (!MemberQ(exceptIndices, i))
-			{
-				intersectionTriangleLine LT(p0p1p2s[i][0], p0p1p2s[i][1], p0p1p2s[i][2], A, B);
-				normal_distA2X = Norm(Dot(LT.vecA2X, LT.normal));
-				if (LT.isIntersect && isFinite(normal_distA2X) && normal_distA2X < closest_distFromWall)
-				{
-					closest_distFromWall = normal_distA2X;
-					this->X = LT.X;
-					this->normal = LT.normal;
-					this->vecA2X = LT.vecA2X;
-					this->vecX2B = LT.vecX2B;
-					this->vecX2B_ = LT.vecX2B_;
-					this->isIntersect = LT.isIntersect;
-					this->indexOfTriangle = i;
-				}
-			}
-		};
-	};
-	//////////////
-	V_d reflectIfPossible(const V_d &v) const
-	{
-		if (this->isIntersect)
-			return this->reflect(v, this->normal);
-		else
-			return v;
-	};
-	V_d reflect(const V_d &v, const V_d &n) const
-	{
-		return v - 2. * Dot(v, n) * n;
-	};
-};
+// class intersectionTriangleLine
+// {
+// public:
+// 	V_d X;
+// 	V_d normal;
+// 	V_d vecA2X;
+// 	V_d vecX2B;
+// 	V_d vecX2B_;
+// 	bool isIntersect;
+// 	int indexOfTriangle;
+// 	// Vnewの方向を変更
+// 	// Xonの位置を計算
+// 	intersectionTriangleLine(const V_d &p0,
+// 							 const V_d &p1,
+// 							 const V_d &p2,
+// 							 const V_d &A,
+// 							 const V_d &B)
+// 		: X({}), normal({}), vecA2X({}), vecX2B({}), vecX2B_({}), isIntersect(false), indexOfTriangle(0)
+// 	{
+// 		if (isIntersectingSurface(p0, p1, p2, A, B) == 3 /*三角形と干渉した場合*/)
+// 		{
+// 			this->normal = TriangleNormal(p0, p1, p2);
+// 			this->X = pOnSurface(p0, p1, p2, A, B);
+// 			this->vecA2X = this->X - A;
+// 			this->vecX2B = B - this->X;
+// 			this->vecX2B_ = this->reflect(this->vecX2B, this->normal);
+// 			this->isIntersect = true;
+// 		}
+// 	};
+// 	////////////
+// 	intersectionTriangleLine(const VVV_d &p0p1p2s,
+// 							 const V_d &A,
+// 							 const V_d &B,
+// 							 const V_i &exceptIndices = {})
+// 		: X({}), normal({}), vecA2X({}), vecX2B({}), vecX2B_({}), isIntersect(false), indexOfTriangle(0)
+// 	{
+// 		double closest_distFromWall = 1E+100;
+// 		double normal_distA2X;
+// 		for (auto i = 0; i < p0p1p2s.size(); i++)
+// 		{
+// 			if (!MemberQ(exceptIndices, i))
+// 			{
+// 				intersectionTriangleLine LT(p0p1p2s[i][0], p0p1p2s[i][1], p0p1p2s[i][2], A, B);
+// 				normal_distA2X = Norm(Dot(LT.vecA2X, LT.normal));
+// 				if (LT.isIntersect && isFinite(normal_distA2X) && normal_distA2X < closest_distFromWall)
+// 				{
+// 					closest_distFromWall = normal_distA2X;
+// 					this->X = LT.X;
+// 					this->normal = LT.normal;
+// 					this->vecA2X = LT.vecA2X;
+// 					this->vecX2B = LT.vecX2B;
+// 					this->vecX2B_ = LT.vecX2B_;
+// 					this->isIntersect = LT.isIntersect;
+// 					this->indexOfTriangle = i;
+// 				}
+// 			}
+// 		};
+// 	};
+// 	//////////////
+// 	V_d reflectIfPossible(const V_d &v) const
+// 	{
+// 		if (this->isIntersect)
+// 			return this->reflect(v, this->normal);
+// 		else
+// 			return v;
+// 	};
+// 	V_d reflect(const V_d &v, const V_d &n) const
+// 	{
+// 		return v - 2. * Dot(v, n) * n;
+// 	};
+// };
 /* ------------------------------------------------------ */
 namespace geometry
 {
@@ -1187,33 +1284,71 @@ namespace geometry
 	//   }
 	//   return true;
 	// };
-	//////////
-	bool isConvexPolygon(const VV_d &ps)
+
+	bool isConvexPolygon(const std::vector<Tddd> &ps, const Tddd &n)
 	{
 		auto s = ps.size();
 		if (s < 3)
 			return false;
+		else if (s == 3)
+			return true;
 
-		V_d v0 = *ps.begin() - *ps.rbegin();
-		V_d v1 = *(ps.begin() + 1) - *ps.begin();
-		V_d normal = Cross(v0, v1);
-		normal = normal / Norm(normal);
-		double angle = MyVectorAngle(v0 /*基準*/, v1, normal);
-		if (!isFinite(normal))
-			return false;
-
-		for (auto i = 0; i < s; i++)
+		for (auto i = 0; i < s; ++i)
 		{
-			// 0->1 1->2
-			angle = angle * MyVectorAngle(ps[i] - ps[(s + i - 1) % s] /*基準*/,
-										  ps[(s + i + 1) % s] - ps[i], normal);
-			if (!isFinite(angle))
-				return false;
+			auto v0 = ps[i + 1] - ps[i];
+			auto v1 = ps[i + 2] - ps[i + 1];
+			auto angle = Dot(Cross(v0, v1), n);
 			if (angle <= 1E-13)
 				return false; //符号が変わったらfalse
 		}
 		return true;
 	};
+
+	bool isConcavePolygon(const std::vector<Tddd> &ps, const Tddd &n)
+	{
+		return !isConvexPolygon(ps, n);
+	};
+
+	bool isConvexPolygon(const std::vector<Tdd> &ps)
+	{
+		std::vector<Tddd> Ps(ps.size());
+		int i = 0;
+		for (const auto &v : ps)
+			Ps[i++] = {std::get<0>(v), std::get<1>(v), 0.};
+		return isConvexPolygon(Ps, Tddd{0., 0., 1});
+	};
+
+	bool isConcavePolygon(const std::vector<Tdd> &ps)
+	{
+		return !isConvexPolygon(ps);
+	};
+
+	// bool isConvexPolygon(const VV_d &ps)
+	// {
+	// 	auto s = ps.size();
+	// 	if (s < 3)
+	// 		return false;
+
+	// 	V_d v0 = *ps.begin() - *ps.rbegin();
+	// 	V_d v1 = *(ps.begin() + 1) - *ps.begin();
+	// 	V_d normal = Cross(v0, v1);
+	// 	normal = normal / Norm(normal);
+	// 	double angle = MyVectorAngle(v0 /*基準*/, v1, normal);
+	// 	if (!isFinite(normal))
+	// 		return false;
+
+	// 	for (auto i = 0; i < s; i++)
+	// 	{
+	// 		// 0->1 1->2
+	// 		angle = angle * MyVectorAngle(ps[i] - ps[(s + i - 1) % s] /*基準*/,
+	// 									  ps[(s + i + 1) % s] - ps[i], normal);
+	// 		if (!isFinite(angle))
+	// 			return false;
+	// 		if (angle <= 1E-13)
+	// 			return false; //符号が変わったらfalse
+	// 	}
+	// 	return true;
+	// };
 	/*ccw angle
 	 *       *
 	 *     / | \
@@ -1389,9 +1524,6 @@ namespace geometry
 				return true; // too small
 			return false;
 		};
-
-		/*
-		 */
 
 		bool getPointsMeetCondition(const V_pp &ps, const double smallangle_IN, point *&select_p, int &current_index)
 		{
@@ -1781,6 +1913,48 @@ namespace geometry
 	//   }
 	// };
 
+	double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C)
+	{
+		//   V_d center = Mean[{A, B, C}];
+		auto oA = (A - o);
+		auto oB = (B - o);
+		auto oC = (C - o);
+		double c = VectorAngle(oA, oB);
+		double a = VectorAngle(oB, oC);
+		double b = VectorAngle(oC, oA);
+		double s = (a + b + c) / 2.;
+		double eps = 1E-10;
+		if (Between(s, {M_PI - eps, M_PI + eps}))
+			return 4. * M_PI / 2.;
+		else
+			return 4. * atan(sqrt(tan(s / 2) * tan((s - a) / 2.) * tan((s - b) / 2) * tan((s - c) / 2)));
+	};
+
+	double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz)
+	{
+		double total = 0., tmp, angle;
+		int sz = xyz.size();
+		Tddd normal = {0., 0., 0.}, X1, X2;
+		for (auto i = 0; i < xyz.size(); ++i)
+		{
+			X1 = Normalize(xyz[(i + sz) % sz] - o);
+			X2 = Normalize(xyz[(i + sz + 1) % sz] - o);
+			angle = VectorAngle(X1, X2);
+			normal += angle * Normalize(Cross(X1, X2));
+		}
+		normal = -Normalize(normal);
+		for (auto i = 0; i < xyz.size(); ++i)
+		{
+			tmp = geometry::SolidAngle(Tddd{0., 0., 0.},
+									   Normalize(xyz[(i + sz) % sz] - o),
+									   Normalize(xyz[(i + sz + 1) % sz] - o),
+									   normal);
+			if (Between(tmp, {0., 4. * M_PI}))
+				total += tmp;
+		}
+		return total;
+	};
+
 	double SolidAngle(const V_d &o, const V_d &A, const V_d &B, const V_d &C)
 	{
 		//   V_d center = Mean[{A, B, C}];
@@ -1832,6 +2006,62 @@ namespace geometry
 	//   return ret;
 	// };
 
-} // namespace geometry
+}
+
+/* ------------------------------------------------------ */
+
+Tddd closestPointOnTriangle(const Tddd &X, const T3Tddd &vertex)
+{
+	auto intxn = IntersectionSphereTriangle_(X, 1E+20, vertex);
+	return intxn.X;
+};
+
+Tddd closestPointOnTriangle(const Tddd &X, const std::vector<T3Tddd> &vector_vertex)
+{
+	Tddd r = {1E+20, 1E+20, 1E+20}, ret, closestX;
+	for (const auto &vertex : vector_vertex)
+	{
+		closestX = closestPointOnTriangle(X, vertex);
+		if (Norm(r) >= Norm(closestX - X))
+		{
+			r = closestX - X;
+			ret = X;
+		}
+	}
+	return ret;
+};
+
+Tddd vectorToClosestPointOnTriangle(const Tddd &X, const std::vector<T3Tddd> &vector_vertex)
+{
+	return closestPointOnTriangle(X, vector_vertex) - X;
+};
+
+Tddd closestPointOnLine(const Tddd &X, const T2Tddd &line)
+{
+	auto intxn = IntersectionSphereLine(X, 1E+20, line);
+	return intxn.X;
+};
+
+Tddd closestPointOnLine(const Tddd &X, const std::vector<T2Tddd> &vector_line)
+{
+	Tddd r = {1E+20, 1E+20, 1E+20}, ret, closestX;
+	for (const auto &line : vector_line)
+	{
+		closestX = closestPointOnLine(X, line);
+		if (Norm(r) >= Norm(closestX - X))
+		{
+			r = closestX - X;
+			ret = X;
+		}
+	}
+	return ret;
+};
+
+Tddd vectorToClosestPointOnLine(const Tddd &X, const std::vector<T2Tddd> &vector_vertex)
+{
+	return closestPointOnLine(X, vector_vertex) - X;
+};
+
+// namespace geometry
 /*namespace_geometry_code*/
 #endif

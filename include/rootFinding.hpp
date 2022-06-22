@@ -106,4 +106,198 @@ struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d>
 	};
 };
 
+/* ------------------------------------------------------ */
+/*                           利用例                        */
+/* ------------------------------------------------------ */
+Tddd optimumVector(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector)
+{
+	NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
+	double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
+	for (auto i = 0; i < 100; ++i)
+	{
+		F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+		for (const auto &vec : sample_vectors)
+		{
+			w = 1; // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
+			r = w * (std::get<0>(vec) - NR0.X);
+			drdx = -w;
+			F0 += r * r; //<- d/dx (d*d)
+			dF0dx += 2. * r * drdx;
+			r = w * (std::get<1>(vec) - NR1.X);
+			drdx = -w;
+			F1 += r * r; //<- d/dx (d*d)
+			dF1dx += 2. * r * drdx;
+			r = w * (std::get<2>(vec) - NR2.X);
+			drdx = -w;
+			F2 += r * r; //<- d/dx (d*d)
+			dF2dx += 2. * r * drdx;
+		}
+		NR0.update(F0, dF0dx);
+		NR1.update(F1, dF1dx);
+		NR2.update(F2, dF2dx);
+		if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
+			break;
+	}
+	return {NR0.X, NR1.X, NR2.X};
+};
+
+Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector)
+{
+	NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
+	double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
+	for (auto i = 0; i < 100; ++i)
+	{
+		F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+		for (const auto &vec : sample_vectors)
+		{
+			w = 1; // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
+			r = w * (std::get<0>(vec) - NR0.X);
+			drdx = -w;
+			F0 += 2. * r * drdx; //<- d/dx (d*d)
+			dF0dx += 2. * drdx * drdx;
+			r = w * (std::get<1>(vec) - NR1.X);
+			drdx = -w;
+			F1 += 2. * r * drdx; //<- d/dx (d*d)
+			dF1dx += 2. * drdx * drdx;
+			r = w * (std::get<2>(vec) - NR2.X);
+			drdx = -w;
+			F2 += 2. * r * drdx; //<- d/dx (d*d)
+			dF2dx += 2. * drdx * drdx;
+		}
+		NR0.update(F0, dF0dx);
+		NR1.update(F1, dF1dx);
+		NR2.update(F2, dF2dx);
+		if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
+			break;
+	}
+	return {NR0.X, NR1.X, NR2.X};
+};
+
+Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector, std::vector<double> weight)
+{
+	if (weight.size() != sample_vectors.size())
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	weight /= Max(weight);
+	NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
+	double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
+	Tddd vec;
+	for (auto i = 0; i < 200; ++i)
+	{
+		F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+		for (auto i = 0; i < sample_vectors.size(); ++i)
+		{
+			vec = sample_vectors[i];
+			w = weight[i];
+			r = w * (std::get<0>(vec) - NR0.X);
+			drdx = -w;
+			F0 += 2. * r * drdx; //<- d/dx (d*d)
+			dF0dx += 2. * drdx * drdx;
+			r = w * (std::get<1>(vec) - NR1.X);
+			drdx = -w;
+			F1 += 2. * r * drdx; //<- d/dx (d*d)
+			dF1dx += 2. * drdx * drdx;
+			r = w * (std::get<2>(vec) - NR2.X);
+			drdx = -w;
+			F2 += 2. * r * drdx; //<- d/dx (d*d)
+			dF2dx += 2. * drdx * drdx;
+		}
+		NR0.update(F0, dF0dx);
+		NR1.update(F1, dF1dx);
+		NR2.update(F2, dF2dx);
+		if (std::abs(NR0.dX) < 1E-13 && std::abs(NR1.dX) < 1E-13 && std::abs(NR2.dX) < 1E-13)
+			break;
+	}
+	return {NR0.X, NR1.X, NR2.X};
+};
+
+Tddd optimumVector_(const std::vector<Tddd> &sample_vectors,
+					const Tddd &init_vector,
+					const std::vector<Tddd> &N,
+					const std::vector<double> &weight)
+{
+	NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
+	double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
+	Tddd vec;
+	for (auto i = 0; i < 100; ++i)
+	{
+		F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+		for (auto i = 0; i < sample_vectors.size(); ++i)
+		{
+			vec = sample_vectors[i];
+			auto n = N[i];
+			w = weight[i];
+			Tddd X = {NR0.X, NR1.X, NR2.X};
+			r = w * Dot(vec - X, n);
+			drdx = -w * std::get<0>(n);
+			F0 += 2. * r * drdx; //<- d/dx (d*d)
+			dF0dx += 2. * drdx * drdx;
+			r = w * Dot(vec - X, n);
+			drdx = -w * std::get<1>(n);
+			F1 += 2. * r * drdx; //<- d/dx (d*d)
+			dF1dx += 2. * drdx * drdx;
+			r = w * Dot(vec - X, n);
+			drdx = -w * std::get<2>(n);
+			F2 += 2. * r * drdx; //<- d/dx (d*d)
+			dF2dx += 2. * drdx * drdx;
+		}
+		if (isFinite(dF0dx))
+			NR0.update(F0, dF0dx);
+		if (isFinite(dF1dx))
+			NR1.update(F1, dF1dx);
+		if (isFinite(dF2dx))
+			NR2.update(F2, dF2dx);
+		if (isFinite(NR0.dX) && isFinite(NR1.dX) && isFinite(NR2.dX))
+			if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
+				break;
+	}
+	Tddd ret = {NR0.X, NR1.X, NR2.X};
+	if (isFinite(ret))
+		return ret;
+	else
+		return {0., 0., 0.};
+};
+
+Tddd optimumVector(const std::vector<Tddd> &sample_vectors,
+				   const Tddd &init_vector,
+				   const std::vector<Tddd> &N,
+				   std::vector<double> weight)
+{
+	NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
+	double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
+	Tddd vec;
+	for (auto i = 0; i < 100; ++i)
+	{
+		F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+		for (auto i = 0; i < sample_vectors.size(); ++i)
+		{
+			vec = sample_vectors[i];
+			auto n = N[i];
+			w = weight[i];
+			Tddd X = {NR0.X, NR1.X, NR2.X};
+			r = w * Dot(vec - X, n);
+			drdx = -w * std::get<0>(n);
+			F0 += r * r; //<- d/dx (d*d)
+			dF0dx += 2. * r * drdx;
+			drdx = -w * std::get<1>(n);
+			F1 += r * r; //<- d/dx (d*d)
+			dF1dx += 2. * r * drdx;
+			drdx = -w * std::get<2>(n);
+			F2 += r * r; //<- d/dx (d*d)
+			dF2dx += 2. * r * drdx;
+		}
+		if (F0 + F1 + F2 < 1E-5)
+			break;
+		if (isFinite(dF0dx))
+			NR0.update(F0, dF0dx);
+		if (isFinite(dF1dx))
+			NR1.update(F1, dF1dx);
+		if (isFinite(dF2dx))
+			NR2.update(F2, dF2dx);
+		if (isFinite(NR0.dX) && isFinite(NR1.dX) && isFinite(NR2.dX))
+			if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
+				break;
+	}
+	return {NR0.X, NR1.X, NR2.X};
+};
+
 #endif

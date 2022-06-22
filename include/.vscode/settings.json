@@ -16,5 +16,8 @@
     "prettier.printWidth": 200,
     "editor.formatOnSave": true,
     "editor.wordWrapColumn": 200,
-    "html.format.wrapLineLength": 200
+    "html.format.wrapLineLength": 200,
+    "C_Cpp.default.includePath": [
+        "${env:HOME}/Dropbox/markdown/cpp/include"
+    ]
 }

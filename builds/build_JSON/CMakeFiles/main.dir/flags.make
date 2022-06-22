@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../../include
 
-CXX_FLAGS = -include /Users/tomoaki/Dropbox/markdown/cpp/builds/../include/fundamental.hpp -std=c++17 -fuse-ld=gold -Ofast -fopenmp -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.14 -std=gnu++17
+CXX_FLAGS =  -llapack -lblas -std=c++17 -fuse-ld=gold -framework OpenCL -O3 -fopenmp -march=native -mssse3 -mfpmath=sse -fexcess-precision=fast -ffast-math -flto -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.14 -std=gnu++17
 

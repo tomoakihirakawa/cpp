@@ -1,4 +1,19 @@
 {
     "editor.wordWrapColumn": 200,
-    "html.format.wrapLineLength": 200
+    "html.format.wrapLineLength": 200,
+    "editor.formatOnSave": true,
+    "prettier.printWidth": 200,
+    "C_Cpp.default.includePath": [
+        "${env:HOME}/Dropbox/markdown/cpp/include"
+    ],
+    "C_Cpp.default.systemIncludePath": [
+        "${env:HOME}/Dropbox/markdown/cpp/include"
+    ],
+    "C_Cpp.default.forcedInclude": [
+        "${env:HOME}/Dropbox/markdown/cpp/include"
+    ],
+    "C_Cpp.intelliSenseEngineFallback": "Enabled",
+    "C_Cpp.default.compilerPath": "${env:HOME}/Dropbox/markdown/cpp/include",
+    "C_Cpp.default.cppStandard": "gnu++17",
+    "C_Cpp.default.cStandard": "gnu17"
 }

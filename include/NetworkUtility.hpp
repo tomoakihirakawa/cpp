@@ -5,6 +5,43 @@
 #include "Network.hpp"
 #include "InterpolationRBF.hpp"
 
+// using T_2P = std::tuple<networkPoint *, networkPoint *>;
+// using T_3P = std::tuple<networkPoint *, networkPoint *, networkPoint *>;
+// using T_4P = std::tuple<networkPoint *, networkPoint *, networkPoint *, networkPoint *>;
+// using T_5P = std::tuple<networkPoint *, networkPoint *, networkPoint *, networkPoint *, networkPoint *>;
+// using T_6P = std::tuple<networkPoint *, networkPoint *, networkPoint *, networkPoint *, networkPoint *, networkPoint *>;
+
+// T2Tddd ToX(const T_2P &ps) { return {std::get<0>(ps)->getXtuple(), std::get<1>(ps)->getXtuple()}; };
+// T3Tddd ToX(const T_3P &ps) { return {std::get<0>(ps)->getXtuple(), std::get<1>(ps)->getXtuple(), std::get<2>(ps)->getXtuple()}; };
+// T4Tddd ToX(const T_4P &ps) { return {std::get<0>(ps)->getXtuple(), std::get<1>(ps)->getXtuple(), std::get<2>(ps)->getXtuple(), std::get<3>(ps)->getXtuple()}; };
+// T5Tddd ToX(const T_5P &ps) { return {std::get<0>(ps)->getXtuple(), std::get<1>(ps)->getXtuple(), std::get<2>(ps)->getXtuple(), std::get<3>(ps)->getXtuple(), std::get<4>(ps)->getXtuple()}; };
+// T6Tddd ToX(const T_6P &ps) { return {std::get<0>(ps)->getXtuple(), std::get<1>(ps)->getXtuple(), std::get<2>(ps)->getXtuple(), std::get<3>(ps)->getXtuple(), std::get<4>(ps)->getXtuple(), std::get<5>(ps)->getXtuple()}; };
+
+/* ------------------------------------------------------ */
+void creteOBJ(std::ofstream &ofs, Network &net)
+{
+	std::map<netPp, int> P_i;
+	int i = 0;
+	for (const auto &p : net.getPoints())
+	{
+		P_i[p] = ++i;
+		auto X = p->getX();
+		ofs << "v "
+			<< X[0] << " "
+			<< X[1] << " "
+			<< X[2] << std::endl;
+	}
+	ofs << std::endl;
+
+	for (const auto &f : net.getFaces())
+	{
+		auto ps = f->getPoints();
+		ofs << "f "
+			<< P_i[ps[0]] << " "
+			<< P_i[ps[1]] << " "
+			<< P_i[ps[2]] << std::endl;
+	}
+};
 //% ------------------------------------------------------ */
 //%                         反射点の計算                     */
 //% ------------------------------------------------------ */
@@ -16,7 +53,7 @@ Tddd getClosestFacePoint(const networkPoint *p,
 	auto sphere = geometry::Sphere(p->getXtuple(), mirroring_distance);
 	for (const auto &f : boundary_face)
 	{
-		auto ITX = intersection(sphere, geometry::Triangle(f->getX_Vertices()));
+		auto ITX = intersection(sphere, geometry::Triangle(f->getXVertices()));
 		if (ITX.isIntersecting)
 			if (Norm(ret) > Norm(ITX.X - p->getXtuple()))
 				ret = ITX.X - p->getXtuple();
@@ -39,107 +76,6 @@ std::unordered_map<networkPoint *, Tddd> getMap_PointToClosestFacePoint(const st
 			else if (Norm(it->second) > Norm(pToX))
 				ret[p] = pToX;
 		}
-	}
-	return ret;
-};
-
-/* ------------------------- extract ----------------------------- */
-V_d extLength(const std::unordered_set<networkLine *> &ls)
-{
-	V_d ret;
-	for (const auto &l : ls)
-		ret.emplace_back(l->length());
-	return ret;
-};
-//
-V_d extLength(const V_netLp &ls)
-{
-	V_d ret;
-	for (const auto &l : ls)
-		ret.emplace_back(l->length());
-	return ret;
-};
-
-V_d extractAreas(const V_netFp &fs)
-{
-	V_d ret;
-	for (const auto &f : fs)
-		ret.emplace_back(f->getArea());
-	return ret;
-};
-template <class T>
-std::vector<Tddd> extractXtuple(const std::unordered_set<T *> &object)
-{
-	std::vector<Tddd> ret(object.size());
-	int i = 0;
-	for (auto it = object.begin(); it != object.end(); ++it)
-		ret[i++] = (*it)->getXtuple();
-	return ret;
-};
-template <class T>
-std::vector<Tddd> extractXtuple(const std::vector<T *> &object)
-{
-	std::vector<Tddd> ret(object.size());
-	for (auto i = 0; i < object.size(); i++)
-		ret[i] = object[i]->getXtuple();
-	return ret;
-};
-
-template <class T>
-VV_d extractX(const std::unordered_set<T *> &object)
-{
-	VV_d ret(object.size(), V_d(3));
-	int i = 0;
-	for (auto it = object.begin(); it != object.end(); ++it)
-		ret[i++] = (*it)->getX();
-	return ret;
-};
-template <class T>
-VV_d extractX(const std::vector<T *> &object)
-{
-	VV_d ret(object.size(), V_d(3));
-	for (auto i = 0; i < object.size(); i++)
-		ret[i] = object[i]->getX();
-	return ret;
-};
-// 2021/09/06追加
-std::vector<Tddd> extXtuple(const V_netPp &points)
-{
-	std::vector<Tddd> ret(points.size());
-	int i = 0;
-	for (const auto &p : points)
-		ret[i++] = p->getXtuple();
-	return ret;
-};
-
-template <class T>
-VVV_d extractX(const std::vector<std::vector<T *>> &object)
-{
-	VVV_d ret;
-	ret.reserve(object.size());
-	for (const auto &obj : object)
-		ret.emplace_back(obj3D::extractX(obj));
-	return ret;
-};
-T3Tddd extractX(networkFace const *f)
-{
-	auto ps = f->getPoints();
-	return std::make_tuple(ps[0]->getXtuple(), ps[1]->getXtuple(), ps[2]->getXtuple());
-};
-T3Tddd extractXtuple(networkFace const *f)
-{
-	auto ps = f->getPoints();
-	return std::make_tuple(ps[0]->getXtuple(), ps[1]->getXtuple(), ps[2]->getXtuple());
-};
-//
-std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine *> &lines)
-{
-	std::vector<std::vector<Tddd>> ret;
-	for (const auto &l : lines)
-	{
-		ret.push_back({});
-		for (const auto &p : l->getPoints())
-			ret.rbegin()->emplace_back(p->getXtuple());
 	}
 	return ret;
 };
@@ -444,7 +380,7 @@ void isConsistent(const std::vector<Network *> &all_obj)
 // bool isConvexPolygon(const V_netPp &ps, const V_d &normal) { return geometry::isConvexPolygon(obj3D::extractX(ps), normal); };
 // bool isConcavePolygon(const V_netPp &ps, const V_d &normal) { return geometry::isConcavePolygon(obj3D::extractX(ps), normal); };
 ///////////////////////////////////////////////////////////
-bool isInConvexPolygon(const netPp p)
+bool isInConvexPolygon(const networkPoint *const p)
 {
 	try
 	{
@@ -456,7 +392,7 @@ bool isInConvexPolygon(const netPp p)
 		if (ps.size() != p->getNeighbors().size())
 			return false; //面が重複する場合を覗くために設置
 
-		return geometry::isConvexPolygon(obj3D::extractX(ps));
+		return geometry::isConvexPolygon(extX(ps), p->getNormalTuple());
 	}
 	catch (std::exception &e)
 	{
@@ -482,7 +418,7 @@ bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double ang
 	return (isStraight(p0->getX() - p1->getX(), p1->getX() - p2->getX()) < angle);
 };
 ///////////////////////////////////////////////////////////
-bool isFlat(const netPp p, double minangle = 1.)
+bool isFlat(const netPp p, double minangle = M_PI / 180.)
 {
 	if (p->getLines().empty())
 	{
@@ -496,22 +432,61 @@ bool isFlat(const netPp p, double minangle = 1.)
 	//面の法線方向が作る内角が全て1E-2より小さい場合，flat
 	for (auto i = 0; i < normals.size(); i++)
 		for (auto j = i + 1; j < normals.size(); j++)
-			if (MyVectorAngle(normals[i], normals[j]) / M_PI * 180. > minangle)
+			if (Dot(normals[i], normals[j]) < cos(minangle))
 				return false; // not flat
 	return true;
 };
 ///////////
-bool isFlat(const netLp line, double minangle = 1.)
+bool isFlat(const netLp line, double minangle = M_PI / 180.)
 {
 	auto fs = line->getFaces();
 	if (fs.size() != 2)
 		return false;
-	else if (MyVectorAngle(fs[0]->getNormalTuple(), fs[1]->getNormalTuple()) / M_PI * 180. > minangle)
+	else if (Dot(fs[0]->getNormalTuple(), fs[1]->getNormalTuple()) < cos(minangle)) // dotはflatなら大きくなる
 		return false;
 	else
 		return true;
 };
 ///////////////////////////////////////////////////////////
+Tddd AreaWeightedSmoothingVector(netPp p)
+{
+	try
+	{
+		if (!isEdgePoint(p))
+		{
+			Tddd ret = {0., 0., 0.}, p_next = p->getXtuple(), V = {0., 0, 0.};
+			T3Tddd F;
+			double scale = Mean(extLength(p->getLines()));
+			double Wtot, W;
+			for (auto k = 0; k < 1000; ++k)
+			{
+				Wtot = 0.;
+				V *= 0.;
+				for (const auto &f : p->getFaces())
+				{
+					auto [p0, p1, p2] = f->getPointsTuple(p);
+					F = {p_next, p1->getXtuple(), p2->getXtuple()};
+					W = TriangleArea(F);
+					Wtot += W;
+					V += scale * W * Normalize(Mean(F) - p_next);
+				}
+				V /= Wtot;
+				ret = (ret + V) / 2.;
+				if (Norm(ret - V) < scale * 1E-10)
+					return ret;
+				p_next = p->getXtuple() + ret; //このp_nextの位置で引っ張られるかチェック
+			}
+			return ret;
+		}
+		return {0., 0., 0.};
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << reset << std::endl;
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	};
+};
+/* ------------------------------------------------------ */
 void LaplacianSmoothing(netPp p)
 {
 	try
@@ -543,6 +518,393 @@ void LaplacianSmoothing(const V_netPp &ps)
 	};
 };
 ///////////////////////////////////////////////////////////
+Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR)
+{
+	std::vector<std::tuple<Tddd, Tddd>> normals;
+	for (const auto &f : p->getFaces())
+		for (const auto &F : p->getFaces())
+			if (!isFlat(f->getNormalTuple(), F->getNormalTuple(), 1E-2 * M_PI / 180.))
+				normals.push_back({f->getNormalTuple(), F->getNormalTuple()});
+	Tddd c;
+	for (const auto &[N0, N1] : normals)
+	{
+		c = Normalize(Cross(N0, N1));
+		VECTOR = Dot(VECTOR, c) * c;
+	}
+	return VECTOR;
+};
+/* ------------------------------------------------------ */
+void AreaWeightedSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10)
+{
+	/*
+	AreaWeightedSmoothingVectorの設定に伴って移動が変わる
+	*/
+	try
+	{
+		if (!isEdgePoint(p))
+		{
+			auto ps = p->getNeighbors();
+			bool isflat = true;
+			auto V = AreaWeightedSmoothingVector(p);
+			Tddd N;
+			bool allflat = true;
+			for (const auto &f : p->getFaces())
+				for (const auto &F : p->getFaces())
+					if (!isFlat(f->getNormalTuple(), F->getNormalTuple(), 1E-2 * M_PI / 180.))
+						allflat = false;
+			//もし面が全てフラットなら調べる必要はない
+			for (auto kk = 0; kk < 5; ++kk)
+			{
+				if (ps.size() > 2)
+				{
+					V = exact_along_surface(p, V);
+					for (const auto &f : p->getFaces())
+					{
+						auto [p0, p1, p2] = f->getPointsTuple(p);
+						bool isfiniteangles = isFinite(TriangleAngles(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()}));
+						bool isfiniteareas = isFinite(TriangleArea(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()}));
+						N = TriangleNormal(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()});
+						bool isfinitenormal = isFinite(N);
+						if (allflat)
+						{
+							//全てフラットなので，反転しなければいい．
+							if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->getNormalTuple(), M_PI / 180.))
+							{
+								isflat = false;
+								break;
+							}
+						}
+						else
+						{
+							if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->getNormalTuple(), lim_rad))
+							{
+								isflat = false;
+								break;
+							}
+						}
+					}
+					if (isflat)
+					{
+						p->setX(p->getXtuple() + V);
+						return;
+					}
+				}
+				V /= 10.;
+			}
+		}
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << reset << std::endl;
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	};
+};
+void AreaWeightedSmoothingPreserveShape(const V_netPp &ps /*copy*/, const double lim_rad = 1E-10)
+{
+	for (const auto &p : ps)
+		AreaWeightedSmoothingPreserveShape(p, lim_rad);
+};
+void AreaWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps /*copy*/, const double lim_rad = 1E-10)
+{
+	for (const auto &p : ps)
+		AreaWeightedSmoothingPreserveShape(p, lim_rad);
+};
+/* ------------------------------------------------------ */
+void LaplacianSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10)
+{
+	try
+	{
+		if (!isEdgePoint(p))
+		{ /*端の点はsmoothingしない*/
+			auto ps = p->getNeighbors();
+			bool isflat = true;
+			bool allflat = true;
+			Tddd N;
+			for (const auto &f : p->getFaces())
+				for (const auto &F : p->getFaces())
+					if (!isFlat(f->getNormalTuple(), F->getNormalTuple(), 1E-2 * M_PI / 180.))
+					{
+						allflat = false;
+						break;
+					}
+			if (ps.size() > 2) // 2点の場合は2点の中点に動いてしまうので，実行しない
+			{
+				Tddd V = Mean(extractXtuple(ps)) - p->getXtuple();
+				V = exact_along_surface(p, V);
+
+				for (const auto &f : p->getFaces())
+				{
+					auto [p0, p1, p2] = f->getPointsTuple(p);
+					bool isfiniteangles = isFinite(TriangleAngles(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()}));
+					bool isfiniteareas = isFinite(TriangleArea(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()}));
+					bool isfinitenormal = isFinite(TriangleNormal(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()}));
+					// if (!isfiniteangles || !isfiniteareas || !isfinitenormal)
+					// {
+					// 	isflat = false;
+					// 	break;
+					// }
+					N = TriangleNormal(T3Tddd{p0->getXtuple() + V, p1->getXtuple(), p2->getXtuple()});
+					if (allflat)
+					{
+						//全てフラットなので，反転しなければいい．
+						if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->getNormalTuple(), M_PI / 180.))
+						{
+							isflat = false;
+							break;
+						}
+					}
+					else
+					{
+						if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->getNormalTuple(), lim_rad))
+						{
+							isflat = false;
+							break;
+						}
+					}
+				}
+				if (isflat)
+					p->setX(p->getXtuple() + V);
+			}
+		}
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << reset << std::endl;
+		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	};
+};
+void LaplacianSmoothingPreserveShape(const V_netPp &ps /*copy*/, const double lim_rad = 1E-10)
+{
+	for (const auto &p : ps)
+		LaplacianSmoothingPreserveShape(p, lim_rad);
+};
+void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps /*copy*/, const double lim_rad = 1E-10)
+{
+	for (const auto &p : ps)
+		LaplacianSmoothingPreserveShape(p, lim_rad);
+};
+/* ------------------------------------------------------ */
+void arrangeCORNER(Network &water, const double limit_inner_angle = M_PI / 180 * 5, const int times = 1000)
+{
+	int count = 0;
+	std::cout << "remeshing" << std::endl;
+	water.setBounds();
+	for (const auto &l : water.getLines())
+	{
+		auto [p0, p1] = l->getPointsTuple();
+		if (!l->CORNER)
+		{
+			if (!p0->CORNER && !p1->CORNER)
+			{
+				for (auto &f : l->getFaces())
+				{
+					auto oppo0 = f->getPointOpposite(l);
+					if (oppo0->CORNER)
+					{
+						if (oppo0->getLinesDirichlet().size() <= 2)
+						{
+							for (const auto &L : oppo0->getLinesCORNER())
+							{
+								if ((*L)(oppo0)->getLinesDirichlet().size() == 1)
+								{
+									if (l->canflip(limit_inner_angle))
+									{
+										l->flip();
+										count++;
+										break;
+									}
+								}
+							}
+						}
+						else if (oppo0->getLinesNeumann().size() <= 2)
+						{
+							for (const auto &L : oppo0->getLinesCORNER())
+							{
+								if ((*L)(oppo0)->getLinesNeumann().size() == 1)
+								{
+									if (l->canflip(limit_inner_angle))
+									{
+										l->flip();
+										count++;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				for (auto &q : l->getPoints())
+				{
+					if (q->CORNER && q->getLinesDirichlet().size() >= 3)
+					{
+						for (auto &f : l->getFaces())
+						{
+							auto oppo0 = f->getPointOpposite(l);
+							if (oppo0->CORNER && oppo0->getLinesDirichlet().size() == 1)
+							{
+								if (l->canflip(limit_inner_angle))
+								{
+									l->flip();
+									count++;
+									break;
+								}
+							}
+						}
+					}
+					else if (q->CORNER && q->getLinesNeumann().size() >= 3)
+					{
+						for (auto &f : l->getFaces())
+						{
+							auto oppo0 = f->getPointOpposite(l);
+							if (oppo0->CORNER && oppo0->getLinesNeumann().size() == 1)
+							{
+								if (l->canflip(limit_inner_angle))
+								{
+									l->flip();
+									count++;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		/* ------------------------------------------------------ */
+		if (count > times)
+			break;
+	}
+};
+
+void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0)
+{
+	// 2022/04/13こっちにBEMのmainから持ってきた
+	std::cout << "remeshing" << std::endl;
+	water.setBounds();
+	double mean_length = Mean(extLength(water.getLines()));
+	bool isfound = false, ismerged = false;
+	int count = 0;
+	for (const auto &l : water.getLines())
+	{
+		auto [p0, p1] = l->getPointsTuple();
+		if (!l->CORNER)
+		// if (!p0->CORNER && !p1->CORNER)
+		{
+			if (force && (times == 0 || count < times))
+			{
+				// p0とp1が角の場合，6という数にこだわる必要がない．
+				// つまり6がトポロジカルにベターではない．
+				isfound = l->flipIfTopologicalyBetter(limit_angle, M_PI / 180. * 10.);
+				if (isfound)
+					count++;
+			}
+			else
+			{
+				isfound = l->flipIfBetter(limit_angle);
+			}
+		}
+	}
+};
+void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0)
+{
+	/*
+	* フリップによって表面の形状が大きく変わってしまうのはよくない．
+	* フリップによって三角形の内角がとても小さくなるのもよくない．
+	flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
+	* limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
+	* limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
+	*/
+	auto [limit_angle, limit_inner_angle] = limit;
+	// 2022/04/13こっちにBEMのmainから持ってきた
+	std::cout << "remeshing" << std::endl;
+	water.setBounds();
+	double mean_length = Mean(extLength(water.getLines()));
+	bool isfound = false, ismerged = false;
+	int count = 0;
+	for (const auto &l : water.getLines())
+	{
+		auto [p0, p1] = l->getPointsTuple();
+		if (!l->CORNER)
+		// if (!p0->CORNER && !p1->CORNER)
+		{
+			if (force && (times == 0 || count < times))
+			{
+				isfound = l->flipIfTopologicalyBetter(limit_angle, limit_inner_angle);
+				if (isfound)
+					count++;
+			}
+			else
+			{
+				isfound = l->flipIfBetter(limit_angle, limit_inner_angle);
+				if (isfound)
+					count++;
+			}
+		}
+	}
+};
+void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0)
+{
+	/*
+	* フリップによって表面の形状が大きく変わってしまうのはよくない．
+	* フリップによって三角形の内角がとても小さくなるのもよくない．
+	flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
+	* limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
+	* limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
+	*/
+	auto [limit_angle_D, limit_inner_angle_D] = limit_Dirichlet;
+	auto [limit_angle_N, limit_inner_angle_N] = limit_Neumann;
+	// 2022/04/13こっちにBEMのmainから持ってきた
+	std::cout << "remeshing" << std::endl;
+	water.setBounds();
+	double mean_length = Mean(extLength(water.getLines()));
+	bool isfound = false, ismerged = false;
+	int count = 0;
+	for (const auto &l : water.getLines())
+	{
+		auto [p0, p1] = l->getPointsTuple();
+		if (!l->CORNER)
+		// if (!p0->CORNER && !p1->CORNER)
+		{
+			if (force && (times == 0 || count < times))
+			{
+				// p0とp1が角の場合，6という数にこだわる必要がない．
+				// つまり6がトポロジカルにベターではない．
+				if (l->Dirichlet)
+				{
+					isfound = l->flipIfTopologicalyBetter(limit_angle_D, limit_inner_angle_D);
+					if (isfound)
+						count++;
+				}
+				else
+				{
+					isfound = l->flipIfTopologicalyBetter(limit_angle_N, limit_inner_angle_N);
+					if (isfound)
+						count++;
+				}
+			}
+			else
+			{
+				if (l->Dirichlet)
+				{
+					isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D);
+					if (isfound)
+						count++;
+				}
+				else
+				{
+					isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N);
+					if (isfound)
+						count++;
+				}
+			}
+		}
+	}
+};
+
+/* ------------------------------------------------------ */
 void LaplacianSmoothingIfFlat(netPp p)
 {
 	try
@@ -1147,7 +1509,7 @@ std::vector<Tddd> fullparticlize(networkFace const *f, const double dx)
 
 // b% -------------- networkFaceを使ったparticlize ------------- */
 
-std::vector<std::tuple<Tddd, Tdd>> particlize(const networkFace *const f, const double dx) { return particlize(f->getX_Vertices(), dx); };
+std::vector<std::tuple<Tddd, Tdd>> particlize(const networkFace *const f, const double dx) { return particlize(f->getXVertices(), dx); };
 std::vector<std::tuple<Tddd, Tdd>> particlize(const V_netFp &faces, const double dx)
 {
 	std::vector<std::tuple<Tddd, Tdd>> ret, tmp;

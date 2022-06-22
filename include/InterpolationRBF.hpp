@@ -109,6 +109,49 @@ RBF_interp_detail*/
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
+/* ------------------------------------------------------ */
+struct InterpolationBspline
+{
+	int K;
+	std::vector<Tdd> sample;
+	std::tuple<V_d, V_d> sampleT;
+	V_d a, q;
+	InterpolationBspline(const int K_IN, const std::vector<Tdd> &sample_IN) : K(K_IN),
+																			  sample(sample_IN),
+																			  sampleT(Transpose(sample_IN)),
+																			  q(OpenUniformKnots(std::get<0>(sampleT), K))
+	{
+		VV_d A = Bspline(std::get<0>(sampleT), q, K); //この点の上では，サンプル値と一致しなければならない．
+		a.resize(A.size());
+		ludcmp lu(A);
+		lu.solve(std::get<1>(sampleT), a);
+	};
+	//! ------------------------------------------------------ */
+	double operator()(const double x) const
+	{
+		return Dot(Bspline(x, q, K), a /*{B0,B1,B2,B3,...}*/);
+	};
+	//! ------------------------------------------------------ */
+	V_d operator()(const V_d &X) const
+	{
+		V_d ret(X.size());
+		for (auto i = 0; i < X.size(); ++i)
+			ret[i] = Dot(Bspline(X[i], q, K), a);
+		return ret;
+	};
+	//! ------------------------------------------------------ */
+	double D(const double x) const
+	{
+		return Dot(D_Bspline(x, q, K), a /*{B0,B1,B2,B3,...}*/);
+	};
+	V_d D(const V_d &X) const
+	{
+		V_d ret(X.size());
+		for (auto i = 0; i < X.size(); ++i)
+			ret[i] = Dot(D_Bspline(X[i], q, K), a);
+		return ret;
+	};
+};
 
 /* ---------------------- ラグランジュ補間 ---------------------- */
 
@@ -1329,17 +1372,17 @@ private:
 	std::function<V_d(V_d, V_d)> grad_phi; // derivative of the RBF basis function passed as a lambda function
 	int parameter_dim;
 	double scale;
-	double p; // power
+	double p; // std::pow
 
 public:
 	//ディフォルトの補間基底関数，多重二乗を使う場合
 	InterpolationIDW(const VV_d &A_IN, const V_d &V_IN)
 		: A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()){};
 	//
-	InterpolationIDW(const VV_d &A_IN, const V_d &V_IN, const double p_IN /*power*/)
+	InterpolationIDW(const VV_d &A_IN, const V_d &V_IN, const double p_IN /*std::pow*/)
 		: A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()), p(p_IN){};
 	//
-	InterpolationIDW(const VV_d &A_IN, const VV_d &VV_IN, const double p_IN = 1. /*power*/)
+	InterpolationIDW(const VV_d &A_IN, const VV_d &VV_IN, const double p_IN = 1. /*std::pow*/)
 		: A(A_IN), V({}), VV(VV_IN), parameter_dim(A_IN[0].size()), p(p_IN){};
 	//
 	double operator()(const V_d &x) const
@@ -1563,20 +1606,198 @@ struct interpolationTriangleLinearByFixedRange3D
 		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
 	};
 };
+//! ------------------------------------------------------ */
+//!                    改善した線形三角補間                   */
+//! ------------------------------------------------------ */
+
+//共通部分：ここではNなど，を取り出したい場合，まずそれ単体でテンプレートを作って，それを別のテンプレートストラクトで継承する
+template <typename T>
+struct interpolationTriangleLinearCommon
+{
+	std::tuple<T, T, T> s; // sample points
+	interpolationTriangleLinearCommon(const std::tuple<T, T, T> &s_IN) : s(s_IN){};
+	Tddd N(const double &t0, const double &t1) const { return {t0, t1, 1 - t0 - t1}; };
+	Tddd dNdt0(const double &t0, const double &t1) const { return {1., 0., -1.}; };
+	Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1., -1.}; };
+	T operator()(const double t0, const double t1) const { return Dot(this->N(t0, t1), this->s); };
+	T dXdt0(const double t0, const double t1) const { return Dot(this->dNdt0(t0, t1), this->s); };
+	T dXdt1(const double t0, const double t1) const { return Dot(this->dNdt1(t0, t1), this->s); };
+};
+
+template <typename T>
+struct interpolationTriangleLinear_ : public interpolationTriangleLinearCommon<T>
+{
+	interpolationTriangleLinear_(const std::tuple<T, T, T> &s_IN) : interpolationTriangleLinearCommon<T>(s_IN){};
+};
+
+template <>
+struct interpolationTriangleLinear_<double> : public interpolationTriangleLinearCommon<double>
+{
+	interpolationTriangleLinear_(const std::tuple<double, double, double> &s_IN) : interpolationTriangleLinearCommon<double>(s_IN){};
+	Tdd grad(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	double J(const double t0, const double t1) const
+	{
+		return this->dXdt0(t0, t1) * this->dXdt1(t0, t1);
+	};
+};
+
+template <>
+struct interpolationTriangleLinear_<Tddd> : public interpolationTriangleLinearCommon<Tddd>
+{
+	interpolationTriangleLinear_(const std::tuple<Tddd, Tddd, Tddd> &s_IN) : interpolationTriangleLinearCommon<Tddd>(s_IN){};
+	/* ------------------------------------------------------ */
+	T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
+	double J(const double t0, const double t1) const
+	{
+		auto dxdt0 = this->dXdt0(t0, t1);
+		auto dxdt1 = this->dXdt1(t0, t1);
+		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
+	};
+};
+//! ------------------------------------------------------ */
+//! ------------------------------------------------------ */
+template <typename T>
+struct interpolationTriangleLinearCommon0101
+{
+	std::tuple<T, T, T> s; // sample points
+	interpolationTriangleLinearCommon0101(const std::tuple<T, T, T> &s_IN) : s(s_IN){};
+	Tddd N(const double &t0, const double &t1) const { return {t0, t1 * (1. - t0), (-1. + t0) * (-1. + t1)}; };
+	Tddd dNdt0(const double &t0, const double &t1) const { return {1., -t1, -1. + t1}; };
+	Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1. - t0, -1. + t0}; };
+	T operator()(const double t0, const double t1) const { return Dot(this->N(t0, t1), this->s); };
+	T dXdt0(const double t0, const double t1) const { return Dot(this->dNdt0(t0, t1), this->s); };
+	T dXdt1(const double t0, const double t1) const { return Dot(this->dNdt1(t0, t1), this->s); };
+};
+
+template <typename T>
+struct interpolationTriangleLinear0101 : public interpolationTriangleLinearCommon0101<T>
+{
+	interpolationTriangleLinear0101(const std::tuple<T, T, T> &s_IN) : interpolationTriangleLinearCommon0101<T>(s_IN){};
+};
+
+template <>
+struct interpolationTriangleLinear0101<double> : public interpolationTriangleLinearCommon0101<double>
+{
+	interpolationTriangleLinear0101(const std::tuple<double, double, double> &s_IN) : interpolationTriangleLinearCommon0101<double>(s_IN){};
+	Tdd grad(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	double J(const double t0, const double t1) const { return this->dXdt0(t0, t1) * this->dXdt1(t0, t1); };
+};
+
+template <>
+struct interpolationTriangleLinear0101<Tddd> : public interpolationTriangleLinearCommon0101<Tddd>
+{
+	interpolationTriangleLinear0101(const std::tuple<Tddd, Tddd, Tddd> &s_IN) : interpolationTriangleLinearCommon0101<Tddd>(s_IN){};
+	/* ------------------------------------------------------ */
+	T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
+	Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
+	double J(const double t0, const double t1) const
+	{
+		auto dxdt0 = this->dXdt0(t0, t1);
+		auto dxdt1 = this->dXdt1(t0, t1);
+		return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - pow(Dot(dxdt0, dxdt1), 2.));
+	};
+};
+
+//! ------------------------------------------------------ */
+//! ------------------------------------------------------ */
+
 ////////////////////////////////////////////////////////////////////////
 struct interpolationTriangleQuadByFixedRange3D
 {
+	/*
+	/Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/interpolationLagQuadIDW20210719.nb
+	のinterpQuadSimplyRangeChanged0to1がこの関数と同じ
+	*/
 	T6Tddd s; // sample points
-	interpolationTriangleQuadByFixedRange3D(const T6Tddd &s_IN) : s(s_IN){};
+	bool approx_p0, approx_p1, approx_p2, no_approx;
+	interpolationTriangleQuadByFixedRange3D() : approx_p0(false),
+												approx_p1(false),
+												approx_p2(false),
+												no_approx(true){};
+	interpolationTriangleQuadByFixedRange3D(const T6Tddd &s_IN) : s(s_IN),
+																  approx_p0(false),
+																  approx_p1(false),
+																  approx_p2(false),
+																  no_approx(true){};
+	void noApprox()
+	{
+		no_approx = true;
+	};
+	void approxP0()
+	{
+		no_approx = false;
+		approx_p0 = true;
+	};
+	void approxP1()
+	{
+		no_approx = false;
+		approx_p1 = true;
+	};
+	void approxP2()
+	{
+		no_approx = false;
+		approx_p2 = true;
+	};
 	T6d N(const double &t0, const double &t1) const
 	{
-		return {t0 * (-1 + 2 * t0),
-				(-1 + t0) * t1 * (1 + 2 * (-1 + t0) * t1),
-				(-1 + t0) * (1 + 2 * t0 * (-1 + t1) - 2 * t1) * (-1 + t1),
-				-4 * (-1 + t0) * t0 * t1,
-				-4 * std::pow(-1 + t0, 2) * (-1 + t1) * t1,
-				4 * (-1 + t0) * t0 * (-1 + t1)};
+		if (no_approx)
+			return {t0 * (-1 + 2 * t0),
+					(-1 + t0) * t1 * (1 + 2 * (-1 + t0) * t1),
+					(-1 + t0) * (1 + 2 * t0 * (-1 + t1) - 2 * t1) * (-1 + t1),
+					-4 * (-1 + t0) * t0 * t1,
+					-4 * std::pow(-1 + t0, 2) * (-1 + t1) * t1,
+					4 * (-1 + t0) * t0 * (-1 + t1)};
+		else if (approx_p0 && approx_p1 && approx_p2)
+			return {0,
+					0,
+					0,
+					-1 + 2 * t0 + 2 * t1 - 10 * t0 * t1 + 8 * std::pow(t0, 2) * t1,
+					1 - 2 * t0 + 4 * t0 * t1 - 4 * std::pow(t0, 2) * t1,
+					1 - 2 * t1 + 6 * t0 * t1 - 4 * std::pow(t0, 2) * t1};
+		else if (approx_p0 && approx_p1)
+			return {0,
+					0,
+					(1 - t0 - (1 - t0) * t1) * (-1 + 2 * (1 - t0 - (1 - t0) * t1)),
+					-t0 + 2 * std::pow(t0, 2) - t1 + 5 * t0 * t1 - 4 * std::pow(t0, 2) * t1 + 2 * std::pow(t1, 2) - 4 * t0 * std::pow(t1, 2) + 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					t0 - 2 * std::pow(t0, 2) + 3 * t1 - 7 * t0 * t1 + 4 * std::pow(t0, 2) * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					3 * t0 - 2 * std::pow(t0, 2) + t1 - 5 * t0 * t1 + 4 * std::pow(t0, 2) * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2)};
+		else if (approx_p0 && approx_p2)
+			return {0,
+					(1 - t0) * t1 * (-1 + 2 * (1 - t0) * t1),
+					0,
+					-1 + 2 * t0 + 3 * t1 - 3 * t0 * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					1 - 2 * t0 + t1 - t0 * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					1 - 3 * t1 + 3 * t0 * t1 + 2 * std::pow(t1, 2) - 4 * t0 * std::pow(t1, 2) + 2 * std::pow(t0, 2) * std::pow(t1, 2)};
+		else if (approx_p1 && approx_p2)
+			return {t0 * (-1 + 2 * t0),
+					0,
+					0,
+					-1 + 3 * t0 - 2 * std::pow(t0, 2) + 2 * t1 - 2 * t0 * t1,
+					1 - 3 * t0 + 2 * std::pow(t0, 2),
+					1 + t0 - 2 * std::pow(t0, 2) - 2 * t1 + 2 * t0 * t1};
+		else if (approx_p0)
+			return {0,
+					(1 - t0) * t1 * (-1 + 2 * (1 - t0) * t1),
+					(1 - t0 - (1 - t0) * t1) * (-1 + 2 * (1 - t0 - (1 - t0) * t1)), -t0 + 2 * std::pow(t0, 2) + 4 * t0 * t1 - 4 * std::pow(t0, 2) * t1,
+					t0 - 2 * std::pow(t0, 2) + 4 * t1 - 8 * t0 * t1 + 4 * std::pow(t0, 2) * t1 - 4 * std::pow(t1, 2) + 8 * t0 * std::pow(t1, 2) - 4 * std::pow(t0, 2) * std::pow(t1, 2),
+					3 * t0 - 2 * std::pow(t0, 2) - 4 * t0 * t1 + 4 * std::pow(t0, 2) * t1};
+		else if (approx_p1)
+			return {t0 * (-1 + 2 * t0),
+					0,
+					(1 - t0 - (1 - t0) * t1) * (-1 + 2 * (1 - t0 - (1 - t0) * t1)),
+					-t1 + 5 * t0 * t1 - 4 * std::pow(t0, 2) * t1 + 2 * std::pow(t1, 2) - 4 * t0 * std::pow(t1, 2) + 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					3 * t1 - 7 * t0 * t1 + 4 * std::pow(t0, 2) * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					4 * t0 - 4 * std::pow(t0, 2) + t1 - 5 * t0 * t1 + 4 * std::pow(t0, 2) * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2)};
+		else
+			return {t0 * (-1 + 2 * t0),
+					(1 - t0) * t1 * (-1 + 2 * (1 - t0) * t1),
+					0,
+					-1 + 3 * t0 - 2 * std::pow(t0, 2) + 3 * t1 - 3 * t0 * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					1 - 3 * t0 + 2 * std::pow(t0, 2) + t1 - t0 * t1 - 2 * std::pow(t1, 2) + 4 * t0 * std::pow(t1, 2) - 2 * std::pow(t0, 2) * std::pow(t1, 2),
+					1 + t0 - 2 * std::pow(t0, 2) - 3 * t1 + 3 * t0 * t1 + 2 * std::pow(t1, 2) - 4 * t0 * std::pow(t1, 2) + 2 * std::pow(t0, 2) * std::pow(t1, 2)};
 	};
+
 	T6d dNdt0(const double &t0, const double &t1) const
 	{
 		return {-1 + 4 * t0,

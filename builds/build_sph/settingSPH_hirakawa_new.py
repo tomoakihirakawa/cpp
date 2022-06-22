@@ -7,8 +7,9 @@ import math
 density = 1000.
 graity = 9.81
 
-H = 800/1000
-particle_spacing = 0.008
+H = 200/1000
+# particle_spacing = 0.008
+particle_spacing = .5
 data = {
     "density": density,
     # -------------------------------------------------------- #
@@ -19,54 +20,37 @@ data = {
     "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
     # ------------------ 粒子配置に関する設定値 ------------------ #
     "particle_spacing": particle_spacing,
-    "xbounds": [-0.07 + particle_spacing/2, 0.07 - particle_spacing/2],
-    "ybounds": [-0.07 + particle_spacing/2, 0.07 - particle_spacing/2],
-    "zbounds": [0.25+particle_spacing/2, 0.25+H - particle_spacing/2],
     # -------------------------------------------------------- #
     # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-.3, .3],
-    "buckets_ybounds": [-.3, .3],
-    "buckets_zbounds": [0, .80],
+    "buckets_xbounds": [-50., 50.],
+    "buckets_ybounds": [-50., 50.],
+    "buckets_zbounds": [-10., 10.],
     #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
-    "C_SML_sigma":3.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    "C_SML_h": 0.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    "C_SML_sigma":3.3,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
+    "C_SML_h": 1.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     # "C_SML": 3.*.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
     "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
+    # radius_SPHはC_SML*dx
     # -------------------------------------------------------- #
     "mu": 0.001005,
     # -------------------------------------------------------- #
-    "C_Tait": 10.*math.sqrt(2.*9.81*H),  # テイトの式
+    "C_Tait": 10.*math.sqrt(2.*graity*H),  # テイトの式
     # ---------------------- 人口粘性係数 ---------------------- 
     "C_artificial_viscousity_alpha": 0.001,
     "C_artificial_viscousity_beta": 0.,
     # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.00005,
+    "preparation_max_dt": 0.0005,
     "preparation_time": 1.,
     "preparation_time_step": 200,
     "preparation_C_artificial_viscousity_alpha": 0.03,
     "preparation_C_artificial_viscousity_beta": 0,
     # -------------------------------------------------------- #
+    "inputfiles" : ["water.json", "tank.json"]
 }
 
 data["max_dt"] = data["C_CFL_velocity"]*data["C_SML_h"]*particle_spacing/(data["C_Tait"]/10.)
 data["max_dt"] = 0.0005
 
-total_volume = 1
-total_volume *= abs(data["xbounds"][1]-data["xbounds"][0])
-total_volume *= abs(data["ybounds"][1]-data["ybounds"][0])
-total_volume *= abs(data["zbounds"][1]-data["zbounds"][0])
-print("体積", total_volume)
-data.update({"total_volume": total_volume})
-
-xlen = data["xbounds"][1]-data["xbounds"][0]
-ylen = data["ybounds"][1]-data["ybounds"][0]
-zlen = data["zbounds"][1]-data["zbounds"][0]
-dx = data["particle_spacing"]
-total_particle = (round(xlen/dx+1)*round(ylen/dx+1)*round(zlen/dx+1))
-volume_of_a_particle = total_volume/total_particle
-data.update({"volume_of_a_particle": total_particle})
-print("粒子点数", total_particle)
-print("各粒子体積", volume_of_a_particle)
 print('------------------------------------')
 for key, value in data.items():
     print(key,'\t',value)
@@ -75,21 +59,34 @@ f = open("./settingSPH.json", 'w')
 json.dump(data, f, ensure_ascii=True, indent=4)
 f.close()
 
-print("rho*g*h = ", 1000.*9.81*H)
+#! -------------------------------------------------------- #
+#! -------------------------------------------------------- #
+#! -------------------------------------------------------- #
+
+data = {
+    "name": "water",    
+    "objfile": "../../obj/Arai2022/water.obj",
+}
+
+f = open("./water.json", 'w')
+json.dump(data, f, ensure_ascii=True, indent=4)
+f.close()
 
 #! -------------------------------------------------------- #
 #! -------------------------------------------------------- #
 #! -------------------------------------------------------- #
 
 data = {
-    "name": "wave_maker",
-    "objfile": "../../obj/tank/sloshing_tank.obj",
+    "name": "wave_maker",    
+    "objfile": "../../obj/Arai2022/tank.obj",
     # "rotate": [0, 1, 0, 0],
-    "reverseNormal": True,
+    # "reverseNormal": True,
     # "scale": [0, 0, 0, 0],  # モデルがmm単位なのでメートルに変換,
+    # "type": "RigidBody",
     "depth_list": [-particle_spacing/2.,
                    -particle_spacing/2.*3.],
-    "volume_of_a_particle": volume_of_a_particle,
+    # "volume_of_a_particle": volume_of_a_particle,
+    "ignore":False,
     "density": density
 }
 
@@ -103,14 +100,12 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    # "translate": [1., 1., 1.],
-    "rotate": [math.pi/3., 1, 1, 0],
-    # "reverseNormal": True,
-    "scale": [1./1.5, 0,0,0],  # モデルがmm単位なのでメートルに変換,
-    "translate": [0, 0, -0.2],
-    "depth_list": [-particle_spacing/2.],
-    "volume_of_a_particle": volume_of_a_particle,
+    "objfile": "../../obj/Arai2022/tank.obj",
+    "type": "RigidBody",
+    "depth_list": [-particle_spacing/2.,
+                   -particle_spacing/2.*3.],
+    # "volume_of_a_particle": volume_of_a_particle,
+    "ignore":False,
     "density": density
 }
 
@@ -125,14 +120,17 @@ f.close()
 
 data = {
     "name": "tank",
-    "objfile": "../../obj/cube0.obj",
-    "rotate": [math.pi/3., 1, 1, 0],
+    # "objfile": "../../obj/cube0.obj",
+    "objfile": "../../obj/Arai2022/tank.obj",
+    # "rotate": [math.pi/3., 1, 1, 0],
     # "translate": [1., 1., 1.],
     # "reverseNormal": True,
     "scale": [1./1.5, 0,0,0],  # モデルがmm単位なのでメートルに変換,
-    "translate": [0, 0, -0.2],
+    "translate": [0, 0, -0.3],
+    "ignore":True,
+    "type": "RigidBody",
     "depth_list": [-particle_spacing/2.],
-    "volume_of_a_particle": volume_of_a_particle,
+    # "volume_of_a_particle": volume_of_a_particle,
     "density": density
 
 }

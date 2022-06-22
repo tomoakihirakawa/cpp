@@ -1,9 +1,19 @@
 {
     "name": "wavemaker",
-    "objfile": "../../obj/tank/sawai/tank_sawai_254x254mm5.obj",
-    "radius": 0.01,
-    "ignore": false,
+    "objfile": "../../obj//Goring1979/wavemaker.obj",
+    "type": "RigidBody",
     "output_vtu_file_name": "wavemaker",
     "output_pvd_file_name": "wavemaker",
-    "output_directory": "/Users/tomoaki/BEM/Sawai_K0.5_beta0.0_max_dt0.02_Mesh19_stopremesh100.0"
+    "isMovementPredefined": true,
+    "mass": 1e+50,
+    "COM": [
+        0,
+        0,
+        0
+    ],
+    "MOI": [
+        1e+50,
+        1e+50,
+        1e+50
+    ]
 }

@@ -1,0 +1,19 @@
+{
+    "name": "floatingbody",
+    "objfile": "../../obj/FloatingWind1/floatingbody.obj",
+    "type": "RigidBody",
+    "output_vtu_file_name": "floatingbody",
+    "output_pvd_file_name": "floatingbody",
+    "isMovementPredefined": false,
+    "mass": 1e+50,
+    "COM": [
+        0,
+        0,
+        0
+    ],
+    "MOI": [
+        1e+50,
+        1e+50,
+        1e+50
+    ]
+}

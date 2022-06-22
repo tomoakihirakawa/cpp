@@ -40,110 +40,110 @@ namespace BEM
 
   DN_detail*/
 	/*DN_code*/
-	class DN
-	{
-		using Netp = Network *;
-		using V_Netp = std::vector<Netp>;
-		using VV_Netp = std::vector<V_Netp>;
+	// class DN
+	// {
+	// 	using Netp = Network *;
+	// 	using V_Netp = std::vector<Netp>;
+	// 	using VV_Netp = std::vector<V_Netp>;
 
-	public:
-		int Bindex = -2;
-		int Cindex = -1;
-		int Dindex = 0;
-		int Nindex = 1;
+	// public:
+	// 	int Bindex = -2;
+	// 	int Cindex = -1;
+	// 	int Dindex = 0;
+	// 	int Nindex = 1;
 
-		V_Netp B, D, N, C;
+	// 	V_Netp B, D, N, C;
 
-		DN() : B(0), D(0), N(0), C(0){};
-		~DN(){};
+	// 	DN() : B(0), D(0), N(0), C(0){};
+	// 	~DN(){};
 
-		void clear()
-		{
-			this->B.clear();
-			this->D.clear();
-			this->N.clear();
-			this->C.clear();
-		};
+	// 	void clear()
+	// 	{
+	// 		this->B.clear();
+	// 		this->D.clear();
+	// 		this->N.clear();
+	// 		this->C.clear();
+	// 	};
 
-		void set(const int i, const Netp &net)
-		{
-			if (i == Dindex)
-				network::add(this->D, net);
-			else if (i == Nindex)
-				network::add(this->N, net);
-			else if (i == Cindex)
-				network::add(this->C, net);
-			else if (i == Bindex)
-				network::add(this->B, net);
-			else
-				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
-		};
+	// 	void set(const int i, const Netp &net)
+	// 	{
+	// 		if (i == Dindex)
+	// 			network::add(this->D, net);
+	// 		else if (i == Nindex)
+	// 			network::add(this->N, net);
+	// 		else if (i == Cindex)
+	// 			network::add(this->C, net);
+	// 		else if (i == Bindex)
+	// 			network::add(this->B, net);
+	// 		else
+	// 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+	// 	};
 
-		void set(const int i, const V_Netp &nets)
-		{
-			for (const auto &net : nets)
-				this->set(i, net);
-		};
+	// 	void set(const int i, const V_Netp &nets)
+	// 	{
+	// 		for (const auto &net : nets)
+	// 			this->set(i, net);
+	// 	};
 
-		void setB(const V_Netp &nets) { set(Bindex, nets); };
-		void setC(const V_Netp &nets) { set(Cindex, nets); };
-		void setD(const V_Netp &nets) { set(Dindex, nets); };
-		void setN(const V_Netp &nets) { set(Nindex, nets); };
-		void setB(const Netp &nets) { set(Bindex, {nets}); };
-		void setC(const Netp &nets) { set(Cindex, {nets}); };
-		void setD(const Netp &nets) { set(Dindex, {nets}); };
-		void setN(const Netp &nets) { set(Nindex, {nets}); };
+	// 	void setB(const V_Netp &nets) { set(Bindex, nets); };
+	// 	void setC(const V_Netp &nets) { set(Cindex, nets); };
+	// 	void setD(const V_Netp &nets) { set(Dindex, nets); };
+	// 	void setN(const V_Netp &nets) { set(Nindex, nets); };
+	// 	void setB(const Netp &nets) { set(Bindex, {nets}); };
+	// 	void setC(const Netp &nets) { set(Cindex, {nets}); };
+	// 	void setD(const Netp &nets) { set(Dindex, {nets}); };
+	// 	void setN(const Netp &nets) { set(Nindex, {nets}); };
 
-		V_Netp getAll() const
-		{
-			VV_Netp tmp = {this->B, this->C, this->D, this->N};
-			return DeleteDuplicates(Flatten(tmp));
-		}
+	// 	V_Netp getAll() const
+	// 	{
+	// 		VV_Netp tmp = {this->B, this->C, this->D, this->N};
+	// 		return DeleteDuplicates(Flatten(tmp));
+	// 	}
 
-		V_Netp get(int i)
-		{
-			if (i == Dindex)
-				return this->D;
-			else if (i == Nindex)
-				return this->N;
-			else if (i == Cindex)
-				return this->C;
-			else if (i == Bindex)
-				return this->B;
-			else
-				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
-		};
+	// 	V_Netp get(int i)
+	// 	{
+	// 		if (i == Dindex)
+	// 			return this->D;
+	// 		else if (i == Nindex)
+	// 			return this->N;
+	// 		else if (i == Cindex)
+	// 			return this->C;
+	// 		else if (i == Bindex)
+	// 			return this->B;
+	// 		else
+	// 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+	// 	};
 
-		int index(const Netp net) const
-		{
-			if (MemberQ(this->D, net))
-				return this->Dindex;
-			else if (MemberQ(this->N, net))
-				return this->Nindex;
-			else if (MemberQ(this->C, net))
-				return this->Cindex;
-			else if (MemberQ(this->B, net))
-				return this->Bindex;
-			else
-				throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
-		};
+	// 	int index(const Netp net) const
+	// 	{
+	// 		if (MemberQ(this->D, net))
+	// 			return this->Dindex;
+	// 		else if (MemberQ(this->N, net))
+	// 			return this->Nindex;
+	// 		else if (MemberQ(this->C, net))
+	// 			return this->Cindex;
+	// 		else if (MemberQ(this->B, net))
+	// 			return this->Bindex;
+	// 		else
+	// 			throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "index must be -1, 0, or 1"));
+	// 	};
 
-		int index(const netPp &p) const { return this->index(p->getNetwork()); };
-		int isD(const netPp &p) const { return MemberQ(this->D, p->getNetwork()); };
-		int isN(const netPp &p) const { return MemberQ(this->N, p->getNetwork()); };
-		int isC(const netPp &p) const { return MemberQ(this->C, p->getNetwork()); };
-		int isB(const netPp &p) const { return MemberQ(this->B, p->getNetwork()); };
-	};
+	// 	int index(const netPp &p) const { return this->index(p->getNetwork()); };
+	// 	int isD(const netPp &p) const { return MemberQ(this->D, p->getNetwork()); };
+	// 	int isN(const netPp &p) const { return MemberQ(this->N, p->getNetwork()); };
+	// 	int isC(const netPp &p) const { return MemberQ(this->C, p->getNetwork()); };
+	// 	int isB(const netPp &p) const { return MemberQ(this->B, p->getNetwork()); };
+	// };
 	/*DN_code*/
 
-	V_Netp TakeBaseNetwork(V_Netp nets_IN)
-	{
-		V_Netp ret;
-		for (auto &n : nets_IN)
-			if (n->isB())
-				ret.emplace_back(n);
-		return ret;
-	};
+	// V_Netp TakeBaseNetwork(V_Netp nets_IN)
+	// {
+	// 	V_Netp ret;
+	// 	for (auto &n : nets_IN)
+	// 		if (n->isB())
+	// 			ret.emplace_back(n);
+	// 	return ret;
+	// };
 	//////////////////////////////////////
 	using map_P_Vd = std::map<netPp, V_d>;
 	using map_P_d = std::map<netPp, double>;
@@ -685,204 +685,204 @@ namespace BEM
 			GaussianQuadratureWeights(25, 0., 1.),
 			GaussianQuadratureWeights(26, 0., 1.)};
 
-	class checkSurfaceInterp
-	{
-		// たぶん範囲を間違っている
-	public:
-		double area;
-		double solution_intgration_out;
-		double solution_intgration_in;
-		double solution_intgration_surface;
-		double solution_intgration_surface_simplified;
-		double solution_intgration_surface_simplified_small;
-		double solution_intgration_surface_simplified_face;
-		V_d solution_intgration_suface_from_eps_1;
-		double r_1_intgration_surface;
-		double r_1_intgration_surface_face;
-		checkSurfaceInterp(interpolationTriangle *intp,
-						   const netPp origin,
-						   const V_netFp &fs,
-						   int gausspoints,
-						   int Npoints = 12,
-						   bool checkSing = false)
-			: area(0.),
-			  solution_intgration_out(0.),
-			  solution_intgration_in(0.),
-			  solution_intgration_surface(0.),
-			  solution_intgration_surface_simplified(0.),
-			  solution_intgration_surface_simplified_face(0.),
-			  solution_intgration_suface_from_eps_1(100, 0.),
-			  r_1_intgration_surface(0.),
-			  r_1_intgration_surface_face(0.),
-			  solution_intgration_surface_simplified_small(0.)
-		{
-			/* ---------------------- 原点の決定 -------------------------------- */
-			V_netPp ps;
-			V_d in_point = {0., 0., 0.};
-			V_d out_point = {1E+3, 1E+3, 1E+3};
-			/* ------------------------------------------------------ */
-			V_d a(3, 0.);
-			double weight = 0;
-			V_d X(3, 0.);
-			V_d r(3, 0.);
-			V_d grad_phi(3, 0.);
-			double t0, t1, J, w0, w1;
-			double x_sing_t0 = 1 / 2.;
-			auto beta = 4.;
-			/* ------------------------------------------------------ */
-			// VVV_d check;
-			auto originface = origin->getFaces()[0];
-			intp->set(obj3D::extractX((originface)->get12Points(origin)));
-			V_d oFace = (*intp)(0.5, 0.5);
-			auto gwgw = GWGWfrom0to1[gausspoints];
-			auto sing_gwgw = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta), InvSg(1., x_sing_t0, beta));
-			for (const auto &f : fs)
-			{
-				if (Npoints == 12)
-					ps = f->get12Points(origin);
-				else if (Npoints == 6)
-					ps = f->get6Points(origin);
+	// class checkSurfaceInterp
+	// {
+	// 	// たぶん範囲を間違っている
+	// public:
+	// 	double area;
+	// 	double solution_intgration_out;
+	// 	double solution_intgration_in;
+	// 	double solution_intgration_surface;
+	// 	double solution_intgration_surface_simplified;
+	// 	double solution_intgration_surface_simplified_small;
+	// 	double solution_intgration_surface_simplified_face;
+	// 	V_d solution_intgration_suface_from_eps_1;
+	// 	double r_1_intgration_surface;
+	// 	double r_1_intgration_surface_face;
+	// 	checkSurfaceInterp(interpolationTriangle *intp,
+	// 					   const netPp origin,
+	// 					   const V_netFp &fs,
+	// 					   int gausspoints,
+	// 					   int Npoints = 12,
+	// 					   bool checkSing = false)
+	// 		: area(0.),
+	// 		  solution_intgration_out(0.),
+	// 		  solution_intgration_in(0.),
+	// 		  solution_intgration_surface(0.),
+	// 		  solution_intgration_surface_simplified(0.),
+	// 		  solution_intgration_surface_simplified_face(0.),
+	// 		  solution_intgration_suface_from_eps_1(100, 0.),
+	// 		  r_1_intgration_surface(0.),
+	// 		  r_1_intgration_surface_face(0.),
+	// 		  solution_intgration_surface_simplified_small(0.)
+	// 	{
+	// 		/* ---------------------- 原点の決定 -------------------------------- */
+	// 		V_netPp ps;
+	// 		V_d in_point = {0., 0., 0.};
+	// 		V_d out_point = {1E+3, 1E+3, 1E+3};
+	// 		/* ------------------------------------------------------ */
+	// 		V_d a(3, 0.);
+	// 		double weight = 0;
+	// 		V_d X(3, 0.);
+	// 		V_d r(3, 0.);
+	// 		V_d grad_phi(3, 0.);
+	// 		double t0, t1, J, w0, w1;
+	// 		double x_sing_t0 = 1 / 2.;
+	// 		auto beta = 4.;
+	// 		/* ------------------------------------------------------ */
+	// 		// VVV_d check;
+	// 		auto originface = origin->getFaces()[0];
+	// 		intp->set(obj3D::extractX((originface)->get12Points(origin)));
+	// 		V_d oFace = (*intp)(0.5, 0.5);
+	// 		auto gwgw = GWGWfrom0to1[gausspoints];
+	// 		auto sing_gwgw = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta), InvSg(1., x_sing_t0, beta));
+	// 		for (const auto &f : fs)
+	// 		{
+	// 			if (Npoints == 12)
+	// 				ps = f->get12Points(origin);
+	// 			else if (Npoints == 6)
+	// 				ps = f->get6PointsTuple(origin);
 
-				// check.emplace_back(obj3D::extractX(ps));
-				intp->set(obj3D::extractX(ps) /*get12Points()で得られた点*/);
-				// bool isSingular = (checkSing && ps.size() > 6 && ps[4] == origin);
-				bool isSingular = (originface == f);
-				for (const auto &x0w0 : isSingular ? sing_gwgw : gwgw)
-				{
-					t0 = isSingular ? Sg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[0];
-					w0 = isSingular ? x0w0[1] * DSg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[1];
-					for (const auto &x1w1 : isSingular ? sing_gwgw : gwgw)
-					{
-						t1 = isSingular ? Sg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[0];
-						w1 = isSingular ? x1w1[1] * DSg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[1];
-						// t1 = x1w1[0];
-						// w1 = x1w1[1];
-						// t1 = x1w1[0];
-						J = intp->J(t0, t1);
-						X = (*intp)(t0, t1);
-						weight = w0 * w1;
-						/* ------------------------------------------------------ */
-						area += J * weight;
-						/* ------------------------------------------------------ */
-						r = X - in_point;
-						grad_phi = -r / pow(Norm(r), 3);
-						solution_intgration_in += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
-						/* ------------------------------------------------------ */
-						r = X - out_point;
-						grad_phi = -r / pow(Norm(r), 3);
-						solution_intgration_out += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
-						/* ------------------------------------------------------ */
-						// r = X - originX;
-						// grad_phi = -r / pow(Norm(r), 3);
-						// solution_intgration_surface += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
-						/* ------------------------------------------------------ */
-						r = X - origin->getX();
-						solution_intgration_surface_simplified += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
-						/* ------------------------------------------------------ */
-						r = X - oFace;
-						solution_intgration_surface_simplified_face += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
-						/* ------------------------------------------------------ */
-						r = X - origin->getX();
-						r_1_intgration_surface += 1. / Norm(r) * J * weight;
-						/* ------------------------------------------------------ */
-						r = X - oFace;
-						r_1_intgration_surface_face += 1. / Norm(r) * J * weight;
-					}
-				}
-			}
+	// 			// check.emplace_back(obj3D::extractX(ps));
+	// 			intp->set(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+	// 			// bool isSingular = (checkSing && ps.size() > 6 && ps[4] == origin);
+	// 			bool isSingular = (originface == f);
+	// 			for (const auto &x0w0 : isSingular ? sing_gwgw : gwgw)
+	// 			{
+	// 				t0 = isSingular ? Sg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[0];
+	// 				w0 = isSingular ? x0w0[1] * DSg(x0w0[0], x_sing_t0, beta) : /**/ x0w0[1];
+	// 				for (const auto &x1w1 : isSingular ? sing_gwgw : gwgw)
+	// 				{
+	// 					t1 = isSingular ? Sg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[0];
+	// 					w1 = isSingular ? x1w1[1] * DSg(x1w1[0], x_sing_t0, beta) : /**/ x1w1[1];
+	// 					// t1 = x1w1[0];
+	// 					// w1 = x1w1[1];
+	// 					// t1 = x1w1[0];
+	// 					J = intp->J(t0, t1);
+	// 					X = (*intp)(t0, t1);
+	// 					weight = w0 * w1;
+	// 					/* ------------------------------------------------------ */
+	// 					area += J * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - in_point;
+	// 					grad_phi = -r / pow(Norm(r), 3);
+	// 					solution_intgration_in += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - out_point;
+	// 					grad_phi = -r / pow(Norm(r), 3);
+	// 					solution_intgration_out += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					// r = X - originX;
+	// 					// grad_phi = -r / pow(Norm(r), 3);
+	// 					// solution_intgration_surface += Dot(grad_phi, Normalize(intp->cross(t0, t1))) * J * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - origin->getX();
+	// 					solution_intgration_surface_simplified += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - oFace;
+	// 					solution_intgration_surface_simplified_face += Dot(-r, intp->cross(t0, t1)) / pow(Norm(r), 3) * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - origin->getX();
+	// 					r_1_intgration_surface += 1. / Norm(r) * J * weight;
+	// 					/* ------------------------------------------------------ */
+	// 					r = X - oFace;
+	// 					r_1_intgration_surface_face += 1. / Norm(r) * J * weight;
+	// 				}
+	// 			}
+	// 		}
 
-			// std::cout << check << std::endl;
-			// std::cin.ignore();
-			/* ------------------------------------------------------ */
-			std::cout << "origin->getLines().size() = " << origin->getLines().size() << std::endl;
-			std::cout << "gausspoints =" << gausspoints << ", checkSing =" << checkSing << ", beta =" << beta << std::endl;
-			int k = gausspoints;
-			std::cout << "面積 " << k << " = " << area
-					  << ", 誤差=" << area / (4. * M_PI * 0.1 * 0.1) - 1 << std::endl;
-			//
-			auto tmp = solution_intgration_in;
-			std::cout << "ガウス in " << k << " = " << tmp
-					  << ", 誤差=" << tmp / (-4. * M_PI) - 1 << std::endl;
-			//
-			tmp = solution_intgration_out;
-			std::cout << "ガウス out " << k << " = " << tmp << std::endl;
-			//
-			// tmp = solution_intgration_surface;
-			// std::cout << Red << "ガウス surface " << k << " = " << tmp
-			// 		  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
-			//
-			tmp = solution_intgration_surface_simplified;
-			std::cout << Magenta << "ガウス surface ある節点を原点とした場合" << k << " = " << tmp
-					  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+	// 		// std::cout << check << std::endl;
+	// 		// std::cin.ignore();
+	// 		/* ------------------------------------------------------ */
+	// 		std::cout << "origin->getLines().size() = " << origin->getLines().size() << std::endl;
+	// 		std::cout << "gausspoints =" << gausspoints << ", checkSing =" << checkSing << ", beta =" << beta << std::endl;
+	// 		int k = gausspoints;
+	// 		std::cout << "面積 " << k << " = " << area
+	// 				  << ", 誤差=" << area / (4. * M_PI * 0.1 * 0.1) - 1 << std::endl;
+	// 		//
+	// 		auto tmp = solution_intgration_in;
+	// 		std::cout << "ガウス in " << k << " = " << tmp
+	// 				  << ", 誤差=" << tmp / (-4. * M_PI) - 1 << std::endl;
+	// 		//
+	// 		tmp = solution_intgration_out;
+	// 		std::cout << "ガウス out " << k << " = " << tmp << std::endl;
+	// 		//
+	// 		// tmp = solution_intgration_surface;
+	// 		// std::cout << Red << "ガウス surface " << k << " = " << tmp
+	// 		// 		  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+	// 		//
+	// 		tmp = solution_intgration_surface_simplified;
+	// 		std::cout << Magenta << "ガウス surface ある節点を原点とした場合" << k << " = " << tmp
+	// 				  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
 
-			tmp = solution_intgration_surface_simplified_face;
-			std::cout << Magenta << "ガウス surface ある面上の点を原点とした場合" << k << " = " << tmp
-					  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
+	// 		tmp = solution_intgration_surface_simplified_face;
+	// 		std::cout << Magenta << "ガウス surface ある面上の点を原点とした場合" << k << " = " << tmp
+	// 				  << ", 誤差=" << tmp / (-2. * M_PI) - 1. << reset << std::endl;
 
-			// std::cout << Green << "solution_intgration_surface_simplified_small = " << solution_intgration_surface_simplified_small << reset << std::endl;
+	// 		// std::cout << Green << "solution_intgration_surface_simplified_small = " << solution_intgration_surface_simplified_small << reset << std::endl;
 
-			// auto Vtmp = solution_intgration_suface_from_eps_1;
-			// std::cout << Green << "ガウス surface" << k << " = " << Vtmp
-			//           << ", 誤差=" << Vtmp / (-2. * M_PI) - 1. << reset << std::endl;
+	// 		// auto Vtmp = solution_intgration_suface_from_eps_1;
+	// 		// std::cout << Green << "ガウス surface" << k << " = " << Vtmp
+	// 		//           << ", 誤差=" << Vtmp / (-2. * M_PI) - 1. << reset << std::endl;
 
-			// Vtmp = minimazing_value;
-			// std::cout << green << "minimazing_value" << k << " = " << minimazing_value << std::endl;
-			//
-			tmp = r_1_intgration_surface;
-			std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
-			tmp = r_1_intgration_surface_face;
-			std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
-		}
-	};
+	// 		// Vtmp = minimazing_value;
+	// 		// std::cout << green << "minimazing_value" << k << " = " << minimazing_value << std::endl;
+	// 		//
+	// 		tmp = r_1_intgration_surface;
+	// 		std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
+	// 		tmp = r_1_intgration_surface_face;
+	// 		std::cout << "ガウス 1/r　" << k << " = " << tmp << ",  / M_PI=" << tmp / M_PI << std::endl;
+	// 	}
+	// };
 
-	double checkSurfaceAreaQuadIDW(const V_netFp &fs, int gausspoints, bool checkSing = false)
-	{
-		//    \ \            ^
-		//     7  0  6       |<-(t0=1.5)
-		//   8  3   5  11    |<-(t0=1)
-		//     1  4  2       |<-(t0=0)
-		//      9  10  \     |
-		//           \  \
-	//         (t1=1)(t1=0)
-		double ret = 0.;
-		V_netPp ps;
-		for (const auto &f : fs)
-		{
-			auto origin = f->getPoints()[0];
-			//!この積分範囲はしゅうせする必要がない
-			interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(f->get12Points(origin)) /*get12Points()で得られた点*/);
-			// interpolationTriangleQuadByFixedRangeCenter intp(obj3D::extractX(f->get6Points(origin)) /*get12Points()で得られた点*/);
-			// interpolationLagLinear intp(obj3D::extractX(f->getPoints(origin)) /*get12Points()で得られた点*/);
-			if (checkSing)
-			{
-				//! IG
-				double x0, x1, w0, w1;
-				double x_sing_t0 = 0.;
-				auto beta_t0 = 2.;
-				auto gwgw_t0 = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta_t0), InvSg(1., x_sing_t0, beta_t0));
-				for (const auto &x0w0 : gwgw_t0)
-				{
-					x0 = Sg(x0w0[0], x_sing_t0, beta_t0);
-					w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_t0);
-					for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
-					{
-						ret += intp.J(x0, x1w1[0]) * w0 * x1w1[1];
-					}
-				}
-			}
-			else
-			{
-				for (const auto &x0w0 : GWGWfrom0to1[gausspoints])
-				{
-					for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
-					{
-						ret += intp.J(x0w0[0], x1w1[0]) * x0w0[1] * x1w1[1];
-					}
-				}
-			}
-		}
-		return ret;
-	};
+	// double checkSurfaceAreaQuadIDW(const V_netFp &fs, int gausspoints, bool checkSing = false)
+	// {
+	// 	//    \ \            ^
+	// 	//     7  0  6       |<-(t0=1.5)
+	// 	//   8  3   5  11    |<-(t0=1)
+	// 	//     1  4  2       |<-(t0=0)
+	// 	//      9  10  \     |
+	// 	//           \  \
+	// //         (t1=1)(t1=0)
+	// 	double ret = 0.;
+	// 	V_netPp ps;
+	// 	for (const auto &f : fs)
+	// 	{
+	// 		auto origin = f->getPoints()[0];
+	// 		//!この積分範囲はしゅうせする必要がない
+	// 		interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(f->get12Points(origin)) /*get12Points()で得られた点*/);
+	// 		// interpolationTriangleQuadByFixedRangeCenter intp(obj3D::extractX(f->get6PointsTuple(origin)) /*get12Points()で得られた点*/);
+	// 		// interpolationLagLinear intp(obj3D::extractX(f->getPoints(origin)) /*get12Points()で得られた点*/);
+	// 		if (checkSing)
+	// 		{
+	// 			//! IG
+	// 			double x0, x1, w0, w1;
+	// 			double x_sing_t0 = 0.;
+	// 			auto beta_t0 = 2.;
+	// 			auto gwgw_t0 = GaussianQuadratureWeights(gausspoints, InvSg(0., x_sing_t0, beta_t0), InvSg(1., x_sing_t0, beta_t0));
+	// 			for (const auto &x0w0 : gwgw_t0)
+	// 			{
+	// 				x0 = Sg(x0w0[0], x_sing_t0, beta_t0);
+	// 				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_t0);
+	// 				for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
+	// 				{
+	// 					ret += intp.J(x0, x1w1[0]) * w0 * x1w1[1];
+	// 				}
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			for (const auto &x0w0 : GWGWfrom0to1[gausspoints])
+	// 			{
+	// 				for (const auto &x1w1 : GWGWfrom0to1[gausspoints])
+	// 				{
+	// 					ret += intp.J(x0w0[0], x1w1[0]) * x0w0[1] * x1w1[1];
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	return ret;
+	// };
 
 // #define use_old_p_igign_Quad_IDW
 #ifdef use_old_p_igign_Quad_IDW
@@ -951,69 +951,69 @@ namespace BEM
 		}
 	};
 #else
-	void p_igign_Quad_IDW(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
-	{
-		//    \ \            ^
-		//     7  0  6       |<-(t0=1.5)
-		//   8  3   5  11    |<-(t0=1)
-		//     1  4  2       |<-(t0=0)
-		//      9  10  \     |
-		//           \  \
-		//         (t1=1)(t1=0)
-		for (auto &[p, igign] : new_igign_OUT)
-		{
-			igign[0] = 0.;
-			igign[1] = 0.;
-		}
-		interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(ps) /*get12Points()で得られた点*/);
-		V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
-		double common, nr, weight;
-		V_d cross;
-		if (ps[4] == origin)
-		{
-			auto beta_IG = 2.;
-			double x_sing_t0 = 0.;
-			auto gwgw_IG = GaussianQuadratureWeights(i, InvSg(0., x_sing_t0, beta_IG), InvSg(1., x_sing_t0, beta_IG));
-			double x0, x1, w0, w1;
-			for (const auto &x0w0 : gwgw_IG)
-			{
-				x0 = Sg(x0w0[0], x_sing_t0, beta_IG);
-				w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_IG);
-				for (const auto &x1w1 : GWGWfrom0to1[i])
-				{
-					x1 = x1w1[0];
-					w1 = x1w1[1];
-					{
-						cross = intp.cross(x0, x1);
-						r = intp(x0, x1) - A;
-						nr = Norm(r);
-						IGIGn[0] = 1 / nr * Norm(cross) * w0 * w1;
-						IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * w0 * w1;
-						N = intp.N(x0, x1);
-						for (auto k = 0; k < ps.size(); k++)
-							new_igign_OUT[ps[k]] += IGIGn * N[k];
-					}
-				}
-			}
-		}
-		else
-		{
-			for (const auto &x0w0 : GWGWfrom0to1[i])
-			{
-				for (const auto &x1w1 : GWGWfrom0to1[i])
-				{
-					cross = intp.cross(x0w0[0], x1w1[0]);
-					r = intp(x0w0[0], x1w1[0]) - A;
-					nr = Norm(r);
-					IGIGn[0] = Norm(cross) / nr * x0w0[1] * x1w1[1];
-					IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * x0w0[1] * x1w1[1];
-					N = intp.N(x0w0[0], x1w1[0]);
-					for (auto k = 0; k < ps.size(); k++)
-						new_igign_OUT[ps[k]] += IGIGn * N[k];
-				}
-			}
-		}
-	};
+	// void p_igign_Quad_IDW(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
+	// {
+	// 	//    \ \            ^
+	// 	//     7  0  6       |<-(t0=1.5)
+	// 	//   8  3   5  11    |<-(t0=1)
+	// 	//     1  4  2       |<-(t0=0)
+	// 	//      9  10  \     |
+	// 	//           \  \
+	// 	//         (t1=1)(t1=0)
+	// 	for (auto &[p, igign] : new_igign_OUT)
+	// 	{
+	// 		igign[0] = 0.;
+	// 		igign[1] = 0.;
+	// 	}
+	// 	interpolationCenterTriangleQuadIDW12 intp(obj3D::extractX(ps) /*get12Points()で得られた点*/);
+	// 	V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
+	// 	double common, nr, weight;
+	// 	V_d cross;
+	// 	if (ps[4] == origin)
+	// 	{
+	// 		auto beta_IG = 2.;
+	// 		double x_sing_t0 = 0.;
+	// 		auto gwgw_IG = GaussianQuadratureWeights(i, InvSg(0., x_sing_t0, beta_IG), InvSg(1., x_sing_t0, beta_IG));
+	// 		double x0, x1, w0, w1;
+	// 		for (const auto &x0w0 : gwgw_IG)
+	// 		{
+	// 			x0 = Sg(x0w0[0], x_sing_t0, beta_IG);
+	// 			w0 = x0w0[1] * DSg(x0w0[0], x_sing_t0, beta_IG);
+	// 			for (const auto &x1w1 : GWGWfrom0to1[i])
+	// 			{
+	// 				x1 = x1w1[0];
+	// 				w1 = x1w1[1];
+	// 				{
+	// 					cross = intp.cross(x0, x1);
+	// 					r = intp(x0, x1) - A;
+	// 					nr = Norm(r);
+	// 					IGIGn[0] = 1 / nr * Norm(cross) * w0 * w1;
+	// 					IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * w0 * w1;
+	// 					N = intp.N(x0, x1);
+	// 					for (auto k = 0; k < ps.size(); k++)
+	// 						new_igign_OUT[ps[k]] += IGIGn * N[k];
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		for (const auto &x0w0 : GWGWfrom0to1[i])
+	// 		{
+	// 			for (const auto &x1w1 : GWGWfrom0to1[i])
+	// 			{
+	// 				cross = intp.cross(x0w0[0], x1w1[0]);
+	// 				r = intp(x0w0[0], x1w1[0]) - A;
+	// 				nr = Norm(r);
+	// 				IGIGn[0] = Norm(cross) / nr * x0w0[1] * x1w1[1];
+	// 				IGIGn[1] = -Dot(r / pow(nr, 3.), cross) * x0w0[1] * x1w1[1];
+	// 				N = intp.N(x0w0[0], x1w1[0]);
+	// 				for (auto k = 0; k < ps.size(); k++)
+	// 					new_igign_OUT[ps[k]] += IGIGn * N[k];
+	// 			}
+	// 		}
+	// 	}
+	// };
 
 	/* -------------------------- 面 ------------------------- */
 
@@ -1440,30 +1440,30 @@ namespace BEM
 	//* ------------------------------------------------------ */
 	//#                 RBF 各点んで方程式を作る場合              */
 	//* ------------------------------------------------------ */
-	std::map<netP *, V_d> calc_P_IGIGn_RBF(const netFp &f, const netPp origin)
-	{
-		/*
-		 * 点を原点とした場合の境界積分方程式の一部：IGIGnを計算する
-		 */
-		V_netPp ps = f->get12Points(origin); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
-		V_i nGWGW = {6 + 1, 8 + 1, 10 + 1, 12 + 1};
-		double conv = 1E-2;
-		V_d zeros(2, 0.);
-		std::map<netPp, V_d> pre_igign;
-		for (const auto &p : ps)
-			pre_igign[p] = zeros;
-		std::map<netPp, V_d> new_igign = pre_igign;
-		p_igign_Quad_IDW_RBF(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
-		for (auto i = 1; i < nGWGW.size(); i++)
-		{
-			p_igign_Quad_IDW_RBF(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
-			if (isConverged(new_igign, pre_igign, ps, conv))
-				return new_igign;
-			else
-				pre_igign = new_igign; // replace and try again
-		}
-		return new_igign;
-	};
+	// std::map<netP *, V_d> calc_P_IGIGn_RBF(const netFp &f, const netPp origin)
+	// {
+	// 	/*
+	// 	 * 点を原点とした場合の境界積分方程式の一部：IGIGnを計算する
+	// 	 */
+	// 	V_netPp ps = f->get12Points(origin); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
+	// 	V_i nGWGW = {6 + 1, 8 + 1, 10 + 1, 12 + 1};
+	// 	double conv = 1E-2;
+	// 	V_d zeros(2, 0.);
+	// 	std::map<netPp, V_d> pre_igign;
+	// 	for (const auto &p : ps)
+	// 		pre_igign[p] = zeros;
+	// 	std::map<netPp, V_d> new_igign = pre_igign;
+	// 	p_igign_Quad_IDW_RBF(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
+	// 	for (auto i = 1; i < nGWGW.size(); i++)
+	// 	{
+	// 		p_igign_Quad_IDW_RBF(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
+	// 		if (isConverged(new_igign, pre_igign, ps, conv))
+	// 			return new_igign;
+	// 		else
+	// 			pre_igign = new_igign; // replace and try again
+	// 	}
+	// 	return new_igign;
+	// };
 
 	//* ------------------------------------------------------ */
 	//%               面における方程式を点上で作成                  */
@@ -1477,7 +1477,7 @@ namespace BEM
 		/* --------------------- 線形か2次かを決める --------------------- */
 		/* ---------------- 引数に与えられた面を，点を使って表現し直す --------------- */
 		V_netPp ps = f->getPoints(origin);
-		// V_netPp ps = f->get6Points(origin);
+		// V_netPp ps = f->get6PointsTuple(origin);
 		// V_netPp ps = f->get12Points(origin); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
 		/* ------------------------ 順番を調整 ----------------------- */
 		// if (ps.size() == 3) {
@@ -1531,19 +1531,6 @@ namespace BEM
 					pre_igign = new_igign; // replace and try again
 			}
 		}
-		else if (ps.size() == 12)
-		{
-			p_igign_Quad_IDW(ps, origin, nGWGW[0], /*出力結果*/ pre_igign); //!まず計算
-			new_igign = pre_igign;
-			for (auto i = 1; i < nGWGW.size(); i++)
-			{
-				p_igign_Quad_IDW(ps, origin, nGWGW[i], /*出力結果*/ new_igign); //!次に計算
-				if (isConverged(new_igign, pre_igign, ps, conv))
-					return new_igign;
-				else
-					pre_igign = new_igign; // replace and try again
-			}
-		}
 		else
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 		return new_igign;
@@ -1561,139 +1548,980 @@ namespace BEM
 	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkPoint *const origin)
 	{
 		//おそらくIgIgnの計算精度に大きく関わるため，
+		const auto [p0, p1, p2] = f->getPointsTuple(origin);
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		Tdd IGIGn, p0igign = {0., 0.}, p1igign = {0., 0.}, p2igign = {0., 0.};
+		Tddd r, N, A = origin->getXtuple(), cross;
+		double nr;
+		// for (const auto &[x0, x1, w0w1] : (p0 == origin ? __GWGW_beta2_8__ : __GWGW8__Tuple))
+		// {
+		// 	std::get<0>(IGIGn) = (Norm(cross = intp.cross(x0, x1)) * w0w1) / (nr = Norm(r = intp(x0, x1) - A));
+		// 	std::get<1>(IGIGn) = -Dot(r / (nr * nr * nr), cross) * w0w1;
+		// 	p0igign += IGIGn * std::get<0>(N = intp.N(x0, x1));
+		// 	p1igign += IGIGn * std::get<1>(N);
+		// 	p2igign += IGIGn * std::get<2>(N);
+		// }
+		for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+		{
+			std::get<0>(IGIGn) = (Norm(cross = intp.cross(x0, x1)) * w0w1) / (nr = Norm(r = intp(x0, x1) - A));
+			std::get<1>(IGIGn) = -Dot(r / (nr * nr * nr), cross) * w0w1;
+			p0igign += IGIGn * std::get<0>(N = intp.N(x0, x1));
+			p1igign += IGIGn * std::get<1>(N);
+			p2igign += IGIGn * std::get<2>(N);
+		}
+		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+	};
+	//
+	std::tuple<std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>>
+	calc_P_IGIGnLinear3Tuples(const networkFace *const f, const networkPoint *const origin)
+	{
+		//おそらくIgIgnの計算精度に大きく関わるため，
+		const auto [p0, p1, p2] = f->getPointsTuple(origin);
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		Tdd IGIGn, p0igign = {0., 0.}, p1igign = {0., 0.}, p2igign = {0., 0.};
+		Tddd r, N, A = origin->getXtuple(), cross;
+		double nr;
+		// for (const auto &[x0, x1, w0w1] : (p0 == origin ? __GWGW_beta2_10__ : __GWGW10__Tuple))
+		// {
+		// 	std::get<0>(IGIGn) = (Norm(cross = intp.cross(x0, x1)) * w0w1) / (nr = Norm(r = (intp(x0, x1) - A)));
+		// 	std::get<1>(IGIGn) = -Dot(r, cross) * w0w1 / (nr * nr * nr);
+		// 	p0igign += IGIGn * std::get<0>(N = intp.N(x0, x1));
+		// 	p1igign += IGIGn * std::get<1>(N);
+		// 	p2igign += IGIGn * std::get<2>(N);
+		// }
+		for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+		{
+			std::get<0>(IGIGn) = (Norm(cross = intp.cross(x0, x1)) * w0w1) / (nr = Norm(r = (intp(x0, x1) - A)));
+			std::get<1>(IGIGn) = -Dot(r, cross) * w0w1 / (nr * nr * nr);
+			p0igign += IGIGn * std::get<0>(N = intp.N(x0, x1));
+			p1igign += IGIGn * std::get<1>(N);
+			p2igign += IGIGn * std::get<2>(N);
+		}
+		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+	};
+	//
+	std::tuple<std::tuple<netP *, Tdd>,
+			   std::tuple<netP *, Tdd>,
+			   std::tuple<netP *, Tdd>>
+	calc_P_IGIGnLinearTupleTuple(const networkFace *const f, const networkPoint *const origin)
+	{
+		//おそらくIgIgnの計算精度に大きく関わるため，
+		auto [p0, p1, p2] = f->getPointsTuple(origin);
+		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+		Tdd IGIGn;
+		std::tuple<std::tuple<netP *, Tdd>,
+				   std::tuple<netP *, Tdd>,
+				   std::tuple<netP *, Tdd>>
+			ret = {{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}};
+		Tddd r, N, A = origin->getXtuple();
+		double nr;
+		bool isSingular = (p0 == origin);
+		for (const auto &[x0, x1, w0w1] : isSingular ? __GWGW_beta2_10__ : __GWGW8__Tuple)
+		{
+			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / (nr = Norm(r = intp(x0, x1) - A));
+			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+			std::get<1>(std::get<0>(ret)) += IGIGn * std::get<0>(N = intp.N(x0, x1));
+			std::get<1>(std::get<1>(ret)) += IGIGn * std::get<1>(N);
+			std::get<1>(std::get<2>(ret)) += IGIGn * std::get<2>(N);
+		}
+		return ret;
+	};
+
+	// std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkFace *const origin_f)
+	// {
+	// 	// auto [P0, P1, P2] = f->getPointsTuple();
+	// 	// auto [p0, p1, p2] = (P0->CORNER) ? f->getPointsTuple(P0) : ((P1->CORNER) ? f->getPointsTuple(P1) : f->getPointsTuple(P2));
+	// 	auto [p0, p1, p2] = f->getPointsTuple();
+	// 	Tdd p0igign = {0, 0};
+	// 	Tdd p1igign = {0, 0};
+	// 	Tdd p2igign = {0, 0};
+	// 	int i = 5;
+
+	// 	double mean_len = 5. * Max(extLength(origin_f->getLines()));
+	// 	if (Norm(p0->getXtuple() - origin_f->getXtuple()) < mean_len ||
+	// 		Norm(p1->getXtuple() - origin_f->getXtuple()) < mean_len ||
+	// 		Norm(p2->getXtuple() - origin_f->getXtuple()) < mean_len)
+	// 		i = 14;
+	// 	// タプルに対応させる．
+	// 	interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
+	// 	// Tddd A = intp(0.25, 0.25);
+	// 	Tddd A = origin_f->getXtuple(); // p0->getXtuple() + p1->getXtuple() + p2->getXtuple();
+	// 	// std::cout << "A_ = " << A_ << ", A = " << A << ", intp.N(x0, x1)" << intp.N(0.5, 0.5) << std::endl;
+	// 	// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
+	// 	// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalTuple(), p1->getNormalTuple(), p2->getNormalTuple()});
+	// 	Tdd IGIGn;
+	// 	Tddd r, N; // origin_f->getXtuple();
+	// 	// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+	// 	// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+	// 	double common, nr;
+	// 	double x0, x1, w0, w1;
+	// 	// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
+	// 	bool isSingular = false; //(f == origin_f); //! linearの場合は0
+	// 	double beta = 2.;
+	// 	double x_sing = 0.5; //! linearの場合はx_sing = 1.
+	// 	for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(i, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW__Tuple[i])
+	// 	{
+	// 		if (isSingular)
+	// 		{
+	// 			x0 = Sg(std::get<0>(x0w0), x_sing, beta);
+	// 			w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+	// 		}
+	// 		else
+	// 		{
+	// 			x0 = std::get<0>(x0w0);
+	// 			w0 = std::get<1>(x0w0);
+	// 		}
+	// 		for (const auto &x1w1 : __GW__Tuple[i])
+	// 		{
+	// 			x1 = std::get<0>(x1w1);
+	// 			w1 = std::get<1>(x1w1);
+	// 			/* ------------------------------ */
+	// 			common = intp.J(x0, x1) * w0 * w1;
+	// 			r = intp(x0, x1) - A;
+	// 			nr = Norm(r);
+	// 			std::get<0>(IGIGn) = common / nr;
+	// 			//! Dombre2019ならこっち
+	// 			// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
+	// 			// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 		}
+	// 	}
+	// 	// if (!isFinite(p0igign) || !isFinite(p1igign) || !isFinite(p2igign))
+	// 	// {
+	// 	// 	std::cout << "origin = " << origin << std::endl;
+	// 	// 	std::cout << "f = " << f << ", f->getPoints() = " << f->getPoints() << std::endl;
+	// 	// 	std::cout << "origin_f = " << origin_f << "origin_f->getPoints() = " << origin_f->getPoints() << std::endl;
+	// 	// 	std::cout << "[p0, p1, p2] = " << p0 << ", " << p1 << ", " << p2 << std::endl;
+	// 	// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+	// 	// }
+	// 	return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+	// };
+
+	/* ------------------------------------------------------ */
+	std::vector<std::tuple<networkPoint *, std::unordered_map<Tii /*k,m*/, Tdd /*YYn*/>>> calc_P_MomentQuadTuple(const networkFace *const f, const Tddd &A)
+	{
+		/*
+		*---*---*
+		 \ / \ /
+		  *-l-*
+		 / \ / \
+		*---*---*
+		*/
+		auto [p0, p1, p2] = f->getPointsTuple();
+		std::unordered_map<Tii, Tdd> p0igign;
+		std::unordered_map<Tii, Tdd> p1igign;
+		std::unordered_map<Tii, Tdd> p2igign;
+		std::unordered_map<Tii, Tdd> p01igign;
+		std::unordered_map<Tii, Tdd> p12igign;
+		std::unordered_map<Tii, Tdd> p20igign;
+		int i = 10;
+		/*
+			0*
+		f0  / \  f2
+		   /   \
+		 1*-----*2
+			 f1
+		*/
+		auto l0 = p0->getLineBetween(p1);
+		auto l1 = p1->getLineBetween(p2);
+		auto l2 = p2->getLineBetween(p0);
+		//
+		auto fs0 = l0->getFaces();
+		auto ps6_l0_f00 = fs0[0]->get6PointsTuple(l0);
+		auto ps6_l0_f01 = fs0[1]->get6PointsTuple(l0);
+		interpolationTriangleQuadByFixedRange3D intp_l0_0(ToX(ps6_l0_f00));
+		interpolationTriangleQuadByFixedRange3D intp_l0_1(ToX(ps6_l0_f01));
+		//
+		auto fs1 = l1->getFaces();
+		auto ps6_l1_f10 = fs1[0]->get6PointsTuple(l1);
+		auto ps6_l1_f11 = fs1[1]->get6PointsTuple(l1);
+		interpolationTriangleQuadByFixedRange3D intp_l1_0(ToX(ps6_l1_f10));
+		interpolationTriangleQuadByFixedRange3D intp_l1_1(ToX(ps6_l1_f11));
+		//
+		auto fs2 = l2->getFaces();
+		auto ps6_l2_f20 = fs2[0]->get6PointsTuple(l2);
+		auto ps6_l2_f21 = fs2[1]->get6PointsTuple(l2);
+		interpolationTriangleQuadByFixedRange3D intp_l2_0(ToX(ps6_l2_f20));
+		interpolationTriangleQuadByFixedRange3D intp_l2_1(ToX(ps6_l2_f21));
+		//
+		auto [f0p0, f0p1, f0p2] = (*l0)(f)->getPointsTuple();
+		auto [f1p0, f1p1, f1p2] = (*l1)(f)->getPointsTuple();
+		auto [f2p0, f2p1, f2p2] = (*l2)(f)->getPointsTuple();
+		interpolationTriangleQuadByFixedRange3D intp(
+			T6Tddd{p0->getXtuple(),
+				   p1->getXtuple(),
+				   p2->getXtuple(),
+				   (intp_l0_0(.5, .5) + intp_l0_1(.5, .5)) / 2.,
+				   (intp_l1_0(.5, .5) + intp_l1_1(.5, .5)) / 2.,
+				   (intp_l2_0(.5, .5) + intp_l2_1(.5, .5)) / 2.});
+		Tdd IGIGn;
+		Tddd r;
+		T6d N;
+		double common, nr, x0, x1, w0, w1, tmp;
+		int max_k = 2;
+		//初期化
+		for (auto k = 0; k <= max_k; ++k)
+			for (auto m = -k; m <= k; ++m)
+			{
+				p0igign[{k, m}] = {0., 0.};
+				p1igign[{k, m}] = {0., 0.};
+				p2igign[{k, m}] = {0., 0.};
+				p01igign[{k, m}] = {0., 0.};
+				p12igign[{k, m}] = {0., 0.};
+				p20igign[{k, m}] = {0., 0.};
+			}
+		//
+		for (auto k = 0; k <= max_k; ++k)
+			for (auto m = -k; m <= k; ++m)
+				for (const auto &[x0, x1, w0w1] : __GWGW5__Tuple)
+				{
+					// nr = Norm(r = intp(x0, x1) - A);
+					// std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+					// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+
+					r = intp(x0, x1) - A;
+					auto [nr, theta, psi] = ToSphericalCoodrinates(r);
+
+					std::get<0>(IGIGn) = std::pow(nr, k) * real_sph_scale_ommited(k, -m, theta, psi) * (intp.J(x0, x1) * w0w1);
+					tmp = k * std::pow(nr, k - 1) * real_sph_scale_ommited(k, -m, theta, psi);
+					// std::get<1>(IGIGn) = 1./nr*Dot(Ox,n)*(intp.J(x0, x1) * w0w1);
+					std::get<1>(IGIGn) = Dot(tmp * r / nr, intp.cross(x0, x1)) * w0w1;
+
+					N = intp.N(x0, x1);
+					p0igign[{k, m}] += IGIGn * std::get<0>(N);
+					p1igign[{k, m}] += IGIGn * std::get<1>(N);
+					p2igign[{k, m}] += IGIGn * std::get<2>(N);
+					p01igign[{k, m}] += IGIGn * std::get<3>(N);
+					p12igign[{k, m}] += IGIGn * std::get<4>(N);
+					p20igign[{k, m}] += IGIGn * std::get<5>(N);
+				}
+
+		auto N6_l0_0 = intp_l0_0.N(.5, .5) / 2.;
+		auto N6_l0_1 = intp_l0_1.N(.5, .5) / 2.;
+		auto N6_l1_0 = intp_l1_0.N(.5, .5) / 2.;
+		auto N6_l1_1 = intp_l1_1.N(.5, .5) / 2.;
+		auto N6_l2_0 = intp_l2_0.N(.5, .5) / 2.;
+		auto N6_l2_1 = intp_l2_1.N(.5, .5) / 2.;
+
+		return {
+			{p0, p0igign},
+			{p1, p1igign},
+			{p2, p2igign},
+			//
+			{std::get<0>(ps6_l0_f00), p01igign * std::get<0>(N6_l0_0) / 2.},
+			{std::get<1>(ps6_l0_f00), p01igign * std::get<1>(N6_l0_0) / 2.},
+			{std::get<2>(ps6_l0_f00), p01igign * std::get<2>(N6_l0_0) / 2.},
+			{std::get<3>(ps6_l0_f00), p01igign * std::get<3>(N6_l0_0) / 2.},
+			{std::get<4>(ps6_l0_f00), p01igign * std::get<4>(N6_l0_0) / 2.},
+			{std::get<5>(ps6_l0_f00), p01igign * std::get<5>(N6_l0_0) / 2.},
+			//
+			{std::get<0>(ps6_l0_f01), p01igign * std::get<0>(N6_l0_1) / 2.},
+			{std::get<1>(ps6_l0_f01), p01igign * std::get<1>(N6_l0_1) / 2.},
+			{std::get<2>(ps6_l0_f01), p01igign * std::get<2>(N6_l0_1) / 2.},
+			{std::get<3>(ps6_l0_f01), p01igign * std::get<3>(N6_l0_1) / 2.},
+			{std::get<4>(ps6_l0_f01), p01igign * std::get<4>(N6_l0_1) / 2.},
+			{std::get<5>(ps6_l0_f01), p01igign * std::get<5>(N6_l0_1) / 2.},
+			//
+			{std::get<0>(ps6_l1_f10), p12igign * std::get<0>(N6_l1_0) / 2.},
+			{std::get<1>(ps6_l1_f10), p12igign * std::get<1>(N6_l1_0) / 2.},
+			{std::get<2>(ps6_l1_f10), p12igign * std::get<2>(N6_l1_0) / 2.},
+			{std::get<3>(ps6_l1_f10), p12igign * std::get<3>(N6_l1_0) / 2.},
+			{std::get<4>(ps6_l1_f10), p12igign * std::get<4>(N6_l1_0) / 2.},
+			{std::get<5>(ps6_l1_f10), p12igign * std::get<5>(N6_l1_0) / 2.},
+			//
+			{std::get<0>(ps6_l1_f11), p12igign * std::get<0>(N6_l1_1) / 2.},
+			{std::get<1>(ps6_l1_f11), p12igign * std::get<1>(N6_l1_1) / 2.},
+			{std::get<2>(ps6_l1_f11), p12igign * std::get<2>(N6_l1_1) / 2.},
+			{std::get<3>(ps6_l1_f11), p12igign * std::get<3>(N6_l1_1) / 2.},
+			{std::get<4>(ps6_l1_f11), p12igign * std::get<4>(N6_l1_1) / 2.},
+			{std::get<5>(ps6_l1_f11), p12igign * std::get<5>(N6_l1_1) / 2.},
+			//
+			{std::get<0>(ps6_l2_f20), p20igign * std::get<0>(N6_l2_0) / 2.},
+			{std::get<1>(ps6_l2_f20), p20igign * std::get<1>(N6_l2_0) / 2.},
+			{std::get<2>(ps6_l2_f20), p20igign * std::get<2>(N6_l2_0) / 2.},
+			{std::get<3>(ps6_l2_f20), p20igign * std::get<3>(N6_l2_0) / 2.},
+			{std::get<4>(ps6_l2_f20), p20igign * std::get<4>(N6_l2_0) / 2.},
+			{std::get<5>(ps6_l2_f20), p20igign * std::get<5>(N6_l2_0) / 2.},
+			//
+			{std::get<0>(ps6_l2_f21), p20igign * std::get<0>(N6_l2_1) / 2.},
+			{std::get<1>(ps6_l2_f21), p20igign * std::get<1>(N6_l2_1) / 2.},
+			{std::get<2>(ps6_l2_f21), p20igign * std::get<2>(N6_l2_1) / 2.},
+			{std::get<3>(ps6_l2_f21), p20igign * std::get<3>(N6_l2_1) / 2.},
+			{std::get<4>(ps6_l2_f21), p20igign * std::get<4>(N6_l2_1) / 2.},
+			{std::get<5>(ps6_l2_f21), p20igign * std::get<5>(N6_l2_1) / 2.}};
+	};
+	/* ------------------------------------------------------ */
+	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace *const f, const networkPoint *const origin)
+	{
+		/*
+		*---*---*
+		 \ / \ /
+		  *-l-*
+		 / \ / \
+		*---*---*
+		*/
+
 		auto [p0, p1, p2] = f->getPointsTuple(origin);
 		Tdd p0igign = {0, 0};
 		Tdd p1igign = {0, 0};
 		Tdd p2igign = {0, 0};
-		int i = 6;
 
-		double mean_len = 10. * Max(extLength(origin->getLines()));
-		if (Norm(p0->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p1->getXtuple() - origin->getXtuple()) < mean_len ||
-			Norm(p2->getXtuple() - origin->getXtuple()) < mean_len)
-			i = 13;
-		// タプルに対応させる．
-		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
-		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
-		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalTuple(), p1->getNormalTuple(), p2->getNormalTuple()});
+		Tdd p01igign = {0, 0};
+		Tdd p12igign = {0, 0};
+		Tdd p20igign = {0, 0};
+
+		// auto l0 = p0->getLineBetween(p1);
+		// auto l1 = p1->getLineBetween(p2);
+		// auto l2 = p2->getLineBetween(p0);
+
+		auto [l0, l1, l2] = f->getLinesTupleFrom(p0);
+		//
+		// 幾何学的補間については，
+		// X_surfaceがすでに角点については考慮したものとなっているので．
+		// 角点に関して特に修正はいらない．
+		//@ φやφnの補間に関しては，角点で滑らかでないことを考慮する必要があるが，φnに関しては，幾何学形状とは違って，同じ場所で2つの異なる値を持っている．
+		interpolationTriangleQuadByFixedRange3D intp(
+			T6Tddd{p0->getXtuple(),
+				   p1->getXtuple(),
+				   p2->getXtuple(),
+				   l0->X_surface,
+				   l1->X_surface,
+				   l2->X_surface});
+
 		Tdd IGIGn;
-		Tddd r, N, A = origin->getXtuple();
-		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
-		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
-		double common, nr;
-		double x0, x1, w0, w1;
-		// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
-		bool isSingular = (p0 == origin); //! linearの場合は0
-		double beta = 2.;
-		double x_sing = 1.; //! linearの場合はx_sing = 1.
-		auto GW = __GW__Tuple[i];
-		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(i, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : GW)
-		{
-			if (isSingular)
+		Tddd r, A = origin->getXtuple();
+		T6d N;
+		double common, nr, x0, x1, w0, w1;
+		// bool isSingular = (p0 == origin); //! linearの場合は0
+
+		/*
+				p0*
+		  f0   /   \
+		   p01      p20 f2
+			/         \
+		  p1*-- p12 ---*p2
+				 f1
+		 @ まずは，シンプルに上の６点p0,p1,p2,p01,p12,p20に掛かる係数を計算する
+		*/
+
+		/*
+		@ p01,p12,p20は実際には存在しない点
+		@ 上で求めたそこでの係数は，p01,p12,p20を存在する点で補間し，その存在する点に分配する．
+		@ ここでは，p01,p12,p20は，２つの２次補間の平均で表現する．
+		*/
+		// auto F = !l0->isGoodForQuadInterp() ? f : (*l0)(f);
+		auto F = !l0->isGoodForQuadInterp() ? f : (*l0)(f);
+		// auto F = !l0->isGoodForQuadInterp_Geo() ? f : (*l0)(f);
+		// auto F = (*l0)(f);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_0(f, l0);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_1(F, l0);
+
+		F = !l1->isGoodForQuadInterp() ? f : (*l1)(f);
+		// F = (*l1)(f);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l1_0(f, l1);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l1_1(F, l1);
+
+		F = !l2->isGoodForQuadInterp() ? f : (*l2)(f);
+		// F = (*l2)(f);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l2_0(f, l2);
+		interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l2_1(F, l2);
+
+		if (p0 == origin)
+			for (const auto &[x0, x1, w0w1] : __GWGW_beta2_11__)
 			{
-				x0 = Sg(std::get<0>(x0w0), x_sing, beta);
-				w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+				nr = Norm(r = intp(x0, x1) - A);
+				std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+				N = intp.N(x0, x1);
+				p0igign += IGIGn * std::get<0>(N); //@ 係数の計算
+				p1igign += IGIGn * std::get<1>(N);
+				p2igign += IGIGn * std::get<2>(N);
+				p01igign += IGIGn * std::get<3>(N);
+				p12igign += IGIGn * std::get<4>(N);
+				p20igign += IGIGn * std::get<5>(N);
 			}
-			else
+		else if (MemberQ(intp_l0_0.Points, origin) ||
+				 MemberQ(intp_l0_1.Points, origin) ||
+				 MemberQ(intp_l1_0.Points, origin) ||
+				 MemberQ(intp_l1_1.Points, origin) ||
+				 MemberQ(intp_l2_0.Points, origin) ||
+				 MemberQ(intp_l2_1.Points, origin))
+			for (const auto &[x0, x1, w0w1] : __GWGW11__Tuple)
 			{
-				x0 = std::get<0>(x0w0);
-				w0 = std::get<1>(x0w0);
-			}
-			for (const auto &x1w1 : GW)
-			{
-				x1 = std::get<0>(x1w1);
-				w1 = std::get<1>(x1w1);
-				/* ------------------------------ */
-				common = intp.J(x0, x1) * w0 * w1;
-				r = intp(x0, x1) - A;
-				nr = Norm(r);
-				std::get<0>(IGIGn) = common / nr;
-				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
-				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
-				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+				nr = Norm(r = intp(x0, x1) - A);
+				std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
 				N = intp.N(x0, x1);
 				p0igign += IGIGn * std::get<0>(N);
 				p1igign += IGIGn * std::get<1>(N);
 				p2igign += IGIGn * std::get<2>(N);
+				p01igign += IGIGn * std::get<3>(N);
+				p12igign += IGIGn * std::get<4>(N);
+				p20igign += IGIGn * std::get<5>(N);
 			}
-		}
-		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
-	};
-
-	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkFace *const origin_f)
-	{
-		// auto [P0, P1, P2] = f->getPointsTuple();
-		// auto [p0, p1, p2] = (P0->CORNER) ? f->getPointsTuple(P0) : ((P1->CORNER) ? f->getPointsTuple(P1) : f->getPointsTuple(P2));
-		auto [p0, p1, p2] = f->getPointsTuple();
-		Tdd p0igign = {0, 0};
-		Tdd p1igign = {0, 0};
-		Tdd p2igign = {0, 0};
-		int i = 5;
-
-		double mean_len = 5. * Max(extLength(origin_f->getLines()));
-		if (Norm(p0->getXtuple() - origin_f->getXtuple()) < mean_len ||
-			Norm(p1->getXtuple() - origin_f->getXtuple()) < mean_len ||
-			Norm(p2->getXtuple() - origin_f->getXtuple()) < mean_len)
-			i = 14;
-		// タプルに対応させる．
-		interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
-		// Tddd A = intp(0.25, 0.25);
-		Tddd A = origin_f->getXtuple(); // p0->getXtuple() + p1->getXtuple() + p2->getXtuple();
-		// std::cout << "A_ = " << A_ << ", A = " << A << ", intp.N(x0, x1)" << intp.N(0.5, 0.5) << std::endl;
-		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalAreaAveraged(), p1->getNormalAreaAveraged(), p2->getNormalAreaAveraged()});
-		// interpolationTriangleLinearByFixedRange3D intp_normal(T3Tddd{p0->getNormalTuple(), p1->getNormalTuple(), p2->getNormalTuple()});
-		Tdd IGIGn;
-		Tddd r, N; // origin_f->getXtuple();
-		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
-		// auto gw = GaussianQuadratureWeights(i, 0., 1.);
-		double common, nr;
-		double x0, x1, w0, w1;
-		// bool isSingular = false; //(ps[0] == origin);  //!linearの場合は0
-		bool isSingular = false; //(f == origin_f); //! linearの場合は0
-		double beta = 2.;
-		double x_sing = 0.5; //! linearの場合はx_sing = 1.
-		for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(i, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW__Tuple[i])
-		{
-			if (isSingular)
+		else
+			for (const auto &[x0, x1, w0w1] : __GWGW8__Tuple)
 			{
-				x0 = Sg(std::get<0>(x0w0), x_sing, beta);
-				w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
-			}
-			else
-			{
-				x0 = std::get<0>(x0w0);
-				w0 = std::get<1>(x0w0);
-			}
-			for (const auto &x1w1 : __GW__Tuple[i])
-			{
-				x1 = std::get<0>(x1w1);
-				w1 = std::get<1>(x1w1);
-				/* ------------------------------ */
-				common = intp.J(x0, x1) * w0 * w1;
-				r = intp(x0, x1) - A;
-				nr = Norm(r);
-				std::get<0>(IGIGn) = common / nr;
-				//! Dombre2019ならこっち
-				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
-				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
-				// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+				nr = Norm(r = intp(x0, x1) - A);
+				std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+				std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
 				N = intp.N(x0, x1);
 				p0igign += IGIGn * std::get<0>(N);
 				p1igign += IGIGn * std::get<1>(N);
 				p2igign += IGIGn * std::get<2>(N);
+				p01igign += IGIGn * std::get<3>(N);
+				p12igign += IGIGn * std::get<4>(N);
+				p20igign += IGIGn * std::get<5>(N);
 			}
-		}
-		// if (!isFinite(p0igign) || !isFinite(p1igign) || !isFinite(p2igign))
-		// {
-		// 	std::cout << "origin = " << origin << std::endl;
-		// 	std::cout << "f = " << f << ", f->getPoints() = " << f->getPoints() << std::endl;
-		// 	std::cout << "origin_f = " << origin_f << "origin_f->getPoints() = " << origin_f->getPoints() << std::endl;
-		// 	std::cout << "[p0, p1, p2] = " << p0 << ", " << p1 << ", " << p2 << std::endl;
-		// 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-		// }
-		return {{p0, p0igign}, {p1, p1igign}, {p2, p2igign}};
+
+		auto N6_l0_0 = intp_l0_0.N(.5, .5) * 0.5;
+		auto N6_l0_1 = intp_l0_1.N(.5, .5) * 0.5;
+		auto N6_l1_0 = intp_l1_0.N(.5, .5) * 0.5;
+		auto N6_l1_1 = intp_l1_1.N(.5, .5) * 0.5;
+		auto N6_l2_0 = intp_l2_0.N(.5, .5) * 0.5;
+		auto N6_l2_1 = intp_l2_1.N(.5, .5) * 0.5;
+
+		return {
+			{p0, p0igign},
+			{p1, p1igign},
+			{p2, p2igign},
+			/* ------------------------------------------------------ */
+			{std::get<0>(intp_l0_0.Points), p01igign * std::get<0>(N6_l0_0)},
+			{std::get<1>(intp_l0_0.Points), p01igign * std::get<1>(N6_l0_0)},
+			{std::get<2>(intp_l0_0.Points), p01igign * std::get<2>(N6_l0_0)},
+			{std::get<3>(intp_l0_0.Points), p01igign * std::get<3>(N6_l0_0)},
+			{std::get<4>(intp_l0_0.Points), p01igign * std::get<4>(N6_l0_0)},
+			{std::get<5>(intp_l0_0.Points), p01igign * std::get<5>(N6_l0_0)},
+			//
+			{std::get<0>(intp_l0_1.Points), p01igign * std::get<0>(N6_l0_1)},
+			{std::get<1>(intp_l0_1.Points), p01igign * std::get<1>(N6_l0_1)},
+			{std::get<2>(intp_l0_1.Points), p01igign * std::get<2>(N6_l0_1)},
+			{std::get<3>(intp_l0_1.Points), p01igign * std::get<3>(N6_l0_1)},
+			{std::get<4>(intp_l0_1.Points), p01igign * std::get<4>(N6_l0_1)},
+			{std::get<5>(intp_l0_1.Points), p01igign * std::get<5>(N6_l0_1)},
+			/* ------------------------------------------------------ */
+			{std::get<0>(intp_l1_0.Points), p12igign * std::get<0>(N6_l1_0)},
+			{std::get<1>(intp_l1_0.Points), p12igign * std::get<1>(N6_l1_0)},
+			{std::get<2>(intp_l1_0.Points), p12igign * std::get<2>(N6_l1_0)},
+			{std::get<3>(intp_l1_0.Points), p12igign * std::get<3>(N6_l1_0)},
+			{std::get<4>(intp_l1_0.Points), p12igign * std::get<4>(N6_l1_0)},
+			{std::get<5>(intp_l1_0.Points), p12igign * std::get<5>(N6_l1_0)},
+			//
+			{std::get<0>(intp_l1_1.Points), p12igign * std::get<0>(N6_l1_1)},
+			{std::get<1>(intp_l1_1.Points), p12igign * std::get<1>(N6_l1_1)},
+			{std::get<2>(intp_l1_1.Points), p12igign * std::get<2>(N6_l1_1)},
+			{std::get<3>(intp_l1_1.Points), p12igign * std::get<3>(N6_l1_1)},
+			{std::get<4>(intp_l1_1.Points), p12igign * std::get<4>(N6_l1_1)},
+			{std::get<5>(intp_l1_1.Points), p12igign * std::get<5>(N6_l1_1)},
+			/* ------------------------------------------------------ */
+			{std::get<0>(intp_l2_0.Points), p20igign * std::get<0>(N6_l2_0)},
+			{std::get<1>(intp_l2_0.Points), p20igign * std::get<1>(N6_l2_0)},
+			{std::get<2>(intp_l2_0.Points), p20igign * std::get<2>(N6_l2_0)},
+			{std::get<3>(intp_l2_0.Points), p20igign * std::get<3>(N6_l2_0)},
+			{std::get<4>(intp_l2_0.Points), p20igign * std::get<4>(N6_l2_0)},
+			{std::get<5>(intp_l2_0.Points), p20igign * std::get<5>(N6_l2_0)},
+			//
+			{std::get<0>(intp_l2_1.Points), p20igign * std::get<0>(N6_l2_1)},
+			{std::get<1>(intp_l2_1.Points), p20igign * std::get<1>(N6_l2_1)},
+			{std::get<2>(intp_l2_1.Points), p20igign * std::get<2>(N6_l2_1)},
+			{std::get<3>(intp_l2_1.Points), p20igign * std::get<3>(N6_l2_1)},
+			{std::get<4>(intp_l2_1.Points), p20igign * std::get<4>(N6_l2_1)},
+			{std::get<5>(intp_l2_1.Points), p20igign * std::get<5>(N6_l2_1)}};
 	};
 
+	/* ------------------------------------------------------ */
+	// std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace *const f, const networkPoint *const origin)
+	// {
+	// 	/*
+	// 	*---*---*
+	// 	 \ / \ /
+	// 	  *-l-*
+	// 	 / \ / \
+	// 	*---*---*
+	// 	*/
+
+	// 	auto [p0, p1, p2] = f->getPointsTuple(origin);
+	// 	Tdd p0igign = {0, 0};
+	// 	Tdd p1igign = {0, 0};
+	// 	Tdd p2igign = {0, 0};
+
+	// 	Tdd p01igign = {0, 0};
+	// 	Tdd p12igign = {0, 0};
+	// 	Tdd p20igign = {0, 0};
+
+	// 	// int i = 10;
+
+	// 	/*
+	// 		0*
+	// 	f0  / \  f2
+	// 	   /   \
+	// 	 1*-----*2
+	// 		 f1
+	// 	*/
+	// 	auto l0 = p0->getLineBetween(p1);
+	// 	auto l1 = p1->getLineBetween(p2);
+	// 	auto l2 = p2->getLineBetween(p0);
+	// 	//
+	// 	// 幾何学的補間については，
+	// 	// X_surfaceがすでに角点については考慮したものとなっているので．
+	// 	// 角点に関して特に修正はいらない．
+	// 	//@ φやφnの補間に関しては，角点で滑らかでないことを考慮する必要があるが，φnに関しては，幾何学形状とは違って，同じ場所で2つの異なる値を持っている．
+	// 	interpolationTriangleQuadByFixedRange3D intp(
+	// 		T6Tddd{p0->getXtuple(),
+	// 			   p1->getXtuple(),
+	// 			   p2->getXtuple(),
+	// 			   l0->X_surface,
+	// 			   l1->X_surface,
+	// 			   l2->X_surface});
+
+	// 	Tdd IGIGn;
+	// 	Tddd r, A = origin->getXtuple();
+	// 	T6d N;
+	// 	double common, nr;
+	// 	double x0, x1, w0, w1;
+	// 	bool isSingular = (p0 == origin); //! linearの場合は0
+
+	// 	if (isSingular)
+	// 		for (const auto &[x0, x1, w0w1] : __GWGW_beta2_10__)
+	// 		{
+	// 			nr = Norm(r = intp(x0, x1) - A);
+	// 			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 			p01igign += IGIGn * std::get<3>(N);
+	// 			p12igign += IGIGn * std::get<4>(N);
+	// 			p20igign += IGIGn * std::get<5>(N);
+	// 		}
+	// 	else
+	// 		for (const auto &[x0, x1, w0w1] : __GWGW5__Tuple)
+	// 		{
+	// 			nr = Norm(r = intp(x0, x1) - A);
+	// 			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 			p01igign += IGIGn * std::get<3>(N);
+	// 			p12igign += IGIGn * std::get<4>(N);
+	// 			p20igign += IGIGn * std::get<5>(N);
+	// 		}
+
+	// 	// 	bool l0_good = !l0->CORNER && l0->islegal() && !(l0->Neumann && !l0->isFlat(M_PI / 2));
+	// 	// 	bool l1_good = !l1->CORNER && l1->islegal() && !(l1->Neumann && !l1->isFlat(M_PI / 2));
+	// 	// 	bool l2_good = !l2->CORNER && l2->islegal() && !(l2->Neumann && !l2->isFlat(M_PI / 2));
+
+	// 	// 	auto ps6_l0_f00 = f->get6PointsTuple(l0);
+	// 	// 	auto ps6_l0_f01 = (l0_good ? f : (*l0)(f))->get6PointsTuple(l0);
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l0_0(ToX(ps6_l0_f00));
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l0_1(ToX(ps6_l0_f01));
+	// 	// 	//
+	// 	// 	auto ps6_l1_f10 = f->get6PointsTuple(l1);
+	// 	// 	auto ps6_l1_f11 = (l1_good ? f : (*l1)(f))->get6PointsTuple(l1);
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l1_0(ToX(ps6_l1_f10));
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l1_1(ToX(ps6_l1_f11));
+	// 	// 	//
+	// 	// 	auto ps6_l2_f20 = f->get6PointsTuple(l2);
+	// 	// 	auto ps6_l2_f21 = (l2_good ? f : (*l2)(f))->get6PointsTuple(l2);
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l2_0(ToX(ps6_l2_f20));
+	// 	// 	interpolationTriangleQuadByFixedRange3D intp_l2_1(ToX(ps6_l2_f21));
+	// 	// 	//
+	// 	// 	/*
+	// 	// 	 approx 0
+	// 	// 	   Q1 for l2
+	// 	// 	   Q2 for l1
+	// 	// 	*--Q0 for l0--*
+	// 	// 	 \   /   \   /
+	// 	// 	  \/      \ /
+	// 	// 	p1*---l0---*p0
+	// 	// 	  / \  f  / \
+	// // 	 /   \   /   \
+	// //   Q1*------*------*Q2
+	// 	// 		   p2
+	// 	// 	この修正によって，角ではphi，phinが不連続となる.
+	// 	// 	*/
+	// 	// 	if (l0_good)
+	// 	// 	{
+	// 	// 		intp_l0_0.approxP0();
+	// 	// 		intp_l0_1.approxP0();
+	// 	// 		intp_l1_0.approxP2();
+	// 	// 		intp_l1_1.approxP2();
+	// 	// 		intp_l2_0.approxP1();
+	// 	// 		intp_l2_1.approxP1();
+	// 	// 	}
+	// 	// 	if (l1_good)
+	// 	// 	{
+	// 	// 		intp_l0_0.approxP1();
+	// 	// 		intp_l0_1.approxP1();
+	// 	// 		intp_l1_0.approxP0();
+	// 	// 		intp_l1_1.approxP0();
+	// 	// 		intp_l2_0.approxP2();
+	// 	// 		intp_l2_1.approxP2();
+	// 	// 	}
+	// 	// 	if (l2_good)
+	// 	// 	{
+	// 	// 		intp_l0_0.approxP2();
+	// 	// 		intp_l0_1.approxP2();
+	// 	// 		intp_l1_0.approxP1();
+	// 	// 		intp_l1_1.approxP1();
+	// 	// 		intp_l2_0.approxP0();
+	// 	// 		intp_l2_1.approxP0();
+	// 	// 	}
+
+	// 	/* ------------------------------------------------------ */
+
+	// 	// auto F = !l0->isGoodForQuadInterp() ? f : (*l0)(f);
+	// 	auto F = !l0->isGoodForQuadInterp() ? f : (*l0)(f);
+	// 	// auto F = (*l0)(f);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_0(f, l0);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_1(F, l0);
+
+	// 	F = !l1->isGoodForQuadInterp() ? f : (*l1)(f);
+	// 	// F = (*l1)(f);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l1_0(f, l1);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l1_1(F, l1);
+
+	// 	F = !l2->isGoodForQuadInterp() ? f : (*l2)(f);
+	// 	// F = (*l2)(f);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l2_0(f, l2);
+	// 	interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l2_1(F, l2);
+
+	// 	auto N6_l0_0 = intp_l0_0.N(.5, .5) / 2.;
+	// 	auto N6_l0_1 = intp_l0_1.N(.5, .5) / 2.;
+	// 	auto N6_l1_0 = intp_l1_0.N(.5, .5) / 2.;
+	// 	auto N6_l1_1 = intp_l1_1.N(.5, .5) / 2.;
+	// 	auto N6_l2_0 = intp_l2_0.N(.5, .5) / 2.;
+	// 	auto N6_l2_1 = intp_l2_1.N(.5, .5) / 2.;
+
+	// 	return {
+	// 		{p0, p0igign},
+	// 		{p1, p1igign},
+	// 		{p2, p2igign},
+	// 		/* ------------------------------------------------------ */
+	// 		{std::get<0>(intp_l0_0.Points), p01igign * std::get<0>(N6_l0_0) / 2.},
+	// 		{std::get<1>(intp_l0_0.Points), p01igign * std::get<1>(N6_l0_0) / 2.},
+	// 		{std::get<2>(intp_l0_0.Points), p01igign * std::get<2>(N6_l0_0) / 2.},
+	// 		{std::get<3>(intp_l0_0.Points), p01igign * std::get<3>(N6_l0_0) / 2.},
+	// 		{std::get<4>(intp_l0_0.Points), p01igign * std::get<4>(N6_l0_0) / 2.},
+	// 		{std::get<5>(intp_l0_0.Points), p01igign * std::get<5>(N6_l0_0) / 2.},
+	// 		//
+	// 		{std::get<0>(intp_l0_1.Points), p01igign * std::get<0>(N6_l0_1) / 2.},
+	// 		{std::get<1>(intp_l0_1.Points), p01igign * std::get<1>(N6_l0_1) / 2.},
+	// 		{std::get<2>(intp_l0_1.Points), p01igign * std::get<2>(N6_l0_1) / 2.},
+	// 		{std::get<3>(intp_l0_1.Points), p01igign * std::get<3>(N6_l0_1) / 2.},
+	// 		{std::get<4>(intp_l0_1.Points), p01igign * std::get<4>(N6_l0_1) / 2.},
+	// 		{std::get<5>(intp_l0_1.Points), p01igign * std::get<5>(N6_l0_1) / 2.},
+	// 		/* ------------------------------------------------------ */
+	// 		{std::get<0>(intp_l1_0.Points), p12igign * std::get<0>(N6_l1_0) / 2.},
+	// 		{std::get<1>(intp_l1_0.Points), p12igign * std::get<1>(N6_l1_0) / 2.},
+	// 		{std::get<2>(intp_l1_0.Points), p12igign * std::get<2>(N6_l1_0) / 2.},
+	// 		{std::get<3>(intp_l1_0.Points), p12igign * std::get<3>(N6_l1_0) / 2.},
+	// 		{std::get<4>(intp_l1_0.Points), p12igign * std::get<4>(N6_l1_0) / 2.},
+	// 		{std::get<5>(intp_l1_0.Points), p12igign * std::get<5>(N6_l1_0) / 2.},
+	// 		//
+	// 		{std::get<0>(intp_l1_1.Points), p12igign * std::get<0>(N6_l1_1) / 2.},
+	// 		{std::get<1>(intp_l1_1.Points), p12igign * std::get<1>(N6_l1_1) / 2.},
+	// 		{std::get<2>(intp_l1_1.Points), p12igign * std::get<2>(N6_l1_1) / 2.},
+	// 		{std::get<3>(intp_l1_1.Points), p12igign * std::get<3>(N6_l1_1) / 2.},
+	// 		{std::get<4>(intp_l1_1.Points), p12igign * std::get<4>(N6_l1_1) / 2.},
+	// 		{std::get<5>(intp_l1_1.Points), p12igign * std::get<5>(N6_l1_1) / 2.},
+	// 		/* ------------------------------------------------------ */
+	// 		{std::get<0>(intp_l2_0.Points), p20igign * std::get<0>(N6_l2_0) / 2.},
+	// 		{std::get<1>(intp_l2_0.Points), p20igign * std::get<1>(N6_l2_0) / 2.},
+	// 		{std::get<2>(intp_l2_0.Points), p20igign * std::get<2>(N6_l2_0) / 2.},
+	// 		{std::get<3>(intp_l2_0.Points), p20igign * std::get<3>(N6_l2_0) / 2.},
+	// 		{std::get<4>(intp_l2_0.Points), p20igign * std::get<4>(N6_l2_0) / 2.},
+	// 		{std::get<5>(intp_l2_0.Points), p20igign * std::get<5>(N6_l2_0) / 2.},
+	// 		//
+	// 		{std::get<0>(intp_l2_1.Points), p20igign * std::get<0>(N6_l2_1) / 2.},
+	// 		{std::get<1>(intp_l2_1.Points), p20igign * std::get<1>(N6_l2_1) / 2.},
+	// 		{std::get<2>(intp_l2_1.Points), p20igign * std::get<2>(N6_l2_1) / 2.},
+	// 		{std::get<3>(intp_l2_1.Points), p20igign * std::get<3>(N6_l2_1) / 2.},
+	// 		{std::get<4>(intp_l2_1.Points), p20igign * std::get<4>(N6_l2_1) / 2.},
+	// 		{std::get<5>(intp_l2_1.Points), p20igign * std::get<5>(N6_l2_1) / 2.}};
+	// };
+	/* ------------------------------------------------------ */
+	/* ------------------------------------------------------ */
+	// std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace *const f, const networkPoint *const origin)
+	// {
+	// 	/*
+	// 	*---*---*
+	// 	 \ / \ /
+	// 	  *-l-*
+	// 	 / \ / \
+	// 	*---*---*
+	// 	*/
+
+	// 	auto [p0, p1, p2] = f->getPointsTuple(origin);
+	// 	Tdd p0igign = {0, 0};
+	// 	Tdd p1igign = {0, 0};
+	// 	Tdd p2igign = {0, 0};
+
+	// 	Tdd p01igign = {0, 0};
+	// 	Tdd p12igign = {0, 0};
+	// 	Tdd p20igign = {0, 0};
+
+	// 	// int i = 10;
+
+	// 	/*
+	// 		0*
+	// 	f0  / \  f2
+	// 	   /   \
+	// 	 1*-----*2
+	// 		 f1
+	// 	*/
+	// 	auto l0 = p0->getLineBetween(p1);
+	// 	auto l1 = p1->getLineBetween(p2);
+	// 	auto l2 = p2->getLineBetween(p0);
+	// 	//
+	// 	auto fs0 = l0->getFaces();
+	// 	auto ps6_l0_f00 = fs0[0]->get6PointsTuple(l0);
+	// 	auto ps6_l0_f01 = fs0[1]->get6PointsTuple(l0);
+	// 	interpolationTriangleQuadByFixedRange3D intp_l0_0(ToX(ps6_l0_f00));
+	// 	interpolationTriangleQuadByFixedRange3D intp_l0_1(ToX(ps6_l0_f01));
+	// 	//
+	// 	auto fs1 = l1->getFaces();
+	// 	auto ps6_l1_f10 = fs1[0]->get6PointsTuple(l1);
+	// 	auto ps6_l1_f11 = fs1[1]->get6PointsTuple(l1);
+	// 	interpolationTriangleQuadByFixedRange3D intp_l1_0(ToX(ps6_l1_f10));
+	// 	interpolationTriangleQuadByFixedRange3D intp_l1_1(ToX(ps6_l1_f11));
+	// 	//
+	// 	auto fs2 = l2->getFaces();
+	// 	auto ps6_l2_f20 = fs2[0]->get6PointsTuple(l2);
+	// 	auto ps6_l2_f21 = fs2[1]->get6PointsTuple(l2);
+	// 	interpolationTriangleQuadByFixedRange3D intp_l2_0(ToX(ps6_l2_f20));
+	// 	interpolationTriangleQuadByFixedRange3D intp_l2_1(ToX(ps6_l2_f21));
+	// 	//
+	// 	auto [f0p0, f0p1, f0p2] = (*l0)(f)->getPointsTuple();
+	// 	auto [f1p0, f1p1, f1p2] = (*l1)(f)->getPointsTuple();
+	// 	auto [f2p0, f2p1, f2p2] = (*l2)(f)->getPointsTuple();
+	// 	//
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   (intp_l0_0(.5, .5) + intp_l0_1(.5, .5)) / 2.,
+	// 	// 		   (intp_l1_0(.5, .5) + intp_l1_1(.5, .5)) / 2.,
+	// 	// 		   (intp_l2_0(.5, .5) + intp_l2_1(.5, .5)) / 2.});
+
+	// 	// auto [L0, L1, L2] = f->getLinesTupleFrom(p0);
+
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   l0->CORNER ? (p0->getXtuple() + p1->getXtuple()) / 2. : (intp_l0_0(.5, .5) + intp_l0_1(.5, .5)) / 2.,
+	// 	// 		   l1->CORNER ? (p1->getXtuple() + p2->getXtuple()) / 2. : (intp_l1_0(.5, .5) + intp_l1_1(.5, .5)) / 2.,
+	// 	// 		   l2->CORNER ? (p2->getXtuple() + p0->getXtuple()) / 2. : (intp_l2_0(.5, .5) + intp_l2_1(.5, .5)) / 2.});
+
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   angle0 > M_PI / 3. ? (p0->getXtuple() + p1->getXtuple()) / 2. : (intp_l0_0(.5, .5) + intp_l0_1(.5, .5)) / 2.,
+	// 	// 		   angle1 > M_PI / 3. ? (p1->getXtuple() + p2->getXtuple()) / 2. : (intp_l1_0(.5, .5) + intp_l1_1(.5, .5)) / 2.,
+	// 	// 		   angle2 > M_PI / 3. ? (p2->getXtuple() + p0->getXtuple()) / 2. : (intp_l2_0(.5, .5) + intp_l2_1(.5, .5)) / 2.});
+
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   (p0->CORNER || p1->CORNER || angle0 > M_PI / 3.) ? (p0->getXtuple() + p1->getXtuple()) / 2. : (intp_l0_0(.5, .5) + intp_l0_1(.5, .5)) / 2.,
+	// 	// 		   (p2->CORNER || p1->CORNER || angle1 > M_PI / 3.) ? (p1->getXtuple() + p2->getXtuple()) / 2. : (intp_l1_0(.5, .5) + intp_l1_1(.5, .5)) / 2.,
+	// 	// 		   (p0->CORNER || p2->CORNER || angle2 > M_PI / 3.) ? (p2->getXtuple() + p0->getXtuple()) / 2. : (intp_l2_0(.5, .5) + intp_l2_1(.5, .5)) / 2.});
+
+	// 	interpolationTriangleQuadByFixedRange3D intp(
+	// 		T6Tddd{p0->getXtuple(),
+	// 			   p1->getXtuple(),
+	// 			   p2->getXtuple(),
+	// 			   l0->X_surface,
+	// 			   l1->X_surface,
+	// 			   l2->X_surface});
+
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   (p0->getXtuple() + p1->getXtuple()) / 2.,
+	// 	// 		   (p1->getXtuple() + p2->getXtuple()) / 2.,
+	// 	// 		   (p2->getXtuple() + p0->getXtuple()) / 2.});
+
+	// 	// interpolationTriangleQuadByFixedRange3D intp(
+	// 	// 	T6Tddd{p0->getXtuple(),
+	// 	// 		   p1->getXtuple(),
+	// 	// 		   p2->getXtuple(),
+	// 	// 		   (p0->getXtuple() + p1->getXtuple()) / 2.,
+	// 	// 		   (p1->getXtuple() + p2->getXtuple()) / 2.,
+	// 	// 		   (p2->getXtuple() + p0->getXtuple()) / 2.});
+
+	// 	// auto [intp_l0_0_,
+	// 	// 	  intp_l0_1_,
+	// 	// 	  intp_l1_0_,
+	// 	// 	  intp_l1_1_,
+	// 	// 	  intp_l2_0_,
+	// 	// 	  intp_l2_1_,
+	// 	// 	  intp_] = f->getQuadInterpolation(origin);
+
+	// 	// auto intp_l0_0 = *intp_l0_0_;
+	// 	// auto intp_l0_1 = *intp_l0_1_;
+	// 	// auto intp_l1_0 = *intp_l1_0_;
+	// 	// auto intp_l1_1 = *intp_l1_1_;
+	// 	// auto intp_l2_0 = *intp_l2_0_;
+	// 	// auto intp_l2_1 = *intp_l2_1_;
+	// 	// auto intp = *intp_;
+
+	// 	Tdd IGIGn;
+	// 	Tddd r, A = origin->getXtuple();
+	// 	T6d N;
+	// 	// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+	// 	// auto gw = GaussianQuadratureWeights(i, 0., 1.);
+	// 	double common, nr;
+	// 	double x0, x1, w0, w1;
+	// 	// bool isSingular = false;		  //(ps[0] == origin);  //!linearの場合は0
+	// 	bool isSingular = (p0 == origin); //! linearの場合は0
+	// 	// double beta = 2.;
+	// 	// double x_sing = 1.; //! linearの場合はx_sing = 1.
+
+	// 	// for (const auto &x0w0 : isSingular ? GaussianQuadratureWeightsTuple(10, InvSg(0., x_sing, beta), InvSg(1., x_sing, beta)) : __GW5__Tuple)
+	// 	// {
+	// 	// 	if (isSingular)
+	// 	// 	{
+	// 	// 		x0 = Sg(std::get<0>(x0w0), x_sing, beta);
+	// 	// 		w0 = std::get<1>(x0w0) * DSg(std::get<0>(x0w0), x_sing, beta);
+	// 	// 	}
+	// 	// 	else
+	// 	// 	{
+	// 	// 		x0 = std::get<0>(x0w0);
+	// 	// 		w0 = std::get<1>(x0w0);
+	// 	// 	}
+	// 	// 	for (const auto &[x1, w1] : __GW5__Tuple)
+	// 	// 	{
+	// 	// 		// x1 = std::get<0>(x1w1);
+	// 	// 		// w1 = std::get<1>(x1w1);
+	// 	// 		/* ------------------------------ */
+	// 	// 		common = intp.J(x0, x1) * w0 * w1;
+	// 	// 		r = intp(x0, x1) - A;
+	// 	// 		nr = Norm(r);
+	// 	// 		std::get<0>(IGIGn) = common / nr;
+	// 	// 		// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp.cross(x0, x1))) * common;
+	// 	// 		std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0 * w1;
+	// 	// 		// std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), Normalize(intp_normal(x0, x1))) * common;
+	// 	// 		N = intp.N(x0, x1);
+	// 	// 		p0igign += IGIGn * std::get<0>(N);
+	// 	// 		p1igign += IGIGn * std::get<1>(N);
+	// 	// 		p2igign += IGIGn * std::get<2>(N);
+	// 	// 		p01igign += IGIGn * std::get<3>(N);
+	// 	// 		p12igign += IGIGn * std::get<4>(N);
+	// 	// 		p20igign += IGIGn * std::get<5>(N);
+	// 	// 	}
+	// 	// }
+
+	// 	if (isSingular)
+	// 		for (const auto &[x0, x1, w0w1] : __GWGW_beta2_10__)
+	// 		{
+	// 			nr = Norm(r = intp(x0, x1) - A);
+	// 			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 			p01igign += IGIGn * std::get<3>(N);
+	// 			p12igign += IGIGn * std::get<4>(N);
+	// 			p20igign += IGIGn * std::get<5>(N);
+	// 		}
+	// 	else if (MemberQ(std::vector<networkPoint *>{f0p0, f0p1, f0p2, f1p0, f1p1, f1p2, f2p0, f2p1, f2p2}, origin))
+	// 	{
+	// 		for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+	// 		{
+	// 			nr = Norm(r = intp(x0, x1) - A);
+	// 			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 			p01igign += IGIGn * std::get<3>(N);
+	// 			p12igign += IGIGn * std::get<4>(N);
+	// 			p20igign += IGIGn * std::get<5>(N);
+	// 		}
+	// 	}
+	// 	else
+	// 		for (const auto &[x0, x1, w0w1] : __GWGW7__Tuple)
+	// 		{
+	// 			nr = Norm(r = intp(x0, x1) - A);
+	// 			std::get<0>(IGIGn) = (intp.J(x0, x1) * w0w1) / nr;
+	// 			std::get<1>(IGIGn) = -Dot(r / pow(nr, 3.), intp.cross(x0, x1)) * w0w1;
+	// 			N = intp.N(x0, x1);
+	// 			p0igign += IGIGn * std::get<0>(N);
+	// 			p1igign += IGIGn * std::get<1>(N);
+	// 			p2igign += IGIGn * std::get<2>(N);
+	// 			p01igign += IGIGn * std::get<3>(N);
+	// 			p12igign += IGIGn * std::get<4>(N);
+	// 			p20igign += IGIGn * std::get<5>(N);
+	// 		}
+
+	// 	auto N6_l0_0 = intp_l0_0.N(.5, .5) / 2.;
+	// 	auto N6_l0_1 = intp_l0_1.N(.5, .5) / 2.;
+	// 	auto N6_l1_0 = intp_l1_0.N(.5, .5) / 2.;
+	// 	auto N6_l1_1 = intp_l1_1.N(.5, .5) / 2.;
+	// 	auto N6_l2_0 = intp_l2_0.N(.5, .5) / 2.;
+	// 	auto N6_l2_1 = intp_l2_1.N(.5, .5) / 2.;
+
+	// 	return {
+	// 		{p0, p0igign},
+	// 		{p1, p1igign},
+	// 		{p2, p2igign},
+	// 		//
+	// 		{std::get<0>(ps6_l0_f00), p01igign * std::get<0>(N6_l0_0) / 2.},
+	// 		{std::get<1>(ps6_l0_f00), p01igign * std::get<1>(N6_l0_0) / 2.},
+	// 		{std::get<2>(ps6_l0_f00), p01igign * std::get<2>(N6_l0_0) / 2.},
+	// 		{std::get<3>(ps6_l0_f00), p01igign * std::get<3>(N6_l0_0) / 2.},
+	// 		{std::get<4>(ps6_l0_f00), p01igign * std::get<4>(N6_l0_0) / 2.},
+	// 		{std::get<5>(ps6_l0_f00), p01igign * std::get<5>(N6_l0_0) / 2.},
+	// 		//
+	// 		{std::get<0>(ps6_l0_f01), p01igign * std::get<0>(N6_l0_1) / 2.},
+	// 		{std::get<1>(ps6_l0_f01), p01igign * std::get<1>(N6_l0_1) / 2.},
+	// 		{std::get<2>(ps6_l0_f01), p01igign * std::get<2>(N6_l0_1) / 2.},
+	// 		{std::get<3>(ps6_l0_f01), p01igign * std::get<3>(N6_l0_1) / 2.},
+	// 		{std::get<4>(ps6_l0_f01), p01igign * std::get<4>(N6_l0_1) / 2.},
+	// 		{std::get<5>(ps6_l0_f01), p01igign * std::get<5>(N6_l0_1) / 2.},
+	// 		//
+	// 		{std::get<0>(ps6_l1_f10), p12igign * std::get<0>(N6_l1_0) / 2.},
+	// 		{std::get<1>(ps6_l1_f10), p12igign * std::get<1>(N6_l1_0) / 2.},
+	// 		{std::get<2>(ps6_l1_f10), p12igign * std::get<2>(N6_l1_0) / 2.},
+	// 		{std::get<3>(ps6_l1_f10), p12igign * std::get<3>(N6_l1_0) / 2.},
+	// 		{std::get<4>(ps6_l1_f10), p12igign * std::get<4>(N6_l1_0) / 2.},
+	// 		{std::get<5>(ps6_l1_f10), p12igign * std::get<5>(N6_l1_0) / 2.},
+	// 		//
+	// 		{std::get<0>(ps6_l1_f11), p12igign * std::get<0>(N6_l1_1) / 2.},
+	// 		{std::get<1>(ps6_l1_f11), p12igign * std::get<1>(N6_l1_1) / 2.},
+	// 		{std::get<2>(ps6_l1_f11), p12igign * std::get<2>(N6_l1_1) / 2.},
+	// 		{std::get<3>(ps6_l1_f11), p12igign * std::get<3>(N6_l1_1) / 2.},
+	// 		{std::get<4>(ps6_l1_f11), p12igign * std::get<4>(N6_l1_1) / 2.},
+	// 		{std::get<5>(ps6_l1_f11), p12igign * std::get<5>(N6_l1_1) / 2.},
+	// 		//
+	// 		{std::get<0>(ps6_l2_f20), p20igign * std::get<0>(N6_l2_0) / 2.},
+	// 		{std::get<1>(ps6_l2_f20), p20igign * std::get<1>(N6_l2_0) / 2.},
+	// 		{std::get<2>(ps6_l2_f20), p20igign * std::get<2>(N6_l2_0) / 2.},
+	// 		{std::get<3>(ps6_l2_f20), p20igign * std::get<3>(N6_l2_0) / 2.},
+	// 		{std::get<4>(ps6_l2_f20), p20igign * std::get<4>(N6_l2_0) / 2.},
+	// 		{std::get<5>(ps6_l2_f20), p20igign * std::get<5>(N6_l2_0) / 2.},
+	// 		//
+	// 		{std::get<0>(ps6_l2_f21), p20igign * std::get<0>(N6_l2_1) / 2.},
+	// 		{std::get<1>(ps6_l2_f21), p20igign * std::get<1>(N6_l2_1) / 2.},
+	// 		{std::get<2>(ps6_l2_f21), p20igign * std::get<2>(N6_l2_1) / 2.},
+	// 		{std::get<3>(ps6_l2_f21), p20igign * std::get<3>(N6_l2_1) / 2.},
+	// 		{std::get<4>(ps6_l2_f21), p20igign * std::get<4>(N6_l2_1) / 2.},
+	// 		{std::get<5>(ps6_l2_f21), p20igign * std::get<5>(N6_l2_1) / 2.}};
+	// };
 	/* ------------------------------------------------------ */
 	std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple(const networkFace *const f, const networkPoint *const origin)
 	{
@@ -1849,50 +2677,50 @@ namespace BEM
 	// 	}
 	// 	return new_igign;
 	// };
-	//* ------------------------------------------------------ */
-	//!               面における方程式を面上で作成                  */
-	//* ------------------------------------------------------ */
-	std::map<netP *, V_d> calc_P_IGIGn(const netFp &f /*積分面*/,
-									   const netFp origin_f /*原点のある面*/,
-									   double t0, double t1 /*原点の位置を指定するパラメタ座標*/,
-									   int points_number)
-	{
-		/**
-		 * 面を原点とした場合の境界積分方程式の一部：IGIGnを計算する
-		 */
-		// 明日はリメッシュについて考察．
-		// まとめる．論文を読む．
-		V_i gps = {8};
-		if (f == origin_f)
-			gps = {18};
-		double conv = 1E-3;
-		V_d zeros(2, 0.);
-		std::map<netPp, V_d> pre_igign;
-		V_netPp ps;
-		/* ------------------------------------------------------ */
-		if (points_number == 3)
-			ps = f->getPoints(); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
-		else if (points_number == 6)
-			ps = f->get6Points();
-		else if (points_number == 12)
-			ps = f->get12Points();
-		//
-		for (const auto &p : ps)
-			pre_igign[p] = zeros;
-		//
-		p_igign(f, origin_f, t0, t1, gps[0], /*出力結果*/ pre_igign, ps); //!まず計算
-		//
-		std::map<netPp, V_d> new_igign = pre_igign;
-		for (auto i = 1; i < gps.size(); i++)
-		{
-			p_igign(f, origin_f, t0, t1, gps[i], /*出力結果*/ new_igign, ps); //!次に計算
-			if (isConverged(new_igign, pre_igign, ps, conv))
-				return new_igign;
-			else
-				pre_igign = new_igign; // replace and try again
-		}
-		return new_igign;
-	};
+	// //* ------------------------------------------------------ */
+	// //!               面における方程式を面上で作成                  */
+	// //* ------------------------------------------------------ */
+	// std::map<netP *, V_d> calc_P_IGIGn(const netFp &f /*積分面*/,
+	// 								   const netFp origin_f /*原点のある面*/,
+	// 								   double t0, double t1 /*原点の位置を指定するパラメタ座標*/,
+	// 								   int points_number)
+	// {
+	// 	/**
+	// 	 * 面を原点とした場合の境界積分方程式の一部：IGIGnを計算する
+	// 	 */
+	// 	// 明日はリメッシュについて考察．
+	// 	// まとめる．論文を読む．
+	// 	V_i gps = {8};
+	// 	if (f == origin_f)
+	// 		gps = {18};
+	// 	double conv = 1E-3;
+	// 	V_d zeros(2, 0.);
+	// 	std::map<netPp, V_d> pre_igign;
+	// 	V_netPp ps;
+	// 	/* ------------------------------------------------------ */
+	// 	if (points_number == 3)
+	// 		ps = f->getPoints(); //基準としてoriginを使おうとする．が，面に含まれない点の場合は，適当な面の点が内部で自動で選ばれる．
+	// 	else if (points_number == 6)
+	// 		ps = f->get6PointsTuple();
+	// 	// else if (points_number == 12)
+	// 	// 	ps = f->get12Points();
+	// 	//
+	// 	for (const auto &p : ps)
+	// 		pre_igign[p] = zeros;
+	// 	//
+	// 	p_igign(f, origin_f, t0, t1, gps[0], /*出力結果*/ pre_igign, ps); //!まず計算
+	// 	//
+	// 	std::map<netPp, V_d> new_igign = pre_igign;
+	// 	for (auto i = 1; i < gps.size(); i++)
+	// 	{
+	// 		p_igign(f, origin_f, t0, t1, gps[i], /*出力結果*/ new_igign, ps); //!次に計算
+	// 		if (isConverged(new_igign, pre_igign, ps, conv))
+	// 			return new_igign;
+	// 		else
+	// 			pre_igign = new_igign; // replace and try again
+	// 	}
+	// 	return new_igign;
+	// };
 
 	///////////////////////////////////
 
@@ -1953,69 +2781,69 @@ namespace BEM
 	// };
 	///////
 
-	class networkSampler
-	{
-	public:
-		V_Netp nets_for_C_phin;
-		V_Netp nets_for_N_phin;
-		V_Netp nets_for_D_phin;
-		V_Netp nets_for_C_phi;
-		V_Netp nets_for_N_phi;
-		V_Netp nets_for_D_phi;
-		V_Netp nets_for_C_nabla;
-		V_Netp nets_for_N_nabla;
-		V_Netp nets_for_D_nabla;
+	// class networkSampler
+	// {
+	// public:
+	// 	V_Netp nets_for_C_phin;
+	// 	V_Netp nets_for_N_phin;
+	// 	V_Netp nets_for_D_phin;
+	// 	V_Netp nets_for_C_phi;
+	// 	V_Netp nets_for_N_phi;
+	// 	V_Netp nets_for_D_phi;
+	// 	V_Netp nets_for_C_nabla;
+	// 	V_Netp nets_for_N_nabla;
+	// 	V_Netp nets_for_D_nabla;
 
-		networkSampler(const V_Netp &all_networks)
-		{
-			initialize(all_networks);
-		};
+	// 	networkSampler(const V_Netp &all_networks)
+	// 	{
+	// 		initialize(all_networks);
+	// 	};
 
-		void initialize(const V_Netp &all_networks)
-		{
-			nets_for_C_phin = takeN(all_networks);
-			nets_for_D_phin = takeD(all_networks);
-			nets_for_N_phin = Join(takeC(all_networks), takeN(all_networks));
+	// 	void initialize(const V_Netp &all_networks)
+	// 	{
+	// 		nets_for_C_phin = takeN(all_networks);
+	// 		nets_for_D_phin = takeD(all_networks);
+	// 		nets_for_N_phin = Join(takeC(all_networks), takeN(all_networks));
 
-			nets_for_C_phi = all_networks;
-			nets_for_D_phi = Join(takeC(all_networks), takeD(all_networks));
-			nets_for_N_phi = Join(takeC(all_networks), takeN(all_networks));
+	// 		nets_for_C_phi = all_networks;
+	// 		nets_for_D_phi = Join(takeC(all_networks), takeD(all_networks));
+	// 		nets_for_N_phi = Join(takeC(all_networks), takeN(all_networks));
 
-			nets_for_C_nabla = Join(takeC(all_networks), takeN(all_networks));
-			nets_for_D_nabla = takeD(all_networks);
-			nets_for_N_nabla = Join(takeC(all_networks), takeN(all_networks));
-		};
+	// 		nets_for_C_nabla = Join(takeC(all_networks), takeN(all_networks));
+	// 		nets_for_D_nabla = takeD(all_networks);
+	// 		nets_for_N_nabla = Join(takeC(all_networks), takeN(all_networks));
+	// 	};
 
-		V_Netp net4nabla(const netPp p)
-		{
-			if (p->isC())
-				return nets_for_C_nabla;
-			else if (p->isD())
-				return nets_for_D_nabla;
-			else
-				return nets_for_N_nabla;
-		};
+	// 	V_Netp net4nabla(const netPp p)
+	// 	{
+	// 		if (p->isC())
+	// 			return nets_for_C_nabla;
+	// 		else if (p->isD())
+	// 			return nets_for_D_nabla;
+	// 		else
+	// 			return nets_for_N_nabla;
+	// 	};
 
-		V_Netp net4phin(const netPp p)
-		{
-			if (p->isC())
-				return nets_for_C_phin;
-			else if (p->isD())
-				return nets_for_D_phin;
-			else
-				return nets_for_N_phin;
-		};
+	// 	V_Netp net4phin(const netPp p)
+	// 	{
+	// 		if (p->isC())
+	// 			return nets_for_C_phin;
+	// 		else if (p->isD())
+	// 			return nets_for_D_phin;
+	// 		else
+	// 			return nets_for_N_phin;
+	// 	};
 
-		V_Netp net4phi(const netPp p)
-		{
-			if (p->isC())
-				return nets_for_C_phi;
-			else if (p->isD())
-				return nets_for_D_phi;
-			else
-				return nets_for_N_phi;
-		};
-	};
+	// 	V_Netp net4phi(const netPp p)
+	// 	{
+	// 		if (p->isC())
+	// 			return nets_for_C_phi;
+	// 		else if (p->isD())
+	// 			return nets_for_D_phi;
+	// 		else
+	// 			return nets_for_N_phi;
+	// 	};
+	// };
 
 	// V_Netp getReferenceNetwork(const netPp p, const V_Netp &all_networks)
 	// {
@@ -2034,53 +2862,53 @@ namespace BEM
 	//   return getReferenceNetwork(p, takeNetworks(ps));
 	// };
 
-	double SolidAngleDN(const netPp p)
-	{
-#define use_solidangle
-// #define do_not_use_solidangle
-#ifdef use_solidangle
-		if (isFlat(p))
-			return 2. * M_PI;
-		auto s = p->getSolidAngle();
-		if (p->isD())
-		{
-			return 2. * M_PI;
-			// return (Between(s, {0.5*2.*M_PI, 1.5*2.*M_PI})) ? s : 2. * M_PI;
-		}
-		else if (p->isC())
-			return (Between(s, {0.3 * M_PI, 1.7 * M_PI})) ? s : M_PI;
-		else
-			return (Between(s, {M_PI / 4., 2. * M_PI})) ? s : 2. * M_PI;
-#elif defined(do_not_use_solidangle)
-		if (isFlat(p))
-			return 2. * M_PI;
+	// 	double SolidAngleDN(const netPp p)
+	// 	{
+	// #define use_solidangle
+	// // #define do_not_use_solidangle
+	// #ifdef use_solidangle
+	// 		if (isFlat(p))
+	// 			return 2. * M_PI;
+	// 		auto s = p->getSolidAngle();
+	// 		if (p->isD())
+	// 		{
+	// 			return 2. * M_PI;
+	// 			// return (Between(s, {0.5*2.*M_PI, 1.5*2.*M_PI})) ? s : 2. * M_PI;
+	// 		}
+	// 		else if (p->isC())
+	// 			return (Between(s, {0.3 * M_PI, 1.7 * M_PI})) ? s : M_PI;
+	// 		else
+	// 			return (Between(s, {M_PI / 4., 2. * M_PI})) ? s : 2. * M_PI;
+	// #elif defined(do_not_use_solidangle)
+	// 		if (isFlat(p))
+	// 			return 2. * M_PI;
 
-		if (p->isD())
-			return 2. * M_PI;
-		else if (p->isC())
-			return M_PI;
-		else
-			return 2. * M_PI;
-#else
-		// if (p->isD())
-		//   return 2. * M_PI;
-		// else if (p->isC())
-		//   return M_PI;
-		// else
-		//   return 2. * M_PI;
+	// 		if (p->isD())
+	// 			return 2. * M_PI;
+	// 		else if (p->isC())
+	// 			return M_PI;
+	// 		else
+	// 			return 2. * M_PI;
+	// #else
+	// 		// if (p->isD())
+	// 		//   return 2. * M_PI;
+	// 		// else if (p->isC())
+	// 		//   return M_PI;
+	// 		// else
+	// 		//   return 2. * M_PI;
 
-		if (isFlat(p))
-			return 2. * M_PI;
+	// 		if (isFlat(p))
+	// 			return 2. * M_PI;
 
-		auto s = p->getSolidAngle();
-		if (p->isD())
-			return 2. * M_PI;
-		else if (p->isC())
-			return M_PI;
-		else
-			return (Between(s, {0.7 * M_PI, 1.3 * M_PI})) ? s : 2. * M_PI;
-#endif
-	};
+	// 		auto s = p->getSolidAngle();
+	// 		if (p->isD())
+	// 			return 2. * M_PI;
+	// 		else if (p->isC())
+	// 			return M_PI;
+	// 		else
+	// 			return (Between(s, {0.7 * M_PI, 1.3 * M_PI})) ? s : 2. * M_PI;
+	// #endif
+	// 	};
 	////////////////////////////////////////////////////
 	////////////////////////////////////////////////////
 
@@ -2179,4 +3007,5 @@ namespace BEM
 	/////////////////////////////////////////////////////////
 
 } // namespace BEM
+
 #endif

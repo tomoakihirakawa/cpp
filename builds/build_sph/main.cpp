@@ -912,7 +912,6 @@ std::vector<Tddd> tmp_V_SPH(const V_netPp &points)
 	std::vector<Tddd> ret(points.size());
 	// double mu = 0.001005;
 	// double nu = mu / 1000.;
-	V_d gravity = {0., 0., -9.81};
 	int i = 0;
 	for (const auto &p : points)
 		ret[i++] = p->tmp_U_SPH;
@@ -1175,7 +1174,6 @@ void output_dummy(const std::string &name, const std::unordered_set<networkPoint
 // Kerosene    1.92 x 10-3                  2.39 x 10-4
 /* ------------------------------------------------------ */
 V_d zeros(3, 0.);
-Tddd gravity = {0., 0., -9.81};
 //注意：平滑化距離を設定する際に大事なこと
 //バケットで平滑化距離範囲内の全ての点を抜き出せている
 //核関数の定義は，平滑化距離内の点だけが値を持つ形になっているか．　
@@ -1185,9 +1183,9 @@ JSON settingSPH("./settingSPH.json");
 // JSON water_json(std::ifstream("./water.json"));
 //@ ----------------------- 粒子の初期配置条件 ---------------------- */
 const double particle_spacing = stod(settingSPH["particle_spacing"])[0]; //粒子間隔        //*=20[ptcl/meter]
-V_d xbounds = stod(settingSPH["xbounds"]);
-V_d ybounds = stod(settingSPH["ybounds"]);
-V_d zbounds = stod(settingSPH["zbounds"]);
+// V_d xbounds = stod(settingSPH["xbounds"]);
+// V_d ybounds = stod(settingSPH["ybounds"]);
+// V_d zbounds = stod(settingSPH["zbounds"]);
 //
 Tdd buckets_xbounds = ToTdd(stod(settingSPH["buckets_xbounds"]));
 Tdd buckets_ybounds = ToTdd(stod(settingSPH["buckets_ybounds"]));
@@ -1237,7 +1235,7 @@ int main()
 	std::cout << Green << "Enterを押してください" << std::endl;
 	std::cin.ignore();
 
-	auto generate_network_from_file = [](const std::ifstream &ifs)
+	auto generate_network_from_file = [](const std::ifstream &ifs, const double particle_volume = 1)
 	{
 		Network *tank = nullptr;
 		// JSON object_JSON(std::ifstream("./tank.json"));
@@ -1245,6 +1243,7 @@ int main()
 		auto file_directory = object_JSON["objfile"][0];
 		auto name = object_JSON["name"][0];
 		tank = new Network(file_directory, name);
+		tank->inputJSON = object_JSON;
 		std::cout << name << std::endl;
 		if (object_JSON.find("rotate"))
 		{
@@ -1270,25 +1269,33 @@ int main()
 			V_d tmp = stod(object_JSON["translate"]);
 			tank->translate({tmp[0], tmp[1], tmp[2]});
 		}
-		mk_vtu(output_dir + "/" + name + ".vtu", tank->getFaces());
-		const V_d depth_list = stod(object_JSON["depth_list"]);
-		double volume_of_a_particle = stod(object_JSON["volume_of_a_particle"])[0];
-		double density = stod(object_JSON["density"])[0];
-		for (const auto &f : tank->getFaces())
+		if (object_JSON.find("ignore"))
 		{
-			f->clearParametricPoints();
-			for (const auto &p : f->particlize(particle_spacing, depth_list))
+			tank->IGNORE = stob(object_JSON["ignore"])[0];
+			std::cout << "ignore found" << std::endl;
+		}
+
+		mk_vtu(output_dir + "/" + name + ".vtu", tank->getFaces());
+
+		if (object_JSON.find("depth_list"))
+		{
+			const V_d depth_list = stod(object_JSON["depth_list"]);
+			for (const auto &f : tank->getFaces())
 			{
-				// for (const auto [xyz, t0, t1, depth, h_] : particlizeInfo(f, particle_spacing /*粒子間隔*/, depth_list))
-				// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
-				// p->initialX = xyz;
-				p->setDensityVolume(density, volume_of_a_particle);
-				p->radius_SPH = C_SML * particle_spacing;
-				// p->radius_SPH = C_SML * std::pow(volume_of_a_particle, 1 / 3.);
-				//以下はparticlize_infoから入手できる．
-				p->normal_SPH = f->getNormalTuple();
-				p->face_org = f;
-				// p->particlize_info = {f, t0, t1, depth, h_};
+				f->clearParametricPoints();
+				for (const auto &p : f->particlize(particle_spacing, depth_list))
+				{
+					// for (const auto [xyz, t0, t1, depth, h_] : particlizeInfo(f, particle_spacing /*粒子間隔*/, depth_list))
+					// auto p = new networkPoint(wall_dummy, wall_dummy, xyz);
+					// p->initialX = xyz;
+					p->setDensityVolume(_WATER_DENSITY_, particle_volume);
+					p->radius_SPH = C_SML * particle_spacing;
+					// p->radius_SPH = C_SML * std::pow(particle_volume, 1 / 3.);
+					//以下はparticlize_infoから入手できる．
+					p->normal_SPH = f->getNormalTuple();
+					p->face_org = f;
+					// p->particlize_info = {f, t0, t1, depth, h_};
+				}
 			}
 		}
 		tank->setBounds();
@@ -1299,50 +1306,77 @@ int main()
 
 	try
 	{
-		/* ----------------- networkPointの生成，配置 ----------------- */
-		auto net = new Network;
 
-		auto X = Subdivide(xbounds[0], xbounds[1], (int)std::round((xbounds[1] - xbounds[0]) / particle_spacing)); //粒子のX座標
-		auto Y = Subdivide(ybounds[0], ybounds[1], (int)std::round((ybounds[1] - ybounds[0]) / particle_spacing)); //粒子のY座標
-		auto Z = Subdivide(zbounds[0], zbounds[1], (int)std::round((zbounds[1] - zbounds[0]) / particle_spacing)); //粒子のZ座標
+		//* ------------------------------------------------------ */
+		//*                         setting                        */
+		//* ------------------------------------------------------ */
+		JSON settingJSON(std::ifstream("./settingSPH.json"));
+		std::vector<Network *> RigidBodyObject;
+		std::vector<Network *> FluidObject;
+		// std::string output_directory = settingJSON["output_directory"][0];
+		// std::filesystem::create_directories(output_directory);
+		// double max_dt = stod(settingJSON["max_dt"])[0];
+		/* ----------------- networkPointの生成，配置 ----------------- */
+		auto net_ = generate_network_from_file(std::ifstream("./water.json"));
+		std::cout << net_->getBounds().getXMinMax() << std::endl;
+		std::cout << net_->getBounds().getYMinMax() << std::endl;
+		std::cout << net_->getBounds().getZMinMax() << std::endl;
+		auto [xb0, xb1] = net_->getBounds().getXMinMax();
+		auto [yb0, yb1] = net_->getBounds().getYMinMax();
+		auto [zb0, zb1] = net_->getBounds().getZMinMax();
+		xb0 = xb0 + particle_spacing / 2;
+		xb1 = xb1 - particle_spacing / 2;
+		yb0 = yb0 + particle_spacing / 2;
+		yb1 = yb1 - particle_spacing / 2;
+		zb0 = zb0 + particle_spacing / 2;
+		zb1 = zb1 - particle_spacing / 2;
+		/* ------------------------------------------------------ */
+		auto net = new Network;
+		auto X = Subdivide(xb0, xb1, (int)std::round((xb1 - xb0) / particle_spacing)); //粒子のX座標
+		auto Y = Subdivide(yb0, yb1, (int)std::round((yb1 - yb0) / particle_spacing)); //粒子のY座標
+		auto Z = Subdivide(zb0, zb1, (int)std::round((zb1 - zb0) / particle_spacing)); //粒子のZ座標
 		for (const auto &x : X)
 			for (const auto &y : Y)
 				for (const auto &z : Z)
-					new networkPoint(net, net, {x, y, z});
+				{
+					std::cout << net_->GaussIntegral(Tddd{x, y, z}) << std::endl;
+					if (net_->isInside(Tddd{x, y, z}))
+						new networkPoint(net, net, {x, y, z});
+				}
 		//! --------------------- 質量・体積・密度の決定 -------------------- */
-		int n = (X.size() - 1) * (Y.size() - 1) * (Z.size() - 1);										 /*1少なく*/
-		double Vtot = (xbounds[1] - xbounds[0]) * (ybounds[1] - ybounds[0]) * (zbounds[1] - zbounds[0]); //不変であるべき全体積
-		double density = 1000.;
-		double g = 9.81;
-		double Mtot = density * Vtot;
-		double volume = Vtot / n; //各粒子の初期体積
+		// int n = (X.size() - 1) * (Y.size() - 1) * (Z.size() - 1); /*1少なく*/
+		// double Vtot = (xb1 - xb0) * (yb1 - yb0) * (zb1 - zb0);	  //不変であるべき全体積
+		double Vtot = net_->getVolume();
+		double Mtot = _WATER_DENSITY_ * Vtot;
+		double particle_volume = Vtot / net->getPoints().size(); //各粒子の初期体積
 		for (const auto &p : net->getPoints())
 		{
 			p->initialX = p->getXtuple();
-			p->setDensityVolume(density, volume); //質量(mass)は関数内部で自動で決められる
+			p->setDensityVolume(_WATER_DENSITY_, particle_volume); //質量(mass)は関数内部で自動で決められる
 			p->radius_SPH = C_SML * particle_spacing;
 			// p->radius_SPH = C_SML * std::pow(volume, 1 / 3.); //平滑化半径（"距離"は曖昧さがあるので使わない）
-			p->pressure_SPH = density * g * (initial_surface_z_position - std::get<2>(p->getXtuple()));
+			p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->getXtuple()));
 		}
 		{
 			auto p = (*net->getPoints().begin());
-			std::cout << Grid({"total volume", "total mass", "volume", "mass", "radius_SPH", "radius", "distance"}) << std::endl;
+			std::cout << Grid({"total volume", "total mass", "particle_volume", "mass", "radius_SPH", "radius", "distance"}) << std::endl;
 			std::cout << Grid({Vtot, Mtot, p->volume, p->mass, p->radius_SPH, p->radius, particle_spacing}) << std::endl;
 		}
-		//! --------------------------------------------- */
-		Network *wave_maker = generate_network_from_file(std::ifstream("./wave_maker.json"));
-		Network *tank_init = generate_network_from_file(std::ifstream("./tank_init.json"));
-		Network *tank = generate_network_from_file(std::ifstream("./tank.json"));
-		//! --------------------------------------------- */
-		mk_vtu(output_dir + "/wave_maker_points.vtu", {wave_maker->getPoints()});
-		mk_vtu(output_dir + "/tank_points.vtu", {tank->getPoints()});
-		V_Netp rigid_bodies = {tank, wave_maker};
-		//! ------------------------------------------------------ */
+
+		for (const auto &FileName : settingJSON["inputfiles"])
+		{
+			std::cout << FileName << std::endl;
+			auto net = generate_network_from_file(std::ifstream("./" + FileName), particle_volume);
+			mk_vtu(output_dir + "/" + net->getName() + "_points.vtu", {net->getPoints()});
+			mk_vtu(output_dir + "/" + net->getName() + "_faces.vtu", {net->getFaces()});
+			if (!net->IGNORE && net->inputJSON.find("type") && net->inputJSON["type"][0] == "RigidBody")
+				RigidBodyObject.emplace_back(net);
+		}
+
 		std::filesystem::create_directories(output_dir);
 		std::filesystem::copy_file("settingSPH.json", output_dir + "/settingSPH.json", std::filesystem::copy_options::overwrite_existing);
-		std::filesystem::copy_file("wave_maker.json", output_dir + "/wave_maker.json", std::filesystem::copy_options::overwrite_existing);
-		std::filesystem::copy_file("tank_init.json", output_dir + "/tank_init.json", std::filesystem::copy_options::overwrite_existing);
-		std::filesystem::copy_file("tank.json", output_dir + "/tank.json", std::filesystem::copy_options::overwrite_existing);
+		for (const auto &FileName : settingJSON["inputfiles"])
+			std::filesystem::copy_file(FileName, output_dir + "/" + FileName, std::filesystem::copy_options::overwrite_existing);
 
 /*
 WCSPH:
@@ -1354,8 +1388,8 @@ EISP:
 
 */
 //@ WCSPH/EISPH
-#define WCSPH
-// #define EISPH
+// #define WCSPH
+#define EISPH
 #define apply_polygon_boundary
 		/* ------------------------------------------------------ */
 		double dt = max_dt;
@@ -1375,23 +1409,36 @@ EISP:
 		//@ ------------------------------------------------------------------- */
 		for (auto step = 0; step < 100000; step++)
 		{
+			// if (step == 0)
+			// {
+			// 	wave_maker->clearBucketParametricPoints();
+			// 	wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
+			// 	wave_maker->makeBucketFaces(particle_spacing / 2.);
+			// 	mk_vtu(output_dir + "/wave_maker_parametric_points.vtu", {wave_maker->getParametricPoints()});
+			// }
+			// if (step == 0 || step == preparation_time_step)
+			// {
+			// 	std::swap(tank, tank_init);
+			// 	tank->clearBucketParametricPoints();
+			// 	tank_init->clearBucketParametricPoints();
+			// 	tank->makeBucketParametricPoints(particle_spacing / 2.);
+			// 	tank->makeBucketFaces(particle_spacing / 2.);
+			// 	mk_vtu(output_dir + "/tank_parametric_points.vtu", {tank->getParametricPoints()});
+			// 	RigidBodyObject.clear();
+			// 	for (const auto &net : V_Netp{tank, wave_maker})
+			// 		if (!net->IGNORE)
+			// 			RigidBodyObject.emplace_back(net);
+			// }
+
 			if (step == 0)
-			{
-				wave_maker->clearBucketParametricPoints();
-				wave_maker->makeBucketParametricPoints(particle_spacing / 2.);
-				wave_maker->makeBucketFaces(particle_spacing / 2.);
-				mk_vtu(output_dir + "/wave_maker_parametric_points.vtu", {wave_maker->getParametricPoints()});
-			}
-			if (step == 0 || step == preparation_time_step)
-			{
-				std::swap(tank, tank_init);
-				tank->clearBucketParametricPoints();
-				tank_init->clearBucketParametricPoints();
-				tank->makeBucketParametricPoints(particle_spacing / 2.);
-				tank->makeBucketFaces(particle_spacing / 2.);
-				mk_vtu(output_dir + "/tank_parametric_points.vtu", {tank->getParametricPoints()});
-				rigid_bodies = {tank, wave_maker};
-			}
+				for (const auto &net : RigidBodyObject)
+				{
+					net->clearBucketParametricPoints();
+					net->makeBucketParametricPoints(particle_spacing / 2.);
+					net->makeBucketFaces(particle_spacing / 2.);
+					mk_vtu(output_dir + "/" + net->getName() + "_parametric_points.vtu", {net->getParametricPoints()});
+				}
+
 			/* ------------------------------------------------------ */
 			water_points = net->getPoints();
 #if defined(EISPH)
@@ -1399,7 +1446,7 @@ EISP:
 			if (step <= 2)
 				for (const auto &p : water_points)
 				{
-					p->pressure_SPH = density * g * (initial_surface_z_position - std::get<2>(p->getXtuple()));
+					p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->getXtuple()));
 					p->pressure_SPH_ = p->pressure_SPH;
 				}
 #endif
@@ -1429,10 +1476,7 @@ EISP:
 			std::cout << "net->getLocationsTuple() = " << net->getLocationsTuple() << std::endl;
 			net->makeBucketPoints(particle_spacing / 2.);
 			std::cout << Green << "Elapsed time: " << Red << watch() << reset << " s\n";
-			// b% ------------------------------------------------------ */
-			// b%                      近傍粒子の取得                      */
-			// b% ------------------------------------------------------ */
-			for (const auto &n : Join(rigid_bodies, {net}))
+			for (const auto &n : Join(RigidBodyObject, {net}))
 			{
 				for (const auto &p : n->getPoints())
 				{
@@ -1457,7 +1501,7 @@ EISP:
 			{
 				p->clearContactFaces();
 				p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
-				for (const auto &n : rigid_bodies)
+				for (const auto &n : RigidBodyObject)
 					p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
 			}
 
@@ -1543,10 +1587,10 @@ EISP:
 #endif
 				{
 					//@ unlimiteを使う2021/11/10
-					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					p->addContactPoints(net->getBucketPoints(), p->getXtuple(), p->radius_SPH * 1.1);
 #ifndef apply_polygon_boundary
-					for (const auto &n : rigid_bodies)
-						p->addContactPoints(n->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.2);
+					for (const auto &n : RigidBodyObject)
+						p->addContactPoints(n->getBucketParametricPoints(), p->getXtuple(), p->radius_SPH * 1.1);
 #endif
 
 					// 物体だけで法線方向は決められない．
@@ -1651,7 +1695,7 @@ EISP:
 			{
 				// if (!dummy_points.empty())
 				// 	output_dummy(output_dir + "/dummy_points" + std::to_string(count) + ".vtu", dummy_points);
-				// mk_vtu(output_dir + "/contact_dummy_point.vtu", {net->getContactPointsOfPoints(rigid_bodies)});
+				// mk_vtu(output_dir + "/contact_dummy_point.vtu", {net->getContactPointsOfPoints(RigidBodyObject)});
 				/* ------------------------------------------------------ */
 				std::string filename = "points" + std::to_string(count) + ".vtu";
 				output(output_dir + "/" + filename, water_points);
@@ -1659,11 +1703,15 @@ EISP:
 				waterPVD.output();
 				/* ------------------------------------------------------ */
 				//! メモリーリークに注意
+				for (const auto &net : RigidBodyObject)
 				{
-					std::string filename = "wave_maker" + std::to_string(count) + ".vtu";
-					mk_vtu(output_dir + "/" + filename, wave_maker->getFaces());
-					wave_makerPVD.push(filename, real_time);
-					wave_makerPVD.output();
+					if (net->getName() == "wave_maker")
+					{
+						std::string filename = "wave_maker" + std::to_string(count) + ".vtu";
+						mk_vtu(output_dir + "/" + filename, net->getFaces());
+						wave_makerPVD.push(filename, real_time);
+						wave_makerPVD.output();
+					}
 				}
 
 				{
@@ -1709,6 +1757,7 @@ EISP:
 			//@ ------------------------------------------------------ */
 			//@                  ルンゲクッタを使った時間積分               */
 			//@ ------------------------------------------------------ */
+			int RK_order = 3;
 #ifdef WCSPH
 			std::map<netPp, RungeKutta_<double> *> P_RK_rho;
 #elif defined(EISPH)
@@ -1717,16 +1766,16 @@ EISP:
 			std::map<netPp, RungeKutta_<Tddd> *> P_RK_U, P_RK_X;
 			for (const auto &p : water_points)
 			{
-				P_RK_U[p] = (new RungeKutta_(dt, real_time, p->U_SPH, 4));
-				P_RK_X[p] = (new RungeKutta_(dt, real_time, p->getXtuple(), 4));
+				P_RK_U[p] = (new RungeKutta_(dt, real_time, p->U_SPH, RK_order));
+				P_RK_X[p] = (new RungeKutta_(dt, real_time, p->getXtuple(), RK_order));
 #ifdef WCSPH
-				P_RK_rho[p] = (new RungeKutta_(dt, real_time, p->density, 4));
+				P_RK_rho[p] = (new RungeKutta_(dt, real_time, p->density, RK_order));
 #elif defined(EISPH)
-				P_RK_pressure[p] = (new RungeKutta_(dt, real_time, p->pressure_SPH, 4));
+				P_RK_pressure[p] = (new RungeKutta_(dt, real_time, p->pressure_SPH, RK_order));
 #endif
 			}
 			/* ------------------------------------------------------ */
-			for (const auto &n : Join(rigid_bodies, {net}))
+			for (const auto &n : Join(RigidBodyObject, {net}))
 				for (const auto &p : n->getPoints())
 				{
 					p->lap_U = {0, 0, 0};
@@ -1746,9 +1795,9 @@ EISP:
 					double L = 0.25;
 					double w = std::sqrt(M_PI * 9.8 / L * tanh(M_PI * h / L));
 					double A = 0.005;
-					wave_maker->acceleration = {-A * w * w * cos(w * t), 0, 0, 0, 0, 0};
-					wave_maker->velocity = {-A * w * sin(w * t), 0, 0, 0, 0, 0};
-					wave_maker->translateFromInitialX({A * (cos(w * t) - 1), 0, 0});
+					// wave_maker->acceleration = {-A * w * w * cos(w * t), 0, 0, 0, 0, 0};
+					// wave_maker->velocity = {-A * w * sin(w * t), 0, 0, 0, 0, 0};
+					// wave_maker->translateFromInitialX({A * (cos(w * t) - 1), 0, 0});
 				}
 				/* ------------------------------------------------------ */
 				//* ------------------------------------------------------------ */
@@ -1757,7 +1806,7 @@ EISP:
 #ifndef apply_polygon_boundary
 				Print("接触するダミー粒子を抜き出す", Green);
 				dummy_points.clear();
-				dummy_points = net->getContactPointsOfPoints(rigid_bodies);
+				dummy_points = net->getContactPointsOfPoints(RigidBodyObject);
 				std::cout << "ダミー粒子の数：" << dummy_points.size() << std::endl;
 #else
 				std::cout << "ポリゴン壁を使う．ダミー粒子は使わない" << std::endl;
@@ -1765,7 +1814,7 @@ EISP:
 				//@ ------------------------------------------------------ */
 				//@                 ダミー粒子を更新する関数                   */
 				//@ ------------------------------------------------------ */
-				auto updateDummyPressure = [&net, dummy_points, &rigid_bodies]()
+				auto updateDummyPressure = [&net, dummy_points, &RigidBodyObject]()
 				{
 #ifndef apply_polygon_boundary
 					Print("ダミー粒子（鏡映関係を使う）の圧力を計算．WCSPHなら圧力の評価の\"後\"．EISPHなら圧力の評価の\"前\"", Green);
@@ -1788,7 +1837,7 @@ EISP:
 					}
 #endif
 				};
-				auto updateDummy_U_tmpU_mass_rho = [&net, &dummy_points, &rigid_bodies]()
+				auto updateDummy_U_tmpU_mass_rho = [&net, &dummy_points, &RigidBodyObject]()
 				{
 #ifndef apply_polygon_boundary
 					auto faces = net->getContactFacesOfPoints();
@@ -1854,7 +1903,7 @@ EISP:
 				{
 					p->clearContactFaces();
 					p->radius = p->radius_SPH; // Mean(extLength(p->getLines()));/
-					for (const auto &n : rigid_bodies)
+					for (const auto &n : RigidBodyObject)
 						p->addContactFaces(n->getBucketFaces(), false); /**shadowあり*/
 				}
 #endif
@@ -1877,15 +1926,19 @@ EISP:
 #pragma omp single nowait
 #endif
 				{
-					double radiusToCheck = (p->radius_SPH / C_SML) * 2.5;
-					auto CPS = p->getContactPoints();
-					std::vector<Tddd> Xs;
-					for (const auto &qq : CPS)
+					// p->radius_SPH / C_SMLは，おおよそparticle spacing dx
+					double radiusToCheck = (p->radius_SPH / C_SML) * 3;
+					auto ContactPs = p->getContactPoints();
+					std::vector<Tddd> Xs, hitPs;
+					for (const auto &qq : ContactPs)
 					{
 						auto INTXN = IntersectionsSphereTrianglesLines(qq->getContactFaces());
-						for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(qq, (qq->radius_SPH / C_SML) * 2.5))
+						for (const auto &[F0, F1, X, Y, N] : INTXN.getFFXYN(qq, (qq->radius_SPH / C_SML) * 3))
 							if (Norm(Y - p->getXtuple()) <= radiusToCheck)
+							{
 								Xs.emplace_back(Y);
+								hitPs.emplace_back(X);
+							}
 						if (Norm(qq->getXtuple() - p->getXtuple()) <= radiusToCheck)
 							Xs.emplace_back(qq->getXtuple());
 					}
@@ -1894,33 +1947,26 @@ EISP:
 					if (!isFinite(p->interpolated_normal_SPH))
 						p->interpolated_normal_SPH = {1, 0, 0};
 #ifndef apply_polygon_boundary
-					p->isSurface = std::none_of(CPS.begin(), CPS.end(),
+					p->isSurface = std::none_of(ContactPs.begin(), ContactPs.end(),
 												[p, radiusToCheck](const auto &q)
-												{ return (q != p &&
-														  (Norm(q->getXtuple() - p->getXtuple()) < radiusToCheck) &&
-														  (MyVectorAngle(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple())) < M_PI / 4.)); });
+												{
+													return (q != p &&
+															(Norm(q->getXtuple() - p->getXtuple()) < radiusToCheck) &&
+															(isFlat(p->interpolated_normal_SPH, Normalize(q->getXtuple() - p->getXtuple()), M_PI / 4.)));
+												});
 #else
-					p->isSurface = std::none_of(Xs.begin(), Xs.end(),
+					p->isSurface = std::none_of(std::begin(Xs), std::end(Xs),
 												[p, radiusToCheck](const auto &X)
 												{
 													return ((Norm(X - p->getXtuple()) > 1E-10) &&
 															(Norm(X - p->getXtuple()) < radiusToCheck) &&
-															(MyVectorAngle(p->interpolated_normal_SPH, Normalize(X - p->getXtuple())) < M_PI / 4.));
+															isFlat(p->interpolated_normal_SPH, X - p->getXtuple(), M_PI / 4.));
 												});
 #endif
 					if (Xs.size() <= 3)
 						p->isSurface = true;
 				}
 				std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
-
-				/*
-
-
-
-
-
-
-				*/
 
 #ifdef WCSPH
 				// b# ------------------------------------------------------ */
@@ -2010,7 +2056,7 @@ EISP:
 #else
 					p->lap_U = laplacian_U_ShaoAndLo2003(p->getContactPoints(), p, p->radius_SPH);
 #endif
-					p->tmp_U_SPH = p->U_SPH + ((/*動粘性係数*/ p->mu_SPH / p->density) * p->lap_U + gravity) * dt;
+					p->tmp_U_SPH = p->U_SPH + ((/*動粘性係数*/ p->mu_SPH / p->density) * p->lap_U + _GRAVITY3_) * dt;
 				}
 				std::cout << green << "Elapsed time: " << Red << watch() << reset << " s\n";
 				//@ ------------------------------------------------------- */
@@ -2135,7 +2181,7 @@ EISP:
 						// p->DUDt_SPH = -p->gradP_SPH / p->density + (p->tmp_U_SPH - p->U_SPH) / dt;
 						double nu = p->mu_SPH / p->density;
 
-						p->DUDt_SPH = -p->gradP_SPH / p->density + nu * p->lap_U + gravity;
+						p->DUDt_SPH = -p->gradP_SPH / p->density + nu * p->lap_U + _GRAVITY3_;
 						/* ------------------------- 修正 ------------------------- */
 						p->repulsive_force_SPH *= 0.;
 						auto INTXN = IntersectionsSphereTrianglesLines(p->getContactFaces());
@@ -2160,7 +2206,7 @@ EISP:
 #ifdef WCSPH
 								p->repulsive_force_SPH += N * 2500. * w;
 #elif defined(EISPH)
-								p->repulsive_force_SPH += N * 5000. * w;
+								p->repulsive_force_SPH += N * 500. * w;
 								// p->repulsive_force_SPH += N * 5000. * ((std::tanh(2 * (critical_distance - M_PI / 2. * d) / critical_distance) + 1.) / 2.);
 								// p->DUDt_SPH += N * 2 * (critical_distance - Norm(X - p->getXtuple()) / critical_distance);
 								// auto relative_normal_velocity = Dot(p->U_SPH - velocity /*相対速度*/, N) * N;

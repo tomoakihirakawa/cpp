@@ -64,7 +64,7 @@ int main()
 	// }
 
 	/* ------------------------ 特異積分様 ----------------------- */
-	double x_sing = 0.;
+	double x_sing = 1.;
 	double beta = 2.;
 	for (auto i = 0; i < 15; i++)
 	{
@@ -74,8 +74,8 @@ int main()
 		VV_d gwgw;
 		for (const auto &tw0 : gw_singular)
 		{
-			double xi = Sg(tw0[0], x_sing, beta);			  //!0,1に戻したガウス点
-			double w_xi = tw0[1] * DSg(tw0[0], x_sing, beta); //!0,1に戻した重み
+			double xi = Sg(tw0[0], x_sing, beta);			  //! 0,1に戻したガウス点
+			double w_xi = tw0[1] * DSg(tw0[0], x_sing, beta); //! 0,1に戻した重み
 			for (const auto &tw1 : gw)
 			{
 				double h = tw1[0];
@@ -106,9 +106,9 @@ int main()
 	Print(ans, Red);
 };
 
-//Mathematica
-// ClearAll["Global`*"];
-// ijk = {3, 2, 1};
+// Mathematica
+//  ClearAll["Global`*"];
+//  ijk = {3, 2, 1};
 
 // f[x_, y_, z_, ijk_] := Module[{i, j, k},
 //    {i, j, k} = ijk;
