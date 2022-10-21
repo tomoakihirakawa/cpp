@@ -1,0 +1,15 @@
+{
+    "max_dt": 0.05,
+    "mesh": 90,
+    "stop_remesh_time": 150.0,
+    "force_remesh_time": 0.1,
+    "preparation_time": 0.0,
+    "preparation_max_dt": 0.001,
+    "grid_refinement": 0,
+    "inputfiles": [
+        "water.json",
+        "wavemaker.json",
+        "wavetank.json"
+    ],
+    "output_directory": "/Users/tomoaki/BEM/wave_generation_test"
+}

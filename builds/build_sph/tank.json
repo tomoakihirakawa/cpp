@@ -1,0 +1,11 @@
+{
+    "name": "tank",
+    "objfile": "../../obj/2022Arai/tank10.obj",
+    "type": "RigidBody",
+    "depth_list": [
+        -0.25,
+        -0.75
+    ],
+    "ignore": false,
+    "density": 1000.0
+}

@@ -1,0 +1,50 @@
+
+#include "GNUPLOT.hpp"
+#include "integrationOfODE.hpp"
+
+double dydt(double y, double t) { return sin(t) * sin(t) * y; };
+double solution(double y0, double t) { return y0 * exp((2 * t - sin(2. * t)) / 4.); };
+
+int main() {
+   int n = 3;
+   std::vector<std::vector<std::vector<double>>> ansRK(n);
+   double y0 = 2, t0 = 0.;  //初期値
+   double dt = .5;          //時間ステップ
+   double t_end = 5;        //終了時刻
+   for (auto i = 2; i <= 4; ++i) {
+      std::cout << i + n << "次のルンゲクッタ" << std::endl;
+      double y = y0;
+      double t = t0;
+      for (auto j = 0; j < 100; j++) {
+         RungeKutta rk(dt, t, y, i);
+         ansRK[i - 2].push_back({t, y});
+         while (true) {
+            rk.displayStatus();
+            if (rk.push(dydt(rk.getX(), rk.gett())))
+               break;
+         }
+         y = rk.getX();
+         t += dt;
+         Print(y, Magenta);
+         if (t > t_end)
+            break;
+      }
+   }
+
+   std::vector<std::vector<double>> exact;
+   for (auto j = 0; j < 1000; j++) {
+      double t = j * 0.05;
+      if (t > t_end)
+         break;
+      exact.push_back({t, solution(y0, t)});
+   };
+
+   GNUPLOT plot;
+   plot.Set({{"key", "left"}});
+   plot.SaveData(exact, {{"lc", plot.rgb({255, 0, 0})}, {"w", "l"}, {"lw", "4"}, {"title", "exact"}});
+   plot.SaveData(ansRK[2], {{"lc", plot.rgb({205, 0, 205})}, {"w", "lp"}, {"lw", "2"}, {"title", "RK4"}});
+   plot.SaveData(ansRK[1], {{"lc", plot.rgb({0, 205, 205})}, {"w", "lp"}, {"lw", "2"}, {"title", "RK3"}});
+   plot.SaveData(ansRK[0], {{"lc", plot.rgb({205, 205, 0})}, {"w", "lp"}, {"lw", "2"}, {"title", "RK2"}});
+   plot.Plot2D();
+   std::cin.ignore();
+};

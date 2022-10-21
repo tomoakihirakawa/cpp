@@ -1,0 +1,5 @@
+# /bin/bash
+
+rm -r ./CMake*
+rm -r ./cmake_*
+rm -r ./Makefile

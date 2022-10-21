@@ -1,0 +1,878 @@
+//#define cehck_setCrossInfos
+
+#include "GNUPLOT.hpp"
+
+
+// GNUPLOT plot_divide;
+// #define PLOT_DIVIDE
+
+#include "Network.hpp"
+
+
+//#define DEBUG
+#include "bem_utility.hpp"
+
+using V_d = std::vector<double>;
+using VV_d = std::vector<std::vector<double>>;
+using VVV_d = std::vector<std::vector<std::vector<double>>>;
+
+
+std::vector<std::vector<double>> getLocations(const std::vector<networkPoint*> points){
+  std::vector<std::vector<double>> ret(points.size(),std::vector<double>(3));
+  for(auto i=0; i<points.size(); i++)
+    ret[i] = points[i]->xyz;
+  return ret;
+};
+std::vector<std::vector<std::vector<double>>> getLocation(const std::vector<networkLine*> lines){
+  std::vector<std::vector<std::vector<double>>> ret;
+  for(auto i=0; i<lines.size();i++)
+    ret[i] = lines[i]->getLocations();
+  return ret;
+};
+
+networkLine* longerLine(networkLine* line_IN, double ratio=1.01){
+  networkLine *ret=line_IN;
+  double len=line_IN->length(), v;
+
+  for(const auto& p:line_IN->Points)
+    for(const auto& l:p->Lines){
+      if(l!=line_IN){/*omit comparison with line_IN line self*/
+	v = l->length();
+	if(v > ratio*len){
+	  len = v;	
+	  ret = l;	
+	}
+      }
+    }
+  return ret;
+};
+
+//================================================
+int main(){
+
+  /// SHOW ALL
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./test.obj");
+    obj.rotate(M_PI/2.,{1.,0.,0.});
+    NetworkW water({5,5},{30.01,30.01,1/2.},10);
+    V_netFp faces;
+    V_netPp points;		      
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","1"},{"title","obj"}});
+    plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","3"},{"title","water"}});
+    plot.plot3d();
+    std::cin.ignore();
+  }
+
+  /// SHOW ALL
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./test.obj");
+    obj.rotate(M_PI/2.,{1.,0.,0.});
+    NetworkW water({5,5},{30.01,30.01,4.},10);
+    Network corssNetwork(obj,water);
+    V_netFp faces;
+    V_netPp points;		      
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    
+    int i=0;
+    netF* f;    
+    while(i++<3){
+      for(const auto& l:obj.getLines())
+	obj.divide(longerLine(l));
+
+      obj.displayStates();
+      plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","3"},{"title","bisectioning"}});
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();
+    }    
+    
+    plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","1"},{"title","obj"}});
+    plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","3"},{"title","water"}});
+    plot.plot3d();
+    std::cin.ignore();
+  }
+  
+  /// SHOW ALL
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.01,1.01,1/2.},.1);
+    Network corssNetwork(obj,water);
+    V_netFp faces;
+    V_netPp points;		      
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","1"},{"title","obj"}});
+    plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","3"},{"title","water"}});
+    plot.plot3d();
+    std::cin.ignore();
+  }
+  
+  // FACES BASED
+  //==============================================  
+
+  // getNeighbors_AvoidX_recursive()
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    V_netFp faces;
+    V_netPp points;		      
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    faces = network::takeNearest(obj3D::takeInsideOfBounds(obj.Faces, bounds), {0,0,0.2})->getNeighbors_AvoidX_recursive();		      
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+    faces = network::takeNearest(obj3D::takeInsideOfBounds(water.Faces, bounds), {0,0,0.2})->getNeighbors_AvoidX_recursive();
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","2"},{"title","takeInsideOfBounds"}});
+    plot.plot3d();
+    std::cin.ignore();
+  }
+
+  // getNeighbors_UpToX_recursive()
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);
+    V_netFp faces;
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    faces = network::takeNearest(obj3D::takeInsideOfBounds(obj.Faces, bounds), {0,0,0.2})->getNeighbors_UpToX_recursive();		      
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});		      
+    faces = network::takeNearest(obj3D::takeInsideOfBounds(water.Faces, bounds), {0,0,0.2})->getNeighbors_UpToX_recursive();
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","2"},{"title","takeInsideOfBounds"}});
+    plot.plot3d();
+    std::cin.ignore();    
+  }  
+
+  // getNeighbors_UpToX_recursive(checkedL,passedL)
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./test.obj");
+    obj.rotate(M_PI,{0.,1.,0.});
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    V_netLp passedL;
+    V_netLp checkedL;
+    network::takeNearest(obj3D::takeInsideOfBounds(obj.Faces, bounds),{0,0,0})->getNeighbors_UpToX_recursive(checkedL,passedL);
+    plot.SaveVectorData(getVectorData(passedL),{{"lc","'red'"},{"title","passedL"}});
+    plot.SaveVectorData(getVectorData(checkedL),{{"lc","'blue'"},{"title","checkedL"}});
+    plot.plot3d();
+    std::cin.ignore();    
+  }
+  
+  // One-Way
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);
+    V_netFp faces;
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    faces = water.Faces[10]->getNeighbors_OneWay_recursive();
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","1"},{"title","takeInsideOfBounds"}});
+    faces = obj.Faces[0]->getNeighbors_OneWay_recursive();
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","2"},{"title","takeInsideOfBounds"}});		      
+    plot.plot3d();
+    std::cin.ignore();    
+  }  
+
+  // POINTS BASED
+  //=============================================
+
+  // getNeighbors_AvoidX_recursive()
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);
+    V_netPp points;
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    points = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,bounds),{0,0,0})->getNeighbors_AvoidX_recursive();
+    plot.SaveData(getData(points),{{"title","takeInsideOfBounds"}});
+    points = network::takeNearest(obj3D::takeInsideOfBounds(water.Points,bounds),{0,0,0})->getNeighbors_AvoidX_recursive();
+    plot.SaveData(getData(points),{{"title","takeInsideOfBounds"}});
+    plot.plot3d();
+    std::cin.ignore();    
+  }  
+
+  // getNeighbors_UpToX_recursive(checkedL,passedL)
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    V_netLp passedL;
+    V_netLp checkedL;		      
+    network::takeNearest(obj3D::takeInsideOfBounds(obj.Points, bounds),{0,0,0})->getNeighbors_UpToX_recursive(checkedL,passedL);
+    plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","1"},{"title","passedL"}});
+    plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","2"},{"title","checkedL"}});
+    plot.SaveVectorData(getVectorData(extractFaces(checkedL)),{{"arrowstyle","3"},{"title","extractFaces"}});
+    plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","4"},{"title","water"}});
+    plot.plot3d();
+    std::cin.ignore();    
+  }  
+
+  // One-Way
+  //-----------------------------------
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);	
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    auto points = water.Points[10]->getNeighbors_OneWay_recursive();
+    plot.SaveData(getData(points),{{"w","lp"},{"title","takeInsideOfBounds"}});		      
+
+    points = obj.Points[10]->getNeighbors_OneWay_recursive();
+    plot.SaveData(getData(points),{{"w","lp"},{"title","takeInsideOfBounds"}});		      
+
+    points = corssNetwork.Points[0]->getNeighbors_OneWay_recursive();
+    plot.SaveData(getData(points),{{"w","lp"},{"title","takeInsideOfBounds"}});		      
+    plot.plot3d();
+    std::cin.ignore();    
+  }
+
+  // INTERSECTION
+  //===========================================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);	
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    // true
+    auto faces = network::takeIfIntersect(obj.Faces);
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","3"},{"title","true"}});		      
+    faces = network::takeIfIntersect(water.Faces);
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","3"},{"title","true"}});
+    // false
+    faces = network::takeIfIntersect(obj.Faces,false);
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","4"},{"title","false"}});		      
+    faces = network::takeIfIntersect(water.Faces,false);
+    plot.SaveVectorData(getVectorData(faces),{{"arrowstyle","4"},{"title","false"}});
+
+
+    //
+    plot.SaveData(getData(corssNetwork.Points[0]->getNeighbors_OneWay_recursive()),{{"w","lp"},{"lc","'red'"},{"lw","2"},{"title","corssNetwork"}});		      
+    
+    plot.plot3d();
+    std::cin.ignore();    
+  }
+  		      
+  // ACCESS TO FACES FROM POINTS
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);	
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+      
+    auto p = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points,bounds),{0,0,0});
+    plot.SaveData({p->getX()},{{"ps","3"},{"pt","7"},{"lc","'pink'"},{"title","obj1 p"}});    
+    plot.SaveVectorData(getVectorData(p->getFaces()),{{"arrowstyle","1"},{"title","obj1 p->getFaces()"}});
+
+
+    p = network::takeNearest(obj3D::takeInsideOfBounds(water.Points,bounds),{0,0,0});		      
+    plot.SaveData({p->getX()},{{"ps","3"},{"pt","7"},{"lc","'red'"},{"title","obj1 p"}});    
+    plot.SaveVectorData(getVectorData(p->getFaces()),{{"arrowstyle","2"},{"title","obj2 p->getFaces()"}});
+
+    plot.plot3d();
+    std::cin.ignore();    
+  }
+
+  // ACCESS TO POINTS FROM FACES
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({1,1},{1.133,1.13,1/2.},.1);
+    obj.setBounds();
+    water.setBounds();    
+    Network corssNetwork(obj,water);	
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+      
+    auto f = network::takeNearest(obj3D::takeInsideOfBounds(obj.Faces,bounds),{0,0,0});
+    plot.SaveData({f->getMeanLocation()},{{"ps","3"},{"pt","7"},{"lc","'pink'"},{"title","obj1 p"}});    
+    plot.SaveData(getData(f->getPoints()),{{"loop",""},{"w","lp"},{"title","takeInsideOfBounds"}});
+
+    f = network::takeNearest(obj3D::takeInsideOfBounds(water.Faces,bounds),{0,0,0});		      
+    plot.SaveData({f->getMeanLocation()},{{"ps","3"},{"pt","7"},{"lc","'red'"},{"title","obj1 p"}});    
+    plot.SaveData(getData(f->getPoints()),{{"loop",""},{"w","lp"},{"title","takeInsideOfBounds"}});
+    
+    plot.plot3d();
+    std::cin.ignore();    
+  }
+		      
+  // BISECTIONING
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+
+    int i=0;
+    while(i++<6){
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+	obj.divide(longerLine(l));
+
+      obj.displayStates();
+      plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","3"},{"title","bisectioning"}});
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();
+    }    
+  }
+
+  // TRIANGULATE INTERSECTING FACES ROUTES POLYGONS
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({3,3},{1.133,1.13,1/2.},.1);
+    Network corssNetwork(obj,water);
+    GNUPLOT plot;
+
+    plot.Set({{"key",""}});
+
+    for(const auto& f:network::takeIfIntersect(obj.Faces))
+      for(const auto& routeP:f->getPointsCutFacesBehind())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  plot.SaveData(obj3D::extractX(ps),{{"loop",""},{"w","lp"},{"ps","0"},{"lc","'pink'"},{"notitle",""}});
+    
+    for(const auto& f:network::takeIfIntersect(water.Faces))
+      for(const auto& routeP:f->getPointsCutFacesBehind())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  plot.SaveData(obj3D::extractX(ps),{{"loop",""},{"w","lp"},{"ps","0"},{"lc","'blue'"},{"notitle",""}});
+
+
+    plot.SaveData(getData(corssNetwork.Points[0]->getNeighbors_OneWay_recursive()),{{"w","lp"},{"lc","'red'"},{"lw","2"},{"title","corssNetwork"}});		      
+
+    plot.plot3d();
+    std::cin.ignore();
+    plot.Clear();
+  }
+		      
+  // TRIANGULATE INTERSECTING FACES BEHIND AND FRONT
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.15,1.15,1/2.},.1);
+    Network corssNetwork(obj,water);
+    
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+    
+    VV_netPp vvp;
+    for(const auto& f:network::takeIfIntersect(obj.Faces))
+      for(const auto& routeP:f->getPointsCutFacesBehind())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  vvp.push_back(ps);
+    plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","1"},{"title","getPointsCutFacesBehind()"}});
+
+    vvp.clear();
+    for(const auto& f:network::takeIfIntersect(obj.Faces))
+      for(const auto& routeP:f->getPointsCutFacesFront())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  vvp.push_back(ps);
+    plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","2"},{"title","getPointsCutFacesFront()"}});
+
+    vvp.clear();    
+    for(const auto& f:network::takeIfIntersect(water.Faces))
+      for(const auto& routeP:f->getPointsCutFacesBehind())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  vvp.push_back(ps);
+    plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","3"},{"title","getPointsCutFacesBehind()"}});
+
+    vvp.clear();
+    for(const auto& f:network::takeIfIntersect(water.Faces))
+      for(const auto& routeP:f->getPointsCutFacesFront())
+	for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	  vvp.push_back(ps);
+    plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","4"},{"title","getPointsCutFacesFront()"}});
+    
+    plot.plot3d();
+    std::cin.ignore();
+  }
+  
+  // NETWORK PARTITIONING, FACE BASED
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    int i=0;
+    while(i++<3)
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+	obj.divide(longerLine(l));
+
+    NetworkW water({2,2},{1.15,1.15,1/2.},.1);
+    Network corssNetwork(obj,water);
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+
+    /// obj
+    {
+      auto f = network::takeNearest(obj3D::takeInsideOfBounds(obj.Faces, bounds),{0,0,0});
+      auto fs = f->getNeighbors_recursive();
+
+      plot.SaveVectorData(getVectorData(f),{{"arrowstyle","1"},{"title","start"}});
+      plot.SaveVectorData(getVectorData(fs),{{"arrowstyle","2"},{"title","recursive"}});    
+      plot.SaveVectorData(getVectorData(f->getNeighbors_AvoidX_recursive()),
+			  {{"arrowstyle","3"},{"title","recursive avoid intersection"}});      
+    
+      VV_netPp vvp;
+      for(const auto& f:network::takeIfIntersect(fs))
+	for(const auto& routeP:f->getPointsCutFacesBehind())
+	  for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	    vvp.push_back(ps);
+      plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","4"},{"title","getPointsCutFacesBehind()"}});
+
+      vvp.clear();
+      for(const auto& f:network::takeIfIntersect(fs))
+	for(const auto& routeP:f->getPointsCutFacesFront())
+	  for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	    vvp.push_back(ps);
+
+      plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","5"},{"title","getPointsCutFacesFront()"}});
+
+
+    }
+
+    /// water
+    {
+      auto f = network::takeNearest(obj3D::takeInsideOfBounds(water.Faces, bounds),{0,0,0});
+      auto fs = f->getNeighbors_recursive();
+
+      plot.SaveVectorData(getVectorData(f),{{"arrowstyle","1"},{"title","start"}});
+      plot.SaveVectorData(getVectorData(fs),{{"arrowstyle","2"},{"title","recursive"}});    
+      plot.SaveVectorData(getVectorData(f->getNeighbors_AvoidX_recursive()),
+			  {{"arrowstyle","3"},{"title","recursive avoid intersection"}});      
+    
+      VV_netPp vvp;    
+      for(const auto& f:network::takeIfIntersect(fs))
+	for(const auto& routeP:f->getPointsCutFacesBehind())
+	  for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	    vvp.push_back(ps);
+      plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","4"},{"title","getPointsCutFacesBehind()"}});
+
+      vvp.clear();
+      for(const auto& f:network::takeIfIntersect(fs))
+	for(const auto& routeP:f->getPointsCutFacesFront())
+	  for(const auto& ps: network::triangulate(routeP,f->getNormal()))
+	    vvp.push_back(ps);
+      plot.SaveVectorData(getVectorData(vvp),{{"arrowstyle","5"},{"title","getPointsCutFacesFront()"}});
+      
+    }
+
+    plot.plot3d();
+    std::cin.ignore();
+  }
+
+  // NETWORK PARTITIONING, POINT BASED
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    int i=0;
+    while(i++<2)
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+	obj.divide(longerLine(l));
+
+    NetworkW water({2,2},{1.15,1.15,1/2.},.1);
+    Network corssNetwork(obj,water);
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+
+    /// obj
+    {
+      auto p = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points, bounds),{0,0,0});
+      plot.SaveData(p->getX(),{{"ps","3"},{"pt","7"},{"title","start"}});
+
+      V_netLp passedL;
+      V_netLp checkedL;
+      
+      V_netPp ps;
+
+      ps = p->getNeighbors_AvoidX_recursive(checkedL, passedL);
+      plot.SaveData(obj3D::extractX(ps),{{"ps","2"},{"pt","7"},{"title","getNeighbors_AvoidX_recursive"}});      
+      plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","1"},{"title","passedL"}});
+      plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","2"},{"title","checkedL"}});
+
+      checkedL.clear();
+      passedL.clear();
+      ps = p->getNeighbors_UpToX_recursive(checkedL, passedL);
+      plot.SaveData(obj3D::extractX(ps),{{"ps","2"},{"pt","7"},{"title","getNeighbors_UpToX_recursive"}});      
+      plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","1"},{"title","passedL"}});
+      plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","2"},{"title","checkedL"}});
+
+    }
+
+    /// water
+    {
+      auto p = network::takeNearest(obj3D::takeInsideOfBounds(water.Points, bounds),{0,0,0});
+      plot.SaveData(p->getX(),{{"ps","3"},{"pt","7"},{"title","start"}});
+
+      V_netLp passedL;
+      V_netLp checkedL;
+      
+      V_netPp ps;
+
+      ps = p->getNeighbors_AvoidX_recursive(checkedL, passedL);
+      plot.SaveData(obj3D::extractX(ps),{{"ps","2"},{"pt","7"},{"title","getNeighbors_AvoidX_recursive"}});      
+      plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","1"},{"title","passedL"}});
+      plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","2"},{"title","checkedL"}});
+
+      checkedL.clear();
+      passedL.clear();
+      ps = p->getNeighbors_UpToX_recursive(checkedL, passedL);
+      plot.SaveData(obj3D::extractX(ps),{{"ps","2"},{"pt","7"},{"title","getNeighbors_UpToX_recursive"}});      
+      plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","1"},{"title","passedL"}});
+      plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","2"},{"title","checkedL"}});
+
+    }
+
+    plot.plot3d();
+    std::cin.ignore();
+  }
+
+  // NETWORK PARTITIONING, POINT BASED, first out bounded points
+  // ===================
+  if(false){
+    NetworkObj obj("./obj/tank.obj");
+    int i=0;
+    while(i++<3)
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+	obj.divide(longerLine(l));
+
+    NetworkW water({2,2},{1.15,1.15,1/2.},.1);
+    Network corssNetwork(obj,water);
+    GNUPLOT plot;
+    plot.Set({{"key",""}});    
+    VV_d bounds = {{-0.55,0.55},{-0.55,0.55},{0.05,1.5}};
+
+    /// obj
+    {
+      auto p = network::takeNearest(obj3D::takeInsideOfBounds(obj.Points, bounds),{0,0,0});
+      plot.SaveData(p->getX(),{{"ps","3"},{"pt","7"},{"title","start"}});
+
+      V_netLp checkedL, passedL, endL;
+      V_netPp ps;
+      V_netPp insideP, endP;
+      p->pushNeighbors_UpToX_recursive(insideP, endP, checkedL, passedL, endL);
+      
+      plot.SaveVectorData(getVectorData(checkedL),{{"arrowstyle","1"},{"title","checkedL"}});
+      plot.SaveVectorData(getVectorData(passedL),{{"arrowstyle","2"},{"title","passedL"}});
+      plot.SaveVectorData(getVectorData(endL),{{"arrowstyle","3"},{"title","endL"}});
+      plot.SaveData(obj3D::extractX(insideP),{{"ps","2"},{"pt","7"},{"title","insideP"}});            
+      plot.SaveData(obj3D::extractX(endP),{{"ps","2"},{"pt","7"},{"title","endP"}});            
+    }
+
+
+    plot.plot3d();
+    std::cin.ignore();
+  }
+  
+  // UPDATE POSITION
+  //=====================
+  if(true){
+
+    using map_P_d = std::map<netP*, double>;
+    using map_P_Vd = std::map<netP*, V_d>;
+    using map_F_P_Vd = std::map<netF*, map_P_Vd>;
+    using map_P_P_Vd = std::map<netP*, map_P_Vd>;		      
+    using map_P_F_P_Vd = std::map<netP*, map_F_P_Vd>;
+    GNUPLOT plot;
+    plot.Set({{"key",""}});
+      
+    map_P_Vd P_phiphin, next_P_phiphin;
+      
+    NetworkObj obj("./obj/tank.obj");
+    NetworkW water({2,2},{1.13,1.1222,.4},.1);
+
+    int i=0;
+    while(i++<2){
+      for(const auto& l:obj3D::takeInsideOfBounds(obj.getLines(),{{-0.55,0.55},{-0.55,0.55},{-100,100}}))
+	obj.divide(longerLine(l));
+
+      obj.displayStates();
+      plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","3"},{"title","bisectioning"}});
+      plot.plot3d();
+      std::cin.ignore();
+      plot.Clear();
+    }
+    
+    /// TIME STEP
+    for(int step=0; step<100; step++){    
+      auto DphiDt = [&obj, &water](map_P_Vd& P_phiphin, const V_netFp& Faces,
+				   V_netPp& InsideP, V_netPp& EndP){
+		      Print(__PRETTY_FUNCTION__,magenta);
+		      V_netPp Points;
+		      for(const auto& p:P_phiphin)
+			Points.emplace_back(p.first);
+		      /// CALCULATING IG IGn
+		      //-------------------------------------------
+		      /// calculate IG and IGn that satisfy
+		      /// IG *  phi_n  = (IGn - c * delta)  * phi
+		      VV_d gw = GaussianQuadratureWeights(10,0.,1.);
+		      VV_d gwgw;
+		      for(const auto& tw0:gw){
+			double a = tw0[0];	  
+			for(const auto& tw1:gw){
+			  V_d v = tw1*(1-a);
+			  double b = v[0];
+			  gwgw.push_back({a, b , tw0[1] * v[1]});
+			}
+		      }
+		      
+		      map_P_Vd init_P_IGIGn;
+		      for(const auto& p:Points)
+			init_P_IGIGn[p] = {0.,0.};
+
+		      map_P_P_Vd P_P_IGIGn;		      
+		      map_P_Vd P_IGIGn;
+
+		      for(const auto& org:Points){
+			P_IGIGn = init_P_IGIGn;//initialize
+			for(const auto& f:Faces){
+			  for(const auto& [p, igign]:BEM::calc_P_IGIGn(f,org,gwgw))
+			    P_IGIGn[p] += igign;
+			}
+			P_P_IGIGn[org] = P_IGIGn;
+		      }
+		      
+		      for(const auto& p:InsideP)
+			P_P_IGIGn[p][p][1] += 2.*M_PI;
+		      
+		      // SWAP LEFT AND RIGHT HANDSIDE
+		      for(auto& [p, p_igign]:P_P_IGIGn){//each row
+			for(auto& [q, igign]:p_igign){//each column
+			  if(!(q->getNetwork() == &water)/*Neumann*/)
+			    igign = { - igign[1], - igign[0]};
+			}
+		      }
+		      
+		      /// MAKE COEFFICIENT MATRCIES
+		      /// GET UNKNOWNS
+		      //-------------------------------------------    
+		      VV_d matOfKnowns, matOfUnknowns;
+		      V_d knowns;
+		      V_netPp pOfknowns;
+		      
+		      for(const auto& [org, p_igign]:P_P_IGIGn){
+			pOfknowns.emplace_back(org);
+			V_d rowOfKnwon, rowOfUnknwon;
+			for(const auto& [p,igign]:p_igign){
+			  rowOfUnknwon.emplace_back(igign[0]);///left hand side
+			  rowOfKnwon.emplace_back(igign[1]);///right hand side
+			}
+			matOfUnknowns.emplace_back(rowOfUnknwon);
+			matOfKnowns.emplace_back(rowOfKnwon);
+			bool isDirichlet = (org->getNetwork() == &water);
+			knowns.emplace_back(P_phiphin[org][ isDirichlet ? 0/*phi*/ : 1/*phin*/]);
+		      }
+
+	  
+		      auto phiORphin = Dot( Dot(Inverse(matOfUnknowns), matOfKnowns), knowns);
+		      for(size_t i=0; i<pOfknowns.size(); i++){
+			auto p = pOfknowns[i];
+			auto unknown = phiORphin[i];
+			bool isDirichlet = (p->getNetwork() == &water);			
+			P_phiphin[p][ isDirichlet ? 1/*phin*/ : 0/*phi*/] = unknown;
+		      }
+		      return BEM::DphiDt(P_phiphin);		      
+		    };
+    
+      //------------------------------------------
+      V_netFp Faces(0);
+      V_netPp Points(0);
+      VV_d bounds = {{-0.5,0.5},{-0.5,0.5},{0.05,1.5}};
+
+      V_netPp InsideP(0), EndP(0);
+      /// TAKE POINTS AND FACES INSIDE FO OBJECT
+      //------------------------------------------
+      Network corssNetwork(obj,water);
+      for(const auto& OBJ:std::vector<Network>{obj, water})
+	{
+	  V_netLp checkedL, passedL, endL;
+	  V_netPp insideP, endP;
+	  auto p = network::takeNearest(obj3D::takeInsideOfBounds(OBJ.Points, bounds),{0,.3,0});
+	  p->pushNeighbors_UpToX_recursive(insideP, endP, checkedL, passedL, endL);	  
+
+	  auto faces = extractFaces(checkedL);
+	  auto points = extractPoints(checkedL);
+	  
+	  Faces.insert(Faces.begin(),faces.begin(),faces.end());
+	  Points.insert(Points.begin(),points.begin(),points.end());
+	  InsideP.insert(InsideP.begin(),insideP.begin(),insideP.end());
+	  EndP.insert(EndP.begin(),endP.begin(),endP.end());
+	}
+      
+      // DEACTIVATE POINTS AND FACES WHICH WILL NOT BE USED
+      network::setStatus(obj.Faces,false);
+      network::setStatus(water.Faces,false);
+      network::setStatus(Faces,true);
+      network::setStatus(InsideP,true);
+      network::setStatus(EndP,true);
+      
+      for(const auto& p:Points)
+	P_phiphin[p]={0.,0.};
+
+      double dt = 100.;    
+      // INITIALIZE
+      if(step==0){
+	dt = 0.;
+	for(const auto& p:Points)
+	  P_phiphin[p]={0.,0.};
+      }else{
+	dt = 0.01;
+	for(const auto& [p, ph]:next_P_phiphin)
+	  if(P_phiphin.find(p) != P_phiphin.end()){
+	    P_phiphin[p] = ph;
+	  }
+	for(const auto& p:Points){
+	  if(p->getNetwork() == &obj)
+	    P_phiphin[p] = {1E+30, 0.};
+	  if(p->getNetwork() == &water)
+	    P_phiphin[p][1] = 1E+30;
+	}	
+      }
+
+    // CALCULATE phi phin FROM BIE
+    auto P_DphiDt = DphiDt(P_phiphin, Faces, InsideP, EndP);
+
+    if(false){
+      VVV_d vvv;
+      for(const auto& fs:{obj.Faces, water.Faces})
+	for(const auto& f:fs)
+	  if(f->intersectQ())
+	    for(const auto& routeP:f->getPointsCutFacesBehind())
+	      plot.SaveVectorData(getVectorData(network::triangulate(routeP,f->getNormal())),{{"arrowstyle","5"},{"title","triangulate"}});	    
+    }
+    // UPDATE xyz
+    {
+      auto Vphi = BEM::nablaPhi(P_phiphin);
+      for(const auto& [p,nablaphi]:Vphi){
+	
+	if(MemberQ(InsideP, p)){
+	  if(p->getNetwork() == &water){
+	    p->setX( p->xyz + nablaphi*dt );
+	  }
+	}else if(MemberQ(EndP, p)){
+	  for(const auto& insidep:p->getNeighbors()){
+	    if(MemberQ(InsideP, insidep)){
+	      p->setX( p->xyz + Vphi[insidep][0]*dt );
+	      break;
+	    }
+	  }	  	  
+	}
+	
+      }
+    }
+    // Update
+    // you are allowed to update NEUMANNs phi but they will be over written later
+    for(const auto& [p,dphidt]:P_DphiDt){
+      // if(p->getNetwork() == &water)
+      // 	P_phiphin[p][0] += dphidt * dt;/*phi*/
+
+
+	if(MemberQ(InsideP, p)){
+	  if(p->getNetwork() == &water){
+	    P_phiphin[p][0] += dphidt * dt;/*phi*/
+	  }
+	}else if(MemberQ(EndP, p)){
+	  for(const auto& insidep:p->getNeighbors()){
+	    if(MemberQ(InsideP, insidep)){
+	      P_phiphin[p][0] += P_DphiDt[insidep] * dt;/*phi*/
+	      break;
+	    }
+	  }	  
+	}
+
+
+      
+    }
+
+    next_P_phiphin = P_phiphin;
+      
+    obj.setBounds();
+    water.setBounds();
+
+    ///check
+    if(true){
+      plot.Set({{"key",""}});
+      V_netFp interactionf, normalf;
+      for(const auto& f:Faces){
+	if(f->intersectQ()){
+	  interactionf.emplace_back(f);
+	}else{
+	  normalf.emplace_back(f);
+	}
+      }
+      plot.SaveVectorData(getVectorData(interactionf),{{"arrowstyle","1"},{"title","interactionf"}});
+      plot.SaveVectorData(getVectorData(normalf),{{"arrowstyle","2"},{"title","normalf"}});	  
+
+      double max=-1E+10;
+      for(const auto& [p,igign]:P_phiphin){
+	if(p->getNetwork() == &water)
+	  if(max<abs(igign[0]))
+	    max = abs(igign[0]);
+      }
+      
+      for(const auto& p:InsideP)
+	if(p->getNetwork() == &water)
+	  plot.SaveData(p->getX(),{{"ps","2"},{"pt","7"},{"lc",plot.rgb(250.*abs(P_phiphin[p][0]/max),50.,50.)},{"notitle",""}});
+      for(const auto& p:EndP)
+	if(p->getNetwork() == &water)
+	  plot.SaveData(p->getX(),{{"ps","2"},{"pt","7"},{"lc",plot.rgb(250.*abs(P_phiphin[p][0]/max),50.,50.)},{"notitle",""}});
+
+      
+    }
+
+    //    plot.SaveVectorData(getVectorData(obj.Faces),{{"arrowstyle","3"},{"title","obj"}});
+    //    plot.SaveVectorData(getVectorData(water.Faces),{{"arrowstyle","1"},{"title","water"}});
+    plot.plot3d();
+    // std::cin.ignore();
+    plot.Clear();
+      
+    }
+    
+  }
+  
+  return 0;      
+};

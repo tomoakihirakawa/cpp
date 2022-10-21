@@ -1,0 +1,9 @@
+#! bin/bash
+
+rm ./test
+rm ./out
+rm ./cmake_install.cmake
+rm ./CMakeCache.txt*
+rm -r ./CMakeFiles
+rm ./Makefile
+ 

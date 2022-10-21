@@ -1,0 +1,11 @@
+total 848
+ExpandFile("/Users/tomoaki/Dropbox/cpp/source_test/ExpandFile.cpp")
+-rw-r--r--@  1 tomoaki  staff   13034  5 28 13:34 CMakeCache.txt
+drwxr-xr-x@ 12 tomoaki  staff     384  5 28 13:36 CMakeFiles
+-rw-r--r--@  1 tomoaki  staff    4972  5 28 13:34 Makefile
+-rwxr-xr-x@  1 tomoaki  staff  397028  5 28 13:36 a.out
+-rw-r--r--@  1 tomoaki  staff    1382  5 25 14:05 cmake_install.cmake
+-rwxrwxrwx@  1 tomoaki  staff      54  3 23 11:07 makerun~
+-rwxrwxrwx@  1 tomoaki  staff      62  3 23 11:11 run
+-rw-r--r--@  1 tomoaki  staff       0  5 28 13:38 test.txt
+

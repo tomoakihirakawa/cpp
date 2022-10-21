@@ -1,0 +1,8 @@
+{
+  "max": 17,
+  "scale": 0.5,
+  "scale_additional": 0.5,
+  "improve": 1,
+  "eps": 3e-3,
+  "scale_grad": 6
+}

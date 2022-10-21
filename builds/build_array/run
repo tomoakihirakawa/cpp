@@ -1,0 +1,8 @@
+# /bin/bash
+
+rm ./vtu/*
+mkdir ./vtu
+sh clean
+cmake -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LTO=Thin -DLLVM_BUILD_INSTRUMENTED=IR ../
+make
+./main

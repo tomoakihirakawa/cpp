@@ -1,0 +1,7 @@
+{
+    "name": "water",
+    "type": "Fluid",
+    "output_vtu_file_name": "water",
+    "output_pvd_file_name": "water",
+    "objfile": "../../obj/wave_generation_test/water70.obj"
+}

@@ -1,0 +1,7 @@
+{
+    "name": "wavetank",
+    "type": "RigidBody",
+    "output_vtu_file_name": "wavetank",
+    "output_pvd_file_name": "wavetank",
+    "objfile": "../../obj/wave_generation_test/tank0.obj"
+}

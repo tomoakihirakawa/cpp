@@ -1,0 +1,6 @@
+#!/bin/bash
+make &
+BACK_PID=$!
+wait $BACK_PID
+echo ""
+./a.out

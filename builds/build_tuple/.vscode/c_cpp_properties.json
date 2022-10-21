@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${default}"
+            ],
+            "defines": [],
+            "compilerPath": "/opt/homebrew/bin/gcc-11",
+            "compileCommands": "/Users/tomoaki/Dropbox/markdown/cpp/include/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

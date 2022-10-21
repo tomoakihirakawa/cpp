@@ -1,0 +1,10 @@
+{
+    "name": "wave_maker",
+    "objfile": "../../obj/2022Arai/tank70.obj",
+    "depth_list": [
+        -0.25,
+        -0.75
+    ],
+    "ignore": false,
+    "density": 1000.0
+}

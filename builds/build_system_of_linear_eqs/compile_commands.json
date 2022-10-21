@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_system_of_linear_eqs",
+  "command": "g++-12  -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../include -I/Users/tomoaki/Dropbox/markdown/cpp/builds/../../include  -llapack -lblas -std=c++17 -fuse-ld=gold -Og -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk -std=gnu++17 -o CMakeFiles/main.dir/main.cpp.o -c /Users/tomoaki/Dropbox/markdown/cpp/builds/build_system_of_linear_eqs/main.cpp",
+  "file": "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_system_of_linear_eqs/main.cpp"
+}
+]

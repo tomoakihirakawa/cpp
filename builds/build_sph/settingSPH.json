@@ -1,0 +1,36 @@
+{
+    "density": 1000.0,
+    "initial_surface_z_position": 0.2,
+    "C_CFL_velocity": 0.075,
+    "C_CFL_accel": 0.25,
+    "particle_spacing": 0.5,
+    "buckets_xbounds": [
+        -50.0,
+        50.0
+    ],
+    "buckets_ybounds": [
+        -50.0,
+        50.0
+    ],
+    "buckets_zbounds": [
+        -10.0,
+        10.0
+    ],
+    "C_SML_sigma": 3.0,
+    "C_SML_h": 1.0,
+    "kNS_SML": 5.0,
+    "mu": 0.001005,
+    "C_Tait": 19.809088823063014,
+    "C_artificial_viscousity_alpha": 0.001,
+    "C_artificial_viscousity_beta": 0.0,
+    "preparation_max_dt": 0.0005,
+    "preparation_time": 1.0,
+    "preparation_time_step": 200,
+    "preparation_C_artificial_viscousity_alpha": 0.03,
+    "preparation_C_artificial_viscousity_beta": 0,
+    "inputfiles": [
+        "water.json",
+        "tank.json"
+    ],
+    "max_dt": 0.0005
+}
