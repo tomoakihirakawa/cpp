@@ -7,12 +7,12 @@
         "flap",
         0,
         1,
-        5,
-        10,
+        6.38,
+        150,
         0,
         0,
         1,
         0
     ],
-    "objfile": "../../obj/wave_generation_test/wavemaker0.obj"
+    "objfile": "../../obj/2022Tonegawa/test20221020/wavemaker0.obj"
 }

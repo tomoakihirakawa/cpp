@@ -68,15 +68,16 @@ match SimulationCase:
         settingBEM["max_dt"] = 0.05
         settingBEM["output_directory"] = home + "/BEM/wave_generation_test"
         #
-        objfolder = "wave_generation_test"
-        water["objfile"] = "../../obj/"+objfolder+"/"+"water70.obj"
+        # objfolder = "wave_generation_test"
+        objfolder = "2022Tonegawa/test20221020"
+        water["objfile"] = "../../obj/"+objfolder+"/"+"water200.obj"
         wavemaker["objfile"] = "../../obj/"+objfolder+"/"+"wavemaker0.obj"
         wavetank["objfile"] = "../../obj/"+objfolder+"/"+"tank0.obj"
         wavetank_ignore = False
         start = 0
         A = 1
-        T = 5
-        h = 10
+        T = 6.38
+        h = 150
         l = 0
         wavemaker["velocity"] = ["flap", start, A, T, h, l, 0, 1, 0]
     case "FloatingWind1":

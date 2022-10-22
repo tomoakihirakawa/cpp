@@ -247,9 +247,9 @@ int main(int argc, char **argv) {
       2)
    -------------------------------------------------------------------------- */
    {
-      auto polyFluid = new Network("/Users/tomoaki/Dropbox/markdown/cpp/obj/wave_generation_test/water.obj", "water");
-      auto polyWaveTank = new Network("/Users/tomoaki/Dropbox/markdown/cpp/obj/wave_generation_test/tank.obj", "tank");
-      auto polyWaveMaker = new Network("/Users/tomoaki/Dropbox/markdown/cpp/obj/wave_generation_test/wavemaker.obj", "wavemaker");
+      auto polyFluid = new Network("../../obj/2022Arai/water.obj", "water");
+      auto polyWaveTank = new Network("../../obj/2022Arai/tank.obj", "tank");
+      auto polyWaveMaker = new Network("../../obj/2022Arai/tank.obj", "wavemaker");
       //
       octree treeFluid(polyFluid->getBounds(), {maxDepth, minNumber}, ToX(polyFluid->getFaces()));
       treeFluid.deleteOuside();
@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
       auto WaveTank = new Network;
       auto WaveMaker = new Network;
       //
-      int n = 1;
+      int n = 2;
       Tdd rangeX = {-100, 300}, rangeY = {-10, 10}, rangeZ = {-10, 50};
       auto vecX = Subdivide(rangeX, std::round(std::get<1>(rangeX) - std::get<0>(rangeX)) * n);
       auto vecY = Subdivide(rangeY, std::round(std::get<1>(rangeY) - std::get<0>(rangeY)) * n);
