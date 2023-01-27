@@ -1,9 +1,0 @@
-{
-    "html.format.wrapLineLength": 200,
-    "files.associations": {
-        "*.html": "html",
-        "__split_buffer": "cpp",
-        "deque": "cpp",
-        "vector": "cpp"
-    }
-}
