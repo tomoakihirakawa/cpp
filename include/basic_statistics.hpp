@@ -22,6 +22,13 @@ double Variance(const V_d &v) {
       ret += w * w;
    return ret / (v.size()) - std::pow(Mean(v), 2.);
 };
+
+double Variance(const T4d &V) {
+   double ret = 0, count = 0, sum = 0;
+   for_each(V, [&](const auto &v) { sum += v; ret += v * v; count+=1.; });
+   return ret / count - std::pow(sum / count, 2.);
+};
+
 template <typename T>
 double RootMeanSquare(const T &TUPLE) {
    double ret = 0, div = 0;
@@ -33,13 +40,13 @@ double RootMeanSquare(const T &TUPLE) {
 // #define debug_histogram
 class Histogram {
   public:
-   V_d data;       //ソートした生データ
-   int data_size;  //全dataの長さ
+   V_d data;       // ソートした生データ
+   int data_size;  // 全dataの長さ
    int sturges;    // dataの数に応じてbinの幅を決める
    VV_d bins;
    double bin_width;
-   V_i count;             //角瓶の中にあるデータの数
-   V_i cumulative_count;  //角瓶の中にあるデータの数を初めから累積してった結果
+   V_i count;             // 角瓶の中にあるデータの数
+   V_i cumulative_count;  // 角瓶の中にあるデータの数を初めから累積してった結果
    V_i diff;
    V_d interval;
    V_d mid_interval;

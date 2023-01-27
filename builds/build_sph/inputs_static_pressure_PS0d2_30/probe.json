@@ -1,0 +1,11 @@
+{
+    "name": "probe",
+    "type": "probe",
+    "output_vtu_file_name": "prove",
+    "output_pvd_file_name": "prove",
+    "location": [
+        1.61,
+        0.075,
+        0.003
+    ]
+}

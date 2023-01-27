@@ -13,17 +13,17 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 //* 注意：入力はスカラーでもいいが，getXはベクトルしか返せない
 template <typename T>
 struct RungeKuttaCommon {
-   double dt_fixed;  //基本となるステップ間隔,固定
+   double dt_fixed;  // 基本となるステップ間隔,固定
    /* ----------------------- 毎回変わる値 ----------------------- */
-   double dt;           //次回計算する必要がある値になる増分,回数ごとに変化
-   std::vector<T> _dX;  //これにプッシュしていく，c1k1,c2k2,c3k3,c4k4,,,//このベクトルの長さで何回目かを判断数し，必要な回数まできたら，finished=trueとなる
+   double dt;           // 次回計算する必要がある値になる増分,回数ごとに変化
+   std::vector<T> _dX;  // これにプッシュしていく，c1k1,c2k2,c3k3,c4k4,,,//このベクトルの長さで何回目かを判断数し，必要な回数まできたら，finished=trueとなる
    T dX;                //_dXやdtを基に計算される
    /* ------------------------- 初期値 ------------------------ */
-   double t_init;  //初期値,固定
+   double t_init;  // 初期値,固定
    T Xinit;
    /* ------------------------ 積分結果 ------------------------ */
-   bool finished;  //全てそろって積分が評価できるようになったらtrue
-                   //最終結果はdXに代入される;
+   bool finished;  // 全てそろって積分が評価できるようになったらtrue
+                   // 最終結果はdXに代入される;
    void displayStatus() {
       std::cout << "dt : " << red << this->dt << colorOff << std::endl;
       std::cout << "_dX : " << red << this->_dX << colorOff << std::endl;
@@ -44,12 +44,19 @@ struct RungeKuttaCommon {
       this->_dX = {};
       this->dX = X0;
       this->steps = stepsIN;
+      if (stepsIN == 0 && stepsIN > 4)
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "stepsINが1~4の整数でなければならない");
       this->current_step = 0;
    };
 
    T getXinit() const { return this->Xinit; };
 
-   T getX() const { return this->Xinit + this->dX; };
+   T getX() const {
+      if (this->current_step == 0)
+         return this->Xinit;
+      else
+         return this->Xinit + this->dX;
+   };
 
    T getdX() const { return this->dX; };
    double gett() const { return this->t_init + this->dt; };
@@ -59,19 +66,19 @@ struct RungeKuttaCommon {
       // 次の計算は，t+dtを狙って計算することになる．
       // ここでのdtを返す
       if (this->steps == 1)
-         return dt_fixed;  //!何もプッシュしていない初期状態
+         return dt_fixed;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed;
             case 1:
-               return dt_fixed / 2.;  //!何もプッシュしていない初期状態
+               return dt_fixed / 2.;  //! 何もプッシュしていない初期状態
             default:
                return dt_fixed;
          }
       } else if (this->steps == 3) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed / 2.;
             case 1:
                return dt_fixed;
@@ -82,7 +89,7 @@ struct RungeKuttaCommon {
          }
       } else if (this->steps == 4) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
                return dt_fixed / 2.;
@@ -97,8 +104,15 @@ struct RungeKuttaCommon {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
    };
 
+   bool repush(const T &dXdt_IN) {
+      if (!_dX.empty())
+         _dX.pop_back();
+      return this->push(dXdt_IN);
+   };
+
    bool push(const T &dXdt_IN) {
-      _dX.insert(_dX.begin(), dXdt_IN * dt_fixed);
+      // _dX.insert(_dX.begin(), dXdt_IN * dt_fixed);
+      _dX.push_back(dXdt_IN * dt_fixed);
       current_step++;
       if (this->steps == 1) {
          switch (_dX.size()) {
@@ -163,17 +177,17 @@ struct RungeKuttaCommon {
    /* ------------------------------------------------------ */
    T getX(const T &dXdt_IN) const {
       if (this->steps == 1)
-         return this->Xinit + dXdt_IN * dt_fixed;  //!何もプッシュしていない初期状態
+         return this->Xinit + dXdt_IN * dt_fixed;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed;
             default:
                return this->Xinit + (_dX[0] + dXdt_IN * dt_fixed) / 2.;
          }
       } else if (this->steps == 3) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
                return this->Xinit + dXdt_IN * dt_fixed;
@@ -182,7 +196,7 @@ struct RungeKuttaCommon {
          }
       } else if (this->steps == 4) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
                return this->Xinit + dXdt_IN * dt_fixed / 2.;
@@ -200,17 +214,17 @@ struct RungeKuttaCommon {
 
    T getdXdt(const T &dXdt_IN) const {
       if (this->steps == 1)
-         return dXdt_IN;  //!何もプッシュしていない初期状態
+         return dXdt_IN;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN * dt_fixed;
             default:
                return (_dX[0] / dt_fixed + dXdt_IN);
          }
       } else if (this->steps == 3) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN;
             case 1:  // -> {f2, f1(t,v(t))}
                return dXdt_IN;
@@ -219,7 +233,7 @@ struct RungeKuttaCommon {
          }
       } else if (this->steps == 4) {
          switch (_dX.size()) {
-            case 0:  //!何もプッシュしていない初期状態
+            case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN;
             case 1:  // -> {f2, f1(t,v(t))}
                return dXdt_IN;

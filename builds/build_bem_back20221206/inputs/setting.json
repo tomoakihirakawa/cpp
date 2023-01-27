@@ -1,0 +1,15 @@
+{
+    "max_dt": 0.002,
+    "mesh": 90,
+    "stop_remesh_time": 150.0,
+    "force_remesh_time": 0.1,
+    "preparation_time": 0.0,
+    "preparation_max_dt": 0.001,
+    "grid_refinement": 0,
+    "inputfiles": [
+        "water.json",
+        "wavemaker.json",
+        "wavetank.json"
+    ],
+    "output_directory": "/Users/tomoaki/BEM/Retzler2000_0d002_Linear_10times_20221016"
+}

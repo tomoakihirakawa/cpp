@@ -890,7 +890,7 @@ void p_igign_Quad_IDW(const V_netPp &ps, const netPp origin, const int i, std::m
 
    for (auto &[p, igign] : new_igign_OUT)
       igign = zeros;
-   //!この積分範囲はしゅうせする必要がない
+   //! この積分範囲はしゅうせする必要がない
    interpolationCenterTriangleQuadIDW12 intp(extractX(ps) /*get12Points()で得られた点*/);
    V_d IGIGn(2, 0.), r(3, 0.), N(ps.size(), 0.), A = origin->getX();
    double common, nr;
@@ -1251,7 +1251,7 @@ void p_igign_Linear(const V_netPp &ps, const netPp origin, const int i, std::map
 // 		}
 // 	}
 // };
-//昔の
+// 昔の
 void p_igign_Linear(networkPoint *p0,
                     networkPoint *p1,
                     networkPoint *p2,
@@ -1306,7 +1306,7 @@ void p_igign_Linear(networkPoint *p0,
 };
 /* ------------------------------------------------------ */
 //* ------------------------------------------------------ */
-//#          RBF  面における方程式を点上で作成                  */
+// #          RBF  面における方程式を点上で作成                  */
 // //* ------------------------------------------------------ */
 // void p_igign_Quad_IDW_RBF(const V_netPp &ps, const netPp origin, const int i, std::map<netP *, V_d> &new_igign_OUT)
 // {
@@ -1403,7 +1403,7 @@ void p_igign_Linear(networkPoint *p0,
 // 	}
 // };
 // //* ------------------------------------------------------ */
-//#                 RBF 各点んで方程式を作る場合              */
+// #                 RBF 各点んで方程式を作る場合              */
 //* ------------------------------------------------------ */
 // std::map<netP *, V_d> calc_P_IGIGn_RBF(const netFp &f, const netPp origin)
 // {
@@ -1511,8 +1511,8 @@ void p_igign_Linear(networkPoint *p0,
 // };
 /* ------------------------------------------------------ */
 std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkPoint *const origin) {
-   //おそらくIgIgnの計算精度に大きく関わるため，
-   const auto [p0, p1, p2] = f->getPointsTuple(origin);
+   // おそらくIgIgnの計算精度に大きく関わるため，
+   const auto [p0, p1, p2] = f->getPoints(origin);
    interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
    Tdd IGIGn, p0igign = {0., 0.}, p1igign = {0., 0.}, p2igign = {0., 0.};
    Tddd r, N, A = origin->getXtuple(), cross;
@@ -1537,8 +1537,8 @@ std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *
 
 std::tuple<std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>>
 calc_P_IGIGnLinear3Tuples(const networkFace *const f, const networkPoint *const origin) {
-   //おそらくIgIgnの計算精度に大きく関わるため，
-   const auto [p0, p1, p2] = f->getPointsTuple(origin);
+   // おそらくIgIgnの計算精度に大きく関わるため，
+   const auto [p0, p1, p2] = f->getPoints(origin);
    Tddd X0 = p0->getXtuple();
    Tddd X1 = p1->getXtuple();
    Tddd X2 = p2->getXtuple();
@@ -1609,8 +1609,8 @@ calc_P_IGIGnLinear3Tuples(const networkFace *const f, const networkPoint *const 
 /* ------------------------------------------------------ */
 std::tuple<std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>>
 calc_P_IGIGnLinear3Tuples2(const networkFace *const f, const networkPoint *const origin) {
-   //おそらくIgIgnの計算精度に大きく関わるため，
-   const auto [p0, p1, p2] = f->getPointsTuple(origin);
+   // おそらくIgIgnの計算精度に大きく関わるため，
+   const auto [p0, p1, p2] = f->getPoints(origin);
    std::tuple<std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>> ret({{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}});
    Tdd IGIGn;  //, p0igign = {0., 0.}, p1igign = {0., 0.}, p2igign = {0., 0.};
    double nr, tmp;
@@ -1672,8 +1672,8 @@ std::tuple<std::tuple<netP *, Tdd>,
            std::tuple<netP *, Tdd>,
            std::tuple<netP *, Tdd>>
 calc_P_IGIGnLinearTupleTuple(const networkFace *const f, const networkPoint *const origin) {
-   //おそらくIgIgnの計算精度に大きく関わるため，
-   auto [p0, p1, p2] = f->getPointsTuple(origin);
+   // おそらくIgIgnの計算精度に大きく関わるため，
+   auto [p0, p1, p2] = f->getPoints(origin);
    interpolationTriangleLinearByFixedRange3D intp(T3Tddd{p0->getXtuple(), p1->getXtuple(), p2->getXtuple()});
    Tdd IGIGn;
    std::tuple<std::tuple<netP *, Tdd>,
@@ -1696,7 +1696,7 @@ calc_P_IGIGnLinearTupleTuple(const networkFace *const f, const networkPoint *con
 // std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnLinearTuple(const networkFace *const f, const networkFace *const origin_f)
 // {
 // 	// auto [P0, P1, P2] = f->getPoints();
-// 	// auto [p0, p1, p2] = (P0->CORNER) ? f->getPointsTuple(P0) : ((P1->CORNER) ? f->getPointsTuple(P1) : f->getPointsTuple(P2));
+// 	// auto [p0, p1, p2] = (P0->CORNER) ? f->getPoints(P0) : ((P1->CORNER) ? f->getPoints(P1) : f->getPoints(P2));
 // 	auto [p0, p1, p2] = f->getPoints();
 // 	Tdd p0igign = {0, 0};
 // 	Tdd p1igign = {0, 0};
@@ -1828,7 +1828,7 @@ std::vector<std::tuple<networkPoint *, std::unordered_map<Tii /*k,m*/, Tdd /*YYn
    T6d N;
    double tmp;
    int max_k = 2;
-   //初期化
+   // 初期化
    for (auto k = 0; k <= max_k; ++k)
       for (auto m = -k; m <= k; ++m) {
          p0igign[{k, m}] = {0., 0.};
@@ -1927,7 +1927,7 @@ std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace
    *---*---*
    */
 
-   auto [p0, p1, p2] = f->getPointsTuple(origin);
+   auto [p0, p1, p2] = f->getPoints(origin);
    Tdd p0igign = {0, 0};
    Tdd p1igign = {0, 0};
    Tdd p2igign = {0, 0};
@@ -2103,7 +2103,7 @@ std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace
 	// 	*---*---*
 // 	*/
 
-// 	auto [p0, p1, p2] = f->getPointsTuple(origin);
+// 	auto [p0, p1, p2] = f->getPoints(origin);
 // 	Tdd p0igign = {0, 0};
 // 	Tdd p1igign = {0, 0};
 // 	Tdd p2igign = {0, 0};
@@ -2318,7 +2318,7 @@ std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace
 	// 	*---*---*
 // 	*/
 
-// 	auto [p0, p1, p2] = f->getPointsTuple(origin);
+// 	auto [p0, p1, p2] = f->getPoints(origin);
 // 	Tdd p0igign = {0, 0};
 // 	Tdd p1igign = {0, 0};
 // 	Tdd p2igign = {0, 0};
@@ -2584,7 +2584,7 @@ std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple_mod(const networkFace
 /* ------------------------------------------------------ */
 std::vector<std::tuple<netP *, Tdd>> calc_P_IGIGnQuadTuple(const networkFace *const f, const networkPoint *const origin) {
 
-   auto [p0, p1, p2] = f->getPointsTuple(origin);
+   auto [p0, p1, p2] = f->getPoints(origin);
    Tdd p0igign = {0, 0};
    Tdd p1igign = {0, 0};
    Tdd p2igign = {0, 0};

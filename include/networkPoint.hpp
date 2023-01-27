@@ -37,7 +37,7 @@
 inline std::unordered_set<networkLine *> networkPoint::getLinesAround() const {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : this->Faces)
-      for_each(f->getLinesTuple(), [&](const auto &l) { ret.emplace(l); });
+      for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
    // for (const auto &l : f->getLines())
    // 	ret.emplace(l);
 
@@ -51,24 +51,21 @@ inline std::unordered_set<networkLine *> networkPoint::getLinesOppsoite() const 
 inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFacesX() const {
    // radiusで衝突をチェック
    std::vector<std::tuple<networkFace *, Tddd>> ret;
+   Tddd x;
    for (const auto &f : this->getContactFaces()) {
-      auto intxn = IntersectionSphereTriangle(this->getXtuple(), this->radius, f->getXVertices());
-      if (intxn.isIntersecting)
-         ret.emplace_back(std::tuple<networkFace *, Tddd>{f, intxn.X});
+      x = Nearest(this->X, ToX(f));
+      if (this->radius > Norm(this->X - x))
+         ret.push_back({f, x});
    }
    return ret;
 };
 inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFacesXCloser() const {
    auto c_faces_sorted = this->getContactFacesX();
-   if (c_faces_sorted.empty())
-      return c_faces_sorted;
-   else {
-      auto X = this->getXtuple();
-      std::sort(c_faces_sorted.begin(), c_faces_sorted.end(), [X](auto a, auto b) { return isFinite(Norm(std::get<1>(a) - X)) &&
-                                                                                           isFinite(Norm(std::get<1>(b) - X)) &&
-                                                                                           (Norm(std::get<1>(a) - X) - Norm(std::get<1>(b) - X)) < 1E-10; });
-      return c_faces_sorted;
-   }
+   if (!c_faces_sorted.empty())
+      std::sort(c_faces_sorted.begin(), c_faces_sorted.end(),
+                [&](auto a, auto b) { return isFinite(Norm(std::get<1>(a) - this->X)) && isFinite(Norm(std::get<1>(b) - this->X)) &&
+                                             (Norm(std::get<1>(a) - this->X) - Norm(std::get<1>(b) - this->X)) < 1E-20; });
+   return c_faces_sorted;
 };
 
 /* ------------------------------------------------------ */
@@ -94,12 +91,12 @@ inline V_netFp networkPoint::getFacesDirichlet() const {
 /*
 この点に隣接する面の中で，f_INと向かいあう面があるかどうかを確認する
 */
-inline bool networkPoint::isThereAnyFacingFace(const networkFace *const f_IN, const double rad) const {
-   for (const auto &f : this->Faces)
-      if (f->isFacing(f_IN, rad))
-         return true;
-   return false;
-};
+// inline bool networkPoint::isThereAnyFacingFace(const networkFace *const f_IN, const double rad) const {
+//    for (const auto &f : this->Faces)
+//       if (f->isFacing(f_IN, rad))
+//          return true;
+//    return false;
+// };
 /* ------------------------------------------------------ */
 inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_face, const double mirroring_distance) {
    /*
@@ -128,24 +125,23 @@ inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_fac
 (x)
    */
    this->map_Face_MirrorPoint.clear();
-   for (const auto &f : DeleteDuplicates(Flatten(B_face.getObjects(this->getXtuple(), mirroring_distance)))) {
+   auto x = this->X;
+   for (const auto &f : DeleteDuplicates(Flatten(B_face.getObjects(this->X, mirroring_distance)))) {
       if (f->getNetwork() != this->getNetwork())
-         if (Dot(f->getXtuple() - this->getXtuple(), f->normal) < 0 /*面と点が向き合っているかどうか*/) {
-            auto [p0, p1, p2] = f->getPointsTuple();
-            auto ITX = intersection(geometry::Sphere(this->getXtuple(), mirroring_distance), geometry::Triangle(p0->getXtuple(), p1->getXtuple(), p2->getXtuple()));
-            if (ITX.isIntersecting)
-               this->map_Face_MirrorPoint[f] = new networkPoint(f->getNetwork(), 2. * (ITX.X - this->getXtuple()) + this->getXtuple());
+         if (Dot(f->incenter - x, f->normal) < 0 /*面と点が向き合っているかどうか*/) {
+            if (IntersectQ(x, mirroring_distance, ToX(f)))
+               this->map_Face_MirrorPoint[f] = new networkPoint(f->getNetwork(), 2. * (Nearest(x, ToX(f)) - x) + x);
          }
    }
 };
 
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::normalDirichletFace() const {
-   //接触面としての法線方向を計算する良い方法が必要．
+   // 接触面としての法線方向を計算する良い方法が必要．
    Tddd normal = {0., 0., 0.};
    int count = 0;
    for (auto &f : this->Faces) {
-      auto [p0, p1, p2] = f->getPointsTuple();
+      auto [p0, p1, p2] = f->getPoints();
       if ((p0->Dirichlet || p0->CORNER) && (p1->Dirichlet || p1->CORNER) && (p2->Dirichlet || p2->CORNER))
          normal += f->getAngle(this) * f->normal;
    }
@@ -158,7 +154,7 @@ inline Tddd networkPoint::normalNeumannFace() const {
    Tddd normal = {0., 0., 0.};
    int count = 0;
    for (auto &f : this->Faces) {
-      auto [p0, p1, p2] = f->getPointsTuple();
+      auto [p0, p1, p2] = f->getPoints();
       if ((p0->Neumann || p0->CORNER) && (p1->Neumann || p1->CORNER) && (p2->Neumann || p2->CORNER)) {
          normal += f->getAngle(this) * f->normal;
       }
@@ -169,7 +165,7 @@ inline Tddd networkPoint::normalNeumannFace() const {
 };
 
 inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const double pw1 = 1.) const {
-   //接触面としての法線方向を計算する良い方法が必要．
+   // 接触面としての法線方向を計算する良い方法が必要．
    double len = this->radius;
    Tddd n = {0, 0, 0};
    double totlen = 0;
@@ -189,7 +185,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
       }
       //
       for (const auto &f : contactfaces) {
-         len = Norm(f->mirrorPosition(this) - this->getXtuple());
+         len = Norm(f->mirrorPosition(this) - this->X);
          n += (1. / pow(len, pw1)) * sgn(Dot(f->normal, this->getNormalTuple())) * f->normal;
          totlen += 1. / pow(len, pw1);
       }
@@ -197,35 +193,153 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
    return n / totlen;
 };
 
-inline Tddd networkPoint::reflect(const Tddd &v) const {
-   // particlizeした点だけが使える．
-   auto f = std::get<0>(particlize_info);
-   if (f) {
-      auto n = f->normal;
-      return v - 2. * Dot(v, n) * n;
-   } else
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-};
+// inline Tddd networkPoint::reflect(const Tddd &v) const {
+//    // particlizeした点だけが使える．
+//    auto f = std::get<0>(particlize_info);
+//    if (f) {
+//       auto n = f->normal;
+//       return v - 2. * Dot(v, n) * n;
+//    } else
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+// };
 
-inline Tddd networkPoint::X_little_inside() const {
-   return this->getXtuple() - (this->radius / 4.) * this->getNormalTuple();
-};
+// inline Tddd networkPoint::X_little_inside() const {
+//    return this->X - (this->radius / 4.) * this->getNormalTuple();
+// };
 /*
 @ addContactPointsは，引数として半径が与えられない場合，各点のradiusが成す球として，互いの重なりを調べ，重なった点はContactPointsに保存する．
 */
+
+const double contact_angle = 20. * M_PI / 180.;
+//
+
+bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
+   bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
+   bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
+   bool anyCloseNormal = std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
+                                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
+   return isinradius && (isCloseNormal || anyCloseNormal);
+};
+
+bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
+   bool isinradius = p->radius > Norm(pX - Nearest(pX, f_target));
+   bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
+   bool anyCloseNormal = std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
+                                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
+   return isinradius && (isCloseNormal || anyCloseNormal);
+};
+
+bool isInContact(const Tddd &X, const Tddd &n, const T3Tddd &f_target, const double &radius) {
+   bool isinradius = radius > Norm(X - Nearest(X, f_target));
+   bool anyCloseNormal = isFlat(n, -TriangleNormal(f_target), contact_angle) ||
+                         isFlat(n, TriangleNormal(f_target), contact_angle);
+   return isinradius && anyCloseNormal;
+};
+
+// is f contact with f ?
+bool isInContact(const networkPoint *p, const networkFace *f_normal, const networkFace *f_target) {
+   return isInContact(p->X, f_normal->normal, ToX(f_target), p->radius);
+};
+
+// is p contact with f ?
+bool isInContact(const networkPoint *p, const networkFace *f_target) {
+   return std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &f_normal) { return isInContact(p, f_normal, f_target); });
+};
+
+bool isInContact(const networkPoint *p, const networkFace *f_normal, const std::unordered_set<networkFace *> &faces_target) {
+   return std::any_of(faces_target.begin(), faces_target.end(), [&](const auto &f_target) { return isInContact(p, f_normal, f_target); });
+};
+
+std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
+                                            const std::unordered_set<networkFace *> &contactFacesIN,
+                                            const int num,
+                                            const bool delete_same_direction = true) {
+   /*
+   節点は，複数の三角形と接触していることがある．
+   接触している三角形のうち境界条件として利用する必要がない三角形もある（法線方向が重複する三角形のうち利用すべき三角形は，最も近いものだけでよい）．
+   */
+   // auto X = p->X;
+   // if (contactFacesIN.empty())
+   //    return {};
+   // else if (contactFacesIN.size() == 1)
+   //    return {*contactFacesIN.begin()};
+   // std::vector<networkFace *> contactFaces;
+   // contactFaces.reserve(contactFacesIN.size());
+
+   // for (const auto &f : contactFacesIN)
+   //    if (isInContact(p, f))
+   //       contactFaces.emplace_back(f);
+
+   // std::sort(contactFaces.begin(), contactFaces.end(),
+   //           [&](const auto &A, const auto &B) { return Norm(X - Nearest(X, ToX(A))) < Norm(X - Nearest(X, ToX(B))); });
+
+   // std::vector<networkFace *> ret = {*contactFaces.begin()};
+   // for (const auto &F : contactFaces)
+   //    if (std::none_of(ret.begin(), ret.end(),
+   //                     [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
+   //                                                 isFlat(F->normal, f->normal, M_PI / 180); }))
+   //       ret.emplace_back(F);
+   // return ret;
+   /* -------------------------------------------------------------------------- */
+   std::vector<std::tuple<networkFace *, double>> f_dist_sort;
+   double dist;
+   for (const auto &f : contactFacesIN)
+      if (f->getNetwork() != p->getNetwork()) {
+         // 別のネットワークに属するという条件
+         dist = Norm(p->X - Nearest(p->X, ToX(f)));
+         if (isInContact(p, f)) {
+            std::tuple<networkFace *, double> T = {f, dist};
+            if (f_dist_sort.empty())
+               f_dist_sort.emplace_back(T);
+            else {
+               auto inserted = false;
+               for (auto it = f_dist_sort.begin(); it != f_dist_sort.end(); ++it) {
+                  if (std::get<1>(*it) >= dist) {
+                     f_dist_sort.insert(it, T);
+                     inserted = true;
+                     break;
+                  }
+               }
+               if (!inserted)
+                  f_dist_sort.emplace_back(T);
+            }
+         }
+      }
+
+   std::vector<networkFace *> ret;
+
+   if (!f_dist_sort.empty()) {
+      for (const auto &[F, D] : f_dist_sort) {
+         if (!delete_same_direction)
+            ret.emplace_back(F);
+         else if (std::none_of(ret.begin(), ret.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
+                                                                                   isFlat(F->normal, f->normal, M_PI / 180); }))
+            ret.emplace_back(F);
+         if (ret.size() >= num)
+            return ret;
+      };
+   }
+   return ret;
+};
+
 inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
    /*
     b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
    */
+   Tddd x;
    if (this->Lines.empty()) {
       // b!まずは，衝突があり得そうな面を多めに保存する．
       std::unordered_map<networkFace *, Tddd> tmpContactFaces;
-      // for (const auto &f : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius))
+      // for (const auto &f : B.getObjects_unorderedset(this->X, 2. * this->radius))
       for (const auto &f : B.getAll()) {
-         auto [p0, p1, p2] = f->getXVertices();
-         auto intxn = IntersectionSphereTriangle(this->getXtuple(), 3. * this->radius, f->getXVertices());
-         if (Norm(intxn.X - this->getXtuple()) < 2. * this->radius)
-            tmpContactFaces[f] = intxn.X;
+         // auto [p0, p1, p2] = f->getXVertices();
+         // auto intxn = IntersectionSphereTriangle(this->X, 3. * this->radius, f->getXVertices());
+         // if (Norm(intxn.X - this->X) < 2. * this->radius)
+         //    tmpContactFaces[f] = intxn.X;
+         //
+         x = Nearest(this->X, ToX(f));
+         if (2 * this->radius > Norm(this->X - x))
+            tmpContactFaces[f] = x;
       }
       // b!各面について衝突があり得るか詳しく調べて判断する．
       for (const auto &[f, intxnX] : tmpContactFaces) {
@@ -234,246 +348,90 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
          // BEMのために導入したもの．周辺の点の方向にある面には衝突し得ないため，無視する．
          // ただし修正面の方向をむくせんを抜き出す必要がある．
          // auto n = f->normal;
-         auto thisPointToFace = intxnX - this->getXtuple();
+         auto thisPointToFace = intxnX - this->X;
          // b$ 点が面を有していない場合（SPH用）
          if (Dot(f->normal, thisPointToFace /* <--この点からfまでのベクトルを向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
             this->ContactFaces.emplace(f);
       }
    } else {
-      // b!まずは，衝突があり得そうな面を多めに保存する．
-      std::unordered_map<networkFace *, std::tuple<Tddd, Tddd>> tmpContactFaces;
-      Tddd r;
-      std::unordered_set<networkFace *> faces;
-      for (const auto &FF : B.getObjects_unorderedset(this->getXtuple(), 5. * this->radius))
-         faces.emplace(FF);
 
-      for (const auto &f : faces) {
-         if (include_self_network || !(f->getNetwork() == this->getNetwork())) {
-            auto intxn = IntersectionSphereTriangle(this->getXtuple(), this->radius, f->getXVertices());
-            if (intxn.isIntersecting) {
-               r = intxn.X - this->getXtuple();
-               if (Norm(r) < this->radius) {
-                  // if (Dot(f->normal, this->getNormalTuple()) <= 0)
-                  // if (MyVectorAngle(f->normal, -this->getNormalTuple()) / M_PI * 180. <= 135. ||
-                  // 	Norm(r) < this->radius / 50.)
-                  {
-                     std::get<0>(tmpContactFaces[f]) = intxn.X;
-                     std::get<1>(tmpContactFaces[f]) = r;
+      // this->ContactFaces = ToUnorderedSet(selectionOfFaces(this, B.getObjects_unorderedset(this->X, this->radius), 20, false));
+
+      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
+      double dist;
+      std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
+      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
+      for (const auto &f : faces)
+         // 別のネットワークに属するという条件
+         if (include_self_network || f->getNetwork() != this->getNetwork()) {
+            dist = Norm(this->X - Nearest(this->X, ToX(f)));
+            // 面同士が向き合っているという条件
+            if (isInContact(this, f)) {
+               std::tuple<networkFace *, double> T = {f, dist};
+               if (f_dist_sort.empty())
+                  f_dist_sort.push_back(T);
+               else {
+                  auto inserted = false;
+                  for (auto it = f_dist_sort.begin(); it != f_dist_sort.end(); ++it) {
+                     if (std::get<1>(*it) >= dist) {
+                        f_dist_sort.insert(it, T);
+                        inserted = true;
+                        break;
+                     }
                   }
+                  if (!inserted)
+                     f_dist_sort.push_back(T);
                }
             }
          }
-      }
-      std::vector<std::tuple<networkFace *, double>> faces_sort;
-      // b! 各面について衝突があり得るか詳しく調べて判断する．
-      for (const auto &[f, intxnX_r] : tmpContactFaces) {
-         /*
-                  |
-         Face |<---thisPointToFace---- thisPoint
-                  |
-         */
-         /*
-         _________________________
-         |       \     A
-         | shadow   \60|
-         |      0    \|
-         |  q<---------*--------q
-         |  |
-         |  |
-         |  *
-         */
-         //$ 点が面を有している場合（境界要素法用）
-         // auto shadowed = false;
-         // auto hitX = std::get<0>(intxnX_r);
-         // auto thisPointToFace = std::get<1>(intxnX_r);
-         // for (const auto &q : this->getNeighbors())
-         // {
-         // 	auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
-         // 	auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace) * 180. / M_PI;
-         // 	if (angle < 10. || Norm(thisPointToFace) > this->radius)
-         // 	{
-         // 		if (!(Norm(thisPointToFace) <= this->radius / 10.))
-         // 		{
-         // 			shadowed = true;
-         // 			break;
-         // 		}
-         // 	}
-         // }
-         // if (!shadowed)
-         // if (Dot(f->normal, this->getNormalTuple() /* <--メッシュの場合は法線方向を向き合いの判定に利用*/) <= 0.)
-         if (this->isThereAnyFacingFace(f, M_PI / 180. * 20.))
-            faces_sort.push_back({f, Norm(std::get<1>(intxnX_r))});
-      }
-      std::sort(faces_sort.begin(), faces_sort.end(), [](const auto &a, const auto &b) { return Norm(std::get<1>(a)) - Norm(std::get<1>(b)) < 1E-20; });
 
-      std::vector<Tddd> face_normal_vectors;
-      for (const auto &f : faces_sort) {
-         bool duplication = false;
-         for (const auto &n : face_normal_vectors)
-            if (isFlat(std::get<0>(f)->normal, n, M_PI / 180))
-               duplication = true;
-         if (!duplication) {
-            this->ContactFaces.emplace(std::get<0>(f));
-            face_normal_vectors.emplace_back(std::get<0>(f)->normal);
-            if (this->ContactFaces.size() >= 5)
-               break;
-         }
-      };
-      /* ------------------------------------------------------ */
-      // // b!まずは，衝突があり得そうな面を多めに保存する．
-      // std::unordered_map<networkFace *, std::tuple<Tddd, Tddd>> tmpContactFaces;
-      // auto X_little_inside = this->X_little_inside(); // this->getXtuple() - (this->radius / 4.) * this->getNormalTuple();
-      // for (const auto &f : B.getObjects_unorderedset(X_little_inside, 3. * this->radius))
-      // 	if (!(!include_self_network && (f->getNetwork() == this->getNetwork())))
-      // 	{
-      // 		// auto intxn = intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(f->getXVertices()));
-
-      // 		// 完全に正対している面のみを取得.斜めに見る面は取得しない．
-      // 		auto intxn = IntersectionSphereTriangle(X_little_inside, this->radius, f->getXVertices());
-      // 		Tddd r = intxn.X - X_little_inside;
-      // 		if (intxn.isIntersectingInsideTriangle)
-      // 			if (intxn.scale <= 0. /*面の法線方向とは逆向き*/ || Dot(r, f->normal) <= 0.)
-      // 			{
-      // 				std::get<0>(tmpContactFaces[f]) = intxn.X;
-      // 				std::get<1>(tmpContactFaces[f]) = r;
-      // 			}
-      // 	}
-      // //全てを入れる場合
-      // for (const auto &[f, intxnX_r] : tmpContactFaces)
-      // 	this->ContactFaces.emplace(f);
-      /* ------------------------------------------------------ */
-      // b!各面について衝突があり得るか詳しく調べて判断する．
-      // for (const auto &[f, intxnX_r] : tmpContactFaces)
-      // {
-      // 	/*
-      // 		 |
-      // 	Face |<---thisPointToFace---- thisPoint
-      // 		 |
-      // 	*/
-      // 	/*
-      // 	_________________________
-      // 	|       \     A
-      // 	| shadow   \60|
-      // 	|      0    \|
-      // 	|  q<---------*--------q
-      // 	|  |
-      // 	|  |
-      // 	|  *
-      // 	*/
-      // 	//$ 点が面を有している場合（境界要素法用）
-      // 	auto shadowed = false;
-      // 	auto hitX = std::get<0>(intxnX_r);
-      // 	auto thisPointToFace = std::get<1>(intxnX_r);
-      // 	for (const auto &q : this->getNeighbors())
-      // 	{
-      // 		auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
-      // 		auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace) * 180. / M_PI;
-      // 		if (angle < 10. || Norm(thisPointToFace) > this->radius)
-      // 		{
-      // 			if (!(Norm(thisPointToFace) <= this->radius / 10.))
-      // 			{
-      // 				shadowed = true;
-      // 				break;
-      // 			}
-      // 		}
-      // 	}
-      // 	if (!shadowed)
-      // 		if (Dot(f->normal, this->getNormalTuple() /* <--メッシュの場合は法線方向を向き合いの判定に利用*/) <= 0. /*少なくとも向き合っていなければいけない*/
-      // 			|| Norm(hitX - this->getXtuple()) < this->radius)
-      // 			this->ContactFaces.emplace(f);
-      // }
+      if (!f_dist_sort.empty()) {
+         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
+         for (const auto &[F, D] : f_dist_sort) {
+            // if (std::none_of(this->ContactFaces.begin(),
+            //                  this->ContactFaces.end(),
+            //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
+            //                                              isFlat(F->normal, f->normal, M_PI / 180); }))
+            this->ContactFaces.emplace(F);
+            // if (this->ContactFaces.size() > 5) {
+            //    return;
+            // }
+         };
+      } else
+         DebugPrint("faces is empty");
    }
-   // /*
-   //  b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
-   // */
-   // // b!まずは，衝突があり得そうな面を多めに保存する．
-   // std::unordered_map<networkFace *, Tddd> tmpContactFaces;
-   // for (const auto &f : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius))
-   // 	if (!(!include_self_network && (f->getNetwork() == this->getNetwork())))
-   // 	{
-   // 		// auto intxn = intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Triangle(f->getXVertices()));
-   // 		auto intxn = IntersectionSphereTriangle(this->getXtuple(), 2. * this->radius, f->getXVertices());
-   // 		if (intxn.isIntersecting && intxn.scale < 0 /*面の法線方向とは逆向き*/)
-   // 			tmpContactFaces[f] = intxn.X;
-   // 	}
-   // // b!各面について衝突があり得るか詳しく調べて判断する．
-   // for (const auto &[f, intxnX] : tmpContactFaces)
-   // {
-   // 	//@ 周りの点に隠れて面が見えない状況の場合，その面とは接し得ないので，考慮しない．
-   // 	// auto [p0, p1, p2] = f->getPointsTuple();
-   // 	// BEMのために導入したもの．周辺の点の方向にある面には衝突し得ないため，無視する．
-   // 	// ただし修正面の方向をむくせんを抜き出す必要がある．
-   // 	// auto n = f->getNormalTuple();
-   // 	auto thisPointToFace = intxnX - this->getXtuple();
-   // 	if (this->Lines.empty())
-   // 	{
-   // 		// b$ 点が面を有していない場合（SPH用）
-   // 		if (Dot(f->normal, thisPointToFace /* <--この点からfまでのベクトルを向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
-   // 			this->ContactFaces[f] = intxnX;
-   // 	}
-   // 	else
-   // 	{
-   // 		/*
-   // 			 |
-   // 		Face |<---thisPointToFace---- thisPoint
-   // 			 |
-   // 		*/
-   // 		/*
-   // 		_____________________
-   // 		|       \  A
-   // 		| shadow \ |
-   // 		|      60 \|
-   // 		|  q<------*--------q
-   // 		|  |
-   // 		|  |
-   // 		|  *
-   // 		*/
-   // 		//$ 点が面を有している場合（境界要素法用）
-   // 		auto shadowed = false;
-   // 		for (const auto &q : this->getNeighbors())
-   // 		{
-   // 			auto thisPointToNeighbor = q->getXtuple() - this->getXtuple();
-   // 			auto angle = MyVectorAngle(thisPointToNeighbor, thisPointToFace) * 180. / M_PI;
-   // 			if (angle < 60. || Norm(thisPointToFace) > this->radius)
-   // 			{
-   // 				shadowed = true;
-   // 				break;
-   // 			}
-   // 		}
-   // 		if (!shadowed)
-   // 			if (Dot(f->normal, this->getNormalTuple() /* <--メッシュの場合は法線方向を向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
-   // 				this->ContactFaces[f] = intxnX;
-   // 	}
-   // }
 };
 
-//点なのに，sphereでインターセクションをチェックするのは効率的ではない．
+// 点なのに，sphereでインターセクションをチェックするのは効率的ではない．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius /*depth*/))
+   for (const auto &q : B.getObjects_unorderedset(this->X, 2. * this->radius /*depth*/))
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
-         if (this != q)
-            if (intersection(geometry::Sphere(this->getXtuple(), this->radius), geometry::Sphere(this->getXtuple(), q->radius)).isIntersecting)
+         if (this != q) {
+            // if (intersection(geometry::Sphere(this->X, this->radius), geometry::Sphere(this->X, q->radius)).isIntersecting)
+            if (IntersectQ(this->X, this->radius, q->X, q->radius))
                this->ContactPoints.emplace(q);
+         }
 };
 // radiusのしていがある場合は，その半径内の点を取得する．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const double radius,
                                            const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), 2. * this->radius /*depth*/))
+   for (const auto &q : B.getObjects_unorderedset(this->X, 2. * this->radius /*depth*/))
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q)
-            if (Norm(this->getXtuple() - q->getXtuple()) <= radius)
+            if (Norm(this->X - q->X) <= radius)
                this->ContactPoints.emplace(q);
 };
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const int limit_depth,
                                            const int limit_num,
                                            const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->getXtuple(), limit_depth, limit_num))
+   for (const auto &q : B.getObjects_unorderedset(this->X, limit_depth, limit_num))
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q)
-            if (Norm(this->getXtuple() - q->getXtuple()) <= radius)
+            if (Norm(this->X - q->X) <= radius)
                this->ContactPoints.emplace(q);
 };
 // radiusのしていがある場合は，その半径内の点を取得する．
@@ -491,9 +449,9 @@ inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoin
       addContactPoints(B, limit_depth, limit_num, include_self_network);
 };
 
-//追加2021/06/18
+// 追加2021/06/18
 V_netFp networkPoint::getFacesSort() const {
-   V_netFp ret = {(this->getFaces())[0]};
+   V_netFp ret = {*this->Faces.begin()};
    netFp f;
    netLp l;
    int count = 0;
@@ -517,14 +475,14 @@ V_netFp networkPoint::getFacesSort() const {
    return ret;
 };
 /* ------------------------------------------------------ */
-//追加2021/09/02
+// 追加2021/09/02
 inline V_netFp networkPoint::getFacesSort(networkLine *const line) const {
    try {
       auto p1 = (*line)(this);
       if (!p1)
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       networkFace *begin_face;
-      //左回りの面を選ぶ．その面からスタート
+      // 左回りの面を選ぶ．その面からスタート
       for (const auto &f : line->getFaces())
          if (f->getPointFront(line) == p1) {
             begin_face = f;
@@ -560,7 +518,7 @@ V_netPp networkPoint::getNeighborsSort2() const {
    netPp p;
    netLp l;
    for (const auto &f : getFacesSort()) {
-      p = std::get<1>(f->getPointsTuple(this));
+      p = std::get<1>(f->getPoints(this));
       ret.emplace_back(p);
       l = f->getLineOpposite(this);
       p = (*l)(f)->getPointOpposite(l);
@@ -589,7 +547,7 @@ inline V_d networkPoint::getAngles(networkLine *const base_line) const {
 
 using V_Tup_ddVdPp = std::vector<std::tuple<double, double, V_d, networkPoint *>>;
 
-//!起点を指定できるようにする．
+//! 起点を指定できるようにする．
 using V_Tup_ddVd = std::vector<std::tuple<double, double, V_d>>;
 
 using V_Var_VVdVPp = std::vector<std::variant<VV_d, V_netPp>>;
@@ -624,7 +582,7 @@ inline void networkPoint::setX(const V_d &xyz_IN) {
 };
 
 inline Tddd networkPoint::getNormalTuple() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       normal += f->getAngle(this) * f->normal;
@@ -650,7 +608,7 @@ inline std::vector<double> networkPoint::getFaceAreas() const {
 #define linear_area_averaged
 inline Tddd networkPoint::getNormalAreaAveraged() const {
 #ifdef linear_area_averaged
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       normal += f->area * f->normal;
@@ -693,14 +651,14 @@ inline Tddd networkPoint::getNormalAreaAveraged() const {
 /*                       Arithmetic                       */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalArithmeticAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       normal += f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalDirichletArithmeticAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -708,7 +666,7 @@ inline Tddd networkPoint::getNormalDirichletArithmeticAveraged() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannArithmeticAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -719,43 +677,43 @@ inline Tddd networkPoint::getNormalNeumannArithmeticAveraged() const {
 /*              Kernel Weighted Averaged                  */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalSplineKernelAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
-   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->getXtuple());
+   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
-      normal += kernel_Bspline5(Norm(f->getXtuple() - this->getXtuple()), radius) * f->normal;
+      normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalDirichletSplineKernelAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
-   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->getXtuple());
+   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
-         normal += kernel_Bspline5(Norm(f->getXtuple() - this->getXtuple()), radius) * f->normal;
+         normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannSplineKernelAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
-   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->getXtuple());
+   double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
       if (f->Neumann)
-         normal += kernel_Bspline5(Norm(f->getXtuple() - this->getXtuple()), radius) * f->normal;
+         normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 /* ------------------------------------------------------ */
 /*                   SubArea Averaged                     */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalSubAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.}, a, b, c;
    for (const auto &f : this->Faces)
       normal += f->getSubArea(this) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalDirichletSubAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -764,7 +722,7 @@ inline Tddd networkPoint::getNormalDirichletSubAreaAveraged() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannSubAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -775,7 +733,7 @@ inline Tddd networkPoint::getNormalNeumannSubAreaAveraged() const {
 /*                      Area Averaged                     */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalDirichletAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -783,7 +741,7 @@ inline Tddd networkPoint::getNormalDirichletAreaAveraged() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -793,35 +751,35 @@ inline Tddd networkPoint::getNormalNeumannAreaAveraged() const {
 /* ------------------------------------------------------ */
 /*                  Area Averaged Buffer                  */
 /* ------------------------------------------------------ */
-inline Tddd networkPoint::getNormalAreaAveraged_Buffer() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
-   Tddd normal = {0., 0., 0.};
-   for (const auto &f : this->Faces)
-      if (f->Dirichlet)
-         normal += f->getAreaBuffer() * f->getNormalBuffer();
-   return Normalize(normal);
-};
-inline Tddd networkPoint::getNormalDirichletAreaAveraged_Buffer() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
-   Tddd normal = {0., 0., 0.};
-   for (const auto &f : this->Faces)
-      if (f->Dirichlet)
-         normal += f->getAreaBuffer() * f->getNormalBuffer();
-   return Normalize(normal);
-};
-inline Tddd networkPoint::getNormalNeumannAreaAveraged_Buffer() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
-   Tddd normal = {0., 0., 0.};
-   for (const auto &f : this->Faces)
-      if (f->Neumann)
-         normal += f->getAreaBuffer() * f->getNormalBuffer();
-   return Normalize(normal);
-};
+// inline Tddd networkPoint::getNormalAreaAveraged_Buffer() const {
+//    // 角度の重みを掛けた法線ベクトルを足し合わせる
+//    Tddd normal = {0., 0., 0.};
+//    for (const auto &f : this->Faces)
+//       if (f->Dirichlet)
+//          normal += f->getAreaBuffer() * f->getNormalBuffer();
+//    return Normalize(normal);
+// };
+// inline Tddd networkPoint::getNormalDirichletAreaAveraged_Buffer() const {
+//    // 角度の重みを掛けた法線ベクトルを足し合わせる
+//    Tddd normal = {0., 0., 0.};
+//    for (const auto &f : this->Faces)
+//       if (f->Dirichlet)
+//          normal += f->getAreaBuffer() * f->getNormalBuffer();
+//    return Normalize(normal);
+// };
+// inline Tddd networkPoint::getNormalNeumannAreaAveraged_Buffer() const {
+//    // 角度の重みを掛けた法線ベクトルを足し合わせる
+//    Tddd normal = {0., 0., 0.};
+//    for (const auto &f : this->Faces)
+//       if (f->Neumann)
+//          normal += f->getAreaBuffer() * f->getNormalBuffer();
+//    return Normalize(normal);
+// };
 /* ------------------------------------------------------ */
 /*             Inscribed Circle Area Averaged             */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalDirichletInscribedCircleAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -829,7 +787,7 @@ inline Tddd networkPoint::getNormalDirichletInscribedCircleAreaAveraged() const 
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannInscribedCircleAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -837,7 +795,7 @@ inline Tddd networkPoint::getNormalNeumannInscribedCircleAreaAveraged() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalInscribedCircleAreaAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       normal += f->getInscribedCircleArea() * f->normal;
@@ -847,7 +805,7 @@ inline Tddd networkPoint::getNormalInscribedCircleAreaAveraged() const {
 /*                     Angle Averaged                     */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalDirichlet() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -855,7 +813,7 @@ inline Tddd networkPoint::getNormalDirichlet() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumann() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -866,14 +824,14 @@ inline Tddd networkPoint::getNormalNeumann() const {
 /*                     Angle Averaged                     */
 /* ------------------------------------------------------ */
 inline Tddd networkPoint::getNormalAngleAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       normal += f->getAngle(this) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalDirichletAngleAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
@@ -881,7 +839,7 @@ inline Tddd networkPoint::getNormalDirichletAngleAveraged() const {
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannAngleAveraged() const {
-   //角度の重みを掛けた法線ベクトルを足し合わせる
+   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
       if (f->Neumann)
@@ -1145,7 +1103,7 @@ inline Tddd networkPoint::getNormal_BEM_Buffer() const {
 // 	if (s < 1E-5)
 // 		return 2. * M_PI;
 
-// 	return geometry::SolidAngle(this->getX(), obj3D::extractX(this->getNeighborsSort(TorF)));
+// 	return SolidAngle(this->getX(), obj3D::extractX(this->getNeighborsSort(TorF)));
 // 	;
 // };
 // inline double networkPoint::getSolidAngle(const V_netFp &faces /*available faces*/)
@@ -1168,7 +1126,7 @@ inline Tddd networkPoint::getNormal_BEM_Buffer() const {
 // 	if (s < 1E-5)
 // 		return 2. * M_PI;
 
-// 	return geometry::SolidAngle(this->getX(), obj3D::extractX(fs));
+// 	return SolidAngle(this->getX(), obj3D::extractX(fs));
 // 	;
 // };
 /*SolidAngle_detail_code*/
@@ -1191,8 +1149,8 @@ inline V_netPp networkPoint::getNeighborsSort() const {
          // 	Vps.push_back(V_netPp{qs[0], qs[1]});
          // else
          // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ps is empty");
-         //これは以下で実現できる．変更2021/06/18
-         auto [q0, q1, q2] = f->getPointsTuple(this);
+         // これは以下で実現できる．変更2021/06/18
+         auto [q0, q1, q2] = f->getPoints(this);
          Vps.push_back(V_netPp{q1, q2});
       }
       auto ret = FlattenAsChain(Vps);
@@ -1200,10 +1158,10 @@ inline V_netPp networkPoint::getNeighborsSort() const {
          ret.pop_back();
       else {
          return ret;
-         //この場合，
-         // * thisが端点であるか
-         // * 周りが数珠つなぎとなっていない（エラー）
-         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not chain !");
+         // この場合，
+         //  * thisが端点であるか
+         //  * 周りが数珠つなぎとなっていない（エラー）
+         //  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not chain !");
       }
       return ret;
    } catch (std::exception &e) {
@@ -1329,7 +1287,7 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->W = 0.;
    //! SPH
    this->a_viscosity = 0.;
-   this->mu_SPH = 0.001005;
+   this->mu_SPH = 0.001140;  // water 15 deg
    this->DUDt_SPH = {0., 0., 0.};
    this->repulsive_force_SPH = {0., 0., 0.};
    this->DPDt_SPH = 0.;
@@ -1347,18 +1305,19 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->pressure_SPH = 0.;
    this->pressure_SPH_ = 0.;
    this->isSurface = false;
+   this->isCaptured = false;
 #endif
 
    this->Dirichlet = false;
    this->Neumann = false;
 };
-//逆方向の立体角
+// 逆方向の立体角
 inline double networkPoint::getSolidAngle() const {
-   return geometry::SolidAngle(this->getXtuple(), extX(this->getNeighborsSort()));
+   return SolidAngle(this->X, extX(this->getNeighborsSort()));
 };
-inline double networkPoint::getSolidAngleBuffer() const {
-   return geometry::SolidAngle(this->getXBuffer(), extXBuffer(this->getNeighborsSort()));
-};
+// inline double networkPoint::getSolidAngleBuffer() const {
+//    return SolidAngle(this->getXBuffer(), extXBuffer(this->getNeighborsSort()));
+// };
 
 /////////////////////////////////////////
 

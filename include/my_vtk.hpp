@@ -120,6 +120,12 @@ class pvd {
    };
 };
 
+std::string NumtoString(const auto &x) {
+   std::stringstream ss;
+   ss << std::setprecision(5) << (float)(Between(x, {-1E-10, 1E-10}) ? 0. : x);
+   return ss.str();
+};
+
 /* ------------------------------------------------------ */
 #define debug_PVDWriter
 struct PVDWriter {
@@ -161,18 +167,18 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
          for (auto i = 0; i < NumberOfComponents; i++) {
             if (i < vec.size()) {
                if (vec[i] > 1E+15 || vec[i] < -1E+15)
-                  fprintf(fp, "NaN ");  //値が大きすぎるときは，NaNにする
+                  fprintf(fp, "NaN ");  // 値が大きすぎるときは，NaNにする
                else
-                  fprintf(fp, "%f ", vec[i]);
+                  fprintf(fp, "%s ", NumtoString(vec[i]).c_str());
             } else
                fprintf(fp, "NaN ");
          }
       } else
          for (auto i = 0; i < NumberOfComponents; i++)
             fprintf(fp, "NaN ");
-      fprintf(fp, "\n");
+      // fprintf(fp, "\n");
    }
-   fprintf(fp, "</DataArray>\n");
+   fprintf(fp, "\n</DataArray>\n");
 };
 // map Tddd
 template <class T>
@@ -185,23 +191,23 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
          if (map_p_v.find(p) != map_p_v.end()) {
             auto vec = map_p_v.at(p);
             if (!isFinite(std::get<0>(vec)))
-               fprintf(fp, "NaN ");  //値が大きすぎるときは，NaNにする
+               fprintf(fp, "NaN ");  // 値が大きすぎるときは，NaNにする
             else
-               fprintf(fp, "%f ", std::get<0>(vec));
+               fprintf(fp, "%s ", NumtoString(std::get<0>(vec)).c_str());
             if (!isFinite(std::get<1>(vec)))
-               fprintf(fp, "NaN ");  //値が大きすぎるときは，NaNにする
+               fprintf(fp, "NaN ");  // 値が大きすぎるときは，NaNにする
             else
-               fprintf(fp, "%f ", std::get<1>(vec));
+               fprintf(fp, "%s ", NumtoString(std::get<1>(vec)).c_str());
             if (!isFinite(std::get<2>(vec)))
-               fprintf(fp, "NaN ");  //値が大きすぎるときは，NaNにする
+               fprintf(fp, "NaN ");  // 値が大きすぎるときは，NaNにする
             else
-               fprintf(fp, "%f ", std::get<2>(vec));
+               fprintf(fp, "%s ", NumtoString(std::get<2>(vec)).c_str());
          } else
             for (auto i = 0; i < NumberOfComponents; i++)
                fprintf(fp, "NaN ");
-         fprintf(fp, "\n");
+         // fprintf(fp, "\n");
       }
-      fprintf(fp, "</DataArray>\n");
+      fprintf(fp, "\n</DataArray>\n");
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -218,15 +224,15 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
          if (map_p_v.find(p) != map_p_v.end()) {
             auto value = map_p_v.at(p);
             if (!isFinite(value))
-               fprintf(fp, "NaN ");  //値が大きすぎるときは，NaNにする
+               fprintf(fp, "NaN ");  // 値が大きすぎるときは，NaNにする
             else
-               fprintf(fp, "%f ", value);
+               fprintf(fp, "%s ", NumtoString(value).c_str());
          } else
             for (auto i = 0; i < NumberOfComponents; i++)
                fprintf(fp, "NaN ");
-         fprintf(fp, "\n");
+         // fprintf(fp, "\n");
       }
-      fprintf(fp, "</DataArray>\n");
+      fprintf(fp, "\n</DataArray>\n");
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -250,7 +256,7 @@ void DataArray(FILE *fp, const std::vector<T> &Points,
    try {
       for (auto &V_name_comp_mapPVd : VV_name_comp_mapPVd) {
          // V_name_comp_mapPVdの先頭は必ずstringでなければならない．
-         //それ以降は，多様．
+         // それ以降は，多様．
          std::string Name = std::get<std::string>(V_name_comp_mapPVd[0]);
          if (V_name_comp_mapPVd.size() > 1 && std::holds_alternative<std::unordered_map<T, double>>(V_name_comp_mapPVd[1])) {
             writeDataArray(fp, Points, Name, std::get<std::unordered_map<T, double>>(V_name_comp_mapPVd[1]));
@@ -319,8 +325,8 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
                   // for (const auto &xyz : VV_points)
                   // 	fprintf(fp, "%lf %lf %lf\n", xyz[0], xyz[1], xyz[2]);
                   for (const auto &xyz : VV_points)
-                     fprintf(fp, "%f %f %f\n", xyz[0], xyz[1], xyz[2]);
-                  fprintf(fp, "</DataArray>\n");
+                     fprintf(fp, "%s %s %s ", NumtoString(xyz[0]).c_str(), NumtoString(xyz[1]).c_str(), NumtoString(xyz[2]).c_str());
+                  fprintf(fp, "\n</DataArray>\n");
                }
                fprintf(fp, "</Points>\n");
 
@@ -355,8 +361,8 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
                   fprintf(fp, "</DataArray>\n");
                   fprintf(fp, "<DataArray type='UInt8' Name='types' format='ascii'>\n");
                   for (const auto &f : VV_points)
-                     fprintf(fp, "7\n");
-                  fprintf(fp, "</DataArray>\n");
+                     fprintf(fp, "7 ");
+                  fprintf(fp, "\n</DataArray>\n");
                }
                fprintf(fp, "</Cells>\n");
             }
@@ -509,9 +515,11 @@ void mk_vtu(const std::string &filename,
                      for (const auto &V_points : VV_points)
                         for (const auto &p : V_points) {
                            xyz = p->getXtuple();
-                           fprintf(fp, "%f %f %f\n", std::get<0>(xyz), std::get<1>(xyz), std::get<2>(xyz));
+                           // fprintf(fp, "%f %f %f ", std::get<0>(xyz), std::get<1>(xyz), std::get<2>(xyz));
+                           fprintf(fp, "%s %s %s ", NumtoString(std::get<0>(xyz)).c_str(), NumtoString(std::get<1>(xyz)).c_str(), NumtoString(std::get<2>(xyz)).c_str());
                         }
-                     fprintf(fp, "</DataArray>\n");
+
+                     fprintf(fp, "\n</DataArray>\n");
                   }
                   fprintf(fp, "</Points>\n");
 
@@ -533,22 +541,22 @@ void mk_vtu(const std::string &filename,
                      for (const auto &V_points : VV_points) {
                         for (const auto &p : V_points)
                            fprintf(fp, "%d ", i++);
-                        fprintf(fp, "\n");
+                        // fprintf(fp, "\n");
                      }
 
-                     fprintf(fp, "</DataArray>\n");
+                     fprintf(fp, "\n</DataArray>\n");
                      fprintf(fp, "<DataArray type='Int32' Name='offsets' format='ascii'>\n");
                      {
                         int sum(0);
                         for (const auto &i : PointsSize)
-                           fprintf(fp, "%d\n", sum = sum + i);
+                           fprintf(fp, "%d ", sum = sum + i);
                      }
 
-                     fprintf(fp, "</DataArray>\n");
+                     fprintf(fp, "\n</DataArray>\n");
                      fprintf(fp, "<DataArray type='UInt8' Name='types' format='ascii'>\n");
                      for (auto ii = 0; ii < VV_points.size(); ++ii)
-                        fprintf(fp, "7\n");
-                     fprintf(fp, "</DataArray>\n");
+                        fprintf(fp, "7 ");
+                     fprintf(fp, "\n</DataArray>\n");
                   }
                   fprintf(fp, "</Cells>\n");
                }
@@ -585,7 +593,7 @@ void mk_vtu(const std::string &filename,
             const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
    VV_netPp fs;
    for (const auto &f : Faces)
-      fs.emplace_back(ToVector(f->getPointsTuple()));
+      fs.emplace_back(ToVector(f->getPoints()));
    mk_vtu(filename, fs, VV_name_comp_mapPVd);
 }
 void mk_vtu(const std::string &filename,
@@ -594,7 +602,7 @@ void mk_vtu(const std::string &filename,
    VV_netPp VVps(Faces.size());
    int i = 0;
    for (const auto &f : Faces)
-      VVps[i++] = ToVector(f->getPointsTuple());
+      VVps[i++] = ToVector(f->getPoints());
    mk_vtu(filename, VVps, VV_name_comp_mapPVd);
 }
 /* ------------------------------------------------------ */
@@ -603,7 +611,7 @@ void mk_vtu(const std::string &filename,
             const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
    VV_netPp vvp;
    for (const auto &l : Lines)
-      vvp.emplace_back(ToVector(l->getPointsTuple()));
+      vvp.emplace_back(ToVector(l->getPoints()));
    mk_vtu(filename, vvp, VV_name_comp_mapPVd);
 }
 /*DataArray_code*/

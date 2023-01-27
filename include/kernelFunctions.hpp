@@ -115,35 +115,38 @@ double D2_kernel_Bspline3(const double r, double h) {
 };
 //! ------------------ 5th order Bspline functions ----------------- */
 double kernel_Bspline5(const double r, double h) {
-   // h<=1だけあたいを持つように変更
    h /= 3.;
    double q = r / h;
    if (q <= 3.) {
+      double alpha = 1 / (M_PI * h * h * h * 120.);
       if (2. < q)
-         return std::pow(3. - q, 5) / (M_PI * h * h * h * 120.);
+         return alpha * std::pow(3. - q, 5);
       else if (1. <= q)
-         return (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5)) / (M_PI * h * h * h * 120.);
+         return alpha * (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5));
       else
-         return (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5) + 15 * std::pow(1. - q, 5)) / (M_PI * h * h * h * 120.);
+         return alpha * (std::pow(3. - q, 5) - 6 * std::pow(2. - q, 5) + 15 * std::pow(1. - q, 5));
    } else
       return 0.;
 };
 double D_kernel_Bspline5(const double r, double h) {
-   // h<=1だけあたいを持つように変更
    h /= 3;
    double q = r / h;
    if (q <= 3.) {
+      double alpha = 1 / (M_PI * h * h * h * 120.);
       if (2. < q)
-         return ((-5) * std::pow(3. - q, 4)) / (M_PI * h * h * h * 120.);
+         return -5. * alpha * std::pow(3. - q, 4);
       else if (1. <= q)
-         return ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4)) / (M_PI * h * h * h * 120.);
+         return -5. * alpha * (std::pow(3. - q, 4) - 6 * std::pow(2. - q, 4));
       else
-         return ((-5) * std::pow(3. - q, 4) + 30 * std::pow(2. - q, 4) - 75 * std::pow(1 - q, 4)) / (M_PI * h * h * h * 120.);
+         return -5. * alpha * (std::pow(3. - q, 4) - 6 * std::pow(2. - q, 4) + 15 * std::pow(1. - q, 4));
    } else
       return 0.;
 };
+
 /* ------------------------------------------------------ */
-double kernel_Bspline3(const Tddd &xi, const Tddd &xj, const double h) { return kernel_Bspline3(Norm(xi - xj), h); };
+double kernel_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
+   return kernel_Bspline3(Norm(xi - xj), h);
+};
 Tddd grad_kernel_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
    double r = Norm(xi - xj);
    return -(xi - xj) / (r * h / 2.) * D_kernel_Bspline3(r, h);
@@ -154,5 +157,60 @@ Tddd grad_kernel_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    double r = Norm(xi - xj);
    return -(xi - xj) / (r * h / 3.) * D_kernel_Bspline5(r, h);
 };
+//! --------------------------------- ５次スプライン -------------------------------- */
+double w_Bspline5(double s, const double &h) {
+   if ((s /= h) < 1.) {
+      if (s < 0.333333333333333333)
+         return (std::pow(1 - s, 5) - 6. * std::pow(0.6666666666666666 - s, 5) + 15. * std::pow(0.333333333333333333 - s, 5)) * 2187. / (40. * M_PI * h * h * h);
+      else if (s < 0.6666666666666666)
+         return (std::pow(1 - s, 5) - 6. * std::pow(0.6666666666666666 - s, 5)) * 2187. / (40. * M_PI * h * h * h);
+      else
+         return (std::pow(1 - s, 5)) * 2187. / (40. * M_PI * h * h * h);
+   } else
+      return 0.;
+};
+Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
+   double r = Norm(xi - xj);
+   double s = r / h;
+   if (s < 1.) {
+      if (s < 0.333333333333333333)
+         return (xi - xj) / (r * h) * (-5 * std::pow(1. - s, 4) + 30. * std::pow(0.6666666666666666 - s, 4) - 75. * std::pow(0.333333333333333333 - s, 4)) * 2187. / (40. * M_PI * h * h * h);
+      else if (s < 0.6666666666666666)
+         return (xi - xj) / (r * h) * (-5 * std::pow(1. - s, 4) + 30. * std::pow(0.6666666666666666 - s, 4)) * 2187. / (40. * M_PI * h * h * h);
+      else
+         return (xi - xj) / (r * h) * (-5 * std::pow(1. - s, 4)) * 2187. / (40. * M_PI * h * h * h);
+   } else
+      return {0., 0., 0.};
+};
+//! --------------------------------- 3次スプライン -------------------------------- */
+double w_Bspline3(const double &r, double h) {
+   h /= 2;
+   double q = r / h;
+   if (q < 2.) {
+      if (q < 1.)
+         return (1. - 3. / 2. * q * q * (1. - q / 2.)) / (M_PI * h * h * h);
+      else
+         return std::pow(2. - q, 3.) / (M_PI * h * h * h) / 4.;
+   } else
+      return 0.;
+};
+Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, double h) {
+   h /= 2;
+   double r = Norm(xi - xj);
+   double q = r / h;
+   Tddd dqdx = (xi - xj) / (r * h);
+   if (q < 2.) {
+      if (q < 1.)
+         return (-3. / 2. * 2 * q * dqdx * (1. - q / 2.) - 3. / 2. * q * q * (-dqdx / 2.)) / (M_PI * h * h * h);
+      else
+         return -3 * std::pow(2. - q, 2.) * dqdx / (M_PI * h * h * h) / 4.;
+   } else
+      return {0., 0., 0.};
+};
+/* -------------------------------------------------------------------------- */
+auto &w_Bspline = w_Bspline5;
+auto &grad_w_Bspline = grad_w_Bspline5;
+// auto &w_Bspline = w_Bspline3;
+// auto &grad_w_Bspline = grad_w_Bspline3;
 
 #endif

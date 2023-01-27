@@ -1,0 +1,13 @@
+{
+    "max_dt": 0.2,
+    "end_time_step": 12000,
+    "end_time": 10000,
+    "output_directory": "/Users/tomoaki/BEM/two_floatingbodies_a1d5_T5d0_h150",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "floatingbody_b.json",
+        "floatingbody_c.json"
+    ]
+}

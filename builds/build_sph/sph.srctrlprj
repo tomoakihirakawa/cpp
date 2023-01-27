@@ -3,15 +3,15 @@
     <source_groups>
         <source_group_35180683-9ed9-4172-81eb-8ab3d233f722>
             <compiler_flags>
-                <compiler_flag>-std=c++17</compiler_flag>
+                <compiler_flag>-std=c++20</compiler_flag>
             </compiler_flags>
             <cpp_standard>gnu++17</cpp_standard>
             <cross_compilation>
                 <target>
                     <abi>gnu</abi>
-                    <arch>x86_64</arch>
+                    <arch>arm</arch>
                     <sys>macosx</sys>
-                    <vendor>unknown</vendor>
+                    <vendor>apple</vendor>
                 </target>
                 <target_options_enabled>1</target_options_enabled>
             </cross_compilation>

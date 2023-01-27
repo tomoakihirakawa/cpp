@@ -27,8 +27,7 @@ struct BEM_BVP {
    using VVV_uo_P_uoTiiTdd = std::vector<VV_uo_P_uoTiiTdd>;
    /* ------------------------------------------------------ */
    std::unordered_map<std::tuple<netP *, bool, netF *>, int> PBF_index;
-   VV_d mat_ukn;
-   VV_d mat_kn;
+   VV_d mat_ukn, mat_kn;
    V_d knowns;
    std::vector<std::vector<Tdd>> IGIGn;
    /* ------------------------------------------------------ */
@@ -78,9 +77,7 @@ struct BEM_BVP {
       }
    };
 
-   void solve(const Network &water,
-              const Buckets<networkPoint *> &FMM_BucketsPoints,
-              const Buckets<networkFace *> &FMM_BucketsFaces) {
+   void solve(const Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
       //* ------------------------------------------------------ */
       //%                     各点で方程式を作る場合                 */
       //* ------------------------------------------------------ */
@@ -114,19 +111,45 @@ struct BEM_BVP {
          auto it = PBF_index.begin();
          double p0_ign_rigid_mode = 0.;
          auto &IGIGn_Row = IGIGn[index];
+         //
+         std::tuple<std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>, std::tuple<netP *, Tdd>> ret;
+         Tdd IGIGn, c;  //, p0igign = {0., 0.}, p1igign = {0., 0.}, p2igign = {0., 0.};
+         double nr, tmp;
+         Tddd X2, X0, X1, A, cross;
+         auto origin = p0;
          for (const auto &integ_f : FMM_BucketsFaces.all_stored_objects) {
-            for_each(BEM::calc_P_IGIGnLinear3Tuples2(integ_f, p0),
-                     [&](const auto &p_igign) {
-                        //@ここのpは面の積分している三角の頂点の一つ
-                        // const auto [p, igign] = p_igign;
-                        IGIGn_Row[(it = PBF_index.find({std::get<0>(p_igign), integ_f->Dirichlet, integ_f})) != PBF_index.end()
-                                      ? it->second
-                                      : PBF_index[{std::get<0>(p_igign), integ_f->Dirichlet, nullptr}]] += std::get<1>(p_igign);
-                        /* ------------------------------ */
-                        if (std::get<0>(p_igign) != p0)                             // for use_rigid_mode
-                           p0_ign_rigid_mode -= std::get<1>(std::get<1>(p_igign));  // for use_rigid_mode
-                     });
+            {
+               const auto [p0, p1, p2] = integ_f->getPoints(origin);
+               ret = {{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}};
+               X2 = p2->getXtuple();
+               X0 = p0->getXtuple() - X2;
+               X1 = p1->getXtuple() - X2;
+               A = origin->getXtuple() - X2;
+               cross = Cross(X0, X1);
+               c = {Norm(cross), Dot(A, cross)};
+               if (origin == p0 || origin == p1 || origin == p2)
+                  std::get<1>(c) = 0;
+
+               for_each(__GW5xGW5__, [&](const auto &GWGW) {
+                  tmp = std::get<2>(GWGW) * (1. - std::get<0>(GWGW)) / (nr = Norm(X0 * std::get<0>(GWGW) + X1 * std::get<1>(GWGW) * (1. - std::get<0>(GWGW)) - A));
+                  std::get<1>(std::get<0>(ret)) += (IGIGn = {tmp, tmp / (nr * nr)}) * std::get<0>(GWGW);
+                  std::get<1>(std::get<1>(ret)) += IGIGn * std::get<1>(GWGW) * (1. - std::get<0>(GWGW));
+                  std::get<1>(std::get<2>(ret)) += IGIGn * (-1. + std::get<0>(GWGW)) * (-1. + std::get<1>(GWGW));
+               });
+               std::get<1>(std::get<0>(ret)) *= c;
+               std::get<1>(std::get<1>(ret)) *= c;
+               std::get<1>(std::get<2>(ret)) *= c;
+            }
+            for_each(ret, [&](const auto &p_igign) {
+               IGIGn_Row[(it = PBF_index.find({std::get<0>(p_igign), integ_f->Dirichlet, integ_f})) != PBF_index.end()
+                             ? it->second
+                             : PBF_index[{std::get<0>(p_igign), integ_f->Dirichlet, nullptr}]] += std::get<1>(p_igign);
+               /* ------------------------------ */
+               if (std::get<0>(p_igign) != p0)                             // for use_rigid_mode
+                  p0_ign_rigid_mode -= std::get<1>(std::get<1>(p_igign));  // for use_rigid_mode
+            });
          }
+         /* -------------------------------------------------------------------------- */
 #if defined(use_rigid_mode)
          std::get<1>(IGIGn_Row[index]) = p0_ign_rigid_mode;
 #else
@@ -138,6 +161,7 @@ struct BEM_BVP {
          std::get<1>(IGIGn_Row[index]) += p0->getSolidAngle();
 #endif
       }
+      //
       std::cout << Green << "離散化にかかった時間" << timer() << colorOff << std::endl;
       /* ------------------------------------------------------ */
       // #define quad_element
@@ -218,17 +242,17 @@ struct BEM_BVP {
          {
             auto [p, DorN, f] = PBF;
             // auto &PBF_IGIGn = IGIGn[i];
-            //ディリクレの角点だけが積分した係数を使った方程式を使う．
+            // ディリクレの角点だけが積分した係数を使った方程式を使う．
             if (p->CORNER && DorN == Neumann /*変更する対象の行*/)  //! OK
             {
                for (const auto &[PBF_j, j] : PBF_index) {
                   auto [p_, DorN_, f_] = PBF_j;
                   if (p == p_ && DorN_ == Neumann && f == f_) {
-                     mat_ukn[i][j] = maxpp;  //φの系数
-                     mat_kn[i][j] = 0;       //φnの系数
+                     mat_ukn[i][j] = maxpp;  // φの系数
+                     mat_kn[i][j] = 0;       // φnの系数
                   } else if (p == p_ && DorN_ == Dirichlet) {
-                     mat_ukn[i][j] = 0;     //φnの系数
-                     mat_kn[i][j] = maxpp;  //φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
+                     mat_ukn[i][j] = 0;     // φnの系数
+                     mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                   } else {
                      mat_ukn[i][j] = 0;
                      mat_kn[i][j] = 0;
@@ -336,23 +360,6 @@ struct BEM_BVP {
          svd.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 #endif
 
-#ifdef use_multiple_node
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-         for (auto i = 0; i < vec_P.size(); ++i) {
-            auto p = std::get<0>(vec_P[i]);
-            auto DorN = std::get<1>(vec_P[i]);
-            if (DorN == Dirichlet)
-               std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
-            else
-               std::get<0>(p->phiphin) = phiORphin[i];
-         }
-         if (!isFinite(phiORphin))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "phiORphin is not finite");
-
-#else
-
          for (const auto &[PBF, i] : PBF_index) {
             auto [p, DorN, f] = PBF;
             if (DorN == Dirichlet)
@@ -362,7 +369,6 @@ struct BEM_BVP {
          }
          if (!isFinite(phiORphin))
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "phiORphin is not finite");
-#endif
       }
    };
 };

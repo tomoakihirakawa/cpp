@@ -2,46 +2,49 @@
 cmake_minimum_required(VERSION 3.11)
 
 # プロジェクト名と使用する言語を設定
-project(network_bem CXX)
+# project(network_bem CXX)
+project(ProjectName)
 
 # message(${CMAKE_SOURCE_DIR}) set (CMAKE_MODULE_PATH
 # "${CMAKE_SOURCE_DIR}/CMake") include(cotire)
 
 # ##############################################################################
 if(APPLE)
-  set(CMAKE_CXX_COMPILER g++-12)
+  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-12")
   message(STATUS ">> Apple")
 
   # set(CMAKE_CXX_FLAGS "-Ofast -fopenmp") set(CMAKE_CXX_FLAGS " -llapack -lblas
   # -lgfortran -include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp
   # -std=c++17 -fuse-ld=gold" )
-  set(CMAKE_CXX_FLAGS " -llapack -lblas -fconcepts -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS " -fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
 
-  # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wnonnull -Wnonnull-compare -Wopenmp-simd -Wparentheses -Wpointer-sign    -Wreorder     -Wreturn-type    -Wsequence-point   -Wsign-compare  -Wsizeof-pointer-memaccess   -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch -Wtautological-compare -Wtrigraphs  -Wuninitialized    -Wunknown-pragmas  -Wunused-function  -Wunused-label      -Wunused-value -Wunused-variable -Wvolatile-register-var")
-  # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wunused-function -Wunused-label -Wunused-value -Wunused-variable")
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wunused-label -Wunused-value")
+  # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wnonnull -Wnonnull-compare -Wopenmp-simd -Wparentheses -Wpointer-sign    -Wreorder     -Wreturn-type    -Wsequence-point   -Wsign-compare  -Wsizeof-pointer-memaccess   -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch -Wtautological-compare -Wtrigraphs  -Wuninitialized    -Wunknown-pragmas  -Wunused-function  -Wunused-label      -Wunused-value -Wunused-variable -Wvolatile-registercm-var")
+  # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenacc -fopenmp -Wunused-function -Wunused-label -Wunused-value -Wunused-variable")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -fopenacc -Wunused-label -Wunused-value")
 
 # ############################################################################
 elseif(LINUX)
-  set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
+  set(CMAKE_CXX_COMPILER "/usr/bin/g++-12")
   message(STATUS ">> Linux")
-  set(CMAKE_CXX_FLAGS " -llapack -lblas -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS " -fopenmp -llapack -lblas  -fconcepts -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -march=native")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
 
 # ############################################################################
 else()
-  set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
+  set(CMAKE_CXX_COMPILER "/usr/bin/g++-12")
   message(STATUS ">> Not Linux")
-  set(CMAKE_CXX_FLAGS " -llapack -lblas -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS "-fopenmp  -llapack -lblas -fconcepts -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -march=native")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
 endif()
 
 # ##############################################################################
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
-# if(UNIX OR APPLE)
+#
 execute_process(
   COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version
   ERROR_QUIET
@@ -54,13 +57,10 @@ if("${ld_version}" MATCHES "GNU gold")
     "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
 endif()
 
-# endif()
 set(CMAKE_C_COMPILER_LAUNCHER ccache)
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-set(CMAKE_CXX_STANDARD 20)
 
-option(CCACHE_ENABLE "If the command ccache is avilable, use it for compile."
-  ON)
+option(CCACHE_ENABLE "If the command ccache is avilable, use it for compile." ON)
 
 find_program(CCACHE_EXE ccache)
 

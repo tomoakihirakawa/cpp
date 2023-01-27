@@ -440,13 +440,13 @@ struct QR {
                }
 
                // Dot(F,R)の省略版
-               for (auto k = 0; k < m; ++k) {          //# column direction
+               for (auto k = 0; k < m; ++k) {          // # column direction
                   R0 = c * R[i][k] - s * R[i + 1][k];  //$ row i
                   R1 = s * R[i][k] + c * R[i + 1][k];  //$ row i+k
                   R[i][k] = R0;
                   R[i + 1][k] = R1;
                };
-               for (auto k = 0; k < n; ++k) {          //# column direction
+               for (auto k = 0; k < n; ++k) {          // # column direction
                   Q0 = c * Q[i][k] - s * Q[i + 1][k];  //$ row i
                   Q1 = s * Q[i][k] + c * Q[i + 1][k];  //$ row i+k
                   Q[i][k] = Q0;

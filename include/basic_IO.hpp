@@ -174,12 +174,29 @@ std::ostream &operator<<(std::ostream &stream, const T3Tddd &v) {
 
 /* ------------------------------------------------------ */
 
+// template <typename T>
+// void Print(const T *const v_IN) { std::cout << v_IN << std::endl; };
 template <typename T>
-void Print(const T *const v_IN) { std::cout << v_IN << std::endl; };
-template <typename T>
-void Print(const T &v_IN) { std::cout << v_IN << std::endl; };
+void Print(const T &v_IN) {
+   std::cout << v_IN << std::endl;
+};
 template <typename T, typename U>
-void Print(const T &v_IN, const U &color) { std::cout << color << v_IN << colorOff << std::endl; };
+void Print(const T &v_IN, const U &color) {
+   std::cout << color << v_IN << colorOff << std::endl;
+};
+//
+template <typename T>
+void DebugPrint(const T &v_IN) {
+#if defined(_debugging_)
+   std::cout << v_IN << std::endl;
+#endif
+};
+template <typename T, typename U>
+void DebugPrint(const T &v_IN, const U &color) {
+#if defined(_debugging_)
+   std::cout << color << v_IN << colorOff << std::endl;
+#endif
+};
 //
 template <typename T>
 void MatrixForm(const std::vector<std::vector<T>> &mat) {

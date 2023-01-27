@@ -1,0 +1,7 @@
+{
+    "name": "wavetank",
+    "type": "RigidBody",
+    "output_vtu_file_name": "wavetank",
+    "output_pvd_file_name": "wavetank",
+    "objfile": "~/Dropbox/markdown/cpp/obj/2023Tanabe/test20221219/tank.obj"
+}

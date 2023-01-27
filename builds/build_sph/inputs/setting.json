@@ -1,0 +1,11 @@
+{
+    "max_dt": 0.005,
+    "C_SML": 3.0,
+    "initial_surface_z_position": 0.1,
+    "particle_spacing": 0.01,
+    "output_directory": "/Users/tomoaki/SPH/test20221216_5divU",
+    "input_files": [
+        "wavetank.json",
+        "water.json"
+    ]
+}

@@ -1,22 +1,22 @@
 {
     "env": {
-        "myDefaultIncludePath": [
-            "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/**",
-            "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1/**",
-            "/Users/tomoaki/Dropbox/markdown/cpp/include/**",
-            "${workspaceFolder}/**"
-        ]
+        // "myDefaultIncludePath": [
+        //     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/**",
+        //     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1/**",
+        //     "/Users/tomoaki/Dropbox/markdown/cpp/include/**",
+        //     "${workspaceFolder}/**"
+        // ]
     },
     "configurations": [
         {
             "name": "Mac",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "/Users/tomoaki/Dropbox/markdown/cpp/include/**",
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/**",
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
-                "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers"
-            ],
+            // "includePath": [
+            //     "${workspaceFolder}/**",
+            //     "/Users/tomoaki/Dropbox/markdown/cpp/include/**",
+            //     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/**",
+            //     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
+            //     "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers"
+            // ],
             "macFrameworkPath": [
                 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
             ],
@@ -29,7 +29,8 @@
                 "databaseFilename": ""
             },
             "cStandard": "gnu17",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "/Users/tomoaki/Library/CloudStorage/Dropbox/markdown/cpp/builds/build_bem/compile_commands.json"
         }
     ],
     "version": 4

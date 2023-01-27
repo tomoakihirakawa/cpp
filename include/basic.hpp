@@ -393,73 +393,85 @@ template <class T>
 int Count(const std::vector<T *> &list, const T *const v) {
    return std::count(list.cbegin(), list.cend(), v);
 };
-/* ------------------------------------------------------ */
-template <class T>
-bool MemberQ(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p) {
-   return (std::get<0>(Ps) == p ||
-           std::get<1>(Ps) == p ||
-           std::get<2>(Ps) == p ||
-           std::get<3>(Ps) == p ||
-           std::get<4>(Ps) == p ||
-           std::get<5>(Ps) == p);
-};
-
-template <class T>
+/* -------------------------------------------------------------------------- */
+template <typename T>
 bool MemberQ(const std::vector<T> &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <class T>
+template <typename T>
 bool MemberQ(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <class T>
+template <typename T>
 bool MemberQ(const std::vector<T *> &list, const T *const form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <class T>
+template <typename T>
 bool MemberQ(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
 
-template <class T>
-bool MemberQ(const std::tuple<T, T, T> &list, const T &form) {
-   if (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form)
-      return true;
-   else
-      return false;
+template <typename T>
+bool MemberQ(const std::tuple<T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T, T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form || std::get<5>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T *, T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
+template <typename T>
+bool MemberQ(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p) {
+   return (std::get<0>(Ps) == p || std::get<1>(Ps) == p || std::get<2>(Ps) == p || std::get<3>(Ps) == p || std::get<4>(Ps) == p || std::get<5>(Ps) == p);
 };
+template <typename T>
+bool MemberQ(const std::unordered_set<T> &list, const T &form) { return list.contains(form); };
+/* -------------------------------------------------------------------------- */
+template <typename T>
+bool MemberQ_(const std::vector<T> &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
+template <typename T>
+bool MemberQ_(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
+template <typename T>
+bool MemberQ_(const std::vector<T *> &list, const T *const form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
+template <typename T>
+bool MemberQ_(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
+
+template <typename T>
+bool MemberQ_(const std::tuple<T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T, T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form || std::get<5>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T *, T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
+template <typename T>
+bool MemberQ_(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p) {
+   return (std::get<0>(Ps) == p || std::get<1>(Ps) == p || std::get<2>(Ps) == p || std::get<3>(Ps) == p || std::get<4>(Ps) == p || std::get<5>(Ps) == p);
+};
+template <typename T>
+bool MemberQ_(const std::unordered_set<T> &list, const T &form) { return list.contains(form); };
+/* -------------------------------------------------------------------------- */
+template <class T>
+bool AnyTrue(const std::vector<T> &vec) {
+   for (const auto &o : vec)
+      if (o)
+         return true;
+   return false;
+}
 
 template <class T>
-bool MemberQ(const std::tuple<T *, T *, T *> &list, const T *const form) {
-   if (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form)
-      return true;
-   else
-      return false;
-};
+bool AllTrue(const std::vector<T> &vec) {
+   for (const auto &o : vec)
+      if (!o)
+         return false;
+   return true;
+}
 
-template <class T>
-bool MemberQ(const std::tuple<T, T, T, T> &list, const T &form) {
-   if (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form)
-      return true;
-   else
-      return false;
-};
-
-template <class T>
-bool MemberQ(const std::tuple<T, T> &list, const T &form) {
-   if (std::get<0>(list) == form || std::get<1>(list) == form)
-      return true;
-   else
-      return false;
-};
-
-template <class T>
-bool MemberQ(const std::unordered_set<T> &list, const T &form) {
-   return list.contains(form);
-};
-
-// template <class T>
-// bool MemberQ(const std::vector<T> &list, const T &form) { return std::binary_search(list.cbegin(), list.cend(), form); };
-// template <class T>
-// bool MemberQ(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return std::binary_search(list.cbegin(), list.cend(), form); };
-// template <class T>
-// bool MemberQ(const std::vector<T *> &list, const T *form) { return std::binary_search(list.cbegin(), list.cend(), form); };
-// template <class T>
-// bool MemberQ(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return std::binary_search(list.cbegin(), list.cend(), form); };
-
-////////
+bool AllTrue(const T8b &v) { return std::get<0>(v) && std::get<1>(v) && std::get<2>(v) && std::get<3>(v) && std::get<4>(v) && std::get<5>(v) && std::get<6>(v) && std::get<7>(v); }
+/* -------------------------------------------------------------------------- */
 template <typename T>
 std::vector<T> TakeExcept(const std::vector<T> &list, const T &form) {
    std::vector<T> ret;
@@ -665,7 +677,7 @@ V_d SgLog(const V_d &h, const double hsig, const double maxmin) {
 };
 double DSgLog(const double u, const double hsig, const double maxmin) {
    return maxmin * sgn(u) * exp(maxmin * (std::abs(u) - 1.));
-};  //単調増加
+};  // 単調増加
 V_d DSgLog(const V_d &h, const double hsig, const double maxmin) {
    V_d ret;
    std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [hsig, maxmin](double tmp) { return DSgLog(tmp, hsig, maxmin); });
@@ -685,7 +697,7 @@ V_d Sg(const V_d &h, const double h_sig, const double beta) {
 };
 double DSg(const double h, const double h_sig, const double beta) {
    return beta * pow(std::abs(h), beta - 1.);
-};  //単調増加
+};  // 単調増加
 V_d DSg(const V_d &h, const double h_sig, const double beta) {
    V_d ret;
    std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [h_sig, beta](double tmp) { return DSg(tmp, h_sig, beta); });
@@ -766,10 +778,18 @@ std::tuple<T, T, T, T, T, T> Join(const std::tuple<T, T, T> &a, const std::tuple
            std::get<2>(b)};
 };
 template <typename T>
+std::unordered_set<T> Join(std::unordered_set<T> ret, const std::unordered_set<T> &b, const std::unordered_set<T> &c) {
+   ret.insert(b.begin(), b.end());
+   ret.insert(c.begin(), c.end());
+   return ret;
+};
+
+template <typename T>
 std::unordered_set<T> Join(std::unordered_set<T> ret, const std::unordered_set<T> &b) {
    ret.insert(b.begin(), b.end());
    return ret;
 };
+
 template <typename T>
 std::vector<T> Join(std::vector<T> ret, const std::vector<T> &b) {
    ret.reserve(ret.size() + b.size());
@@ -814,8 +834,8 @@ std::vector<double> Subdivide(const double xmin, const double xmax, const int n)
       ss << "Subdivide(" << xmin << "," << xmax << "," << n << ")の位置3に与えられた分割数は正の整数でなければなりません．";
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
    }
-   double dx = (xmax - xmin) / n;
    std::vector<double> ret(n + 1);
+   const double dx = (xmax - xmin) / n;
    for (int i = 0; i < n + 1; i++)
       ret[i] = i * dx + xmin;
    return ret;
@@ -1438,7 +1458,7 @@ class glLINES {
   public:
    VV_d v_complex;
    std::vector<std::vector<float>> s_complex;
-   VV_i f_v_complex;  //これのstd::vector<int>が１面 -> 3頂点を指定
+   VV_i f_v_complex;  // これのstd::vector<int>が１面 -> 3頂点を指定
    std::vector<bool> hits;
 
    VV_d samp3X, samp3Y, samp3Z;
@@ -1513,7 +1533,7 @@ struct ParametricInterpolation3D {
   public:
    VV_d v_complex;
    std::vector<std::vector<float>> s_complex;
-   VV_i f_v_complex;  //これのstd::vector<int>が１面 -> 3頂点を指定
+   VV_i f_v_complex;  // これのstd::vector<int>が１面 -> 3頂点を指定
 
    VV_d samp3X, samp3Y, samp3Z;
    V_d q1, q2;
@@ -2133,9 +2153,13 @@ struct JSON {
       // return this->map_S_S[key];
    };
 
-   bool find(const std::string &key) const {
-      return (this->map_S_S.find(key) != this->map_S_S.end());
+   V_S at(const std::string &key) const /*変更を許さない*/
+   {
+      return this->map_S_S.at(key);
    };
+
+   bool find(const std::string &key) const { return this->map_S_S.contains(key); };
+   bool contains(const std::string &key) const { return this->map_S_S.contains(key); };
 
    // V_s operator[](const std::string &key) const
    // {
@@ -2188,19 +2212,26 @@ struct JSONoutput {
    std::map<std::string, std::vector<std::string>> map_S_S;
    JSONoutput(){};
 
-   void push(std::string s, const T6d D) {
+   const double notfinite = 1E+30;
+   const Tddd notfinite_tddd = {notfinite, notfinite, notfinite};
+   const T6d notfinite_t6d = {notfinite, notfinite, notfinite, notfinite, notfinite, notfinite};
+
+   void push(std::string s, const T6d d) {
+      auto D = (isFinite(d) ? d : notfinite_t6d);
       if (this->map_S_T6d.find(s) != this->map_S_T6d.end())
          this->map_S_T6d[s].emplace_back(D);
       else
          this->map_S_T6d[s] = {D};
    };
-   void push(std::string s, const Tddd D) {
+   void push(std::string s, const Tddd d) {
+      auto D = (isFinite(d) ? d : notfinite_tddd);
       if (this->map_S_Tddd.find(s) != this->map_S_Tddd.end())
          this->map_S_Tddd[s].emplace_back(D);
       else
          this->map_S_Tddd[s] = {D};
    };
-   void push(std::string s, double D) {
+   void push(std::string s, double d) {
+      auto D = (isFinite(d) ? d : notfinite);
       if (this->map_S_D.find(s) != this->map_S_D.end())
          this->map_S_D[s].emplace_back(D);
       else
@@ -2676,8 +2707,8 @@ std::vector<std::tuple<Tddd, Tdd>> particlize(const T3Tddd &X0X1X2, const double
 /* ------------------------------------------------------ */
 /*         近傍のオブジェクト探査のための，空間分割バケツ         */
 /* ------------------------------------------------------ */
-//テンプレートどんなオブジェクトでもできるはず
-// #define debug_BaseBuckets
+// テンプレートどんなオブジェクトでもできるはず
+//  #define debug_BaseBuckets
 template <typename T>
 struct BaseBuckets {
    //! getX()でxyz座標を取得できるオブジェクトTのための，バケツ
@@ -2855,7 +2886,7 @@ struct BaseBuckets {
               this->dL * (j + 0.5) + std::get<0>(this->ybounds) /*min*/,
               this->dL * (k + 0.5) + std::get<0>(this->zbounds) /*min*/};
    };
-   //インデックスがboundsに収まっているかどうか
+   // インデックスがboundsに収まっているかどうか
    bool isInside(const int i, const int j, const int k) const {
       return (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize));
    };
@@ -2873,12 +2904,12 @@ struct BaseBuckets {
          this->map_to_ijk.erase(it);
       }
    };
-   void add(const Tddd &x, const T p) {
-      auto ijk = indices(x);
+   /* -------------------------------------------------------------------------- */
+   void add(const Tiii &ijk, const T p) {
       auto [i, j, k] = ijk;
-      this->map_to_ijk[p] = ijk;
       try {
          if (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize)) {
+            this->map_to_ijk[p] = ijk;
             this->buckets[i][j][k].emplace(p);
             this->all_stored_objects.emplace(p);
          }
@@ -2892,15 +2923,54 @@ struct BaseBuckets {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       };
    };
-   void add(const std::unordered_set<T> &p) {
-      for (const auto &q : p)
-         add(ToX(q), q);
+   //
+   void add(const Tddd &x, const T p) { add(indices(x), p); };
+   //
+   void add(const std::unordered_set<T> &P) {
+
+      // for (const auto &q : P)
+      //    add(ToX(q), q);
+
+      auto func0 = [&]() {
+               Tiii ijk;
+               for (const auto &p : P) {
+                  ijk = indices(ToX(p));
+                  auto [i, j, k] = ijk;
+                  if (isInside(i,j,k))
+                     this->map_to_ijk[p] = ijk;
+               }; };
+
+      auto func1 = [&]() {
+               for (const auto &p : P) {
+               auto [i, j, k] =  indices(ToX(p));
+               if (isInside(i,j,k))
+                  this->buckets[i][j][k].emplace(p);
+            } };
+
+      auto func2 = [&]() {
+         for (const auto &p : P) {
+            auto [i, j, k] = indices(ToX(p));
+            if (isInside(i, j, k))
+               this->all_stored_objects.emplace(p);
+         }
+      };
+#pragma omp parallel sections
+      {
+#pragma omp section
+         func0();
+#pragma omp section
+         func1();
+#pragma omp section
+         func2();
+      };
    };
    void add(const std::vector<T> &p) {
       for (const auto &q : p)
          add(ToX(q), q);
    };
-   //座標を入力し，バケツを指定する．
+   /* -------------------------------------------------------------------------- */
+
+   // 座標を入力し，バケツを指定する．
    std::vector<T> getAllBuckets() const {
       return this->buckets;
    };
@@ -2959,13 +3029,23 @@ struct BaseBuckets {
    //@ std::vector<std::vector<T >> getObjects(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const
    //@ を改良
    /* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
+   // i=3,d=2
+   // index = | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+   // depth =     | -2| -1| 0 | 1 | 2 |
+   int bind_range(const int i, const Tii &minmax) const { return (i <= std::get<0>(minmax) ? std::get<0>(minmax) : (i >= std::get<1>(minmax) ? std::get<1>(minmax) : i)); };
+   int min_index_x(const int i, const int d) const { return bind_range(i - d, {0, this->xsize - 1}); };
+   int max_index_x(const int i, const int d) const { return bind_range(i + d, {0, this->xsize - 1}); };
+   int min_index_y(const int i, const int d) const { return bind_range(i - d, {0, this->ysize - 1}); };
+   int max_index_y(const int i, const int d) const { return bind_range(i + d, {0, this->ysize - 1}); };
+   int min_index_z(const int i, const int d) const { return bind_range(i - d, {0, this->zsize - 1}); };
+   int max_index_z(const int i, const int d) const { return bind_range(i + d, {0, this->zsize - 1}); };
 
-   int min_index_x(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
-   int max_index_x(const int i, const int d) const { return (i + d > this->xsize - 1 ? this->xsize - 1 : i + d); };
-   int min_index_y(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
-   int max_index_y(const int i, const int d) const { return (i + d > this->ysize - 1 ? this->ysize - 1 : i + d); };
-   int min_index_z(const int i, const int d) const { return (i - d < 0 ? 0 : i - d); };
-   int max_index_z(const int i, const int d) const { return (i + d > this->zsize - 1 ? this->zsize - 1 : i + d); };
+   // int min_index_x(const int i, const int d) const { return ((i - d) <= 0 ? 0 : ((i - d) >= (this->xsize - 1) ? this->xsize - 1 : i - d)); };
+   // int max_index_x(const int i, const int d) const { return ((i + d) >= (this->xsize - 1) ? this->xsize - 1 : i + d); };
+   // int min_index_y(const int i, const int d) const { return ((i - d) <= 0 ? 0 : i - d); };
+   // int max_index_y(const int i, const int d) const { return ((i + d) >= (this->ysize - 1) ? this->ysize - 1 : i + d); };
+   // int min_index_z(const int i, const int d) const { return ((i - d) <= 0 ? 0 : i - d); };
+   // int max_index_z(const int i, const int d) const { return ((i + d) >= (this->zsize - 1) ? this->zsize - 1 : i + d); };
 
    std::unordered_set<T> getObjects_unorderedset(const Tddd &x, const int limit_depth /*limit depth*/, const int limit_number = 100000) const {
       std::unordered_set<T> ret;
@@ -3029,139 +3109,218 @@ struct BaseBuckets {
       int depth = std::ceil(smoothing_length / this->dL);
       return getObjects_unorderedset(x, depth, limit_number);
    };
-   //
-   template <typename U, typename W>
-   void apply(const std::function<U(W)> &func, const Tddd &x, const Tii &depth_range) const {
-      auto [d_begin, d_end] = depth_range;
-      int i, j, k, i0, j0, k0;
-      for (auto d = d_begin; d <= d_end; ++d) {
-         this->indices(x, i, j, k);
-         if (d == 0) {
-            if (isInside(i, j, k))
-               for (const auto &p : this->buckets[i][j][k])
-                  if (!func(p))
-                     return;
-         } else {
-            for (j = (j0 - d < 0 ? 0 : j0 - d); j <= j0 + d && j < this->ysize; ++j)
-               for (k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; ++k) {
-                  i = i0 + d;
-                  if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-                  i = i0 - d;
-                  if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-               }
-            for (i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; ++i) {
-               for (k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; ++k) {
-                  j = j0 + d;
-                  if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-                  j = j0 - d;
-                  if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-               }
-               for (j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; ++j) {
-                  k = k0 + d;
-                  if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-                  k = k0 - d;
-                  if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-                     for (const auto &p : this->buckets[i][j][k])
-                        if (!func(p))
-                           return;
-               }
-            }
-         }
+   // b@ -------------------------------------------------------------------------- */
+   // b@                             STL like functions                             */
+   // b@ -------------------------------------------------------------------------- */
+   T6i indices_range(const Tddd &x, const double &d) const {
+      auto [i, j, k] = this->indices(x);
+      return {bind_range(i - d, {0, this->xsize}), bind_range(i + d, {0, this->xsize}),
+              bind_range(j - d, {0, this->ysize}), bind_range(j + d, {0, this->ysize}),
+              bind_range(k - d, {0, this->zsize}), bind_range(k + d, {0, this->zsize})};
+   };
+   //! accumulate
+   double accumulate(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      double ret = 0;
+      if (!this->buckets.empty()) {
+         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+         auto it = this->buckets.begin();
+         auto jt = it->begin();
+         auto kt = jt->begin();
+         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
+            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
+               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
+                  for (const auto &p : *kt)
+                     ret += func(p);
       }
+      return ret;
    };
-   void apply(const std::function<bool(T)> &func, const Tddd &x, const Tdd &depth_range) const {
-      apply(func, x, {std::ceil(std::get<0>(depth_range) / this->dL), std::ceil(std::get<1>(depth_range) / this->dL)});
+   double accumulate(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return accumulate(x, (int)std::ceil(d / this->dL), func); };
+   double accumulate(const std::function<bool(const T &)> &func) const {
+      double ret = 0;
+      for (const auto &p : this->all_stored_objects)
+         ret += func(p);
+      return ret;
    };
-   void apply(const std::function<bool(T)> &func, const Tddd &x, const int d) const {
-      apply(func, x, {d, d});
-   };
-   /* -------------- デフォルトのバケツは，深さ毎に粒子を保存していく -------------- */
-   std::vector<T> get(const Tddd &x, const int d) const {
-      std::vector<T> r;
-      r.reserve(10000);
-      int i0, j0, k0;
-      this->indices(x, i0, j0, k0);
-      if (d == 0) {
-         if (isInside(i0, j0, k0))
-            r.insert(r.end(), this->buckets[i0][j0][k0].begin(), this->buckets[i0][j0][k0].end());
-      } else {
-         int i, j, k;
-         for (j = (j0 - d < 0 ? 0 : j0 - d); j <= j0 + d && j < this->ysize; ++j)
-            for (k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; ++k) {
-               i = i0 + d;
-               if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-               i = i0 - d;
-               if (!(i < 0 || i >= this->xsize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-            }
-         for (i = (i0 - d + 1 < 0 ? 0 : i0 - d + 1); i < i0 + d && i < this->xsize; ++i) {
-            for (k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < this->zsize; ++k) {
-               j = j0 + d;
-               if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-               j = j0 - d;
-               if (!(j < 0 || j >= this->ysize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-            }
-            for (j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < this->ysize; ++j) {
-               k = k0 + d;
-               if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-               k = k0 - d;
-               if (!(k < 0 || k >= this->zsize || this->buckets[i][j][k].empty()))
-                  r.insert(r.begin(), this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
-            }
-         }
+   //! count_if
+   int count_if(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      int ret = 0;
+      if (!this->buckets.empty()) {
+         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+         auto it = this->buckets.begin();
+         auto jt = it->begin();
+         auto kt = jt->begin();
+         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
+            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
+               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
+                  for (const auto &p : *kt)
+                     if (func(p))
+                        ret++;
       }
+      return ret;
+   };
+   int count_if(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return count_if(x, (int)std::ceil(d / this->dL), func); };
+   int count_if(const std::function<bool(const T &)> &func) const {
+      int ret = 0;
+      for (const auto &p : this->all_stored_objects)
+         if (func(p))
+            ret++;
+      return ret;
+   };
+   //! none_of
+   bool none_of(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      if (!this->buckets.empty()) {
+         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+         /* ------------------------------ イテレータを使ったループ ------------------------------ */
+         // std::cout << "i, j, k = " << i << ", " << j << ", " << k << std::endl;
+         // std::cout << "d = " << d << std::endl;
+         // std::cout << "i = " << i_min << ", " << i_max << ", " << this->xsize << std::endl;
+         // std::cout << "j = " << j_min << ", " << j_max << ", " << this->ysize << std::endl;
+         // std::cout << "k = " << k_min << ", " << k_max << ", " << this->zsize << std::endl;
+         // for (auto i = i_min; i < i_max; ++i)
+         //    for (auto j = j_min; j < j_max; ++j)
+         //       for (auto k = k_min; k < k_max; ++k)
+         //          for (const auto &p : this->buckets[i][j][k])
+         //             if (func(p))
+         //                return false;
+         auto it = this->buckets.begin();
+         auto jt = it->begin();
+         auto kt = jt->begin();
+         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
+            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
+               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
+                  for (const auto &p : *kt)
+                     if (func(p))
+                        return false;
+      }
+      return true;
+   };
+   bool none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return none_of(x, (int)std::ceil(d / this->dL), func); };
+   bool none_of(const std::function<bool(const T &)> &func) const {
+      for (const auto &p : this->all_stored_objects)
+         if (func(p))
+            return false;
+      return true;
+   };
+   //! all_of
+   bool all_of(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      if (!this->buckets.empty()) {
+         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+         /* ------------------------------ イテレータを使ったループ ------------------------------ */
+         auto it = this->buckets.begin();
+         auto jt = it->begin();
+         auto kt = jt->begin();
+         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
+            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
+               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
+                  for (const auto &p : *kt)
+                     if (!func(p))
+                        return false;
+      }
+      return true;
+   };
+   bool all_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return all_of(x, (int)std::ceil(d / this->dL), func); };
+   //! any_of
+   bool any_of(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      if (!this->buckets.empty()) {
+         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+         /* -------------------------------------------------------------------------- */
+         auto it = this->buckets.begin();
+         auto jt = it->begin();
+         auto kt = jt->begin();
+         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
+            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
+               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
+                  for (const auto &p : *kt)
+                     if (func(p) /*一つでも見つかったらtrue*/)
+                        return true;
+      }
+      return false;
+   };
+   bool any_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return any_of(x, (int)std::ceil(d / this->dL), func); };
+   //! apply
+   void apply(const Tddd &x, const int d, const std::function<void(const T &)> &func) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+      /* -------------------------------- シンプルなループ -------------------------------- */
+      // for (auto i = i_min; i <= i_max; ++i)
+      //    for (auto j = j_min; j <= j_max; ++j)
+      //       for (auto k = k_min; k <= k_max; ++k)
+      //          for (const auto &p : this->buckets[i][j][k])
+      //             func(p);
+      /* ------------------------------ イテレータを使ったループ ------------------------------ */
+      // std::cout << "i,j,k = " << i << "," << j << ", " << k << std::endl;
+      // std::cout << "d = " << d << std::endl;
+      // std::cout << "i = " << i_min << ", " << i_max << ", " << this->xsize << std::endl;
+      // std::cout << "j = " << j_min << ", " << j_max << ", " << this->ysize << std::endl;
+      // std::cout << "k = " << k_min << ", " << k_max << ", " << this->zsize << std::endl;
+      /* -------------------------------------------------------------------------- */
+      // auto it = this->buckets.begin();
+      // auto jt = it->begin();
+      // auto kt = jt->begin();
+      // for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it) {
+      //    for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt) {
+      //       for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt) {
+      //          for (const auto &p : *kt) func(p);
+      //       }
+      //    }
+      // }
+      /* ----------------------------- for_eachを使ったループ ---------------------------- */
+      std::for_each(std::execution::unseq, std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
+         std::for_each(std::execution::unseq, std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
+            std::for_each(std::execution::unseq, std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
+               for (const auto &p : Bijk) func(p);
+            });
+         });
+      });
+   };
+   void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const { apply(x, (int)std::ceil(d / this->dL), func); };
+   void apply(const std::function<void(const T &)> &func) const {
+      for (const auto &p : this->all_stored_objects) func(p);
+   };
+   //! ------------------- バケツ内のオブジェクトではなく，バケツを引数として受け取る関数を渡す ------------------- */
+   void Apply(const Tddd &x, const int d, const std::function<void(const std::unordered_set<T> &)> &func) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
+      /* ----------------------------- for_eachを使ったループ ---------------------------- */
+      for_each(std::execution::unseq, std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
+         for_each(std::execution::unseq, std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
+            for_each(std::execution::unseq, std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) { func(Bijk); });
+         });
+      });
+   };
+   void Apply(const Tddd &x, const double d, const std::function<void(const std::unordered_set<T> &)> &func) const {
+      Apply(x, (int)std::ceil(d / this->dL), func);
+   };
+   /* -------------------------------------------------------------------------- */
+   std::vector<T> copy_if(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
+      std::vector<T> ret;
+      ret.reserve(1000);
+      this->apply(x, d, [&](const auto &p) {
+         if (func(p)) ret.emplace_back(p);
+      });
+      return ret;
+   };
 
-      return r;
+   std::vector<T> get(const Tddd &x, const int d) const {
+      std::vector<T> ret;
+      ret.reserve(1000);
+      this->Apply(x, d, [&](const auto &Bijk) { ret.insert(ret.end(), Bijk.begin(), Bijk.end()); });
+      return ret;
    };
    std::vector<T> get(const Tddd &x, const double d) const { return get(x, (int)std::ceil(d / this->dL)); };
+
    std::vector<std::vector<T>> get(const Tddd &x, const Tii &depth_minmax) const {
       std::vector<std::vector<T>> ret(1 + std::get<1>(depth_minmax) - std::get<0>(depth_minmax));
-#pragma omp parallel
       for (auto i = std::get<0>(depth_minmax); i <= std::get<1>(depth_minmax); ++i)
-#pragma omp single nowait
-      {
          ret[i] = this->get(x, i);
-      }
       return ret;
    };
    std::vector<std::vector<T>> get(const Tddd &x, const Tdd &depth_minmax) const {
       return get(x, Tii{(int)std::ceil(std::get<0>(depth_minmax) / this->dL),
                         (int)std::ceil(std::get<1>(depth_minmax) / this->dL)});
    };
-   //    std::vector<std::vector<T>> get(const Tddd &x, const std::T<int> &depthlist) const {
-   //       std::vector<std::vector<T>> ret(depthlist.size());
-   //       int i = 0;
-   // #ifdef _OPENMP
-   // #pragma omp parallel
-   // #endif
-   //       for (const auto &d : depthlist)
-   // #ifdef _OPENMP
-   // #pragma omp single nowait
-   // #endif
-   //       {
-   //          ret[i++] = this->get(x, d);
-   //       }
-   //       return ret;
-   //    };
 
    void getNearest(const std::unordered_set<T> &list, const Tddd &x, T &ret) const {
       if (!list.empty()) {
@@ -3337,41 +3496,95 @@ struct BaseBuckets {
    };
    /* -------------------------------------------------------------------------- */
    Tdd xrange(const int i, const double &x) const {
-      auto [v0, v1] = (this->dL * i + this->xbounds) - x;  //注意！v0,v1どちらが最大かわからない
+      auto [v0, v1] = (this->dL * i + this->xbounds) - x;  // 注意！v0,v1どちらが最大かわからない
       return {Norm(v0), Norm(v1)};
    };
    Tdd yrange(const int i, const double &x) const {
-      auto [v0, v1] = (this->dL * i + this->ybounds) - x;  //注意！v0,v1どちらが最大かわからない
+      auto [v0, v1] = (this->dL * i + this->ybounds) - x;  // 注意！v0,v1どちらが最大かわからない
       return {Norm(v0), Norm(v1)};
    };
    Tdd zrange(const int i, const double &x) const {
-      auto [v0, v1] = (this->dL * i + this->zbounds) - x;  //注意！v0,v1どちらが最大かわからない
+      auto [v0, v1] = (this->dL * i + this->zbounds) - x;  // 注意！v0,v1どちらが最大かわからない
       return {Norm(v0), Norm(v1)};
    };
    template <typename U>
    bool anyInside(const Tddd &center, const double radius, const U &exceptions) const {
-      Tii i, j, k;
-      indices(center, radius, i, j, k);
-      auto [i_beg, i_end] = i;
-      auto [j_beg, j_end] = j;
-      auto [k_beg, k_end] = k;
-      for (auto i = i_beg; i <= i_end; ++i) {
-         for (auto j = j_beg; j <= j_end; ++j) {
-            for (auto k = k_beg; k <= k_end; ++k) {
-               for (const auto &p : this->buckets[i][j][k]) {
-                  if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p))
-                     return true;
-               }
-            }
-         }
-      }
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      int d = (int)std::ceil(radius / this->dL);
+      int i, j, k;
+      this->indices(center, i, j, k);
+      const int i_min = bind_range(i - d, {0, this->xsize}), i_max = bind_range(i + d, {0, this->xsize});
+      const int j_min = bind_range(j - d, {0, this->ysize}), j_max = bind_range(j + d, {0, this->ysize});
+      const int k_min = bind_range(k - d, {0, this->zsize}), k_max = bind_range(k + d, {0, this->zsize});
+      /* ----------------------------- for_eachを使ったループ ---------------------------- */
+      bool found = false;
+      for_each(std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
+         if (!found)
+            for_each(std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
+               if (!found)
+                  for_each(std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
+                     if (!found)
+                        for (const auto &p : Bijk) {
+                           if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p)) {
+                              found = true;
+                              break;
+                           }
+                        }
+                  });
+            });
+      });
+      return found;
+      //
+      // Tii i, j, k;
+      // indices(center, radius, i, j, k);
+      // auto [i_beg, i_end] = i;
+      // auto [j_beg, j_end] = j;
+      // auto [k_beg, k_end] = k;
+      // for (auto i = i_beg; i <= i_end; ++i) {
+      //    for (auto j = j_beg; j <= j_end; ++j) {
+      //       for (auto k = k_beg; k <= k_end; ++k) {
+      //          for (const auto &p : this->buckets[i][j][k]) {
+      //             if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p))
+      //                return true;
+      //          }
+      //       }
+      //    }
+      // }
 
       //   for (const auto &p : this->all_stored_objects) {
       //      if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p))
       //         return true;
       //   }
-
-      return false;
+   };
+   template <typename U>
+   bool anyInside(const Tddd &center, const double radius) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      int d = (int)std::ceil(radius / this->dL);
+      int i, j, k;
+      this->indices(center, i, j, k);
+      const int i_min = bind_range(i - d, {0, this->xsize}), i_max = bind_range(i + d, {0, this->xsize});
+      const int j_min = bind_range(j - d, {0, this->ysize}), j_max = bind_range(j + d, {0, this->ysize});
+      const int k_min = bind_range(k - d, {0, this->zsize}), k_max = bind_range(k + d, {0, this->zsize});
+      /* ----------------------------- for_eachを使ったループ ---------------------------- */
+      bool found = false;
+      for_each(std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
+         if (!found)
+            for_each(std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
+               if (!found)
+                  for_each(std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
+                     if (!found)
+                        for (const auto &p : Bijk) {
+                           if (radius >= Norm(ToX(p) - center)) {
+                              found = true;
+                              break;
+                           }
+                        }
+                  });
+            });
+      });
+      return found;
    };
    /* ------------------------------------------------------ */
    //    void apply(const std::function<void(T)> &fun, const Tddd &x, const int d /*limit depth*/, const int limit_number = 100000) {
@@ -3402,7 +3615,7 @@ struct LoadObj {
    VV_d v_complex;
    std::vector<Tddd> v_complex_tuple;
    std::vector<std::vector<float>> s_complex;
-   VV_i f_v_complex;  //これのstd::vector<int>が１面 -> 3頂点を指定
+   VV_i f_v_complex;  // これのstd::vector<int>が１面 -> 3頂点を指定
 
    std::vector<std::vector<float>> s;
    VV_d v, vn;
@@ -3410,40 +3623,6 @@ struct LoadObj {
    VV_i f_v;  // start from 0
    VV_i f_t;
    VV_i f_vn;
-
-   std::vector<int> checkAllIntersection(const V_d &a, const V_d &b) {
-      //物体全体の最大最小範囲の外で偏っている場合をチェック
-      for (auto k = 0; k < 3; k++)
-         if ((eachMax[k] < a[k] && eachMax[k] < b[k]) || (eachMin[k] > a[k] && eachMin[k] > b[k]))
-            return {};
-      std::vector<int> check0123(f_v_complex.size(), 0);
-      int i = 0;
-      for (const auto &f : f_v_complex) {
-         //上以外
-         auto mean = v_complex_tuple[f[0]] + v_complex_tuple[f[1]] + v_complex_tuple[f[2]];
-         mean /= 3.;
-         check0123[i] = isIntersectingSurface(v_complex_tuple[f[0]] + (v_complex_tuple[f[0]] - mean) * 1E-10,
-                                              v_complex_tuple[f[1]] + (v_complex_tuple[f[1]] - mean) * 1E-10,
-                                              v_complex_tuple[f[2]] + (v_complex_tuple[f[2]] - mean) * 1E-10,
-                                              Tddd{a[0], a[1], a[2]},
-                                              Tddd{b[0], b[1], b[2]});
-
-         if (check0123[i] == 3) {
-            s_complex[f[0]] = {0., 1., 0., 1.};
-            s_complex[f[1]] = {0., 1., 0., 1.};
-            s_complex[f[2]] = {0., 1., 0., 1.};
-            return check0123;
-         }
-         // if(check0123[i] == 2){
-         // 	s_complex[f[0]] += {0.,1.,0.,1.};
-         // 	s_complex[f[1]] += {0.,1.,0.,1.};
-         // 	s_complex[f[2]] += {0.,1.,0.,1.};
-         // }
-
-         i++;
-      }
-      return check0123;
-   }
 
    void calculateMaxMin() {
       eachMax.resize(3);
@@ -3457,15 +3636,11 @@ struct LoadObj {
          }
    };
 
-   std::vector<int> checkAllIntersection(const VV_d &ab) { return checkAllIntersection(ab[0], ab[1]); }
-
    V_d surface(int i, double t0, double t1) {
       std::vector<int> indexes = f_v[i];
-
       VV_d a(indexes.size());
       for (auto n = 0; n < indexes.size(); n++)
          a[n] = v[indexes[n] - 1];
-
       return PointsToSurface(t0, t1, a);
    };
 
@@ -3512,20 +3687,10 @@ struct LoadObj {
             j = j + 3;
          }
       }
-      // }
-
-      // s_complex.resize(f_v.size(),std::vector<float>(4,0));
-      // int j=0;
-      // for(const auto& Ind:f_v)
-      //   for(const auto& i:Ind){
-      //     s_complex[j] = v[i];
-      // 	j++;
-      //   }
    };
 
    // stringを変換しv, f_nに格納
    void load(VV_s &read_line) {
-      Print(__PRETTY_FUNCTION__, Red);
       for (auto &line : read_line)
          if (line[0] == "v") {
             line.erase(line.begin());
@@ -3562,9 +3727,6 @@ struct LoadObj {
       s.resize(v.size(), std::vector<float>(4, 0));  // RGBS
       for (auto &tmp : s)
          tmp = {.9, .9, .9, 1.};
-
-      // for(auto& tmp:s)
-      //   tmp = {std::rand()/float(RAND_MAX),std::rand()/float(RAND_MAX),std::rand()/float(RAND_MAX),1.};
    };
 
    void ConstructFromString(const std::string &strIN) {
@@ -3581,10 +3743,10 @@ struct LoadObj {
       generateComplex();
       calculateMaxMin();
       glLINES lines;
-      for (auto i = 0; i < lines.f_v_complex.size(); i++) {
-         checkAllIntersection({lines.v_complex[lines.f_v_complex[i][0]],
-                               lines.v_complex[lines.f_v_complex[i][1]]});
-      }
+      // for (auto i = 0; i < lines.f_v_complex.size(); i++) {
+      //    checkAllIntersection({lines.v_complex[lines.f_v_complex[i][0]],
+      //                          lines.v_complex[lines.f_v_complex[i][1]]});
+      // }
    };
 
    // std::string JSON(){
@@ -3778,7 +3940,7 @@ std::vector<int> removePositiveMinArea(const V_d &area,
    // area.erase(area.begin()+select_num);
    vertices.erase(vertices.begin() + select_num);
    indices.erase(indices.begin() + select_num);
-   //結んだ点の番号
+   // 結んだ点の番号
 
    return ret;
 };
@@ -3808,7 +3970,7 @@ std::vector<int> removeMinArea(const V_d &area,
    // area.erase(area.begin()+select_num);
    vertices.erase(vertices.begin() + select_num);
    indices.erase(indices.begin() + select_num);
-   //結んだ点の番号
+   // 結んだ点の番号
 
    return ret;
 };
@@ -3860,8 +4022,8 @@ std::vector<int> removeMinArea(const V_d &area,
 // 	}
 // 	return ret;
 // };
-
-template <class T>
+/* -------------------------------------------------------------------------- */
+template <typename T>
 std::vector<T> DeleteDuplicates(const std::vector<T> &V) {
    std::vector<T> ret(0);
    for (const auto &v : V)
@@ -3869,7 +4031,7 @@ std::vector<T> DeleteDuplicates(const std::vector<T> &V) {
          ret.insert(std::lower_bound(ret.begin(), ret.end(), v), v);
    return ret;
 };
-template <class T>
+template <typename T>
 std::vector<T *> DeleteDuplicates(const std::vector<T *> &V) {
    std::vector<T *> ret(0);
    for (const auto &v : V)
@@ -3877,7 +4039,7 @@ std::vector<T *> DeleteDuplicates(const std::vector<T *> &V) {
          ret.insert(std::lower_bound(ret.begin(), ret.end(), v), v);
    return ret;
 };
-template <class T>
+template <typename T>
 bool DuplicateFreeQ(const std::vector<T> &vec) {
    for (auto i = 0; i < vec.size(); i++)
       for (auto j = i + 1; j < vec.size(); j++)
@@ -3885,31 +4047,26 @@ bool DuplicateFreeQ(const std::vector<T> &vec) {
             return false;
    return true;
 };
-// template <class T>
-// bool DuplicateFreeQ(std::vector<T> vec)
-// {
-// 	std::sort(vec.begin(), vec.end());
-// 	for (int i = 0; i < vec.size() - 1; ++i)
-// 	{
-// 		if (vec[i] == vec[i + 1])
-// 			return false;
-// 	}
-// 	return true;
-// 	// for (auto i = 0; i < vec.size(); i++)
-// 	// 	for (auto j = i + 1; j < vec.size(); j++)
-// 	// 		if (vec[i] == vec[j])
-// 	// 			return false;
-// 	// return true;
-// };
-//===============
-template <class T>
+
+template <typename T>
+bool DuplicateFreeQ(const std::tuple<T, T, T> &V) {
+   auto [t0, t1, t2] = V;
+   return (t0 != t1 && t0 != t2 && t1 != t2);
+};
+template <typename T>
+bool DuplicateFreeQ(const std::tuple<T, T, T, T> &V) {
+   auto [t0, t1, t2, t3] = V;
+   return (t0 != t1 && t0 != t2 && t0 != t3 && t1 != t2 && t1 != t3 && t2 != t3);
+};
+/* -------------------------------------------------------------------------- */
+template <typename T>
 T Product(const std::vector<T> &vec) {
    T ret = 1;
    for (const auto &v : vec)
       ret = ret * v;
    return ret;
 };
-//===============
+/* -------------------------------------------------------------------------- */
 VV_d nearestPointsOfLines(const VV_d &a0a1,
                           const VV_d &b0b1) {
    V_d a1 = a0a1[1], a0 = a0a1[0];
@@ -3961,7 +4118,6 @@ V_d midPointOfLines(const VVV_d &vecs) {
 
 // 20200818
 #include "basic_mathematical_functions.hpp"
-
 //-----------------------
 template <class T>
 std::unordered_set<T> Intersection(const std::tuple<T, T> &A, const std::tuple<T, T> &B) {
@@ -4100,32 +4256,15 @@ std::unordered_set<T> Intersection(const std::tuple<T, T, T, T> &A, const std::t
 
 //   return true;
 // };
-
-template <class T>
-bool AnyTrue(const std::vector<T> &vec) {
-   for (const auto &o : vec)
-      if (o)
-         return true;
-   return false;
-}
-
-template <class T>
-bool AllTrue(const std::vector<T> &vec) {
-   for (const auto &o : vec)
-      if (!o)
-         return false;
-   return true;
-}
-
 /* ------------------------------------------------------ */
 /*                       連立1次方程式の解法                 */
 /* ------------------------------------------------------ */
 
 template <typename U, typename T>
 class SLE {
-   //マップから行列を生成する
-   // mapと違い，行列は，行列と，それにかかるベクトルの並びが正しくなくてはならない．
-   //正しい並びで生成する方法を考える．
+   // マップから行列を生成する
+   //  mapと違い，行列は，行列と，それにかかるベクトルの並びが正しくなくてはならない．
+   // 正しい並びで生成する方法を考える．
    //*1)indexをもつ新たなmapを生成し，それを使って，行列に割り振っていく
    //*2)pointerをソートして，そのソートした順番に従う．バイナリーサーチ
   public:
@@ -4145,14 +4284,14 @@ class SLE {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       }
       //* -------------------- 使用するキーを生成，ソート ------------------- */
-      //このキーは初期に作成したあとは，固定．
+      // このキーは初期に作成したあとは，固定．
       this->keys = TakeFirst(A_IN);
       std::sort(this->keys.begin(), this->keys.end());
-      //この順番がマトリックスの添字となる
-      //これ以降index()が使える
+      // この順番がマトリックスの添字となる
+      // これ以降index()が使える
       //* -------------------- 行列とベクトルを生成する -------------------- */
       int i = 0;
-      for (const auto &[p, m] : A_IN)  //必ず全ての点がある
+      for (const auto &[p, m] : A_IN)  // 必ず全ての点がある
       {
          auto &row = this->A[index(p)];
          for (const auto &[q, v] : m)
@@ -4191,7 +4330,7 @@ class SLE {
       std::sort(this->eqs_keys.begin(), this->eqs_keys.end());
    };
    //! ------------------------------------------------------ */
-   //単純に，方程式を追加したい場合，方程式に対してインデックスを割り振る必要はない．
+   // 単純に，方程式を追加したい場合，方程式に対してインデックスを割り振る必要はない．
    void add(const std::map<U *, std::map<T *, double>> &A_IN,
             const std::map<U *, double> &b_IN = {}) {
       //* ------------------------------------------------------ */
@@ -4207,7 +4346,7 @@ class SLE {
       int i = 0;
       VV_d newA(eqn.size(), V_d(this->keys.size(), 0.));
       V_d newb(eqn.size(), 0.);
-      for (const auto &[p, m] : A_IN)  //必ず全ての点がある
+      for (const auto &[p, m] : A_IN)  // 必ず全ての点がある
       {
          auto &row = newA[index_eq(p)];
          for (const auto &[q, v] : m)
@@ -4221,13 +4360,13 @@ class SLE {
       this->b = Join(this->b, newb);
    };
    //! ------------------------------------------------------ */
-   //方程式を修正する場合は，修正する方程式を識別するインデックスが必要
-   //インデックスは初期に作っておく必要がある．
+   // 方程式を修正する場合は，修正する方程式を識別するインデックスが必要
+   // インデックスは初期に作っておく必要がある．
    void modify(const std::map<U *, std::map<T *, double>> &A_IN,
                const std::map<U *, double> &b_IN = {}) {
       try {
          int i = 0, j = 0;
-         for (const auto &[p, m] : A_IN)  //必ず全ての点がある
+         for (const auto &[p, m] : A_IN)  // 必ず全ての点がある
          {
             j = this->eqs_index(p);
             if (j >= 0) {
