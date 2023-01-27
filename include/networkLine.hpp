@@ -25,8 +25,8 @@ inline bool networkLine::Replace(netP *oldP, netP *newP) {
    auto bool1 = this->Switch(oldP, newP);  // 1
    auto bool2 = oldP->Erase(this);         // 2
    auto bool3 = newP->Add(this);           // 3
-   //このステップがdouble replace
-   // switchでないと，順番に意味のあるFaceではおかしくなるので注意
+   // このステップがdouble replace
+   //  switchでないと，順番に意味のあるFaceではおかしくなるので注意
    if (bool1 && bool2 & bool3)
       return true;
    else
@@ -169,7 +169,7 @@ inline V_netFp networkLine::getFacesPenetrating() const {
 
 bool isLinkedDoubly(const netLp l, const netPp p) {
    try {
-      auto [q0, q1] = l->getPointsTuple();
+      auto [q0, q1] = l->getPoints();
       if (q0 && q0 == p) {
          for (const auto &m : p->getLines())
             if (m && m == l)
@@ -191,7 +191,7 @@ bool isLinkedDoubly(const netLp l, const netFp f) {
    try {
       for (const auto &q : l->getFaces())
          if (q && q == f) {
-            auto [l0, l1, l2] = f->getLinesTuple();
+            auto [l0, l1, l2] = f->getLines();
             if ((l0 && l0 == l) || (l1 && l1 == l) || (l2 && l2 == l))
                return true;
          }
@@ -273,6 +273,7 @@ bool isLinkedDoubly(const netFp f, const netLp l) { return isLinkedDoubly(l, f);
 //%                          辺の分割                        */
 //% ------------------------------------------------------ */
 // #define debug_divide
+
 inline netPp networkLine::divide(const Tddd &midX) {
    // isConsistent(this);
    // 2面の場合も対応できるように，ポインター予め準備しておく
@@ -292,12 +293,12 @@ inline netPp networkLine::divide(const Tddd &midX) {
    V_netLp oldFLines1;
    netLp bL1 = nullptr, fL1 = nullptr;
 
-   int c = 0;  //カラーバー
+   int c = 0;  // カラーバー
    try {
       if (this->Faces.size() == 1 || this->Faces.size() == 2) {
          // std::cout << "this->Faces = " << this->Faces << std::endl;
          if (this->Faces.size() > 0) {
-            //点・線・面のベクトルのそれぞれの設定を忘れずに
+            // 点・線・面のベクトルのそれぞれの設定を忘れずに
             oldF = this->Faces[0];
             bL = oldF->getLine(this, -1);
             fL = oldF->getLine(this, 1);
@@ -335,8 +336,10 @@ inline netPp networkLine::divide(const Tddd &midX) {
             // std::cout << ColorFunction(c++) << "|" << colorOff;
             newP = new networkPoint(this->getNetwork() /*属性*/, isFinite(midX) ? midX : (fP->getXtuple() + bP->getXtuple()) / 2.);
             newDivL = new networkLine(this->getNetwork(), newP, fP);
-
-            /*          /     \
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
+            /*           /     \
              *          /       \
              *         /         \
              *        /    / \    \              /   / \   \
@@ -347,11 +350,12 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this-----><-fP        ----this----
              *                              newP-><-------newDivL-----><-fP
              */
-
             if (!(this->Switch(fP, newP)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
             newP->Add(this);
-
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*
              *           /     \
              *          /       \
@@ -366,7 +370,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
              */
             if (!(fP->Erase(this)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*              oP                               oP
              *           V     V                              V
              *          A       A                              A
@@ -379,10 +385,11 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this        fP        ----this----         A
              *                \-------><-newP-><-------newDivL-----><-fP
              */
-
             // std::cout << ColorFunction(c++) << "|" << colorOff;
             newMidL = new networkLine(this->getNetwork(), newP, oP);
-
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*             oP ------><--------                     oP
              *           V     V             |                      V
              *          A       A            |                       A
@@ -395,6 +402,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this      fP      |         ----this----       A
              *                 \--------><--newP-><-------newDivL-----><-fP*/
             newMidL->set(oldF, newF);
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*             oP ------><--------                     oP
              *           V     V             |                      V
              *          A       A            |                       A
@@ -407,13 +417,14 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this      fP      |         ----this----       A
              *                 \--------><--newP-><-------newDivL-----><-fP
              */
-
             if (!(oldF->Switch(fL, newMidL))) {
                std::stringstream ss;
                // ss << "oldF->getLines() = " << oldF->getLines();
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
             }
-
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*             oP ------><--------                     oP
              *           V                   |                      V
              *          A                    |                       A
@@ -432,6 +443,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
                ss << "fL->getFaces() = " << fL->getFaces();
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
             }
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*
              *             oP ------><--------                      oP
              *           V                   |                       V
@@ -444,11 +458,11 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *    A         A                A              V              V
              *  bP-><------this              |         ----this----        A
              *                 \--------><--newP-><-------newDivL-----><-fP*/
-            // std::cout << ColorFunction(c++) << "|" << colorOff;
-
             if (!(newF->Switch(bL, newMidL)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
             /*             oP ------><--------                      oP
              *           V                   |                       V
              *          A                    |                        A
@@ -469,6 +483,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
                // ss << "newF->getLines() = " << newF->getLines() << ", this = " << this;
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
             }
+#ifdef debug_divide
+            std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
 
             newDivL->Add(newF);
 
@@ -489,36 +506,39 @@ inline netPp networkLine::divide(const Tddd &midX) {
             std::cerr << e.what() << colorOff << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
          };
+#ifdef debug_divide
+         std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
+#endif
 
-         //もし2面ある場合
+         // もし2面ある場合
          if (newF1 != nullptr) {
 #if defined(debug_divide)
-
             std::cout << Blue << "|";
 #endif
             // std::cout << ColorFunction(c++) << "|" << colorOff;
-            auto newMidL1 = new networkLine(this->getNetwork(), newP, oP1);  //逆側も
-                                                                             /*             oP ------><--------                      oP
-                                                                              *           V                   |                       V
-                                                                              *          A                    |                        A
-                                                                              *         /                     |                         \
-                                                                              *        /    / \               |             / \    \     \
-                                                                              *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
-                                                                              *      /    /oldF \　　　        |           /newF \    \     \
-                                                                              *     V     ---V---             V           ---|---           \
-                                                                              *    A         A                A              V              V
-                                                                              *  bP-><------this      fP      |              A              A
-                                                                              *   V          |  \-----+--><--newP-><-------newDivL-----><-fP
-                                                                              *    A         V        V       V                this
-                                                                              *     \     ---A---     A       A              ---A---
-                                                                              *   fL1\-><-\oldF1/    /        |         fL1<-\newF1/
-                                                                              *       \    \   /-><-/bL1      |               \   /->bL1
-                                                                              *        \    \ /    /        newMidL1           \ /
-                                                                              *          V       V            |
-                                                                              *           A     A             |
-                                                                              *             oP1 ------><-------
-                                                                              */
-                                                                             // std::cout << ColorFunction(c++) << "|" << colorOff;
+            auto newMidL1 = new networkLine(this->getNetwork(), newP, oP1);
+            // 逆側も
+            /*             oP ------><--------                      oP
+             *           V                   |                       V
+             *          A                    |                        A
+             *         /                     |                         \
+             *        /    / \               |             / \    \     \
+             *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
+             *      /    /oldF \　　　        |           /newF \    \     \
+             *     V     ---V---             V           ---|---           \
+             *    A         A                A              V              V
+             *  bP-><------this      fP      |              A              A
+             *   V          |  \-----+--><--newP-><-------newDivL-----><-fP
+             *    A         V        V       V                this
+             *     \     ---A---     A       A              ---A---
+             *   fL1\-><-\oldF1/    /        |         fL1<-\newF1/
+             *       \    \   /-><-/bL1      |               \   /->bL1
+             *        \    \ /    /        newMidL1           \ /
+             *          V       V            |
+             *           A     A             |
+             *             oP1 ------><-------
+             */
+            // std::cout << ColorFunction(c++) << "|" << colorOff;
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
@@ -546,7 +566,6 @@ inline netPp networkLine::divide(const Tddd &midX) {
                 */
                // std::cout << ColorFunction(c++) << "|" << colorOff;
 #if defined(debug_divide)
-
             std::cout << red << "|";
 #endif
             if (!(bL1->Switch(oldF1, newF1)))
@@ -573,7 +592,6 @@ inline netPp networkLine::divide(const Tddd &midX) {
                 */
                // std::cout << ColorFunction(c++) << "|" << colorOff;
 #if defined(debug_divide)
-
             std::cout << red << "|";
 #endif
             if (!(newF1->Switch(fL1, newMidL1)))
@@ -601,7 +619,6 @@ inline netPp networkLine::divide(const Tddd &midX) {
              */
             // std::cout << ColorFunction(c++) << "|" << colorOff;
 #if defined(debug_divide)
-
             std::cout << red << "|";
 #endif
             newMidL1->set(oldF1, newF1);
@@ -662,8 +679,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
             newP->Neumann = this->Neumann;
             newP->CORNER = this->CORNER;
          }
-#if defined(debug_divide)
+#ifdef debug_divide
          std::cout << Blue << "|" << colorOff << std::endl;
+         std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
 #endif
          return newP;
       } else {
@@ -686,7 +704,7 @@ inline bool networkLine::isMergeable() const {
    // isConsistent(this);
    // auto oldPoints = this->getPoints(); //最後にsetBoundsする必要がる
    //* ------------------------------------------------------ */
-   auto [p0, p1] = this->getPointsTuple();
+   auto [p0, p1] = this->getPoints();
    if (p0->getNeighbors().size() < 4 || p1->getNeighbors().size() < 4) {
       Print("今の所，mergeできない条件");
       return false;
@@ -709,10 +727,10 @@ inline bool networkLine::isMergeable() const {
 		} });
 
    /*ここが間違っていたconcaveの場合，拒否する*/
-   if (geometry::isConcavePolygon({std::get<1>(Aps)->getXtuple(),
-                                   std::get<2>(Aps)->getXtuple(),
-                                   std::get<1>(Bps)->getXtuple(),
-                                   std::get<2>(Bps)->getXtuple()})) {
+   if (isConcavePolygon({std::get<1>(Aps)->getXtuple(),
+                         std::get<2>(Aps)->getXtuple(),
+                         std::get<1>(Bps)->getXtuple(),
+                         std::get<2>(Bps)->getXtuple()})) {
       Print("Concave Polygonです．mergeしません．");
       return false;
    }
@@ -1138,15 +1156,15 @@ inline bool networkLine::flip() {
 #endif
 
       /*ここが間違っていたconcaveの場合，拒否する*/
-      //凹凸包かどうかのチェックは，チェックできなかった場合falseを返す．チェックできなかった場合もflipさせないためには，!isConvexPolygonとしなければならない
-      // if (!geometry::isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
-      // {
-      // 	return false;
-      // }
-      // if (!geometry::isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
-      // {
-      // 	return false;
-      // }
+      // 凹凸包かどうかのチェックは，チェックできなかった場合falseを返す．チェックできなかった場合もflipさせないためには，!isConvexPolygonとしなければならない
+      //  if (!isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
+      //  {
+      //  	return false;
+      //  }
+      //  if (!isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
+      //  {
+      //  	return false;
+      //  }
 
       //  std::cout << ColorFunction(c++) << "|" << colorOff;
       //                     Aps[2]
@@ -1178,7 +1196,7 @@ inline bool networkLine::flip() {
       auto Bbl = B->getLine(this, -1);
       auto Bfl = B->getLine(this, 1);
 
-      auto [p0, p1] = this->getPointsTuple();
+      auto [p0, p1] = this->getPoints();
 
       // std::cout << ColorFunction(c++) << "|" << colorOff;
       if (!(std::get<2>(Aps)->Add(this)))
@@ -1422,8 +1440,8 @@ inline bool networkLine::canflip(const double min_inner_angle = M_PI / 180.) con
    そうでなくとも，指定されたmin_inner_angleよりも角度が大きくなればそれでもtrueを返す
    */
    auto f0f1 = this->getFaces();
-   auto [f0, f1, f2] = f0f1[0]->getPointsTuple(this);
-   auto [F0, F1, F2] = f0f1[1]->getPointsTuple(this);
+   auto [f0, f1, f2] = f0f1[0]->getPoints(this);
+   auto [F0, F1, F2] = f0f1[1]->getPoints(this);
    //
    auto nextTrig0 = T3Tddd{f0->getXtuple(), F2->getXtuple(), f2->getXtuple()};
    auto nextTrig1 = T3Tddd{F0->getXtuple(), f2->getXtuple(), F2->getXtuple()};
@@ -1452,10 +1470,24 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
    if (!canflip(min_inner_angle))
       return false;
    else if (this->isFlat(min_degree_to_flat /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
-      // auto [p0, p2] = this->getPointsTuple();
+      {
+         auto [p0, p1] = this->getPoints();
+         auto f0f1 = this->getFaces();
+         int s0 = p0->getLines().size();
+         int s1 = p1->getLines().size();
+         auto p2 = f0f1[0]->getPointOpposite(this);
+         auto p3 = f0f1[1]->getPointOpposite(this);
+         int s2 = p2->getLines().size();
+         int s3 = p3->getLines().size();
+         if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+            if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+               return false;  // 3以下はつくらない
+      }
+      /* -------------------------------------------------------------------------- */
+      // auto [p0, p2] = this->getPoints();
       auto f0f1 = this->getFaces();
-      auto [f0pb, f0pf, f0po] = f0f1[0]->getPointsTuple(this);
-      auto [f1pb, f1pf, f1po] = f0f1[1]->getPointsTuple(this);
+      auto [f0pb, f0pf, f0po] = f0f1[0]->getPoints(this);
+      auto [f1pb, f1pf, f1po] = f0f1[1]->getPoints(this);
       // 面積の減少
       // double diffAinit = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
       // double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
@@ -1529,7 +1561,7 @@ inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_of_lin
       //@ フリップ前後の両方で不正な辺と判定された場合，
       //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
       if (this->isFlat(min_degree_of_line) && !isIntxn()) {
-         auto [p0, p1] = this->getPointsTuple();
+         auto [p0, p1] = this->getPoints();
          auto f0f1 = this->getFaces();
          int s0 = p0->getLines().size();
          int s1 = p1->getLines().size();
@@ -1537,6 +1569,10 @@ inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_of_lin
          auto p3 = f0f1[1]->getPointOpposite(this);
          int s2 = p2->getLines().size();
          int s3 = p3->getLines().size();
+         if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+            if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+               return false;  // 3以下はつくらない
+
          double s_mean = s_meanIN;  //(s0 + s1 + s2 + s3) / 4.;
          double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
          double v_next = std::pow(s0 - s_mean - 1, 2) + std::pow(s1 - s_mean - 1, 2) + std::pow(s2 - s_mean + 1, 2) + std::pow(s3 - s_mean + 1, 2);

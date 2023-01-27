@@ -1,0 +1,7 @@
+{
+    "name": "water",
+    "type": "Fluid",
+    "output_vtu_file_name": "water",
+    "output_pvd_file_name": "water",
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/2022Tonegawa/test20221218/water150_mod.obj"
+}

@@ -1,0 +1,7 @@
+{
+    "name": "wavetank",
+    "type": "RigidBody",
+    "output_vtu_file_name": "wavetank",
+    "output_pvd_file_name": "wavetank",
+    "objfile": "/Users/tomoaki/research/cpp/obj/2022Arai/Lobovsky2014/tank.obj"
+}

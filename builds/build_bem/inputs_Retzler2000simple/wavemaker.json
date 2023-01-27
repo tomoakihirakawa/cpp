@@ -1,0 +1,12 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "output_vtu_file_name": "wavemaker",
+    "output_pvd_file_name": "wavemaker",
+    "isFixed": true,
+    "velocity": [
+        "Retzler2000",
+        0.1
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/chaplin2000simple//cylinder200.obj"
+}

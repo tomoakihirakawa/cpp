@@ -12,18 +12,16 @@
             "includePath": [
                 "${myDefaultIncludePath}",
                 "${default}",
-                "${workspaceFolder}/../../include",
                 "/Users/tomoaki/Dropbox/markdown/cpp/include",
                 "/Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers"
             ],
             "defines": [],
             "macFrameworkPath": [],
-            "compilerPath": "/opt/homebrew/bin/g++-11",
+            "compilerPath": "/opt/homebrew/bin/g++-12",
             "intelliSenseMode": "macos-gcc-arm64",
             "compilerArgs": [
                 "-Og",
-                "-I/Users/tomoaki/Dropbox/markdown/cpp/include",
-                "-I../../include"
+                "-I/Users/tomoaki/Dropbox/markdown/cpp/include"
             ],
             "cppStandard": "c++17",
             "browse": {
@@ -32,7 +30,8 @@
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
-            "cStandard": "gnu17"
+            "cStandard": "gnu17",
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4

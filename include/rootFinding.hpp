@@ -62,24 +62,24 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
       std::get<3>(X) += (std::get<3>(dX) = ans[3]);
    };
 };
-template <>
-struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d> {
-   NewtonRaphson(const T7d &Xinit) : NewtonRaphson_Common<T7d>(Xinit) {
-      this->ans = V_d(7, 0.);
-   };
-   V_d ans;
-   void update(const T7d &F, const T7T7d &dFdx) {
-      ludcmp lu(ToVector(dFdx));
-      lu.solve(ToVector(-F), ans);
-      std::get<0>(X) += (std::get<0>(dX) = ans[0]);
-      std::get<1>(X) += (std::get<1>(dX) = ans[1]);
-      std::get<2>(X) += (std::get<2>(dX) = ans[2]);
-      std::get<3>(X) += (std::get<3>(dX) = ans[3]);
-      std::get<4>(X) += (std::get<4>(dX) = ans[4]);
-      std::get<5>(X) += (std::get<5>(dX) = ans[5]);
-      std::get<6>(X) += (std::get<6>(dX) = ans[6]);
-   };
-};
+// template <>
+// struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d> {
+//    NewtonRaphson(const T7d &Xinit) : NewtonRaphson_Common<T7d>(Xinit) {
+//       this->ans = V_d(7, 0.);
+//    };
+//    V_d ans;
+//    void update(const T7d &F, const T7T7d &dFdx) {
+//       ludcmp lu(ToVector(dFdx));
+//       lu.solve(ToVector(-F), ans);
+//       std::get<0>(X) += (std::get<0>(dX) = ans[0]);
+//       std::get<1>(X) += (std::get<1>(dX) = ans[1]);
+//       std::get<2>(X) += (std::get<2>(dX) = ans[2]);
+//       std::get<3>(X) += (std::get<3>(dX) = ans[3]);
+//       std::get<4>(X) += (std::get<4>(dX) = ans[4]);
+//       std::get<5>(X) += (std::get<5>(dX) = ans[5]);
+//       std::get<6>(X) += (std::get<6>(dX) = ans[6]);
+//    };
+// };
 
 /* ------------------------------------------------------ */
 /*                           利用例                        */
@@ -193,6 +193,58 @@ Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_ve
          break;
    }
    return {NR0.X, NR1.X, NR2.X};
+};
+
+T6d optimumVector_(const std::vector<T6d> &sample_vectors, const T6d &init_vector, std::vector<double> weight) {
+   if (weight.size() != sample_vectors.size())
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   weight /= Max(weight);
+   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector)),
+       NR3(std::get<3>(init_vector)), NR4(std::get<4>(init_vector)), NR5(std::get<5>(init_vector));
+   double r, F0, F1, F2, F3, F4, F5, dF0dx, dF1dx, dF2dx, dF3dx, dF4dx, dF5dx, drdx, w;
+   T6d vec;
+   for (auto i = 0; i < 200; ++i) {
+      F0 = F1 = F2 = F3 = F4 = F5 = dF0dx = dF1dx = dF2dx = dF3dx = dF4dx = dF5dx = 0;
+      for (auto i = 0; i < sample_vectors.size(); ++i) {
+         vec = sample_vectors[i];
+         w = weight[i];
+         r = w * (std::get<0>(vec) - NR0.X);
+         drdx = -w;
+         F0 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF0dx += 2. * drdx * drdx;
+         r = w * (std::get<1>(vec) - NR1.X);
+         drdx = -w;
+         F1 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF1dx += 2. * drdx * drdx;
+         r = w * (std::get<2>(vec) - NR2.X);
+         drdx = -w;
+         F2 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF2dx += 2. * drdx * drdx;
+         //
+         r = w * (std::get<3>(vec) - NR3.X);
+         drdx = -w;
+         F3 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF3dx += 2. * drdx * drdx;
+         r = w * (std::get<4>(vec) - NR4.X);
+         drdx = -w;
+         F4 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF4dx += 2. * drdx * drdx;
+         r = w * (std::get<5>(vec) - NR5.X);
+         drdx = -w;
+         F5 += 2. * r * drdx;  //<- d/dx (d*d)
+         dF5dx += 2. * drdx * drdx;
+      }
+      NR0.update(F0, dF0dx);
+      NR1.update(F1, dF1dx);
+      NR2.update(F2, dF2dx);
+      NR3.update(F3, dF3dx);
+      NR4.update(F4, dF4dx);
+      NR5.update(F5, dF5dx);
+      if (std::abs(NR0.dX) < 1E-13 && std::abs(NR1.dX) < 1E-13 && std::abs(NR2.dX) < 1E-13 &&
+          std::abs(NR3.dX) < 1E-13 && std::abs(NR4.dX) < 1E-13 && std::abs(NR5.dX) < 1E-13)
+         break;
+   }
+   return {NR0.X, NR1.X, NR2.X, NR3.X, NR4.X, NR5.X};
 };
 
 double optimumVector_(const std::vector<double> &sample_vectors, const double init_vector, std::vector<double> weight) {
@@ -313,7 +365,7 @@ struct DispersionRelation {
       NewtonRaphson nr(1.);
       for (auto i = 0; i < 10; i++)
          nr.update(omega(nr.X, h) - w, domegadk(nr.X, h));
-      this->k = nr.X;
+      this->k = std::abs(nr.X);
       this->L = 2 * M_PI / this->k;
    };
    double omega(const double k, const double h) {

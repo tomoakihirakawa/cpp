@@ -1,0 +1,16 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "output_vtu_file_name": "wavemaker",
+    "output_pvd_file_name": "wavemaker",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        1.0,
+        7.0,
+        150,
+        150
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/2022Tonegawa/test20221218/wavemaker100.obj"
+}

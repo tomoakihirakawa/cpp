@@ -1,0 +1,24 @@
+{
+    "name": "floatingbody",
+    "type": "RigidBody",
+    "output_vtu_file_name": "floatingbody",
+    "output_pvd_file_name": "floatingbody",
+    "velocity": "floating",
+    "mass": 12645516.0,
+    "COM": [
+        75.0,
+        50.0,
+        111.0
+    ],
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
+    ],
+    "MOI": [
+        5058206400.0,
+        5058206400.0,
+        5058206400.0
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/2022Tonegawa/test20221218/floatingbody50.obj"
+}

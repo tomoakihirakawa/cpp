@@ -1,102 +1,214 @@
-from math import pi
-import json
+from os.path import expanduser
+import os
 import math
+import json
+from math import pi
+import platform
 
-# edge_length = 2.*0.05
+home = expanduser("~")
 
-density = 1000.
-graity = 9.81
+if platform.system() == "Linux":
+    program_home = home + "/research"
+else:
+    program_home = home + "/Dropbox/markdown"
 
-H = 200/1000
-# particle_spacing = 0.008
-particle_spacing = .5
-data = {
-    "density": density,
-    # -------------------------------------------------------- #
-    "initial_surface_z_position": H,
-    # ---------------- 時間間隔dtに関する設定値 ----------------- #
-    # 最初のstep==0の場合はdt=1E-10とする
-    "C_CFL_velocity": 0.075,  # dt = C_CFL_velocity*h/Max(U)
-    "C_CFL_accel": 0.25,     # dt = C_CFL_accel*sqrt(h/Max(A))
-    # ------------------ 粒子配置に関する設定値 ------------------ #
-    "particle_spacing": particle_spacing,
-    # -------------------------------------------------------- #
-    # バケットのバウンディングボックスの外に達した流体粒子は削除する．
-    "buckets_xbounds": [-50., 50.],
-    "buckets_ybounds": [-50., 50.],
-    "buckets_zbounds": [-10., 10.],
-    #@ ---------------------- 平滑化半径に関するの設定値（計算精度に関わる） --------------------- #
-    "C_SML_sigma": 3.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    "C_SML_h": 1.,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    # "C_SML": 3.*.9,  # 一般的な平滑化距離．5次のスプラインの場合3h離れた粒子は影しない
-    "kNS_SML": 5.,  # k-nearest search. dxを決めるための近傍粒子数
-    # radius_SPHはC_SML*dx
-    # -------------------------------------------------------- #
-    "mu": 0.001005,
-    # -------------------------------------------------------- #
-    "C_Tait": 10.*math.sqrt(2.*graity*H),  # テイトの式
-    # ---------------------- 人口粘性係数 ----------------------
-    "C_artificial_viscousity_alpha": 0.001,
-    "C_artificial_viscousity_beta": 0.,
-    # ------------------------ 準備時間 ------------------------ #
-    "preparation_max_dt": 0.0005,
-    "preparation_time": 1.,
-    "preparation_time_step": 200,
-    "preparation_C_artificial_viscousity_alpha": 0.03,
-    "preparation_C_artificial_viscousity_beta": 0,
-    # -------------------------------------------------------- #
-    "inputfiles": ["water.json", "tank.json"]
-}
+rho = 1000.
+g = 9.81
 
-data["max_dt"] = data["C_CFL_velocity"] * \
-    data["C_SML_h"]*particle_spacing/(data["C_Tait"]/10.)
-data["max_dt"] = 0.0005
+'''
+プログラムを回す際に面倒な事は，入力ファイルの設定方法．
+入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
+例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
+このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
+'''
 
+# ---------------------------------------------------------------------------- #
+
+SimulationCase = "Kamra2019"
+match SimulationCase:
+    case "static_pressure_PS0d2_30":
+        input_directory = "./inputs_" + SimulationCase
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/SPH/" + SimulationCase
+        os.makedirs(output_directory, exist_ok=True)
+
+        objfolder = program_home + "/cpp/obj/2023Tanabe/test20221219"
+
+        water = {
+            "name": "water",
+            "type": "Fluid",
+            "output_vtu_file_name": "water",  # 拡張子はいらない
+            "output_pvd_file_name": "water",  # 拡張子はいらない
+            "objfile": objfolder + "/water.obj"
+        }
+
+        wavetank = {
+            "name": "wavetank",
+            "type": "RigidBody",
+            # "ignore": wavetank_ignore,
+            "output_vtu_file_name": "wavetank",  # 拡張子はいらない
+            "output_pvd_file_name": "wavetank",  # 拡張子はいらない
+            "objfile": objfolder + "/tank.obj"
+        }
+
+        object = {
+            "name": "object",
+            "type": "RigidBody",
+            "output_vtu_file_name": "floatingbody",  # 拡張子はいらない
+            "output_pvd_file_name": "floatingbody",  # 拡張子はいらない
+            "velocity": "floating",
+            "objfile": objfolder + "/object.obj"
+        }
+
+        input_files = [wavetank, water]
+
+        setting = {
+            "RK_order": 1,
+            "max_dt": 0.005,
+            "C_SML": 3.,
+            "end_time_step": 10000,
+            "end_time": 10,
+            "initial_surface_z_position": 0.1,
+            # "particle_spacing": 0.00625,
+            "particle_spacing": 0.2/25.,
+            "output_directory": output_directory,
+            "input_files": [x["name"]+".json" for x in input_files]
+        }
+    case "Lobovsky2014":
+        input_directory = "./inputs_" + SimulationCase
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/SPH/" + SimulationCase
+        os.makedirs(output_directory, exist_ok=True)
+
+        objfolder = program_home + "/cpp/obj/2022Arai/Lobovsky2014"
+
+        water = {
+            "name": "water",
+            "type": "Fluid",
+            "output_vtu_file_name": "water",  # 拡張子はいらない
+            "output_pvd_file_name": "water",  # 拡張子はいらない
+            "objfile": objfolder + "/water.obj"
+        }
+
+        wavetank = {
+            "name": "wavetank",
+            "type": "RigidBody",
+            # "ignore": wavetank_ignore,
+            "output_vtu_file_name": "wavetank",  # 拡張子はいらない
+            "output_pvd_file_name": "wavetank",  # 拡張子はいらない
+            "objfile": objfolder + "/tank5.obj"
+        }
+
+        sensor1 = {"name": "sensor1",
+                   "type": "probe",
+                   "location": [1610 / 1000., 150 / 2. / 1000., 3 / 1000.]}
+
+        sensor2 = {"name": "sensor2",
+                   "type": "probe",
+                   "location": [1610 / 1000., 150 / 2. / 1000., 15 / 1000.]}
+
+        sensor2L = {"name": "sensor2L",
+                    "type": "probe",
+                    "location": [1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.]}
+
+        sensor3 = {"name": "sensor3",
+                   "type": "probe",
+                   "location": [1610 / 1000., 150 / 2. / 1000., 30 / 1000.]}
+
+        sensor4 = {"name": "sensor4",
+                   "type": "probe",
+                   "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
+
+        input_files = [wavetank, water,
+                       sensor1, sensor2, sensor2L, sensor3, sensor4]
+
+        setting = {
+            "RK_order": 1,
+            "max_dt": 0.0025,
+            "end_time_step": 20000,
+            "end_time": 10,
+            "C_SML": 3.,
+            "initial_surface_z_position": 0.6,
+            "particle_spacing": 0.015,
+            "output_directory": output_directory,
+            "input_files": [x["name"]+".json" for x in input_files]
+        }
+    case "Kamra2019":
+        input_directory = "./inputs_" + SimulationCase
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/SPH/" + SimulationCase
+        os.makedirs(output_directory, exist_ok=True)
+
+        objfolder = program_home + "/cpp/obj/2022Arai/Kamra2019"
+
+        water = {
+            "name": "water",
+            "type": "Fluid",
+            "output_vtu_file_name": "water",  # 拡張子はいらない
+            "output_pvd_file_name": "water",  # 拡張子はいらない
+            "objfile": objfolder + "/water.obj"
+        }
+
+        wavetank = {
+            "name": "wavetank",
+            "type": "RigidBody",
+            # "ignore": wavetank_ignore,
+            "output_vtu_file_name": "wavetank",  # 拡張子はいらない
+            "output_pvd_file_name": "wavetank",  # 拡張子はいらない
+            "objfile": objfolder + "/tank_square_cylinder.obj"
+        }
+
+        sensor1 = {"name": "sensor1",
+                   "type": "probe",
+                   "location": [0.6, 0.1, 0.011]}
+
+        sensor2 = {"name": "sensor2",
+                   "type": "probe",
+                   "location": [0.8, 0.1, 0.004]}
+
+        input_files = [wavetank, water,  sensor1, sensor2]
+
+        setting = {
+            "RK_order": 1,
+            "max_dt": 0.0025,
+            "end_time_step": 20000,
+            "end_time": 1,
+            "C_SML": 3.,
+            "initial_surface_z_position": 0.2,
+            "particle_spacing": 0.01,
+            "output_directory": output_directory,
+            "input_files": [x["name"]+".json" for x in input_files]
+        }
+
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+
+red = '\033[91m'
+green = '\033[92m'
+magenta = '\033[95m'
+coloroff = '\033[0m'
+#@ -------------------------------------------------------- #
+#@                  setting.json を出力                      #
+#@ -------------------------------------------------------- #
 print('------------------------------------')
-for key, value in data.items():
-    print(key, '\t', value)
+for key, value in setting.items():
+    print(f'{key: <{20}}', '\t', red, value, coloroff)
 print('------------------------------------')
-f = open("./settingSPH.json", 'w')
-json.dump(data, f, ensure_ascii=True, indent=4)
+f = open(input_directory+"/setting.json", 'w')
+json.dump(setting, f, ensure_ascii=True, indent=4)
 f.close()
 
-#! -------------------------------------------------------- #
-#! -------------------------------------------------------- #
-#! -------------------------------------------------------- #
-
-data = {
-    "name": "water",
-    "objfile": "../../obj/2022Arai/water_simple.obj",
-    "type": "",
-}
-print('------------------------------------')
-for key, value in data.items():
-    print(f'{key: <{20}}', '\t', '\033[91m', value, '\033[0m')
-print('------------------------------------')
-
-f = open("./water.json", 'w')
-json.dump(data, f, ensure_ascii=True, indent=4)
-f.close()
-
-#! -------------------------------------------------------- #
-#! -------------------------------------------------------- #
-#! -------------------------------------------------------- #
-
-data = {
-    "name": "tank",
-    "objfile": "../../obj/2022Arai/tank10.obj",
-    "type": "RigidBody",
-    "depth_list": [-particle_spacing/2.,
-                   -particle_spacing/2.*3.],
-    # "volume_of_a_particle": volume_of_a_particle,
-    "ignore": False,
-    "density": density
-}
-print('------------------------------------')
-for key, value in data.items():
-    print(f'{key: <{20}}', '\t', '\033[92m', value, '\033[0m')
-print('------------------------------------')
-
-f = open("./tank.json", 'w')
-json.dump(data, f, ensure_ascii=True, indent=4)
-f.close()
+#@ -------------------------------------------------------- #
+#@           その他，water.json,tank.json などを出力           #
+#@ -------------------------------------------------------- #
+print("The directory for input files :", magenta, input_directory, coloroff)
+for INPUTS in input_files:
+    print('------------------------------------')
+    for key, value in INPUTS.items():
+        print(f'{key: <{20}}', '\t', green, value, coloroff)
+    print('------------------------------------')
+    f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
+    json.dump(INPUTS, f, ensure_ascii=True, indent=4)
+    f.close()

@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        1.5,
+        7.0,
+        150,
+        150
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/markdown//cpp/obj/2022Tonegawa/two_floatingbodies//wavemaker100_two.obj"
+}

@@ -1,0 +1,16 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "output_vtu_file_name": "wavemaker",
+    "output_pvd_file_name": "wavemaker",
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        2.0,
+        7.0,
+        80,
+        80
+    ],
+    "objfile": "../../obj/tsukada2022_re/wavemaker200.obj",
+    "isFixed": true
+}

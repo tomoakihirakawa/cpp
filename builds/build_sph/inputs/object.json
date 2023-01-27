@@ -1,0 +1,8 @@
+{
+    "name": "object",
+    "type": "RigidBody",
+    "output_vtu_file_name": "floatingbody",
+    "output_pvd_file_name": "floatingbody",
+    "velocity": "floating",
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/2023Tanabe/test20221219/object.obj"
+}

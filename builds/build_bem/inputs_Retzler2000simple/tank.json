@@ -1,0 +1,8 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "output_vtu_file_name": "tank",
+    "output_pvd_file_name": "tank",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/chaplin2000simple//tank.obj"
+}

@@ -1,7 +1,0 @@
-{
-    "name": "wavetank",
-    "type": "RigidBody",
-    "output_vtu_file_name": "wavetank",
-    "output_pvd_file_name": "wavetank",
-    "objfile": "../../obj/2022Tonegawa/test20221020/tank0.obj"
-}

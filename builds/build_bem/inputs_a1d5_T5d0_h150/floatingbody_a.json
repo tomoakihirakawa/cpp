@@ -1,0 +1,22 @@
+{
+    "name": "floatingbody_a",
+    "COM": [
+        900.0,
+        150.0,
+        111.0
+    ],
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 13320762.0,
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
+    ],
+    "MOI": [
+        5328304800.0,
+        5328304800.0,
+        5328304800.0
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/2022Tonegawa/float_case1/floatingbody_c50.obj"
+}

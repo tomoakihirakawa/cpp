@@ -38,7 +38,7 @@ int main(int arg, char **argv) {
       return ret;
    };
    //* ------------------------------------------------------ */
-   //*                          線の分割                        */
+   //*                          線の分割                       */
    //* ------------------------------------------------------ */
    V_netLp lines;
    for (auto count = 0; count <= remesh; ++count) {
@@ -98,22 +98,23 @@ int main(int arg, char **argv) {
       @ しかし，円筒の内面などは滑らかにしたいができない．
       @ 湾曲した面の辺をフリップしてしまうと，そのまま動かなくなる．これは面の法線方向を変化させるような平滑化を禁止しているためで，フリップにはその制限がかかっていないためである．
       */
+      const double small = M_PI / 180 * 0.001;
       for (auto i = 0; i < 10; i++) {
-         AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-7);
+         AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
-            l->flipIfTopologicalyBetter(5 * M_PI / 180., 5 * M_PI / 180.);
-         AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-7);
+            l->flipIfTopologicalyBetter(1 * M_PI / 180., 1 * M_PI / 180.);
+         AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
             l->flipIfBetter(M_PI / 180.);
       }
       //
       std::cout << "1. time:" << time() << std::endl;
-      AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-7);
+      AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
       for (const auto &l : net.Lines)
          l->flipIfBetter(M_PI / 180.);
       std::cout << "2. time:" << time() << std::endl;
-      AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-7);
-      AreaWeightedSmoothingPreserveShape(net.getPoints(), 1E-7);
+      AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
+      AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
       std::cout << "3. time:" << time() << std::endl;
    }
 }
@@ -263,7 +264,7 @@ int main() {
                   p->setX(p->getX() / Norm(p->getX()));
                   for (auto &p : Flatten(BFS(p, 3)))
                      for (auto &L : p->getLines())
-                        L->flipIfIllegal();  //フリップがないと歪な三角形ができる．
+                        L->flipIfIllegal();  // フリップがないと歪な三角形ができる．
                   found = true;
                   mk_vtu("./vtu/sphere_merge_0" + std::to_string(cc++) + ".vtu", net.getFaces());
                   break;

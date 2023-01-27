@@ -39,10 +39,12 @@ using T15d = std::tuple<double, double, double, double, double, double, double, 
 using T16d = std::tuple<double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double>;
 using T17d = std::tuple<double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double>;
 //
+
 using Tii = std::tuple<int, int>;
 using Tiii = std::tuple<int, int, int>;
 using T4i = std::tuple<int, int, int, int>;
 using T5i = std::tuple<int, int, int, int, int>;
+using T6i = std::tuple<int, int, int, int, int, int>;
 /* ------------------------------------------------------ */
 using T2Tdd = std::tuple<Tdd, Tdd>;
 using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
@@ -84,15 +86,73 @@ using T4T4d = std::tuple<T4d, T4d, T4d, T4d>;
 using T4Tiii = std::tuple<Tiii, Tiii, Tiii, Tiii>;
 using T6T6d = std::tuple<T6d, T6d, T6d, T6d, T6d, T6d>;
 using T7T7d = std::tuple<T7d, T7d, T7d, T7d, T7d, T7d, T7d>;
-
+//
+using T4T3Tddd = std::tuple<T3Tddd, T3Tddd, T3Tddd, T3Tddd>;
+//
+using T6T2Tddd = std::tuple<T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd>;
 using T6T4Tddd = std::tuple<T4Tddd, T4Tddd, T4Tddd, T4Tddd, T4Tddd, T4Tddd>;
-using T12T3Tddd = std::tuple<T3Tddd, T3Tddd, T3Tddd, T3Tddd,
-                             T3Tddd, T3Tddd, T3Tddd, T3Tddd,
-                             T3Tddd, T3Tddd, T3Tddd, T3Tddd>;
-
+using T12T3Tddd = std::tuple<T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd, T3Tddd>;
+using T12T2Tddd = std::tuple<T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd, T2Tddd>;
+//
+using T2b = std::tuple<bool, bool>;
+using T3b = std::tuple<bool, bool, bool>;
+using T4b = std::tuple<bool, bool, bool, bool>;
+using T5b = std::tuple<bool, bool, bool, bool, bool>;
+using T6b = std::tuple<bool, bool, bool, bool, bool, bool>;
+using T7b = std::tuple<bool, bool, bool, bool, bool, bool, bool>;
+using T8b = std::tuple<bool, bool, bool, bool, bool, bool, bool, bool>;
 /* ------------------------------------------------------ */
 /*                     タプルのベクトル演算                  */
 /* ------------------------------------------------------ */
+template <size_t N = 0, typename T, typename U>
+bool all_of(const T &t, const U &func) {
+   if constexpr (N < std::tuple_size<T>::value) {
+      return func(std::get<N>(t)) && all_of<N + 1>(t, func);
+   } else
+      return true;
+}
+template <size_t N = 0, typename T, typename U>
+bool any_of(const T &t, const U &func) {
+   if constexpr (N < std::tuple_size<T>::value) {
+      return func(std::get<N>(t)) || any_of<N + 1>(t, func);
+   } else
+      return false;
+}
+template <size_t N = 0, typename T, typename U>
+bool none_of(const T &t, const U &func) {
+   if constexpr (N < std::tuple_size<T>::value) {
+      return !func(std::get<N>(t)) && none_of<N + 1>(t, func);
+   } else
+      return true;
+}
+//
+template <size_t N = 0, typename T, typename U>
+void for_each(T &t, const U &func) {
+   if constexpr (1 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+   } else if constexpr (2 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+   } else if constexpr (3 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+   } else if constexpr (4 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+      func(std::get<3>(t));
+   } else if constexpr (5 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+      func(std::get<3>(t));
+      func(std::get<4>(t));
+   } else if constexpr (N < std::tuple_size<T>::value) {
+      func(std::get<N>(t));
+      for_each<N + 1>(t, func);
+   }
+}
 template <size_t N = 0, typename T, typename U>
 void for_each(const T &t, const U &func) {
    if constexpr (1 == std::tuple_size<T>::value) {

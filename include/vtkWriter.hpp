@@ -28,6 +28,9 @@ struct vtkPolygonWriter : XMLElement {
    std::vector<std::vector<id>> connectivity_lines;
    std::vector<std::tuple<id, id, id>> connectivity3;
    std::vector<std::tuple<id, id, id, id>> connectivity4;
+   void clear() {
+      verticies.clear();
+   };
    void add(const T &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); };
    void add(const T &v, const T &u) {
       std::get<1>(this->verticies[{v, 0}]) = ToX(v);
@@ -53,12 +56,19 @@ struct vtkPolygonWriter : XMLElement {
       for (const auto &v : verts)
          std::get<1>(this->verticies[{v, 0}]) = ToX(v);
    };
+   void add(const std::unordered_set<T> &verts) {
+      for (const auto &v : verts)
+         std::get<1>(this->verticies[{v, 0}]) = ToX(v);
+   };
    void addLine(const std::vector<T> &conns) {
       std::vector<id> tmp(conns.size());
       for (auto i = 0; i < conns.size(); ++i)
          tmp[i] = {conns[i], 0};
       this->connectivity_lines.emplace_back(tmp);
    };
+   void addLine(const T &p0, const T &p1) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}}); };
+   void addLine(const T &p0, const T &p1, const T &p2) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}}); };
+   void addLine(const T &p0, const T &p1, const T &p2, const T &p3) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}, {p3, 0}}); };
    void addLine(const std::vector<std::vector<T>> &conns) {
       this->addLine(conns);
    };
@@ -104,12 +114,13 @@ struct vtkPolygonWriter : XMLElement {
       Piece->add(Polys);
       Piece->add(Lines);
       /* ------------------------ */
+      /* -------------------------------------------------------------------------- */
       {
          std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"NumberOfComponents", "3"}, {"format", "ascii"}}));
          DataArray->writer = [&](std::stringstream &ofs) {
             int i = 0;
             for (auto &[_, INT_X] : this->verticies) {
-               //書き出すともに番号を保存
+               // 書き出すともに番号を保存
                std::get<0>(INT_X) = i++;
                for_each(std::get<1>(INT_X), [&](auto &x) { ofs << std::setprecision(7) << (float)x << " "; });
             }
@@ -181,7 +192,13 @@ struct vtkPolygonWriter : XMLElement {
          for (const auto &[ID, value] : this->verticies) {
             it = data.find(std::get<0>(ID));
             if (it != data.end()) {
-               for_each(it->second, [&](const auto &x) { ofs << std::setprecision(7) << (Between(x, {-1E-10, 1E-10}) ? 0 : (float)x) << " "; });
+               for_each(it->second,
+                        [&](const auto &x) {
+                           if (isFinite(x))
+                              ofs << std::setprecision(6) << (Between(x, {-1E-10, 1E-10}) ? 0 : (float)x) << " ";
+                           else
+                              ofs << std::setprecision(6) << "NaN ";
+                        });
             } else
                ofs << "Nan Nan Nan ";
          }
@@ -202,7 +219,10 @@ struct vtkPolygonWriter : XMLElement {
          for (const auto &[ID, value] : this->verticies) {
             it = data.find(std::get<0>(ID));
             if (it != data.end()) {
-               ofs << std::setprecision(7) << (Between(it->second, {-1E-10, 1E-10}) ? 0 : (float)it->second) << " ";
+               if (isFinite(it->second))
+                  ofs << std::setprecision(6) << (Between(it->second, {-1E-10, 1E-10}) ? 0 : (float)it->second) << " ";
+               else
+                  ofs << std::setprecision(6) << "NaN ";
             } else
                ofs << "Nan ";
          }
@@ -242,10 +262,13 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T4Tddd> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    for (const auto &[X0, X1, X2, X3] : V) {
       std::shared_ptr<Tddd> x0(new Tddd(X0));
+      vtp.add(x0);
       std::shared_ptr<Tddd> x1(new Tddd(X1));
+      vtp.add(x1);
       std::shared_ptr<Tddd> x2(new Tddd(X2));
+      vtp.add(x2);
       std::shared_ptr<Tddd> x3(new Tddd(X3));
-      vtp.add({x0, x1, x2, x3});
+      vtp.add(x3);
       vtp.addPolygon({x0, x1, x2, x3});
    }
    vtp.write(ofs);
@@ -262,9 +285,11 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T3Tddd> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    for (const auto &[X0, X1, X2] : V) {
       std::shared_ptr<Tddd> x0(new Tddd(X0));
+      vtp.add(x0);
       std::shared_ptr<Tddd> x1(new Tddd(X1));
+      vtp.add(x1);
       std::shared_ptr<Tddd> x2(new Tddd(X2));
-      vtp.add({x0, x1, x2});
+      vtp.add(x2);
       vtp.addPolygon({x0, x1, x2});
    }
    vtp.write(ofs);
@@ -298,8 +323,9 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T2Tddd> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    for (const auto &[X0, X1] : V) {
       std::shared_ptr<Tddd> x0(new Tddd(X0));
+      vtp.add(x0);
       std::shared_ptr<Tddd> x1(new Tddd(X1));
-      vtp.add({x0, x1});
+      vtp.add(x1);
       vtp.addLine({x0, x1});
    }
    vtp.write(ofs);
@@ -313,7 +339,7 @@ template <typename T, typename U>
 void vtkPolygonWrite(std::ofstream &ofs, const std::vector<std::tuple<T, T>> &V, const std::unordered_map<T, U> &data_double) {
    vtkPolygonWriter<T> vtp;
    for (const auto &[X0, X1] : V) {
-      vtp.add({X0, X1});
+      vtp.add(X0, X1);
       vtp.addLine(std::vector<T>{X0, X1});
    }
    vtp.addPointData("data", data_double);
@@ -342,6 +368,62 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<T> &V, const s
    vtp.write(ofs);
 };
 
+#if defined(Network_H)
+template <typename U>
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uo_f, const std::unordered_map<networkPoint *, U> &data_double = {}) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for (const auto &f : uo_f) {
+      auto abc = f->getPoints();
+      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+      vtp.addPolygon(abc);
+   }
+   if (!data_double.empty())
+      vtp.addPointData("data", data_double);
+   vtp.write(ofs);
+};
+
+void vtkPolygonWrite(std::ofstream &ofs, const T_4F &tuple_f) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for_each(tuple_f, [&](const auto &f) {
+      auto abc = f->getPoints();
+      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+      vtp.addPolygon(abc);
+   });
+   vtp.write(ofs);
+};
+
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for (const auto &l : uoL) {
+      auto [a, b] = l->getPoints();
+      vtp.add(a, b);
+      vtp.addLine(a, b);
+   }
+   vtp.write(ofs);
+};
+
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for (const auto &f : uoF) {
+      auto abc = f->getPoints();
+      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+      vtp.addPolygon(abc);
+   };
+   vtp.write(ofs);
+};
+
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for (const auto &tet : uoTet)
+      for_each(tet->Faces, [&](const auto &f) {
+         auto abc = f->getPoints();
+         vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+         vtp.addPolygon(abc);
+      });
+   vtp.write(ofs);
+};
+
+#endif
    // template <typename T, typename U>
    // void vtkPolygonWrite(const std::string &name, const std::unordered_set<T> &V, const std::unordered_map<T, U> &data_double) {
    //    std::ofstream ofs(name);
