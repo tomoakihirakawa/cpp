@@ -72,7 +72,7 @@ struct RungeKuttaCommon {
             case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed;
             case 1:
-               return dt_fixed / 2.;  //! 何もプッシュしていない初期状態
+               return dt_fixed / 2.; 
             default:
                return dt_fixed;
          }

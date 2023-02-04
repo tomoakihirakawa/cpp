@@ -485,7 +485,7 @@ class networkPoint : public CoordinateBounds {
    // 物性
    double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
    //
-   double total_weight;
+   double total_weight,total_N;
    Tddd normal_SPH;
    networkFace *mirroring_face;
    double d_empty_center;
@@ -505,7 +505,7 @@ class networkPoint : public CoordinateBounds {
    double &p_SPH__ = this->pressure_SPH__;
    double p_SPH_SPP;
    double DPDt_SPH;
-   int contact_points_SPH;
+   int contact_points_fluid_SPH, contact_points_all_SPH;
    double pressure_Tait(const double rho, double C0 = 1466.) const {
       // double C0 = 1466.; //[m/s]
       // C0 /= 5;
@@ -523,7 +523,7 @@ class networkPoint : public CoordinateBounds {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U;
+   Tddd lap_U, lap_U_;
    // void setLapU(const V_d &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setLapU(const Tddd &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setDensityVolume(const double &den, const double &v) {
@@ -567,7 +567,7 @@ class networkPoint : public CoordinateBounds {
    Tddd cg_neighboring_particles_SPH;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
-   Tddd DUDt_SPH;
+   Tddd DUDt_SPH, DUDt_SPH_;
    Tddd repulsive_force_SPH;
    double DrhoDt_SPH;
    //
@@ -3642,6 +3642,7 @@ class Network : public CoordinateBounds {
    };
    //% ------------------------------------------------------ */
    const std::string &getName() const { return this->name; };
+   void setName(const std::string nameIN) { this->name=nameIN; };
    V_netPp linkXPoints(Network &water, Network &obj);
    /* ------------------------------------------------------ */
    void displayStates() {

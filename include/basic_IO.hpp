@@ -184,6 +184,12 @@ template <typename T, typename U>
 void Print(const T &v_IN, const U &color) {
    std::cout << color << v_IN << colorOff << std::endl;
 };
+template <typename... Args>
+void Print(Args... args) {
+   std::stringstream stream;
+   (stream << ... << args);
+   std::cout << stream.str() << colorOff << std::endl;
+}
 //
 template <typename T>
 void DebugPrint(const T &v_IN) {
@@ -197,6 +203,15 @@ void DebugPrint(const T &v_IN, const U &color) {
    std::cout << color << v_IN << colorOff << std::endl;
 #endif
 };
+//
+template <typename... Args>
+void DebugPrint(Args... args) {
+#if defined(_debugging_)
+   std::stringstream stream;
+   (stream << ... << args);
+   std::cout << stream.str() << colorOff << std::endl;
+#endif
+}
 //
 template <typename T>
 void MatrixForm(const std::vector<std::vector<T>> &mat) {

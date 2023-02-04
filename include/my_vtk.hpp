@@ -418,12 +418,13 @@ void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
                      fprintf(fp, "<DataArray NumberOfComponents='3' type='Float32' Name='Position' format='ascii'>\n");
                      for (const auto &T8Tddds : VV_points) {
                         auto [X0, X1, X2, X3] = T8Tddds;
-                        fprintf(fp, "%f %f %f\n", std::get<0>(X0), std::get<1>(X0), std::get<2>(X0));
-                        fprintf(fp, "%f %f %f\n", std::get<0>(X1), std::get<1>(X1), std::get<2>(X1));
-                        fprintf(fp, "%f %f %f\n", std::get<0>(X2), std::get<1>(X2), std::get<2>(X2));
-                        fprintf(fp, "%f %f %f\n", std::get<0>(X3), std::get<1>(X3), std::get<2>(X3));
+                        fprintf(fp, "%f %f %f %f %f %f %f %f %f %f %f %f ",
+                                std::get<0>(X0), std::get<1>(X0), std::get<2>(X0),
+                                std::get<0>(X1), std::get<1>(X1), std::get<2>(X1),
+                                std::get<0>(X2), std::get<1>(X2), std::get<2>(X2),
+                                std::get<0>(X3), std::get<1>(X3), std::get<2>(X3));
                      }
-                     fprintf(fp, "</DataArray>\n");
+                     fprintf(fp, "\n</DataArray>\n");
                   }
                   fprintf(fp, "</Points>\n");
 
@@ -434,16 +435,16 @@ void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
                   {
                      fprintf(fp, "<DataArray type='Int32' Name='connectivity' format='ascii'>\n");
                      for (auto i = 0; i < VV_points.size(); ++i)
-                        fprintf(fp, "%d %d %d %d\n", N * i, N * i + 1, N * i + 2, N * i + 3);
-                     fprintf(fp, "</DataArray>\n");
+                        fprintf(fp, "%d %d %d %d ", N * i, N * i + 1, N * i + 2, N * i + 3);
+                     fprintf(fp, "\n</DataArray>\n");
                      fprintf(fp, "<DataArray type='Int32' Name='offsets' format='ascii'>\n");
                      for (auto i = 0; i < VV_points.size(); ++i)
-                        fprintf(fp, "%d\n", N * (i + 1));
-                     fprintf(fp, "</DataArray>\n");
+                        fprintf(fp, "%d ", N * (i + 1));
+                     fprintf(fp, "\n</DataArray>\n");
                      fprintf(fp, "<DataArray type='UInt8' Name='types' format='ascii'>\n");
                      for (const auto &f : VV_points)
-                        fprintf(fp, "9\n");
-                     fprintf(fp, "</DataArray>\n");
+                        fprintf(fp, "9 ");
+                     fprintf(fp, "\n</DataArray>\n");
                   }
                   fprintf(fp, "</Cells>\n");
                }

@@ -161,9 +161,21 @@ double minNextLineLength(const networkPoint *p) {
    return len;
 };
 
+double meanNextLineLength(const networkPoint *p) {
+   double len = 0;
+   int count = 0;
+   for (const auto &l : p->getLines()) {
+      auto [p0, p1] = l->getPoints();
+      double norm = Norm(RK_with_Ubuff(p0) - RK_with_Ubuff(p1));
+      len += norm;
+      count++;
+   }
+   return len / count;
+};
+
 Tddd factor(const networkPoint *p, const Tddd &ubuff, const double max_ratio = 0.01) {
    double adjustment = Norm(RK_with_Ubuff(p) - RK_with_Ubuff(p, ubuff));
-   double minLenNext = minNextLineLength(p);
+   double minLenNext = meanNextLineLength(p);
    double ratio = adjustment / minLenNext;
    auto tmp = (ratio < max_ratio) ? ubuff : max_ratio * ubuff / ratio;
    if (factor_angle(p, tmp))
@@ -259,6 +271,17 @@ double magicalValue(const networkPoint *p, const networkFace *f) {
       return tmp;
 };
 
+double variance2(const networkPoint *p, const networkFace *f) {
+   auto [p0, p1, p2] = f->getPoints(p);
+   double m = 0, l0, l1, l2;
+   m += (l0 = Norm(RK_with_Ubuff(p0) - RK_with_Ubuff(p1)));
+   m += (l1 = Norm(RK_with_Ubuff(p1) - RK_with_Ubuff(p2)));
+   m += (l2 = Norm(RK_with_Ubuff(p2) - RK_with_Ubuff(p0)));
+   m /= 3.;
+   auto ret = std::pow(l0 - m, 2) + std::pow(l1 - m, 2) + std::pow(l2 - m, 2);
+   return 10 * ret / (m * m);
+};
+
 Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
    Tddd vectorToCenter = {0., 0., 0.};
    double s = 0;
@@ -276,7 +299,7 @@ Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
       for (const auto &f : p->getFaces()) {
          auto [p0, p1, p2] = f->getPoints(p);
          auto nP012 = T3Tddd{RK_with_Ubuff(p0, p1, p2)};
-         auto a = magicalValue(p, f);
+         auto a = magicalValue(p, f) + variance2(p, f);
          if (min_distance > Norm(Incenter(nP012) - RK_with_Ubuff(p)))
             min_distance = Norm(Incenter(nP012) - RK_with_Ubuff(p));
 
@@ -309,15 +332,15 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          auto [np0x, np1x, np2x] = nP012;
          auto mean = (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3.;
          auto l12 = Norm(np2x - np1x);
-         double a = magicalValue(p, f);
+         double a = magicalValue(p, f) + variance2(p, f);
          if (any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
-            a *= 27;
+            a *= 4;
          else if (any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
-            a *= 9;
+            a *= 3;
          else if (any_of(f->getPoints(),
                          [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
                                                                  [&](const auto &F) { return any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
-            a *= 3;
+            a *= 2;
          auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
          auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;
          vectorToCenter += a * (X - np0x);  //[m]
@@ -366,7 +389,7 @@ void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 20, c
    @ このことは，任意のノイマン面上に節点を維持する上で便利である．
    @ Ω(t+δt)をまず見積もり，その面上で最適な格子配置となるように流速を修正する．
    */
-   const double scale = 0.5;
+   const double scale = 0.2;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */

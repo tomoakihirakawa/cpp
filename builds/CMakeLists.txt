@@ -10,18 +10,23 @@ project(ProjectName)
 
 # ##############################################################################
 if(APPLE)
-  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-12")
   message(STATUS ">> Apple")
+
+  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-12")
+  set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
+  set(CMAKE_CXX_FLAGS_DEBUG "-Og")
 
   # set(CMAKE_CXX_FLAGS "-Ofast -fopenmp") set(CMAKE_CXX_FLAGS " -llapack -lblas
   # -lgfortran -include ${PROJECT_SOURCE_DIR}/../include/fundamental.hpp
   # -std=c++17 -fuse-ld=gold" )
-  set(CMAKE_CXX_FLAGS " -fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
-  set(CMAKE_CXX_FLAGS_DEBUG "-Og")
+
+  # set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+  # set(CMAKE_CXX_FLAGS " -fopenmp=libomp -llapack -lblas -fuse-ld=gold")
+  # set(CMAKE_CXX_FLAGS_DEBUG "-Og")
 
   # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wnonnull -Wnonnull-compare -Wopenmp-simd -Wparentheses -Wpointer-sign    -Wreorder     -Wreturn-type    -Wsequence-point   -Wsign-compare  -Wsizeof-pointer-memaccess   -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch -Wtautological-compare -Wtrigraphs  -Wuninitialized    -Wunknown-pragmas  -Wunused-function  -Wunused-label      -Wunused-value -Wunused-variable -Wvolatile-registercm-var")
   # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenacc -fopenmp -Wunused-function -Wunused-label -Wunused-value -Wunused-variable")
-  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -fopenacc -Wunused-label -Wunused-value")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
 
 # ############################################################################
 elseif(LINUX)

@@ -1,5 +1,3 @@
 #!/bin/bash
 
-./main ./inputs1
-./main ./inputs2
-./main ./inputs3
+./main ./inputs_static_pressure_PS0d006666666666666667_CSML3d0_RK2
