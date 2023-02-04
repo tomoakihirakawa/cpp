@@ -2,5 +2,5 @@
     "name": "tank",
     "type": "RigidBody",
     "isFixed": true,
-    "objfile": "/Users/tomoaki/Dropbox/markdown/cpp/obj/tsukada2022_re/wavetank10.obj"
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_re/wavetank10.obj"
 }

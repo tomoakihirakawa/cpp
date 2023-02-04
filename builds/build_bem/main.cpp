@@ -1280,7 +1280,7 @@ int main(int arg, char **argv) {
          setBoundaryConditions(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
          // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
+         flipIf(*water, {10 * rad, rad}, {10 * rad /*結構小さく*/, rad}, false);
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
@@ -1411,8 +1411,7 @@ int main(int arg, char **argv) {
             // b#         物体のノイマン境界の加速度 accel(t) を計算            */
             // b# ------------------------------------------------------ */
             for (const auto &net : RigidBodyObject) {
-               if (net->inputJSON.find("velocity") &&
-                   net->inputJSON["velocity"][0] == "floating") {
+               if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
                   std::cout << net->inputJSON.find("velocity") << std::endl;
                   std::cout << net->inputJSON["velocity"][0] << std::endl;
                   auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);

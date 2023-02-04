@@ -3266,9 +3266,17 @@ struct BaseBuckets {
       //    }
       // }
       /* ----------------------------- for_eachを使ったループ ---------------------------- */
-      std::for_each(std::execution::unseq, std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
-         std::for_each(std::execution::unseq, std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
-            std::for_each(std::execution::unseq, std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
+      // std::for_each(std::execution::unseq, std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
+      //    std::for_each(std::execution::unseq, std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
+      //       std::for_each(std::execution::unseq, std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
+      //          for (const auto &p : Bijk) func(p);
+      //       });
+      //    });
+      // });
+      /* -------------------------------------------------------------------------- */
+      std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max, [&](const auto &Bi) {
+         std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max, [&](const auto &Bij) {
+            std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max, [&](const auto &Bijk) {
                for (const auto &p : Bijk) func(p);
             });
          });

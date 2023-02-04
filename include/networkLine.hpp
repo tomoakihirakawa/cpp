@@ -1479,9 +1479,9 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
          auto p3 = f0f1[1]->getPointOpposite(this);
          int s2 = p2->getLines().size();
          int s3 = p3->getLines().size();
-         if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
-            if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
-               return false;  // 3以下はつくらない
+         // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+         //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+         //       return false;  // 3以下はつくらない
       }
       /* -------------------------------------------------------------------------- */
       // auto [p0, p2] = this->getPoints();
@@ -1569,9 +1569,9 @@ inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_of_lin
          auto p3 = f0f1[1]->getPointOpposite(this);
          int s2 = p2->getLines().size();
          int s3 = p3->getLines().size();
-         if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
-            if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
-               return false;  // 3以下はつくらない
+         // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+         //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+         //       return false;  // 3以下はつくらない
 
          double s_mean = s_meanIN;  //(s0 + s1 + s2 + s3) / 4.;
          double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);

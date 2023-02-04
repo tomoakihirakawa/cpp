@@ -1287,7 +1287,8 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->W = 0.;
    //! SPH
    this->a_viscosity = 0.;
-   this->mu_SPH = 0.001140;  // water 15 deg
+   this->mu_SPH = 0.001307;  // 10 deg
+   // 0.001140;  // water 15 deg
    this->DUDt_SPH = {0., 0., 0.};
    this->repulsive_force_SPH = {0., 0., 0.};
    this->DPDt_SPH = 0.;

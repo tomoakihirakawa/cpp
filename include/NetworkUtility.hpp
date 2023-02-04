@@ -168,6 +168,68 @@ Tddd AreaWeightedSmoothingVector(const netPp p) {
    } else
       return {0., 0., 0.};
 };
+//! -------------------------------------------------------------------------- */
+
+double magicalValue_(const networkPoint *p, const networkFace *f) {
+   // auto [p0, p1, p2] = f->getPoints(p);
+   auto nP012 = ToX(f->getPoints(p));
+   auto tmp = std::log10(Circumradius(nP012) / Inradius(nP012));
+   double max = 10;
+   if (tmp > max)
+      return max;
+   else
+      return tmp;
+};
+
+double variance2_(const networkPoint *p, const networkFace *f) {
+   auto [p0, p1, p2] = f->getPoints(p);
+   double m = 0, l0, l1, l2;
+   m += (l0 = Norm(ToX(p0) - ToX(p1)));
+   m += (l1 = Norm(ToX(p1) - ToX(p2)));
+   m += (l2 = Norm(ToX(p2) - ToX(p0)));
+   m /= 3.;
+   auto ret = std::pow(l0 - m, 2) + std::pow(l1 - m, 2) + std::pow(l2 - m, 2);
+   return 10 * ret / (m * m);
+};
+
+Tddd vectorTangentialShift_(const networkPoint *p, const double scale = 1.) {
+   Tddd vectorToCenter = {0., 0., 0.};
+   double s = 0;
+   Tddd pX = p->X;
+   double min_distance = 1E+10;
+   if (p->CORNER) {
+      for (const auto &l : p->getLinesCORNER()) {
+         vectorToCenter += ((*l)(p))->X - pX;
+         s += 1.;
+      }
+      vectorToCenter /= s;
+      return scale * vectorToCenter;
+   } else {
+      for (const auto &f : p->getFaces()) {
+         auto nP012 = ToX(f->getPoints(p));
+         auto [np0x, np1x, np2x] = nP012;
+         auto mean = (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3.;
+         auto l12 = Norm(np2x - np1x);
+         double a = magicalValue_(p, f) + variance2_(p, f);
+         if (any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
+            a *= 4;
+         else if (any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
+            a *= 3;
+         else if (any_of(f->getPoints(),
+                         [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
+                                                                 [&](const auto &F) { return any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
+            a *= 2;
+         auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
+         auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;
+         vectorToCenter += a * (X - np0x);  //[m]
+         s += a;
+      }
+      vectorToCenter /= s;
+      return scale * vectorToCenter;
+   }
+   return vectorToCenter;
+};
+
 /* ------------------------------------------------------ */
 void LaplacianSmoothing(netPp p) {
    try {

@@ -208,6 +208,7 @@ Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, double h) {
       return {0., 0., 0.};
 };
 /* -------------------------------------------------------------------------- */
+//
 auto &w_Bspline = w_Bspline5;
 auto &grad_w_Bspline = grad_w_Bspline5;
 // auto &w_Bspline = w_Bspline3;

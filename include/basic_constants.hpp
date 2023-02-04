@@ -4,10 +4,10 @@
 /* ----------------- physical properties ---------------- */
 
 const double _WATER_DENSITY_ = 1000;
+const double _WATER_MU_10deg_ = 0.001307;  // 10 deg
 const double _GRAVITY_ = 9.81;
 #include <tuple>
 const Tddd _GRAVITY3_ = {0., 0., -_GRAVITY_};
-
 /* --------------- files system -------------- */
 
 #include <string>

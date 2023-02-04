@@ -1,5 +1,5 @@
 // #define _debugging_
-
+#include <filesystem>
 #include <utility>
 #define DEM
 #include "Network.hpp"
@@ -47,6 +47,10 @@ int main(int arg, char **argv) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "argv <= 1. write input json file directory!\\ex.\\$ ./main ./input");
    std::string input_directory{argv[1]};  // input directory
    input_directory += "/";
+   //
+   std::string id = "";
+   if (arg >= 3)
+      id = argv[2];  // input directory
    // b! -------------------------------------------------------------------------- */
    std::cout << "input_directory : " << input_directory << std::endl;
    JSON settingJSON(std::ifstream(input_directory + "setting.json"));
@@ -54,8 +58,8 @@ int main(int arg, char **argv) {
       std::cout << Red << std::setw(30) << line.first << " : " << line.second << colorOff << std::endl;
    if (!settingJSON.find("output_directory"))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no output_directory");
-   if (!settingJSON.find("C_SML"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no C_SML");
+   if (!settingJSON.find("CSML"))
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no CSML");
    if (!settingJSON.find("end_time_step"))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no end_time_step");
    if (!settingJSON.find("end_time"))
@@ -67,8 +71,18 @@ int main(int arg, char **argv) {
    if (!settingJSON.find("initial_surface_z_position"))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no initial_surface_z_position");
    //
-   const auto output_directory = settingJSON["output_directory"][0] + "/";
-   const double C_SML = stod(settingJSON["C_SML"])[0];
+   const auto output_directory = settingJSON["output_directory"][0] + id + "/";
+   //
+   std::filesystem::path dir = output_directory;
+   if (!std::filesystem::exists(dir)) {
+      try {
+         std::filesystem::create_directory(dir);
+      } catch (const std::filesystem::filesystem_error &e) {
+         std::cerr << e.what() << '\n';
+      }
+   }
+   //
+   const double CSML = stod(settingJSON["CSML"])[0];
    const double end_time_step = stod(settingJSON["end_time_step"])[0];
    const double end_time = stod(settingJSON["end_time"])[0];
    const double max_dt = stod(settingJSON["max_dt"])[0];
@@ -93,7 +107,8 @@ int main(int arg, char **argv) {
    for (const auto &file : settingJSON["input_files"]) {
       JSON J(std::ifstream(input_directory + file));
       if (J["type"][0] == "probe") {
-         auto tmp = new Network;
+         auto tmp = new Network();
+         tmp->setName(J["name"][0]);
          new networkPoint(tmp, {stod(J["location"][0]),
                                 stod(J["location"][1]),
                                 stod(J["location"][2])});
@@ -113,11 +128,15 @@ int main(int arg, char **argv) {
          all_objects.push_back({particlesNet, polyNet, J});
          if (J["type"][0] == "RigidBody") {
             RigidBodies.push_back({particlesNet, polyNet, J});
+            particlesNet->isFluid = false;
+            polyNet->isFluid = false;
             particlesNet->isRigidBody = true;
             polyNet->isRigidBody = true;
          } else if (J["type"][0] == "Fluid") {
-            particlesNet->isFluid = false;
-            polyNet->isFluid = false;
+            particlesNet->isFluid = true;
+            polyNet->isFluid = true;
+            particlesNet->isRigidBody = false;
+            polyNet->isRigidBody = false;
          }
          //
          net2PVD[particlesNet] = new PVDWriter(output_directory + J["name"][0] + "_Particle_SPH.pvd");
@@ -170,8 +189,8 @@ int main(int arg, char **argv) {
                if (isInside) {
                   auto p = new networkPoint(object, xyz);
                   p->setDensityVolume(_WATER_DENSITY_, volume);  // 質量(mass)は関数内部で自動で決められる
-                  p->radius_SPH = C_SML * ps;
-                  p->C_SML = C_SML;
+                  p->radius_SPH = CSML * ps;
+                  p->C_SML = CSML;
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   break;
                }
@@ -182,8 +201,9 @@ int main(int arg, char **argv) {
    // auto Wall = std::get<0>(all_objects[1]);
    auto Fluid = std::get<0>(all_objects[1]);
    for (const auto &p : Fluid->getPoints()) {
-      auto rand = RandomRealTddd(-particle_spacing * 1E-14, particle_spacing * 1E-14);
-      p->setX(p->X + rand);
+      // auto rand = RandomRealTddd(-particle_spacing * 1E-14, particle_spacing * 1E-14);
+      // p->setX(p->X + rand);
+      p->setX(p->X);
    }
    // b# -------------------------------------------------------------------------- */
    // b#                             外向きベクトルの設定                               */
@@ -196,7 +216,8 @@ int main(int arg, char **argv) {
          for (const auto &p : obj->getPoints()) {
             // p->normal_SPH = poly->interpolateVector(p->X);
             auto [X, f] = Nearest_(p->X, poly->getFaces());
-            p->normal_SPH = X - p->X;
+            p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 2.) * particle_spacing * Normalize(X - p->X);
+            // p->normal_SPH = X - p->X;
             p->mirroring_face = f;
          }
       //
@@ -246,12 +267,23 @@ int main(int arg, char **argv) {
       if (end_time < real_time)
          break;
 
-      // developByEISPH(Fluid, RigidBodies, real_time, C_SML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
+      // int N = 100;
+      // if (time_step == N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_;
+      // } else if (time_step < N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_ * (1 + N - time_step);
+      // }
+
+      // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid, RigidBodies,
                      real_time,
-                     C_SML,
+                     CSML,
                      particle_spacing,
-                     time_step < 50 ? max_dt * 0.01 : max_dt,
+                     max_dt,
                      RK_order);
       std::cout << "real_time = " << real_time << std::endl;
       //------------------------------------------
@@ -319,30 +351,42 @@ int main(int arg, char **argv) {
          //!                                    プローブ                                  */
          //! -------------------------------------------------------------------------- */
          Print("プローブ出力");
+         jsonout.push("time", real_time);
          for (const auto &[probe, J] : probes) {
             vtkPolygonWriter<networkPoint *> vtp;
             for (const auto &p : probe->getPoints())
                vtp.add(p);
 
-            std::unordered_map<networkPoint *, double> PRESSURE, RHO;
+            std::unordered_map<networkPoint *, double> PRESSURE, RHO, PRESSURE_N, RHO_N;
             for (const auto &p : probe->getPoints()) {
-               double pressure = 0, rho = 0;
+               double pressure = 0, rho = 0, w, total = 0.;
+               double pressure_normalized = 0, rho_normalized = 0;
                int c = 0;
                for (const auto &[particlesNet, _, __] : all_objects) {
-                  particlesNet->BucketPoints.apply(p->X, particle_spacing * C_SML, [&](const auto &q) {
+                  particlesNet->BucketPoints.apply(p->X, particle_spacing * CSML, [&](const auto &q) {
                      if (isFinite(q->p_SPH) && isFinite(q->volume)) {
-                        pressure += q->p_SPH * q->volume * w_Bspline(Norm(q->X - p->X), particle_spacing * C_SML);
-                        rho += q->mass * w_Bspline(Norm(q->X - p->X), particle_spacing * C_SML);
+                        w = q->volume * w_Bspline(Norm(q->X - p->X), particle_spacing * CSML);
+                        pressure += q->p_SPH * w;
+                        rho += q->rho * w;
+                        if (particlesNet->isFluid) {
+                           total += w;
+                           pressure_normalized += q->p_SPH * w;
+                           rho_normalized += q->rho * w;
+                        }
                         c++;
                      }
                   });
                }
-               if (c > 10) {
+               if (total > 1E-15) {
                   PRESSURE[p] = pressure;
                   RHO[p] = rho;
+                  PRESSURE_N[p] = pressure_normalized / total;
+                  RHO_N[p] = rho_normalized / total;
                } else {
                   PRESSURE[p] = 0.;
-                  RHO[p] = rho;
+                  RHO[p] = 0.;
+                  PRESSURE_N[p] = 0.;
+                  RHO_N[p] = 0.;
                }
             }
             vtp.addPointData("pressure", PRESSURE);
@@ -354,7 +398,18 @@ int main(int arg, char **argv) {
             //
             net2PVD[probe]->push(name, real_time);
             net2PVD[probe]->output();
+            // b# -------------------------------------------------------------------------- */
+            // b#                              output JSON files                             */
+            // b# -------------------------------------------------------------------------- */
+            jsonout.push(probe->getName() + "_pressure", std::get<1>(*PRESSURE.begin()));
+            jsonout.push(probe->getName() + "_rho", std::get<1>(*RHO.begin()));
+            jsonout.push(probe->getName() + "_pressure_normalized", std::get<1>(*PRESSURE_N.begin()));
+            jsonout.push(probe->getName() + "_rho_normalized", std::get<1>(*RHO_N.begin()));
+            std::ofstream os(output_directory + "/result.json");
+            jsonout.output(os);
+            os.close();
          }
+
          //* -------------------------------------------------------------------------- */
          //*                                   オブジェクト                               */
          //* -------------------------------------------------------------------------- */
@@ -373,9 +428,9 @@ int main(int arg, char **argv) {
                double pressure = 0, rho = 0;
                int c = 0;
                for (const auto &[particlesNet, _, __] : all_objects) {
-                  particlesNet->BucketPoints.apply(p->X, particle_spacing * C_SML, [&](const auto &q) {
-                     pressure += q->p_SPH * q->volume * w_Bspline(Norm(q->X - p->X), particle_spacing * C_SML);
-                     rho += q->mass * w_Bspline(Norm(q->X - p->X), particle_spacing * C_SML);
+                  particlesNet->BucketPoints.apply(p->X, particle_spacing * CSML, [&](const auto &q) {
+                     pressure += q->p_SPH * q->volume * w_Bspline(Norm(q->X - p->X), particle_spacing * CSML);
+                     rho += q->mass * w_Bspline(Norm(q->X - p->X), particle_spacing * CSML);
                      c++;
                   });
                }
