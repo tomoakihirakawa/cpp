@@ -147,11 +147,38 @@ int main() {
    for (const auto &T : Subdivide({0.1, 20}, 50)) {
       double h = 1000, omega = 2 * M_PI / T;
       NewtonRaphson nr(1.);
-      for (auto i = 0; i < 10; i++)
+      for (auto i = 0; i < 10; i++) {
          nr.update(w(nr.X, h) - omega, dwdk(nr.X, h));
+         std::cout << Red << "i = " << i << ", 誤差 : w(nr.X, h) - omega = " << w(nr.X, h) - omega << colorOff << std::endl;
+      }
       // std::cout << "分散関係を満たす組：{w,k,h} = " << Tddd{omega, nr.X, h} << ", w(nr.X, h) - omega = " << w(nr.X, h) - omega << std::endl;
       auto ds = DispersionRelation(omega, h);
       std::cout << "{水深h, 角周波数w, 波数k, 周期T, 波長L} = " << T5d{ds.h, ds.w, ds.k, ds.T, ds.L} << std::endl;
+   }
+   /* -------------------------------------------------------------------------- */
+   {
+      auto f = [](const double x) { return x * x * x * x * x - x * x * x * x + x * x * x - x * x + x - 1; };
+      auto dfdx = [](const double x) { return 5 * x * x * x * x - 4 * x * x * x + 3 * x * x - 2 * x + 1; };
+      std::cout << "x^5 - x^4 + x^3 - x^2 + x - 1" << std::endl;
+      NewtonRaphson nr(-5.);
+      auto G = [&](const double l) { return nr.X + l * nr.dX; };
+      auto dGdl = [&](const double l) { return dfdx(G(l)) * nr.dX; };
+      auto lambda = [&]() { return -dGdl(0) / (2 * (G(1) - G(0) - dGdl(0))); };
+      for (auto i = 0; i < 30; i++) {
+         // {
+         //    // back tracking を使ったつもりだが，早くはならなかった．
+         //    auto l = (i == 0 ? 1 : lambda());
+         //    if (l < 0.1)
+         //       l = 0.1;
+         //    nr.update(f(nr.X), dfdx(nr.X), l);
+         // }
+         {
+            // 改良版は確かに早いが，面倒だ
+            nr.update(f(nr.X) * f(nr.X),
+                      dfdx(nr.X) * (f(nr.X) - f(nr.X - f(nr.X) / dfdx(nr.X))));
+         }
+         std::cout << Green << "i = " << i << ", 誤差 : f(nr.X) = " << f(nr.X) << colorOff << std::endl;
+      }
    }
 };
 #endif

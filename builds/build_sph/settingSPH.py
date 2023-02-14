@@ -56,14 +56,13 @@ match SimulationCase:
 
         setting = {"RK_order": 1,
                    "max_dt": 0.002,
-                   "CSML": 3.,
+                   "CSML": 3.05,
                    "end_time_step": 10000,
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
                    # "particle_spacing": 0.00625,
-                   "particle_spacing": 0.2/30.,
+                   "particle_spacing": 0.2/25,
                    "input_files": [x["name"]+".json" for x in input_files]}
-
     case "Lobovsky2014":
 
         objfolder = program_home + "/cpp/obj/2022Arai/Lobovsky2014"
@@ -114,7 +113,7 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in input_files]}
     case "Kamra2019":
 
-        id = "_circuler"
+        id = "_square"
 
         objfolder = program_home + "/cpp/obj/2022Arai/Kamra2019"
 
@@ -145,9 +144,9 @@ match SimulationCase:
                    "max_dt": 0.0025,
                    "end_time_step": 20000,
                    "end_time": 1,
-                   "CSML": 2.7,
+                   "CSML": 3.05,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.01,
+                   "particle_spacing": 0.0125,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #

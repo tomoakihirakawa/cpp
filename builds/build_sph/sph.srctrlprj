@@ -29,7 +29,7 @@
                 <source_extension>.hpp</source_extension>
             </source_extensions>
             <source_paths>
-                <source_path>/Users/tomoaki/Dropbox/markdown/cpp/builds/build_sph/main.cpp</source_path>
+                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_sph/main.cpp</source_path>
                 <source_path>../../include/basic_alias.hpp</source_path>
                 <source_path>../../include/basic_arithmetic_vector_operations.hpp</source_path>
                 <source_path>../../include/basic_constants.hpp</source_path>

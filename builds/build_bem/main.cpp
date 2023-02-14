@@ -181,9 +181,23 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          return {0., 0., 0., wx, wy, wz};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-
-   } else
-      return {0., 0., 0., 0., 0., 0.};
+   } else if (name.contains("sinusoidal") || name.contains("sin")) {
+      if (strings.size() == 4) {
+         double start = stod(strings[1] /*start*/);
+         if (t >= start) {
+            double a = std::abs(stod(strings[2] /*a*/));
+            double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
+            return {a * w * cos(w * t), 0., 0., 0., 0., 0.};
+         }
+      } else {
+         std::stringstream ss;
+         int i = 0;
+         for (const auto &s : strings)
+            ss << i++ << ":" << s << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      }
+   }
+   return {0., 0., 0., 0., 0., 0.};
 };
 
 // b$ -------------------------------------------------------------------------- */

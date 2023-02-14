@@ -395,6 +395,20 @@ struct CoordinateBounds {
    Tddd X;  // center
    Tddd &center = this->X;
    /* ------------------------------------------------------ */
+   T3Tdd scaledBounds(const double scale) const {
+      auto [xrange, yrange, zrange] = this->bounds;
+      auto cX = Mean(xrange);
+      auto cY = Mean(yrange);
+      auto cZ = Mean(zrange);
+      auto [x0, x1] = xrange;
+      auto [y0, y1] = yrange;
+      auto [z0, z1] = zrange;
+      xrange = {cX + scale * (x0 - cX), cX + scale * (x1 - cX)};
+      yrange = {cY + scale * (y0 - cY), cY + scale * (y1 - cY)};
+      zrange = {cZ + scale * (z0 - cZ), cZ + scale * (z1 - cZ)};
+      return T3Tdd{xrange, yrange, zrange};
+   };
+   /* -------------------------------------------------------------------------- */
    void setBounds(const std::vector<Tddd> &Vxyz) {
       this->bounds = MinMaxTranspose(Vxyz);
       this->X = Mean(Transpose(this->bounds));

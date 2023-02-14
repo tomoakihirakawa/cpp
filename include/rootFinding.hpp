@@ -13,6 +13,7 @@ struct NewtonRaphson_Common {
    T X;
    T dX;  // tmp
    NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit){};
+   void initialize(const T &Xin) { X = Xin; };
 };
 
 template <typename T>
@@ -32,9 +33,15 @@ struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
 /* ------------------------------------------------------ */
 template <>
 struct NewtonRaphson<double> : public NewtonRaphson_Common<double> {
-   NewtonRaphson(const double Xinit) : NewtonRaphson_Common<double>(Xinit){};
-   void update(const double F, const double dFdx) { X += (dX = F / (-dFdx)); };
-   void update(const double F, const double dFdx, const double a) { X += a * (dX = F / (-dFdx)); };
+   NewtonRaphson(const double Xinit = 0) : NewtonRaphson_Common<double>(Xinit){};
+   void update(const double F, const double dFdx) {
+      if (std::abs(dFdx) > 1E-20)
+         X += (dX = F / (-dFdx));
+   };
+   void update(const double F, const double dFdx, const double a) {
+      if (std::abs(dFdx) > 1E-20)
+         X += a * (dX = F / (-dFdx));
+   };
 };
 template <>
 struct NewtonRaphson<Tdd> : public NewtonRaphson_Common<Tdd> {

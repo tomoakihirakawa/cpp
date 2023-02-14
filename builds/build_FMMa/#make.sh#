@@ -1,0 +1,19 @@
+#! /bin/bash
+cp ../../include/fundamental.hpp ./fundamental.cpp
+emcc ./fundamental.cpp --bind -s ALLOW_MEMORY_GROWTH=1 -Oz -o embinded.js -v -fopenmp
+# emcc ./fundamental.cpp \
+#      --bind \
+#      --pre-js pre.js\
+#      -s TOTAL_MEMORY=512MB\
+#      -s WASM=1\
+#      -s ALLOW_MEMORY_GROWTH=1 \
+#      -Oz \
+#      -o embinded.js -v
+
+
+      std::vector<double> perimeters(vertices.size());
+      for(auto i=0; i<vertices.size()-1 ;i++)
+	perimeters[i] = Norm(vertices[i+1] - vertices[i]);  
+      perimeters[s-1]=Norm(vertices[0] - vertices[s-1]);
+
+
