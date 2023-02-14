@@ -9,6 +9,7 @@
 #include "InterpolationRBF.hpp"
 #include "NetworkCommon.hpp"
 #include "basic.hpp"
+#include "rootFinding.hpp"
 
 class networkLine;
 class networkTetra;
@@ -392,7 +393,9 @@ class networkPoint : public CoordinateBounds {
    RungeKutta<Tddd> RK_U;
    RungeKutta<double> RK_rho;
    RungeKutta<double> RK_P;
-
+   /* -------------------------------------------------------------------------- */
+   NewtonRaphson<double> NR_pressure;
+   /* -------------------------------------------------------------------------- */
   public:
    V_netLp getLinesCORNER() const {
       V_netLp ret;
@@ -485,7 +488,7 @@ class networkPoint : public CoordinateBounds {
    // 物性
    double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
    //
-   double total_weight,total_N;
+   double total_weight, total_weight_, total_weight__, total_N;
    Tddd normal_SPH;
    networkFace *mirroring_face;
    double d_empty_center;
@@ -493,7 +496,7 @@ class networkPoint : public CoordinateBounds {
    bool pn_is_set;
    bool isSurface;
    bool isInsideOfBody;
-   bool isCaptured, isCaptured_;
+   bool isCaptured, isCaptured_, isFluid;
    bool isFreeFalling;
    double radius_SPH;
    double C_SML;
@@ -503,8 +506,10 @@ class networkPoint : public CoordinateBounds {
    double &p_SPH = this->pressure_SPH;
    double &p_SPH_ = this->pressure_SPH_;
    double &p_SPH__ = this->pressure_SPH__;
+   double dp_SPH, dp_SPH_;
    double p_SPH_SPP;
    double DPDt_SPH;
+   double div_U_error;
    int contact_points_fluid_SPH, contact_points_all_SPH;
    double pressure_Tait(const double rho, double C0 = 1466.) const {
       // double C0 = 1466.; //[m/s]
@@ -523,7 +528,7 @@ class networkPoint : public CoordinateBounds {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U, lap_U_;
+   Tddd lap_U, lap_U_, lap_tmpU, lap_tmpU_;
    // void setLapU(const V_d &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setLapU(const Tddd &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setDensityVolume(const double &den, const double &v) {
@@ -551,23 +556,26 @@ class networkPoint : public CoordinateBounds {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
-   double div_U;
-   Tddd gradP_SPH;
+   double div_U, div_U_, div_tmpU, div_tmpU_;
+   Tddd grad_div_U, grad_div_U_;
+   Tddd gradP_SPH, gradP_SPH_;
    //////////////////////////
    netFp face_org;
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_;
-   Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X;
+   Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X, pre_X;
    double tmp_density;
    Tddd pre_U_SPH;
    Tddd mu_lap_rho_g_SPH;
    Tddd interpolated_normal_SPH, interpolated_normal_SPH_original;
+   Tddd COM_SPH;
    Tddd interpolated_normal_SPH_all, interpolated_normal_SPH_original_all;
    Tddd cg_neighboring_particles_SPH;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;
+   Tddd ViscousAndGravityForce, tmp_ViscousAndGravityForce;
    Tddd repulsive_force_SPH;
    double DrhoDt_SPH;
    //
@@ -3271,10 +3279,13 @@ class Network : public CoordinateBounds {
    const Buckets<networkPoint *> &getBucketPoints() const { return BucketPoints; };
    const Buckets<networkPoint *> &getBucketParametricPoints() const { return BucketParametricPoints; };
 
+   const double expand_bounds = 1.5;
+
    void makeBucketFaces(const double spacing) {
+      this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
-      this->BucketFaces.set(this->bounds, spacing);
+      this->BucketFaces.set(this->scaledBounds(expand_bounds), spacing);
       //
       double min;
       for (const auto &f : this->getFaces()) {
@@ -3285,26 +3296,35 @@ class Network : public CoordinateBounds {
    };
 
    void makeBucketPoints(const double spacing) {
+      this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
       this->BucketPoints.clear();
-      this->BucketPoints.resize(this->bounds, spacing);
-      //
+      this->BucketPoints.resize(this->scaledBounds(expand_bounds), spacing);
       std::cout << this->getName() << ", resize done" << std::endl;
-      this->BucketPoints.add(this->getPoints());
-      std::cout << this->getName() << ", all points are added" << std::endl;
+      if (!this->BucketPoints.add(this->getPoints()))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
+      else
+         std::cout << this->getName() << ", all points are added" << std::endl;
+      // this->BucketPoints.hashing();
+      // std::cout << this->getName() << ", hashing is done" << std::endl;
+      // this->BucketPoints.shrink_to_fit();
+      // std::cout << this->getName() << ", shrink_to_fit" << std::endl;
       // #pragma acc enter data copyin(this->BucketPoints)
    };
    void makeBucketParametricPoints(const double spacing) {
+      this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
-      this->BucketParametricPoints.resize(this->bounds, spacing);
+      this->BucketParametricPoints.resize(this->scaledBounds(expand_bounds), spacing);
       this->BucketParametricPoints.add(this->getParametricPoints());
       std::cout << "this->getParametricPoints().size()=" << this->getParametricPoints().size() << std::endl;
    };
    void makeBucketParametricPoints(const T3Tdd &bounds, const double spacing) {
-      this->BucketParametricPoints.resize(bounds, spacing);
+      this->BucketPoints.hashing_done = false;
+      this->BucketParametricPoints.resize(this->scaledBounds(expand_bounds), spacing);
       this->BucketParametricPoints.add(this->getParametricPoints());
    };
    void clearBucketParametricPoints() {
+      this->BucketPoints.hashing_done = false;
       this->BucketParametricPoints.clear();
    };
    // b$ ------------------------------------------------------ */
@@ -3642,7 +3662,7 @@ class Network : public CoordinateBounds {
    };
    //% ------------------------------------------------------ */
    const std::string &getName() const { return this->name; };
-   void setName(const std::string nameIN) { this->name=nameIN; };
+   void setName(const std::string nameIN) { this->name = nameIN; };
    V_netPp linkXPoints(Network &water, Network &obj);
    /* ------------------------------------------------------ */
    void displayStates() {

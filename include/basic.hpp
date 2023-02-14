@@ -803,10 +803,9 @@ std::vector<std::vector<T>> Join(std::vector<std::vector<T>> ret, const std::vec
    return ret;
 };
 template <typename T>
-std::vector<T> Append(const std::vector<T> &a, const T &b) {
-   std::vector<T> ret = a;
-   ret.insert(ret.end(), b);
-   return ret;
+std::unordered_set<T> Append(std::unordered_set<T> a, const T &b) {
+   a.insert(a.end(), b);
+   return a;
 };
 /////////////////////////////////////////////////////
 template <typename T>
@@ -1596,6 +1595,7 @@ struct ParametricInterpolation3D {
       samp3Y = samp3Y_IN;
       samp3Z = samp3Z_IN;
    };
+
    ////////////////////////////////////////////////////
    V_d Nx(const double b /*y*/) {
       return Dot(inv_coefmatT, Bspline_vector(b, s2, K, q2));
@@ -2627,6 +2627,11 @@ std::vector<T> Reverse(std::vector<T> vec) {
    std::reverse(vec.begin(), vec.end());
    return vec;
 };
+
+double Subtract(const Tdd &ab) {
+   return std::get<0>(ab) - std::get<1>(ab);
+};
+
 //===========================================================
 #include "basic_geometry.hpp"
 #include "basic_statistics.hpp"
@@ -2661,6 +2666,7 @@ T6d Total(const std::vector<T6d> &V) {
       ret += v;
    return ret;
 };
+
 /* ------------------------------------------------------ */
 // b% ------------------- タプルからparticlize ------------------ */
 std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>>
@@ -2718,6 +2724,8 @@ struct BaseBuckets {
    Tddd center;
    Tiii dn;
    std::vector</*x*/ std::vector</*y*/ std::vector</*z*/ std::unordered_set<T>>>> buckets;
+   std::unordered_map<Tiii, std::unordered_set<T> *> hashed_buckets;
+   bool hashing_done;
    std::unordered_set<T> all_stored_objects;
    std::unordered_map<T, Tiii> map_to_ijk;
    /*
@@ -2736,14 +2744,15 @@ struct BaseBuckets {
       return pow(2. * depth - 1., 2.) * vol;
    };
    BaseBuckets(const CoordinateBounds &c_bounds, const double dL_IN)
-       : bounds(c_bounds.bounds), dL(dL_IN), dn(Tiii{0, 0, 0}) {
+       : bounds(c_bounds.bounds), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
       set(this->bounds, dL_IN);
    };
    BaseBuckets(const T3Tdd &boundingboxIN, const double dL_IN)
-       : bounds(boundingboxIN), dL(dL_IN), dn(Tiii{0, 0, 0}) {
+       : bounds(boundingboxIN), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
       set(this->bounds, dL_IN);
    };
    void set(const T3Tdd &boundingboxIN, const double dL_IN) {
+      hashing_done = false;
       try {
          this->bounds = boundingboxIN;
          this->dL = dL_IN;
@@ -2763,7 +2772,13 @@ struct BaseBuckets {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
+   void shrink_to_fit() {
+      this->buckets.shrink_to_fit();
+      //
+   };
+
    void resize(const T3Tdd &boundingboxIN, const double dL_IN) {
+      hashing_done = false;
       try {
          this->bounds = boundingboxIN;
          this->dL = dL_IN;
@@ -2905,13 +2920,13 @@ struct BaseBuckets {
       }
    };
    /* -------------------------------------------------------------------------- */
-   void add(const Tiii &ijk, const T p) {
+   bool add(const Tiii &ijk, const T p) {
+      hashing_done = false;
       auto [i, j, k] = ijk;
       try {
          if (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize)) {
             this->map_to_ijk[p] = ijk;
-            this->buckets[i][j][k].emplace(p);
-            this->all_stored_objects.emplace(p);
+            return (this->buckets[i][j][k].emplace(p)).second && (this->all_stored_objects.emplace(p)).second;
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
@@ -2922,14 +2937,17 @@ struct BaseBuckets {
             << "[" << xsize << "," << ysize << "," << zsize << "]" << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       };
+      return false;
    };
    //
-   void add(const Tddd &x, const T p) { add(indices(x), p); };
+   bool add(const Tddd &x, const T p) { return add(indices(x), p); };
    //
-   void add(const std::unordered_set<T> &P) {
-
+   bool add(const std::unordered_set<T> &P) {
+      hashing_done = false;
       // for (const auto &q : P)
       //    add(ToX(q), q);
+
+      bool ret = true;
 
       auto func0 = [&]() {
                Tiii ijk;
@@ -2939,34 +2957,28 @@ struct BaseBuckets {
                   if (isInside(i,j,k))
                      this->map_to_ijk[p] = ijk;
                }; };
-
       auto func1 = [&]() {
                for (const auto &p : P) {
-               auto [i, j, k] =  indices(ToX(p));
-               if (isInside(i,j,k))
-                  this->buckets[i][j][k].emplace(p);
+               auto [i, j, k] = indices(ToX(p));
+               if (isInside(i,j,k)){
+                  ret = ret && (this->buckets[i][j][k].emplace(p)).second;
+               ret = ret && (this->all_stored_objects.emplace(p)).second;
+               }
             } };
-
-      auto func2 = [&]() {
-         for (const auto &p : P) {
-            auto [i, j, k] = indices(ToX(p));
-            if (isInside(i, j, k))
-               this->all_stored_objects.emplace(p);
-         }
-      };
 #pragma omp parallel sections
       {
 #pragma omp section
          func0();
 #pragma omp section
          func1();
-#pragma omp section
-         func2();
       };
+      return ret;
    };
-   void add(const std::vector<T> &p) {
+   bool add(const std::vector<T> &p) {
+      bool ret = true;
       for (const auto &q : p)
-         add(ToX(q), q);
+         ret = ret && add(ToX(q), q);
+      return ret;
    };
    /* -------------------------------------------------------------------------- */
 
@@ -3018,6 +3030,7 @@ struct BaseBuckets {
    };
    /* ------------------------------------------------------ */
    void clear() {
+      hashing_done = false;
       this->buckets.clear();
       this->all_stored_objects.clear();
       // for (auto &vvu_b : this->buckets)
@@ -3282,6 +3295,33 @@ struct BaseBuckets {
          });
       });
    };
+
+   void hashing() {
+      // int x = 0, y = 0, z = 0;
+      // std::for_each(std::execution::seq, this->buckets.begin(), this->buckets.end(), [&](auto &Bi) {
+      //    y = 0;
+      //    std::for_each(std::execution::seq, Bi.begin(), Bi.end(), [&](auto &Bij) {
+      //       z = 0;
+      //       std::for_each(std::execution::seq, Bij.begin(), Bij.end(), [&](auto &Bijk) {
+      //          hashed_buckets[{x, y, z}] = &Bijk;
+      //          z++;});
+      //    y++;});
+      // x++; });
+      // std::cout << Tiii{x, y, z} << std::endl;
+      // std::cout << xsize << std::endl;
+      // std::cout << ysize << std::endl;
+      // std::cout << zsize << std::endl;
+      // //
+      // // for (auto x = 0; x < xsize; x++) {
+      // //    for (auto y = 0; y < ysize; y++) {
+      // //       for (auto z = 0; z < xsize; z++) {
+      // //          hashed_buckets[{x, y, z}] = &buckets[x][y][z];
+      // //       }
+      // //    }
+      // // }
+      hashing_done = true;
+   };
+
    void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const { apply(x, (int)std::ceil(d / this->dL), func); };
    void apply(const std::function<void(const T &)> &func) const {
       for (const auto &p : this->all_stored_objects) func(p);

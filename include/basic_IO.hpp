@@ -1,6 +1,7 @@
 #ifndef basic_IO_H
 #define basic_IO_H
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
@@ -214,14 +215,14 @@ void DebugPrint(Args... args) {
 }
 //
 template <typename T>
-void MatrixForm(const std::vector<std::vector<T>> &mat) {
+void MatrixForm(const std::vector<std::vector<T>> &mat, const int n = 4, const int m = 7) {
    std::stringstream ss;
-   ss << Red << "{" << colorOff;
+   ss << std::setprecision(n) << Red << "{" << colorOff;
    for (auto it = mat.begin(); it != mat.end(); ++it) {
-      ss << Green << "{" << colorOff;
+      ss << Green << (it == mat.begin() ? "{" : " {") << colorOff;
       for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt)
-         ss << (*jt) << Green << "," << colorOff;
-      ss << (*((*it).end() - 1)) << Green << "}" << colorOff;
+         ss << std::setw(m) << std::setfill(' ') << (*jt) << Green << "," << colorOff;
+      ss << std::setw(m) << std::setfill(' ') << (*((*it).end() - 1)) << Green << "}" << colorOff;
       if (it != mat.end() - 1)
          ss << ",\n";
    }

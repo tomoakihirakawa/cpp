@@ -1626,7 +1626,7 @@ Tddd Reflect(const Tddd &v, const Tddd &n) {
    return v - 2. * Projection(v, n);
 };
 
-Tddd Scaled(const Tddd &v, const double &d) {
+Tddd Scaled(const Tddd &v, const double d) {
    /* n is a normal vector of a surface*/
    return d * Normalize(v);
 };

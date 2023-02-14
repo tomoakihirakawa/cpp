@@ -310,6 +310,14 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
    }
    vtp.write(ofs);
 };
+void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
+   vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+   for (const auto &X : V) {
+      std::shared_ptr<Tddd> x(new Tddd(ToX(X)));
+      vtp.add(x);
+   }
+   vtp.write(ofs);
+};
 // void vtkPolygonWrite(const std::string &name, const std::vector<Tddd> &V) {
 //    std::ofstream ofs(name);
 //    vtkPolygonWrite(ofs, V);

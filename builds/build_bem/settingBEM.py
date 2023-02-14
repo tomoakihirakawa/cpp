@@ -25,7 +25,7 @@ g = 9.81
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Retzler2000simple"
+SimulationCase = "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
 
 match SimulationCase:
     case "two_floatingbodies":
@@ -111,14 +111,24 @@ match SimulationCase:
         h = 80
         z_surface = 80
 
-        wavemaker = {"name": "wavemaker",
-                     "type": "SoftBody",
-                     "isFixed": True,
-                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+        if True:
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "isFixed": True}
+        else:
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
-        floatingbody = {"name": "floatingbody",
-                        "type": "RigidBody",
-                        "velocity": "floating"}
+        if True:
+            floatingbody = {"name": "floatingbody",
+                            "type": "RigidBody",
+                            "velocity": ["sin", 0, a, T]}
+        else:
+            floatingbody = {"name": "floatingbody",
+                            "type": "RigidBody",
+                            "velocity": "floating"}
 
         A = 2450.00
         floatingbody["mass"] = m = (1000.*g*7.5*A)/g
@@ -333,7 +343,6 @@ coloroff = '\033[0m'
 #@ -------------------------------------------------------- #
 #@           その他，water.json,tank.json などを出力           #
 #@ -------------------------------------------------------- #
-print("The directory for input files :", magenta, input_directory, coloroff)
 for INPUTS in inputfiles:
     print('------------------------------------')
     for key, value in INPUTS.items():
@@ -360,3 +369,5 @@ print('------------------------------------')
 f = open(input_directory+"/setting.json", 'w')
 json.dump(setting, f, ensure_ascii=True, indent=4)
 f.close()
+
+print("The directory for input files :", magenta, input_directory, coloroff)

@@ -46,7 +46,7 @@ struct GradientMethod {
       }
       count = 0;
       double norm;
-      V_d p = b - Dot(A, x);  //修正ベクトルp
+      V_d p = b - Dot(A, x);  // 修正ベクトルp
       norm = Norm(p);
       while (!(norm < eps)) {
          //  std::cout << "count = " << count << ", norm = " << norm << std::endl;
@@ -76,7 +76,7 @@ struct GradientMethod {
             x[i] = x_init[i];
       }
       count = 0;
-      V_d r = b - Dot(A, x);  //残差ベクトル
+      V_d r = b - Dot(A, x);  // 残差ベクトル
       double norm = Norm(r);
       //   std::cout << "count = " << count << ", norm = " << norm << std::endl;
       if (norm < eps)
@@ -93,10 +93,10 @@ struct GradientMethod {
       while (!(norm < eps)) {
          //  std::cout << "count = " << count << ", norm = " << norm << std::endl;
          beta = -Dot(r, Dot(A, p)) / Dot(Dot(A, p), p);
-         p = r + beta * p;  //修正ベクトルは，最急降下方向を少し変更した物
+         p = r + beta * p;  // 修正ベクトルは，最急降下方向を少し変更した物
          alpha = Dot(r, p) / Dot(Dot(A, p), p);
          x += alpha * p;                       // xを修正
-         r = b - Dot(A, x /*x=x0+alpha*p0*/);  //残差ベクトルr（最急降下方向）
+         r = b - Dot(A, x /*x=x0+alpha*p0*/);  // 残差ベクトルr（最急降下方向）
          if (!isFinite(norm = Norm(r)))
             return x;
          else if (count++ > 1000)
@@ -224,6 +224,7 @@ struct ArnoldiProcess {
          for (i = 0; i < j + 1; ++i)
             w -= (H[i][j] = Dot(V[i], w)) * V[i];  //@ ベクトル内積
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
+         MatrixForm(H);
       }
       // Print("done");
    };

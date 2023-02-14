@@ -65,7 +65,7 @@ int main(int arg, char **argv) {
    double particle_spacing = Mean(Tddd{vecX[1] - vecX[0], vecY[1] - vecY[0], vecZ[1] - vecZ[0]});
    double depth = particle_spacing;
    /* -------------------------------------------------------------------------- */
-   Tdd r = {-0.00000, 0.00000};
+   Tdd r = {-0.001, 0.001};
    std::vector<Tddd> XYZ;
    for (const auto &x : vecX)
       for (const auto &y : vecY)
@@ -83,9 +83,12 @@ int main(int arg, char **argv) {
 
    object->setGeometricProperties();
    // object->genOctreeOfPoints({minDepth, maxDepth}, 1);
-   // auto ofs = std::ofstream("./output/octreeOfPoints" + std::to_string(I) + ".vtp");
-   // vtkPolygonWrite(ofs, toCubeFaces(object->octreeOfPoints->getAllDeepestInside()));
-   // ofs.close();
+   //
+   {
+      auto ofs = std::ofstream("./output/points.vtp");
+      vtkPolygonWrite(ofs, object->getPoints());
+      ofs.close();
+   }
    /* --------------------------------- バケツの準備 --------------------------------- */
    Buckets<networkPoint *> buckets(object->getBounds(), particle_spacing);
    Buckets<networkFace *> face_buckets(object->getBounds(), particle_spacing);
@@ -156,12 +159,12 @@ int main(int arg, char **argv) {
       vtkPolygonWrite(ofs, object->getLines());
    }
    check();
-   
+
    // b% -------------------------------------------------------------------------- */
 
    auto accumulate = [&](const T_4P &ABCD, const T_2P &pq) {
       double ACCUM = 0.;
-      if (!(any_of(ABCD, [&](const auto &P) { return P == std::get<0>(pq); }) && 
+      if (!(any_of(ABCD, [&](const auto &P) { return P == std::get<0>(pq); }) &&
             any_of(ABCD, [&](const auto &P) { return P == std::get<1>(pq); })))
          for_each(ToT4T3P(ABCD), [&](const auto &tri) {
             auto t = Triangle(ToX(tri));
@@ -180,14 +183,14 @@ int main(int arg, char **argv) {
          double count = 0, cr;
          const double small = 1E-6;
          if (
-            // all_of(T.solidangles, [&](const auto &s) { return Between(s, {2 * M_PI * 0.0001, 2 * M_PI * 0.9999}); }) &&
+             // all_of(T.solidangles, [&](const auto &s) { return Between(s, {2 * M_PI * 0.0001, 2 * M_PI * 0.9999}); }) &&
              T.inradius > particle_spacing / 50 &&
              std::get<0>(object->isInside_MethodOctree(T.incenter)) &&
              tetra_buckets.none_of([&](const auto &t) { return IntersectQ(T, t->scaled(0.9999)); })) {
             /* -------------------------------------------------------------------------- */
             const double range = 2 * particle_spacing;
             double ACCUM = 0.;
-            
+
             buckets.apply(T.incenter, range, [&](const auto &p) {
                if (IntersectQ(T.circumcenter, T.circumradius, p->X))
                   ACCUM += std::abs(T.circumradius - Norm(T.circumcenter - p->X));
@@ -196,8 +199,8 @@ int main(int arg, char **argv) {
             std::unordered_set<networkLine *> lines;
             buckets.apply(T.incenter, range, [&](const auto &p) { lines.insert(p->getLines().begin(), p->getLines().end()); });
 
-            for (const auto &l : lines) 
-               ACCUM += accumulate(abcd, l->getPoints());            
+            for (const auto &l : lines)
+               ACCUM += accumulate(abcd, l->getPoints());
 
             tetra_buckets.apply(T.incenter, range, [&](const auto &TET) {
                ACCUM += accumulate(TET->Points, {a, b});
@@ -240,15 +243,15 @@ int main(int arg, char **argv) {
       return std::tuple<bool, networkTetra *>{false, nullptr};
    };
    // b% -------------------------------------------------------------------------- */
-   auto gen1 = [&](const T_3P &abc, const auto &vec, const Tddd& n={0.,0.,0.}) {
-      double ACCUM = 1E+5;
+   auto gen1 = [&](const T_3P &abc, const auto &vec, const Tddd &n = {0., 0., 0.}) {
+      double SCORE = 1E+20;
       int count = 0;
       auto [a, b, c] = abc;
       T_4P abcd = {nullptr, nullptr, nullptr, nullptr}, ABCD = {nullptr, nullptr, nullptr, nullptr};
       Tddd f_center = Mean(ToX(abc));
       auto f = isFace(a, b, c);
       for (const auto &d : vec) {
-         /* ---------------------- */
+         /* dは追加候補 */
          bool good = true;
          if (f) {
             auto [t0, t1] = f->Tetras;
@@ -260,15 +263,15 @@ int main(int arg, char **argv) {
                good = false;
          }
          /* ---------------------- */
-         if (Norm(n)>0.5)
+         if (Norm(n) > 0.5)
             if (!(Dot(d->X - f_center, n) > 0.))
-               good = false;         
+               good = false;
          /* ---------------------- */
          if (good) {
             abcd = {a, b, c, d};
             auto accum = criterion(abcd);
-            if (ACCUM >= accum) {
-               ACCUM = accum;
+            if (SCORE >= accum) {
+               SCORE = accum;
                ABCD = abcd;
                count++;
             }
@@ -315,14 +318,41 @@ int main(int arg, char **argv) {
       int count = 0;
       /* -------------------------------------------------------------------------- */
       for (const auto &f : initialFaces) {
-         auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 2 * particle_spacing),-f->normal);
+         auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), -f->normal);
          if (ismade) {
             tetras.emplace_back(tet);
             std::cout << count << std::endl;
-            if (count++ > 500)
+            if (count++ > 200)
                break;
          }
       }
+      {
+         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+         std::ofstream ofs("./output/tetras" + std::to_string(i) + ".vtp");
+         vtkPolygonWrite(ofs, object->getTetras());
+         ofs.close();
+         i++;
+      }
+      count = 0;
+      /* -------------------------------------------------------------------------- */
+      for (const auto &tet : object->getTetras())
+         for_each(tet->Faces, [&](const auto &f) {
+            if (count++ < 200) {
+               {
+                  auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), -f->normal);
+                  if (ismade) {
+                     tetras.emplace_back(tet);
+                     std::cout << count << std::endl;
+                  }
+               }
+               auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), f->normal);
+               if (ismade) {
+                  tetras.emplace_back(tet);
+                  std::cout << count << std::endl;
+               }
+            }
+         });
+
       {
          std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
          std::ofstream ofs("./output/tetras" + std::to_string(i) + ".vtp");

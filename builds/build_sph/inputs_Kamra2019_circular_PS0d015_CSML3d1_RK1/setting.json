@@ -1,0 +1,16 @@
+{
+    "RK_order": 1,
+    "max_dt": 0.0025,
+    "end_time_step": 20000,
+    "end_time": 1,
+    "CSML": 3.1,
+    "initial_surface_z_position": 0.2,
+    "particle_spacing": 0.015,
+    "input_files": [
+        "wavetank.json",
+        "water.json",
+        "sensor1.json",
+        "sensor2.json"
+    ],
+    "output_directory": "/Users/tomoaki/SPH/Kamra2019_circuler_PS0d015_CSML3d1_RK1"
+}

@@ -681,7 +681,7 @@ inline Tddd networkPoint::getNormalSplineKernelAveraged() const {
    Tddd normal = {0., 0., 0.};
    double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
-      normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
+      normal += w_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalDirichletSplineKernelAveraged() const {
@@ -690,7 +690,7 @@ inline Tddd networkPoint::getNormalDirichletSplineKernelAveraged() const {
    double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
       if (f->Dirichlet)
-         normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
+         normal += w_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 inline Tddd networkPoint::getNormalNeumannSplineKernelAveraged() const {
@@ -699,7 +699,7 @@ inline Tddd networkPoint::getNormalNeumannSplineKernelAveraged() const {
    double radius = 1.5 * Norm(extX(this->getNeighbors()) - this->X);
    for (const auto &f : this->Faces)
       if (f->Neumann)
-         normal += kernel_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
+         normal += w_Bspline5(Norm(f->getXtuple() - this->X), radius) * f->normal;
    return Normalize(normal);
 };
 /* ------------------------------------------------------ */
@@ -1287,7 +1287,7 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->W = 0.;
    //! SPH
    this->a_viscosity = 0.;
-   this->mu_SPH = 0.001307;  // 10 deg
+   this->mu_SPH = _WATER_MU_10deg_;  // 10 deg
    // 0.001140;  // water 15 deg
    this->DUDt_SPH = {0., 0., 0.};
    this->repulsive_force_SPH = {0., 0., 0.};
