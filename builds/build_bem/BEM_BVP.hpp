@@ -4,6 +4,8 @@
 #include "Network.hpp"
 // #define use_CG
 
+std::unordered_map<std::tuple<netP *, bool, netF *>, int> PBF_index;
+
 struct BEM_BVP {
    // std::unordered_set<networkPoint *> Points;
    // std::unordered_set<networkFace *> Faces;
@@ -26,7 +28,6 @@ struct BEM_BVP {
    using VV_uo_P_uoTiiTdd = std::vector<V_uo_P_uoTiiTdd>;
    using VVV_uo_P_uoTiiTdd = std::vector<VV_uo_P_uoTiiTdd>;
    /* ------------------------------------------------------ */
-   std::unordered_map<std::tuple<netP *, bool, netF *>, int> PBF_index;
    VV_d mat_ukn, mat_kn;
    V_d knowns;
    std::vector<std::vector<Tdd>> IGIGn;
@@ -39,7 +40,7 @@ struct BEM_BVP {
       // b*                         phiphin_t                      */
       // b* ------------------------------------------------------ */
       V_d knowns(PBF_index.size());
-      V_d phiORphin(PBF_index.size(), 0);
+      V_d phiORphin_t(PBF_index.size(), 0);
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, B, F] = PBF;
          if (B == Dirichlet)
@@ -50,27 +51,27 @@ struct BEM_BVP {
 
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
-      phiORphin = gd.solve(Dot(mat_kn, knowns));
+      phiORphin_t = gd.solve(Dot(mat_kn, knowns));
 #else
       // std::cout << "test gmres" << std::endl;
-      // gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/, 5);
+      // gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, 5);
       // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
       // std::cout << err << std::endl;
       // /* ------------------------------------------------------ */
       // if (isFinite(err) && err < 0.1)
-      //     phiORphin = gm.x;
+      //     phiORphin_t = gm.x;
       // else
       //
-      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
 #endif
       std::cout << "solved" << std::endl;
       /* ------------------------------------------------------ */
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, DorN, f] = PBF;
          if (DorN == Dirichlet)
-            std::get<1>(p->phiphin_t) = phiORphin[i];
+            std::get<1>(p->phiphin_t) = phiORphin_t[i];
          else
-            std::get<0>(p->phiphin_t) = phiORphin[i];
+            std::get<0>(p->phiphin_t) = phiORphin_t[i];
          p->pressure_BEM = -std::get<0>(p->phiphin_t) - _GRAVITY_ * p->height() - Dot(p->U_BEM, p->U_BEM) / 2.;
          p->pressure_BEM *= _WATER_DENSITY_;
          p->pressure = p->pressure_BEM;
@@ -82,6 +83,7 @@ struct BEM_BVP {
       //%                     各点で方程式を作る場合                 */
       //* ------------------------------------------------------ */
       std::cout << "各点で方程式を作る場合" << std::endl;
+      PBF_index.clear();
       PBF_index.reserve(3 * water.getPoints().size());
       int i = 0;
       for (const auto &p : water.getPoints()) {

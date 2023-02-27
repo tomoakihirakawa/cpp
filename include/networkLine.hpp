@@ -22,9 +22,9 @@ inline void networkLine::setBoundsSingle() {
    CoordinateBounds::setBounds(getLocationsTuple());
 };
 inline bool networkLine::Replace(netP *oldP, netP *newP) {
-   auto bool1 = this->Switch(oldP, newP);  // 1
-   auto bool2 = oldP->Erase(this);         // 2
-   auto bool3 = newP->Add(this);           // 3
+   auto bool1 = this->replace(oldP, newP);  // 1
+   auto bool2 = oldP->Erase(this);          // 2
+   auto bool3 = newP->Add(this);            // 3
    // このステップがdouble replace
    //  switchでないと，順番に意味のあるFaceではおかしくなるので注意
    if (bool1 && bool2 & bool3)
@@ -34,7 +34,7 @@ inline bool networkLine::Replace(netP *oldP, netP *newP) {
 };
 // inline bool networkLine::Replace(netF *oldF, netF *newF, netL *newL)
 // {
-// 	auto bool1 = this->Switch(oldF, newF); // 1
+// 	auto bool1 = this->replace(oldF, newF); // 1
 // 	auto bool2 = oldF->Erase(this);		   // 2
 // 	auto bool3 = newF->Add(this);		   // 3
 // 										   //このステップがdouble replace
@@ -350,7 +350,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this-----><-fP        ----this----
              *                              newP-><-------newDivL-----><-fP
              */
-            if (!(this->Switch(fP, newP)))
+            if (!(this->replace(fP, newP)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
             newP->Add(this);
 #ifdef debug_divide
@@ -417,7 +417,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this      fP      |         ----this----       A
              *                 \--------><--newP-><-------newDivL-----><-fP
              */
-            if (!(oldF->Switch(fL, newMidL))) {
+            if (!(oldF->replace(fL, newMidL))) {
                std::stringstream ss;
                // ss << "oldF->getLines() = " << oldF->getLines();
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
@@ -438,7 +438,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *                 \--------><--newP-><-------newDivL-----><-fP
              * std::cout << ColorFunction(c++) << "|" << colorOff;
              */
-            if (!(fL->Switch(oldF, newF))) {
+            if (!(fL->replace(oldF, newF))) {
                std::stringstream ss;
                ss << "fL->getFaces() = " << fL->getFaces();
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
@@ -458,7 +458,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *    A         A                A              V              V
              *  bP-><------this              |         ----this----        A
              *                 \--------><--newP-><-------newDivL-----><-fP*/
-            if (!(newF->Switch(bL, newMidL)))
+            if (!(newF->replace(bL, newMidL)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 #ifdef debug_divide
             std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
@@ -478,7 +478,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              */
             // std::cout << ColorFunction(c++) << "|" << colorOff;
 
-            if (!(newF->Switch(this, newDivL))) {
+            if (!(newF->replace(this, newDivL))) {
                std::stringstream ss;
                // ss << "newF->getLines() = " << newF->getLines() << ", this = " << this;
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
@@ -542,7 +542,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
-            if (!(oldF1->Switch(bL1, newMidL1)))
+            if (!(oldF1->replace(bL1, newMidL1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
                /*             oP ------><--------                      oP
                 *           V                   |                       V
@@ -568,7 +568,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
-            if (!(bL1->Switch(oldF1, newF1)))
+            if (!(bL1->replace(oldF1, newF1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
                /*             oP ------><--------                      oP
                 *           V                   |                       V
@@ -594,7 +594,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
-            if (!(newF1->Switch(fL1, newMidL1)))
+            if (!(newF1->replace(fL1, newMidL1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
             newDivL->Add(newF1);
             /*           oP ------><--------                      oP
@@ -622,7 +622,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
             std::cout << red << "|";
 #endif
             newMidL1->set(oldF1, newF1);
-            if (!(newF1->Switch(this, newDivL))) {
+            if (!(newF1->replace(this, newDivL))) {
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
             }
             /*           oP ------><--------                      oP
@@ -678,6 +678,25 @@ inline netPp networkLine::divide(const Tddd &midX) {
             newP->Dirichlet = this->Dirichlet;
             newP->Neumann = this->Neumann;
             newP->CORNER = this->CORNER;
+            //
+            /* ---------------------------------------------------------- */
+            // auto set = [&](networkPoint *newP) {
+            //    newP->setFaces();
+            //    for (const auto &p : newP->getNeighbors())
+            //       p->setFaces();
+            //    for (const auto &l : newP->getLines())
+            //       l->setBoundsSingle();
+            //    for (const auto &f : newP->getFacesFromLines())
+            //       f->setGeometricProperties(ToX(f->setPoints()));
+            // };
+            // set(newP);
+            // set(bP);
+            // set(fP);
+            // set(oP);
+            // set(oP1);
+            /* ---------------------------------------------------------- */
+            fP->getNetwork()->setGeometricProperties();
+            /* ---------------------------------------------------------- */
          }
 #ifdef debug_divide
          std::cout << Blue << "|" << colorOff << std::endl;
@@ -759,358 +778,428 @@ inline bool networkLine::isMergeable() const {
    }
    return true;
 };
+
 //@ ------------------------------------------------------ */
-//@ ------------------------------------------------------ */
-// #define debug_merge
+
 inline netPp networkLine::merge() {
-   auto AB = this->getFaces();
-   auto A = AB[0];
-   auto B = AB[1];
-   auto Aps = A->getPoints(this);
-   auto Bps = B->getPoints(this);
+   auto net = this->getNetwork();
+   // net->setGeometricProperties();
+   std::cout << "choose a deleting point, lines and faces" << std::endl;
+   const auto Fs = this->getFaces();
+   const auto f_del0 = Fs[0];
+   const auto f_del1 = Fs[1];
+   const auto p_del = f_del0->getPointBack(this);
+   const auto p_rem = f_del0->getPointFront(this);
    //
-   auto Abl = A->getLineBack(this);
-   auto Afl = A->getLineFront(this);
-   auto Bbl = B->getLineBack(this);
-   auto Bfl = B->getLineFront(this);
-
-   auto a = (*Abl)(A);
-   auto b = (*Bfl)(B);
-
-   auto aa = (*Afl)(A);
-   auto bb = (*Bbl)(B);
-
-   // aaとbbが同じ！？divideのミスでしょう．
-
-   std::cout << "A " << A << std::endl;
-   std::cout << "B " << B << std::endl;
-   // std::cout << "a points " << a->getPoints(Aps[0]) << std::endl;
-   // std::cout << "b points " << b->getPoints(Aps[0]) << std::endl;
-   std::cout << "a " << a << std::endl;
-   std::cout << "b " << b << std::endl;
-   std::cout << "aa " << aa << std::endl;
-   std::cout << "bb " << bb << std::endl;
-   std::cout << "(*Afl)(A) " << (*Afl)(A) << std::endl;
-   std::cout << "(*Bbl)(B) " << (*Bbl)(B) << std::endl;
-
-   auto Aps0lines = TakeExcept(std::get<0>(Aps)->getLines(), {this, Abl, Bfl});
-   try {
-#if defined(debug_merge)
-      std::cout << green << "|" << colorOff;
-#endif
-
-      /*                          Aps[2]
-       *                          V    V
-       *                         A      A
-       *                        /         \
-       *      (will be deleted)/    / \    \
-       *                   Abl/-><-/   \-><-\Afl
-       *                     /    /  FA \ 　  \　　
-       *                    V     ---V---      V
-       *  (will be deleted)A         A          A
-       *        Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
-       *                  V          |          V
-       *                   A         V         A
-       *   (will be deleted)\     ---A---     /
-       *                  Bfl\-><-\     /-><-/Bbl
-       *                      \    \ FB/    /
-       *                       \    \ /    /
-       *                        V        V
-       *                         A      A
-       *                          Bps[2]
-       */
-#if defined(debug_merge)
-      std::cout << green << "|" << colorOff;
-#endif
-      auto mid_X = (std::get<0>(Aps)->getXtuple() + std::get<1>(Aps)->getXtuple()) / 2.;
-
-#if defined(debug_merge)
-      std::cout << green << "|" << colorOff;
-#endif
-
-      /*                      Aps[2]
-       *                     V    V
-       *                     A      A
-       *                   /         \          ______
-       *                  /    / \    \         \    /
-       *         a-><-Abl/-><-/   \-><-\Afl-><---\  /
-       *                /    /  FA \ 　  \　　     \/
-       *               V     ---V---      V
-       *              A         A          A
-       *  Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
-       *             V          |          V
-       *              A         V         A
-       *               \     ---A---     /
-       *        b-><-Bfl\-><-\     /-><-/Bbl
-       *                 \    \ FB/    /
-       *                  \    \ /     /
-       *                    V        V
-       *                     A      A
-       *                      Bps[2]
-       */
-#if defined(debug_merge)
-      std::cout << green << "|" << colorOff;
-#endif
-
-      if (!(a->Switch(Abl, Afl)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!(Afl->Switch(A, a)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!(Abl->Erase(a)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(Abl->Erase(A)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(A->Erase(Abl)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(A->Erase(Afl)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(A->Erase(this)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(this->Erase(A)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         //
-         // if (!(Abl->Erase(Aps[2])))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(Abl->Erase(Aps[0])))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(Aps[2]->Erase(Abl)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(Aps[0]->Erase(Abl)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-         /*                 Aps[2]
-          *                           V
-          *     ______                 A
-          *     \ a / ----><----------->\Afl       ______
-          *      \ /             / \     \         \    /
-          *               Abl   /   \     \----><---\  /
-          *                    /  A  \  　  \　　     \/
-          *                    -------      V
-          *                                   A
-          *  Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
-          *             V          |          V
-          *              A         V         A
-          *               \     ---A---     /
-          *(*Bfl)(B)-><-Bfl\-><-\     /-><-/Bbl
-          *                 \    \ B /    /
-          *                  \    \ /    /
-          *                   V         V
-          *                    A       A
-          *                      Bps[2]
-          */
-
-#if defined(debug_merge)
-      std::cout << green << "|" << colorOff;
-#endif
-
-      if (!(b->Switch(Bfl, Bbl)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!(Bbl->Switch(B, b)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!(Bfl->Erase(b)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(Bfl->Erase(B)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(B->Erase(Bfl)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(B->Erase(Bbl)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(B->Erase(this)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(this->Erase(B)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // //
-      // if (!(Bfl->Erase(Bps[2])))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(Bfl->Erase(Aps[0])))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(Bps[2]->Erase(Bfl)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!(Aps[0]->Erase(Bfl)))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      // Aps[0]->Erase(this);
-      /*                   Aps[2]
-       *                           V
-       *     ______                 A
-       *     \ a / ----><----------->\Afl       ______
-       *      \ /             / \     \         \    /
-       *               Abl   /   \     \----><---\  /
-       *                    /  FA \  　  \　　     \/
-       *                    -------      V
-       *                                   A
-       *  Bps[1],Aps[0]    <--this---><---Aps[1],Bps[0]
-       *                                   V
-       *                                  A
-       *                     -------     /
-       *              Bfl    \     /    /Bbl
-       *                      \ B /    /
-       *       /b \            \ /    /
-       *      /____\----><---------->/Bbl
-       *                            A
-       *                      Bps[2]
-       */
-
-      // for (const auto &l : Aps[0]->getLines())
-      // auto tmp = TakeExcept(Aps[0]->getLines(), {this, Abl, Bfl});
-      for (auto &l : Aps0lines) {
-         if (!(l->Switch(std::get<0>(Aps), std::get<1>(Aps))))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         // if (!(Aps[0]->Erase(l)))
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         std::get<1>(Aps)->Add(l);
-         // Aps[1]が3lineしか持っていない場合もあり得るので，Addできない場合もある
-         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   const auto l_del0 = f_del0->getLineBack(this);
+   const auto l_remain0 = f_del0->getLineFront(this);
+   const auto l_del1 = f_del1->getLineFront(this);
+   const auto l_remain1 = f_del1->getLineBack(this);
+   //
+   const auto faces = p_del->getFaces();
+   const auto lines = p_del->getLines();
+   const auto points = Join(p_del->getNeighbors(), p_rem->getNeighbors());
+   // is merge able ?
+   for (const auto &f : faces) {
+      if (f != f_del0 && f != f_del1) {
+         if (f->MemberQ(l_remain0) || f->MemberQ(l_remain1) || f->MemberQ(this) || f->MemberQ(p_rem))
+            return nullptr;  // not mergeable
+         if (f->MemberQ(l_del0) && f->MemberQ(l_del1))
+            return nullptr;  // not mergeable
+         if (l_del0 == l_del1 || p_del == p_rem || l_remain0 == l_remain1)
+            return nullptr;  // not mergeable
       }
-      // if (!Aps[0]->getLines().empty())
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!this->Erase(Aps[0]))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!this->Erase(Aps[1]))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!Aps[1]->Erase(this))
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   }
+   //
+   // std::cout << Red << "delete f_del0 " << colorOff << f_del0 << std::endl;
+   // std::cout << Red << "delete f_del1 " << colorOff << f_del1 << std::endl;
+   // std::cout << Red << "delete l_del0 " << colorOff << l_del0 << std::endl;
+   // std::cout << Red << "delete l_del1 " << colorOff << l_del1 << std::endl;
+   // std::cout << Red << "delete p_del " << colorOff << p_del << std::endl;
+   // std::cout << Red << "delete this " << colorOff << this << std::endl;
+   //
+   // std::cout << "set" << std::endl;
+   p_rem->setX((p_rem->X + p_del->X) / 2.);
+   //
+   // std::cout << "replace" << std::endl;
+   for (const auto &f : faces) {
+      if (f != f_del0 && f != f_del1) {
+         if (f->replace(l_del0, l_remain0)) {
+            l_remain0->replace(f_del0, f);
+            p_rem->replace(f_del0, f);
+         } else if (f->replace(l_del1, l_remain1)) {
+            l_remain1->replace(f_del1, f);
+            p_rem->replace(f_del1, f);
+         }
+         f->replace(p_del, p_rem);
+      }
+   }
+   // std::cout << "replace and add" << std::endl;
+   p_rem->Erase(this);
+   for (const auto &l : lines) {
+      if (l != l_del0 && l != l_del1 && l != this) {
+         l->replace(p_del, p_rem);
+         p_rem->Add(l);
+      }
+      p_del->Erase(l);
+   }
+   for (const auto &p : points) {
+      p->Erase(this);
+      p->Erase(l_del0);
+      p->Erase(l_del1);
+   }
 
-      /*                   Aps[2]
-       *                           V
-       *     ______                 A
-       *     \ a / ----><----------->\Afl       ______
-       *      \ /             / \     \         \    /
-       *               Abl   /   \     \----><---\  /
-       *                    /  A  \  　  \　　     \/
-       *                   --------       V           |
-       *                                   A          V
-       *  Bps[1],Aps[0]       this          Aps[1],Bps[0]<----
-       *                                   V          A
-       *                                  A           |
-       *                    --------     /
-       *              Bfl    \     /    /Bbl
-       *                      \ B /    /
-       *       /b \            \ /    /
-       *      /____\----><---------->/Bbl
-       *                            A
-       *                      Bps[2]
-       */
-
-#if defined(debug_merge)
-      if (!A->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!B->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!Abl->getPoints().empty())
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!Bfl->getPoints().empty())
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!Abl->getFaces().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!Bfl->getFaces().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!this->getPoints().empty())
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // if (!this->getFaces().empty())
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (!Aps[0]->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      /* ------------------------------------------------------ */
-      if (Aps[2]->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (Aps[1]->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      if (Bps[2]->getLines().empty())
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-#endif
-
-      delete A;
-      delete B;
-      delete Abl;
-      delete Bfl;
-      delete this;
-      delete std::get<0>(Aps);  // thisもきえます
-
-      /*                   Aps[2]
-       *                           V
-       *     ______                 A
-       *     \ a / ----><----------->\Afl       ______
-       *      \ /                     \         \    /
-       *                               \----><---\  /
-       *                             　  \　　     \/
-       *                                  V           |
-       *                                   A          V
-       *                                  Aps[1],Bps[0]<----
-       *                                   V          A
-       *                                   A           |
-       *                                  /
-       *                                 /Bbl
-       *                                /
-       *       /b \                    /
-       *      /____\----><---------->/Bbl
-       *                            A
-       *                      Bps[2]
-       */
-
-#if defined(debug_merge)
-      // lineを基準としてpointを取得できるか
-      //  for (const auto &f : Afl->getFaces())
-      //  	std::cout << "f->getPoints(Afl) = " << f->getPoints(Afl) << std::endl;
-
-      // for (const auto &f : Bbl->getFaces())
-      // 	std::cout << "f->getPoints(Bbl) = " << f->getPoints(Bbl) << std::endl;
-
-      for (const auto &l : V_netLp{Afl, Bbl})
-         for (const auto &f : l->getFaces())
-            if (!isLinkedDoubly(f, l))
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      for (const auto &p : V_netPp{std::get<1>(Aps), Aps[2], Bps[2]})
-         for (const auto &l : p->getLines())
-            if (!isLinkedDoubly(p, l))
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-#endif
-      //
-      // std::cout << std::get<1>(Aps)->getNetwork()->isMember(Aps[0]) << std::endl;
-      // std::cout << std::get<1>(Aps)->getNetwork() << std::endl;
-      // std::cout << std::get<1>(Aps)->getStorage() << std::endl;
-      // std::cout << "check in merge 1" << std::endl;
-      // std::get<1>(Aps)->getNetwork()->displayStates();
-      // std::cout << Aps[0] << std::endl;
-      // std::cout << "network : " << std::get<1>(Aps)->getNetwork() << std::endl;
-      // std::cout << std::get<1>(Aps)->getNetwork()->isMember(Aps[0]) << std::endl;
-      // std::cout << std::get<1>(Aps)->getStorage()->isMember(Aps[0]) << std::endl;
-      // std::cout << std::get<1>(Aps)->getLines() << std::endl;
-      // std::cout << Aps[2]->getLines() << std::endl;
-      // std::cout << Bps[2]->getLines() << std::endl;
-      // std::cout << "a->setBounds()" << std::endl;
-      // a->setBounds();
-      // std::cout << "b->setBounds()" << std::endl;
-      // b->setBounds();
-      // std::cout << "aa->setBounds()" << std::endl;
-      // aa->setBounds();
-      // std::cout << "bb->setBounds()" << std::endl;
-      // bb->setBounds();
-      // std::cout << "Aps[2]->setBounds();" << std::endl;
-      // Aps[2]->setBounds();
-      // std::cout << "Bps[2]->setBounds();" << std::endl;
-      // Bps[2]->setBounds();
-      // std::cout << "std::get<1>(Aps)->setX(mid_X);" << std::endl;
-      std::get<1>(Aps)->setX(mid_X);
-      return std::get<1>(Aps);
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      std::stringstream ss;
-      ss << "Aps " << Aps << std::endl;
-      ss << "Bps " << Bps << std::endl;
-      ss << "Abl " << Abl << std::endl;
-      ss << "Afl " << Afl << std::endl;
-      ss << "Bbl " << Bbl << std::endl;
-      ss << "Bfl " << Bfl << std::endl;
-      ss << "a " << a << std::endl;
-      ss << "b " << b << std::endl;
-      ss << "aa " << aa << std::endl;
-      ss << "bb " << bb << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-   };
+   std::cout << "delete f_del0 " << f_del0 << std::endl;
+   delete f_del0;
+   std::cout << "delete f_del1 " << f_del1 << std::endl;
+   delete f_del1;
+   std::cout << "delete l_del0 " << l_del0 << std::endl;
+   delete l_del0;
+   std::cout << "delete l_del1 " << l_del1 << std::endl;
+   delete l_del1;
+   std::cout << "delete p_del " << p_del << std::endl;
+   delete p_del;
+   std::cout << "delete this " << this << std::endl;
+   delete this;
+   //
+   /* ----------------------------------------- */
+   // p_rem->setFaces();
+   // for (const auto &p : p_rem->getNeighbors())
+   //    p->setFaces();
+   // for (const auto &l : p_rem->getLines())
+   //    l->setBoundsSingle();
+   // for (const auto &f : p_rem->getFacesFromLines())
+   //    f->setGeometricProperties(ToX(f->setPoints()));
+   // /* ----------------------------------------- */
+   net->setGeometricProperties();
+   /* ----------------------------------------- */
+   // std::cout << "done" << std::endl;
+   return p_rem;
 };
+
+/* -------------------------------------------------------------------------- */
+
+// #define debug_merge
+// inline netPp networkLine::merge() {
+//    auto AB = this->getFaces();
+//    auto A = AB[0];
+//    auto B = AB[1];
+//    auto Aps = A->getPoints(this);
+//    auto A0 = std::get<0>(Aps);
+//    auto A1 = std::get<1>(Aps);
+//    auto Bps = B->getPoints(this);
+//    //
+//    auto Abl = A->getLineBack(this);
+//    auto Afl = A->getLineFront(this);
+//    auto Bbl = B->getLineBack(this);
+//    auto Bfl = B->getLineFront(this);
+
+//    auto a = (*Abl)(A);
+//    auto b = (*Bfl)(B);
+
+//    auto aa = (*Afl)(A);
+//    auto bb = (*Bbl)(B);
+
+//    // aaとbbが同じ！？divideのミスでしょう．
+
+//    std::cout << "A " << A << std::endl;
+//    std::cout << "B " << B << std::endl;
+//    // std::cout << "a points " << a->getPoints(Aps[0]) << std::endl;
+//    // std::cout << "b points " << b->getPoints(Aps[0]) << std::endl;
+//    std::cout << "a " << a << std::endl;
+//    std::cout << "b " << b << std::endl;
+//    std::cout << "aa " << aa << std::endl;
+//    std::cout << "bb " << bb << std::endl;
+//    std::cout << "(*Afl)(A) " << (*Afl)(A) << std::endl;
+//    std::cout << "(*Bbl)(B) " << (*Bbl)(B) << std::endl;
+
+//    auto Aps0lines = TakeExcept(std::get<0>(Aps)->getLines(), {this, Abl, Bfl});
+//    try {
+// #if defined(debug_merge)
+//       std::cout << green << "|" << colorOff;
+// #endif
+
+//       /*                          Aps[2]
+//        *                          V    V
+//        *                         A      A
+//        *                        /         \
+//        *      (will be deleted)/    / \    \
+//        *                   Abl/-><-/   \-><-\Afl
+//        *                     /    /  A  \ 　  \　　
+//        *                    V     ---V---      V
+//        *  (will be deleted)A         A          A
+//        *        Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
+//        *                  V          |          V
+//        *                   A         V         A
+//        *   (will be deleted)\     ---A---     /
+//        *                  Bfl\-><-\     /-><-/Bbl
+//        *                      \    \ B /    /
+//        *                       \    \ /    /
+//        *                        V        V
+//        *                         A      A
+//        *                          Bps[2]
+//        */
+
+// #if defined(debug_merge)
+//       std::cout << green << "|" << colorOff;
+// #endif
+//       auto mid_X = (std::get<0>(Aps)->getXtuple() + std::get<1>(Aps)->getXtuple()) / 2.;
+
+// #if defined(debug_merge)
+//       std::cout << green << "|" << colorOff;
+// #endif
+
+//       /*                      Aps[2]
+//        *                     V    V
+//        *                    A      A
+//        *                   /         \          ______
+//        *       ___        /    / \    \         \    /
+//        *       \a/-><-Abl/-><-/   \-><-\Afl-><---\  /
+//        *        V       /    /  A  \ 　  \　　     \/
+//        *               V     ---V---      V
+//        *              A         A          A
+//        *  Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
+//        *             V          |          V
+//        *              A         V         A
+//        *               \     ---A---     /
+//        *        b-><-Bfl\-><-\     /-><-/Bbl
+//        *                 \    \ B /    /
+//        *                  \    \ /     /
+//        *                    V        V
+//        *                     A      A
+//        *                      Bps[2]
+//        */
+// #if defined(debug_merge)
+//       std::cout << green << "|" << colorOff;
+// #endif
+//       if (!(this->Erase(A)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(a->replace(Abl, Afl)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(a->replace(A0, A1)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(Afl->replace(A, a)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(Abl->Erase(a)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//          /*                     Aps[2]
+//           *                    V       V
+//           *        _____      A         A
+//           *         \a/ ----><-----------\Afl       ______
+//           *          V      /     / \     \         \    /
+//           *               Abl    / A \     \----><---\  /
+//           *        \      /     /     \  　  \　　     \/
+//           *         \    V      ---V---       V
+//           *          V  A          A           A
+//           *-->Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
+//           *         A   V          V          V
+//           *        /     A         A         A
+//           *               \     -------     /
+//           *(*Bfl)(B)-><-Bfl\-><-\     /-><-/Bbl
+//           *                 \    \ B /    /
+//           *                  \    \ /    /
+//           *                   V         V
+//           *                    A       A
+//           *                      Bps[2]
+//           */
+
+// #if defined(debug_merge)
+//       std::cout << green << "|" << colorOff;
+// #endif
+//       if (!(this->Erase(B)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(b->replace(Bfl, Bbl)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(b->replace(A0, A1)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(Bbl->replace(B, b)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!(Bfl->Erase(b)))
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+//       /*                   Aps[2]
+//        *                   V       V
+//        *       ____       A         A
+//        *       \a/ ----></---------->\Afl       ______
+//        *        V       /     / \     \         \    /
+//        *              Abl    /   \     \----><---\  /
+//        *       \      /     /  A  \  　  \　　     \/
+//        *        \    V      -------       V
+//        *         V  A                      A
+//        *-->Bps[1],Aps[0]-><--this---><----Aps[1],Bps[0]
+//        *        A   V                      V
+//        *       /    A                      A
+//        *      /       \      -------     /
+//        *              Bfl    \     /    /Bbl
+//        *                 \    \ B /    /
+//        *         /\       \    \ /    /
+//        *        /b_\----><-\-------->/Bbl
+//        *                    A       A
+//        *                      Bps[2]
+//        */
+
+//       // for (const auto &l : Aps[0]->getLines())
+//       // auto tmp = TakeExcept(Aps[0]->getLines(), {this, Abl, Bfl});
+//       // auto tmp = std::get<0>(Aps)->getLines();
+//       auto tmp = TakeExcept(std::get<0>(Aps)->getLines(), {this, Abl, Bfl});
+//       for (auto &l : tmp) {
+//          {
+//             if (!(l->replace(std::get<0>(Aps), std::get<1>(Aps))))
+//                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//             if (!(std::get<0>(Aps)->Erase(l)))
+//                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//             std::get<1>(Aps)->Add(l);
+//          }
+//          // Aps[1]が3lineしか持っていない場合もあり得るので，Addできない場合もある
+//          // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       }
+
+//       for (auto &l : std::get<0>(Aps)->getLines()) {
+//          std::get<0>(Aps)->Erase(l);
+//       }
+//       this->Erase(std::get<0>(Aps));
+//       Abl->Erase(std::get<0>(Aps));
+//       Bfl->Erase(std::get<0>(Aps));
+//       Abl->Erase(A);
+//       Bfl->Erase(B);
+//       this->Erase(A);
+//       this->Erase(B);
+//       /*                   Aps[2]
+//        *                   V       V
+//        *       ____       A         A
+//        *       \a/ ----></---------->\Afl       ______
+//        *        V       /     / \     \         \    /
+//        *    (points)  Abl    /   \     \----><---\  /
+//        *     (lines)        /  A  \  　  \　　     \/     /
+//        *                    -------       V             /
+//        *                                   A           V
+//        *   Bps[1],Aps[0]     this---><----Aps[1],Bps[0]<----
+//        *                                   V        A
+//        *                                   A         \
+//        *                     -------     /             \
+//        *     (lines)  Bfl    \     /    /Bbl
+//        *    (points)     \    \ B /    /
+//        *       /b \       \    \ /    /
+//        *      /____\----><-\-------->/Bbl
+//        *                    A       A
+//        *                      Bps[2]
+//        */
+
+// #if defined(debug_merge)
+//       if (!Abl->getFaces().empty())
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//       if (!Bfl->getFaces().empty())
+//          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+
+// #endif
+
+//       for (const auto &f : A0->getFaces()) {
+//          f->replace(A0, A1);
+//          for_each(f->getLines(), [&](const auto &l) {
+//             l->replace(A0, A1);
+//             l->replace(A0, A1);
+//          });
+//       }
+
+//       std::get<2>(Aps)->erase(A);
+//       std::get<0>(Aps)->erase(A);
+//       std::get<0>(Aps)->erase(B);
+//       std::get<0>(Aps)->erase(a);
+//       std::get<0>(Aps)->erase(b);
+//       std::get<2>(Bps)->erase(B);
+//       //
+//       std::get<1>(Aps)->erase(A);
+//       std::get<1>(Aps)->erase(B);
+
+//       // std::cout << " deleting A = " << A << std::endl;
+//       delete A;
+//       // std::cout << " deleting B = " << B << std::endl;
+//       delete B;
+//       // std::cout << " deleting Abl = " << Abl << std::endl;
+//       delete Abl;
+//       // std::cout << " deleting Bfl = " << Bfl << std::endl;
+//       delete Bfl;
+//       // std::cout << " deleting this = " << this << std::endl;
+//       delete this;
+//       delete std::get<0>(Aps);  // thisもきえます
+
+//       /*                   Aps[2]
+//        *                           V
+//        *     ______                 A
+//        *     \ a / ----><----------->\Afl       ______
+//        *      \ /                     \         \    /
+//        *                               \----><---\  /
+//        *                             　  \　　     \/     /
+//        *                                  V            /
+//        *                                   A          V
+//        *                                  Aps[1],Bps[0]<----
+//        *                                   V          A
+//        *                                   A           \
+//        *                                  /             \
+//        *                                 /Bbl
+//        *                                /
+//        *       /b \                    /
+//        *      /____\----><---------->/Bbl
+//        *                            A
+//        *                      Bps[2]
+//        */
+
+// #if defined(debug_merge)
+//       std::cout << " l = " << std::get<0>(Aps)->getLines() << std::endl;
+//       std::cout << " l = " << std::get<1>(Aps)->getLines() << std::endl;
+//       //
+//       std::cout << " std::get<1>(Aps)->getFaces() = " << std::get<1>(Aps)->getFaces() << std::endl;
+//       std::cout << " std::get<1>(Aps)->getNeighbors() = " << std::get<1>(Aps)->getNeighbors() << std::endl;
+//       //
+//       std::cout << " Afl->points = " << Afl->getPoints() << std::endl;
+//       std::cout << " Bbl->points = " << Bbl->getPoints() << std::endl;
+//       //
+//       std::cout << " Afl->faces = " << Afl->getFaces() << std::endl;
+//       std::cout << " Bbl->faces = " << Bbl->getFaces() << std::endl;
+//       //
+//       if (ConnectedQ(std::get<1>(Aps), std::get<2>(Aps)))
+//          std::cout << "Connected Q = true" << std::endl;
+//       if (ConnectedQ(std::get<1>(Aps), std::get<2>(Bps)))
+//          std::cout << "Connected Q = true" << std::endl;
+
+//       for (const auto &l : V_netLp{Afl, Bbl}) {
+//          if (l) {
+//             for (const auto &f : l->getFaces()) {
+//                if (f) {
+//                   if (!isLinkedDoubly(f, l))
+//                      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//                } else {
+//                   std::cout << "f = nullptr" << std::endl;
+//                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//                }
+//             }
+//          } else {
+//             std::cout << "l = nullptr" << std::endl;
+//             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//          }
+//       }
+//       std::cout << "Clear " << std::endl;
+// #endif
+//       std::get<1>(Aps)->setX(mid_X);
+//       std::cout << "mid_X = " << mid_X << std::endl;
+//       std::cout << "std::get<1>(Aps)->X = " << std::get<1>(Aps)->X << std::endl;
+//       return std::get<1>(Aps);
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       std::stringstream ss;
+//       ss << "Aps " << Aps << std::endl;
+//       ss << "Bps " << Bps << std::endl;
+//       ss << "Abl " << Abl << std::endl;
+//       ss << "Afl " << Afl << std::endl;
+//       ss << "Bbl " << Bbl << std::endl;
+//       ss << "Bfl " << Bfl << std::endl;
+//       ss << "a " << a << std::endl;
+//       ss << "b " << b << std::endl;
+//       ss << "aa " << aa << std::endl;
+//       ss << "bb " << bb << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+//    };
+// };
 
 inline netPp networkLine::mergeIfMergeable() {
    if (isMergeable())
@@ -1242,10 +1331,10 @@ inline bool networkLine::flip() {
       std::cout << green << "|" << colorOff;
 #endif
 
-      if (!(Abl->Switch(A, B)))
+      if (!(Abl->replace(A, B)))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 
-      if (!(Bbl->Switch(B, A)))
+      if (!(Bbl->replace(B, A)))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 
 #if defined(debug_flip)

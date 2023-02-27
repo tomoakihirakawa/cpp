@@ -1,9 +1,7 @@
-#! bin/bash
+# /bin/bash
 
-rm ./test
-rm ./out
-rm ./cmake_install.cmake
-rm ./CMakeCache.txt*
-rm -r ./CMakeFiles
-rm ./Makefile
- 
+rm -r ./CMake*
+rm -r ./cmake*
+rm -r ./Makefile
+rm -r ./build*.*
+rm -r ./.ninja

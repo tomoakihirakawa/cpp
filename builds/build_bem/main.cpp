@@ -52,7 +52,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
                     0.,
                     0.,
                     0.};
-         }
+         } else
+            return {0., 0., 0., 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
    } else if (name.contains("weird")) {
@@ -806,7 +807,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
       p->phinOnFace.clear();
       p->phintOnFace.clear();
       if (p->Neumann || p->CORNER) {
-         // 角度に応じて変更する
+         // 角度に応じて変更するxf
          auto facesNeuman = p->getFacesNeumann();
          if (multiple_node_if(p, facesNeuman)) {
             for (const auto &f : facesNeuman) {
@@ -915,9 +916,9 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
                P_NearestContactFacesX[p] = Nearest(p->X, NearestContactFace(p)) - ToX(p);
             }
          }
-         P_adustment_vector[p] = p->U_BUFFER;
-         P_U_cling_to_Neumann[p] = p->U_cling_to_Neumann;
-         P_update_vs_cling[p] = Norm(p->U_cling_to_Neumann) / Norm(p->U_update_BEM);
+         // P_adustment_vector[p] = p->U_BUFFER;
+         // P_U_cling_to_Neumann[p] = p->U_cling_to_Neumann;
+         // P_update_vs_cling[p] = Norm(p->U_cling_to_Neumann) / Norm(p->U_update_BEM);
          P_U_BEM[p] = p->U_BEM;
          P_U_update_BEM[p] = p->U_update_BEM;
          // P_solidangleBIE[p] = p->getSolidAngle();
@@ -929,7 +930,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
          else
             P_isMultipleNode[p] = 2;
          // P_normalVariance[p] = normalVariance(p);
-         P_U_normal_BEM[p] = p->U_normal_BEM;
+         // P_U_normal_BEM[p] = p->U_normal_BEM;
          // P_U_tangential_BEM[p] = p->U_tangential_BEM;
          // P_state[p] = p->getStatus();
          // P_height[p] = std::get<2>(p->X);
@@ -976,12 +977,12 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
           // {"s/m", P_s_m},
           // {"smin/min", P_smin_min},
           {"accel Neumann", P_accel_body},
-          {"adustment vector", P_adustment_vector},
+          //  {"adustment vector", P_adustment_vector},
           // {"volume", P_volume},
-          {"U_cling_to_Neumann", P_U_cling_to_Neumann},
+          //  {"U_cling_to_Neumann", P_U_cling_to_Neumann},
           //  {"absU_cling_to_Neumann/absU_update_BEM", P_update_vs_cling},
           {"velocity Neumann", P_velocity_body},
-          {"Nearest face", P_NearestContactFacesX},
+          //  {"Nearest face", P_NearestContactFacesX},
           //  {"φn_Neumann", P_phin_Neumann},
           //  {"φn_Dirichlet", P_phin_Dirichlet},
           //  {"φ_Neumann", P_phi_Neumann},
@@ -999,7 +1000,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
           // {"dxdt_mod", P_dxdt_mod},
           {"grad_phi", P_gradPhi},
           //  {"phin_vector", P_phin_vector},
-          {"gradPhiTangential", P_gradPhi_tangential},
+          //  {"gradPhiTangential", P_gradPhi_tangential},
           //  {"z", P_height},
           {"position", P_position},
           {"φ", P_phi},
@@ -1413,7 +1414,7 @@ int main(int arg, char **argv) {
             // b*                    微分∇ΦやDUDtを計算                    */
             // b* ------------------------------------------------------ */
             std::cout << Green << "微分∇ΦやDUDtを計算" << colorOff << std::endl;
-            derivatives ders(*water);
+            derivatives ders(*water, 10);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
             // b* ------------------------------------------------------ */
             // b*           　境界値問題を解く-> {Φt,Φtn}が決まる              */
@@ -1431,7 +1432,7 @@ int main(int arg, char **argv) {
                   auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
                   auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
                   auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
-                  force = force * Tddd{1., 1., 0.5};
+                  // force = force * Tddd{1., 1., 0.5};
                   auto torque = tmp.getFroudeKrylovTorque(net->COM);
                   auto [a0, a1, a2] = force / Tddd{mx, my, mz};
                   auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};

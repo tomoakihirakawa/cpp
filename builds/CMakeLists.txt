@@ -26,7 +26,7 @@ if(APPLE)
 
   # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp -Wnonnull -Wnonnull-compare -Wopenmp-simd -Wparentheses -Wpointer-sign    -Wreorder     -Wreturn-type    -Wsequence-point   -Wsign-compare  -Wsizeof-pointer-memaccess   -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch -Wtautological-compare -Wtrigraphs  -Wuninitialized    -Wunknown-pragmas  -Wunused-function  -Wunused-label      -Wunused-value -Wunused-variable -Wvolatile-registercm-var")
   # set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenacc -fopenmp -Wunused-function -Wunused-label -Wunused-value -Wunused-variable")
-  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
 
 # ############################################################################
 elseif(LINUX)
@@ -34,7 +34,7 @@ elseif(LINUX)
   message(STATUS ">> Linux")
   set(CMAKE_CXX_FLAGS " -fopenmp -llapack -lblas  -fconcepts -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
 
 # ############################################################################
 else()
@@ -42,7 +42,7 @@ else()
   message(STATUS ">> Not Linux")
   set(CMAKE_CXX_FLAGS "-fopenmp  -llapack -lblas -fconcepts -fuse-ld=gold")
   set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value")
+  set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
 endif()
 
 # ##############################################################################
@@ -94,7 +94,13 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # set(main main.cpp) set(out main)
 
 # mainという実行ファイルをmain.cppから作成
-add_executable(main main.cpp)
+set(DEFAULT_MAIN_FILE "main.cpp")
+
+if(NOT DEFINED MAIN_FILE)
+  set(MAIN_FILE ${DEFAULT_MAIN_FILE})
+endif()
+
+add_executable(main ${MAIN_FILE})
 
 # cotire(main)
 

@@ -108,6 +108,27 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
 
 void add_U_BUFFER_BUFFER_to_U_BUFFER(const auto &p) { p->U_BUFFER += p->U_BUFFER_BUFFER; };
 
+T3Tddd nextBodyVertex(const networkFace *f) {
+   auto net = f->getNetwork();
+   auto [p0, p1, p2] = f->getPoints();
+   if (net->isRigidBody) {
+      Quaternion q;
+      q = q.d_dt(net->velocityRotational());
+      auto COM = net->RK_COM.getX(net->velocityTranslational());
+      Quaternion Q(net->RK_Q.getX(q()));
+      auto X0 = Q.Rv(p0->initialX - p0->getNetwork()->ICOM) + COM;
+      auto X1 = Q.Rv(p1->initialX - p1->getNetwork()->ICOM) + COM;
+      auto X2 = Q.Rv(p2->initialX - p2->getNetwork()->ICOM) + COM;
+      return T3Tddd{X0, X1, X2};
+   } else if (net->isSoftBody) {
+      auto X0 = p0->RK_X.getX(p0->velocityTranslational());
+      auto X1 = p1->RK_X.getX(p1->velocityTranslational());
+      auto X2 = p2->RK_X.getX(p2->velocityTranslational());
+      return T3Tddd{X0, X1, X2};
+   } else
+      return ToX(f);
+};
+
 std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs) {
    std::vector<T3Tddd> ret;
    for (auto &f : Fs) {
@@ -334,13 +355,21 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          auto l12 = Norm(np2x - np1x);
          double a = magicalValue(p, f) + variance2(p, f);
          if (any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
-            a *= 4;
+            a *= 2 * 2 * 2;
          else if (any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
-            a *= 3;
+            a *= 2 * 2;
          else if (any_of(f->getPoints(),
                          [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
-                                                                 [&](const auto &F) { return any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
+                                                                 [&](const auto &F) { return any_of(F->getPoints(), [&](const auto &q) { return q->CORNER; }); }); }))
             a *= 2;
+         /*
+         このaを大きくするの，大きな重みのさによって，歪な三角形が生まれる場合がある．
+         緩やかに変化させる必要がある．
+         */
+         // else if (any_of(f->getPoints(),
+         //                 [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
+         //                                                         [&](const auto &F) { return any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
+         // a *= 5;
          auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
          auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;
          vectorToCenter += a * (X - np0x);  //[m]
@@ -383,13 +412,13 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 };
 
 //$ -------------------------------------------------------------------------- */
-void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 20, const bool adjust_dirichlet = true) {
+void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 10, const bool adjust_dirichlet = true) {
    /*
    @ この方法なら，次の時刻における任意の場所でのポテンシャルを見積もることができる．
    @ このことは，任意のノイマン面上に節点を維持する上で便利である．
    @ Ω(t+δt)をまず見積もり，その面上で最適な格子配置となるように流速を修正する．
    */
-   const double scale = 0.2;
+   const double scale = 0.1;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */
@@ -481,7 +510,7 @@ Tddd gradPhi(const networkPoint *const p) {
 #define derivatives_debug
 struct derivatives {
    ~derivatives(){};
-   derivatives(const Network &net, bool adjust_dirichlet = true) {
+   derivatives(const Network &net, const int loop = 10, bool adjust_dirichlet = true) {
       auto &Points = net.getPoints();
       auto &Faces = net.getFaces();
 #ifdef derivatives_debug
@@ -542,14 +571,13 @@ struct derivatives {
       for (const auto &p : Points)
          p->U_BUFFER = p->U_BUFFER_BUFFER = {0., 0., 0.};
 
-      calculateVectorToSurfaceInBuffer(net, 20, adjust_dirichlet);
+      calculateVectorToSurfaceInBuffer(net, loop, adjust_dirichlet);
       std::cout << "calculateVectorToSurfaceInBuffer✅" << std::endl;
       // calculateVectorFromBufferToContactFaces(net);
       // std::cout << "calculateVectorFromBufferToContactFaces✅" << std::endl;
       // /* ------------------------------------------------------ */
 
       for (auto &p : Points) {
-         p->U_update_BEM += p->U_BUFFER / p->RK_X.getdt();
          // dxdt_correct = p->U_BUFFER / p->RK_X.getdt();
          if (!isFinite(p->U_update_BEM, 1E+10) || !isFinite(p->U_BUFFER, 1E+10)) {
             std::cout << "p->X = " << p->X << std::endl;
@@ -560,7 +588,8 @@ struct derivatives {
             std::cout << "p->Neumann = " << p->Neumann << std::endl;
             std::cout << "p->CORNER = " << p->CORNER << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         }
+         } else
+            p->U_update_BEM += p->U_BUFFER / p->RK_X.getdt();
       }
 
 #ifdef derivatives_debug
@@ -592,16 +621,21 @@ struct derivatives {
             auto Q = Quaternion();
             for (auto &[f, phin_t] : p->phintOnFace) {
                if (f) {
-                  auto dQdt = Q.d_dt(NearestContactFace(f)->getNetwork()->velocityRotational());
+                  auto w = NearestContactFace(f)->getNetwork()->velocityRotational();
+                  auto dQdt = Q.d_dt(w);
                   auto n = f->normal;
                   auto [p0, p1, p2] = f->getPoints(p);
                   Tddd phi012 = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
                   Tddd phin012 = {std::get<1>(p0->phiphin), std::get<1>(p1->phiphin), std::get<1>(p2->phiphin)};
                   Tddd grad_phi = Mean(phin012) * n + gradTangential_LinearElement(phi012, ToX(f));
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p, f) - grad_phi, dQdt.Rv()) + accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
+                  // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p, f) - grad_phi, dQdt.Rv()) + accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
+                  // 修正2023/02/22
+                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, uNeumann(p, f) - grad_phi) + Dot(n, accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
                } else {
-                  auto dQdt = Q.d_dt(NearestContactFace(p)->getNetwork()->velocityRotational());
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p) - p->U_BEM, dQdt.Rv()) + accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
+                  auto w = NearestContactFace(p)->getNetwork()->velocityRotational();
+                  auto dQdt = Q.d_dt(w);
+                  // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p) - p->U_BEM, dQdt.Rv()) + accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
+                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, uNeumann(p) - p->U_BEM) + Dot(n, accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
                }
             }
          }

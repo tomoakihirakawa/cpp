@@ -156,7 +156,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 // template <typename T, typename U>
 // bool doubleReplace(U *Uthis, T *Ta /*孤立するオブジェクト*/, T *Tb, U *Uother)
 // {
-//   Uthis->Switch(Ta, Tb); //1
+//   Uthis->swap(Ta, Tb); //1
 //   Ta->Erase(Uthis);      //2
 //   Tb->Add(Uthis);        //3
 //                          //このステップがdouble replace

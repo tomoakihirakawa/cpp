@@ -567,10 +567,16 @@ inline void networkPoint::resetXinfo() {
 inline void networkPoint::setX(const Tddd &xyz_IN) {
    try {
       CoordinateBounds::setBounds(xyz_IN);
-      for (const auto &l : this->getLines())
+      for (const auto &l : this->getLines()) {
+         // std::cout << "l = " << l << std::endl;
          l->setBoundsSingle();
-      for (const auto &f : this->Faces)
+      }
+      for (const auto &f : this->Faces) {
+         // std::cout << "f = " << f << std::endl;
+         // std::cout << f->Points << std::endl;
+         // std::cout << f->Lines << std::endl;
          f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+      }
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");

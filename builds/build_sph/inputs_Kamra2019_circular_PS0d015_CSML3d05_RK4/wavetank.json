@@ -1,7 +1,0 @@
-{
-    "name": "wavetank",
-    "type": "RigidBody",
-    "output_vtu_file_name": "wavetank",
-    "output_pvd_file_name": "wavetank",
-    "objfile": "/Users/tomoaki/Dropbox/code/cpp/obj/2022Arai/Kamra2019/tank_circuler_cylinder.obj"
-}

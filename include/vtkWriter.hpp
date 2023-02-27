@@ -431,6 +431,17 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *
    vtp.write(ofs);
 };
 
+void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkTetra *> &uoTet) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   for (const auto &tet : uoTet)
+      for_each(tet->Faces, [&](const auto &f) {
+         auto abc = f->getPoints();
+         vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+         vtp.addPolygon(abc);
+      });
+   vtp.write(ofs);
+};
+
 #endif
    // template <typename T, typename U>
    // void vtkPolygonWrite(const std::string &name, const std::unordered_set<T> &V, const std::unordered_map<T, U> &data_double) {

@@ -25,7 +25,7 @@ g = 9.81
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
+SimulationCase = "three_200"
 
 match SimulationCase:
     case "two_floatingbodies":
@@ -151,7 +151,7 @@ match SimulationCase:
                    "end_time": 10000,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
-    case "Tonegawa20221216":
+    case "Tonegawa":
 
         input_directory = "./inputs3"
         os.makedirs(input_directory, exist_ok=True)
@@ -189,7 +189,7 @@ match SimulationCase:
                                m*math.pow(floatingbody["radius_of_gyration"][1], 2),
                                m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
 
-        objfolder = home + "/Dropbox/markdown/cpp/obj/2022Tonegawa/test20221218"
+        objfolder = home + "/Dropbox/markdown/cpp/obj/2022Tonegawa/three_d100"
         water["objfile"] = objfolder + "/water150_mod.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
@@ -252,8 +252,8 @@ match SimulationCase:
 
         # ------------------------------------------------------------------------#
 
-        objfolder = program_home + "/cpp/obj/2022Tonegawa/float_case1/"
-        water["objfile"] = objfolder + "/water300_mod.obj"
+        objfolder = program_home + "/cpp/obj/2022Tonegawa/three_d100/"
+        water["objfile"] = objfolder + "/water0_200.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
         floatingbody_a["objfile"] = objfolder + "floatingbody_a50.obj"
@@ -328,6 +328,72 @@ match SimulationCase:
         setting = {"max_dt": 0.002,
                    "end_time_step": 100,
                    "end_time": 0.4,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
+    case "three_200":
+
+        start = 0.
+        a = 1.5
+        T = 6.  # 5-8
+        h = 150
+        z_surface = 150
+
+        id = "_a" + str(a).replace(".", "d")\
+            + "_T" + str(T).replace(".", "d")\
+            + "_h" + str(h).replace(".", "d")
+
+        input_directory = "./inputs_" + SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/" + SimulationCase + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water",
+                 "type": "Fluid"}
+
+        tank = {"name": "tank",
+                "type": "RigidBody",
+                "isFixed": True}
+
+        wavemaker = {"name": "wavemaker",
+                     "type": "SoftBody",
+                     "isFixed": True,
+                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+
+        floatingbody_a = {"name": "floatingbody_a",
+                          "COM": [500., 150., 150-78./2]}
+
+        floatingbody_b = {"name": "floatingbody_b",
+                          "COM": [600., 150., 150-78./2]}
+
+        floatingbody_c = {"name": "floatingbody_c",
+                          "COM": [700., 150., 150-78./2]}
+
+        A = 170.779
+        for x in [floatingbody_a, floatingbody_b, floatingbody_c]:
+            x["type"] = "RigidBody"
+            x["velocity"] = "floating"
+            x["mass"] = m = (1000.*g*78*A)/g
+            x["radius_of_gyration"] = [20., 20., 20.]
+            x["MOI"] = [m*math.pow(x["radius_of_gyration"][0], 2),
+                        m*math.pow(x["radius_of_gyration"][1], 2),
+                        m*math.pow(x["radius_of_gyration"][2], 2)]
+
+        # ------------------------------------------------------------------------#
+
+        objfolder = program_home + "/cpp/obj/2022Tonegawa/three_d200/"
+        water["objfile"] = objfolder + "/water_modified.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+        tank["objfile"] = objfolder + "/tank10_200.obj"
+        floatingbody_a["objfile"] = objfolder + "floatingbodyA50_200.obj"
+        floatingbody_b["objfile"] = objfolder + "floatingbodyB50_200.obj"
+        floatingbody_c["objfile"] = objfolder + "floatingbodyC50_200.obj"
+
+        inputfiles = [tank, wavemaker, water,
+                      floatingbody_a, floatingbody_b, floatingbody_c]
+
+        setting = {"max_dt": 0.5,
+                   "end_time_step": 12000,
+                   "end_time": 120,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 

@@ -51,7 +51,7 @@ int main(int arg, char **argv) {
    auto object = new Network(name, "object");
    auto initialFaces = object->getFaces();
    object->genOctreeOfFaces({1, 5}, 1);
-   auto ofs = std::ofstream("./output/polygon.vtp");
+   auto ofs = std::ofstream(_HOME_DIR_ + "/output/polygon.vtp");
    vtkPolygonWrite(ofs, object->getFaces());
    ofs.close();
    /* -------------------------------------------------------------------------- */
@@ -85,7 +85,7 @@ int main(int arg, char **argv) {
    // object->genOctreeOfPoints({minDepth, maxDepth}, 1);
    //
    {
-      auto ofs = std::ofstream("./output/points.vtp");
+      auto ofs = std::ofstream(_HOME_DIR_ + "/output/points.vtp");
       vtkPolygonWrite(ofs, object->getPoints());
       ofs.close();
    }
@@ -188,29 +188,51 @@ int main(int arg, char **argv) {
              std::get<0>(object->isInside_MethodOctree(T.incenter)) &&
              tetra_buckets.none_of([&](const auto &t) { return IntersectQ(T, t->scaled(0.9999)); })) {
             /* -------------------------------------------------------------------------- */
-            const double range = 2 * particle_spacing;
+            const double range = 3 * particle_spacing;
             double ACCUM = 0.;
-
+            double excess = 0;
+            // 外接級の内部に点があるかどうか
             buckets.apply(T.incenter, range, [&](const auto &p) {
-               if (IntersectQ(T.circumcenter, T.circumradius, p->X))
-                  ACCUM += std::abs(T.circumradius - Norm(T.circumcenter - p->X));
+               if (IntersectQ(T.circumcenter, T.circumradius, p->X)) {
+                  auto CtoX = Norm(T.circumcenter - p->X);
+                  excess += std::abs(CtoX - T.circumradius);
+               }
             });
+            if (T.circumradius > range /*too small*/)
+               return 1E+50;  // bad condition
+            // else if (excess > T.circumradius * 0.01)
+            //    return -1.;  // bad condition
 
-            std::unordered_set<networkLine *> lines;
-            buckets.apply(T.incenter, range, [&](const auto &p) { lines.insert(p->getLines().begin(), p->getLines().end()); });
+            // std::unordered_set<networkLine *> lines;
+            // buckets.apply(T.incenter, range, [&](const auto &p) { lines.insert(p->getLines().begin(), p->getLines().end()); });
 
-            for (const auto &l : lines)
-               ACCUM += accumulate(abcd, l->getPoints());
+            // for (const auto &l : lines)
+            //    ACCUM += accumulate(abcd, l->getPoints());
 
-            tetra_buckets.apply(T.incenter, range, [&](const auto &TET) {
-               ACCUM += accumulate(TET->Points, {a, b});
-               ACCUM += accumulate(TET->Points, {a, c});
-               ACCUM += accumulate(TET->Points, {a, d});
-               ACCUM += accumulate(TET->Points, {b, c});
-               ACCUM += accumulate(TET->Points, {b, d});
-               ACCUM += accumulate(TET->Points, {c, d});
-            });
+            // tetra_buckets.apply(T.incenter, range, [&](const auto &TET) {
+            //    ACCUM += accumulate(TET->Points, {a, b});
+            //    ACCUM += accumulate(TET->Points, {a, c});
+            //    ACCUM += accumulate(TET->Points, {a, d});
+            //    ACCUM += accumulate(TET->Points, {b, c});
+            //    ACCUM += accumulate(TET->Points, {b, d});
+            //    ACCUM += accumulate(TET->Points, {c, d});
+            // });
 
+            // if (any_of(T.solidangles, [&](const auto &s) { return s < 0.05; }))
+            //    return -1.;  // bad condition
+
+            // if (Min(T.solidangles) < 0.01)
+            //    return 1E+50;
+
+            // auto tmp = T.solidangles - Mean(T.solidangles);
+            // auto [s0, s1, s2, s3] = tmp;
+            // ACCUM += s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3;
+            // std::cout << T.solidangles << ", " << tmp << ", " << ACCUM << std::endl;
+            // ACCUM += Max(T.solidangles) - Min(T.solidangles);
+            if (isFinite(1. / Min(T.solidangles)))
+               ACCUM += 1. / Min(T.solidangles);
+            else
+               return 1E+50;
             return ACCUM;
             /* -------------------------------------------------------------------------- */
          }
@@ -243,37 +265,81 @@ int main(int arg, char **argv) {
       return std::tuple<bool, networkTetra *>{false, nullptr};
    };
    // b% -------------------------------------------------------------------------- */
-   auto gen1 = [&](const T_3P &abc, const auto &vec, const Tddd &n = {0., 0., 0.}) {
+   auto gen1 = [&](const T_3P &abc, const auto &candidates_points, const Tddd &n = {0., 0., 0.}) {
       double SCORE = 1E+20;
       int count = 0;
       auto [a, b, c] = abc;
       T_4P abcd = {nullptr, nullptr, nullptr, nullptr}, ABCD = {nullptr, nullptr, nullptr, nullptr};
       Tddd f_center = Mean(ToX(abc));
+      auto normal = TriangleNormal(ToX(abc));
+
       auto f = isFace(a, b, c);
-      for (const auto &d : vec) {
-         /* dは追加候補 */
-         bool good = true;
-         if (f) {
-            auto [t0, t1] = f->Tetras;
-            if (t0 && t1)
-               good = false;
-            else if (t0 && Dot(t0->center - f_center, d->X - f_center) > 0)
-               good = false;
-            else if (t1 && Dot(t1->center - f_center, d->X - f_center) > 0)
-               good = false;
+      if (f) {
+         auto [t0, t1] = f->Tetras;
+         if (t0 && !t1) {
+            auto normal_out = Projection(f_center - t0->center, normal);
+            for (const auto &d : candidates_points) {
+               /* dは追加候補 */
+               auto f_to_d = d->X - f_center;
+               bool good = Dot(normal_out, f_to_d) > 0;
+               /* ---------------------- */
+               if (Norm(n) > 0.1)
+                  if (!(Dot(f_to_d, n) > 0.))
+                     good = false;
+               /* ---------------------- */
+               if (good) {
+                  abcd = {a, b, c, d};
+                  auto accum = criterion(abcd);
+                  if (SCORE >= accum) {
+                     SCORE = accum;
+                     ABCD = abcd;
+                     count++;
+                  }
+               }
+            }
          }
-         /* ---------------------- */
-         if (Norm(n) > 0.5)
-            if (!(Dot(d->X - f_center, n) > 0.))
-               good = false;
-         /* ---------------------- */
-         if (good) {
-            abcd = {a, b, c, d};
-            auto accum = criterion(abcd);
-            if (SCORE >= accum) {
-               SCORE = accum;
-               ABCD = abcd;
-               count++;
+         if (!t0 && t1) {
+            auto normal_out = Projection(f_center - t1->center, normal);
+            for (const auto &d : candidates_points) {
+               /* dは追加候補 */
+               auto f_to_d = d->X - f_center;
+               bool good = Dot(normal_out, f_to_d) > 0;
+               /* ---------------------- */
+               if (Norm(n) > 0.1)
+                  if (!(Dot(f_to_d, n) > 0.))
+                     good = false;
+               /* ---------------------- */
+               if (good) {
+                  abcd = {a, b, c, d};
+                  auto accum = criterion(abcd);
+                  if (SCORE >= accum) {
+                     SCORE = accum;
+                     ABCD = abcd;
+                     count++;
+                  }
+               }
+            }
+         }
+         if (!t0 && !t1) {
+            // auto normal_out = Projection(f_center - t1->center, normal);
+            for (const auto &d : candidates_points) {
+               /* dは追加候補 */
+               auto f_to_d = d->X - f_center;
+               bool good = true;  // Dot(normal_out, f_to_d) > 0;
+               /* ---------------------- */
+               if (Norm(n) > 0.1)
+                  if (!(Dot(f_to_d, n) > 0.))
+                     good = false;
+               /* ---------------------- */
+               if (good) {
+                  abcd = {a, b, c, d};
+                  auto accum = criterion(abcd);
+                  if (SCORE >= accum) {
+                     SCORE = accum;
+                     ABCD = abcd;
+                     count++;
+                  }
+               }
             }
          }
       }
@@ -318,7 +384,9 @@ int main(int arg, char **argv) {
       int count = 0;
       /* -------------------------------------------------------------------------- */
       for (const auto &f : initialFaces) {
-         auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), -f->normal);
+         auto [ismade, tet] = gen1(f->getPoints(),
+                                   buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
+                                   -f->normal);
          if (ismade) {
             tetras.emplace_back(tet);
             std::cout << count << std::endl;
@@ -328,34 +396,38 @@ int main(int arg, char **argv) {
       }
       {
          std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
-         std::ofstream ofs("./output/tetras" + std::to_string(i) + ".vtp");
+         std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
          vtkPolygonWrite(ofs, object->getTetras());
          ofs.close();
          i++;
       }
       count = 0;
       /* -------------------------------------------------------------------------- */
-      for (const auto &tet : object->getTetras())
+      std::vector<networkTetra *> tetras_;
+      for (const auto &tet : object->getTetras()) {
          for_each(tet->Faces, [&](const auto &f) {
-            if (count++ < 200) {
-               {
-                  auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), -f->normal);
-                  if (ismade) {
-                     tetras.emplace_back(tet);
-                     std::cout << count << std::endl;
-                  }
-               }
-               auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 3 * particle_spacing), f->normal);
-               if (ismade) {
-                  tetras.emplace_back(tet);
-                  std::cout << count << std::endl;
-               }
+            auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing));
+            if (ismade) {
+               tetras.emplace_back(tet);
+               tetras_.emplace_back(tet);
+               std::cout << "add tetra " << count << ", object->getTetras().size() = " << object->getTetras().size() << std::endl;
+               count++;
             }
          });
+         if (count > 200)
+            break;
+      }
+
+      {
+         std::cout << Magenta << I << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+         std::ofstream ofs(_HOME_DIR_ + "/output/tetras_" + std::to_string(I) + ".vtp");
+         vtkPolygonWrite(ofs, tetras_);
+         ofs.close();
+      }
 
       {
          std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
-         std::ofstream ofs("./output/tetras" + std::to_string(i) + ".vtp");
+         std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
          vtkPolygonWrite(ofs, object->getTetras());
          ofs.close();
          i++;

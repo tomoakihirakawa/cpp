@@ -7,8 +7,8 @@
 
 Tddd SPP_X(const networkPoint *p) {
    // return p - (p->COM_SPH - p);
-   return p->X - 2 * p->COM_SPH;
-   // return p->X + p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
+   // return p->X - 2 * p->COM_SPH;
+   return p->X + p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
 };
 
 auto canSetSPP(const auto &target_nets, const auto &p) {
@@ -31,7 +31,8 @@ auto canSetSPP(const auto &target_nets, const auto &p) {
 
    const double C = 1.2;
    for (const auto &net : target_nets)
-      if (net->BucketPoints.any_of(X, C * range, [&](const auto &q) { return p != q && Distance(q, X) < C * range; }))
+      if (net->BucketPoints.any_of(X, C * range,
+                                   [&](const auto &q) { return p != q && Distance(q, X) < C * range; }))
          return false;
 
    // {
@@ -84,8 +85,8 @@ auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
                                        func(B->X);
 #ifdef USE_SPP_Fluid
                                     if (B->isSurface) {
-                                       // if (canSetSPP(target_nets, B))
-                                       func(SPP_X(B), SPP_U_coef);
+                                       if (canSetSPP(target_nets, B))
+                                          func(SPP_X(B), SPP_U_coef);
                                     }
 #endif
                                  }
@@ -145,8 +146,8 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
                                     func(B->X);
 #ifdef USE_SPP_Fluid
                                     if (B->isSurface) {
-                                       // if (canSetSPP(target_nets, B))
-                                       func(SPP_X(B), SPP_U_coef);
+                                       if (canSetSPP(target_nets, B))
+                                          func(SPP_X(B), SPP_U_coef);
                                     }
 #endif
                                  }
@@ -217,8 +218,8 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
          func(B->X);
 #ifdef USE_SPP_Fluid
          if (B->isSurface)
-            // if (canSetSPP(target_nets, B))
-            func(SPP_X(B), SPP_p_coef);
+            if (canSetSPP(target_nets, B))
+               func(SPP_X(B), SPP_p_coef);
 #endif
       }
    };
@@ -259,7 +260,9 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
       std::cout << "sum_Aij_Pij = " << sum_Aij_Pj << std::endl;
       std::cout << "sum_Aij_Pj = " << sum_Aij_Pj << std::endl;
       std::cout << "sum_Aij = " << sum_Aij << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not a finite");
+      // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not a finite");
+
+      A->p_SPH = A->p_SPH_ = 0;
    }
 };
 
@@ -286,8 +289,8 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
          func(B->X);
 #ifdef USE_SPP_Fluid
          if (B->isSurface) {
-            // if (canSetSPP(target_nets, B))
-            func(SPP_X(B), SPP_p_coef);
+            if (canSetSPP(target_nets, B))
+               func(SPP_X(B), SPP_p_coef);
          }
 #endif
       }

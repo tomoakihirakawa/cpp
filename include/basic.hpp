@@ -554,18 +554,18 @@ double Sum(const V_d::iterator first, const V_d::iterator second) {
    return std::accumulate(first, second, 0.);
 };
 double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
-double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
+// double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 
 #include "basic_arithmetic_vector_operations.hpp"
 
-double Mean(const V_d &v) {
-   if (v.empty())
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
-   else if (v.size() == 1)
-      return v[0];
-   else
-      return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
-};
+// double Mean(const V_d &v) {
+//    if (v.empty())
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
+//    else if (v.size() == 1)
+//       return v[0];
+//    else
+//       return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
+// };
 
 V_d Sum(const VV_d &v) {
    if (v.empty())
@@ -804,6 +804,11 @@ std::vector<std::vector<T>> Join(std::vector<std::vector<T>> ret, const std::vec
 };
 template <typename T>
 std::unordered_set<T> Append(std::unordered_set<T> a, const T &b) {
+   a.insert(a.end(), b);
+   return a;
+};
+template <typename T>
+std::vector<T> Append(std::vector<T> a, const T &b) {
    a.insert(a.end(), b);
    return a;
 };
@@ -2107,9 +2112,8 @@ std::map<std::string, V_S> parseJSON(const std::string &str_IN) {
 /* ------------------------------------------------------ */
 
 struct JSON {
-   using V_S = std::vector<std::string>;
-   std::map<std::string, V_S> map_S_S;
-   V_S emp = {};
+   std::map<std::string, std::vector<std::string>> map_S_S;
+   std::vector<std::string> emp = {};
    // JSON(const std::string &str_IN) : map_S_S() { this->parse(str_IN); };
 
    JSON(){};
@@ -2139,11 +2143,11 @@ struct JSON {
    //    }
    // };
 
-   std::map<std::string, V_S> operator()() const {
+   std::map<std::string, std::vector<std::string>> operator()() const {
       return this->map_S_S;
    };
 
-   V_S &operator[](const std::string &key) /*変更を許す*/
+   std::vector<std::string> &operator[](const std::string &key) /*変更を許す*/
    {
       auto it = this->map_S_S.find(key);
       if (it != this->map_S_S.end())
@@ -2153,7 +2157,7 @@ struct JSON {
       // return this->map_S_S[key];
    };
 
-   V_S at(const std::string &key) const /*変更を許さない*/
+   std::vector<std::string> at(const std::string &key) const /*変更を許さない*/
    {
       return this->map_S_S.at(key);
    };
@@ -2161,7 +2165,7 @@ struct JSON {
    bool find(const std::string &key) const { return this->map_S_S.contains(key); };
    bool contains(const std::string &key) const { return this->map_S_S.contains(key); };
 
-   // V_s operator[](const std::string &key) const
+   // std::vector<std::string> operator[](const std::string &key) const
    // {
    // 	if (this->map_S_S.find(key) != this->map_S_S.end())
    // 		return this->map_S_S.at(key);
@@ -2635,38 +2639,6 @@ double Subtract(const Tdd &ab) {
 //===========================================================
 #include "basic_geometry.hpp"
 #include "basic_statistics.hpp"
-/* ------------------------------------------------------ */
-
-double Total(const Tddd &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v); };
-double Total(const Tdd &v) { return std::get<0>(v) + std::get<1>(v); };
-Tddd Total(const T3Tddd &v) {
-   return {std::get<0>(std::get<0>(v)) + std::get<0>(std::get<1>(v)) + std::get<0>(std::get<2>(v)),
-           std::get<1>(std::get<0>(v)) + std::get<1>(std::get<1>(v)) + std::get<1>(std::get<2>(v)),
-           std::get<2>(std::get<0>(v)) + std::get<2>(std::get<1>(v)) + std::get<2>(std::get<2>(v))};
-};
-Tdd Total(const T3Tdd &v) {
-   return {std::get<0>(std::get<0>(v)) + std::get<0>(std::get<1>(v)) + std::get<0>(std::get<2>(v)),
-           std::get<1>(std::get<0>(v)) + std::get<1>(std::get<1>(v)) + std::get<1>(std::get<2>(v))};
-};
-Tddd Total(const std::vector<Tddd> &V) {
-   Tddd ret = {0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
-T4d Total(const std::vector<T4d> &V) {
-   T4d ret = {0, 0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
-T6d Total(const std::vector<T6d> &V) {
-   T6d ret = {0, 0, 0, 0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
-
 /* ------------------------------------------------------ */
 // b% ------------------- タプルからparticlize ------------------ */
 std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>>

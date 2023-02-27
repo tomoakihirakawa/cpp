@@ -28,7 +28,8 @@ inline networkFace::networkFace(Network *network_IN, const T_LLL &Lines_IN, T_3P
       std::get<1>(this->Lines)->Add(this);
       std::get<2>(this->Lines)->Add(this);
       // setBounds();
-      this->Points = this->getPointsFromLines();
+      // this->Points = this->getPointsFromLines();
+      setPoints();
       for_each(this->Points, [](auto &p) { p->setFaces(p->Lines); });
       T3Tddd p0p1p2_X = ToX(this->Points);
       CoordinateBounds::setBounds(p0p1p2_X);

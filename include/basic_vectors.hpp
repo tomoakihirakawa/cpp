@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
+#include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
 
@@ -856,29 +857,91 @@ bool isFinite(const T3Tddd &V) {
       return false;
 };
 /* ------------------------------------------------------ */
-double Mean(const Tdd &X) { return (std::get<0>(X) + std::get<1>(X)) * 0.5; };
-double Mean(const Tddd &X) { return (std::get<0>(X) + std::get<1>(X) + std::get<2>(X)) / 3.; };
-Tddd Mean(const T2Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X))) * 0.5,
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X))) * 0.5,
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X))) * 0.5};
+// template <typename T, std::size_t i>
+// typename std::enable_if<std::tuple_size<T>::value == i, double>::type
+// Total(const T &t) {
+//    return 0.0;
+// }
+
+// template <typename T, std::size_t i>
+// typename std::enable_if<std::is_same<typename std::tuple_element<i, T>::type, double>::value, double>::type
+// Total(const T &t) {
+//    return std::get<i>(t) + Total<T, i + 1>(t);
+// }
+
+// template <typename T, std::size_t i>
+// typename std::enable_if<std::is_same<typename std::tuple_element<i, T>::type, int>::value, int>::type
+// Total(const T &t) {
+//    return std::get<i>(t) + Total<T, i + 1>(t);
+// }
+
+double Total(const T4d &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v) + std::get<3>(v); };
+double Total(const Tddd &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v); };
+double Total(const Tdd &v) { return std::get<0>(v) + std::get<1>(v); };
+
+Tdd Total(const T3Tdd &v) {
+   return {std::get<0>(std::get<0>(v)) + std::get<0>(std::get<1>(v)) + std::get<0>(std::get<2>(v)),
+           std::get<1>(std::get<0>(v)) + std::get<1>(std::get<1>(v)) + std::get<1>(std::get<2>(v))};
 };
-Tddd Mean(const T3Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X))) / 3.,
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X))) / 3.,
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X))) / 3.};
+Tddd Total(const T2Tddd &X) {
+   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X))),
+           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X))),
+           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)))};
 };
-Tddd Mean(const T4Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X))) / 4.,
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X))) / 4.,
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X))) / 4.};
+Tddd Total(const T3Tddd &X) {
+   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X))),
+           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X))),
+           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)))};
 };
-Tddd Mean(const T8Tddd &X) {
+Tddd Total(const T4Tddd &X) {
+   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X))),
+           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X))),
+           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X)))};
+};
+
+Tddd Total(const T8Tddd &X) {
    return {
-       (std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X)) + std::get<0>(std::get<4>(X)) + std::get<0>(std::get<5>(X)) + std::get<0>(std::get<6>(X)) + std::get<0>(std::get<7>(X))) / 8.,
-       (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X)) + std::get<1>(std::get<4>(X)) + std::get<1>(std::get<5>(X)) + std::get<1>(std::get<6>(X)) + std::get<1>(std::get<7>(X))) / 8.,
-       (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X)) + std::get<2>(std::get<4>(X)) + std::get<2>(std::get<5>(X)) + std::get<2>(std::get<6>(X)) + std::get<2>(std::get<7>(X))) / 8.};
+       (std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X)) + std::get<0>(std::get<4>(X)) + std::get<0>(std::get<5>(X)) + std::get<0>(std::get<6>(X)) + std::get<0>(std::get<7>(X))),
+       (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X)) + std::get<1>(std::get<4>(X)) + std::get<1>(std::get<5>(X)) + std::get<1>(std::get<6>(X)) + std::get<1>(std::get<7>(X))),
+       (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X)) + std::get<2>(std::get<4>(X)) + std::get<2>(std::get<5>(X)) + std::get<2>(std::get<6>(X)) + std::get<2>(std::get<7>(X)))};
 };
+
+Tddd Total(const std::vector<Tddd> &V) {
+   Tddd ret = {0, 0, 0};
+   for (const auto &v : V)
+      ret += v;
+   return ret;
+};
+T4d Total(const std::vector<T4d> &V) {
+   T4d ret = {0, 0, 0, 0};
+   for (const auto &v : V)
+      ret += v;
+   return ret;
+};
+T6d Total(const std::vector<T6d> &V) {
+   T6d ret = {0, 0, 0, 0, 0, 0};
+   for (const auto &v : V)
+      ret += v;
+   return ret;
+};
+double Total(const std::vector<double> &V) {
+   double ret = 0;
+   for (const auto &v : V)
+      ret += v;
+   return ret;
+};
+/* -------------------------------------------------------------------------- */
+
+double Mean(const Tdd &v) { return Total(v) / 2.; };
+double Mean(const T4d &v) { return Total(v) / 4.; };
+double Mean(const Tddd &v) { return Total(v) / 3.; };
+
+Tddd Mean(const Tddd &A, const Tddd &B, const Tddd &C) { return (A + B + C) / 3.; };
+
+Tddd Mean(const T2Tddd &X) { return Total(X) / 2.; };
+Tddd Mean(const T3Tddd &X) { return Total(X) / 3.; };
+Tddd Mean(const T4Tddd &X) { return Total(X) / 4.; };
+Tddd Mean(const T8Tddd &X) { return Total(X) / 8.; };
 
 Tddd Mean(const std::vector<Tddd> &X) {
    Tddd ret = {0., 0., 0.};
@@ -889,6 +952,9 @@ Tddd Mean(const std::vector<Tddd> &X) {
    }
    return ret / ((double)X.size());
 };
+
+double Mean(const std::vector<double> &X) { return Total(X) / X.size(); };
+
 // Tddd Mean(const std::unordered_set<Tddd> &X)
 // {
 // 	Tddd ret = {0., 0., 0.};
