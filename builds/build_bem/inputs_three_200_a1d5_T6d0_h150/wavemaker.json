@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        1.5,
+        6.0,
+        150,
+        150
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2022Tonegawa/three_d200//wavemaker100.obj"
+}

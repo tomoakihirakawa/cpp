@@ -30,7 +30,6 @@ int main(int arg, char **argv) {
    /* ------------------------------------------------------ */
    net.displayStates();
 
-   double lim_len = .2;
    auto extractLength = [](const V_netLp &lines) {
       V_d ret;
       for (auto l : lines)
@@ -41,6 +40,7 @@ int main(int arg, char **argv) {
    //*                          線の分割                       */
    //* ------------------------------------------------------ */
    V_netLp lines;
+   Histogram Histo;
    for (auto count = 0; count <= remesh; ++count) {
       //! ------------------------------------------------------ */
       mk_vtu(output_directory + "/" + output_name + std::to_string(count) + ".vtu", net.getFaces());
@@ -49,73 +49,56 @@ int main(int arg, char **argv) {
       ofs.close();
       std::cout << "output " << time() << std::endl;
       //! ------------------------------------------------------ */
-      Histogram h(extLength(net.getLines()));
-      std::cout << Grid({"count", h.count}, 50) << std::endl;
-      std::cout << Grid({"cumulative_count", h.cumulative_count}, 50) << std::endl;
-      std::cout << Grid({"diff", h.diff}, 50) << std::endl;
-      std::cout << Grid({"interval", h.interval}, 50) << std::endl;
+      std::cout << Grid({"count", Histo.count}, 50) << std::endl;
+      std::cout << Grid({"cumulative_count", Histo.cumulative_count}, 50) << std::endl;
+      std::cout << Grid({"diff", Histo.diff}, 50) << std::endl;
+      std::cout << Grid({"interval", Histo.interval}, 50) << std::endl;
       int num = 0;
       /* ------------------------*/
-      //* | 0 | 1 | 2 |[3]| 4 |   diff, mid_interval
-      //! 0   1   2  [3]  4   5   interval, cumulative_count
+      //* | 0 | 1 | 2 |[3]| 4 |     diff, mid_interval
+      //!   0   1   2  [3]  4   5   interval, cumulative_count
       /* ------------------------*/
+      Histo.set(extLength(net.getLines()));
       std::cout << "time:" << time() << std::endl;
-      for (auto j = 0; j < h.diff.size(); ++j)
-         if (h.cumulative_count[j + 1] / h.data_size >= 0.8 && h.diff[j] >= h.diff[num == 0 ? j : num])
+      for (auto j = 0; j < Histo.cumulative.size(); ++j)
+         if (Histo.cumulative[j] >= 0.8) {
             num = j;
-      std::cout << "num " << num << std::endl;
-      std::cout << "h.interval[num] " << h.interval[num] << std::endl;
-      bool found_flip = false;
-      bool found_divide = false;
-      int COUNT = 0;
-      if (!num == 0) {
-         found_flip = found_divide = false;
-         for (int COUNT = 0; COUNT < 10; COUNT++) {
-            std::cout << Red << "|";
-            found_flip = false;
-            found_divide = false;
-            lines = ToVector(net.Lines);
-            sortByLength(lines);
-            for (const auto &l : Reverse(lines)) {
-               /* ------------------------------------------------------ */
-               if (l->length() >= h.interval[num]) {
-                  std::cout << Green << "|";
-                  l->divide();
-                  found_divide = true;
-               }
-            }
-            std::cout << colorOff << std::endl;
-            if (found_divide)
-               break;
+            break;
          }
-         std::cout << Blue << "|" << colorOff;
-      }
-      std::cout << "COUNT = " << COUNT << std::endl;
-      // flipIf(net, true);
+      std::cout << "Histo.interval[" << num << "]" << Histo.interval[num] << std::endl;
+      Divide(net.Lines, [&](auto l) { return l->length() > Histo.interval[num]; });
+      //
+      for (auto i = 0; i < 10; i++)
+         Merge(net.Lines, [&](auto l) { return l->length() < Histo.interval[num]; });
+      // (*net.Lines.begin())->merge();
+      //
+      std::cout << net << std::endl;
+      std::cout << net.getPoints().size() << std::endl;
+      std::cout << net.Lines.size() << std::endl;
       /*
       ! 注意
       @ 強い制限のため，湾曲した境界面上を点は移動することができない．
       @ しかし，円筒の内面などは滑らかにしたいができない．
       @ 湾曲した面の辺をフリップしてしまうと，そのまま動かなくなる．これは面の法線方向を変化させるような平滑化を禁止しているためで，フリップにはその制限がかかっていないためである．
       */
-      const double small = M_PI / 180 * 0.001;
-      for (auto i = 0; i < 10; i++) {
+      const double small = M_PI / 180 * 0.01;
+      for (auto i = 0; i < 1; i++) {
          AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
-            l->flipIfTopologicalyBetter(1 * M_PI / 180., 1 * M_PI / 180.);
+            l->flipIfTopologicalyBetter(0.5 * M_PI / 180., 0.5 * M_PI / 180.);
          AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
             l->flipIfBetter(M_PI / 180.);
       }
-      //
+
       std::cout << "1. time:" << time() << std::endl;
       AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
       for (const auto &l : net.Lines)
          l->flipIfBetter(M_PI / 180.);
       std::cout << "2. time:" << time() << std::endl;
       AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
-      AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
       std::cout << "3. time:" << time() << std::endl;
+      LaplacianSmoothingPreserveShape(net.getPoints(), small);
    }
 }
 #elif defined(sphare)

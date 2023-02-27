@@ -10,13 +10,13 @@
 
 //$ ------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-#define USE_SPP_Fluid
+// #define USE_SPP_Fluid
 #if defined(USE_SPP_Fluid)
 #define SPP_U_coef 1.
 #define SPP_p_coef -1.
 #endif
 /* -------------------------------------------------------------------------- */
-#define USE_SPP_Wall
+// #define USE_SPP_Wall
 #if defined(USE_SPP_Wall)
 #define SPP_U_coef_of_Wall 1.
 #define SPP_p_coef_of_Wall -1.
@@ -227,7 +227,7 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
 #pragma omp single nowait
    {
       PW->total_weight = 0;
-      PW->tmp_ViscousAndGravityForce = PW->ViscousAndGravityForce = PW->DUDt_SPH_ = PW->gradP_SPH_ = {0., 0., 0.};
+      PW->tmp_ViscousAndGravityForce_ = PW->ViscousAndGravityForce_ = PW->DUDt_SPH_ = PW->gradP_SPH_ = {0., 0., 0.};
       const Tddd markerX = PW->X + 2 * PW->normal_SPH;
       const Tddd accel = {0., 0., 0.};
       const Tddd mirror_wall = PW->X + PW->normal_SPH;
@@ -240,14 +240,14 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
             // if (PF->getNetwork()->isFluid) {
             PW->total_weight += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW));
             PW->DUDt_SPH_ += coef * PF->DUDt_SPH * W;
-            PW->ViscousAndGravityForce += coef * PF->ViscousAndGravityForce * W;
-            PW->tmp_ViscousAndGravityForce += coef * PF->tmp_ViscousAndGravityForce * W;
+            PW->ViscousAndGravityForce_ += coef * PF->ViscousAndGravityForce * W;
+            PW->tmp_ViscousAndGravityForce_ += coef * PF->tmp_ViscousAndGravityForce * W;
             if (mirroring) {
                auto mirrored_X = Mirror(nearX, mirror_wall, n);
                PW->total_weight += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(mirrored_X - markerX), PW->radius_SPH * a), POW));
                PW->DUDt_SPH_ += coef * PF->DUDt_SPH * W;
-               PW->ViscousAndGravityForce += coef * PF->ViscousAndGravityForce * W;
-               PW->tmp_ViscousAndGravityForce += coef * PF->tmp_ViscousAndGravityForce * W;
+               PW->ViscousAndGravityForce_ += coef * PF->ViscousAndGravityForce * W;
+               PW->tmp_ViscousAndGravityForce_ += coef * PF->tmp_ViscousAndGravityForce * W;
             }
          }
       };
@@ -257,10 +257,14 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
 #ifdef USE_SPP_Wall
          if (PF->isSurface) {
             // if (canSetSPP(net, RigidBodyObject, PF))
-               func(PF, SPP_X(PF), SPP_DUDt_coef_of_Wall);
+            func(PF, SPP_X(PF), SPP_DUDt_coef_of_Wall);
          }
 #endif
       });
+      for (const auto &[obj, poly] : RigidBodyObject)
+         obj->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &qW) {
+            func(qW, qW->X);
+         });
       // for (const auto &[obj, poly] : RigidBodyObject)
       //    obj->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &qW) {
       //       func(qW, qW->X);
@@ -270,8 +274,8 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
    for (const auto &PW : wall_p) {
       if (isFinite(1. / PW->total_weight, 1E+15) && !PW->isFluid) {
          PW->DUDt_SPH = PW->DUDt_SPH_ / PW->total_weight;
-         PW->ViscousAndGravityForce = PW->ViscousAndGravityForce / PW->total_weight;
-         PW->tmp_ViscousAndGravityForce = PW->tmp_ViscousAndGravityForce / PW->total_weight;
+         PW->ViscousAndGravityForce = PW->ViscousAndGravityForce_ / PW->total_weight;
+         PW->tmp_ViscousAndGravityForce = PW->tmp_ViscousAndGravityForce_ / PW->total_weight;
       }
    }
 };
@@ -333,7 +337,7 @@ void mapValueOnWall(auto &net,
                PW->U_SPH_ += cU * PF->U_SPH * W;
                PW->tmp_U_SPH_ += cU * PF->tmp_U_SPH * W;
                PW->grad_div_U_ += PF->grad_div_U * W;
-               PW->p_SPH_ += cp * (spp ? PF->p_SPH_SPP : PF->p_SPH) * W;
+               PW->p_SPH_ += cp * (spp ? PF->p_SPH : PF->p_SPH) * W;
                PW->div_U_ += cU * PF->div_U * W;
                PW->rho_ += cRho * PF->rho * W;
                PW->volume_ += PF->volume * W;
@@ -344,7 +348,7 @@ void mapValueOnWall(auto &net,
                   PW->total_N += std::pow(w_Bspline(Norm(mirrored_X - markerX), PW->radius_SPH * a), POW);
                   PW->total_weight += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(mirrored_X - markerX), PW->radius_SPH * a), POW));
                   PW->total_weight_ += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(mirrored_X - markerX), PW->radius_SPH * a), POW));
-                  PW->p_SPH_ += cp * (spp ? PF->p_SPH_SPP : PF->p_SPH) * W;
+                  PW->p_SPH_ += cp * (spp ? PF->p_SPH : PF->p_SPH) * W;
                   PW->lap_tmpU_ += cU * PF->lap_tmpU * W;
                   PW->grad_div_U_ += PF->grad_div_U * W;
                   PW->U_SPH_ += cU * PF->U_SPH * W;
@@ -355,15 +359,15 @@ void mapValueOnWall(auto &net,
                   PW->DUDt_SPH_ += PF->DUDt_SPH * W;
                   PW->gradP_SPH_ += PF->gradP_SPH * W;
                }
-            } else if (Norm(PF->normal_SPH) < 1E-12 && PF->isFluid) {
+            } else if (PF->isFluid) {
                // 壁粒子でもこの壁粒子の流速はゼロと確定している．
                // 他の壁粒子は，ミラリングによって補う．
                PW->total_N += std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW);
                // PW->total_weight += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW));
                PW->total_weight_ += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW));
                // PW->lap_tmpU_ += cU * PF->lap_tmpU * W;
-               PW->U_SPH_ += 0 * PF->U_SPH * W;
-               PW->tmp_U_SPH_ += 0 * PF->tmp_U_SPH * W;
+               PW->U_SPH_ += PF->U_SPH * W;
+               PW->tmp_U_SPH_ += PF->tmp_U_SPH * W;
                // PW->grad_div_U_ += PF->grad_div_U * W;
                // PW->p_SPH_ += cp * (spp ? PF->p_SPH_SPP : PF->p_SPH) * W;
                // PW->div_U_ += cU * PF->div_U * W;
@@ -377,11 +381,10 @@ void mapValueOnWall(auto &net,
          /* -------------------------------------------------------------------------- */
          net->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &PF) {
             func(PF, PF->X);
-
 #ifdef USE_SPP_Wall
             if (do_spp && PF->isSurface) {
                // if (canSetSPP(net, RigidBodyObject, PF))
-                  func(PF, SPP_X(PF), true);
+               func(PF, SPP_X(PF), true);
             }
 #endif
          });
@@ -398,15 +401,14 @@ void mapValueOnWall(auto &net,
             if (PW->total_weight > 1E-15) {
                PW->p_SPH = PW->p_SPH_ / PW->total_weight;
                // PW->lap_tmpU = PW->lap_tmpU_ / PW->total_weight_;
-               PW->U_SPH = PW->U_SPH_ / PW->total_weight_;
-               PW->tmp_U_SPH = PW->tmp_U_SPH_ / PW->total_weight_;
-               PW->grad_div_U = PW->grad_div_U_ / PW->total_weight_;
-               // 以下二つは，流体と同様に変更する
-               // if (PW->isCaptured && !PW->isCaptured_) {
-               // PW->setDensityVolume(PW->rho_ / PW->total_weight_, PW->volume_ / PW->total_weight_);
-               PW->div_U = PW->div_U_ / PW->total_weight;
-               // PW->DUDt_SPH = (PW->DUDt_SPH_) / PW->total_weight;
-               // }
+               if (!PW->isFluid) {
+                  /*流体として扱う壁粒子は，流速をmapによって更新しない*/
+                  PW->U_SPH = PW->U_SPH_ / PW->total_weight_;
+                  PW->tmp_U_SPH = PW->tmp_U_SPH_ / PW->total_weight_;
+                  PW->grad_div_U = PW->grad_div_U_ / PW->total_weight_;
+                  PW->div_U = PW->div_U_ / PW->total_weight;
+                  PW->DUDt_SPH = (PW->DUDt_SPH_) / PW->total_weight;
+               }
             } else
                initialize(PW);
          }
@@ -606,7 +608,7 @@ void developByEISPH(Network *net,
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
                }
-               if (Norm(q->normal_SPH) < 1E-12 && Distance(p, q) < p->radius_SPH) {
+               if (Norm(q->normal_SPH) < 1E-12 && Distance(p, q) < p->radius_SPH / p->C_SML * 1.1) {
                   q->isCaptured_ = true;
                   q->isFluid = true;
                }
@@ -724,32 +726,31 @@ void developByEISPH(Network *net,
          set_tmpLap_U(net->getPoints());
          set_tmpLap_U(wall_as_fluid);
          // b$ ---------------------------------- (2) 密度の更新 --------------------------------- */
-         // for (const auto &p : net->getPoints())
-         //    p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
-         // for (const auto &p : wall_as_fluid)
-         //    p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
+         for (const auto &p : net->getPoints())
+            p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
+         for (const auto &p : wall_as_fluid)
+            p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
 
-         // mapValueOnWall(net, wall_p, RigidBodyObject);
+         mapValueOnWall(net, wall_p, RigidBodyObject);
 
-         // /*
-         // nablaは同じでないといけないので，
-         // div(U) = div(grad(P^n+1))
-         // のdivは同じように計算されなければならないだろう:同じ密度，体積を使う．
-         // */
+         /*
+         nablaは同じでないといけないので，
+         div(U) = div(grad(P^n+1))
+         のdivは同じように計算されなければならないだろう:同じ密度，体積を使う．
+         */
 
-         // // b$ ---------------------- 仮位置における div(U*) and laplacian(U*) ----------------------*/
+         // b$ ---------------------- 仮位置における div(U*) and laplacian(U*) ----------------------*/
 
-         // div_tmpU(net->getPoints(), Append(net_RigidBody, net));
-         // div_tmpU(wall_as_fluid, Append(net_RigidBody, net));
+         div_tmpU(net->getPoints(), Append(net_RigidBody, net));
+         div_tmpU(wall_as_fluid, Append(net_RigidBody, net));
 
-         // set_tmpLap_U(net->getPoints());
-         // set_tmpLap_U(wall_as_fluid);
+         set_tmpLap_U(net->getPoints());
+         set_tmpLap_U(wall_as_fluid);
 
          // setWallDUDt(net, wall_p, RigidBodyObject);  // 壁の粘性項を計算する
 
          // b$ -------------------------------------------------------------------------- */
 
-         mapValueOnWall(net, wall_p, RigidBodyObject);
          // mapValueOnWall(net, wall_p, RigidBodyObject, {1, 0, 0});  // ここではDUDtなど考慮せずに壁の圧力を蹴っているす．圧力勾配を計算する時のみDUDtを考慮するのがいいかもしれない．
          // b% ------------------------------------------------------ */
          // b%  　　　　　        仮位置における圧力Pの計算                 */
@@ -759,6 +760,8 @@ void developByEISPH(Network *net,
             if (p->isSurface)
                p->p_SPH = 0;
 #endif
+
+         mapValueOnWall(net, wall_p, RigidBodyObject);
 
          for (const auto &p : net->getPoints())
             p->NR_pressure.initialize(p->p_SPH);
@@ -813,14 +816,14 @@ void developByEISPH(Network *net,
 #endif
          }
 
-         // for (const auto &p : net->getPoints()) {
-         //    p->dp_SPH = p->p_SPH - p->dp_SPH;
-         //    p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
-         //    // p->p_SPH = p->p_SPH_;
-         //    p->RK_P.push(p->DPDt_SPH);  // 圧力
-         //    // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-         //    p->p_SPH = p->p_SPH_;
-         // }
+         for (const auto &p : net->getPoints()) {
+            p->dp_SPH = p->p_SPH - p->dp_SPH;
+            p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
+            // p->p_SPH = p->p_SPH_;
+            p->RK_P.push(p->DPDt_SPH);  // 圧力
+            // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+            p->p_SPH = p->p_SPH_;
+         }
 
          //% ---------------------------- 計算した圧力をマップするかどうか ---------------------------- */
 

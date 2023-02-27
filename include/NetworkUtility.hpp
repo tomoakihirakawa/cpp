@@ -3,7 +3,9 @@
 
 #include "InterpolationRBF.hpp"
 #include "Network.hpp"
+
 /* ------------------------------------------------------ */
+
 void creteOBJ(std::ofstream &ofs, Network &net) {
    std::map<netPp, int> P_i;
    int i = 0;
@@ -231,27 +233,27 @@ Tddd vectorTangentialShift_(const networkPoint *p, const double scale = 1.) {
 };
 
 /* ------------------------------------------------------ */
-void LaplacianSmoothing(netPp p) {
-   try {
-      if (!isEdgePoint(p) && isInConvexPolygon(p)) { /*端の点はsmoothingしない*/
-         auto ps = p->getNeighbors();
-         if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
-            p->setX(Mean(extractX(ps)));
-      }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
-void LaplacianSmoothing(const V_netPp &ps) {
-   try {
-      for (const auto &p : ps)
-         LaplacianSmoothing(p);
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
+// void LaplacianSmoothing(netPp p) {
+//    try {
+//       if (!isEdgePoint(p) && isInConvexPolygon(p)) { /*端の点はsmoothingしない*/
+//          auto ps = p->getNeighbors();
+//          if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
+//             p->setX(Mean(extractX(ps)));
+//       }
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
+// void LaplacianSmoothing(const V_netPp &ps) {
+//    try {
+//       for (const auto &p : ps)
+//          LaplacianSmoothing(p);
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 ///////////////////////////////////////////////////////////
 Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
    auto faces = ToVector(p->getFaces());
@@ -514,43 +516,43 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
 };
 
 /* ------------------------------------------------------ */
-void LaplacianSmoothingIfFlat(netPp p) {
-   try {
-      if (!isEdgePoint(p) && isFlat(p) && isInConvexPolygon(p)) { /*端の点はsmoothingしない*/
-         auto ps = p->getNeighbors();
-         if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
-            p->setX(Mean(extractX(ps)));
-      }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
+// void LaplacianSmoothingIfFlat(netPp p) {
+//    try {
+//       if (!isEdgePoint(p) && isFlat(p) && isInConvexPolygon(p)) { /*端の点はsmoothingしない*/
+//          auto ps = p->getNeighbors();
+//          if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
+//             p->setX(Mean(extractX(ps)));
+//       }
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 //////////////////////////////////////////////////////////
-void LaplacianSmoothingIfFlat(V_netPp ps /*copy*/) {
-   for (const auto &p : ps)
-      LaplacianSmoothingIfFlat(p);
-};
+// void LaplacianSmoothingIfFlat(V_netPp ps /*copy*/) {
+//    for (const auto &p : ps)
+//       LaplacianSmoothingIfFlat(p);
+// };
 ///////////////////////////////////////////////////////////
-void LaplacianSmoothingIfFlat_ExceptIntX(V_netPp ps /*copy*/) {
-   try {
-      std::shuffle(std::begin(ps), std::end(ps), std::default_random_engine());
-      for (const auto &p : ps)
-         if (!isEdgePoint(p) && isFlat(p) && isInConvexPolygon(p)) {  // 端の点はsmoothingしない
-            auto countintx = 0;
-            for (const auto &l : p->getLines())
-               if (l->isIntxn())
-                  countintx++;
-            if (!(countintx > 1)) {
-               auto tmp = Mean(extractX(p->getNeighbors()));
-               p->setX(tmp);
-            }
-         }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
+// void LaplacianSmoothingIfFlat_ExceptIntX(V_netPp ps /*copy*/) {
+//    try {
+//       std::shuffle(std::begin(ps), std::end(ps), std::default_random_engine());
+//       for (const auto &p : ps)
+//          if (!isEdgePoint(p) && isFlat(p) && isInConvexPolygon(p)) {  // 端の点はsmoothingしない
+//             auto countintx = 0;
+//             for (const auto &l : p->getLines())
+//                if (l->isIntxn())
+//                   countintx++;
+//             if (!(countintx > 1)) {
+//                auto tmp = Mean(extractX(p->getNeighbors()));
+//                p->setX(tmp);
+//             }
+//          }
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 ///////////////////////////////////////////////////////////
 void LaplacianSmoothingIfOnStraightLine(V_netPp ps) {
    try {
@@ -628,6 +630,27 @@ void sortByLength(V_netLp &lines) {
              });
 };
 
+void reverseSortByLength(V_netLp &lines) {
+   std::sort(lines.begin(), lines.end(),
+             [](const auto &w, const auto &v) {
+                if (v->length() - w->length() <= 1E-10)
+                   return v < w;
+                else
+                   return v->length() < w->length();
+             });
+};
+
+// void reverseSortByLength(const std::unordered_set<networkLine *> &uo_lines) {
+//    V_netLp lines(uo_lines.begin(), uo_lines.end());
+//    std::sort(lines.begin(), lines.end(),
+//              [](const auto &w, const auto &v) {
+//                 if (v->length() - w->length() <= 1E-10)
+//                    return v < w;
+//                 else
+//                    return v->length() < w->length();
+//              });
+// };
+
 void sortByDistance(V_netPp &points, const netPp origin) {
    std::sort(points.begin(), points.end(),
              [&origin](const netPp &v, const netPp &w) {
@@ -648,7 +671,63 @@ void sortByDistance(V_netPp &points, const Tddd &origin) {
              });
 };
 
-////////////////////////////////////////////////////////////////
+// void Merge(const Network *net, const std::function<bool(const networkLine *)> &condition) {
+//    bool found = true;
+//    int count = 0;
+//    while (found && count++ < 5) {
+//       found = false;
+//       for (const auto &l : net->Lines)
+//          if (!found && condition(l) && l->merge()) {
+//             found = true;
+//             break;
+//          }
+//    }
+// };
+void Merge(const std::unordered_set<networkLine *> &uo_lines, const std::function<bool(const networkLine *)> &func) {
+   for (const auto &l : uo_lines)
+      if (func(l)) {
+         l->merge();
+         return;
+      }
+   // std::unordered_set<std::shared_ptr<networkLine>> shared_pointers;
+   // std::transform(uo_lines.begin(), uo_lines.end(), std::inserter(shared_pointers, shared_pointers.begin()),
+   //                [](networkLine *raw_ptr) { return std::make_shared<networkLine>(*raw_ptr); });
+   // std::vector<std::shared_ptr<networkLine>> shared_pointers_copy(shared_pointers.begin(), shared_pointers.end());
+   // for (const auto &l : shared_pointers_copy) {
+   //    if (func(l.get())) {
+   //       l->merge();
+   //       shared_pointers.erase(l);
+   //    }
+   // }
+};
+
+void Divide(const std::unordered_set<networkLine *> &uo_lines, const std::function<bool(const networkLine *)> &func) {
+   for (const auto &l : uo_lines)
+      if (func(l))
+         l->divide();
+};
+
+void Divide(const std::unordered_set<networkLine *> &uo_lines, const double lim_len) {
+   std::cout << Red << "|";
+   for (const auto &l : uo_lines)
+      if (l->length() >= lim_len) {
+         std::cout << Green << "|";
+         l->divide();
+      }
+   std::cout << Blue << "|" << colorOff;
+   //
+   // std::vector<networkLine *> lines(uo_lines.begin(), uo_lines.end());
+   // std::cout << Red << "|";
+   // reverseSortByLength(lines);
+   // for (const auto &l : lines)
+   //    if (l->length() >= lim_len) {
+   //       std::cout << Green << "|";
+   //       l->divide();
+   //    }
+   // // else
+   // //    break;
+   // std::cout << Blue << "|" << colorOff;
+};
 
 // std::vector<V_netPp> triangulate(const V_netPp &objects, const V_d &normal, const double smallangle = 0.) {
 //    // std::cout << __PRETTY_FUNCTION__ << std::endl;

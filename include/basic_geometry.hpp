@@ -18,7 +18,6 @@ using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
 using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 
 /* -------------------------------------------------------------------------- */
-
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
    // The solid angle of a plane triangle
    // Van Oosterom, A. and Strackee, J. (1983)
@@ -52,8 +51,44 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { r
 //    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 // };
 
+double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+   double c = VectorAngle(p1 - p0, p2 - p0), a = VectorAngle(p2 - p0, p3 - p0), b = VectorAngle(p3 - p0, p1 - p0);
+   double s = (a + b + c) * 0.5;
+   if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
+      return 4. * M_PI / 2.;
+   else
+      return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
+};
+
+double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+
+   //     1,2,3 (outward rotation)
+   //          3
+   // 0,3,2  / | \ 0,1,3     --- 1 ---
+   //       2--|--1           \      /
+   // 0,2,1  \ | /             2    0
+   //          0                 \/
+   //
+   /* -------------------------------------------------------------------------- */
+   // return SolidAngle_VanOosteromAandStrackeeJ1983(p0, p1, p2, p3);
+   /* -------------------------------------------------------------------------- */
+   // auto A = Normalize(p1 - p0);
+   // auto B = Normalize(p2 - p0);
+   // auto C = Normalize(p3 - p0);
+   // return 2 * atan2(Dot(A, Cross(B, C)), (1 + Dot(A, B) + Dot(B, C) + Dot(C, A)));
+   auto A = (p1 - p0);
+   auto B = (p2 - p0);
+   auto C = (p3 - p0);
+   return 2 * atan2(Det({A, B, C}), Norm(A) * Norm(B) * Norm(C) +
+                                        Dot(A, B) * Norm(C) +
+                                        Dot(A, C) * Norm(B) +
+                                        Dot(B, C) * Norm(A));
+};
+
 double SolidAngle(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
-   return std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c));
+   return SolidAngle_(o, a, b, c);
+   //
+   // return std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c));
    //
    //     auto v1 = A - o;
    // auto v2 = B - o;
@@ -80,18 +115,20 @@ double SolidAngle(const Tddd &p, const T3Tddd &ABC) {
 };
 
 T4d SolidAngles(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
-   return {std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(a, b, c, o)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(b, c, o, a)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
+   return {(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(a, b, c, o)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(b, c, o, a)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
+   //
+   // return {std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)),
+   //         std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(a, b, c, o)),
+   //         std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(b, c, o, a)),
+   //         std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
 };
 
 T4d SolidAngles(const T4Tddd &oabc) {
    auto [o, a, b, c] = oabc;
-   return {std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(a, b, c, o)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(b, c, o, a)),
-           std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
+   return SolidAngles(o, a, b, c);
 };
 
 double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
@@ -113,6 +150,28 @@ double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
    }
    return total;
 };
+
+T4d TetrahedronSolidAngle_UsingVectorAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
+   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3 - X0) < 0)
+      X2.swap(X3);
+   return {(SolidAngle_UsingVectorAngle(X0, X1, X2, X3)),
+           (SolidAngle_UsingVectorAngle(X1, X0, X3, X2)),
+           (SolidAngle_UsingVectorAngle(X2, X0, X1, X3)),
+           (SolidAngle_UsingVectorAngle(X3, X0, X2, X1))};
+};
+
+T4d TetrahedronSolidAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
+   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3 - X0) < 0)
+      X2.swap(X3);
+   return {(SolidAngle_VanOosteromAandStrackeeJ1983(X0, X1, X2, X3)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(X1, X0, X3, X2)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(X2, X0, X1, X3)),
+           (SolidAngle_VanOosteromAandStrackeeJ1983(X3, X0, X2, X1))};
+};
+
+T4d TetrahedronSolidAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+
+T4d TetrahedronSolidAngle_UsingVectorAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle_UsingVectorAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 // % -------------------------------------------------------------------------- */
 // %                                  外接球                                     */
 // % -------------------------------------------------------------------------- */
@@ -690,7 +749,9 @@ struct Triangle : public CoordinateBounds {
    };
    operator T3Tddd() const { return this->verticies; };
 };
+
 /* -------------------------------------------------------------------------- */
+
 struct Tetrahedron : public CoordinateBounds {
    //     1,3,2
    //          3
@@ -699,16 +760,14 @@ struct Tetrahedron : public CoordinateBounds {
    // 0,1,2  \ | /             2    0
    //          0                 \/
    //
-   // GEOMETRIC PROPERTIES
+   //$ GEOMETRIC PROPERTIES
    T4Tddd verticies;
    double volume;
    Tddd centroid;
-   //
-   //@ circumscribed sphere (circumsphere)
+   //$ circumscribed sphere (circumsphere)
    Tddd circumcenter /*外心*/;
    double circumradius /*外半径*/;
-   //
-   //@ inscribed sphere (insphere)
+   //$ inscribed sphere (insphere)
    Tddd incenter /*内心*/;
    double inradius /*内接*/;
    //
@@ -724,7 +783,7 @@ struct Tetrahedron : public CoordinateBounds {
          incenter(Incenter(XIN)),
          inradius(Inradius(XIN)),
          normals(TetrahedronNormals(XIN)),
-         solidangles(SolidAngles(XIN)){};
+         solidangles(TetrahedronSolidAngle_UsingVectorAngle(XIN)){};
 
    Tetrahedron scaled(const auto &s = 0.9) {
       return Tetrahedron({(std::get<0>(this->verticies) - centroid) * s + centroid,
@@ -733,6 +792,13 @@ struct Tetrahedron : public CoordinateBounds {
                           (std::get<3>(this->verticies) - centroid) * s + centroid});
    };
 
+   // T4d SolidAngles(const T4Tddd &X) {
+   //    auto [X0, X1, X2, X3] = X;
+   //    return {(SolidAngle_(X0, X1, X2, X3)),
+   //            (SolidAngle_(X1, X0, X3, X2)),
+   //            (SolidAngle_(X2, X0, X1, X3)),
+   //            (SolidAngle_(X3, X0, X2, X1))};
+   // };
    operator T6T2Tddd() const {
       auto [p0, p1, p2, p3] = this->verticies;
       return {{p0, p1}, {p0, p2}, {p0, p3}, {p1, p2}, {p2, p3}, {p3, p1}};
@@ -746,7 +812,9 @@ struct Tetrahedron : public CoordinateBounds {
               {p1, p2, p3}};
    };
 };
-/* ------------------------------------------------------ */
+
+/* -------------------------------------------------------------------------- */
+
 std::ostream &operator<<(std::ostream &stream, const CoordinateBounds &bounds) {
    return (stream << bounds.bounds);
 };

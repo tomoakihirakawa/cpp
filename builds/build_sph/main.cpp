@@ -53,7 +53,8 @@ int main(int arg, char **argv) {
       id = argv[2];  // input directory
    // b! -------------------------------------------------------------------------- */
    std::cout << "input_directory : " << input_directory << std::endl;
-   JSON settingJSON(std::ifstream(input_directory + "setting.json"));
+   std::string input_main_file = "setting.json";
+   JSON settingJSON(std::ifstream(input_directory + input_main_file));
    for (const auto &line : settingJSON())
       std::cout << Red << std::setw(30) << line.first << " : " << line.second << colorOff << std::endl;
    if (!settingJSON.find("output_directory"))
@@ -73,15 +74,26 @@ int main(int arg, char **argv) {
    //
    const auto output_directory = settingJSON["output_directory"][0] + id + "/";
    //
-   std::filesystem::path dir = output_directory;
-   if (!std::filesystem::exists(dir)) {
+   std::filesystem::path output_path = output_directory;
+   if (!std::filesystem::exists(output_path)) {
       try {
-         std::filesystem::create_directory(dir);
+         std::filesystem::create_directory(output_path);
       } catch (const std::filesystem::filesystem_error &e) {
          std::cerr << e.what() << '\n';
       }
    }
-   //
+   /* --------------------- copy input directory and files --------------------- */
+   {
+      std::filesystem::path output_directory(settingJSON["output_directory"][0] + id + "/");
+      std::cout << "copy input directory and files" << std::endl;
+      for (const auto &file : Append(settingJSON["input_files"], input_main_file)) {
+         std::filesystem::path source(input_directory + file);
+         auto new_path = output_directory / std::filesystem::relative(source, ".");
+         std::filesystem::create_directories(new_path.parent_path());
+         std::filesystem::copy(source, new_path, std::filesystem::copy_options::overwrite_existing);
+      }
+   }
+   /* -------------------------------------------------------------------------- */
    const double CSML = stod(settingJSON["CSML"])[0];
    const double end_time_step = stod(settingJSON["end_time_step"])[0];
    const double end_time = stod(settingJSON["end_time"])[0];
@@ -269,12 +281,12 @@ int main(int arg, char **argv) {
       if (end_time < real_time)
          break;
 
-      int N = 100;
+      // int N = 1000;
 
-      // if (time_step == N) {
-      for (const auto &[object, _, __] : all_objects)
-         for (const auto &p : object->getPoints())
-            p->mu_SPH = _WATER_MU_10deg_;
+      // // if (time_step == N) {
+      // for (const auto &[object, _, __] : all_objects)
+      //    for (const auto &p : object->getPoints())
+      //       p->mu_SPH = _WATER_MU_10deg_;
       // } else if (time_step < N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
@@ -286,7 +298,7 @@ int main(int arg, char **argv) {
                      real_time,
                      CSML,
                      particle_spacing,
-                     time_step < N ? max_dt / 10 : max_dt,
+                     time_step < 50 ? max_dt / 10 : max_dt,
                      RK_order);
       std::cout << "real_time = " << real_time << std::endl;
       //------------------------------------------
