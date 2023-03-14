@@ -493,6 +493,22 @@ std::vector<std::unordered_set<networkFace *>> BFSUO(const V_netFp &startObj, co
    bfs.search();
    return bfs.getObjectsAtDepthUO();
 };
-   //-----------------------------------------------------------
+
+/* -------------------------------------------------------------------------- */
+
+std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &FACES, const int s) {
+   std::unordered_set<networkFace *> tmp, ret = FACES;
+   for (auto i = 0; i < s; i++) {
+      tmp = ret;
+      for (const auto &F : tmp) {
+         for_each(F->getPoints(),
+                  [&](const auto &p) {
+                     for (const auto &f : p->getFaces())
+                        ret.emplace(f);
+                  });
+      }
+   }
+   return ret;
+};
 
 #endif

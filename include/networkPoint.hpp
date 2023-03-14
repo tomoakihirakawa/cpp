@@ -210,7 +210,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 @ addContactPointsは，引数として半径が与えられない場合，各点のradiusが成す球として，互いの重なりを調べ，重なった点はContactPointsに保存する．
 */
 
-const double contact_angle = 20. * M_PI / 180.;
+const double contact_angle = 40. * M_PI / 180.;
 //
 
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {

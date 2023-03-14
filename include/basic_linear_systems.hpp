@@ -1,6 +1,7 @@
 #ifndef basic_linear_systems_H
 #define basic_linear_systems_H
 
+#include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
 

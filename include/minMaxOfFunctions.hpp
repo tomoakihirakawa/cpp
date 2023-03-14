@@ -224,7 +224,7 @@ struct ArnoldiProcess {
          for (i = 0; i < j + 1; ++i)
             w -= (H[i][j] = Dot(V[i], w)) * V[i];  //@ ベクトル内積
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
-         MatrixForm(H);
+         // MatrixForm(H);
       }
       // Print("done");
    };
@@ -233,15 +233,14 @@ struct ArnoldiProcess {
 struct gmres : public ArnoldiProcess {
    int n;  // th number of interation
    V_d e1, x, y;
+   double err;
    /* NOTE:
    r0 = Normalize(b - A.x0)
    to find {r0,A.r0,A^2.r0,...}
    Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
    */
    gmres(const VV_d &A, const V_d &b, const V_d &x0, const int nIN)
-       : ArnoldiProcess(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN),
-         n(nIN),
-         e1(V_d(nIN + 1, 0.)) {
+       : ArnoldiProcess(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN), n(nIN), e1(V_d(nIN + 1, 0.)) {
       e1[0] = ArnoldiProcess::beta;
       QR qr(ArnoldiProcess::H);
       // Print("Q");
@@ -252,7 +251,9 @@ struct gmres : public ArnoldiProcess {
       V_d g(qr.Q.size());
       for (const auto &q : qr.Q)
          g[i++] = q[0] * beta;
-      // Print("予想される誤差", *g.rbegin());
+      // Print("予想される誤差", err = *g.rbegin());
+      err = g[i];
+      // std::cout << "予想される誤差" << err << std::endl;
       // std::cout << "n = " << nIN << std::endl;
       // std::cout << "g = " << g << std::endl;
       g.pop_back();

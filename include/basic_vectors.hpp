@@ -637,6 +637,41 @@ T7d Normalize(const T7d &X) { return X / Norm(X); };
 Tddd Normalize(const Tddd &X) { return X / Norm(X); };
 Tdd Normalize(const Tdd &X) { return X / Norm(X); };
 
+/* -------------------------------------------------------------------------- */
+
+// template <typename T>
+// std::vector<T> Dot(const std::vector<std::vector<double>> &A, const std::vector<T> &B) {
+//    // (M x N) . (N x 3) = (M x 3)
+//    const int N = std::tuple_size<T>::value;
+//    std::vector<T> ret(A.size());
+//    for (auto i = 0; i < A.size(); ++i) {
+//       for_each(ret[i], [](auto &r) { r = 0; });
+//       for (auto j = 0; j < N; ++j)
+//          std::get<j>(ret[i]) += A[i][j] * std::get<j>(B[i]);
+//    }
+//    return ret;
+// };
+
+// template <typename T, typename = std::enable_if_t<std::is_same_v<T, std::tuple<double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double, double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double, double, double, double, double>> ||
+//                                                   std::is_same_v<T, std::tuple<double, double, double, double, double, double, double, double, double>>>>
+// std::vector<T> Dot(const std::vector<std::vector<double>> &A, const std::vector<T> &B) {
+//    const int N = std::tuple_size<T>::value;
+//    std::vector<T> ret(A.size());
+//    int j = 0;
+//    for (auto i = 0; i < A.size(); ++i) {
+//       for_each(ret[i], [&](auto &r) { r = 0; });
+//       j = 0;
+//       for_each10(ret[i], B[i], [&](auto &r, auto &b) { r += A[i][j++] * b; });
+//    }
+//    return ret;
+// };
+
 double Dot(const T6d &v, const T6d &u) {
    return (std::get<0>(v) * std::get<0>(u) +
            std::get<1>(v) * std::get<1>(u) +
@@ -725,6 +760,8 @@ T4d Dot(const T4d &v, const T4T4d &A) {
 //            std::get<0>(v) * std::get<4>(std::get<0>(A)) + std::get<1>(v) * std::get<4>(std::get<1>(A)) + std::get<2>(v) * std::get<4>(std::get<2>(A)) + std::get<3>(v) * std::get<4>(std::get<3>(A)) + std::get<4>(std::get<4>(A)) * std::get<4>(v)};
 // };
 
+/* -------------------------------------------------------------------------- */
+
 Tddd Cross(const Tddd &A, const Tddd &X) {
    return {std::get<1>(A) * std::get<2>(X) - std::get<2>(A) * std::get<1>(X),
            std::get<2>(A) * std::get<0>(X) - std::get<0>(A) * std::get<2>(X),
@@ -804,7 +841,7 @@ bool myIsfinite(const double v) {
 };
 
 bool isFinite(const double v, const double eps = 1E+20) {
-   if (v < -eps || v > eps || v != v)
+   if (v < -eps || v > eps || v != v || std::isnan(v))
       return false;
    else
       return true;

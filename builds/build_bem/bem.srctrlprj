@@ -2,10 +2,7 @@
 <config>
     <source_groups>
         <source_group_35180683-9ed9-4172-81eb-8ab3d233f722>
-            <compiler_flags>
-                <compiler_flag>-std=c++17</compiler_flag>
-            </compiler_flags>
-            <cpp_standard>gnu++17</cpp_standard>
+            <cpp_standard>c++2a</cpp_standard>
             <cross_compilation>
                 <target>
                     <abi>gnu</abi>
@@ -13,7 +10,7 @@
                     <sys>macosx</sys>
                     <vendor>unknown</vendor>
                 </target>
-                <target_options_enabled>1</target_options_enabled>
+                <target_options_enabled>0</target_options_enabled>
             </cross_compilation>
             <header_search_paths>
                 <header_search_path>../../include/</header_search_path>
@@ -29,9 +26,9 @@
                 <source_extension>.hpp</source_extension>
             </source_extensions>
             <source_paths>
-                <source_path>/Users/tomoaki/Dropbox/markdown/cpp/builds/build_bem/BEM_BVP.hpp</source_path>
-                <source_path>/Users/tomoaki/Dropbox/markdown/cpp/builds/build_bem/BEM_derivatives.hpp</source_path>
-                <source_path>/Users/tomoaki/Dropbox/markdown/cpp/builds/build_bem/main.cpp</source_path>
+                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM_BVP.hpp</source_path>
+                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM_derivatives.hpp</source_path>
+                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/main.cpp</source_path>
                 <source_path>../../include/basic_alias.hpp</source_path>
                 <source_path>../../include/basic_arithmetic_vector_operations.hpp</source_path>
                 <source_path>../../include/basic_constants.hpp</source_path>

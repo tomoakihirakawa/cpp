@@ -19,6 +19,7 @@ const std::string CHECK("\xE2\x9C\x94");
 const std::string ERROR("!!");
 
 const std::string black("\033[0;30m");
+const std::string pink("\033[38;5;206m");
 const std::string red("\033[0;31m");
 const std::string green("\033[0;32m");
 const std::string yellow("\033[0;33m");
