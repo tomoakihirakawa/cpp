@@ -1,0 +1,11 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 10000,
+    "end_time": 10000,
+    "output_directory": "/Users/tomoaki/BEM/Gu2018Float1_offset_neg0d075",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "float.json"
+    ]
+}

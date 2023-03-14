@@ -103,8 +103,7 @@ V_netLp extractLines(const std::vector<T *> &points) {
          ret.emplace(l);
    return V_netLp(ret.begin(), ret.end());
 };
-/* ---------------------------
---------------------------- */
+/* ------------------------------------------------------ */
 /*     *     */
 /*    / \    */
 /*   *===*   */
@@ -667,10 +666,13 @@ class networkPoint : public CoordinateBounds {
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
    Tdd phiphin;
    Tdd phiphin_t;
+   T2T6d phiphin_t_a6;  // 加速度による微分
    double phi_Dirichlet;
    double phin_Dirichlet;
+   double dpda;
    std::unordered_map<networkFace *, double> phinOnFace;
-   std::unordered_map<networkFace *, double> phintOnFace;
+   std::unordered_map<networkFace *, double, std::tuple<networkFace *, T6d>> phintOnFace;
+   // std::unordered_map<networkFace *, double> phintOnFace_a;  // 加速度による微分
    //* ------------------------------------------------- */
    // Tddd X_BUFFER;
    // const Tddd &getXBuffer() const { return X_BUFFER; };
@@ -727,7 +729,8 @@ class networkPoint : public CoordinateBounds {
 
    double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const {
       // 重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
-      return Dot(Normalize(this->X - g_center), this->X - offset);
+      auto n = Normalize(this->X - g_center);
+      return Dot(this->X, n) - Dot(offset, n);
    };
 
    double aphiat(const double pressure /*zero if on atmosfere*/,
@@ -744,7 +747,6 @@ class networkPoint : public CoordinateBounds {
                  const Tddd &g_center = {0., 0., -1E+20}) const {
       // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D BIM simulation with an application to underwater explosion bubble dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003. equaiton (11)
       // return this->DphiDt(pressure, offset, g_center) + Dot(U_modified - this->U_BEM, this->U_BEM);
-      //
       // return aphiat(pressure, offset, g_center) + Dot(U_modified, this->U_BEM);以下はと同じ：
       return Dot(U_modified - 0.5 * this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
    };
@@ -3076,6 +3078,7 @@ std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const double &r, const s
       }
    return {ret, F};
 };
+Tddd Nearest(const Tddd &X, const std::vector<networkFace *> &faces) { return std::get<0>(Nearest_(X, faces)); };
 Tddd Nearest(const Tddd &X, const std::unordered_set<networkFace *> &faces) { return std::get<0>(Nearest_(X, faces)); };
 Tddd Nearest(const networkPoint *p, const std::unordered_set<networkFace *> &faces) { return Nearest(ToX(p), faces); };
 
@@ -3114,6 +3117,7 @@ class Network : public CoordinateBounds {
       this->octreeOfPoints = new octree(this->getBounds(), depthlimit, objnum, this->Points);
       this->octreeOfPoints->deleteOuside();
    };
+   /* -------------------------------------------------------------------------- */
    std::tuple<bool, octree<networkFace *> *, networkFace *> isInside_MethodOctree(const Tddd &X, const double small = 1E-13) const {
       //! セルに含まれるかどうかではなく，ポリゴンの内部にあるかどうかで判定するための関数
       if (this->octreeOfFaces) {
@@ -3123,7 +3127,9 @@ class Network : public CoordinateBounds {
          else {
             auto cell = cells[0];
             if (cell->faces_.empty()) {
-               //% faceを持たない場合，まずはセルの頂点における回転を調べることで，ポリゴンの内部外部のどちらに位置するか調べる
+               //% cellがfaceを持たない場合，
+               //% まずはセルの頂点における回転数を調べることで，
+               //% ポリゴンの内部外部のどちらに位置するか調べる
                if (all_of(cell->WNs, [](const auto &w_num) { return w_num > 0.6; }) /*should be inside*/)
                   return {true, cell, nullptr};
                else if (all_of(cell->WNs, [](const auto &w_num) { return w_num < 0.1; }) /*should be outside*/)
@@ -4137,33 +4143,54 @@ networkLine *ConnectedQ(const networkFace *const a, const networkFace *const b) 
       return l2;
    return nullptr;
 };
-networkLine *ConnectedQ(const networkPoint *const a, const networkPoint *const b) {
-   for (const auto &la : a->getLines())
-      if ((*la)(a) == b)
-         return la;
+networkLine *ConnectedQ(const networkLine *const l, const networkPoint *const a) {
+   // 両方が参照し合う状態かどうか
+   /*
+    __line__
+    |      |
+    |     *|-><--* point
+    --------
+   */
+   for (const auto &L : a->getLines())
+      if (L == l) {
+         auto [p0, p1] = L->getPoints();
+         if (p0 == a || p1 == a)
+            return L;
+      }
    return nullptr;
 };
-T_3L ConnectedQ(const networkPoint *const a, const networkPoint *const b, const networkPoint *const c) {
-   for (const auto &la : a->getLines())
-      if ((*la)(a) == b)
-         for (const auto &lb : b->getLines())
-            if ((*lb)(b) == c)
-               for (const auto &lc : c->getLines())
-                  if ((*lc)(c) == a)
-                     return T_3L{la, lb, lc};
-   return T_3L{nullptr, nullptr, nullptr};
+networkLine *ConnectedQ(const networkPoint *const a, const networkLine *const l) { return ConnectedQ(l, a); };
+
+networkLine *ConnectedQ(const networkPoint *const a, const networkPoint *const b) {
+   // 両方が参照し合う状態かどうか
+   /*
+    point  __line__
+    *--><--|*     |
+           |     *|-><--* point
+           --------
+   */
+   networkLine *L;
+   for (const auto &l : a->getLines())
+      if (L = ConnectedQ(l, a))
+         if (ConnectedQ(L, b))
+            return L;
+   return nullptr;
 };
+
+T_3L ConnectedQ(const networkPoint *const a, const networkPoint *const b, const networkPoint *const c) {
+   return T_3L{ConnectedQ(a, b), ConnectedQ(b, c), ConnectedQ(c, a)};
+
+   // for (const auto &la : a->getLines())
+   //    if ((*la)(a) == b)
+   //       for (const auto &lb : b->getLines())
+   //          if ((*lb)(b) == c)
+   //             for (const auto &lc : c->getLines())
+   //                if ((*lc)(c) == a)
+   //                   return T_3L{la, lb, lc};
+   // return T_3L{nullptr, nullptr, nullptr};
+};
+
 T_3L ConnectedQ(const T_3P &abc) { return ConnectedQ(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc)); };
-   /* -------------------------------------------------------------------------- */
-   // Tddd velocityRigidBody(const networkPoint *const p, const Tddd &COM_IN, const Quaternion &Q_IN) {
-   //    // center_of_massとquaternionに従って計算
-   //    // Tddd ICOM = p->getNetwork()->ICOM;
-   //    // Tddd trans = COM_IN - ICOM;
-   //    // Tddd rotation = Q_IN.Rv(p->initialX - ICOM) + (ICOM - p->initialX);
-   //    // return rotation + trans + p->initialX;
-   //    // 上と同じ
-   //    return Q_IN.Rv(p->initialX - p->getNetwork()->ICOM) + COM_IN;
-   // };
 
 #include "my_vtk.hpp"
 #include "networkPoint.hpp"

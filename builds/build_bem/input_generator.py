@@ -22,10 +22,11 @@ g = 9.81
 このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
 '''
 
+input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
+SimulationCase = "Gu2018Float1_offset_neg0d074"
 
 match SimulationCase:
     case "moon_pool_large":
@@ -40,7 +41,7 @@ match SimulationCase:
             + "_T" + str(T).replace(".", "d")\
             + "_h" + str(h).replace(".", "d") + "_forced_"
 
-        input_directory = "./inputs_" + id
+        input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/"+SimulationCase + "_" + id
         os.makedirs(output_directory, exist_ok=True)
@@ -101,7 +102,7 @@ match SimulationCase:
             + "_T" + str(T).replace(".", "d")\
             + "_h" + str(h).replace(".", "d")
 
-        input_directory = "./inputs_" + SimulationCase + id
+        input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/" + SimulationCase + id
         os.makedirs(output_directory, exist_ok=True)
@@ -155,9 +156,42 @@ match SimulationCase:
                    "end_time": 120,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
+    case "Gu2018Float1_offset_neg0d074":
+
+        input_directory += SimulationCase
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/" + SimulationCase
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water", "type": "Fluid"}
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        float = {"name": "float",
+                 "type": "RigidBody",
+                 "velocity": "floating"}
+
+        float["mass"] = m = 9.75
+        float["COM"] = [0., 0., 0.09+0.8]  # 今回は重要ではない
+        float["radius_of_gyration"] = [10**10, 10**10, 10**10]
+        float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
+                        m*math.pow(float["radius_of_gyration"][1], 2),
+                        m*math.pow(float["radius_of_gyration"][2], 2)]
+
+        objfolder = program_home + "/cpp/obj/" + SimulationCase
+        water["objfile"] = objfolder + "/water300.obj"
+        tank["objfile"] = objfolder + "/tank10.obj"
+        float["objfile"] = objfolder+"/float10.obj"
+
+        inputfiles = [tank, water, float]
+
+        setting = {"max_dt": 0.02,
+                   "end_time_step": 10000,
+                   "end_time": 4,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
     case "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0":
 
-        input_directory = "./inputs_" + SimulationCase
+        input_directory += SimulationCase
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
         os.makedirs(output_directory, exist_ok=True)
@@ -214,7 +248,7 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
     case "Tonegawa":
 
-        input_directory = "./inputs3"
+        input_directory += SimulationCase
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/2022Tonegawa3"
         os.makedirs(output_directory, exist_ok=True)
@@ -250,7 +284,7 @@ match SimulationCase:
                                m*math.pow(floatingbody["radius_of_gyration"][1], 2),
                                m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
 
-        objfolder = home + "/Dropbox/markdown/cpp/obj/2022Tonegawa/three_d100"
+        objfolder = program_home + "/cpp/obj/2022Tonegawa/three_d100"
         water["objfile"] = objfolder + "/water150_mod.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
@@ -275,7 +309,7 @@ match SimulationCase:
             + "_T" + str(T).replace(".", "d")\
             + "_h" + str(h).replace(".", "d")
 
-        input_directory = "./inputs_" + SimulationCase + id
+        input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/" + SimulationCase + id
         os.makedirs(output_directory, exist_ok=True)
@@ -331,7 +365,7 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
     case "Retzler2000simple":
 
-        input_directory = "./inputs_" + SimulationCase
+        input_directory += SimulationCase
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/" + SimulationCase
         os.makedirs(output_directory, exist_ok=True)
@@ -362,7 +396,7 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
     case "Retzler2000":
 
-        input_directory = "./inputs_Retzler2000simple"
+        input_directory += SimulationCase
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/Retzler2000simple"
         os.makedirs(output_directory, exist_ok=True)
@@ -378,9 +412,9 @@ match SimulationCase:
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
                      "isFixed": True,
-                     "velocity": ["Retzler2000", 0.1]}
+                     "velocity": ["Retzler2000", 0.02]}
 
-        objfolder = home + "/Dropbox/markdown/cpp/obj/chaplin2000/"
+        objfolder = program_home + "/cpp/obj/chaplin2000/"
         water["objfile"] = objfolder+"/water_remeshed2.obj"
         wavemaker["objfile"] = objfolder+"/cylinder200.obj"
         tank["objfile"] = objfolder+"/tank.obj"
@@ -404,7 +438,7 @@ match SimulationCase:
             + "_h" + str(h).replace(".", "d")\
             + "_"
 
-        input_directory = "./inputs_" + SimulationCase + id
+        input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
         output_directory = home + "/BEM/" + SimulationCase + id
         os.makedirs(output_directory, exist_ok=True)
@@ -482,6 +516,11 @@ for INPUTS in inputfiles:
             print(f'{key: <{20}}', '\t', blue, value, coloroff)
         else:
             print(f'{key: <{20}}', '\t', white, value, coloroff)
+
+        if key == "objfile":
+            file_exist = os.path.exists(value)
+            if file_exist == False:
+                print(red, "! file does not exist", coloroff)
     print('------------------------------------')
     f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
     json.dump(INPUTS, f, ensure_ascii=True, indent=4)

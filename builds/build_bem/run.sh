@@ -1,8 +1,4 @@
 #!/bin/bash
 
-./main ./inputs_a0d5_T4d5_h80_forced_
-./main ./inputs_a0d5_T5d0_h80_forced_
-./main ./inputs_a0d5_T5d5_h80_forced_
-./main ./inputs_a0d5_T6d0_h80_forced_
-./main ./inputs_a0d5_T6d5_h80_forced_
-./main ./inputs_a0d5_T7d0_h80_forced_
+./main ./input_files/Gu2018Float1_offset_neg0d074
+./main ./input_files/Gu2018Float1_offset_pos0d076

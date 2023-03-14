@@ -1,0 +1,22 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 9.75,
+    "COM": [
+        0.0,
+        0.0,
+        0.7
+    ],
+    "radius_of_gyration": [
+        10000000000,
+        10000000000,
+        10000000000
+    ],
+    "MOI": [
+        9.75e+20,
+        9.75e+20,
+        9.75e+20
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Gu2018Float1_offset_neg0d075/float200.obj"
+}

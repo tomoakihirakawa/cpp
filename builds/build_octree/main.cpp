@@ -47,7 +47,7 @@ int main(int arg, char **argv) {
    Timer timer;
    std::string name = "./bunny.obj";
    /* -------------------------------------------------------------------------- */
-   int n = 15;
+   int n = 10;
    auto object = new Network(name, "object");
    auto initialFaces = object->getFaces();
    object->genOctreeOfFaces({1, 5}, 1);
@@ -71,8 +71,17 @@ int main(int arg, char **argv) {
       for (const auto &y : vecY)
          for (const auto &z : vecZ) {
             Tddd xyz = {x + RandomReal(r), y + RandomReal(r), z + RandomReal(r)};
-            if (std::get<0>(object->isInside_MethodOctree(xyz)))
-               XYZ.push_back(xyz);
+            // if (std::get<0>(object->isInside_MethodOctree(xyz)))
+            //    XYZ.push_back(xyz);
+            /* ---------------------------------------------------------- */
+            auto [isinside, cell, f] = object->isInside_MethodOctree(xyz);
+            if (isinside) {
+               if (!cell->faces_.empty()) {
+                  if (Norm(Nearest(xyz, cell->faces_) - xyz) > particle_spacing)
+                     XYZ.push_back(xyz);
+               } else
+                  XYZ.push_back(xyz);
+            }
          }
    /* -------------------------------------------------------------------------- */
    /* -------------------------------------------------------------------------- */
@@ -179,63 +188,47 @@ int main(int arg, char **argv) {
    auto criterion = [&](const T_4P &abcd) {
       if (DuplicateFreeQ(abcd)) {
          auto [a, b, c, d] = abcd;
+
          Tetrahedron T(T4Tddd{a->X, b->X, c->X, d->X});
+
          double count = 0, cr;
          const double small = 1E-6;
-         if (
-             // all_of(T.solidangles, [&](const auto &s) { return Between(s, {2 * M_PI * 0.0001, 2 * M_PI * 0.9999}); }) &&
-             T.inradius > particle_spacing / 50 &&
-             std::get<0>(object->isInside_MethodOctree(T.incenter)) &&
-             tetra_buckets.none_of([&](const auto &t) { return IntersectQ(T, t->scaled(0.9999)); })) {
-            /* -------------------------------------------------------------------------- */
+         // 四面体の形に関する条件
+         if (T.inradius > particle_spacing / 20                        /*内接円半径に関する条件*/
+             && T.circumradius < 2 * particle_spacing                  /*外接円半径に関する条件*/
+             && std::get<0>(object->isInside_MethodOctree(T.incenter)) /**/
+                                                                       //  && std::get<0>(object->isInside_MethodOctree(T.circumcenter)) /**/
+             //  && tetra_buckets.none_of([&](const auto &t) { return IntersectQ(T, t->scaled(0.9999)); })
+             && tetra_buckets.none_of(T.incenter, 3 * particle_spacing, [&](const auto &t) { return IntersectQ(T, t->scaled(1 - 1E-10)); })) {
+            /* ----------------------------------------------- */
+            //% 外接級の内部に点がある場合はペナルティー
             const double range = 3 * particle_spacing;
-            double ACCUM = 0.;
-            double excess = 0;
-            // 外接級の内部に点があるかどうか
+            double ACCUM = 0., excess = 0;
             buckets.apply(T.incenter, range, [&](const auto &p) {
-               if (IntersectQ(T.circumcenter, T.circumradius, p->X)) {
-                  auto CtoX = Norm(T.circumcenter - p->X);
-                  excess += std::abs(CtoX - T.circumradius);
-               }
+               auto tmp = (T.circumradius - Distance(p->X, T.circumcenter));  // / T.circumradius;
+               if (tmp > 0)
+                  ACCUM += tmp;
             });
-            if (T.circumradius > range /*too small*/)
-               return 1E+50;  // bad condition
-            // else if (excess > T.circumradius * 0.01)
-            //    return -1.;  // bad condition
-
-            // std::unordered_set<networkLine *> lines;
-            // buckets.apply(T.incenter, range, [&](const auto &p) { lines.insert(p->getLines().begin(), p->getLines().end()); });
-
-            // for (const auto &l : lines)
-            //    ACCUM += accumulate(abcd, l->getPoints());
-
-            // tetra_buckets.apply(T.incenter, range, [&](const auto &TET) {
-            //    ACCUM += accumulate(TET->Points, {a, b});
-            //    ACCUM += accumulate(TET->Points, {a, c});
-            //    ACCUM += accumulate(TET->Points, {a, d});
-            //    ACCUM += accumulate(TET->Points, {b, c});
-            //    ACCUM += accumulate(TET->Points, {b, d});
-            //    ACCUM += accumulate(TET->Points, {c, d});
-            // });
-
-            // if (any_of(T.solidangles, [&](const auto &s) { return s < 0.05; }))
-            //    return -1.;  // bad condition
-
-            // if (Min(T.solidangles) < 0.01)
+            // if (ACCUM > 0.5)
             //    return 1E+50;
 
-            // auto tmp = T.solidangles - Mean(T.solidangles);
-            // auto [s0, s1, s2, s3] = tmp;
-            // ACCUM += s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3;
-            // std::cout << T.solidangles << ", " << tmp << ", " << ACCUM << std::endl;
-            // ACCUM += Max(T.solidangles) - Min(T.solidangles);
-            if (isFinite(1. / Min(T.solidangles)))
-               ACCUM += 1. / Min(T.solidangles);
-            else
+            //% 歪な形状の場合ぺネルティー
+            ACCUM += Norm(T.circumcenter - T.incenter) / T.inradius;
+
+            // //% 歪な形状の場合ぺネルティー
+            ACCUM = ACCUM * log10(1 / Min(T.solidangles));
+
+            if (!isFinite(ACCUM))
                return 1E+50;
-            return ACCUM;
-            /* -------------------------------------------------------------------------- */
-         }
+            else
+               return ACCUM;
+         } else if (
+             tetra_buckets.none_of(T.incenter, 3 * particle_spacing, [&](const auto &t) { return IntersectQ(T, t->scaled(1 - 1E-10)); }) &&
+             all_of(ConnectedQ(a, b, c)) &&
+             all_of(ConnectedQ(a, b, d)) &&
+             all_of(ConnectedQ(a, c, d)) &&
+             all_of(ConnectedQ(b, c, d)))
+            return 0.;
       }
       return 1E+50;
    };
@@ -265,15 +258,13 @@ int main(int arg, char **argv) {
       return std::tuple<bool, networkTetra *>{false, nullptr};
    };
    // b% -------------------------------------------------------------------------- */
-   auto gen1 = [&](const T_3P &abc, const auto &candidates_points, const Tddd &n = {0., 0., 0.}) {
+   auto gen1 = [&](const networkFace *f, const auto &candidates_points, const Tddd &n = {0., 0., 0.}) {
       double SCORE = 1E+20;
       int count = 0;
-      auto [a, b, c] = abc;
+      auto [a, b, c] = f->getPoints();
       T_4P abcd = {nullptr, nullptr, nullptr, nullptr}, ABCD = {nullptr, nullptr, nullptr, nullptr};
-      Tddd f_center = Mean(ToX(abc));
-      auto normal = TriangleNormal(ToX(abc));
-
-      auto f = isFace(a, b, c);
+      Tddd f_center = Mean(ToX(f->getPoints()));
+      auto normal = TriangleNormal(ToX(f->getPoints()));
       if (f) {
          auto [t0, t1] = f->Tetras;
          if (t0 && !t1) {
@@ -383,38 +374,40 @@ int main(int arg, char **argv) {
       bool found = false;
       int count = 0;
       /* -------------------------------------------------------------------------- */
-      for (const auto &f : initialFaces) {
-         auto [ismade, tet] = gen1(f->getPoints(),
-                                   buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
-                                   -f->normal);
-         if (ismade) {
-            tetras.emplace_back(tet);
-            std::cout << count << std::endl;
-            if (count++ > 200)
-               break;
+      if (I == 0) {
+         for (const auto &f : initialFaces) {
+            auto [ismade, tet] = gen1(f,
+                                      buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
+                                      -f->normal);
+            if (ismade) {
+               tetras.emplace_back(tet);
+               std::cout << count << std::endl;
+               if (count++ > 10)
+                  break;
+            }
          }
-      }
-      {
-         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
-         std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
-         vtkPolygonWrite(ofs, object->getTetras());
-         ofs.close();
-         i++;
+         {
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
+            vtkPolygonWrite(ofs, object->getTetras());
+            ofs.close();
+            i++;
+         }
       }
       count = 0;
       /* -------------------------------------------------------------------------- */
       std::vector<networkTetra *> tetras_;
-      for (const auto &tet : object->getTetras()) {
-         for_each(tet->Faces, [&](const auto &f) {
-            auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing));
+      for (const auto &f : object->getFaces()) {
+         {
+            auto [ismade, tet] = gen1(f, buckets.get(Mean(ToX(f->getPoints())), 2. * particle_spacing));
             if (ismade) {
                tetras.emplace_back(tet);
                tetras_.emplace_back(tet);
                std::cout << "add tetra " << count << ", object->getTetras().size() = " << object->getTetras().size() << std::endl;
                count++;
             }
-         });
-         if (count > 200)
+         };
+         if (count > 100)
             break;
       }
 

@@ -799,10 +799,21 @@ struct Tetrahedron : public CoordinateBounds {
    //            (SolidAngle_(X2, X0, X1, X3)),
    //            (SolidAngle_(X3, X0, X2, X1))};
    // };
+
    operator T6T2Tddd() const {
       auto [p0, p1, p2, p3] = this->verticies;
       return {{p0, p1}, {p0, p2}, {p0, p3}, {p1, p2}, {p2, p3}, {p3, p1}};
    };
+
+   // operator T6Tddd() const {
+   //    auto [p0, p1, p2, p3] = this->verticies;
+   //    return {(p0 + p1) / 2.,
+   //            (p0 + p2) / 2.,
+   //            (p0 + p3) / 2.,
+   //            (p1 + p2) / 2.,
+   //            (p2 + p3) / 2.,
+   //            (p3 + p1) / 2.};
+   // };
 
    operator T4T3Tddd() const {
       auto [p0, p1, p2, p3] = this->verticies;
@@ -1555,7 +1566,7 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
 };
 
 //! tetrahedron - point
-bool IntersectQ(const T4Tddd &abcd, const Tddd &X) {
+bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    //@ barycentric coordinates
    //
    // | a0, b0, c0, d0 | | t0 |   | x |
@@ -1572,6 +1583,17 @@ bool IntersectQ(const T4Tddd &abcd, const Tddd &X) {
                                                    {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
                                                    {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
                                                    {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}));
+   //
+   //
+   // auto mean = Mean(abcd);
+   // auto [a, b, c, d] = abcd - mean;
+   // X -= Mean(abcd);
+   // const auto [t0, t1, t2, t3] = Dot(T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.},
+   //                                   Inverse(T4T4d{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
+   //                                                 {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
+   //                                                 {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
+   //                                                 {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}));
+
    return (Between(t0, {0., 1.}) && Between(t1, {0., 1. - t0}) && Between(t2, {0., 1. - t0 - t1}));
 }
 
@@ -1793,11 +1815,14 @@ T8d windingNumber(const T8Tddd &Xs, const std::unordered_set<Tddd> &V_vertices) 
 
 std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector<T3Tddd> &V_vertices) {
    std::vector<double> ret(Xs.size(), 0.);
-   for (const auto &vertices : V_vertices) {
-      for (auto i = 0; i < Xs.size(); ++i)
-         ret[i] += SolidAngle_VanOosteromAandStrackeeJ1983(Xs[i], vertices);
+   for (auto i = 0; i < Xs.size(); ++i) {
+      auto X = Xs[i];
+      auto tmp = 0;
+      for (const auto &vertices : V_vertices)
+         tmp += SolidAngle_VanOosteromAandStrackeeJ1983(X, vertices);
+      ret[i] = tmp / (4. * M_PI);
    }
-   return ret / (4. * M_PI);
+   return ret;
 };
 
 T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {

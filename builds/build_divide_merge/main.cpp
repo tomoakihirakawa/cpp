@@ -66,10 +66,10 @@ int main(int arg, char **argv) {
             break;
          }
       std::cout << "Histo.interval[" << num << "]" << Histo.interval[num] << std::endl;
-      Divide(net.Lines, [&](auto l) { return l->length() > Histo.interval[num]; });
-      //
-      for (auto i = 0; i < 10; i++)
-         Merge(net.Lines, [&](auto l) { return l->length() < Histo.interval[num]; });
+      auto tmp = net.Lines;
+      Divide(tmp, [&](auto l) { return l->length() > Histo.interval[num]; });
+      // for (auto i = 0; i < 10; i++)
+      //    Merge(net.Lines, [&](auto l) { return l->length() < Histo.interval[num]; });
       // (*net.Lines.begin())->merge();
       //
       std::cout << net << std::endl;

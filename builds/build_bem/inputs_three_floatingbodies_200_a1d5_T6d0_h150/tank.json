@@ -1,6 +1,0 @@
-{
-    "name": "tank",
-    "type": "RigidBody",
-    "isFixed": true,
-    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2022Tonegawa/three_d200//tank10_200.obj"
-}

@@ -95,6 +95,7 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<std::vector<int
    stream << "}";
    return stream;
 };
+
 std::ostream &operator<<(std::ostream &stream, const std::vector<std::vector<double>> &v) {
    stream << "{";
    if (!v.empty()) {
@@ -156,6 +157,18 @@ std::ostream &operator<<(std::ostream &stream, const std::tuple<T, T, T, T, T, T
                   << std::get<3>(v) << ","
                   << std::get<4>(v) << ","
                   << std::get<5>(v) << "}");
+};
+
+template <typename T>
+std::ostream &operator<<(std::ostream &stream, const std::vector<T> &v) {
+   stream << "{";
+   if (!v.empty()) {
+      for (size_t i = 0; i < v.size() - 1; i++)
+         stream << v[i] << ",";
+      stream << *v.rbegin();
+   }
+   stream << "}";
+   return stream;
 };
 
 std::ostream &operator<<(std::ostream &stream, const T3Tdd &v) {

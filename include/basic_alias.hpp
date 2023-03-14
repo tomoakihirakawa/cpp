@@ -104,6 +104,13 @@ using T8b = std::tuple<bool, bool, bool, bool, bool, bool, bool, bool>;
 /* ------------------------------------------------------ */
 /*                     タプルのベクトル演算                  */
 /* ------------------------------------------------------ */
+template <size_t N = 0, typename T>
+bool all_of(const T &t) {
+   if constexpr (N < std::tuple_size<T>::value) {
+      return std::get<N>(t) && all_of<N + 1>(t);
+   } else
+      return true;
+}
 template <size_t N = 0, typename T, typename U>
 bool all_of(const T &t, const U &func) {
    if constexpr (N < std::tuple_size<T>::value) {
@@ -180,7 +187,9 @@ void for_each(const T &t, const U &func) {
       for_each<N + 1>(t, func);
    }
 }
+
 /* -------------------------------------------------------- */
+
 template <size_t N = 0, typename T, typename H, typename U>
 void for_each(T &t, H &h, const U &func) {
    if constexpr (N < std::tuple_size<T>::value && N < std::tuple_size<H>::value) {
@@ -188,6 +197,7 @@ void for_each(T &t, H &h, const U &func) {
       for_each<N + 1>(t, h, func);
    }
 }
+
 template <size_t N = 0, typename T, typename H, typename U>
 void for_each01(T t, H &h, const U &func) {
    if constexpr (N < std::tuple_size<T>::value && N < std::tuple_size<H>::value) {
@@ -195,6 +205,15 @@ void for_each01(T t, H &h, const U &func) {
       for_each01<N + 1>(t, h, func);
    }
 }
+
+template <size_t N = 0, typename T, typename H, typename U>
+void for_each10(T &t, const H &h, const U &func) {
+   if constexpr (N < std::tuple_size<T>::value && N < std::tuple_size<H>::value) {
+      func(std::get<N>(t), std::get<N>(h));
+      for_each10<N + 1>(t, h, func);
+   }
+}
+
 // template <size_t N = 0, typename T, typename H, typename U>
 // void for_each(T t, H &h, const U &func) {
 //    if constexpr (N < std::tuple_size<T>::value && N < std::tuple_size<H>::value) {

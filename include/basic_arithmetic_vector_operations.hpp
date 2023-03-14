@@ -2,7 +2,8 @@
 #define basic_arithmetic_vector_operations_H
 
 #include <algorithm>  //transformなど
-#include <numeric>    //数値のシーケンスの処理に特化したアルゴリズム
+#include <cmath>
+#include <numeric>  //数値のシーケンスの処理に特化したアルゴリズム
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -1118,6 +1119,7 @@ Tdd operator/(const double u, Tdd v) {
 // 	return v;
 // };
 // /* ------------------------------------------------------ */
+
 T3Tddd &operator-=(T3Tddd &v, const T3Tddd &u) {
    std::get<0>(v) -= std::get<0>(u);
    std::get<1>(v) -= std::get<1>(u);
@@ -1241,7 +1243,55 @@ T3Tddd operator/(const double u, T3Tddd v) {
    std::get<2>(v) = u / std::get<2>(v);
    return v;
 };
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+T4Tddd &operator-=(T4Tddd &v, const Tddd &u) {
+   std::get<0>(v) -= u;
+   std::get<1>(v) -= u;
+   std::get<2>(v) -= u;
+   std::get<3>(v) -= u;
+   return v;
+};
+T4Tddd &operator+=(T4Tddd &v, const Tddd &u) {
+   std::get<0>(v) += u;
+   std::get<1>(v) += u;
+   std::get<2>(v) += u;
+   std::get<3>(v) += u;
+   return v;
+};
 /* ------------------------------------------------------ */
+T4Tddd operator-(T4Tddd v, const Tddd &u) {
+   std::get<0>(v) -= u;
+   std::get<1>(v) -= u;
+   std::get<2>(v) -= u;
+   std::get<3>(v) -= u;
+   return v;
+};
+T4Tddd operator+(T4Tddd v, const Tddd &u) {
+   std::get<0>(v) += u;
+   std::get<1>(v) += u;
+   std::get<2>(v) += u;
+   std::get<3>(v) += u;
+   return v;
+};
+T4Tddd operator*(T4Tddd v, const Tddd &u) {
+   std::get<0>(v) *= u;
+   std::get<1>(v) *= u;
+   std::get<2>(v) *= u;
+   std::get<3>(v) *= u;
+   return v;
+};
+T4Tddd operator/(T4Tddd v, const Tddd &u) {
+   std::get<0>(v) /= u;
+   std::get<1>(v) /= u;
+   std::get<2>(v) /= u;
+   std::get<3>(v) /= u;
+   return v;
+};
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 std::vector<Tddd> operator-(std::vector<Tddd> V, const Tddd &u) {
    for (auto &v : V)
       v -= u;

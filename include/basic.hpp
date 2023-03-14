@@ -554,7 +554,7 @@ double Sum(const V_d::iterator first, const V_d::iterator second) {
    return std::accumulate(first, second, 0.);
 };
 double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
-// double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
+   // double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 
 #include "basic_arithmetic_vector_operations.hpp"
 
@@ -2639,7 +2639,25 @@ double Subtract(const Tdd &ab) {
 //===========================================================
 #include "basic_geometry.hpp"
 #include "basic_statistics.hpp"
-/* ------------------------------------------------------ */
+// //! -------------------------------------------------------------------------- */
+// //!                  Operations for Elements 2023/03/11                        */
+// //! -------------------------------------------------------------------------- */
+// Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
+//    auto [X0, X1, X2] = X012;
+//    auto [phi0, phi1, phi2] = phi012;
+//    auto n = TriangleNormal(X012);
+//    return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
+// };
+
+// T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
+//    auto [X0, X1, X2] = X012;
+//    auto [Vx012, Vy012, Vz012] = Transpose(V012);
+//    return {gradTangential_LinearElement(Vx012, X012),
+//            gradTangential_LinearElement(Vy012, X012),
+//            gradTangential_LinearElement(Vz012, X012)};
+// };
+
+/* -------------------------------------------------------------------------- */
 // b% ------------------- タプルからparticlize ------------------ */
 std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>>
 triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
@@ -2682,11 +2700,11 @@ triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
 std::vector<std::tuple<Tddd, Tdd>> particlize(const T3Tddd &X0X1X2, const double dx) {
    return triangleIntoPoints(X0X1X2, dx);
 };
-/* ------------------------------------------------------ */
-/*         近傍のオブジェクト探査のための，空間分割バケツ         */
-/* ------------------------------------------------------ */
-// テンプレートどんなオブジェクトでもできるはず
-//  #define debug_BaseBuckets
+// b$ ------------------------------------------------------ */
+// b$         近傍のオブジェクト探査のための，空間分割バケツ         */
+// b$ ------------------------------------------------------ */
+//  テンプレートどんなオブジェクトでもできるはず
+//   #define debug_BaseBuckets
 template <typename T>
 struct BaseBuckets {
    //! getX()でxyz座標を取得できるオブジェクトTのための，バケツ
@@ -2705,9 +2723,7 @@ struct BaseBuckets {
    例えば，鏡像関係を作りたい場合，他のバケット位置に，同じオブジェクトを入れておけばいい．
    */
    double dL;
-   double bucketVolume() const {
-      return std::pow(this->dL, 3.);
-   };
+   double bucketVolume() const { return std::pow(this->dL, 3.); };
    double bucketVolume(const int depth) const {
       //    depth  1  2  3  4
       // edge len  1  3  5  7   = 2*d-1
@@ -2715,12 +2731,10 @@ struct BaseBuckets {
       auto vol = std::pow(this->dL, 3.);
       return pow(2. * depth - 1., 2.) * vol;
    };
-   BaseBuckets(const CoordinateBounds &c_bounds, const double dL_IN)
-       : bounds(c_bounds.bounds), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
+   BaseBuckets(const CoordinateBounds &c_bounds, const double dL_IN) : bounds(c_bounds.bounds), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
       set(this->bounds, dL_IN);
    };
-   BaseBuckets(const T3Tdd &boundingboxIN, const double dL_IN)
-       : bounds(boundingboxIN), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
+   BaseBuckets(const T3Tdd &boundingboxIN, const double dL_IN) : bounds(boundingboxIN), dL(dL_IN), dn(Tiii{0, 0, 0}), hashing_done(false) {
       set(this->bounds, dL_IN);
    };
    void set(const T3Tdd &boundingboxIN, const double dL_IN) {
@@ -2744,9 +2758,9 @@ struct BaseBuckets {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
+
    void shrink_to_fit() {
       this->buckets.shrink_to_fit();
-      //
    };
 
    void resize(const T3Tdd &boundingboxIN, const double dL_IN) {
@@ -2777,10 +2791,9 @@ struct BaseBuckets {
       };
    };
 
-   const std::unordered_set<T> &getAll() const {
-      return this->all_stored_objects;
-   };
+   const std::unordered_set<T> &getAll() const { return this->all_stored_objects; };
 
+   //@ -------------------------------- インデックス変換 -------------------------------- */
    // x座標を内包するバケツのインデックスを返す
    Tddd itox(const Tiii &ijk) const {
       return {this->dL * 0.5 + this->dL * std::get<0>(ijk) + std::get<0>(this->xbounds),
@@ -2873,7 +2886,10 @@ struct BaseBuckets {
               this->dL * (j + 0.5) + std::get<0>(this->ybounds) /*min*/,
               this->dL * (k + 0.5) + std::get<0>(this->zbounds) /*min*/};
    };
-   // インデックスがboundsに収まっているかどうか
+
+   //
+
+   //@ ------------------------ インデックスがboundsに収まっているかどうか ------------------------ */
    bool isInside(const int i, const int j, const int k) const {
       return (!(i < 0 || j < 0 || k < 0 || i >= this->xsize || j >= this->ysize || k >= this->zsize));
    };
@@ -2891,7 +2907,8 @@ struct BaseBuckets {
          this->map_to_ijk.erase(it);
       }
    };
-   /* -------------------------------------------------------------------------- */
+   //@ -------------------------------------------------------------------------- */
+   //! explicitly specify coordinates
    bool add(const Tiii &ijk, const T p) {
       hashing_done = false;
       auto [i, j, k] = ijk;
@@ -2903,24 +2920,18 @@ struct BaseBuckets {
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
          std::stringstream ss;
-         ss << "[i,j,k] = "
-            << "[" << i << "," << j << "," << k << "]" << std::endl;
-         ss << "[xsize,ysize,zsize] = "
-            << "[" << xsize << "," << ysize << "," << zsize << "]" << std::endl;
+         ss << "[i,j,k] = [" << i << "," << j << "," << k << "]" << std::endl;
+         ss << "[xsize,ysize,zsize] = [" << xsize << "," << ysize << "," << zsize << "]" << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       };
       return false;
    };
-   //
    bool add(const Tddd &x, const T p) { return add(indices(x), p); };
-   //
+
+   //! automatically specify coordinates
    bool add(const std::unordered_set<T> &P) {
       hashing_done = false;
-      // for (const auto &q : P)
-      //    add(ToX(q), q);
-
       bool ret = true;
-
       auto func0 = [&]() {
                Tiii ijk;
                for (const auto &p : P) {

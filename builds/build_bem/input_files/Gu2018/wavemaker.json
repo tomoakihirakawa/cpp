@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        2.0,
+        7.0,
+        80,
+        80
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Gu2018/pole100.obj"
+}

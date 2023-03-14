@@ -1,45 +1,47 @@
 #!/bin/bash
 RED="\033[1;31m"
 NC='\033[0m'
+DIR='/Users/tomoaki/Dropbox/code/cpp/builds'
 
-tmp="/Users/tomoaki/Dropbox/markdown/cpp/builds/build_geometry"
+echo "============================================"
+tmp=${DIR}"/build_computaional_geometry"
 (
-    echo ${RED}check compile${NC}
+    echo ${RED}"check compile"${NC}
     echo ${RED}${tmp}${NC}
     cd ${tmp}
     make
 )
-
-tmp="/Users/tomoaki/Dropbox/markdown/cpp/builds/build_sph"
+echo "============================================"
+tmp=${DIR}"/build_sph"
 (
-    echo ${RED}check compile${NC}
+    echo ${RED}"check compile"${NC}
     echo ${RED}${tmp}${NC}
     cd ${tmp}
     make
 )
-
-tmp="/Users/tomoaki/Dropbox/markdown/cpp/builds/build_octree"
+echo "============================================"
+tmp=${DIR}"/build_octree"
 (
-    echo ${RED}check compile${NC}
+    echo ${RED}"check compile"${NC}
     echo ${RED}${tmp}${NC}
     cd ${tmp}
     make
 )
-
-tmp="/Users/tomoaki/Dropbox/markdown/cpp/builds/build_geometry"
+echo "============================================"
+tmp=${DIR}"/build_octree"
 (
-    echo ${RED}check compile${NC}
+    echo ${RED}"check compile"${NC}
     echo ${RED}${tmp}${NC}
     cd ${tmp}
     make
 )
-
-tmp="/Users/tomoaki/Dropbox/markdown/cpp/builds/build_divide_merge"
+echo "============================================"
+tmp=${DIR}"/build_divide_merge"
 (
-    echo ${RED}check compile${NC}
+    echo ${RED}"check compile"${NC}
     echo ${RED}${tmp}${NC}
     cd ${tmp}
     make
 )
-
+echo "============================================"
 echo "done"
