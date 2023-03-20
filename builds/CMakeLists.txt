@@ -92,18 +92,33 @@ endif()
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # set(main main.cpp) set(out main)
-
 # mainという実行ファイルをmain.cppから作成
-set(DEFAULT_MAIN_FILE "main.cpp")
+# set(DEFAULT_MAIN_FILE "main.cpp")
+# if(NOT DEFINED MAIN_FILE)
+# set(MAIN_FILE ${DEFAULT_MAIN_FILE})
+# endif()
+# add_executable(main ${MAIN_FILE})
+#
+set(DEFAULT_SOURCE_FILE "main.cpp")
 
-if(NOT DEFINED MAIN_FILE)
-  set(MAIN_FILE ${DEFAULT_MAIN_FILE})
+if(CMAKE_ARGS)
+  list(FIND CMAKE_ARGS "-DSOURCE_FILE" SOURCE_FILE_IDX)
+
+  if(NOT SOURCE_FILE_IDX EQUAL -1)
+    list(GET CMAKE_ARGS ${SOURCE_FILE_IDX} SOURCE_FILE_ARG)
+    string(REPLACE "-DSOURCE_FILE=" "" SOURCE_FILE ${SOURCE_FILE_ARG})
+  endif()
 endif()
 
-add_executable(main ${MAIN_FILE})
+if(NOT DEFINED SOURCE_FILE)
+  set(SOURCE_FILE ${DEFAULT_SOURCE_FILE})
+endif()
+
+message(${SOURCE_FILE})
+get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
+add_executable(${BASE_NAME} ${SOURCE_FILE})
 
 # cotire(main)
-
 # if(APPLE)
 
 # else() # * ------------------------------------------------------ */
@@ -111,8 +126,8 @@ add_executable(main ${MAIN_FILE})
 # set(lapackblas_libraries "${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}") endif()
 # target_link_libraries(main PUBLIC ${lapackblas_libraries}) # *
 # ------------------------------------------------------ */ endif()
-target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/../include)
-target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/../../include)
+target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../include)
+target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../../include)
 
 message(${PROJECT_SOURCE_DIR})
 
