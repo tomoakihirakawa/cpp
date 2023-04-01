@@ -134,12 +134,13 @@ T3Tddd nextBodyVertex(const networkFace *f) {
 };
 
 std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs) {
-   std::vector<T3Tddd> ret;
+   std::vector<T3Tddd> ret(Fs.size());
+   int i = 0;
    for (auto &f : Fs) {
       auto net = f->getNetwork();
       auto [p0, p1, p2] = f->getPoints();
       if (net->isFixed)
-         ret.emplace_back(ToX(f));
+         ret[i] = ToX(f);
       else if (net->isRigidBody) {
          Quaternion q;
          q = q.d_dt(net->velocityRotational());
@@ -148,13 +149,14 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
          auto X0 = Q.Rv(p0->initialX - p0->getNetwork()->ICOM) + COM;
          auto X1 = Q.Rv(p1->initialX - p1->getNetwork()->ICOM) + COM;
          auto X2 = Q.Rv(p2->initialX - p2->getNetwork()->ICOM) + COM;
-         ret.emplace_back(T3Tddd{X0, X1, X2});
+         ret[i] = {X0, X1, X2};
       } else if (net->isSoftBody) {
          auto X0 = p0->RK_X.getX(p0->velocityTranslational());
          auto X1 = p1->RK_X.getX(p1->velocityTranslational());
          auto X2 = p2->RK_X.getX(p2->velocityTranslational());
-         ret.emplace_back(T3Tddd{X0, X1, X2});
+         ret[i] = {X0, X1, X2};
       }
+      i++;
    }
    return ret;
 };
@@ -215,27 +217,31 @@ Tddd factor(const networkPoint *p, const Tddd &ubuff, const double max_ratio = 0
 //% ------------------------------------------------------ */
 
 Tddd vectorsToStructure(const networkPoint *p, const std::vector<T3Tddd> &next_Vrtx) {
-   if (next_Vrtx.empty())
-      return {0., 0., 0.};
-   else if (p->Neumann || p->CORNER) {
+   if (!next_Vrtx.empty() && p->Neumann || p->CORNER) {
       std::vector<Tddd> F_clings;
-      std::vector<double> weights;
+      F_clings.reserve(5 * next_Vrtx.size());
+      // std::vector<double> weights;
       auto p_next_X = RK_with_Ubuff(p);
-      for (const auto &f : p->getFacesNeumann()) {
-         //
-         Tddd to_closest_X = {1E+100, 1E+100, 1E+100}, X;
+      Tddd to_closest_X = {1E+100, 1E+100, 1E+100}, X;
+      for (const auto &f : p->getFacesNeumann() /*pの隣接面*/) {
+         // pの周りの面が干渉している構造物面のみを対象として，点に最も近い構造物面上の点を抽出する
+         bool found = false;
+         to_closest_X = {1E+100, 1E+100, 1E+100};
          for (const auto &vertex : next_Vrtx)
             if (isInContact(p_next_X, f->normal, vertex, p->radius)) {
                X = Nearest(p_next_X, vertex);
-               if (Norm(to_closest_X) >= Norm(X - p_next_X))
+               if (Norm(to_closest_X) >= Norm(X - p_next_X)) {
                   to_closest_X = X - p_next_X;
+                  found = true;
+               }
             }
-         //
-         F_clings.push_back(Projection(to_closest_X, f->normal));
-         weights.push_back(w_Bspline5(Norm(to_closest_X), p->radius));
+         if (found) {
+            F_clings.push_back(Projection(to_closest_X, f->normal));  // この面fにとって，最も近くにある干渉点
+            // weights.push_back(w_Bspline5(Norm(to_closest_X), p->radius));
+         }
       }
       // Tddd r = 0.5 * optimumVector_(F_clings, {0., 0., 0.}, weights);
-      Tddd r = 0.5 * optimumVector_(F_clings, {0., 0., 0.});
+      Tddd r = 0.5 * optimumVector_(F_clings, {0., 0., 0.}, 1E-10);
       if (isFinite(r))
          return r;
       else
@@ -257,11 +263,8 @@ void calculateVectorFromBufferToContactFaces(const Network &net) {
             p->U_BUFFER_BUFFER = {0., 0., 0.};
             if (p->CORNER || p->Neumann) {
                // 接触面候補の次の時刻の位置を予測
-               std::unordered_set<networkFace *> Fs = p->getContactFaces();
-               auto tmp = bfs(Fs, 3);
-               Fs.insert(tmp.begin(), tmp.end());
                //! 角のディリクレ面へのめり込みを防止
-               p->U_BUFFER_BUFFER = vectorsToStructure(p, nextBodyVertices(Fs));
+               p->U_BUFFER_BUFFER = vectorsToStructure(p, nextBodyVertices(bfs(p->getContactFaces(), 2)));
                if (p->CORNER)
                   p->U_BUFFER_BUFFER = Chop(p->U_BUFFER_BUFFER, getNextNormalDirichlet_BEM(p));
             }
@@ -360,13 +363,14 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          auto l12 = Norm(np2x - np1x);
          double a = magicalValue(p, f) + variance2(p, f);
          if (any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
-            a *= 2 * 2 * 2;
+            a *= std::pow(2., 3);
          else if (any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
-            a *= 2 * 2;
+            a *= std::pow(2., 2);
          else if (any_of(f->getPoints(),
                          [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
                                                                  [&](const auto &F) { return any_of(F->getPoints(), [&](const auto &q) { return q->CORNER; }); }); }))
-            a *= 2;
+            a *= 2.;
+         //
          /*
          このaを大きくするの，大きな重みのさによって，歪な三角形が生まれる場合がある．
          緩やかに変化させる必要がある．
@@ -418,13 +422,14 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 //$ -------------------------------------------------------------------------- */
 
-void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 10, const bool adjust_dirichlet = true) {
+void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 20, const bool adjust_dirichlet = true) {
    /*
    @ この方法なら，次の時刻における任意の場所でのポテンシャルを見積もることができる．
    @ このことは，任意のノイマン面上に節点を維持する上で便利である．
    @ Ω(t+δt)をまず見積もり，その面上で最適な格子配置となるように流速を修正する．
    */
-   const double scale = 0.2;
+   TimeWatch watch;
+   const double scale = 0.25;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */
@@ -454,6 +459,7 @@ void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 10, c
          std::cerr << e.what() << colorOff << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
+      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
 
       //$ ------------------------------------------------------ */
       //$                   vectorToNextSurface                  */
@@ -479,8 +485,10 @@ void calculateVectorToSurfaceInBuffer(const Network &net, const int loop = 10, c
          std::cerr << e.what() << colorOff << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
+      std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
 
       calculateVectorFromBufferToContactFaces(net);
+      std::cout << "Elapsed time for calculateVectorFromBufferToContactFaces: " << watch() << " [s]" << std::endl;
    }
    calculateVectorFromBufferToContactFaces(net);
 };
@@ -533,10 +541,14 @@ Tddd gradPhi(const networkPoint *const p) {
    };
 };
 
+   //@ -------------------------------------------------------------------------- */
+   //@                                 derivatives                                */
+   //@ -------------------------------------------------------------------------- */
+
 #define derivatives_debug
 struct derivatives {
    ~derivatives(){};
-   derivatives(const Network &net, const int loop = 10, bool adjust_dirichlet = true) {
+   derivatives(const Network &net, const int loop = 20, bool adjust_dirichlet = true) {
       auto &Points = net.getPoints();
       auto &Faces = net.getFaces();
 #ifdef derivatives_debug
@@ -569,16 +581,17 @@ struct derivatives {
          /* -------------------- おおよそのアップデート流速 ------------------- */
          //@ U_update_BEM は first guess
          // 2022/06/17
-         // if (p->CORNER) {
-         //    p->U_update_BEM = p->U_BEM;  // Chop(p->U_BEM, Normalize(Cross(p->getNormalDirichlet_BEM(), p->getNormalNeumann_BEM())));
-         // } else if (p->Neumann)
-         //    p->U_update_BEM = Chop(uNeumann(p), p->getNormal_BEM());
-         // else
-         //    p->U_update_BEM = p->U_BEM;
+         if (p->CORNER) {
+            p->U_update_BEM = p->U_BEM;  // Chop(p->U_BEM, Normalize(Cross(p->getNormalDirichlet_BEM(), p->getNormalNeumann_BEM())));
+         } else if (p->Neumann)
+            p->U_update_BEM = 0.5 * p->U_BEM + 0.5 * Chop(uNeumann(p), p->getNormal_BEM());
+         else
+            p->U_update_BEM = p->U_BEM;
       }
+
       std::cout << "U_updateBEMを計算✅" << std::endl;
       /* ------------------------------------------------------ */
-      //@ この後U_update_BEMをclingなどを使って修正する
+      //@ この後, U_update_BEMをclingなどを使って修正する
       //@ ルンゲクッタに従って次のΩ(t+δt)を予測する
       // for (const auto &p : Points) {
       //    p->X_BUFFER = p->RK_X.getX(p->U_update_BEM);
@@ -598,6 +611,7 @@ struct derivatives {
          p->U_BUFFER = p->U_BUFFER_BUFFER = {0., 0., 0.};
 
       calculateVectorToSurfaceInBuffer(net, loop, adjust_dirichlet);
+
       std::cout << "calculateVectorToSurfaceInBuffer✅" << std::endl;
       // calculateVectorFromBufferToContactFaces(net);
       // std::cout << "calculateVectorFromBufferToContactFaces✅" << std::endl;
@@ -617,60 +631,6 @@ struct derivatives {
          } else
             p->U_update_BEM += p->U_BUFFER / p->RK_X.getdt();
       }
-
-      // #ifdef derivatives_debug
-      //       std::cout << "φtとφntを一部計算👇" << std::endl;
-      // #endif
-      // #ifdef _OPENMP
-      // #pragma omp parallel
-      // #endif
-      //       for (const auto &p : Points)
-      // #ifdef _OPENMP
-      // #pragma omp single nowait
-      // #endif
-      //       {
-      //          //% ------------------------------------------------------ */
-      //          //%    ノイマン境界面上の加速度から,ノイマン境界面上のφntを計算     */
-      //          //% ------------------------------------------------------ */
-      //          if (p->Neumann || p->CORNER) {
-      //             /*
-      //             ∇U=∇∇f={{fxx, fyx, fzx},
-      //                      {fxy, fyy, fzy},
-      //                      {fxz, fyz, fzz}}
-      //             なので，∇∇f=∇∇f^T
-      //             */
-      //             // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
-      //             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-      //             // b* setBoundaryConditionsで決めている．
-      //             auto n = p->getNormalNeumann_BEM();
-      //             auto Q = Quaternion();
-      //             for (auto &[f, phin_t] : p->phintOnFace) {
-      //                if (f) {
-      //                   auto w = NearestContactFace(f)->getNetwork()->velocityRotational();
-      //                   auto dQdt = Q.d_dt(w);
-      //                   auto n = f->normal;
-      //                   auto [p0, p1, p2] = f->getPoints(p);
-      //                   Tddd phi012 = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
-      //                   Tddd phin012 = {std::get<1>(p0->phiphin), std::get<1>(p1->phiphin), std::get<1>(p2->phiphin)};
-      //                   Tddd grad_phi = Mean(phin012) * n + gradTangential_LinearElement(phi012, ToX(f));
-      //                   // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p, f) - grad_phi, dQdt.Rv()) + accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
-      //                   // 修正2023/02/22
-      //                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, uNeumann(p, f) - grad_phi) + Dot(n, accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
-      //                } else {
-      //                   auto w = NearestContactFace(p)->getNetwork()->velocityRotational();
-      //                   auto dQdt = Q.d_dt(w);
-      //                   // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p) - p->U_BEM, dQdt.Rv()) + accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
-      //                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, uNeumann(p) - p->U_BEM) + Dot(n, accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
-      //                   // 修正流速は修正加速度にも影響するのか？
-      //                }
-      //             }
-      //          }
-      //          //% ------------------------------------------------------ */
-      //          //%                 ディリクレ境界面上のφtを計算                */
-      //          //% ------------------------------------------------------ */
-      //          if (p->Dirichlet || p->CORNER)
-      //             std::get<0>(p->phiphin_t) = p->DphiDt(0.) - Dot(p->U_BEM, p->U_BEM);  //!!ノイマンの場合はこれでDphiDtは計算できませんよ！！！
-      //       }
 
 #ifdef derivatives_debug
       std::cout << "φtとφntを一部計算✅" << std::endl;

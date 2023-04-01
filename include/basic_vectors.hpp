@@ -18,11 +18,40 @@
 #include <unordered_set>
 #include <vector>
 #include "basic_IO.hpp"
+#include "basic_arithmetic_array_operations.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
 
 /* -------------------------------------------------------------------------- */
-void IdentityMatrix(VV_d &mat) {
+template <typename T>
+tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> TensorProduct(const T &vec1, const T &vec2) {
+   tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> m;
+   for_each01(vec1, m, [&](const auto &v1, auto &mi) {
+      for_each01(vec2, mi, [&](const auto &v2, auto &mij) { mij = v1 * v2; });
+   });
+   return m;
+};
+
+template <typename T>
+double Dot(tuple_of<std::tuple_size<T>::value, double> &V,
+           tuple_of<std::tuple_size<T>::value, double> &U) {
+   double ret = 0.;
+   for_each(V, U, [&ret](const auto &u, const auto &v) { ret += u * v; });
+   return ret;
+};
+//
+template <typename T>
+void IdentityMatrix(T &M) {
+   int i = 0, j = 0;
+   for_each1(M, [&](auto &Mi) {
+      j = 0;
+      for_each1(Mi, [&](auto &Mij) { Mij = (i == j++) ? 1. : 0.; });
+      i++;
+   });
+};
+//
+template <>
+void IdentityMatrix<VV_d>(VV_d &mat) {
    int i = 0, j = 0;
    for (auto &m : mat) {
       j = 0;
@@ -52,6 +81,45 @@ void Swap(std::tuple<T, T> &ab) {
    std::get<1>(ab) = a;
 };
 /* -------------------------------------------------------------------------- */
+
+template <typename T>
+tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> Inverse(const tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> &M) {
+   tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> tup_mat;
+   std::vector<std::vector<T>> vec_mat(std::tuple_size<T>::value, std::vector<T>(std::tuple_size<T>::value));
+   int i = 0, j = 0;
+   for_each(tup_mat, [&](const auto &tup_mat_i) {
+      j = 0;
+      for_each(tup_mat_i, [&](const auto &tup_mat_ij) { vec_mat[i][j++] = tup_mat_ij; });
+      i++;
+   });
+   vec_mat = Inverse(vec_mat);
+   for_each(tup_mat, [&](const auto &tup_mat_i) {
+      j = 0;
+      for_each(tup_mat_i, [&](const auto &tup_mat_ij) { tup_mat_ij = vec_mat[i][j++]; });
+      i++;
+   });
+   return;
+};
+
+// template <typename T>
+// tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> Inverse(const tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> &M) {
+//    tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> tup_mat;
+//    std::vector<std::vector<T>> vec_mat(std::tuple_size<T>::value, std::vector<T>(std::tuple_size<T>::value));
+//    int i = 0, j = 0;
+//    for_each(tup_mat, [&](const auto &tup_mat_i) {
+//       j = 0;
+//       for_each(tup_mat_i, [&](const auto &tup_mat_ij) { vec_mat[i][j++] = tup_mat_ij; });
+//       i++;
+//    });
+//    vec_mat = Inverse(vec_mat);
+//    for_each(tup_mat, [&](const auto &tup_mat_i) {
+//       j = 0;
+//       for_each(tup_mat_i, [&](const auto &tup_mat_ij) { tup_mat_ij = vec_mat[i][j++]; });
+//       i++;
+//    });
+//    return;
+// };
+
 T2Tdd Inverse(const T2Tdd &M) {
    const auto [x00, x01] = std::get<0>(M);
    const auto [x10, x11] = std::get<1>(M);

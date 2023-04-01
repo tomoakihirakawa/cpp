@@ -398,6 +398,7 @@ auto modify = [](Network &water, const JSON &json1) {
 //@ ------------------------------------------------------ */
 
 Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
+   // これは{x,y,z}座標系での結果
    auto [X0, X1, X2] = X012;
    auto [phi0, phi1, phi2] = phi012;
    auto n = TriangleNormal(X012);
@@ -405,7 +406,6 @@ Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
 };
 
 T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
-   auto [X0, X1, X2] = X012;
    auto [Vx012, Vy012, Vz012] = Transpose(V012);
    return {gradTangential_LinearElement(Vx012, X012),
            gradTangential_LinearElement(Vy012, X012),
@@ -417,40 +417,78 @@ T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
    return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
 };
 
-T3Tddd grad_U_LinearElement(const networkPoint *const p) {
-   T3Tddd gradUtang = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
+   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
+   return gradTangential_LinearElement(F012, X012) + F_n;
+};
+
+T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
+   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
+   return {grad_LinearElement(std::get<0>(F012), X012, std::get<0>(F_n)),
+           grad_LinearElement(std::get<1>(F012), X012, std::get<1>(F_n)),
+           grad_LinearElement(std::get<2>(F012), X012, std::get<2>(F_n))};
+};
+
+T3Tddd OrthogonalBasis(const Tddd &n) {
+   Tddd s0 = Chop(Tddd{1, 0, 0}, n);
+   if (Norm(s0) < 1E-1)
+      s0 = Chop(Tddd{0, 1, 0}, n);
+   s0 = Normalize(s0);
+   Tddd s1 = Normalize(Cross(n, s0));
+   return {n, s0, s1};
+};
+
+//! 注意 成分がx,y,z成分ではないので注意
+T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal_basis) {
+   auto [s0, s1, s2] = orthogonal_basis;
+   auto U_ = [&](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
+   auto [P0, P1, P2] = F->getPoints();
+   // s座標の流速
+   auto [f0_s0, f0_s1, f0_s2] = U_(P0);
+   auto [f1_s0, f1_s1, f1_s2] = U_(P1);
+   auto [f2_s0, f2_s1, f2_s2] = U_(P2);
+   //
+   T3Tddd X012 = {P0->X, P1->X, P2->X};
+   //
+   // 接線方向微分
+   auto f_s0_tag = gradTangential_LinearElement({f0_s0, f1_s0, f2_s0}, X012);
+   auto f_s1_tag = gradTangential_LinearElement({f0_s1, f1_s1, f2_s1}, X012);
+   auto f_s2_tag = gradTangential_LinearElement({f0_s2, f1_s2, f2_s2}, X012);
+   // s座標に置き換える
+   // auto f_s0s0 = Dot(f_s0_tag, s0);  // n方向なので成分はないはず
+   auto f_s0s1 = Dot(f_s0_tag, s1);
+   auto f_s0s2 = Dot(f_s0_tag, s2);
+   //
+   // auto f_s1s0 = Dot(f_s1_tag, s0);  // n方向なので成分はないはず
+   auto f_s1s1 = Dot(f_s1_tag, s1);
+   auto f_s1s2 = Dot(f_s1_tag, s2);
+   //
+   // auto f_s2s0 = Dot(f_s2_tag, s0);  // n方向なので成分はないはず
+   auto f_s2s1 = Dot(f_s2_tag, s1);
+   auto f_s2s2 = Dot(f_s2_tag, s2);
+   //
+   // n方向成分の微分は計算できていないが，接線方向微分でわかる
+   auto f_s0s0 = -f_s1s1 - f_s2s2;
+   return T3Tddd{{f_s0s0, f_s0s1, f_s0s2},
+                 {f_s0s1, f_s1s1, f_s1s2},
+                 {f_s0s2, f_s2s1, f_s2s2}};
+};
+
+T3Tddd grad_U_LinearElement(const networkFace *const F) { return grad_U_LinearElement(F, OrthogonalBasis(F->normal)); };
+
+T3Tddd grad_U_LinearElement(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
    /*
    スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
    しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
+   ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T
    */
+   T3Tddd H = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
    double Atot = 0;
    for (const auto &f : p->getFaces()) {
-      gradUtang += f->area * grad_U_tangential_LinearElement(f);
+      H += f->area * grad_U_LinearElement(f, orthogonal_basis);
       Atot += f->area;
    }
-   gradUtang /= Atot;  // 接線方向勾配
-   auto q = (p->getNeighbors())[0];
-   auto V = q->getXtuple() - ToX(p);
-   auto n = p->getNormal_BEM();
-   Tddd s0 = Normalize(V - n * Dot(V, n));
-   Tddd s1 = Normalize(Cross(n, s0));
-   Tddd V0 = Dot(gradUtang, s0);
-   Tddd V1 = Dot(gradUtang, s1);
-   Tddd V2 = {std::get<2>(V0), std::get<2>(V1), -std::get<0>(V0) - std::get<1>(V1)};
-   return T3Tddd{V0, V1, V2};
-};
-
-T3Tddd grad_U_LinearElement(const networkFace *const f) {
-   T3Tddd gradUtang = grad_U_tangential_LinearElement(f);
-   auto [p0, p1, p2] = f->getPoints();
-   auto V = ToX(p1) - ToX(p0);
-   auto n = f->normal;
-   Tddd s0 = Normalize(V - n * Dot(V, n));
-   Tddd s1 = Normalize(Cross(n, s0));
-   Tddd V0 = Dot(gradUtang, s0);
-   Tddd V1 = Dot(gradUtang, s1);
-   Tddd V2 = {std::get<2>(V0), std::get<2>(V1), -std::get<0>(V0) - std::get<1>(V1)};
-   return T3Tddd{V0, V1, V2};
+   return H / Atot;
 };
 
    //@ ------------------------------------------------------ */
@@ -707,7 +745,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 #pragma omp single nowait
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         p->radius = Mean(extLength(p->getLines())) / 3.;
+         p->radius = (Mean(extLength(p->getLines())) + radius) / 2.;
          // auto toF = extXtuple(ToVector(p->getFaces())) - ToX(p);
          // auto toP = extXtuple(p->getNeighbors()) - ToX(p);
          // double a = Norm(*std::min_element(toP.begin(), toP.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
@@ -733,9 +771,9 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    /*面Aの点が接触している面Bを取得．A,B面が向き合っていればノイマン*/
    for (const auto &f : water.getFaces()) {
       auto [p0, p1, p2] = f->getPoints();
-      f->Neumann = isInContact(p0, f, BFS_Flattened(p0->getContactFaces(), 2)) &&
-                   isInContact(p1, f, BFS_Flattened(p1->getContactFaces(), 2)) &&
-                   isInContact(p2, f, BFS_Flattened(p2->getContactFaces(), 2));
+      f->Neumann = isInContact(p0, f, bfs(p0->getContactFaces(), 2)) &&
+                   isInContact(p1, f, bfs(p1->getContactFaces(), 2)) &&
+                   isInContact(p2, f, bfs(p2->getContactFaces(), 2));
       f->Dirichlet = !f->Neumann;
    }
    // b% step3 線の境界条件を決定
@@ -782,6 +820,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
    auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
       // return p->Neumann;
+      // return p->CORNER;
       return (p->CORNER || std::any_of(facesNeuman.begin(), facesNeuman.end(), [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
       // return (p->CORNER && std::any_of(facesNeuman.begin(), facesNeuman.end(), [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
    };
@@ -795,12 +834,12 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
          if (multiple_node_if(p, facesNeuman)) {
             for (const auto &f : facesNeuman) {
                p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
-               p->phintOnFace[f] = {1E+30, {1E+30, 1E+30, 1E+30}};  // この値は，derivativesクラス内で計算する
+               p->phintOnFace[f] = {1E+30};  // この値は，derivativesクラス内で計算する
             }
          } else {
             std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
             p->phinOnFace[nullptr] = std::get<1>(p->phiphin);
-            p->phintOnFace[nullptr] = {1E+30, {1E+30, 1E+30, 1E+30}};  // この値は，derivativesクラス内で計算
+            p->phintOnFace[nullptr] = {1E+30};  // この値は，derivativesクラス内で計算
          }
 
          if (!isFinite(p->phiphin)) {
@@ -948,7 +987,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
          P_phin_vector[p] = p->U_normal_BEM;
          // P_gradPhi_tangential[p] = p->U_tangential_BEM;
          P_gradPhi[p] = p->U_BEM;
-         P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
+         // P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
       }
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
@@ -1068,72 +1107,6 @@ void show_info(const Network &net) {
    std::cout << "Dirichlet : " << d << std::endl;
 };
 JSONoutput jsonout;
-
-// b! ------------------------------------------------------ */
-
-struct calculateFroudeKrylovForce {
-   std::vector<networkFace *> actingFaces;
-   Tddd force, torque;
-   double area;
-   T6d acceleration;
-   std::vector<std::tuple<Tddd, T3Tddd>> PressureVeticies;
-   calculateFroudeKrylovForce(const std::unordered_set<networkFace *> faces /*waterfaces*/,
-                              const Network *PasObj)
-       : force({0., 0., 0.}),
-         torque({0., 0., 0.}),
-         area(0.),
-         PressureVeticies({}),
-         acceleration({0., 0., 0., 0., 0., 0.}) {
-      // PasObjと接したfaceの頂点にpressureが設定されている前提
-      int count = 0;
-      for (const auto &f : faces)
-         if (f->Neumann) {
-            auto [p0, p1, p2] = f->getPoints();
-            if (std::any_of(p0->getContactFaces().begin(), p0->getContactFaces().end(), [&](const auto &F) { return F->getNetwork() == PasObj; }) &&
-                std::any_of(p1->getContactFaces().begin(), p1->getContactFaces().end(), [&](const auto &F) { return F->getNetwork() == PasObj; }) &&
-                std::any_of(p2->getContactFaces().begin(), p2->getContactFaces().end(), [&](const auto &F) { return F->getNetwork() == PasObj; })) {
-               this->PressureVeticies.push_back({{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
-               this->actingFaces.emplace_back(f);
-               count++;
-            }
-         }
-      for (const auto &[P012, X012] : this->PressureVeticies) {
-         auto intpX = interpolationTriangleLinear0101(X012);
-         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            area += intpX.J(x0, x1) * w0w1;
-      }
-      std::cout << "接触している面の数:" << count << std::endl;
-      std::cout << "表面積:" << area << std::endl;
-   };
-
-   Tddd getFroudeKrylovTorque(const Tddd &COM) {
-      /*
-      crossの引数の順番に注意
-      モーメントの計算が，N=rxP
-      */
-      this->torque = {0., 0., 0.};
-      for (const auto &[P012, X012] : this->PressureVeticies) {
-         auto intpP = interpolationTriangleLinear0101(P012);
-         auto intpX = interpolationTriangleLinear0101(X012);
-         auto n = TriangleNormal(X012);
-         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            this->torque += Cross(intpX(x0, x1) - COM, n * intpP(x0, x1)) * intpX.J(x0, x1) * w0w1;
-      }
-      return this->torque;
-   };
-
-   Tddd surfaceIntegralOfPressure() {
-      this->force = {0., 0., 0.};
-      for (const auto &[P012, X012] : this->PressureVeticies) {
-         auto intpP = interpolationTriangleLinear0101(P012);
-         auto intpX = interpolationTriangleLinear0101(X012);
-         auto n = TriangleNormal(X012);
-         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            this->force += n * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
-      }
-      return this->force;
-   };
-};
 
 // b! ------------------------------------------------------ */
 

@@ -56,6 +56,7 @@
                 <source_path>../../include/vtkWriter.hpp</source_path>
                 <source_path>../../include/XML.hpp</source_path>
                 <source_path>../../include/searcher.hpp</source_path>
+                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM.hpp</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

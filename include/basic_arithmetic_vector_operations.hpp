@@ -44,6 +44,112 @@ T4T4d operator/(T4T4d v, const double &d) {
    return v;
 };
 
+/* -------------------------------------------------------------------------- */
+/*                              一般的に利用できる                               */
+/* -------------------------------------------------------------------------- */
+template <typename... T>
+std::tuple<T...> operator-(std::tuple<T...> V) {
+   for_each(V, [](auto &v) { v *= -1.; });
+   return V;
+};
+/* -------------------------------------------------------------------------- */
+template <typename... T>
+std::tuple<T...> operator-(std::tuple<T...> V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v -= u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> operator+(std::tuple<T...> V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v += u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> operator*(std::tuple<T...> V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v *= u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> operator/(std::tuple<T...> V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v /= u; });
+   return V;
+};
+/* -------------------------------------------------------------------------- */
+template <typename... T>
+std::tuple<T...> &operator-=(std::tuple<T...> &V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v -= u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> &operator+=(std::tuple<T...> &V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v += u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> &operator*=(std::tuple<T...> &V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v *= u; });
+   return V;
+};
+
+template <typename... T>
+std::tuple<T...> &operator/=(std::tuple<T...> &V, const std::tuple<T...> &U) {
+   for_each10(V, U, [](auto &v, const auto &u) { v /= u; });
+   return V;
+};
+/* -------------------------------------------------------------------------- */
+template <typename... T, typename Y>
+std::tuple<T...> operator-(std::tuple<T...> V, const Y &U) {
+   for_each(V, [&](auto &v) { v -= U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> operator+(std::tuple<T...> V, const Y &U) {
+   for_each(V, [&](auto &v) { v += U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> operator*(std::tuple<T...> V, const Y &U) {
+   for_each(V, [&](auto &v) { v *= U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> operator/(std::tuple<T...> V, const Y &U) {
+   for_each(V, [&](auto &v) { v /= U; });
+   return V;
+};
+/* -------------------------------------------------------------------------- */
+template <typename... T, typename Y>
+std::tuple<T...> &operator-=(std::tuple<T...> &V, const Y &U) {
+   for_each(V, [&](auto &v) { v -= U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> &operator+=(std::tuple<T...> &V, const Y &U) {
+   for_each(V, [&](auto &v) { v += U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> &operator*=(std::tuple<T...> &V, const Y &U) {
+   for_each(V, [&](auto &v) { v *= U; });
+   return V;
+};
+
+template <typename... T, typename Y>
+std::tuple<T...> &operator/=(std::tuple<T...> &V, const Y &U) {
+   for_each(V, [&](auto &v) { v /= U; });
+   return V;
+};
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 /* ------------------------------------------------------ */
 /*                    タプルダブル8                         */
 /* ------------------------------------------------------ */

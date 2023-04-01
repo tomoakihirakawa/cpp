@@ -191,7 +191,7 @@ int main(int arg, char **argv) {
          }
 
          int RK_step = 0;
-
+         BEM_BVP BVP;
          do {
             //! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
             auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
@@ -202,12 +202,19 @@ int main(int arg, char **argv) {
             for (const auto &net : RigidBodyObject) {
                std::cout << "----------------" << std::endl;
                std::cout << net->getName() << "　の流速の計算方法" << std::endl;
+               if (net->isFixed) {
+                  net->mass = 1E+20;
+                  net->inertia = {1E+20, 1E+20, 1E+20, 1E+20, 1E+20, 1E+20};
+                  net->COM = net->initial_center_of_mass = {0, 0, 0};
+               }
+
                if (net->inputJSON.find("velocity")) {
                   std::string move_name = net->inputJSON["velocity"][0];
                   std::cout << "move_name = " << move_name << std::endl;
                   if (move_name == "fixed") {
                      net->velocity = {0., 0., 0., 0., 0., 0.};
                      net->acceleration = {0., 0., 0., 0., 0., 0.};
+                     //
                   } else if (move_name != "floating") {
                      net->velocity = velocity(move_name, net->inputJSON["velocity"], RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
                                                                                                 // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
@@ -259,7 +266,6 @@ int main(int arg, char **argv) {
             // b!           　境界値問題を解く-> {Φ,Φn}が決まる                */
             // b! ------------------------------------------------------ */
             std::cout << Green << "境界値問題を解く-> {Φ,Φn}が決まる" << colorOff << std::endl;
-            BEM_BVP BVP;
             BVP.solve(*water, FMM_BucketsPoints, FMM_BucketsFaces);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
             // b* ------------------------------------------------------ */
@@ -272,35 +278,8 @@ int main(int arg, char **argv) {
             // b*           　境界値問題を解く-> {Φt,Φtn}が決まる              */
             // b* ------------------------------------------------------ */
             std::cout << Green << "境界値問題を解く-> {Φt,Φtn}が決まる" << colorOff << std::endl;
-            BVP.solveForPhiPhin_t(RigidBodyObject);
+            BVP.solveForPhiPhin_t(water, RigidBodyObject);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // b# ------------------------------------------------------ */
-            // b#         物体のノイマン境界の加速度 accel(t) を計算            */
-            // b# ------------------------------------------------------ */
-            for (const auto &net : RigidBodyObject) {
-               if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
-                  std::cout << net->inputJSON.find("velocity") << std::endl;
-                  std::cout << net->inputJSON["velocity"][0] << std::endl;
-                  auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
-                  auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
-                  auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
-                  // force = force * Tddd{1., 1., 0.5};
-                  auto torque = tmp.getFroudeKrylovTorque(net->COM);
-                  auto [a0, a1, a2] = force / Tddd{mx, my, mz};
-                  auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
-                  net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
-                  std::cout << red << net->getName() << "\n"
-                            << ", net->getInertiaGC() = " << net->getInertiaGC() << "\n"
-                            << ", net->mass = " << net->mass << "\n"
-                            << ", tmp.surfaceIntegralOfPressure() = " << tmp.surfaceIntegralOfPressure() << "\n"
-                            << ", tmp.getFroudeKrylovTorque(net->COM) = " << tmp.getFroudeKrylovTorque(net->COM) << "\n"
-                            << ", tmp.area = " << tmp.area << "\n"
-                            << ", net->velocity = " << net->velocity << "\n"
-                            << ", net->acceleration = " << net->acceleration << "\n"
-                            << ", net->COM = " << net->COM << "\n"
-                            << colorOff << std::endl;
-               }
-            }
             // b* ------------------------------------------------------ */
             // b*                 ディリクレ境界ではΦを時間積分               */
             // b* ------------------------------------------------------ */
