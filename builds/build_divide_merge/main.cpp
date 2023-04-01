@@ -43,10 +43,12 @@ int main(int arg, char **argv) {
    Histogram Histo;
    for (auto count = 0; count <= remesh; ++count) {
       //! ------------------------------------------------------ */
-      mk_vtu(output_directory + "/" + output_name + std::to_string(count) + ".vtu", net.getFaces());
-      std::ofstream ofs(output_directory + "/" + output_name + std::to_string(count) + ".obj");
-      creteOBJ(ofs, net);
-      ofs.close();
+      if (count % 10 == 0) {
+         mk_vtu(output_directory + "/" + output_name + std::to_string(count) + ".vtu", net.getFaces());
+         std::ofstream ofs(output_directory + "/" + output_name + std::to_string(count) + ".obj");
+         creteOBJ(ofs, net);
+         ofs.close();
+      }
       std::cout << "output " << time() << std::endl;
       //! ------------------------------------------------------ */
       std::cout << Grid({"count", Histo.count}, 50) << std::endl;

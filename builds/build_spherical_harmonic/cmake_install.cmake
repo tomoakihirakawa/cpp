@@ -1,4 +1,4 @@
-# Install script for directory: /Users/tomoaki/Dropbox/markdown/cpp/builds
+# Install script for directory: /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,7 +34,7 @@ endif()
 
 # Set default install directory permissions.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/objdump")
+  set(CMAKE_OBJDUMP "/Library/Developer/CommandLineTools/usr/bin/objdump")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/Users/tomoaki/Dropbox/markdown/cpp/builds/build_spherical_harmonic/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_spherical_harmonic/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

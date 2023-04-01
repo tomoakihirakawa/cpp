@@ -496,19 +496,37 @@ std::vector<std::unordered_set<networkFace *>> BFSUO(const V_netFp &startObj, co
 
 /* -------------------------------------------------------------------------- */
 
-std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &FACES, const int s) {
-   std::unordered_set<networkFace *> tmp, ret = FACES;
+std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &FACES, const short unsigned int s) {
+   // if s=0 ->  do nothing
+
+   std::unordered_set<networkFace *> tmp = FACES, ret = FACES;
    for (auto i = 0; i < s; i++) {
-      tmp = ret;
       for (const auto &F : tmp) {
-         for_each(F->getPoints(),
-                  [&](const auto &p) {
-                     for (const auto &f : p->getFaces())
-                        ret.emplace(f);
-                  });
+         for_each(F->getPoints(), [&](const auto &p) {
+            for (const auto &f : p->getFaces()) ret.emplace(f);
+         });
       }
+      tmp = ret;
    }
    return ret;
+
+   // 段階をわければ，全てを改めて使ってfor_eachしなくていいので，早く終わるのでは？
+
+   // std::unordered_set<networkFace *> accum = FACES;
+   // std::vector<networkFace *> newfaces, loopwith(FACES.begin(), FACES.end());
+   // for (auto i = 0; i < s; i++) {
+   //    newfaces.clear();
+   //    for (const auto &F : loopwith) {
+   //       for_each(F->getPoints(), [&](const auto &p) {
+   //          for (const auto &f : p->getFaces()) {
+   //             if (*((accum.emplace(f)).first))
+   //                newfaces.emplace_back(f);  // 新たに追加された
+   //          }
+   //       });
+   //    }
+   //    loopwith = newfaces;
+   // }
+   // return accum;
 };
 
 #endif

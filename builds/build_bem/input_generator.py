@@ -26,10 +26,48 @@ input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Gu2018Float1_offset_neg0d074"
+SimulationCase = "Kramer2021"
 
 match SimulationCase:
+    case "Kramer2021":
+
+        H0 = 30/1000
+        id = str(H0).replace(".", "d")
+
+        input_directory += SimulationCase + "_" + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/" + SimulationCase + "_" + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water", "type": "Fluid"}
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        float = {"name": "float",
+                 "type": "RigidBody",
+                 "velocity": ["floating", 0.1]}
+
+        float["mass"] = m = 7.056
+        float["COM"] = [0., 0., H0 - 34.8/1000 + 900/1000]  # 今回は重要ではない
+        float["radius_of_gyration"] = [10**10, 10**10, 10**10]
+        float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
+                        m*math.pow(float["radius_of_gyration"][1], 2),
+                        m*math.pow(float["radius_of_gyration"][2], 2)]
+
+        objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
+        water["objfile"] = objfolder + "/water200_mod.obj"
+        tank["objfile"] = objfolder + "/tank10.obj"
+        float["objfile"] = objfolder+"/sphere.obj"
+
+        inputfiles = [tank, water, float]
+
+        setting = {"max_dt": 0.01,
+                   "end_time_step": 10000,
+                   "end_time": 4,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
     case "moon_pool_large":
+
+        FORCED_MOTION = False
 
         start = 0.1
         a = .5
@@ -39,7 +77,10 @@ match SimulationCase:
 
         id = "a" + str(a).replace(".", "d")\
             + "_T" + str(T).replace(".", "d")\
-            + "_h" + str(h).replace(".", "d") + "_forced_"
+            + "_h" + str(h).replace(".", "d")
+
+        if FORCED_MOTION:
+            id += "_forced_"
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -50,7 +91,7 @@ match SimulationCase:
 
         tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
-        if True:
+        if FORCED_MOTION:
             wavemaker = {"name": "wavemaker",
                          "type": "RigidBody",
                          "isFixed": True}
@@ -60,7 +101,7 @@ match SimulationCase:
                          "isFixed": True,
                          "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
-        if True:
+        if FORCED_MOTION:
             floatingbody = {"name": "floatingbody",
                             "type": "RigidBody",
                             "velocity": ["sin", start, a, T]}
@@ -171,7 +212,8 @@ match SimulationCase:
                  "velocity": "floating"}
 
         float["mass"] = m = 9.75
-        float["COM"] = [0., 0., 0.09+0.8]  # 今回は重要ではない
+        # float["COM"] = [0., 0., 0.09+0.8]  # 今回は重要ではない
+        float["COM"] = [0., 0., 0.]  # 今回は重要ではない
         float["radius_of_gyration"] = [10**10, 10**10, 10**10]
         float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
                         m*math.pow(float["radius_of_gyration"][1], 2),
@@ -241,7 +283,7 @@ match SimulationCase:
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.5,
+        setting = {"max_dt": 0.25,
                    "end_time_step": 10000,
                    "end_time": 10000,
                    "output_directory": output_directory,

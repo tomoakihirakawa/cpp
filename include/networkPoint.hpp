@@ -229,11 +229,16 @@ bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) 
    return isinradius && (isCloseNormal || anyCloseNormal);
 };
 
-bool isInContact(const Tddd &X, const Tddd &n, const T3Tddd &f_target, const double &radius) {
-   bool isinradius = radius > Norm(X - Nearest(X, f_target));
-   bool anyCloseNormal = isFlat(n, -TriangleNormal(f_target), contact_angle) ||
-                         isFlat(n, TriangleNormal(f_target), contact_angle);
-   return isinradius && anyCloseNormal;
+bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/,
+                 const T3Tddd &f_target,
+                 const double &range) {
+   // nとf_targetの法線が近いかどうかを判定する．次に，最も近い点がrange以内にあるかどうかを判定する．
+   auto N = TriangleNormal(f_target);
+   if (!(isFlat(n, -N, contact_angle) || isFlat(n, N, contact_angle)))
+      return false;  // not close normal!
+   if (!(range > Norm(X - Nearest(X, f_target))))
+      return false;  // not in range!
+   return true;
 };
 
 // is f contact with f ?
@@ -338,7 +343,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
          //    tmpContactFaces[f] = intxn.X;
          //
          x = Nearest(this->X, ToX(f));
-         if (2 * this->radius > Norm(this->X - x))
+         if (3 * this->radius > Norm(this->X - x))
             tmpContactFaces[f] = x;
       }
       // b!各面について衝突があり得るか詳しく調べて判断する．
@@ -394,9 +399,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
             //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
             //                                              isFlat(F->normal, f->normal, M_PI / 180); }))
             this->ContactFaces.emplace(F);
-            // if (this->ContactFaces.size() > 5) {
-            //    return;
-            // }
+            if (this->ContactFaces.size() > 10) {
+               return;
+            }
          };
       } else
          DebugPrint("faces is empty");

@@ -81,6 +81,7 @@ using T64Tddd = std::tuple<Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd,
                            Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd, Tddd,
                            Tddd, Tddd, Tddd, Tddd>;
 //
+using T2T6d = std::tuple<T6d, T6d>;
 using T3T4d = std::tuple<T4d, T4d, T4d>;
 using T4T4d = std::tuple<T4d, T4d, T4d, T4d>;
 using T4Tiii = std::tuple<Tiii, Tiii, Tiii, Tiii>;
@@ -101,6 +102,59 @@ using T5b = std::tuple<bool, bool, bool, bool, bool>;
 using T6b = std::tuple<bool, bool, bool, bool, bool, bool>;
 using T7b = std::tuple<bool, bool, bool, bool, bool, bool, bool>;
 using T8b = std::tuple<bool, bool, bool, bool, bool, bool, bool, bool>;
+
+/* -------------------------------------------------------------------------- */
+/*                                    array                                   */
+/* -------------------------------------------------------------------------- */
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(std::array<T, N> &arr, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr));
+      for_each<M + 1>(arr, func);
+   }
+}
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(const std::array<T, N> &arr, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr));
+      for_each<M + 1>(arr, func);
+   }
+}
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(std::array<T, N> &arr, std::array<T, N> &ARR, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr), std::get<M>(ARR));
+      for_each<M + 1>(arr, ARR, func);
+   }
+}
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(const std::array<T, N> &arr, const std::array<T, N> &ARR, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr), std::get<M>(ARR));
+      for_each<M + 1>(arr, ARR, func);
+   }
+}
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(const std::array<T, N> &arr0, const std::array<T, N> &arr1, const std::array<T, N> &arr2, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr0), std::get<M>(arr1), std::get<M>(arr2));
+      for_each<M + 1>(arr0, arr1, arr2, func);
+   }
+}
+
+template <size_t M = 0, size_t N, typename T, typename Func>
+void for_each(std::array<T, N> &arr0, std::array<T, N> &arr1, std::array<T, N> &arr2, const Func &func) {
+   if constexpr (M < std::tuple_size<std::array<T, N>>::value) {
+      func(std::get<M>(arr0), std::get<M>(arr1), std::get<M>(arr2));
+      for_each<M + 1>(arr0, arr1, arr2, func);
+   }
+}
+
 /* ------------------------------------------------------ */
 /*                     タプルのベクトル演算                  */
 /* ------------------------------------------------------ */
@@ -188,6 +242,33 @@ void for_each(const T &t, const U &func) {
    }
 }
 
+template <size_t N = 0, typename T, typename U>
+void for_each1(T &t, const U &func) {
+   if constexpr (1 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+   } else if constexpr (2 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+   } else if constexpr (3 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+   } else if constexpr (4 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+      func(std::get<3>(t));
+   } else if constexpr (5 == std::tuple_size<T>::value) {
+      func(std::get<0>(t));
+      func(std::get<1>(t));
+      func(std::get<2>(t));
+      func(std::get<3>(t));
+      func(std::get<4>(t));
+   } else if constexpr (N < std::tuple_size<T>::value) {
+      func(std::get<N>(t));
+      for_each1<N + 1>(t, func);
+   }
+}
 /* -------------------------------------------------------- */
 
 template <size_t N = 0, typename T, typename H, typename U>
@@ -293,6 +374,42 @@ void for_each01111(const T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, const U &func) 
       for_each01111<N + 1>(t0, t1, t2, t3, t4, func);
    }
 }
+/* -------------------------------------------------------------------------- */
+// example from https://stackoverflow.com/questions/38885406/produce-stdtuple-of-same-type-in-compile-time-given-its-length-by-a-template-a
+// typenameはコンパイラーに，以下が型であることを伝えるためのもの．
+template <size_t I, typename T>
+struct tuple_n {
+   template <typename... Args>
+   using type = typename tuple_n<I - 1, T>::template type<T, Args...>;
+   // Iを減らすと同時に，引数を増やしていき，Iがゼロとなった場合，最終的に詰め込まれた引数を持つタプルとなる
+};
 
-/* ------------------------------------------------------ */
+template <typename T>
+struct tuple_n<0, T> {
+   template <typename... Args>
+   using type = std::tuple<Args...>;
+};
+
+template <size_t I, typename T>
+using tuple_of = typename tuple_n<I, T>::template type<>;
+
+template <size_t I, typename T>
+using tuple_tuple_of = typename tuple_n<I, tuple_of<I, T>>::template type<>;
+
+/*
+tuple_of<3>
+なら
+tuple_n<3>::template type<>
+が呼ばれ，さらに
+tuple_n<3 - 1>::template type<double>
+が呼ばれ，さらに
+tuple_n<2 - 1>::template type<double,double>
+が呼ばれ，さらに
+tuple_n<1-1>::template type<double,double,double>
+が呼ばれ，これは，
+tuple_n<0>::template std::tuple<double,double,double>
+となる
+*/
+
+/* -------------------------------------------------------------------------- */
 #endif

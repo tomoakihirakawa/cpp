@@ -3,12 +3,16 @@
 #pragma once
 
 #include <functional>
-#include "basic_vectors.hpp"
-#include "svd.hpp"
+#include "basic_linear_systems.hpp"
+// #include "svd.hpp"
 
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
+
+/* -------------------------------------------------------------------------- */
+/*                               Gradient Method                              */
+/* -------------------------------------------------------------------------- */
 
 struct GradientMethod {
   public:
@@ -152,119 +156,39 @@ struct GradientMethod {
    };
 };
 
-/* ------------------------------------------------------ */
-/*                          GMRES                         */
-/* ------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
+/*                               Broyden Method                               */
+/* -------------------------------------------------------------------------- */
 
-V_d forward_substitution(const VV_d &mat, const V_d &b) {
-   int s = b.size();
-   V_d x(s);
-   double tmp = 0;
-   // for (auto i = 0; i < s; ++i)
-   // {
-   // 	tmp = 0;
-   // 	for (auto j = 0; j < i; ++j)
-   // 		tmp += mat[i][j] * x[j];
-   // 	x[i] = (b[i] - tmp) / mat[i][i];
-   // }
-
-   int i = 0;
-   for (const auto &a : mat) {
-      tmp = 0;
-      for (auto j = 0; j < i; ++j)
-         tmp += a[j] * x[j];
-      x[i] = (b[i] - tmp) / a[i];
-      i++;
-   }
-   return x;
-};
-
-V_d back_substitution(const VV_d &mat, V_d b, const Tii &mat_size) {
-   auto [row, col] = mat_size;
-   for (auto i = row - 1; i >= 0; --i) { /*　0~row-1まで，長さは，row　*/
-      for (auto j = col - 1; j > i; --j) /*　長さは，col-i-1　*/
-         b[i] -= mat[i][j] * b[j];
-      b[i] /= mat[i][i];
-   }
-   b.erase(std::next(b.begin(), row + 1), b.end());
-   return b;
-};
-
-V_d back_substitution(const VV_d &mat, V_d b, const int &mat_size) {
-   return back_substitution(mat, b, Tii{mat_size, mat_size});
-};
-
-struct ArnoldiProcess {
-   // ヘッセンベルグ行列H[0:k-1]は，Aと相似なベクトルであり，同じ固有値を持つ
-   // GMRESで使う場合，V0にはNormalize(b-A.x0)を与える．
-   // x0は初期値
-   // Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
-   //
-   // https://en.wikipedia.org/wiki/Arnoldi_iteration
-   // アーノルディ法は固有値問題の数値解法であり反復解法である．
-   // 一般的な行列の固有ベクトルと固有値を
-   // クリロフ空間の直行基底によって近似する方法計算する方法である．
-   /* ------------------------------------------------------ */
-   int n;  // the number of interation
-   double beta;
-   V_d v0;
-   VV_d H;  // ヘッセンベルグ行列
-   VV_d V;  // an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
-   V_d w;
-   int i, j;
-   ArnoldiProcess(const VV_d &A, const V_d &v0IN /*the first direction*/, const int nIN)
-       : n(nIN),
-         beta(Norm(v0IN)),
-         v0(Normalize(v0IN)),
-         H(VV_d(nIN + 1, V_d(nIN, 0.))),
-         V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
-         w(A.size()) {
-      for (j = 0; j < n /*展開項数*/; ++j) {
-         w = Dot(A, V[j]);  //@ 行列-ベクトル積
-         for (i = 0; i < j + 1; ++i)
-            w -= (H[i][j] = Dot(V[i], w)) * V[i];  //@ ベクトル内積
-         V[j + 1] = w / (H[j + 1][j] = Norm(w));
-         // MatrixForm(H);
-      }
-      // Print("done");
+template <typename T>
+struct BroydenMethod {
+   using Tnd = tuple_of<std::tuple_size<T>::value, double>;
+   Tnd X, dX;
+   tuple_of<std::tuple_size<T>::value, Tnd> J;
+   BroydenMethod(const T &Xin, const T &Xin_) : X(Xin), dX(Xin - Xin_), J(TensorProduct(Xin, Xin)) {
+      IdentityMatrix(J);
+   };
+   void initialize(const T &Xin) { X = Xin; };
+   void update(const T F, const T F_, const double alpha = 1.) {
+      J += TensorProduct((F - F_ - Dot(J, dX)) / Dot(dX, dX), dX);
+      X += (dX = -alpha * Dot(Inverse(J), F));  // inverseが計算できるかは未検証
    };
 };
 
-struct gmres : public ArnoldiProcess {
-   int n;  // th number of interation
-   V_d e1, x, y;
-   double err;
-   /* NOTE:
-   r0 = Normalize(b - A.x0)
-   to find {r0,A.r0,A^2.r0,...}
-   Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
-   */
-   gmres(const VV_d &A, const V_d &b, const V_d &x0, const int nIN)
-       : ArnoldiProcess(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN), n(nIN), e1(V_d(nIN + 1, 0.)) {
-      e1[0] = ArnoldiProcess::beta;
-      QR qr(ArnoldiProcess::H);
-      // Print("Q");
-      // MatrixForm(qr.Q);
-      // Print("H");
-      // MatrixForm(ArnoldiProcess::H);
-      int i = 0;
-      V_d g(qr.Q.size());
-      for (const auto &q : qr.Q)
-         g[i++] = q[0] * beta;
-      // Print("予想される誤差", err = *g.rbegin());
-      err = g[i];
-      // std::cout << "予想される誤差" << err << std::endl;
-      // std::cout << "n = " << nIN << std::endl;
-      // std::cout << "g = " << g << std::endl;
-      g.pop_back();
-      y = back_substitution(qr.R, g, g.size());
-      this->x = x0;
-      for (auto i = 0; i < n; i++)
-         this->x += y[i] * ArnoldiProcess::V[i];
+using Vd = std::vector<double>;
+using VVd = std::vector<std::vector<double>>;
+template <>
+struct BroydenMethod<Vd> {
+   Vd X, dX;
+   VVd J;
+   BroydenMethod(const Vd &Xin, const Vd &Xin_) : X(Xin), dX(Xin - Xin_), J(VV_d(Xin.size(), V_d(Xin.size()))) {
+      IdentityMatrix(J);
    };
-
-   ~gmres(){
-       // delete ap;
+   void initialize(const Vd &Xin) { X = Xin; };
+   void update(const Vd F, const Vd F_, const double alpha = 1.) {
+      J += TensorProduct((F - F_ - Dot(J, dX)) / Dot(dX, dX), dX);
+      X += (dX = -alpha * Dot(Inverse(J), F));
    };
 };
+
 #endif

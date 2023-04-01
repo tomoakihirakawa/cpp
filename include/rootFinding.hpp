@@ -10,8 +10,7 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 
 template <typename T>
 struct NewtonRaphson_Common {
-   T X;
-   T dX;  // tmp
+   T X, dX;  // tmp
    NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit){};
    void initialize(const T &Xin) { X = Xin; };
 };
@@ -92,24 +91,21 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
 /*                           利用例                        */
 /* ------------------------------------------------------ */
 Tddd optimumVector(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector) {
+   // これは根を見つけようとするもの
    NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
    double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
    for (auto i = 0; i < 100; ++i) {
       F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
       for (const auto &vec : sample_vectors) {
-         w = 1;  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
-         r = w * (std::get<0>(vec) - NR0.X);
-         drdx = -w;
-         F0 += r * r;  //<- d/dx (d*d)
-         dF0dx += 2. * r * drdx;
+         w = 1;                                                  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
+         F0 += std::pow(r = w * (std::get<0>(vec) - NR0.X), 2);  //<- d/dx (d*d)
+         dF0dx += 2. * r * (drdx = -w);
          r = w * (std::get<1>(vec) - NR1.X);
-         drdx = -w;
-         F1 += r * r;  //<- d/dx (d*d)
-         dF1dx += 2. * r * drdx;
+         F1 += std::pow(r = w * (std::get<1>(vec) - NR1.X), 2);  //<- d/dx (d*d)
+         dF1dx += 2. * r * (drdx = -w);
          r = w * (std::get<2>(vec) - NR2.X);
-         drdx = -w;
-         F2 += r * r;  //<- d/dx (d*d)
-         dF2dx += 2. * r * drdx;
+         F2 += std::pow(r = w * (std::get<2>(vec) - NR2.X), 2);  //<- d/dx (d*d)
+         dF2dx += 2. * r * (drdx = -w);
       }
       NR0.update(F0, dF0dx);
       NR1.update(F1, dF1dx);
@@ -120,7 +116,7 @@ Tddd optimumVector(const std::vector<Tddd> &sample_vectors, const Tddd &init_vec
    return {NR0.X, NR1.X, NR2.X};
 };
 
-double optimumVector_(const std::vector<double> &sample_vectors, const double init_vector) {
+double optimumVector_(const std::vector<double> &sample_vectors, const double init_vector, const double tolerance = 1E-12) {
    NewtonRaphson NR0(init_vector);
    double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
    for (auto i = 0; i < 100; ++i) {
@@ -129,46 +125,43 @@ double optimumVector_(const std::vector<double> &sample_vectors, const double in
          w = 1;  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
          r = w * (vec - NR0.X);
          drdx = -w;
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
+         F0 += r * drdx;  //<- d/dx (d*d)
+         dF0dx += drdx * drdx;
       }
       NR0.update(F0, dF0dx);
-      if (std::abs(NR0.dX) < 1E-12)
+      if (std::abs(NR0.dX) < tolerance)
          break;
    }
    return NR0.X;
 };
 
-Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector) {
+Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector, const double tolerance = 1E-12) {
+   // これは，根を見つけるというよりは，極値を見つけるもの．
    NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
    double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
    for (auto i = 0; i < 100; ++i) {
       F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
       for (const auto &vec : sample_vectors) {
-         w = 1;  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
-         r = w * (std::get<0>(vec) - NR0.X);
-         drdx = -w;
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
-         r = w * (std::get<1>(vec) - NR1.X);
-         drdx = -w;
-         F1 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF1dx += 2. * drdx * drdx;
-         r = w * (std::get<2>(vec) - NR2.X);
-         drdx = -w;
-         F2 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF2dx += 2. * drdx * drdx;
+         w = 1;                                                 // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
+         F0 += (w * (std::get<0>(vec) - NR0.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF0dx += drdx * drdx;
+         F1 += (w * (std::get<1>(vec) - NR1.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF1dx += drdx * drdx;
+         F2 += (w * (std::get<2>(vec) - NR2.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF2dx += drdx * drdx;
       }
+      //
       NR0.update(F0, dF0dx);
       NR1.update(F1, dF1dx);
       NR2.update(F2, dF2dx);
-      if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
+      if (std::abs(NR0.dX) < tolerance && std::abs(NR1.dX) < tolerance && std::abs(NR2.dX) < tolerance)
          break;
    }
    return {NR0.X, NR1.X, NR2.X};
 };
 
 Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector, std::vector<double> weight) {
+   // これは，根を見つけるというよりは，極値を見つけるもの．
    if (weight.size() != sample_vectors.size())
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    weight /= Max(weight);
@@ -180,18 +173,12 @@ Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_ve
       for (auto i = 0; i < sample_vectors.size(); ++i) {
          vec = sample_vectors[i];
          w = weight[i];
-         r = w * (std::get<0>(vec) - NR0.X);
-         drdx = -w;
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
-         r = w * (std::get<1>(vec) - NR1.X);
-         drdx = -w;
-         F1 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF1dx += 2. * drdx * drdx;
-         r = w * (std::get<2>(vec) - NR2.X);
-         drdx = -w;
-         F2 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF2dx += 2. * drdx * drdx;
+         F0 += (r = w * (std::get<0>(vec) - NR0.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF0dx += drdx * drdx;
+         F1 += (r = w * (std::get<1>(vec) - NR1.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF1dx += drdx * drdx;
+         F2 += (r = w * (std::get<2>(vec) - NR2.X)) * (drdx = -w);  //<- d/dx (d*d)
+         dF2dx += drdx * drdx;
       }
       NR0.update(F0, dF0dx);
       NR1.update(F1, dF1dx);

@@ -666,12 +666,14 @@ class networkPoint : public CoordinateBounds {
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
    Tdd phiphin;
    Tdd phiphin_t;
+   // T2T6d phiphin_t_a6;  // 加速度による微分
    T2T6d phiphin_t_a6;  // 加速度による微分
    double phi_Dirichlet;
    double phin_Dirichlet;
    double dpda;
    std::unordered_map<networkFace *, double> phinOnFace;
-   std::unordered_map<networkFace *, double, std::tuple<networkFace *, T6d>> phintOnFace;
+   std::unordered_map<networkFace *, double> phintOnFace;
+   // std::unordered_map<networkFace *, std::tuple<double, T6d>> phintOnFace;
    // std::unordered_map<networkFace *, double> phintOnFace_a;  // 加速度による微分
    //* ------------------------------------------------- */
    // Tddd X_BUFFER;

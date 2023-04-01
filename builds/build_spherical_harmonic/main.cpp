@@ -1,61 +1,59 @@
-#include <fundamental.hpp>
+#include <array>
+#include <cmath>
+#include <complex>
+#include <iostream>
+#include "basic_arithmetic_array_operations.hpp"
 
-// std::unordered_map<Tii, Tdd> operator*(const double din, const std::unordered_map<Tii, Tdd> &v)
-// {
-// 	auto ret = v;
-// 	for (auto &[ii, dd] : ret)
-// 		dd *= din;
-// 	return ret;
-// };
-// std::unordered_map<Tii, Tdd> operator*(const std::unordered_map<Tii, Tdd> &v, const double din)
-// {
-// 	auto ret = v;
-// 	for (auto &[ii, dd] : ret)
-// 		dd *= din;
-// 	return ret;
-// };
-// std::unordered_map<Tii, Tdd> &operator+=(std::unordered_map<Tii, Tdd> &ii_dd, const std::unordered_map<Tii, Tdd> &jj_dd)
-// {
-// 	// for (auto &[ii, dd] : ii_dd)
-// 	// 	dd += jj_dd[ii];
-// 	return ii_dd;
-// };
+// Compute the factorial of a given number
+unsigned int factorial(unsigned int n) {
+   if (n == 0 || n == 1)
+      return 1;
+   return n * factorial(n - 1);
+}
 
-int main()
-{
+// Compute the spherical harmonic function sph(k, m, theta, phi)
+std::complex<double> Y(int k, int m, double theta, double phi) {
+   if (k < 0 || abs(m) > k) {
+      return std::complex<double>(0.0, 0.0);
+   }
 
-	std::unordered_map<Tii, Tdd> ii_dd, jj_dd;
-	for (auto k = 0; k <= 10; ++k)
-		for (auto m = -k; m <= k; ++m)
-			ii_dd[Tii{k, m}] = {200, 200};
+   double assocLegendre = std::sqrt(factorial(k - abs(m)) / (factorial(k + abs(m)))) * std::pow(-1, m) * std::assoc_legendre(k, abs(m), std::cos(theta));
+   double realPart = assocLegendre * std::cos(m * phi);
+   double imagPart = -assocLegendre * std::sin(m * phi);
 
-	for (auto k = 0; k <= 10; ++k)
-		for (auto m = -k; m <= k; ++m)
-			jj_dd[Tii{k, m}] = {(double)k, (double)m};
+   return std::complex<double>(realPart, imagPart);
+}
 
-	jj_dd += ii_dd;
-	jj_dd = jj_dd * 10.;
+std::complex<double> G(const std::array<double, 3>& x0y0z0, const std::array<double, 3>& x1y1z1) { return 1 / Norm(x0y0z0 - x1y1z1); }
 
-	for (const auto &[jj, dd] : jj_dd)
-		std::cout << "jj = " << jj << ", dd = " << dd << std::endl;
+// とりあえずOは原点と考える
+std::complex<double> Gapprox(unsigned p,
+                             const std::array<double, 3>& x0y0z0,
+                             const std::array<double, 3>& x1y1z1) {
+   auto [x0, y0, z0] = x0y0z0;
+   auto [x1, y1, z1] = x1y1z1;
+   //
+   auto r0 = Norm(x0y0z0);
+   auto a = std::atan2(sqrt(x0 * x0 + y0 * y0), z0);
+   auto b = std::atan2(y0, x0);
+   //
+   auto r1 = Norm(x1y1z1);
+   auto theta = std::atan2(sqrt(x1 * x1 + y1 * y1), z1);
+   auto phi = std::atan2(y1, x1);
 
-	// int i = 2;
-	// for (auto l = 0; l <= i; ++l)
-	// 	for (auto m = -i; m <= i; ++m)
-	// 		for (auto x = 0; x <= 10; ++x)
-	// 		{
-	// 			double q = (2. * M_PI * x / 10.);
-	// 			std::cout << "std::sph_legendre ("
-	// 					  << l << ","
-	// 					  << m << ","
-	// 					  << q << ") = "
-	// 					  << std::sph_legendre(l, m, q) << std::endl;
+   auto inv_r = 1. / r1;
+   auto r0_inv_r = r0 * inv_r;
+   std::complex<double> accum = 0;
+   for (int k = 0; k <= p; ++k)
+      for (int m = -k; m <= k; ++m)
+         accum += std::pow(r0_inv_r, k) * inv_r * Y(k, -m, a, b) * Y(k, m, theta, phi);
+   return accum;
+}
 
-	// 			std::cout << "std::assoc_legendre ("
-	// 					  << l << ","
-	// 					  << m << ","
-	// 					  << q << ") = "
-	// 					  << std::assoc_legendre(l, m, q) << std::endl;
-	// 		}
-	// return 0;
-};
+int main() {
+   std::array<double, 3> x0y0z0 = {1, 0, 0};
+   std::array<double, 3> x1y1z1 = {100, 100, 100};
+   for (int i = 1; i < 100; i++) {
+      std::cout << "G = " << G(x0y0z0, x1y1z1) << ", Gapprox = " << Gapprox(i, x0y0z0, x1y1z1) << "\n";
+   }
+}
