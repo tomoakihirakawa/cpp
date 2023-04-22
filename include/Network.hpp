@@ -1897,7 +1897,7 @@ getPointsOnLines_detail*/
       //@ Pointsに従って，値を設定する．
       //@ 線の持つ点のインターセクションをチェックすることで，面の持つ点を間接的に取得する．
       try {
-         /*
+         /**
          @ networkFacesの持つ
          @ this->Points = {p0,p1,p2}
          @ this->Lines = {l0,l1,l2}
