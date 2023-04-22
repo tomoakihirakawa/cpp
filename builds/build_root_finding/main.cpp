@@ -14,19 +14,19 @@ Tdd F2(const Tdd &X) {
    return {sin(std::get<0>(X)), cos(std::get<1>(X))};
 }
 T2Tdd dF2dx(const Tdd &X) {
-   return {{cos(std::get<0>(X)), 0}, {0, -sin(std::get<1>(X))}};
+   return {{{cos(std::get<0>(X)), 0}, {0, -sin(std::get<1>(X))}}};
 }
 
 Tddd F3(const Tddd &X) {
    return {sin(std::get<0>(X)), cos(std::get<1>(X)), sin(std::get<2>(X))};
 }
 T3Tddd dF3dx(const Tddd &X) {
-   return {{cos(std::get<0>(X)), 0, 0},
-           {0, -sin(std::get<1>(X)), 0},
-           {0, 0, cos(std::get<2>(X))}};
+   return {{{cos(std::get<0>(X)), 0, 0},
+            {0, -sin(std::get<1>(X)), 0},
+            {0, 0, cos(std::get<2>(X))}}};
 };
 
-T3Tddd X0X1X2 = {{10, 5, 1}, {-4, 5, 5}, {5, 10, 1}};
+T3Tddd X0X1X2 = {{{10, 5, 1}, {-4, 5, 5}, {5, 10, 1}}};
 
 double G(const double t0, const double t1) {
    return Norm(Dot({t0, t1, 1 - t0 - t1}, X0X1X2));
@@ -65,8 +65,8 @@ int main() {
    /* ----------------------- 1次元の場合 ----------------------- */
    std::cout << "1次元の場合" << std::endl;
    {
-      NewtonRaphson nr0(1.);
-      NewtonRaphson nr1(1.);
+      NewtonRaphson nr0(4.);
+      NewtonRaphson nr1(4.);
       for (auto i = 0; i < 500; i++) {
          nr0.update(G(nr0.X, nr1.X), dGdt0(nr0.X, nr1.X));
          nr1.update(G(nr0.X, nr1.X), dGdt1(nr0.X, nr1.X));
@@ -92,18 +92,18 @@ int main() {
       }
    }
    /* -------------------------------------------------------------------------- */
-   std::cout << "分散関係の lambda -> omega" << std::endl;
-   for (const auto &T : Subdivide({0.1, 20}, 50)) {
-      double h = 1000, omega = 2 * M_PI / T;
-      NewtonRaphson nr(1.);
-      for (auto i = 0; i < 10; i++) {
-         nr.update(w(nr.X, h) - omega, dwdk(nr.X, h));
-         std::cout << Red << "i = " << i << ", 誤差 : w(nr.X, h) - omega = " << w(nr.X, h) - omega << colorOff << std::endl;
-      }
-      // std::cout << "分散関係を満たす組：{w,k,h} = " << Tddd{omega, nr.X, h} << ", w(nr.X, h) - omega = " << w(nr.X, h) - omega << std::endl;
-      auto ds = DispersionRelation(omega, h);
-      std::cout << "{水深h, 角周波数w, 波数k, 周期T, 波長L} = " << T5d{ds.h, ds.w, ds.k, ds.T, ds.L} << std::endl;
-   }
+   // std::cout << "分散関係の lambda -> omega" << std::endl;
+   // for (const auto &T : Subdivide({0.1, 20}, 50)) {
+   //    double h = 1000, omega = 2 * M_PI / T;
+   //    NewtonRaphson nr(1.);
+   //    for (auto i = 0; i < 10; i++) {
+   //       nr.update(w(nr.X, h) - omega, dwdk(nr.X, h));
+   //       std::cout << Red << "i = " << i << ", 誤差 : w(nr.X, h) - omega = " << w(nr.X, h) - omega << colorOff << std::endl;
+   //    }
+   //    // std::cout << "分散関係を満たす組：{w,k,h} = " << Tddd{omega, nr.X, h} << ", w(nr.X, h) - omega = " << w(nr.X, h) - omega << std::endl;
+   //    auto ds = DispersionRelation(omega, h);
+   //    std::cout << "{水深h, 角周波数w, 波数k, 周期T, 波長L} = " << T5d{ds.h, ds.w, ds.k, ds.T, ds.L} << std::endl;
+   // }
    /* -------------------------------------------------------------------------- */
    {
       auto f = [](const double x) { return x * x * x * x * x - x * x * x * x + x * x * x - x * x + x - 1; };

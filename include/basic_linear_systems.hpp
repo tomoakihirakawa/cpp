@@ -183,31 +183,25 @@ extern "C" void dgetrs_(const char *TRANS,
 struct lapack_lu {
    std::vector<double> a;
    const int dim;
-   const char trans = 'T';
    const int nrhs = 1, LDA, LDB;
    int info;
    std::vector<int> ipiv;
    ~lapack_lu(){};
-   lapack_lu(const std::vector<std::vector<double>> &aIN)
-       : a(this->flatten(aIN)),
-         dim(aIN.size()),
-         LDB(dim),
-         LDA(dim),
-         ipiv(dim) {
-      dgetrf_(&dim, &dim, &*a.begin(), &LDA, &*ipiv.begin(), &info);
+
+   lapack_lu(const std::vector<std::vector<double>> &aIN) : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
-   lapack_lu(const std::vector<std::vector<double>> &aIN,
-             const std::vector<double> &rhd,
-             std::vector<double> &b)
-       : a(this->flatten(aIN)),
-         dim(aIN.size()),
-         LDB(dim),
-         LDA(dim),
-         ipiv(dim) {
+   template <size_t N>
+   lapack_lu(const std::array<std::array<double, N>, N> &aIN) : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+   };
+
+   lapack_lu(const std::vector<std::vector<double>> &aIN, const std::vector<double> &rhd, std::vector<double> &b)
+       : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
       b = rhd;
-      dgetrf_(&dim, &dim, &*a.begin(), &LDA, &*ipiv.begin(), &info);
-      dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, &*ipiv.begin(), &*b.begin(), &LDB, &info);
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), b.data(), &LDB, &info);
       if (info) {
          // std::cerr << e.what() << colorOff << std::endl;
          std::stringstream ss;
@@ -221,17 +215,43 @@ struct lapack_lu {
    };
 
    std::vector<double> flatten(const std::vector<std::vector<double>> &mat) const {
-      int i = 0;
-      std::vector<double> ret(mat.size() * mat[0].size());
+      std::vector<double> flattened;
+      flattened.reserve(mat.size() * mat[0].size());
       for (const auto &part : mat)
-         for (const auto &value : part)
-            ret[i++] = value;
-      return ret;
+         flattened.insert(flattened.end(), part.begin(), part.end());
+      return flattened;
+   };
+
+   template <size_t N>
+   std::vector<double> flatten(const std::array<std::array<double, N>, N> &mat) const {
+      std::vector<double> flattened;
+      flattened.reserve(N * N);
+      for (const auto &part : mat)
+         flattened.insert(flattened.end(), part.begin(), part.end());
+      return flattened;
    };
 
    void solve(const std::vector<double> &rhd, std::vector<double> &b) {
+      if ((dim != rhd.size()) || (dim != b.size()) || (rhd.size() != b.size()))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "dim != rhd.size() || dim != b.size() || rhd.size() != b.size() ");
       b = rhd;
-      dgetrs_(&trans, &dim, &nrhs, &*a.begin(), &LDA, &*ipiv.begin(), &*b.begin(), &LDB, &info);
+      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), b.data(), &LDB, &info);
+      if (info) {
+         // std::cerr << e.what() << colorOff << std::endl;
+         std::stringstream ss;
+         ss << "LDB:" << LDB;
+         ss << "\nLDA:" << LDA;
+         ss << "\nipiv:" << ipiv;
+         // ss << "\na:" << a;
+         ss << "\nb:" << b;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      };
+   };
+
+   template <size_t N>
+   void solve(const std::array<double, N> &rhd, std::array<double, N> &b) {
+      b = rhd;
+      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), b.data(), &LDB, &info);
       if (info) {
          // std::cerr << e.what() << colorOff << std::endl;
          std::stringstream ss;

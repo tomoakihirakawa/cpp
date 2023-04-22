@@ -50,9 +50,9 @@ inline networkFace::networkFace(const netFp f)
       Lines(f->Lines),
       XPoints(0),
       /* ------------------------------------------------------ */
-      interp_from_p0({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
-      interp_from_p1({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
-      interp_from_p2({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+      // interp_from_p0({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+      // interp_from_p1({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
+      // interp_from_p2({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}),
       /* ------------------------------------------------------ */
       //   force({0., 0., 0., 0., 0., 0.}),
       //   inertia(6, 0.),

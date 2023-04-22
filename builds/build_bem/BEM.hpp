@@ -1,510 +1,11 @@
 #ifndef BEM_H
 #define BEM_H
 
+#include "BEM_calculateVelocities.hpp"
+#include "BEM_setBoundaryConditions.hpp"
+#include "BEM_solveBVP.hpp"
+#include "BEM_utilities.hpp"
 #include "Network.hpp"
-
-using V_i = std::vector<int>;
-using V_d = std::vector<double>;
-using VV_d = std::vector<std::vector<double>>;
-using VVV_d = std::vector<std::vector<std::vector<double>>>;
-using V_Netp = std::vector<Network *>;
-using V_netFp = std::vector<networkFace *>;
-using VV_netFp = std::vector<V_netFp>;
-
-/* -------------------------------------------------------------------------- */
-
-T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
-   if (name.contains("linear") && (name.contains("traveling") || name.contains("wave"))) {
-      if (strings.size() == 6) {
-         double start = stod(strings[1] /*start*/);
-         if (t >= start) {
-            double a = std::abs(stod(strings[2] /*a*/));
-            double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-            double h = std::abs(stod(strings[4] /*h*/));
-            double z_surface = std::abs(stod(strings[5] /*z_surface*/));
-            auto [x, y, z] = p->X - Tddd{0., 0., z_surface};
-            DispersionRelation DS(w, h);
-            double k = std::abs(DS.k);
-            // std::cout << "a = " << a
-            //           << ", {w,k} = {" << w << "," << k << "}"
-            //           << ", h = " << h
-            //           << ", z_surface = " << z_surface
-            //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-            // t += M_PI / 2. / w;
-            return {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
-                        w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
-                    0.,
-                    -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x),
-                    0.,
-                    0.,
-                    0.};
-         } else
-            return {0., 0., 0., 0., 0., 0.};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
-   } else if (name.contains("weird")) {
-      if (strings.size() == 6) {
-         double start = stod(strings[1] /*start*/);
-         double a = std::abs(stod(strings[2] /*a*/));
-         double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-         double h = std::abs(stod(strings[4] /*h*/));
-         double z_surface = std::abs(stod(strings[5] /*z_surface*/));
-         auto [x, y, z] = p->X;
-         DispersionRelation DS(w, h);
-         double k = std::abs(DS.k);
-         std::cout << "a = " << a
-                   << ", {w,k} = {" << w << "," << k << "}"
-                   << ", h = " << h
-                   << ", z_surface = " << z_surface
-                   << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         return {a * w * cos(w * t - k * z),
-                 0.,
-                 0.,
-                 0.,
-                 0.,
-                 0.};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
-   }
-   return {0., 0., 0., 0., 0., 0.};
-};
-
-/* -------------------------------------------------------------------------- */
-
-T6d velocity(const std::string &name, const std::vector<std::string> strings, const double t) {
-   auto g = _GRAVITY_;
-   if (name == "Goring1979") {
-      double h = 0.25;
-      double H = 0.1 * h;  // 造波する初期入射波の波高
-      double x = 0;
-      double c = std::sqrt(g * (H + h));
-      double kappa = std::sqrt(3. * H / (4. * h * h * h));
-      double start = stod(strings[1] /*start*/);
-      double eta = H * std::pow(1. / cosh(kappa * (-c * (t - start))), 2.);
-      return {c * eta / (h + eta), 0., 0., 0, 0, 0};
-   } else if (name == "Retzler2000") {
-      const std::vector<Tdd> sample = {
-          {-0.15000000000000002, 0.},
-          {-0.11, 0.},
-          {-0.1, 0.},
-          {-0.09, 0.},
-          {-0.08, 0.},
-          {-0.07, 0.},
-          {-0.06, 0.},
-          {-0.050409836065573754, 0.007920792079208039},
-          {-0.02397540983606558, 0.06930693069306948},
-          {-0.0006147540983606481, 0.13762376237623775},
-          {0.0282786885245902, 0.24851485148514862},
-          {0.05040983606557381, 0.3594059405940595},
-          {0.05901639344262294, 0.40297029702970305},
-          {0.06946721311475412, 0.4425742574257427},
-          {0.08299180327868855, 0.4792079207920793},
-          {0.10020491803278692, 0.516831683168317},
-          {0.11065573770491804, 0.5415841584158416},
-          {0.12110655737704923, 0.5663366336633664},
-          {0.132172131147541, 0.5910891089108912},
-          {0.15000000000000008, 0.6198019801980199},
-          {0.1616803278688525, 0.6306930693069308},
-          {0.17643442622950822, 0.6445544554455447},
-          {0.18872950819672135, 0.6603960396039605},
-          {0.20102459016393448, 0.6792079207920793},
-          {0.21823770491803285, 0.6801980198019802},
-          {0.23053278688524592, 0.6445544554455447},
-          {0.25081967213114753, 0.5742574257425743},
-          {0.27848360655737703, 0.40297029702970305},
-          {0.30000000000000004, 0.23564356435643574},
-          {0.319672131147541, 0.10396039603960416},
-          {0.3319672131147542, 0.02772277227722786},
-          {0.35040983606557385, -0.03960396039603942},
-          {0.37069672131147546, -0.085148514851485},
-          {0.38913934426229513, -0.08316831683168302},
-          {0.4002049180327869, -0.06831683168316827},
-          {0.4254098360655738, -0.03069306930693061},
-          {0.45000000000000007, -0.009900990099009799},
-          {0.5, 0.},
-          {0.55, 0.},
-          {0.6, 0.},
-          {0.65, 0.},
-          {0.7, 0.}};
-      double start = stod(strings[1] /*start*/);
-      const auto intp = InterpolationBspline(3, sample);
-      return {intp(t - start), 0., 0., 0., 0., 0.};
-   } else if (name == "Chaplin2000") {
-      double start = stod(strings[1] /*start*/);
-      if (t < start)
-         return {0., 0., 0., 0., 0., 0.};
-      double h = 0.5;
-      // double w = 1.257 / std::sqrt(h / g); /*5.57065*/
-      // double A = 0.046 * h;
-      // double A = 0.02 * h;
-      double w, A;
-      if (strings.size() > 3) {
-         A = stod(strings[2] /*start*/);
-         w = stod(strings[3] /*start*/);
-         std::cout << "A = " << A << ", w = " << w << std::endl;
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-
-      auto v = A * w * sin(w * (t - start));
-      return {0., v, 0., 0., 0., 0.};
-   } else if (name == "flap") {
-      // start,A, T, h, l
-      // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
-      double start = stod(strings[1] /*start*/);
-      double A, w, h, l, d, k;
-      if (strings.size() > 7) {
-         A = std::abs(stod(strings[2] /*A*/));
-         w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-         h = std::abs(stod(strings[4] /*h*/));
-         l = std::abs(stod(strings[5] /*l*/));
-         DispersionRelation DS(w, h);
-         k = std::abs(DS.k);
-         double d = (l >= 0 ? d : -l);
-         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h
-                   << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         Tddd axis = {stod(strings[6]), stod(strings[7]), stod(strings[8])};
-         auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
-                                                      (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
-         return {0., 0., 0., wx, wy, wz};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-   } else if (name.contains("sinusoidal") || name.contains("sin")) {
-      if (strings.size() == 4) {
-         double start = stod(strings[1] /*start*/);
-         if (t >= start) {
-            double a = std::abs(stod(strings[2] /*a*/));
-            double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-            return {a * w * cos(w * t), 0., 0., 0., 0., 0.};
-         }
-      } else {
-         std::stringstream ss;
-         int i = 0;
-         for (const auto &s : strings)
-            ss << i++ << ":" << s << std::endl;
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-      }
-   }
-   return {0., 0., 0., 0., 0., 0.};
-};
-
-// b$ -------------------------------------------------------------------------- */
-// b$                    流体面と構造物面間の関係．面積重み平均．                         */
-// b$ -------------------------------------------------------------------------- */
-/*
-隣接 (Adjacent)
-接触 (Contact)
-*/
-netFp NearestContactFace(const networkPoint *const p) { return std::get<1>(Nearest_(p->X, p->getContactFaces())); };
-netFp NearestContactFace(const networkFace *const f_IN) {
-   std::unordered_set<networkFace *> faces;
-   for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
-   return std::get<1>(Nearest_(f_IN->center, faces));
-};
-netFp NearestContactFace(const networkPoint *const p, const networkFace *const f_normal) {
-   Tddd r = {1E+100, 1E+100, 1E+100}, X;
-   networkFace *ret = nullptr;
-   for (const auto &f_target : bfs(p->getContactFaces(), 2))
-      if (isInContact(p, f_normal, f_target)) {
-         X = Nearest(p->X, ToX(f_target));
-         if (Norm(r) >= Norm(X - p->X)) {
-            r = X - p->X;
-            ret = f_target;
-         }
-      }
-   return ret;
-};
-std::tuple<netFp, Tddd> NearestContactFace_(const networkPoint *const p, const networkFace *const f_normal) {
-   Tddd r = {1E+100, 1E+100, 1E+100}, X;
-   networkFace *ret = nullptr;
-   for (const auto &f_target : bfs(p->getContactFaces(), 2))
-      if (isInContact(p, f_normal, f_target)) {
-         X = Nearest(p->X, ToX(f_target));
-         if (Norm(r) >= Norm(X - p->X)) {
-            r = X - p->X;
-            ret = f_target;
-         }
-      }
-   return {ret, r};
-};
-
-//$ --------------------------------------------------------------- */
-
-std::tuple<Tddd, double> uNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = NearestContactFace_(p, f_normal);
-   if (f) {
-      double weight = w_Bspline5(Norm(vToContact), p->radius);
-      if (f->getNetwork()->isRigidBody) {
-         return {f->getNetwork()->velocityRigidBody(p->X), weight};
-      } else if (f->getNetwork()->isSoftBody) {
-         auto [p0, p1, p2] = f->getPoints();
-         auto v0 = p0->velocityTranslational();
-         auto v1 = p1->velocityTranslational();
-         auto v2 = p2->velocityTranslational();
-         auto [t0, t1, X] = Nearest_(p->X, ToX(f));
-         return {v0 * t0 + v1 * t1 + v2 * (1 - t0 - t1), weight};
-      }
-   }
-   return {{0., 0., 0.}, 0.};
-};
-
-std::tuple<Tddd, double> accelNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = NearestContactFace_(p, f_normal);
-   if (f) {
-      double weight = w_Bspline5(Norm(vToContact), p->radius);
-      if (f->getNetwork()->isRigidBody) {
-         return {f->getNetwork()->accelRigidBody(p->X), weight};
-      } else if (f->getNetwork()->isSoftBody) {
-         auto [p0, p1, p2] = f->getPoints();
-         auto v0 = p0->accelTranslational();
-         auto v1 = p1->accelTranslational();
-         auto v2 = p2->accelTranslational();
-         auto [t0, t1, X] = Nearest_(p->X, ToX(f));
-         return {v0 * t0 + v1 * t1 + v2 * (1 - t0 - t1), weight};
-      }
-   }
-   return {{0., 0., 0.}, 0.};
-};
-
-Tddd uNeumann(const networkPoint *const p, const networkFace *const f_normal) {
-   return std::get<0>(uNeumann_(p, f_normal));
-};
-
-Tddd accelNeumann(const networkPoint *const p, const networkFace *const f_normal) {
-   return std::get<0>(accelNeumann_(p, f_normal));
-};
-
-Tddd uNeumann(const networkPoint *const p) {
-   std::vector<Tddd> V;
-   std::vector<double> W;
-   const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFaces()) {
-      auto [v, w] = uNeumann_(p, f_normal);
-      if (w > 1E-20) {
-         V.emplace_back(v);
-         W.emplace_back(w);
-      }
-   }
-   if (!V.empty()) {
-      auto ret = optimumVector_(V, init, W);
-      if (isFinite(ret))
-         return ret;
-   }
-   return init;
-};
-
-Tddd accelNeumann(const networkPoint *const p) {
-   std::vector<Tddd> V;
-   std::vector<double> W;
-   const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFaces()) {
-      auto [v, w] = accelNeumann_(p, f_normal);
-      if (w > 1E-20) {
-         V.emplace_back(v);
-         W.emplace_back(w);
-      }
-   }
-   if (!V.empty()) {
-      auto ret = optimumVector_(V, init, W);
-      if (isFinite(ret))
-         return ret;
-   }
-   return init;
-};
-
-Tddd uNeumann(const networkFace *const f_normal) {
-   auto [p0, p1, p2] = f_normal->getPoints();
-   return (uNeumann(p0, f_normal) + uNeumann(p1, f_normal) + uNeumann(p2, f_normal)) / 3.;
-};
-Tddd accelNeumann(const networkFace *const f_normal) {
-   auto [p0, p1, p2] = f_normal->getPoints();
-   return (accelNeumann(p0, f_normal) + accelNeumann(p1, f_normal) + accelNeumann(p2, f_normal)) / 3.;
-};
-
-//$ --------------------------------------------------------------- */
-//$ --------------------------------------------------------------- */
-//$ --------------------------------------------------------------- */
-
-using map_P_d = std::map<netP *, double>;
-using map_P_Vd = std::map<netP *, V_d>;
-using map_P_VVd = std::map<netP *, VV_d>;
-using map_F_P_Vd = std::map<netF *, map_P_Vd>;
-using map_P_P_Vd = std::map<netP *, map_P_Vd>;
-using pair_PB = std::pair<netP *, bool>;
-using map_pairPB_Tdd = std::unordered_map<std::tuple<netP *, bool, netF *>, Tdd>;
-using map_pairPB_pairPB_Tdd = std::unordered_map<std::tuple<netP *, bool, netF *>, map_pairPB_Tdd>;
-using map_P_P_Tdd = std::map<netP *, std::map<netP *, Tdd>>;
-using map_P_F_P_Vd = std::map<netP *, map_F_P_Vd>;
-using VV_SorIorMap = std::vector<std::vector<std::variant<std::string, int, map_P_Vd>>>;
-
-V_netFp takeFaces(const V_Netp &nets) {
-   V_netFp ret({});
-   for (const auto &n : nets)
-      ret.insert(ret.end(), n->getFaces().begin(), n->getFaces().end());
-   return DeleteDuplicates(ret);
-};
-
-/* ------------------------------------------------------ */
-
-V_d volume({});
-
-auto modify = [](Network &water, const JSON &json1) {
-   auto isExsist = [&json1](std::string str) { return (json1().find(str) != json1().end() && !json1()[str].empty()); };
-   if (isExsist("center_of_mass")) {
-      std::get<0>(water.center_of_mass) = stob(json1()["center_of_mass"])[0];
-      std::get<1>(water.center_of_mass) = stob(json1()["center_of_mass"])[1];
-      std::get<2>(water.center_of_mass) = stob(json1()["center_of_mass"])[2];
-   }
-   if (isExsist("ignore")) {
-      water.IGNORE = stob(json1()["ignore"])[0];
-   }
-   if (isExsist("rotate")) {
-      auto rotate = stod(json1()["rotate"]);
-      if (rotate.size() > 1)
-         water.rotate(rotate[0], Tddd{rotate[1], rotate[2], rotate[3]});
-   }
-   if (isExsist("scale")) {
-      auto scale = stod(json1()["scale"]);
-      if (scale.size() > 1)
-         water.scale({scale[0], scale[1], scale[2]});
-      else
-         water.scale(scale[0]);
-   }
-   if (isExsist("translate")) {
-      auto translate = stod(json1()["translate"]);
-      if (translate.size() > 1)
-         water.translate({translate[0], translate[1], translate[2]});
-   }
-   // if (isExsist("remesh"))
-   // {
-   // 	auto minlen = stod(json1()["remesh"]);
-   // 	if (minlen.size() > 0)
-   // 		remesh(&water, minlen[0]);
-   // }
-   // if (isExsist("coarsen"))
-   // {
-   // 	auto minlen = stod(json1()["coarsen"]);
-   // 	if (minlen.size() > 0)
-   // 		coarsen(&water, minlen[0]);
-   // }
-   if (isExsist("reverseNormal")) {
-      std::string TorF = json1()["reverseNormal"][0];
-      if (TorF.compare("True") == 0 || TorF.compare("true") == 0 || TorF.compare("1") == 0) {
-         water.reverseNormal();
-         std::cout << "reverse done" << std::endl;
-      }
-   }
-};
-
-//@ ------------------------------------------------------ */
-
-Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
-   // これは{x,y,z}座標系での結果
-   auto [X0, X1, X2] = X012;
-   auto [phi0, phi1, phi2] = phi012;
-   auto n = TriangleNormal(X012);
-   return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
-};
-
-T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
-   auto [Vx012, Vy012, Vz012] = Transpose(V012);
-   return {gradTangential_LinearElement(Vx012, X012),
-           gradTangential_LinearElement(Vy012, X012),
-           gradTangential_LinearElement(Vz012, X012)};
-};
-
-T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
-   auto [p0, p1, p2] = f->getPoints();
-   return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
-};
-
-Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
-   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
-   return gradTangential_LinearElement(F012, X012) + F_n;
-};
-
-T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
-   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
-   return {grad_LinearElement(std::get<0>(F012), X012, std::get<0>(F_n)),
-           grad_LinearElement(std::get<1>(F012), X012, std::get<1>(F_n)),
-           grad_LinearElement(std::get<2>(F012), X012, std::get<2>(F_n))};
-};
-
-T3Tddd OrthogonalBasis(const Tddd &n) {
-   Tddd s0 = Chop(Tddd{1, 0, 0}, n);
-   if (Norm(s0) < 1E-1)
-      s0 = Chop(Tddd{0, 1, 0}, n);
-   s0 = Normalize(s0);
-   Tddd s1 = Normalize(Cross(n, s0));
-   return {n, s0, s1};
-};
-
-//! 注意 成分がx,y,z成分ではないので注意
-T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal_basis) {
-   auto [s0, s1, s2] = orthogonal_basis;
-   auto U_ = [&](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
-   auto [P0, P1, P2] = F->getPoints();
-   // s座標の流速
-   auto [f0_s0, f0_s1, f0_s2] = U_(P0);
-   auto [f1_s0, f1_s1, f1_s2] = U_(P1);
-   auto [f2_s0, f2_s1, f2_s2] = U_(P2);
-   //
-   T3Tddd X012 = {P0->X, P1->X, P2->X};
-   //
-   // 接線方向微分
-   auto f_s0_tag = gradTangential_LinearElement({f0_s0, f1_s0, f2_s0}, X012);
-   auto f_s1_tag = gradTangential_LinearElement({f0_s1, f1_s1, f2_s1}, X012);
-   auto f_s2_tag = gradTangential_LinearElement({f0_s2, f1_s2, f2_s2}, X012);
-   // s座標に置き換える
-   // auto f_s0s0 = Dot(f_s0_tag, s0);  // n方向なので成分はないはず
-   auto f_s0s1 = Dot(f_s0_tag, s1);
-   auto f_s0s2 = Dot(f_s0_tag, s2);
-   //
-   // auto f_s1s0 = Dot(f_s1_tag, s0);  // n方向なので成分はないはず
-   auto f_s1s1 = Dot(f_s1_tag, s1);
-   auto f_s1s2 = Dot(f_s1_tag, s2);
-   //
-   // auto f_s2s0 = Dot(f_s2_tag, s0);  // n方向なので成分はないはず
-   auto f_s2s1 = Dot(f_s2_tag, s1);
-   auto f_s2s2 = Dot(f_s2_tag, s2);
-   //
-   // n方向成分の微分は計算できていないが，接線方向微分でわかる
-   auto f_s0s0 = -f_s1s1 - f_s2s2;
-   return T3Tddd{{f_s0s0, f_s0s1, f_s0s2},
-                 {f_s0s1, f_s1s1, f_s1s2},
-                 {f_s0s2, f_s2s1, f_s2s2}};
-};
-
-T3Tddd grad_U_LinearElement(const networkFace *const F) { return grad_U_LinearElement(F, OrthogonalBasis(F->normal)); };
-
-T3Tddd grad_U_LinearElement(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
-   /*
-   スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
-   しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
-   ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T
-   */
-   T3Tddd H = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-   double Atot = 0;
-   for (const auto &f : p->getFaces()) {
-      H += f->area * grad_U_LinearElement(f, orthogonal_basis);
-      Atot += f->area;
-   }
-   return H / Atot;
-};
-
-   //@ ------------------------------------------------------ */
-
-#include "BEM_derivatives.hpp"
-
-   //* ------------------------------------------------------ */
-   //*                        境界値問題を解く                   */
-   //* ------------------------------------------------------ */
-
-   // #define solve_equations_on_all_points
-
-#define solve_equations_on_all_points_rigid_mode
-#define solveBVP_debug
-#include "BEM_BVP.hpp"
-
 // b! ------------------------------------------------------ */
 // b!            格子のdivide, merge．それに伴うΦ，Φnの付与          */
 // b! ------------------------------------------------------ */
@@ -718,353 +219,212 @@ void remesh(Network &water,
 
    flipIf(water, limit_angle_D, limit_angle_N, force);
 };
-// b! ------------------------------------------------------ */
-// b! ------------------------------------------------------ */
-// b! ------------------------------------------------------ */
 
-void setBoundaryConditions(Network &water, const std::vector<Network *> &objects) {
-   auto radius = Mean(extLength(water.getLines()));
-   auto Points = ToVector(water.getPoints());
-   Print("makeBucketFaces", Green);
-   for (const auto &net : objects) {
-      radius = Mean(extLength(net->getLines()));
-      net->makeBucketFaces(radius);
-   }
-
-   // b% -------------------------------------------------------- */
-   // b%              境界条件（角点・ディリクレ・ノイマン）の決定              */
-   // b% -------------------------------------------------------- */
-   // b% step1 点の衝突の判定
-   std::cout << "step1 点の衝突の判定" << std::endl;
-   for (const auto &p : Points)
-      p->clearContactFaces();
-   //!!! 衝突の判定がよくエラーが出る箇所
-   for (const auto &net : objects) {
-#pragma omp parallel
-      for (const auto &p : Points)
-#pragma omp single nowait
-      {
-         //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         p->radius = (Mean(extLength(p->getLines())) + radius) / 2.;
-         // auto toF = extXtuple(ToVector(p->getFaces())) - ToX(p);
-         // auto toP = extXtuple(p->getNeighbors()) - ToX(p);
-         // double a = Norm(*std::min_element(toP.begin(), toP.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
-         // double b = Norm(*std::min_element(toF.begin(), toF.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
-         // p->radius = Mean(extLength(extractLines(Flatten(BFS(p, 2))))) / 5.;
-         p->addContactFaces(net->getBucketFaces(), false); /**shadowあり*/
-      }
-   }
-   // b% step2 面の境界条件を判定
-   std::cout << "step2 面の境界条件を判定" << std::endl;
-
-   // auto isNeumann = [&](const networkFace *const f) {
-   //    auto [p0, p1, p2] = f->getPoints();
-   //    auto faces_p0 = p0->getContactFaces();
-   //    auto faces_p1 = p1->getContactFaces();
-   //    auto faces_p2 = p2->getContactFaces();
-   //    bool isNeumann = f->isThereAnyFacingFace(faces_p0, M_PI / 9.) &&
-   //                     f->isThereAnyFacingFace(faces_p1, M_PI / 9.) &&
-   //                     f->isThereAnyFacingFace(faces_p2, M_PI / 9.);
-   //    return isNeumann;
-   // };
-
-   /*面Aの点が接触している面Bを取得．A,B面が向き合っていればノイマン*/
-   for (const auto &f : water.getFaces()) {
-      auto [p0, p1, p2] = f->getPoints();
-      f->Neumann = isInContact(p0, f, bfs(p0->getContactFaces(), 2)) &&
-                   isInContact(p1, f, bfs(p1->getContactFaces(), 2)) &&
-                   isInContact(p2, f, bfs(p2->getContactFaces(), 2));
-      f->Dirichlet = !f->Neumann;
-   }
-   // b% step3 線の境界条件を決定
-   std::cout << "step3 線の境界条件を決定" << std::endl;
-   for (const auto &l : water.getLines()) {
-      auto faces = l->getFaces();
-      l->Neumann = std::all_of(faces.begin(), faces.end(), [](const auto &f) { return f->Neumann; });
-      l->Dirichlet = std::all_of(faces.begin(), faces.end(), [](const auto &f) { return f->Dirichlet; });
-      if (!l->Neumann && !l->Dirichlet)
-         l->CORNER = true;
-      else
-         l->CORNER = false;
-   }
-   // b% step4 点の境界条件を決定
-   std::cout << "step4 点の境界条件を決定" << std::endl;
-   /*
-     周りの面が全てノイマンなら点はノイマン．
-     周りの面がディリクレとノイマン両方を持っていれば角点
-   　それ以外は，ディリクレ．
-   */
-   for (const auto &p : Points) {
-      auto faces = p->getFacesUO();
-      bool isNeumann = std::all_of(faces.begin(), faces.end(), [](const auto &f) { return f->Neumann; }) &&
-                       !p->getContactFacesX().empty();
-      // getContactFacesXがないと，周りの面がノイマンでも，phinを計算できないことがある．
-      bool isDirichlet = std::all_of(faces.begin(), faces.end(), [](const auto &f) { return f->Dirichlet; });
-
-      if (isNeumann)
-         p->setN();
-      else if (isDirichlet)
-         p->setD();
-      else
-         p->setC();
-   }
-   // b! ------------------------------------------------------ */
-   // b!       　    ノイマン境界の点や面にはΦnを与える                  */
-   // b! ------------------------------------------------------ */
-   // b! 点
-   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
-   //@ -------------------------------------------------------------------------------- */
-   //@ -------------------------------- 多重節点となる条件 ------------------------------- */
-   //@ -------------------------------------------------------------------------------- */
-   // b* p->phinOnFaceは，std::unordered_map<networkFace *, double>
-   // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-   auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
-      // return p->Neumann;
-      // return p->CORNER;
-      return (p->CORNER || std::any_of(facesNeuman.begin(), facesNeuman.end(), [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
-      // return (p->CORNER && std::any_of(facesNeuman.begin(), facesNeuman.end(), [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
-   };
-   //@ -------------------------------------------------------------------------------- */
-   for (const auto &p : Points) {
-      p->phinOnFace.clear();
-      p->phintOnFace.clear();
-      if (p->Neumann || p->CORNER) {
-         // 角度に応じて変更するxf
-         auto facesNeuman = p->getFacesNeumann();
-         if (multiple_node_if(p, facesNeuman)) {
-            for (const auto &f : facesNeuman) {
-               p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
-               p->phintOnFace[f] = {1E+30};  // この値は，derivativesクラス内で計算する
-            }
-         } else {
-            std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
-            p->phinOnFace[nullptr] = std::get<1>(p->phiphin);
-            p->phintOnFace[nullptr] = {1E+30};  // この値は，derivativesクラス内で計算
-         }
-
-         if (!isFinite(p->phiphin)) {
-            std::cout << "p->phiphinはfiniteではない！！" << std::endl;
-            if (p->Neumann)
-               std::cout << "Neumann" << std::endl;
-            if (p->Dirichlet)
-               std::cout << "Dirichlet" << std::endl;
-            if (p->CORNER)
-               std::cout << "CORNER" << std::endl;
-            std::cout << "p->phiphin = " << p->phiphin << std::endl;
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         }
-      }
-   }
-   // b! 面
-   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorOff << std::endl;
-   for (const auto &f : water.getFaces()) {
-      if (f->Neumann) {
-         std::get<1>(f->phiphin) = Dot(uNeumann(f), f->normal);
-      } else {
-         auto [p0, p1, p2] = f->getPoints();
-         std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
-      }
-   }
-};
-
-// b* ------------------------- 出力 ------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                     出力                                    */
+/* -------------------------------------------------------------------------- */
 VV_VarForOutput dataForOutput(const Network &water, const double dt) {
-   auto hist = Histogram(extLength(water.getLines()));
-   std::stringstream ss;
-   ss << "\"cumulative_count\":" << hist.cumulative_count << ","
-      << "\"diff\":" << hist.diff << ","
-      << "\"count\":" << hist.count << ","
-      << "\"interval\":" << hist.interval << ","
-      << "\"bin_width\":" << hist.bin_width << ","
-      << "\"mid_interval\":" << hist.mid_interval << ",";
-   std::string s = ss.str();
-   std::replace(s.begin(), s.end(), '{', '[');
-   std::replace(s.begin(), s.end(), '}', ']');
-   std::cout << "{" << s << "}" << std::endl;
-   // if (*hist.data.rbegin() > 5)
-   // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "length > 5");
-
-   int ii = 0;
-   derivatives ders(water, false);
-   //-------------------------------------------
-   map_P_Vd P_phiphin;
-   // V_d lim_len = Subdivide(0.3, 0.2, 5 - 1);
-   /* ------------------------------------------------------ */
-   std::cout << "-------------------- 次の時刻の変数の値を得る -------------------- " << std::endl;
-   std::cout << "------------------ getImprovedの後に微分を評価 ----------------------- " << std::endl;
-   uomap_P_Tddd P_accel_body, P_NearestContactFacesX, P_position,
-       P_phin_Neumann, P_phin_Dirichlet, P_velocity_body,
-       P_uNeumann, P_normal, P_normal_BEM, P_mirrorPosition, P_U_normal_BEM, P_U_dot_gradgrad_U,
-       P_U_tangential_BEM, P_U_BEM, P_adustment_vector, P_U_update_BEM, P_U_cling_to_Neumann, P_phin_vector, P_gradPhi_tangential, P_gradPhi;
-   uomap_P_d P_IG, P_IGn, P_isGoodForQuad, P_smin_min, P_s_m, P_minViewRatio, P_DphiDt,
-       P_volume, P_phi_Neumann, P_phi_Dirichlet, P_state, P_solidangleBIE, P_height, P_phi, P_phin,
-       P_face_size, P_radius, P_lines_size, P_ishit, P_BC, P_Intxn_size, P_ContactFaces,
-       P_is_multiple_phiphin, P_min_depth, P_aphiat, P_aphiant, P_pressure, P_update_vs_cling, P_normalVariance, P_isMultipleNode;
-
-   uomap_P_Tddd initial_uomap_P_Tddd;
-   uomap_P_d initial_uomap_P_d;
-   for (const auto &p : water.getPoints()) {
-      initial_uomap_P_Tddd[p] = {1E+30, 1E+30, 1E+30};
-      initial_uomap_P_d[p] = 1E+30;
-   }
-   P_U_dot_gradgrad_U = P_gradPhi = P_gradPhi_tangential = P_phin_vector = P_accel_body = P_position = P_NearestContactFacesX = P_phin_Neumann = P_phin_Dirichlet = P_velocity_body = P_uNeumann = P_normal = P_normal_BEM = P_mirrorPosition = P_U_normal_BEM = P_U_tangential_BEM = P_adustment_vector = P_U_BEM = P_U_update_BEM = P_U_cling_to_Neumann = initial_uomap_P_Tddd;
-   P_isMultipleNode = P_DphiDt = P_IG = P_IGn = P_isGoodForQuad = P_smin_min = P_s_m = P_minViewRatio = P_volume = P_phi_Neumann = P_phi_Dirichlet = P_state = P_solidangleBIE = P_height = P_phi = P_phin = P_face_size = P_radius = P_lines_size = P_ishit = P_BC = P_Intxn_size = P_ContactFaces = P_is_multiple_phiphin = P_min_depth = P_aphiat = P_aphiant = P_pressure = P_update_vs_cling = P_normalVariance = initial_uomap_P_d;
-
-   Print("ders.P_phiphin_InnerOuterCornerPを出力");
    try {
+      auto hist = Histogram(extLength(water.getLines()));
+      std::stringstream ss;
+      ss << "\"cumulative_count\":" << hist.cumulative_count << ","
+         << "\"diff\":" << hist.diff << ","
+         << "\"count\":" << hist.count << ","
+         << "\"interval\":" << hist.interval << ","
+         << "\"bin_width\":" << hist.bin_width << ","
+         << "\"mid_interval\":" << hist.mid_interval << ",";
+      std::string s = ss.str();
+      std::replace(s.begin(), s.end(), '{', '[');
+      std::replace(s.begin(), s.end(), '}', ']');
+      std::cout << "{" << s << "}" << std::endl;
+      // if (*hist.data.rbegin() > 5)
+      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "length > 5");
+
+      int ii = 0;
+      // derivatives ders(water, false);
+      //-------------------------------------------
+      map_P_Vd P_phiphin;
+      // V_d lim_len = Subdivide(0.3, 0.2, 5 - 1);
+      /* ------------------------------------------------------ */
+      std::cout << "-------------------- 次の時刻の変数の値を得る -------------------- " << std::endl;
+      std::cout << "------------------ getImprovedの後に微分を評価 ----------------------- " << std::endl;
+      uomap_P_Tddd P_accel_body, P_NearestContactFacesX, P_position,
+          P_phin_Neumann, P_phin_Dirichlet, P_velocity_body,
+          P_uNeumann, P_normal, P_normal_BEM, P_mirrorPosition, P_U_normal_BEM, P_U_dot_gradgrad_U,
+          P_U_tangential_BEM, P_U_BEM, P_adustment_vector, P_U_update_BEM, P_U_cling_to_Neumann, P_phin_vector, P_gradPhi_tangential, P_gradPhi;
+      uomap_P_d P_IG, P_IGn, P_isGoodForQuad, P_smin_min, P_s_m, P_minViewRatio, P_DphiDt,
+          P_volume, P_phi_Neumann, P_phi_Dirichlet, P_state, P_solidangleBIE, P_height, P_phi, P_phin,
+          P_face_size, P_radius, P_lines_size, P_ishit, P_BC, P_Intxn_size, P_ContactFaces,
+          P_is_multiple_phiphin, P_min_depth, P_aphiat, P_aphiant, P_pressure, P_update_vs_cling, P_normalVariance, P_isMultipleNode;
+
+      uomap_P_Tddd initial_uomap_P_Tddd;
+      uomap_P_d initial_uomap_P_d;
+      for (const auto &p : water.getPoints()) {
+         initial_uomap_P_Tddd[p] = {1E+30, 1E+30, 1E+30};
+         initial_uomap_P_d[p] = 1E+30;
+      }
+      P_U_dot_gradgrad_U = P_gradPhi = P_gradPhi_tangential = P_phin_vector = P_accel_body = P_position = P_NearestContactFacesX = P_phin_Neumann = P_phin_Dirichlet = P_velocity_body = P_uNeumann = P_normal = P_normal_BEM = P_mirrorPosition = P_U_normal_BEM = P_U_tangential_BEM = P_adustment_vector = P_U_BEM = P_U_update_BEM = P_U_cling_to_Neumann = initial_uomap_P_Tddd;
+      P_isMultipleNode = P_DphiDt = P_IG = P_IGn = P_isGoodForQuad = P_smin_min = P_s_m = P_minViewRatio = P_volume = P_phi_Neumann = P_phi_Dirichlet = P_state = P_solidangleBIE = P_height = P_phi = P_phin = P_face_size = P_radius = P_lines_size = P_ishit = P_BC = P_Intxn_size = P_ContactFaces = P_is_multiple_phiphin = P_min_depth = P_aphiat = P_aphiant = P_pressure = P_update_vs_cling = P_normalVariance = initial_uomap_P_d;
+
+      Print("ders.P_phiphin_InnerOuterCornerPを出力");
+      try {
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
-      for (const auto &p : water.getPoints())
+         for (const auto &p : water.getPoints())
 #ifdef _OPENMP
 #pragma omp single nowait
 #endif
-      {
-         if (p->Neumann || p->CORNER) {
-            P_accel_body[p] = accelNeumann(p);
-            P_velocity_body[p] = uNeumann(p);
-         }
-         // auto [m0, s0, min0, smin0, max0] = distorsion(p, dt);
-         // P_s_m[p] = s0 / m0;
-         // P_smin_min[p] = smin0 / min0;
-         P_volume[p] = water.getVolume();
-         // P_phin_Neumann[p] = p->getNormalNeumann_BEM() * p->phin_Neumann;
-         P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
-         // P_phi_Neumann[p] = p->phi_Neumann;
-         P_phi_Dirichlet[p] = p->phi_Dirichlet;
-         if (p->Neumann || p->CORNER) {
-            auto f = NearestContactFace(p);
-            if (f) {
-               P_NearestContactFacesX[p] = Nearest(p->X, NearestContactFace(p)) - ToX(p);
+         {
+            if (p->Neumann || p->CORNER) {
+               P_accel_body[p] = accelNeumann(p);
+               P_velocity_body[p] = uNeumann(p);
             }
+            // auto [m0, s0, min0, smin0, max0] = distorsion(p, dt);
+            // P_s_m[p] = s0 / m0;
+            // P_smin_min[p] = smin0 / min0;
+            P_volume[p] = water.getVolume();
+            // P_phin_Neumann[p] = p->getNormalNeumann_BEM() * p->phin_Neumann;
+            P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
+            // P_phi_Neumann[p] = p->phi_Neumann;
+            P_phi_Dirichlet[p] = p->phi_Dirichlet;
+            if (p->Neumann || p->CORNER) {
+               auto f = NearestContactFace(p);
+               if (f) {
+                  P_NearestContactFacesX[p] = Nearest(p->X, NearestContactFace(p)) - ToX(p);
+               }
+            }
+            // P_adustment_vector[p] = p->U_BUFFER;
+            // P_U_cling_to_Neumann[p] = p->U_cling_to_Neumann;
+            // P_update_vs_cling[p] = Norm(p->U_cling_to_Neumann) / Norm(p->U_update_BEM);
+            P_U_BEM[p] = p->U_BEM;
+            P_U_update_BEM[p] = p->U_update_BEM;
+            // P_solidangleBIE[p] = p->getSolidAngle();
+            // P_minViewRatio[p] = minViewRatio(p);
+            if (p->phinOnFace.empty())
+               P_isMultipleNode[p] = 0;
+            else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
+               P_isMultipleNode[p] = 1;
+            else
+               P_isMultipleNode[p] = 2;
+            // P_normalVariance[p] = normalVariance(p);
+            // P_U_normal_BEM[p] = p->U_normal_BEM;
+            // P_U_tangential_BEM[p] = p->U_tangential_BEM;
+            // P_state[p] = p->getStatus();
+            // P_height[p] = std::get<2>(p->X);
+            P_phi[p] = std::get<0>(p->phiphin);
+            P_phin[p] = std::get<1>(p->phiphin);
+            // P_normal[p] = p->normal;
+            P_normal_BEM[p] = p->getNormal_BEM();
+            // P_face_size[p] = (double)p->getFaces().size();
+            // P_lines_size[p] = (double)p->getLines().size();
+            // P_lines_length[p] = extLength(p->getLines());
+            // P_Intxn_size[p] = (double)takeIntxn(p->getLines()).size();
+            P_ContactFaces[p] = (double)p->getContactFaces().size();
+            // P_Intxn_length[p] = extLength(takeIntxn(p->getLines()));
+            P_BC[p] = p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.));
+            // if (!p->getContactFaces().empty())
+            // 	P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - ToX(p);
+            P_radius[p] = p->radius;
+            P_position[p] = ToX(p);
+            // P_ishit[p] = (double)(!p->getContactFaces().empty());
+            // P_ishit[p] = (double)(p->getStatus());
+            // P_is_multiple_phiphin[p] = (double)(p->multiple_phiphin.size());
+            // P_min_depth[p] = p->minDepthFromCORNER; //;getMinDepth(p);
+            bool isgood = true;
+            for (const auto &l : p->getLines())
+               isgood = isgood && l->isGoodForQuadInterp();
+            // P_isGoodForQuad[p] = isgood;
+            // P_aphiat[p] = std::get<0>(p->phiphin_t);
+            // P_aphiant[p] = std::get<1>(p->phiphin_t);
+            P_pressure[p] = p->pressure_BEM;
+            P_uNeumann[p] = uNeumann(p);
+            P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
+            P_phin_vector[p] = p->U_normal_BEM;
+            // P_gradPhi_tangential[p] = p->U_tangential_BEM;
+            P_gradPhi[p] = p->U_BEM;
+            // P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
          }
-         // P_adustment_vector[p] = p->U_BUFFER;
-         // P_U_cling_to_Neumann[p] = p->U_cling_to_Neumann;
-         // P_update_vs_cling[p] = Norm(p->U_cling_to_Neumann) / Norm(p->U_update_BEM);
-         P_U_BEM[p] = p->U_BEM;
-         P_U_update_BEM[p] = p->U_update_BEM;
-         // P_solidangleBIE[p] = p->getSolidAngle();
-         // P_minViewRatio[p] = minViewRatio(p);
-         if (p->phinOnFace.empty())
-            P_isMultipleNode[p] = 0;
-         else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
-            P_isMultipleNode[p] = 1;
-         else
-            P_isMultipleNode[p] = 2;
-         // P_normalVariance[p] = normalVariance(p);
-         // P_U_normal_BEM[p] = p->U_normal_BEM;
-         // P_U_tangential_BEM[p] = p->U_tangential_BEM;
-         // P_state[p] = p->getStatus();
-         // P_height[p] = std::get<2>(p->X);
-         P_phi[p] = std::get<0>(p->phiphin);
-         P_phin[p] = std::get<1>(p->phiphin);
-         // P_normal[p] = p->normal;
-         P_normal_BEM[p] = p->getNormal_BEM();
-         // P_face_size[p] = (double)p->getFaces().size();
-         // P_lines_size[p] = (double)p->getLines().size();
-         // P_lines_length[p] = extLength(p->getLines());
-         // P_Intxn_size[p] = (double)takeIntxn(p->getLines()).size();
-         P_ContactFaces[p] = (double)p->getContactFaces().size();
-         // P_Intxn_length[p] = extLength(takeIntxn(p->getLines()));
-         P_BC[p] = p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.));
-         // if (!p->getContactFaces().empty())
-         // 	P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - ToX(p);
-         P_radius[p] = p->radius;
-         P_position[p] = ToX(p);
-         // P_ishit[p] = (double)(!p->getContactFaces().empty());
-         // P_ishit[p] = (double)(p->getStatus());
-         // P_is_multiple_phiphin[p] = (double)(p->multiple_phiphin.size());
-         // P_min_depth[p] = p->minDepthFromCORNER; //;getMinDepth(p);
-         bool isgood = true;
-         for (const auto &l : p->getLines())
-            isgood = isgood && l->isGoodForQuadInterp();
-         // P_isGoodForQuad[p] = isgood;
-         // P_aphiat[p] = std::get<0>(p->phiphin_t);
-         // P_aphiant[p] = std::get<1>(p->phiphin_t);
-         P_pressure[p] = p->pressure_BEM;
-         P_uNeumann[p] = uNeumann(p);
-         P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
-         P_phin_vector[p] = p->U_normal_BEM;
-         // P_gradPhi_tangential[p] = p->U_tangential_BEM;
-         P_gradPhi[p] = p->U_BEM;
-         // P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
-      }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-   try {
-      // phiのアップデートがされていない
-      VV_VarForOutput data = {
-          // {"s/m", P_s_m},
-          // {"smin/min", P_smin_min},
-          {"accel Neumann", P_accel_body},
-          //  {"adustment vector", P_adustment_vector},
-          // {"volume", P_volume},
-          //  {"U_cling_to_Neumann", P_U_cling_to_Neumann},
-          //  {"absU_cling_to_Neumann/absU_update_BEM", P_update_vs_cling},
-          {"velocity Neumann", P_velocity_body},
-          //  {"Nearest face", P_NearestContactFacesX},
-          //  {"φn_Neumann", P_phin_Neumann},
-          //  {"φn_Dirichlet", P_phin_Dirichlet},
-          //  {"φ_Neumann", P_phi_Neumann},
-          //  {"φ_Dirichlet", P_phi_Dirichlet},
-          //  {"min_depth", P_min_depth},
-          {"isMultipleNode", P_isMultipleNode},
-          // P_NearestContactFacesXで確かに最寄の構造物までをさすことができている．！
-          // これで改善できない？
-          //  {"U_update_BEM", P_U_update_BEM},
-          {"U_BEM", P_U_BEM},
-          //  {"U_normal_BEM", P_U_normal_BEM},
-          {"U_tangential_BEM", P_U_tangential_BEM},
-          // {"kappa", ders.P_kappa},
-          {"ContactFaces", P_ContactFaces},
-          // {"dxdt_mod", P_dxdt_mod},
-          {"grad_phi", P_gradPhi},
-          //  {"phin_vector", P_phin_vector},
-          //  {"gradPhiTangential", P_gradPhi_tangential},
-          //  {"z", P_height},
-          {"position", P_position},
-          {"φ", P_phi},
-          {"φn", P_phin},
-          //  {"solidangle", P_solidangleBIE},
-          //  {"minViewRatio", P_minViewRatio},
-          //  {"normalVariance", P_normalVariance},
-          //  {"normal", P_normal},
-          //  {"uNeumann", P_uNeumann},
-          //  {"normal_BEM", P_normal_BEM},
-          //  {"all_lines_are_GoodForQuad", P_isGoodForQuad},
-          // {"laplacian_phi", P_laplacian},
-          // {"face_size", P_face_size},
-          // {"line_length", 10, P_lines_length},
-          // {"line_size", P_lines_size},
-          // {"Intxn_size", P_Intxn_size},
-          // {"Intxn_length", 10, P_Intxn_length},
-          {"boundary condition", P_BC},
-          //  {"radius", P_radius},
-          // {"state", P_state},
-          // {"correction vector", ders.P_dxdt_correct},
-          //  {"DφDt", P_DphiDt},
-          //  {"φt", P_aphiat},
-          //  {"φnt", P_aphiant},
-          {"pressure", P_pressure}
-          //  {"U.∇U", P_U_dot_gradgrad_U},
-          //  {"IG", P_IG},
-          //  {"IGn", P_IGn}
-          // {"vector to mirrorPosition", P_mirrorPosition},
-          // {"is hit", P_ishit}
+      } catch (std::exception &e) {
+         std::cerr << e.what() << colorOff << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
-      return data;
+      try {
+         // phiのアップデートがされていない
+         VV_VarForOutput data = {
+             // {"s/m", P_s_m},
+             // {"smin/min", P_smin_min},
+             {"accel Neumann", P_accel_body},
+             //  {"adustment vector", P_adustment_vector},
+             // {"volume", P_volume},
+             //  {"U_cling_to_Neumann", P_U_cling_to_Neumann},
+             //  {"absU_cling_to_Neumann/absU_update_BEM", P_update_vs_cling},
+             {"velocity Neumann", P_velocity_body},
+             //  {"Nearest face", P_NearestContactFacesX},
+             //  {"φn_Neumann", P_phin_Neumann},
+             //  {"φn_Dirichlet", P_phin_Dirichlet},
+             //  {"φ_Neumann", P_phi_Neumann},
+             //  {"φ_Dirichlet", P_phi_Dirichlet},
+             //  {"min_depth", P_min_depth},
+             {"isMultipleNode", P_isMultipleNode},
+             // P_NearestContactFacesXで確かに最寄の構造物までをさすことができている．！
+             // これで改善できない？
+             //  {"U_update_BEM", P_U_update_BEM},
+             {"U_BEM", P_U_BEM},
+             //  {"U_normal_BEM", P_U_normal_BEM},
+             {"U_tangential_BEM", P_U_tangential_BEM},
+             // {"kappa", ders.P_kappa},
+             {"ContactFaces", P_ContactFaces},
+             // {"dxdt_mod", P_dxdt_mod},
+             {"grad_phi", P_gradPhi},
+             //  {"phin_vector", P_phin_vector},
+             //  {"gradPhiTangential", P_gradPhi_tangential},
+             //  {"z", P_height},
+             {"position", P_position},
+             {"φ", P_phi},
+             {"φn", P_phin},
+             //  {"solidangle", P_solidangleBIE},
+             //  {"minViewRatio", P_minViewRatio},
+             //  {"normalVariance", P_normalVariance},
+             //  {"normal", P_normal},
+             //  {"uNeumann", P_uNeumann},
+             //  {"normal_BEM", P_normal_BEM},
+             //  {"all_lines_are_GoodForQuad", P_isGoodForQuad},
+             // {"laplacian_phi", P_laplacian},
+             // {"face_size", P_face_size},
+             // {"line_length", 10, P_lines_length},
+             // {"line_size", P_lines_size},
+             // {"Intxn_size", P_Intxn_size},
+             // {"Intxn_length", 10, P_Intxn_length},
+             {"boundary condition", P_BC},
+             //  {"radius", P_radius},
+             // {"state", P_state},
+             // {"correction vector", ders.P_dxdt_correct},
+             //  {"DφDt", P_DphiDt},
+             //  {"φt", P_aphiat},
+             //  {"φnt", P_aphiant},
+             {"pressure", P_pressure}
+             //  {"U.∇U", P_U_dot_gradgrad_U},
+             //  {"IG", P_IG},
+             //  {"IGn", P_IGn}
+             // {"vector to mirrorPosition", P_mirrorPosition},
+             // {"is hit", P_ishit}
+         };
+         return data;
+      } catch (std::exception &e) {
+         std::cerr << e.what() << colorOff << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+      };
+      std::cout << __PRETTY_FUNCTION__ << " done" << std::endl;
+      // mk_vtu(output_directory + "/" + net.getName() + std::to_string(time_step) + ".vtu", net.getFaces(), datacpg);
+      // mk_vtu(output_directory + "/" + name + std::to_string(time_step) + ".vtu", cpg.well_Faces, datacpg);
+      // cpg_pvd.push(name, name + std::to_string(time_step) + ".vtu", time_step * t_rep * dt);
+      // cpg_pvd.output_();
+      return {};
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
-   std::cout << __PRETTY_FUNCTION__ << " done" << std::endl;
-   // mk_vtu(output_directory + "/" + net.getName() + std::to_string(time_step) + ".vtu", net.getFaces(), datacpg);
-   // mk_vtu(output_directory + "/" + name + std::to_string(time_step) + ".vtu", cpg.well_Faces, datacpg);
-   // cpg_pvd.push(name, name + std::to_string(time_step) + ".vtu", time_step * t_rep * dt);
-   // cpg_pvd.output_();
-   return {};
 };
 /* ------------------------------------------------------ */
 

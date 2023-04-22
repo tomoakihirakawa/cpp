@@ -26,8 +26,6 @@
                 <source_extension>.hpp</source_extension>
             </source_extensions>
             <source_paths>
-                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM_BVP.hpp</source_path>
-                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM_derivatives.hpp</source_path>
                 <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/main.cpp</source_path>
                 <source_path>../../include/basic_alias.hpp</source_path>
                 <source_path>../../include/basic_arithmetic_vector_operations.hpp</source_path>
@@ -56,7 +54,12 @@
                 <source_path>../../include/vtkWriter.hpp</source_path>
                 <source_path>../../include/XML.hpp</source_path>
                 <source_path>../../include/searcher.hpp</source_path>
-                <source_path>/Users/tomoaki/Dropbox/code/cpp/builds/build_bem/BEM.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_array_operations.hpp</source_path>
+                <source_path>BEM_utilities.hpp</source_path>
+                <source_path>BEM_setBoundaryConditions.hpp</source_path>
+                <source_path>BEM.hpp</source_path>
+                <source_path>BEM_solveBVP.hpp</source_path>
+                <source_path>BEM_calculateVelocities.hpp</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

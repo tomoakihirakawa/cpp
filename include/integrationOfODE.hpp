@@ -26,7 +26,7 @@ struct RungeKuttaCommon {
                    // 最終結果はdXに代入される;
    void displayStatus() {
       std::cout << "dt : " << red << this->dt << colorOff << std::endl;
-      std::cout << "_dX : " << red << this->_dX << colorOff << std::endl;
+      // std::cout << "_dX : " << red << this->_dX << colorOff << std::endl;
       std::cout << "dX : " << red << this->dX << colorOff << std::endl;
    };
    int steps;
@@ -72,7 +72,7 @@ struct RungeKuttaCommon {
             case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed;
             case 1:
-               return dt_fixed / 2.; 
+               return dt_fixed / 2.;
             default:
                return dt_fixed;
          }
@@ -269,26 +269,10 @@ struct RungeKutta<double> : public RungeKuttaCommon<double> {
    };
    RungeKutta() : RungeKuttaCommon<double>(){};
 };
-template <>
-struct RungeKutta<Tddd> : public RungeKuttaCommon<Tddd> {
-   RungeKutta(const double dt_IN, const double t0, const Tddd &X0, int stepsIN) : RungeKuttaCommon<Tddd>(dt_IN, t0, X0, stepsIN) {
-      this->dX = {0, 0, 0};
-   };
-   RungeKutta() : RungeKuttaCommon<Tddd>(){};
-};
-template <>
-struct RungeKutta<T4d> : public RungeKuttaCommon<T4d> {
-   RungeKutta(const double dt_IN, const double t0, const T4d &X0, int stepsIN) : RungeKuttaCommon<T4d>(dt_IN, t0, X0, stepsIN) {
-      this->dX = {0, 0, 0, 0};
-   };
-   RungeKutta() : RungeKuttaCommon<T4d>(){};
-};
-template <>
-struct RungeKutta<T6d> : public RungeKuttaCommon<T6d> {
-   RungeKutta(const double dt_IN, const double t0, const T6d &X0, int stepsIN) : RungeKuttaCommon<T6d>(dt_IN, t0, X0, stepsIN) {
-      this->dX = {0, 0, 0, 0, 0, 0};
-   };
-   RungeKutta() : RungeKuttaCommon<T6d>(){};
+template <std::size_t N>
+struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<double, N>> {
+   RungeKutta(const double dt_IN, const double t0, const std::array<double, N> &X0, int stepsIN) : RungeKuttaCommon<std::array<double, N>>(dt_IN, t0, X0, stepsIN) { this->dX.fill(0.); };
+   RungeKutta() : RungeKuttaCommon<std::array<double, N>>(){};
 };
 
 #endif

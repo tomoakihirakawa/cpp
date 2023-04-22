@@ -11,11 +11,11 @@
 // そのために，
 // タプルを作ろうとしている，
 
-using Tdd = std::tuple<double, double>;
-using Tddd = std::tuple<double, double, double>;
-using T2Tddd = std::tuple<Tddd, Tddd>;
-using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
-using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
+// using Tdd = std::tuple<double, double>;
+// using Tddd = std::tuple<double, double, double>;
+// using T2Tddd = std::tuple<Tddd, Tddd>;
+// using T3Tddd = std::tuple<Tddd, Tddd, Tddd>;
+// using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 
 /* -------------------------------------------------------------------------- */
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
@@ -152,7 +152,7 @@ double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
 };
 
 T4d TetrahedronSolidAngle_UsingVectorAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
-   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3 - X0) < 0)
+   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3. - X0) < 0)
       X2.swap(X3);
    return {(SolidAngle_UsingVectorAngle(X0, X1, X2, X3)),
            (SolidAngle_UsingVectorAngle(X1, X0, X3, X2)),
@@ -161,7 +161,7 @@ T4d TetrahedronSolidAngle_UsingVectorAngle(const Tddd &X0, const Tddd &X1, Tddd 
 };
 
 T4d TetrahedronSolidAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
-   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3 - X0) < 0)
+   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3. - X0) < 0)
       X2.swap(X3);
    return {(SolidAngle_VanOosteromAandStrackeeJ1983(X0, X1, X2, X3)),
            (SolidAngle_VanOosteromAandStrackeeJ1983(X1, X0, X3, X2)),
@@ -280,6 +280,10 @@ bool isInside(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
    auto [X0, X1] = std::get<0>(bounds);
    auto [Y0, Y1] = std::get<1>(bounds);
    auto [Z0, Z1] = std::get<2>(bounds);
+   auto isInside = [&](const Tddd &X, const Tddd &Xcenter, const double &r) {
+      // point v.s. sphere
+      return Norm(X - Xcenter) < r;
+   };
    return (isInside({X0, Y0, Z0}, Xcenter, r) &&
            isInside({X1, Y0, Z0}, Xcenter, r) &&
            isInside({X1, Y1, Z0}, Xcenter, r) &&
@@ -293,6 +297,10 @@ bool isInside(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
    auto [X0, X1] = std::get<0>(bounds);
    auto [Y0, Y1] = std::get<1>(bounds);
    auto [Z0, Z1] = std::get<2>(bounds);
+   auto isInside = [&](const Tddd &X, const Tddd &Xcenter, const double &r) {
+      // point v.s. sphere
+      return Norm(X - Xcenter) < r;
+   };
    return (!isInside({X0, Y0, Z0}, Xcenter, r) &&
            !isInside({X1, Y0, Z0}, Xcenter, r) &&
            !isInside({X1, Y1, Z0}, Xcenter, r) &&
@@ -373,7 +381,7 @@ struct Line {
                       std::get<2>(std::get<1>(XIN))})),
          maxZ(Max(Tdd{std::get<2>(std::get<0>(XIN)),
                       std::get<2>(std::get<1>(XIN))})),
-         bounds({{minX, maxX}, {minY, maxY}, {minZ, maxZ}}){};
+         bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
    Line(const Tddd &X0IN, const Tddd &X1IN)
        : X({X0IN, X1IN}),
          minX(Min(Tdd{std::get<0>(X0IN), std::get<0>(X1IN)})),
@@ -382,7 +390,7 @@ struct Line {
          maxY(Max(Tdd{std::get<1>(X0IN), std::get<1>(X1IN)})),
          minZ(Min(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
          maxZ(Max(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
-         bounds({{minX, maxX}, {minY, maxY}, {minZ, maxZ}}){};
+         bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
 };
 /* ------------------------------------------------------ */
 struct Triangle {
@@ -393,7 +401,7 @@ struct Triangle {
    Triangle(const T3Tddd &XIN)
        : X(XIN),
          center(Mean(XIN)),
-         bounds({{(Min(Tddd{std::get<0>(std::get<0>(XIN)),
+         bounds{{{(Min(Tddd{std::get<0>(std::get<0>(XIN)),
                             std::get<0>(std::get<1>(XIN)),
                             std::get<0>(std::get<2>(XIN))})),
                   (Max(Tddd{std::get<0>(std::get<0>(XIN)),
@@ -410,13 +418,13 @@ struct Triangle {
                             std::get<2>(std::get<2>(XIN))})),
                   (Max(Tddd{std::get<2>(std::get<0>(XIN)),
                             std::get<2>(std::get<1>(XIN)),
-                            std::get<2>(std::get<2>(XIN))}))}}),
+                            std::get<2>(std::get<2>(XIN))}))}}},
          normal(Normalize(Cross(std::get<1>(X) - std::get<0>(X),
                                 std::get<2>(X) - std::get<0>(X)))){};
    Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
        : X({X0IN, X1IN, X2IN}),
          center((X0IN + X1IN + X2IN) / 3.),
-         bounds({{(Min(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
+         bounds{{{(Min(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
                             std::get<0>(X2IN)})),
                   (Max(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
                             std::get<0>(X2IN)}))},
@@ -427,7 +435,7 @@ struct Triangle {
                  {(Min(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
                             std::get<2>(X2IN)})),
                   (Max(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
-                            std::get<2>(X2IN)}))}}),
+                            std::get<2>(X2IN)}))}}},
          normal(Normalize(Cross(X1IN - X0IN, X2IN - X0IN))){};
 };
 
@@ -440,10 +448,10 @@ struct Sphere {
    Sphere(const Tddd &XIN, const double radiusIN = 0.)
        : X(XIN),
          radius(radiusIN),
-         bounds({{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
+         bounds{{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
                  {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
                  {(std::get<2>(XIN) - radiusIN),
-                  (std::get<2>(XIN) + radiusIN)}}){};
+                  (std::get<2>(XIN) + radiusIN)}}} {};
 };
 };  // namespace geometry
 
@@ -465,11 +473,11 @@ struct CoordinateBounds {
       xrange = {cX + scale * (x0 - cX), cX + scale * (x1 - cX)};
       yrange = {cY + scale * (y0 - cY), cY + scale * (y1 - cY)};
       zrange = {cZ + scale * (z0 - cZ), cZ + scale * (z1 - cZ)};
-      return T3Tdd{xrange, yrange, zrange};
+      return {{xrange, yrange, zrange}};
    };
    /* -------------------------------------------------------------------------- */
    void setBounds(const std::vector<Tddd> &Vxyz) {
-      this->bounds = MinMaxTranspose(Vxyz);
+      this->bounds = MinMaxColumns(Vxyz);
       this->X = Mean(Transpose(this->bounds));
    };
    void setBounds(const CoordinateBounds &bs) {
@@ -477,11 +485,11 @@ struct CoordinateBounds {
       this->X = bs.X;
    };
    void setBounds(const T3Tddd &X012) {
-      this->bounds = MinMaxTranspose(X012);
+      this->bounds = MinMaxColumns(X012);
       this->X = Mean(X012);
    };
    void setBounds(const Tddd &x) {
-      this->bounds = {{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}};
+      this->bounds = {{{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}}};
       this->X = x;
    };
    const Tddd &getXtuple() const {
@@ -493,21 +501,21 @@ struct CoordinateBounds {
    // std::get<2>(this->X)}; };
    const T3Tdd &getBounds() const { return this->bounds; };
    /* ------------------------------------------------------ */
-   CoordinateBounds() : bounds({{1E+20, -1E+20}, {1E+20, -1E+20}, {1E+20, -1E+20}}){};
+   CoordinateBounds() : bounds{{{1E+20, -1E+20}, {1E+20, -1E+20}, {1E+20, -1E+20}}} {};
    CoordinateBounds(const CoordinateBounds &bs) : bounds(bs.bounds), X(bs.X){};
    CoordinateBounds(const Tdd &minmaxX, const Tdd &minmaxY, const Tdd &minmaxZ) : bounds({minmaxX, minmaxY, minmaxZ}), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const Tddd &x) : bounds({{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}}), X(x){};
+   CoordinateBounds(const Tddd &x) : bounds{{{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}}}, X(x){};
    CoordinateBounds(const T3Tdd &minmax) : bounds(minmax), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const double minX, const double maxX, const double minY, const double maxY, const double minZ, const double maxZ) : bounds({{minX, maxX}, {minY, maxY}, {minZ, maxZ}}), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const T2Tddd &x) : bounds(MinMaxTranspose(x)), X(Mean(x)){};
-   CoordinateBounds(const T3Tddd &x) : bounds(MinMaxTranspose(x)), X(Mean(x)){};
-   CoordinateBounds(const T4Tddd &x) : bounds(MinMaxTranspose(x)), X(Mean(x)){};
-   CoordinateBounds(const Tddd &x0, const Tddd &x1, const Tddd &x2) : bounds(MinMaxTranspose(T3Tddd{x0, x1, x2})), X((x0 + x1 + x2) / 3.){};
+   CoordinateBounds(const double minX, const double maxX, const double minY, const double maxY, const double minZ, const double maxZ) : bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}}, X(Mean(Transpose(bounds))){};
+   CoordinateBounds(const T2Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
+   CoordinateBounds(const T3Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
+   CoordinateBounds(const T4Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
+   CoordinateBounds(const Tddd &x0, const Tddd &x1, const Tddd &x2) : bounds(MinMaxColumns(T3Tddd{x0, x1, x2})), X((x0 + x1 + x2) / 3.){};
    CoordinateBounds(const std::vector<T3Tddd> &V_X);
-   CoordinateBounds(const std::vector<Tddd> &X) : bounds(MinMax(Transpose(X))), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const geometry::Line &L) : bounds(MinMaxTranspose(L.X)){};
-   CoordinateBounds(const geometry::Sphere &S) : bounds({{std::get<0>(S.X) - S.radius, std::get<0>(S.X) + S.radius}, {std::get<1>(S.X) - S.radius, std::get<1>(S.X) + S.radius}, {std::get<2>(S.X) - S.radius, std::get<2>(S.X) + S.radius}}){};
-   CoordinateBounds(const geometry::Triangle &T) : bounds(MinMaxTranspose(T.X)){};
+   CoordinateBounds(const std::vector<Tddd> &X) : bounds(MinMaxColumns(X)), X(Mean(Transpose(bounds))){};
+   CoordinateBounds(const geometry::Line &L) : bounds(MinMaxColumns(L.X)){};
+   CoordinateBounds(const geometry::Sphere &S) : bounds{{{std::get<0>(S.X) - S.radius, std::get<0>(S.X) + S.radius}, {std::get<1>(S.X) - S.radius, std::get<1>(S.X) + S.radius}, {std::get<2>(S.X) - S.radius, std::get<2>(S.X) + S.radius}}} {};
+   CoordinateBounds(const geometry::Triangle &T) : bounds(MinMaxColumns(T.X)){};
    /* ------------------------------------------------------ */
    Tdd Distance(const Tddd &a) const {
       auto [mmX, mmY, mmZ] = this->bounds;
@@ -545,14 +553,14 @@ struct CoordinateBounds {
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
       // connectivity:  {{x4, x6, x7, x5}, {x0, x2, x6, x4}, {x2, x3, x7, x6}, {x3, x1, x5, x7}, {x0, x4, x5, x1}, {x0, x1, x3, x2}}
-      return T8Tddd{{X0, Y0, Z0},   // 000, 0
-                    {X0, Y0, Z1},   // 001, 1
-                    {X0, Y1, Z0},   // 010, 2
-                    {X0, Y1, Z1},   // 011, 3
-                    {X1, Y0, Z0},   // 100, 4
-                    {X1, Y0, Z1},   // 101, 5
-                    {X1, Y1, Z0},   // 110, 6
-                    {X1, Y1, Z1}};  // 111, 7
+      return T8Tddd{{{X0, Y0, Z0},    // 000, 0
+                     {X0, Y0, Z1},    // 001, 1
+                     {X0, Y1, Z0},    // 010, 2
+                     {X0, Y1, Z1},    // 011, 3
+                     {X1, Y0, Z0},    // 100, 4
+                     {X1, Y0, Z1},    // 101, 5
+                     {X1, Y1, Z0},    // 110, 6
+                     {X1, Y1, Z1}}};  // 111, 7
    };
    //% ---------------- キャスト定義 -------------- */
    //% 型が明示され，関数よりもわかりやすい．
@@ -569,50 +577,50 @@ struct CoordinateBounds {
       //               {X1, Y1, Z0},   // 110, 5 -> 6
       //               {X1, Y0, Z1},   // 101, 6 -> 5
       //               {X1, Y1, Z1}};  // 111, 7
-      return T8Tddd{{X0, Y0, Z0},   // 000, 0
-                    {X0, Y0, Z1},   // 001, 1
-                    {X0, Y1, Z0},   // 010, 2
-                    {X0, Y1, Z1},   // 011, 3
-                    {X1, Y0, Z0},   // 100, 4
-                    {X1, Y0, Z1},   // 101, 5
-                    {X1, Y1, Z0},   // 110, 6
-                    {X1, Y1, Z1}};  // 111, 7
+      return T8Tddd{{{X0, Y0, Z0},    // 000, 0
+                     {X0, Y0, Z1},    // 001, 1
+                     {X0, Y1, Z0},    // 010, 2
+                     {X0, Y1, Z1},    // 011, 3
+                     {X1, Y0, Z0},    // 100, 4
+                     {X1, Y0, Z1},    // 101, 5
+                     {X1, Y1, Z0},    // 110, 6
+                     {X1, Y1, Z1}}};  // 111, 7
    };
 
    operator T6T4Tddd() const {
       auto [X0, X1] = std::get<0>(this->bounds);
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
-      return T6T4Tddd{T4Tddd{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y1, Z0}, {X0, Y1, Z0}},
-                      T4Tddd{{X0, Y0, Z1}, {X1, Y0, Z1}, {X1, Y1, Z1}, {X0, Y1, Z1}},
-                      T4Tddd{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y0, Z1}, {X0, Y0, Z1}},
-                      T4Tddd{{X0, Y1, Z0}, {X1, Y1, Z0}, {X1, Y1, Z1}, {X0, Y1, Z1}},
-                      T4Tddd{{X0, Y0, Z0}, {X0, Y0, Z1}, {X0, Y1, Z1}, {X0, Y1, Z0}},
-                      T4Tddd{{X1, Y0, Z0}, {X1, Y0, Z1}, {X1, Y1, Z1}, {X1, Y1, Z0}}};
+      return {{{{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y1, Z0}, {X0, Y1, Z0}}},
+               {{{X0, Y0, Z1}, {X1, Y0, Z1}, {X1, Y1, Z1}, {X0, Y1, Z1}}},
+               {{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y0, Z1}, {X0, Y0, Z1}}},
+               {{{X0, Y1, Z0}, {X1, Y1, Z0}, {X1, Y1, Z1}, {X0, Y1, Z1}}},
+               {{{X0, Y0, Z0}, {X0, Y0, Z1}, {X0, Y1, Z1}, {X0, Y1, Z0}}},
+               {{{X1, Y0, Z0}, {X1, Y0, Z1}, {X1, Y1, Z1}, {X1, Y1, Z0}}}}};
    };
 
    operator T12T2Tddd() const {
       auto [X0, X1] = std::get<0>(this->bounds);
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
-      return T12T2Tddd{/*X面*/ T2Tddd{{X0, Y0, Z0}, {X1, Y0, Z0} /*to X*/}, T2Tddd{{X0, Y0, Z0}, {X0, Y0, Z1} /*to Z*/},
-                       /*X面*/ T2Tddd{{X0, Y0, Z1}, {X1, Y0, Z1} /*to X*/}, T2Tddd{{X1, Y0, Z0}, {X1, Y0, Z1} /*to Z*/},
-                       /*X面*/ T2Tddd{{X0, Y1, Z0}, {X1, Y0, Z0} /*to X*/}, T2Tddd{{X0, Y0, Z0}, {X0, Y1, Z1} /*to Z*/},
-                       /*X面*/ T2Tddd{{X0, Y1, Z1}, {X1, Y0, Z1} /*to X*/}, T2Tddd{{X1, Y0, Z0}, {X1, Y1, Z1} /*to Z*/},
-                       /*Z面*/ T2Tddd{{X0, Y0, Z0}, {X0, Y1, Z0} /*to Y*/}, T2Tddd{{X1, Y0, Z0}, {X1, Y1, Z0} /*to Y*/},
-                       /*Z面*/ T2Tddd{{X0, Y0, Z1}, {X0, Y1, Z1} /*to Y*/}, T2Tddd{{X1, Y0, Z1}, {X1, Y1, Z1} /*to Y*/}};
+      return {{/*X面*/ {{{X0, Y0, Z0}, {X1, Y0, Z0} /*to X*/}}, {{{X0, Y0, Z0}, {X0, Y0, Z1} /*to Z*/}},
+               /*X面*/ {{{X0, Y0, Z1}, {X1, Y0, Z1} /*to X*/}},
+               {{{X1, Y0, Z0}, {X1, Y0, Z1} /*to Z*/}},
+               /*X面*/ {{{X0, Y1, Z0}, {X1, Y0, Z0} /*to X*/}},
+               {{{X0, Y0, Z0}, {X0, Y1, Z1} /*to Z*/}},
+               /*X面*/ {{{X0, Y1, Z1}, {X1, Y0, Z1} /*to X*/}},
+               {{{X1, Y0, Z0}, {X1, Y1, Z1} /*to Z*/}},
+               /*Z面*/ {{{X0, Y0, Z0}, {X0, Y1, Z0} /*to Y*/}},
+               {{{X1, Y0, Z0}, {X1, Y1, Z0} /*to Y*/}},
+               /*Z面*/ {{{X0, Y0, Z1}, {X0, Y1, Z1} /*to Y*/}},
+               {{{X1, Y0, Z1}, {X1, Y1, Z1} /*to Y*/}}}};
    };
 
    operator T12T3Tddd() const {
       auto [X0, X1] = std::get<0>(this->bounds);
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
-      return T12T3Tddd{T3Tddd{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y1, Z0}}, T3Tddd{{X0, Y0, Z0}, {X1, Y1, Z0}, {X0, Y1, Z0}},
-                       T3Tddd{{X0, Y0, Z1}, {X1, Y0, Z1}, {X1, Y1, Z1}}, T3Tddd{{X0, Y0, Z1}, {X1, Y1, Z1}, {X0, Y1, Z1}},
-                       T3Tddd{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y0, Z1}}, T3Tddd{{X0, Y0, Z0}, {X1, Y0, Z1}, {X0, Y0, Z1}},
-                       T3Tddd{{X0, Y1, Z0}, {X1, Y1, Z0}, {X1, Y1, Z1}}, T3Tddd{{X0, Y1, Z0}, {X1, Y1, Z1}, {X0, Y1, Z1}},
-                       T3Tddd{{X0, Y0, Z0}, {X0, Y0, Z1}, {X0, Y1, Z1}}, T3Tddd{{X0, Y0, Z0}, {X0, Y1, Z1}, {X0, Y1, Z0}},
-                       T3Tddd{{X1, Y0, Z0}, {X1, Y0, Z1}, {X1, Y1, Z1}}, T3Tddd{{X1, Y0, Z0}, {X1, Y1, Z1}, {X1, Y1, Z0}}};
+      return T12T3Tddd{{{{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y1, Z0}}}, {{{X0, Y0, Z0}, {X1, Y1, Z0}, {X0, Y1, Z0}}}, {{{X0, Y0, Z1}, {X1, Y0, Z1}, {X1, Y1, Z1}}}, {{{X0, Y0, Z1}, {X1, Y1, Z1}, {X0, Y1, Z1}}}, {{{X0, Y0, Z0}, {X1, Y0, Z0}, {X1, Y0, Z1}}}, {{{X0, Y0, Z0}, {X1, Y0, Z1}, {X0, Y0, Z1}}}, {{{X0, Y1, Z0}, {X1, Y1, Z0}, {X1, Y1, Z1}}}, {{{X0, Y1, Z0}, {X1, Y1, Z1}, {X0, Y1, Z1}}}, {{{X0, Y0, Z0}, {X0, Y0, Z1}, {X0, Y1, Z1}}}, {{{X0, Y0, Z0}, {X0, Y1, Z1}, {X0, Y1, Z0}}}, {{{X1, Y0, Z0}, {X1, Y0, Z1}, {X1, Y1, Z1}}}, {{{X1, Y0, Z0}, {X1, Y1, Z1}, {X1, Y1, Z0}}}}};
    };
    //% -------------------------------------------- */
    std::tuple<CoordinateBounds,  // 0
@@ -636,14 +644,14 @@ struct CoordinateBounds {
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
       auto [Xc, Yc, Zc] = this->getCenter();
-      return {CoordinateBounds({X0 - eps, Xc + eps}, {Y0 - eps, Yc + eps}, {Z0 - eps, Zc + eps}),
-              CoordinateBounds({Xc - eps, X1 + eps}, {Y0 - eps, Yc + eps}, {Z0 - eps, Zc + eps}),
-              CoordinateBounds({X0 - eps, Xc + eps}, {Yc - eps, Y1 + eps}, {Z0 - eps, Zc + eps}),
-              CoordinateBounds({Xc - eps, X1 + eps}, {Yc - eps, Y1 + eps}, {Z0 - eps, Zc + eps}),
-              CoordinateBounds({X0 - eps, Xc + eps}, {Y0 - eps, Yc + eps}, {Zc - eps, Z1 + eps}),
-              CoordinateBounds({Xc - eps, X1 + eps}, {Y0 - eps, Yc + eps}, {Zc - eps, Z1 + eps}),
-              CoordinateBounds({X0 - eps, Xc + eps}, {Yc - eps, Y1 + eps}, {Zc - eps, Z1 + eps}),
-              CoordinateBounds({Xc - eps, X1 + eps}, {Yc - eps, Y1 + eps}, {Zc - eps, Z1 + eps})};
+      return {CoordinateBounds(Tdd{{X0 - eps, Xc + eps}}, Tdd{{Y0 - eps, Yc + eps}}, Tdd{{Z0 - eps, Zc + eps}}),
+              CoordinateBounds(Tdd{{Xc - eps, X1 + eps}}, Tdd{{Y0 - eps, Yc + eps}}, Tdd{{Z0 - eps, Zc + eps}}),
+              CoordinateBounds(Tdd{{X0 - eps, Xc + eps}}, Tdd{{Yc - eps, Y1 + eps}}, Tdd{{Z0 - eps, Zc + eps}}),
+              CoordinateBounds(Tdd{{Xc - eps, X1 + eps}}, Tdd{{Yc - eps, Y1 + eps}}, Tdd{{Z0 - eps, Zc + eps}}),
+              CoordinateBounds(Tdd{{X0 - eps, Xc + eps}}, Tdd{{Y0 - eps, Yc + eps}}, Tdd{{Zc - eps, Z1 + eps}}),
+              CoordinateBounds(Tdd{{Xc - eps, X1 + eps}}, Tdd{{Y0 - eps, Yc + eps}}, Tdd{{Zc - eps, Z1 + eps}}),
+              CoordinateBounds(Tdd{{X0 - eps, Xc + eps}}, Tdd{{Yc - eps, Y1 + eps}}, Tdd{{Zc - eps, Z1 + eps}}),
+              CoordinateBounds(Tdd{{Xc - eps, X1 + eps}}, Tdd{{Yc - eps, Y1 + eps}}, Tdd{{Zc - eps, Z1 + eps}})};
    };
    std::tuple<CoordinateBounds,  // 0
               CoordinateBounds,  // 1
@@ -666,10 +674,10 @@ struct CoordinateBounds {
       auto [Y0, Y1] = std::get<1>(this->bounds);
       auto [Z0, Z1] = std::get<2>(this->bounds);
       auto [Xc, Yc, Zc] = center;
-      return {CoordinateBounds({X0, Xc}, {Y0, Yc}, {Z0, Zc}), CoordinateBounds({Xc, X1}, {Y0, Yc}, {Z0, Zc}),
-              CoordinateBounds({X0, Xc}, {Yc, Y1}, {Z0, Zc}), CoordinateBounds({Xc, X1}, {Yc, Y1}, {Z0, Zc}),
-              CoordinateBounds({X0, Xc}, {Y0, Yc}, {Zc, Z1}), CoordinateBounds({Xc, X1}, {Y0, Yc}, {Zc, Z1}),
-              CoordinateBounds({X0, Xc}, {Yc, Y1}, {Zc, Z1}), CoordinateBounds({Xc, X1}, {Yc, Y1}, {Zc, Z1})};
+      return {CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Y0, Yc}}, Tdd{{Z0, Zc}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Y0, Yc}}, Tdd{{Z0, Zc}}),
+              CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Yc, Y1}}, Tdd{{Z0, Zc}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Yc, Y1}}, Tdd{{Z0, Zc}}),
+              CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}),
+              CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}})};
    };
    bool isInside(const Tddd &X) const {
       if ((std::get<0>(X) < std::get<0>(std::get<0>(this->bounds)) || std::get<1>(std::get<0>(this->bounds)) < std::get<0>(X)) ||
@@ -691,9 +699,9 @@ struct Sphere : public CoordinateBounds {
    Tddd center;
    double radius;
    Sphere(const Tddd &XIN, const double radiusIN = 0.)
-       : CoordinateBounds(T3Tdd{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
-                                {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
-                                {(std::get<2>(XIN) - radiusIN), (std::get<2>(XIN) + radiusIN)}}),
+       : CoordinateBounds(T3Tdd{{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
+                                 {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
+                                 {(std::get<2>(XIN) - radiusIN), (std::get<2>(XIN) + radiusIN)}}}),
          center(XIN),
          radius(radiusIN){};
 };
@@ -802,7 +810,7 @@ struct Tetrahedron : public CoordinateBounds {
 
    operator T6T2Tddd() const {
       auto [p0, p1, p2, p3] = this->verticies;
-      return {{p0, p1}, {p0, p2}, {p0, p3}, {p1, p2}, {p2, p3}, {p3, p1}};
+      return {{{p0, p1}, {p0, p2}, {p0, p3}, {p1, p2}, {p2, p3}, {p3, p1}}};
    };
 
    // operator T6Tddd() const {
@@ -817,10 +825,10 @@ struct Tetrahedron : public CoordinateBounds {
 
    operator T4T3Tddd() const {
       auto [p0, p1, p2, p3] = this->verticies;
-      return {{p0, p1, p2},
-              {p0, p1, p3},
-              {p0, p2, p3},
-              {p1, p2, p3}};
+      return {{{p0, p1, p2},
+               {p0, p1, p3},
+               {p0, p2, p3},
+               {p1, p2, p3}}};
    };
 };
 
@@ -849,9 +857,9 @@ CoordinateBounds &operator+=(CoordinateBounds &b0, const CoordinateBounds &b1) {
    auto [minZ0, maxZ0] = std::get<2 /*z*/>(b0.bounds);
    auto [minZ1, maxZ1] = std::get<2 /*z*/>(b1.bounds);
    b0.bounds = {
-       {(minX0 <= minX1 ? minX0 : minX1), (maxX0 >= maxX1 ? maxX0 : maxX1)},
-       {(minY0 <= minY1 ? minY0 : minY1), (maxY0 >= maxY1 ? maxY0 : maxY1)},
-       {(minZ0 <= minZ1 ? minZ0 : minZ1), (maxZ0 >= maxZ1 ? maxZ0 : maxZ1)}};
+       {{(minX0 <= minX1 ? minX0 : minX1), (maxX0 >= maxX1 ? maxX0 : maxX1)},
+        {(minY0 <= minY1 ? minY0 : minY1), (maxY0 >= maxY1 ? maxY0 : maxY1)},
+        {(minZ0 <= minZ1 ? minZ0 : minZ1), (maxZ0 >= maxZ1 ? maxZ0 : maxZ1)}}};
    return b0;
 };
 inline CoordinateBounds::CoordinateBounds(const std::vector<T3Tddd> &V_X) {
@@ -1019,13 +1027,13 @@ struct IntersectionTriangles {
       max1 = lmitMax(a1, b1);
 
       auto t = min0;
-      I00 = Dot({t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}, P0);
+      I00 = Dot(Tddd{{t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}}, P0);
       t = max0;
-      I01 = Dot({t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}, P0);
+      I01 = Dot(Tddd{{t, b0 - a0 * t, 1 - t - (b0 - a0 * t)}}, P0);
       t = min1;
-      I10 = Dot({t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}, P1);
+      I10 = Dot(Tddd{{t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}}, P1);
       t = max1;
-      I11 = Dot({t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}, P1);
+      I11 = Dot(Tddd{{t, b1 - a1 * t, 1 - t - (b1 - a1 * t)}}, P1);
 
       auto tmp = (I10 - I00) / (I01 - I00);
       I10InT = isFinite(std::get<0>(tmp)) ? std::get<0>(tmp) : (isFinite(std::get<1>(tmp)) ? std::get<1>(tmp) : std::get<2>(tmp));
@@ -1220,9 +1228,9 @@ struct IntersectionSphereTriangleLimitedToNormalRegion {
          p12y(std::get<1>(p1 - p2)),
          p12z(std::get<2>(p1 - p2)),
          determ(-(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z),
-         mat({{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
-              {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
-              {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}),
+         mat({{{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+               {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+               {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}}),
          ans(Dot(center - p2, mat / determ)),
          t0(std::get<0>(ans)),
          t1(std::get<1>(ans)),
@@ -1272,7 +1280,7 @@ struct IntersectionSphereTriangleLimitedToNormalRegion {
       }
    };
 };
-/* -------------------------------------------------------------------------- */
+
 std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
    /*
    a * t + b * (1-t)
@@ -1292,8 +1300,8 @@ std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
 Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    const auto [a, b] = ab;
    const auto [A, B] = AB;
-   const auto [t, tau] = Dot(Inverse(T2Tdd{{Dot(a - b, a - b), -Dot(A - B, a - b)},
-                                           {Dot(a - b, A - B), -Dot(A - B, A - B)}}),
+   const auto [t, tau] = Dot(Inverse(T2Tdd{{{Dot(a - b, a - b), -Dot(A - B, a - b)},
+                                            {Dot(a - b, A - B), -Dot(A - B, A - B)}}}),
                              Tdd{-Dot(b, a - b) + Dot(B, a - b),
                                  -Dot(b, A - B) + Dot(B, A - B)});
    if (Between(t, {0., 1.}) && Between(tau, {0., 1.}))
@@ -1579,10 +1587,10 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    //
    const auto [a, b, c, d] = abcd;
    const auto [t0, t1, t2, t3] = Dot(T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.},
-                                     Inverse(T4T4d{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
-                                                   {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
-                                                   {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
-                                                   {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}));
+                                     Inverse(T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
+                                                    {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
+                                                    {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
+                                                    {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}));
    //
    //
    // auto mean = Mean(abcd);
@@ -1613,10 +1621,10 @@ bool IntersectQ(const T4Tddd &abcd, const T2Tddd &AB) {
    auto [A, B] = AB;
    return IntersectQ(abcd, A) ||
           IntersectQ(abcd, B) ||
-          IntersectQ({a, b, c}, AB) ||
-          IntersectQ({a, b, d}, AB) ||
-          IntersectQ({a, c, d}, AB) ||
-          IntersectQ({b, c, d}, AB);
+          IntersectQ(T3Tddd{{a, b, c}}, AB) ||
+          IntersectQ(T3Tddd{{a, b, d}}, AB) ||
+          IntersectQ(T3Tddd{{a, c, d}}, AB) ||
+          IntersectQ(T3Tddd{{b, c, d}}, AB);
 };
 
 bool IntersectQ(const Tetrahedron &Tet, const T2Tddd &AB) {
@@ -1646,9 +1654,9 @@ Tddd t0_t1_alpha(const T3Tddd &p0p1p2, const Tddd &X) {
    auto [nx, ny, nz] = Normalize(Cross(p1 - p0, p2 - p0));  // 三角形がつくる単位法線ベクトル
    auto [p02x, p02y, p02z] = p0 - p2;
    auto [p12x, p12y, p12z] = p1 - p2;
-   return Dot(X - p2, {{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
-                       {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
-                       {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}) /
+   return Dot(X - p2, T3Tddd{{{nz * p12y - ny * p12z, -(nz * p02y) + ny * p02z, p02z * p12y - p02y * p12z},
+                              {-(nz * p12x) + nx * p12z, nz * p02x - nx * p02z, -(p02z * p12x) + p02x * p12z},
+                              {ny * p12x - nx * p12y, -(ny * p02x) + nx * p02y, p02y * p12x - p02x * p12y}}}) /
           (-(nz * p02y * p12x) + ny * p02z * p12x + nz * p02x * p12y - nx * p02z * p12y - ny * p02x * p12z + nx * p02y * p12z);
 };
 
@@ -1754,7 +1762,7 @@ bool isConcavePolygon(const std::vector<Tddd> &ps) {
 /* ------------------------------------------------------ */
 
 template <typename T>
-double windingNumber(const Tddd &X, const std::vector<std::tuple<T, T, T>> &V_vertices) {
+double windingNumber(const Tddd &X, const std::vector<std::array<T, 3>> &V_vertices) {
    double ret = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ \
@@ -2285,14 +2293,14 @@ struct octree : public CoordinateBounds {
    // b!                              SETTING NEIGHBORS                             */
    // b! -------------------------------------------------------------------------- */
    std::unordered_set<octree<T> *> neighbors;
-   std::tuple<T, T, T, T, T, T, T, T> nearest_face;
+   std::array<T, 8> nearest_face;
    std::unordered_set<T> nearest_faces;
-   std::tuple<bool, bool, bool, bool, bool, bool, bool, bool> bools;
+   std::array<bool, 8> bools;
    T8d scalers;
    T8Tddd vectors;
    std::unordered_set<T> checked_faces_passed;
    template <typename U>
-   U Interpolate(const Tddd &X, const std::tuple<U, U, U, U, U, U, U, U> &c) const {
+   U Interpolate(const Tddd &X, const std::array<U, 8> &c) const {
       const auto [x, y, z] = X;
       const auto [c000, c001, c010, c011, c100, c101, c110, c111] = c;
       const auto [x0, x1] = std::get<0>(this->bounds);
@@ -2303,7 +2311,7 @@ struct octree : public CoordinateBounds {
              ((x0 - x1) * (y0 - y1) * (z0 - z1));
    };
    template <typename U>
-   U Integrate(const std::tuple<U, U, U, U, U, U, U, U> &c) const {
+   U Integrate(const std::array<U, 8> &c) const {
       const auto [c000, c001, c010, c011, c100, c101, c110, c111] = c;
       const auto [x0, x1] = std::get<0>(this->bounds);
       const auto [y0, y1] = std::get<1>(this->bounds);
@@ -2326,7 +2334,7 @@ struct octree : public CoordinateBounds {
          auto d0 = (X1 - X0) * 0.2;
          auto d1 = (Y1 - Y0) * 0.2;
          auto d2 = (Z1 - Z0) * 0.2;
-         for (const auto &v : top->getIntersectInside(T3Tdd{{X0 - d0, X1 + d0}, {Y0 - d1, Y1 + d1}, {Z0 - d2, Z1 + d2}})) {
+         for (const auto &v : top->getIntersectInside(T3Tdd{{{X0 - d0, X1 + d0}, {Y0 - d1, Y1 + d1}, {Z0 - d2, Z1 + d2}}})) {
             if (v != c)
                c->neighbors.emplace(v);
          }

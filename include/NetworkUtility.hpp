@@ -4,7 +4,7 @@
 #include "InterpolationRBF.hpp"
 #include "Network.hpp"
 
-/* ------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
 
 void creteOBJ(std::ofstream &ofs, Network &net) {
    std::map<netPp, int> P_i;
@@ -412,107 +412,123 @@ void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &p
 /* ------------------------------------------------------ */
 
 void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0) {
-   // 2022/04/13こっちにBEMのmainから持ってきた
-   std::cout << "remeshing" << std::endl;
-   water.setGeometricProperties();
-   double mean_length = Mean(extLength(water.getLines()));
-   bool isfound = false, ismerged = false;
-   int count = 0;
-   for (const auto &l : water.getLines()) {
-      auto [p0, p1] = l->getPoints();
-      if (!l->CORNER)
-      // if (!p0->CORNER && !p1->CORNER)
-      {
-         if (force && (times == 0 || count < times)) {
-            // p0とp1が角の場合，6という数にこだわる必要がない．
-            // つまり6がトポロジカルにベターではない．
-            isfound = l->flipIfTopologicalyBetter(limit_angle, M_PI / 180. * 10.);
-            if (isfound)
-               count++;
-         } else {
-            isfound = l->flipIfBetter(limit_angle);
+   try {
+      // 2022/04/13こっちにBEMのmainから持ってきた
+      std::cout << "flipIf" << std::endl;
+      water.setGeometricProperties();
+      double mean_length = Mean(extLength(water.getLines()));
+      bool isfound = false, ismerged = false;
+      int count = 0;
+      for (const auto &l : water.getLines()) {
+         auto [p0, p1] = l->getPoints();
+         if (!l->CORNER)
+         // if (!p0->CORNER && !p1->CORNER)
+         {
+            if (force && (times == 0 || count < times)) {
+               // p0とp1が角の場合，6という数にこだわる必要がない．
+               // つまり6がトポロジカルにベターではない．
+               isfound = l->flipIfTopologicalyBetter(limit_angle, M_PI / 180. * 10.);
+               if (isfound)
+                  count++;
+            } else {
+               isfound = l->flipIfBetter(limit_angle);
+            }
          }
       }
-   }
+
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorOff << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   };
 };
 void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0) {
-   /*
-   * フリップによって表面の形状が大きく変わってしまうのはよくない．
-   * フリップによって三角形の内角がとても小さくなるのもよくない．
-   flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
-   * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
-   * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
-   */
-   auto [limit_angle, limit_inner_angle] = limit;
-   // 2022/04/13こっちにBEMのmainから持ってきた
-   std::cout << "remeshing" << std::endl;
-   water.setGeometricProperties();
-   double mean_length = Mean(extLength(water.getLines()));
-   bool isfound = false, ismerged = false;
-   int count = 0;
-   for (const auto &l : water.getLines()) {
-      auto [p0, p1] = l->getPoints();
-      if (!l->CORNER)
-      // if (!p0->CORNER && !p1->CORNER)
-      {
-         if (force && (times == 0 || count < times)) {
-            isfound = l->flipIfTopologicalyBetter(limit_angle, limit_inner_angle);
-            if (isfound)
-               count++;
-         } else {
-            isfound = l->flipIfBetter(limit_angle, limit_inner_angle);
-            if (isfound)
-               count++;
+   try {
+      /*
+      * フリップによって表面の形状が大きく変わってしまうのはよくない．
+      * フリップによって三角形の内角がとても小さくなるのもよくない．
+      flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
+      * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
+      * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
+      */
+      auto [limit_angle, limit_inner_angle] = limit;
+      // 2022/04/13こっちにBEMのmainから持ってきた
+      std::cout << "flipIf" << std::endl;
+      water.setGeometricProperties();
+      double mean_length = Mean(extLength(water.getLines()));
+      bool isfound = false, ismerged = false;
+      int count = 0;
+      for (const auto &l : water.getLines()) {
+         auto [p0, p1] = l->getPoints();
+         if (!l->CORNER)
+         // if (!p0->CORNER && !p1->CORNER)
+         {
+            if (force && (times == 0 || count < times)) {
+               isfound = l->flipIfTopologicalyBetter(limit_angle, limit_inner_angle);
+               if (isfound)
+                  count++;
+            } else {
+               isfound = l->flipIfBetter(limit_angle, limit_inner_angle);
+               if (isfound)
+                  count++;
+            }
          }
       }
-   }
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorOff << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   };
 };
 void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0) {
-   /*
-   * フリップによって表面の形状が大きく変わってしまうのはよくない．
-   * フリップによって三角形の内角がとても小さくなるのもよくない．
-   flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
-   * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
-   * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
-   */
-   auto [limit_angle_D, limit_inner_angle_D] = limit_Dirichlet;
-   auto [limit_angle_N, limit_inner_angle_N] = limit_Neumann;
-   // 2022/04/13こっちにBEMのmainから持ってきた
-   std::cout << "remeshing" << std::endl;
-   water.setGeometricProperties();
-   double mean_length = Mean(extLength(water.getLines()));
-   bool isfound = false, ismerged = false;
-   int count = 0;
-   for (const auto &l : water.getLines()) {
-      auto [p0, p1] = l->getPoints();
-      if (!l->CORNER)
-      // if (!p0->CORNER && !p1->CORNER)
-      {
-         if (force && (times == 0 || count < times)) {
-            // p0とp1が角の場合，6という数にこだわる必要がない．
-            // つまり6がトポロジカルにベターではない．
-            if (l->Dirichlet) {
-               isfound = l->flipIfTopologicalyBetter(limit_angle_D, limit_inner_angle_D);
-               if (isfound)
-                  count++;
+   try {
+      /*
+      * フリップによって表面の形状が大きく変わってしまうのはよくない．
+      * フリップによって三角形の内角がとても小さくなるのもよくない．
+      flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
+      * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
+      * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
+      */
+      auto [limit_angle_D, limit_inner_angle_D] = limit_Dirichlet;
+      auto [limit_angle_N, limit_inner_angle_N] = limit_Neumann;
+      // 2022/04/13こっちにBEMのmainから持ってきた
+      std::cout << "flipIf" << std::endl;
+      water.setGeometricProperties();
+      double mean_length = Mean(extLength(water.getLines()));
+      bool isfound = false, ismerged = false;
+      int count = 0;
+      for (const auto &l : water.getLines()) {
+         auto [p0, p1] = l->getPoints();
+         if (!l->CORNER)
+         // if (!p0->CORNER && !p1->CORNER)
+         {
+            if (force && (times == 0 || count < times)) {
+               // p0とp1が角の場合，6という数にこだわる必要がない．
+               // つまり6がトポロジカルにベターではない．
+               if (l->Dirichlet) {
+                  isfound = l->flipIfTopologicalyBetter(limit_angle_D, limit_inner_angle_D);
+                  if (isfound)
+                     count++;
+               } else {
+                  isfound = l->flipIfTopologicalyBetter(limit_angle_N, limit_inner_angle_N);
+                  if (isfound)
+                     count++;
+               }
             } else {
-               isfound = l->flipIfTopologicalyBetter(limit_angle_N, limit_inner_angle_N);
-               if (isfound)
-                  count++;
-            }
-         } else {
-            if (l->Dirichlet) {
-               isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D);
-               if (isfound)
-                  count++;
-            } else {
-               isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N);
-               if (isfound)
-                  count++;
+               if (l->Dirichlet) {
+                  isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D);
+                  if (isfound)
+                     count++;
+               } else {
+                  isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N);
+                  if (isfound)
+                     count++;
+               }
             }
          }
       }
-   }
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorOff << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   };
 };
 
 /* ------------------------------------------------------ */
@@ -703,8 +719,10 @@ void Merge(const std::unordered_set<networkLine *> &uo_lines, const std::functio
 
 void Divide(const std::unordered_set<networkLine *> &uo_lines, const std::function<bool(const networkLine *)> &func) {
    for (const auto &l : uo_lines)
-      if (func(l))
+      if (func(l)) {
          l->divide();
+         // std::cout << "divide" << std::endl;
+      }
 };
 
 void Divide(const std::unordered_set<networkLine *> &uo_lines, const double lim_len) {
@@ -1071,9 +1089,8 @@ Tddd particlize(const networkFace *f, const Tdd &t0t1, const double d) {
 };
 
 // b% ------------------------------------------------------ */
-using TPPP = std::tuple<networkPoint *, networkPoint *, networkPoint *>;
 Tddd oppositeX(const std::tuple<networkFace * /*補間に使った三角形の頂点*/,
-                                TPPP /*補間に使った三角形の頂点*/,
+                                T_PPP /*補間に使った三角形の頂点*/,
                                 Tdd /*パラメタt0,t1*/,
                                 double /*深さ方向距離*/,
                                 double /*粒子間隔*/> &particlize_info) {

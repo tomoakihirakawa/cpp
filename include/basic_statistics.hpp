@@ -39,10 +39,11 @@ struct Histogram {
    V_d interval;
    V_d mid_interval;
 
-   V_d sort(V_d dataIN) const {
-      std::sort(dataIN.begin(), dataIN.end(), [](const double a, const double b) { return a <= b; });
-      return dataIN;
-   };
+   static V_d sort(const V_d &dataIN) {
+      V_d dataOUT = dataIN;
+      std::sort(dataOUT.begin(), dataOUT.end(), [](const double a, const double b) { return a < b; });
+      return dataOUT;
+   }
 
    /*
    bins.size() = s = 5
@@ -117,6 +118,12 @@ struct Histogram {
                                   sturges((int)(std::log2(this->size) + 3)),
                                   bins(VV_d(this->sturges, V_d{})),
                                   bin_width((*this->data.rbegin() - *this->data.begin()) / sturges) {
+      // std::cout << "data " << this->data << std::endl;
+      // std::cout << "size " << this->size << std::endl;
+      // std::cout << "sturges " << this->sturges << std::endl;
+      // std::cout << "bins " << this->bins << std::endl;
+      // std::cout << "bin_width " << this->bin_width << std::endl;
+
       auto min_data = *this->data.begin();
       int n;
       for (const auto &d : this->data) {
