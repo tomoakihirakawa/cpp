@@ -153,28 +153,17 @@ struct BEM_BVP {
                   auto w = netInContact->velocityRotational();
                   auto dQdt = Q.d_dt(w);
                   auto U = uNeumann(p, f);
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p, f) - grad_phi, dQdt.Rv()) + accelNeumann(p, f) - Dot(grad_phi, grad_U_LinearElement(f)));
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f) - Dot(U, Hessian));
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f) - Dot(U, Hessian));
-                  //
                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
-                  //
                   auto s0s1s2 = OrthogonalBasis(f->normal);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
                   phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-                  //
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(w, uNeumann(p, f) - p->U_BEM) + Dot(n, accelNeumann(p, f) - Dot(p->U_BEM, grad_U_LinearElement(f)));
                } else {
                   auto netInContact = NearestContactFace(p)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto dQdt = Q.d_dt(w);
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(n, Dot(uNeumann(p) - p->U_BEM, dQdt.Rv()) + accelNeumann(p) - Dot(p->U_BEM, grad_U_LinearElement(p)));
                   auto U = uNeumann(p);
-                  // phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p) - Dot(U, Hessian));
-                  //
                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
-                  //
                   auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(p, s0s1s2);
@@ -331,7 +320,6 @@ struct BEM_BVP {
    /* ------------------------------------------------------ */
 
    void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) const {
-
       //@ --------------------------------------------------- */
       //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
       //@ --------------------------------------------------- */
@@ -637,6 +625,10 @@ struct BEM_BVP {
             //    std::get<2>(ret[1]) += IGIGn * p20_w1 * N012345[5];   // 補間添字
             // }
             /* ------------------------------ 2023/04/03 -------------------------------- */
+            /*
+            このfor loopでは連立一次方程式の計数行列を作成する作業を行なっている．
+            これは，原点をある節点(origin)に固定し，originと各面との位置や向きの関係に依存する，値を各節点に分配する作業である．
+            */
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}},
                                                                                                     {p1, integ_f, {0., 0.}},
@@ -655,7 +647,7 @@ struct BEM_BVP {
             for (auto &[_, __, igign] : ret)
                igign *= c;
             for (const auto &[p, which_side_f, igign] : ret) {
-               /*
+               /**
                このループでは，
                ある面integ_fに隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
                （p0が多重接点の場合，適切にp0と同じ位置に別の変数が設定されており，別の面の積分の際にq0が参照される．）
@@ -687,6 +679,17 @@ struct BEM_BVP {
             }
          }
          /* -------------------------------------------------------------------------- */
+         /**
+          * # Example Function
+          *
+          * This is an example function that demonstrates how to use the keywords.
+          *
+          * NOTE: This is a note.
+          * WARNING: This is a warning.
+          * TODO: This is a todo item.
+          * IMPORTANT: This is an important point.
+          * TIP: This is a helpful tip.
+          */
 #if defined(use_rigid_mode)
          std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
 #else

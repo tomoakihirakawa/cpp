@@ -31,7 +31,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
          // double a = Norm(*std::min_element(toP.begin(), toP.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
          // double b = Norm(*std::min_element(toF.begin(), toF.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
          // p->radius = Mean(extLength(extractLines(Flatten(BFS(p, 2))))) / 5.;
-         p->addContactFaces(net->getBucketFaces(), false); /**shadowあり*/
+         p->addContactFaces(net->getBucketFaces(), false);
       }
    }
    std::cout << "step2 面の境界条件を判定" << std::endl;
@@ -65,14 +65,19 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    /*                         phinOnFace, phintOnFaceの設定                         */
    /* -------------------------------------------------------------------------- */
    // b! 点
+   /**
+    ## 多重節点
+    多重節点という名前は具体性に欠ける．
+    普通φnは(節点)にのみ依存する変数だが，nの変化が急なため，不連続性が著しい節点においては，(節点に加え面)にも依存する変数を複数設定する．それらは離散化などで使い分けることになる．
+    BIEの離散化における，多重節点扱いについて．
+    BIEを数値的に解くために，十分な数の１次方程式を作成する．これは，節点と同じ位置にBIEの原点を取ることで実現できる．
+    同じ位置であるにもかかわらず，(節点に加え面)にも依存する変数φnを設定した場合，
+    同じ位置であるにもかかわらず，それらを一つ一つを原点として，１次方程式を作成する．
+    これらは完全に同じ方程式である．変数の数を節点の数よりも増やしたことによって，方程式の数が増えている．
+   */
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
-   // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-   // 多重節点となる条件
    auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
-      // return p->Neumann;
-      // return p->CORNER;
       return (p->CORNER || any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
-      // return (p->CORNER && std::any_of(facesNeuman.begin(), facesNeuman.end(), [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
    };
 #pragma omp parallel
    for (const auto &p : water.getPoints())
@@ -80,21 +85,21 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    {
       p->phinOnFace.clear();
       p->phintOnFace.clear();
+
       if (p->Neumann || p->CORNER) {
          auto facesNeuman = p->getFacesNeumann();
          if (multiple_node_if(p, facesNeuman)) {
-            // 必ずp->CORNERはこっちになる
             for (const auto &f : facesNeuman) {
-               // 確かに方向を制限しておくのはいい方法のように思われるが，，，，
                p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
-               p->phintOnFace[f] = 1E+30;  // この値は，derivativesクラス内で計算する
+               p->phintOnFace[f] = 1E+30;
             }
          } else {
             p->phinOnFace[nullptr] = std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
-            p->phintOnFace[nullptr] = 1E+30;  // この値は，derivativesクラス内で計算
+            p->phintOnFace[nullptr] = 1E+30;
          }
       }
    }
+
    // b! 面
    std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorOff << std::endl;
 #pragma omp parallel
