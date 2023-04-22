@@ -139,9 +139,6 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 bool factor_angle(const networkPoint *p, const Tddd &ubuff) {
    for (const auto &f : p->getFaces()) {
       auto [p0, p1, p2] = f->getPoints(p);
-      // if (!isFlat(RK_with_Ubuff_Normal(f),TriangleNormal(T3Tddd{RK_with_Ubuff(p0, ubuff), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}),
-      //             45. * M_PI / 180.))
-      //    return false;
       if (0 > Dot(RK_with_Ubuff_Normal(f),
                   TriangleNormal(T3Tddd{RK_with_Ubuff(p0, ubuff), RK_with_Ubuff(p1), RK_with_Ubuff(p2)})))
          return false;
