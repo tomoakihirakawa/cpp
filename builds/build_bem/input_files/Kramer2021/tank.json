@@ -1,6 +1,0 @@
-{
-    "name": "tank",
-    "type": "RigidBody",
-    "isFixed": true,
-    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Kramer2021/tank10.obj"
-}

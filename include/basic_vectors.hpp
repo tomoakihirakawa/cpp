@@ -23,29 +23,29 @@
 #include "basic_exception.hpp"
 
 /* -------------------------------------------------------------------------- */
-template <typename T>
-tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> TensorProduct(const T &vec1, const T &vec2) {
-   tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> m;
-   for_each01(vec1, m, [&](const auto &v1, auto &mi) {
-      for_each01(vec2, mi, [&](const auto &v2, auto &mij) { mij = v1 * v2; });
-   });
-   return m;
-};
+// template <typename T>
+// tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> TensorProduct(const T &vec1, const T &vec2) {
+//    tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> m;
+//    for_each01(vec1, m, [&](const auto &v1, auto &mi) {
+//       for_each01(vec2, mi, [&](const auto &v2, auto &mij) { mij = v1 * v2; });
+//    });
+//    return m;
+// };
 
-template <typename T>
-double Dot(tuple_of<std::tuple_size<T>::value, double> &V,
-           tuple_of<std::tuple_size<T>::value, double> &U) {
-   double ret = 0.;
-   for_each(V, U, [&ret](const auto &u, const auto &v) { ret += u * v; });
-   return ret;
-};
+// template <typename T>
+// double Dot(tuple_of<std::tuple_size<T>::value, double> &V,
+//            tuple_of<std::tuple_size<T>::value, double> &U) {
+//    double ret = 0.;
+//    for_each(V, U, [&ret](const auto &u, const auto &v) { ret += u * v; });
+//    return ret;
+// };
 //
 template <typename T>
 void IdentityMatrix(T &M) {
    int i = 0, j = 0;
-   for_each1(M, [&](auto &Mi) {
+   for_each(M, [&](auto &Mi) {
       j = 0;
-      for_each1(Mi, [&](auto &Mij) { Mij = (i == j++) ? 1. : 0.; });
+      for_each(Mi, [&](auto &Mij) { Mij = (i == j++) ? 1. : 0.; });
       i++;
    });
 };
@@ -67,7 +67,7 @@ void IdentityMatrix<VV_d>(VV_d &mat) {
 };
 /* -------------------------------------------------------------------------- */
 template <typename T>
-std::tuple<T, T> Sort(std::tuple<T, T> &ab) {
+std::array<T, 2> Sort(std::array<T, 2> &ab) {
    if (std::get<0>(ab) <= std::get<1>(ab))
       return ab;
    else
@@ -75,31 +75,31 @@ std::tuple<T, T> Sort(std::tuple<T, T> &ab) {
 };
 /* -------------------------------------------------------------------------- */
 template <typename T>
-void Swap(std::tuple<T, T> &ab) {
+void Swap(std::array<T, 2> &ab) {
    auto a = std::get<0>(ab);
    std::get<0>(ab) = std::get<1>(ab);
    std::get<1>(ab) = a;
 };
 /* -------------------------------------------------------------------------- */
 
-template <typename T>
-tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> Inverse(const tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> &M) {
-   tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> tup_mat;
-   std::vector<std::vector<T>> vec_mat(std::tuple_size<T>::value, std::vector<T>(std::tuple_size<T>::value));
-   int i = 0, j = 0;
-   for_each(tup_mat, [&](const auto &tup_mat_i) {
-      j = 0;
-      for_each(tup_mat_i, [&](const auto &tup_mat_ij) { vec_mat[i][j++] = tup_mat_ij; });
-      i++;
-   });
-   vec_mat = Inverse(vec_mat);
-   for_each(tup_mat, [&](const auto &tup_mat_i) {
-      j = 0;
-      for_each(tup_mat_i, [&](const auto &tup_mat_ij) { tup_mat_ij = vec_mat[i][j++]; });
-      i++;
-   });
-   return;
-};
+// template <typename T>
+// tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> Inverse(const tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> &M) {
+//    tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> tup_mat;
+//    std::vector<std::vector<T>> vec_mat(std::tuple_size<T>::value, std::vector<T>(std::tuple_size<T>::value));
+//    int i = 0, j = 0;
+//    for_each(tup_mat, [&](const auto &tup_mat_i) {
+//       j = 0;
+//       for_each(tup_mat_i, [&](const auto &tup_mat_ij) { vec_mat[i][j++] = tup_mat_ij; });
+//       i++;
+//    });
+//    vec_mat = Inverse(vec_mat);
+//    for_each(tup_mat, [&](const auto &tup_mat_i) {
+//       j = 0;
+//       for_each(tup_mat_i, [&](const auto &tup_mat_ij) { tup_mat_ij = vec_mat[i][j++]; });
+//       i++;
+//    });
+//    return;
+// };
 
 // template <typename T>
 // tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> Inverse(const tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> &M) {
@@ -124,7 +124,7 @@ T2Tdd Inverse(const T2Tdd &M) {
    const auto [x00, x01] = std::get<0>(M);
    const auto [x10, x11] = std::get<1>(M);
    const double det = -(x01 * x10) + x00 * x11;
-   return {{x11 / det, -x01 / det}, {-x10 / det, x00 / det}};
+   return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
 };
 /* -------------------------------------------------------------------------- */
 T3Tddd Inverse(const T3Tddd &mat) {
@@ -155,10 +155,10 @@ T4T4d Inverse(const T4T4d &mat) {
    auto [x30, x31, x32, x33] = std::get<3>(mat);
    double det = (x01 * x13 * x22 * x30 - x01 * x12 * x23 * x30 - x00 * x13 * x22 * x31 + x00 * x12 * x23 * x31 - x01 * x13 * x20 * x32 + x00 * x13 * x21 * x32 + x01 * x10 * x23 * x32 - x00 * x11 * x23 * x32 + x03 * (x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32) + (x01 * x12 * x20 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22) * x33 + x02 * (-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33));
    //
-   T4T4d inv = {{-(x13 * x22 * x31) + x12 * x23 * x31 + x13 * x21 * x32 - x11 * x23 * x32 - x12 * x21 * x33 + x11 * x22 * x33, x03 * x22 * x31 - x02 * x23 * x31 - x03 * x21 * x32 + x01 * x23 * x32 + x02 * x21 * x33 - x01 * x22 * x33, -(x03 * x12 * x31) + x02 * x13 * x31 + x03 * x11 * x32 - x01 * x13 * x32 - x02 * x11 * x33 + x01 * x12 * x33, x03 * x12 * x21 - x02 * x13 * x21 - x03 * x11 * x22 + x01 * x13 * x22 + x02 * x11 * x23 - x01 * x12 * x23},
-                {x13 * x22 * x30 - x12 * x23 * x30 - x13 * x20 * x32 + x10 * x23 * x32 + x12 * x20 * x33 - x10 * x22 * x33, -(x03 * x22 * x30) + x02 * x23 * x30 + x03 * x20 * x32 - x00 * x23 * x32 - x02 * x20 * x33 + x00 * x22 * x33, x03 * x12 * x30 - x02 * x13 * x30 - x03 * x10 * x32 + x00 * x13 * x32 + x02 * x10 * x33 - x00 * x12 * x33, -(x03 * x12 * x20) + x02 * x13 * x20 + x03 * x10 * x22 - x00 * x13 * x22 - x02 * x10 * x23 + x00 * x12 * x23},
-                {-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33, x03 * x21 * x30 - x01 * x23 * x30 - x03 * x20 * x31 + x00 * x23 * x31 + x01 * x20 * x33 - x00 * x21 * x33, -(x03 * x11 * x30) + x01 * x13 * x30 + x03 * x10 * x31 - x00 * x13 * x31 - x01 * x10 * x33 + x00 * x11 * x33, x03 * x11 * x20 - x01 * x13 * x20 - x03 * x10 * x21 + x00 * x13 * x21 + x01 * x10 * x23 - x00 * x11 * x23},
-                {x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32, -(x02 * x21 * x30) + x01 * x22 * x30 + x02 * x20 * x31 - x00 * x22 * x31 - x01 * x20 * x32 + x00 * x21 * x32, x02 * x11 * x30 - x01 * x12 * x30 - x02 * x10 * x31 + x00 * x12 * x31 + x01 * x10 * x32 - x00 * x11 * x32, -(x02 * x11 * x20) + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22}};
+   T4T4d inv = {{{-(x13 * x22 * x31) + x12 * x23 * x31 + x13 * x21 * x32 - x11 * x23 * x32 - x12 * x21 * x33 + x11 * x22 * x33, x03 * x22 * x31 - x02 * x23 * x31 - x03 * x21 * x32 + x01 * x23 * x32 + x02 * x21 * x33 - x01 * x22 * x33, -(x03 * x12 * x31) + x02 * x13 * x31 + x03 * x11 * x32 - x01 * x13 * x32 - x02 * x11 * x33 + x01 * x12 * x33, x03 * x12 * x21 - x02 * x13 * x21 - x03 * x11 * x22 + x01 * x13 * x22 + x02 * x11 * x23 - x01 * x12 * x23},
+                 {x13 * x22 * x30 - x12 * x23 * x30 - x13 * x20 * x32 + x10 * x23 * x32 + x12 * x20 * x33 - x10 * x22 * x33, -(x03 * x22 * x30) + x02 * x23 * x30 + x03 * x20 * x32 - x00 * x23 * x32 - x02 * x20 * x33 + x00 * x22 * x33, x03 * x12 * x30 - x02 * x13 * x30 - x03 * x10 * x32 + x00 * x13 * x32 + x02 * x10 * x33 - x00 * x12 * x33, -(x03 * x12 * x20) + x02 * x13 * x20 + x03 * x10 * x22 - x00 * x13 * x22 - x02 * x10 * x23 + x00 * x12 * x23},
+                 {-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33, x03 * x21 * x30 - x01 * x23 * x30 - x03 * x20 * x31 + x00 * x23 * x31 + x01 * x20 * x33 - x00 * x21 * x33, -(x03 * x11 * x30) + x01 * x13 * x30 + x03 * x10 * x31 - x00 * x13 * x31 - x01 * x10 * x33 + x00 * x11 * x33, x03 * x11 * x20 - x01 * x13 * x20 - x03 * x10 * x21 + x00 * x13 * x21 + x01 * x10 * x23 - x00 * x11 * x23},
+                 {x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32, -(x02 * x21 * x30) + x01 * x22 * x30 + x02 * x20 * x31 - x00 * x22 * x31 - x01 * x20 * x32 + x00 * x21 * x32, x02 * x11 * x30 - x01 * x12 * x30 - x02 * x10 * x31 + x00 * x12 * x31 + x01 * x10 * x32 - x00 * x11 * x32, -(x02 * x11 * x20) + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22}}};
    return inv / det;
 };
 
@@ -684,26 +684,26 @@ Tddd ToTddd(const V_d &v) { return {v[0], v[1], v[2]}; };
 Tddd ToTddd(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
 Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
 // std::vector<double> ToVector(const Tdd &v) { return {std::get<0>(v), std::get<1>(v)}; };
-double Norm(const T4d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t) + std::get<3>(t) * std::get<3>(t)); };
-double Norm(const T6d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) +
-                                             std::get<1>(t) * std::get<1>(t) +
-                                             std::get<2>(t) * std::get<2>(t) +
-                                             std::get<3>(t) * std::get<3>(t) +
-                                             std::get<4>(t) * std::get<4>(t) +
-                                             std::get<5>(t) * std::get<5>(t)); };
-double Norm(const T7d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) +
-                                             std::get<1>(t) * std::get<1>(t) +
-                                             std::get<2>(t) * std::get<2>(t) +
-                                             std::get<3>(t) * std::get<3>(t) +
-                                             std::get<4>(t) * std::get<4>(t) +
-                                             std::get<5>(t) * std::get<5>(t) +
-                                             std::get<6>(t) * std::get<6>(t)); };
-double Norm(const Tddd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t)); };
-double Norm(const Tdd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t)); };
-T4d Normalize(const T4d &X) { return X / Norm(X); };
-T7d Normalize(const T7d &X) { return X / Norm(X); };
-Tddd Normalize(const Tddd &X) { return X / Norm(X); };
-Tdd Normalize(const Tdd &X) { return X / Norm(X); };
+// double Norm(const T4d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t) + std::get<3>(t) * std::get<3>(t)); };
+// double Norm(const T6d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) +
+//                                              std::get<1>(t) * std::get<1>(t) +
+//                                              std::get<2>(t) * std::get<2>(t) +
+//                                              std::get<3>(t) * std::get<3>(t) +
+//                                              std::get<4>(t) * std::get<4>(t) +
+//                                              std::get<5>(t) * std::get<5>(t)); };
+// double Norm(const T7d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) +
+//                                              std::get<1>(t) * std::get<1>(t) +
+//                                              std::get<2>(t) * std::get<2>(t) +
+//                                              std::get<3>(t) * std::get<3>(t) +
+//                                              std::get<4>(t) * std::get<4>(t) +
+//                                              std::get<5>(t) * std::get<5>(t) +
+//                                              std::get<6>(t) * std::get<6>(t)); };
+// double Norm(const Tddd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t)); };
+// double Norm(const Tdd &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t)); };
+// T4d Normalize(const T4d &X) { return X / Norm(X); };
+// T7d Normalize(const T7d &X) { return X / Norm(X); };
+// Tddd Normalize(const Tddd &X) { return X / Norm(X); };
+// Tdd Normalize(const Tdd &X) { return X / Norm(X); };
 
 /* -------------------------------------------------------------------------- */
 
@@ -740,85 +740,85 @@ Tdd Normalize(const Tdd &X) { return X / Norm(X); };
 //    return ret;
 // };
 
-double Dot(const T6d &v, const T6d &u) {
-   return (std::get<0>(v) * std::get<0>(u) +
-           std::get<1>(v) * std::get<1>(u) +
-           std::get<2>(v) * std::get<2>(u) +
-           std::get<3>(v) * std::get<3>(u) +
-           std::get<4>(v) * std::get<4>(u) +
-           std::get<5>(v) * std::get<5>(u));
-};
-Tddd Dot(const T6d &v, const T6Tddd &A) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v) + std::get<0>(std::get<3>(A)) * std::get<3>(v) + std::get<0>(std::get<4>(A)) * std::get<4>(v) + std::get<0>(std::get<5>(A)) * std::get<5>(v),
-           std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v) + std::get<1>(std::get<3>(A)) * std::get<3>(v) + std::get<1>(std::get<4>(A)) * std::get<4>(v) + std::get<1>(std::get<5>(A)) * std::get<5>(v),
-           std::get<2>(std::get<0>(A)) * std::get<0>(v) + std::get<2>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<2>(std::get<3>(A)) * std::get<3>(v) + std::get<2>(std::get<4>(A)) * std::get<4>(v) + std::get<2>(std::get<5>(A)) * std::get<5>(v)};
-};
-double Dot(const T4d &v, const T4d &u) {
-   return (std::get<0>(v) * std::get<0>(u) +
-           std::get<1>(v) * std::get<1>(u) +
-           std::get<2>(v) * std::get<2>(u) +
-           std::get<3>(v) * std::get<3>(u));
-};
-double Dot(const Tddd &v, const Tddd &u) {
-   return (std::get<0>(v) * std::get<0>(u) +
-           std::get<1>(v) * std::get<1>(u) +
-           std::get<2>(v) * std::get<2>(u));
-};
+// double Dot(const T6d &v, const T6d &u) {
+//    return (std::get<0>(v) * std::get<0>(u) +
+//            std::get<1>(v) * std::get<1>(u) +
+//            std::get<2>(v) * std::get<2>(u) +
+//            std::get<3>(v) * std::get<3>(u) +
+//            std::get<4>(v) * std::get<4>(u) +
+//            std::get<5>(v) * std::get<5>(u));
+// };
+// Tddd Dot(const T6d &v, const T6Tddd &A) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v) + std::get<0>(std::get<3>(A)) * std::get<3>(v) + std::get<0>(std::get<4>(A)) * std::get<4>(v) + std::get<0>(std::get<5>(A)) * std::get<5>(v),
+//            std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v) + std::get<1>(std::get<3>(A)) * std::get<3>(v) + std::get<1>(std::get<4>(A)) * std::get<4>(v) + std::get<1>(std::get<5>(A)) * std::get<5>(v),
+//            std::get<2>(std::get<0>(A)) * std::get<0>(v) + std::get<2>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<2>(std::get<3>(A)) * std::get<3>(v) + std::get<2>(std::get<4>(A)) * std::get<4>(v) + std::get<2>(std::get<5>(A)) * std::get<5>(v)};
+// };
+// double Dot(const T4d &v, const T4d &u) {
+//    return (std::get<0>(v) * std::get<0>(u) +
+//            std::get<1>(v) * std::get<1>(u) +
+//            std::get<2>(v) * std::get<2>(u) +
+//            std::get<3>(v) * std::get<3>(u));
+// };
+// double Dot(const Tddd &v, const Tddd &u) {
+//    return (std::get<0>(v) * std::get<0>(u) +
+//            std::get<1>(v) * std::get<1>(u) +
+//            std::get<2>(v) * std::get<2>(u));
+// };
 
-double Dot(const Tdd &v, const Tdd &u) {
-   return (std::get<0>(v) * std::get<0>(u) + std::get<1>(v) * std::get<1>(u));
-};
+// double Dot(const Tdd &v, const Tdd &u) {
+//    return (std::get<0>(v) * std::get<0>(u) + std::get<1>(v) * std::get<1>(u));
+// };
 
-Tdd Dot(const Tdd &t, const T2Tdd &u) {
-   return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
-           std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u))};
-};
+// Tdd Dot(const Tdd &t, const T2Tdd &u) {
+//    return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
+//            std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u))};
+// };
 
-Tdd Dot(const T2Tdd &u, const Tdd &t) {
-   return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<0>(u)),
-           std::get<0>(t) * std::get<0>(std::get<1>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u))};
-};
+// Tdd Dot(const T2Tdd &u, const Tdd &t) {
+//    return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<0>(u)),
+//            std::get<0>(t) * std::get<0>(std::get<1>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u))};
+// };
 
-Tddd Dot(const Tdd &t, const T2Tddd &u) {
-   return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
-           std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u)),
-           std::get<0>(t) * std::get<2>(std::get<0>(u)) + std::get<1>(t) * std::get<2>(std::get<1>(u))};
-};
+// Tddd Dot(const Tdd &t, const T2Tddd &u) {
+//    return {std::get<0>(t) * std::get<0>(std::get<0>(u)) + std::get<1>(t) * std::get<0>(std::get<1>(u)),
+//            std::get<0>(t) * std::get<1>(std::get<0>(u)) + std::get<1>(t) * std::get<1>(std::get<1>(u)),
+//            std::get<0>(t) * std::get<2>(std::get<0>(u)) + std::get<1>(t) * std::get<2>(std::get<1>(u))};
+// };
 
-Tddd Dot(const T3Tddd &A, const Tddd &v) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<0>(A)) * std::get<1>(v) + std::get<2>(std::get<0>(A)) * std::get<2>(v),
-           std::get<0>(std::get<1>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<1>(A)) * std::get<2>(v),
-           std::get<0>(std::get<2>(A)) * std::get<0>(v) + std::get<1>(std::get<2>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v)};
-};
+// Tddd Dot(const T3Tddd &A, const Tddd &v) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<0>(A)) * std::get<1>(v) + std::get<2>(std::get<0>(A)) * std::get<2>(v),
+//            std::get<0>(std::get<1>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<1>(A)) * std::get<2>(v),
+//            std::get<0>(std::get<2>(A)) * std::get<0>(v) + std::get<1>(std::get<2>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v)};
+// };
 
-/*
-In[12]:= Dot[{t0,t1,t2},{{X0x,X0y},{X1x,X1y},{X2x,X2y}}]
-Out[12]= {t0 X0x+t1 X1x+t2 X2x,t0 X0y+t1 X1y+t2 X2y
-*/
-Tdd Dot(const Tddd &v, const T3Tdd &A) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
-           std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v)};
-};
+// /*
+// In[12]:= Dot[{t0,t1,t2},{{X0x,X0y},{X1x,X1y},{X2x,X2y}}]
+// Out[12]= {t0 X0x+t1 X1x+t2 X2x,t0 X0y+t1 X1y+t2 X2y
+// */
+// Tdd Dot(const Tddd &v, const T3Tdd &A) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
+//            std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v)};
+// };
 
-Tddd Dot(const Tddd &v, const T3Tddd &A) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
-           std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v),
-           std::get<2>(std::get<0>(A)) * std::get<0>(v) + std::get<2>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v)};
-};
+// Tddd Dot(const Tddd &v, const T3Tddd &A) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v),
+//            std::get<1>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v),
+//            std::get<2>(std::get<0>(A)) * std::get<0>(v) + std::get<2>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v)};
+// };
 
-T4d Dot(const T4T4d &A, const T4d &v) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<0>(A)) * std::get<1>(v) + std::get<2>(std::get<0>(A)) * std::get<2>(v) + std::get<3>(std::get<0>(A)) * std::get<3>(v),
-           std::get<0>(std::get<1>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<1>(A)) * std::get<2>(v) + std::get<3>(std::get<1>(A)) * std::get<3>(v),
-           std::get<0>(std::get<2>(A)) * std::get<0>(v) + std::get<1>(std::get<2>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<3>(std::get<2>(A)) * std::get<3>(v),
-           std::get<0>(std::get<3>(A)) * std::get<0>(v) + std::get<1>(std::get<3>(A)) * std::get<1>(v) + std::get<2>(std::get<3>(A)) * std::get<2>(v) + std::get<3>(std::get<3>(A)) * std::get<3>(v)};
-};
+// T4d Dot(const T4T4d &A, const T4d &v) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<1>(std::get<0>(A)) * std::get<1>(v) + std::get<2>(std::get<0>(A)) * std::get<2>(v) + std::get<3>(std::get<0>(A)) * std::get<3>(v),
+//            std::get<0>(std::get<1>(A)) * std::get<0>(v) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<2>(std::get<1>(A)) * std::get<2>(v) + std::get<3>(std::get<1>(A)) * std::get<3>(v),
+//            std::get<0>(std::get<2>(A)) * std::get<0>(v) + std::get<1>(std::get<2>(A)) * std::get<1>(v) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<3>(std::get<2>(A)) * std::get<3>(v),
+//            std::get<0>(std::get<3>(A)) * std::get<0>(v) + std::get<1>(std::get<3>(A)) * std::get<1>(v) + std::get<2>(std::get<3>(A)) * std::get<2>(v) + std::get<3>(std::get<3>(A)) * std::get<3>(v)};
+// };
 
-T4d Dot(const T4d &v, const T4T4d &A) {
-   return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v) + std::get<0>(std::get<3>(A)) * std::get<3>(v),
-           std::get<0>(v) * std::get<1>(std::get<0>(A)) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v) + std::get<1>(std::get<3>(A)) * std::get<3>(v),
-           std::get<0>(v) * std::get<2>(std::get<0>(A)) + std::get<1>(v) * std::get<2>(std::get<1>(A)) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<2>(std::get<3>(A)) * std::get<3>(v),
-           std::get<0>(v) * std::get<3>(std::get<0>(A)) + std::get<1>(v) * std::get<3>(std::get<1>(A)) + std::get<2>(v) * std::get<3>(std::get<2>(A)) + std::get<3>(std::get<3>(A)) * std::get<3>(v)};
-};
+// T4d Dot(const T4d &v, const T4T4d &A) {
+//    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v) + std::get<0>(std::get<3>(A)) * std::get<3>(v),
+//            std::get<0>(v) * std::get<1>(std::get<0>(A)) + std::get<1>(std::get<1>(A)) * std::get<1>(v) + std::get<1>(std::get<2>(A)) * std::get<2>(v) + std::get<1>(std::get<3>(A)) * std::get<3>(v),
+//            std::get<0>(v) * std::get<2>(std::get<0>(A)) + std::get<1>(v) * std::get<2>(std::get<1>(A)) + std::get<2>(std::get<2>(A)) * std::get<2>(v) + std::get<2>(std::get<3>(A)) * std::get<3>(v),
+//            std::get<0>(v) * std::get<3>(std::get<0>(A)) + std::get<1>(v) * std::get<3>(std::get<1>(A)) + std::get<2>(v) * std::get<3>(std::get<2>(A)) + std::get<3>(std::get<3>(A)) * std::get<3>(v)};
+// };
 
 // T5d Dot(const T5d &v, const T5T5d &A) {
 //    return {std::get<0>(std::get<0>(A)) * std::get<0>(v) + std::get<0>(std::get<1>(A)) * std::get<1>(v) + std::get<0>(std::get<2>(A)) * std::get<2>(v) + std::get<0>(std::get<3>(A)) * std::get<3>(v) + std::get<0>(std::get<4>(A)) * std::get<4>(v),
@@ -830,60 +830,60 @@ T4d Dot(const T4d &v, const T4T4d &A) {
 
 /* -------------------------------------------------------------------------- */
 
-Tddd Cross(const Tddd &A, const Tddd &X) {
-   return {std::get<1>(A) * std::get<2>(X) - std::get<2>(A) * std::get<1>(X),
-           std::get<2>(A) * std::get<0>(X) - std::get<0>(A) * std::get<2>(X),
-           std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)};
-};
+// Tddd Cross(const Tddd &A, const Tddd &X) {
+//    return {{std::get<1>(A) * std::get<2>(X) - std::get<2>(A) * std::get<1>(X),
+//             std::get<2>(A) * std::get<0>(X) - std::get<0>(A) * std::get<2>(X),
+//             std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)}};
+// };
 
-Tddd Cross(const Tdd &A, const Tdd &X) {
-   return {0., 0., std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)};
-};
+// Tddd Cross(const Tdd &A, const Tdd &X) {
+//    return {{0., 0., std::get<0>(A) * std::get<1>(X) - std::get<1>(A) * std::get<0>(X)}};
+// };
 
-T2Tdd Transpose(const T2Tdd &A) {
-   return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))},
-           {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))}};
-};
-T2Tddd Transpose(const T3Tdd &A) {
-   return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A))},
-           {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A))}};
-};
+// T2Tdd Transpose(const T2Tdd &A) {
+//    return {{{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))},
+//             {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))}}};
+// };
+// T2Tddd Transpose(const T3Tdd &A) {
+//    return {{{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A))},
+//             {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A))}}};
+// };
 
-T3Tdd Transpose(const T2Tddd &A) {
-   return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))},
-           {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))},
-           {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A))}};
-};
+// T3Tdd Transpose(const T2Tddd &A) {
+//    return {{{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))},
+//             {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))},
+//             {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A))}}};
+// };
 
-T3Tddd Transpose(const T3Tddd &A) {
-   return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A))},
-           {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A))},
-           {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A)), std::get<2>(std::get<2>(A))}};
-};
+// T3Tddd Transpose(const T3Tddd &A) {
+//    return {{{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A))},
+//             {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A))},
+//             {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A)), std::get<2>(std::get<2>(A))}}};
+// };
 
-T3T4d Transpose(const T4Tddd &A) {
-   return {{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A)), std::get<0>(std::get<3>(A))},
-           {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A)), std::get<1>(std::get<3>(A))},
-           {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A)), std::get<2>(std::get<2>(A)), std::get<2>(std::get<3>(A))}};
-};
+// T3T4d Transpose(const T4Tddd &A) {
+//    return {{{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A)), std::get<0>(std::get<2>(A)), std::get<0>(std::get<3>(A))},
+//             {std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A)), std::get<1>(std::get<2>(A)), std::get<1>(std::get<3>(A))},
+//             {std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A)), std::get<2>(std::get<2>(A)), std::get<2>(std::get<3>(A))}}};
+// };
 
-std::tuple<V_d, V_d> Transpose(const std::vector<Tdd> &V_Tdd) {
-   V_d v0(V_Tdd.size()), v1(V_Tdd.size());
-   for (auto i = 0; i < V_Tdd.size(); ++i) {
-      v0[i] = std::get<0>(V_Tdd[i]);
-      v1[i] = std::get<1>(V_Tdd[i]);
-   }
-   return {v0, v1};
-};
-std::tuple<V_d, V_d, V_d> Transpose(const std::vector<Tddd> &V_Tdd) {
-   V_d v0(V_Tdd.size()), v1(V_Tdd.size()), v2(V_Tdd.size());
-   for (auto i = 0; i < V_Tdd.size(); ++i) {
-      v0[i] = std::get<0>(V_Tdd[i]);
-      v1[i] = std::get<1>(V_Tdd[i]);
-      v2[i] = std::get<2>(V_Tdd[i]);
-   }
-   return {v0, v1, v2};
-};
+// std::tuple<V_d, V_d> Transpose(const std::vector<Tdd> &V_Tdd) {
+//    V_d v0(V_Tdd.size()), v1(V_Tdd.size());
+//    for (auto i = 0; i < V_Tdd.size(); ++i) {
+//       v0[i] = std::get<0>(V_Tdd[i]);
+//       v1[i] = std::get<1>(V_Tdd[i]);
+//    }
+//    return {v0, v1};
+// };
+// std::tuple<V_d, V_d, V_d> Transpose(const std::vector<Tddd> &V_Tdd) {
+//    V_d v0(V_Tdd.size()), v1(V_Tdd.size()), v2(V_Tdd.size());
+//    for (auto i = 0; i < V_Tdd.size(); ++i) {
+//       v0[i] = std::get<0>(V_Tdd[i]);
+//       v1[i] = std::get<1>(V_Tdd[i]);
+//       v2[i] = std::get<2>(V_Tdd[i]);
+//    }
+//    return {v0, v1, v2};
+// };
 
 /* -------------------------------------------------------------------------- */
 // bool isfinite(const V_d &v_IN)
@@ -1107,12 +1107,12 @@ T Max(const std::vector<std::vector<T>> &v) {
 
 double Min(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
 double Max(const Tdd &A) { return ((std::get<0>(A) > std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
-Tdd MinMax(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? Tdd{std::get<0>(A), std::get<1>(A)} : Tdd{std::get<1>(A), std::get<0>(A)}); };
-T3Tdd MinMaxTranspose(const T2Tddd &A) {
-   return {MinMax(Tdd{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))}),
-           MinMax(Tdd{std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))}),
-           MinMax(Tdd{std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A))})};
-};
+// Tdd MinMax(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? Tdd{std::get<0>(A), std::get<1>(A)} : Tdd{std::get<1>(A), std::get<0>(A)}); };
+// T3Tdd MinMaxTranspose(const T2Tddd &A) {
+//    return {MinMax(Tdd{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))}),
+//            MinMax(Tdd{std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))}),
+//            MinMax(Tdd{std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A))})};
+// };
 double Min(const Tddd &A) {
    // イコールが重要
    const auto [X, Y, Z] = A;
@@ -1164,14 +1164,14 @@ double FiniteMin(const Tddd &A) {
    return Min(Tddd{X, Y, Z});
 };
 
-T3Tdd MinMaxTranspose(const T3Tddd &A) {
-   const auto [Xs, Ys, Zs] = Transpose(A);
-   return {{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}};
-};
-T3Tdd MinMaxTranspose(const T4Tddd &A) {
-   const auto [Xs, Ys, Zs] = Transpose(A);
-   return {{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}};
-};
+// T3Tdd MinMaxTranspose(const T3Tddd &A) {
+//    const auto [Xs, Ys, Zs] = Transpose(A);
+//    return {{{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}}};
+// };
+// T3Tdd MinMaxTranspose(const T4Tddd &A) {
+//    const auto [Xs, Ys, Zs] = Transpose(A);
+//    return {{{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}}};
+// };
 
 double Max(const std::vector<Tddd> &A) {
    double ret = -1E-10;
@@ -1182,13 +1182,11 @@ double Max(const std::vector<Tddd> &A) {
 };
 
 T3Tdd MinMax(const std::tuple<V_d, V_d, V_d> &A) {
-   return {
-       MinMax(std::get<0>(A)),
-       MinMax(std::get<1>(A)),
-       MinMax(std::get<2>(A)),
-   };
+   return {{MinMax(std::get<0>(A)),
+            MinMax(std::get<1>(A)),
+            MinMax(std::get<2>(A))}};
 };
-T3Tdd MinMaxTranspose(const std::vector<Tddd> &A) { return MinMax(Transpose(A)); };
+// T3Tdd MinMaxTranspose(const std::vector<Tddd> &A) { return MinMax(Transpose(A)); };
 /* ------------------------------------------------------ */
 double Rot(const V_d vec1, const V_d vec2) {
    return vec1[0] * vec2[1] - vec1[1] * vec2[0];
@@ -1300,33 +1298,46 @@ std::tuple<T, T, T> RotateLeft(const std::tuple<T, T, T> &vecs, int n = 1) {  //
    else
       return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
 }
-T3Tddd RotateLeft(const T3Tddd &vecs, int n = 1) {  // 2021/12/05
-   n = n % 3;
-   if (n == 0)
-      return vecs;
-   else if (n == 1)
-      return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
-   else
-      return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+
+template <typename T, size_t N>
+std::array<T, N> RotateLeft(const std::array<T, N> &arr, int n = 1) {
+   std::array<T, N> result;
+   n = n % N;
+
+   for (size_t i = 0; i < N; ++i) {
+      result[(i + N - n) % N] = arr[i];
+   }
+
+   return result;
 }
-T3Tddd RotateRight(const T3Tddd &vecs, int n = 1) {  // 2021/12/05
-   n = n % 3;
-   if (n == 0)
-      return vecs;
-   else if (n == 1)
-      return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
-   else
-      return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
-}
-Tddd RotateRight(const Tddd &vecs, int n = 1) {  // 2021/12/05
-   n = n % 3;
-   if (n == 0)
-      return vecs;
-   else if (n == 1)
-      return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
-   else
-      return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
-}
+
+// T3Tddd RotateLeft(const T3Tddd &vecs, int n = 1) {  // 2021/12/05
+//    n = n % 3;
+//    if (n == 0)
+//       return vecs;
+//    else if (n == 1)
+//       return {{std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)}};
+//    else
+//       return {{std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)}};
+// }
+// T3Tddd RotateRight(const T3Tddd &vecs, int n = 1) {  // 2021/12/05
+//    n = n % 3;
+//    if (n == 0)
+//       return vecs;
+//    else if (n == 1)
+//       return {{std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)}};
+//    else
+//       return {{std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)}};
+// }
+// Tddd RotateRight(const Tddd &vecs, int n = 1) {  // 2021/12/05
+//    n = n % 3;
+//    if (n == 0)
+//       return vecs;
+//    else if (n == 1)
+//       return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+//    else
+//       return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+// }
 template <class Type>
 std::vector<Type> RotateRight(const std::vector<Type> &vecs, const int n) {  // 2021/04/07
    std::vector<Type> ret(vecs);
@@ -1367,18 +1378,18 @@ struct Quaternion {
       //%固定した座標系(global座標)における．位置ベクトルの回転をするために使う．
       // ノーマライズされていなくていい
       double a2 = a * a, b2 = b * b, c2 = c * c, d2 = d * d;
-      return {{a2 + b2 - c2 - d2, 2. * b * c - 2. * a * d, 2. * a * c + 2. * b * d},
-              {2. * b * c + 2. * a * d, a2 - b2 + c2 - d2, -2. * a * b + 2. * c * d},
-              {-2. * a * c + 2. * b * d, 2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}};
+      return {{{a2 + b2 - c2 - d2, 2. * b * c - 2. * a * d, 2. * a * c + 2. * b * d},
+               {2. * b * c + 2. * a * d, a2 - b2 + c2 - d2, -2. * a * b + 2. * c * d},
+               {-2. * a * c + 2. * b * d, 2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}}};
       // OK
    }
    T3Tddd Rs() const {
       //%物体座標系を回転することで，global座標が物体座標にとってどのように移動するかを計算するために使う．
       // ノーマライズされていなくていい
       double a2 = a * a, b2 = b * b, c2 = c * c, d2 = d * d;
-      return {{a2 + b2 - c2 - d2, 2. * b * c + 2. * a * d, -2. * a * c + 2. * b * d},
-              {2. * b * c - 2. * a * d, a2 - b2 + c2 - d2, 2. * a * b + 2. * c * d},
-              {2. * a * c + 2. * b * d, -2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}};
+      return {{{a2 + b2 - c2 - d2, 2. * b * c + 2. * a * d, -2. * a * c + 2. * b * d},
+               {2. * b * c - 2. * a * d, a2 - b2 + c2 - d2, 2. * a * b + 2. * c * d},
+               {2. * a * c + 2. * b * d, -2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}}};
       // OK
    }
    Tddd Rv(const Tddd &uIN) const { return Dot(this->Rv(), uIN); }
@@ -1406,17 +1417,17 @@ struct Quaternion {
 
    T3Tddd Ryaw() const {
       double t = this->yaw();
-      return T3Tddd{{cos(t), sin(t), 0.}, {-sin(t), cos(t), 0.}, {0., 0., 1.}};
+      return {{{cos(t), sin(t), 0.}, {-sin(t), cos(t), 0.}, {0., 0., 1.}}};
    }
 
    T3Tddd Rpitch() const {
       double t = this->pitch();
-      return T3Tddd{{cos(t), 0., -sin(t)}, {0., 1., 0.}, {sin(t), 0., cos(t)}};
+      return {{{cos(t), 0., -sin(t)}, {0., 1., 0.}, {sin(t), 0., cos(t)}}};
    }
 
    T3Tddd Rroll() const {
       double t = this->roll();
-      return T3Tddd{{1., 0., 0.}, {0., cos(t), sin(t)}, {0., -sin(t), cos(t)}};
+      return {{{1., 0., 0.}, {0., cos(t), sin(t)}, {0., -sin(t), cos(t)}}};
    }
 
    Tddd Ryaw(const Tddd &uIN) const { return Dot(this->Ryaw(), uIN); }
@@ -1819,7 +1830,7 @@ V_d diagonal_scaling_vector(VV_d mat) {
 
 /* ------------------------------------------------------ */
 template <typename T>
-bool Between(const T &x, const std::tuple<T, T> &minmax) {
+bool Between(const T &x, const std::array<T, 2> &minmax) {
    return (std::get<0>(minmax) <= x && x <= std::get<1>(minmax) && isFinite(x));
 };
 

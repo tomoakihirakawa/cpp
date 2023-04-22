@@ -1,6 +1,0 @@
-{
-    "name": "pole",
-    "type": "RigidBody",
-    "isFixed": true,
-    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Gu2018/pole100.obj"
-}

@@ -8,24 +8,25 @@ double solution(double y0, double t) { return y0 * exp((2 * t - sin(2. * t)) / 4
 int main() {
    int n = 4;
    std::vector<std::vector<std::vector<double>>> ansRK(n);
-   double y0 = 2, t0 = 0.;  // 初期値
-   double dt = 1.;          // 時間ステップ
-   double t_end = 5;        // 終了時刻
+   std::array<double, 1> y0 = {2};
+   double t0 = 0.;    // 初期値
+   double dt = 1.;    // 時間ステップ
+   double t_end = 5;  // 終了時刻
    for (auto i = 1; i <= 4; ++i) {
       std::cout << i << "次のルンゲクッタ" << std::endl;
-      double y = y0;
+      std::array<double, 1> y = y0;
       double t = t0;
       for (auto j = 0; j < 100; j++) {
          RungeKutta rk(dt, t, y, i);
-         ansRK[i - 1].push_back({t, y});
+         ansRK[i - 1].push_back({t, y[0]});
          while (true) {
             rk.displayStatus();
-            if (rk.push(dydt(rk.getX(), rk.gett())))
+            if (rk.push({dydt(rk.getX()[0], rk.gett())}))
                break;
          }
          y = rk.getX();
          t += dt;
-         Print(y, Magenta);
+         Print(y[0], Magenta);
          if (t > t_end)
             break;
       }
@@ -36,7 +37,7 @@ int main() {
       double t = j * 0.05;
       if (t > t_end)
          break;
-      exact.push_back({t, solution(y0, t)});
+      exact.push_back({t, solution(y0[0], t)});
    };
 
    GNUPLOT plot;

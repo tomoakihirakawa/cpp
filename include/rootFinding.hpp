@@ -68,286 +68,85 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
       std::get<3>(X) += (std::get<3>(dX) = ans[3]);
    };
 };
-// template <>
-// struct NewtonRaphson<T7d> : public NewtonRaphson_Common<T7d> {
-//    NewtonRaphson(const T7d &Xinit) : NewtonRaphson_Common<T7d>(Xinit) {
-//       this->ans = V_d(7, 0.);
-//    };
-//    V_d ans;
-//    void update(const T7d &F, const T7T7d &dFdx) {
-//       ludcmp lu(ToVector(dFdx));
-//       lu.solve(ToVector(-F), ans);
-//       std::get<0>(X) += (std::get<0>(dX) = ans[0]);
-//       std::get<1>(X) += (std::get<1>(dX) = ans[1]);
-//       std::get<2>(X) += (std::get<2>(dX) = ans[2]);
-//       std::get<3>(X) += (std::get<3>(dX) = ans[3]);
-//       std::get<4>(X) += (std::get<4>(dX) = ans[4]);
-//       std::get<5>(X) += (std::get<5>(dX) = ans[5]);
-//       std::get<6>(X) += (std::get<6>(dX) = ans[6]);
-//    };
-// };
 
 /* ------------------------------------------------------ */
 /*                           利用例                        */
 /* ------------------------------------------------------ */
-Tddd optimumVector(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector) {
-   // これは根を見つけようとするもの
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   for (auto i = 0; i < 100; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
+
+template <std::size_t N>
+std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+                                    const std::array<double, N> &init_vector,
+                                    const double tolerance = 1E-12) {
+   std::array<NewtonRaphson<double>, N> NRs;
+   for (std::size_t i = 0; i < N; ++i)
+      NRs[i].X = init_vector[i];
+   std::array<double, N> Fs, dFs;
+   double w, drdx;
+   for (auto j = 0; j < 500; ++j) {
+      Fs.fill(0);
+      dFs.fill(0);
       for (const auto &vec : sample_vectors) {
-         w = 1;                                                  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
-         F0 += std::pow(r = w * (std::get<0>(vec) - NR0.X), 2);  //<- d/dx (d*d)
-         dF0dx += 2. * r * (drdx = -w);
-         r = w * (std::get<1>(vec) - NR1.X);
-         F1 += std::pow(r = w * (std::get<1>(vec) - NR1.X), 2);  //<- d/dx (d*d)
-         dF1dx += 2. * r * (drdx = -w);
-         r = w * (std::get<2>(vec) - NR2.X);
-         F2 += std::pow(r = w * (std::get<2>(vec) - NR2.X), 2);  //<- d/dx (d*d)
-         dF2dx += 2. * r * (drdx = -w);
+         w = 1;
+         drdx = -w;
+         for (std::size_t i = 0; i < N; ++i) {
+            Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
+            dFs[i] += drdx * drdx;
+         }
       }
-      NR0.update(F0, dF0dx);
-      NR1.update(F1, dF1dx);
-      NR2.update(F2, dF2dx);
-      if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
-         break;
+      bool converged = true;
+      for (std::size_t i = 0; i < N; ++i) {
+         NRs[i].update(Fs[i], dFs[i]);
+         if (std::abs(NRs[i].dX) >= tolerance) converged = false;
+      }
+      if (converged) break;
    }
-   return {NR0.X, NR1.X, NR2.X};
-};
+   std::array<double, N> result;
+   for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+   return result;
+}
 
-double optimumVector_(const std::vector<double> &sample_vectors, const double init_vector, const double tolerance = 1E-12) {
-   NewtonRaphson NR0(init_vector);
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   for (auto i = 0; i < 100; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (const auto &vec : sample_vectors) {
-         w = 1;  // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
-         r = w * (vec - NR0.X);
-         drdx = -w;
-         F0 += r * drdx;  //<- d/dx (d*d)
-         dF0dx += drdx * drdx;
-      }
-      NR0.update(F0, dF0dx);
-      if (std::abs(NR0.dX) < tolerance)
-         break;
-   }
-   return NR0.X;
-};
+template <std::size_t N>
+std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+                                    const std::array<double, N> &init_vector,
+                                    const std::vector<double> &weights,
+                                    const double tolerance = 1E-12) {
+   if (weights.size() != sample_vectors.size())
+      throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
 
-Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector, const double tolerance = 1E-12) {
-   // これは，根を見つけるというよりは，極値を見つけるもの．
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   for (auto i = 0; i < 100; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (const auto &vec : sample_vectors) {
-         w = 1;                                                 // kernel_Bspline3(Norm(X - p->getXtuple()), p->radius);
-         F0 += (w * (std::get<0>(vec) - NR0.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF0dx += drdx * drdx;
-         F1 += (w * (std::get<1>(vec) - NR1.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF1dx += drdx * drdx;
-         F2 += (w * (std::get<2>(vec) - NR2.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF2dx += drdx * drdx;
-      }
-      //
-      NR0.update(F0, dF0dx);
-      NR1.update(F1, dF1dx);
-      NR2.update(F2, dF2dx);
-      if (std::abs(NR0.dX) < tolerance && std::abs(NR1.dX) < tolerance && std::abs(NR2.dX) < tolerance)
-         break;
-   }
-   return {NR0.X, NR1.X, NR2.X};
-};
+   double max_weight = *std::max_element(weights.begin(), weights.end());
+   std::vector<double> normalized_weights(weights.size());
+   std::transform(weights.begin(), weights.end(), normalized_weights.begin(), [&](double w) { return w / max_weight; });
 
-Tddd optimumVector_(const std::vector<Tddd> &sample_vectors, const Tddd &init_vector, std::vector<double> weight) {
-   // これは，根を見つけるというよりは，極値を見つけるもの．
-   if (weight.size() != sample_vectors.size())
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   weight /= Max(weight);
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   Tddd vec;
-   for (auto i = 0; i < 200; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (auto i = 0; i < sample_vectors.size(); ++i) {
-         vec = sample_vectors[i];
-         w = weight[i];
-         F0 += (r = w * (std::get<0>(vec) - NR0.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF0dx += drdx * drdx;
-         F1 += (r = w * (std::get<1>(vec) - NR1.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF1dx += drdx * drdx;
-         F2 += (r = w * (std::get<2>(vec) - NR2.X)) * (drdx = -w);  //<- d/dx (d*d)
-         dF2dx += drdx * drdx;
-      }
-      NR0.update(F0, dF0dx);
-      NR1.update(F1, dF1dx);
-      NR2.update(F2, dF2dx);
-      if (std::abs(NR0.dX) < 1E-13 && std::abs(NR1.dX) < 1E-13 && std::abs(NR2.dX) < 1E-13)
-         break;
-   }
-   return {NR0.X, NR1.X, NR2.X};
-};
+   std::array<NewtonRaphson<double>, N> NRs;
+   for (std::size_t i = 0; i < N; ++i)
+      NRs[i].X = init_vector[i];
 
-T6d optimumVector_(const std::vector<T6d> &sample_vectors, const T6d &init_vector, std::vector<double> weight) {
-   if (weight.size() != sample_vectors.size())
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   weight /= Max(weight);
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector)),
-       NR3(std::get<3>(init_vector)), NR4(std::get<4>(init_vector)), NR5(std::get<5>(init_vector));
-   double r, F0, F1, F2, F3, F4, F5, dF0dx, dF1dx, dF2dx, dF3dx, dF4dx, dF5dx, drdx, w;
-   T6d vec;
-   for (auto i = 0; i < 200; ++i) {
-      F0 = F1 = F2 = F3 = F4 = F5 = dF0dx = dF1dx = dF2dx = dF3dx = dF4dx = dF5dx = 0;
-      for (auto i = 0; i < sample_vectors.size(); ++i) {
-         vec = sample_vectors[i];
-         w = weight[i];
-         r = w * (std::get<0>(vec) - NR0.X);
+   std::array<double, N> Fs, dFs;
+   double w, drdx;
+   for (int iteration = 0; iteration < 500; ++iteration) {
+      Fs.fill(0);
+      dFs.fill(0);
+      for (size_t i = 0; i < sample_vectors.size(); ++i) {
+         w = normalized_weights[i];
          drdx = -w;
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
-         r = w * (std::get<1>(vec) - NR1.X);
-         drdx = -w;
-         F1 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF1dx += 2. * drdx * drdx;
-         r = w * (std::get<2>(vec) - NR2.X);
-         drdx = -w;
-         F2 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF2dx += 2. * drdx * drdx;
-         //
-         r = w * (std::get<3>(vec) - NR3.X);
-         drdx = -w;
-         F3 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF3dx += 2. * drdx * drdx;
-         r = w * (std::get<4>(vec) - NR4.X);
-         drdx = -w;
-         F4 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF4dx += 2. * drdx * drdx;
-         r = w * (std::get<5>(vec) - NR5.X);
-         drdx = -w;
-         F5 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF5dx += 2. * drdx * drdx;
+         for (size_t j = 0; j < N; ++j) {
+            Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
+            dFs[j] += drdx * drdx;
+         }
       }
-      NR0.update(F0, dF0dx);
-      NR1.update(F1, dF1dx);
-      NR2.update(F2, dF2dx);
-      NR3.update(F3, dF3dx);
-      NR4.update(F4, dF4dx);
-      NR5.update(F5, dF5dx);
-      if (std::abs(NR0.dX) < 1E-13 && std::abs(NR1.dX) < 1E-13 && std::abs(NR2.dX) < 1E-13 &&
-          std::abs(NR3.dX) < 1E-13 && std::abs(NR4.dX) < 1E-13 && std::abs(NR5.dX) < 1E-13)
-         break;
-   }
-   return {NR0.X, NR1.X, NR2.X, NR3.X, NR4.X, NR5.X};
-};
 
-double optimumVector_(const std::vector<double> &sample_vectors, const double init_vector, std::vector<double> weight) {
-   if (weight.size() != sample_vectors.size())
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   weight /= Max(weight);
-   NewtonRaphson NR0(init_vector);
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   double vec;
-   for (auto i = 0; i < 200; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (auto i = 0; i < sample_vectors.size(); ++i) {
-         vec = sample_vectors[i];
-         w = weight[i];
-         r = w * (vec - NR0.X);
-         drdx = -w;
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
+      bool converged = true;
+      for (std::size_t i = 0; i < N; ++i) {
+         NRs[i].update(Fs[i], dFs[i]);
+         if (std::abs(NRs[i].dX) >= tolerance) converged = false;
       }
-      NR0.update(F0, dF0dx);
-      if (std::abs(NR0.dX) < 1E-13)
-         break;
+      if (converged) break;
    }
-   return NR0.X;
-};
 
-Tddd optimumVector_(const std::vector<Tddd> &sample_vectors,
-                    const Tddd &init_vector,
-                    const std::vector<Tddd> &N,
-                    const std::vector<double> &weight) {
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   Tddd vec;
-   for (auto i = 0; i < 100; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (auto i = 0; i < sample_vectors.size(); ++i) {
-         vec = sample_vectors[i];
-         auto n = N[i];
-         w = weight[i];
-         Tddd X = {NR0.X, NR1.X, NR2.X};
-         r = w * Dot(vec - X, n);
-         drdx = -w * std::get<0>(n);
-         F0 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF0dx += 2. * drdx * drdx;
-         r = w * Dot(vec - X, n);
-         drdx = -w * std::get<1>(n);
-         F1 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF1dx += 2. * drdx * drdx;
-         r = w * Dot(vec - X, n);
-         drdx = -w * std::get<2>(n);
-         F2 += 2. * r * drdx;  //<- d/dx (d*d)
-         dF2dx += 2. * drdx * drdx;
-      }
-      if (isFinite(dF0dx))
-         NR0.update(F0, dF0dx);
-      if (isFinite(dF1dx))
-         NR1.update(F1, dF1dx);
-      if (isFinite(dF2dx))
-         NR2.update(F2, dF2dx);
-      if (isFinite(NR0.dX) && isFinite(NR1.dX) && isFinite(NR2.dX))
-         if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
-            break;
-   }
-   Tddd ret = {NR0.X, NR1.X, NR2.X};
-   if (isFinite(ret))
-      return ret;
-   else
-      return {0., 0., 0.};
-};
-
-Tddd optimumVector(const std::vector<Tddd> &sample_vectors,
-                   const Tddd &init_vector,
-                   const std::vector<Tddd> &N,
-                   std::vector<double> weight) {
-   NewtonRaphson NR0(std::get<0>(init_vector)), NR1(std::get<1>(init_vector)), NR2(std::get<2>(init_vector));
-   double r, F0, F1, F2, dF0dx, dF1dx, dF2dx, drdx, w;
-   Tddd vec;
-   for (auto i = 0; i < 100; ++i) {
-      F0 = F1 = F2 = dF0dx = dF1dx = dF2dx = 0;
-      for (auto i = 0; i < sample_vectors.size(); ++i) {
-         vec = sample_vectors[i];
-         auto n = N[i];
-         w = weight[i];
-         Tddd X = {NR0.X, NR1.X, NR2.X};
-         r = w * Dot(vec - X, n);
-         drdx = -w * std::get<0>(n);
-         F0 += r * r;  //<- d/dx (d*d)
-         dF0dx += 2. * r * drdx;
-         drdx = -w * std::get<1>(n);
-         F1 += r * r;  //<- d/dx (d*d)
-         dF1dx += 2. * r * drdx;
-         drdx = -w * std::get<2>(n);
-         F2 += r * r;  //<- d/dx (d*d)
-         dF2dx += 2. * r * drdx;
-      }
-      if (F0 + F1 + F2 < 1E-5)
-         break;
-      if (isFinite(dF0dx))
-         NR0.update(F0, dF0dx);
-      if (isFinite(dF1dx))
-         NR1.update(F1, dF1dx);
-      if (isFinite(dF2dx))
-         NR2.update(F2, dF2dx);
-      if (isFinite(NR0.dX) && isFinite(NR1.dX) && isFinite(NR2.dX))
-         if (std::abs(NR0.dX) < 1E-12 && std::abs(NR1.dX) < 1E-12 && std::abs(NR2.dX) < 1E-12)
-            break;
-   }
-   return {NR0.X, NR1.X, NR2.X};
-};
+   std::array<double, N> result;
+   for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+   return result;
+}
 /* -------------------------------------------------------------------------- */
 struct DispersionRelation {
    double w;

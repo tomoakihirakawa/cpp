@@ -31,8 +31,9 @@ SimulationCase = "Kramer2021"
 match SimulationCase:
     case "Kramer2021":
 
-        H0 = 30/1000
-        id = str(H0).replace(".", "d")
+        D = 300/1000
+        H0 = D*0.1
+        id = "H0"+str(H0).replace(".", "d")
 
         input_directory += SimulationCase + "_" + id
         os.makedirs(input_directory, exist_ok=True)
@@ -44,19 +45,21 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "velocity": ["floating", 0.1]}
+                 "velocity": ["floating", 0.05]}
 
         float["mass"] = m = 7.056
-        float["COM"] = [0., 0., H0 - 34.8/1000 + 900/1000]  # 今回は重要ではない
+        float["reverseNormal"] = True
+        float["COM"] = [0., 0., 0.1*D + 900/1000]  # 今回は重要ではない
         float["radius_of_gyration"] = [10**10, 10**10, 10**10]
         float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
                         m*math.pow(float["radius_of_gyration"][1], 2),
                         m*math.pow(float["radius_of_gyration"][2], 2)]
+        float["translate"] = [0., 0., 0.1*D + 900/1000]
 
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
         water["objfile"] = objfolder + "/water200_mod.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
-        float["objfile"] = objfolder+"/sphere.obj"
+        float["objfile"] = objfolder+"/sphere_divide26.obj"
 
         inputfiles = [tank, water, float]
 
@@ -544,9 +547,9 @@ green = '\033[92m'
 magenta = '\033[95m'
 coloroff = '\033[0m'
 
-#@ -------------------------------------------------------- #
-#@           その他，water.json,tank.json などを出力           #
-#@ -------------------------------------------------------- #
+# @ -------------------------------------------------------- #
+# @           その他，water.json,tank.json などを出力           #
+# @ -------------------------------------------------------- #
 for INPUTS in inputfiles:
     print('------------------------------------')
     for key, value in INPUTS.items():
@@ -568,9 +571,9 @@ for INPUTS in inputfiles:
     json.dump(INPUTS, f, ensure_ascii=True, indent=4)
     f.close()
 
-#@ -------------------------------------------------------- #
-#@                  setting.json を出力                      #
-#@ -------------------------------------------------------- #
+# @ -------------------------------------------------------- #
+# @                  setting.json を出力                      #
+# @ -------------------------------------------------------- #
 print('------------------------------------')
 for key, value in setting.items():
     print(f'{key: <{20}}', '\t', green, value, coloroff)

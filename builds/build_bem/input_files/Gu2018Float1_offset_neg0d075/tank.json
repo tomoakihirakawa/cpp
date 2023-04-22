@@ -1,6 +1,0 @@
-{
-    "name": "tank",
-    "type": "RigidBody",
-    "isFixed": true,
-    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Gu2018Float1_offset_neg0d075/tank10.obj"
-}

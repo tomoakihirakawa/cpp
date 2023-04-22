@@ -102,6 +102,7 @@ int main(int arg, char **argv) {
       std::cout << "3. time:" << time() << std::endl;
       LaplacianSmoothingPreserveShape(net.getPoints(), small);
    }
+
 }
 #elif defined(sphare)
 int main() {

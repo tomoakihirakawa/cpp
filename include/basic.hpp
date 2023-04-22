@@ -394,65 +394,31 @@ int Count(const std::vector<T *> &list, const T *const v) {
    return std::count(list.cbegin(), list.cend(), v);
 };
 /* -------------------------------------------------------------------------- */
-template <typename T>
-bool MemberQ(const std::vector<T> &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ(const std::vector<T *> &list, const T *const form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-
-template <typename T>
-bool MemberQ(const std::tuple<T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T, T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form || std::get<5>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T *, T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
-template <typename T>
-bool MemberQ(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p) {
-   return (std::get<0>(Ps) == p || std::get<1>(Ps) == p || std::get<2>(Ps) == p || std::get<3>(Ps) == p || std::get<4>(Ps) == p || std::get<5>(Ps) == p);
-};
+template <typename Container, typename T>
+bool MemberQ(const Container &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
 template <typename T>
 bool MemberQ(const std::unordered_set<T> &list, const T &form) { return list.contains(form); };
-/* -------------------------------------------------------------------------- */
-template <typename T>
-bool MemberQ_(const std::vector<T> &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ_(const std::vector<std::vector<T>> &list, const std::vector<T> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ_(const std::vector<T *> &list, const T *const form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-template <typename T>
-bool MemberQ_(const std::vector<std::vector<T *>> &list, const std::vector<T *> &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
-
-template <typename T>
-bool MemberQ_(const std::tuple<T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T, T, T, T, T, T> &list, const T &form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form || std::get<4>(list) == form || std::get<5>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T *, T *, T *, T *> &list, const T *const form) { return (std::get<0>(list) == form || std::get<1>(list) == form || std::get<2>(list) == form || std::get<3>(list) == form); };
-template <typename T>
-bool MemberQ_(const std::tuple<T *, T *, T *, T *, T *, T *> &Ps, const T *const p) {
-   return (std::get<0>(Ps) == p || std::get<1>(Ps) == p || std::get<2>(Ps) == p || std::get<3>(Ps) == p || std::get<4>(Ps) == p || std::get<5>(Ps) == p);
+template <typename T, typename... Ts>
+bool MemberQ(const std::tuple<T, Ts...> &list, const T &form) {
+   return std::apply([&form](const auto &...elems) { return ((elems == form) || ...); }, list);
 };
+template <typename T, typename... Ts>
+bool MemberQ(const std::tuple<T *, Ts...> &list, const T *const form) {
+   return std::apply([&form](const auto &...elems) { return ((elems == form) || ...); }, list);
+};
+/* -------------------------------------------------------------------------- */
+template <typename Container, typename T>
+bool MemberQ_(const Container &list, const T &form) { return (std::find(list.cbegin(), list.cend(), form) != list.cend()); };
 template <typename T>
 bool MemberQ_(const std::unordered_set<T> &list, const T &form) { return list.contains(form); };
+template <typename T, typename... Ts>
+bool MemberQ_(const std::tuple<T, Ts...> &list, const T &form) {
+   return std::apply([&form](const auto &...elems) { return ((elems == form) || ...); }, list);
+};
+template <typename T, typename... Ts>
+bool MemberQ_(const std::tuple<T *, Ts...> &list, const T *const form) {
+   return std::apply([&form](const auto &...elems) { return ((elems == form) || ...); }, list);
+};
 /* -------------------------------------------------------------------------- */
 template <class T>
 bool AnyTrue(const std::vector<T> &vec) {
@@ -2063,58 +2029,175 @@ std::string Directory(const std::string &f) {
 };
 ////////////////////////////////////////////////////////////////////////
 // 2021/03/31導入
-using V_S = std::vector<std::string>;
+std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str_IN) {
+   enum class ParserState {
+      Init,
+      InKey,
+      InValue,
+      InArray
+   };
 
-std::map<std::string, V_S> parseJSON(const std::string &str_IN) {
-   std::map<std::string, V_S> map_S_S;
-   //
-   V_S SEP = {" ", "\t", "\n", "\r"};
-   std::string trimed = StringTrim(str_IN, SEP);
-   std::string L = "[", R = "]", Col = ":", Cam = ",", Lb = "{", Rb = "}";
-   bool is_array = false;
-   std::string array = "", value = "";
-   V_S vstr(0);
-   for (auto it = trimed.begin(); it != trimed.end(); it++) {
-      if (is_array || L.find(*it) != std::string::npos) {
-         //[から始まるarrayの場合は，ここでキャッチする
-         if ((R.find(*it) != std::string::npos)) {
-            is_array = false;
-            vstr.emplace_back(array);
-            array.clear();
-         } else {
-            if (is_array)
-               array.push_back(*it);
-            is_array = true;
-         }
-      } else {
-         // arrayでない場合で，{},:などで始まる場合はここでキャッチする
-         if ((Lb.find(*it) != std::string::npos) ||
-             (Cam.find(*it) != std::string::npos) ||
-             (Col.find(*it) != std::string::npos) ||
-             (Rb.find(*it) != std::string::npos)) {
-            if (!value.empty()) {
-               // std::cout << red << value << std::endl;
-               vstr.emplace_back(value);
+   std::map<std::string, std::vector<std::string>> map_S_S;
+   std::vector<std::string> SEP = {" ", "\t", "\n", "\r"};
+   std::string trimmed = StringTrim(str_IN, SEP);
+   std::string Lsb = "[", Rsb = "]", Col = ":", Cam = ",", Lcb = "{", Rcb = "}";
+   ParserState currentState = ParserState::Init;
+   std::string key = "", value = "";
+   for (auto it = trimmed.begin(); it != trimmed.end(); it++) {
+      switch (currentState) {
+         case ParserState::Init:
+            if (Lcb.find(*it) != std::string::npos)
+               currentState = ParserState::InKey;
+            break;
+         case ParserState::InKey:
+            if (Col.find(*it) != std::string::npos)
+               currentState = ParserState::InValue;
+            else if (*it != '"' && *it != ' ')
+               key.push_back(*it);
+            break;
+         case ParserState::InValue:
+            if (Cam.find(*it) != std::string::npos || Rcb.find(*it) != std::string::npos) {
+               map_S_S[key] = StringSplit(StringTrim(value, {"\""}), {","});
+               key.clear();
                value.clear();
-            }
-         } else {
-            value.push_back(*it);
-         }
+               currentState = ParserState::InKey;
+            } else if (Lsb.find(*it) != std::string::npos)
+               currentState = ParserState::InArray;
+            else if (*it != ' ')
+               value.push_back(*it);
+            break;
+         case ParserState::InArray:
+            if (Rsb.find(*it) != std::string::npos)
+               currentState = ParserState::InValue;
+            else
+               value.push_back(*it);
+            break;
       }
    }
-   // 得られたstd::vector<std::string>をmapに保存する．
-   for (auto i = 0; i < vstr.size() - 1; i += 2)
-      map_S_S[StringTrim(vstr[i], {"\""})] = StringSplit(StringTrim(vstr[i + 1], {"\""}), {","});
-
    return map_S_S;
-};
+}
+
+// std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str_IN) {
+//    std::map<std::string, std::vector<std::string>> map_S_S;
+//    //
+//    std::vector<std::string> SEP = {" ", "\t", "\n", "\r"};
+//    std::string trimmed = StringTrim(str_IN, SEP);
+//    std::string L = "[", R = "]", Col = ":", Cam = ",", Lb = "{", Rb = "}";
+//    ParserState currentState = ParserState::Init;
+//    std::string array = "", value = "";
+//    std::vector<std::string> vstr(0);
+//    for (auto it = trimmed.begin(); it != trimmed.end(); it++) {
+//       switch (currentState) {
+//          case ParserState::Init:
+//             if (L.find(*it) != std::string::npos) {
+//                currentState = ParserState::InArray;
+//             } else if (Lb.find(*it) != std::string::npos) {
+//                currentState = ParserState::InKey;
+//             }
+//             break;
+//          case ParserState::InKey:
+//             if (Col.find(*it) != std::string::npos) {
+//                currentState = ParserState::InValue;
+//             } else {
+//                value.push_back(*it);
+//             }
+//             break;
+//          case ParserState::InValue:
+//             if (Cam.find(*it) != std::string::npos) {
+//                vstr.push_back(value);
+//                value.clear();
+//                currentState = ParserState::InKey;
+//             } else if (Rb.find(*it) != std::string::npos) {
+//                vstr.push_back(value);
+//                value.clear();
+//             } else if (L.find(*it) != std::string::npos) {
+//                currentState = ParserState::InArray;
+//             } else {
+//                value.push_back(*it);
+//             }
+//             break;
+//          case ParserState::InArray:
+//             if (R.find(*it) != std::string::npos) {
+//                currentState = ParserState::InValue;
+//                vstr.push_back(array);
+//                array.clear();
+//             } else {
+//                array.push_back(*it);
+//             }
+//             break;
+//       }
+//    }
+//    // Save the obtained std::vector<std::string> to the map.
+//    for (size_t i = 0; i < vstr.size() - 1; i += 2)
+//       map_S_S[StringTrim(vstr[i], {"\""})] = StringSplit(StringTrim(vstr[i + 1], {"\""}), {","});
+
+//    return map_S_S;
+// }
+
+/* -------------------------------------------------------------------------- */
+
+// using V_S = std::vector<std::string>;
+
+// std::map<std::string, V_S> parseJSON(const std::string &str_IN) {
+//    std::map<std::string, V_S> map_S_S;
+//    //
+//    V_S SEP = {" ", "\t", "\n", "\r"};
+//    std::string trimed = StringTrim(str_IN, SEP);
+//    std::string L = "[", R = "]", Col = ":", Cam = ",", Lb = "{", Rb = "}";
+//    bool is_array = false;
+//    std::string array = "", value = "";
+//    V_S vstr(0);
+//    for (auto it = trimed.begin(); it != trimed.end(); it++) {
+//       if (is_array || L.find(*it) != std::string::npos) {
+//          //[から始まるarrayの場合は，ここでキャッチする
+//          if ((R.find(*it) != std::string::npos)) {
+//             is_array = false;
+//             vstr.emplace_back(array);
+//             array.clear();
+//          } else {
+//             if (is_array)
+//                array.push_back(*it);
+//             is_array = true;
+//          }
+//       } else {
+//          // arrayでない場合で，{},:などで始まる場合はここでキャッチする
+//          if ((Lb.find(*it) != std::string::npos) ||
+//              (Cam.find(*it) != std::string::npos) ||
+//              (Col.find(*it) != std::string::npos) ||
+//              (Rb.find(*it) != std::string::npos)) {
+//             if (!value.empty()) {
+//                // std::cout << red << value << std::endl;
+//                vstr.emplace_back(value);
+//                value.clear();
+//             }
+//          } else {
+//             value.push_back(*it);
+//          }
+//       }
+//    }
+//    // 得られたstd::vector<std::string>をmapに保存する．
+//    for (auto i = 0; i < vstr.size() - 1; i += 2)
+//       map_S_S[StringTrim(vstr[i], {"\""})] = StringSplit(StringTrim(vstr[i + 1], {"\""}), {","});
+
+//    return map_S_S;
+// };
 
 /* ------------------------------------------------------ */
 
 struct JSON {
    std::map<std::string, std::vector<std::string>> map_S_S;
    std::vector<std::string> emp = {};
-   // JSON(const std::string &str_IN) : map_S_S() { this->parse(str_IN); };
+   JSON(const std::string &str_IN) : map_S_S() {
+      std::ifstream istrm(str_IN);
+      if (!istrm.is_open())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not open " + str_IN);
+      else {
+         std::stringstream ss;
+         ss << istrm.rdbuf();
+         map_S_S = parseJSON(ss.str());
+      }
+      istrm.close();
+   };
 
    JSON(){};
    JSON &operator=(const JSON &other) {
@@ -2206,6 +2289,7 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
    stream << "}";
    return stream;
 };
+
 /* ------------------------------------------------------ */
 
 struct JSONoutput {

@@ -7,6 +7,7 @@ double real_time = 0;
 
 #define simulation
 #include <filesystem>
+#include <regex>
 #include "Network.hpp"
 #include "integrationOfODE.hpp"
 #include "kernelFunctions.hpp"
@@ -25,117 +26,118 @@ int main(int arg, char **argv) {
    input_directory += "/";
    std::cout << input_directory << std::endl;
    try {
-      //* ------------------------------------------------------ */
-      //*                         setting                        */
-      //* ------------------------------------------------------ */
-      JSON settingJSON(std::ifstream(input_directory + "/setting.json"));
+      /* -------------------------------------------------------------------------- */
+      /*                           read setting.json                                */
+      /* -------------------------------------------------------------------------- */
+      // Read settings from a JSON file and store values
+      JSON settingJSON(input_directory + "/setting.json");
       for (auto &[key, value] : settingJSON())
          std::cout << key << ": " << value << std::endl;
-      //
-      if (!settingJSON.find("end_time_step"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have end_time_step");
-      if (!settingJSON.find("end_time"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have  end_time");
-      if (!settingJSON.find("output_directory"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have output_directory");
-      if (!settingJSON.find("max_dt"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have max_dt");
-      if (!settingJSON.find("input_files"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have input_files");
-      //
-      std::map<Network *, outputInfo> NetOutputInfo;
-      std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
-      std::string output_directory = settingJSON["output_directory"][0];
-      double max_dt = stod(settingJSON["max_dt"])[0];
-      const int end_time_step = stoi(settingJSON["end_time_step"])[0];
-      const double end_time = stod(settingJSON["end_time"])[0];
-      std::filesystem::create_directories(output_directory);
-      std::filesystem::copy_file(input_directory + "/setting.json", output_directory + "/setting.json", std::filesystem::copy_options::overwrite_existing);
-      /* ------------------------------------------------------ */
+
+      // Check for the existence of required keys in the JSON file
+      const std::vector<std::string> required_keys = {"end_time_step", "end_time", "output_directory", "max_dt", "input_files"};
+      for (const auto &key : required_keys)
+         if (!settingJSON.find(key))
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have " + key);
+
+      // Store values from the JSON file into variables
+      std::string output_directory = settingJSON.at("output_directory")[0];
+      double max_dt = stod(settingJSON.at("max_dt"))[0];
+      const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
+      const double end_time = stod(settingJSON.at("end_time"))[0];
+
+      // Set default values for optional keys and update if found in the JSON file
       double stop_remesh_time = 1E+10;
       double force_remesh_time = 0;
-      if (settingJSON.find("stop_remesh_time"))
-         stop_remesh_time = stod(settingJSON["stop_remesh_time"][0]);
-      if (settingJSON.find("force_remesh_time"))
-         force_remesh_time = stod(settingJSON["force_remesh_time"][0]);
       int grid_refinement = 0;
+      if (settingJSON.find("stop_remesh_time"))
+         stop_remesh_time = stod(settingJSON.at("stop_remesh_time")[0]);
+      if (settingJSON.find("force_remesh_time"))
+         force_remesh_time = stod(settingJSON.at("force_remesh_time")[0]);
       if (settingJSON.find("grid_refinement"))
-         grid_refinement = stoi(settingJSON["grid_refinement"][0]);
-      /* ------------------------------------------------------ */
+         grid_refinement = stoi(settingJSON.at("grid_refinement")[0]);
 
-      for (auto FileName : settingJSON["input_files"]) {
-         Print("---------------------------------------------------");
-         Print("-----------------" + input_directory + FileName + "------------------");
-         Print("---------------------------------------------------");
-         JSON J(std::ifstream(input_directory + FileName));
-         for (auto &[key, value] : J())
+      /* -------------------------------------------------------------------------- */
+      /*                read JSON files, input_files in setting.json                */
+      /* -------------------------------------------------------------------------- */
+      // Define containers and helper functions for network objects and output information
+      std::map<Network *, outputInfo> NetOutputInfo;
+      auto setup_network_output_info = [&NetOutputInfo](Network *net, const JSON &injson, const std::string &output_directory) {
+         auto output_name = injson.at("name")[0];
+         NetOutputInfo[net].pvd_file_name = output_name;
+         NetOutputInfo[net].vtu_file_name = output_name + "_";
+         NetOutputInfo[net].PVD = new PVDWriter(output_directory + "/" + output_name + ".pvd");
+      };
+
+      std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
+      auto initialize_network_objects = [&FluidObject, &RigidBodyObject, &SoftBodyObject](Network *net, const JSON &injson) {
+         auto type = injson.at("type")[0];
+         if (type == "RigidBody") {
+            RigidBodyObject.emplace_back(net);
+            net->isRigidBody = true;
+            net->isSoftBody = false;
+         } else if (type == "SoftBody" || type == "FixedBody") {
+            SoftBodyObject.emplace_back(net);
+            net->isRigidBody = false;
+            net->isSoftBody = true;
+         } else if (type == "Fluid") {
+            FluidObject.emplace_back(net);
+            net->isRigidBody = net->isSoftBody = false;
+         }
+         net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
+         for (auto i = 0; i < 10; ++i)
+            AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
+         net->resetInitialX();
+         net->setGeometricProperties();
+      };
+
+      for (auto input_file_name : settingJSON["input_files"]) {
+         std::cout << input_directory + input_file_name << std::endl;
+         JSON injson(input_directory + input_file_name);
+
+         const std::vector<std::string> required_keys = {"name", "objfile", "type"};
+         for (const auto &key : required_keys)
+            if (!injson.find(key))
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " does not have " + key);
+
+         auto object_name = injson["name"][0];
+
+         for (auto &[key, value] : injson())
             std::cout << key << ": " << value << std::endl;
-         if (!J.find("ignore") || !stob(J["ignore"])[0]) {
-            auto net = new Network(J["objfile"][0], J["name"][0]);
-            net->inputJSON = J;
-            // for (auto &p : net->getPoints())
-            // 	p->radius = stod(J["radius"])[0];
-            // if (J.find("velocity"))
-            // {
-            // 	std::get<0>(net->velocity_name_start) = stob(J["velocity"][0] /*name*/)[0];
-            // 	std::get<1>(net->velocity_name_start) = stod(J["velocity"][1] /*start*/)[0];
-            // }
-            //
-            if (J.find("mass"))
-               std::get<2>(net->inertia) = std::get<1>(net->inertia) = std::get<0>(net->inertia) = net->mass = stod(J["mass"])[0];
-            if (J.find("MOI")) {
-               std::get<3>(net->inertia) = stod(J["MOI"])[0];
-               std::get<4>(net->inertia) = stod(J["MOI"])[1];
-               std::get<5>(net->inertia) = stod(J["MOI"])[2];
-            }
-            if (J.find("COM"))
-               net->COM = net->initial_center_of_mass = Tddd{stod(J["COM"])[0], stod(J["COM"])[1], stod(J["COM"])[2]};
 
-            modify(*net, J);
-            NetOutputInfo[net].pvd_file_name = J["name"][0];
-            NetOutputInfo[net].vtu_file_name = J["name"][0] + "_";
-            NetOutputInfo[net].PVD = new PVDWriter(output_directory + "/" + J["name"][0] + ".pvd");
-            std::filesystem::copy_file(input_directory + FileName, output_directory + "/" + FileName, std::filesystem::copy_options::overwrite_existing);
-            if (J["type"][0] == "RigidBody") {
-               RigidBodyObject.emplace_back(net);
-               net->isRigidBody = true;
-               net->isSoftBody = false;
-            } else if (J["type"][0] == "SoftBody" || J["type"][0] == "FixedBody") {
-               SoftBodyObject.emplace_back(net);
-               net->isRigidBody = false;
-               net->isSoftBody = true;
-            } else if (J["type"][0] == "Fluid") {
-               FluidObject.emplace_back(net);
-               net->isRigidBody = net->isSoftBody = false;
-            }
-            //
-            net->isFixed = (J.find("isFixed") && stob(J["isFixed"])[0]);
-            //
-            // 2022/12/14
-            for (auto i = 0; i < 10; ++i)
-               AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
-            net->resetInitialX();
-            net->setGeometricProperties();
-            //
-            mk_vtu(output_directory + "/" + J["name"][0] + "_init.vtu", {net->getFaces()});
-
-            //
-
+         if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
+            auto net = new Network(injson.at("objfile")[0], object_name);
+            net->inputJSON = injson;
+            net->applyTransformations(injson);
+            setup_network_output_info(net, injson, output_directory);
+            initialize_network_objects(net, injson);
+            std::filesystem::copy_file(input_directory + input_file_name, output_directory + "/" + input_file_name, std::filesystem::copy_options::overwrite_existing);
+            mk_vtu(output_directory + "/" + object_name + "_init.vtu", {net->getFaces()});
          } else {
             Print("skipped");
          }
-         Print("---------------------------------------------------");
       }
+
+      /* -------------------------------------------------------------------------- */
+
+      // Create output directory and copy files
+      std::filesystem::create_directories(output_directory);
+      std::filesystem::copy_file(input_directory + "/setting.json", output_directory + "/setting.json", std::filesystem::copy_options::overwrite_existing);
       std::filesystem::copy_file("./main.cpp", output_directory + "/main.cpp", std::filesystem::copy_options::overwrite_existing);
-      std::filesystem::copy_file("./BEM_derivatives.hpp", output_directory + "/BEM_derivatives.hpp", std::filesystem::copy_options::overwrite_existing);
+      //
+      std::regex pattern("^BEM.*\\.hpp$");
+      for (auto &entry : std::filesystem::directory_iterator("."))
+         if (std::regex_match(entry.path().filename().string(), pattern))
+            std::filesystem::copy_file(entry.path(), output_directory / entry.path().filename(), std::filesystem::copy_options::overwrite_existing);
+
+      /* -------------------------------------------------------------------------- */
+
       auto water = FluidObject[0];
-      /* ------------------------------------------------------ */
       PVDWriter cornerPointsPVD(output_directory + "/cornerPointsPVD.pvd");
       PVDWriter cornerPVD(output_directory + "/corner.pvd");
-
       Print("setting done");
       //  b* ------------------------------------------------------ */
-      //  b*                         メインループ                     */
+      //  b*                         メインループ                      */
       //  b* ------------------------------------------------------ */
       TimeWatch watch;
       for (time_step = 0; time_step < end_time_step; time_step++) {
@@ -153,7 +155,6 @@ int main(int arg, char **argv) {
          // b# ------------------------------------------------------ */
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         //
          double dt = max_dt;
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
@@ -204,17 +205,17 @@ int main(int arg, char **argv) {
                std::cout << net->getName() << "　の流速の計算方法" << std::endl;
                if (net->isFixed) {
                   net->mass = 1E+20;
-                  net->inertia = {1E+20, 1E+20, 1E+20, 1E+20, 1E+20, 1E+20};
-                  net->COM = net->initial_center_of_mass = {0, 0, 0};
+                  net->inertia.fill(1E+20);
+                  net->COM.fill(0.);
+                  net->initial_center_of_mass.fill(0.);
                }
 
                if (net->inputJSON.find("velocity")) {
                   std::string move_name = net->inputJSON["velocity"][0];
                   std::cout << "move_name = " << move_name << std::endl;
                   if (move_name == "fixed") {
-                     net->velocity = {0., 0., 0., 0., 0., 0.};
-                     net->acceleration = {0., 0., 0., 0., 0., 0.};
-                     //
+                     net->velocity.fill(0.);
+                     net->acceleration.fill(0.);
                   } else if (move_name != "floating") {
                      net->velocity = velocity(move_name, net->inputJSON["velocity"], RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
                                                                                                 // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
@@ -223,8 +224,8 @@ int main(int arg, char **argv) {
                   }
                } else {
                   std::cout << "指定がないので速度はゼロ" << std::endl;
-                  net->velocity = {0., 0., 0., 0., 0., 0.};
-                  net->acceleration = {0., 0., 0., 0., 0., 0.};
+                  net->velocity.fill(0.);
+                  net->acceleration.fill(0.);
                }
                std::cout << "----------------" << std::endl;
             }
@@ -232,15 +233,15 @@ int main(int arg, char **argv) {
             for (const auto &net : SoftBodyObject) {
                std::cout << "----------------" << std::endl;
                std::cout << net->getName() << "　の流速の計算方法．soft bodyの場合，各節点に速度を与える．" << std::endl;
-               net->velocity = {0., 0., 0., 0., 0., 0.};
-               net->acceleration = {0., 0., 0., 0., 0., 0.};
+               net->velocity.fill(0.);
+               net->acceleration.fill(0.);
                if (net->inputJSON.find("velocity")) {
                   std::string move_name = net->inputJSON["velocity"][0];
                   std::cout << "move_name = " << move_name << std::endl;
                   if (move_name == "fixed") {
                      for (const auto &p : net->getPoints()) {
-                        p->velocity = {0., 0., 0., 0., 0., 0.};
-                        p->acceleration = {0., 0., 0., 0., 0., 0.};
+                        p->velocity.fill(0.);
+                        p->acceleration.fill(0.);
                      }
                   } else {
                      for (const auto &p : net->getPoints())
@@ -249,8 +250,8 @@ int main(int arg, char **argv) {
                } else {
                   std::cout << "指定がないので速度はゼロ" << std::endl;
                   for (const auto &p : net->getPoints()) {
-                     p->velocity = {0., 0., 0., 0., 0., 0.};
-                     p->acceleration = {0., 0., 0., 0., 0., 0.};
+                     p->velocity.fill(0.);
+                     p->acceleration.fill(0.);
                   }
                }
                std::cout << "----------------" << std::endl;
@@ -272,18 +273,19 @@ int main(int arg, char **argv) {
             // b*                    微分∇ΦやDUDtを計算                    */
             // b* ------------------------------------------------------ */
             std::cout << Green << "微分∇ΦやDUDtを計算" << colorOff << std::endl;
-            derivatives ders(*water, 10);
+            calculateVelocities(*water);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
             // b* ------------------------------------------------------ */
-            // b*           　境界値問題を解く-> {Φt,Φtn}が決まる              */
+            // b*           　境界値問題を解く-> {Φt,Φtn}が決まる               */
             // b* ------------------------------------------------------ */
             std::cout << Green << "境界値問題を解く-> {Φt,Φtn}が決まる" << colorOff << std::endl;
             BVP.solveForPhiPhin_t(water, RigidBodyObject);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // b* ------------------------------------------------------ */
-            // b*                 ディリクレ境界ではΦを時間積分               */
-            // b* ------------------------------------------------------ */
+            // @ -------------------------------------------------------- */
+            // @                 ディリクレ境界ではΦを時間積分                 */
+            // @ -------------------------------------------------------- */
             std::cout << Green << "ディリクレ境界ではΦを時間積分，ノイマン境界ではΦnを陽に与える" << colorOff << std::endl;
+            // b$ --------------------------------------------------- */
             for (const auto &net : RigidBodyObject) {
                std::cout << "name:" << net->getName() << std::endl;
                if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] != "fixed") {
@@ -309,17 +311,18 @@ int main(int arg, char **argv) {
                }
                net->setGeometricProperties();
             }
+            // b$ --------------------------------------------------- */
             for (const auto &p : Points) {
-               if (!p->Neumann) {
-                  // b! ここでノイマン面が変な場所に移動させられてはたまらない
-                  //@ Φの時間発展，Φnの時間発展はない
+               //@ Φの時間発展，Φnの時間発展はない
+               if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，何からわない．*/) {
                   p->RK_phi.push(p->DphiDt(p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
                }
-               p->RK_X.push(p->U_update_BEM);  //@ 位置xの時間発展
+               //@ 位置xの時間発展
+               p->RK_X.push(p->U_update_BEM);
                p->setXSingle(p->RK_X.getX());
             }
-            /* ------------------------------------------------------ */
+            // b$ --------------------------------------------------- */
             std::cout << Green << "name:" << water->getName() << ": setBounds" << colorOff << std::endl;
             water->setGeometricProperties();
 
@@ -330,11 +333,11 @@ int main(int arg, char **argv) {
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
          } while (!((*Points.begin())->RK_X.finished));
 
-         // b$ ------------------------------------------------------ */
          for (const auto &net : SoftBodyObject)
             AreaWeightedSmoothingPreserveShape(net->getPoints(), 1);
 
          /* ------------------------------------------------------ */
+
          {
             double mean_phi = 0.;
             for (const auto &p : water->getPoints())
@@ -348,6 +351,7 @@ int main(int arg, char **argv) {
          }
 
          /* ------------------------------------------------------ */
+
          std::cout << Green << "real_timeを取得" << colorOff << std::endl;
          real_time = (*Points.begin())->RK_X.gett();
 
@@ -482,8 +486,9 @@ int main(int arg, char **argv) {
          // cpg_pvd.output_();
          // b* ------------------------------------------------------ */
       }
-   } catch (error_message &e) {
-      e.print();
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorOff << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
    return 0;
 };

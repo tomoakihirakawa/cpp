@@ -36,18 +36,6 @@
 //    return stream;
 // }
 
-template <typename T, std::size_t N>
-typename std::enable_if<!std::is_same_v<T, char>, std::ostream &>::type
-operator<<(std::ostream &stream, const std::array<T, N> &arr) {
-   bool first = true;
-   stream << "{";
-   std::for_each(arr.begin(), arr.end(), [&](auto x) {
-      stream << (first ? (first = false, "") : ",") << x;
-   });
-   stream << "}";
-   return stream;
-}
-
 template <typename... T>
 std::ostream &operator<<(std::ostream &stream, const std::tuple<T...> &V) {
    stream << "{";
