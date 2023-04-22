@@ -1,3 +1,5 @@
+[main.cpp#L1](main.cpp#L1):
+
 # コンパイルのやり方
 
 以下のコマンドの先頭の"$"は無視してください．
@@ -31,7 +33,7 @@ $ sh clean
 # settingBEM.py
 
 プログラム内でつかわfれるパラメターや，入力値や出力先は`settingBEM.py`を実行することで作られる`json`ファイルで設定される．
-
+**NOTE:** `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
 
 # RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える
 
@@ -56,8 +58,7 @@ $ sh clean
 
 ![](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_bem/anim.gif)
 
-
-
 ![](WATCHME_settingjson.mov)
 
 ![](WATCHME_settingBEM.mov)
+
