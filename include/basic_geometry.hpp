@@ -1400,7 +1400,7 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
    double distance = 1E+20, tmp;
    Tddd near, ret;
    CoordinateBounds B(minmax3);
-   for_each((T12T3Tddd)(B), [&](const auto &abc) {
+   std::ranges::for_each((T12T3Tddd)(B), [&](const auto &abc) {
       if (distance > (tmp = Norm(X - (near = Nearest(X, abc))))) {
          distance = tmp;
          ret = near;
@@ -1560,7 +1560,7 @@ bool IntersectQ(const T3Tdd &minmax3, const T3Tddd &abc) {
       return IntersectQ(minmax3, T2Tddd{a, b}) ||
              IntersectQ(minmax3, T2Tddd{b, c}) ||
              IntersectQ(minmax3, T2Tddd{c, a}) ||
-             any_of((T12T2Tddd)CoordinateBounds(minmax3), [&](const auto &AB) { return IntersectQ(abc, AB); });
+             std::ranges::any_of((T12T2Tddd)CoordinateBounds(minmax3), [&](const auto &AB) { return IntersectQ(abc, AB); });
    } else
       return false;
 };
@@ -1638,8 +1638,8 @@ bool IntersectQ(const Tetrahedron &Tet0, const Tetrahedron &Tet1) {
    if (IntersectQ(Tet0.bounds, Tet1.bounds)) {
       if (IntersectQ(Tet0.incenter, Tet0.inradius, Tet1.incenter, Tet1.inradius))
          return true;
-      return any_of((T6T2Tddd)(Tet0), [&](const auto &ab) { return IntersectQ(Tet1, ab); }) ||
-             any_of((T6T2Tddd)(Tet1), [&](const auto &AB) { return IntersectQ(Tet0, AB); });
+      return std::ranges::any_of((T6T2Tddd)(Tet0), [&](const auto &ab) { return IntersectQ(Tet1, ab); }) ||
+             std::ranges::any_of((T6T2Tddd)(Tet1), [&](const auto &AB) { return IntersectQ(Tet0, AB); });
    } else
       return false;
 };
@@ -1800,11 +1800,16 @@ double windingNumber(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
 template <typename T>
 T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &V_vertices) {
    T8d ret = {0., 0., 0., 0., 0., 0., 0., 0.};
-   for (const auto &V : V_vertices) {
-      for_each(ret, Xs, [&](auto &r, const auto &X) {
-         // r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
-         r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
+   // for (const auto &V : V_vertices)
+   {
+      for_each(ret, Xs, [&](auto &r, auto &X) {
+         for (const auto &V : V_vertices)
+            r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
       });
+      // std::ranges::for_each(ret, Xs, [&](auto &r, const auto &X) {
+      //    // r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
+      //    r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
+      // });
    }
    return ret / (4. * M_PI);
 };
@@ -1813,7 +1818,10 @@ template <>
 T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
    T8d ret = {0., 0., 0., 0., 0., 0., 0, 0.};
    for (const auto &V : V_vertices)
-      for_each(ret, Xs, [&](auto &r, const auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V); });
+      for_each(ret, Xs, [&](auto &r, auto &X) {
+         r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
+      });
+   // std::ranges::for_each(ret, Xs, [&](auto &r, const auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V); });
    return ret / (4. * M_PI);
 };
 template <>
@@ -1899,19 +1907,19 @@ struct octree : public CoordinateBounds {
    octree(const CoordinateBounds &boundsIN, const Tii &depthlimit, const int objnum, const std::vector<T> &FACES)
        : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(FACES), faces_({}),  // inside(windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75),
          WNs(windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
-         inside(any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
+         inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
          children(generateChildrenParallel(depthlimit, objnum, FACES)){};
    octree(const CoordinateBounds &boundsIN, const Tii &depthlimit, const int objnum, const std::unordered_set<T> &FACES)
        : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(std::vector<T>(FACES.begin(), FACES.end())), faces_({}),  // inside(windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75),
          WNs(windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
-         inside(any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
+         inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
          children(generateChildrenParallel(depthlimit, objnum, faces_only_for_top)){};
    /* ------------------------------------------------------ */
    octree(const CoordinateBounds &boundsIN, const Tii &depthlimit, const int objnum, const std::vector<T> &FACES, octree<T> *const parentIN)
        : CoordinateBounds(boundsIN), parent(parentIN), depth(parentIN->depth + 1), top(parentIN->top), faces_only_for_top({}), faces_({}),
          //  inside((parentIN && FACES.empty()) ? parentIN->inside : (windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75)),
          WNs((parentIN && FACES.empty()) ? parentIN->WNs : windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
-         inside(any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
+         inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
          children(generateChildrenParallel(depthlimit, objnum, FACES)){};
    /* ------------------------------------------------------ */
    std::vector<octree<T> *> generateChildrenParallel(const Tii &depthlimit, const int objnum, const std::vector<T> &FACES) {
@@ -2377,32 +2385,32 @@ void setVectorsToTriangle(octree<T> &tree) {
    for (int i = 0; i < 5; ++i)
       for (const auto &cell : tmp) {  // cellにとって，最も近い面を，neighborsから探す
          for (const auto &nei : cell->neighbors) {
-            for_each(nei->nearest_face, nei->bools,
-                     [&](const auto &f, const auto &B) {
-                        if (B && (cell->checked_faces_passed.emplace(f)).second) {
-                           // std::cout << "各頂点にとって最も近い点を抽出" << std::endl;
-                           for_each01111(cell->getVertices(), cell->scalers, cell->vectors, cell->nearest_face, cell->bools,
-                                         [&](const auto &x, auto &s, auto &v, auto &f4v, auto &b) {
-                                            auto XonTriangle = Nearest(x, ToX(f));
-                                            if (Norm(XonTriangle - x) <= s || !b) {
-                                               s = Norm(XonTriangle - x);
-                                               v = XonTriangle - x;
-                                               f4v = f;
-                                               b = true;
-                                            }
-                                         });
-                           // for_each01111(cell->getVertices(), cell->scalers, cell->vectors, cell->nearest_face, cell->bools,
-                           //               [&](const auto &x, auto &s, auto &v, auto &f4v, auto &b) {
-                           //                  auto intsp = IntersectionSphereTriangle(x, 1E+10, ToX(f));
-                           //                  if (intsp.isIntersecting && (intsp.distance <= s || !b)) {
-                           //                     s = intsp.distance;
-                           //                     v = intsp.X - x;
-                           //                     f4v = f;
-                           //                     b = true;
-                           //                  }
-                           //               });
-                        }
-                     });
+            std::ranges::for_each(nei->nearest_face, nei->bools,
+                                  [&](const auto &f, const auto &B) {
+                                     if (B && (cell->checked_faces_passed.emplace(f)).second) {
+                                        // std::cout << "各頂点にとって最も近い点を抽出" << std::endl;
+                                        for_each01111(cell->getVertices(), cell->scalers, cell->vectors, cell->nearest_face, cell->bools,
+                                                      [&](const auto &x, auto &s, auto &v, auto &f4v, auto &b) {
+                                                         auto XonTriangle = Nearest(x, ToX(f));
+                                                         if (Norm(XonTriangle - x) <= s || !b) {
+                                                            s = Norm(XonTriangle - x);
+                                                            v = XonTriangle - x;
+                                                            f4v = f;
+                                                            b = true;
+                                                         }
+                                                      });
+                                        // for_each01111(cell->getVertices(), cell->scalers, cell->vectors, cell->nearest_face, cell->bools,
+                                        //               [&](const auto &x, auto &s, auto &v, auto &f4v, auto &b) {
+                                        //                  auto intsp = IntersectionSphereTriangle(x, 1E+10, ToX(f));
+                                        //                  if (intsp.isIntersecting && (intsp.distance <= s || !b)) {
+                                        //                     s = intsp.distance;
+                                        //                     v = intsp.X - x;
+                                        //                     f4v = f;
+                                        //                     b = true;
+                                        //                  }
+                                        //               });
+                                     }
+                                  });
             for (const auto &f : nei->faces_)
                if (cell->checked_faces_passed.emplace(f).second) {
                   // std::cout << "各頂点にとって最も近い点を抽出" << std::endl;

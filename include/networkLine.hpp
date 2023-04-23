@@ -740,7 +740,7 @@ inline bool networkLine::isMergeable() const {
    auto Bps = B->getPoints(this);
    //* ------------------------------------------------------ */
    int c = 0;
-   for_each(Join(Bps, Aps), [&](const auto &p) {		if (p->getLines().empty())
+   std::ranges::for_each(Join(Bps, Aps), [&](const auto &p) {		if (p->getLines().empty())
 		{
 			throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
 		} });

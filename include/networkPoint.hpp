@@ -10,7 +10,7 @@
 inline std::unordered_set<networkLine *> networkPoint::getLinesAround() const {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : this->Faces)
-      for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
+      std::ranges::for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
    return ret;
 };
 
@@ -163,21 +163,10 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
    return n / totlen;
 };
 
-// inline Tddd networkPoint::reflect(const Tddd &v) const {
-//    // particlizeした点だけが使える．
-//    auto f = std::get<0>(particlize_info);
-//    if (f) {
-//       auto n = f->normal;
-//       return v - 2. * Dot(v, n) * n;
-//    } else
-//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-// };
+/**
+### networkPoint::isInContact
 
-// inline Tddd networkPoint::X_little_inside() const {
-//    return this->X - (this->radius / 4.) * this->getNormalTuple();
-// };
-/*
-@ addContactPointsは，引数として半径が与えられない場合，各点のradiusが成す球として，互いの重なりを調べ，重なった点はContactPointsに保存する．
+
 */
 
 const double contact_angle = 30. * M_PI / 180.;
@@ -185,16 +174,16 @@ const double contact_angle = 30. * M_PI / 180.;
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
    bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
-   bool anyCloseNormal = std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
-                                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
+   bool anyCloseNormal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
+                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
    return isinradius && (isCloseNormal || anyCloseNormal);
 };
 
 bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(pX - Nearest(pX, f_target));
    bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
-   bool anyCloseNormal = std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
-                                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
+   bool anyCloseNormal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
+                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
    return isinradius && (isCloseNormal || anyCloseNormal);
 };
 
@@ -217,11 +206,11 @@ bool isInContact(const networkPoint *p, const networkFace *f_normal, const netwo
 
 // is p contact with f ?
 bool isInContact(const networkPoint *p, const networkFace *f_target) {
-   return std::any_of(p->Faces.begin(), p->Faces.end(), [&](const auto &f_normal) { return isInContact(p, f_normal, f_target); });
+   return std::ranges::any_of(p->Faces, [&](const auto &f_normal) { return isInContact(p, f_normal, f_target); });
 };
 
 bool isInContact(const networkPoint *p, const networkFace *f_normal, const std::unordered_set<networkFace *> &faces_target) {
-   return std::any_of(faces_target.begin(), faces_target.end(), [&](const auto &f_target) { return isInContact(p, f_normal, f_target); });
+   return std::ranges::any_of(faces_target, [&](const auto &f_target) { return isInContact(p, f_normal, f_target); });
 };
 
 std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,

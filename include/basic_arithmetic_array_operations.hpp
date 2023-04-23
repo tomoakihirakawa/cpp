@@ -267,9 +267,30 @@ template <typename T, std::size_t N>
 std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& arr) noexcept {
    bool first = true;
    stream << "{";
-   for_each(arr, [&](const auto& x) { stream << (first ? (first = false, "") : ",") << x; });
+   std::ranges::for_each(arr, [&](const auto& x) { stream << (first ? (first = false, "") : ",") << x; });
    stream << "}";
    return stream;
+}
+/* -------------------------------------------------------------------------- */
+
+template <size_t N, typename T, typename TT, typename Func>
+constexpr void for_each(std::array<T, N>& arr, std::array<TT, N>& ARR, const Func& func) {
+   if constexpr (N > 0) {
+      [&]<size_t... Is>(std::index_sequence<Is...>) {
+         (func(std::get<Is>(arr), std::get<Is>(ARR)), ...);
+      }
+      (std::make_index_sequence<N>());
+   }
+}
+
+template <size_t N, typename T, typename TT, typename Func>
+constexpr void for_each(std::array<T, N>& arr, const std::array<TT, N>& ARR, const Func& func) {
+   if constexpr (N > 0) {
+      [&]<size_t... Is>(std::index_sequence<Is...>) {
+         (func(std::get<Is>(arr), std::get<Is>(ARR)), ...);
+      }
+      (std::make_index_sequence<N>());
+   }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -291,98 +312,6 @@ std::vector<Tddd> operator/(std::vector<Tddd> V, const Tddd& u) noexcept {
    for (auto& v : V) v /= u;
    return V;
 };
-
-/* -------------------------------------------------------------------------- */
-/*                                    array                                   */
-/* -------------------------------------------------------------------------- */
-
-template <size_t N, typename T, typename Func>
-constexpr void for_each(std::array<T, N>& arr, const Func& func) {
-   if constexpr (N > 0) {
-      [&]<size_t... Is>(std::index_sequence<Is...>) {
-         (func(std::get<Is>(arr)), ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-}
-
-template <size_t N, typename T, typename Func>
-constexpr void for_each(const std::array<T, N>& arr, const Func& func) {
-   if constexpr (N > 0) {
-      [&]<size_t... Is>(std::index_sequence<Is...>) {
-         (func(std::get<Is>(arr)), ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-}
-
-template <size_t N, typename T0, typename T1, typename Func>
-constexpr void for_each(std::array<T0, N>& arr0, std::array<T1, N>& arr1, const Func& func) {
-   if constexpr (N > 0) {
-      [&]<size_t... Is>(std::index_sequence<Is...>) {
-         (func(std::get<Is>(arr0), std::get<Is>(arr1)), ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-}
-
-template <size_t N, typename T0, typename T1, typename Func>
-constexpr void for_each(std::array<T0, N>& arr0, const std::array<T1, N>& arr1, const Func& func) {
-   if constexpr (N > 0) {
-      [&]<size_t... Is>(std::index_sequence<Is...>) {
-         (func(std::get<Is>(arr0), std::get<Is>(arr1)), ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-}
-
-template <size_t N, typename T, typename Func>
-constexpr bool all_of(const std::array<T, N>& arr, const Func& func) {
-   if constexpr (N > 0) {
-      return [&]<size_t... Is>(std::index_sequence<Is...>) {
-         return (func(std::get<Is>(arr)) && ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-   return false;
-}
-
-template <typename T, typename Func>
-constexpr std::enable_if_t<!is_std_array<T>::value, bool> all_of(const T& vec, const Func& func) {
-   return std::all_of(vec.begin(), vec.end(), func);
-}
-
-template <size_t N, typename T, typename Func>
-constexpr bool any_of(const std::array<T, N>& arr, const Func& func) {
-   if constexpr (N > 0) {
-      return [&]<size_t... Is>(std::index_sequence<Is...>) {
-         return (func(std::get<Is>(arr)) || ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-   return false;
-}
-
-template <typename T, typename Func>
-constexpr std::enable_if_t<!is_std_array<T>::value, bool> any_of(const T& vec, const Func& func) {
-   return std::any_of(vec.begin(), vec.end(), func);
-}
-
-template <size_t N, typename T, typename Func>
-constexpr bool none_of(const std::array<T, N>& arr, const Func& func) {
-   if constexpr (N > 0) {
-      return [&]<size_t... Is>(std::index_sequence<Is...>) {
-         return (!func(std::get<Is>(arr)) && ...);
-      }
-      (std::make_index_sequence<N>());
-   }
-   return false;
-}
-
-template <typename T, typename Func>
-constexpr std::enable_if_t<!is_std_array<T>::value, bool> none_of(const T& vec, const Func& func) {
-   return std::none_of(vec.begin(), vec.end(), func);
-}
 
 /* =========================================================================== */
 /*                       Mathematical Vector Operations                       */
@@ -469,7 +398,7 @@ constexpr auto MinMaxColumns(const std::vector<std::array<T, N>>& vec_arr) noexc
 template <size_t N, typename T>
 constexpr T Total(const std::array<T, N>& arr) noexcept {
    T ret = 0;
-   for_each(arr, [&ret](const auto& a) { ret += a; });
+   std::ranges::for_each(arr, [&ret](const auto& a) { ret += a; });
    return ret;
 }
 
