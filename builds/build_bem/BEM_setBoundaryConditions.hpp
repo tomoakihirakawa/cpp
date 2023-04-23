@@ -39,7 +39,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    for (const auto &f : water.getFaces())
 #pragma omp single nowait
    {
-      f->Neumann = all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
+      f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
       f->Dirichlet = !f->Neumann;
    }
 
@@ -48,8 +48,8 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    for (const auto &l : water.getLines())
 #pragma omp single nowait
    {
-      l->Neumann = all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
-      l->Dirichlet = all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });
+      l->Neumann = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
+      l->Dirichlet = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });
       l->CORNER = (!l->Neumann && !l->Dirichlet);
    }
    std::cout << "step4 点の境界条件を決定" << std::endl;
@@ -57,8 +57,8 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    for (const auto &p : water.getPoints())
 #pragma omp single nowait
    {
-      p->Neumann = all_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
-      p->Dirichlet = all_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+      p->Neumann = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
+      p->Dirichlet = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
       p->CORNER = (!p->Neumann && !p->Dirichlet);
    }
    /* -------------------------------------------------------------------------- */
@@ -77,7 +77,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    */
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
    auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
-      return (p->CORNER || any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
+      return (p->CORNER || std::ranges::any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
    };
 #pragma omp parallel
    for (const auto &p : water.getPoints())

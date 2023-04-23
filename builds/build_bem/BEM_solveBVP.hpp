@@ -30,8 +30,8 @@ struct calculateFroudeKrylovForce {
       int count = 0;
       for (const auto &f : faces)
          if (f->Neumann) {
-            if (all_of(f->getPoints(),
-                       [&](const auto &p) { return std::any_of(p->getContactFaces().begin(), p->getContactFaces().end(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+            if (std::ranges::all_of(f->getPoints(),
+                                    [&](const auto &p) { return std::ranges::any_of(p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
                this->PressureVeticies.push_back({{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
@@ -189,7 +189,7 @@ struct BEM_BVP {
          int i = 0;
          for (const auto &net : rigidbodies)
             if (isTarget(net))
-               for_each(net->acceleration, [&](auto &a_w) { a_w = ACCELS_IN[i++]; });
+               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = ACCELS_IN[i++]; });
       }
 
       //* --------------------------------------------------- */
@@ -312,7 +312,7 @@ struct BEM_BVP {
             auto [a0, a1, a2] = force / Tddd{mx, my, mz};
             auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
             // net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
-            for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
+            std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
          }
       return ACCELS - ACCELS_IN;
    };
@@ -333,9 +333,9 @@ struct BEM_BVP {
                if (real_time < start_time)
                   net->acceleration.fill(0.);
                else
-                  for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+                  std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
             } else
-               for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+               std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
          } else
             net->acceleration.fill(0.);
       }
@@ -369,9 +369,9 @@ struct BEM_BVP {
                   if (real_time < start_time) {
                      net->acceleration.fill(0.);
                   } else
-                     for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
+                     std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
                } else
-                  for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
+                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
             } else
                net->acceleration.fill(0.);
          }
