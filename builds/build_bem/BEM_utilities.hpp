@@ -12,7 +12,6 @@ using V_netFp = std::vector<networkFace *>;
 using VV_netFp = std::vector<V_netFp>;
 
 /* -------------------------------------------------------------------------- */
-
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
    if (name.contains("linear") && (name.contains("traveling") || name.contains("wave"))) {
       if (strings.size() == 6) {
@@ -68,9 +67,6 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
    }
    return {0., 0., 0., 0., 0., 0.};
 };
-
-/* -------------------------------------------------------------------------- */
-
 T6d velocity(const std::string &name, const std::vector<std::string> strings, const double t) {
    auto g = _GRAVITY_;
    if (name == "Goring1979") {
@@ -186,13 +182,12 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
    }
    return {0., 0., 0., 0., 0., 0.};
 };
-
 /* -------------------------------------------------------------------------- */
 
 netFp NearestContactFace(const networkPoint *const p) { return std::get<1>(Nearest_(p->X, p->getContactFaces())); };
 netFp NearestContactFace(const networkFace *const f_IN) {
    std::unordered_set<networkFace *> faces;
-   for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
+   std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
    return std::get<1>(Nearest_(f_IN->center, faces));
 };
 netFp NearestContactFace(const networkPoint *const p, const networkFace *const f_normal) {
