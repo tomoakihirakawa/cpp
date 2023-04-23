@@ -5,27 +5,19 @@
 以下のコマンドの先頭の"$"は無視してください．
 本来はコンパイルの際には，多くのヘッダーファイルをインクルードするよう長いコンパイルのコマンドを打つ必要がある．
 cmakeを使えば，それをCMakeLists.txtにあらかじめ書いておくことで省くことができる．
-
 ```shell
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 ```
-
 次に，
-
 ```shell
 $ make
 ```
-
 これでコンパイル終了．後は，次のようにすればmainファイルが実行される．
-
 ```shell
 $ ./main
 ```
-
-
 ただし，古いcmake情報が今のフォルダ内に残っている場合，その情報を削除しておかないと，
 cmakeの際に，エラーがでる．古いcmake関連のファイルを消したい場合．次を実行した後にcmakeする．
-
 ```shell
 $ sh clean
 ```
@@ -33,6 +25,7 @@ $ sh clean
 # settingBEM.py
 
 プログラム内でつかわfれるパラメターや，入力値や出力先は`settingBEM.py`を実行することで作られる`json`ファイルで設定される．
+
 **💡 NOTE:** `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
 
 # RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える
