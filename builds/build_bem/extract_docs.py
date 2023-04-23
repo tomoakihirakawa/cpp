@@ -27,6 +27,9 @@ def extract_markdown_comments(input_file, output_file):
     markdown_comments = markdown_comment_pattern.finditer(content)
 
     with open(output_file, 'w') as md_file:
+        # Add the link to the stylesheet at the beginning of the file
+        md_file.write('<link rel="stylesheet" href="styles.css">\n\n')
+
         for match in markdown_comments:
             comment = match.group(1)
             start_line = content[:match.start()].count('\n') + 1

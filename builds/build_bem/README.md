@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="styles.css">
+
 [main.cpp#L1](main.cpp#L1):
 
 # コンパイルのやり方
