@@ -286,7 +286,7 @@ search_detail*/
          std::unordered_set<networkFace *> netObjsThisDepthUO = {};
          for (const auto &p : checkP) {
             // for (const auto &l : p->Lines)
-            for_each(p->Lines, [&](const auto &l) {if (!this->enteredLines_UO.count(l) && !this->enteredLinesUO.count(l) /*!l->doUKM(this)*/ /*mandetory*/)
+            std::ranges::for_each(p->Lines, [&](const auto &l) {if (!this->enteredLines_UO.count(l) && !this->enteredLinesUO.count(l) /*!l->doUKM(this)*/ /*mandetory*/)
 					{
 						if (this->condEnterLine(p, l))
 						{
@@ -501,7 +501,7 @@ std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &F
    std::unordered_set<networkFace *> tmp = FACES, ret = FACES;
    for (auto i = 0; i < s; i++) {
       for (const auto &F : tmp) {
-         for_each(F->getPoints(), [&](const auto &p) {
+         std::ranges::for_each(F->getPoints(), [&](const auto &p) {
             for (const auto &f : p->getFaces()) ret.emplace(f);
          });
       }

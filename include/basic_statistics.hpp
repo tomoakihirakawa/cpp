@@ -14,7 +14,7 @@ double Variance(const V_d &v) {
 
 double Variance(const T4d &V) {
    double ret = 0, count = 0, sum = 0;
-   for_each(V, [&](const auto &v) { sum += v; ret += v * v; count+=1.; });
+   std::ranges::for_each(V, [&](const auto &v) { sum += v; ret += v * v; count+=1.; });
    return ret / count - std::pow(sum / count, 2.);
 };
 

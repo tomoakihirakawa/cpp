@@ -213,13 +213,13 @@ Tddd vectorTangentialShift_(const networkPoint *p, const double scale = 1.) {
          auto mean = (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3.;
          auto l12 = Norm(np2x - np1x);
          double a = magicalValue_(p, f) + variance2_(p, f);
-         if (any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
+         if (std::ranges::any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
             a *= 4;
-         else if (any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
+         else if (std::ranges::any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
             a *= 3;
-         else if (any_of(f->getPoints(),
-                         [&](const auto &p) { return std::any_of(p->getFaces().begin(), p->getFaces().end(),
-                                                                 [&](const auto &F) { return any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
+         else if (std::ranges::any_of(f->getPoints(),
+                                      [&](const auto &p) { return std::ranges::any_of(p->getFaces(),
+                                                                                      [&](const auto &F) { return std::ranges::any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
             a *= 2;
          auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
          auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;

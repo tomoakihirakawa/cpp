@@ -1732,7 +1732,7 @@ class networkFace : public Triangle {
    V_netPp getPointsPenetrated() const { return this->XPoints; };
    V_netPp getPointsPenetrate() const {
       V_netPp XPoints;
-      for_each(this->getLines(), [&](const auto &l) {for (const auto &p : l->XPoints){XPoints.emplace_back(p);} });
+      std::ranges::for_each(this->getLines(), [&](const auto &l) {for (const auto &p : l->XPoints){XPoints.emplace_back(p);} });
 
       // for (const auto &l : this->getLines())
       // 	for (const auto &p : l->XPoints)
@@ -1797,7 +1797,7 @@ getPointsOnLines_detail*/
       // 		ret.emplace_back(f);
       // 	};
 
-      for_each(this->Lines, [&](const auto &l) {if (f = (*l)(this)){ret.emplace_back(f);}; });
+      std::ranges::for_each(this->Lines, [&](const auto &l) {if (f = (*l)(this)){ret.emplace_back(f);}; });
       return ret;
    };
 
@@ -2926,13 +2926,13 @@ std::unordered_set<networkPoint *> extPointsCornerOrNeumann_(const std::unordere
 std::unordered_set<networkLine *> extLinesCORNER_(const std::unordered_set<networkFace *> &fs) {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : fs)
-      for_each(f->getLines(), [&](const auto &l) {if (l->CORNER){ret.emplace(l);}; });
+      std::ranges::for_each(f->getLines(), [&](const auto &l) {if (l->CORNER){ret.emplace(l);}; });
    return ret;
 };
 std::unordered_set<networkLine *> extLines_(const std::unordered_set<networkFace *> &fs) {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : fs)
-      for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
+      std::ranges::for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
    return ret;
 };
 std::unordered_set<networkLine *> extLinesCORNER_(const std::unordered_set<networkPoint *> &ps) {
@@ -2961,13 +2961,13 @@ std::unordered_set<networkLine *> extLines_(const std::unordered_set<networkPoin
 std::unordered_set<networkLine *> extLinesCORNER_(const std::vector<networkFace *> &fs) {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : fs)
-      for_each(f->getLines(), [&](const auto &l) {if (l->CORNER){ret.emplace(l);}; });
+      std::ranges::for_each(f->getLines(), [&](const auto &l) {if (l->CORNER){ret.emplace(l);}; });
    return ret;
 };
 std::unordered_set<networkLine *> extLines_(const std::vector<networkFace *> &fs) {
    std::unordered_set<networkLine *> ret;
    for (const auto &f : fs)
-      for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
+      std::ranges::for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
    return ret;
 };
 std::unordered_set<networkLine *> extLinesCORNER_(const std::vector<networkPoint *> &ps) {
@@ -3335,9 +3335,9 @@ class Network : public CoordinateBounds {
                //% cellがfaceを持たない場合，
                //% まずはセルの頂点における回転数を調べることで，
                //% ポリゴンの内部外部のどちらに位置するか調べる
-               if (all_of(cell->WNs, [](const auto &w_num) { return w_num > 0.6; }) /*should be inside*/)
+               if (std::ranges::all_of(cell->WNs, [](const auto &w_num) { return w_num > 0.6; }) /*should be inside*/)
                   return {true, cell, nullptr};
-               else if (all_of(cell->WNs, [](const auto &w_num) { return w_num < 0.1; }) /*should be outside*/)
+               else if (std::ranges::all_of(cell->WNs, [](const auto &w_num) { return w_num < 0.1; }) /*should be outside*/)
                   return {false, cell, nullptr};
                else {
                   //@ 構造物の内部外部に位置するか回転数で判断するのが困難な場合
@@ -4387,7 +4387,7 @@ class Network : public CoordinateBounds {
          // for (const auto &line : face->getLines())
          // 	line->XPoints.clear();
 
-         for_each(face->getLines(), [&](const auto &l) { l->XPoints.clear(); });
+         std::ranges::for_each(face->getLines(), [&](const auto &l) { l->XPoints.clear(); });
       }
    };
    /* ------------------------------------------------------ */
@@ -4548,7 +4548,7 @@ inline void networkFace::Delete() {
       if (!this->network->Erase(this))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "is not a member of " + this->network->getName());
       else
-         for_each(this->Lines, [&](const auto &l) { l->Erase(this); });
+         std::ranges::for_each(this->Lines, [&](const auto &l) { l->Erase(this); });
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");

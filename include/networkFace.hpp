@@ -30,7 +30,7 @@ inline networkFace::networkFace(Network *network_IN, const T_LLL &Lines_IN, T_3P
       // setBounds();
       // this->Points = this->getPointsFromLines();
       setPoints();
-      for_each(this->Points, [](auto &p) { p->setFaces(p->Lines); });
+      std::ranges::for_each(this->Points, [](auto &p) { p->setFaces(p->Lines); });
       T3Tddd p0p1p2_X = ToX(this->Points);
       CoordinateBounds::setBounds(p0p1p2_X);
       this->area = TriangleArea(p0p1p2_X);

@@ -14,7 +14,7 @@ inline networkTetra::networkTetra(Network *network_IN,
       Faces(faces) {
    this->network->add(this);
    // 面に四面体を格納
-   for_each(faces, [&](const auto &f) { f->Tetras = {this, std::get<0>(f->Tetras)}; });
+   std::ranges::for_each(faces, [&](const auto &f) { f->Tetras = {this, std::get<0>(f->Tetras)}; });
 };
 
 #endif
