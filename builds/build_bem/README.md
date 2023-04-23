@@ -35,7 +35,7 @@ $ sh clean
 # settingBEM.py
 
 プログラム内でつかわfれるパラメターや，入力値や出力先は`settingBEM.py`を実行することで作られる`json`ファイルで設定される．
-<span style="font-weight: bold; color: #1f77b4;">NOTE:</span> `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
+**💡 NOTE:** `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
 
 # RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える
 
