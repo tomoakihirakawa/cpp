@@ -17,35 +17,42 @@ def highlight_keywords(text):
     return text
 
 
-def extract_markdown_comments(input_file, output_file):
+def extract_markdown_comments(input_file):
     markdown_comment_pattern = re.compile(r'/\*\*(.*?)\*/', re.DOTALL)
 
     with open(input_file, 'r') as cpp_file:
         content = cpp_file.read()
 
     markdown_comments = markdown_comment_pattern.finditer(content)
+    extracted_comments = ""
 
-    with open(output_file, 'w') as md_file:
-        for match in markdown_comments:
-            comment = match.group(1)
-            start_line = content[:match.start()].count('\n') + 1
+    for match in markdown_comments:
+        comment = match.group(1)
+        start_line = content[:match.start()].count('\n') + 1
 
-            # Remove leading asterisks and whitespace
-            cleaned_comment = re.sub(
-                r'^\s*\*', '', comment, flags=re.MULTILINE)
+        # Remove leading asterisks and whitespace
+        cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
 
-            cleaned_comment = highlight_keywords(cleaned_comment)
+        cleaned_comment = highlight_keywords(cleaned_comment)
 
-            md_file.write(
-                f'[{input_file}#L{start_line}]({input_file}#L{start_line}):\n\n')
-            md_file.write(cleaned_comment.strip() + '\n\n')
+        extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line}):\n\n'
+        extracted_comments += cleaned_comment.strip() + '\n\n'
+
+    return extracted_comments
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python extract_comments.py input_file.cpp output_file.md")
+    if len(sys.argv) < 3:
+        print("Usage: python extract_comments.py output_file.md input_file1.cpp input_file2.cpp ...")
         sys.exit(1)
 
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    extract_markdown_comments(input_file, output_file)
+    output_file = sys.argv[1]
+    input_files = sys.argv[2:]
+
+    all_extracted_comments = ""
+
+    for input_file in input_files:
+        all_extracted_comments += extract_markdown_comments(input_file)
+
+    with open(output_file, 'w') as md_file:
+        md_file.write(all_extracted_comments)
