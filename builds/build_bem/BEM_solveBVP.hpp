@@ -647,6 +647,7 @@ struct BEM_BVP {
             for (auto &[_, __, igign] : ret)
                igign *= c;
             for (const auto &[p, which_side_f, igign] : ret) {
+
                /**
                このループでは，
                ある面integ_fに隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
