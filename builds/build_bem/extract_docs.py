@@ -4,15 +4,16 @@ import sys
 
 def highlight_keywords(text):
     keyword_patterns = {
-        'NOTE': r'(?i)(NOTE:?)',
-        'WARNING': r'(?i)(WARNING:?)',
-        'TODO': r'(?i)(TODO:?)',
-        'IMPORTANT': r'(?i)(IMPORTANT:?)',
-        'TIP': r'(?i)(TIP:?)',
+        'note': r'(?i)(NOTE:?)',
+        'warning': r'(?i)(WARNING:?)',
+        'todo': r'(?i)(TODO:?)',
+        'important': r'(?i)(IMPORTANT:?)',
+        'tip': r'(?i)(TIP:?)',
     }
 
     for keyword, pattern in keyword_patterns.items():
-        text = re.sub(pattern, f'**{keyword}:**', text)
+        text = re.sub(
+            pattern, f'<span class="{keyword}">{keyword.capitalize()}:</span>', text)
 
     return text
 
