@@ -3,17 +3,17 @@ import sys
 
 
 def highlight_keywords(text):
-    keyword_patterns = {
-        'note': r'(?i)(NOTE:?)',
-        'warning': r'(?i)(WARNING:?)',
-        'todo': r'(?i)(TODO:?)',
-        'important': r'(?i)(IMPORTANT:?)',
-        'tip': r'(?i)(TIP:?)',
+    keyword_styles = {
+        'NOTE': (r'(?i)(NOTE:?)', 'font-weight: bold; color: #1f77b4;'),
+        'WARNING': (r'(?i)(WARNING:?)', 'font-weight: bold; color: #d62728;'),
+        'TODO': (r'(?i)(TODO:?)', 'font-weight: bold; color: #ff7f0e;'),
+        'IMPORTANT': (r'(?i)(IMPORTANT:?)', 'font-weight: bold; color: #9467bd;'),
+        'TIP': (r'(?i)(TIP:?)', 'font-weight: bold; color: #2ca02c;'),
     }
 
-    for keyword, pattern in keyword_patterns.items():
+    for keyword, (pattern, style) in keyword_styles.items():
         text = re.sub(
-            pattern, f'<span class="{keyword}">{keyword.capitalize()}:</span>', text)
+            pattern, f'<span style="{style}">{keyword}:</span>', text)
 
     return text
 
