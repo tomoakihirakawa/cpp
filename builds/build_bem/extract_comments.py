@@ -3,17 +3,16 @@ import sys
 
 
 def highlight_keywords(text):
-    keyword_styles = {
-        'NOTE': '**NOTE:**',
-        'WARNING': '**WARNING:**',
-        'TODO': '**TODO:**',
-        'IMPORTANT': '**IMPORTANT:**',
-        'TIP': '**TIP:**',
+    keyword_patterns = {
+        'NOTE': (r'(?i)(NOTE:?)', '💡'),
+        'WARNING': (r'(?i)(WARNING:?)', '⚠️'),
+        'TODO': (r'(?i)(TODO:?)', '📝'),
+        'IMPORTANT': (r'(?i)(IMPORTANT:?)', '❗'),
+        'TIP': (r'(?i)(TIP:?)', '🌟'),
     }
 
-    for keyword, style in keyword_styles.items():
-        pattern = r'(?i)({}:?)'.format(keyword)
-        text = re.sub(pattern, style, text)
+    for keyword, (pattern, emoji) in keyword_patterns.items():
+        text = re.sub(pattern, f'**{emoji} {keyword}:**', text)
 
     return text
 
