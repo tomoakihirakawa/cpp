@@ -1,5 +1,6 @@
 import re
 import sys
+import markdown
 
 
 def highlight_keywords(text):
@@ -17,7 +18,7 @@ def highlight_keywords(text):
     return text
 
 
-def extract_markdown_comments(input_file, output_file):
+def extract_html_comments(input_file, output_file):
     markdown_comment_pattern = re.compile(r'/\*\*(.*?)\*/', re.DOTALL)
 
     with open(input_file, 'r') as cpp_file:
@@ -25,9 +26,17 @@ def extract_markdown_comments(input_file, output_file):
 
     markdown_comments = markdown_comment_pattern.finditer(content)
 
-    with open(output_file, 'w') as md_file:
-        # Add the link to the stylesheet at the beginning of the file
-        md_file.write('<link rel="stylesheet" href="styles.css">\n\n')
+    with open(output_file, 'w') as html_file:
+        # Add the CSS styles
+        html_file.write('''
+        <style>
+        .note { font-weight: bold; color: #1f77b4; }
+        .warning { font-weight: bold; color: #d62728; }
+        .todo { font-weight: bold; color: #ff7f0e; }
+        .important { font-weight: bold; color: #9467bd; }
+        .tip { font-weight: bold; color: #2ca02c; }
+        </style>
+        ''')
 
         for match in markdown_comments:
             comment = match.group(1)
@@ -39,16 +48,19 @@ def extract_markdown_comments(input_file, output_file):
 
             cleaned_comment = highlight_keywords(cleaned_comment)
 
-            md_file.write(
-                f'[{input_file}#L{start_line}]({input_file}#L{start_line}):\n\n')
-            md_file.write(cleaned_comment.strip() + '\n\n')
+            # Convert the comment from Markdown to HTML
+            html_comment = markdown.markdown(cleaned_comment)
+
+            html_file.write(
+                f'<p><a href="{input_file}#L{start_line}">[{input_file}#L{start_line}]</a>:</p>\n')
+            html_file.write(html_comment + '\n')
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python extract_comments.py input_file.cpp output_file.md")
+        print("Usage: python extract_comments.py input_file.cpp output_file.html")
         sys.exit(1)
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    extract_markdown_comments(input_file, output_file)
+    extract_html_comments(input_file, output_file)
