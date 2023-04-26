@@ -613,9 +613,15 @@ class networkPoint : public CoordinateBounds {
    // Tddd reflect(const Tddd &v) const;
    /* ------------------------ 境界条件 ------------------------ */
   public:
+   bool isMultipleNode;
    bool CORNER;
    bool Dirichlet;
    bool Neumann;
+
+   std::unordered_map<std::tuple<networkFace *, bool>, int> key2Index;
+   int Index(const networkFace* f) { return key2Index.at(Key(f)); };
+   std::tuple<networkFace *, bool> Key(const networkFace *f) const;
+
    std::map<Network *, int> net_depth;
    int minDepthFromCORNER;  // remeshのために導入
    //
