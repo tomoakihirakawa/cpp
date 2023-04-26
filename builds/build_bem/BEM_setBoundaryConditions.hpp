@@ -76,9 +76,13 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
     これらは完全に同じ方程式である．変数の数を節点の数よりも増やしたことによって，方程式の数が増えている．
    */
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
-   auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
-      return (p->CORNER || std::ranges::any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
-   };
+   // auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
+   //    return (p->CORNER || std::ranges::any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
+   // };
+
+   for (const auto &p : water.getPoints())
+      setIsMultipleNode(p);
+
 #pragma omp parallel
    for (const auto &p : water.getPoints())
 #pragma omp single nowait
@@ -87,9 +91,8 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
       p->phintOnFace.clear();
 
       if (p->Neumann || p->CORNER) {
-         auto facesNeuman = p->getFacesNeumann();
-         if (multiple_node_if(p, facesNeuman)) {
-            for (const auto &f : facesNeuman) {
+         if (p->isMultipleNode) {
+            for (const auto &f : p->getFacesNeumann()) {
                p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
                p->phintOnFace[f] = 1E+30;
             }
