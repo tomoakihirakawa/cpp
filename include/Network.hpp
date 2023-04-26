@@ -618,9 +618,14 @@ class networkPoint : public CoordinateBounds {
    bool Dirichlet;
    bool Neumann;
 
+   /* -------------------------------------------------------------------------- */
+
    std::unordered_map<std::tuple<networkFace *, bool>, int> key2Index;
-   int Index(const networkFace* f) { return key2Index.at(Key(f)); };
+   int Index(const networkFace *f) { return key2Index.at(Key(f)); };
    std::tuple<networkFace *, bool> Key(const networkFace *f) const;
+   std::unordered_set<std::tuple<networkFace *, bool>> Keys() const;
+
+   /* -------------------------------------------------------------------------- */
 
    std::map<Network *, int> net_depth;
    int minDepthFromCORNER;  // remeshのために導入
@@ -1156,7 +1161,7 @@ class networkPoint : public CoordinateBounds {
       for (const auto &l : this_lines)
          if (l)
             for (const auto &f : l->getFaces())
-               ret.insert(f);
+               ret.emplace(f);
       return (this->Faces = ret);
    };
 
@@ -1164,7 +1169,7 @@ class networkPoint : public CoordinateBounds {
       this->Faces.clear();
       for (const auto &l : this->Lines)
          for (const auto &f : l->getFaces())
-            this->Faces.insert(f);
+            this->Faces.emplace(f);
       return this->Faces;
    };
 
@@ -1172,7 +1177,7 @@ class networkPoint : public CoordinateBounds {
       std::unordered_set<networkFace *> ret;
       for (const auto &l : this->Lines)
          for (const auto &f : l->getFaces())
-            ret.insert(f);
+            ret.emplace(f);
       return ret;
    };
 
@@ -4245,12 +4250,12 @@ class Network : public CoordinateBounds {
             // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
             // }
             for (const auto &l : p->getLines())
-               ret.insert(l);
+               ret.emplace(l);
          }
 #else
          for (const auto &p : this->Points)
             for (const auto &l : p->getLines())
-               tmp.insert(l);
+               tmp.emplace(l);
 #endif
          // ret.assign(tmp.begin(), tmp.end());
       } catch (std::exception &e) {
@@ -4288,26 +4293,25 @@ class Network : public CoordinateBounds {
    - 干渉点として作成される`networkPoint`には，`xline`と`xface`が与えられる．これらは，デフォルトで`xline=nullptr`，`xface=nullptr`となっている．
 
    setXPoints_detail*/
-   /*setXPoints_code*/
+
    void setXPoints(Network &target, Network *interactionNet);
-   /*setXPoints_code*/
-   //======================================
-   // Pointsの座標が変更されたとき
-   // linesの繋ぎかえのみがあった時
    void setGeometricProperties() {
+      /**
+      p->Linesとf->Linesが正しく設定してあるかチェックする．
+      p->setFaces()もf->setFaces()も,自身のp->Lines,f->Linesを元に，p->Faces,f->Facesを決定し保存する．
+
+      f->Linesが正しく設定されているかチェックする．
+       */
       try {
-         T_PPP tppp;
          if (!this->getPoints().empty()) {
-            // std::cout << this->getPoints().size() << std::endl;
             for (const auto &p : this->getPoints())
-               p->setFaces();
+               p->setFaces();  // % point->Lines must have been determined
             for (const auto &l : this->getLines())
                l->setBoundsSingle();
             for (const auto &f : this->getFaces())
-               f->setGeometricProperties(ToX(f->setPoints()));
-            CoordinateBounds::setBounds(ToX(this->Points));
+               f->setGeometricProperties(ToX(f->setPoints()));  // @ face->Lines must have been determined
+            CoordinateBounds::setBounds(ToX(this->getPoints()));
          } else {
-            // std::cout << "empty\n ";
             CoordinateBounds::setBounds(Tddd{{0., 0., 0.}});
          }
       } catch (std::exception &e) {

@@ -128,19 +128,53 @@ struct BEM_BVP {
       knowns.clear();
       knowns.reserve(3 * water.getPoints().size());
       int i = 0;
+
+      int dirichlet_count = 0;
+      int neumann_count = 0;
+
+      for (const auto &p : water.getPoints()) {
+         for (const auto &key : p->Keys()) {
+            auto [F, isDirichlet] = key;
+            if (isDirichlet) {
+               PBF_index[{p, isDirichlet, F}] = i++;
+               knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
+               dirichlet_count--;
+            } else {
+               PBF_index[{p, isDirichlet, F}] = i++;
+               knowns.emplace_back(p->phinOnFace[F]);
+               neumann_count--;
+            }
+         }
+      }
+
+      std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
+      std::cout << "neumann_count = " << neumann_count << std::endl;
+
       for (const auto &p : water.getPoints()) {
          if (p->Dirichlet || p->CORNER) {
             PBF_index[{p, Dirichlet, nullptr}] = i++;
             knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
+            dirichlet_count++;
          }
          //! PBF_indexのNeuamnn箇所に関しては，設定済みの　p->phinOnFace　の状態にに任せる
          for (const auto &[f, phin] : p->phinOnFace) {
+            if (PBF_index.find({p, Neumann, f}) == PBF_index.end()) {
+               std::cout << "p = " << p << std::endl;
+               std::cout << "isDirichlet = " << Neumann << std::endl;
+               std::cout << "f = " << f << std::endl;
+               std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
+               std::cout << "p->CORNER = " << p->CORNER << std::endl;
+               std::cout << "f->Dirichlet = " << f->Dirichlet << std::endl;
+            }
             PBF_index[{p, Neumann, f}] = i++;
             knowns.emplace_back(phin);
+            neumann_count++;
          }
       }
 
-      std::cout << Red << "water.getPoints() = " << i << std::endl;
+      std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
+      std::cout << "neumann_count = " << neumann_count << std::endl;
+      std::cout << Red << "total = " << dirichlet_count + neumann_count << std::endl;
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
 

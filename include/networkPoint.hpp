@@ -8,17 +8,25 @@
 /* ------------------------------------------------------- */
 
 inline std::tuple<networkFace *, bool> networkPoint::Key(const networkFace *f) const {
+   //{p,f}を変換
    // f cannot be nullptr
    //  {p,f} --o--> {p,nullptr}
    //  {p,f} <--x-- {p,nullptr}
    if (this->isMultipleNode) {
-      if (f->Dirichlet){
-         return {nullptr,f->Dirichlet};
-      }else{
-         return {const_cast<networkFace*>(f),f->Dirichlet};
+      if (f->Dirichlet) {
+         return {nullptr, f->Dirichlet};
+      } else {
+         return {const_cast<networkFace *>(f), f->Dirichlet};
       }
    } else
-        return  {nullptr,this->Dirichlet};
+      return {nullptr, this->Dirichlet};
+};
+
+inline std::unordered_set<std::tuple<networkFace *, bool>> networkPoint::Keys() const {
+   std::unordered_set<std::tuple<networkFace *, bool>> ret;
+   for (const auto &f : this->getFacesFromLines())
+      ret.emplace(Key(f));
+   return ret;
 };
 
 /* ------------------------------------------------------ */
@@ -58,18 +66,16 @@ inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFace
 
 inline V_netFp networkPoint::getFacesNeumann() const {
    std::unordered_set<networkFace *> tmp;
-   for (const auto &l : this->Lines)
-      for (const auto &f : l->getFaces())
-         if (f->Neumann)
-            tmp.insert(f);
+   for (const auto &f : this->getFacesFromLines())
+      if (f->Neumann)
+         tmp.emplace(f);
    return V_netFp(tmp.begin(), tmp.end());
 };
 inline V_netFp networkPoint::getFacesDirichlet() const {
    std::unordered_set<networkFace *> tmp;
-   for (const auto &l : this->Lines)
-      for (const auto &f : l->getFaces())
-         if (f->Dirichlet)
-            tmp.insert(f);
+   for (const auto &f : this->getFacesFromLines())
+      if (f->Dirichlet)
+         tmp.emplace(f);
    return V_netFp(tmp.begin(), tmp.end());
 };
 
