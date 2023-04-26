@@ -113,279 +113,6 @@ struct BEM_BVP {
    ~BEM_BVP() {
       if (this->lu) delete this->lu;
    };
-   //% ------------------------------------------------------------------------------ */
-   //%                             solve phi_t and phi_n_t                            */
-   //% ------------------------------------------------------------------------------ */
-   void setPhiPhin_t() const {
-#ifdef derivatives_debug
-      std::cout << "φtとφntを一部計算👇" << std::endl;
-#endif
-
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-      for (const auto &[PBF, i] : PBF_index)
-#ifdef _OPENMP
-#pragma omp single nowait
-#endif
-      {
-         auto [p, B, F] = PBF;
-         //% ------------------------------------------------------ */
-         //%                 ディリクレ境界面上のφtを計算                */
-         //% ------------------------------------------------------ */
-         //!!ノイマンの場合はこれでDphiDtは計算できませんよ
-         if (p->Dirichlet || p->CORNER)
-            std::get<0>(p->phiphin_t) = p->aphiat(0.);
-         // std::get<0>(p->phiphin_t) = p->DphiDt(0.) - Dot(p->U_BEM, p->U_BEM);
-         //% ------------------------------------------------------ */
-         //%    ノイマン境界面上の加速度から,ノイマン境界面上のφntを計算     */
-         //% ------------------------------------------------------ */
-         if (p->Neumann || p->CORNER) {
-            /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
-            // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
-            // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-            // b* setBoundaryConditionsで決めている．
-            auto n = p->getNormalNeumann_BEM();
-            auto Q = Quaternion();
-            for (auto &[f, phin_t] : p->phintOnFace) {
-               if (f) {
-                  auto netInContact = NearestContactFace(f)->getNetwork();
-                  auto w = netInContact->velocityRotational();
-                  auto dQdt = Q.d_dt(w);
-                  auto U = uNeumann(p, f);
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
-                  auto s0s1s2 = OrthogonalBasis(f->normal);
-                  auto [s0, s1, s2] = s0s1s2;
-                  auto Hessian = grad_U_LinearElement(f, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-               } else {
-                  auto netInContact = NearestContactFace(p)->getNetwork();
-                  auto w = netInContact->velocityRotational();
-                  auto dQdt = Q.d_dt(w);
-                  auto U = uNeumann(p);
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
-                  auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
-                  auto [s0, s1, s2] = s0s1s2;
-                  auto Hessian = grad_U_LinearElement(p, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-               }
-            }
-         }
-      }
-   };
-   /* ------------------------------------------------------ */
-   bool isTarget(Network *net) const {
-      // return true;
-      if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating")
-         // if (net->inputJSON.find("RigidBody"))
-         return true;
-      else
-         return false;
-   };
-   /* ------------------------------------------------------ */
-   V_d Func(V_d ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) const {
-      auto ACCELS = ACCELS_IN;
-      {
-         int i = 0;
-         for (const auto &net : rigidbodies)
-            if (isTarget(net))
-               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = ACCELS_IN[i++]; });
-      }
-
-      //* --------------------------------------------------- */
-      //*                  加速度 --> phiphin_t                */
-      //* --------------------------------------------------- */
-      setPhiPhin_t();
-      V_d knowns(PBF_index.size());
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet)
-            knowns[i] = std::get<0>(p->phiphin_t);
-         else
-            knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
-      }
-
-      V_d phiORphin_t(PBF_index.size());
-      std::cout << "加速度 --> phiphin_t" << std::endl;
-
-#if defined(use_CG)
-      GradientMethod gd(mat_ukn);
-      phiORphin_t = gd.solve(Dot(mat_kn, knowns));
-#elif defined(use_gmres)
-      std::cout << "gmres for phiphin_t" << std::endl;
-      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, use_gmres);
-      phiORphin_t = gm.x;
-      if (!isFinite(gm.err)) {
-         std::cout << "gm.err = " << gm.err << std::endl;
-         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
-      }
-      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-      // gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, 5);
-      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-      // std::cout << err << std::endl;
-      // /* ------------------------------------------------------ */
-      // if (isFinite(err) && err < 0.1)
-      // else
-      //
-#elif defined(use_lapack)
-      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
-#endif
-      std::cout << "solved" << std::endl;
-      //* --------------------------------------------------- */
-      //*                 phiphin_t --> 圧力                   */
-      //* --------------------------------------------------- */
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Dirichlet)
-      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
-      //    else
-      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
-      //    p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
-      // }
-      /* -------------------------------------------------------------------------- */
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet) {
-            // do nothing
-         } else if (p->phintOnFace.size() > 1) {
-            std::get<0>(p->phiphin_t) = 0;
-            std::get<1>(p->phiphin_t) = 0;
-         } else
-            std::get<0>(p->phiphin_t) = 0;
-      }
-
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet)
-            std::get<1>(p->phiphin_t) = phiORphin_t[i];
-         else if (p->phintOnFace.size() > 1) {
-            double total = 0;
-            for (auto [f, phin_t] : p->phintOnFace)
-               total += f->area;
-            std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
-            std::get<1>(p->phiphin_t) += p->phintOnFace.at(f) * f->area / total;
-         } else {
-            std::get<0>(p->phiphin_t) = phiORphin_t[i];
-            std::get<1>(p->phiphin_t) = p->phintOnFace.at(f);
-         }
-      }
-      /* -------------------------------------------------------------------------- */
-      // // 足し合わせるので初期化
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Neumann)
-      //       std::get<0>(p->phiphin_t) = 0;
-      // }
-      // //
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Dirichlet)
-      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
-      //    else if (p->phinOnFace.size() > 1) {
-      //       double total = 0;
-      //       for (auto [f, phin] : p->phinOnFace)
-      //          total += f->area;
-
-      //       std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
-      //    } else
-      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
-      // }
-
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
-      }
-
-      //* --------------------------------------------------- */
-      //*                     圧力 ---> 加速度                  */
-      //* --------------------------------------------------- */
-      int i = 0;
-      for (const auto &net : rigidbodies)
-         if (isTarget(net)) {
-            // std::cout << net->inputJSON.find("velocity") << std::endl;
-            // std::cout << net->inputJSON["velocity"][0] << std::endl;
-            auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
-            auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
-            auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
-            std::cout << "force_check:" << tmp.force_check << std::endl;
-            auto torque = tmp.getFroudeKrylovTorque(net->COM);
-            auto [a0, a1, a2] = force / Tddd{mx, my, mz};
-            auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
-            // net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
-            std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
-         }
-      return ACCELS - ACCELS_IN;
-   };
-
-   /* ------------------------------------------------------ */
-
-   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) const {
-      //@ --------------------------------------------------- */
-      //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
-      //@ --------------------------------------------------- */
-      V_d ACCELS_init, ACCELS, ACCELS_old, ACCELS_old_old;
-      for (const auto &net : rigidbodies) {
-         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-            if (net->inputJSON.at("velocity").size() > 1) {
-               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
-               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
-               if (real_time < start_time)
-                  net->acceleration.fill(0.);
-               else
-                  std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
-            } else
-               std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
-         } else
-            net->acceleration.fill(0.);
-      }
-
-      if (ACCELS_init.empty()) {
-         setPhiPhin_t();
-         return;
-      }
-
-      auto tmp = ACCELS_init;
-      tmp[0] += 1E-10;
-      BroydenMethod BM(ACCELS_init, tmp);
-      for (auto j = 0; j < 20; ++j) {
-
-         auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
-         std::cout << "func_ = " << func_ << std::endl;
-         auto func = Func(BM.X, water, rigidbodies);
-         std::cout << "func = " << func_ << std::endl;
-         BM.update(func, func_, j < 1 ? 1E-10 : 1.);
-         // for (const auto &net : rigidbodies)
-         //    if (isTarget(net))
-         //       for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-         // save --> acceleration
-         int i = 0;
-         for (const auto &net : rigidbodies) {
-            if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-               if (net->inputJSON.at("velocity").size() > 1) {
-                  std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
-                  double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-                  std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
-                  if (real_time < start_time) {
-                     net->acceleration.fill(0.);
-                  } else
-                     std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-               } else
-                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-            } else
-               net->acceleration.fill(0.);
-         }
-
-         std::cout << "j = " << j << ", " << Red << Norm(func) << colorOff << std::endl;
-         std::cout << Red << "func_ = " << func_ << colorOff << std::endl;
-         std::cout << Red << "func = " << func << colorOff << std::endl;
-         std::cout << Red << "BM.X = " << BM.X << colorOff << std::endl;
-         std::cout << Red << "BM.dX = " << BM.dX << colorOff << std::endl;
-
-         if (Norm(func) < 1E-10)
-            break;
-      }
-   };
 
    //% -------------------------------------------------------------------------- */
    //%                             solve phi and phi_n                            */
@@ -904,6 +631,280 @@ struct BEM_BVP {
 
          if (!isFinite(phiORphin))
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "phiORphin is not finite");
+      }
+   };
+
+   //% ------------------------------------------------------------------------------ */
+   //%                             solve phi_t and phi_n_t                            */
+   //% ------------------------------------------------------------------------------ */
+   void setPhiPhin_t() const {
+#ifdef derivatives_debug
+      std::cout << "φtとφntを一部計算👇" << std::endl;
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+      for (const auto &[PBF, i] : PBF_index)
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+      {
+         auto [p, B, F] = PBF;
+         //% ------------------------------------------------------ */
+         //%                 ディリクレ境界面上のφtを計算                */
+         //% ------------------------------------------------------ */
+         //!!ノイマンの場合はこれでDphiDtは計算できませんよ
+         if (p->Dirichlet || p->CORNER)
+            std::get<0>(p->phiphin_t) = p->aphiat(0.);
+         // std::get<0>(p->phiphin_t) = p->DphiDt(0.) - Dot(p->U_BEM, p->U_BEM);
+         //% ------------------------------------------------------ */
+         //%    ノイマン境界面上の加速度から,ノイマン境界面上のφntを計算     */
+         //% ------------------------------------------------------ */
+         if (p->Neumann || p->CORNER) {
+            /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
+            // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
+            // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
+            // b* setBoundaryConditionsで決めている．
+            auto n = p->getNormalNeumann_BEM();
+            auto Q = Quaternion();
+            for (auto &[f, phin_t] : p->phintOnFace) {
+               if (f) {
+                  auto netInContact = NearestContactFace(f)->getNetwork();
+                  auto w = netInContact->velocityRotational();
+                  auto dQdt = Q.d_dt(w);
+                  auto U = uNeumann(p, f);
+                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
+                  auto s0s1s2 = OrthogonalBasis(f->normal);
+                  auto [s0, s1, s2] = s0s1s2;
+                  auto Hessian = grad_U_LinearElement(f, s0s1s2);
+                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+               } else {
+                  auto netInContact = NearestContactFace(p)->getNetwork();
+                  auto w = netInContact->velocityRotational();
+                  auto dQdt = Q.d_dt(w);
+                  auto U = uNeumann(p);
+                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
+                  auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
+                  auto [s0, s1, s2] = s0s1s2;
+                  auto Hessian = grad_U_LinearElement(p, s0s1s2);
+                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+               }
+            }
+         }
+      }
+   };
+   /* ------------------------------------------------------ */
+   bool isTarget(Network *net) const {
+      // return true;
+      if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating")
+         // if (net->inputJSON.find("RigidBody"))
+         return true;
+      else
+         return false;
+   };
+   /* ------------------------------------------------------ */
+   V_d Func(V_d ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) const {
+      auto ACCELS = ACCELS_IN;
+      {
+         int i = 0;
+         for (const auto &net : rigidbodies)
+            if (isTarget(net))
+               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = ACCELS_IN[i++]; });
+      }
+
+      //* --------------------------------------------------- */
+      //*                  加速度 --> phiphin_t                */
+      //* --------------------------------------------------- */
+      setPhiPhin_t();
+      V_d knowns(PBF_index.size());
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, DorN, f] = PBF;
+         if (DorN == Dirichlet)
+            knowns[i] = std::get<0>(p->phiphin_t);
+         else
+            knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
+      }
+
+      V_d phiORphin_t(PBF_index.size());
+      std::cout << "加速度 --> phiphin_t" << std::endl;
+
+#if defined(use_CG)
+      GradientMethod gd(mat_ukn);
+      phiORphin_t = gd.solve(Dot(mat_kn, knowns));
+#elif defined(use_gmres)
+      std::cout << "gmres for phiphin_t" << std::endl;
+      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, use_gmres);
+      phiORphin_t = gm.x;
+      if (!isFinite(gm.err)) {
+         std::cout << "gm.err = " << gm.err << std::endl;
+         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
+      }
+      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
+      // gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, 5);
+      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
+      // std::cout << err << std::endl;
+      // /* ------------------------------------------------------ */
+      // if (isFinite(err) && err < 0.1)
+      // else
+      //
+#elif defined(use_lapack)
+      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
+#endif
+      std::cout << "solved" << std::endl;
+      //* --------------------------------------------------- */
+      //*                 phiphin_t --> 圧力                   */
+      //* --------------------------------------------------- */
+      // for (const auto &[PBF, i] : PBF_index) {
+      //    auto [p, DorN, f] = PBF;
+      //    if (DorN == Dirichlet)
+      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
+      //    else
+      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
+      //    p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
+      // }
+      /* -------------------------------------------------------------------------- */
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, DorN, f] = PBF;
+         if (DorN == Dirichlet) {
+            // do nothing
+         } else if (p->phintOnFace.size() > 1) {
+            std::get<0>(p->phiphin_t) = 0;
+            std::get<1>(p->phiphin_t) = 0;
+         } else
+            std::get<0>(p->phiphin_t) = 0;
+      }
+
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, DorN, f] = PBF;
+         if (DorN == Dirichlet)
+            std::get<1>(p->phiphin_t) = phiORphin_t[i];
+         else if (p->phintOnFace.size() > 1) {
+            double total = 0;
+            for (auto [f, phin_t] : p->phintOnFace)
+               total += f->area;
+            std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
+            std::get<1>(p->phiphin_t) += p->phintOnFace.at(f) * f->area / total;
+         } else {
+            std::get<0>(p->phiphin_t) = phiORphin_t[i];
+            std::get<1>(p->phiphin_t) = p->phintOnFace.at(f);
+         }
+      }
+      /* -------------------------------------------------------------------------- */
+      // // 足し合わせるので初期化
+      // for (const auto &[PBF, i] : PBF_index) {
+      //    auto [p, DorN, f] = PBF;
+      //    if (DorN == Neumann)
+      //       std::get<0>(p->phiphin_t) = 0;
+      // }
+      // //
+      // for (const auto &[PBF, i] : PBF_index) {
+      //    auto [p, DorN, f] = PBF;
+      //    if (DorN == Dirichlet)
+      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
+      //    else if (p->phinOnFace.size() > 1) {
+      //       double total = 0;
+      //       for (auto [f, phin] : p->phinOnFace)
+      //          total += f->area;
+
+      //       std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
+      //    } else
+      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
+      // }
+
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, DorN, f] = PBF;
+         p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
+      }
+
+      //* --------------------------------------------------- */
+      //*                     圧力 ---> 加速度                  */
+      //* --------------------------------------------------- */
+      int i = 0;
+      for (const auto &net : rigidbodies)
+         if (isTarget(net)) {
+            // std::cout << net->inputJSON.find("velocity") << std::endl;
+            // std::cout << net->inputJSON["velocity"][0] << std::endl;
+            auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
+            auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
+            auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
+            std::cout << "force_check:" << tmp.force_check << std::endl;
+            auto torque = tmp.getFroudeKrylovTorque(net->COM);
+            auto [a0, a1, a2] = force / Tddd{mx, my, mz};
+            auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
+            // net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
+            std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
+         }
+      return ACCELS - ACCELS_IN;
+   };
+
+   /* ------------------------------------------------------ */
+
+   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) const {
+      //@ --------------------------------------------------- */
+      //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
+      //@ --------------------------------------------------- */
+      V_d ACCELS_init, ACCELS, ACCELS_old, ACCELS_old_old;
+      for (const auto &net : rigidbodies) {
+         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+            if (net->inputJSON.at("velocity").size() > 1) {
+               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
+               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
+               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
+               if (real_time < start_time)
+                  net->acceleration.fill(0.);
+               else
+                  std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+            } else
+               std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+         } else
+            net->acceleration.fill(0.);
+      }
+
+      if (ACCELS_init.empty()) {
+         setPhiPhin_t();
+         return;
+      }
+
+      auto tmp = ACCELS_init;
+      tmp[0] += 1E-10;
+      BroydenMethod BM(ACCELS_init, tmp);
+      for (auto j = 0; j < 20; ++j) {
+
+         auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
+         std::cout << "func_ = " << func_ << std::endl;
+         auto func = Func(BM.X, water, rigidbodies);
+         std::cout << "func = " << func_ << std::endl;
+         BM.update(func, func_, j < 1 ? 1E-10 : 1.);
+         // for (const auto &net : rigidbodies)
+         //    if (isTarget(net))
+         //       for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
+         // save --> acceleration
+         int i = 0;
+         for (const auto &net : rigidbodies) {
+            if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+               if (net->inputJSON.at("velocity").size() > 1) {
+                  std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
+                  double start_time = std::stod(net->inputJSON.at("velocity")[1]);
+                  std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
+                  if (real_time < start_time) {
+                     net->acceleration.fill(0.);
+                  } else
+                     std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
+               } else
+                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
+            } else
+               net->acceleration.fill(0.);
+         }
+
+         std::cout << "j = " << j << ", " << Red << Norm(func) << colorOff << std::endl;
+         std::cout << Red << "func_ = " << func_ << colorOff << std::endl;
+         std::cout << Red << "func = " << func << colorOff << std::endl;
+         std::cout << Red << "BM.X = " << BM.X << colorOff << std::endl;
+         std::cout << Red << "BM.dX = " << BM.dX << colorOff << std::endl;
+
+         if (Norm(func) < 1E-10)
+            break;
       }
    };
 };
