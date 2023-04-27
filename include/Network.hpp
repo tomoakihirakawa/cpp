@@ -619,11 +619,10 @@ class networkPoint : public CoordinateBounds {
    bool Neumann;
 
    /* -------------------------------------------------------------------------- */
-
-   std::unordered_map<std::tuple<networkFace *, bool>, int> key2Index;
-   int Index(const networkFace *f) { return key2Index.at(Key(f)); };
-   std::tuple<networkFace *, bool> Key(const networkFace *f) const;
-   std::unordered_set<std::tuple<networkFace *, bool>> Keys() const;
+   // std::unordered_map<std::tuple<networkFace *, bool>, int> key2Index;
+   // int Index(const networkFace *f) { return key2Index.at(variableID_BEM(f)); };
+   // std::tuple<networkFace *, bool> variableID_BEM(const networkFace *f) const;
+   // std::unordered_set<std::tuple<networkFace *, bool>> variableIDs_BEM() const;
 
    /* -------------------------------------------------------------------------- */
 
@@ -1869,9 +1868,9 @@ getPointsOnLines_detail*/
    V_d parameterize(const V_d &xyz_IN) { return Dot(getXInverse(), xyz_IN); };
 
    T_PPP getPointsFromLines(const T_LLL &lines) const {
-      auto A = Intersection(std::get<0>(this->Lines)->getPoints(), std::get<2>(this->Lines)->getPoints());
-      auto B = Intersection(std::get<1>(this->Lines)->getPoints(), std::get<0>(this->Lines)->getPoints());
-      auto C = Intersection(std::get<2>(this->Lines)->getPoints(), std::get<1>(this->Lines)->getPoints());
+      auto A = Intersection(std::get<0>(lines)->getPoints(), std::get<2>(lines)->getPoints());
+      auto B = Intersection(std::get<1>(lines)->getPoints(), std::get<0>(lines)->getPoints());
+      auto C = Intersection(std::get<2>(lines)->getPoints(), std::get<1>(lines)->getPoints());
       if ((A.size() != 1 || B.size() != 1 || C.size() != 1))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Intersection size is not 1");
       else
