@@ -4235,19 +4235,8 @@ V_d midPointOfLines(const VVV_d &vecs) {
 #include "basic_mathematical_functions.hpp"
 //-----------------------
 template <class T>
-std::unordered_set<T> Intersection(const std::tuple<T, T> &A, const std::tuple<T, T> &B) {
-   std::unordered_set<T> ret({});
-   auto [a0, a1] = A;
-   auto [b0, b1] = B;
-   if (a0 == b0 || a0 == b1)
-      ret.emplace(a0);
-   if (a1 == b0 || a1 == b1)
-      ret.emplace(a1);
-   return ret;
-};
-template <class T>
-std::vector<T *> Intersection(const std::vector<T *> &A, const std::vector<T *> &B) {
-   std::vector<T *> ret({});
+std::vector<T> Intersection(const std::vector<T> &A, const std::vector<T> &B) {
+   std::vector<T> ret;
    ret.reserve((A.size() > B.size()) ? B.size() : A.size());
    for (const auto &b : B) {
       if (std::find_if(A.cbegin(), A.cend(), [&](const auto &a) { return a == b; }) != A.end())
@@ -4255,6 +4244,25 @@ std::vector<T *> Intersection(const std::vector<T *> &A, const std::vector<T *> 
    }
    return ret;
 };
+template <class T>
+std::vector<T> Intersection(const std::unordered_set<T> &A, const std::unordered_set<T> &B) {
+   std::vector<T> ret;
+   ret.reserve((A.size() > B.size()) ? B.size() : A.size());
+   for (const auto &b : B) {
+      if (std::find_if(A.cbegin(), A.cend(), [&](const auto &a) { return a == b; }) != A.end())
+         ret.emplace_back(b);
+   }
+   return ret;
+};
+template <typename... Args>
+std::vector<std::tuple<Args...>> Intersection(const std::vector<std::tuple<Args...>> &a, const std::vector<std::tuple<Args...>> &b) {
+   std::vector<std::tuple<Args...>> result;
+   for (const auto &x : a)
+      if (std::find(b.begin(), b.end(), x) != b.end())
+         result.push_back(x);
+   return result;
+}
+
 template <class T>
 std::vector<T> Intersection(const std::vector<T> &A,
                             const std::vector<T> &B,
@@ -4284,93 +4292,6 @@ std::unordered_set<T> Intersection(const std::unordered_set<T> &A,
    return ret;
 };
 
-template <class T>
-std::vector<T> Intersection(const std::vector<T> &A, const std::vector<T> &B) {
-   std::vector<T> ret({});
-   ret.reserve((A.size() > B.size()) ? B.size() : A.size());
-   for (const auto &b : B) {
-      if (std::find_if(A.cbegin(), A.cend(), [&](const auto &a) { return a == b; }) != A.end())
-         ret.emplace_back(b);
-   }
-   return ret;
-};
-
-template <class T>
-std::unordered_set<T> Intersection(const std::tuple<T, T, T, T> &A, const std::tuple<T, T, T, T> &B) {
-   std::unordered_set<T> ret;
-   ret.reserve(4);
-   for_each(A, [&](const auto &a) {if (std::get<0>(B) == a || std::get<1>(B) == a ||std::get<2>(B) == a||std::get<3>(B) == a)
-					 ret.emplace(a); });
-   return ret;
-};
-
-//------------------------
-// VV_d CoordinateBounds(const VV_d &v)
-// {
-// 	// v = {{x0,y0,z0},{x1,y1,z1},{x2,y2,z2},{x3,y3,z3}}
-// 	VV_d xyzT = Transpose(v);
-// 	V_d r(v.size(), 0);
-// 	V_d mean = Mean(v); // mean = {xc,yc,zc}
-// 	std::transform(v.cbegin(), v.cend(), r.begin(), [&mean](const auto &xyz)
-// 				   { return Norm(xyz - mean); });
-// 	VV_d bs = {{Min(xyzT[0]), Max(xyzT[0])},
-// 			   {Min(xyzT[1]), Max(xyzT[1])},
-// 			   {Min(xyzT[2]), Max(xyzT[2])},
-// 			   {Min(r), Max(r)}}; // r:中心から各点までの距離
-// 	return bs;
-// };
-
-// class BoundingBox
-// {
-// public:
-//   V_d center, xbounds, ybounds, zbounds, rbounds;
-//   VV_d bounds;
-//   BoundingBox(const VV_d &v) { set(v); };
-//   VV_d getBounds() const { return {xbounds, ybounds, zbounds, rbounds}; };
-//   double getScale() const
-//   {
-//     return Norm(V_d{std::abs(this->xbounds[1] - this->xbounds[0]),
-//                     std::abs(this->ybounds[1] - this->ybounds[0]),
-//                     std::abs(this->zbounds[1] - this->zbounds[0])});
-//   };
-//   void setBounds(const VV_d &bs)
-//   {
-//     double rand = (RandomReal({-1, 1.}) > 0 ? 1. : -1) * RandomReal({0.1, 1.}) * 1E-13;
-//     this->xbounds = {bs[0][0], bs[0][1]};
-//     this->ybounds = {bs[1][0], bs[1][1]};
-//     this->zbounds = {bs[2][0], bs[2][1]};
-//     this->rbounds = {bs[3][0], bs[3][1]};
-//     this->xbounds += rand;
-//     this->ybounds += rand;
-//     this->zbounds += rand;
-//     this->center = V_d{Mean(this->xbounds), Mean(this->ybounds), Mean(this->zbounds)};
-//   };
-//   void setBoundsFromPoints(const VV_d &v)
-//   {
-//     VV_d xyzT = Transpose(v);
-//     V_d r(v.size(), 0.);
-//     V_d center = Mean(v); //mean = {xc,yc,zc}
-//     std::transform(v.cbegin(), v.cend(), r.begin(), [&center](const auto &xyz) { return Norm(xyz - center); });
-//     this->xbounds = {Min(xyzT[0]), Max(xyzT[0])};
-//     this->ybounds = {Min(xyzT[1]), Max(xyzT[1])};
-//     this->zbounds = {Min(xyzT[2]), Max(xyzT[2])};
-//     this->rbounds = {Min(r), Max(r)}; //r:中心から各点までの距離
-//     this->bounds = getBounds();
-//   };
-// };
-
-// //境界面の重なりを検知するのみ，完全に内部に入った場合はfalse
-// bool isBoundariesOverlap(const BoundingBox &boxA, const BoundingBox &boxB)
-// {
-//   auto boundsA = boxA.bounds;
-//   auto boundsB = boxB.bounds;
-//   if ((boundsA[0][1] /*max*/ < boundsB[0][0] /*min*/ || boundsB[0][1] /*max*/ < boundsA[0][0] /*min*/) ||
-//       (boundsA[1][1] /*max*/ < boundsB[1][0] /*min*/ || boundsB[1][1] /*max*/ < boundsA[1][0] /*min*/) ||
-//       (boundsA[2][1] /*max*/ < boundsB[2][0] /*min*/ || boundsB[2][1] /*max*/ < boundsA[2][0] /*min*/))
-//     return false;
-
-//   return true;
-// };
 /* ------------------------------------------------------ */
 /*                       連立1次方程式の解法                 */
 /* ------------------------------------------------------ */

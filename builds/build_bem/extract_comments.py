@@ -52,7 +52,10 @@ if __name__ == "__main__":
     all_extracted_comments = ""
 
     for input_file in input_files:
-        all_extracted_comments += extract_markdown_comments(input_file)
+        extracted_comments = extract_markdown_comments(input_file)
+        if extracted_comments:
+            file_link_name = f'## {input_file}\n\n'
+            all_extracted_comments += file_link_name + extracted_comments
 
     with open(output_file, 'w') as md_file:
         md_file.write(all_extracted_comments)
