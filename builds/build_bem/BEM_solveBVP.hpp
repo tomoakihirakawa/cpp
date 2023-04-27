@@ -382,7 +382,7 @@ struct BEM_BVP {
                   if (p == p_ && f_ == f /*can be nullptr*/) {
                      mat_ukn[i][j] = maxpp;  // φの系数
                      mat_kn[i][j] = 0;       // φnの系数
-                  } else if (p == p_ && isDirichletID_BEM(p, f) /* there must be the only one in this row*/) {
+                  } else if (p == p_ && isDirichletID_BEM(p__, f) /* there must be the only one in this row*/) {
                      mat_ukn[i][j] = 0;     // φnの系数
                      mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                   } else {
