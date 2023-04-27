@@ -1,61 +1,45 @@
-[main.cpp#L1](main.cpp#L1):
+## ../../include/Network.hpp
 
-# コンパイルのやり方
+[../../include/Network.hpp#L1152](../../include/Network.hpp#L1152):
 
-以下のコマンドの先頭の"$"は無視してください．
-本来はコンパイルの際には，多くのヘッダーファイルをインクルードするよう長いコンパイルのコマンドを打つ必要がある．
-cmakeを使えば，それをCMakeLists.txtにあらかじめ書いておくことで省くことができる．
-```shell
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-```
-次に，
-```shell
-$ make
-```
-これでコンパイル終了．後は，次のようにすればmainファイルが実行される．
-```shell
-$ ./main
-```
-ただし，古いcmake情報が今のフォルダ内に残っている場合，その情報を削除しておかないと，
-cmakeの際に，エラーがでる．古いcmake関連のファイルを消したい場合．次を実行した後にcmakeする．
-```shell
-$ sh clean
-```
+2021/09/02unordered_setを使うよう修正した
+   将来的にはunordered setを返す関数に修正すべき
 
-# settingBEM.py
+[../../include/Network.hpp#L1905](../../include/Network.hpp#L1905):
 
-プログラム内でつかわfれるパラメターや，入力値や出力先は`settingBEM.py`を実行することで作られる`json`ファイルで設定される．
+! 依存関係の明示方法
+ 下のように使う．これによって，setPointsFromLinesした後に，これを実行する必要があることを印象付けることができる．
+ f->setGeometricProperties(f->setPointsFromLines())
 
-**💡 NOTE:** `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
+[../../include/Network.hpp#L1913](../../include/Network.hpp#L1913):
 
-# RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える
+@ networkFacesの持つ
+         @ this->Points = {p0,p1,p2}
+         @ this->Lines = {l0,l1,l2}
+         @ の関係:
+         @ 		    p2
+         @         /\
+         @ 		   /a2\
+         @       /    \
+         @  l2  /      \ l1
+         @ 	   /a0    a1\
+         @    -------------
+         @  p0      l0      p1
 
-どのように境界条件を適用するか．
+[../../include/Network.hpp#L4301](../../include/Network.hpp#L4301):
 
-# remesh（再配置）の条件
+p->setFaces()もf->setFaces()も,自身のp->Lines,f->Linesを元に，p->Faces,f->Facesを決定し保存する．
+   p->Linesとf->Linesが正しく設定してあるかチェックする．
+   特に，flipやdivideの後には，p->Lines,f->Linesが正しく設定されていない可能性があるので，要注意．
 
-## flip,divide,mergeに共通する条件
+[../../include/Network.hpp#L4325](../../include/Network.hpp#L4325):
 
-辺のフリップ，分割，削除が実行されるには，辺で繋がる２点の境界条件が同じである必要がある．
+pointのFacesとLinesの関係は整合性があるか？faceのFacesとLinesの関係は整合性があるか？をチェック．
+   setGeometricProperties()を実行していれば，この整合性は保たれるはずではある．
 
-(!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
+## ./BEM_setBoundaryConditions.hpp
 
-がtrueである場合のみ，辺の修正を実行することができる．
-
-## flipの条件
-
-## divideの条件
-
-## mergeの条件
-
-
-![](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_bem/anim.gif)
-
-![](WATCHME_settingjson.mov)
-
-![](WATCHME_settingBEM.mov)
-
-[BEM_setBoundaryConditions.hpp#L68](BEM_setBoundaryConditions.hpp#L68):
+[./BEM_setBoundaryConditions.hpp#L68](./BEM_setBoundaryConditions.hpp#L68):
 
 ## 多重節点
     多重節点という名前は具体性に欠ける．
@@ -66,7 +50,9 @@ $ sh clean
     同じ位置であるにもかかわらず，それらを一つ一つを原点として，１次方程式を作成する．
     これらは完全に同じ方程式である．変数の数を節点の数よりも増やしたことによって，方程式の数が増えている．
 
-[BEM_solveBVP.hpp#L650](BEM_solveBVP.hpp#L650):
+## ./BEM_solveBVP.hpp
+
+[./BEM_solveBVP.hpp#L414](./BEM_solveBVP.hpp#L414):
 
 このループでは，
                ある面integ_fに隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
@@ -89,7 +75,7 @@ $ sh clean
                PBF_index[{p, Dirichlet, ある要素}]
                は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
-[BEM_solveBVP.hpp#L681](BEM_solveBVP.hpp#L681):
+[./BEM_solveBVP.hpp#L445](./BEM_solveBVP.hpp#L445):
 
 # Example Function
 

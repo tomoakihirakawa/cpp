@@ -435,7 +435,7 @@ void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false
             }
          }
       }
-
+      water.setGeometricProperties();
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -473,6 +473,7 @@ void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0)
             }
          }
       }
+      water.setGeometricProperties();
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -525,6 +526,7 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
             }
          }
       }
+      water.setGeometricProperties();
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");

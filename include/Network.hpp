@@ -268,14 +268,14 @@ class networkLine : public CoordinateBounds {
    double length() const;
    //------------------
    // V_netPp getPoints() const { return {this->Point_A, this->Point_B}; };
-   std::tuple<networkPoint *, networkPoint *> getPoints(const networkPoint *const p) const {
+   T_PP getPoints(const networkPoint *const p) const {
       if (p == this->Point_A)
          return {this->Point_A, this->Point_B};
       else
          return {this->Point_B, this->Point_A};
    };
-   std::tuple<netP *, netP *> getPoints() const { return {this->Point_A, this->Point_B}; };
-   std::tuple<netP *, netP *> getPointsTuple() const { return {this->Point_A, this->Point_B}; };
+   T_PP getPoints() const { return {this->Point_A, this->Point_B}; };
+   T_PP getPointsTuple() const { return {this->Point_A, this->Point_B}; };
    const V_netFp &getFaces() const { return this->Faces; };
    V_netFp getFacesExcept(const netFp f) const { return TakeExcept(this->Faces, f); };
    V_netFp getFacesExcept(const V_netFp &fs) const { return TakeExcept(this->Faces, fs); };
@@ -1868,18 +1868,20 @@ getPointsOnLines_detail*/
    };
    V_d parameterize(const V_d &xyz_IN) { return Dot(getXInverse(), xyz_IN); };
 
-   T_PPP getPointsFromLines() const {
-      return {*(Intersection(std::get<0>(this->Lines)->getPoints(), std::get<2>(this->Lines)->getPoints()).begin()),
-              *(Intersection(std::get<1>(this->Lines)->getPoints(), std::get<0>(this->Lines)->getPoints()).begin()),
-              *(Intersection(std::get<2>(this->Lines)->getPoints(), std::get<1>(this->Lines)->getPoints()).begin())};
+   T_PPP getPointsFromLines(const T_LLL &lines) const {
+      auto A = Intersection(std::get<0>(this->Lines)->getPoints(), std::get<2>(this->Lines)->getPoints());
+      auto B = Intersection(std::get<1>(this->Lines)->getPoints(), std::get<0>(this->Lines)->getPoints());
+      auto C = Intersection(std::get<2>(this->Lines)->getPoints(), std::get<1>(this->Lines)->getPoints());
+      if ((A.size() != 1 || B.size() != 1 || C.size() != 1))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Intersection size is not 1");
+      else
+         return {*A.begin(), *B.begin(), *C.begin()};
    };
 
+   T_PPP getPointsFromLines() const { return getPointsFromLines(this->Lines); };
+
    T_PPP setPoints(const T_LLL &lines) {
-      // std::cout << "networkFace::setPoints::lines = " << lines << std::endl;
-      this->Points = {*(Intersection(std::get<0>(lines)->getPoints(), std::get<2>(lines)->getPoints()).begin()),
-                      *(Intersection(std::get<1>(lines)->getPoints(), std::get<0>(lines)->getPoints()).begin()),
-                      *(Intersection(std::get<2>(lines)->getPoints(), std::get<1>(lines)->getPoints()).begin())};
-      //
+      this->Points = getPointsFromLines(lines);
       std::get<0>(PLPLPL) = std::get<0>(this->Points);
       std::get<1>(PLPLPL) = std::get<0>(lines);
       std::get<2>(PLPLPL) = std::get<1>(this->Points);
@@ -4295,13 +4297,13 @@ class Network : public CoordinateBounds {
    setXPoints_detail*/
 
    void setXPoints(Network &target, Network *interactionNet);
-   void setGeometricProperties() {
-      /**
-      p->Linesとf->Linesが正しく設定してあるかチェックする．
-      p->setFaces()もf->setFaces()も,自身のp->Lines,f->Linesを元に，p->Faces,f->Facesを決定し保存する．
 
-      f->Linesが正しく設定されているかチェックする．
-       */
+   /**
+   p->setFaces()もf->setFaces()も,自身のp->Lines,f->Linesを元に，p->Faces,f->Facesを決定し保存する．
+   p->Linesとf->Linesが正しく設定してあるかチェックする．
+   特に，flipやdivideの後には，p->Lines,f->Linesが正しく設定されていない可能性があるので，要注意．
+    */
+   void setGeometricProperties() {
       try {
          if (!this->getPoints().empty()) {
             for (const auto &p : this->getPoints())
@@ -4320,7 +4322,41 @@ class Network : public CoordinateBounds {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
-   /* ------------------------------------------------------ */
+   /**
+   pointのFacesとLinesの関係は整合性があるか？faceのFacesとLinesの関係は整合性があるか？をチェック．
+   setGeometricProperties()を実行していれば，この整合性は保たれるはずではある．
+    */
+   std::array<bool, 2> validateConsistency() {
+
+      bool consistent_Line_Face_in_Points = true;
+      bool consistent_Line_Face_in_Faces = true;
+
+      for (const auto &p : this->getPoints()) {
+         std::unordered_set<networkFace *> tmp1, tmp2;
+         for (const auto &f : p->getFacesFromLines())
+            tmp1.emplace(f);
+         for (const auto &f : p->getFaces())
+            tmp2.emplace(f);
+         auto s = Intersection(tmp1, tmp2).size();
+         if (s != tmp1.size() || s != tmp2.size())
+            consistent_Line_Face_in_Points = false;
+      }
+
+      for (const auto &f : this->getFaces()) {
+         std::unordered_set<networkPoint *> tmp1, tmp2;
+         for (const auto &p : f->getPoints())
+            tmp1.emplace(p);
+         for (const auto &p : f->getPoints())
+            tmp2.emplace(p);
+         auto s = Intersection(tmp1, tmp2).size();
+         if (s != tmp1.size() || s != tmp2.size())
+            consistent_Line_Face_in_Faces = false;
+      }
+
+      return {consistent_Line_Face_in_Points,
+              consistent_Line_Face_in_Faces};
+   };
+
   public:
    V_netPp setPoints(const VV_d &v_IN) {
       // Timer timer;

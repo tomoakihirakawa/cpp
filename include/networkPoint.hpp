@@ -24,7 +24,7 @@ inline std::tuple<networkFace *, bool> networkPoint::Key(const networkFace *f) c
 
 inline std::unordered_set<std::tuple<networkFace *, bool>> networkPoint::Keys() const {
    std::unordered_set<std::tuple<networkFace *, bool>> ret;
-   for (const auto &f : this->getFacesFromLines())
+   for (const auto &f : this->Faces)
       ret.emplace(Key(f));
    return ret;
 };
@@ -66,14 +66,14 @@ inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFace
 
 inline V_netFp networkPoint::getFacesNeumann() const {
    std::unordered_set<networkFace *> tmp;
-   for (const auto &f : this->getFacesFromLines())
+   for (const auto &f : this->Faces)
       if (f->Neumann)
          tmp.emplace(f);
    return V_netFp(tmp.begin(), tmp.end());
 };
 inline V_netFp networkPoint::getFacesDirichlet() const {
    std::unordered_set<networkFace *> tmp;
-   for (const auto &f : this->getFacesFromLines())
+   for (const auto &f : this->Faces)
       if (f->Dirichlet)
          tmp.emplace(f);
    return V_netFp(tmp.begin(), tmp.end());

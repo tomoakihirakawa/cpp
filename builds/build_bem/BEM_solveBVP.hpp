@@ -118,7 +118,7 @@ struct BEM_BVP {
    //%                             solve phi and phi_n                            */
    //% -------------------------------------------------------------------------- */
 
-   void solve(const Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
+   void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
       //* ------------------------------------------------------ */
       //%                     各点で方程式を作る場合                 */
       //* ------------------------------------------------------ */
@@ -131,6 +131,8 @@ struct BEM_BVP {
 
       int dirichlet_count = 0;
       int neumann_count = 0;
+
+      /* -------------------------------------------------------------------------- */
 
       for (const auto &p : water.getPoints()) {
          for (const auto &key : p->Keys()) {
@@ -146,31 +148,32 @@ struct BEM_BVP {
             }
          }
       }
+      /* -------------------------------------------------------------------------- */
 
-      std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
-      std::cout << "neumann_count = " << neumann_count << std::endl;
+      // std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
+      // std::cout << "neumann_count = " << neumann_count << std::endl;
 
-      for (const auto &p : water.getPoints()) {
-         if (p->Dirichlet || p->CORNER) {
-            PBF_index[{p, Dirichlet, nullptr}] = i++;
-            knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
-            dirichlet_count++;
-         }
-         //! PBF_indexのNeuamnn箇所に関しては，設定済みの　p->phinOnFace　の状態にに任せる
-         for (const auto &[f, phin] : p->phinOnFace) {
-            if (PBF_index.find({p, Neumann, f}) == PBF_index.end()) {
-               std::cout << "p = " << p << std::endl;
-               std::cout << "isDirichlet = " << Neumann << std::endl;
-               std::cout << "f = " << f << std::endl;
-               std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
-               std::cout << "p->CORNER = " << p->CORNER << std::endl;
-               std::cout << "f->Dirichlet = " << f->Dirichlet << std::endl;
-            }
-            PBF_index[{p, Neumann, f}] = i++;
-            knowns.emplace_back(phin);
-            neumann_count++;
-         }
-      }
+      // for (const auto &p : water.getPoints()) {
+      //    if (p->Dirichlet || p->CORNER) {
+      //       PBF_index[{p, Dirichlet, nullptr}] = i++;
+      //       knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
+      //       dirichlet_count++;
+      //    }
+      //    //! PBF_indexのNeuamnn箇所に関しては，設定済みの　p->phinOnFace　の状態にに任せる
+      //    for (const auto &[f, phin] : p->phinOnFace) {
+      //       if (PBF_index.find({p, Neumann, f}) == PBF_index.end()) {
+      //          std::cout << "p = " << p << std::endl;
+      //          std::cout << "isDirichlet = " << Neumann << std::endl;
+      //          std::cout << "f = " << f << std::endl;
+      //          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
+      //          std::cout << "p->CORNER = " << p->CORNER << std::endl;
+      //          std::cout << "f->Dirichlet = " << f->Dirichlet << std::endl;
+      //       }
+      //       PBF_index[{p, Neumann, f}] = i++;
+      //       knowns.emplace_back(phin);
+      //       neumann_count++;
+      //    }
+      // }
 
       std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
       std::cout << "neumann_count = " << neumann_count << std::endl;
