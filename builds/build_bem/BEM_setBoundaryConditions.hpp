@@ -87,6 +87,9 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
    for (const auto &p : water.getPoints())
 #pragma omp single nowait
    {
+      p->phiOnFace.clear();
+      p->phitOnFace.clear();
+
       p->phinOnFace.clear();
       p->phintOnFace.clear();
 

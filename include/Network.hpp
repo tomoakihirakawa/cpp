@@ -353,6 +353,7 @@ class networkPoint : public CoordinateBounds {
    netPp tmpPoint;
    V_netLp Lines;
    std::unordered_set<networkFace *> Faces;
+   bool MemberQ(networkFace *const &f_IN) const { return this->Faces.contains(f_IN); };
    Network *network;
    Network *getNetwork() const { return this->network; };
    // Network *getStorage() const { return this->storage; };
@@ -370,14 +371,14 @@ class networkPoint : public CoordinateBounds {
    int Find(netL *l_IN) { return network::find(this->Lines, l_IN); };
    bool Erase(netL *l_IN) { return network::erase(this->Lines, l_IN); };
    bool add(netL *l_IN) {
-      if (!MemberQ(this->Lines, l_IN)) {
+      if (!MemberQ_(this->Lines, l_IN)) {
          return this->Lines.emplace_back(l_IN);
          return true;
       } else
          return false;
    };
    bool Add(netL *l_IN) {
-      if (!MemberQ(this->Lines, l_IN)) {
+      if (!MemberQ_(this->Lines, l_IN)) {
          return this->Lines.emplace_back(l_IN);
          return true;
       } else
@@ -681,8 +682,8 @@ class networkPoint : public CoordinateBounds {
    double phi_Dirichlet;
    double phin_Dirichlet;
    double dpda;
-   std::unordered_map<networkFace *, double> phinOnFace;
-   std::unordered_map<networkFace *, double> phintOnFace;
+   std::unordered_map<networkFace *, double> phiOnFace, phinOnFace;
+   std::unordered_map<networkFace *, double> phitOnFace, phintOnFace;
    // std::unordered_map<networkFace *, std::tuple<double, T6d>> phintOnFace;
    // std::unordered_map<networkFace *, double> phintOnFace_a;  // 加速度による微分
    //* ------------------------------------------------- */

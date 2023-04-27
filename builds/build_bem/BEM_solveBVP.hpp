@@ -118,23 +118,48 @@ struct BEM_BVP {
    //%                             solve phi and phi_n                            */
    //% -------------------------------------------------------------------------- */
 
-   bool isDirichlet(const networkPoint *p,const networkFace *f) const {
-       return f!=nullptr ? f->Dirichlet : (p->Dirichlet||p->CORNER);
-    };
-
-   std::tuple<networkPoint *,networkFace *> variableID_BEM(const networkPoint *p,const networkFace *f) const  {
+   std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) const {
       //{p,f}を変換
       // f cannot be nullptr
       //  {p,f} --o--> {p,nullptr}
       //  {p,f} <--x-- {p,nullptr}
-      if (p->isMultipleNode) {
-         if (f->Dirichlet) {
+      auto var = [&](const networkFace *f) -> std::tuple<networkPoint *, networkFace *> {
+         if (p->isMultipleNode) {
+            if (f->Dirichlet)
+               return {const_cast<networkPoint *>(p), nullptr};
+            else
+               return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+         } else
             return {const_cast<networkPoint *>(p), nullptr};
-         } else {
-            return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-         }
+      };
+
+      std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
+      for (const auto &f : p->getFaces())
+         ret.emplace(var(f));
+      return ret;
+   };
+
+   /**
+   isNeumannID_BEMとisDirichletID_BEMの両方を満たす{p,f}は存在しない．
+   */
+   bool isNeumannID_BEM(const auto &p, const auto &f) const {
+      if (p->Neumann || p->CORNER) {
+         if (p->isMultipleNode) {
+            if (p->MemberQ(f))
+               return f->Neumann;
+            else
+               return false;
+         } else
+            return (f == nullptr);
       } else
-         return {const_cast<networkPoint *>(p), nullptr};
+         return false;
+   };
+
+   bool isDirichletID_BEM(const auto &p, const auto &f) const {
+      if (p->Dirichlet || p->CORNER) {
+         return (f == nullptr);
+      } else
+         return false;
    };
 
    void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
@@ -146,47 +171,26 @@ struct BEM_BVP {
       PBF_index.reserve(3 * water.getPoints().size());
       knowns.clear();
       knowns.reserve(3 * water.getPoints().size());
+
       int i = 0;
-
-      int dirichlet_count = 0;
-      int neumann_count = 0;
-
-      for (const auto &p : water.getPoints()) {
-         for (const auto &f : p->getFaces()) {
-            auto id = variableID_BEM(p,f);
-            if(PBF_index.find(id) == PBF_index.end()){
-            if (isDirichlet(p,f)) {
+      for (const auto &q : water.getPoints()) {
+         for (const auto &id : variableIDs(q)) {
+            if (PBF_index.find(id) == PBF_index.end()) {
                PBF_index[id] = i++;
-               knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
-               dirichlet_count++;
-            } else {
-               PBF_index[id] = i++;
-               knowns.emplace_back(p->phinOnFace[f]);
-               neumann_count++;
-            }
+               auto [P, F] = id;
+               if (isDirichletID_BEM(P, F) && isNeumannID_BEM(P, F))
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
+               else if (isDirichletID_BEM(P, F)) {
+                  knowns.emplace_back(P->phi_Dirichlet = std::get<0>(P->phiphin));
+               } else if (isNeumannID_BEM(P, F)) {
+                  knowns.emplace_back(P->phinOnFace.at(F));
+               } else
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
             }
          }
       }
 
-
-      // for (const auto &p : water.getPoints()) {
-      //    for (const auto &key : p->variableIDs_BEM()) {
-      //       auto [F, isDirichlet] = key;
-      //       if (isDirichlet) {
-      //          PBF_index[{p, isDirichlet, F}] = i++;
-      //          knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
-      //          dirichlet_count++;
-      //       } else {
-      //          PBF_index[{p, isDirichlet, F}] = i++;
-      //          knowns.emplace_back(p->phinOnFace[F]);
-      //          neumann_count++;
-      //       }
-      //    }
-      // }
-
-      std::cout << Red << "dirichlet_count = " << dirichlet_count << colorOff << std::endl;
-      std::cout << Red << "neumann_count = " << neumann_count << colorOff << std::endl;
-      std::cout << Red << "total = " << dirichlet_count + neumann_count << colorOff << std::endl;
+      std::cout << Red << "total = " << PBF_index.size() << colorOff << std::endl;
 
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
@@ -218,7 +222,7 @@ struct BEM_BVP {
          std::array<double, 2> IGIGn, c;
          std::array<double, 3> X0, X1, X2, A, cross;
          std::array<double, 3> N012;
-         for (const auto &integ_f : FMM_BucketsFaces.all_stored_objects) {
+         for (const auto &integ_f : water.getFaces()) {
             /* ------------------------------ 2023/04/03 -------------------------------- */
             /*
             このfor loopでは連立一次方程式の計数行列を作成する作業を行なっている．
@@ -273,17 +277,6 @@ struct BEM_BVP {
             }
          }
          /* -------------------------------------------------------------------------- */
-         /**
-          * # Example Function
-          *
-          * This is an example function that demonstrates how to use the keywords.
-          *
-          * NOTE: This is a note.
-          * WARNING: This is a warning.
-          * TODO: This is a todo item.
-          * IMPORTANT: This is an important point.
-          * TIP: This is a helpful tip.
-          */
 #if defined(use_rigid_mode)
          std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
 #else
@@ -335,7 +328,7 @@ struct BEM_BVP {
                for (const auto &[PBF_j, j] : PBF_index) {
                   igign = IGIGn[i][j];
                   // 未知変数の係数行列は左，既知変数の係数行列は右
-                  if (!isDirichlet(std::get<0>(PBF_j),std::get<1>(PBF_j)))
+                  if (isNeumannID_BEM(std::get<0>(PBF_j), std::get<1>(PBF_j)))
                      igign = {-std::get<1>(igign), -std::get<0>(igign)};
                   /*
                   IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -383,20 +376,15 @@ struct BEM_BVP {
             // b$               mat_unknowns, mat_knownsの計算            */
             // b$ ------------------------------------------------------ */
 
-            if (p->isMultipleNode/*多重節点の条件*/) {
-               for (const auto &[PBF_j, j] : PBF_index) {
+            if (p->isMultipleNode && isNeumannID_BEM(p, f) /*行の変更*/) {
+               for (const auto &[PBF_j, j] : PBF_index) { /*要素の変更*/
                   auto [p_, f_] = PBF_j;
-                  if (p == p_) {
-                     if (!isDirichlet(p_,f_) && f_ == f /*can be nullptr*/) {
-                        mat_ukn[i][j] = maxpp;  // φの系数
-                        mat_kn[i][j] = 0;       // φnの系数
-                     } else if (isDirichlet(p_,f_) && f_ == nullptr /* there is only one in this row*/) {
-                        mat_ukn[i][j] = 0;     // φnの系数
-                        mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
-                     } else {
-                        mat_ukn[i][j] = 0;
-                        mat_kn[i][j] = 0;
-                     }
+                  if (p == p_ && f_ == f /*can be nullptr*/) {
+                     mat_ukn[i][j] = maxpp;  // φの系数
+                     mat_kn[i][j] = 0;       // φnの系数
+                  } else if (p == p_ && isDirichletID_BEM(p, f) /* there must be the only one in this row*/) {
+                     mat_ukn[i][j] = 0;     // φnの系数
+                     mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                   } else {
                      mat_ukn[i][j] = 0;
                      mat_kn[i][j] = 0;
@@ -468,37 +456,57 @@ struct BEM_BVP {
          SVD svd(mat_ukn);
          svd.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 #endif
-         std::cout << Blue << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
-         // 足し合わせるので初期化
-         for (const auto &[PBF, i] : PBF_index) {
-            auto [p, f] = PBF;
-            if (isDirichlet(p,f)) {
-               // do nothing
-            } else if (p->phinOnFace.size() > 1) {
-               std::get<0>(p->phiphin) = 0;
-               std::get<1>(p->phiphin) = 0;
-            } else
-               std::get<0>(p->phiphin) = 0;
-         }
+
+         std::cout << colorOff << "update p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
 
          for (const auto &[PBF, i] : PBF_index) {
             auto [p, f] = PBF;
-            if (isDirichlet(p,f))
-               std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
-            else if (p->phinOnFace.size() > 1) {
-               double total = 0;
-               for (auto [f, phin] : p->phinOnFace)
-                  total += f->area;
-               std::get<0>(p->phiphin) += phiORphin[i] * f->area / total;
-               std::get<1>(p->phiphin) += p->phinOnFace.at(f) * f->area / total;
-            } else {
-               std::get<0>(p->phiphin) = phiORphin[i];
-               std::get<1>(p->phiphin) = p->phinOnFace.at(f);
+            if (isDirichletID_BEM(p, f)) {
+               p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
+               p->phiOnFace[f] = std::get<0>(p->phiphin);
+            }
+            if (isNeumannID_BEM(p, f)) {
+               p->phiOnFace[f] = std::get<0>(p->phiphin) = phiORphin[i];
             }
          }
 
-         if (!isFinite(phiORphin))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "phiORphin is not finite");
+         for (const auto &p : water.getPoints())
+            if (p->Neumann) {
+               double total = 0;
+               std::get<0>(p->phiphin) = 0;
+               for (const auto &f : p->getFaces())
+                  total += f->area;
+               for (const auto &f : p->getFaces()) {
+                  if (p->phiOnFace.count(f))
+                     std::get<0>(p->phiphin) += p->phiOnFace.at(f) * f->area / total;
+                  else
+                     std::get<0>(p->phiphin) += p->phiOnFace.at(nullptr) * f->area / total;
+               }
+            }
+
+         std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
+
+         for (const auto &p : water.getPoints()) {
+            if (!isFinite(p->phiphin)) {
+               std::stringstream ss;
+               ss << p->phiphin;
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+            }
+            for (const auto &[f, phi] : p->phiOnFace)
+               if (!isFinite(phi)) {
+                  std::stringstream ss;
+                  for (const auto &[f, phi] : p->phiOnFace)
+                     ss << phi << ", ";
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+               }
+            for (const auto &[f, phin] : p->phinOnFace)
+               if (!isFinite(phin)) {
+                  std::stringstream ss;
+                  for (const auto &[f, phin] : p->phiOnFace)
+                     ss << phin << ", ";
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+               }
+         }
       }
    };
 
@@ -588,9 +596,9 @@ struct BEM_BVP {
       V_d knowns(PBF_index.size());
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
-         if (isDirichlet(p,f))
+         if (isDirichletID_BEM(p, f))
             knowns[i] = std::get<0>(p->phiphin_t);
-         else
+         if (isNeumannID_BEM(p, f))
             knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
       }
 
@@ -623,62 +631,30 @@ struct BEM_BVP {
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
       //* --------------------------------------------------- */
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Dirichlet)
-      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
-      //    else
-      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
-      //    p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
-      // }
-      /* -------------------------------------------------------------------------- */
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichlet(p,f)) {
-            // do nothing
-         } else if (p->phintOnFace.size() > 1) {
-            std::get<0>(p->phiphin_t) = 0;
-            std::get<1>(p->phiphin_t) = 0;
-         } else
-            std::get<0>(p->phiphin_t) = 0;
-      }
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
-         if (isDirichlet(p,f))
-            std::get<1>(p->phiphin_t) = phiORphin_t[i];
-         else if (p->phintOnFace.size() > 1) {
-            double total = 0;
-            for (auto [f, phin_t] : p->phintOnFace)
-               total += f->area;
-            std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
-            std::get<1>(p->phiphin_t) += p->phintOnFace.at(f) * f->area / total;
-         } else {
-            std::get<0>(p->phiphin_t) = phiORphin_t[i];
-            std::get<1>(p->phiphin_t) = p->phintOnFace.at(f);
+         if (isDirichletID_BEM(p, f)) {
+            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = phiORphin_t[i];
+            p->phitOnFace[f] = std::get<0>(p->phiphin_t);
          }
+         if (isNeumannID_BEM(p, f))
+            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = phiORphin_t[i];
       }
-      /* -------------------------------------------------------------------------- */
-      // // 足し合わせるので初期化
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Neumann)
-      //       std::get<0>(p->phiphin_t) = 0;
-      // }
-      // //
-      // for (const auto &[PBF, i] : PBF_index) {
-      //    auto [p, DorN, f] = PBF;
-      //    if (DorN == Dirichlet)
-      //       std::get<1>(p->phiphin_t) = phiORphin_t[i];
-      //    else if (p->phinOnFace.size() > 1) {
-      //       double total = 0;
-      //       for (auto [f, phin] : p->phinOnFace)
-      //          total += f->area;
 
-      //       std::get<0>(p->phiphin_t) += phiORphin_t[i] * f->area / total;
-      //    } else
-      //       std::get<0>(p->phiphin_t) = phiORphin_t[i];
-      // }
+      for (const auto &p : water->getPoints())
+         if (p->Neumann) {
+            double total = 0;
+            std::get<0>(p->phiphin_t) = 0;
+            for (const auto &f : p->getFaces())
+               total += f->area;
+            for (const auto &f : p->getFaces()) {
+               if (p->phintOnFace.count(f))
+                  std::get<0>(p->phiphin_t) += p->phintOnFace.at(f) * f->area / total;
+               else
+                  std::get<0>(p->phiphin_t) += p->phintOnFace.at(nullptr) * f->area / total;
+            }
+         }
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
