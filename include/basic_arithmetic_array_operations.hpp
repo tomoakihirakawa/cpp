@@ -549,12 +549,12 @@ constexpr bool DuplicateFreeQ(const std::array<T, N>& vecs) {
 }
 
 template <size_t N1, size_t N2, typename T>
-std::unordered_set<T> Intersection(const std::array<T, N1> &arr1, const std::array<T, N2> &arr2) {
-  std::unordered_set<T> result;
-  std::unordered_set<T> set1(arr1.begin(), arr1.end());
-  std::unordered_set<T> set2(arr2.begin(), arr2.end());
-  std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(result, result.end()));
-  return result;
+std::unordered_set<T> Intersection(const std::array<T, N1>& arr1, const std::array<T, N2>& arr2) {
+   std::unordered_set<T> result;
+   for (const auto& elem1 : arr1)
+      if (std::find(arr2.begin(), arr2.end(), elem1) != arr2.end())
+         result.emplace(elem1);
+   return result;
 }
 
 template <size_t N, typename T>

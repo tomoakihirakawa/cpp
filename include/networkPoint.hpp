@@ -5,30 +5,6 @@
 #include "InterpolationRBF.hpp"
 #include "Network.hpp"
 
-/* ------------------------------------------------------- */
-
-inline std::tuple<networkFace *, bool> networkPoint::Key(const networkFace *f) const {
-   //{p,f}を変換
-   // f cannot be nullptr
-   //  {p,f} --o--> {p,nullptr}
-   //  {p,f} <--x-- {p,nullptr}
-   if (this->isMultipleNode) {
-      if (f->Dirichlet) {
-         return {nullptr, f->Dirichlet};
-      } else {
-         return {const_cast<networkFace *>(f), f->Dirichlet};
-      }
-   } else
-      return {nullptr, this->Dirichlet};
-};
-
-inline std::unordered_set<std::tuple<networkFace *, bool>> networkPoint::Keys() const {
-   std::unordered_set<std::tuple<networkFace *, bool>> ret;
-   for (const auto &f : this->Faces)
-      ret.emplace(Key(f));
-   return ret;
-};
-
 /* ------------------------------------------------------ */
 
 inline std::unordered_set<networkLine *> networkPoint::getLinesAround() const {

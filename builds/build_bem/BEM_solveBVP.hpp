@@ -11,7 +11,7 @@
 // #define use_CG
 // #define use_gmres 20
 #define use_lapack
-std::unordered_map<std::tuple<netP *, bool, netF *>, int> PBF_index;
+std::unordered_map<std::tuple<netP *, netF *>, int> PBF_index;
 
 struct calculateFroudeKrylovForce {
    std::vector<networkFace *> actingFaces;
@@ -97,7 +97,7 @@ struct BEM_BVP {
    ludcmp_parallel *lu;
 #endif
 
-   using T_PBF = std::tuple<netP *, bool, netF *>;
+   using T_PBF = std::tuple<netP *, netF *>;
    using mapTPBF_Tdd = std::map<T_PBF, Tdd>;
    using mapTPBF_mapTPBF_Tdd = std::map<T_PBF /*タプル*/, mapTPBF_Tdd>;
    using map_P_Vd = std::map<netP *, V_d>;
@@ -118,6 +118,25 @@ struct BEM_BVP {
    //%                             solve phi and phi_n                            */
    //% -------------------------------------------------------------------------- */
 
+   bool isDirichlet(const networkPoint *p,const networkFace *f) const {
+       return f!=nullptr ? f->Dirichlet : (p->Dirichlet||p->CORNER);
+    };
+
+   std::tuple<networkPoint *,networkFace *> variableID_BEM(const networkPoint *p,const networkFace *f) const  {
+      //{p,f}を変換
+      // f cannot be nullptr
+      //  {p,f} --o--> {p,nullptr}
+      //  {p,f} <--x-- {p,nullptr}
+      if (p->isMultipleNode) {
+         if (f->Dirichlet) {
+            return {const_cast<networkPoint *>(p), nullptr};
+         } else {
+            return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+         }
+      } else
+         return {const_cast<networkPoint *>(p), nullptr};
+   };
+
    void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
       //* ------------------------------------------------------ */
       //%                     各点で方程式を作る場合                 */
@@ -132,61 +151,52 @@ struct BEM_BVP {
       int dirichlet_count = 0;
       int neumann_count = 0;
 
-      /* -------------------------------------------------------------------------- */
-
       for (const auto &p : water.getPoints()) {
-         for (const auto &key : p->Keys()) {
-            auto [F, isDirichlet] = key;
-            if (isDirichlet) {
-               PBF_index[{p, isDirichlet, F}] = i++;
+         for (const auto &f : p->getFaces()) {
+            auto id = variableID_BEM(p,f);
+            if(PBF_index.find(id) == PBF_index.end()){
+            if (isDirichlet(p,f)) {
+               PBF_index[id] = i++;
                knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
-               dirichlet_count--;
+               dirichlet_count++;
             } else {
-               PBF_index[{p, isDirichlet, F}] = i++;
-               knowns.emplace_back(p->phinOnFace[F]);
-               neumann_count--;
+               PBF_index[id] = i++;
+               knowns.emplace_back(p->phinOnFace[f]);
+               neumann_count++;
+            }
             }
          }
       }
-      /* -------------------------------------------------------------------------- */
 
-      // std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
-      // std::cout << "neumann_count = " << neumann_count << std::endl;
 
       // for (const auto &p : water.getPoints()) {
-      //    if (p->Dirichlet || p->CORNER) {
-      //       PBF_index[{p, Dirichlet, nullptr}] = i++;
-      //       knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
-      //       dirichlet_count++;
-      //    }
-      //    //! PBF_indexのNeuamnn箇所に関しては，設定済みの　p->phinOnFace　の状態にに任せる
-      //    for (const auto &[f, phin] : p->phinOnFace) {
-      //       if (PBF_index.find({p, Neumann, f}) == PBF_index.end()) {
-      //          std::cout << "p = " << p << std::endl;
-      //          std::cout << "isDirichlet = " << Neumann << std::endl;
-      //          std::cout << "f = " << f << std::endl;
-      //          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
-      //          std::cout << "p->CORNER = " << p->CORNER << std::endl;
-      //          std::cout << "f->Dirichlet = " << f->Dirichlet << std::endl;
+      //    for (const auto &key : p->variableIDs_BEM()) {
+      //       auto [F, isDirichlet] = key;
+      //       if (isDirichlet) {
+      //          PBF_index[{p, isDirichlet, F}] = i++;
+      //          knowns.emplace_back(p->phi_Dirichlet = std::get<0>(p->phiphin));
+      //          dirichlet_count++;
+      //       } else {
+      //          PBF_index[{p, isDirichlet, F}] = i++;
+      //          knowns.emplace_back(p->phinOnFace[F]);
+      //          neumann_count++;
       //       }
-      //       PBF_index[{p, Neumann, f}] = i++;
-      //       knowns.emplace_back(phin);
-      //       neumann_count++;
       //    }
       // }
 
-      std::cout << "dirichlet_count = " << dirichlet_count << std::endl;
-      std::cout << "neumann_count = " << neumann_count << std::endl;
-      std::cout << Red << "total = " << dirichlet_count + neumann_count << std::endl;
+      std::cout << Red << "dirichlet_count = " << dirichlet_count << colorOff << std::endl;
+      std::cout << Red << "neumann_count = " << neumann_count << colorOff << std::endl;
+      std::cout << Red << "total = " << dirichlet_count + neumann_count << colorOff << std::endl;
+
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
 
       auto PF2index = [&](netP *p, netF *integ_f) {
-         auto it = PBF_index.find({p, integ_f->Dirichlet, integ_f});
+         auto it = PBF_index.find({p, integ_f});
          if (it != PBF_index.end())
             return it->second;
          else
-            return PBF_index[{p, integ_f->Dirichlet, nullptr}];
+            return PBF_index[{p, nullptr}];
       };
 
 #define use_rigid_mode
@@ -201,8 +211,7 @@ struct BEM_BVP {
 #pragma omp single nowait
 #endif
       {
-         auto [origin, _, __] = PBF;
-         auto it = PBF_index.begin();
+         auto [origin, _] = PBF;
          double origin_ign_rigid_mode = 0.;
          auto &IGIGn_Row = IGIGn[index];
          double nr, tmp;
@@ -210,184 +219,6 @@ struct BEM_BVP {
          std::array<double, 3> X0, X1, X2, A, cross;
          std::array<double, 3> N012;
          for (const auto &integ_f : FMM_BucketsFaces.all_stored_objects) {
-
-            // const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            // ret = {{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}};
-            // X2 = p2->getXtuple();
-            // X0 = p0->getXtuple() - X2;
-            // X1 = p1->getXtuple() - X2;
-            // A = origin->getXtuple() - X2;
-            // cross = Cross(X0, X1);
-            // c = {Norm(cross), Dot(A, cross)};
-
-            //
-            // for_each(__GW5xGW5__, [&](const auto &GWGW) {
-            //    tmp = std::get<2>(GWGW) * (1. - std::get<0>(GWGW)) / (nr = Norm(X0 * std::get<0>(GWGW) + X1 * std::get<1>(GWGW) * (1. - std::get<0>(GWGW)) - A));
-            //    std::get<1>(std::get<0>(ret)) += (IGIGn = {tmp, tmp / (nr * nr)}) * std::get<0>(GWGW);
-            //    std::get<1>(std::get<1>(ret)) += IGIGn * std::get<1>(GWGW) * (1. - std::get<0>(GWGW));
-            //    std::get<1>(std::get<2>(ret)) += IGIGn * (-1. + std::get<0>(GWGW)) * (-1. + std::get<1>(GWGW));
-            // });
-            //
-            /* -------------------------------------------------------------------------- */
-            //
-            // const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            // ret = {{{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}}};
-            // X2 = p2->getXtuple();
-            // X0 = p0->getXtuple() - X2;
-            // X1 = p1->getXtuple() - X2;
-            // A = origin->getXtuple() - X2;
-            // cross = Cross(X0, X1);
-            // c = {Norm(cross), Dot(A, cross)};
-
-            // for_each(__array_GW5xGW5__, [&](const auto &GWGW) {
-            //    tmp = std::get<2>(GWGW) * (1. - std::get<0>(GWGW)) / (nr = Norm(X0 * std::get<0>(GWGW) + X1 * std::get<1>(GWGW) * (1. - std::get<0>(GWGW)) - A));
-            //    std::get<1>(std::get<0>(ret)) += (IGIGn = {tmp, tmp / (nr * nr)}) * std::get<0>(GWGW);           // 補間添字0
-            //    std::get<1>(std::get<1>(ret)) += IGIGn * std::get<1>(GWGW) * (1. - std::get<0>(GWGW));           // 補間添字1
-            //    std::get<1>(std::get<2>(ret)) += IGIGn * (-1. + std::get<0>(GWGW)) * (-1. + std::get<1>(GWGW));  // 補間添字2
-            // });
-            /* -------------------------------------------------------------------------- */
-            // // 2023/04/03
-            // const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            // ret = {{{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}}};
-            // X0 = p0->getXtuple();
-            // X1 = p1->getXtuple();
-            // X2 = p2->getXtuple();
-            // std::array<std::array<double, 3>, 3> X012{{ToArray(X0), ToArray(X1), ToArray(X2)}};
-            // A = origin->getXtuple();
-            // cross = Cross(X0 - X2, X1 - X2);
-            // c = {Norm(cross), Dot(A - (X0 + X1 + X2) / 3., cross)};
-            // std::array<double, 3> N012;
-
-            // auto add = [&integ_f](const double &t0, const double &t1) {
-            //    N012 = integ_f->ModTriShape6(t0, t1);
-            // };
-
-            // for_each(__array_GW5xGW5__, [&](const auto &GWGW) {
-            //    N012 = ModTriShape<3>(GWGW[0], GWGW[1]);
-            //    tmp = GWGW[2] * (1. - std::get<0>(GWGW)) / (nr = Norm(Dot(N012, X012) - ToArray(A)));
-            //    IGIGn = {tmp, tmp / (nr * nr)};
-            //    //
-            //    // std::get<1>(std::get<0>(ret)) += IGIGn * N012[0];  // 補間添字0
-            //    // std::get<1>(std::get<1>(ret)) += IGIGn * N012[1];  // 補間添字1
-            //    // std::get<1>(std::get<2>(ret)) += IGIGn * N012[2];  // 補間添字2
-            //    //
-            //    add();
-            // });
-            // /* -------------------------------------------------------------------------- */
-            // 2023/04/03
-            // const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            // X0 = p0->getXtuple();
-            // X1 = p1->getXtuple();
-            // X2 = p2->getXtuple();
-            // A = origin->getXtuple();
-            // cross = Cross(X0 - X2, X1 - X2);
-            // c = {Norm(cross), Dot(A - (X0 + X1 + X2) / 3., cross)};
-            // std::array<std::array<double, 3>, 3> X012{{ToArray(X0), ToArray(X1), ToArray(X2)}};
-            // std::array<double, 3> N012;
-            // //
-            // // std::array<std::tuple<netP *, Tdd>, 3> ret{{{p0, {0., 0.}}, {p1, {0., 0.}}, {p2, {0., 0.}}}};
-            // //
-            // ModTriShape6 shape6(integ_f, origin);
-            // std::vector<std::tuple<netP *, Tdd>> ret;
-            // for (auto &[p, i] : shape6.p2i)
-            //    ret.push_back({p, {0., 0.}});
-            // for_each(__array_GW5xGW5__, [&](const auto &GWGW) {
-            //    N012 = ModTriShape<3>(GWGW[0], GWGW[1]);
-            //    tmp = GWGW[2] * (1. - std::get<0>(GWGW)) / (nr = Norm(Dot(N012, X012) - ToArray(A)));
-            //    IGIGn = {tmp, tmp / (nr * nr)};
-            //    //
-            //    auto shape12 = shape6(GWGW[0], GWGW[1]);
-            //    for (auto i = 0; i < ret.size(); ++i)
-            //       std::get<1>(ret[i]) *= IGIGn * shape12[i];  // 補間添字
-            // });
-            // /* -------------------------------------------------------------------------- */
-            // // 2023/04/03
-            // // const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            // const auto [p0, l0, p1, l1, p2, l2] = integ_f->getPointsAndLines(origin);
-            // //
-            // auto f01 = (*l0)(integ_f);
-            // auto p01 = f01->getPointOpposite(l0);
-            // std::array<double, 2> p01_w01{{1., 1.}}, p01_w0{{1., 1.}}, p01_w1{{1., 1.}}, p01_w2{{1., 1.}};
-            // double n = 2;
-            // p01_w01[0] = l0->CORNER ? 0. : 1.;
-            // p01_w01 *= 1 / std::pow(Norm(p01->X - 0.5 * (p0->X + p1->X)), n);
-            // p01_w0 *= 1 / std::pow(Norm(p0->X - 0.5 * (p0->X + p1->X)), n);
-            // p01_w1 *= 1 / std::pow(Norm(p1->X - 0.5 * (p0->X + p1->X)), n);
-            // p01_w2 *= 1 / std::pow(Norm(p2->X - 0.5 * (p0->X + p1->X)), n);
-            // std::array<double, 2> sum0 = p01_w01 + p01_w0 + p01_w1 + p01_w2;
-            // p01_w01 /= sum0;
-            // p01_w0 /= sum0;
-            // p01_w1 /= sum0;
-            // p01_w2 /= sum0;
-            // //
-            // auto f12 = (*l1)(integ_f);
-            // auto p12 = f12->getPointOpposite(l1);
-            // std::array<double, 2> p12_w12{{1., 1.}}, p12_w1{{1., 1.}}, p12_w2{{1., 1.}}, p12_w0{{1., 1.}};
-            // p12_w12[0] = l1->CORNER ? 0. : 1.;
-            // p12_w12 *= 1 / std::pow(Norm(p12->X - 0.5 * (p1->X + p2->X)), n);
-            // p12_w1 *= 1 / std::pow(Norm(p1->X - 0.5 * (p1->X + p2->X)), n);
-            // p12_w2 *= 1 / std::pow(Norm(p2->X - 0.5 * (p1->X + p2->X)), n);
-            // p12_w0 *= 1 / std::pow(Norm(p0->X - 0.5 * (p1->X + p2->X)), n);
-            // auto sum1 = p12_w12 + p12_w1 + p12_w2 + p12_w0;
-            // p12_w12 /= sum1;
-            // p12_w1 /= sum1;
-            // p12_w2 /= sum1;
-            // p12_w0 /= sum1;
-            // //
-            // auto f20 = (*l2)(integ_f);
-            // auto p20 = f20->getPointOpposite(l2);
-            // std::array<double, 2> p20_w20{{1., 1.}}, p20_w2{{1., 1.}}, p20_w0{{1., 1.}}, p20_w1{{1., 1.}};
-            // p20_w20[0] = l2->CORNER ? 0. : 1.;
-            // p20_w20 *= 1 / std::pow(Norm(p20->X - 0.5 * (p2->X + p0->X)), n);
-            // p20_w2 *= 1 / std::pow(Norm(p2->X - 0.5 * (p2->X + p0->X)), n);
-            // p20_w0 *= 1 / std::pow(Norm(p0->X - 0.5 * (p2->X + p0->X)), n);
-            // p20_w1 *= 1 / std::pow(Norm(p1->X - 0.5 * (p2->X + p0->X)), n);
-            // std::array<double, 2> sum2 = p20_w20 + p20_w2 + p20_w0 + p20_w1;
-            // p20_w20 /= sum2;
-            // p20_w2 /= sum2;
-            // p20_w0 /= sum2;
-            // p20_w1 /= sum2;
-            // //
-            // std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 6> ret = {{{p0, integ_f, {0., 0.}},
-            //                                                                                         {p1, integ_f, {0., 0.}},
-            //                                                                                         {p2, integ_f, {0., 0.}},
-            //                                                                                         {p01, f01, {0., 0.}},
-            //                                                                                         {p12, f12, {0., 0.}},
-            //                                                                                         {p20, f20, {0., 0.}}}};
-            // //
-            // X0 = p0->getXtuple();
-            // X1 = p1->getXtuple();
-            // X2 = p2->getXtuple();
-            // std::array<std::array<double, 3>, 3> X012{{ToArray(X0), ToArray(X1), ToArray(X2)}};
-            // A = origin->getXtuple();
-            // cross = Cross(X0 - X2, X1 - X2);
-            // c = {Norm(cross), Dot(A - (X0 + X1 + X2) / 3., cross)};
-            // std::array<double, 3> N012;
-            // for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-            //    N012 = ModTriShape<3>(t0, t1);
-            //    tmp = ww * (1. - t0) / (nr = Norm(N012[0] * X0 + N012[1] * X1 + N012[2] * X2 - A));
-            //    IGIGn = {tmp, tmp / (nr * nr)};
-            //    //
-            //    auto N012345 = ModTriShape<6>(t0, t1);
-            //    std::get<2>(ret[0]) += IGIGn * N012345[0];  // 補間添字
-            //    std::get<2>(ret[1]) += IGIGn * N012345[1];  // 補間添字
-            //    std::get<2>(ret[2]) += IGIGn * N012345[2];  // 補間添字
-            //    //
-            //    std::get<2>(ret[3]) += IGIGn * p01_w01 * N012345[3];  // 補間添字
-            //    std::get<2>(ret[0]) += IGIGn * p01_w0 * N012345[3];   // 補間添字
-            //    std::get<2>(ret[1]) += IGIGn * p01_w1 * N012345[3];   // 補間添字
-            //    std::get<2>(ret[2]) += IGIGn * p01_w2 * N012345[3];   // 補間添字
-            //    //
-            //    std::get<2>(ret[4]) += IGIGn * p12_w12 * N012345[4];  // 補間添字
-            //    std::get<2>(ret[1]) += IGIGn * p12_w1 * N012345[4];   // 補間添字
-            //    std::get<2>(ret[2]) += IGIGn * p12_w2 * N012345[4];   // 補間添字
-            //    std::get<2>(ret[0]) += IGIGn * p12_w0 * N012345[4];   // 補間添字
-            //    //
-            //    std::get<2>(ret[5]) += IGIGn * p20_w20 * N012345[5];  // 補間添字
-            //    std::get<2>(ret[2]) += IGIGn * p20_w2 * N012345[5];   // 補間添字
-            //    std::get<2>(ret[0]) += IGIGn * p20_w0 * N012345[5];   // 補間添字
-            //    std::get<2>(ret[1]) += IGIGn * p20_w1 * N012345[5];   // 補間添字
-            // }
             /* ------------------------------ 2023/04/03 -------------------------------- */
             /*
             このfor loopでは連立一次方程式の計数行列を作成する作業を行なっている．
@@ -488,7 +319,7 @@ struct BEM_BVP {
             V |--+--+--|
               +--+--+--+
             */
-            auto [p, DorN, f] = PBF;
+            auto [p, f] = PBF;
             // auto &IGIGn_Row = IGIGn[i];
             // p->IGIGn[vec_P[i]]; // PBF_PBF_IGIGn.at(vec_P[i]);
             /* mat_ukn, mat_kn, vec_P
@@ -504,7 +335,7 @@ struct BEM_BVP {
                for (const auto &[PBF_j, j] : PBF_index) {
                   igign = IGIGn[i][j];
                   // 未知変数の係数行列は左，既知変数の係数行列は右
-                  if (std::get<1>(PBF_j) == Neumann)
+                  if (!isDirichlet(std::get<0>(PBF_j),std::get<1>(PBF_j)))
                      igign = {-std::get<1>(igign), -std::get<0>(igign)};
                   /*
                   IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -537,7 +368,7 @@ struct BEM_BVP {
 #pragma omp single nowait
 #endif
          {
-            auto [p, DorN, f] = PBF;
+            auto [p, f] = PBF;
             // auto &PBF_IGIGn = IGIGn[i];
             // ディリクレの角点だけが積分した係数を使った方程式を使う．
             // if (DorN == Neumann && p->CORNER /*多重節点の条件*/) {
@@ -552,14 +383,14 @@ struct BEM_BVP {
             // b$               mat_unknowns, mat_knownsの計算            */
             // b$ ------------------------------------------------------ */
 
-            if (DorN == Neumann && p->CORNER /*多重節点の条件*/) {
+            if (p->isMultipleNode/*多重節点の条件*/) {
                for (const auto &[PBF_j, j] : PBF_index) {
-                  auto [p_, DorN_, f_] = PBF_j;
+                  auto [p_, f_] = PBF_j;
                   if (p == p_) {
-                     if (DorN_ == Neumann && f_ == f /*can be nullptr*/) {
+                     if (!isDirichlet(p_,f_) && f_ == f /*can be nullptr*/) {
                         mat_ukn[i][j] = maxpp;  // φの系数
                         mat_kn[i][j] = 0;       // φnの系数
-                     } else if (DorN_ == Dirichlet && f_ == nullptr /* there is only one in this row*/) {
+                     } else if (isDirichlet(p_,f_) && f_ == nullptr /* there is only one in this row*/) {
                         mat_ukn[i][j] = 0;     // φnの系数
                         mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                      } else {
@@ -640,8 +471,8 @@ struct BEM_BVP {
          std::cout << Blue << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
          // 足し合わせるので初期化
          for (const auto &[PBF, i] : PBF_index) {
-            auto [p, DorN, f] = PBF;
-            if (DorN == Dirichlet) {
+            auto [p, f] = PBF;
+            if (isDirichlet(p,f)) {
                // do nothing
             } else if (p->phinOnFace.size() > 1) {
                std::get<0>(p->phiphin) = 0;
@@ -651,8 +482,8 @@ struct BEM_BVP {
          }
 
          for (const auto &[PBF, i] : PBF_index) {
-            auto [p, DorN, f] = PBF;
-            if (DorN == Dirichlet)
+            auto [p, f] = PBF;
+            if (isDirichlet(p,f))
                std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
             else if (p->phinOnFace.size() > 1) {
                double total = 0;
@@ -687,7 +518,7 @@ struct BEM_BVP {
 #pragma omp single nowait
 #endif
       {
-         auto [p, B, F] = PBF;
+         auto [p, F] = PBF;
          //% ------------------------------------------------------ */
          //%                 ディリクレ境界面上のφtを計算                */
          //% ------------------------------------------------------ */
@@ -756,8 +587,8 @@ struct BEM_BVP {
       setPhiPhin_t();
       V_d knowns(PBF_index.size());
       for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet)
+         auto [p, f] = PBF;
+         if (isDirichlet(p,f))
             knowns[i] = std::get<0>(p->phiphin_t);
          else
             knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
@@ -802,8 +633,8 @@ struct BEM_BVP {
       // }
       /* -------------------------------------------------------------------------- */
       for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet) {
+         auto [p, f] = PBF;
+         if (isDirichlet(p,f)) {
             // do nothing
          } else if (p->phintOnFace.size() > 1) {
             std::get<0>(p->phiphin_t) = 0;
@@ -813,8 +644,8 @@ struct BEM_BVP {
       }
 
       for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
-         if (DorN == Dirichlet)
+         auto [p, f] = PBF;
+         if (isDirichlet(p,f))
             std::get<1>(p->phiphin_t) = phiORphin_t[i];
          else if (p->phintOnFace.size() > 1) {
             double total = 0;
@@ -850,7 +681,7 @@ struct BEM_BVP {
       // }
 
       for (const auto &[PBF, i] : PBF_index) {
-         auto [p, DorN, f] = PBF;
+         auto [p, f] = PBF;
          p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
       }
 
