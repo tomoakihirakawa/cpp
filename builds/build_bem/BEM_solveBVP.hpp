@@ -11,6 +11,10 @@
 // #define use_CG
 // #define use_gmres 20
 #define use_lapack
+
+// #define quad_element
+// #define linear_element
+// #define liear_and_quad_element
 std::unordered_map<std::tuple<netP *, netF *>, int> PBF_index;
 
 struct calculateFroudeKrylovForce {
@@ -86,9 +90,114 @@ struct calculateFroudeKrylovForce {
    };
 };
 
+std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
+   /**
+   NOTE: non-multiple node ID is {p,nullptr}
+   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
+    */
+   if (p->isMultipleNode) {
+      if (f->Dirichlet)
+         return {const_cast<networkPoint *>(p), nullptr};
+      else
+         return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+   } else
+      return {const_cast<networkPoint *>(p), nullptr};
+};
+
+bool isNeumannID_BEM(const auto &p, const auto &f) {
+   if (p->Neumann || p->CORNER) {
+      if (p->isMultipleNode) {
+         if (p->MemberQ(f))
+            return f->Neumann;
+         else
+            return false;
+      } else
+         return (f == nullptr);
+   } else
+      return false;
+};
+
+bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) { return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+
+bool isDirichletID_BEM(const auto &p, const auto &f) {
+   if (p->Dirichlet || p->CORNER)
+      return (f == nullptr);
+   else
+      return false;
+};
+
+bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) { return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+
+void setPhiPhin(Network &water) {
+   /**
+   \phi on Dirichlet nodes have been updated by RK method. \phi_n on Neumann nodes are calculated in this function.
+   */
+   /* -------------------------------------------------------------------------- */
+   /*                         phinOnFace, phintOnFaceの設定                         */
+   /* -------------------------------------------------------------------------- */
+   // b! 点
+   /**
+    ## 多重節点
+    多重節点という名前は具体性に欠ける．
+    普通φnは(節点)にのみ依存する変数だが，nの変化が急なため，不連続性が著しい節点においては，(節点に加え面)にも依存する変数を複数設定する．それらは離散化などで使い分けることになる．
+    BIEの離散化における，多重節点扱いについて．
+    BIEを数値的に解くために，十分な数の１次方程式を作成する．これは，節点と同じ位置にBIEの原点を取ることで実現できる．
+    同じ位置であるにもかかわらず，(節点に加え面)にも依存する変数φnを設定した場合，
+    同じ位置であるにもかかわらず，それらを一つ一つを原点として，１次方程式を作成する．
+    これらは完全に同じ方程式である．変数の数を節点の数よりも増やしたことによって，方程式の数が増えている．
+   */
+   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
+
+   for (const auto &P : water.getPoints())
+      setIsMultipleNode(P);
+
+#pragma omp parallel
+   for (const auto &P : water.getPoints())
+#pragma omp single nowait
+   {
+      P->phiOnFace.clear();
+      P->phitOnFace.clear();
+
+      P->phinOnFace.clear();
+      P->phintOnFace.clear();
+
+      auto process = [&P](networkFace *const &F) {
+         if (isNeumannID_BEM(P, F)) {
+            auto [p, f] = pf2ID(P, F);
+            if (f == nullptr) {
+               p->phinOnFace[nullptr] = std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
+               p->phintOnFace[nullptr] = 1E+30;
+            } else {
+               p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
+               p->phintOnFace[f] = 1E+30;
+            }
+         }
+      };
+      process(nullptr);
+      for (const auto &F : P->getFaces())
+         process(F);
+   }
+
+   // b! 面
+   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorOff << std::endl;
+#pragma omp parallel
+   for (const auto &f : water.getFaces())
+#pragma omp single nowait
+   {
+      if (f->Neumann) {
+         std::get<1>(f->phiphin) = Dot(uNeumann(f), f->normal);
+      } else {
+         auto [p0, p1, p2] = f->getPoints();
+         std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
+      }
+   }
+};
+
+// b@ -------------------------------------------------------------------------- */
+// b@                                   BEM_BVP                                  */
+// b@ -------------------------------------------------------------------------- */
+
 struct BEM_BVP {
-   // std::unordered_set<networkPoint *> Points;
-   // std::unordered_set<networkFace *> Faces;
    const bool Neumann = false;
    const bool Dirichlet = true;
 #if defined(use_lapack)
@@ -118,16 +227,6 @@ struct BEM_BVP {
    //%                             solve phi and phi_n                            */
    //% -------------------------------------------------------------------------- */
 
-   std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) const {
-      if (p->isMultipleNode) {
-         if (f->Dirichlet)
-            return {const_cast<networkPoint *>(p), nullptr};
-         else
-            return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-      } else
-         return {const_cast<networkPoint *>(p), nullptr};
-   };
-
    int pf2Index(const networkPoint *p, const networkFace *f) const {
       return PBF_index.at(pf2ID(p, f));
    };
@@ -147,52 +246,9 @@ struct BEM_BVP {
    /**
    isNeumannID_BEMとisDirichletID_BEMの両方を満たす{p,f}は存在しない．
    */
-   bool isNeumannID_BEM(const auto &p, const auto &f) const {
-      if (p->Neumann || p->CORNER) {
-         if (p->isMultipleNode) {
-            if (p->MemberQ(f))
-               return f->Neumann;
-            else
-               return false;
-         } else
-            return (f == nullptr);
-      } else
-         return false;
-   };
 
-   bool isDirichletID_BEM(const auto &p, const auto &f) const {
-      if (p->Dirichlet || p->CORNER) {
-         return (f == nullptr);
-      } else
-         return false;
-   };
-
-   void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
-      //* ------------------------------------------------------ */
-      //%                     各点で方程式を作る場合                 */
-      //* ------------------------------------------------------ */
-      std::cout << "各点で方程式を作る場合" << std::endl;
-      PBF_index.clear();
-      PBF_index.reserve(3 * water.getPoints().size());
-
-      int i = 0;
-      for (const auto &q : water.getPoints())
-         for (const auto &id : variableIDs(q))
-            if (PBF_index.find(id) == PBF_index.end())
-               PBF_index[id] = i++;
-
-      std::cout << Red << "total = " << PBF_index.size() << colorOff << std::endl;
-
+   void setIGIGn(Network &water) {
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
-      mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
-
-      // auto PF2index = [&](netP *p, netF *integ_f) {
-      //    auto it = PBF_index.find({p, integ_f});
-      //    if (it != PBF_index.end())
-      //       return it->second;
-      //    else
-      //       return PBF_index[{p, nullptr}];
-      // };
 
 #define use_rigid_mode
       Timer timer;
@@ -255,7 +311,7 @@ struct BEM_BVP {
                //@ さて，この段階でp0が多重節点であるかどうか判断できるだろうか？
                {節点，面}-> 列ベクトルのインデックス を決めれるか？
                //
-               面を区別するかどうかが先にわからないので，face*のままかnullptrとすべきかわからないということ．．．．
+               面を区別するかどうかが先にわからないので，face*のまsまかnullptrとすべきかわからないということ．．．．
                //
                PBF_index[{p, Dirichlet, ある要素}]
                は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
@@ -279,195 +335,109 @@ struct BEM_BVP {
          std::get<1>(IGIGn_Row[index]) += origin->getSolidAngle();
 #endif
       }
-      //
       std::cout << Green << "離散化にかかった時間" << timer() << colorOff << std::endl;
-      /* ------------------------------------------------------ */
-      // #define quad_element
-#define linear_element
-      // #define liear_and_quad_element
+   };
 
-      std::cout << "並列化 DONE" << std::endl;
-      std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
-
+   void makeMatrix() {
+      mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
+      // b@ ------------------------------------------------------ */
+      // b@                 系数行列mat_ukn．mat_knの計算             */
+      // b@ ------------------------------------------------------ */
+#pragma omp parallel
+      for (const auto &[_, i] : PBF_index)
+#pragma omp single nowait
       {
-         // b@ ------------------------------------------------------ */
-         // b@                 系数行列mat_ukn．mat_knの計算             */
-         // b@ ------------------------------------------------------ */
-#pragma omp parallel
-         for (const auto &[PBF, i] : PBF_index)
-#pragma omp single nowait
-         {
-            /*@ mat_ukn, mat_kn, vec_P
-              +--+--+--+
-            | |--+--+--|
-            V |--+--+--|
-              +--+--+--+
-            */
-            auto [p, f] = PBF;
-            // auto &IGIGn_Row = IGIGn[i];
-            // p->IGIGn[vec_P[i]]; // PBF_PBF_IGIGn.at(vec_P[i]);
-            /* mat_ukn, mat_kn, vec_P
-                ====>
-              +--+--+--+
-              |--+--+--|
-              |--+--+--|
-              +--+--+--+
-            */
-            // if (!(p->CORNER && DorN == Neumann /*変更する対象の行*/))  //! OK
-            {
-               std::array<double, 2> igign;
-               for (const auto &[PBF_j, j] : PBF_index) {
-                  igign = IGIGn[i][j];
-                  // 未知変数の係数行列は左，既知変数の係数行列は右
-                  if (isNeumannID_BEM(std::get<0>(PBF_j), std::get<1>(PBF_j)))
-                     igign = {-std::get<1>(igign), -std::get<0>(igign)};
-                  /*
-                  IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
-                  IG*φn = IGn*φ
-                  移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
-                  移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
-                  */
-                  mat_ukn[i][j] = std::get<0>(igign);
-                  mat_kn[i][j] = std::get<1>(igign);
-               }
-            }
-         }
-
-         /* ------------------------------------------------------ */
-         double maxpp = 0;
-         for (auto i = 0; i < mat_ukn.size(); ++i) {
-            // LUするのはmat_uknだけなので，mat_knの最大値を使う必要はない
-            if (maxpp < std::abs(mat_ukn[i][i]))
-               maxpp = std::abs(mat_ukn[i][i]);
-         }
-         /* ------------------------------------------------------ */
-         // knowns = V_d(PBF_index.size());  //! ok
-         //                                  //! Pointsの順番と合わせてとるように注意
-
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-         for (const auto &[PBF, i] : PBF_index)
-#ifdef _OPENMP
-#pragma omp single nowait
-#endif
-         {
-            auto [p, f] = PBF;
-            // auto &PBF_IGIGn = IGIGn[i];
-            // ディリクレの角点だけが積分した係数を使った方程式を使う．
-            // if (DorN == Neumann && p->CORNER /*多重節点の条件*/) {
-
+         std::array<double, 2> igign;
+         for (const auto &[j_col, j] : PBF_index) {
+            igign = IGIGn[i][j];
+            // 未知変数の係数行列は左，既知変数の係数行列は右
+            if (isNeumannID_BEM(j_col))
+               igign = {-std::get<1>(igign), -std::get<0>(igign)};
             /*
-               移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
-               移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
-               多重節点:{0, 1, 0, 0} . {φn0,φ1,φn2,φn3} = {0, 0, 0, 1} . {φ0,φn1,φ2,φ3}
+            IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
+            IG*φn = IGn*φ
+            移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
+            移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
             */
-
-            // b$ ------------------------------------------------------ */
-            // b$               mat_unknowns, mat_knownsの計算            */
-            // b$ ------------------------------------------------------ */
-            /**
-            p->isMultipleNode && isNeumannID_BEM(p, f)だけでは，\phiが与えられていないノイマン点を含んでしまう．
-            p->isMultipleNode && p->CORNER && isNeumannID_BEM(p, f)として，CORNERのみを対象とする．
-            */
-            if (p->CORNER && isNeumannID_BEM(p, f) /*行の変更*/) {
-               for (const auto &[PBF_j, j] : PBF_index) { /*要素の変更*/
-                  auto [p_, f_] = PBF_j;
-                  if (p == p_ && f_ == f /*can be nullptr*/) {
-                     mat_ukn[i][j] = maxpp;  // φの系数
-                     mat_kn[i][j] = 0;       // φnの系数
-                  } else if (p == p_ && isDirichletID_BEM(p_, f_) /* there must be the only one in this row*/) {
-                     mat_ukn[i][j] = 0;     // φnの系数
-                     mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
-                  } else {
-                     mat_ukn[i][j] = 0;
-                     mat_kn[i][j] = 0;
-                  }
-               }
-            }
+            mat_ukn[i][j] = std::get<0>(igign);
+            mat_kn[i][j] = std::get<1>(igign);
          }
-         //* 未知変数の計算
-         /* ------------------------------------------------------ */
-         // 前処理
-         // auto v = diagonal_scaling_vector(mat_ukn);
-         // for (auto i = 0; i < v.size(); ++i) {
-         //    mat_ukn[i] *= v[i];
-         //    mat_kn[i] *= v[i];
-         // }
-         /* ------------------------------------------------------ */
-
-         if (!isFinite(mat_ukn))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_ukn is not finite");
-         if (!isFinite(mat_kn))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_kn is not finite");
       }
 
-      // b% ------------------------------------------------------ */
-      // b%                  境界積分方程式を解く                      */
-      // b% ------------------------------------------------------ */
-      {
-         std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
-         TimeWatch watch;
+      /* ------------------------------------------------------ */
+      double maxpp = 0;
+      for (auto i = 0; i < mat_ukn.size(); ++i) {
+         // LUするのはmat_uknだけなので，mat_knの最大値を使う必要はない
+         if (maxpp < std::abs(mat_ukn[i][i]))
+            maxpp = std::abs(mat_ukn[i][i]);
+      }
 
-         knowns.resize(PBF_index.size());
-         for (const auto &[PBF, i] : PBF_index) {
-            auto [p, f] = PBF;
-            if (isDirichletID_BEM(p, f) && isNeumannID_BEM(p, f))
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
-            else if (isDirichletID_BEM(p, f))
-               knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
-            else if (isNeumannID_BEM(p, f))
-               knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
-            else
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
-         }
-
-         V_d phiORphin(knowns.size());
-         if (this->lu)
-            delete this->lu;
-#if defined(use_CG)
-         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
-         std::cout << "The conjugate gradient is used" << std::endl;
-         GradientMethod gd1(mat_ukn);
-         phiORphin = gd1.solve(Dot(mat_kn, knowns), {}, 1E-1);
-         GradientMethod gd2(mat_ukn);
-         phiORphin = gd2.solveCG(Dot(mat_kn, knowns), phiORphin);
-#elif defined(use_gmres)
-         std::cout << "gmres for phiORphin" << std::endl;
-         gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/, use_gmres);
-         phiORphin = gm.x;
-         std::cout << "gm.err = " << gm.err << ", isFinite(gm.err) = " << isFinite(gm.err) << std::endl;
-         if (real_time < 0.005 || !isFinite(gm.err < 1E-20)) {
-            std::cout << "lapack lu decomposition" << std::endl;
-            this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
-         }
-         // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-         // std::cout << err << std::endl;
-#elif defined(use_lapack)
-         std::cout << "lapack lu decomposition" << std::endl;
-         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+#ifdef _OPENMP
+#pragma omp parallel
 #endif
+      for (const auto &[i_row, i] : PBF_index)
+#ifdef _OPENMP
+#pragma omp single nowait
+#endif
+      {
+         auto [a, _] = i_row;
+         // auto &PBF_IGIGn = IGIGn[i];
+         // ディリクレの角点だけが積分した係数を使った方程式を使う．
+         // if (DorN == Neumann && p->CORNER /*多重節点の条件*/) {
 
-         //@ -------------------------------------------------------------------------- */
-         //@                    update p->phiphin and p->phinOnFace                     */
-         //@ -------------------------------------------------------------------------- */
-         std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
+         /*
+            移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
+            移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
+            多重節点:{0, 1, 0, 0} . {φn0,φ1,φn2,φn3} = {0, 0, 0, 1} . {φ0,φn1,φ2,φ3}
+         */
 
-         for (const auto &[PBF, i] : PBF_index) {
-            auto [p, f] = PBF;
-            if (isDirichletID_BEM(p, f)) {
-               p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
-               p->phiOnFace[f] = std::get<0>(p->phiphin);
+         // b$ ------------------------------------------------------ */
+         // b$               mat_unknowns, mat_knownsの計算            */
+         // b$ ------------------------------------------------------ */
+         /**
+         p->isMultipleNode && isNeumannID_BEM(p, f)だけでは，\phiが与えられていないノイマン点を含んでしまう．
+         p->CORNER && isNeumannID_BEM(p, f)として，CORNERのみを対象とする．
+         */
+         if (a->CORNER && isNeumannID_BEM(i_row) /*行の変更*/) {
+            std::ranges::fill(mat_ukn[i], 0.);
+            std::ranges::fill(mat_kn[i], 0.);
+            for (const auto &[j_col, j] : PBF_index) { /*要素の変更*/
+               if (i == j /*can be nullptr*/) {
+                  mat_ukn[i][j] = maxpp;  // φの系数
+                  mat_kn[i][j] = 0;       // φnの系数
+               } else if (a == std::get<0>(j_col) && isDirichletID_BEM(j_col) /* there must be the only one in this row*/) {
+                  mat_ukn[i][j] = 0;     // φnの系数
+                  mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
+               }
             }
-            if (isNeumannID_BEM(p, f))
-               p->phiOnFace[f] = std::get<0>(p->phiphin) = phiORphin[i];
          }
+      }
+      /* ------------------------------------------------------ */
+      // 前処理
+      // auto v = diagonal_scaling_vector(mat_ukn);
+      // for (auto i = 0; i < v.size(); ++i) {
+      //    mat_ukn[i] *= v[i];
+      //    mat_kn[i] *= v[i];
+      // }
+      /* ------------------------------------------------------ */
+   };
 
-         for (const auto &p : water.getPoints()) {
+   void storePhiPhin(Network &water, const auto &phiORphin) const {
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, f] = PBF;
+         if (isDirichletID_BEM(PBF)) {
+            p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
+            p->phiOnFace[f] = std::get<0>(p->phiphin);
+         }
+         if (isNeumannID_BEM(PBF))
+            p->phiOnFace[f] = std::get<0>(p->phiphin) = phiORphin[i];
+      }
+      //\phiを代入．Neumannに限る
+      for (const auto &p : water.getPoints())
+         if (p->Neumann) {
             double total = 0;
             std::get<0>(p->phiphin) = 0;
-            for (const auto &f : p->getFaces())
-               total += f->area;
+            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
             for (const auto &f : p->getFaces()) {
                if (p->phiOnFace.count(f))
                   std::get<0>(p->phiphin) += p->phiOnFace.at(f) * f->area / total;
@@ -475,30 +445,132 @@ struct BEM_BVP {
                   std::get<0>(p->phiphin) += p->phiOnFace.at(nullptr) * f->area / total;
             }
          }
+   }
 
-         std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
+   void storePhiPhin_t(const auto &water, const auto &phiORphin_t) const {
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, f] = PBF;
+         if (isDirichletID_BEM(PBF)) {
+            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = phiORphin_t[i];
+            p->phitOnFace[f] = std::get<0>(p->phiphin_t);
+         }
+         if (isNeumannID_BEM(PBF))
+            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = phiORphin_t[i];
+      }
 
-         for (const auto &p : water.getPoints()) {
-            if (!isFinite(p->phiphin)) {
+      //\phi_tを代入. Neumannに限る
+      for (const auto &p : water->getPoints())
+         if (p->Neumann) {
+            double total = 0;
+            std::get<0>(p->phiphin_t) = 0;
+            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
+            for (const auto &f : p->getFaces()) {
+               if (p->phitOnFace.count(f))
+                  std::get<0>(p->phiphin_t) += p->phitOnFace.at(f) * f->area / total;
+               else
+                  std::get<0>(p->phiphin_t) += p->phitOnFace.at(nullptr) * f->area / total;
+            }
+         }
+   }
+   // b! -------------------------------------------------------------------------- */
+   // b!                                    solve                                   */
+   // b! -------------------------------------------------------------------------- */
+
+   void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
+
+      setPhiPhin(water);
+
+      PBF_index.clear();
+      PBF_index.reserve(3 * water.getPoints().size());
+
+      int i = 0;
+      for (const auto &q : water.getPoints())
+         for (const auto &id : variableIDs(q))
+            if (PBF_index.find(id) == PBF_index.end())
+               PBF_index[id] = i++;
+
+      std::cout << Red << "total = " << PBF_index.size() << colorOff << std::endl;
+
+      setIGIGn(water);
+
+      std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
+
+      makeMatrix();
+
+      knowns.resize(PBF_index.size());
+      for (const auto &[PBF, i] : PBF_index) {
+         auto [p, f] = PBF;
+         if (isDirichletID_BEM(PBF) && isNeumannID_BEM(PBF))
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
+         else if (isDirichletID_BEM(PBF))
+            knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
+         else if (isNeumannID_BEM(PBF))
+            knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
+         else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
+      }
+
+      V_d phiORphin(knowns.size());
+
+      // b% ------------------------------------------------------ */
+      // b%                  境界積分方程式を解く                      */
+      // b% ------------------------------------------------------ */
+      std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
+      TimeWatch watch;
+
+      if (this->lu)
+         delete this->lu;
+#if defined(use_CG)
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
+      std::cout << "The conjugate gradient is used" << std::endl;
+      GradientMethod gd1(mat_ukn);
+      phiORphin = gd1.solve(Dot(mat_kn, knowns), {}, 1E-1);
+      GradientMethod gd2(mat_ukn);
+      phiORphin = gd2.solveCG(Dot(mat_kn, knowns), phiORphin);
+#elif defined(use_gmres)
+      std::cout << "gmres for phiORphin" << std::endl;
+      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/, use_gmres);
+      phiORphin = gm.x;
+      std::cout << "gm.err = " << gm.err << ", isFinite(gm.err) = " << isFinite(gm.err) << std::endl;
+      if (real_time < 0.005 || !isFinite(gm.err < 1E-20)) {
+         std::cout << "lapack lu decomposition" << std::endl;
+         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+      }
+      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
+      // std::cout << err << std::endl;
+#elif defined(use_lapack)
+      std::cout << "lapack lu decomposition" << std::endl;
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+#endif
+
+      //@ -------------------------------------------------------------------------- */
+      //@                    store p->phiphin and p->phinOnFace                     */
+      //@ -------------------------------------------------------------------------- */
+      std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
+      storePhiPhin(water, phiORphin);
+
+      std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
+
+      for (const auto &p : water.getPoints()) {
+         if (!isFinite(p->phiphin)) {
+            std::stringstream ss;
+            ss << p->phiphin;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+         }
+         for (const auto &[f, phi] : p->phiOnFace)
+            if (!isFinite(phi)) {
                std::stringstream ss;
-               ss << p->phiphin;
+               for (const auto &[f, phi] : p->phiOnFace)
+                  ss << phi << ", ";
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
             }
-            for (const auto &[f, phi] : p->phiOnFace)
-               if (!isFinite(phi)) {
-                  std::stringstream ss;
-                  for (const auto &[f, phi] : p->phiOnFace)
-                     ss << phi << ", ";
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-               }
-            for (const auto &[f, phin] : p->phinOnFace)
-               if (!isFinite(phin)) {
-                  std::stringstream ss;
-                  for (const auto &[f, phin] : p->phiOnFace)
-                     ss << phin << ", ";
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-               }
-         }
+         for (const auto &[f, phin] : p->phinOnFace)
+            if (!isFinite(phin)) {
+               std::stringstream ss;
+               for (const auto &[f, phin] : p->phiOnFace)
+                  ss << phin << ", ";
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+            }
       }
    };
 
@@ -520,28 +592,36 @@ struct BEM_BVP {
 #endif
       {
          auto [p, F] = PBF;
-         //% ------------------------------------------------------ */
-         //%                 ディリクレ境界面上のφtを計算                */
-         //% ------------------------------------------------------ */
          //!!ノイマンの場合はこれでDphiDtは計算できませんよ
-         if (p->Dirichlet || p->CORNER)
+         if (isDirichletID_BEM(PBF))
             std::get<0>(p->phiphin_t) = p->aphiat(0.);
-         // std::get<0>(p->phiphin_t) = p->DphiDt(0.) - Dot(p->U_BEM, p->U_BEM);
-         //% ------------------------------------------------------ */
-         //%    ノイマン境界面上の加速度から,ノイマン境界面上のφntを計算     */
-         //% ------------------------------------------------------ */
-         if (p->Neumann || p->CORNER) {
+         if (isNeumannID_BEM(PBF)) {
+            // /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
+            // // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
+            // // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
+            // // b* setBoundaryConditionsで決めている．
+            // for (auto &[f, phin_t] : p->phintOnFace) {
+            //    auto use_face = (f != nullptr);
+            //    auto n = use_face ? f->normal : p->getNormalNeumann_BEM();
+            //    auto netInContact = use_face ? NearestContactFace(f)->getNetwork() : NearestContactFace(p)->getNetwork();
+            //    auto w = netInContact->velocityRotational();
+            //    auto U = uNeumann(p);
+            //    phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
+            //    auto s0s1s2 = OrthogonalBasis(n);
+            //    auto [s0, s1, s2] = s0s1s2;
+            //    auto Hessian = use_face ? grad_U_LinearElement(f, s0s1s2) : grad_U_LinearElement(p, s0s1s2);
+            //    phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+            // }
+
             /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
             // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
             auto n = p->getNormalNeumann_BEM();
-            auto Q = Quaternion();
             for (auto &[f, phin_t] : p->phintOnFace) {
                if (f) {
                   auto netInContact = NearestContactFace(f)->getNetwork();
                   auto w = netInContact->velocityRotational();
-                  auto dQdt = Q.d_dt(w);
                   auto U = uNeumann(p, f);
                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
                   auto s0s1s2 = OrthogonalBasis(f->normal);
@@ -551,7 +631,6 @@ struct BEM_BVP {
                } else {
                   auto netInContact = NearestContactFace(p)->getNetwork();
                   auto w = netInContact->velocityRotational();
-                  auto dQdt = Q.d_dt(w);
                   auto U = uNeumann(p);
                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
                   auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
@@ -591,9 +670,9 @@ struct BEM_BVP {
       knowns.resize(PBF_index.size());
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
-         if (isDirichletID_BEM(p, f))
+         if (isDirichletID_BEM(PBF))
             knowns[i] = std::get<0>(p->phiphin_t);
-         if (isNeumannID_BEM(p, f))
+         if (isNeumannID_BEM(PBF))
             knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
       }
 
@@ -620,28 +699,7 @@ struct BEM_BVP {
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(p, f)) {
-            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = phiORphin_t[i];
-            p->phitOnFace[f] = std::get<0>(p->phiphin_t);
-         }
-         if (isNeumannID_BEM(p, f))
-            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = phiORphin_t[i];
-      }
-
-      for (const auto &p : water->getPoints()) {
-         double total = 0;
-         std::get<0>(p->phiphin_t) = 0;
-         for (const auto &f : p->getFaces())
-            total += f->area;
-         for (const auto &f : p->getFaces()) {
-            if (p->phitOnFace.count(f))
-               std::get<0>(p->phiphin_t) += p->phitOnFace.at(f) * f->area / total;
-            else
-               std::get<0>(p->phiphin_t) += p->phitOnFace.at(nullptr) * f->area / total;
-         }
-      }
+      storePhiPhin_t(water, phiORphin_t);
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
@@ -675,11 +733,8 @@ struct BEM_BVP {
 
    /* ------------------------------------------------------ */
 
-   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {
-      //@ --------------------------------------------------- */
-      //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
-      //@ --------------------------------------------------- */
-      V_d ACCELS_init, ACCELS, ACCELS_old, ACCELS_old_old;
+   V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
+      V_d ACCELS_init;
       for (const auto &net : rigidbodies) {
          if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
             if (net->inputJSON.at("velocity").size() > 1) {
@@ -695,6 +750,34 @@ struct BEM_BVP {
          } else
             net->acceleration.fill(0.);
       }
+      return ACCELS_init;
+   }
+
+   void insertAcceleration(const std::vector<Network *> &rigidbodies, const V_d &BM_X) {
+      int i = 0;
+      for (const auto &net : rigidbodies) {
+         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+            if (net->inputJSON.at("velocity").size() > 1) {
+               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
+               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
+               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
+               if (real_time < start_time) {
+                  net->acceleration.fill(0.);
+               } else
+                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
+            } else
+               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
+         } else
+            net->acceleration.fill(0.);
+      }
+   }
+
+   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {
+      //@ --------------------------------------------------- */
+      //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
+      //@ --------------------------------------------------- */
+
+      auto ACCELS_init = initializeAcceleration(rigidbodies);
 
       if (ACCELS_init.empty()) {
          setPhiPhin_t();
@@ -711,26 +794,7 @@ struct BEM_BVP {
          auto func = Func(BM.X, water, rigidbodies);
          std::cout << "func = " << func_ << std::endl;
          BM.update(func, func_, j < 1 ? 1E-10 : 1.);
-         // for (const auto &net : rigidbodies)
-         //    if (isTarget(net))
-         //       for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-         // save --> acceleration
-         int i = 0;
-         for (const auto &net : rigidbodies) {
-            if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-               if (net->inputJSON.at("velocity").size() > 1) {
-                  std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
-                  double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-                  std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
-                  if (real_time < start_time) {
-                     net->acceleration.fill(0.);
-                  } else
-                     std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-               } else
-                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM.X[i++]; });
-            } else
-               net->acceleration.fill(0.);
-         }
+         insertAcceleration(rigidbodies, BM.X);
 
          std::cout << "j = " << j << ", " << Red << Norm(func) << colorOff << std::endl;
          std::cout << Red << "func_ = " << func_ << colorOff << std::endl;
