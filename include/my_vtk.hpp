@@ -239,20 +239,17 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
    };
 };
 /* ------------------------------------------------------ */
-using uomap_P_Vd = std::unordered_map<networkPoint *, std::vector<double>>;
+// using uomap_P_Vd = std::unordered_map<networkPoint *, std::vector<double>>;
 using uomap_P_Tddd = std::unordered_map<networkPoint *, Tddd>;
 using uomap_P_d = std::unordered_map<networkPoint *, double>;
 using uomap_F_d = std::unordered_map<networkFace *, double>;
-using VarForOutput = std::variant<std::string, int, uomap_P_Vd, uomap_P_Tddd, uomap_P_d>;
+using VarForOutput = std::variant<std::string, int, uomap_P_Tddd, uomap_P_d>;
 using V_VarForOutput = std::vector<VarForOutput>;
 using VV_VarForOutput = std::vector<V_VarForOutput>;
 /* ------------------------------------------------------ */
 template <class T>
 void DataArray(FILE *fp, const std::vector<T> &Points,
-               const std::vector<std::vector<std::variant<std::string, int,
-                                                          std::unordered_map<T, V_d>,
-                                                          std::unordered_map<T, Tddd>,
-                                                          std::unordered_map<T, double>>>> &VV_name_comp_mapPVd) {
+               const VV_VarForOutput &VV_name_comp_mapPVd) {
    try {
       for (auto &V_name_comp_mapPVd : VV_name_comp_mapPVd) {
          // V_name_comp_mapPVdの先頭は必ずstringでなければならない．
@@ -262,11 +259,7 @@ void DataArray(FILE *fp, const std::vector<T> &Points,
             writeDataArray(fp, Points, Name, std::get<std::unordered_map<T, double>>(V_name_comp_mapPVd[1]));
          } else if (V_name_comp_mapPVd.size() > 0 && std::holds_alternative<std::unordered_map<T, Tddd>>(V_name_comp_mapPVd[1])) {
             writeDataArray(fp, Points, Name, std::get<std::unordered_map<T, Tddd>>(V_name_comp_mapPVd[1]));
-         } else if (V_name_comp_mapPVd.size() > 1 && std::holds_alternative<std::unordered_map<T, V_d>>(V_name_comp_mapPVd[2])) {
-            int NumberOfComponents = std::get<int>(V_name_comp_mapPVd[1]);
-            std::unordered_map<T, V_d> map_p_v = std::get<std::unordered_map<T, V_d>>(V_name_comp_mapPVd[2]);
-            writeDataArray(fp, Points, Name, NumberOfComponents, map_p_v);
-         } else {
+          } else {
             std::stringstream ss;
             ss << Name << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
