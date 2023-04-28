@@ -396,52 +396,32 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 // b! -------------------------------------------------------------------------- */
 Tddd gradPhi(const networkPoint *const p) {
    try {
-      Tddd u, ut, un;
-      V_Tddd UW, V, Un, Ut, U;
+      Tddd u;
+      V_Tddd UW, V;
       V_d weights;
       double w;
       for (const auto &f : p->getFaces()) {
          auto [p0, p1, p2] = f->getPoints(p);
-         ut = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-         un.fill(0.);
+         u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
          if (f->Neumann) {
             if (p->phinOnFace.find(f) != p->phinOnFace.end()) {
-               un += f->normal * p->phinOnFace.at(f);
+               u += f->normal * p->phinOnFace.at(f);
                w = f->area;
             } else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end()) {
-               un += f->normal * p->phinOnFace.at(nullptr);
+               u += f->normal * p->phinOnFace.at(nullptr);
                w = f->area;
             } else
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, std::to_string(p->phinOnFace.size()));
          } else if (f->Dirichlet) {
-            un += f->normal * std::get<1>(p->phiphin);
+            u += f->normal * p->phin_Dirichlet;
             w = 100 * f->area;  // よりDirichletに合わせるように重みを大きくした
          } else
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         u = ut + un;
-         Un.emplace_back(un);
-         Ut.emplace_back(ut);
-         U.emplace_back(u);
+         V.emplace_back(u);
          UW.emplace_back(u * w);
          weights.emplace_back(w);
-
-         if (!isFinite(u, 1E+10)) {
-            std::cout << "p->X = " << p->X << std::endl;
-            std::cout << "p->U_BEM = " << p->U_BEM << std::endl;
-            for (const auto &q : f->getPoints(p))
-               std::cout << "q->phiphin = " << q->phiphin << std::endl;
-            for (const auto &f : p->getFaces())
-               std::cout << "f->area = " << f->area << std::endl;
-            std::cout << "un = " << un << std::endl;
-            std::cout << "ut = " << ut << std::endl;
-            std::cout << "u = " << u << std::endl;
-            std::cout << "w = " << w << std::endl;
-            std::cout << V_i{f->Dirichlet, f->Neumann} << std::endl;
-            std::cout << V_i{p->Dirichlet, p->CORNER, p->Neumann} << std::endl;
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-         }
       }
-
+      //
       Tddd grad = Total(UW) / Total(weights);
 
       //%! --------------------------------------------------------- */
@@ -452,7 +432,6 @@ Tddd gradPhi(const networkPoint *const p) {
                grad = ret;
          }
       //%! --------------------------------------------------------- */
-
       return grad;
 
    } catch (std::exception &e) {

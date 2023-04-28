@@ -118,24 +118,29 @@ struct BEM_BVP {
    //%                             solve phi and phi_n                            */
    //% -------------------------------------------------------------------------- */
 
+   std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) const {
+      if (p->isMultipleNode) {
+         if (f->Dirichlet)
+            return {const_cast<networkPoint *>(p), nullptr};
+         else
+            return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+      } else
+         return {const_cast<networkPoint *>(p), nullptr};
+   };
+
+   int pf2Index(const networkPoint *p, const networkFace *f) const {
+      return PBF_index.at(pf2ID(p, f));
+   };
+
    std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) const {
       //{p,f}を変換
       // f cannot be nullptr
       //  {p,f} --o--> {p,nullptr}
       //  {p,f} <--x-- {p,nullptr}
-      auto var = [&](const networkFace *f) -> std::tuple<networkPoint *, networkFace *> {
-         if (p->isMultipleNode) {
-            if (f->Dirichlet)
-               return {const_cast<networkPoint *>(p), nullptr};
-            else
-               return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-         } else
-            return {const_cast<networkPoint *>(p), nullptr};
-      };
 
       std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
       for (const auto &f : p->getFaces())
-         ret.emplace(var(f));
+         ret.emplace(pf2ID(p, f));
       return ret;
    };
 
@@ -169,39 +174,25 @@ struct BEM_BVP {
       std::cout << "各点で方程式を作る場合" << std::endl;
       PBF_index.clear();
       PBF_index.reserve(3 * water.getPoints().size());
-      knowns.clear();
-      knowns.reserve(3 * water.getPoints().size());
 
       int i = 0;
-      for (const auto &q : water.getPoints()) {
-         for (const auto &id : variableIDs(q)) {
-            if (PBF_index.find(id) == PBF_index.end()) {
+      for (const auto &q : water.getPoints())
+         for (const auto &id : variableIDs(q))
+            if (PBF_index.find(id) == PBF_index.end())
                PBF_index[id] = i++;
-               auto [P, F] = id;
-               if (isDirichletID_BEM(P, F) && isNeumannID_BEM(P, F))
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
-               else if (isDirichletID_BEM(P, F)) {
-                  knowns.emplace_back(P->phi_Dirichlet = std::get<0>(P->phiphin));
-               } else if (isNeumannID_BEM(P, F)) {
-                  knowns.emplace_back(P->phinOnFace.at(F));
-               } else
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
-            }
-         }
-      }
 
       std::cout << Red << "total = " << PBF_index.size() << colorOff << std::endl;
 
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
 
-      auto PF2index = [&](netP *p, netF *integ_f) {
-         auto it = PBF_index.find({p, integ_f});
-         if (it != PBF_index.end())
-            return it->second;
-         else
-            return PBF_index[{p, nullptr}];
-      };
+      // auto PF2index = [&](netP *p, netF *integ_f) {
+      //    auto it = PBF_index.find({p, integ_f});
+      //    if (it != PBF_index.end())
+      //       return it->second;
+      //    else
+      //       return PBF_index[{p, nullptr}];
+      // };
 
 #define use_rigid_mode
       Timer timer;
@@ -271,7 +262,7 @@ struct BEM_BVP {
                */
                //
                // auto [p, igign] = p_igign;
-               IGIGn_Row[PF2index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
+               IGIGn_Row[pf2Index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
                if (p != origin)                                 // for use_rigid_mode
                   origin_ign_rigid_mode -= std::get<1>(igign);  // for use_rigid_mode
             }
@@ -375,14 +366,17 @@ struct BEM_BVP {
             // b$ ------------------------------------------------------ */
             // b$               mat_unknowns, mat_knownsの計算            */
             // b$ ------------------------------------------------------ */
-
-            if (p->isMultipleNode && isNeumannID_BEM(p, f) /*行の変更*/) {
+            /**
+            p->isMultipleNode && isNeumannID_BEM(p, f)だけでは，\phiが与えられていないノイマン点を含んでしまう．
+            p->isMultipleNode && p->CORNER && isNeumannID_BEM(p, f)として，CORNERのみを対象とする．
+            */
+            if (p->CORNER && isNeumannID_BEM(p, f) /*行の変更*/) {
                for (const auto &[PBF_j, j] : PBF_index) { /*要素の変更*/
                   auto [p_, f_] = PBF_j;
                   if (p == p_ && f_ == f /*can be nullptr*/) {
                      mat_ukn[i][j] = maxpp;  // φの系数
                      mat_kn[i][j] = 0;       // φnの系数
-                  } else if (p == p_ && isDirichletID_BEM(p__, f) /* there must be the only one in this row*/) {
+                  } else if (p == p_ && isDirichletID_BEM(p_, f_) /* there must be the only one in this row*/) {
                      mat_ukn[i][j] = 0;     // φnの系数
                      mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                   } else {
@@ -392,24 +386,6 @@ struct BEM_BVP {
                }
             }
          }
-
-         if (!isFinite(mat_ukn))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_ukn is not finite");
-         if (!isFinite(mat_kn))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_kn is not finite");
-      }
-
-      {
-         // b% ------------------------------------------------------ */
-         // b%                  境界積分方程式を解く                      */
-         // b% ------------------------------------------------------ */
-         std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
-         TimeWatch watch;
-         /* ------------------------------------------------------ */
-         V_d phiORphin(knowns.size(), 0);
-         std::cout << "IGIGn.size()= " << IGIGn.size() << std::endl;
-         std::cout << "phiORphin.size()= " << phiORphin.size() << std::endl;
-         std::cout << "  mat_kn.size() = " << mat_kn.size() << std::endl;
          //* 未知変数の計算
          /* ------------------------------------------------------ */
          // 前処理
@@ -419,6 +395,34 @@ struct BEM_BVP {
          //    mat_kn[i] *= v[i];
          // }
          /* ------------------------------------------------------ */
+
+         if (!isFinite(mat_ukn))
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_ukn is not finite");
+         if (!isFinite(mat_kn))
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mat_kn is not finite");
+      }
+
+      // b% ------------------------------------------------------ */
+      // b%                  境界積分方程式を解く                      */
+      // b% ------------------------------------------------------ */
+      {
+         std::cout << "--------------------- 境界積分方程式を解く ---------------------" << std::endl;
+         TimeWatch watch;
+
+         knowns.resize(PBF_index.size());
+         for (const auto &[PBF, i] : PBF_index) {
+            auto [p, f] = PBF;
+            if (isDirichletID_BEM(p, f) && isNeumannID_BEM(p, f))
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
+            else if (isDirichletID_BEM(p, f))
+               knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
+            else if (isNeumannID_BEM(p, f))
+               knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
+            else
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
+         }
+
+         V_d phiORphin(knowns.size());
          if (this->lu)
             delete this->lu;
 #if defined(use_CG)
@@ -441,23 +445,13 @@ struct BEM_BVP {
          // std::cout << err << std::endl;
 #elif defined(use_lapack)
          std::cout << "lapack lu decomposition" << std::endl;
-         // this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
-         // std::cout << "try to solve" << std::endl;
-         // this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
          this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
-#elif defined(use_lu)
-         std::cout << "parallel lu decomposition" << std::endl;
-         this->lu = new ludcmp_parallel(mat_ukn /*未知の行列係数（左辺）*/);
-         std::cout << "try to solve" << std::endl;
-         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
-#else
-         //* 未知変数の計算
-         std::cout << "SVD decomposition" << std::endl;
-         SVD svd(mat_ukn);
-         svd.solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
 #endif
 
-         std::cout << colorOff << "update p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
+         //@ -------------------------------------------------------------------------- */
+         //@                    update p->phiphin and p->phinOnFace                     */
+         //@ -------------------------------------------------------------------------- */
+         std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
 
          for (const auto &[PBF, i] : PBF_index) {
             auto [p, f] = PBF;
@@ -465,24 +459,22 @@ struct BEM_BVP {
                p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
                p->phiOnFace[f] = std::get<0>(p->phiphin);
             }
-            if (isNeumannID_BEM(p, f)) {
+            if (isNeumannID_BEM(p, f))
                p->phiOnFace[f] = std::get<0>(p->phiphin) = phiORphin[i];
-            }
          }
 
-         for (const auto &p : water.getPoints())
-            if (p->Neumann) {
-               double total = 0;
-               std::get<0>(p->phiphin) = 0;
-               for (const auto &f : p->getFaces())
-                  total += f->area;
-               for (const auto &f : p->getFaces()) {
-                  if (p->phiOnFace.count(f))
-                     std::get<0>(p->phiphin) += p->phiOnFace.at(f) * f->area / total;
-                  else
-                     std::get<0>(p->phiphin) += p->phiOnFace.at(nullptr) * f->area / total;
-               }
+         for (const auto &p : water.getPoints()) {
+            double total = 0;
+            std::get<0>(p->phiphin) = 0;
+            for (const auto &f : p->getFaces())
+               total += f->area;
+            for (const auto &f : p->getFaces()) {
+               if (p->phiOnFace.count(f))
+                  std::get<0>(p->phiphin) += p->phiOnFace.at(f) * f->area / total;
+               else
+                  std::get<0>(p->phiphin) += p->phiOnFace.at(nullptr) * f->area / total;
             }
+         }
 
          std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
 
@@ -513,6 +505,7 @@ struct BEM_BVP {
    //% ------------------------------------------------------------------------------ */
    //%                             solve phi_t and phi_n_t                            */
    //% ------------------------------------------------------------------------------ */
+
    void setPhiPhin_t() const {
 #ifdef derivatives_debug
       std::cout << "φtとφntを一部計算👇" << std::endl;
@@ -570,6 +563,7 @@ struct BEM_BVP {
          }
       }
    };
+
    /* ------------------------------------------------------ */
    bool isTarget(Network *net) const {
       // return true;
@@ -580,7 +574,7 @@ struct BEM_BVP {
          return false;
    };
    /* ------------------------------------------------------ */
-   V_d Func(V_d ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) const {
+   V_d Func(V_d ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) {
       auto ACCELS = ACCELS_IN;
       {
          int i = 0;
@@ -593,7 +587,8 @@ struct BEM_BVP {
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
-      V_d knowns(PBF_index.size());
+
+      knowns.resize(PBF_index.size());
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(p, f))
@@ -616,21 +611,14 @@ struct BEM_BVP {
          std::cout << "gm.err = " << gm.err << std::endl;
          this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
       }
-      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-      // gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, 5);
-      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-      // std::cout << err << std::endl;
-      // /* ------------------------------------------------------ */
-      // if (isFinite(err) && err < 0.1)
-      // else
-      //
 #elif defined(use_lapack)
       this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
 #endif
       std::cout << "solved" << std::endl;
-      //* --------------------------------------------------- */
-      //*                 phiphin_t --> 圧力                   */
-      //* --------------------------------------------------- */
+
+      //@ -------------------------------------------------------------------------- */
+      //@                    update p->phiphin_t and p->phinOnFace                   */
+      //@ -------------------------------------------------------------------------- */
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
@@ -642,19 +630,22 @@ struct BEM_BVP {
             p->phitOnFace[f] = std::get<0>(p->phiphin_t) = phiORphin_t[i];
       }
 
-      for (const auto &p : water->getPoints())
-         if (p->Neumann) {
-            double total = 0;
-            std::get<0>(p->phiphin_t) = 0;
-            for (const auto &f : p->getFaces())
-               total += f->area;
-            for (const auto &f : p->getFaces()) {
-               if (p->phintOnFace.count(f))
-                  std::get<0>(p->phiphin_t) += p->phintOnFace.at(f) * f->area / total;
-               else
-                  std::get<0>(p->phiphin_t) += p->phintOnFace.at(nullptr) * f->area / total;
-            }
+      for (const auto &p : water->getPoints()) {
+         double total = 0;
+         std::get<0>(p->phiphin_t) = 0;
+         for (const auto &f : p->getFaces())
+            total += f->area;
+         for (const auto &f : p->getFaces()) {
+            if (p->phitOnFace.count(f))
+               std::get<0>(p->phiphin_t) += p->phitOnFace.at(f) * f->area / total;
+            else
+               std::get<0>(p->phiphin_t) += p->phitOnFace.at(nullptr) * f->area / total;
          }
+      }
+
+      //* --------------------------------------------------- */
+      //*                 phiphin_t --> 圧力                   */
+      //* --------------------------------------------------- */
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
@@ -684,7 +675,7 @@ struct BEM_BVP {
 
    /* ------------------------------------------------------ */
 
-   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) const {
+   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {
       //@ --------------------------------------------------- */
       //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
       //@ --------------------------------------------------- */
