@@ -301,12 +301,13 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_U_update_BEM[p] = p->U_update_BEM;
             // P_solidangleBIE[p] = p->getSolidAngle();
             // P_minViewRatio[p] = minViewRatio(p);
-            if (p->phinOnFace.empty())
-               P_isMultipleNode[p] = 0;
-            else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
-               P_isMultipleNode[p] = 1;
-            else
-               P_isMultipleNode[p] = 2;
+            // if (p->phinOnFace.empty())
+            //    P_isMultipleNode[p] = 0;
+            // else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
+            //    P_isMultipleNode[p] = 1;
+            // else
+            //    P_isMultipleNode[p] = 2;
+            P_isMultipleNode[p] = p->isMultipleNode;
             // P_normalVariance[p] = normalVariance(p);
             // P_U_normal_BEM[p] = p->U_normal_BEM;
             // P_U_tangential_BEM[p] = p->U_tangential_BEM;
