@@ -4,67 +4,6 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-void setPhiPhin(Network &water) {
-   /* -------------------------------------------------------------------------- */
-   /*                         phinOnFace, phintOnFaceの設定                         */
-   /* -------------------------------------------------------------------------- */
-   // b! 点
-   /**
-    ## 多重節点
-    多重節点という名前は具体性に欠ける．
-    普通φnは(節点)にのみ依存する変数だが，nの変化が急なため，不連続性が著しい節点においては，(節点に加え面)にも依存する変数を複数設定する．それらは離散化などで使い分けることになる．
-    BIEの離散化における，多重節点扱いについて．
-    BIEを数値的に解くために，十分な数の１次方程式を作成する．これは，節点と同じ位置にBIEの原点を取ることで実現できる．
-    同じ位置であるにもかかわらず，(節点に加え面)にも依存する変数φnを設定した場合，
-    同じ位置であるにもかかわらず，それらを一つ一つを原点として，１次方程式を作成する．
-    これらは完全に同じ方程式である．変数の数を節点の数よりも増やしたことによって，方程式の数が増えている．
-   */
-   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
-   // auto multiple_node_if = [&](const auto &p, const auto &facesNeuman) {
-   //    return (p->CORNER || std::ranges::any_of(facesNeuman, [&](const auto &f) { return !isFlat(p->getNormalNeumann_BEM(), f->normal, M_PI / 180. * 20); }));
-   // };
-
-   for (const auto &p : water.getPoints())
-      setIsMultipleNode(p);
-
-#pragma omp parallel
-   for (const auto &p : water.getPoints())
-#pragma omp single nowait
-   {
-      p->phiOnFace.clear();
-      p->phitOnFace.clear();
-
-      p->phinOnFace.clear();
-      p->phintOnFace.clear();
-
-      if (p->Neumann || p->CORNER) {
-         if (p->isMultipleNode) {
-            for (const auto &f : p->getFacesNeumann()) {
-               p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
-               p->phintOnFace[f] = 1E+30;
-            }
-         } else {
-            p->phinOnFace[nullptr] = std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
-            p->phintOnFace[nullptr] = 1E+30;
-         }
-      }
-   }
-
-   // b! 面
-   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorOff << std::endl;
-#pragma omp parallel
-   for (const auto &f : water.getFaces())
-#pragma omp single nowait
-   {
-      if (f->Neumann) {
-         std::get<1>(f->phiphin) = Dot(uNeumann(f), f->normal);
-      } else {
-         auto [p0, p1, p2] = f->getPoints();
-         std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
-      }
-   }
-};
-
 void setBoundaryConditions(Network &water, const std::vector<Network *> &objects) {
    /* -------------------------------------------------------------------------- */
    /*                             f,l,pの境界条件を決定                             */
@@ -122,8 +61,6 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
       p->Dirichlet = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
       p->CORNER = (!p->Neumann && !p->Dirichlet);
    }
-
-   setPhiPhin(water);
 };
 
 #endif

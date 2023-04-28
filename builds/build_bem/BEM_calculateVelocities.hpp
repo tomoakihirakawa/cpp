@@ -354,7 +354,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
       p->vecToSurface.fill(0.);
    }
    TimeWatch watch;
-   const double scale = 0.1;
+   const double scale = 0.05;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */
@@ -365,7 +365,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 #pragma omp parallel
          for (const auto &p : net.getPoints())
 #pragma omp single nowait
-            p->vecToSurface_BUFFER = (p->Neumann ? 0.1 : 1.) * vectorTangentialShift2(p, scale);
+            p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
 
          for (const auto &p : net.getPoints()) {
             add_vecToSurface_BUFFER_to_vecToSurface(p);
@@ -396,49 +396,64 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 // b! -------------------------------------------------------------------------- */
 Tddd gradPhi(const networkPoint *const p) {
    try {
-      Tddd u;
-      V_Tddd UW, V;
+      Tddd u, grad;
+      grad.fill(0.);
+      V_Tddd V;
       V_d weights;
       double w;
       for (const auto &f : p->getFaces()) {
          auto [p0, p1, p2] = f->getPoints(p);
          u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-         if (f->Neumann) {
-            if (p->phinOnFace.find(f) != p->phinOnFace.end()) {
-               u += f->normal * p->phinOnFace.at(f);
-               w = f->area;
-            } else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end()) {
-               u += f->normal * p->phinOnFace.at(nullptr);
-               w = f->area;
-            } else
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, std::to_string(p->phinOnFace.size()));
-         } else if (f->Dirichlet) {
-            u += f->normal * p->phin_Dirichlet;
-            w = 100 * f->area;  // よりDirichletに合わせるように重みを大きくした
-         } else
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+         u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
+         w = f->area * (f->Dirichlet ? 10 : 1.);
          V.emplace_back(u);
-         UW.emplace_back(u * w);
          weights.emplace_back(w);
       }
-      //
-      Tddd grad = Total(UW) / Total(weights);
-
-      //%! --------------------------------------------------------- */
-      if (p->CORNER || p->Neumann)
-         if (!V.empty()) {
-            auto ret = optimumVector(V, grad, weights);
-            if (isFinite(ret))
-               grad = ret;
-         }
-      //%! --------------------------------------------------------- */
-      return grad;
+      return optimumVector(V, {0., 0., 0.}, weights);
 
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
+
+// Tddd gradPhi(const networkPoint *const p) {
+//    try {
+//       Tddd u, accum;
+//       double w = 0;
+//       accum.fill(0.);
+//       if (p->CORNER) {
+//          for (const auto &f : p->getFacesDirichlet()) {
+//             auto [p0, p1, p2] = f->getPoints(p);
+//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+//             u += f->normal * p->phinOnFace.at(nullptr);
+//             accum += f->area * u;
+//             w += f->area;
+//          }
+//       } else if (p->Dirichlet) {
+//          for (const auto &f : p->getFaces()) {
+//             auto [p0, p1, p2] = f->getPoints(p);
+//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+//             u += f->normal * p->phinOnFace.at(nullptr);
+//             accum += f->area * u;
+//             w += f->area;
+//          }
+//       } else {
+//          for (const auto &f : p->getFaces()) {
+//             auto [p0, p1, p2] = f->getPoints(p);
+//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+//             u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
+//             accum += f->area * u;
+//             w += f->area;
+//          }
+//       }
+//       return accum / w;
+
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 
 void calculateVelocities(const Network &net, const int loop = 10) {
 #pragma omp parallel
