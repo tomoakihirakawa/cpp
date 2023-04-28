@@ -223,210 +223,96 @@ void remesh(Network &water,
 /* -------------------------------------------------------------------------- */
 /*                                     出力                                    */
 /* -------------------------------------------------------------------------- */
+
+template <typename V>
+std::unordered_map<networkPoint *, V> init_map(const Network &network, const V &value) {
+   std::unordered_map<networkPoint *, V> m;
+   for (const auto &p : network.getPoints()) {
+      m[p] = value;
+   }
+   return m;
+}
+
 VV_VarForOutput dataForOutput(const Network &water, const double dt) {
    try {
-      auto hist = Histogram(extLength(water.getLines()));
-      std::stringstream ss;
-      ss << "\"cumulative_count\":" << hist.cumulative_count << ","
-         << "\"diff\":" << hist.diff << ","
-         << "\"count\":" << hist.count << ","
-         << "\"interval\":" << hist.interval << ","
-         << "\"bin_width\":" << hist.bin_width << ","
-         << "\"mid_interval\":" << hist.mid_interval << ",";
-      std::string s = ss.str();
-      std::replace(s.begin(), s.end(), '{', '[');
-      std::replace(s.begin(), s.end(), '}', ']');
-      std::cout << "{" << s << "}" << std::endl;
-      // if (*hist.data.rbegin() > 5)
-      // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "length > 5");
 
-      int ii = 0;
-      // derivatives ders(water, false);
-      //-------------------------------------------
-      map_P_Vd P_phiphin;
-      // V_d lim_len = Subdivide(0.3, 0.2, 5 - 1);
-      /* ------------------------------------------------------ */
-      std::cout << "-------------------- 次の時刻の変数の値を得る -------------------- " << std::endl;
-      std::cout << "------------------ getImprovedの後に微分を評価 ----------------------- " << std::endl;
-      uomap_P_Tddd P_accel_body, P_NearestContactFacesX, P_position,
-          P_phin_Neumann, P_phin_Dirichlet, P_velocity_body,
-          P_uNeumann, P_normal, P_normal_BEM, P_mirrorPosition, P_U_normal_BEM, P_U_dot_gradgrad_U,
-          P_U_tangential_BEM, P_U_BEM, P_adustment_vector, P_U_update_BEM, P_U_cling_to_Neumann, P_phin_vector, P_gradPhi_tangential, P_gradPhi;
-      uomap_P_d P_IG, P_IGn, P_isGoodForQuad, P_smin_min, P_s_m, P_minViewRatio, P_DphiDt,
-          P_volume, P_phi_Neumann, P_phi_Dirichlet, P_state, P_solidangleBIE, P_height, P_phi, P_phin,
-          P_face_size, P_radius, P_lines_size, P_ishit, P_BC, P_Intxn_size, P_ContactFaces,
-          P_is_multiple_phiphin, P_min_depth, P_aphiat, P_aphiant, P_pressure, P_update_vs_cling, P_normalVariance, P_isMultipleNode;
+      const Tddd tdd0 = {1E+30, 1E+30, 1E+30};
+      const double d0 = 1E+30;
 
-      uomap_P_Tddd initial_uomap_P_Tddd;
-      uomap_P_d initial_uomap_P_d;
-      for (const auto &p : water.getPoints()) {
-         initial_uomap_P_Tddd[p] = {1E+30, 1E+30, 1E+30};
-         initial_uomap_P_d[p] = 1E+30;
-      }
-      P_U_dot_gradgrad_U = P_gradPhi = P_gradPhi_tangential = P_phin_vector = P_accel_body = P_position = P_NearestContactFacesX = P_phin_Neumann = P_phin_Dirichlet = P_velocity_body = P_uNeumann = P_normal = P_normal_BEM = P_mirrorPosition = P_U_normal_BEM = P_U_tangential_BEM = P_adustment_vector = P_U_BEM = P_U_update_BEM = P_U_cling_to_Neumann = initial_uomap_P_Tddd;
-      P_isMultipleNode = P_DphiDt = P_IG = P_IGn = P_isGoodForQuad = P_smin_min = P_s_m = P_minViewRatio = P_volume = P_phi_Neumann = P_phi_Dirichlet = P_state = P_solidangleBIE = P_height = P_phi = P_phin = P_face_size = P_radius = P_lines_size = P_ishit = P_BC = P_Intxn_size = P_ContactFaces = P_is_multiple_phiphin = P_min_depth = P_aphiat = P_aphiant = P_pressure = P_update_vs_cling = P_normalVariance = initial_uomap_P_d;
+      const uomap_P_Tddd p_tdd0 = init_map(water, tdd0);
+      const uomap_P_d p_d0 = init_map(water, d0);
 
-      Print("ders.P_phiphin_InnerOuterCornerPを出力");
+      uomap_P_Tddd P_accel_body = p_tdd0;
+      uomap_P_Tddd P_velocity_body = p_tdd0;
+      uomap_P_Tddd P_phin_Dirichlet = p_tdd0;
+      uomap_P_Tddd P_U_BEM = p_tdd0;
+      uomap_P_Tddd P_U_tangential_BEM = p_tdd0;
+      uomap_P_Tddd P_position = p_tdd0;
+      uomap_P_Tddd P_normal_BEM = p_tdd0;
+      uomap_P_Tddd P_gradPhi = p_tdd0;
+      uomap_P_Tddd P_uNeumann = p_tdd0;
+
+      uomap_P_d P_isMultipleNode = p_d0;
+      uomap_P_d P_phi = p_d0;
+      uomap_P_d P_phin = p_d0;
+      uomap_P_d P_pressure = p_d0;
+      uomap_P_d P_DphiDt = p_d0;
+      uomap_P_d P_ContactFaces = p_d0;
+      uomap_P_d P_BC = p_d0;
+
       try {
-#ifdef _OPENMP
 #pragma omp parallel
-#endif
          for (const auto &p : water.getPoints())
-#ifdef _OPENMP
 #pragma omp single nowait
-#endif
          {
             if (p->Neumann || p->CORNER) {
                P_accel_body[p] = accelNeumann(p);
                P_velocity_body[p] = uNeumann(p);
             }
-            // auto [m0, s0, min0, smin0, max0] = distorsion(p, dt);
-            // P_s_m[p] = s0 / m0;
-            // P_smin_min[p] = smin0 / min0;
-            P_volume[p] = water.getVolume();
-            // P_phin_Neumann[p] = p->getNormalNeumann_BEM() * p->phin_Neumann;
             P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
-            // P_phi_Neumann[p] = p->phi_Neumann;
-            P_phi_Dirichlet[p] = p->phi_Dirichlet;
-            if (p->Neumann || p->CORNER) {
-               auto f = NearestContactFace(p);
-               if (f) {
-                  P_NearestContactFacesX[p] = Nearest(p->X, NearestContactFace(p)) - ToX(p);
-               }
-            }
-            // P_adustment_vector[p] = p->U_BUFFER;
-            // P_U_cling_to_Neumann[p] = p->U_cling_to_Neumann;
-            // P_update_vs_cling[p] = Norm(p->U_cling_to_Neumann) / Norm(p->U_update_BEM);
-            P_U_BEM[p] = p->U_BEM;
-            P_U_update_BEM[p] = p->U_update_BEM;
-            // P_solidangleBIE[p] = p->getSolidAngle();
-            // P_minViewRatio[p] = minViewRatio(p);
-            // if (p->phinOnFace.empty())
-            //    P_isMultipleNode[p] = 0;
-            // else if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
-            //    P_isMultipleNode[p] = 1;
-            // else
-            //    P_isMultipleNode[p] = 2;
             P_isMultipleNode[p] = p->isMultipleNode;
-            // P_normalVariance[p] = normalVariance(p);
-            // P_U_normal_BEM[p] = p->U_normal_BEM;
-            // P_U_tangential_BEM[p] = p->U_tangential_BEM;
-            // P_state[p] = p->getStatus();
-            // P_height[p] = std::get<2>(p->X);
             P_phi[p] = std::get<0>(p->phiphin);
             P_phin[p] = std::get<1>(p->phiphin);
-            // P_normal[p] = p->normal;
             P_normal_BEM[p] = p->getNormal_BEM();
-            // P_face_size[p] = (double)p->getFaces().size();
-            // P_lines_size[p] = (double)p->getLines().size();
-            // P_lines_length[p] = extLength(p->getLines());
-            // P_Intxn_size[p] = (double)takeIntxn(p->getLines()).size();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
-            // P_Intxn_length[p] = extLength(takeIntxn(p->getLines()));
             P_BC[p] = p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.));
-            // if (!p->getContactFaces().empty())
-            // 	P_mirrorPosition[p] = 2. * ((*p->getContactFaces().begin()).second) - ToX(p);
-            P_radius[p] = p->radius;
             P_position[p] = ToX(p);
-            // P_ishit[p] = (double)(!p->getContactFaces().empty());
-            // P_ishit[p] = (double)(p->getStatus());
-            // P_is_multiple_phiphin[p] = (double)(p->multiple_phiphin.size());
-            // P_min_depth[p] = p->minDepthFromCORNER; //;getMinDepth(p);
-            bool isgood = true;
-            for (const auto &l : p->getLines())
-               isgood = isgood && l->isGoodForQuadInterp();
-            // P_isGoodForQuad[p] = isgood;
-            // P_aphiat[p] = std::get<0>(p->phiphin_t);
-            // P_aphiant[p] = std::get<1>(p->phiphin_t);
             P_pressure[p] = p->pressure_BEM;
             P_uNeumann[p] = uNeumann(p);
             P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
-            P_phin_vector[p] = p->U_normal_BEM;
-            // P_gradPhi_tangential[p] = p->U_tangential_BEM;
             P_gradPhi[p] = p->U_BEM;
-            // P_U_dot_gradgrad_U[p] = Dot(p->U_BEM, grad_U_LinearElement(p));
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       try {
-         // phiのアップデートがされていない
          VV_VarForOutput data = {
-             // {"s/m", P_s_m},
-             // {"smin/min", P_smin_min},
              {"accel Neumann", P_accel_body},
-             //  {"adustment vector", P_adustment_vector},
-             // {"volume", P_volume},
-             //  {"U_cling_to_Neumann", P_U_cling_to_Neumann},
-             //  {"absU_cling_to_Neumann/absU_update_BEM", P_update_vs_cling},
              {"velocity Neumann", P_velocity_body},
-             //  {"Nearest face", P_NearestContactFacesX},
-             //  {"φn_Neumann", P_phin_Neumann},
-             //  {"φn_Dirichlet", P_phin_Dirichlet},
-             //  {"φ_Neumann", P_phi_Neumann},
-             //  {"φ_Dirichlet", P_phi_Dirichlet},
-             //  {"min_depth", P_min_depth},
              {"isMultipleNode", P_isMultipleNode},
-             // P_NearestContactFacesXで確かに最寄の構造物までをさすことができている．！
-             // これで改善できない？
-             //  {"U_update_BEM", P_U_update_BEM},
              {"U_BEM", P_U_BEM},
-             //  {"U_normal_BEM", P_U_normal_BEM},
              {"U_tangential_BEM", P_U_tangential_BEM},
-             // {"kappa", ders.P_kappa},
              {"ContactFaces", P_ContactFaces},
-             // {"dxdt_mod", P_dxdt_mod},
              {"grad_phi", P_gradPhi},
-             //  {"phin_vector", P_phin_vector},
-             //  {"gradPhiTangential", P_gradPhi_tangential},
-             //  {"z", P_height},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},
-             //  {"solidangle", P_solidangleBIE},
-             //  {"minViewRatio", P_minViewRatio},
-             //  {"normalVariance", P_normalVariance},
-             //  {"normal", P_normal},
-             //  {"uNeumann", P_uNeumann},
-             //  {"normal_BEM", P_normal_BEM},
-             //  {"all_lines_are_GoodForQuad", P_isGoodForQuad},
-             // {"laplacian_phi", P_laplacian},
-             // {"face_size", P_face_size},
-             // {"line_length", 10, P_lines_length},
-             // {"line_size", P_lines_size},
-             // {"Intxn_size", P_Intxn_size},
-             // {"Intxn_length", 10, P_Intxn_length},
              {"boundary condition", P_BC},
-             //  {"radius", P_radius},
-             // {"state", P_state},
-             // {"correction vector", ders.P_dxdt_correct},
-             //  {"DφDt", P_DphiDt},
-             //  {"φt", P_aphiat},
-             //  {"φnt", P_aphiant},
-             {"pressure", P_pressure}
-             //  {"U.∇U", P_U_dot_gradgrad_U},
-             //  {"IG", P_IG},
-             //  {"IGn", P_IGn}
-             // {"vector to mirrorPosition", P_mirrorPosition},
-             // {"is hit", P_ishit}
-         };
+             {"pressure", P_pressure}};
          return data;
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       std::cout << __PRETTY_FUNCTION__ << " done" << std::endl;
-      // mk_vtu(output_directory + "/" + net.getName() + std::to_string(time_step) + ".vtu", net.getFaces(), datacpg);
-      // mk_vtu(output_directory + "/" + name + std::to_string(time_step) + ".vtu", cpg.well_Faces, datacpg);
-      // cpg_pvd.push(name, name + std::to_string(time_step) + ".vtu", time_step * t_rep * dt);
-      // cpg_pvd.output_();
       return {};
    } catch (std::exception &e) {
       std::cerr << e.what() << colorOff << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
+
 /* ------------------------------------------------------ */
 
 double dt_CFL(const Network &water, double min_dt, const Tdd coeff = {0.4, 1}) {

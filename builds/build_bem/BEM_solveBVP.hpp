@@ -119,14 +119,11 @@ std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const net
    NOTE: non-multiple node ID is {p,nullptr}
    NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
     */
-   if (p->isMultipleNode) {
-      if (f->Dirichlet)
-         return {const_cast<networkPoint *>(p), nullptr};
-      else
-         return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-   } else
+   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
       return {const_cast<networkPoint *>(p), nullptr};
-};
+   else
+      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+}
 
 std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
    //{p,f}を変換
@@ -389,17 +386,11 @@ struct BEM_BVP {
          if (a->CORNER && isNeumannID_BEM(i_row) /*行の変更*/) {
             std::ranges::fill(mat_ukn[i], 0.);
             std::ranges::fill(mat_kn[i], 0.);
-            for (const auto &[j_col, j] : PBF_index) { /*要素の変更*/
-               if (i == j /*can be nullptr*/) {
-                  mat_ukn[i][j] = maxpp;  // φの系数
-                  mat_kn[i][j] = 0;       // φnの系数
-               } else if (a == std::get<0>(j_col) && isDirichletID_BEM(j_col) /* there must be the only one in this row*/) {
-                  mat_ukn[i][j] = 0;     // φnの系数
-                  mat_kn[i][j] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
-               }
-            }
+            mat_ukn[i][i] = maxpp;                    // φの系数
+            mat_kn[i][pf2Index(a, nullptr)] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
          }
       }
+      //
       /* ------------------------------------------------------ */
       // 前処理
       // auto v = diagonal_scaling_vector(mat_ukn);
