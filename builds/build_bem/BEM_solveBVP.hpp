@@ -329,10 +329,6 @@ struct BEM_BVP {
       std::cout << Green << "離散化にかかった時間" << timer() << colorOff << std::endl;
    };
 
-   // @ ------------------------------------------------------ */
-   // @                 系数行列mat_ukn．mat_knの計算             */
-   // @ ------------------------------------------------------ */
-
    void makeMatrix() {
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
 #pragma omp parallel
@@ -414,15 +410,15 @@ struct BEM_BVP {
       /* ------------------------------------------------------ */
    };
 
-   void storePhiPhin(Network &water, const auto &phiORphin) const {
+   void storePhiPhin(Network &water, const auto &ans) const {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF)) {
-            p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = phiORphin[i];
+            p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = ans[i];
             p->phiOnFace[f] = std::get<0>(p->phiphin);
          }
          if (isNeumannID_BEM(PBF))
-            p->phiOnFace[f] = std::get<0>(p->phiphin) = phiORphin[i];
+            p->phiOnFace[f] = std::get<0>(p->phiphin) = ans[i];
       }
       //\phiを代入．Neumannに限る
       for (const auto &p : water.getPoints())
@@ -439,15 +435,15 @@ struct BEM_BVP {
          }
    }
 
-   void storePhiPhin_t(const auto &water, const auto &phiORphin_t) const {
+   void storePhiPhin_t(const auto &water, const auto &ans) const {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF)) {
-            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = phiORphin_t[i];
+            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = ans[i];
             p->phitOnFace[f] = std::get<0>(p->phiphin_t);
          }
          if (isNeumannID_BEM(PBF))
-            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = phiORphin_t[i];
+            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = ans[i];
       }
 
       //\phi_tを代入. Neumannに限る
@@ -493,19 +489,19 @@ struct BEM_BVP {
    // b!                                    solve                                   */
    // b! -------------------------------------------------------------------------- */
 
+   V_d ans;
+
    void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
 
       setPhiPhin(water);
 
       PBF_index.clear();
       PBF_index.reserve(3 * water.getPoints().size());
-
       int i = 0;
       for (const auto &q : water.getPoints())
          for (const auto &id : variableIDs(q))
             if (PBF_index.find(id) == PBF_index.end())
                PBF_index[id] = i++;
-
       std::cout << Red << "total = " << PBF_index.size() << colorOff << std::endl;
 
       setIGIGn(water);
@@ -527,9 +523,9 @@ struct BEM_BVP {
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
       }
 
-      V_d phiORphin(knowns.size());
-
       TimeWatch watch;
+
+      ans.resize(knowns.size());
 
       if (this->lu)
          delete this->lu;
@@ -537,30 +533,27 @@ struct BEM_BVP {
       this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
       std::cout << "The conjugate gradient is used" << std::endl;
       GradientMethod gd1(mat_ukn);
-      phiORphin = gd1.solve(Dot(mat_kn, knowns), {}, 1E-1);
+      ans = gd1.solve(Dot(mat_kn, knowns), {}, 1E-1);
       GradientMethod gd2(mat_ukn);
-      phiORphin = gd2.solveCG(Dot(mat_kn, knowns), phiORphin);
+      ans = gd2.solveCG(Dot(mat_kn, knowns), ans);
 #elif defined(use_gmres)
-      std::cout << "gmres for phiORphin" << std::endl;
-      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/, use_gmres);
-      phiORphin = gm.x;
+      std::cout << "gmres for ans" << std::endl;
+      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/, use_gmres);
+      ans = gm.x;
       std::cout << "gm.err = " << gm.err << ", isFinite(gm.err) = " << isFinite(gm.err) << std::endl;
       if (real_time < 0.005 || !isFinite(gm.err < 1E-20)) {
          std::cout << "lapack lu decomposition" << std::endl;
-         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       }
       // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
       // std::cout << err << std::endl;
 #elif defined(use_lapack)
       std::cout << "lapack lu decomposition" << std::endl;
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin /*解*/);
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
 
-      //@ -------------------------------------------------------------------------- */
-      //@                    store p->phiphin and p->phinOnFace                     */
-      //@ -------------------------------------------------------------------------- */
       std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
-      storePhiPhin(water, phiORphin);
+      storePhiPhin(water, ans);
 
       std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
 
@@ -669,22 +662,21 @@ struct BEM_BVP {
             knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
       }
 
-      V_d phiORphin_t(PBF_index.size());
       std::cout << "加速度 --> phiphin_t" << std::endl;
-
+      ans.resize(knowns.size());
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
-      phiORphin_t = gd.solve(Dot(mat_kn, knowns));
+      ans = gd.solve(Dot(mat_kn, knowns));
 #elif defined(use_gmres)
       std::cout << "gmres for phiphin_t" << std::endl;
-      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/, use_gmres);
-      phiORphin_t = gm.x;
+      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/, use_gmres);
+      ans = gm.x;
       if (!isFinite(gm.err)) {
          std::cout << "gm.err = " << gm.err << std::endl;
-         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
+         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       }
 #elif defined(use_lapack)
-      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, phiORphin_t /*解*/);
+      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
       std::cout << "solved" << std::endl;
 
@@ -692,7 +684,7 @@ struct BEM_BVP {
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
-      storePhiPhin_t(water, phiORphin_t);
+      storePhiPhin_t(water, ans);
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
