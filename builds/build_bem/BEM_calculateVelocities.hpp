@@ -251,13 +251,13 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          auto &[np0x, np1x, np2x] = nP012;
          double a = magicalValue(p, f) + variance2(p, f);
 
-         if (std::any_of(f->getLines().begin(), f->getLines().end(), [&](const auto &l) { return l->CORNER; })) {
+         if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
             a *= std::pow(2., 3);
-         } else if (std::any_of(f->getPoints().begin(), f->getPoints().end(), [&](const auto &p) { return p->CORNER; })) {
+         } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
             a *= std::pow(2., 2);
-         } else if (std::any_of(f->getPoints().begin(), f->getPoints().end(), [&](const auto &p) {
-                       return std::any_of(p->getFaces().begin(), p->getFaces().end(), [&](const auto &F) {
-                          return std::any_of(F->getPoints().begin(), F->getPoints().end(), [&](const auto &q) { return q->CORNER; });
+         } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
+                       return std::ranges::any_of(p->getFaces(), [](const auto &F) {
+                          return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
                        });
                     })) {
             a *= 2.;
@@ -312,8 +312,10 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       Tddd to_structure_face;
       if (!next_Vrtx.empty()) {
          std::vector<Tddd> F_clings;
-         F_clings.reserve(5 * next_Vrtx.size());
          std::vector<double> distance, weights;
+         F_clings.reserve(4 * next_Vrtx.size());
+         distance.reserve(4 * next_Vrtx.size());
+         weights.reserve(4 * next_Vrtx.size());
          Tddd to_closest_X, X;
          for (const auto &f : p->getFacesNeumann() /*pの隣接面*/) {
             // pの周りの面が干渉している構造物面のみを対象として，点に最も近い構造物面上の点を抽出する
@@ -354,7 +356,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
       p->vecToSurface.fill(0.);
    }
    TimeWatch watch;
-   const double scale = 0.1;
+   const double scale = 0.2;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */

@@ -227,9 +227,8 @@ void remesh(Network &water,
 template <typename V>
 std::unordered_map<networkPoint *, V> init_map(const Network &network, const V &value) {
    std::unordered_map<networkPoint *, V> m;
-   for (const auto &p : network.getPoints()) {
+   for (const auto &p : network.getPoints())
       m[p] = value;
-   }
    return m;
 }
 

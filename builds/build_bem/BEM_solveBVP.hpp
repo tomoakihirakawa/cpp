@@ -157,34 +157,51 @@ void setPhiPhin(Network &water) {
    */
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
 
-   for (const auto &P : water.getPoints())
-      setIsMultipleNode(P);
+   for (const auto &p : water.getPoints())
+      setIsMultipleNode(p);
 
 #pragma omp parallel
-   for (const auto &P : water.getPoints())
+   for (const auto &p : water.getPoints())
 #pragma omp single nowait
    {
-      P->phiOnFace.clear();
-      P->phitOnFace.clear();
-
-      P->phinOnFace.clear();
-      P->phintOnFace.clear();
-
-      auto process = [&P](networkFace *const &F) {
-         if (isNeumannID_BEM(P, F)) {
-            auto [p, f] = pf2ID(P, F);
+      auto setNeumann = [&p](networkFace *const &f) {
+         if (isNeumannID_BEM(p, f)) {
             if (f == nullptr) {
-               p->phinOnFace[nullptr] = std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM());
-               p->phintOnFace[nullptr] = 1E+30;
+               p->phiOnFace.insert({nullptr, 1E+30});
+               p->phitOnFace.insert({nullptr, 1E+30});
+               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
+               p->phintOnFace.insert({nullptr, 1E+30});
             } else {
-               p->phinOnFace[f] = Dot(uNeumann(p, f), f->normal);
-               p->phintOnFace[f] = 1E+30;
+               p->phiOnFace.insert({f, 1E+30});
+               p->phitOnFace.insert({f, 1E+30});
+               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
+               p->phintOnFace.insert({f, 1E+30});
             }
          }
       };
-      process(nullptr);
-      for (const auto &F : P->getFaces())
-         process(F);
+
+      auto setDirichlet = [&p](networkFace *const &f) {
+         if (isDirichletID_BEM(p, f)) {
+            p->phiOnFace.insert({nullptr, 1E+30});
+            p->phitOnFace.insert({nullptr, 1E+30});
+            p->phinOnFace.insert({nullptr, 1E+30});
+            p->phintOnFace.insert({nullptr, 1E+30});
+         }
+      };
+
+      p->phiOnFace.clear();
+      p->phitOnFace.clear();
+
+      p->phinOnFace.clear();
+      p->phintOnFace.clear();
+
+      setNeumann(nullptr);
+      for (const auto &f : p->getFaces())
+         setNeumann(f);
+
+      setDirichlet(nullptr);
+      for (const auto &f : p->getFaces())
+         setDirichlet(f);
    }
 
    // b! 面
@@ -255,8 +272,7 @@ struct BEM_BVP {
          auto &IGIGn_Row = IGIGn[index];
          double nr, tmp;
          std::array<double, 2> IGIGn, c;
-         std::array<double, 3> X0, X1, X2, A, cross;
-         std::array<double, 3> N012;
+         std::array<double, 3> X0, X1, X2, A, cross, N012;
          for (const auto &integ_f : water.getFaces()) {
             /* ------------------------------ 2023/04/03 -------------------------------- */
             /*
@@ -304,8 +320,6 @@ struct BEM_BVP {
                PBF_index[{p, Dirichlet, ある要素}]
                は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
                */
-               //
-               // auto [p, igign] = p_igign;
                IGIGn_Row[pf2Index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
                if (p != origin)                                 // for use_rigid_mode
                   origin_ign_rigid_mode -= std::get<1>(igign);  // for use_rigid_mode
@@ -327,9 +341,15 @@ struct BEM_BVP {
    };
 
    void makeMatrix() {
+      double max_value = 0;
+      for (auto i = 0; i < IGIGn.size(); ++i) {
+         if (max_value < std::abs(std::get<0>(IGIGn[i][i])))
+            max_value = std::abs(std::get<0>(IGIGn[i][i]));
+      }
+
       mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
 #pragma omp parallel
-      for (const auto &[_, i] : PBF_index)
+      for (const auto &[i_row, i] : PBF_index)
 #pragma omp single nowait
       {
          std::array<double, 2> igign;
@@ -347,71 +367,33 @@ struct BEM_BVP {
             mat_ukn[i][j] = std::get<0>(igign);
             mat_kn[i][j] = std::get<1>(igign);
          }
-      }
-
-      /* ------------------------------------------------------ */
-      double maxpp = 0;
-      for (auto i = 0; i < mat_ukn.size(); ++i) {
-         // LUするのはmat_uknだけなので，mat_knの最大値を使う必要はない
-         if (maxpp < std::abs(mat_ukn[i][i]))
-            maxpp = std::abs(mat_ukn[i][i]);
-      }
-
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-      for (const auto &[i_row, i] : PBF_index)
-#ifdef _OPENMP
-#pragma omp single nowait
-#endif
-      {
-         auto [a, _] = i_row;
-         // auto &PBF_IGIGn = IGIGn[i];
-         // ディリクレの角点だけが積分した係数を使った方程式を使う．
-         // if (DorN == Neumann && p->CORNER /*多重節点の条件*/) {
-
          /*
             移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
             移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
             多重節点:{0, 1, 0, 0} . {φn0,φ1,φn2,φn3} = {0, 0, 0, 1} . {φ0,φn1,φ2,φ3}
          */
-
-         // b$ ------------------------------------------------------ */
-         // b$               mat_unknowns, mat_knownsの計算            */
-         // b$ ------------------------------------------------------ */
-         /**
-         p->isMultipleNode && isNeumannID_BEM(p, f)だけでは，\phiが与えられていないノイマン点を含んでしまう．
-         p->CORNER && isNeumannID_BEM(p, f)として，CORNERのみを対象とする．
-         */
+         auto [a, _] = i_row;
          if (a->CORNER && isNeumannID_BEM(i_row) /*行の変更*/) {
             std::ranges::fill(mat_ukn[i], 0.);
             std::ranges::fill(mat_kn[i], 0.);
-            mat_ukn[i][i] = maxpp;                    // φの系数
-            mat_kn[i][pf2Index(a, nullptr)] = maxpp;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
+            mat_ukn[i][i] = max_value;                    // φの系数
+            mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
          }
       }
-      //
-      /* ------------------------------------------------------ */
-      // 前処理
-      // auto v = diagonal_scaling_vector(mat_ukn);
-      // for (auto i = 0; i < v.size(); ++i) {
-      //    mat_ukn[i] *= v[i];
-      //    mat_kn[i] *= v[i];
-      // }
-      /* ------------------------------------------------------ */
    };
 
    void storePhiPhin(Network &water, const auto &ans) const {
+      std::cout << "store ans" << std::endl;
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF)) {
-            p->phinOnFace[f] = std::get<1>(p->phiphin) = p->phin_Dirichlet = ans[i];
-            p->phiOnFace[f] = std::get<0>(p->phiphin);
+            p->phinOnFace.at(f) = std::get<1>(p->phiphin) = p->phin_Dirichlet = ans[i];
+            p->phiOnFace.at(f) = std::get<0>(p->phiphin);
          }
          if (isNeumannID_BEM(PBF))
-            p->phiOnFace[f] = std::get<0>(p->phiphin) = ans[i];
+            p->phiOnFace.at(f) = std::get<0>(p->phiphin) = ans[i];
       }
-      //\phiを代入．Neumannに限る
+      std::cout << "Neumannに限りphiを代入." << std::endl;
       for (const auto &p : water.getPoints())
          if (p->Neumann) {
             double total = 0;
@@ -430,11 +412,11 @@ struct BEM_BVP {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF)) {
-            p->phintOnFace[f] = std::get<1>(p->phiphin_t) = ans[i];
-            p->phitOnFace[f] = std::get<0>(p->phiphin_t);
+            p->phintOnFace.at(f) = std::get<1>(p->phiphin_t) = ans[i];
+            p->phitOnFace.at(f) = std::get<0>(p->phiphin_t);
          }
          if (isNeumannID_BEM(PBF))
-            p->phitOnFace[f] = std::get<0>(p->phiphin_t) = ans[i];
+            p->phitOnFace.at(f) = std::get<0>(p->phiphin_t) = ans[i];
       }
 
       //\phi_tを代入. Neumannに限る
@@ -544,6 +526,7 @@ struct BEM_BVP {
 #endif
 
       std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
+
       storePhiPhin(water, ans);
 
       std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
@@ -571,7 +554,7 @@ struct BEM_BVP {
          auto [p, F] = PBF;
          //!!ノイマンの場合はこれでDphiDtは計算できませんよ
          if (isDirichletID_BEM(PBF))
-            std::get<0>(p->phiphin_t) = p->aphiat(0.);
+            p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
          if (isNeumannID_BEM(PBF)) {
             // /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
             // // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
@@ -594,26 +577,29 @@ struct BEM_BVP {
             // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
-            auto n = p->getNormalNeumann_BEM();
             for (auto &[f, phin_t] : p->phintOnFace) {
                if (f) {
+                  auto n = f->normal;
                   auto netInContact = NearestContactFace(f)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto U = uNeumann(p, f);
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
-                  auto s0s1s2 = OrthogonalBasis(f->normal);
+                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
+                  auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
                   phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+                  std::get<1>(p->phiphin_t) = phin_t;
                } else {
+                  auto n = p->getNormalNeumann_BEM();
                   auto netInContact = NearestContactFace(p)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto U = uNeumann(p);
                   phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
                   auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
                   auto [s0, s1, s2] = s0s1s2;
-                  auto Hessian = grad_U_LinearElement(p, s0s1s2);
+                  auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
                   phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+                  std::get<1>(p->phiphin_t) = phin_t;
                }
             }
          }
@@ -648,7 +634,7 @@ struct BEM_BVP {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF))
-            knowns[i] = std::get<0>(p->phiphin_t);
+            knowns[i] = p->phitOnFace.at(f);
          if (isNeumannID_BEM(PBF))
             knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
       }

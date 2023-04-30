@@ -120,33 +120,6 @@ void Swap(std::array<T, 2> &ab) {
 //    return;
 // };
 
-T2Tdd Inverse(const T2Tdd &M) {
-   const auto [x00, x01] = std::get<0>(M);
-   const auto [x10, x11] = std::get<1>(M);
-   const double det = -(x01 * x10) + x00 * x11;
-   return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
-};
-/* -------------------------------------------------------------------------- */
-T3Tddd Inverse(const T3Tddd &mat) {
-   // 以下も参考にできる
-   // https://www.onlinemathstutor.org/post/3x3_inverses
-   auto [x00, x01, x02] = std::get<0>(mat);
-   auto [x10, x11, x12] = std::get<1>(mat);
-   auto [x20, x21, x22] = std::get<2>(mat);
-   double inv_det = 1. / (-x02 * x11 * x20 + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22);
-   return {Tddd{inv_det * (-x12 * x21 + x11 * x22),
-                inv_det * (x02 * x21 - x01 * x22),
-                inv_det * (-x02 * x11 + x01 * x12)},
-           Tddd{inv_det * (x12 * x20 - x10 * x22),
-                inv_det * (-x02 * x20 + x00 * x22),
-                inv_det * (x02 * x10 - x00 * x12)},
-           Tddd{inv_det * (-x11 * x20 + x10 * x21),
-                inv_det * (x01 * x20 - x00 * x21),
-                inv_det * (-x01 * x10 + x00 * x11)}};
-   /* ---------------------------------------------------------- */
-   // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
-   // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
-};
 /* -------------------------------------------------------------------------- */
 T4T4d Inverse(const T4T4d &mat) {
    auto [x00, x01, x02, x03] = std::get<0>(mat);
@@ -540,68 +513,97 @@ VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
 
 double Dot3d(const std::vector<double> &vec1, const std::vector<double> &vec2) { return vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2]; };
 
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
+//    // return std::transform_reduce(
+//    // 	vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0,
+//    // 	std::plus{}, // 集計関数
+//    // 	[](T x, T y)
+//    // 	{ return x * y; });
+//    // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0);
+//    //
+//    // T init(0);
+//    // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), init);
+//    //
+//    int i = 0;
+//    T ret = 0;
+//    for (const auto &v : vec1)
+//       ret += v * vec2[i++];
+//    return ret;
+// };
+
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
-   // return std::transform_reduce(
-   // 	vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0,
-   // 	std::plus{}, // 集計関数
-   // 	[](T x, T y)
-   // 	{ return x * y; });
-   // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0);
-   //
-   // T init(0);
-   // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), init);
-   //
-   int i = 0;
    T ret = 0;
-   for (const auto &v : vec1)
-      ret += v * vec2[i++];
+   for (size_t i = 0; i < vec1.size(); ++i) {
+      ret = std::fma(vec1[i], vec2[i], ret);
+   }
    return ret;
-};
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-T Dot(const std::vector<T *> &vec1, const std::vector<T *> &vec2) {
-   T ans(0.);
-   for (size_t i = 0; i < vec1.size(); ++i)
-      ans += *vec1[i] * *vec2[i];
-   return ans;
-};
+}
+
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// T Dot(const std::vector<T *> &vec1, const std::vector<T *> &vec2) {
+//    T ans(0.);
+//    for (size_t i = 0; i < vec1.size(); ++i)
+//       ans += *vec1[i] * *vec2[i];
+//    return ans;
+// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec) {
    std::vector<T> ans(mat.size());
-   //
    int i = 0;
    for (const auto &m : mat)
       ans[i++] = Dot(m, vec);
    return ans;
 };
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat) {
+//    // return Dot(Transpose(mat), vec);
+//    std::vector<T> ans(mat[0].size(), 0.);
+//    // for (auto j = 0; j < mat.size(); j++)
+//    // 	for (auto i = 0; i < mat[j].size(); i++)
+//    // 		ans[i] += mat[j][i] * vec[j];
+
+//    int j = 0, i = 0;
+//    T tmp;
+//    for (const auto &mj : mat) {
+//       tmp = vec[j];
+//       i = 0;
+//       for (const auto &mi : mj)
+//          ans[i++] += mi * tmp;
+//       j++;
+//    }
+//    return ans;
+// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat) {
-   // return Dot(Transpose(mat), vec);
    std::vector<T> ans(mat[0].size(), 0.);
-   // for (auto j = 0; j < mat.size(); j++)
-   // 	for (auto i = 0; i < mat[j].size(); i++)
-   // 		ans[i] += mat[j][i] * vec[j];
-
    int j = 0, i = 0;
    T tmp;
    for (const auto &mj : mat) {
       tmp = vec[j];
       i = 0;
-      for (const auto &mi : mj)
-         ans[i++] += mi * tmp;
+      for (const auto &mi : mj) {
+         ans[i] = std::fma(mi, tmp, ans[i]);
+         i++;
+      }
       j++;
    }
    return ans;
-};
+}
+
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> Dot(const std::vector<std::vector<T>> &mat1, const std::vector<std::vector<T>> &mat2) {
-   std::vector<std::vector<double>> ans(mat1.size(), std::vector<double>(mat2[0].size(), 0.));
-   for (size_t x = 0; x < mat1.size(); x++)
-      for (size_t y = 0; y < mat2[0].size(); y++)
-         for (size_t j = 0; j < mat2.size(); j++)
-            ans[x][y] += mat1[x][j] * mat2[j][y];
+   std::vector<std::vector<T>> ans(mat1.size(), std::vector<T>(mat2[0].size(), 0.));
+   for (size_t x = 0; x < mat1.size(); x++) {
+      for (size_t y = 0; y < mat2[0].size(); y++) {
+         for (size_t j = 0; j < mat2.size(); j++) {
+            ans[x][y] = std::fma(mat1[x][j], mat2[j][y], ans[x][y]);
+         }
+      }
+   }
    return ans;
-};
+}
 
 template <typename T>
 std::vector<T> ToVector(const std::unordered_set<T> &uo) {
@@ -1278,38 +1280,38 @@ T Abs(const V_d &vec) {
    return sqrt(tmp);
 };
 /* ------------------------------------------------------ */
-template <typename T>
-std::vector<T> RotateLeft(const std::vector<T> &vecs, const int n = 1) {  // 2020/03/22
-   std::vector<T> ret(vecs);
-   std::rotate(ret.begin(), ret.begin() + n, ret.end());
-   return ret;
-}
-template <typename T>
-std::tuple<T, T, T> Reverse(const std::tuple<T, T, T> &vecs) {  // 2022年3月21日
-   return {std::get<2>(vecs), std::get<1>(vecs), std::get<0>(vecs)};
-};
-template <typename T>
-std::tuple<T, T, T> RotateLeft(const std::tuple<T, T, T> &vecs, int n = 1) {  // 2021/12/05
-   n = n % 3;
-   if (n == 0)
-      return vecs;
-   else if (n == 1)
-      return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
-   else
-      return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
-}
+// template <typename T>
+// std::vector<T> RotateLeft(const std::vector<T> &vecs, const int n = 1) {  // 2020/03/22
+//    std::vector<T> ret(vecs);
+//    std::rotate(ret.begin(), ret.begin() + n, ret.end());
+//    return ret;
+// }
+// template <typename T>
+// std::tuple<T, T, T> Reverse(const std::tuple<T, T, T> &vecs) {  // 2022年3月21日
+//    return {std::get<2>(vecs), std::get<1>(vecs), std::get<0>(vecs)};
+// };
+// template <typename T>
+// std::tuple<T, T, T> RotateLeft(const std::tuple<T, T, T> &vecs, int n = 1) {  // 2021/12/05
+//    n = n % 3;
+//    if (n == 0)
+//       return vecs;
+//    else if (n == 1)
+//       return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
+//    else
+//       return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
+// }
 
-template <typename T, size_t N>
-std::array<T, N> RotateLeft(const std::array<T, N> &arr, int n = 1) {
-   std::array<T, N> result;
-   n = n % N;
+// template <typename T, size_t N>
+// std::array<T, N> RotateLeft(const std::array<T, N> &arr, int n = 1) {
+//    std::array<T, N> result;
+//    n = n % N;
 
-   for (size_t i = 0; i < N; ++i) {
-      result[(i + N - n) % N] = arr[i];
-   }
+//    for (size_t i = 0; i < N; ++i) {
+//       result[(i + N - n) % N] = arr[i];
+//    }
 
-   return result;
-}
+//    return result;
+// }
 
 // T3Tddd RotateLeft(const T3Tddd &vecs, int n = 1) {  // 2021/12/05
 //    n = n % 3;
@@ -1338,12 +1340,12 @@ std::array<T, N> RotateLeft(const std::array<T, N> &arr, int n = 1) {
 //    else
 //       return {std::get<1>(vecs), std::get<2>(vecs), std::get<0>(vecs)};
 // }
-template <class Type>
-std::vector<Type> RotateRight(const std::vector<Type> &vecs, const int n) {  // 2021/04/07
-   std::vector<Type> ret(vecs);
-   std::rotate(ret.rbegin(), ret.rbegin() + n, ret.rend());
-   return ret;
-}
+// template <class Type>
+// std::vector<Type> RotateRight(const std::vector<Type> &vecs, const int n) {  // 2021/04/07
+//    std::vector<Type> ret(vecs);
+//    std::rotate(ret.rbegin(), ret.rbegin() + n, ret.rend());
+//    return ret;
+// }
 /* ------------------------------------------------------ */
 // 2021/06/14
 struct Quaternion {
@@ -1831,7 +1833,8 @@ V_d diagonal_scaling_vector(VV_d mat) {
 /* ------------------------------------------------------ */
 template <typename T>
 bool Between(const T &x, const std::array<T, 2> &minmax) {
-   return (std::get<0>(minmax) <= x && x <= std::get<1>(minmax) && isFinite(x));
-};
+   const auto &[min, max] = minmax;
+   return (min <= x && x <= max && isFinite(x));
+}
 
 #endif

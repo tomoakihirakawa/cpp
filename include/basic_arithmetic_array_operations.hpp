@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <numeric>
 #include "basic_alias.hpp"
 
 /*
@@ -405,9 +406,8 @@ template <typename T, size_t N>
 constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
 Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
    T ret = 0;
-   for (size_t i = 0; i < N; ++i) {
-      ret += arr[i] * ARR[i];
-   }
+   int i = 0;
+   std::ranges::for_each(arr, [&](const auto& a) { ret = std::fma(a, ARR[i++], ret); });
    return ret;
 }
 
@@ -486,26 +486,22 @@ constexpr std::array<T, N> ToArray(const std::array<T, N>& arr) noexcept { retur
 
 //    return ret;
 // }
+//
+//
 
 template <size_t N, typename T>
 constexpr T Norm(const std::array<T, N>& arr) noexcept {
-   T norm = static_cast<T>(0);
-   for (const auto& a : arr)
-      norm += a * a;
-   return std::sqrt(norm);
+   return std::sqrt(std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); }));
 }
 
+//
 template <size_t N, typename T>
 constexpr std::array<T, N> Normalize(std::array<T, N> arr) noexcept {
    static_assert(N > 0, "Array must have at least one element.");
    T norm = Norm(arr);
-   if (norm == static_cast<T>(0))
-      return arr;
-   else {
-      for (auto& a : arr)
-         a /= norm;
-      return arr;
-   }
+   auto c = (norm == static_cast<T>(0)) ? static_cast<T>(1) : static_cast<T>(1) / norm;
+   std::ranges::transform(arr, arr.begin(), [&c](T a) { return a * c; });
+   return arr;
 }
 
 template <size_t M = 0, size_t N, typename T>
@@ -513,10 +509,10 @@ constexpr T RootMeanSquare(const std::array<T, N>& arr) noexcept { return std::s
 
 template <typename T>
 constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
-   return {{A[1] * std::get<2>(B) - std::get<2>(A) * std::get<1>(B),
-            std::get<2>(A) * std::get<0>(B) - A[0] * std::get<2>(B),
-            A[0] * std::get<1>(B) - A[1] * std::get<0>(B)}};
-};
+   return {{std::fma(-std::get<2>(A), std::get<1>(B), std::get<1>(A) * std::get<2>(B)),
+            std::fma(-std::get<0>(A), std::get<2>(B), std::get<2>(A) * std::get<0>(B)),
+            std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
+}
 /* -------------------------------------------------------------------------- */
 
 template <std::size_t N>
@@ -565,10 +561,26 @@ std::vector<T> ToVector(const std::array<T, N>& arr) {
 template <size_t N0, size_t N1, typename T>
 constexpr std::array<T, N0 + N1> Join(const std::array<T, N0>& a, const std::array<T, N1>& b) {
    std::array<T, N0 + N1> result{};
-   std::copy(a.begin(), a.end(), result.begin());
-   std::copy(b.begin(), b.end(), result.begin() + N0);
+   std::ranges::copy(a, result.begin());
+   std::ranges::copy(b, result.begin() + N0);
    return result;
-};
+}
+/* -------------------------------------------------------------------------- */
+
+template <typename T, size_t N>
+constexpr std::array<T, N> RotateLeft(const std::array<T, N>& arr, const int n = 1) {
+   std::array<T, N> result = arr;
+   std::ranges::rotate(result, result.begin() + (n % N));
+   return result;
+}
+
+template <typename T, size_t N>
+constexpr std::array<T, N> RotateRight(const std::array<T, N>& arr, const int n = 1) {
+   std::array<T, N> result = arr;
+   std::ranges::rotate(result, result.begin() + (N - n % N));
+   return result;
+}
+
 /* =========================================================================== */
 /*                                Interpolation                               */
 /* =========================================================================== */
@@ -659,5 +671,59 @@ struct hash<std::array<T, N>> {
    }
 };
 }  // namespace std
+/* -------------------------------------------------------------------------- */
+
+// T2Tdd Inverse(const T2Tdd &M) {
+//    const auto [x00, x01] = std::get<0>(M);
+//    const auto [x10, x11] = std::get<1>(M);
+//    const double det = -(x01 * x10) + x00 * x11;
+//    return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
+// };
+// /* -------------------------------------------------------------------------- */
+// T3Tddd Inverse(const T3Tddd &mat) {
+//    // 以下も参考にできる
+//    // https://www.onlinemathstutor.org/post/3x3_inverses
+//    auto [x00, x01, x02] = std::get<0>(mat);
+//    auto [x10, x11, x12] = std::get<1>(mat);
+//    auto [x20, x21, x22] = std::get<2>(mat);
+//    double inv_det = 1. / (-x02 * x11 * x20 + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22);
+//    return {Tddd{inv_det * (-x12 * x21 + x11 * x22),
+//                 inv_det * (x02 * x21 - x01 * x22),
+//                 inv_det * (-x02 * x11 + x01 * x12)},
+//            Tddd{inv_det * (x12 * x20 - x10 * x22),
+//                 inv_det * (-x02 * x20 + x00 * x22),
+//                 inv_det * (x02 * x10 - x00 * x12)},
+//            Tddd{inv_det * (-x11 * x20 + x10 * x21),
+//                 inv_det * (x01 * x20 - x00 * x21),
+//                 inv_det * (-x01 * x10 + x00 * x11)}};
+//    /* ---------------------------------------------------------- */
+//    // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
+//    // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
+// };
+
+T2Tdd Inverse(const T2Tdd& M) {
+   const auto [x00, x01] = std::get<0>(M);
+   const auto [x10, x11] = std::get<1>(M);
+   const double det = std::fma(-x01, x10, x00 * x11);
+   return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
+};
+
+T3Tddd Inverse(const T3Tddd& mat) {
+   const auto [x00, x01, x02] = std::get<0>(mat);
+   const auto [x10, x11, x12] = std::get<1>(mat);
+   const auto [x20, x21, x22] = std::get<2>(mat);
+   const double inv_det = 1. / (std::fma(std::fma(-x02, x11, x01 * x12), x20, std::fma(std::fma(x02, x10, -x00 * x12), x21, std::fma(std::fma(-x01, x10, x00 * x11), x22, 0))));
+   return {Tddd{inv_det * std::fma(-x12, x21, x11 * x22),
+                inv_det * std::fma(x02, x21, -x01 * x22),
+                inv_det * std::fma(-x02, x11, x01 * x12)},
+           Tddd{inv_det * std::fma(x12, x20, -x10 * x22),
+                inv_det * std::fma(-x02, x20, x00 * x22),
+                inv_det * std::fma(x02, x10, -x00 * x12)},
+           Tddd{inv_det * std::fma(-x11, x20, x10 * x21),
+                inv_det * std::fma(x01, x20, -x00 * x21),
+                inv_det * std::fma(-x01, x10, x00 * x11)}};
+   // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
+   // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
+};
 
 #endif
