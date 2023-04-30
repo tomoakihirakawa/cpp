@@ -566,11 +566,12 @@ struct BEM_BVP {
             //    auto netInContact = use_face ? NearestContactFace(f)->getNetwork() : NearestContactFace(p)->getNetwork();
             //    auto w = netInContact->velocityRotational();
             //    auto U = uNeumann(p);
-            //    phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
+            //    phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
             //    auto s0s1s2 = OrthogonalBasis(n);
             //    auto [s0, s1, s2] = s0s1s2;
             //    auto Hessian = use_face ? grad_U_LinearElement(f, s0s1s2) : grad_U_LinearElement(p, s0s1s2);
             //    phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+            //    std::get<1>(p->phiphin_t) =  phin_t;
             // }
 
             /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
@@ -578,7 +579,7 @@ struct BEM_BVP {
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
             for (auto &[f, phin_t] : p->phintOnFace) {
-               if (f) {
+               if (f != nullptr) {
                   auto n = f->normal;
                   auto netInContact = NearestContactFace(f)->getNetwork();
                   auto w = netInContact->velocityRotational();
@@ -588,19 +589,18 @@ struct BEM_BVP {
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
                   phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-                  std::get<1>(p->phiphin_t) = phin_t;
                } else {
                   auto n = p->getNormalNeumann_BEM();
                   auto netInContact = NearestContactFace(p)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto U = uNeumann(p);
-                  phin_t = std::get<1>(p->phiphin_t) = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
-                  auto s0s1s2 = OrthogonalBasis(p->getNormal_BEM());
+                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
+                  auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
                   phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-                  std::get<1>(p->phiphin_t) = phin_t;
                }
+               std::get<1>(p->phiphin_t) = phin_t;
             }
          }
       }
