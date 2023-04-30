@@ -184,8 +184,8 @@ int main(int arg, char **argv) {
    for (const auto &x : vecX)
       for (const auto &y : vecY)
          for (const auto &z : vecZ)
-            if (min >= Norm({x, y, z})) {
-               min = Norm({x, y, z});
+            if (min >= Norm(Tddd{x, y, z})) {
+               min = Norm(Tddd{x, y, z});
                closest = {x, y, z};
             }
    // double rand = RandomReal({1E-10, 1E-10});
@@ -294,7 +294,8 @@ int main(int arg, char **argv) {
       // }
 
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
-      developByEISPH(Fluid, RigidBodies,
+      developByEISPH(Fluid,
+                     RigidBodies,
                      real_time,
                      CSML,
                      particle_spacing,
@@ -453,7 +454,7 @@ int main(int arg, char **argv) {
                vtp.add(p0);
                vtp.add(p1);
                vtp.add(p2);
-               vtp.addPolygon({p0, p1, p2});
+               vtp.addPolygon(std::array<networkPoint *, 4>{p0, p1, p2});
             }
             std::unordered_map<networkPoint *, double> PRESSURE, RHO;
             for (const auto &p : poly->getPoints()) {

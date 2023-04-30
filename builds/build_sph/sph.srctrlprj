@@ -5,7 +5,7 @@
             <compiler_flags>
                 <compiler_flag>-std=c++20</compiler_flag>
             </compiler_flags>
-            <cpp_standard>gnu++17</cpp_standard>
+            <cpp_standard>c++2a</cpp_standard>
             <cross_compilation>
                 <target>
                     <abi>gnu</abi>
@@ -57,8 +57,10 @@
                 <source_path>../../include/vtkWriter.hpp</source_path>
                 <source_path>../../include/XML.hpp</source_path>
                 <source_path>../../include/searcher.hpp</source_path>
-                <source_path>../../include/SPH_weightingFunctions.hpp</source_path>
                 <source_path>../../include/kernelFunctions.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_array_operations.hpp</source_path>
+                <source_path>SPH_Functions.hpp</source_path>
+                <source_path>SPH_weightingFunctions.hpp</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

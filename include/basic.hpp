@@ -2259,7 +2259,39 @@ struct JSON {
 
 /* ------------------------------------------------------ */
 
-std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
+// std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
+//    stream << "{\n";
+//    auto count = 0;
+//    for (const auto &[key, v] : json.map_S_S) {
+//       count++;
+//       if (v.size() == 1) {
+//          stream << "    "
+//                 << "\"" << key << "\":"
+//                 << " "
+//                 << "\"" << v[0] << "\"";
+//       } else {
+//          stream << "    "
+//                 << "\"" << key << "\":"
+//                 << " "
+//                 << "[";
+//          for (auto i = 0; i < v.size(); i++) {
+//             stream << "\"" << v[i] << "\"";
+//             if (i != v.size() - 1)
+//                stream << ",";
+//          }
+//          stream << "]";
+//       }
+//       if (json.map_S_S.size() != count)
+//          stream << ",\n";
+//       else
+//          stream << "\n";
+//    }
+//    stream << "}";
+//    return stream;
+// };
+
+std::string ToString(const JSON &json) {
+   std::stringstream stream;
    stream << "{\n";
    auto count = 0;
    for (const auto &[key, v] : json.map_S_S) {
@@ -2287,8 +2319,8 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
          stream << "\n";
    }
    stream << "}";
-   return stream;
-};
+   return stream.str();
+}
 
 /* ------------------------------------------------------ */
 
@@ -3354,9 +3386,9 @@ struct BaseBuckets {
       //    });
       // });
       /* -------------------------------------------------------------------------- */
-      std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max, [&](const auto &Bi) {
-         std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max, [&](const auto &Bij) {
-            std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max, [&](const auto &Bijk) {
+      std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+         std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max, [&func, &k_min, &k_max](const auto &Bij) {
+            std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max, [&func](const auto &Bijk) {
                for (const auto &p : Bijk) func(p);
             });
          });
