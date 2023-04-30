@@ -579,12 +579,14 @@ struct BEM_BVP {
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
             for (auto &[f, phin_t] : p->phintOnFace) {
-               if (f != nullptr) {
+               auto use_face = (f != nullptr);
+               if (use_face) {
                   auto n = f->normal;
                   auto netInContact = NearestContactFace(f)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto U = uNeumann(p, f);
-                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p, f));
+                  auto A = accelNeumann(p, f);
+                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, A);
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
@@ -594,7 +596,8 @@ struct BEM_BVP {
                   auto netInContact = NearestContactFace(p)->getNetwork();
                   auto w = netInContact->velocityRotational();
                   auto U = uNeumann(p);
-                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
+                  auto A = accelNeumann(p);
+                  phin_t = Dot(w, U - p->U_BEM) + Dot(n, A);
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);

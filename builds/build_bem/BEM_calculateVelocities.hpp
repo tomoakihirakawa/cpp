@@ -356,7 +356,6 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
       p->vecToSurface.fill(0.);
    }
    TimeWatch watch;
-   const double scale = 0.2;
    for (auto kk = 0; kk < loop; ++kk) {
       //$ ------------------------------------------------------ */
       //$           　　　　 vectorTangentialShift   　 　         */
@@ -367,8 +366,10 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 #pragma omp parallel
          for (const auto &p : net.getPoints())
 #pragma omp single nowait
-            p->vecToSurface_BUFFER = (p->Neumann ? 0.1 : 1.) * vectorTangentialShift2(p, scale);
-
+         {
+            auto scale = (p->Neumann ? 0.01 : 0.1);
+            p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
+         }
          for (const auto &p : net.getPoints()) {
             add_vecToSurface_BUFFER_to_vecToSurface(p);
             p->vecToSurface_BUFFER.fill(0.);

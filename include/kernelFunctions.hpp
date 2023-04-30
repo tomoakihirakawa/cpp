@@ -70,26 +70,33 @@ double laplacian_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
 };
 //! --------------------------------- ５次スプライン -------------------------------- */
 double w_Bspline5(double q, const double &h) {
-   constexpr double a = 2187. / (40. * M_PI);
+   constexpr double a = 2187. / (40. * std::numbers::pi);
+   constexpr double one_third = 1.0 / 3.0;
+   constexpr double two_thirds = 2.0 / 3.0;
+
    if ((q /= h) > 1.)
       return 0;
-   else if (q < 0.333333333333333333)
-      return (std::pow(1 - q, 5) - 6. * std::pow(0.6666666666666666 - q, 5) + 15. * std::pow(0.333333333333333333 - q, 5)) * a / (h * h * h);
-   else if (q < 0.6666666666666666)
-      return (std::pow(1 - q, 5) - 6. * std::pow(0.6666666666666666 - q, 5)) * a / (h * h * h);
+   else if (q < one_third)
+      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5) + 15. * std::pow(one_third - q, 5)) * a / (h * h * h);
+   else if (q < two_thirds)
+      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5)) * a / (h * h * h);
    else
       return (std::pow(1 - q, 5)) * a / (h * h * h);
 };
 Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
-   constexpr double a = 2187. / (40. * M_PI);
+   constexpr double a = 2187. / (40. * std::numbers::pi);
+   constexpr double one_third = 1.0 / 3.0;
+   constexpr double two_thirds = 2.0 / 3.0;
+
    double r = Norm(xi - xj);
    double q = r / h;
+
    if (q > 1.)
       return {0., 0., 0.};
-   else if (q < 0.333333333333333333)
-      return (xi - xj) * (-5 * std::pow(1. - q, 4) + 30. * std::pow(0.6666666666666666 - q, 4) - 75. * std::pow(0.333333333333333333 - q, 4)) * a / (h * h * h * r * h);
-   else if (q < 0.6666666666666666)
-      return (xi - xj) * (-5 * std::pow(1. - q, 4) + 30. * std::pow(0.6666666666666666 - q, 4)) * a / (h * h * h * r * h);
+   else if (q < one_third)
+      return (xi - xj) * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4) - 75. * std::pow(one_third - q, 4)) * a / (h * h * h * r * h);
+   else if (q < two_thirds)
+      return (xi - xj) * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4)) * a / (h * h * h * r * h);
    else
       return (xi - xj) * (-5 * std::pow(1. - q, 4)) * a / (h * h * h * r * h);
 };
@@ -99,26 +106,38 @@ double w_Bspline3(const double &r, const double &h) {
    if (q > 1.)
       return 0.;
    else if (q < 0.5)
-      return (1. - 6 * q * q + 6 * q * q * q) / (M_PI * h * h * h);
+      return (1. - 6 * q * q + 6 * q * q * q) / (std::numbers::pi * h * h * h);
    else
-      return 2. * std::pow(1 - q, 3) / (M_PI * h * h * h);
+      return 2. * std::pow(1 - q, 3) / (std::numbers::pi * h * h * h);
 };
+
 Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
-   // q = r / (3*h)なので，
-   // grad(q) = r / (3*h) = Normalize(xi - xj) / (3 * h)
    auto r = Norm(xi - xj);
    double q = r / h;
-   /*
-   dqdx = dqdx(q=r/h) = (xi - xj) / (r * h)
-   dWdq =
-   */
+
    if (q > 1.)
       return {0., 0., 0.};
    else if (q < 0.5)
-      return (xi - xj) * 6 * (-2 * q + 3 * q * q) / (M_PI * h * h * h * r * h);
+      return (xi - xj) * 6 * (-2 * q + 3 * q * q) / (std::numbers::pi * h * h * h * r * h);
    else
-      return -(xi - xj) * 6. * std::pow(1 - q, 2) / (M_PI * h * h * h * r * h);
+      return -(xi - xj) * 6. * std::pow(1 - q, 2) / (std::numbers::pi * h * h * h * r * h);
 };
+// Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
+//    // q = r / (3*h)なので，
+//    // grad(q) = r / (3*h) = Normalize(xi - xj) / (3 * h)
+//    auto r = Norm(xi - xj);
+//    double q = r / h;
+//    /*
+//    dqdx = dqdx(q=r/h) = (xi - xj) / (r * h)
+//    dWdq =
+//    */
+//    if (q > 1.)
+//       return {0., 0., 0.};
+//    else if (q < 0.5)
+//       return (xi - xj) * 6 * (-2 * q + 3 * q * q) / (M_PI * h * h * h * r * h);
+//    else
+//       return -(xi - xj) * 6. * std::pow(1 - q, 2) / (M_PI * h * h * h * r * h);
+// };
 /* -------------------------------------------------------------------------- */
 auto &w_Bspline = w_Bspline5;
 auto &grad_w_Bspline = grad_w_Bspline5;

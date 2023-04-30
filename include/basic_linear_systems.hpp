@@ -214,22 +214,15 @@ struct lapack_lu {
       };
    };
 
-   std::vector<double> flatten(const std::vector<std::vector<double>> &mat) const {
-      std::vector<double> flattened;
-      flattened.reserve(mat.size() * mat[0].size());
+   template <typename Container>
+   std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
+      using ValueType = typename Container::value_type::value_type;
+      std::vector<ValueType> flattened;
+      flattened.reserve(mat.size() * mat.size());
       for (const auto &part : mat)
          flattened.insert(flattened.end(), part.begin(), part.end());
       return flattened;
-   };
-
-   template <size_t N>
-   std::vector<double> flatten(const std::array<std::array<double, N>, N> &mat) const {
-      std::vector<double> flattened;
-      flattened.reserve(N * N);
-      for (const auto &part : mat)
-         flattened.insert(flattened.end(), part.begin(), part.end());
-      return flattened;
-   };
+   }
 
    void solve(const std::vector<double> &rhd, std::vector<double> &b) {
       if ((dim != rhd.size()) || (dim != b.size()) || (rhd.size() != b.size()))
@@ -491,16 +484,12 @@ struct QR {
       }
    };
    void IdentityMatrix(VV_d &mat) {
-      int i = 0, j = 0;
+      size_t i = 0;
       for (auto &m : mat) {
-         j = 0;
-         for (auto &n : m) {
-            n = (i == j) ? 1. : 0.;
-            j++;
-         }
-         i++;
+         m.assign(m.size(), 0.0);
+         m[i++] = 1.0;
       }
-   };
+   }
 };
 
 /* ------------------------------------------------------ */

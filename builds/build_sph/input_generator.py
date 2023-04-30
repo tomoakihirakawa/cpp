@@ -140,13 +140,13 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 1,
+        setting = {"RK_order": 2,
                    "max_dt": 0.001,
                    "end_time_step": 50000,
                    "end_time": 0.5,
                    "CSML": 3.05,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.015,
+                   "particle_spacing": 0.02,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #
