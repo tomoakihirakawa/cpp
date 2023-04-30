@@ -267,7 +267,7 @@ Tddd uNeumann(const networkPoint *const p) {
    std::vector<Tddd> V;
    std::vector<double> W;
    const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFaces()) {
+   for (const auto &f_normal : p->getFacesNeumann()) {
       auto [v, w] = uNeumann_(p, f_normal);
       if (w > 1E-20) {
          V.emplace_back(v);
@@ -286,7 +286,7 @@ Tddd accelNeumann(const networkPoint *const p) {
    std::vector<Tddd> V;
    std::vector<double> W;
    const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFaces()) {
+   for (const auto &f_normal : p->getFacesNeumann()) {
       auto [v, w] = accelNeumann_(p, f_normal);
       if (w > 1E-20) {
          V.emplace_back(v);
@@ -406,7 +406,7 @@ T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal
 
 T3Tddd grad_U_LinearElement(const networkFace *const F) { return grad_U_LinearElement(F, OrthogonalBasis(F->normal)); };
 
-T3Tddd grad_U_LinearElement(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
+T3Tddd grad_U_LinearElementNeuamnn(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
    /*
    スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
    しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
@@ -414,7 +414,7 @@ T3Tddd grad_U_LinearElement(const networkPoint *const p, const T3Tddd &orthogona
    */
    T3Tddd H{{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
    double Atot = 0;
-   for (const auto &f : p->getFaces()) {
+   for (const auto &f : p->getFacesNeumann()) {
       H += f->area * grad_U_LinearElement(f, orthogonal_basis);
       Atot += f->area;
    }

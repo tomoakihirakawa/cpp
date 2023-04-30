@@ -247,9 +247,9 @@ using VarForOutput = std::variant<std::string, int, uomap_P_Tddd, uomap_P_d>;
 using V_VarForOutput = std::vector<VarForOutput>;
 using VV_VarForOutput = std::vector<V_VarForOutput>;
 /* ------------------------------------------------------ */
+
 template <class T>
-void DataArray(FILE *fp, const std::vector<T> &Points,
-               const VV_VarForOutput &VV_name_comp_mapPVd) {
+void DataArray(FILE *fp, const std::vector<T> &Points, const VV_VarForOutput &VV_name_comp_mapPVd) {
    try {
       for (auto &V_name_comp_mapPVd : VV_name_comp_mapPVd) {
          // V_name_comp_mapPVdの先頭は必ずstringでなければならない．
@@ -259,7 +259,7 @@ void DataArray(FILE *fp, const std::vector<T> &Points,
             writeDataArray(fp, Points, Name, std::get<std::unordered_map<T, double>>(V_name_comp_mapPVd[1]));
          } else if (V_name_comp_mapPVd.size() > 0 && std::holds_alternative<std::unordered_map<T, Tddd>>(V_name_comp_mapPVd[1])) {
             writeDataArray(fp, Points, Name, std::get<std::unordered_map<T, Tddd>>(V_name_comp_mapPVd[1]));
-          } else {
+         } else {
             std::stringstream ss;
             ss << Name << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());

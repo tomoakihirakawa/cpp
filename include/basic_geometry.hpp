@@ -247,7 +247,7 @@ double Inradius(const T4Tddd &p0123) { return Inradius(std::get<0>(p0123), std::
 Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2) {
    // see /Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/四面体の内接球外接球.nb
    // https://en.wikipedia.org/wiki/Tetrahedron
-   auto len = [](const Tddd &a, const Tddd &b, const Tddd &c) { return Norm(c - ((a - b) * Dot(c - b, a - b) / Dot(a - b, a - b) + b)); };
+   auto len = [](const Tddd &a, const Tddd &b, const Tddd &c) { const auto a_b = a - b;return Norm(c - ((a_b) * Dot(c - b, a_b) / Dot(a_b, a_b) + b)); };
    auto l0 = len(p1, p2, p0);
    auto l1 = len(p2, p0, p1);
    auto l2 = len(p0, p1, p2);
@@ -1289,21 +1289,21 @@ std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
    ( (a-b)*t + (b - X) ).(a-b) = 0
    t = (X-b).(a-b)/(a-b).(a-b)
    */
-   auto [a, b] = ab;
-   double t = Dot(X - b, a - b) / Dot(a - b, a - b);
-   if (t > 1.)
-      t = 1.;
-   else if (t < 0.)
-      t = 0.;
+   const auto [a, b] = ab;
+   const auto a_b = a - b;
+   const auto t = std::clamp(Dot(X - b, a_b) / Dot(a_b, a_b), 0.0, 1.0);
    return {t, a * t + b * (1. - t)};
 };
+
 Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    const auto [a, b] = ab;
    const auto [A, B] = AB;
-   const auto [t, tau] = Dot(Inverse(T2Tdd{{{Dot(a - b, a - b), -Dot(A - B, a - b)},
-                                            {Dot(a - b, A - B), -Dot(A - B, A - B)}}}),
-                             Tdd{-Dot(b, a - b) + Dot(B, a - b),
-                                 -Dot(b, A - B) + Dot(B, A - B)});
+   const auto a_b = a - b;
+   const auto A_B = A - B;
+   const auto [t, tau] = Dot(Inverse(T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)},
+                                            {Dot(a_b, A_B), -Dot(A_B, A_B)}}}),
+                             Tdd{-Dot(b, a_b) + Dot(B, a_b),
+                                 -Dot(b, A_B) + Dot(B, A_B)});
    if (Between(t, {0., 1.}) && Between(tau, {0., 1.}))
       return {t, tau};
    auto [t0, X0] = Nearest_(a, {A, B});
@@ -1326,8 +1326,8 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
 Tddd Nearest(const Tddd &X, const T2Tddd &ab) { return std::get<1>(Nearest_(X, ab)); };
 std::tuple<double, double, Tddd> DistanceToPlane_(const Tddd &X, const T3Tddd &abc) {
    // アンダースコアがついているものはパラメタも返す
-   auto [a, b, c] = abc;
-   auto [t0, t1, alpah] = Dot(X - c, Inverse(T3Tddd{a - c, b - c, Cross(a - c, b - c)}));
+   const auto [a, b, c] = abc;
+   const auto [t0, t1, alpah] = Dot(X - c, Inverse(T3Tddd{a - c, b - c, Cross(a - c, b - c)}));
    return {t0, t1, a * t0 + b * t1 + c * (1 - t0 - t1)};
 };
 Tddd DistanceToPlane(const Tddd &X, const T3Tddd &abc) {
