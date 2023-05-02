@@ -9,6 +9,7 @@ if(APPLE)
   message(STATUS "platform is Apple\n")
 
   set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-13")
+  include_directories(/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3)
 
 # set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-12")
 # set(CMAKE_CXX_COMPILER /usr/bin/clang++)

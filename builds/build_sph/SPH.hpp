@@ -27,7 +27,7 @@
 
 #define POWER 1.
 
-const double damping_factor = 0.;
+const double reflection_factor = 1.;
 const double asobi = 0.;
 
 #include "SPH_Functions.hpp"
@@ -865,6 +865,7 @@ void developByEISPH(Network *net,
          {
             // テスト
             auto U = p->U_SPH;
+            auto X_last = p->X;
             p->RK_U.push(p->DUDt_SPH);  // 速度
             p->U_SPH = p->RK_U.getX();  // * 0.5 + U * 0.5;
             p->RK_X.push(p->U_SPH);     // 位置
@@ -892,18 +893,28 @@ void developByEISPH(Network *net,
                // const auto X = p->RK_X.getX(p->U_SPH);
                isReflected = false;
                networkPoint *closest_wall_point;
-               if (closest_wall_point = closest())
-                  if (particle_spacing * (1. - asobi) > Distance(closest_wall_point->X, p->X)) {
+               if (closest_wall_point = closest()) {
+                  auto ovre_run = ((1. - asobi) * particle_spacing - Distance(closest_wall_point->X, p->X)) / 2.;
+                  if (ovre_run > 0.) {
                      auto normal_distance = Norm(Projection(p->X - closest_wall_point->X, closest_wall_point->normal_SPH));
                      if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
-                        p->DUDt_SPH -= (1. + damping_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                        p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                         p->RK_U.repush(p->DUDt_SPH);  // 速度
                         p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
                         p->RK_X.repush(p->U_SPH);     // 位置
                         p->setXSingle(p->tmp_X = p->RK_X.getX());
+                        //
+
+                        // p->DUDt_SPH += (ovre_run * closest_wall_point->normal_SPH) / dt / dt;
+                        // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                        // p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
+                        // p->RK_X.repush(p->U_SPH);     // 位置
+                        // p->setXSingle(p->tmp_X = p->RK_X.getX());
+
                         isReflected = true;
                      }
                   }
+               }
             };
 #endif
          }

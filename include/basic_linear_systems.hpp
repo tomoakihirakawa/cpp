@@ -474,7 +474,7 @@ V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
       for (int j = 0; j < i; ++j) {
          tmp = std::fma(a[j], b[j], tmp);
       }
-      b[i] = std::fma(-tmp, 1.0 / a[i], b[i]);
+      b[i] = std::fma(tmp, -1.0 / a[i], b[i]);
       i++;
    }
    return b;
@@ -492,7 +492,7 @@ V_d back_substitution(const VV_d &mat, V_d b, const Tii &mat_size) {
    return b;
 };
 
-V_d back_substitution(const VV_d &mat, V_d b, const int &mat_size) {
+V_d back_substitution(const VV_d &mat, V_d b, const int mat_size) {
    return back_substitution(mat, b, Tii{mat_size, mat_size});
 };
 
@@ -570,10 +570,70 @@ struct QR {
    }
 };
 
+/* -------------------------------------------------------------------------- */
+
+struct CSR {
+   double value;
+   size_t index;
+   std::unordered_map<CSR *, double> column_value;
+   CSR(){};
+   void clear() { this->column_value.clear(); }
+   double at(CSR *const p) { return column_value.at(p); };
+   bool contains(CSR *const p) { return column_value.contains(p); };
+   void increment(CSR *const p, double v) {
+      auto it = column_value.find(p);
+      if (it != column_value.end())
+         (*it).second += v;
+      else
+         column_value[p] = v;
+   };
+};
+
+double Dot(const std::unordered_map<CSR *, double> &column_value, const V_d &V) {
+   double ret = 0.;
+   for (const auto &[crs, value] : column_value)
+      ret += value * V[crs->index];
+   return ret;
+};
+
+double Dot(const std::unordered_map<CSR *, double> &column_value, const std::unordered_set<CSR *> &V_crs) {
+   double ret = 0.;
+   for (const auto &[crs, value] : column_value) {
+      auto it = V_crs.find(crs);
+      if (it != V_crs.end())
+         ret += value * (*it)->value;
+   }
+   return ret;
+};
+
+V_d Dot(const std::unordered_set<CSR *> &V_crs) {
+   V_d ret(V_crs.size(), 0.);
+   for (const auto &crs0 : V_crs)
+      for (const auto &[crs1, value] : crs0->column_value)
+         ret[crs0->index] += value * crs1->value;
+   return ret;
+};
+
+V_d Dot(const std::unordered_set<CSR *> &A, const V_d &V) {
+   V_d ret(V.size(), 0.);
+   for (const auto &crs : A)
+      ret[crs->index] += Dot(crs->column_value, V);
+   return ret;
+};
+
+V_d Dot(const std::unordered_set<CSR *> &A, const std::unordered_set<CSR *> &V_crs) {
+   V_d ret(V_crs.size(), 0.);
+   for (const auto &crs : A)
+      ret[crs->index] += Dot(crs->column_value, V_crs);
+   return ret;
+};
+
+/* -------------------------------------------------------------------------- */
+
 /* ------------------------------------------------------ */
 /*                          GMRES                         */
 /* ------------------------------------------------------ */
-
+template <typename Matrix>
 struct ArnoldiProcess {
    // ヘッセンベルグ行列H[0:k-1]は，Aと相似なベクトルであり，同じ固有値を持つ
    // GMRESで使う場合，V0にはNormalize(b-A.x0)を与える．
@@ -588,17 +648,17 @@ struct ArnoldiProcess {
    int n;  // the number of interation
    double beta;
    V_d v0;
-   VV_d H;  // ヘッセンベルグ行列
-   VV_d V;  // an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
+   VV_d H;  // ((n+1) x n) Hessenberg matrix
+   VV_d V;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
    V_d w;
-   int i, j;
-   ArnoldiProcess(const VV_d &A, const V_d &v0IN /*the first direction*/, const int nIN)
+   ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN)
        : n(nIN),
          beta(Norm(v0IN)),
-         v0(Normalize(v0IN)),
+         v0(v0IN / beta),
          H(VV_d(nIN + 1, V_d(nIN, 0.))),
          V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
          w(A.size()) {
+      size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
          w = Dot(A, V[j]);  //@ 行列-ベクトル積
          for (i = 0; i < j + 1; ++i)
@@ -610,7 +670,8 @@ struct ArnoldiProcess {
    };
 };
 
-struct gmres : public ArnoldiProcess {
+template <typename Matrix>
+struct gmres : public ArnoldiProcess<Matrix> {
    /* NOTE:
    r0 = Normalize(b - A.x0)
    to find {r0,A.r0,A^2.r0,...}
@@ -622,22 +683,27 @@ struct gmres : public ArnoldiProcess {
    const QR qr;
    V_d g;
    ~gmres(){};
-   gmres(const VV_d &A, const V_d &b, const V_d &x0, const int nIN)
-       : ArnoldiProcess(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN),
+   gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN)
+       : ArnoldiProcess<Matrix>(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN),
          n(nIN),
          x(x0),
          y(b.size()),
-         qr(ArnoldiProcess::H),
-         g(qr.Q.size()) {
-      int i = 0;
+         qr(ArnoldiProcess<Matrix>::H),
+         g(qr.Q.size()),
+         err(0.) {
+      if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
+         return;
+      //
+      size_t i = 0;
       for (const auto &q : qr.Q)
-         g[i++] = q[0] * beta;
-      err = g[i];  // 予想される誤差
+         g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
+
+      err = g.back();  // 予想される誤差
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
       i = 0;
       for (i = 0; i < n; ++i)
-         this->x += this->y[i] * ArnoldiProcess::V[i];
+         this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
    };
 };
 

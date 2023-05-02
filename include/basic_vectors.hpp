@@ -514,8 +514,8 @@ VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
    T ret = 0;
-   for (size_t i = 0; i < vec1.size(); ++i) {
-      ret = std::fma(vec1[i], vec2[i], ret);
+   for (size_t i = 0; const auto &v1 : vec1) {
+      ret = std::fma(v1, vec2[i++], ret);
    }
    return ret;
 }
