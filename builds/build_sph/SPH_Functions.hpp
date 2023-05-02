@@ -5,10 +5,10 @@
 
 /* -------------------------------------------------------------------------- */
 
-Tddd SPP_X(const networkPoint *p) {
+Tddd SPP_X(const networkPoint *p, const double c = 1.0) {
    // return p - (p->COM_SPH - p);
    // return p->X - 2 * p->COM_SPH;
-   return p->X + p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
+   return p->X + c * p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
 };
 
 auto canSetSPP(const auto &target_nets, const auto &p) {
@@ -63,17 +63,17 @@ auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
    A->lap_U_ = A->lap_U = {0., 0., 0.};
    //$ ------------------------------------------ */
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
-      auto rij = qX - A->X;
-      auto Uij = coef * B->U_SPH - A->U_SPH;
-      auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
+      const auto rij = qX - A->X;
+      const auto Uij = coef * B->U_SPH - A->U_SPH;
+      const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
       A->lap_U_ += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
                    ((B->rho + A->rho) * Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
    };
    //$ ------------------------------------------ */
    //$ ------------------------------------------ */
    // auto func = [&](const auto &B, const Tddd &qX) {
-   //    auto rij = A->X - qX;
-   //    auto Uij = A->U_SPH - coef *B->U_SPH;
+   //    const auto rij = A->X - qX;
+   //    const auto Uij = A->U_SPH - coef *B->U_SPH;
    //    A->lap_U_ += 2 * B->mass / A->rho * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH)) / Dot(rij, rij) * Uij;
    // };
    //$ ------------------------------------------ */
@@ -84,8 +84,10 @@ auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
                func(B, B->X);
 #ifdef USE_SPP_Fluid
             if (B->isSurface) {
-               if (canSetSPP(target_nets, B))
+               if (canSetSPP(target_nets, B)) {
                   func(B, SPP_X(B), SPP_U_coef);
+                  func(B, SPP_X(B, 2.), SPP_U_coef);
+               }
             }
 #endif
          }
@@ -143,8 +145,10 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
             func(B, B->X);
 #ifdef USE_SPP_Fluid
             if (B->isSurface) {
-               if (canSetSPP(target_nets, B))
+               if (canSetSPP(target_nets, B)) {
                   func(B, SPP_X(B), SPP_U_coef);
+                  func(B, SPP_X(B, 2.), SPP_U_coef);
+               }
             }
 #endif
          }
@@ -214,8 +218,10 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
          func(B, B->X);
 #ifdef USE_SPP_Fluid
          if (B->isSurface)
-            if (canSetSPP(target_nets, B))
+            if (canSetSPP(target_nets, B)) {
                func(B, SPP_X(B), SPP_p_coef);
+               func(B, SPP_X(B, 2.), SPP_p_coef);
+            }
 #endif
       }
    };
@@ -237,12 +243,12 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
    auto F = sum_Aij_Pij - b;
    auto dFdPi = sum_Aij;
 
-#ifdef surface_zero_pressure
+   #ifdef surface_zero_pressure
    if (A->isSurface) {
       F += A->p_SPH;
       sum_Aij += 1;
    }
-#endif
+   #endif
 
    auto FF = F * F / 2.;
    auto dFFdPi = F * dFdPi;
@@ -285,8 +291,10 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
          func(B, B->X);
 #ifdef USE_SPP_Fluid
          if (B->isSurface) {
-            if (canSetSPP(target_nets, B))
+            if (canSetSPP(target_nets, B)) {
                func(B, SPP_X(B), SPP_p_coef);
+               func(B, SPP_X(B, 2.), SPP_p_coef);
+            }
          }
 #endif
       }
@@ -303,6 +311,45 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
    //
    if (!isFinite(A->DUDt_SPH))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
+};
+
+// b$ ------------------------------------------------------ */
+// b$                    ∇²Pを計算                           */
+// b$ ------------------------------------------------------ */
+
+auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
+   A->column_value.clear();
+   A->value = -A->div_tmpU;
+   auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
+      const auto rij = qX - A->X;
+      const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
+      double v = 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH)) / ((B->rho + A->rho) * Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
+      A->increment(B, v);
+      A->increment(A, -v);
+   };
+
+   for (const auto &net : target_nets)
+      net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+         if (B->isCaptured) {
+            if (A != B)
+               func(B, B->X);
+#ifdef USE_SPP_Fluid
+            if (B->isSurface) {
+               if (canSetSPP(target_nets, B)) {
+                  func(B, SPP_X(B), SPP_p_coef);
+                  func(B, SPP_X(B, 2.), SPP_p_coef);
+               }
+            }
+#endif
+         }
+      });
+};
+
+auto Lap_P(const auto &points, const std::unordered_set<Network *> &target_nets) {
+#pragma omp parallel
+   for (const auto &A : points)
+#pragma omp single nowait
+      Lap_P(A, target_nets);
 };
 
 #endif

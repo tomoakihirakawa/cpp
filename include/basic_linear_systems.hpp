@@ -1,6 +1,7 @@
 #ifndef basic_linear_systems_H
 #define basic_linear_systems_H
 
+#include <concepts>
 #include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
@@ -44,7 +45,7 @@ struct ludcmp_parallel {
             lu_k[k] = TINY;
 
 #ifdef _OPENMP
-#pragma omp parallel for
+   #pragma omp parallel for
 #endif
          for (auto i = k + 1; i < n; ++i) {
             lu[i][k] /= lu_k[k];
@@ -573,14 +574,25 @@ struct QR {
 /* -------------------------------------------------------------------------- */
 
 struct CSR {
+   bool __is_active__, __exclude__;
    double value;
-   size_t index;
+   size_t __index__;
+   void setIndexCSR(size_t i) {
+      __index__ = i;
+      __is_active__ = true;
+   };
+   size_t getIndexCSR() const { return __index__; };
+   void deactivate() { __is_active__ = false; };
+   void exclude(bool torf) { __exclude__ = torf; };
    std::unordered_map<CSR *, double> column_value;
-   CSR(){};
+   CSR() : __is_active__(false){};
    void clear() { this->column_value.clear(); }
    double at(CSR *const p) { return column_value.at(p); };
    bool contains(CSR *const p) { return column_value.contains(p); };
    void increment(CSR *const p, double v) {
+      if (__exclude__)
+         if (!p->__is_active__)
+            return;
       auto it = column_value.find(p);
       if (it != column_value.end())
          (*it).second += v;
@@ -588,43 +600,70 @@ struct CSR {
          column_value[p] = v;
    };
 };
-
-double Dot(const std::unordered_map<CSR *, double> &column_value, const V_d &V) {
-   double ret = 0.;
-   for (const auto &[crs, value] : column_value)
-      ret += value * V[crs->index];
-   return ret;
-};
-
-double Dot(const std::unordered_map<CSR *, double> &column_value, const std::unordered_set<CSR *> &V_crs) {
+template <typename T>
+   requires std::derived_from<T, CSR>
+double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V) {
    double ret = 0.;
    for (const auto &[crs, value] : column_value) {
-      auto it = V_crs.find(crs);
-      if (it != V_crs.end())
-         ret += value * (*it)->value;
+      if (crs->__is_active__) {
+         ret += value * V[crs->__index__];
+      }
    }
    return ret;
 };
 
-V_d Dot(const std::unordered_set<CSR *> &V_crs) {
-   V_d ret(V_crs.size(), 0.);
-   for (const auto &crs0 : V_crs)
-      for (const auto &[crs1, value] : crs0->column_value)
-         ret[crs0->index] += value * crs1->value;
+template <typename T>
+   requires std::derived_from<T, CSR>
+double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs) {
+   double ret = 0.;
+   for (const auto &[crs, value] : column_value) {
+      if (crs->__is_active__) {
+         auto it = V_crs.find(crs);
+         if (it != V_crs.end() && (*it)->__is_active__) {
+            ret += value * (*it)->value;
+         }
+      }
+   }
    return ret;
 };
 
-V_d Dot(const std::unordered_set<CSR *> &A, const V_d &V) {
+template <typename T>
+   requires std::derived_from<T, CSR>
+V_d Dot(const std::unordered_set<T *> &V_crs) {
+   V_d ret(V_crs.size(), 0.);
+   for (const auto &crs0 : V_crs) {
+      if (crs0->__is_active__) {
+         auto &tmp = ret[crs0->__index__];
+         for (const auto &[crs1, value] : crs0->column_value) {
+            if (crs1->__is_active__)
+               tmp += value * crs1->value;
+         }
+      }
+   }
+   return ret;
+};
+
+template <typename T>
+   requires std::derived_from<T, CSR>
+V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
    V_d ret(V.size(), 0.);
-   for (const auto &crs : A)
-      ret[crs->index] += Dot(crs->column_value, V);
+   for (const auto &crs : A) {
+      if (crs->__is_active__) {
+         ret[crs->__index__] += Dot(crs->column_value, V);
+      }
+   }
    return ret;
 };
 
-V_d Dot(const std::unordered_set<CSR *> &A, const std::unordered_set<CSR *> &V_crs) {
+template <typename T>
+   requires std::derived_from<T, CSR>
+V_d Dot(const std::unordered_set<T *> &A, const std::unordered_set<T *> &V_crs) {
    V_d ret(V_crs.size(), 0.);
-   for (const auto &crs : A)
-      ret[crs->index] += Dot(crs->column_value, V_crs);
+   for (const auto &crs : A) {
+      if (crs->__is_active__) {
+         ret[crs->__index__] += Dot(crs->column_value, V_crs);
+      }
+   }
    return ret;
 };
 

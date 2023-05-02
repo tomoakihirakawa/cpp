@@ -1,36 +1,36 @@
 #ifndef SPH_weightingFunctions_H
-#define SPH_weightingFunctions_H
+   #define SPH_weightingFunctions_H
 
-#include "kernelFunctions.hpp"
-#include "vtkWriter.hpp"
+   #include "kernelFunctions.hpp"
+   #include "vtkWriter.hpp"
 
-#define REFLECTION
+   #define REFLECTION
 
-// #define surface_zero_pressure
+   #define surface_zero_pressure
 
-//$ ------------------------------------------------------------------- */
+   //$ ------------------------------------------------------------------- */
+   /* -------------------------------------------------------------------------- */
+   // #define USE_SPP_Fluid
+   #if defined(USE_SPP_Fluid)
+      #define SPP_U_coef 1.
+      #define SPP_p_coef -1.
+   #endif
+   /* -------------------------------------------------------------------------- */
+   // #define USE_SPP_Wall
+   #if defined(USE_SPP_Wall)
+      #define SPP_U_coef_of_Wall 1.
+      #define SPP_p_coef_of_Wall -1.
+      #define SPP_DUDt_coef_of_Wall 1.
+      #define SPP_rho_coef_of_Wall 1.
+   #endif
 /* -------------------------------------------------------------------------- */
-#define USE_SPP_Fluid
-#if defined(USE_SPP_Fluid)
-#define SPP_U_coef 1.
-#define SPP_p_coef -1.
-#endif
-/* -------------------------------------------------------------------------- */
-#define USE_SPP_Wall
-#if defined(USE_SPP_Wall)
-#define SPP_U_coef_of_Wall 1.
-#define SPP_p_coef_of_Wall -1.
-#define SPP_DUDt_coef_of_Wall 1.
-#define SPP_rho_coef_of_Wall 1.
-#endif
-/* -------------------------------------------------------------------------- */
 
-#define POWER 1.
+   #define POWER 1.
 
 const double reflection_factor = 1.;
 const double asobi = 0.;
 
-#include "SPH_Functions.hpp"
+   #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
 
 // b# -------------------------------------------------------------------------- */
@@ -38,9 +38,9 @@ const double asobi = 0.;
 // b# -------------------------------------------------------------------------- */
 void setPressureForInitialGuess(Network *net) {
 
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       p->p_SPH_ = p->total_weight = 0;
       double w = 0, own_w = 0;
@@ -50,9 +50,9 @@ void setPressureForInitialGuess(Network *net) {
       };
       net->BucketPoints.apply(p->X, p->radius_SPH, func);
    }
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       p->p_SPH = p->p_SPH_ / p->total_weight;
    }
@@ -62,9 +62,9 @@ void setPressureForInitialGuess(Network *net) {
 
 void setPressureSPP(Network *net, const auto &RigidBodyObject) {
 
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       // if (p->isSurface && surface_zero_pressure)
       //    p->p_SPH = 0;
@@ -118,9 +118,9 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    // b# ------------------------------------------------------ */
    // b#  A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       // p->interpolated_normal_SPH, q->X - p->Xの方向が完全に一致した際に失敗する
       /* ---------------------- p->interpolated_normal_SPHの計算 --------------------- */
@@ -186,10 +186,10 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
                       return false;
                    }))
                   p->isSurface = false;
-#ifdef surface_zero_pressure
+   #ifdef surface_zero_pressure
          if (p->isSurface)
             p->p_SPH = 0;
-#endif
+   #endif
       }
    }
 
@@ -197,9 +197,9 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints())
          p->interpolated_normal_SPH_original = {0, 0, 0};
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : wall_p) {
-#pragma omp single nowait
+   #pragma omp single nowait
       {
          p->interpolated_normal_SPH_original = {0., 0., 0.};
          for (const auto &[obj, poly] : RigidBodyObject)
@@ -221,9 +221,9 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
    const double POW = 1., a = 1.;
    const bool mirroring = true;
    const bool account_volume = true;
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &PW : wall_p)
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       PW->total_weight = 0;
       PW->tmp_ViscousAndGravityForce_ = PW->ViscousAndGravityForce_ = PW->DUDt_SPH_ = PW->gradP_SPH_ = {0., 0., 0.};
@@ -253,12 +253,13 @@ void setWallDUDt(auto &net, const std::unordered_set<networkPoint *> &wall_p, co
       /* -------------------------------------------------------------------------- */
       net->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &PF) {
          func(PF, PF->X);
-#ifdef USE_SPP_Wall
+   #ifdef USE_SPP_Wall
          if (PF->isSurface) {
             // if (canSetSPP(net, RigidBodyObject, PF))
             func(PF, SPP_X(PF), SPP_DUDt_coef_of_Wall);
+            func(PF, SPP_X(PF, 2), SPP_DUDt_coef_of_Wall);
          }
-#endif
+   #endif
       });
       for (const auto &[obj, poly] : RigidBodyObject)
          obj->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &qW) {
@@ -305,9 +306,9 @@ void mapValueOnWall(auto &net,
    bool account_volume = false;
    bool do_spp = false;
    auto calc = [&]() {
-#pragma omp parallel
+   #pragma omp parallel
       for (const auto &PW : wall_p)
-#pragma omp single nowait
+   #pragma omp single nowait
       {
          const Tddd markerX = PW->X + 2 * PW->normal_SPH;
          const Tddd accel = {0., 0., 0.};
@@ -319,15 +320,15 @@ void mapValueOnWall(auto &net,
          /* -------------------------------------------------------------------------- */
          auto func = [&](const networkPoint *PF, const Tddd &nearX, const bool spp = false) {
 
-#ifdef USE_SPP_Wall
+   #ifdef USE_SPP_Wall
             double cU = spp ? SPP_U_coef_of_Wall : 1.;
             double cp = spp ? SPP_p_coef_of_Wall : 1.;
             double cRho = spp ? SPP_rho_coef_of_Wall : 1.;
-#else
+   #else
             double cU = 1.;
             double cp = 1.;
             double cRho = 1.;
-#endif
+   #endif
             if (PF->getNetwork()->isFluid) {
                PW->total_N += std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW);
                PW->total_weight += (W = (account_volume ? PF->volume : 1.) * std::pow(w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a), POW));
@@ -380,12 +381,13 @@ void mapValueOnWall(auto &net,
          /* -------------------------------------------------------------------------- */
          net->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &PF) {
             func(PF, PF->X);
-#ifdef USE_SPP_Wall
+   #ifdef USE_SPP_Wall
             if (do_spp && PF->isSurface) {
                // if (canSetSPP(net, RigidBodyObject, PF))
                func(PF, SPP_X(PF), true);
+               func(PF, SPP_X(PF, 2.), true);
             }
-#endif
+   #endif
          });
          for (const auto &[obj, poly] : RigidBodyObject)
             obj->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &qW) {
@@ -606,9 +608,9 @@ void developByEISPH(Network *net,
       DebugPrint("関連する壁粒子をマーク", Green);
       double C = 1.2;
       for (const auto &[obj, poly] : RigidBodyObject) {
-#pragma omp parallel
+   #pragma omp parallel
          for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
          {
             obj->BucketPoints.apply(p->X, p->radius_SPH * C, [&](const auto &q) {
                if (Distance(p, q) < p->radius_SPH * C) {
@@ -716,9 +718,9 @@ void developByEISPH(Network *net,
 
          // b$ ---------------------------------- (1) 位置の更新 for (2) 密度の更新--------------------------------- */
 
-#pragma omp parallel
+   #pragma omp parallel
          for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
             p->setX(p->tmp_X);
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
@@ -763,11 +765,11 @@ void developByEISPH(Network *net,
          // b% ------------------------------------------------------ */
          // b%  　　　　　             仮位置における圧力Pの計算                   */
          // b% ------------------------------------------------------ */
-#ifdef surface_zero_pressure
+   #ifdef surface_zero_pressure
          for (const auto &p : net->getPoints())
             if (p->isSurface)
                p->p_SPH = 0;
-#endif
+   #endif
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -785,25 +787,52 @@ void developByEISPH(Network *net,
          */
          //
          DebugPrint("仮位置における圧力Pの計算", Magenta);
-         int loopnum = 1;
          //
-// #define NewtonMethod
-#if defined(NewtonMethod)
+   // #define ISPH
+   #if defined(ISPH)
+
+         DebugPrint("activate");
+         V_d b(net->getPoints().size()), x0(net->getPoints().size());
+         size_t i = 0;
+         for (const auto &p : net->getPoints()) {
+            p->setIndexCSR(i);
+            b[i] = p->value = p->div_tmpU;
+            x0[i] = p->p_SPH;
+            i++;
+         }
+
+         DebugPrint("Lap_P");
+         Lap_P(net->getPoints(), Append(net_RigidBody, net));
+         for (const auto &p : net->getPoints())
+            if (p->isSurface) {
+               p->column_value.clear();
+               p->increment(p, 1.);
+               p->value = 0.;
+            }
+         gmres gm(net->getPoints(), b, x0, 100);
+         std::cout << "gm.err : " << gm.err << std::endl;
+         for (const auto &p : net->getPoints()) {
+            p->p_SPH = gm.x[p->getIndexCSR()];
+         }
+   #else
+         // #define NewtonMethod
+         int loopnum = 1;
+      #if defined(NewtonMethod)
          for (auto i = 0; i < loopnum; ++i)
-#endif
+      #endif
          {
 
-#pragma omp parallel
+      #pragma omp parallel
             for (const auto &p : net->getPoints())
-#pragma omp single nowait
+      #pragma omp single nowait
                nextPressure(p, Append(net_RigidBody, net), dt);
 
-#pragma omp parallel
+      #pragma omp parallel
             for (const auto &p : wall_as_fluid)
-#pragma omp single nowait
+      #pragma omp single nowait
                nextPressure(p, Append(net_RigidBody, net), dt);
 
-#if defined(NewtonMethod)
+      #if defined(NewtonMethod)
             double sum = 0;
             for (const auto &p : net->getPoints()) {
                if (i == 0)
@@ -823,7 +852,7 @@ void developByEISPH(Network *net,
                std::cout << "EISPH" << Red << "sum/N " << sum / (net->getPoints().size() + wall_as_fluid.size()) << colorOff << std::endl;
             else if (i == loopnum - 1)
                std::cout << " 最後" << Red << "sum/N " << sum / (net->getPoints().size() + wall_as_fluid.size()) << colorOff << std::endl;
-#endif
+      #endif
          }
 
          for (const auto &p : net->getPoints()) {
@@ -835,6 +864,36 @@ void developByEISPH(Network *net,
             p->p_SPH = p->p_SPH_;
          }
 
+         /* -------------------------------------------------------------------------- */
+         if (real_time > 0.011) {
+            DebugPrint("activate");
+            V_d b(net->getPoints().size()), x0(net->getPoints().size());
+            size_t i = 0;
+            for (const auto &p : net->getPoints()) {
+               p->setIndexCSR(i);
+               p->exclude(true);
+               b[i] = p->value = p->div_tmpU;
+               x0[i] = p->p_SPH;
+               i++;
+            }
+
+            DebugPrint("Lap_P");
+            Lap_P(net->getPoints(), Append(net_RigidBody, net));
+            for (const auto &p : net->getPoints())
+               if (p->isSurface) {
+                  p->column_value.clear();
+                  p->increment(p, 1.);
+                  p->value = 0.;
+               }
+            gmres gm(net->getPoints(), b, x0, 50);
+            std::cout << "gm.err : " << gm.err << std::endl;
+            for (const auto &p : net->getPoints()) {
+               p->p_SPH = gm.x[p->getIndexCSR()];
+            }
+         }
+            /* -------------------------------------------------------------------------- */
+
+   #endif
          //% ---------------------------- 計算した圧力をマップするかどうか ---------------------------- */
 
          // mapValueOnWall(net, wall_p, RigidBodyObject);
@@ -847,9 +906,9 @@ void developByEISPH(Network *net,
 
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
 
-#pragma omp parallel
+   #pragma omp parallel
          for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
             gradP(p, Append(net_RigidBody, net));
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
@@ -859,9 +918,9 @@ void developByEISPH(Network *net,
          //@ -------------------------------------------------------- */
 
          DebugPrint("粒子の時間発展", Green);
-#pragma omp parallel
+   #pragma omp parallel
          for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
          {
             // テスト
             auto U = p->U_SPH;
@@ -873,7 +932,7 @@ void developByEISPH(Network *net,
             // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
             /* -------------------------------------------------------------------------- */
             int count = 0;
-#if defined(REFLECTION)
+   #if defined(REFLECTION)
             auto closest = [&]() {
                double distance = 1E+20;
                networkPoint *P = nullptr;
@@ -916,7 +975,7 @@ void developByEISPH(Network *net,
                   }
                }
             };
-#endif
+   #endif
          }
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粒子の時間発展");
          real_time = (*net->getPoints().begin())->RK_X.gett();

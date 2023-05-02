@@ -21,32 +21,32 @@ int main() {
 
    {
       auto csr = new CSR();
-      csr->index = 0;
+      csr->setIndexCSR(0);
       csr->value = 15.;
       V_CSR.emplace(csr);
    }
    {
       auto csr = new CSR();
-      csr->index = 1;
+      csr->setIndexCSR(1);
       csr->value = 10.;
       V_CSR.emplace(csr);
    }
    {
       auto csr = new CSR();
-      csr->index = 2;
+      csr->setIndexCSR(2);
       csr->value = 10.;
       V_CSR.emplace(csr);
    }
    {
       auto csr = new CSR();
-      csr->index = 3;
+      csr->setIndexCSR(3);
       csr->value = 15.;
       V_CSR.emplace(csr);
    }
    for (const auto& crs0 : V_CSR)
       for (const auto& crs1 : V_CSR) {
-         int i = crs0->index;
-         int j = crs1->index;
+         int i = crs0->getIndexCSR();
+         int j = crs1->getIndexCSR();
          if (A[i][j] != static_cast<double>(0.))
             crs0->increment(crs1, A[i][j]);
       }

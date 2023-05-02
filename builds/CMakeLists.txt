@@ -99,3 +99,5 @@ target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../include)
 target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../../include)
 
 message(${PROJECT_SOURCE_DIR})
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
