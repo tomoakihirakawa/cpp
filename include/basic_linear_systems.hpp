@@ -418,6 +418,84 @@ VV_d Inverse(const VV_d &mat) {
 #include <iomanip>
 #include "basic_vectors.hpp"
 
+// V_d forward_substitution(const VV_d &mat, const V_d &b) {
+//    int s = b.size();
+//    V_d x(s);
+//    double tmp = 0;
+//    // for (auto i = 0; i < s; ++i)
+//    // {
+//    // 	tmp = 0;
+//    // 	for (auto j = 0; j < i; ++j)
+//    // 		tmp += mat[i][j] * x[j];
+//    // 	x[i] = (b[i] - tmp) / mat[i][i];
+//    // }
+
+//    int i = 0, j;
+//    for (const auto &a : mat) {
+//       tmp = 0;
+//       for (j = 0; j < i; ++j)
+//          tmp += a[j] * x[j];
+//       x[i] = (b[i] - tmp) / a[i];
+//       i++;
+//    }
+//    return x;
+// };
+
+// // faster version
+// V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
+//    double tmp = 0;
+//    int i = 0, j;
+//    for (const auto &a : mat) {
+//       tmp = 0;
+//       for (j = 0; j < i; ++j)
+//          tmp += a[j] * b[j];
+//       b[i] = (b[i] - tmp) / a[i];
+//       i++;
+//    }
+//    return b;
+// };
+
+// V_d back_substitution(const VV_d &mat, V_d b, const Tii &mat_size) {
+//    auto [row, col] = mat_size;
+//    int i, j;
+//    for (i = row - 1; i >= 0; --i) { /*　0~row-1まで，長さは，row　*/
+//       for (j = col - 1; j > i; --j) /*　長さは，col-i-1　*/
+//          b[i] -= mat[i][j] * b[j];
+//       b[i] /= mat[i][i];
+//    }
+//    b.erase(std::next(b.begin(), row + 1), b.end());
+//    return b;
+// };
+
+V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
+   int i = 0;
+   for (const auto &a : mat) {
+      double tmp = 0;
+      for (int j = 0; j < i; ++j) {
+         tmp = std::fma(a[j], b[j], tmp);
+      }
+      b[i] = std::fma(-tmp, 1.0 / a[i], b[i]);
+      i++;
+   }
+   return b;
+};
+
+V_d back_substitution(const VV_d &mat, V_d b, const Tii &mat_size) {
+   auto [row, col] = mat_size;
+   for (int i = row - 1; i >= 0; --i) {
+      for (int j = col - 1; j > i; --j) {
+         b[i] = std::fma(-mat[i][j], b[j], b[i]);
+      }
+      b[i] /= mat[i][i];
+   }
+   b.erase(std::next(b.begin(), row + 1), b.end());
+   return b;
+};
+
+V_d back_substitution(const VV_d &mat, V_d b, const int &mat_size) {
+   return back_substitution(mat, b, Tii{mat_size, mat_size});
+};
+
 /* -------------------------------------------------------------------------- */
 /*                              QR decomposition                              */
 /* -------------------------------------------------------------------------- */
@@ -495,59 +573,6 @@ struct QR {
 /* ------------------------------------------------------ */
 /*                          GMRES                         */
 /* ------------------------------------------------------ */
-
-// V_d forward_substitution(const VV_d &mat, const V_d &b) {
-//    int s = b.size();
-//    V_d x(s);
-//    double tmp = 0;
-//    // for (auto i = 0; i < s; ++i)
-//    // {
-//    // 	tmp = 0;
-//    // 	for (auto j = 0; j < i; ++j)
-//    // 		tmp += mat[i][j] * x[j];
-//    // 	x[i] = (b[i] - tmp) / mat[i][i];
-//    // }
-
-//    int i = 0, j;
-//    for (const auto &a : mat) {
-//       tmp = 0;
-//       for (j = 0; j < i; ++j)
-//          tmp += a[j] * x[j];
-//       x[i] = (b[i] - tmp) / a[i];
-//       i++;
-//    }
-//    return x;
-// };
-
-// faster version
-V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
-   double tmp = 0;
-   int i = 0, j;
-   for (const auto &a : mat) {
-      tmp = 0;
-      for (j = 0; j < i; ++j)
-         tmp += a[j] * b[j];
-      b[i] = (b[i] - tmp) / a[i];
-      i++;
-   }
-   return b;
-};
-
-V_d back_substitution(const VV_d &mat, V_d b, const Tii &mat_size) {
-   auto [row, col] = mat_size;
-   int i, j;
-   for (i = row - 1; i >= 0; --i) { /*　0~row-1まで，長さは，row　*/
-      for (j = col - 1; j > i; --j) /*　長さは，col-i-1　*/
-         b[i] -= mat[i][j] * b[j];
-      b[i] /= mat[i][i];
-   }
-   b.erase(std::next(b.begin(), row + 1), b.end());
-   return b;
-};
-
-V_d back_substitution(const VV_d &mat, V_d b, const int &mat_size) {
-   return back_substitution(mat, b, Tii{mat_size, mat_size});
-};
 
 struct ArnoldiProcess {
    // ヘッセンベルグ行列H[0:k-1]は，Aと相似なベクトルであり，同じ固有値を持つ

@@ -44,8 +44,8 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { r
 // double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
 //    double c = VectorAngle(A - o, B - o), a = VectorAngle(B - o, C - o), b = VectorAngle(C - o, A - o);
 //    double s = (a + b + c) * 0.5;
-//    if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
-//       return 4. * M_PI / 2.;
+//    if (Between(s, {std::numbers::pi - 1E-10, std::numbers::pi + 1E-10}))
+//       return 4. * std::numbers::pi / 2.;
 //    else
 //       return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
 //    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
@@ -54,8 +54,8 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { r
 double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
    double c = VectorAngle(p1 - p0, p2 - p0), a = VectorAngle(p2 - p0, p3 - p0), b = VectorAngle(p3 - p0, p1 - p0);
    double s = (a + b + c) * 0.5;
-   if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
-      return 4. * M_PI / 2.;
+   if (Between(s, {std::numbers::pi - 1E-10, std::numbers::pi + 1E-10}))
+      return 4. * std::numbers::pi / 2.;
    else
       return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
 };
@@ -96,12 +96,12 @@ double SolidAngle(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
    // auto cv1v2 = Normalize(Cross(v1, v2));
    // auto cv1v3 = Normalize(Cross(v1, v3));
    // auto cv2v3 = Normalize(Cross(v2, v3));
-   // return std::abs(acos(Dot(cv1v2, cv1v3)) + acos(-Dot(cv1v2, cv2v3)) + acos(Dot(cv1v3, cv2v3)) - M_PI);
+   // return std::abs(acos(Dot(cv1v2, cv1v3)) + acos(-Dot(cv1v2, cv2v3)) + acos(Dot(cv1v3, cv2v3)) - std::numbers::pi);
    //
    // double c = VectorAngle(A - o, B - o), a = VectorAngle(B - o, C - o), b = VectorAngle(C - o, A - o);
    // double s = (a + b + c) * 0.5;
-   // if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
-   //    return 4. * M_PI / 2.;
+   // if (Between(s, {std::numbers::pi - 1E-10, std::numbers::pi + 1E-10}))
+   //    return 4. * std::numbers::pi / 2.;
    // else
    //    return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
 
@@ -146,7 +146,7 @@ double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
       tmp = SolidAngle(Tddd{0., 0., 0.},
                        Normalize(xyz[(i + sz) % sz] - o),
                        Normalize(xyz[(i + sz + 1) % sz] - o), normal);
-      if (Between(tmp, {0., 4. * M_PI})) total += tmp;
+      if (Between(tmp, {0., 4. * std::numbers::pi})) total += tmp;
    }
    return total;
 };
@@ -204,7 +204,7 @@ double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c) {
    return (Norm(a - X) + Norm(b - X) + Norm(c - X)) / 3.;
 };
 double Circumradius(const T3Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
-double CircumArea(const T3Tddd &abcd) { return std::pow(Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)), 2) * M_PI; };
+double CircumArea(const T3Tddd &abcd) { return std::pow(Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)), 2) * std::numbers::pi; };
 double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    auto X = Circumcenter(a, b, c, d);
    return (Norm(a - X) + Norm(b - X) + Norm(c - X) + Norm(d - X)) / 4.;
@@ -221,7 +221,7 @@ double Inradius(Tddd p0, Tddd p1, Tddd p2) {
    return (Norm(p1) * l2) / (Norm(p1) + Norm(p2) + Norm(p1 - p2));
 };
 double Inradius(const T3Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
-double InArea(const T3Tddd &p0123) { return std::pow(Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)), 2) * M_PI; };
+double InArea(const T3Tddd &p0123) { return std::pow(Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)), 2) * std::numbers::pi; };
 double Inradius(Tddd p0, Tddd p1, Tddd p2, Tddd p3) {
    // see /Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/四面体の内接球外接球.nb
    p3 -= p0;
@@ -1770,7 +1770,7 @@ double windingNumber(const Tddd &X, const std::vector<std::array<T, 3>> &V_verti
 #endif
    for (const auto &V : V_vertices)
       ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 
 template <typename T>
@@ -1782,7 +1782,7 @@ double windingNumber(const Tddd &X, const std::vector<T> &V_vertices) {
 #endif
    for (const auto &V : V_vertices)
       ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 
 template <>
@@ -1794,7 +1794,7 @@ double windingNumber(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
 #endif
    for (const auto &V : V_vertices)
       ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 
 template <typename T>
@@ -1811,7 +1811,7 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &V_vertices) {
       //    r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
       // });
    }
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 
 template <>
@@ -1822,7 +1822,7 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
          r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
       });
    // std::ranges::for_each(ret, Xs, [&](auto &r, const auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V); });
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 template <>
 T8d windingNumber(const T8Tddd &Xs, const std::vector<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
@@ -1836,7 +1836,7 @@ std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector
       auto tmp = 0;
       for (const auto &vertices : V_vertices)
          tmp += SolidAngle_VanOosteromAandStrackeeJ1983(X, vertices);
-      ret[i] = tmp / (4. * M_PI);
+      ret[i] = tmp / (4. * std::numbers::pi);
    }
    return ret;
 };
@@ -1845,7 +1845,7 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
    T8d ret = {0., 0., 0., 0., 0., 0., 0, 0.};
    for (const auto &vertices : V_vertices)
       for_each(ret, Xs, [&](auto &r, auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, vertices); });
-   return ret / (4. * M_PI);
+   return ret / (4. * std::numbers::pi);
 };
 
 double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) { return 0.; };

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <numeric>
+#include <type_traits>
 #include "basic_alias.hpp"
 
 /*
@@ -34,11 +35,16 @@
    = {{1,a/b,a/c},{b/a,1,b/c},{c/a,c/b,1}}
 */
 
-template <typename>
+// template <typename>
+// struct is_std_array : std::false_type {};
+
+// template <template <typename, std::size_t> class Array, typename T, std::size_t N>
+// struct is_std_array<Array<T, N>> : std::true_type {};
+template <typename T>
 struct is_std_array : std::false_type {};
 
-template <template <typename, std::size_t> class Array, typename T, std::size_t N>
-struct is_std_array<Array<T, N>> : std::true_type {};
+template <typename T, std::size_t N>
+struct is_std_array<std::array<T, N>> : std::true_type {};
 /* -------------------------------------------------------------------------- */
 template <size_t N, typename T>
 constexpr std::array<T, N> operator-(std::array<T, N> arr) noexcept {
@@ -46,14 +52,14 @@ constexpr std::array<T, N> operator-(std::array<T, N> arr) noexcept {
       a = -a;
    return arr;
 }
-/* -------------------------------- += ------------------------------- */
-// 1d array - value
+/* -------------------------------- addition -------------------------------- */
+// 1d array + value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator+=(std::array<T, N>& arr /*ref*/, const TT& d) noexcept {
    for (auto& a : arr) a += d;
    return arr;
 }
-// 1d array - 1d array
+// 1d array + 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -61,7 +67,7 @@ constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std:
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 1d array
+// 2d array + 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -69,7 +75,7 @@ constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 2d array
+// 2d array + 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -78,31 +84,31 @@ constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M
    return arr;
 }
 /* -------------------------------------------------------------------------- */
-// 1d array - value
+// 1d array + value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator+(std::array<T, N> arr /*copy*/, const TT& d) noexcept { return arr += d; }
-// value - 1d array
+// value + 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator+(const TT& d, std::array<T, N> arr /*copy*/) noexcept { return arr + d; }
-// 1d array - 1d array
+// 1d array + 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator+(std::array<T, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept { return arr += ARR; }
-// 2d array - 1d array
+// 2d array + 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<std::array<T, M>, N>> operator+(std::array<std::array<T, M>, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept {
    return arr += ARR;
 }
-// 1d array - 2d array
+// 1d array + 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N> operator+(const std::array<TT, N>& ARR, std::array<std::array<T, M>, N> arr /*copy*/) noexcept { return arr += ARR; }
-/* -------------------------------- -= ------------------------------- */
-// 1d array - value
+/* ------------------------------- subtraction ------------------------------ */
+// 1d array -= value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator-=(std::array<T, N>& arr /*ref*/, const TT& d) noexcept {
    for (auto& a : arr) a -= d;
    return arr;
 }
-// 1d array - 1d array
+// 1d array -= 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator-=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -110,7 +116,7 @@ constexpr std::array<T, N>& operator-=(std::array<T, N>& arr /*ref*/, const std:
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 1d array
+// 2d array -= 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -118,7 +124,7 @@ constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 2d array
+// 2d array -= 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -151,14 +157,14 @@ constexpr std::array<std::array<T, M>, N> operator-(const std::array<TT, N>& ARR
    for (auto i = 0; auto& a : arr) a = ARR[i++] - a;
    return arr;
 }
-/* -------------------------------- *= ------------------------------- */
-// 1d array - value
+/* ----------------------------- multiplication ----------------------------- */
+// 1d array *= value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator*=(std::array<T, N>& arr /*ref*/, const TT& d) noexcept {
    for (auto& a : arr) a *= d;
    return arr;
 }
-// 1d array - 1d array
+// 1d array *= 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator*=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -166,7 +172,7 @@ constexpr std::array<T, N>& operator*=(std::array<T, N>& arr /*ref*/, const std:
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 1d array
+// 2d array *= 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -174,7 +180,7 @@ constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M
    (std::make_index_sequence<N>());
    return arr;
 }
-// 2d array - 2d array
+// 2d array *= 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
@@ -182,82 +188,82 @@ constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M
    (std::make_index_sequence<N>());
    return arr;
 }
-/* -------------------------------------------------------------------------- */
-// 1d array - value
+
+// 1d array * value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator*(std::array<T, N> arr /*copy*/, const TT& d) noexcept {
    for (auto& a : arr) a *= d;
    return arr;
 }
-// value - 1d array
+// value * 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator*(const TT& d, std::array<T, N> arr /*copy*/) noexcept {
    for (auto& a : arr) a *= d;
    return arr;
 }
-// 1d array - 1d array
+// 1d array * 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N> operator*(std::array<T, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept { return arr *= ARR; }
-// 2d array - 1d array
+// 2d array * 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<std::array<T, M>, N>> operator*(std::array<std::array<T, M>, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept { return arr *= ARR; }
-// 1d array - 2d array
+// 1d array * 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N> operator*(const std::array<TT, N>& ARR, std::array<std::array<T, M>, N> arr /*copy*/) noexcept {
    for (auto i = 0; auto& a : arr) a *= ARR[i++];
    return arr;
 }
-/* -------------------------------- /= ------------------------------- */
-// 1d array - value
+/* -------------------------------- division -------------------------------- */
+// 1d array /= value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator/=(std::array<T, N>& arr /*ref*/, const TT& d) noexcept {
    for (auto& a : arr) a /= d;
    return arr;
 }
-// 1d array - 1d array
+// 1d array /= 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator/=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    for (auto i = 0; auto& a : arr) a /= ARR[i++];
    return arr;
 }
-// 2d array - 1d array
+// 2d array /= 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator/=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    for (auto i = 0; auto& a : arr) a /= ARR[i++];
    return arr;
 }
-// 2d array - 2d array
+// 2d array /= 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator/=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    for (auto i = 0; auto& a : arr) a /= ARR[i++];
    return arr;
 }
 /* -------------------------------------------------------------------------- */
-// 1d array - value
+// 1d array / value
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator/(std::array<T, N> arr /*copy*/, const TT& d) noexcept {
    for (auto& a : arr) a /= d;
    return arr;
 }
-// value - 1d array
+// value / 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator/(const TT& d, std::array<T, N> arr /*copy*/) noexcept {
    for (auto& a : arr) a = d / a;
    return arr;
 }
-// 1d array - 1d array
+// 1d array / 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N> operator/(std::array<T, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept {
    for (auto i = 0; auto& a : arr) a /= ARR[i++];
    return arr;
 }
-// 2d array - 1d array
+// 2d array / 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<std::array<T, M>, N>> operator/(std::array<std::array<T, M>, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept {
-   for (auto i = 0; auto& a : arr) a /= ARR[i++]; /*std::array<T, M> += TT*/
+   for (auto i = 0; auto& a : arr) a /= ARR[i++]; /*std::array<T, M> /= TT*/
    return arr;
 }
-// 1d array - 2d array
+// 1d array / 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N> operator/(const std::array<TT, N>& ARR, std::array<std::array<T, M>, N> arr /*copy*/) noexcept {
    for (auto i = 0; auto& a : arr) a = ARR[i++] / a;

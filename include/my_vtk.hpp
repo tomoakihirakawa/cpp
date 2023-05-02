@@ -14,7 +14,7 @@ DataArray_detail */
 using V_str = std::vector<std::string>;
 
 void mk_pvd(const std::string &filename, const std::map<std::string, double> &map_s_d) {
-   Print("Creating " + filename + " ...");
+   Print("Creating " + filename + " ..." + colorOff);
    FILE *fp;
    fp = fopen(filename.c_str(), "wb");
    fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -74,7 +74,7 @@ class pvd {
       else
          throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "file name is not given"));
 
-      Print("Creating " + filename + " ...");
+      Print("Creating " + filename + " ..." + colorOff);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -98,7 +98,7 @@ class pvd {
       else
          throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "file name is not given"));
 
-      Print("Creating " + filename + " ...");
+      Print("Creating " + filename + " ..." + colorOff);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -143,7 +143,7 @@ struct PVDWriter {
 #if defined(debug_PVDWriter)
       std::cout << Magenta << filename << std::endl;
 #endif
-      Print("Creating " + filename + " ...");
+      Print("Creating " + filename + " ..." + colorOff);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");

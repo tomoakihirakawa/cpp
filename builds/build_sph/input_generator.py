@@ -140,13 +140,13 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 2,
-                   "max_dt": 0.001,
+        setting = {"RK_order": 1,
+                   "max_dt": 0.0005,
                    "end_time_step": 50000,
                    "end_time": 0.5,
-                   "CSML": 3.05,
+                   "CSML": 3.0,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.02,
+                   "particle_spacing": 0.0125,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #
@@ -167,9 +167,9 @@ red = '\033[91m'
 green = '\033[92m'
 magenta = '\033[95m'
 coloroff = '\033[0m'
-#@ -------------------------------------------------------- #
-#@           その他，water.json,tank.json などを出力           #
-#@ -------------------------------------------------------- #
+# @ -------------------------------------------------------- #
+# @           その他，water.json,tank.json などを出力           #
+# @ -------------------------------------------------------- #
 for INPUTS in input_files:
     print('------------------------------------')
     for key, value in INPUTS.items():
@@ -179,9 +179,9 @@ for INPUTS in input_files:
     json.dump(INPUTS, f, ensure_ascii=True, indent=4)
     f.close()
 
-#@ -------------------------------------------------------- #
-#@                  setting.json を出力                      #
-#@ -------------------------------------------------------- #
+# @ -------------------------------------------------------- #
+# @                  setting.json を出力                      #
+# @ -------------------------------------------------------- #
 print('------------------------------------')
 for key, value in setting.items():
     print(f'{key: <{20}}', '\t', red, value, coloroff)
