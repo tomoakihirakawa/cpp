@@ -581,8 +581,6 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd ViscousAndGravityForce, tmp_ViscousAndGravityForce;
    Tddd repulsive_force_SPH;
    double DrhoDt_SPH;
-   //
-   int index;
 #endif
    // std::tuple<networkFace * /*補間に使った三角形の頂点*/,
    // 		   double /*パラメタt0*/,
@@ -644,16 +642,16 @@ class networkPoint : public CoordinateBounds, public CSR {
    void unsetD() { this->unsetDirichlet(); };
    void setN() { this->setNeumann(); };
    void unsetN() { this->unsetNeumann(); };
-      //
-      // bool isCompleteNeumann()
-      // {
-      // 	//近傍が全てノイマンであればノイマンです．
-      // 	//導入理由は？
-      // 	for (const auto &p : getNeighbors())
-      // 		if (!p->Neumann)
-      // 			return false;
-      // 	return true;
-      // };
+   //
+   // bool isCompleteNeumann()
+   // {
+   // 	//近傍が全てノイマンであればノイマンです．
+   // 	//導入理由は？
+   // 	for (const auto &p : getNeighbors())
+   // 		if (!p->Neumann)
+   // 			return false;
+   // 	return true;
+   // };
 
 #ifdef BEM
   public:
