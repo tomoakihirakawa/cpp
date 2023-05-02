@@ -8,7 +8,7 @@ project(ProjectName)
 if(APPLE)
   message(STATUS "platform is Apple\n")
 
-  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-12")
+  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-13")
 
 # set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-12")
 # set(CMAKE_CXX_COMPILER /usr/bin/clang++)

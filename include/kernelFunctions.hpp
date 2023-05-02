@@ -88,8 +88,8 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    constexpr double one_third = 1.0 / 3.0;
    constexpr double two_thirds = 2.0 / 3.0;
 
-   double r = Norm(xi - xj);
-   double q = r / h;
+   const double r = Norm(xi - xj);
+   const double q = r / h;
 
    if (q > 1.)
       return {0., 0., 0.};
@@ -102,7 +102,7 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
 };
 //! --------------------------------- 3次スプライン -------------------------------- */
 double w_Bspline3(const double &r, const double &h) {
-   double q = r / h;
+   const double q = r / h;
    if (q > 1.)
       return 0.;
    else if (q < 0.5)
@@ -112,8 +112,8 @@ double w_Bspline3(const double &r, const double &h) {
 };
 
 Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
-   auto r = Norm(xi - xj);
-   double q = r / h;
+   const auto r = Norm(xi - xj);
+   const double q = r / h;
 
    if (q > 1.)
       return {0., 0., 0.};

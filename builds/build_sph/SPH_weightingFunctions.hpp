@@ -6,11 +6,11 @@
 
 #define REFLECTION
 
-#define surface_zero_pressure
+// #define surface_zero_pressure
 
 //$ ------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-// #define USE_SPP_Fluid
+#define USE_SPP_Fluid
 #if defined(USE_SPP_Fluid)
 #define SPP_U_coef 1.
 #define SPP_p_coef -1.
@@ -24,12 +24,11 @@
 #define SPP_rho_coef_of_Wall 1.
 #endif
 /* -------------------------------------------------------------------------- */
-//$ ------------------------------------------------------------------- */
 
 #define POWER 1.
 
 const double damping_factor = 0.;
-const double asobi = 1E-3;
+const double asobi = 0.;
 
 #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
@@ -125,9 +124,9 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    {
       // p->interpolated_normal_SPH, q->X - p->Xの方向が完全に一致した際に失敗する
       /* ---------------------- p->interpolated_normal_SPHの計算 --------------------- */
-      p->COM_SPH = {0., 0., 0.};
-      p->interpolated_normal_SPH_original = {0., 0., 0.};
-      p->interpolated_normal_SPH_original_all = {0., 0., 0.};
+      p->COM_SPH.fill(0.);
+      p->interpolated_normal_SPH_original.fill(0.);
+      p->interpolated_normal_SPH_original_all.fill(0.);
       double total_vol = 0, w;
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
@@ -167,7 +166,7 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
          if (net->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
                 {
                    if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-                      return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < M_PI / 4);
+                      return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < std::numbers::pi / 4);
                    } else
                       return false;
                 }
@@ -180,7 +179,7 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
                if (obj->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
                       {
                          if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-                            return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < M_PI / 180. * 60);
+                            return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < std::numbers::pi / 180. * 60);
                          } else
                             return false;
                       }
@@ -416,6 +415,7 @@ void mapValueOnWall(auto &net,
          if (std::any_of(Bools.begin(), Bools.end(), [](bool b) { return b; })) {
             std::stringstream ss;
             ss << Bools << std::endl;
+            ss << "PW->p_SPH = " << PW->p_SPH << std::endl;
             ss << "PW->isFluid = " << PW->isFluid << std::endl;
             ss << "PW->rho = " << PW->rho << std::endl;
             ss << "PW->volume = " << PW->volume << std::endl;
@@ -577,6 +577,7 @@ void developByEISPH(Network *net,
       /*     密度, 平滑化距離      */
       DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
       for (const auto &p : net->getPoints()) {
+         // p->C_SML = C_SML * std::pow(_WATER_DENSITY_ / p->rho, 3);  // C_SMLを密度の応じて変えてみる．
          p->setDensity(_WATER_DENSITY_);
          p->isFreeFalling = false;
          p->isInsideOfBody = false;
@@ -632,9 +633,9 @@ void developByEISPH(Network *net,
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
       // b# -------------- バケットの生成, p->radius_SPHの範囲だけ点を取得 --------------- */
       DebugPrint("バケットの生成", Green);
-      net->makeBucketPoints(particle_spacing);
+      net->makeBucketPoints(particle_spacing * 0.8);
       for (const auto &[obj, poly] : RigidBodyObject)
-         obj->makeBucketPoints(particle_spacing);
+         obj->makeBucketPoints(particle_spacing * 0.8);
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "バケットの生成");
       // b# -------------------------------------------------------------------------- */
       // b# --------------- CFL条件を満たすようにタイムステップ間隔dtを設定 ----------------- */
@@ -731,10 +732,12 @@ void developByEISPH(Network *net,
          set_tmpLap_U(net->getPoints());
          set_tmpLap_U(wall_as_fluid);
          // b$ ---------------------------------- (2) 密度の更新 --------------------------------- */
-         for (const auto &p : net->getPoints())
+         for (const auto &p : net->getPoints()) {
             p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
-         for (const auto &p : wall_as_fluid)
+         }
+         for (const auto &p : wall_as_fluid) {
             p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
+         }
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -758,7 +761,7 @@ void developByEISPH(Network *net,
 
          // mapValueOnWall(net, wall_p, RigidBodyObject, {1, 0, 0});  // ここではDUDtなど考慮せずに壁の圧力を蹴っているす．圧力勾配を計算する時のみDUDtを考慮するのがいいかもしれない．
          // b% ------------------------------------------------------ */
-         // b%  　　　　　        仮位置における圧力Pの計算                 */
+         // b%  　　　　　             仮位置における圧力Pの計算                   */
          // b% ------------------------------------------------------ */
 #ifdef surface_zero_pressure
          for (const auto &p : net->getPoints())
@@ -828,7 +831,7 @@ void developByEISPH(Network *net,
             p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
             // p->p_SPH = p->p_SPH_;
             p->RK_P.push(p->DPDt_SPH);  // 圧力
-            // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+            p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
             p->p_SPH = p->p_SPH_;
          }
 
@@ -994,7 +997,12 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
    for (const auto &p : Fluid->getPoints())
       U[p] = p->U_SPH;
    vtp.addPointData("U", U);
-   //
+
+   std::unordered_map<networkPoint *, double> C_SML;
+   for (const auto &p : Fluid->getPoints())
+      C_SML[p] = p->C_SML;
+   vtp.addPointData("C_SML", C_SML);
+
    std::unordered_map<networkPoint *, double> div_U_error;
    div_U_error.reserve(Fluid->getPoints().size());
    for (const auto &p : Fluid->getPoints())

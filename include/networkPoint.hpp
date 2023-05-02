@@ -144,7 +144,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
       for (auto &f : this->getContactFaces()) {
          bool duplicate = false;
          for (auto &cface : contactfaces)
-            if (M_PI / 180. > MyVectorAngle(cface->normal, f->normal)) {
+            if (std::numbers::pi / 180. > MyVectorAngle(cface->normal, f->normal)) {
                duplicate = true;
                break;
             }
@@ -167,7 +167,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 
 */
 
-const double contact_angle = 30. * M_PI / 180.;
+const double contact_angle = 30. * std::numbers::pi / 180.;
 
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
@@ -237,8 +237,8 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
    // std::vector<networkFace *> ret = {*contactFaces.begin()};
    // for (const auto &F : contactFaces)
    //    if (std::none_of(ret.begin(), ret.end(),
-   //                     [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
-   //                                                 isFlat(F->normal, f->normal, M_PI / 180); }))
+   //                     [&](const auto &f) { return isFlat(F->normal, -f->normal, std::numbers::pi / 180) ||
+   //                                                 isFlat(F->normal, f->normal, std::numbers::pi / 180); }))
    //       ret.emplace_back(F);
    // return ret;
    /* -------------------------------------------------------------------------- */
@@ -273,8 +273,8 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
       for (const auto &[F, D] : f_dist_sort) {
          if (!delete_same_direction)
             ret.emplace_back(F);
-         else if (std::none_of(ret.begin(), ret.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
-                                                                                   isFlat(F->normal, f->normal, M_PI / 180); }))
+         else if (std::none_of(ret.begin(), ret.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, std::numbers::pi / 180) ||
+                                                                                   isFlat(F->normal, f->normal, std::numbers::pi / 180); }))
             ret.emplace_back(F);
          if (ret.size() >= num)
             return ret;
@@ -341,7 +341,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
          for (const auto &[F, D] : f_dist_sort) {
             // if (std::none_of(this->ContactFaces.begin(),
             //                  this->ContactFaces.end(),
-            //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+            //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, std::numbers::pi / 180) || isFlat(F->normal, f->normal, std::numbers::pi / 180); }))
             this->ContactFaces.emplace(F);
             if (this->ContactFaces.size() > 5)
                return;

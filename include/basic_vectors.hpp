@@ -511,27 +511,6 @@ VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
    return ret;
 };
 
-double Dot3d(const std::vector<double> &vec1, const std::vector<double> &vec2) { return vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2]; };
-
-// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-// T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
-//    // return std::transform_reduce(
-//    // 	vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0,
-//    // 	std::plus{}, // 集計関数
-//    // 	[](T x, T y)
-//    // 	{ return x * y; });
-//    // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), 0);
-//    //
-//    // T init(0);
-//    // return std::inner_product(vec1.cbegin(), vec1.cend(), vec2.cbegin(), init);
-//    //
-//    int i = 0;
-//    T ret = 0;
-//    for (const auto &v : vec1)
-//       ret += v * vec2[i++];
-//    return ret;
-// };
-
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
    T ret = 0;
@@ -541,13 +520,6 @@ T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
    return ret;
 }
 
-// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-// T Dot(const std::vector<T *> &vec1, const std::vector<T *> &vec2) {
-//    T ans(0.);
-//    for (size_t i = 0; i < vec1.size(); ++i)
-//       ans += *vec1[i] * *vec2[i];
-//    return ans;
-// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec) {
    std::vector<T> ans(mat.size());
@@ -556,25 +528,7 @@ std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> 
       ans[i++] = Dot(m, vec);
    return ans;
 };
-// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-// std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat) {
-//    // return Dot(Transpose(mat), vec);
-//    std::vector<T> ans(mat[0].size(), 0.);
-//    // for (auto j = 0; j < mat.size(); j++)
-//    // 	for (auto i = 0; i < mat[j].size(); i++)
-//    // 		ans[i] += mat[j][i] * vec[j];
 
-//    int j = 0, i = 0;
-//    T tmp;
-//    for (const auto &mj : mat) {
-//       tmp = vec[j];
-//       i = 0;
-//       for (const auto &mi : mj)
-//          ans[i++] += mi * tmp;
-//       j++;
-//    }
-//    return ans;
-// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat) {
    std::vector<T> ans(mat[0].size(), 0.);
@@ -1500,41 +1454,41 @@ Quaternion &operator*=(Quaternion &A, const Quaternion &B) {
    return A = (A * B);  // ok
 };
 Quaternion operator*(Quaternion A, const double dt) {
-   A.set(A() * dt);  // ok
+   A.set(A.q * dt);  // ok
    return A;
 };
 /* ------------------------- 足し算 ------------------------ */
 Quaternion operator+(Quaternion B, const double A) {
    //()はただのT4d
-   B.set(A + B());
+   B.set(A + B.q);
    return B;
 };
 Quaternion operator+(const double A, Quaternion B) {
    //()はただのT4d
-   B.set(A + B());
+   B.set(A + B.q);
    return B;
 };
 Quaternion operator+(Quaternion A, const Quaternion &B) {
    //()はただのT4d
-   A.set(A() + B());
+   A.set(A.q + B.q);
    return A;
 };
 Quaternion operator+(Quaternion A, const T4d &B) {
    //()はただのT4d
-   A.set(A() + B);
+   A.set(A.q + B);
    return A;
 };
 Quaternion operator+(const T4d &B, Quaternion A) {
    //()はただのT4d
-   A.set(A() + B);
+   A.set(A.q + B);
    return A;
 };
 Quaternion &operator+=(Quaternion &A, const Quaternion &B) {
-   A.set(A() + B());
+   A.set(A.q + B.q);
    return A;
 };
 double Norm(const Quaternion &A) {
-   return Norm(A());
+   return Norm(A.q);
 };
 /* ------------------------------------------------------ */
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
@@ -1653,7 +1607,7 @@ T VectorAngle(const std::vector<T> &X1, const std::vector<T> &X2) {
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T VectorAngleDirected(const std::vector<T> &X1, const std::vector<T> &X2) {
    T a = VectorAngle(X1, X2, {0., 0.});
-   return (a < 0) ? (2 * M_PI - a) : a;
+   return (a < 0) ? (2 * std::numbers::pi - a) : a;
 };
 // template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // T DirectedArea(const std::vector<T> &vec1,
@@ -1811,7 +1765,7 @@ Tddd Reflect(const Tddd &v, const Tddd &n) {
 };
 
 Tddd Scaled(const Tddd &v, const double d) {
-   /* n is a normal vector of a surface*/
+   /* Returns the scaled vector */
    return d * Normalize(v);
 };
 

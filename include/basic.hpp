@@ -28,7 +28,7 @@ double real_sph(const int l, const int m, const double theta, const double psi) 
    return std::sph_legendre(std::abs(l), std::abs(l), theta) * std::cos(psi);
 };
 double real_sph_scale_ommited(const int l, const int m, const double theta, const double psi) {
-   return real_sph(l, m, theta, psi) / std::sqrt((2. * std::abs(l) + 1.) / (4. * M_PI));
+   return real_sph(l, m, theta, psi) / std::sqrt((2. * std::abs(l) + 1.) / (4. * std::numbers::pi));
 };
 /* ------------------------------------------------------ */
 /*              表示方法に関するライブラリ                     */
@@ -923,7 +923,7 @@ std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -954,7 +954,7 @@ VV_d GaussianQuadratureWeights(const int n,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -1001,7 +1001,7 @@ void gauleg(const double x1, const double x2,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (int i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -1444,7 +1444,7 @@ class glLINES {
             double y = (-1. + 2. / (row - 1) * i);
             samp3X[i][j] = x * scale;
             samp3Y[i][j] = y * scale;
-            samp3Z[i][j] = sin(2. * M_PI * x) * sin(2. * M_PI * y);
+            samp3Z[i][j] = sin(2. * std::numbers::pi * x) * sin(2. * std::numbers::pi * y);
          }
       }
       /* gl.LINESでメッシュがかけるような形式で格納 */
@@ -2577,34 +2577,27 @@ V_s to_cell(const std::string &strIN) {
 };
 ///////////////////////////
 
-/////////////////////////////////
 void Load(const std::string &filename, VVV_d &vvv) {
    std::ifstream strm(filename, std::ios::in);
    if (!strm) {
       std::stringstream ss;
-      ss << "The file can not be opened: " << filename;
+      ss << "The file cannot be opened: " << filename;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
    }
    std::string str;
-   while (!strm.eof()) {
-      std::getline(strm, str);
-
-      // std::cout <<  str << std::endl;
-      // str = str.substr(str.find_last_of("{")+1,  str.find_last_of("}")-1);
-      // std::cout <<  str << std::endl;
-
-      V_s str_vec = to_cell(str); /* expecting {"{1,2,3,5,5}","{1,2,3,5,5}","{1,2,3,5,5}"} */
+   while (std::getline(strm, str)) {
+      V_s str_vec = to_cell(str);  // Expecting {"{1,2,3,5,5}","{1,2,3,5,5}","{1,2,3,5,5}"}
       VV_d row_vec(0);
       for (const auto &v : str_vec) {
          std::string tmp = v.substr(v.find_first_of("{") + 1, v.find_last_of("}") - 1);
-         tmp.find("");
-         V_d vec_doub = string_to_vector_double(/* expecting {1,2,3,5,5} */ tmp, {",", ", "});
+         V_d vec_doub = string_to_vector_double(tmp, {",", ", "});  // Expecting {1,2,3,5,5}
          row_vec.emplace_back(vec_doub);
       }
       vvv.emplace_back(row_vec);
    }
    strm.close();
 };
+
 // /////////////////////////////////
 // void Load(const std::string& filename, std::vector<V_d>& vv)
 // {
@@ -2934,43 +2927,22 @@ struct BaseBuckets {
       j = (int)((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL);
       k = (int)((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL);
    };
-   void bindIndecies(Tii &i, Tii &j, Tii &k) const {
+   void bindIndices(Tii &i, Tii &j, Tii &k) const {
       //! ループの際に便利なので，0 ~ size-1を返すことにする
       //! 最初と最後が同じ{0,0}の場合もループ回したいので，ループには等号を付けている．
       //! もし最後をsizeにすると，等号が計算されバウンディングエラーになる．
       auto [i_beg, i_end] = i;
       auto [j_beg, j_end] = j;
       auto [k_beg, k_end] = k;
-      if (i_beg >= this->xsize)
-         i_beg = this->xsize - 1;
-      else if (i_beg < 0)
-         i_beg = 0;
 
-      if (j_beg >= this->ysize)
-         j_beg = this->ysize - 1;
-      else if (j_beg < 0)
-         j_beg = 0;
+      i_beg = std::clamp(i_beg, 0, this->xsize - 1);
+      j_beg = std::clamp(j_beg, 0, this->ysize - 1);
+      k_beg = std::clamp(k_beg, 0, this->zsize - 1);
 
-      if (k_beg >= this->zsize)
-         k_beg = this->zsize - 1;
-      else if (k_beg < 0)
-         k_beg = 0;
+      i_end = std::clamp(i_end, 0, this->xsize - 1);
+      j_end = std::clamp(j_end, 0, this->ysize - 1);
+      k_end = std::clamp(k_end, 0, this->zsize - 1);
 
-      if (i_end >= this->xsize)
-         i_end = this->xsize - 1;
-      else if (i_end < 0)
-         i_end = 0;
-
-      if (j_end >= this->ysize)
-         j_end = this->ysize - 1;
-      else if (j_end < 0)
-         j_end = 0;
-
-      if (k_end >= this->zsize)
-         k_end = this->zsize - 1;
-      else if (k_end < 0)
-         k_end = 0;
-      //
       i = {i_beg, i_end};
       j = {j_beg, j_end};
       k = {k_beg, k_end};
@@ -2981,7 +2953,7 @@ struct BaseBuckets {
       i = {i_beg, i_end};
       j = {j_beg, j_end};
       k = {k_beg, k_end};
-      bindIndecies(i, j, k);
+      bindIndices(i, j, k);
    };
    void indices(const Tddd &center, const double radius, Tii &i, Tii &j, Tii &k) const {
       auto [i_beg, j_beg, k_beg] = indices(center - radius);
@@ -2990,7 +2962,7 @@ struct BaseBuckets {
       i = {i_beg, i_end};
       j = {j_beg, j_end};
       k = {k_beg, k_end};
-      bindIndecies(i, j, k);
+      bindIndices(i, j, k);
    };
    Tddd indices2X(const int i, const int j, const int k) const {
       return {i * this->dL + std::get<0>(this->xbounds) /*min*/,
@@ -3144,13 +3116,13 @@ struct BaseBuckets {
    // i=3,d=2
    // index = | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
    // depth =     | -2| -1| 0 | 1 | 2 |
-   int bind_range(const int i, const Tii &minmax) const { return (i <= std::get<0>(minmax) ? std::get<0>(minmax) : (i >= std::get<1>(minmax) ? std::get<1>(minmax) : i)); };
-   int min_index_x(const int i, const int d) const { return bind_range(i - d, {0, this->xsize - 1}); };
-   int max_index_x(const int i, const int d) const { return bind_range(i + d, {0, this->xsize - 1}); };
-   int min_index_y(const int i, const int d) const { return bind_range(i - d, {0, this->ysize - 1}); };
-   int max_index_y(const int i, const int d) const { return bind_range(i + d, {0, this->ysize - 1}); };
-   int min_index_z(const int i, const int d) const { return bind_range(i - d, {0, this->zsize - 1}); };
-   int max_index_z(const int i, const int d) const { return bind_range(i + d, {0, this->zsize - 1}); };
+   // int bind_range(const int i, const Tii &minmax) const { return (i <= std::get<0>(minmax) ? std::get<0>(minmax) : (i >= std::get<1>(minmax) ? std::get<1>(minmax) : i)); };
+   int min_index_x(const int i, const int d) const { return std::clamp(i - d, 0, this->xsize - 1); }
+   int max_index_x(const int i, const int d) const { return std::clamp(i + d, 0, this->xsize - 1); }
+   int min_index_y(const int i, const int d) const { return std::clamp(i - d, 0, this->ysize - 1); }
+   int max_index_y(const int i, const int d) const { return std::clamp(i + d, 0, this->ysize - 1); }
+   int min_index_z(const int i, const int d) const { return std::clamp(i - d, 0, this->zsize - 1); }
+   int max_index_z(const int i, const int d) const { return std::clamp(i + d, 0, this->zsize - 1); }
 
    // int min_index_x(const int i, const int d) const { return ((i - d) <= 0 ? 0 : ((i - d) >= (this->xsize - 1) ? this->xsize - 1 : i - d)); };
    // int max_index_x(const int i, const int d) const { return ((i + d) >= (this->xsize - 1) ? this->xsize - 1 : i + d); };
@@ -3224,34 +3196,11 @@ struct BaseBuckets {
    // b@ -------------------------------------------------------------------------- */
    // b@                             STL like functions                             */
    // b@ -------------------------------------------------------------------------- */
-   T6i indices_range(const Tddd &x, const double &d) const {
+   T6i indices_range(const Tddd &x, const int &d) const {
       auto [i, j, k] = this->indices(x);
-      return {bind_range(i - d, {0, this->xsize}), bind_range(i + d, {0, this->xsize}),
-              bind_range(j - d, {0, this->ysize}), bind_range(j + d, {0, this->ysize}),
-              bind_range(k - d, {0, this->zsize}), bind_range(k + d, {0, this->zsize})};
-   };
-   //! accumulate
-   double accumulate(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
-      double ret = 0;
-      if (!this->buckets.empty()) {
-         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_range(x, d);
-         auto it = this->buckets.begin();
-         auto jt = it->begin();
-         auto kt = jt->begin();
-         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
-            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
-               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
-                  for (const auto &p : *kt)
-                     ret += func(p);
-      }
-      return ret;
-   };
-   double accumulate(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return accumulate(x, (int)std::ceil(d / this->dL), func); };
-   double accumulate(const std::function<bool(const T &)> &func) const {
-      double ret = 0;
-      for (const auto &p : this->all_stored_objects)
-         ret += func(p);
-      return ret;
+      return {std::clamp(i - d, 0, this->xsize - 1), std::clamp(i + d, 0, this->xsize - 1),
+              std::clamp(j - d, 0, this->ysize - 1), std::clamp(j + d, 0, this->ysize - 1),
+              std::clamp(k - d, 0, this->zsize - 1), std::clamp(k + d, 0, this->zsize - 1)};
    };
    //! count_if
    int count_if(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
@@ -3270,7 +3219,7 @@ struct BaseBuckets {
       }
       return ret;
    };
-   int count_if(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return count_if(x, (int)std::ceil(d / this->dL), func); };
+   int count_if(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return count_if(x, static_cast<int>(std::ceil(d / this->dL)), func); };
    int count_if(const std::function<bool(const T &)> &func) const {
       int ret = 0;
       for (const auto &p : this->all_stored_objects)
@@ -3306,7 +3255,7 @@ struct BaseBuckets {
       }
       return true;
    };
-   bool none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return none_of(x, (int)std::ceil(d / this->dL), func); };
+   bool none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return none_of(x, static_cast<int>(std::ceil(d / this->dL)), func); };
    bool none_of(const std::function<bool(const T &)> &func) const {
       for (const auto &p : this->all_stored_objects)
          if (func(p))
@@ -3330,7 +3279,7 @@ struct BaseBuckets {
       }
       return true;
    };
-   bool all_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return all_of(x, (int)std::ceil(d / this->dL), func); };
+   bool all_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return all_of(x, static_cast<int>(std::ceil(d / this->dL)), func); };
    //! any_of
    bool any_of(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
       if (!this->buckets.empty()) {
@@ -3348,7 +3297,7 @@ struct BaseBuckets {
       }
       return false;
    };
-   bool any_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return any_of(x, (int)std::ceil(d / this->dL), func); };
+   bool any_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const { return any_of(x, static_cast<int>(std::ceil(d / this->dL)), func); };
    //! apply
    void apply(const Tddd &x, const int d, const std::function<void(const T &)> &func) const {
       if (this->buckets.empty())
@@ -3421,7 +3370,7 @@ struct BaseBuckets {
       hashing_done = true;
    };
 
-   void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const { apply(x, (int)std::ceil(d / this->dL), func); };
+   void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const { apply(x, static_cast<int>(std::ceil(d / this->dL)), func); };
    void apply(const std::function<void(const T &)> &func) const {
       for (const auto &p : this->all_stored_objects) func(p);
    };
@@ -3438,7 +3387,7 @@ struct BaseBuckets {
       });
    };
    void Apply(const Tddd &x, const double d, const std::function<void(const std::unordered_set<T> &)> &func) const {
-      Apply(x, (int)std::ceil(d / this->dL), func);
+      Apply(x, static_cast<int>(std::ceil(d / this->dL)), func);
    };
    /* -------------------------------------------------------------------------- */
    std::vector<T> copy_if(const Tddd &x, const int d, const std::function<bool(const T &)> &func) const {
@@ -3456,7 +3405,7 @@ struct BaseBuckets {
       this->Apply(x, d, [&](const auto &Bijk) { ret.insert(ret.end(), Bijk.begin(), Bijk.end()); });
       return ret;
    };
-   std::vector<T> get(const Tddd &x, const double d) const { return get(x, (int)std::ceil(d / this->dL)); };
+   std::vector<T> get(const Tddd &x, const double d) const { return get(x, static_cast<int>(std::ceil(d / this->dL))); };
 
    std::vector<std::vector<T>> get(const Tddd &x, const Tii &depth_minmax) const {
       std::vector<std::vector<T>> ret(1 + std::get<1>(depth_minmax) - std::get<0>(depth_minmax));
@@ -3661,9 +3610,9 @@ struct BaseBuckets {
       int d = (int)std::ceil(radius / this->dL);
       int i, j, k;
       this->indices(center, i, j, k);
-      const int i_min = bind_range(i - d, {0, this->xsize}), i_max = bind_range(i + d, {0, this->xsize});
-      const int j_min = bind_range(j - d, {0, this->ysize}), j_max = bind_range(j + d, {0, this->ysize});
-      const int k_min = bind_range(k - d, {0, this->zsize}), k_max = bind_range(k + d, {0, this->zsize});
+      const int i_min = std::clamp(i - d, 0, this->xsize - 1), i_max = std::clamp(i + d, 0, this->xsize - 1);
+      const int j_min = std::clamp(j - d, 0, this->ysize - 1), j_max = std::clamp(j + d, 0, this->ysize - 1);
+      const int k_min = std::clamp(k - d, 0, this->zsize - 1), k_max = std::clamp(k + d, 0, this->zsize - 1);
       /* ----------------------------- for_eachを使ったループ ---------------------------- */
       bool found = false;
       for_each(std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
@@ -3682,28 +3631,8 @@ struct BaseBuckets {
             });
       });
       return found;
-      //
-      // Tii i, j, k;
-      // indices(center, radius, i, j, k);
-      // auto [i_beg, i_end] = i;
-      // auto [j_beg, j_end] = j;
-      // auto [k_beg, k_end] = k;
-      // for (auto i = i_beg; i <= i_end; ++i) {
-      //    for (auto j = j_beg; j <= j_end; ++j) {
-      //       for (auto k = k_beg; k <= k_end; ++k) {
-      //          for (const auto &p : this->buckets[i][j][k]) {
-      //             if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p))
-      //                return true;
-      //          }
-      //       }
-      //    }
-      // }
-
-      //   for (const auto &p : this->all_stored_objects) {
-      //      if (radius >= Norm(ToX(p) - center) && !MemberQ(exceptions, p))
-      //         return true;
-      //   }
    };
+
    template <typename U>
    bool anyInside(const Tddd &center, const double radius) const {
       if (this->buckets.empty())
@@ -3711,9 +3640,9 @@ struct BaseBuckets {
       int d = (int)std::ceil(radius / this->dL);
       int i, j, k;
       this->indices(center, i, j, k);
-      const int i_min = bind_range(i - d, {0, this->xsize}), i_max = bind_range(i + d, {0, this->xsize});
-      const int j_min = bind_range(j - d, {0, this->ysize}), j_max = bind_range(j + d, {0, this->ysize});
-      const int k_min = bind_range(k - d, {0, this->zsize}), k_max = bind_range(k + d, {0, this->zsize});
+      const int i_min = std::clamp(i - d, 0, this->xsize - 1), i_max = std::clamp(i + d, 0, this->xsize - 1);
+      const int j_min = std::clamp(j - d, 0, this->ysize - 1), j_max = std::clamp(j + d, 0, this->ysize - 1);
+      const int k_min = std::clamp(k - d, 0, this->zsize - 1), k_max = std::clamp(k + d, 0, this->zsize - 1);
       /* ----------------------------- for_eachを使ったループ ---------------------------- */
       bool found = false;
       for_each(std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {

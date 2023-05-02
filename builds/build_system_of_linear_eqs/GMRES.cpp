@@ -6,7 +6,7 @@
 
 int main() {
 
-   int s = 2000;
+   int s = 100;
    VV_d A(s, V_d(s));
    V_d b(s);
 #pragma omp parallel
@@ -36,8 +36,8 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   for (auto restart = 0; restart < 10; ++restart) {
-      for (auto i = 1; i < 15; i++) {
+   for (auto restart = 0; restart < 3; ++restart) {
+      for (auto i = 99; i < 110; i++) {
          gmres gm(A, b, x0, i);
          //   std::cout << "gm.x = " << gm.x << std::endl;
          std::cout << "time:" << timer() << std::endl;
@@ -46,7 +46,7 @@ int main() {
          if (error < 1E-10) {
             Print(error, Blue);
             finished = true;
-            break;
+            // break;
          } else {
             Print(error, Green);
             x0 = gm.x;

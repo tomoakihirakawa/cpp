@@ -3,7 +3,7 @@
 #include <utility>
 #define DEM
 #include "Network.hpp"
-#include "SPH_weightingFunctions.hpp"
+#include "SPH.hpp"
 #include "vtkWriter.hpp"
 
 std::vector<T4Tddd> toCubeFaces(const auto &accum) {
@@ -135,7 +135,7 @@ int main(int arg, char **argv) {
          ofs.close();
          //
          polyNet->genOctreeOfFaces({minDepth, maxDepth}, 1);
-         polyNet->translate(Tddd{1E-5, 1E-5, 1E-5} * M_PI);
+         polyNet->translate(Tddd{1E-5, 1E-5, 1E-5} * std::numbers::pi);
          auto particlesNet = new Network;
          all_objects.push_back({particlesNet, polyNet, J});
          if (J["type"][0] == "RigidBody") {
@@ -195,7 +195,7 @@ int main(int arg, char **argv) {
             Tddd xyz = {x, y, z};
             xyz -= closest;
             xyz += particle_spacing / 2.;
-            // xyz += 1E-4;  // M_PI / 1000.;
+            // xyz += 1E-4;  // std::numbers::pi / 1000.;
             for (const auto &[object, polygon, _] : all_objects) {
                // 優先順位で粒子を配置
                auto [isInside, cell, f] = polygon->isInside_MethodOctree(xyz, particle_spacing * 1E-10);
@@ -205,6 +205,7 @@ int main(int arg, char **argv) {
                   p->radius_SPH = CSML * ps;
                   p->C_SML = CSML;
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
+                  p->rho = p->rho_;
                   break;
                }
             }
