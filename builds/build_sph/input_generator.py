@@ -140,7 +140,7 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 1,
+        setting = {"RK_order": 4,
                    "max_dt": 0.0005,
                    "end_time_step": 50000,
                    "end_time": 0.5,

@@ -174,7 +174,7 @@ auto set_tmpLap_U(const auto &points) {
 
 // b% -------------------------------------------------------------------------- */
 // b% -------------------------------------------------------------------------- */
-#define Morikawa2019
+// #define Morikawa2019
 // #define NewtonMethod
 
 void nextPressure(const netPp A, const std::unordered_set<Network *> &target_nets, const double dt) {

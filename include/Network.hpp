@@ -330,7 +330,7 @@ networkPoint_detail*/
 /*   --@--   */
 /*    / \    */
 #include "integrationOfODE.hpp"
-class networkPoint : public CoordinateBounds {
+class networkPoint : public CoordinateBounds, public CSR {
   protected:
    bool status;
 
