@@ -8,10 +8,8 @@ This is a C++ implementation of a BEM simulation code. Follow the instructions b
 
 ## Prerequisites
 
-- CMake 3.26 or higher
-- AppleClang 14.0.3 or compatible C++ compiler
+- CMake
 - LAPACK library
-- Eigen 3.4.0 or higher
 - Python 3 for input generation
 
 ## Building the Code
@@ -52,36 +50,51 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-# settingBEM.py
-
-プログラム内でつかわfれるパラメターや，入力値や出力先は`settingBEM.py`を実行することで作られる`json`ファイルで設定される．
-
-**💡 NOTE:** `settingBEM.py`は`settingBEM.py`と同じフォルダ内にある必要がある．
-
-# RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える
-
-どのように境界条件を適用するか．
-
-# remesh（再配置）の条件
-
-## flip,divide,mergeに共通する条件
-
-辺のフリップ，分割，削除が実行されるには，辺で繋がる２点の境界条件が同じである必要がある．
-
-(!((p0->Neumann && p1->Dirichlet) || (p0->Dirichlet && p1->Neumann)))
-
-がtrueである場合のみ，辺の修正を実行することができる．
-
-## flipの条件
-
-## divideの条件
-
-## mergeの条件
-
 
 ![](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_bem/anim.gif)
 
 ![](WATCHME_settingjson.mov)
 
 ![](WATCHME_settingBEM.mov)
+
+## input_generator.py
+
+[input_generator.py#L1](input_generator.py#L1):
+
+# Input Generator for BEM Simulation
+
+This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+
+## Prerequisites
+
+- Python 3
+
+## Usage
+
+1. Make sure the required dependencies are installed.
+2. Run the script using the following command:
+
+Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
+
+## Customization
+
+To customize the input file generation for a specific case, follow these steps:
+
+1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
+2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
+3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
+4. Update the `inputfiles` variable with the new input objects created for the custom case.
+
+After customizing the script, run it again to generate the input files for the new case.
+
+## Output
+
+The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
+
+[input_generator.py#L50](input_generator.py#L50):
+
+プログラムを回す際に面倒な事は，入力ファイルの設定．
+入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
+例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
+このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
 
