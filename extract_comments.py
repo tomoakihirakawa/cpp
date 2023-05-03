@@ -48,8 +48,8 @@ def extract_markdown_comments(input_file):
 
         if header_line:
             extracted_comments += header_line
-        extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line}):\n\n'
         extracted_comments += cleaned_comment.strip() + '\n\n'
+        extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n'
 
     return extracted_comments
 
@@ -78,6 +78,7 @@ if __name__ == "__main__":
         if extracted_comments:
             file_link_name = f'## {input_file}\n\n'
             all_extracted_comments += extracted_comments
-
+            all_extracted_comments += '\n --- \n'
+    
     with open(output_file, 'w') as md_file:
         md_file.write(all_extracted_comments)
