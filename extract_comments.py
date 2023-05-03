@@ -17,15 +17,12 @@ def highlight_keywords(text):
 
     return text
 
-
 def extract_markdown_comments(input_file):
-    # cpp_comment_pattern = re.compile(r'/\*\*(.*?)\*/', re.DOTALL)
     cpp_comment_pattern = re.compile(r'/\*\*EXPOSE(.*?)\*/', re.DOTALL)
     python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
 
     with open(input_file, 'r') as file:
         content = file.read()
-
 
     cpp_comments = cpp_comment_pattern.finditer(content)
     python_comments = python_comment_pattern.finditer(content)
@@ -39,12 +36,18 @@ def extract_markdown_comments(input_file):
         # Remove leading asterisks and whitespace
         cleaned_comment = comment
         # cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
-        cleaned_comment = re.sub(r'\*(.*?)\*', r'**\1**', cleaned_comment)
-        # cleaned_comment = re.sub(r'\n', ' ', cleaned_comment)
-
+        # cleaned_comment = re.sub(r'\*([^*]+)\*', r'**\1**', cleaned_comment)
 
         cleaned_comment = highlight_keywords(cleaned_comment)
 
+        header_line = ""
+        header_match = re.search(r'## (.*?)\n', cleaned_comment)
+        if header_match:
+            header_line = header_match.group(0)
+            cleaned_comment = cleaned_comment.replace(header_line, '')
+
+        if header_line:
+            extracted_comments += header_line
         extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line}):\n\n'
         extracted_comments += cleaned_comment.strip() + '\n\n'
 
@@ -74,7 +77,7 @@ if __name__ == "__main__":
         extracted_comments = extract_markdown_comments(input_file)
         if extracted_comments:
             file_link_name = f'## {input_file}\n\n'
-            all_extracted_comments += file_link_name + extracted_comments
+            all_extracted_comments += extracted_comments
 
     with open(output_file, 'w') as md_file:
         md_file.write(all_extracted_comments)
