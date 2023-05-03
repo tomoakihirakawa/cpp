@@ -1,0 +1,834 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     36300,        826]
+NotebookOptionsPosition[     34842,        796]
+NotebookOutlinePosition[     35197,        811]
+CellTagsIndexPosition[     35154,        808]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}], "-", 
+  RowBox[{"{", 
+   RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"a", ",", "b", ",", "c"}], "}"}], "-", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}]}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}], "*", 
+  RowBox[{"{", 
+   RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"a", ",", "b", ",", "c"}], "}"}], "*", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}]}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}], "/", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"{", 
+   RowBox[{"a", ",", "b", ",", "c"}], "}"}], "/", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}]}]}], "Input",
+ CellChangeTimes->{{3.890941585885244*^9, 3.890941633773467*^9}, {
+   3.890941693969709*^9, 3.8909416998804398`*^9}, {3.89094176261793*^9, 
+   3.890941808938773*^9}, {3.890941867924951*^9, 3.890941869223117*^9}, 
+   3.8910386142656183`*^9},
+ CellLabel->
+  "In[365]:=",ExpressionUUID->"2ad1a80e-898e-4bed-add5-a980581df113"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"0", ",", 
+     RowBox[{
+      RowBox[{"-", "a"}], "+", "b"}], ",", 
+     RowBox[{
+      RowBox[{"-", "a"}], "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", "-", "b"}], ",", "0", ",", 
+     RowBox[{
+      RowBox[{"-", "b"}], "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", "-", "c"}], ",", 
+     RowBox[{"b", "-", "c"}], ",", "0"}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8910386146909227`*^9, 3.8910386174885397`*^9}, {
+  3.891039353000525*^9, 3.8910393742056*^9}},
+ CellLabel->
+  "Out[366]=",ExpressionUUID->"4c4deb45-ff62-4f22-8cf2-6602c4e3b25d"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"0", ",", 
+     RowBox[{"a", "-", "b"}], ",", 
+     RowBox[{"a", "-", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "a"}], "+", "b"}], ",", "0", ",", 
+     RowBox[{"b", "-", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "a"}], "+", "c"}], ",", 
+     RowBox[{
+      RowBox[{"-", "b"}], "+", "c"}], ",", "0"}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8910386146909227`*^9, 3.8910386174885397`*^9}, {
+  3.891039353000525*^9, 3.891039374207101*^9}},
+ CellLabel->
+  "Out[367]=",ExpressionUUID->"02d9592e-60f9-493f-9e0c-97798ac063cc"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     SuperscriptBox["a", "2"], ",", 
+     RowBox[{"a", " ", "b"}], ",", 
+     RowBox[{"a", " ", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", " ", "b"}], ",", 
+     SuperscriptBox["b", "2"], ",", 
+     RowBox[{"b", " ", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", " ", "c"}], ",", 
+     RowBox[{"b", " ", "c"}], ",", 
+     SuperscriptBox["c", "2"]}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8910386146909227`*^9, 3.8910386174885397`*^9}, {
+  3.891039353000525*^9, 3.891039374208479*^9}},
+ CellLabel->
+  "Out[368]=",ExpressionUUID->"ea16facb-d87a-4fed-ae54-10a1520058bb"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     SuperscriptBox["a", "2"], ",", 
+     RowBox[{"a", " ", "b"}], ",", 
+     RowBox[{"a", " ", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", " ", "b"}], ",", 
+     SuperscriptBox["b", "2"], ",", 
+     RowBox[{"b", " ", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"a", " ", "c"}], ",", 
+     RowBox[{"b", " ", "c"}], ",", 
+     SuperscriptBox["c", "2"]}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8910386146909227`*^9, 3.8910386174885397`*^9}, {
+  3.891039353000525*^9, 3.891039374209736*^9}},
+ CellLabel->
+  "Out[369]=",ExpressionUUID->"ce7e8a1e-8459-4675-bed7-7c490e14dbb2"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"1", ",", 
+     FractionBox["a", "b"], ",", 
+     FractionBox["a", "c"]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     FractionBox["b", "a"], ",", "1", ",", 
+     FractionBox["b", "c"]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     FractionBox["c", "a"], ",", 
+     FractionBox["c", "b"], ",", "1"}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.8910386146909227`*^9, 3.8910386174885397`*^9}, {
+  3.891039353000525*^9, 3.891039374210977*^9}},
+ CellLabel->
+  "Out[370]=",ExpressionUUID->"a916763f-b9ff-4c3c-b8bc-7775214ecbb3"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"1", "+", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], 
+   "}"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"a", ",", "b", ",", "c"}], "}"}]}], "}"}], "+", "1"}]}], "Input",\
+
+ CellChangeTimes->{{3.891038609362101*^9, 3.8910386326638403`*^9}},
+ CellLabel->
+  "In[371]:=",ExpressionUUID->"0dc34878-511c-4aa3-8aaf-a3556c92653c"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.891038611413855*^9, 3.891038633013092*^9}, {
+  3.891039353087229*^9, 3.891039374254937*^9}},
+ CellLabel->
+  "Out[371]=",ExpressionUUID->"67759a37-7a80-40a5-9750-f9a09ddb439d"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1", "+", "a"}], ",", 
+     RowBox[{"1", "+", "b"}], ",", 
+     RowBox[{"1", "+", "c"}]}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.891038611413855*^9, 3.891038633013092*^9}, {
+  3.891039353087229*^9, 3.891039374259013*^9}},
+ CellLabel->
+  "Out[372]=",ExpressionUUID->"b49edb14-e673-4b3f-a9dd-673a24804215"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}]], "Input",
+ CellLabel->
+  "In[373]:=",ExpressionUUID->"83a97005-32c3-4508-93d2-8820c4fb22b0"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"rand", "=", 
+   RowBox[{"RandomReal", "[", "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"irand", "=", 
+   RowBox[{"RandomInteger", "[", "10", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"a", "=", 
+   RowBox[{"Table", "[", 
+    RowBox[{
+     RowBox[{"RandomReal", "[", "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"i", ",", "0", ",", "2"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"j", ",", "0", ",", "2"}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"b", "=", 
+   RowBox[{"Table", "[", 
+    RowBox[{
+     RowBox[{"RandomReal", "[", "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"i", ",", "0", ",", "2"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"j", ",", "0", ",", "2"}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"row", "=", 
+    RowBox[{"Table", "[", 
+     RowBox[{
+      RowBox[{"RandomReal", "[", "]"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"i", ",", "0", ",", "2"}], "}"}]}], "]"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"db", "=", "\"\<\\\"\>\""}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"PRINT", "[", "p_", "]"}], ":=", 
+   RowBox[{"(", 
+    RowBox[{"\"\<std::cout << \>\"", "<>", "db", "<>", 
+     RowBox[{"ToString", "[", "p", "]"}], "<>", "db", "<>", 
+     "\"\< << std::endl;\>\""}], ")"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"print", "[", 
+     RowBox[{"str_", ",", "value_"}], "]"}], ":=", 
+    RowBox[{"Module", "[", 
+     RowBox[{
+      RowBox[{"{", "}"}], ",", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"Print", "[", 
+        RowBox[{
+        "\"\<std::cout << std::setw(30) << \>\"", "<>", "db", "<>", "str", 
+         "<>", "\"\< = \>\"", "<>", "db", "<>", "\"\< << (\>\"", "<>", "str", 
+         "<>", "\"\<) << std::endl;\>\""}], "]"}], ";", "\[IndentingNewLine]", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Dimensions", "[", "value", "]"}], "\[Equal]", 
+          RowBox[{"{", 
+           RowBox[{"3", ",", "3"}], "}"}]}], ",", 
+         RowBox[{"v", "=", 
+          RowBox[{"\"\<std::array<std::array<double, 3>, 3>{\>\"", "<>", 
+           RowBox[{"ToString", "[", "value", "]"}], "<>", "\"\<}\>\""}]}]}], 
+        "]"}], ";", "\[IndentingNewLine]", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Dimensions", "[", "value", "]"}], "\[Equal]", 
+          RowBox[{"{", "3", "}"}]}], ",", 
+         RowBox[{"v", "=", 
+          RowBox[{"\"\<std::array<double, 3>{\>\"", "<>", 
+           RowBox[{"ToString", "[", "value", "]"}], "<>", "\"\<}\>\""}]}]}], 
+        "]"}], ";", "\[IndentingNewLine]", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Dimensions", "[", "value", "]"}], "\[Equal]", 
+          RowBox[{"{", "}"}]}], ",", 
+         RowBox[{"v", "=", 
+          RowBox[{"ToString", "[", "value", "]"}]}]}], "]"}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"Print", "[", 
+        RowBox[{
+        "\"\<std::cout << std::setw(30) << \>\"", "<>", "v", "<>", 
+         "\"\< << std::endl;\>\""}], "]"}], ";"}]}], "\[IndentingNewLine]", 
+     "]"}]}], ";"}], "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{"Print", "[", 
+  RowBox[{"\"\<auto rand =\>\"", ",", "rand", ",", "\"\<;\>\""}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Print", "[", 
+  RowBox[{"\"\<auto irand =\>\"", ",", "irand", ",", "\"\<;\>\""}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Print", "[", 
+  RowBox[{
+  "\"\<std::array<std::array<double, 3>, 3> a{\>\"", ",", "a", ",", 
+   "\"\<};\>\""}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Print", "[", 
+  RowBox[{
+  "\"\<std::array<std::array<double, 3>, 3> b{\>\"", ",", "b", ",", 
+   "\"\<};\>\""}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{
+   "\"\<std::array<double, 3> row =\>\"", ",", "row", ",", "\"\<;\>\""}], 
+   "]"}], "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand\>\"", ",", "rand"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<irand\>\"", ",", "irand"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a\>\"", ",", "a"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<b\>\"", ",", "b"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/irand\>\"", ",", 
+   RowBox[{"a", "/", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row\>\"", ",", "row"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row/irand\>\"", ",", 
+   RowBox[{"row", "/", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\<negate\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<-a\>\"", ",", 
+   RowBox[{"-", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<-b\>\"", ",", 
+   RowBox[{"-", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\<+\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+b\>\"", ",", 
+   RowBox[{"a", "+", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a-b\>\"", ",", 
+   RowBox[{"a", "-", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+row\>\"", ",", 
+   RowBox[{"a", "+", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row+a\>\"", ",", 
+   RowBox[{"row", "+", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+irand\>\"", ",", 
+   RowBox[{"a", "+", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row+irand\>\"", ",", 
+   RowBox[{"row", "+", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\<-\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a-row\>\"", ",", 
+   RowBox[{"a", "-", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row-a\>\"", ",", 
+   RowBox[{"row", "-", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+rand\>\"", ",", 
+   RowBox[{"a", "+", "rand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand+a\>\"", ",", 
+   RowBox[{"rand", "+", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+irand\>\"", ",", 
+   RowBox[{"a", "+", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row+irand\>\"", ",", 
+   RowBox[{"row", "+", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\<*\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row*rand\>\"", ",", 
+   RowBox[{"row", "*", "rand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand*row\>\"", ",", 
+   RowBox[{"rand", "*", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a*rand\>\"", ",", 
+   RowBox[{"a", "*", "rand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand*a\>\"", ",", 
+   RowBox[{"rand", "*", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a*irand\>\"", ",", 
+   RowBox[{"a", "*", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row*irand\>\"", ",", 
+   RowBox[{"row", "*", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\</\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row/rand\>\"", ",", 
+   RowBox[{"row", "/", "rand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand/row\>\"", ",", 
+   RowBox[{"rand", "/", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/rand\>\"", ",", 
+   RowBox[{"a", "/", "rand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<rand/a\>\"", ",", 
+   RowBox[{"rand", "/", "a"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/irand\>\"", ",", 
+   RowBox[{"a", "/", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<row/irand\>\"", ",", 
+   RowBox[{"row", "/", "irand"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"PRINT", "[", "\"\<+=, -=, *=, /=\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a+=b\>\"", ",", 
+   RowBox[{"a", "+=", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a-=b\>\"", ",", 
+   RowBox[{"a", "-=", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a*=b\>\"", ",", 
+   RowBox[{"a", "*=", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a*=row\>\"", ",", 
+   RowBox[{"a", "*=", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/=b\>\"", ",", 
+   RowBox[{"a", "/=", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/=row\>\"", ",", 
+   RowBox[{"a", "/=", "row"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/=b\>\"", ",", 
+   RowBox[{"a", "/=", "b"}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"print", "[", 
+  RowBox[{"\"\<a/=row\>\"", ",", 
+   RowBox[{"a", "/=", "row"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.890857272157213*^9, 3.8908576276189547`*^9}, {
+   3.890857714490583*^9, 3.89085801910176*^9}, {3.890858234389365*^9, 
+   3.8908585877734947`*^9}, {3.890858624930026*^9, 3.8908587034824753`*^9}, {
+   3.890858736897847*^9, 3.8908588220054693`*^9}, {3.890862087878455*^9, 
+   3.890862113882916*^9}, {3.890862201262869*^9, 3.890862270002891*^9}, {
+   3.890862414909151*^9, 3.890862415482656*^9}, {3.8908625637854347`*^9, 
+   3.890862669111582*^9}, {3.890862731147912*^9, 3.890862749299375*^9}, {
+   3.890863177366927*^9, 3.890863203261427*^9}, {3.8908633716713533`*^9, 
+   3.890863372232402*^9}, {3.890863486416759*^9, 3.8908634883835983`*^9}, {
+   3.8908638250842457`*^9, 3.8908639396831503`*^9}, {3.890863984345606*^9, 
+   3.890863984873447*^9}, {3.890864038595645*^9, 3.890864041983897*^9}, {
+   3.8908648414259777`*^9, 3.890864929297634*^9}, {3.890866321312818*^9, 
+   3.890866360510146*^9}, {3.890866521703607*^9, 3.8908665297023277`*^9}, {
+   3.890866589906726*^9, 3.890866618844801*^9}, {3.890866713215228*^9, 
+   3.89086671848871*^9}, {3.890866840292839*^9, 3.8908668473140163`*^9}, {
+   3.8909413940850077`*^9, 3.890941457320957*^9}, {3.890950282492571*^9, 
+   3.890950282943804*^9}, {3.890950534708784*^9, 3.89095055088883*^9}, {
+   3.890950755238666*^9, 3.8909507679943123`*^9}, {3.8909510672715683`*^9, 
+   3.890951083430786*^9}, {3.890951503860092*^9, 3.8909515062323236`*^9}, {
+   3.890951596456356*^9, 3.890951628932538*^9}, {3.890951686206314*^9, 
+   3.890951743280237*^9}, {3.8909517784332457`*^9, 3.8909517787853527`*^9}, {
+   3.890951842914365*^9, 3.890952339939282*^9}, {3.890952460974839*^9, 
+   3.8909525830455103`*^9}, {3.890952613413495*^9, 3.890952827110845*^9}, {
+   3.890952893371595*^9, 3.890952956267241*^9}, {3.890952992085456*^9, 
+   3.8909530091711607`*^9}, {3.890953063026846*^9, 3.890953074736973*^9}, {
+   3.8909531481528*^9, 3.890953327792671*^9}, {3.890953662432371*^9, 
+   3.8909537119626102`*^9}, {3.890953775779792*^9, 3.89095378316588*^9}, 
+   3.890953970770358*^9, {3.890954027867474*^9, 3.890954030121071*^9}, {
+   3.89095409070752*^9, 3.890954104712266*^9}, {3.890954137738699*^9, 
+   3.890954141646821*^9}, {3.890954210936771*^9, 3.890954256160388*^9}, {
+   3.890954287033136*^9, 3.890954347436975*^9}, {3.8910393511378517`*^9, 
+   3.8910393515177803`*^9}},
+ CellLabel->
+  "In[374]:=",ExpressionUUID->"78603b54-14db-46ad-a7d5-3037aea95a55"],
+
+Cell[BoxData[{
+ InterpretationBox[
+  RowBox[{"\<\"auto rand =\"\>", "\[InvisibleSpace]", "0.7156797286899228`", 
+   "\[InvisibleSpace]", "\<\";\"\>"}],
+  SequenceForm["auto rand =", 0.7156797286899228, ";"],
+  Editable->False], "\n", 
+ InterpretationBox[
+  RowBox[{"\<\"auto irand =\"\>", "\[InvisibleSpace]", "8", 
+   "\[InvisibleSpace]", "\<\";\"\>"}],
+  SequenceForm["auto irand =", 8, ";"],
+  Editable->False], "\n", 
+ InterpretationBox[
+  RowBox[{"\<\"std::array<std::array<double, 3>, 3> a{\"\>", 
+   "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "0.08000258249830372`", ",", "0.04273020507381187`", ",", 
+       "0.18353761862785323`"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+      "0.5386654261822863`", ",", "0.9179357904995418`", ",", 
+       "0.42419202026998093`"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+      "0.5126838389047208`", ",", "0.026035850978360253`", ",", 
+       "0.872296080593026`"}], "}"}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\"};\"\>"}],
+  SequenceForm[
+  "std::array<std::array<double, 3>, 3> a{", {{0.08000258249830372, 
+   0.04273020507381187, 0.18353761862785323`}, {0.5386654261822863, 
+   0.9179357904995418, 0.42419202026998093`}, {0.5126838389047208, 
+   0.026035850978360253`, 0.872296080593026}}, "};"],
+  Editable->False], "\n", 
+ InterpretationBox[
+  RowBox[{"\<\"std::array<std::array<double, 3>, 3> b{\"\>", 
+   "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "0.3054378496231045`", ",", "0.17423229267516094`", ",", 
+       "0.8395170095905109`"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+      "0.1135382283212818`", ",", "0.4690398693903757`", ",", 
+       "0.682904157561488`"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+      "0.6594035044980995`", ",", "0.1045766135712245`", ",", 
+       "0.2694007166007517`"}], "}"}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\"};\"\>"}],
+  SequenceForm[
+  "std::array<std::array<double, 3>, 3> b{", {{0.3054378496231045, 
+   0.17423229267516094`, 0.8395170095905109}, {0.1135382283212818, 
+   0.4690398693903757, 0.682904157561488}, {0.6594035044980995, 
+   0.1045766135712245, 0.2694007166007517}}, "};"],
+  Editable->False], "\n", 
+ InterpretationBox[
+  RowBox[{"\<\"std::array<double, 3> row =\"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+    "0.08270806022605992`", ",", "0.6447629947016349`", ",", 
+     "0.8338078316198441`"}], "}"}], "\[InvisibleSpace]", "\<\";\"\>"}],
+  SequenceForm[
+  "std::array<double, 3> row =", {0.08270806022605992, 0.6447629947016349, 
+   0.8338078316198441}, ";"],
+  Editable->
+   False], "\n", "\"\<std::cout << std::setw(30) << \\\"rand = \\\" << (rand) \
+<< std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << 0.71568 << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"irand = \\\" << \
+(irand) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << 8 << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a = \\\" << (a) \
+<< std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.0800026, 0.0427302, 0.183538}, \
+{0.538665, 0.917936, 0.424192}, {0.512684, 0.0260359, 0.872296}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"b = \\\" << (b) \
+<< std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.305438, 0.174232, 0.839517}, \
+{0.113538, 0.46904, 0.682904}, {0.659404, 0.104577, 0.269401}}} << std::endl;\
+\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a/irand = \\\" << \
+(a/irand) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.0100003, 0.00534128, 0.0229422}, \
+{0.0673332, 0.114742, 0.053024}, {0.0640855, 0.00325448, 0.109037}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"row = \\\" << \
+(row) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<double, 3>{{0.0827081, 0.644763, 0.833808}} << std::endl;\>\"", "\n\
+", "\"\<std::cout << std::setw(30) << \\\"row/irand = \\\" << (row/irand) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << std::array<double, \
+3>{{0.0103385, 0.0805954, 0.104226}} << std::endl;\>\"", "\n", "\"\<std::cout \
+<< \\\"negate\\\" << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) \
+<< \\\"-a = \\\" << (-a) << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << std::array<std::array<double, 3>, 3>{{{-0.0800026, \
+-0.0427302, -0.183538}, {-0.538665, -0.917936, -0.424192}, {-0.512684, \
+-0.0260359, -0.872296}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"-b = \\\" << (-b) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{-0.305438, -0.174232, -0.839517}, {-0.113538, -0.46904, -0.682904}, \
+{-0.659404, -0.104577, -0.269401}}} << std::endl;\>\"", "\n", "\"\<std::cout \
+<< \\\"+\\\" << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+\\\"a+b = \\\" << (a+b) << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << std::array<std::array<double, 3>, 3>{{{0.38544, 0.216962, \
+1.02305}, {0.652204, 1.38698, 1.1071}, {1.17209, 0.130612, 1.1417}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a-b = \\\" << \
+(a-b) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{-0.225435, -0.131502, -0.655979}, \
+{0.425127, 0.448896, -0.258712}, {-0.14672, -0.0785408, 0.602895}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a+row = \\\" << \
+(a+row) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.162711, 0.125438, 0.266246}, \
+{1.18343, 1.5627, 1.06896}, {1.34649, 0.859844, 1.7061}}} << std::endl;\>\"", \
+"\n", "\"\<std::cout << std::setw(30) << \\\"row+a = \\\" << (row+a) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.162711, 0.125438, 0.266246}, \
+{1.18343, 1.5627, 1.06896}, {1.34649, 0.859844, 1.7061}}} << std::endl;\>\"", \
+"\n", "\"\<std::cout << std::setw(30) << \\\"a+irand = \\\" << (a+irand) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{8.08, 8.04273, 8.18354}, {8.53867, \
+8.91794, 8.42419}, {8.51268, 8.02604, 8.8723}}} << std::endl;\>\"", "\n", "\"\
+\<std::cout << std::setw(30) << \\\"row+irand = \\\" << (row+irand) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << std::array<double, \
+3>{{8.08271, 8.64476, 8.83381}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+\\\"-\\\" << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+\\\"a-row = \\\" << (a-row) << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << std::array<std::array<double, 3>, 3>{{{-0.00270548, \
+-0.0399779, 0.10083}, {-0.106098, 0.273173, -0.220571}, {-0.321124, \
+-0.807772, 0.0384882}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"row-a = \\\" << (row-a) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.00270548, 0.0399779, -0.10083}, {0.106098, -0.273173, 0.220571}, \
+{0.321124, 0.807772, -0.0384882}}} << std::endl;\>\"", "\n", "\"\<std::cout \
+<< std::setw(30) << \\\"a+rand = \\\" << (a+rand) << std::endl;\>\"", "\n", "\
+\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.795682, 0.75841, 0.899217}, {1.25435, 1.63362, 1.13987}, {1.22836, \
+0.741716, 1.58798}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"rand+a = \\\" << (rand+a) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.795682, 0.75841, 0.899217}, {1.25435, 1.63362, 1.13987}, {1.22836, \
+0.741716, 1.58798}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"a+irand = \\\" << (a+irand) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{8.08, 8.04273, 8.18354}, {8.53867, 8.91794, 8.42419}, {8.51268, 8.02604, \
+8.8723}}} << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+\\\"row+irand = \\\" << (row+irand) << std::endl;\>\"", "\n", "\"\<std::cout \
+<< std::setw(30) << std::array<double, 3>{{8.08271, 8.64476, 8.83381}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << \\\"*\\\" << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << \\\"row*rand = \\\" << (row*rand) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << std::array<double, \
+3>{{0.0591925, 0.461444, 0.596739}} << std::endl;\>\"", "\n", "\"\<std::cout \
+<< std::setw(30) << \\\"rand*row = \\\" << (rand*row) << std::endl;\>\"", "\n\
+", "\"\<std::cout << std::setw(30) << std::array<double, 3>{{0.0591925, \
+0.461444, 0.596739}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"a*rand = \\\" << (a*rand) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.0572562, 0.0305811, 0.131354}, {0.385512, 0.656948, 0.303586}, \
+{0.366917, 0.0186333, 0.624285}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"rand*a = \\\" << (rand*a) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.0572562, 0.0305811, 0.131354}, {0.385512, 0.656948, 0.303586}, \
+{0.366917, 0.0186333, 0.624285}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"a*irand = \\\" << (a*irand) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.640021, 0.341842, 1.4683}, {4.30932, 7.34349, 3.39354}, {4.10147, \
+0.208287, 6.97837}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"row*irand = \\\" << (row*irand) << std::endl;\>\"", "\n\
+", "\"\<std::cout << std::setw(30) << std::array<double, 3>{{0.661664, \
+5.1581, 6.67046}} << std::endl;\>\"", "\n", "\"\<std::cout << \\\"/\\\" << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"row/rand = \\\" \
+<< (row/rand) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<double, 3>{{0.115566, 0.90091, 1.16506}} << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << \\\"rand/row = \\\" << (rand/row) << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << std::array<double, \
+3>{{8.65308, 1.10999, 0.858327}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"a/rand = \\\" << (a/rand) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.111785, 0.0597058, 0.256452}, {0.752663, 1.28261, 0.592712}, \
+{0.716359, 0.0363792, 1.21884}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"rand/a = \\\" << (rand/a) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{8.94571, 16.7488, 3.89936}, {1.32862, 0.779662, 1.68716}, {1.39595, \
+27.4882, 0.820455}}} << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << \\\"a/irand = \\\" << (a/irand) << std::endl;\>\"", "\n", \
+"\"\<std::cout << std::setw(30) << std::array<std::array<double, 3>, \
+3>{{{0.0100003, 0.00534128, 0.0229422}, {0.0673332, 0.114742, 0.053024}, \
+{0.0640855, 0.00325448, 0.109037}}} << std::endl;\>\"", "\n", "\"\<std::cout \
+<< std::setw(30) << \\\"row/irand = \\\" << (row/irand) << std::endl;\>\"", "\
+\n", "\"\<std::cout << std::setw(30) << std::array<double, 3>{{0.0103385, \
+0.0805954, 0.104226}} << std::endl;\>\"", "\n", "\"\<std::cout << \\\"+=, -=, \
+*=, /=\\\" << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+\\\"a+=b = \\\" << (a+=b) << std::endl;\>\"", "\n", "\"\<std::cout << \
+std::setw(30) << std::array<std::array<double, 3>, 3>{{{0.38544, 0.216962, \
+1.02305}, {0.652204, 1.38698, 1.1071}, {1.17209, 0.130612, 1.1417}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a-=b = \\\" << \
+(a-=b) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.0800026, 0.0427302, 0.183538}, \
+{0.538665, 0.917936, 0.424192}, {0.512684, 0.0260359, 0.872296}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a*=b = \\\" << \
+(a*=b) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.0244358, 0.00744498, 0.154083}, \
+{0.0611591, 0.430548, 0.289682}, {0.338066, 0.00272274, 0.234997}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a*=row = \\\" \
+<< (a*=row) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.00202104, 0.00061576, 0.0127439}, \
+{0.0394331, 0.277602, 0.186777}, {0.281882, 0.00227024, 0.195942}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a/=b = \\\" << \
+(a/=b) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.00661686, 0.00353413, 0.01518}, \
+{0.347312, 0.591851, 0.273503}, {0.42748, 0.0217089, 0.727327}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a/=row = \\\" \
+<< (a/=row) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.0800026, 0.0427302, 0.183538}, \
+{0.538665, 0.917936, 0.424192}, {0.512684, 0.0260359, 0.872296}}} << \
+std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a/=b = \\\" << \
+(a/=b) << std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{0.261928, 0.245248, 0.218623}, \
+{4.74435, 1.95705, 0.621159}, {0.777496, 0.248964, 3.23791}}} << std::endl;\>\
+\"", "\n", "\"\<std::cout << std::setw(30) << \\\"a/=row = \\\" << (a/=row) \
+<< std::endl;\>\"", "\n", "\"\<std::cout << std::setw(30) << \
+std::array<std::array<double, 3>, 3>{{{3.16689, 2.96523, 2.64331}, {7.35829, \
+3.03531, 0.963391}, {0.932465, 0.298587, 3.88328}}} << std::endl;\>\""}], \
+"Print",
+ GeneratedCell->False,
+ CellAutoOverwrite->False,
+ CellChangeTimes->{{3.891039374296709*^9, 
+  3.8910393825186443`*^9}},ExpressionUUID->"e0fdd6c0-40a1-42f6-a582-\
+b07bb5c208ee"]
+}, Open  ]]
+},
+WindowSize->{1440, 2507},
+WindowMargins->{{Automatic, -1440}, {1117, Automatic}},
+FrontEndVersion->"12.0 for Mac OS X x86 (64-bit) (2019\:5e745\:67083\:65e5)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 2633, 79, 199, "Input",ExpressionUUID->"2ad1a80e-898e-4bed-add5-a980581df113"],
+Cell[3216, 103, 682, 21, 34, "Output",ExpressionUUID->"4c4deb45-ff62-4f22-8cf2-6602c4e3b25d"],
+Cell[3901, 126, 684, 21, 34, "Output",ExpressionUUID->"02d9592e-60f9-493f-9e0c-97798ac063cc"],
+Cell[4588, 149, 699, 21, 37, "Output",ExpressionUUID->"ea16facb-d87a-4fed-ae54-10a1520058bb"],
+Cell[5290, 172, 699, 21, 37, "Output",ExpressionUUID->"ce7e8a1e-8459-4675-bed7-7c490e14dbb2"],
+Cell[5992, 195, 606, 18, 52, "Output",ExpressionUUID->"a916763f-b9ff-4c3c-b8bc-7775214ecbb3"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6635, 218, 738, 23, 52, "Input",ExpressionUUID->"0dc34878-511c-4aa3-8aaf-a3556c92653c"],
+Cell[7376, 243, 692, 21, 34, "Output",ExpressionUUID->"67759a37-7a80-40a5-9750-f9a09ddb439d"],
+Cell[8071, 266, 692, 21, 34, "Output",ExpressionUUID->"b49edb14-e673-4b3f-a9dd-673a24804215"]
+}, Open  ]],
+Cell[8778, 290, 159, 3, 30, "Input",ExpressionUUID->"83a97005-32c3-4508-93d2-8820c4fb22b0"],
+Cell[CellGroupData[{
+Cell[8962, 297, 11729, 268, 1459, "Input",ExpressionUUID->"78603b54-14db-46ad-a7d5-3037aea95a55"],
+Cell[20694, 567, 14132, 226, 1944, "Print",ExpressionUUID->"e0fdd6c0-40a1-42f6-a582-b07bb5c208ee"]
+}, Open  ]]
+}
+]
+*)
+
