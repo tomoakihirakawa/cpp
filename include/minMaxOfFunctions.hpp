@@ -159,36 +159,53 @@ struct GradientMethod {
 /* -------------------------------------------------------------------------- */
 /*                               Broyden Method                               */
 /* -------------------------------------------------------------------------- */
+template <typename T>
+struct BroydenMethod;
 
 template <typename T>
-struct BroydenMethod {
-   using Tnd = tuple_of<std::tuple_size<T>::value, double>;
-   Tnd X, dX;
-   tuple_of<std::tuple_size<T>::value, Tnd> J;
-   BroydenMethod(const T &Xin, const T &Xin_) : X(Xin), dX(Xin - Xin_), J(TensorProduct(Xin, Xin)) {
+   requires is_std_array<T>::value
+struct BroydenMethod<T> {
+   T X, dX;
+   std::array<T, std::tuple_size<T>::value> J;
+
+   BroydenMethod(const T &Xin, const T &Xin_) : X(Xin), dX(Xin_ - Xin), J(TensorProduct(Xin, Xin)) {
       IdentityMatrix(J);
-   };
-   void initialize(const T &Xin) { X = Xin; };
-   void update(const T F, const T F_, const double alpha = 1.) {
-      J += TensorProduct((F - F_ - Dot(J, dX)) / Dot(dX, dX), dX);
+   }
+
+   void initialize(const T &Xin) { X = Xin; }
+
+   void update(const T &F, const T &F_, const double alpha = 1.) {
+      auto dot = Dot(dX, dX);
+      if (dot != static_cast<double>(0.))
+         J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
       X += (dX = -alpha * Dot(Inverse(J), F));  // inverseが計算できるかは未検証
-   };
+   }
 };
+
+// Deduction guide
+template <typename T1, typename T2>
+BroydenMethod(T1, T2) -> BroydenMethod<std::decay_t<T1>>;
 
 using Vd = std::vector<double>;
 using VVd = std::vector<std::vector<double>>;
+
 template <>
 struct BroydenMethod<Vd> {
    Vd X, dX;
    VVd J;
-   BroydenMethod(const Vd &Xin, const Vd &Xin_) : X(Xin), dX(Xin - Xin_), J(VV_d(Xin.size(), V_d(Xin.size()))) {
+
+   BroydenMethod(const Vd &Xin, const Vd &Xin_) : X(Xin), dX(Xin_ - Xin), J(VVd(Xin.size(), Vd(Xin.size()))) {
       IdentityMatrix(J);
-   };
-   void initialize(const Vd &Xin) { X = Xin; };
-   void update(const Vd F, const Vd F_, const double alpha = 1.) {
-      J += TensorProduct((F - F_ - Dot(J, dX)) / Dot(dX, dX), dX);
+   }
+
+   void initialize(const Vd &Xin) { X = Xin; }
+
+   void update(const Vd &F, const Vd &F_, const double alpha = 1.) {
+      auto dot = Dot(dX, dX);
+      if (dot != static_cast<double>(0.))
+         J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
       X += (dX = -alpha * Dot(Inverse(J), F));
-   };
+   }
 };
 
 #endif
