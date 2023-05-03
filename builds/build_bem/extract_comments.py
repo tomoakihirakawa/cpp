@@ -18,12 +18,15 @@ def highlight_keywords(text):
 
 
 def extract_markdown_comments(input_file):
-    markdown_comment_pattern = re.compile(r'/\*\*(.*?)\*/', re.DOTALL)
+    cpp_comment_pattern = re.compile(r'/\*\*(.*?)\*/', re.DOTALL)
+    python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
 
-    with open(input_file, 'r') as cpp_file:
-        content = cpp_file.read()
+    with open(input_file, 'r') as file:
+        content = file.read()
 
-    markdown_comments = markdown_comment_pattern.finditer(content)
+    cpp_comments = cpp_comment_pattern.finditer(content)
+    python_comments = python_comment_pattern.finditer(content)
+    markdown_comments = list(cpp_comments) + list(python_comments)
     extracted_comments = ""
 
     for match in markdown_comments:
