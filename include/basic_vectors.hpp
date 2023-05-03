@@ -23,33 +23,7 @@
 #include "basic_exception.hpp"
 
 /* -------------------------------------------------------------------------- */
-// template <typename T>
-// tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> TensorProduct(const T &vec1, const T &vec2) {
-//    tuple_of<std::tuple_size<T>::value, tuple_of<std::tuple_size<T>::value, double>> m;
-//    for_each01(vec1, m, [&](const auto &v1, auto &mi) {
-//       for_each01(vec2, mi, [&](const auto &v2, auto &mij) { mij = v1 * v2; });
-//    });
-//    return m;
-// };
 
-// template <typename T>
-// double Dot(tuple_of<std::tuple_size<T>::value, double> &V,
-//            tuple_of<std::tuple_size<T>::value, double> &U) {
-//    double ret = 0.;
-//    for_each(V, U, [&ret](const auto &u, const auto &v) { ret += u * v; });
-//    return ret;
-// };
-//
-template <typename T>
-void IdentityMatrix(T &M) {
-   int i = 0, j = 0;
-   for_each(M, [&](auto &Mi) {
-      j = 0;
-      for_each(Mi, [&](auto &Mij) { Mij = (i == j++) ? 1. : 0.; });
-      i++;
-   });
-};
-//
 template <>
 void IdentityMatrix<VV_d>(VV_d &mat) {
    int i = 0, j = 0;

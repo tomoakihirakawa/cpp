@@ -35,11 +35,6 @@
    = {{1,a/b,a/c},{b/a,1,b/c},{c/a,c/b,1}}
 */
 
-// template <typename>
-// struct is_std_array : std::false_type {};
-
-// template <template <typename, std::size_t> class Array, typename T, std::size_t N>
-// struct is_std_array<Array<T, N>> : std::true_type {};
 template <typename T>
 struct is_std_array : std::false_type {};
 
@@ -63,24 +58,21 @@ constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array + 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array + 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 /* -------------------------------------------------------------------------- */
@@ -112,24 +104,21 @@ constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator-=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array -= 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array -= 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 /* -------------------------------------------------------------------------- */
@@ -168,24 +157,21 @@ constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N>& operator*=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array *= 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 // 2d array *= 2d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator*=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }
-   (std::make_index_sequence<N>());
+      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) *= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
 
@@ -285,8 +271,7 @@ constexpr void for_each(std::array<T, N>& arr, std::array<TT, N>& ARR, const Fun
    if constexpr (N > 0) {
       [&]<size_t... Is>(std::index_sequence<Is...>) {
          (func(std::get<Is>(arr), std::get<Is>(ARR)), ...);
-      }
-      (std::make_index_sequence<N>());
+      }(std::make_index_sequence<N>());
    }
 }
 
@@ -295,8 +280,7 @@ constexpr void for_each(std::array<T, N>& arr, const std::array<TT, N>& ARR, con
    if constexpr (N > 0) {
       [&]<size_t... Is>(std::index_sequence<Is...>) {
          (func(std::get<Is>(arr), std::get<Is>(ARR)), ...);
-      }
-      (std::make_index_sequence<N>());
+      }(std::make_index_sequence<N>());
    }
 }
 
@@ -407,6 +391,20 @@ constexpr T Total(const std::array<T, N>& arr) noexcept {
    std::ranges::for_each(arr, [&ret](const auto& a) { ret += a; });
    return ret;
 }
+
+/* -------------------------------------------------------------------------- */
+
+template <typename T, size_t N1, size_t N2>
+constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1>& vec1, const std::array<T, N2>& vec2) noexcept {
+   std::array<std::array<T, N2>, N1> ret{};
+   for (size_t m = 0; m < N1; ++m) {
+      for (size_t j = 0; j < N2; ++j) {
+         ret[m][j] = vec1[m] * vec2[j];
+      }
+   }
+   return ret;
+}
+/* -------------------------------------------------------------------------- */
 
 template <typename T, size_t N>
 constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
@@ -679,34 +677,6 @@ struct hash<std::array<T, N>> {
 }  // namespace std
 /* -------------------------------------------------------------------------- */
 
-// T2Tdd Inverse(const T2Tdd &M) {
-//    const auto [x00, x01] = std::get<0>(M);
-//    const auto [x10, x11] = std::get<1>(M);
-//    const double det = -(x01 * x10) + x00 * x11;
-//    return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
-// };
-// /* -------------------------------------------------------------------------- */
-// T3Tddd Inverse(const T3Tddd &mat) {
-//    // 以下も参考にできる
-//    // https://www.onlinemathstutor.org/post/3x3_inverses
-//    auto [x00, x01, x02] = std::get<0>(mat);
-//    auto [x10, x11, x12] = std::get<1>(mat);
-//    auto [x20, x21, x22] = std::get<2>(mat);
-//    double inv_det = 1. / (-x02 * x11 * x20 + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22);
-//    return {Tddd{inv_det * (-x12 * x21 + x11 * x22),
-//                 inv_det * (x02 * x21 - x01 * x22),
-//                 inv_det * (-x02 * x11 + x01 * x12)},
-//            Tddd{inv_det * (x12 * x20 - x10 * x22),
-//                 inv_det * (-x02 * x20 + x00 * x22),
-//                 inv_det * (x02 * x10 - x00 * x12)},
-//            Tddd{inv_det * (-x11 * x20 + x10 * x21),
-//                 inv_det * (x01 * x20 - x00 * x21),
-//                 inv_det * (-x01 * x10 + x00 * x11)}};
-//    /* ---------------------------------------------------------- */
-//    // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
-//    // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
-// };
-
 T2Tdd Inverse(const T2Tdd& M) {
    const auto [x00, x01] = std::get<0>(M);
    const auto [x10, x11] = std::get<1>(M);
@@ -730,6 +700,15 @@ T3Tddd Inverse(const T3Tddd& mat) {
                 inv_det * std::fma(-x01, x10, x00 * x11)}};
    // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
    // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
+};
+
+template <typename T>
+void IdentityMatrix(T& M) {
+   size_t i = 0;
+   for (auto& m : M) {
+      m.fill(0.);
+      m[i++] = 1.;
+   }
 };
 
 #endif

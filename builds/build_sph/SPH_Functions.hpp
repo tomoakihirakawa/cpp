@@ -319,11 +319,10 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
 
 auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
    A->column_value.clear();
-   A->value = -A->div_tmpU;
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       const auto rij = qX - A->X;
-      const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
-      double v = 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH)) / ((B->rho + A->rho) * Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
+      double v = 2 * B->mass * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH));
+      v /= B->rho * (Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
       A->increment(B, v);
       A->increment(A, -v);
    };

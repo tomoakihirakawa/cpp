@@ -865,27 +865,31 @@ void developByEISPH(Network *net,
          }
 
          /* -------------------------------------------------------------------------- */
-         if (real_time > 0.011) {
+         if (real_time > 0.0) {
             DebugPrint("activate");
             V_d b(net->getPoints().size()), x0(net->getPoints().size());
             size_t i = 0;
+            // for (const auto &net : Append(net_RigidBody, net))
             for (const auto &p : net->getPoints()) {
-               p->setIndexCSR(i);
-               p->exclude(true);
-               b[i] = p->value = p->div_tmpU;
-               x0[i] = p->p_SPH;
-               i++;
+               // if (p->isCaptured)
+               {
+                  p->setIndexCSR(i);
+                  p->exclude(true);
+                  b[i] = p->value = p->rho * p->div_tmpU / dt;
+                  x0[i] = p->p_SPH;
+                  i++;
+               }
             }
 
             DebugPrint("Lap_P");
             Lap_P(net->getPoints(), Append(net_RigidBody, net));
-            for (const auto &p : net->getPoints())
-               if (p->isSurface) {
-                  p->column_value.clear();
-                  p->increment(p, 1.);
-                  p->value = 0.;
-               }
-            gmres gm(net->getPoints(), b, x0, 50);
+            // for (const auto &p : net->getPoints())
+            //    if (p->isSurface) {
+            //       p->column_value.clear();
+            //       p->increment(p, 1.);
+            //       p->value = 0.;
+            //    }
+            gmres gm(net->getPoints(), b, x0, 100);
             std::cout << "gm.err : " << gm.err << std::endl;
             for (const auto &p : net->getPoints()) {
                p->p_SPH = gm.x[p->getIndexCSR()];
