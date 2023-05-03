@@ -1,3 +1,7 @@
+/**EXPOSE
+ * 4x4の行列Aとベクトルbを用いて、Ax=bを解く
+ */
+
 #include "basic_IO.hpp"
 #include "basic_linear_systems.hpp"
 #include "basic_mathematical_functions.hpp"

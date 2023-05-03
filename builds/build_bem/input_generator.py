@@ -3,10 +3,6 @@
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 
-## Prerequisites
-
-- Python 3
-
 ## Usage
 
 1. Make sure the required dependencies are installed.
@@ -14,7 +10,6 @@ This Python script generates input files for the BEM simulation code. It support
 
 ```
 python3 input_generator.py
-
 ```
 
 Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
