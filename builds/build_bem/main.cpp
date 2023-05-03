@@ -1,25 +1,53 @@
 /**
-# コンパイルのやり方
+# BEM Simulation Code
 
-以下のコマンドの先頭の"$"は無視してください．
-本来はコンパイルの際には，多くのヘッダーファイルをインクルードするよう長いコンパイルのコマンドを打つ必要がある．
-cmakeを使えば，それをCMakeLists.txtにあらかじめ書いておくことで省くことができる．
-```shell
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
+This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
+
+## Prerequisites
+
+- CMake 3.26 or higher
+- AppleClang 14.0.3 or compatible C++ compiler
+- LAPACK library
+- Eigen 3.4.0 or higher
+- Python 3 for input generation
+
+## Building the Code
+
+1. Clean the build directory:
+
 ```
-次に，
-```shell
-$ make
+sh clean
 ```
-これでコンパイル終了．後は，次のようにすればmainファイルが実行される．
-```shell
-$ ./main
+
+2. Configure the build using CMake:
+
 ```
-ただし，古いcmake情報が今のフォルダ内に残っている場合，その情報を削除しておかないと，
-cmakeの際に，エラーがでる．古いcmake関連のファイルを消したい場合．次を実行した後にcmakeする．
-```shell
-$ sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
 ```
+
+3. Compile the code:
+
+```
+make
+```
+
+## Running the Simulation
+
+1. Generate input files using the `input_generator.py` script:
+
+```
+python3 ./input_generator.py
+```
+
+2. Run the simulation with the generated input files:
+
+```
+./main ./input_files/Kramer2021_H00d03
+```
+
+## Output
+
+The simulation results will be stored in the specified output directory.
 
 # settingBEM.py
 
