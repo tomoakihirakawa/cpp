@@ -40,7 +40,7 @@ def extract_markdown_comments(input_file):
         cleaned_comment = comment
         # cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
         cleaned_comment = re.sub(r'\*(.*?)\*', r'**\1**', cleaned_comment)
-        cleaned_comment = re.sub(r'\n', ' ', cleaned_comment)
+        # cleaned_comment = re.sub(r'\n', ' ', cleaned_comment)
 
 
         cleaned_comment = highlight_keywords(cleaned_comment)
