@@ -37,7 +37,11 @@ def extract_markdown_comments(input_file):
         start_line = content[:match.start()].count('\n') + 1
 
         # Remove leading asterisks and whitespace
-        cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
+        cleaned_comment = comment
+        # cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
+        cleaned_comment = re.sub(r'\*(.*?)\*', r'**\1**', cleaned_comment)
+        cleaned_comment = re.sub(r'\n', ' ', cleaned_comment)
+
 
         cleaned_comment = highlight_keywords(cleaned_comment)
 
