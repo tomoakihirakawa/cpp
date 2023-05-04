@@ -826,12 +826,9 @@ class networkPoint : public CoordinateBounds, public CSR {
    void clearContactFaces() { this->ContactFaces.clear(); };
    void addContactFaces(const Buckets<networkFace *> &B, bool);  // 自身と同じfaceを含まない
    //
-   void addContactPoints(const Buckets<networkPoint *> &B, const bool);                                                           // 自身と同じnetのpointを含み得る
-   void addContactPoints(const Buckets<networkPoint *> &B, const double radius, const bool);                                      // 自身と同じnetのpointを含み得る
-   void addContactPoints(const Buckets<networkPoint *> &B, const int limit_depth, const int limit_num, const bool);               // 自身と同じnetのpointを含み得る
-   void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const double radius, const bool);                         // 自身と同じnetのpointを含み得る
-   void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const int limit_depth, const int limit_num, const bool);  // 自身と同じnetのpointを含み得る
-
+   void addContactPoints(const Buckets<networkPoint *> &B, const bool);                                    // 自身と同じnetのpointを含み得る
+   void addContactPoints(const Buckets<networkPoint *> &B, const double radius, const bool);               // 自身と同じnetのpointを含み得る
+   void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const double radius, const bool);  // 自身と同じnetのpointを含み得る
    // Tddd X_little_inside() const;
    //
    const std::unordered_set<networkPoint *> &getContactPoints() const { return this->ContactPoints; };
@@ -873,160 +870,6 @@ class networkPoint : public CoordinateBounds, public CSR {
          this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
       }
    };
-   //@ 制限あり
-   void addContactPoints(const Buckets<networkPoint *> &B,
-                         const Tddd &x,
-                         const double radius_SPH,
-                         const int limit_number) {
-      int limit_depth = std::ceil(radius_SPH / B.dL);
-      int i0, j0, k0;
-      B.indices(x, i0, j0, k0);
-      //* ------------------------ depth=0 ------------------------ */
-      if (B.isInside(i0, j0, k0))
-         this->addContactPoints(B.buckets[i0][j0][k0]);
-      if (this->getContactPoints().size() >= limit_number)
-         return;
-      /* ------------------------------------------------------ */
-      // int i, j, k;
-      auto it_begin = B.buckets.begin();
-      for (auto d = 1; d <= limit_depth; ++d) {
-
-         if (!(i0 - d < 0 || i0 - d >= B.xsize) && !(i0 + d < 0 || i0 + d >= B.xsize)) {
-            auto &a = B.buckets[i0 + d];
-            auto &b = B.buckets[i0 - d];
-            for (auto j = (j0 - d < 0 ? 0 : j0 - d); j <= j0 + d && j < B.ysize; ++j)
-               for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < B.zsize; ++k) {
-                  this->addContactPoints(a[j][k]);
-                  this->addContactPoints(b[j][k]);
-               }
-         } else
-            for (auto j = (j0 - d < 0 ? 0 : j0 - d); j <= j0 + d && j < B.ysize; ++j)
-               for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < B.zsize; ++k) {
-                  if (!((i0 + d) < 0 || (i0 + d) >= B.xsize))
-                     this->addContactPoints(B.buckets[i0 + d][j][k]);
-                  if (!((i0 - d) < 0 || (i0 - d) >= B.xsize))
-                     this->addContactPoints(B.buckets[i0 - d][j][k]);
-               }
-
-         auto it_start = std::next(it_begin, i0 - d + 1 < 0 ? 0 : i0 - d + 1);
-         auto it_end = std::next(it_begin, i0 + d < B.xsize ? i0 + d : B.xsize);
-         if (!(j0 + d < 0 || j0 + d >= B.ysize) && !(j0 - d < 0 || j0 - d >= B.ysize) &&
-             !(k0 + d < 0 || k0 + d >= B.zsize) && !(k0 - d < 0 || k0 - d >= B.zsize))
-            for (auto it = it_start; it != it_end; ++it) {
-               for (auto k = k0 - d; k <= k0 + d; ++k) {
-                  this->addContactPoints((*it)[j0 + d][k]);
-                  this->addContactPoints((*it)[j0 - d][k]);
-               }
-               for (auto j = j0 - d + 1; j < j0 + d; ++j) {
-                  this->addContactPoints((*it)[j][k0 + d]);
-                  this->addContactPoints((*it)[j][k0 - d]);
-               }
-            }
-         else
-            for (auto it = it_start; it != it_end; ++it) {
-               if (!(j0 + d < 0 || j0 + d >= B.ysize) && !(j0 - d < 0 || j0 - d >= B.ysize))
-                  for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < B.zsize; ++k) {
-                     this->addContactPoints((*it)[j0 + d][k]);
-                     this->addContactPoints((*it)[j0 - d][k]);
-                  }
-               else if (!(j0 + d < 0 || j0 + d >= B.ysize))
-                  for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < B.zsize; ++k) {
-                     this->addContactPoints((*it)[j0 + d][k]);
-                  }
-               else if (!(j0 - d < 0 || j0 - d >= B.ysize))
-                  for (auto k = (k0 - d < 0 ? 0 : k0 - d); k <= k0 + d && k < B.zsize; ++k) {
-                     this->addContactPoints((*it)[j0 - d][k]);
-                  }
-               /* ------------------------------------------------------ */
-               if (!(k0 + d < 0 || k0 + d >= B.zsize) && !(k0 - d < 0 || k0 - d >= B.zsize))
-                  for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < B.ysize; ++j) {
-                     this->addContactPoints((*it)[j][k0 + d]);
-                     this->addContactPoints((*it)[j][k0 - d]);
-                  }
-               else if (!(k0 + d < 0 || k0 + d >= B.zsize))
-                  for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < B.ysize; ++j) {
-                     this->addContactPoints((*it)[j][k0 + d]);
-                  }
-               else if (!(k0 - d < 0 || k0 - d >= B.zsize))
-                  for (auto j = (j0 - d + 1 < 0 ? 0 : j0 - d + 1); j < j0 + d && j < B.ysize; ++j) {
-                     this->addContactPoints((*it)[j][k0 - d]);
-                  }
-            }
-
-         if (this->getContactPoints().size() >= limit_number)
-            return;
-      }
-   };
-
-   //@ 無制限に点を取得する
-   void addContactPoints(const Buckets<networkPoint *> &B,
-                         const Tddd &x,
-                         const double radius_SPH) {
-      // radius_SPHはバケツの深さを決める際に使う．点がradius_SPHより外にあることもあり得る．
-      int limit_depth = std::ceil(radius_SPH / B.dL);
-      auto [i0, j0, k0] = B.indices(x);
-      if (B.isInside(i0, j0, k0)) {
-         int i_start = i0 - limit_depth;
-         int j_start = j0 - limit_depth;
-         int k_start = k0 - limit_depth;
-         if (i_start < 0)
-            i_start = 0;
-         if (j_start < 0)
-            j_start = 0;
-         if (k_start < 0)
-            k_start = 0;
-         int i_end = i0 + limit_depth;
-         int j_end = j0 + limit_depth;
-         int k_end = k0 + limit_depth;
-         if (i_end > B.xsize)
-            i_end = B.xsize;
-         if (j_end > B.ysize)
-            j_end = B.ysize;
-         if (k_end > B.zsize)
-            k_end = B.zsize;
-         // この方法は，B.Bucketsの長さがそれぞれ一定であることを想定している．
-         //  for (i0 = i_start; i0 < i_end; ++i0)
-         //  	for (j0 = j_start; j0 < j_end; ++j0)
-         //  		for (k0 = k_start; k0 < k_end; ++k0)
-         //  		{
-         //  this->addContactPoints(B.buckets[i0][j0][k0]);
-         //  		}
-
-         //@修正
-         for (i0 = i_start; i0 < i_end; ++i0)
-            for (j0 = j_start; j0 < j_end; ++j0)
-               for (k0 = k_start; k0 < k_end; ++k0) {
-                  this->ContactPoints.insert(B.buckets[i0][j0][k0].begin(), B.buckets[i0][j0][k0].end());
-                  for (auto it = B.buckets[i0][j0][k0].begin(); it != B.buckets[i0][j0][k0].end(); ++it)
-                     this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
-               }
-
-         // for (auto it_i = B.buckets.begin() + i_start; it_i != B.buckets.begin() + i_end; ++it_i)
-         // 	for (auto it_j = (*it_i).begin() + j_start; it_j != (*it_i).begin() + j_end; ++it_j)
-         // 		for (auto it_k = (*it_j).begin() + k_start; it_k != (*it_j).begin() + k_end; ++it_k)
-         // 		{
-         // 			this->ContactPoints.insert((*it_k).begin(), (*it_k).end());
-         // 			for (auto it = (*it_k).begin(); it != (*it_k).end(); ++it)
-         // 				this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
-         // 		}
-
-         // auto it_i = B.buckets.begin();
-         // auto it_j = (*it_i).begin();
-         // auto it_k = (*it_j).begin();
-         // auto it = (*it_k).begin();
-         // for (it_i = B.buckets.begin() + i_start; it_i != B.buckets.begin() + i_end; ++it_i)
-         // 	for (it_j = (*it_i).begin() + j_start; it_j != (*it_i).begin() + j_end; ++it_j)
-         // 		for (it_k = (*it_j).begin() + k_start; it_k != (*it_j).begin() + k_end; ++it_k)
-         // 		{
-         // 			for (it = (*it_k).begin(); it != (*it_k).end(); ++it)
-         // 			{
-         // 				this->ContactPoints.emplace(*it);
-         // 				this->map_Net_ContactPoints[(*it)->getNetwork()].emplace(*it);
-         // 			}
-         // 		}
-      }
-   };
-   //% ------------------------------------------------------ */
    // インライン化する．
    // コンタクトポイントをpointとface上で作成，完成させる．
    // 次にRBFを使った力の計算をその点を使って行えるようにする．
@@ -3575,10 +3418,10 @@ class Network : public CoordinateBounds {
    const double expand_bounds = 1.5;
 
    void makeBucketFaces(const double spacing) {
-      this->BucketPoints.hashing_done = false;
+      // this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
-      this->BucketFaces.set(this->scaledBounds(expand_bounds), spacing);
+      this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       //
       double min;
       for (const auto &f : this->getFaces()) {
@@ -3589,10 +3432,10 @@ class Network : public CoordinateBounds {
    };
 
    void makeBucketPoints(const double spacing) {
-      this->BucketPoints.hashing_done = false;
+      // this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
       this->BucketPoints.clear();
-      this->BucketPoints.resize(this->scaledBounds(expand_bounds), spacing);
+      this->BucketPoints.initialize(this->scaledBounds(expand_bounds), spacing);
       std::cout << this->getName() << ", resize done" << std::endl;
       if (!this->BucketPoints.add(this->getPoints()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
@@ -3605,19 +3448,19 @@ class Network : public CoordinateBounds {
       // #pragma acc enter data copyin(this->BucketPoints)
    };
    void makeBucketParametricPoints(const double spacing) {
-      this->BucketPoints.hashing_done = false;
+      // this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
-      this->BucketParametricPoints.resize(this->scaledBounds(expand_bounds), spacing);
+      this->BucketParametricPoints.initialize(this->scaledBounds(expand_bounds), spacing);
       this->BucketParametricPoints.add(this->getParametricPoints());
       std::cout << "this->getParametricPoints().size()=" << this->getParametricPoints().size() << std::endl;
    };
    void makeBucketParametricPoints(const T3Tdd &bounds, const double spacing) {
-      this->BucketPoints.hashing_done = false;
-      this->BucketParametricPoints.resize(this->scaledBounds(expand_bounds), spacing);
+      // this->BucketPoints.hashing_done = false;
+      this->BucketParametricPoints.initialize(this->scaledBounds(expand_bounds), spacing);
       this->BucketParametricPoints.add(this->getParametricPoints());
    };
    void clearBucketParametricPoints() {
-      this->BucketPoints.hashing_done = false;
+      // this->BucketPoints.hashing_done = false;
       this->BucketParametricPoints.clear();
    };
    // b$ ------------------------------------------------------ */

@@ -1765,4 +1765,139 @@ bool Between(const T &x, const std::array<T, 2> &minmax) {
    return (min <= x && x <= max && isFinite(x));
 }
 
+/* -------------------------------------------------------------------------- */
+/////////////////////////////////////////////////////
+template <typename T>
+std::vector<T> Range(const T xmin, const T xmax, const T di) {
+   std::vector<T> ret;
+   T i = 0.;
+   while (di * i + xmin <= xmax) {
+      ret.push_back(di * i + xmin);
+      i = i + 1.;
+   }
+   return ret;
+};
+// template <typename T>
+// std::vector<T> Subdivide(const T xmin, const T xmax, const int n)
+// {
+// 	T dx = (xmax - xmin) / n;
+// 	std::vector<T> ret(n + 1);
+// 	for (int i = 0; i < n + 1; i++)
+// 		ret[i] = i * dx + xmin;
+// 	return ret;
+// };
+std::vector<double> Subdivide(const double xmin, const double xmax, const int n) {
+   if (n <= 0) {
+      std::stringstream ss;
+      ss << "Subdivide(" << xmin << "," << xmax << "," << n << ")の位置3に与えられた分割数は正の整数でなければなりません．";
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+   }
+   std::vector<double> ret(n + 1);
+   const double dx = (xmax - xmin) / n;
+   for (int i = 0; i < n + 1; i++)
+      ret[i] = i * dx + xmin;
+   return ret;
+};
+std::vector<double> Subdivide(const Tdd &xminxmax, const int n) { return Subdivide(std::get<0>(xminxmax), std::get<1>(xminxmax), n); };
+template <class T>
+std::vector<std::vector<T>> Subdivide(const std::vector<T> &xmin, const std::vector<T> &xmax, const int n) {
+   std::vector<T> dx = (xmax - xmin) / n;
+   std::vector<std::vector<T>> ret(xmin.size(), std::vector<T>(n + 1, 0.));
+   for (size_t i = 0; i < xmin.size(); i++)
+      ret[i] = Subdivide(xmin[i], xmax[i], n);
+   return Transpose(ret);
+};
+template <typename T>
+std::vector<T> SubdivideByStep(const T xmin, const T xmax, const T di) {
+   return Subdivide(xmin, xmax, (int)((xmax - xmin) / di));
+};
+template <typename T>
+std::vector<std::vector<T>> SubdivideByStep(const std::vector<T> &xmin, const std::vector<T> &xmax, const T di) {
+   return Subdivide(xmin, xmax, (int)((Norm(xmax - xmin)) / di));
+};
+template <typename T>
+std::vector<std::vector<T>> SubdivideByStep(const std::vector<std::vector<T>> &x, const T di) {
+   std::vector<std::vector<T>> ret;
+   for (size_t i = 0; i < x.size() - 1; i++) {
+      if (!ret.empty())
+         ret.pop_back();
+      ret = Join(ret, SubdivideByStep(x[i], x[i + 1], di));
+   }
+   return ret;
+};
+template <typename T>
+std::vector<std::vector<T>> SubdivideByStepExclude(const std::vector<std::vector<T>> &x_in, const T di) {
+   std::vector<std::vector<T>> x = x_in;
+   std::vector<std::vector<T>> ret;
+   T n;
+   for (size_t i = 0; i < x.size() - 1; i++) {
+      if (x.size() == 1) {
+         std::cout << "invalid length" << std::endl;
+         std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+         return x;
+      } else if (x.size() == 2) {
+         return SubdivideByStep(x[i], x[i + 1], di);
+      } else if (i == 0) {
+         n = Norm(x[i + 1] - x[i]) / di;
+         std::vector<std::vector<T>> tmp = SubdivideByStep(x[i], x[i + 1] - (x[i + 1] - x[i]) / (2. * n), di);
+         ret = Join(ret, tmp);
+      } else if (i == x.size() - 2) {
+         n = Norm(x[i + 1] - x[i]) / di;
+         std::vector<std::vector<T>> tmp = SubdivideByStep(x[i] + (x[i + 1] - x[i]) / (2. * n), x[i + 1], di);
+         ret = Join(ret, tmp);
+      } else if (i > 0 && i < x.size() - 2) {
+         n = Norm(x[i + 1] - x[i]) / di;
+         std::vector<std::vector<T>> tmp = SubdivideByStep(x[i] + (x[i + 1] - x[i]) / (2. * n), x[i + 1] - (x[i + 1] - x[i]) / (2 * n), di);
+         ret = Join(ret, tmp);
+      }
+   }
+   return ret;
+};
+template <typename T>
+std::vector<std::vector<T>> Subdivide(const std::vector<std::vector<T>> &x, const int n) {
+   T len(0.);
+   for (size_t i = 0; i < x.size() - 1; i++)
+      len += Norm(x[i + 1] - x[i]);
+   T di = len / n;
+   int counter(0);
+   while (counter < 100000) {
+      std::vector<std::vector<T>> tmp = SubdivideByStep(x, di);
+      if (tmp.size() == n)
+         return SubdivideByStep(x, di);
+      else if (tmp.size() > n) {
+         di = di * 1.01;
+      } else if (tmp.size() < n) {
+         di = di * 0.99;
+      };
+      counter++;
+   }
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorOff << std::endl;
+   abort();
+   return SubdivideByStep(x, di);
+};
+template <typename T>
+std::vector<std::vector<T>> SubdivideExclude(const std::vector<std::vector<T>> &x, const int n) {
+   T len(0.);
+   for (size_t i = 0; i < x.size() - 1; i++)
+      len += Norm(x[i + 1] - x[i]);
+   T di = len / n;
+   int counter(0);
+   while (counter < 100000) {
+      std::vector<std::vector<T>> tmp = SubdivideByStepExclude(x, di);
+      if (tmp.size() == n)
+         return tmp;
+      else if (tmp.size() > n) {
+         di = di * 1.01;
+      } else if (tmp.size() < n) {
+         di = di * 0.999;
+      };
+      counter++;
+   }
+   std::cout << Red << __func__ << ":" << colorOff << std::endl;
+   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorOff << std::endl;
+   abort();
+   return SubdivideByStepExclude(x, di);
+};
+
 #endif

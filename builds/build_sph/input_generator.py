@@ -140,16 +140,17 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 4,
+        setting = {"RK_order": 1,
                    "max_dt": 0.0005,
                    "end_time_step": 50000,
                    "end_time": 0.5,
-                   "CSML": 3.0,
+                   "CSML": 2.7,
                    "initial_surface_z_position": 0.2,
                    "particle_spacing": 0.0125,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #
+
 id = id + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
     + "_CSML" + str(setting["CSML"]).replace(".", "d")\
     + "_RK" + str(setting["RK_order"])
@@ -159,8 +160,6 @@ os.makedirs(input_directory, exist_ok=True)
 os.makedirs(output_directory, exist_ok=True)
 setting["output_directory"] = output_directory
 
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
 red = '\033[91m'

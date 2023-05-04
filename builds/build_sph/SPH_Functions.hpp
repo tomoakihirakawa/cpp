@@ -67,7 +67,7 @@ auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
       const auto Uij = coef * B->U_SPH - A->U_SPH;
       const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
       A->lap_U_ += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
-                   ((B->rho + A->rho) * Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
+                   ((B->rho + A->rho) * Dot(rij, rij));
    };
    //$ ------------------------------------------ */
    //$ ------------------------------------------ */
@@ -135,7 +135,7 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
          auto rij = qX - A->X;
          nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
          A->lap_tmpU += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
-                        ((B->rho + A->rho) * Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
+                        ((B->rho + A->rho) * Dot(rij, rij));
       }
    };
    //@ ------------------------------------------ */
@@ -274,7 +274,7 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
 
 void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
    A->contact_points_all_SPH = A->contact_points_fluid_SPH = 0;
-   A->gradP_SPH = {0., 0., 0.};
+   A->gradP_SPH.fill(0.);
    //% ------------------------------------------ */
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       if (Distance(A, qX) > 1E-12) {
@@ -322,7 +322,7 @@ auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       const auto rij = qX - A->X;
       double v = 2 * B->mass * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH));
-      v /= B->rho * (Dot(rij, rij) + std::pow(1E-4 * A->radius_SPH / A->C_SML, 2));
+      v /= B->rho * Dot(rij, rij);
       A->increment(B, v);
       A->increment(A, -v);
    };

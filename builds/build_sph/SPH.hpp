@@ -6,17 +6,17 @@
 
    #define REFLECTION
 
-   #define surface_zero_pressure
+   // #define surface_zero_pressure
 
    //$ ------------------------------------------------------------------- */
    /* -------------------------------------------------------------------------- */
-   // #define USE_SPP_Fluid
+   #define USE_SPP_Fluid
    #if defined(USE_SPP_Fluid)
       #define SPP_U_coef 1.
       #define SPP_p_coef -1.
    #endif
    /* -------------------------------------------------------------------------- */
-   // #define USE_SPP_Wall
+   #define USE_SPP_Wall
    #if defined(USE_SPP_Wall)
       #define SPP_U_coef_of_Wall 1.
       #define SPP_p_coef_of_Wall -1.
@@ -27,7 +27,7 @@
 
    #define POWER 1.
 
-const double reflection_factor = 1.;
+const double reflection_factor = .5;
 const double asobi = 0.;
 
    #include "SPH_Functions.hpp"
@@ -559,6 +559,103 @@ std::unordered_set<networkPoint *> wall_as_fluid;
 std::unordered_set<networkPoint *> wall_p_surface;
 std::unordered_set<networkPoint *> wall_p;
 
+void test_Bucket(const auto &water, const auto &nets, const std::string &output_directory, const auto &r) {
+   std::filesystem::create_directory(output_directory);
+
+   {
+      vtkPolygonWriter<networkPoint *> vtp;
+      for (const auto &net : nets)
+         for (const auto &p : net->getPoints())
+            vtp.add(p);
+      std::ofstream ofs(output_directory + "all.vtp");
+      vtp.write(ofs);
+      ofs.close();
+   }
+
+   int i = 0;
+   for (const auto &p : water->getPoints()) {
+      {
+         vtkPolygonWriter<networkPoint *> vtp;
+         vtp.add(p);
+         std::ofstream ofs(output_directory + "center" + std::to_string(i) + ".vtp");
+         vtp.write(ofs);
+         ofs.close();
+      }
+      {
+         std::unordered_map<networkPoint *, double> Bspline3;
+         std::unordered_map<networkPoint *, double> Bspline5;
+         double sum3 = 0, sum5 = 0;
+         vtkPolygonWriter<networkPoint *> vtp;
+         int j = 0;
+         for (const auto &net : nets)
+            net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+               vtp.add(q);
+               sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+               sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+               j++;
+            });
+         vtp.addPointData("w_Bspline3", Bspline3);
+         vtp.addPointData("w_Bspline5", Bspline5);
+
+         std::cout << "number of points in cell: " << j << std::endl;
+         std::ofstream ofs(output_directory + "inCell" + std::to_string(i) + ".vtp");
+         vtp.write(ofs);
+         ofs.close();
+      }
+      {
+         std::unordered_map<networkPoint *, double> Bspline3;
+         std::unordered_map<networkPoint *, double> Bspline5;
+         double sum3 = 0, sum5 = 0;
+         vtkPolygonWriter<networkPoint *> vtp;
+         int j = 0;
+         for (const auto &net : nets)
+            net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+               if (Distance(p->X, q->X) < p->radius_SPH) {
+                  vtp.add(q);
+                  sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+                  sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+                  j++;
+               }
+            });
+         vtp.addPointData("w_Bspline3", Bspline3);
+         vtp.addPointData("w_Bspline5", Bspline5);
+
+         std::cout << "        points: " << j << std::endl;
+         std::cout << "sum B-spline 3: " << sum3 << std::endl;
+         std::cout << "sum B-spline 5: " << sum5 << std::endl;
+         std::ofstream ofs(output_directory + "inSphere" + std::to_string(i) + ".vtp");
+         vtp.write(ofs);
+         ofs.close();
+      }
+      i++;
+   }
+
+   // check if each cell properly stores objects
+   {
+      int I = 0, J = 0;
+      for (auto i = 0; i < water->BucketPoints.xsize; ++i)
+         for (auto j = 0; j < water->BucketPoints.ysize; ++j)
+            for (auto k = 0; k < water->BucketPoints.zsize; ++k) {
+               {
+                  vtkPolygonWriter<networkPoint *> vtp;
+                  for (const auto &net : nets)
+                     vtp.add(net->BucketPoints.buckets[i][j][k]);
+                  std::ofstream ofs(output_directory + "each_cell" + std::to_string(I++) + ".vtp");
+                  vtp.write(ofs);
+                  ofs.close();
+               }
+               {
+                  vtkPolygonWriter<Tddd> vtp;
+                  for (const auto &net : nets)
+                     vtp.add(net->BucketPoints.itox(i, j, k));
+                  std::ofstream ofs(output_directory + "each_cell_position" + std::to_string(J++) + ".vtp");
+                  vtp.write(ofs);
+                  ofs.close();
+               }
+            }
+   }
+};
+
 void developByEISPH(Network *net,
                     const auto &RigidBodyObjectIN,
                     double &real_time,
@@ -570,11 +667,26 @@ void developByEISPH(Network *net,
       Timer watch;
       std::vector<std::tuple<Network *, Network *>> RigidBodyObject;
       std::unordered_set<Network *> net_RigidBody;
-      //
+      // b# -------------------------------------------------------------------------- */
       for (const auto &[a, b, _] : RigidBodyObjectIN) {
          RigidBodyObject.push_back({a, b});
          net_RigidBody.emplace(a);
       }
+      // b# -------------- バケットの生成, p->radius_SPHの範囲だけ点を取得 --------------- */
+      DebugPrint("バケットの生成", Green);
+      net->makeBucketPoints(particle_spacing);
+      for (const auto &[obj, poly] : RigidBodyObject)
+         obj->makeBucketPoints(particle_spacing);
+      DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "バケットの生成");
+
+      // test_Bucket(net, Append(net_RigidBody, net), "./test_SPH_Bucket/", particle_spacing);
+
+      // void setDataOmitted(auto &vtp, const auto &Fluid) {
+      //    std::unordered_map<networkPoint *, Tddd> normal_SPH;
+      //    for (const auto &p : Fluid->getPoints())
+      //       normal_SPH[p] = p->normal_SPH;
+      //    vtp.addPointData("normal_SPH", normal_SPH);}
+
       // b# --------------------------- 平滑化距離の計算 ------------------------------ */
       /*     密度, 平滑化距離      */
       DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
@@ -633,12 +745,6 @@ void developByEISPH(Network *net,
             }
 
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
-      // b# -------------- バケットの生成, p->radius_SPHの範囲だけ点を取得 --------------- */
-      DebugPrint("バケットの生成", Green);
-      net->makeBucketPoints(particle_spacing * 0.8);
-      for (const auto &[obj, poly] : RigidBodyObject)
-         obj->makeBucketPoints(particle_spacing * 0.8);
-      DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "バケットの生成");
       // b# -------------------------------------------------------------------------- */
       // b# --------------- CFL条件を満たすようにタイムステップ間隔dtを設定 ----------------- */
       // b# -------------------------------------------------------------------------- */
@@ -860,41 +966,56 @@ void developByEISPH(Network *net,
             p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
             // p->p_SPH = p->p_SPH_;
             p->RK_P.push(p->DPDt_SPH);  // 圧力
-            p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+            // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
             p->p_SPH = p->p_SPH_;
          }
 
-         /* -------------------------------------------------------------------------- */
-         if (real_time > 0.0) {
-            DebugPrint("activate");
-            V_d b(net->getPoints().size()), x0(net->getPoints().size());
-            size_t i = 0;
-            // for (const auto &net : Append(net_RigidBody, net))
-            for (const auto &p : net->getPoints()) {
-               // if (p->isCaptured)
-               {
-                  p->setIndexCSR(i);
-                  p->exclude(true);
-                  b[i] = p->value = p->rho * p->div_tmpU / dt;
-                  x0[i] = p->p_SPH;
-                  i++;
-               }
-            }
-
-            DebugPrint("Lap_P");
-            Lap_P(net->getPoints(), Append(net_RigidBody, net));
-            // for (const auto &p : net->getPoints())
-            //    if (p->isSurface) {
-            //       p->column_value.clear();
-            //       p->increment(p, 1.);
-            //       p->value = 0.;
+            /* -------------------------------------------------------------------------- */
+            // if (real_time > 0.01) {
+            //    DebugPrint("activate");
+            //    V_d b, x0;
+            //    size_t i = 0;
+            //    std::unordered_set<networkPoint *> points;
+            //    points.reserve(net->getPoints().size() + wall_as_fluid.size());
+            //    b.reserve(net->getPoints().size() + wall_as_fluid.size());
+            //    x0.reserve(net->getPoints().size() + wall_as_fluid.size());
+            //    for (const auto &p : net->getPoints()) {
+            //       if (p->isCaptured) {
+            //          points.emplace(p);
+            //          p->setIndexCSR(i++);
+            //          p->exclude(true);
+            //          b.emplace_back(p->value = p->rho_ * p->div_tmpU / dt);
+            //          x0.emplace_back(p->p_SPH);
+            //       }
             //    }
-            gmres gm(net->getPoints(), b, x0, 100);
-            std::cout << "gm.err : " << gm.err << std::endl;
-            for (const auto &p : net->getPoints()) {
-               p->p_SPH = gm.x[p->getIndexCSR()];
-            }
-         }
+            //    for (const auto &p : wall_as_fluid) {
+            //       if (p->isCaptured) {
+            //          points.emplace(p);
+            //          p->setIndexCSR(i++);
+            //          p->exclude(true);
+            //          b.emplace_back(p->value = p->rho_ * p->div_tmpU / dt);
+            //          x0.emplace_back(p->p_SPH);
+            //       }
+            //    }
+
+            //    DebugPrint("Lap_P");
+            //    Lap_P(points, Append(net_RigidBody, net));
+
+            //    for (const auto &p : net->getPoints())
+            //       if (p->isSurface) {
+            //          p->column_value.clear();
+            //          p->increment(p, 1.);
+            //          p->value = 0.;
+            //          b[p->getIndexCSR()] = 0.;
+            //       }
+
+            //    gmres gm(points, b, x0, 200);
+            //    std::cout << "gm.err : " << gm.err << std::endl;
+
+            //    for (const auto &p : points) {
+            //       p->p_SPH = gm.x[p->getIndexCSR()];
+            //    }
+            // }
             /* -------------------------------------------------------------------------- */
 
    #endif
