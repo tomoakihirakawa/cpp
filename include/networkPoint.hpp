@@ -320,7 +320,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
 
       DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
       double dist;
-      std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      std::unordered_set<networkFace *> faces;
+      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
       faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
       std::vector<std::tuple<networkFace *, double>> f_dist_sort;
 
@@ -354,7 +356,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
 // 点なのに，sphereでインターセクションをチェックするのは効率的ではない．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->X, 2. * this->radius /*depth*/))
+   std::unordered_set<networkPoint *> points;
+   B.apply(this->X, 2. * this->radius, [&points](const auto &p) { points.emplace(p); });
+   for (const auto &q : points)
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q) {
             // if (intersection(geometry::Sphere(this->X, this->radius), geometry::Sphere(this->X, q->radius)).isIntersecting)
@@ -366,17 +370,9 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const double radius,
                                            const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->X, 2. * this->radius /*depth*/))
-      if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
-         if (this != q)
-            if (Norm(this->X - q->X) <= radius)
-               this->ContactPoints.emplace(q);
-};
-inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
-                                           const int limit_depth,
-                                           const int limit_num,
-                                           const bool include_self_network = true) {
-   for (const auto &q : B.getObjects_unorderedset(this->X, limit_depth, limit_num))
+   std::unordered_set<networkPoint *> points;
+   B.apply(this->X, radius, [&points](const auto &p) { points.emplace(p); });
+   for (const auto &q : points)
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q)
             if (Norm(this->X - q->X) <= radius)
@@ -389,14 +385,6 @@ inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoin
    for (const auto &B : Bs)
       addContactPoints(B, radius, include_self_network);
 };
-inline void networkPoint::addContactPoints(const std::vector<Buckets<networkPoint *>> &Bs,
-                                           const int limit_depth,
-                                           const int limit_num,
-                                           const bool include_self_network = true) {
-   for (const auto &B : Bs)
-      addContactPoints(B, limit_depth, limit_num, include_self_network);
-};
-
 // 追加2021/06/18
 V_netFp networkPoint::getFacesSort() const {
    V_netFp ret = {*this->Faces.begin()};
