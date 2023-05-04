@@ -1,8 +1,25 @@
+/**EXPOSE
+## Bucketを用いた粒子探索のテスト
+Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
+このコードでは，Bucketを用いた粒子探索のテストを行う．
+
+結果はVTKファイルに出力される．
+   * 全ての粒子を表示したものは`all.vtp`
+   * 中心の粒子を表示したものは`center*.vtp`
+   * 中心の粒子が探査したセル内にある粒子を表示したものは`inCell*.vtp`
+   * セル内かつ球内にある粒子を表示したものは`inSphere*.vtp`
+
+   - 各セルにある粒子を表示したものは`each_cell*.vtp`
+   - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
+*/
+
+// Include necessary libraries and header files
 #define DEM
 #include <filesystem>
 #include "Network.hpp"
 #include "vtkWriter.hpp"
 
+// Function to test the bucket method
 void test_Bucket(const auto &water,
                  const std::unordered_set<Network *> &nets,
                  const std::string &output_directory,
@@ -109,10 +126,15 @@ int main(int arg, char **argv) {
       std::cout << std::setw(10) << d << " -> " << static_cast<int>(d) << std::endl;
    auto net = new Network;
 
+   // Create a new network
+   auto net = new Network;
+
+   // Define x, y, z coordinates for the network points
    auto vecX = Subdivide({-.5, 1.}, 10);
    auto vecY = Subdivide({1., 2.}, 10);
    auto vecZ = Subdivide({-.5, 3.}, 10);
 
+   // Generate network points
    for (const auto &x : vecX)
       for (const auto &y : vecY)
          for (const auto &z : vecZ) {
@@ -120,8 +142,12 @@ int main(int arg, char **argv) {
             p->radius_SPH = 0.1;
          }
 
+   // Initialize the bucket points for the network
    net->makeBucketPoints(0.6666);
+
+   // Define the kernel radius
    double r = 0.44;
 
+   // Call the test function to evaluate the bucket method and write the output to VTK files
    test_Bucket(net, {net}, "./test_Buckets_output/", r);
 };

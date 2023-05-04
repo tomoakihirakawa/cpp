@@ -518,11 +518,11 @@ void mapValueOnWall(auto &net,
       // PW->tmp_U_SPH = Reflect(PW->tmp_U_SPH, PW->normal_SPH);
 
       // no-slip
-      // PW->U_SPH *= -1.;
-      // PW->tmp_U_SPH *= -1.;
+      PW->U_SPH *= -1.;
+      PW->tmp_U_SPH *= -1.;
 
-      PW->U_SPH *= 0.;
-      PW->tmp_U_SPH *= 0.;
+      // PW->U_SPH *= 0.;
+      // PW->tmp_U_SPH *= 0.;
 
       // if (Norm(PW->normal_SPH) < 1E-12) {
       //    PW->U_SPH *= 0;
@@ -674,9 +674,9 @@ void developByEISPH(Network *net,
       }
       // b# -------------- バケットの生成, p->radius_SPHの範囲だけ点を取得 --------------- */
       DebugPrint("バケットの生成", Green);
-      net->makeBucketPoints(particle_spacing);
+      net->makeBucketPoints(particle_spacing * 0.8);
       for (const auto &[obj, poly] : RigidBodyObject)
-         obj->makeBucketPoints(particle_spacing);
+         obj->makeBucketPoints(particle_spacing * 0.8);
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "バケットの生成");
 
       // test_Bucket(net, Append(net_RigidBody, net), "./test_SPH_Bucket/", particle_spacing);
