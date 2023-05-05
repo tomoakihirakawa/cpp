@@ -3417,15 +3417,18 @@ class Network : public CoordinateBounds {
 
    const double expand_bounds = 1.5;
 
+   /*
+   面は点と違って，複数のバケツ（セル）と接することがある．
+    */
    void makeBucketFaces(const double spacing) {
-      // this->BucketPoints.hashing_done = false;
+
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       //
       double min;
       for (const auto &f : this->getFaces()) {
-         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 2.});
+         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 2.}) / 2.;
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
             this->BucketFaces.add(xyz, f);
       }
