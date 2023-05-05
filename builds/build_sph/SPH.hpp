@@ -28,7 +28,7 @@
    #define POWER 1.
 
 const double reflection_factor = .5;
-const double asobi = 0.;
+const double asobi = 0.01;
 
    #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
@@ -518,11 +518,11 @@ void mapValueOnWall(auto &net,
       // PW->tmp_U_SPH = Reflect(PW->tmp_U_SPH, PW->normal_SPH);
 
       // no-slip
-      PW->U_SPH *= -1.;
-      PW->tmp_U_SPH *= -1.;
+      // PW->U_SPH *= -1.;
+      // PW->tmp_U_SPH *= -1.;
 
-      // PW->U_SPH *= 0.;
-      // PW->tmp_U_SPH *= 0.;
+      PW->U_SPH *= 0.;
+      PW->tmp_U_SPH *= 0.;
 
       // if (Norm(PW->normal_SPH) < 1E-12) {
       //    PW->U_SPH *= 0;
@@ -971,7 +971,7 @@ void developByEISPH(Network *net,
          }
 
             /* -------------------------------------------------------------------------- */
-            // if (real_time > 0.01) {
+            // if (real_time > 0.0) {
             //    DebugPrint("activate");
             //    V_d b, x0;
             //    size_t i = 0;
@@ -984,7 +984,7 @@ void developByEISPH(Network *net,
             //          points.emplace(p);
             //          p->setIndexCSR(i++);
             //          p->exclude(true);
-            //          b.emplace_back(p->value = p->rho_ * p->div_tmpU / dt);
+            //          b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
             //          x0.emplace_back(p->p_SPH);
             //       }
             //    }
@@ -993,7 +993,7 @@ void developByEISPH(Network *net,
             //          points.emplace(p);
             //          p->setIndexCSR(i++);
             //          p->exclude(true);
-            //          b.emplace_back(p->value = p->rho_ * p->div_tmpU / dt);
+            //          b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
             //          x0.emplace_back(p->p_SPH);
             //       }
             //    }
@@ -1009,7 +1009,8 @@ void developByEISPH(Network *net,
             //          b[p->getIndexCSR()] = 0.;
             //       }
 
-            //    gmres gm(points, b, x0, 200);
+            //    std::cout << "gmres" << std::endl;
+            //    gmres gm(points, b, x0, 100);
             //    std::cout << "gm.err : " << gm.err << std::endl;
 
             //    for (const auto &p : points) {
