@@ -6,11 +6,6 @@
 - $H$をQR分解した行列$Q$と$R$
 - $g$は行列$Q$の最初の列
 
-- ヘッセンベルグ行列 ![](https://latex.codecogs.com/png.latex?H)
-- クリロフ部分空間の直交基底 ![](https://latex.codecogs.com/png.latex?V)
-- ![](https://latex.codecogs.com/png.latex?H) をQR分解した行列 ![](https://latex.codecogs.com/png.latex?Q) と ![](https://latex.codecogs.com/png.latex?R)
-- ![](https://latex.codecogs.com/png.latex?g) は行列 ![](https://latex.codecogs.com/png.latex?Q) の最初の列
-
 ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
 
 */

@@ -40,6 +40,9 @@ def extract_markdown_comments(input_file):
 
         cleaned_comment = highlight_keywords(cleaned_comment)
 
+        # Insert space before $ if there is no space
+        cleaned_comment = re.sub(r'(?<!\s)\$', ' $', cleaned_comment)
+
         header_line = ""
         header_match = re.search(r'## (.*?)\n', cleaned_comment)
         if header_match:
@@ -52,7 +55,6 @@ def extract_markdown_comments(input_file):
         extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n'
 
     return extracted_comments
-
 
 def search_files(directory, extensions):
     for dirpath, _, filenames in os.walk(directory):
