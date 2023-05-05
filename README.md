@@ -53,6 +53,8 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 - $g$は行列$Q$の最初の列
 
 is it ok $Q$?
+is it クリ $Q$?
+is it クリ$Q$?
 
 - ヘッセンベルグ行列 ![](https://latex.codecogs.com/png.latex?H)
 - クリロフ部分空間の直交基底 ![](https://latex.codecogs.com/png.latex?V)
