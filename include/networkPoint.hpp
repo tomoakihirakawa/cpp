@@ -94,7 +94,9 @@ inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_fac
    */
    this->map_Face_MirrorPoint.clear();
    auto x = this->X;
-   for (const auto &f : DeleteDuplicates(Flatten(B_face.getObjects(this->X, mirroring_distance)))) {
+   std::unordered_set<networkFace *> faces;
+   B_face.apply(x, mirroring_distance, [&faces](const auto &f) { faces.emplace(f); });
+   for (const auto &f : faces) {
       if (f->getNetwork() != this->getNetwork())
          if (Dot(f->incenter - x, f->normal) < 0 /*面と点が向き合っているかどうか*/) {
             if (IntersectQ(x, mirroring_distance, ToX(f)))
