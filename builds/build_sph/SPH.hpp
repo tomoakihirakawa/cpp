@@ -970,53 +970,53 @@ void developByEISPH(Network *net,
             p->p_SPH = p->p_SPH_;
          }
 
-            /* -------------------------------------------------------------------------- */
-            // if (real_time > 0.0) {
-            //    DebugPrint("activate");
-            //    V_d b, x0;
-            //    size_t i = 0;
-            //    std::unordered_set<networkPoint *> points;
-            //    points.reserve(net->getPoints().size() + wall_as_fluid.size());
-            //    b.reserve(net->getPoints().size() + wall_as_fluid.size());
-            //    x0.reserve(net->getPoints().size() + wall_as_fluid.size());
-            //    for (const auto &p : net->getPoints()) {
-            //       if (p->isCaptured) {
-            //          points.emplace(p);
-            //          p->setIndexCSR(i++);
-            //          p->exclude(true);
-            //          b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
-            //          x0.emplace_back(p->p_SPH);
-            //       }
-            //    }
-            //    for (const auto &p : wall_as_fluid) {
-            //       if (p->isCaptured) {
-            //          points.emplace(p);
-            //          p->setIndexCSR(i++);
-            //          p->exclude(true);
-            //          b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
-            //          x0.emplace_back(p->p_SPH);
-            //       }
-            //    }
+         /* -------------------------------------------------------------------------- */
+         if (real_time > 0.0) {
+            DebugPrint("activate");
+            V_d b, x0;
+            size_t i = 0;
+            std::unordered_set<networkPoint *> points;
+            points.reserve(net->getPoints().size() + wall_as_fluid.size());
+            b.reserve(net->getPoints().size() + wall_as_fluid.size());
+            x0.reserve(net->getPoints().size() + wall_as_fluid.size());
+            for (const auto &p : net->getPoints()) {
+               if (p->isCaptured) {
+                  points.emplace(p);
+                  p->setIndexCSR(i++);
+                  p->exclude(true);
+                  b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
+                  x0.emplace_back(p->p_SPH);
+               }
+            }
+            for (const auto &p : wall_as_fluid) {
+               if (p->isCaptured) {
+                  points.emplace(p);
+                  p->setIndexCSR(i++);
+                  p->exclude(true);
+                  b.emplace_back(p->value = p->rho * p->div_tmpU / dt);
+                  x0.emplace_back(p->p_SPH);
+               }
+            }
 
-            //    DebugPrint("Lap_P");
-            //    Lap_P(points, Append(net_RigidBody, net));
+            DebugPrint("Lap_P");
+            Lap_P(points, Append(net_RigidBody, net));
 
-            //    for (const auto &p : net->getPoints())
-            //       if (p->isSurface) {
-            //          p->column_value.clear();
-            //          p->increment(p, 1.);
-            //          p->value = 0.;
-            //          b[p->getIndexCSR()] = 0.;
-            //       }
+            for (const auto &p : net->getPoints())
+               if (p->isSurface) {
+                  p->column_value.clear();
+                  p->increment(p, 1.);
+                  p->value = 0.;
+                  b[p->getIndexCSR()] = 0.;
+               }
 
-            //    std::cout << "gmres" << std::endl;
-            //    gmres gm(points, b, x0, 100);
-            //    std::cout << "gm.err : " << gm.err << std::endl;
+            std::cout << "gmres" << std::endl;
+            gmres gm(points, b, x0, 100);
+            std::cout << "gm.err : " << gm.err << std::endl;
 
-            //    for (const auto &p : points) {
-            //       p->p_SPH = gm.x[p->getIndexCSR()];
-            //    }
-            // }
+            for (const auto &p : points) {
+               p->p_SPH = gm.x[p->getIndexCSR()];
+            }
+         }
             /* -------------------------------------------------------------------------- */
 
    #endif

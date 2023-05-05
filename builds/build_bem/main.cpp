@@ -222,8 +222,9 @@ int main(int arg, char **argv) {
          double spacing = Mean(extLength(water->getLines())) * 3;
          Buckets<networkFace *> FMM_BucketsFaces(water->bounds, spacing);
          Buckets<networkPoint *> FMM_BucketsPoints(water->bounds, spacing);
-         for (const auto &f : water->getFaces())
+         for (const auto &f : water->getFaces()) {
             FMM_BucketsFaces.add(f->getXtuple(), f);
+         }
          for (const auto &p : water->getPoints())
             FMM_BucketsPoints.add(ToX(p), p);
 

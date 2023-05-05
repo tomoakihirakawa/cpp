@@ -93,7 +93,7 @@ inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_fac
 (x)
    */
    this->map_Face_MirrorPoint.clear();
-   auto x = this->X;
+   const auto x = this->X;
    std::unordered_set<networkFace *> faces;
    B_face.apply(x, mirroring_distance, [&faces](const auto &f) { faces.emplace(f); });
    for (const auto &f : faces) {
@@ -363,7 +363,6 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
    for (const auto &q : points)
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q) {
-            // if (intersection(geometry::Sphere(this->X, this->radius), geometry::Sphere(this->X, q->radius)).isIntersecting)
             if (IntersectQ(this->X, this->radius, q->X, q->radius))
                this->ContactPoints.emplace(q);
          }
@@ -373,7 +372,7 @@ inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,
                                            const double radius,
                                            const bool include_self_network = true) {
    std::unordered_set<networkPoint *> points;
-   B.apply(this->X, radius, [&points](const auto &p) { points.emplace(p); });
+   B.apply(this->X, 2. * this->radius, [&points](const auto &p) { points.emplace(p); });
    for (const auto &q : points)
       if (!(!include_self_network && (q->getNetwork() == this->getNetwork())))
          if (this != q)
