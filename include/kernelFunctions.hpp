@@ -124,10 +124,10 @@ Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
       return -(xi - xj) * 6. * std::pow(1 - q, 2) / (std::numbers::pi * h * h * h * r * h) * 8.;
 };
 
-// auto &w_Bspline = w_Bspline5;
-// auto &grad_w_Bspline = grad_w_Bspline5;
+auto &w_Bspline = w_Bspline5;
+auto &grad_w_Bspline = grad_w_Bspline5;
 
-auto &w_Bspline = w_Bspline3;
-auto &grad_w_Bspline = grad_w_Bspline3;
+// auto &w_Bspline = w_Bspline3;
+// auto &grad_w_Bspline = grad_w_Bspline3;
 
 #endif

@@ -227,7 +227,6 @@ int main(int arg, char **argv) {
          for (const auto &p : water->getPoints())
             FMM_BucketsPoints.add(ToX(p), p);
 
-         mk_vtu(output_directory + "/FMM_BucketsFaces.vtu", FMM_BucketsFaces.getT4Tddd());
          // b@ ------------------------------------------------------ */
          // b@        初期値問題を解く（時間微分方程式を数値積分する）           */
          // b@ ------------------------------------------------------ */
