@@ -1,3 +1,5 @@
+# python3 extract_comments.py README.md ./
+
 import os
 import re
 import sys
@@ -18,7 +20,7 @@ def highlight_keywords(text):
     return text
 
 def extract_markdown_comments(input_file):
-    cpp_comment_pattern = re.compile(r'/\*\*EXPOSE(.*?)\*/', re.DOTALL)
+    cpp_comment_pattern = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
     python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
 
     with open(input_file, 'r') as file:
@@ -41,7 +43,9 @@ def extract_markdown_comments(input_file):
         cleaned_comment = highlight_keywords(cleaned_comment)
 
         # Insert space before $ if there is no space
-        cleaned_comment = re.sub(r'(?<!\s)\$', ' $', cleaned_comment)
+        # cleaned_comment = re.sub(r'(?<!\s)\$', ' $', cleaned_comment)
+        cleaned_comment = re.sub(r'(?<!\s)(\$[^$]*\$)', r' \1', cleaned_comment)
+
 
         header_line = ""
         header_match = re.search(r'## (.*?)\n', cleaned_comment)

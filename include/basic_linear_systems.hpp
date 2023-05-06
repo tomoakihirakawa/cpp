@@ -674,16 +674,16 @@ V_d Dot(const std::unordered_set<T *> &A, const std::unordered_set<T *> &V_crs) 
 /* ------------------------------------------------------ */
 template <typename Matrix>
 struct ArnoldiProcess {
-   // ヘッセンベルグ行列H[0:k-1]は，Aと相似なベクトルであり，同じ固有値を持つ
-   // GMRESで使う場合，V0にはNormalize(b-A.x0)を与える．
-   // x0は初期値
-   // Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
-   //
-   // https://en.wikipedia.org/wiki/Arnoldi_iteration
-   // アーノルディ法は固有値問題の数値解法であり反復解法である．
-   // 一般的な行列の固有ベクトルと固有値を
-   // クリロフ空間の直行基底によって近似する方法計算する方法である．
-   /* ------------------------------------------------------ */
+   /*DOC_EXTRACT
+   ## ArnoldiProcess
+   ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
+   GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．
+   x0は初期値
+
+   アーノルディ法は固有値問題の数値解法であり反復解法．
+   一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
+   https://en.wikipedia.org/wiki/Arnoldi_iteration
+   */
    int n;  // the number of interation
    double beta;
    V_d v0;

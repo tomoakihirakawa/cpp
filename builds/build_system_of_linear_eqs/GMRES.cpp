@@ -1,4 +1,4 @@
-/**EXPOSE
+/*DOC_EXTRACT
 ## 一般化最小残差法(GMRES)
 
 - ヘッセンベルグ行列$H$

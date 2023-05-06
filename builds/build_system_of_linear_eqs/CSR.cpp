@@ -1,5 +1,11 @@
-/**EXPOSE
-4x4の行列Aとベクトルbを用いて、Ax=bを解く
+/*DOC_EXTRACT
+
+## Compressed Sparse Row (CSR)
+
+CSRは行列を表現する方法の一つである．
+このCSRクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．
+std::unordered_mapのkeyはポインタであり，valueはdoubleである．
+CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 */
 
 #include "basic_IO.hpp"
