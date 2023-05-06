@@ -86,7 +86,7 @@ auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
             if (B->isSurface) {
                if (canSetSPP(target_nets, B)) {
                   func(B, SPP_X(B), SPP_U_coef);
-                  func(B, SPP_X(B, 2.), SPP_U_coef);
+                  // func(B, SPP_X(B, 2.), SPP_U_coef);
                }
             }
 #endif
@@ -147,7 +147,7 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
             if (B->isSurface) {
                if (canSetSPP(target_nets, B)) {
                   func(B, SPP_X(B), SPP_U_coef);
-                  func(B, SPP_X(B, 2.), SPP_U_coef);
+                  // func(B, SPP_X(B, 2.), SPP_U_coef);
                }
             }
 #endif
@@ -155,7 +155,7 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
       });
 };
 
-void div_tmpU(const auto &points, const std::unordered_set<Network *> &target_nets) {
+void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets) {
 #pragma omp parallel
    for (const auto &p : points)
 #pragma omp single nowait
@@ -181,11 +181,10 @@ auto set_tmpLap_U(const auto &points) {
 // #define Morikawa2019
 // #define NewtonMethod
 
-void nextPressure(const netPp A, const std::unordered_set<Network *> &target_nets, const double dt) {
+void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *> &target_nets, const double dt) {
    double sum_Aij = 0, Aij, sum_Aij_Pj = 0, sum_Aij_Pij = 0, sum_Pij = 0, pressure_SPH = 0, qP;
    Tddd Xij;
    A->p_SPH_ = 0;
-   A->gradP_SPH = A->gradP_SPH_ = {0., 0., 0.};
    //% ------------------------------------------ */
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       Xij = A->X - qX;
@@ -201,15 +200,10 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
          // auto Aij = B->mass * 8. / std::pow(B->rho + A->rho, 2) * share;, which is the same as
          Aij = 2. * B->mass / std::pow((B->rho + A->rho) / 2., 2) * share;
 #endif
-
          sum_Aij += Aij;
          sum_Pij += A->p_SPH - qP;
          sum_Aij_Pj += Aij * qP;
          sum_Aij_Pij += Aij * (A->p_SPH - qP);
-
-         // WALL
-         A->gradP_SPH += A->rho * (qP / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * B->mass * grad_w_Bspline(A->X, qX, A->radius_SPH);
-         A->gradP_SPH_ += A->rho * (1. / (A->rho * A->rho)) * B->mass * grad_w_Bspline(A->X, qX, A->radius_SPH);
       }
    };
    //% ------------------------------------------ */
@@ -220,7 +214,7 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
          if (B->isSurface)
             if (canSetSPP(target_nets, B)) {
                func(B, SPP_X(B), SPP_p_coef);
-               func(B, SPP_X(B, 2.), SPP_p_coef);
+               // func(B, SPP_X(B, 2.), SPP_p_coef);
             }
 #endif
       }
@@ -255,17 +249,26 @@ void nextPressure(const netPp A, const std::unordered_set<Network *> &target_net
    A->NR_pressure.update(FF, dFFdPi, 2.);
 
 #endif
-   if (!isFinite(A->p_SPH_) || !isFinite(sum_Aij_Pij)) {
-      std::cout << "A->p_SPH_ = " << A->p_SPH_ << std::endl;
-      std::cout << "A->div_tmpU = " << A->div_tmpU << std::endl;
-      std::cout << "b = " << b << std::endl;
-      std::cout << "sum_Aij_Pij = " << sum_Aij_Pij << std::endl;
-      std::cout << "sum_Aij_Pj = " << sum_Aij_Pj << std::endl;
-      std::cout << "sum_Aij = " << sum_Aij << std::endl;
-      // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not a finite");
+};
 
-      A->p_SPH = A->p_SPH_ = 0;
-   }
+void nextPressure(const std::unordered_set<networkPoint *> &pointsA,
+                  const std::unordered_set<networkPoint *> &pointsB,
+                  const std::unordered_set<Network *> &target_nets,
+                  const double dt) {
+#pragma omp parallel
+   for (const auto &p : pointsA)
+#pragma omp single nowait
+      calculateTemporalPressure(p, target_nets, dt);
+#pragma omp parallel
+   for (const auto &p : pointsB)
+#pragma omp single nowait
+      calculateTemporalPressure(p, target_nets, dt);
+
+   // apply change
+   for (const auto &p : pointsA)
+      p->p_SPH = p->p_SPH_;
+   for (const auto &p : pointsB)
+      p->p_SPH = p->p_SPH_;
 };
 
 // b% ------------------------------------------------------ */
@@ -293,7 +296,7 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
          if (B->isSurface) {
             if (canSetSPP(target_nets, B)) {
                func(B, SPP_X(B), SPP_p_coef);
-               func(B, SPP_X(B, 2.), SPP_p_coef);
+               // func(B, SPP_X(B, 2.), SPP_p_coef);
             }
          }
 #endif
@@ -313,6 +316,12 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
 };
 
+void gradP(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets) {
+#pragma omp parallel
+   for (const auto &p : points)
+#pragma omp single nowait
+      gradP(p, target_nets);
+}
 // b$ ------------------------------------------------------ */
 // b$                    ∇²Pを計算                           */
 // b$ ------------------------------------------------------ */
@@ -336,7 +345,7 @@ auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
             if (B->isSurface) {
                if (canSetSPP(target_nets, B)) {
                   func(B, SPP_X(B), SPP_p_coef);
-                  func(B, SPP_X(B, 2.), SPP_p_coef);
+                  // func(B, SPP_X(B, 2.), SPP_p_coef);
                }
             }
 #endif

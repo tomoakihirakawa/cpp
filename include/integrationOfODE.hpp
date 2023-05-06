@@ -69,7 +69,7 @@ struct RungeKuttaCommon {
          return dt_fixed;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
          switch (_dX.size()) {
-            case 0:  //! 何もプッシュしていない初期状態
+            case 0:
                return dt_fixed;
             case 1:
                return dt_fixed / 2.;
