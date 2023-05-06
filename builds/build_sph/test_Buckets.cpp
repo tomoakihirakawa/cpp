@@ -124,29 +124,28 @@ int main(int arg, char **argv) {
 
    for (const auto &d : Subdivide({-1., 1.}, 30))
       std::cout << std::setw(10) << d << " -> " << static_cast<int>(d) << std::endl;
-   auto net = new Network;
 
    // Create a new network
    auto net = new Network;
 
    // Define x, y, z coordinates for the network points
    auto vecX = Subdivide({-.5, 1.}, 10);
-   auto vecY = Subdivide({1., 2.}, 10);
+   auto vecY = Subdivide({0., 2.}, 10);
    auto vecZ = Subdivide({-.5, 3.}, 10);
+
+   // Define the kernel radius
+   double r = 0.3;
 
    // Generate network points
    for (const auto &x : vecX)
       for (const auto &y : vecY)
          for (const auto &z : vecZ) {
             auto p = new networkPoint(net, {x, y, z});
-            p->radius_SPH = 0.1;
+            p->radius_SPH = r;
          }
 
    // Initialize the bucket points for the network
-   net->makeBucketPoints(0.6666);
-
-   // Define the kernel radius
-   double r = 0.44;
+   net->makeBucketPoints(2 * r);
 
    // Call the test function to evaluate the bucket method and write the output to VTK files
    test_Bucket(net, {net}, "./test_Buckets_output/", r);

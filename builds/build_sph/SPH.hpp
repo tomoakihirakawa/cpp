@@ -840,12 +840,11 @@ void developByEISPH(Network *net,
          set_tmpLap_U(net->getPoints());
          set_tmpLap_U(wall_as_fluid);
          // b$ ---------------------------------- (2) 密度の更新 --------------------------------- */
-         for (const auto &p : net->getPoints()) {
+         for (const auto &p : net->getPoints())
             p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
-         }
-         for (const auto &p : wall_as_fluid) {
+
+         for (const auto &p : wall_as_fluid)
             p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
-         }
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -928,15 +927,8 @@ void developByEISPH(Network *net,
       #endif
          {
 
-      #pragma omp parallel
-            for (const auto &p : net->getPoints())
-      #pragma omp single nowait
-               nextPressure(p, Append(net_RigidBody, net), dt);
-
-      #pragma omp parallel
-            for (const auto &p : wall_as_fluid)
-      #pragma omp single nowait
-               nextPressure(p, Append(net_RigidBody, net), dt);
+            nextPressure(net->getPoints(), wall_as_fluid, Append(net_RigidBody, net), dt);
+            mapValueOnWall(net, wall_p, RigidBodyObject);
 
       #if defined(NewtonMethod)
             double sum = 0;
@@ -961,14 +953,14 @@ void developByEISPH(Network *net,
       #endif
          }
 
-         for (const auto &p : net->getPoints()) {
-            p->dp_SPH = p->p_SPH - p->dp_SPH;
-            p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
-            // p->p_SPH = p->p_SPH_;
-            p->RK_P.push(p->DPDt_SPH);  // 圧力
-            // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-            p->p_SPH = p->p_SPH_;
-         }
+         // for (const auto &p : net->getPoints()) {
+         //    p->dp_SPH = p->p_SPH - p->dp_SPH;
+         //    p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
+         //    // p->p_SPH = p->p_SPH_;
+         //    p->RK_P.push(p->DPDt_SPH);  // 圧力
+         //    // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+         //    p->p_SPH = p->p_SPH_;
+         // }
 
          /* -------------------------------------------------------------------------- */
          if (false)
@@ -1033,10 +1025,8 @@ void developByEISPH(Network *net,
 
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
 
-   #pragma omp parallel
-         for (const auto &p : net->getPoints())
-   #pragma omp single nowait
-            gradP(p, Append(net_RigidBody, net));
+         gradP(net->getPoints(), Append(net_RigidBody, net));
+         gradP(wall_as_fluid, Append(net_RigidBody, net));
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
 

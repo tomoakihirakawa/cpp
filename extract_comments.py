@@ -19,6 +19,9 @@ def highlight_keywords(text):
 
     return text
 
+def insert_space(match):
+    return ' ' + match.group(0) if match.group(1) != '\n' else match.group(0)
+
 def extract_markdown_comments(input_file):
     cpp_comment_pattern = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
     python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
@@ -37,17 +40,14 @@ def extract_markdown_comments(input_file):
 
         # Remove leading asterisks and whitespace
         cleaned_comment = comment
-        # cleaned_comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
-        # cleaned_comment = re.sub(r'\*([^*]+)\*', r'**\1**', cleaned_comment)
 
         cleaned_comment = highlight_keywords(cleaned_comment)
 
-        # Insert space before $ if there is no space
-        # cleaned_comment = re.sub(r'(?<!\s)\$', ' $', cleaned_comment)
-        cleaned_comment = re.sub(r'(?<!\s)(\$[^$]*\$)', r' \1', cleaned_comment)
-
+        # Replace the relative image path with the correct path
+        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({os.path.join(os.path.dirname(input_file), m.group(2))})', cleaned_comment)
 
         header_line = ""
+
         header_match = re.search(r'## (.*?)\n', cleaned_comment)
         if header_match:
             header_line = header_match.group(0)
@@ -59,6 +59,7 @@ def extract_markdown_comments(input_file):
         extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n'
 
     return extracted_comments
+
 
 def search_files(directory, extensions):
     for dirpath, _, filenames in os.walk(directory):
