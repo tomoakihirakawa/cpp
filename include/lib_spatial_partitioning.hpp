@@ -52,9 +52,9 @@ struct BaseBuckets {
    };
    Tddd itox(const ST3 &ijk) const { return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
    ST3 indices_no_clamp(const Tddd &x) const {
-      return {static_cast<ST>((std::get<0>(x) - std::get<0>(this->xbounds)) / this->dL),
-              static_cast<ST>((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL),
-              static_cast<ST>((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL)};
+      return {static_cast<ST>(std::floor((std::get<0>(x) - std::get<0>(this->xbounds)) / this->dL)),
+              static_cast<ST>(std::floor((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL)),
+              static_cast<ST>(std::floor((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL))};
    };
    ST3 indices(const Tddd &x) const {
       /*
@@ -70,7 +70,7 @@ struct BaseBuckets {
               std::clamp(std::get<1>(ijk), static_cast<ST>(0), this->ysize - 1),
               std::clamp(std::get<2>(ijk), static_cast<ST>(0), this->zsize - 1)};
    };
-   ST6 indices_ranges(const Tddd &x, const double d) const {
+   const ST6 indices_ranges(const Tddd &x, const double d) const {
       auto [i_min, j_min, k_min] = indices(x - d);
       auto [i_max, j_max, k_max] = indices(x + d);
       return {i_min, i_max, j_min, j_max, k_min, k_max};
@@ -101,21 +101,11 @@ struct BaseBuckets {
    //! automatically specify coordinates
    bool add(const std::unordered_set<T> &P) {
       bool ret = true;
-      auto add_ijk = [&]() {
-         for (const auto &p : P)
-            this->map_to_ijk[p] = indices(ToX(p));
-      };
-      auto add_object = [&]() {
-               for (const auto &p : P) {
-                  ret = ret && add_force(indices(ToX(p)),p);
-            } };
-#pragma omp parallel sections
-      {
-#pragma omp section
-         add_ijk();
-#pragma omp section
-         add_object();
-      };
+      for (const auto &p : P) {
+         auto ijk = indices(ToX(p));
+         this->map_to_ijk[p] = ijk;
+         ret = ret && add_force(ijk, p);
+      }
       return ret;
    };
    /* -------------------------------------------------------------------------- */
@@ -130,106 +120,60 @@ struct BaseBuckets {
    // b@ -------------------------------------------------------------------------- */
    // b@                             STL like functions                             */
    // b@ -------------------------------------------------------------------------- */
-   //! count_if
-   ST count_if(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
-      ST ret = 0;
-      if (!this->buckets.empty()) {
-         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-         for (auto it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
-            for (auto jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
-               for (auto kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
-                  for (const auto &p : *kt)
-                     if (func(p))
-                        ret++;
-      }
-      return ret;
-   };
-   ST count_if(const std::function<bool(const T &)> &func) const {
-      ST ret = 0;
-      for (const auto &p : this->all_stored_objects)
-         if (func(p))
-            ret++;
-      return ret;
-   };
+
    //! none_of
    bool none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
-      if (!this->buckets.empty()) {
-         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-         for (auto it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
-            for (auto jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
-               for (auto kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
-                  for (const auto &p : *kt)
-                     if (func(p))
-                        return false;
+      if (this->buckets.empty()) {
+         return true;
       }
-      return true;
-   };
-   bool none_of(const std::function<bool(const T &)> &func) const {
-      for (const auto &p : this->all_stored_objects)
-         if (func(p))
-            return false;
-      return true;
-   };
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
+
+      return std::none_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+         return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+            return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+               return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+            });
+         });
+      });
+   }
+
    //! all_of
    bool all_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
-      if (!this->buckets.empty()) {
-         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-         for (auto it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
-            for (auto jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
-               for (auto kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
-                  for (const auto &p : *kt)
-                     if (!func(p))
-                        return false;
+      if (this->buckets.empty()) {
+         return true;
       }
-      return true;
-   };
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
+
+      return std::all_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+         return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+            return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+               return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+            });
+         });
+      });
+   }
+
    //! any_of
    bool any_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
-      if (!this->buckets.empty()) {
-         const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-         auto it = this->buckets.begin();
-         auto jt = it->begin();
-         auto kt = jt->begin();
-         for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it)
-            for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt)
-               for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt)
-                  for (const auto &p : *kt)
-                     if (func(p) /*一つでも見つかったらtrue*/)
-                        return true;
+      if (this->buckets.empty()) {
+         return false;
       }
-      return false;
-   };
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
+
+      return std::any_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+         return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+            return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+               return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+            });
+         });
+      });
+   }
+
    //! apply
    void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const {
       if (this->buckets.empty())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
-      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, 2. * d);
-      /* -------------------------------- simple traditional for loop -------------------------------- */
-      // for (auto i = i_min; i <= i_max; ++i)
-      //    for (auto j = j_min; j <= j_max; ++j)
-      //       for (auto k = k_min; k <= k_max; ++k)
-      //          for (const auto &p : this->buckets[i][j][k])
-      //             func(p);
-      /* ------------------------- for loop with iterator ------------------------- */
-      // auto it = this->buckets.begin();
-      // auto jt = it->begin();
-      // auto kt = jt->begin();
-      // for (it = std::next(this->buckets.begin(), i_min); it != std::next(this->buckets.begin(), i_max); ++it) {
-      //    for (jt = std::next(it->begin(), j_min); jt != std::next(it->begin(), j_max); ++jt) {
-      //       for (kt = std::next(jt->begin(), k_min); kt != std::next(jt->begin(), k_max); ++kt) {
-      //          for (const auto &p : *kt) func(p);
-      //       }
-      //    }
-      // }
-      /* ----------------------------- for_each with next---------------------------- */
-      // std::for_each(std::execution::unseq, std::next(this->buckets.cbegin(), i_min), std::next(this->buckets.cbegin(), i_max), [&](const auto &Bi) {
-      //    std::for_each(std::execution::unseq, std::next(Bi.cbegin(), j_min), std::next(Bi.cbegin(), j_max), [&](const auto &Bij) {
-      //       std::for_each(std::execution::unseq, std::next(Bij.cbegin(), k_min), std::next(Bij.cbegin(), k_max), [&](const auto &Bijk) {
-      //          for (const auto &p : Bijk) func(p);
-      //       });
-      //    });
-      // });
-      /* ----------------------------- for_each with addition ---------------------------- */
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
       std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
          std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
             std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
@@ -237,10 +181,6 @@ struct BaseBuckets {
             });
          });
       });
-   };
-
-   void apply(const std::function<void(const T &)> &func) const {
-      for (const auto &p : this->all_stored_objects) func(p);
    };
 };
 

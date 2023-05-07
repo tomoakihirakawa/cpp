@@ -2,7 +2,52 @@
 #define SPH_Functions_H
 
 #include "Network.hpp"
+/* -------------------------------------------------------------------------- */
 
+double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
+   double dt = dt_IN;
+   const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
+   for (const auto &p : net->getPoints()) {
+      // 速度に関するCFL条件
+      auto dt_C_CFL = [&](const auto &q) {
+         if (p != q) {
+            auto pq = Normalize(p->X - q->X);
+            auto distance = Distance(p, q);
+            /* ------------------------------------------------ */
+            // 相対速度
+            double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
+            // double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
+            // 絶対速度
+            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
+            /* ------------------------------------------------ */
+            // 相対速度
+            double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
+            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
+            if (dt > max_dt_acc && isFinite(max_dt_acc))
+               dt = max_dt_acc;
+            // 絶対速度
+            max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
+            if (dt > max_dt_acc && isFinite(max_dt_acc))
+               dt = max_dt_acc;
+         }
+      };
+      net->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
+      for (const auto &[obj, poly] : RigidBodyObject)
+         obj->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
+      double max_dt_vel = C_CFL_velocity * (p->radius_SPH / p->C_SML) / Norm(p->U_SPH);
+      if (dt > max_dt_vel && isFinite(max_dt_vel))
+         dt = max_dt_vel;
+      double max_dt_acc = C_CFL_accel * std::sqrt((p->radius_SPH / p->C_SML) / Norm(p->DUDt_SPH));
+      if (dt > max_dt_acc && isFinite(max_dt_acc))
+         dt = max_dt_acc;
+   }
+   return dt;
+}
 /* -------------------------------------------------------------------------- */
 
 Tddd SPP_X(const networkPoint *p, const double c = 1.0) {
@@ -60,14 +105,22 @@ auto canSetSPP(const auto &target_nets, const auto &p) {
 
 auto Lap_U(const netPp A, const std::unordered_set<Network *> &target_nets) {
    // ここで初期化することは問題ない．この点pに対して再度計算することはないので，途中で初期化される心配はない．
+   A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = A->checked_points_SPH = 0;
    A->lap_U_ = A->lap_U = {0., 0., 0.};
    //$ ------------------------------------------ */
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       const auto rij = qX - A->X;
-      const auto Uij = coef * B->U_SPH - A->U_SPH;
-      const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
-      A->lap_U_ += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
-                   ((B->rho + A->rho) * Dot(rij, rij));
+      if (Between(Norm(rij), {1E-10, A->radius_SPH})) {
+         const auto Uij = coef * B->U_SPH - A->U_SPH;
+         const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
+         A->lap_U_ += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
+                      ((B->rho + A->rho) * Dot(rij, rij));
+
+         A->checked_points_in_radius_SPH++;
+         if (B->getNetwork()->isFluid || B->isFluid)
+            A->checked_points_in_radius_of_fluid_SPH++;
+      }
+      A->checked_points_SPH++;
    };
    //$ ------------------------------------------ */
    //$ ------------------------------------------ */
@@ -124,7 +177,7 @@ void div_tmpU(const netPp A, const std::unordered_set<Network *> &target_nets) {
    //@ ------------------------------------------ */
    // to use both A and spp
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
-      if (Distance(A, qX) > 1E-12) {
+      if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          // 後藤p.25 (2.89)
          auto Uij = coef * B->U_SPH - A->U_SPH;
          A->div_U += B->mass / A->rho * Dot(Uij, grad_w_Bspline(A->X, qX, A->radius_SPH));
@@ -189,7 +242,7 @@ void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       Xij = A->X - qX;
       qP = coef * B->p_SPH;
-      if (Distance(A, qX) > 1E-12) {
+      if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          auto share = Dot(Xij, grad_w_Bspline(A->X, qX, A->radius_SPH)) / Dot(Xij, Xij);
 #if defined(Morikawa2019)
          // Morikawa, D., Senadheera, H., & Asai, M. (2021). Explicit incompressible smoothed particle hydrodynamics in a multi-GPU environment for large-scale simulations. Computational Particle Mechanics, 8(3), 493–510. https://doi.org/10.1007/s40571-020-00347-0
@@ -251,41 +304,34 @@ void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *
 #endif
 };
 
-void nextPressure(const std::unordered_set<networkPoint *> &pointsA,
-                  const std::unordered_set<networkPoint *> &pointsB,
-                  const std::unordered_set<Network *> &target_nets,
-                  const double dt) {
+void calculateTemporalPressure(const std::unordered_set<networkPoint *> &points,
+                               const std::unordered_set<Network *> &target_nets,
+                               const double dt) {
 #pragma omp parallel
-   for (const auto &p : pointsA)
+   for (const auto &p : points)
 #pragma omp single nowait
       calculateTemporalPressure(p, target_nets, dt);
-#pragma omp parallel
-   for (const auto &p : pointsB)
-#pragma omp single nowait
-      calculateTemporalPressure(p, target_nets, dt);
-
-   // apply change
-   for (const auto &p : pointsA)
-      p->p_SPH = p->p_SPH_;
-   for (const auto &p : pointsB)
-      p->p_SPH = p->p_SPH_;
 };
+
+void setPressure(const std::unordered_set<networkPoint *> &points) {
+   for (const auto &p : points)
+      p->p_SPH = p->p_SPH_;
+}
 
 // b% ------------------------------------------------------ */
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
 
 void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
-   A->contact_points_all_SPH = A->contact_points_fluid_SPH = 0;
+   // A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = 0;
    A->gradP_SPH.fill(0.);
    //% ------------------------------------------ */
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
-      if (Distance(A, qX) > 1E-12) {
+      if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          // double p_rho2 = coef * B->p_SPH / std::pow(B->rho, 2) + A->p_SPH / std::pow(A->rho, 2);
          // auto qP = (spp ? SPP_p_coef * B->p_SPH_SPP : B->p_SPH);
          // A->gradP_SPH += (qP + A->p_SPH) * B->mass / _WATER_DENSITY_ * grad_w_Bspline(A->X, qX, A->radius_SPH);
-         auto qP = coef * B->p_SPH;
-         A->gradP_SPH += A->rho * (qP / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * B->mass * grad_w_Bspline(A->X, qX, A->radius_SPH);
+         A->gradP_SPH += A->rho * (coef * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * B->mass * grad_w_Bspline(A->X, qX, A->radius_SPH);
       }
    };
    //% ------------------------------------------ */
@@ -301,9 +347,6 @@ void gradP(const netPp A, const std::unordered_set<Network *> &target_nets) {
          }
 #endif
       }
-      A->contact_points_all_SPH++;
-      if (B->getNetwork()->isFluid || B->isFluid)
-         A->contact_points_fluid_SPH++;
    };
 
    for (const auto &net : target_nets)
@@ -330,10 +373,12 @@ auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
    A->column_value.clear();
    auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
       const auto rij = qX - A->X;
-      double v = 2 * B->mass * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH));
-      v /= B->rho * Dot(rij, rij);
-      A->increment(B, v);
-      A->increment(A, -v);
+      if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
+         double v = 2 * B->mass * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH));
+         v /= B->rho * Dot(rij, rij);
+         A->increment(B, v);
+         A->increment(A, -v);
+      }
    };
 
    for (const auto &net : target_nets)
@@ -359,5 +404,72 @@ auto Lap_P(const auto &points, const std::unordered_set<Network *> &target_nets)
 #pragma omp single nowait
       Lap_P(A, target_nets);
 };
+
+//@ -------------------------------------------------------- */
+//@                        粒子の時間発展                      */
+//@ -------------------------------------------------------- */
+
+void updateParticles(const auto &points, const auto &RigidBodyObject, const double &particle_spacing, const double dt) {
+   DebugPrint("粒子の時間発展", Green);
+#pragma omp parallel
+   for (const auto &p : points)
+#pragma omp single nowait
+   {
+      // テスト
+      auto U = p->U_SPH;
+      auto X_last = p->X;
+      p->RK_U.push(p->DUDt_SPH);  // 速度
+      p->U_SPH = p->RK_U.getX();  // * 0.5 + U * 0.5;
+      p->RK_X.push(p->U_SPH);     // 位置
+      p->setXSingle(p->tmp_X = p->RK_X.getX());
+      // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+      /* -------------------------------------------------------------------------- */
+      int count = 0;
+#if defined(REFLECTION)
+      auto closest = [&]() {
+         double distance = 1E+20;
+         networkPoint *P = nullptr;
+         for (const auto &[obj, poly] : RigidBodyObject) {
+            obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+               auto tmp = Distance(p->X, q);
+               if (distance > tmp) {
+                  distance = tmp;
+                  P = q;
+               }
+            });
+         }
+         return P;
+      };
+      bool isReflected = true;
+      while (isReflected && count++ < 30) {
+         // const auto X = p->RK_X.getX(p->U_SPH);
+         isReflected = false;
+         networkPoint *closest_wall_point;
+         if (closest_wall_point = closest()) {
+            auto ovre_run = ((1. - asobi) * particle_spacing - Distance(closest_wall_point->X, p->X)) / 2.;
+            if (ovre_run > 0.) {
+               auto normal_distance = Norm(Projection(p->X - closest_wall_point->X, closest_wall_point->normal_SPH));
+               if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
+                  p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                  p->RK_U.repush(p->DUDt_SPH);  // 速度
+                  p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
+                  p->RK_X.repush(p->U_SPH);     // 位置
+                  p->setXSingle(p->tmp_X = p->RK_X.getX());
+                  //
+
+                  // p->DUDt_SPH += (ovre_run * closest_wall_point->normal_SPH) / dt / dt;
+                  // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                  // p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
+                  // p->RK_X.repush(p->U_SPH);     // 位置
+                  // p->setXSingle(p->tmp_X = p->RK_X.getX());
+
+                  isReflected = true;
+               }
+            }
+         }
+      };
+#endif
+   }
+}
 
 #endif

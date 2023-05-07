@@ -770,7 +770,7 @@ std::vector<std::vector<T>> Join(std::vector<std::vector<T>> ret, const std::vec
 };
 template <typename T>
 std::unordered_set<T> Append(std::unordered_set<T> a, const T &b) {
-   a.insert(a.end(), b);
+   a.emplace(b);
    return a;
 };
 template <typename T>

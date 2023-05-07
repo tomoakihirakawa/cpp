@@ -144,7 +144,7 @@ match SimulationCase:
                    "max_dt": 0.0005,
                    "end_time_step": 50000,
                    "end_time": 0.5,
-                   "CSML": 3.05,
+                   "CSML": 2.7,
                    "initial_surface_z_position": 0.2,
                    "particle_spacing": 0.015,
                    "input_files": [x["name"]+".json" for x in input_files]}
