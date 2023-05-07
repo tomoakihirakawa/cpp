@@ -512,7 +512,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    double p_SPH_SPP;
    double DPDt_SPH;
    double div_U_error;
-   int contact_points_fluid_SPH, contact_points_all_SPH;
+   int checked_points_in_radius_of_fluid_SPH, checked_points_in_radius_SPH, checked_points_SPH;
    double pressure_Tait(const double rho, double C0 = 1466.) const {
       // double C0 = 1466.; //[m/s]
       // C0 /= 5;
@@ -3147,7 +3147,7 @@ class Network : public CoordinateBounds {
       this->setGeometricProperties();
       if (this->octreeOfFaces)
          delete this->octreeOfFaces;
-      this->octreeOfFaces = new octree(this->getBounds(), depthlimit, objnum, this->Faces);
+      this->octreeOfFaces = new octree(this->scaledBounds(expand_bounds), depthlimit, objnum, this->Faces);
       Print(this->getName() + "->octreeOfFaces->deleteOuside()");
       this->octreeOfFaces->deleteOuside();
       Print(this->getName() + "->octreeOfFaces->setNeighbors()");
@@ -3158,7 +3158,7 @@ class Network : public CoordinateBounds {
       this->setGeometricProperties();
       if (this->octreeOfPoints)
          delete this->octreeOfPoints;
-      this->octreeOfPoints = new octree(this->getBounds(), depthlimit, objnum, this->Points);
+      this->octreeOfPoints = new octree(this->scaledBounds(expand_bounds), depthlimit, objnum, this->Points);
       this->octreeOfPoints->deleteOuside();
    };
    /* -------------------------------------------------------------------------- */
