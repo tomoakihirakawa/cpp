@@ -218,11 +218,11 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
 
-4. ${\bf u}^*$と ${\bf x}^*$を計算
+4. ${{\bf u}^*}$と ${{\bf x}^*}$を計算
 5. 流速の発散 ${\nabla \cdot {\bf u}^*}$の計算
 
-   - Nomeritae et al. (2016)は，${\bf u}^*$と ${\bf x}^*$を使っている
-   - Morikawa, D. S., & Asai, M. (2021)，${\bf u}^*$は使い， ${\bf x}^*$は使っていない
+   - Nomeritae et al. (2016)は，${{\bf u}^*}$と ${{\bf x}^*}$を使っている
+   - Morikawa, D. S., & Asai, M. (2021)，${{\bf u}^*}$は使い， ${{\bf x}^*}$は使っていない
 
 6. 流速の発散から密度 ${\rho}^*$を計算
 7. 次の時刻の圧力 $p^{n+1}$を計算
