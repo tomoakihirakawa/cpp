@@ -218,15 +218,15 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
 
-4. ${{\bf u}^*}$と ${{\bf x}^*}$を計算
-5. 流速の発散 ${\nabla \cdot {\bf u}^*}$の計算
+4. ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を計算
+5. 流速の発散 ${\nabla \cdot {\bf u}^\ast}$の計算
 
-   - Nomeritae et al. (2016)は，${{\bf u}^*}$と ${{\bf x}^*}$を使っている
-   - Morikawa, D. S., & Asai, M. (2021)，${{\bf u}^*}$は使い， ${{\bf x}^*}$は使っていない
+   - Nomeritae et al. (2016)は，${{\bf u}^\ast}$と ${{\bf x}^\ast}$を使っている
+   - Morikawa, D. S., & Asai, M. (2021)，${{\bf u}^\ast}$は使い， ${{\bf x}^\ast}$は使っていない
 
-6. 流速の発散から密度 ${\rho}^*$を計算
+6. 流速の発散から密度 ${\rho}^\ast$を計算
 7. 次の時刻の圧力 $p^{n+1}$を計算
-   - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^*}+\alpha \frac{\rho_0-\rho^*}{{\Delta t}^2}$を解く
+   - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^\ast}+\alpha \frac{\rho_0-\rho^\ast}{{\Delta t}^2}$を解く
    - EISPHは，陽的に $p^{n+1}$を計算する
 8. $\nabla {p^{n+1}}$が計算でき，$\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
 9. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
