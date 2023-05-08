@@ -33,21 +33,25 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
 
-4. $\nabla \cdot \nabla {\bf u}$と ${\bf u}^*$を計算
-5. 位置を ${\bf x}^*$へ更新
-6. 密度を ${\rho}^*$へ更新
-7. 仮位置における圧力 $p$の計算
-   - ISPHは， $\nabla \cdot {\bf u}^*=\nabla^2 {p^{n+1}}$を解く
-   - EISPHは，陽的に $p^{n+1}$を計算する
-8. $\nabla {p^{n+1}}$を計算
-9. $D{\bf u}/Dt$が得られ流速と位置を更新
+4. ${\bf u}^*$と ${\bf x}^*$を計算
+5. 流速の発散 ${\nabla \cdot {\bf u}^*}$の計算
 
-[./builds/build_sph/SPH.hpp#L215](./builds/build_sph/SPH.hpp#L215)
+   - Nomeritae et al. (2016)は，${\bf u}^*$と ${\bf x}^*$を使っている
+   - Morikawa, D. S., & Asai, M. (2021)，${\bf u}^*$は使い， ${\bf x}^*$は使っていない
+
+6. 流速の発散から密度 ${\rho}^*$を計算
+7. 次の時刻の圧力 $p^{n+1}$を計算
+   - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^*}+\alpha \frac{\rho_0-\rho^*}{{\Delta t}^2}$を解く
+   - EISPHは，陽的に $p^{n+1}$を計算する
+8. $\nabla {p^{n+1}}$が計算でき，$\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
+9. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
+
+[./builds/build_sph/SPH.hpp#L214](./builds/build_sph/SPH.hpp#L214)
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
 
-[./builds/build_sph/SPH.hpp#L473](./builds/build_sph/SPH.hpp#L473)
+[./builds/build_sph/SPH.hpp#L392](./builds/build_sph/SPH.hpp#L392)
 
 
  --- 
