@@ -28,11 +28,13 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
  --- 
-## ISPHとEISPHの計算過程
+## ISPHとEISPH
+### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
-3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
+3. CFL条件を満たすようにタイムステップ間隔 $\Delta t$を設定
 
+### フラクショナルステップを使って初期値問題を解く
 4. ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を計算
 5. 流速の発散 ${\nabla \cdot {\bf u}^\ast}$の計算
 
@@ -51,7 +53,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
 
-[./builds/build_sph/SPH.hpp#L392](./builds/build_sph/SPH.hpp#L392)
+[./builds/build_sph/SPH.hpp#L394](./builds/build_sph/SPH.hpp#L394)
 
 
  --- 

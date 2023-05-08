@@ -212,12 +212,14 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 };
 
 /*DOC_EXTRACT
-## ISPHとEISPHの計算過程
+## ISPHとEISPH
 
+### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
-3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
+3. CFL条件を満たすようにタイムステップ間隔 $\Delta t$を設定
 
+### フラクショナルステップを使って初期値問題を解く
 4. ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を計算
 5. 流速の発散 ${\nabla \cdot {\bf u}^\ast}$の計算
 
