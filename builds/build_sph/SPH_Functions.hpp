@@ -448,7 +448,8 @@ auto setLap_U(const auto &points, const double dt) {
 #pragma omp single nowait
    {
       A->lap_U = A->lap_U_;
-      A->ViscousAndGravityForce = A->DUDt_SPH = A->DUDt_SPH_ = A->lap_U_ * (A->mu_SPH / A->rho) + _GRAVITY3_;  // 後で修正されるDUDt
+      A->DUDt_SPH_ = A->lap_U_ * (A->mu_SPH / A->rho) + _GRAVITY3_;  // 後で修正されるDUDt
+      A->ViscousAndGravityForce = A->DUDt_SPH = A->DUDt_SPH_;
       A->tmp_U_SPH = A->U_SPH + A->DUDt_SPH * dt;
       A->tmp_X = A->X + A->tmp_U_SPH * dt;
    }
@@ -520,7 +521,6 @@ auto set_tmpLap_U(const auto &points) {
 // b% -------------------------------------------------------------------------- */
 // b% -------------------------------------------------------------------------- */
 #define Morikawa2019
-// #define NewtonMethod
 
 void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *> &target_nets, const double dt) {
    double sum_Aij = 0, Aij, sum_Aij_Pj = 0, sum_Aij_Pij = 0, sum_Pij = 0, pressure_SPH = 0, qP;
@@ -538,8 +538,8 @@ void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *
 #else
          // Nomeritae
          // Shao and Lo
-         // auto Aij = B->mass * 8. / std::pow(B->rho + A->rho, 2) * share;, which is the same as
-         Aij = 2. * B->mass / std::pow((B->rho + A->rho) / 2., 2) * share;
+         // auto Aij = B->mass * 8. / std::pow(B->rho_ + A->rho_, 2) * share;, which is the same as
+         Aij = 2. * B->mass / std::pow((B->rho_ + A->rho_) / 2., 2) * share;
 #endif
          sum_Aij += Aij;
          sum_Pij += A->p_SPH - qP;
@@ -568,29 +568,11 @@ void calculateTemporalPressure(const netPp A, const std::unordered_set<Network *
 
 #if defined(Morikawa2019)
    const double alpha = 0.1 * dt;
-   auto b = _WATER_DENSITY_ * A->div_tmpU / dt + alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
+   auto b = A->rho * A->div_tmpU / dt + alpha * (A->rho - A->rho_) / (dt * dt);
 #else
    auto b = A->div_tmpU / dt;
 #endif
    A->p_SPH_ = (b + sum_Aij_Pj) / sum_Aij;
-
-#if defined(NewtonMethod)
-   A->div_U_error = std::abs(sum_Aij_Pij - b);
-   auto F = sum_Aij_Pij - b;
-   auto dFdPi = sum_Aij;
-
-   #ifdef surface_zero_pressure
-   if (A->isSurface) {
-      F += A->p_SPH;
-      sum_Aij += 1;
-   }
-   #endif
-
-   auto FF = F * F / 2.;
-   auto dFFdPi = F * dFdPi;
-   A->NR_pressure.update(FF, dFFdPi, 2.);
-
-#endif
 };
 
 void calculateTemporalPressure(const std::unordered_set<networkPoint *> &points,
@@ -670,7 +652,7 @@ auto Lap_P_for_Wall(const netPp A, const std::unordered_set<Network *> &target_n
       const auto rij = qX - markerX;
       if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          double v = 2 * B->mass * Dot(rij, grad_w_Bspline(markerX, qX, A->radius_SPH));
-         v /= /*B->rho*/ _WATER_DENSITY_ * Dot(rij, rij);
+         v /= B->rho * Dot(rij, rij);
          A->increment(B, v);
          A->increment(A, -v);
          //
@@ -683,7 +665,7 @@ auto Lap_P_for_Wall(const netPp A, const std::unordered_set<Network *> &target_n
       if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          auto Uij = B->tmp_U_SPH - A->value3d;
          auto divU = B->volume * Dot(Uij, grad_w_Bspline(markerX, qX, A->radius_SPH));
-         A->value += /*B->rho*/ _WATER_DENSITY_ * divU / dt;
+         A->value += B->rho * divU / dt;
       }
    };
    //
@@ -736,7 +718,7 @@ auto Lap_P(const netPp A, const std::unordered_set<Network *> &target_nets) {
       const auto rij = qX - A->X;
       if (Between(Distance(A, qX), {1E-10, A->radius_SPH})) {
          double v = 2 * B->mass * Dot(rij, grad_w_Bspline(A->X, qX, A->radius_SPH));
-         v /= B->rho * Dot(rij, rij);
+         v /= B->rho_ * Dot(rij, rij);
          A->increment(B, v);
          A->increment(A, -v);
       }

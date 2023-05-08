@@ -385,8 +385,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    RungeKutta<Tddd> RK_U;
    RungeKutta<double> RK_rho;
    RungeKutta<double> RK_P;
-   /* -------------------------------------------------------------------------- */
-   NewtonRaphson<double> NR_pressure;
+
    /* -------------------------------------------------------------------------- */
   public:
    V_netLp getLinesCORNER() const {
@@ -896,7 +895,10 @@ class networkPoint : public CoordinateBounds, public CSR {
    // void set(const V_d& xyz_IN){object3D::setBounds(xyz_IN);};
    void setX(const V_d &xyz_IN);
    void setX(const Tddd &xyz_IN);
-   void setXSingle(const Tddd &xyz_IN) { CoordinateBounds::setBounds(xyz_IN); };
+   void setXSingle(const Tddd &xyz_IN) {
+      this->pre_X = this->X;
+      CoordinateBounds::setBounds(xyz_IN);
+   };
    // bool setXcarefully(const V_d &xyz_IN);
    void resetXinfo();
    void setLinesStatus(const bool TorF) {

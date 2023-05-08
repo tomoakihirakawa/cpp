@@ -503,6 +503,7 @@ inline void networkPoint::resetXinfo() {
 
 inline void networkPoint::setX(const Tddd &xyz_IN) {
    try {
+      this->pre_X = xyz_IN;
       CoordinateBounds::setBounds(xyz_IN);
       for (const auto &l : this->getLines()) {
          // std::cout << "l = " << l << std::endl;

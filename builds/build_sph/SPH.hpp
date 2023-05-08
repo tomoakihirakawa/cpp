@@ -1,36 +1,39 @@
 #ifndef SPH_weightingFunctions_H
-   #define SPH_weightingFunctions_H
+#define SPH_weightingFunctions_H
 
-   #include "kernelFunctions.hpp"
-   #include "vtkWriter.hpp"
+#include "kernelFunctions.hpp"
+#include "vtkWriter.hpp"
 
-   #define REFLECTION
+#define REFLECTION
 
-   // #define surface_zero_pressure
+// #define surface_zero_pressure
 
-   //$ ------------------------------------------------------------------- */
-   /* -------------------------------------------------------------------------- */
-   #define USE_SPP_Fluid
-   #if defined(USE_SPP_Fluid)
-      #define SPP_U_coef 1.
-      #define SPP_p_coef 0.
-   #endif
-   /* -------------------------------------------------------------------------- */
-   // #define USE_SPP_Wall
-   #if defined(USE_SPP_Wall)
-      #define SPP_U_coef_of_Wall 1.
-      #define SPP_p_coef_of_Wall -1.
-      #define SPP_DUDt_coef_of_Wall 1.
-      #define SPP_rho_coef_of_Wall 1.
-   #endif
 /* -------------------------------------------------------------------------- */
 
-   #define POWER 1.
+#define USE_SPP_Fluid
+#if defined(USE_SPP_Fluid)
+   #define SPP_U_coef 1.
+   #define SPP_p_coef -1.
+#endif
+
+/* -------------------------------------------------------------------------- */
+
+// #define USE_SPP_Wall
+#if defined(USE_SPP_Wall)
+   #define SPP_U_coef_of_Wall 1.
+   #define SPP_p_coef_of_Wall -1.
+   #define SPP_DUDt_coef_of_Wall 1.
+   #define SPP_rho_coef_of_Wall 1.
+#endif
+
+/* -------------------------------------------------------------------------- */
+
+#define POWER 1.
 
 const double reflection_factor = .5;
 const double asobi = 0.;
 
-   #include "SPH_Functions.hpp"
+#include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
 
 // b# -------------------------------------------------------------------------- */
@@ -38,9 +41,9 @@ const double asobi = 0.;
 // b# -------------------------------------------------------------------------- */
 void setPressureForInitialGuess(Network *net) {
 
-   #pragma omp parallel
+#pragma omp parallel
    for (const auto &p : net->getPoints())
-   #pragma omp single nowait
+#pragma omp single nowait
    {
       p->p_SPH_ = p->total_weight = 0;
       double w = 0, own_w = 0;
@@ -50,9 +53,9 @@ void setPressureForInitialGuess(Network *net) {
       };
       net->BucketPoints.apply(p->X, p->radius_SPH, func);
    }
-   #pragma omp parallel
+#pragma omp parallel
    for (const auto &p : net->getPoints())
-   #pragma omp single nowait
+#pragma omp single nowait
    {
       p->p_SPH = p->p_SPH_ / p->total_weight;
    }
@@ -62,9 +65,9 @@ void setPressureForInitialGuess(Network *net) {
 
 void setPressureSPP(Network *net, const auto &RigidBodyObject) {
 
-   #pragma omp parallel
+#pragma omp parallel
    for (const auto &p : net->getPoints())
-   #pragma omp single nowait
+#pragma omp single nowait
    {
       // if (p->isSurface && surface_zero_pressure)
       //    p->p_SPH = 0;
@@ -109,10 +112,6 @@ void setPressureSPP(Network *net, const auto &RigidBodyObject) {
       // p->p_SPH_SPP /= (w_Bspline(0, p->radius_SPH * p->C_SML) + w_Bspline(q->radius_SPH / q->C_SML, p->radius_SPH * p->C_SML));
    }
 };
-
-/* -------------------------------------------------------------------------- */
-std::unordered_set<networkPoint *> wall_as_fluid;
-std::unordered_set<networkPoint *> wall_p;
 
 void test_Bucket(const auto &water, const auto &nets, const std::string &output_directory, const auto &r) {
    std::filesystem::create_directory(output_directory);
@@ -219,16 +218,24 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
 
-4. $\nabla \cdot \nabla {\bf u}$と ${\bf u}^*$を計算
-5. 位置を ${\bf x}^*$へ更新
-6. 密度を ${\rho}^*$へ更新
-7. 仮位置における圧力 $p$の計算
-   - ISPHは， $\nabla \cdot {\bf u}^*=\nabla^2 {p^{n+1}}$を解く
+4. ${\bf u}^*$と ${\bf x}^*$を計算
+5. 流速の発散 ${\nabla \cdot {\bf u}^*}$の計算
+
+   - Nomeritae et al. (2016)は，${\bf u}^*$と ${\bf x}^*$を使っている
+   - Morikawa, D. S., & Asai, M. (2021)，${\bf u}^*$は使い， ${\bf x}^*$は使っていない
+
+6. 流速の発散から密度 ${\rho}^*$を計算
+7. 次の時刻の圧力 $p^{n+1}$を計算
+   - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^*}+\alpha \frac{\rho_0-\rho^*}{{\Delta t}^2}$を解く
    - EISPHは，陽的に $p^{n+1}$を計算する
-8. $\nabla {p^{n+1}}$を計算
-9. $D{\bf u}/Dt$が得られ流速と位置を更新
+8. $\nabla {p^{n+1}}$が計算でき，$\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
+9. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
 
 */
+
+std::unordered_set<networkPoint *> wall_as_fluid;
+std::unordered_set<networkPoint *> wall_p;
+
 void developByEISPH(Network *net,
                     const auto &RigidBodyObjectIN,
                     double &real_time,
@@ -291,16 +298,16 @@ void developByEISPH(Network *net,
          }
       DebugPrint("関連する壁粒子をマーク", Green);
       double C = 1.2;
-   #pragma omp parallel
+#pragma omp parallel
       for (const auto &p : net->getPoints())
-   #pragma omp single nowait
+#pragma omp single nowait
       {
          for (const auto &[obj, poly] : RigidBodyObject) {
             obj->BucketPoints.apply(p->X, p->radius_SPH * C, [&](const auto &q) {
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.25) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.8) {
                      q->isFluid = true;
                   }
                }
@@ -334,218 +341,118 @@ void developByEISPH(Network *net,
       // b# ======================================================= */
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       do {
+#ifdef surface_zero_pressure
+         for (const auto &p : net->getPoints())
+            if (p->isSurface)
+               p->p_SPH = 0;
+#endif
+
          for (const auto &p : net->getPoints())
             p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
          dt = (*net->getPoints().begin())->RK_X.getdt();
          std::cout << "dt = " << dt << std::endl;
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
-         // b$ ------------------------------- ∇.∇UとU*を計算 ------------------------------- */
-
+         //@ ∇.∇UとU*を計算
          Lap_U(net->getPoints(), Append(net_RigidBody, net));
          setLap_U(net->getPoints(), dt);
-
          Lap_U(wall_as_fluid, Append(net_RigidBody, net));
          setLap_U(wall_as_fluid, dt);
-
-         // b$ -------------------------------------------------------------------------- */
-
-         // setWallDUDt(net, wall_p, RigidBodyObject);
-
-         // b$ ---------------------------------- (1) 位置の更新 for (2) 密度の更新--------------------------------- */
-
-   #pragma omp parallel
-         for (const auto &p : net->getPoints())
-   #pragma omp single nowait
-            p->setX(p->tmp_X);
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粘性項の∇.∇Uを計算し，次にU*を計算");
-         DebugPrint("U*を使って，仮想的な位置X^*へ粒子を移動", Green);
 
+         //% ---------------------------  仮の位置に移動して仮密度の更新 ------------------------*/
+         for (const auto &p : net->getPoints()) p->setX(p->tmp_X);
+
+         //@ 発散の計算
          div_tmpU(net->getPoints(), Append(net_RigidBody, net));
          div_tmpU(wall_as_fluid, Append(net_RigidBody, net));
 
-         set_tmpLap_U(net->getPoints());
-         set_tmpLap_U(wall_as_fluid);
-         // b$ ---------------------------------- (2) 密度の更新 --------------------------------- */
          for (const auto &p : net->getPoints())
-            p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
+            p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_tmpU) * dt;
+         // for (const auto &p : wall_as_fluid)
+         //    p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_tmpU) * dt;
 
-         for (const auto &p : wall_as_fluid)
-            p->setDensity(p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_U) * dt);
+         //@ --------------------------------  元の位置に移動 --------------------------------*/
+         for (const auto &p : net->getPoints()) p->setX(p->pre_X);
 
+         //@ 圧力 p^n+1の計算
          mapValueOnWall(net, wall_p, RigidBodyObject);
-
-         /*
-         nablaは同じでないといけないので，
-         div(U) = div(grad(P^n+1))
-         のdivは同じように計算されなければならないだろう:同じ密度，体積を使う．
-         */
-
-         // b$ ---------------------- 仮位置における div(U*) and laplacian(U*) ----------------------*/
-
-         div_tmpU(net->getPoints(), Append(net_RigidBody, net));
-         div_tmpU(wall_as_fluid, Append(net_RigidBody, net));
-
-         set_tmpLap_U(net->getPoints());
-         set_tmpLap_U(wall_as_fluid);
-
-         // setWallDUDt(net, wall_p, RigidBodyObject);  // 壁の粘性項を計算する
-
-         // b$ -------------------------------------------------------------------------- */
-
-         // mapValueOnWall(net, wall_p, RigidBodyObject, {1, 0, 0});  // ここではDUDtなど考慮せずに壁の圧力を蹴っているす．圧力勾配を計算する時のみDUDtを考慮するのがいいかもしれない．
-         // b% ------------------------------------------------------ */
-         // b%  　　　　　             仮位置における圧力Pの計算                   */
-         // b% ------------------------------------------------------ */
-   #ifdef surface_zero_pressure
-         for (const auto &p : net->getPoints())
-            if (p->isSurface)
-               p->p_SPH = 0;
-   #endif
-
-         mapValueOnWall(net, wall_p, RigidBodyObject);
-
-         for (const auto &p : net->getPoints())
-            p->NR_pressure.initialize(p->p_SPH);
-
-         for (const auto &p : wall_as_fluid)
-            p->NR_pressure.initialize(p->p_SPH);
-
-         /*
-         もし水面の圧力をgrad(p)を計算する直前でゼロとしてしまうと，
-         水面は落ちてきてしまい，計算が終わってしまう．
-         圧力を計算する直前だけ水面の圧力をゼロとすると，
-         水面の圧力はゼロとはならないが，圧力勾配の計算結果で水面が落ち込むことはない．
-         */
-         //
          DebugPrint("仮位置における圧力Pの計算", Magenta);
-         //
-   // #define ISPH
-   #if defined(ISPH)
-
-         DebugPrint("activate");
-         V_d b(net->getPoints().size()), x0(net->getPoints().size());
-         size_t i = 0;
-         for (const auto &p : net->getPoints()) {
-            p->setIndexCSR(i);
-            b[i] = p->value = p->div_tmpU;
-            x0[i] = p->p_SPH;
-            i++;
-         }
-
-         DebugPrint("Lap_P");
-         Lap_P(net->getPoints(), Append(net_RigidBody, net));
-         for (const auto &p : net->getPoints())
-            if (p->isSurface) {
-               p->column_value.clear();
-               p->increment(p, 1.);
-               p->value = 0.;
-            }
-         gmres gm(net->getPoints(), b, x0, 100);
-         std::cout << "gm.err : " << gm.err << std::endl;
-         for (const auto &p : net->getPoints()) {
-            p->p_SPH = gm.x[p->getIndexCSR()];
-         }
-   #else
-         int loopnum = 1;
 
          calculateTemporalPressure(net->getPoints(), Append(net_RigidBody, net), dt);
-         calculateTemporalPressure(wall_as_fluid, Append(net_RigidBody, net), dt);
+         // calculateTemporalPressure(wall_as_fluid, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
-         setPressure(wall_as_fluid);
-
-         // mapValueOnWall(net, wall_p, RigidBodyObject);
-
-         // for (const auto &p : net->getPoints()) {
-         //    p->dp_SPH = p->p_SPH - p->dp_SPH;
-         //    p->DPDt_SPH = (p->p_SPH - p->RK_P.getX()) / dt;
-         //    // p->p_SPH = p->p_SPH_;
-         //    p->RK_P.push(p->DPDt_SPH);  // 圧力
-         //    // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-         //    p->p_SPH = p->p_SPH_;
-         // }
-
-         /* -------------------------------------------------------------------------- */
-
+         // setPressure(wall_as_fluid);
+         mapValueOnWall(net, wall_p, RigidBodyObject);
+// #define ISPH
+#ifdef ISPH
          /*DOC_EXTRACT
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
-
-
-
           */
-         if (false)
-            if (real_time > 0.0) {
-               DebugPrint("activate");
-               V_d b, x0;
-               size_t i = 0;
-               std::unordered_set<networkPoint *> points;
-               points.reserve(net->getPoints().size() + wall_as_fluid.size());
-               b.reserve(net->getPoints().size() + wall_as_fluid.size());
-               x0.reserve(net->getPoints().size() + wall_as_fluid.size());
-               const double alpha = 0.01;
-               for (const auto &p : net->getPoints()) {
-                  if (p->isCaptured) {
-                     points.emplace(p);
-                     p->setIndexCSR(i++);
-                     p->exclude(true);
-                     b.emplace_back(p->value = /*p->rho*/ _WATER_DENSITY_ * p->div_tmpU / dt + alpha * (_WATER_DENSITY_ - p->rho) / dt / dt);
-                     x0.emplace_back(p->p_SPH);
-                  }
-               }
-               for (const auto &p : wall_as_fluid) {
-                  if (p->isCaptured && p->isFluid) {
-                     points.emplace(p);
-                     p->setIndexCSR(i++);
-                     p->exclude(true);
-                     b.emplace_back(p->value = /*p->rho*/ _WATER_DENSITY_ * p->div_tmpU / dt);
-                     x0.emplace_back(p->p_SPH);
-                  }
-               }
-
-               DebugPrint("Lap_P");
-               Lap_P(net->getPoints(), Append(net_RigidBody, net));
-               Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
-
-               for (const auto &p : net->getPoints())
-                  if (p->isSurface) {
-                     p->column_value.clear();
-                     p->increment(p, 1.);
-                     p->value = 0.;
-                     b[p->getIndexCSR()] = 0.;
-                  }
-
-               for (const auto &p : wall_as_fluid) {
-                  if (p->isCaptured && p->isFluid)
-                     b[p->getIndexCSR()] = p->value;
-                  else
-                     p->p_SPH = 0;
-               }
-
-               std::cout << "gmres" << std::endl;
-               gmres gm(points, b, x0, 100);
-               std::cout << "gm.err : " << gm.err << std::endl;
-
-               for (const auto &p : points) {
-                  p->p_SPH = gm.x[p->getIndexCSR()];
+         if (real_time > 0.0) {
+            DebugPrint("activate");
+            V_d b, x0;
+            size_t i = 0;
+            std::unordered_set<networkPoint *> points;
+            points.reserve(net->getPoints().size() + wall_as_fluid.size());
+            b.reserve(net->getPoints().size() + wall_as_fluid.size());
+            x0.reserve(net->getPoints().size() + wall_as_fluid.size());
+            const double alpha = 0.01;
+            for (const auto &p : net->getPoints()) {
+               if (p->isCaptured) {
+                  points.emplace(p);
+                  p->setIndexCSR(i++);
+                  p->exclude(true);
+                  b.emplace_back(p->value = (1 - alpha) * p->rho * p->div_tmpU / dt + alpha * (p->rho - p->rho_) / dt / dt);
+                  x0.emplace_back(p->p_SPH);
                }
             }
-               /* -------------------------------------------------------------------------- */
+            for (const auto &p : wall_as_fluid) {
+               if (p->isCaptured && p->isFluid) {
+                  points.emplace(p);
+                  p->setIndexCSR(i++);
+                  p->exclude(true);
+                  b.emplace_back(p->value = (1 - alpha) * p->rho * p->div_tmpU / dt + alpha * (p->rho - p->rho_) / dt / dt);
+                  x0.emplace_back(p->p_SPH);
+               }
+            }
 
-   #endif
-         //% ---------------------------- 計算した圧力をマップするかどうか ---------------------------- */
+            DebugPrint("Lap_P");
+            Lap_P(net->getPoints(), Append(net_RigidBody, net));
+            Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
 
-         // mapValueOnWall(net, wall_p, RigidBodyObject);
+            for (const auto &p : net->getPoints())
+               if (p->isSurface) {
+                  p->column_value.clear();
+                  p->increment(p, 1.);
+                  p->value = 0.;
+                  b[p->getIndexCSR()] = 0.;
+               }
+
+            for (const auto &p : wall_as_fluid) {
+               if (p->isCaptured && p->isFluid)
+                  b[p->getIndexCSR()] = p->value;
+               else
+                  p->p_SPH = 0;
+            }
+
+            std::cout << "gmres" << std::endl;
+            gmres gm(points, b, x0, 100);
+            std::cout << "gm.err : " << gm.err << std::endl;
+
+            for (const auto &p : points) {
+               p->p_SPH = gm.x[p->getIndexCSR()];
+            }
+         }
+#endif
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "仮位置における圧力Pの計算");
 
-         // b% ------------------------------------------------------ */
-         // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
-         // b% ------------------------------------------------------ */
-
+         //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
 
          gradP(net->getPoints(), Append(net_RigidBody, net));
@@ -778,4 +685,3 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
 };
 
 #endif
-//
