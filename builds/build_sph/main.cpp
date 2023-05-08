@@ -222,12 +222,13 @@ int main(int arg, char **argv) {
    // b# -------------------------------------------------------------------------- */
    // b#                             外向きベクトルの設定                               */
    // b# -------------------------------------------------------------------------- */
-   for (const auto &[particlesNet, _, J] : all_objects) {
+   for (const auto &[particlesNet, poly, J] : all_objects) {
       particlesNet->makeBucketPoints(particle_spacing);
       //
       std::cout << "timer : " << timer() << std::endl;
-      for (const auto &[obj, poly, _] : RigidBodies)
-         for (const auto &p : obj->getPoints()) {
+
+      if (particlesNet->isRigidBody)
+         for (const auto &p : particlesNet->getPoints()) {
             // p->normal_SPH = poly->interpolateVector(p->X);
             auto [X, f] = Nearest_(p->X, poly->getFaces());
             // p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 2.) * particle_spacing * Normalize(X - p->X);
@@ -236,29 +237,15 @@ int main(int arg, char **argv) {
             // p->normal_SPH = X - p->X;
             p->mirroring_face = f;
          }
-      {
-         vtkPolygonWriter<networkPoint *> vtp;
-         vtp.add(particlesNet->getPoints());
-         std::unordered_map<networkPoint *, Tddd> normal_SPH;
-         for (const auto &p : particlesNet->getPoints())
-            normal_SPH[p] = p->normal_SPH;
-         vtp.addPointData("normal_SPH", normal_SPH);
-         std::ofstream ofs(output_directory + J.at("name")[0] + "_check_normal.vtp");
-         vtp.write(ofs);
-         ofs.close();
-      }
-      //
-      // for (const auto &[obj, poly, _] : RigidBodies)
-      //    for (const auto &p : obj->getPoints()) {
-      //       auto [isinside, cell, f] = poly->isInside_MethodOctree(p->X);
-      //       if (isinside && f) {
-      //          // auto intsp = IntersectionSphereTriangle(p->X, 1E+10, ToX(f));
-      //          // p->normal_SPH = intsp.X - p->X;
-      //          auto nearest = Nearest(p->X, ToX(f));
-      //          p->normal_SPH = nearest - p->X;
-      //          p->mirroring_face = f;
-      //       }
-      //    };
+      vtkPolygonWriter<networkPoint *> vtp;
+      vtp.add(particlesNet->getPoints());
+      std::unordered_map<networkPoint *, Tddd> normal_SPH;
+      for (const auto &p : particlesNet->getPoints())
+         normal_SPH[p] = p->normal_SPH;
+      vtp.addPointData("normal_SPH", normal_SPH);
+      std::ofstream ofs(output_directory + J.at("name")[0] + "_check_normal.vtp");
+      vtp.write(ofs);
+      ofs.close();
    }
    // b# -------------------------------------------------------------------------- */
    // b# -------------------------------------------------------------------------- */

@@ -25,7 +25,7 @@ void setBoundaryConditions(Network &water, const std::vector<Network *> &objects
 #pragma omp single nowait
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         p->radius = (Mean(extLength(p->getLines())) + radius) / 2.;
+         p->radius = (Mean(extLength(p->getLines())) + radius) / 3.;
          // auto toF = extXtuple(ToVector(p->getFaces())) - ToX(p);
          // auto toP = extXtuple(p->getNeighbors()) - ToX(p);
          // double a = Norm(*std::min_element(toP.begin(), toP.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));

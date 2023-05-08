@@ -30,7 +30,7 @@ struct BaseBuckets {
       this->xbounds = std::get<0>(this->bounds);
       this->ybounds = std::get<1>(this->bounds);
       this->zbounds = std::get<2>(this->bounds);
-      this->center = {Mean(this->xbounds), Mean(this->ybounds), Mean(this->zbounds)};
+      this->center = compute_center(this->xbounds, this->ybounds, this->zbounds);
       this->xsize = std::ceil((std::get<1>(this->xbounds) - std::get<0>(this->xbounds)) / this->dL);
       this->ysize = std::ceil((std::get<1>(this->ybounds) - std::get<0>(this->ybounds)) / this->dL);
       this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
@@ -42,21 +42,25 @@ struct BaseBuckets {
       std::cout << "サイズ = " << this->dn << std::endl;
    }
    const std::unordered_set<T> &getAll() const { return this->all_stored_objects; };
-
+   constexpr Tddd compute_center(const Tdd &xbounds, const Tdd &ybounds, const Tdd &zbounds) {
+      return {(std::get<1>(xbounds) + std::get<0>(xbounds)) / 2,
+              (std::get<1>(ybounds) + std::get<0>(ybounds)) / 2,
+              (std::get<1>(zbounds) + std::get<0>(zbounds)) / 2};
+   }
    //@ -------------------------------- インデックス変換 -------------------------------- */
    // x座標を内包するバケツのインデックスを返す
-   Tddd itox(const ST i, const ST j, const ST k) const {
+   constexpr Tddd itox(const ST i, const ST j, const ST k) const {
       return {this->dL * 0.5 + this->dL * i + std::get<0>(this->xbounds),
               this->dL * 0.5 + this->dL * j + std::get<0>(this->ybounds),
               this->dL * 0.5 + this->dL * k + std::get<0>(this->zbounds)};
    };
-   Tddd itox(const ST3 &ijk) const { return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
-   ST3 indices_no_clamp(const Tddd &x) const {
+   constexpr Tddd itox(const ST3 &ijk) const { return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
+   constexpr ST3 indices_no_clamp(const Tddd &x) const {
       return {static_cast<ST>(std::floor((std::get<0>(x) - std::get<0>(this->xbounds)) / this->dL)),
               static_cast<ST>(std::floor((std::get<1>(x) - std::get<0>(this->ybounds)) / this->dL)),
               static_cast<ST>(std::floor((std::get<2>(x) - std::get<0>(this->zbounds)) / this->dL))};
    };
-   ST3 indices(const Tddd &x) const {
+   constexpr ST3 indices(const Tddd &x) const {
       /*
       intキャストはゼロ方向へ実数を切り捨てた結果を返すので，static_cast<int>によって正しくセルのインデックスに変換できる．
        0.**    1.**  2.**   3.**
@@ -70,7 +74,7 @@ struct BaseBuckets {
               std::clamp(std::get<1>(ijk), static_cast<ST>(0), this->ysize - 1),
               std::clamp(std::get<2>(ijk), static_cast<ST>(0), this->zsize - 1)};
    };
-   const ST6 indices_ranges(const Tddd &x, const double d) const {
+   constexpr ST6 indices_ranges(const Tddd &x, const double d) const {
       auto [i_min, j_min, k_min] = indices(x - d);
       auto [i_max, j_max, k_max] = indices(x + d);
       return {i_min, i_max, j_min, j_max, k_min, k_max};
