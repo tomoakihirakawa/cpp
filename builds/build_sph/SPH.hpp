@@ -219,7 +219,7 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
 
-4. $\nabla \cdot \nabla {\bf u}$と${\bf u}^*$を計算
+4. $\nabla \cdot \nabla {\bf u}$と ${\bf u}^*$を計算
 5. 位置を ${\bf x}^*$へ更新
 6. 密度を ${\rho}^*$へ更新
 7. 仮位置における圧力 $p$の計算
