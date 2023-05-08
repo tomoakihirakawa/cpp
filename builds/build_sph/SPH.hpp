@@ -222,9 +222,9 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 4. $\nabla \cdot \nabla {\bf u}$と${\bf u}^*$を計算
 5. 位置を ${\bf x}^*$へ更新
 6. 密度を ${\rho}^*$へ更新
-7. 仮位置における圧力$p$の計算
+7. 仮位置における圧力 $p$の計算
    - ISPHは， $\nabla \cdot {\bf u}^*=\nabla^2 {p^{n+1}}$を解く
-   - EISPHは，陽的に$p^{n+1}$を計算する
+   - EISPHは，陽的に $p^{n+1}$を計算する
 8. $\nabla {p^{n+1}}$を計算
 9. $D{\bf u}/Dt$が得られ流速と位置を更新
 
