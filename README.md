@@ -43,7 +43,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 7. 次の時刻の圧力 $p^{n+1}$を計算
    - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^\ast}+\alpha \frac{\rho_0-\rho^\ast}{{\Delta t}^2}$を解く
    - EISPHは，陽的に $p^{n+1}$を計算する
-8. $\nabla {p^{n+1}}$が計算でき，$\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
+8. $\nabla {p^{n+1}}$が計算でき， $\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
 9. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
 
 [./builds/build_sph/SPH.hpp#L214](./builds/build_sph/SPH.hpp#L214)
