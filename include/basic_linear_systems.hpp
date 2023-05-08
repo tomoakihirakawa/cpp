@@ -576,6 +576,7 @@ struct QR {
 struct CSR {
    bool __is_active__, __exclude__;
    double value;
+   std::array<double, 3> value3d;
    size_t __index__;
    void setIndexCSR(size_t i) {
       __index__ = i;

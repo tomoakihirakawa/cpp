@@ -7,7 +7,7 @@
    一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
    https://en.wikipedia.org/wiki/Arnoldi_iteration
 
-[./include/basic_linear_systems.hpp#L677](./include/basic_linear_systems.hpp#L677)
+[./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
 
 
  --- 
@@ -28,6 +28,29 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
  --- 
+## ISPHとEISPHの計算過程
+1. バケットの生成
+2. 流れの計算に関与する壁粒子を保存
+3. CFL条件を満たすようにタイムステップ間隔 $dt$を設定
+
+4. $\nabla \cdot \nabla {\bf u}$と${\bf u}^*$を計算
+5. 位置を ${\bf x}^*$へ更新
+6. 密度を ${\rho}^*$へ更新
+7. 仮位置における圧力$p$の計算
+   - ISPHは， $\nabla \cdot {\bf u}^*=\nabla^2 {p^{n+1}}$を解く
+   - EISPHは，陽的に$p^{n+1}$を計算する
+8. $\nabla {p^{n+1}}$を計算
+9. $D{\bf u}/Dt$が得られ流速と位置を更新
+
+[./builds/build_sph/SPH.hpp#L215](./builds/build_sph/SPH.hpp#L215)
+
+ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
+         $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
+
+[./builds/build_sph/SPH.hpp#L473](./builds/build_sph/SPH.hpp#L473)
+
+
+ --- 
 ## Bucketを用いた粒子探索のテスト
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．
@@ -42,6 +65,16 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
    - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
 [./builds/build_sph/test_Buckets.cpp#L1](./builds/build_sph/test_Buckets.cpp#L1)
+
+
+ --- 
+## 壁面粒子の流速と圧力
+壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
+一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
+
+壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
+
+[./builds/build_sph/SPH_Functions.hpp#L210](./builds/build_sph/SPH_Functions.hpp#L210)
 
 
  --- 
