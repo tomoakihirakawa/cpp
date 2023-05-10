@@ -458,7 +458,7 @@ auto setLap_U(const auto &points, const double dt) {
 // b$ ------------------------------------------------------ */
 
 /*DOC_EXTRACT
-### 仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算 `PoissonRHS`
+### `PoissonRHS` と　仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
 
 後に，次時刻の流れ場が非圧縮性を満たすようにポアソン方程式を立てて圧力$p$を計算する．
 ポアソン方程式に，ここで計算する仮流速の発散$\nabla\cdot{\bf u}^\ast$を代入する．
@@ -471,6 +471,7 @@ $$
 \end{align*}
 $$
 
+ここの $b$を`PoissonRHS`とする．
 */
 
 void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets, const double dt) {
@@ -507,9 +508,9 @@ void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unord
 #if defined(Morikawa2019)
                func(B, B->tmp_X /*B->X*/);
 #elif defined(Nomeritae2016)
-            func(B, B->tmp_X);
+               func(B, B->tmp_X);
 #elif defined(Barcarolo2013)
-            func(B, B->tmp_X);
+               func(B, B->tmp_X);
 #endif
 
 #ifdef USE_SPP_Fluid
@@ -575,7 +576,8 @@ CHECKED: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
-                     const double dt) {
+                     const double dt,
+                     const bool isWall = false) {
 #pragma omp parallel
    for (const auto &A : points)
 #pragma omp single nowait
@@ -584,20 +586,23 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       // Tddd Xij;
       A->p_SPH_ = 0;
       double b;
-      //% ------------------------------------------ */
-      const double alpha = 0.1 * dt;
-#if defined(new_method)
-      A->value = b = A->PoissonRHS;
-#elif defined(Morikawa2019)
-      A->value = b = _WATER_DENSITY_ / dt * A->div_tmpU * (1 - alpha) + (_WATER_DENSITY_ - A->rho_) / (dt * dt) * alpha;
-#elif defined(Nomeritae2016)
-      A->value = b = A->rho_ / dt * A->div_tmpU;
-#elif defined(Barcarolo2013)
-      A->value = b = _WATER_DENSITY_ / dt * A->div_tmpU * (1 - alpha) + (_WATER_DENSITY_ - A->rho_) / (dt * dt) * alpha;
-#endif
-      //% ------------------------------------------ */
+      //       //% ------------------------------------------ */
+      //       const double alpha = 0.1 * dt;
+      // #if defined(new_method)
+      //       A->value = b = A->PoissonRHS;
+      // #elif defined(Morikawa2019)
+      //       A->value = b = _WATER_DENSITY_ / dt * A->div_tmpU * (1 - alpha) + (_WATER_DENSITY_ - A->rho_) / (dt * dt) * alpha;
+      // #elif defined(Nomeritae2016)
+      //       A->value = b = A->rho_ / dt * A->div_tmpU;
+      // #elif defined(Barcarolo2013)
+      //       A->value = b = _WATER_DENSITY_ / dt * A->div_tmpU * (1 - alpha) + (_WATER_DENSITY_ - A->rho_) / (dt * dt) * alpha;
+      // #endif
+      //       //% ------------------------------------------ */
+      const auto A_VALUE = (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_);
       auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
 #if defined(Morikawa2019)
+         const auto B_VALUE = (B->rho / dt * B->U_SPH) + (B->mu_SPH * B->lap_U) + (B->rho * _GRAVITY3_);
+         A->PoissonRHS += B->volume * Dot(B_VALUE - A_VALUE, grad_w_Bspline(A->X /*CENTER*/, qX, A->radius_SPH));
          Aij = 2. * B->mass / _WATER_DENSITY_ * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
          Aij = 2. * B->mass / std::pow((B->rho_ + A->rho_) / 2., 2.) * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * A->rho_;
@@ -623,6 +628,59 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          net->BucketPoints.apply(A->X, A->radius_SPH, FUNC);
 
       A->p_SPH_ = (b + sum_Aij_Pj) / sum_Aij;
+
+      /* -------------------------------- for ISPH -------------------------------- */
+      if (isWall) {
+         // 初期化
+         A->column_value.clear();
+         A->value3d.fill(0.);
+         const auto markerX = A->X + 1.00001 * A->normal_SPH;
+         /* ---------------------------------------------------------- */
+         auto func0 = [&](const auto &B, const auto &qX, const double coef = 1.) {
+#if defined(Morikawa2019) || defined(Nomeritae2016) || defined(Barcarolo2013)
+            double Lap_P = 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+#else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not defined");
+#endif
+            A->increment(B, -Lap_P);
+            A->increment(A, Lap_P);
+         };
+         /* ---------------------------------------------------------- */
+         for (const auto &net : target_nets)
+            net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
+               if (B->isCaptured) {
+                  func0(B, B->X);
+#ifdef USE_SPP_Fluid
+                  if (B->isSurface && canSetSPP(target_nets, B))
+                     func0(B, SPP_X(B), SPP_p_coef);
+#endif
+               }
+            });
+      } else {
+         A->column_value.clear();
+         double Lap_P;
+         auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
+#if defined(Morikawa2019) || defined(Nomeritae2016) || defined(Barcarolo2013)
+            Lap_P = 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH);
+#else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not defined");
+#endif
+            A->increment(B, -Lap_P);
+            A->increment(A, Lap_P);
+         };
+
+         for (const auto &net : target_nets)
+            net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+               if (B->isCaptured) {
+                  func(B, B->X);
+#ifdef USE_SPP_Fluid
+                  if (B->isSurface && canSetSPP(target_nets, B))
+                     func(B, SPP_X(B), SPP_p_coef);
+#endif
+               }
+            });
+      }
+      /* -------------------------------------------------------------------------- */
    };
 };
 
@@ -685,7 +743,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 // b$                    ∇²Pを計算                           */
 // b$ ------------------------------------------------------ */
 /*DOC_EXTRACT
-   - [x] $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
+CHECKED: $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
 */
 auto Lap_P_for_Wall(const auto &points, const std::unordered_set<Network *> &target_nets, const double dt) {
 #pragma omp parallel
@@ -695,12 +753,11 @@ auto Lap_P_for_Wall(const auto &points, const std::unordered_set<Network *> &tar
       // 初期化
       A->column_value.clear();
       A->value3d.fill(0.);
-      const auto markerX = A->X + 1.1 * A->normal_SPH;
+      const auto markerX = A->X + 1.00001 * A->normal_SPH;
       /* ---------------------------------------------------------- */
       auto func0 = [&](const auto &B, const auto &qX, const double coef = 1.) {
-         double Lap_P;
 #if defined(Morikawa2019) || defined(Nomeritae2016) || defined(Barcarolo2013)
-         Lap_P = 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+         double Lap_P = 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not defined");
 #endif

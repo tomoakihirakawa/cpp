@@ -311,7 +311,7 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.8) {
                      q->isFluid = true;
                   }
                }
@@ -380,7 +380,7 @@ void developByEISPH(Network *net,
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
          PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt);
-         PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt);
+         PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt, true);
          setPressure(net->getPoints());
          setPressure(wall_as_fluid);
 
@@ -410,19 +410,19 @@ void developByEISPH(Network *net,
             }
 
             DebugPrint("Lap_P");
-            Lap_P(net->getPoints(), Append(net_RigidBody, net), dt);
-            Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
+            // Lap_P(net->getPoints(), Append(net_RigidBody, net), dt);
+            // Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
 
             for (const auto &p : net->getPoints())
                if (p->isSurface) {
                   p->column_value.clear();
                   p->increment(p, 1.);
-                  p->value = 0.;
+                  A->PoissonRHS = 0.;
                   p->p_SPH = 0.;
                }
 
             for (const auto &p : points) {
-               b[p->getIndexCSR()] = p->value;
+               b[p->getIndexCSR()] = A->PoissonRHS;
                x0[p->getIndexCSR()] = p->p_SPH;
             }
 
