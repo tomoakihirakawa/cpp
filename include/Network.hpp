@@ -529,7 +529,7 @@ class networkPoint : public CoordinateBounds, public CSR {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U, lap_U_, lap_tmpU, lap_tmpU_;
+   Tddd lap_U, lap_U_;
    // void setLapU(const V_d &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setLapU(const Tddd &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setDensityVolume(const double &den, const double &v) {

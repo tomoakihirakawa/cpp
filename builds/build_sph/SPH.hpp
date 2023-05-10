@@ -10,7 +10,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-#define USE_SPP_Fluid
+// #define USE_SPP_Fluid
 #if defined(USE_SPP_Fluid)
    #define SPP_U_coef 1.
    #define SPP_p_coef -1.
@@ -283,6 +283,7 @@ void developByEISPH(Network *net,
          p->p_SPH_SPP = 0;
          p->DUDt_SPH = p->lap_U = {0, 0, 0};
          p->isCaptured = true;
+         p->tmp_X = p->X;
       }
       /* ---------------------------- 流れの計算に関与する壁粒子を保存 ---------------------------- */
       wall_as_fluid.clear();
@@ -297,6 +298,7 @@ void developByEISPH(Network *net,
             p->isSurface = false;
             p->p_SPH = 0;
             p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
+            p->tmp_X = p->X;
          }
       DebugPrint("関連する壁粒子をマーク", Green);
       double C = 1.2;
@@ -309,7 +311,7 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.8) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5) {
                      q->isFluid = true;
                   }
                }
@@ -353,42 +355,35 @@ void developByEISPH(Network *net,
             p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
          dt = (*net->getPoints().begin())->RK_X.getdt();
          std::cout << "dt = " << dt << std::endl;
-         mapValueOnWall(net, wall_p, RigidBodyObject);
+         for (const auto &p : wall_p) {
+            p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+            p->tmp_U_SPH.fill(0.);
+            p->U_SPH.fill(0.);
+            p->DUDt_SPH_.fill(0.);
+            p->tmp_X = p->X;
+         }
 
          //@ ∇.∇UとU*を計算
+         DebugPrint("∇.∇UとU*を計算");
          Lap_U(net->getPoints(), Append(net_RigidBody, net));
          setLap_U(net->getPoints(), dt);
-         Lap_U(wall_as_fluid, Append(net_RigidBody, net));
-         setLap_U(wall_as_fluid, dt);
-
-         mapValueOnWall(net, wall_p, RigidBodyObject);
-
-         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粘性項の∇.∇Uを計算し，次にU*を計算");
-
-         //% ---------------------------  仮の位置に移動して仮密度の更新 ------------------------*/
-         for (const auto &p : net->getPoints()) p->setX(p->tmp_X);
 
          //@ 発散の計算
          div_tmpU(net->getPoints(), Append(net_RigidBody, net));
-         div_tmpU(wall_as_fluid, Append(net_RigidBody, net));
+         div_tmpU(wall_p, Append(net_RigidBody, net));
 
-         for (const auto &p : net->getPoints())
-            p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_tmpU) * dt;
-         // for (const auto &p : wall_as_fluid)
-         //    p->rho_ = p->rho + (p->DrhoDt_SPH = -p->rho * p->div_tmpU) * dt;
+         mapValueOnWall(net, wall_p, RigidBodyObject);
 
-         //@ --------------------------------  元の位置に移動 --------------------------------*/
-         for (const auto &p : net->getPoints()) p->setX(p->pre_X);
+         setTmpDensity(net->getPoints(), dt);
+         setTmpDensity(wall_as_fluid, dt);
 
          //@ 圧力 p^n+1の計算
-         mapValueOnWall(net, wall_p, RigidBodyObject);
-         DebugPrint("仮位置における圧力Pの計算", Magenta);
-
-         calculateTemporalPressure(net->getPoints(), Append(net_RigidBody, net), dt);
-         // calculateTemporalPressure(wall_as_fluid, Append(net_RigidBody, net), dt);
+         DebugPrint("圧力 p^n+1の計算", Magenta);
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt);
+         PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
-         // setPressure(wall_as_fluid);
-         mapValueOnWall(net, wall_p, RigidBodyObject);
+         setPressure(wall_as_fluid);
+
 // #define ISPH
 #ifdef ISPH
          /*DOC_EXTRACT
@@ -401,30 +396,21 @@ void developByEISPH(Network *net,
             size_t i = 0;
             std::unordered_set<networkPoint *> points;
             points.reserve(net->getPoints().size() + wall_as_fluid.size());
-            b.reserve(net->getPoints().size() + wall_as_fluid.size());
-            x0.reserve(net->getPoints().size() + wall_as_fluid.size());
-            const double alpha = 0.01;
+            b.resize(net->getPoints().size() + wall_as_fluid.size());
+            x0.resize(net->getPoints().size() + wall_as_fluid.size());
             for (const auto &p : net->getPoints()) {
-               if (p->isCaptured) {
-                  points.emplace(p);
-                  p->setIndexCSR(i++);
-                  p->exclude(true);
-                  b.emplace_back(p->value = (1 - alpha) * p->rho * p->div_tmpU / dt + alpha * (p->rho - p->rho_) / dt / dt);
-                  x0.emplace_back(p->p_SPH);
-               }
+               points.emplace(p);
+               p->setIndexCSR(i++);
+               p->exclude(true);
             }
             for (const auto &p : wall_as_fluid) {
-               if (p->isCaptured && p->isFluid) {
-                  points.emplace(p);
-                  p->setIndexCSR(i++);
-                  p->exclude(true);
-                  b.emplace_back(p->value = (1 - alpha) * p->rho * p->div_tmpU / dt + alpha * (p->rho - p->rho_) / dt / dt);
-                  x0.emplace_back(p->p_SPH);
-               }
+               points.emplace(p);
+               p->setIndexCSR(i++);
+               p->exclude(true);
             }
 
             DebugPrint("Lap_P");
-            Lap_P(net->getPoints(), Append(net_RigidBody, net));
+            Lap_P(net->getPoints(), Append(net_RigidBody, net), dt);
             Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
 
             for (const auto &p : net->getPoints())
@@ -432,14 +418,12 @@ void developByEISPH(Network *net,
                   p->column_value.clear();
                   p->increment(p, 1.);
                   p->value = 0.;
-                  b[p->getIndexCSR()] = 0.;
+                  p->p_SPH = 0.;
                }
 
-            for (const auto &p : wall_as_fluid) {
-               if (p->isCaptured && p->isFluid)
-                  b[p->getIndexCSR()] = p->value;
-               else
-                  p->p_SPH = 0;
+            for (const auto &p : points) {
+               b[p->getIndexCSR()] = p->value;
+               x0[p->getIndexCSR()] = p->p_SPH;
             }
 
             std::cout << "gmres" << std::endl;
@@ -452,14 +436,10 @@ void developByEISPH(Network *net,
          }
 #endif
 
-         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "仮位置における圧力Pの計算");
-
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
-
          gradP(net->getPoints(), Append(net_RigidBody, net));
-         gradP(wall_as_fluid, Append(net_RigidBody, net));
-
+         //
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
 
          //@ -------------------------------------------------------- */
