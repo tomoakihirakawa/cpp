@@ -387,6 +387,7 @@ void mapValueOnWall(auto &net,
 /* -------------------------------------------------------------------------- */
 
 #define Morikawa2019
+#define new_method
 
 // b$ ------------------------------------------------------ */
 // b$                    ∇.∇UとU*を計算                       */
@@ -464,22 +465,24 @@ auto setLap_U(const auto &points, const double dt) {
 
 $$
 \begin{align*}
-\frac{D {\bf u}}{D t}=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
-\rightarrow \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+\rightarrow \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
 */
 
-void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets) {
+void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets, const double dt) {
 #pragma omp parallel
    for (const auto &A : points)
 #pragma omp single nowait
    {
       A->div_tmpU = A->rho_ = 0;  // this is div(U^*) not div(U^n)
       A->grad_div_U = {0., 0., 0.};
+      A->PoissonRHS = 0.;
       const auto CENTER = A->X;
+      const auto A_VALUE = (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_);
       //@ ------------------------------------------ */
       auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
          {
@@ -488,6 +491,8 @@ void div_tmpU(const std::unordered_set<networkPoint *> &points, const std::unord
 #if defined(Morikawa2019)
             A->div_tmpU += B->volume * Dot(coef * B->tmp_U_SPH - A->tmp_U_SPH, grad_w_Bspline(A->tmp_X /*CENTER*/, qX, A->radius_SPH));
             A->rho_ += B->volume * B->volume * w_Bspline(Norm(A->tmp_X - qX), A->radius_SPH);
+            const auto B_VALUE = (B->rho / dt * B->U_SPH) + (B->mu_SPH * B->lap_U) + (B->rho * _GRAVITY3_);
+            A->PoissonRHS += B->volume * Dot(B_VALUE - A_VALUE, grad_w_Bspline(A->X /*CENTER*/, qX, A->radius_SPH));
 #elif defined(Nomeritae2016)
             A->div_tmpU += B->volume * Dot(coef * B->tmp_U_SPH - A->tmp_U_SPH, grad_w_Bspline(A->tmp_X, qX, A->radius_SPH));
 #elif defined(Barcarolo2013)
@@ -581,7 +586,9 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       double b;
       //% ------------------------------------------ */
       const double alpha = 0.1 * dt;
-#if defined(Morikawa2019)
+#if defined(new_method)
+      A->value = b = A->PoissonRHS;
+#elif defined(Morikawa2019)
       A->value = b = _WATER_DENSITY_ / dt * A->div_tmpU * (1 - alpha) + (_WATER_DENSITY_ - A->rho_) / (dt * dt) * alpha;
 #elif defined(Nomeritae2016)
       A->value = b = A->rho_ / dt * A->div_tmpU;
