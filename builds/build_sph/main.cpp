@@ -1,4 +1,4 @@
-// #define _debugging_
+#define _debugging_
 #include <filesystem>
 #include <utility>
 #define DEM
