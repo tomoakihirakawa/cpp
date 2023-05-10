@@ -458,7 +458,7 @@ auto setLap_U(const auto &points, const double dt) {
 // b$ ------------------------------------------------------ */
 
 /*DOC_EXTRACT
-### 仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
+### 仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算 `PoissonRHS`
 
 後に，次時刻の流れ場が非圧縮性を満たすようにポアソン方程式を立てて圧力$p$を計算する．
 ポアソン方程式に，ここで計算する仮流速の発散$\nabla\cdot{\bf u}^\ast$を代入する．
