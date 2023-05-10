@@ -478,7 +478,7 @@ CHECKED: $\nabla^2 p^{n+1} = \sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1})$
 
 $A_{ij}=\frac{2}{{\rho}_i}m_j$
 
-$\frac{{\textbf x} _{ij} \cdot \nabla W_{ij}}{{\textbf x}_{ij}^2}$
+$\frac{{x}_{ij} \cdot \nabla W_{ij}}{{\textbf x}_{ij}^2}$
 
 */
 
