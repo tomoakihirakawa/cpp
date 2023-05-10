@@ -474,12 +474,7 @@ CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\r
 
 CHECKED: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-CHECKED: $\nabla^2 p^{n+1} = \sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1})$
-
-$A_{ij}=\frac{2}{{\rho}_i}m_j$
-
-
-$\frac{{\textbf x}_{ij}}{{\textbf x}_{ij}^{2}}$
+CHECKED: $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 */
 
