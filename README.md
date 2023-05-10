@@ -126,19 +126,20 @@ ISPH
 EISPH
 壁粒子の ${p}^n$がわかっておく必要がある．→　壁に鏡写しすることで，壁粒子の ${p}^n$を計算する．
 
- - [x] $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
- - [x] $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+
+**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
 [./builds/build_sph/SPH_Functions.hpp#L545](./builds/build_sph/SPH_Functions.hpp#L545)
 
 - [x] $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
  - [x] $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L621](./builds/build_sph/SPH_Functions.hpp#L621)
+[./builds/build_sph/SPH_Functions.hpp#L622](./builds/build_sph/SPH_Functions.hpp#L622)
 
 - [x] $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
 
-[./builds/build_sph/SPH_Functions.hpp#L668](./builds/build_sph/SPH_Functions.hpp#L668)
+[./builds/build_sph/SPH_Functions.hpp#L669](./builds/build_sph/SPH_Functions.hpp#L669)
 
 
  --- 
