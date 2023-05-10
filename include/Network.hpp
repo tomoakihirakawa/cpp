@@ -557,7 +557,7 @@ class networkPoint : public CoordinateBounds, public CSR {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
    };
-   double div_U, div_U_, div_tmpU, div_tmpU_;
+   double div_U, div_U_, div_tmpU, div_tmpU_, PoissonRHS;
    Tddd grad_div_U, grad_div_U_;
    Tddd gradP_SPH, gradP_SPH_;
    //////////////////////////

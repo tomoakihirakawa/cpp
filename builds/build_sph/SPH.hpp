@@ -369,8 +369,8 @@ void developByEISPH(Network *net,
          setLap_U(net->getPoints(), dt);
 
          //@ 発散の計算
-         div_tmpU(net->getPoints(), Append(net_RigidBody, net));
-         div_tmpU(wall_p, Append(net_RigidBody, net));
+         div_tmpU(net->getPoints(), Append(net_RigidBody, net), dt);
+         div_tmpU(wall_p, Append(net_RigidBody, net), dt);
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -384,7 +384,7 @@ void developByEISPH(Network *net,
          setPressure(net->getPoints());
          setPressure(wall_as_fluid);
 
-// #define ISPH
+#define ISPH
 #ifdef ISPH
          /*DOC_EXTRACT
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
