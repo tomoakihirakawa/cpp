@@ -12,7 +12,7 @@
 
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [`PoissonRHS`と $`\nabla^2 p^{n+1}`$における $`p^{n+1}`$の係数の計算](#`PoissonRHS`と-$`\nabla^2-p^{n+1}`$における-$`p^{n+1}`$の係数の計算)
+    - [`PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
 
 - [ヘッセ行列を利用したニュートン法](#ヘッセ行列を利用したニュートン法)
 
@@ -108,7 +108,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### `PoissonRHS`と $`\nabla^2 p^{n+1}`$における $`p^{n+1}`$の係数の計算
+### `PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 $$
 \begin{align*}
 \frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
@@ -117,7 +117,7 @@ $$
 \end{align*}
 $$
 
-ここの $`b`$を`PoissonRHS`とする．
+ここの$`b`$を`PoissonRHS`とする．
 
 **✅ CHECKED:** $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 

@@ -458,7 +458,7 @@ void setTmpDensity(const std::unordered_set<networkPoint *> &points,
 // b% -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT
-### `PoissonRHS`と $\nabla^2 p^{n+1}$における $p^{n+1}$の係数の計算
+### `PoissonRHS`と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
 
 $$
 \begin{align*}
@@ -468,7 +468,7 @@ $$
 \end{align*}
 $$
 
-ここの $b$を`PoissonRHS`とする．
+ここの$b$を`PoissonRHS`とする．
 
 CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
