@@ -117,7 +117,8 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 $$
 \begin{align*}
 \frac{D {\bf u}}{D t}=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+\rightarrow \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
@@ -137,17 +138,17 @@ EISPH
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L552](./builds/build_sph/SPH_Functions.hpp#L552)
+[./builds/build_sph/SPH_Functions.hpp#L553](./builds/build_sph/SPH_Functions.hpp#L553)
 
 **✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L629](./builds/build_sph/SPH_Functions.hpp#L629)
+[./builds/build_sph/SPH_Functions.hpp#L630](./builds/build_sph/SPH_Functions.hpp#L630)
 
 - [x] $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
 
-[./builds/build_sph/SPH_Functions.hpp#L679](./builds/build_sph/SPH_Functions.hpp#L679)
+[./builds/build_sph/SPH_Functions.hpp#L680](./builds/build_sph/SPH_Functions.hpp#L680)
 
 
  --- 
