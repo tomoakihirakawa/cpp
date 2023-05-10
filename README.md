@@ -12,9 +12,7 @@
 
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [`PoissonRHS` と　仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算](#`PoissonRHS`-と　仮流速の発散-$\nabla\cdot{\bf-u}^\ast$の計算)
-
-    - [ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する](#ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する)
+    - [`PoissonRHS`と $\nabla^2 p^{n+1}$における $p^{n+1}$の係数の計算](#`PoissonRHS`と-$\nabla^2-p^{n+1}$における-$p^{n+1}$の係数の計算)
 
 - [ヘッセ行列を利用したニュートン法](#ヘッセ行列を利用したニュートン法)
 
@@ -81,7 +79,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
 
-[./builds/build_sph/SPH.hpp#L389](./builds/build_sph/SPH.hpp#L389)
+[./builds/build_sph/SPH.hpp#L385](./builds/build_sph/SPH.hpp#L385)
 
 
  --- 
@@ -110,10 +108,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### `PoissonRHS` と　仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
-後に，次時刻の流れ場が非圧縮性を満たすようにポアソン方程式を立てて圧力$p$を計算する．
-ポアソン方程式に，ここで計算する仮流速の発散$\nabla\cdot{\bf u}^\ast$を代入する．
-
+### `PoissonRHS`と $\nabla^2 p^{n+1}$における $p^{n+1}$の係数の計算
 $$
 \begin{align*}
 \frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
@@ -124,33 +119,19 @@ $$
 
 ここの $b$を`PoissonRHS`とする．
 
+**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+
+**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+
+**✅ CHECKED:** $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+
 [./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
 
-### ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する
-**💡 NOTE:**
-ISPHかEISPHに関わらず，圧力をポアソン方程式から計算する場合は，圧力の $\nabla\cdot{\bf u}^\ast$を利用する．
-
-ISPH
-壁粒子の ${p}^n$はわかっておく必要はない．
-
-EISPH
-壁粒子の ${p}^n$がわかっておく必要がある．→　壁に鏡写しすることで，壁粒子の ${p}^n$を計算する．
-
 **✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L559](./builds/build_sph/SPH_Functions.hpp#L559)
-
-**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
-
-**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
-
-[./builds/build_sph/SPH_Functions.hpp#L692](./builds/build_sph/SPH_Functions.hpp#L692)
-
-**✅ CHECKED:** $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
-
-[./builds/build_sph/SPH_Functions.hpp#L742](./builds/build_sph/SPH_Functions.hpp#L742)
+[./builds/build_sph/SPH_Functions.hpp#L540](./builds/build_sph/SPH_Functions.hpp#L540)
 
 
  --- 

@@ -341,7 +341,7 @@ void developByEISPH(Network *net,
          p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
       }
       // b# ======================================================= */
-      // b#                  ルンゲクッタを使った時間積分                */
+      // b#                  ルンゲクッタを使った時間積分                 */
       // b# ======================================================= */
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       do {
@@ -361,16 +361,12 @@ void developByEISPH(Network *net,
             p->U_SPH.fill(0.);
             p->DUDt_SPH_.fill(0.);
             p->tmp_X = p->X;
+            p->lap_U.fill(0.);
          }
 
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
-         Lap_U(net->getPoints(), Append(net_RigidBody, net));
-         setLap_U(net->getPoints(), dt);
-
-         //@ 発散の計算
-         div_tmpU(net->getPoints(), Append(net_RigidBody, net), dt);
-         div_tmpU(wall_p, Append(net_RigidBody, net), dt);
+         Lap_U(net->getPoints(), Append(net_RigidBody, net), dt);
 
          mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -384,7 +380,7 @@ void developByEISPH(Network *net,
          setPressure(net->getPoints());
          setPressure(wall_as_fluid);
 
-#define ISPH
+// #define ISPH
 #ifdef ISPH
          /*DOC_EXTRACT
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
@@ -409,20 +405,16 @@ void developByEISPH(Network *net,
                p->exclude(true);
             }
 
-            DebugPrint("Lap_P");
-            // Lap_P(net->getPoints(), Append(net_RigidBody, net), dt);
-            // Lap_P_for_Wall(wall_as_fluid, Append(net_RigidBody, net), dt);
-
             for (const auto &p : net->getPoints())
                if (p->isSurface) {
                   p->column_value.clear();
                   p->increment(p, 1.);
-                  A->PoissonRHS = 0.;
+                  p->PoissonRHS = 0.;
                   p->p_SPH = 0.;
                }
 
             for (const auto &p : points) {
-               b[p->getIndexCSR()] = A->PoissonRHS;
+               b[p->getIndexCSR()] = p->PoissonRHS;
                x0[p->getIndexCSR()] = p->p_SPH;
             }
 
