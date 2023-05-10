@@ -127,7 +127,8 @@ $$
 
 $A_{ij}=\frac{2}{{\rho}_i}m_j$
 
-$\frac{{{\textbf x}_{ij}}}{{\textbf x}_{ij}^2}$
+
+$\frac{{\textbf x}_{ij}}{{\textbf x}_{ij}^{2}}$
 
 [./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
 
@@ -135,7 +136,7 @@ $\frac{{{\textbf x}_{ij}}}{{\textbf x}_{ij}^2}$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L556](./builds/build_sph/SPH_Functions.hpp#L556)
+[./builds/build_sph/SPH_Functions.hpp#L557](./builds/build_sph/SPH_Functions.hpp#L557)
 
 
  --- 
