@@ -109,12 +109,14 @@ def highlight_keywords(text):
         'TODO': (r'(?i)(TODO:?)', '📝'),
         'IMPORTANT': (r'(?i)(IMPORTANT:?)', '❗'),
         'TIP': (r'(?i)(TIP:?)', '🌟'),
+        'CHECKED': (r'(?i)(CHECKED:?)', '✅'),
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
         text = re.sub(pattern, f'**{emoji} {keyword}:**', text)
 
     return text
+
 
 def insert_space(match):
     return ' ' + match.group(0) if match.group(1) != '\n' else match.group(0)
