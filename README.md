@@ -12,7 +12,7 @@
 
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算](#仮流速の発散-$\nabla\cdot{\bf-u}^\ast$の計算)
+    - [`PoissonRHS` と　仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算](#`PoissonRHS`-と　仮流速の発散-$\nabla\cdot{\bf-u}^\ast$の計算)
 
     - [ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する](#ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する)
 
@@ -110,7 +110,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### 仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
+### `PoissonRHS` と　仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
 後に，次時刻の流れ場が非圧縮性を満たすようにポアソン方程式を立てて圧力$p$を計算する．
 ポアソン方程式に，ここで計算する仮流速の発散$\nabla\cdot{\bf u}^\ast$を代入する．
 
@@ -122,7 +122,9 @@ $$
 \end{align*}
 $$
 
-[./builds/build_sph/SPH_Functions.hpp#L459](./builds/build_sph/SPH_Functions.hpp#L459)
+ここの $b$を`PoissonRHS`とする．
+
+[./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
 
 ### ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する
 **💡 NOTE:**
@@ -138,17 +140,17 @@ EISPH
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L553](./builds/build_sph/SPH_Functions.hpp#L553)
+[./builds/build_sph/SPH_Functions.hpp#L559](./builds/build_sph/SPH_Functions.hpp#L559)
 
 **✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L630](./builds/build_sph/SPH_Functions.hpp#L630)
+[./builds/build_sph/SPH_Functions.hpp#L692](./builds/build_sph/SPH_Functions.hpp#L692)
 
-- [x] $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
+**✅ CHECKED:** $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
 
-[./builds/build_sph/SPH_Functions.hpp#L680](./builds/build_sph/SPH_Functions.hpp#L680)
+[./builds/build_sph/SPH_Functions.hpp#L742](./builds/build_sph/SPH_Functions.hpp#L742)
 
 
  --- 
