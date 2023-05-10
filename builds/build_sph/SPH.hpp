@@ -368,17 +368,19 @@ void developByEISPH(Network *net,
          DebugPrint("∇.∇UとU*を計算");
          Lap_U(net->getPoints(), Append(net_RigidBody, net), dt);
 
-         mapValueOnWall(net, wall_p, RigidBodyObject);
+         // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          setTmpDensity(net->getPoints(), dt);
          setTmpDensity(wall_as_fluid, dt);
 
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
+
+         PoissonEquation(wall_p, {net}, dt, true);
+         setPressure(wall_p);
+
          PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt);
-         PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt, true);
          setPressure(net->getPoints());
-         setPressure(wall_as_fluid);
 
 // #define ISPH
 #ifdef ISPH

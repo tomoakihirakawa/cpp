@@ -474,7 +474,7 @@ CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\r
 
 CHECKED: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-CHECKED: $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+CHECKED:  $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 */
 
@@ -493,6 +493,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       //
       A->column_value.clear();
       auto markerX = A->X;
+      double total_weight = 0, P = 0;
       if (isWall)
          markerX += (1. - 1E-12) * A->normal_SPH;
       //
@@ -500,7 +501,6 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
          B_VALUE = (B->rho / dt * B->U_SPH) + (B->mu_SPH * B->lap_U) + (B->rho * _GRAVITY3_);
          A->PoissonRHS += B->volume * Dot(B_VALUE - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
-
 #if defined(Morikawa2019)
          Aij = 2. * B->mass / _WATER_DENSITY_ * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
@@ -513,8 +513,14 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          A->increment(B, -Aij);
          A->increment(A, Aij);
+
+         // for mapping to wall
+         total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
+         P += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
       };
+
       //% ------------------------------------------------------- */
+
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured) {
@@ -526,6 +532,12 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          });
 
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+      if (isWall) {
+         if (total_weight > 1E-10)
+            A->p_SPH_ = P / total_weight;
+         else
+            A->p_SPH_ = 0;
+      }
    };
 };
 
