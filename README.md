@@ -79,7 +79,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
 
-[./builds/build_sph/SPH.hpp#L385](./builds/build_sph/SPH.hpp#L385)
+[./builds/build_sph/SPH.hpp#L387](./builds/build_sph/SPH.hpp#L387)
 
 
  --- 
@@ -123,7 +123,7 @@ $$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-**✅ CHECKED:** $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+**✅ CHECKED:** $\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}), A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 [./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
 
@@ -131,7 +131,7 @@ $$
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L540](./builds/build_sph/SPH_Functions.hpp#L540)
+[./builds/build_sph/SPH_Functions.hpp#L552](./builds/build_sph/SPH_Functions.hpp#L552)
 
 
  --- 
