@@ -12,7 +12,7 @@
 
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [`PoissonRHS`と $\nabla^2 p^{n+1}$における $p^{n+1}$の係数の計算](#`PoissonRHS`と-$\nabla^2-p^{n+1}$における-$p^{n+1}$の係数の計算)
+    - [`PoissonRHS`と $`\nabla^2 p^{n+1}`$における $`p^{n+1}`$の係数の計算](#`PoissonRHS`と-$`\nabla^2-p^{n+1}`$における-$`p^{n+1}`$の係数の計算)
 
 - [ヘッセ行列を利用したニュートン法](#ヘッセ行列を利用したニュートン法)
 
@@ -25,8 +25,8 @@
 
 
 ## ArnoldiProcess
-ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
-   GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．
+ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
+   GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．
    x0は初期値
 
    アーノルディ法は固有値問題の数値解法であり反復解法．
@@ -58,26 +58,26 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
-3. CFL条件を満たすようにタイムステップ間隔 $\Delta t$を設定
+3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
 ### フラクショナルステップを使って初期値問題を解く
-4. ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を計算
-5. 流速の発散 ${\nabla \cdot {\bf u}^\ast}$の計算
+4. $`{{\bf u}^\ast}`$と $`{{\bf x}^\ast}`$を計算
+5. 流速の発散 $`{\nabla \cdot {\bf u}^\ast}`$の計算
 
-   - Nomeritae et al. (2016)は， ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を使っている
-   - Morikawa, D. S., & Asai, M. (2021)， ${{\bf u}^\ast}$は使い， ${{\bf x}^\ast}$は使っていない
+   - Nomeritae et al. (2016)は， $`{{\bf u}^\ast}`$と $`{{\bf x}^\ast}`$を使っている
+   - Morikawa, D. S., & Asai, M. (2021)， $`{{\bf u}^\ast}`$は使い， $`{{\bf x}^\ast}`$は使っていない
 
-6. 流速の発散から密度 ${\rho}^\ast$を計算
-7. 次の時刻の圧力 $p^{n+1}$を計算
-   - ISPHは， $\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^\ast}+\alpha \frac{\rho_0-\rho^\ast}{{\Delta t}^2}$を解く
-   - EISPHは，陽的に $p^{n+1}$を計算する
-8. $\nabla {p^{n+1}}$が計算でき， $\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
-9. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
+6. 流速の発散から密度 $`{\rho}^\ast`$を計算
+7. 次の時刻の圧力 $`p^{n+1}`$を計算
+   - ISPHは， $`\nabla^2 {p^{n+1}}=(1-\alpha )\frac{\rho_0}{\Delta t}{\nabla \cdot {\bf u}^\ast}+\alpha \frac{\rho_0-\rho^\ast}{{\Delta t}^2}`$を解く
+   - EISPHは，陽的に $`p^{n+1}`$を計算する
+8. $`\nabla {p^{n+1}}`$が計算でき， $`\frac{D{\bf u}}{D t}=-\frac{1}{\rho_0}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}`$（粘性率が一定の非圧縮性流れの加速度）を得る．
+9. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 [./builds/build_sph/SPH.hpp#L214](./builds/build_sph/SPH.hpp#L214)
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-         $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
+         $`\nabla \cdot {\bf u}^*`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^*`$となるように決める必要はない．
 
 [./builds/build_sph/SPH.hpp#L387](./builds/build_sph/SPH.hpp#L387)
 
@@ -108,7 +108,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### `PoissonRHS`と $\nabla^2 p^{n+1}$における $p^{n+1}$の係数の計算
+### `PoissonRHS`と $`\nabla^2 p^{n+1}`$における $`p^{n+1}`$の係数の計算
 $$
 \begin{align*}
 \frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
@@ -117,19 +117,19 @@ $$
 \end{align*}
 $$
 
-ここの $b$を`PoissonRHS`とする．
+ここの $`b`$を`PoissonRHS`とする．
 
-**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+**✅ CHECKED:** $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 
-**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+**✅ CHECKED:** $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 **✅ CHECKED:** $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 [./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
 
-**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+**✅ CHECKED:** $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 
-**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+**✅ CHECKED:** $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 [./builds/build_sph/SPH_Functions.hpp#L552](./builds/build_sph/SPH_Functions.hpp#L552)
 
@@ -162,12 +162,12 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 
  --- 
 ## 一般化最小残差法(GMRES)
-- ヘッセンベルグ行列$H$
-- クリロフ部分空間の直交基底$V$
-- $H$をQR分解した行列$Q$と$R$
-- $g$は行列$Q$の最初の列
+- ヘッセンベルグ行列$`H`$
+- クリロフ部分空間の直交基底$`V`$
+- $`H`$をQR分解した行列$`Q`$と$`R`$
+- $`g`$は行列$`Q`$の最初の列
 
-ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
+ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
 
 [./builds/build_system_of_linear_eqs/GMRES.cpp#L1](./builds/build_system_of_linear_eqs/GMRES.cpp#L1)
 

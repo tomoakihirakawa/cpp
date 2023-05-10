@@ -102,7 +102,15 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+def convert_inline_math(text):
+    # This pattern will find all instances of $math expression$ but not $`math expression`$, $$math equation$$, and \$somthing\$
+    pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
+    # Replace matched patterns with new format
+    text = re.sub(pattern, r"$`\1`$", text)
+    return text
+
 def highlight_keywords(text):
+    text = convert_inline_math(text)  # Add this line to call the function before other replacements
     keyword_patterns = {
         'NOTE': (r'(?i)(NOTE:?)', '💡'),
         'WARNING': (r'(?i)(WARNING:?)', '⚠️'),
@@ -116,7 +124,6 @@ def highlight_keywords(text):
         text = re.sub(pattern, f'**{emoji} {keyword}:**', text)
 
     return text
-
 
 def insert_space(match):
     return ' ' + match.group(0) if match.group(1) != '\n' else match.group(0)
