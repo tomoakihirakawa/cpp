@@ -12,7 +12,7 @@
 
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [仮流速の発散$\nabla\cdot{\bf u}^\ast$の計算](#仮流速の発散$\nabla\cdot{\bf-u}^\ast$の計算)
+    - [仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算](#仮流速の発散-$\nabla\cdot{\bf-u}^\ast$の計算)
 
     - [ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する](#ポアソン方程式を解いて，非圧縮性を満たす圧力を計算する)
 
@@ -110,9 +110,16 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### 仮流速の発散$\nabla\cdot{\bf u}^\ast$の計算
+### 仮流速の発散 $\nabla\cdot{\bf u}^\ast$の計算
 後に，次時刻の流れ場が非圧縮性を満たすようにポアソン方程式を立てて圧力$p$を計算する．
 ポアソン方程式に，ここで計算する仮流速の発散$\nabla\cdot{\bf u}^\ast$を代入する．
+
+$$
+\begin{align*}
+\frac{D {\bf u}}{D t}=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+\end{align*}
+$$
 
 [./builds/build_sph/SPH_Functions.hpp#L459](./builds/build_sph/SPH_Functions.hpp#L459)
 
@@ -130,16 +137,17 @@ EISPH
 
 **✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L545](./builds/build_sph/SPH_Functions.hpp#L545)
+[./builds/build_sph/SPH_Functions.hpp#L552](./builds/build_sph/SPH_Functions.hpp#L552)
 
-- [x] $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
- - [x] $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+**✅ CHECKED:** $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
-[./builds/build_sph/SPH_Functions.hpp#L622](./builds/build_sph/SPH_Functions.hpp#L622)
+**✅ CHECKED:** $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+
+[./builds/build_sph/SPH_Functions.hpp#L629](./builds/build_sph/SPH_Functions.hpp#L629)
 
 - [x] $\nabla^2 p^{n+1} = \frac{2}{\rho_i} \sum_{j} m_j (p_i^{n+1} - p_j^{n+1}) \frac{{{\bf x}_{ij}}\cdot \nabla W_{ij}}{{\bf x}_{ij}}$
 
-[./builds/build_sph/SPH_Functions.hpp#L669](./builds/build_sph/SPH_Functions.hpp#L669)
+[./builds/build_sph/SPH_Functions.hpp#L679](./builds/build_sph/SPH_Functions.hpp#L679)
 
 
  --- 
