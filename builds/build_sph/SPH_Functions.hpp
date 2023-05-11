@@ -390,7 +390,7 @@ void mapValueOnWall(auto &net,
 
 /*DOC_EXTRACT SPH
 
-## $\nabla^2 {\bf u}$の計算
+### $\nabla^2 {\bf u}$の計算
 
 ラプラシアンの計算方法：
 
@@ -593,7 +593,8 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
 /*DOC_EXTRACT SPH
-## 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
+
+### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
 
 勾配の計算方法：
 
