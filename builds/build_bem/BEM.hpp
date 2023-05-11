@@ -13,7 +13,7 @@
 <style>
    h1 {
    font-weight: 600;
-   background-image: linear-gradient(to left, rgba(255, 255, 255, 255), rgba(50, 50, 50, 50));
+   background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50));
    color: transparent;
    background-clip: text;
    -webkit-background-clip: text;
