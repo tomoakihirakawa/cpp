@@ -574,12 +574,10 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       }
    };
 };
-
 void setPressure(const std::unordered_set<networkPoint *> &points) {
    for (const auto &p : points)
       p->p_SPH = p->p_SPH_;
 }
-
 // b% ------------------------------------------------------ */
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
