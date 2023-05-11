@@ -10,7 +10,7 @@
 /*DOC_EXTRACT BEM
 [![Banner](banner.png)](banner.png)
 
-# BEM
+<h1 align="center">Boundary Element Method (BEM-MEL) </h1>
 
 
 これから
