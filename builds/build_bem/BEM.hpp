@@ -10,8 +10,19 @@
 /*DOC_EXTRACT BEM
 [![Banner](banner.png)](banner.png)
 
-<h1 align="center">Boundary Element Method (BEM-MEL) </h1>
+<style>
+   h1 {
+   font-weight: 600;
+   background-image: linear-gradient(to left, rgba(255, 255, 255, 255), rgba(50, 50, 50, 50));
+   color: transparent;
+   background-clip: text;
+   -webkit-background-clip: text;
+   }
+</style>
 
+<h1 align="center">
+Boundary Element Method (BEM-MEL)
+</h1>
 
 これから
 
