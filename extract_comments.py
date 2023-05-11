@@ -51,9 +51,21 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         comment = match.group(1)
         start_line = content[:match.start()].count('\n') + 1
 
-        # Extract the keyword at the top of the comment and remove it from the comment
-        keyword = comment.split()[0] if comment.split() else "DEFAULT"
-        comment = comment.replace(keyword, '', 1) if keyword != "DEFAULT" else comment
+        # Split comment into lines
+        comment_lines = comment.split('\n')
+
+        # Try to extract "DOC_EXTRACT" keyword from the first line
+        doc_extract_pattern = re.compile(r'^DOC_EXTRACT\s*(.*)')
+        doc_extract_match = doc_extract_pattern.match(comment_lines[0])
+        if doc_extract_match:
+            keyword = doc_extract_match.group(1).strip() or 'DEFAULT'
+            # Remove the first line from the comment
+            comment_lines = comment_lines[1:]
+        else:
+            keyword = comment_lines[0].split()[0] if comment_lines and comment_lines[0].split() else 'DEFAULT'
+        comment = '\n'.join(comment_lines)
+
+        comment = comment.replace(keyword, '', 1) if keyword != 'DEFAULT' else comment
 
         cleaned_comment = highlight_keywords(comment)
 
@@ -85,32 +97,21 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
     curr_section = 1
     curr_subsection = 0
     curr_subsubsection = 0
-    prev_section_level = 0
     for header, line_num in headers_info:
-        header_level = header.count('#')
-
-        if header_level == 2:
-            if prev_section_level == 3:
-                curr_section += 1
-                curr_subsection = 0
-                curr_subsubsection = 0
+        if header.startswith("## "):
             prefix = f"{curr_section}. " if numbered else "- "
             contents_table += f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
             curr_section += 1
-        elif header_level == 3:
-            if prev_section_level == 2:
-                curr_subsection = 1
-                curr_subsubsection = 0
+            curr_subsection = 0
+        elif header.startswith("## "):
+            curr_subsection += 1
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
             contents_table += f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
-            curr_subsection += 1
-        elif header_level == 4:
-            prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection + 1}. " if numbered else "        - "
-            contents_table += f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
+            curr_subsubsection = 0
+        elif header.startswith("### "):
             curr_subsubsection += 1
-
-        prev_section_level = header_level
-
+            prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "        - "
+            contents_table += f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
     contents_table += "\n"
 
     return contents_table
@@ -148,7 +149,7 @@ if __name__ == "__main__":
                     all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
 
-    contents_table = generate_contents_table(all_headers_info) + "\n---\n"+ "\n---\n"
+    contents_table = generate_contents_table(all_headers_info) + "\n---\n"
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
