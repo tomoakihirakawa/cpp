@@ -148,7 +148,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-計算を安定化させるために，$`b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．
+$`b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$として計算を安定化させる場合がある．
 
 $$
 \begin{equation}

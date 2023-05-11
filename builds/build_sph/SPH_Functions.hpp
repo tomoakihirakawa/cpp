@@ -332,7 +332,7 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 /*DOC_EXTRACT SPH
 ### 圧力の安定化
 
-計算を安定化させるために，$b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．
+$b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$として計算を安定化させる場合がある．
 
 $$
 \begin{equation}
