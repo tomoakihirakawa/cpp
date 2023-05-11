@@ -342,11 +342,9 @@ $$
 \end{equation}
 $$
 
-であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
+であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，$b \mathrel{*{=}} (1- \alpha)$を意味している．
 
-$b \mathrel{*{=}} (1- \alpha)$を意味している．
-
-と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`,$b$の計算方法と同じである場合に限る．
+ただ，$\rho^*$の計算方法が，`PoissonRHS`,$b$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 */
