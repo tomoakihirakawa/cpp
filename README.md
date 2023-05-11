@@ -148,7 +148,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-計算を安定化させるために，$`{\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
+計算を安定化させるために，$`b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．この安定化は，簡単に言えば，
 
 $$
 \begin{equation}
@@ -160,7 +160,7 @@ $$
 
 であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，結局，
 
-$`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
+$`b \mathrel{*{=}} (1- \alpha)`$を意味している．
 
 と同じである．ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
