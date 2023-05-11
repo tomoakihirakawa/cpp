@@ -31,6 +31,7 @@ def highlight_keywords(text: str) -> str:
         'TIP': (r'^TIP:?\s*', '🌟'),
         'CHECKED': (r'^CHECKED:?\s*', '✅'),
         '###': (r'^###:?\s*', '### ⚓️'),
+        '##': (r'^## :?\s*', '##⛴️'),
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
