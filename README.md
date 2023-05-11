@@ -148,7 +148,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-$`b = \alpha (\rho - \rho^\ast) / {\Delta t}^2 + \alpha (\rho - \rho^\ast) / {\Delta t}^2`$として計算を安定化させる場合がある．
+$`b =(1-\alpha) \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
 
 $$
 \begin{equation}
