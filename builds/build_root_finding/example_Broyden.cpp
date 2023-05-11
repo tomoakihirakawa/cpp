@@ -1,4 +1,4 @@
-/*DOC_EXTRACT NEWTON
+/*DOC_EXTRACT newton
 ## 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 */
