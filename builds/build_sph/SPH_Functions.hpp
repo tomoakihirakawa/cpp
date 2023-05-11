@@ -464,7 +464,7 @@ void setTmpDensity(const std::unordered_set<networkPoint *> &points, const doubl
 // b% -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT SPH
-## `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
+### `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
 
 $$
 \begin{align*}
@@ -494,6 +494,8 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 */
 
 /*DOC_EXTRACT SPH
+### 圧力の安定化
+
 計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
