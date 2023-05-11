@@ -60,12 +60,12 @@ ISPH EISPH
 </h1>
 
 ## 概要
-**⚓️ **前準備
+⚓️ 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
-**⚓️ **フラクショナルステップを使って初期値問題を解く
+⚓️ フラクショナルステップを使って初期値問題を解く
 
 4. $`{{\bf u}^\ast}`$と $`{{\bf x}^\ast}`$を計算
 5. 流速の発散 $`{\nabla \cdot {\bf u}^\ast}`$の計算
@@ -101,17 +101,17 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
 
-**⚓️ **$`\nabla^2 {\bf u}`$の計算
+⚓️ $`\nabla^2 {\bf u}`$の計算
 
 ラプラシアンの計算方法：
 
-**✅**$`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L391](./builds/build_sph/SPH_Functions.hpp#L391)
 
 
-**⚓️ **`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
+⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
 $$
 \begin{align*}
@@ -126,7 +126,7 @@ $$
 
 発散の計算方法：
 
-**✅**$`\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ $`\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 `PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 今の所，次の順で計算すること．
@@ -137,13 +137,13 @@ $$
 
 ラプラシアンの計算方法：
 
-**✅**$`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L466](./builds/build_sph/SPH_Functions.hpp#L466)
 
 
-**⚓️ **圧力の安定化
+⚓️ 圧力の安定化
 
 計算を安定化させるために，$`{\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
 
@@ -166,13 +166,13 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 [./builds/build_sph/SPH_Functions.hpp#L496](./builds/build_sph/SPH_Functions.hpp#L496)
 
 
-**⚓️ **圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
+⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
 勾配の計算方法：
 
-**✅**$`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
+✅ $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 
-**✅**$`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
+✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L595](./builds/build_sph/SPH_Functions.hpp#L595)
