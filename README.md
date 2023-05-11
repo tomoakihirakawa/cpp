@@ -10,9 +10,11 @@
 
 - [Bucketを用いた粒子探索のテスト](#Bucketを用いた粒子探索のテスト)
 
-- [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
+    - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
     - [`PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
+
+    - [圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
 
 - [ヘッセ行列を利用したニュートン法](#ヘッセ行列を利用したニュートン法)
 
@@ -79,7 +81,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $`\nabla \cdot {\bf u}^*`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^*`$となるように決める必要はない．
 
-[./builds/build_sph/SPH.hpp#L387](./builds/build_sph/SPH.hpp#L387)
+[./builds/build_sph/SPH.hpp#L390](./builds/build_sph/SPH.hpp#L390)
 
 
  --- 
@@ -100,7 +102,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 
  --- 
-## 壁面粒子の流速と圧力
+### 壁面粒子の流速と圧力
 壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
 一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
 
@@ -111,27 +113,57 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 ### `PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 $$
 \begin{align*}
-\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
-\rightarrow \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+&&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+&\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+&\rightarrow& \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
 ここの$`b`$を`PoissonRHS`とする．
 
-**✅ CHECKED:** $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
+発散の計算：
 
-**✅ CHECKED:** $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
+**✅ CHECKED:** $`\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+
+$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
+今の所，次の順で計算すること．
+
+1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
+2. 流体粒子の圧力$`p^{n+1}`$の計算
+3. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^{n+1}`$だけを使って近似）
+
+ラプラシアンの計算方法：
 
 **✅ CHECKED:** $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
-[./builds/build_sph/SPH_Functions.hpp#L460](./builds/build_sph/SPH_Functions.hpp#L460)
+[./builds/build_sph/SPH_Functions.hpp#L457](./builds/build_sph/SPH_Functions.hpp#L457)
+
+計算を安定化させるために，$`PoissonRHS += \alpha (\rho - \rho^*) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
+
+$$
+\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
+\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
+\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
+$$
+
+であることから，$`(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t`$なので，結局，
+
+$`PoissonRHS *= (1- \alpha)`$．
+
+と同じである．ただ，$`\rho^*`$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
+もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+
+[./builds/build_sph/SPH_Functions.hpp#L487](./builds/build_sph/SPH_Functions.hpp#L487)
+
+### 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
+勾配の計算方法：
 
 **✅ CHECKED:** $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 
 **✅ CHECKED:** $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
-[./builds/build_sph/SPH_Functions.hpp#L552](./builds/build_sph/SPH_Functions.hpp#L552)
+[./builds/build_sph/SPH_Functions.hpp#L583](./builds/build_sph/SPH_Functions.hpp#L583)
 
 
  --- 

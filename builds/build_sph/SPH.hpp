@@ -6,7 +6,7 @@
 
 #define REFLECTION
 
-// #define surface_zero_pressure
+#define surface_zero_pressure
 
 /* -------------------------------------------------------------------------- */
 
@@ -362,11 +362,12 @@ void developByEISPH(Network *net,
             p->DUDt_SPH_.fill(0.);
             p->tmp_X = p->X;
             p->lap_U.fill(0.);
+            p->rho_ = p->rho;
          }
 
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
-         Lap_U(net->getPoints(), Append(net_RigidBody, net), dt);
+         calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), dt);
 
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
@@ -380,7 +381,9 @@ void developByEISPH(Network *net,
          setPressure(wall_p);
 
          PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt);
+         // PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
+         // setPressure(wall_as_fluid);
 
 // #define ISPH
 #ifdef ISPH

@@ -213,12 +213,11 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
 };
 
 /*DOC_EXTRACT
-## 壁面粒子の流速と圧力
+### 壁面粒子の流速と圧力
 壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
 一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
 
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
-
 
 */
 
@@ -393,12 +392,11 @@ void mapValueOnWall(auto &net,
 // b$                    ∇.∇UとU*を計算                       */
 // b$ ------------------------------------------------------ */
 
-auto Lap_U(const auto &points, const std::unordered_set<Network *> &target_nets, const double dt) {
+auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &target_nets, const double dt) {
 #pragma omp parallel
    for (const auto &A : points)
 #pragma omp single nowait
    {
-      // ここで初期化することは問題ない．この点pに対して再度計算することはないので，途中で初期化される心配はない．
       A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = A->checked_points_SPH = 0;
       A->lap_U.fill(0.);
       //$ ------------------------------------------ */
@@ -443,8 +441,7 @@ auto Lap_U(const auto &points, const std::unordered_set<Network *> &target_nets,
 // b$                     rho^*  の計算                       */
 // b$ ------------------------------------------------------ */
 
-void setTmpDensity(const std::unordered_set<networkPoint *> &points,
-                   const double dt) {
+void setTmpDensity(const std::unordered_set<networkPoint *> &points, const double dt) {
 #if defined(Morikawa2019)
       /* use rho_ calculated at div_tmpU */
 #elif defined(Nomeritae2016)
@@ -462,22 +459,48 @@ void setTmpDensity(const std::unordered_set<networkPoint *> &points,
 
 $$
 \begin{align*}
-\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-\rightarrow \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
-\rightarrow \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+&&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+&\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
+&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+&\rightarrow& \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
 ここの$b$を`PoissonRHS`とする．
 
-CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+発散の計算：
 
-CHECKED: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+
+$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
+今の所，次の順で計算すること．
+
+1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
+2. 流体粒子の圧力$p^{n+1}$の計算
+3. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^{n+1}$だけを使って近似）
+
+ラプラシアンの計算方法：
 
 CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
-
 */
 
+/*DOC_EXTRACT
+計算を安定化させるために，$PoissonRHS += \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
+
+$$
+\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
+\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
+\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
+$$
+
+であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
+
+$PoissonRHS *= (1- \alpha)$．
+
+と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
+もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+
+*/
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
                      const double dt,
@@ -495,7 +518,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       auto markerX = A->X;
       double total_weight = 0, P = 0;
       if (isWall)
-         markerX += (1. - 1E-12) * A->normal_SPH;
+         markerX += 2. * A->normal_SPH;
       //
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
@@ -518,7 +541,9 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
          P += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
       };
-
+      A->div_tmpU = A->PoissonRHS * dt / A->rho;
+      A->DrhoDt_SPH = -A->rho * A->div_tmpU;
+      A->rho_ = A->rho += A->DrhoDt_SPH * dt;
       //% ------------------------------------------------------- */
 
       for (const auto &net : target_nets)
@@ -531,9 +556,15 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
             }
          });
 
+#if defined(Morikawa2019)
+      const double alpha = 0.1 * dt;
+      // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
+      A->PoissonRHS *= 0.5;
+#endif
+
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
       if (isWall) {
-         if (total_weight > 1E-10)
+         if (total_weight > 1E-13)
             A->p_SPH_ = P / total_weight;
          else
             A->p_SPH_ = 0;
@@ -550,6 +581,9 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
 /*DOC_EXTRACT
+### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
+
+勾配の計算方法：
 
 CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
