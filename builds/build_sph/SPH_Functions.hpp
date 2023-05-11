@@ -485,6 +485,7 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 */
 
 /*DOC_EXTRACT
+
 計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
@@ -520,7 +521,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       auto markerX = A->X;
       double total_weight = 0, P = 0;
       if (isWall)
-         markerX += 2. * A->normal_SPH;
+         markerX += 1. * A->normal_SPH;
       //
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
@@ -561,7 +562,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 #if defined(Morikawa2019)
       const double alpha = 0.1 * dt;
       // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
-      A->PoissonRHS *= 1.5;
+      A->PoissonRHS *= 0.5;
 #endif
 
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
@@ -582,7 +583,7 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 // b% ------------------------------------------------------ */
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
-/*DOC_EXTRACT
+/*DOC_EXTRACT SPH
 ### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
 
 勾配の計算方法：
