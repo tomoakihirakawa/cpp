@@ -146,7 +146,7 @@ $$
 \rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
 \frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
 \nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
-\begin{end}
+\end{equation}
 $$
 
 であることから，$`(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t`$なので，結局，
