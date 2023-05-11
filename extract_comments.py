@@ -102,25 +102,23 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-
-
 def convert_inline_math(text):
     # This pattern will find all instances of $math expression$ but not $`math expression`$, $$math equation$$, and \$somthing\$
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
-
-    # Function to process each matched math expression
-    def process_math_expression(match):
-        math_expr = match.group(1)
-        # Replace ^* with ^\ast in the math expression
-        math_expr = math_expr.replace("^*", "^\\ast")
-        return f"$`{math_expr}`$"
-
     # Replace matched patterns with new format
-    text = re.sub(pattern, process_math_expression, text)
+    text = re.sub(pattern, r"$`\1`$", text)
+    return text
+
+def convert_math_star(text):
+    # This pattern will find all instances of "^*" in $`math expression`$, $$math equation$$
+    pattern = r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))"
+    # Replace matched patterns with new format
+    text = re.sub(pattern, lambda m: m.group().replace("^*", "^\\ast"), text)
     return text
 
 def highlight_keywords(text):
     text = convert_inline_math(text)  # Add this line to call the function before other replacements
+    text = convert_math_star(text)  # Add this line to call the new function after convert_inline_math
     keyword_patterns = {
         'NOTE': (r'(?i)(NOTE:?)', '💡'),
         'WARNING': (r'(?i)(WARNING:?)', '⚠️'),
