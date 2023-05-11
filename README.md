@@ -122,7 +122,7 @@ $$
 &&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
 &\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
 &\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
-&\rightarrow& \nabla^2 p &= b, \quad b = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+&\rightarrow& \nabla^2 p &= b, \quad b = \nabla \cdot {\bf beta} = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
@@ -148,7 +148,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-$`b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$として計算を安定化させる場合がある．
+$`b = \alpha (\rho - \rho^\ast) / {\Delta t}^2 + \alpha (\rho - \rho^\ast) / {\Delta t}^2`$として計算を安定化させる場合がある．
 
 $$
 \begin{equation}
@@ -161,7 +161,10 @@ $$
 であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，
 この安定化は，$`b \mathrel{*{=}} (1- \alpha)`$と同じことになる．$`\alpha`$は適当に値を設定する．
 
-ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
+$`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
+実際に粒子を仮位置に移動させその配置から$`\rho^\ast`$を計算した場合は，数値計算上のようにまとめることはできない．
+
+`PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
@@ -177,7 +180,7 @@ $$
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L430](./builds/build_sph/SPH_Functions.hpp#L430)
+[./builds/build_sph/SPH_Functions.hpp#L433](./builds/build_sph/SPH_Functions.hpp#L433)
 
 
 ## ⛵️ 核関数
