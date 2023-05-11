@@ -44,7 +44,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
-[![Banner](builds/build_sph/banner.png)](build_sph/banner.png)
+[![Banner](builds/build_sph/banner.png)](banner.png)
 
 # ISPHとEISPH
 

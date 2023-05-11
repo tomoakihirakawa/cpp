@@ -213,7 +213,7 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 
 /*DOC_EXTRACT SPH
 
-[![Banner](banner.png)](build_sph/banner.png)
+[![Banner](banner.png)](banner.png)
 
 # ISPHとEISPH
 
