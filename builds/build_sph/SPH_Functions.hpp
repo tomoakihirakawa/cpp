@@ -212,8 +212,8 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    }
 };
 
-/*DOC_EXTRACT
-### 壁面粒子の流速と圧力
+/*DOC_EXTRACT SPH
+## 壁面粒子の流速と圧力
 壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
 一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
 
@@ -455,7 +455,7 @@ void setTmpDensity(const std::unordered_set<networkPoint *> &points, const doubl
 // b% -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT SPH
-### `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
+## `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
 
 $$
 \begin{align*}
@@ -484,7 +484,7 @@ CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\
 CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 */
 
-/*DOC_EXTRACT
+/*DOC_EXTRACT SPH
 
 計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
 
@@ -584,7 +584,7 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
 /*DOC_EXTRACT SPH
-### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
+## 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
 
 勾配の計算方法：
 
