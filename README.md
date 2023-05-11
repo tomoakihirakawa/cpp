@@ -27,6 +27,17 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+# BEM
+
+[![Banner](builds/build_bem/banner.png)](banner.png)
+
+これから
+
+
+[./builds/build_bem/BEM.hpp#L10](./builds/build_bem/BEM.hpp#L10)
+
+
+---
 ## 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 
