@@ -139,7 +139,7 @@ $`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 
 [./builds/build_sph/SPH_Functions.hpp#L457](./builds/build_sph/SPH_Functions.hpp#L457)
 
-計算を安定化させるために，$`PoissonRHS += \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
+計算を安定化させるために，$`{\mathtt{PoissonRHS}} \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
 \begin{equation}
@@ -151,7 +151,7 @@ $$
 
 であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，結局，
 
-$`PoissonRHS *= (1- \alpha)`$．
+$`{\mathtt{PoissonRHS}} \mathrel{*{=}} (1- \alpha)`$．
 
 と同じである．ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．

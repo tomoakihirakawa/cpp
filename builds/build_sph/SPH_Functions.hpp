@@ -485,7 +485,7 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 */
 
 /*DOC_EXTRACT
-計算を安定化させるために，$PoissonRHS += \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
+計算を安定化させるために，${\mathtt{PoissonRHS}} \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
 \begin{equation}
@@ -497,7 +497,7 @@ $$
 
 であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
 
-$PoissonRHS *= (1- \alpha)$．
+${\mathtt{PoissonRHS}} \mathrel{*{=}} (1- \alpha)$．
 
 と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
