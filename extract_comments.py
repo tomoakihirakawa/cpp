@@ -42,7 +42,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         content = file.read()
 
     markdown_comments = list(CPP_COMMENT_PATTERN.finditer(content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
-    
+
     # Initialize dictionary to store comments based on keywords
     keyword_comments = defaultdict(list)
     headers_info = []
@@ -53,6 +53,13 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
 
         # Split comment into lines
         comment_lines = comment.split('\n')
+
+        # Get the minimum number of leading spaces from all lines
+        min_indent = min((len(re.match(r'^(\s*)', line).group(1)) for line in comment_lines if line.strip()), default=0)
+
+        # Remove leading whitespace from all lines
+        comment_lines = [line[min_indent:] for line in comment_lines]
+
 
         # Try to extract "DOC_EXTRACT" keyword from the first line
         doc_extract_pattern = re.compile(r'^DOC_EXTRACT\s*(.*)')
@@ -103,12 +110,12 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
             contents_table += f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
             curr_section += 1
             curr_subsection = 0
-        elif header.startswith("## "):
+        elif header.startswith("### "):
             curr_subsection += 1
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
             contents_table += f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
             curr_subsubsection = 0
-        elif header.startswith("### "):
+        elif header.startswith("#### "):
             curr_subsubsection += 1
             prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "        - "
             contents_table += f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
