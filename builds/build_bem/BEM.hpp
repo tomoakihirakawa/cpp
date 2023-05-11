@@ -6,6 +6,17 @@
 #include "BEM_solveBVP.hpp"
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
+
+/*DOC_EXTRACT BEM
+
+# BEM
+
+[![Banner](banner.png)](banner.png)
+
+これから
+
+*/
+
 // b! ------------------------------------------------------ */
 // b!            格子のdivide, merge．それに伴うΦ，Φnの付与          */
 // b! ------------------------------------------------------ */
