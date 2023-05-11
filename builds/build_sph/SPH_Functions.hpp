@@ -489,9 +489,9 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 
 $$
 \begin{equation}
-\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
-\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
-\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
+\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
 \end{equation}
 $$
 
