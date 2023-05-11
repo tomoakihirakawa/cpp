@@ -213,183 +213,19 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
 };
 
 /*DOC_EXTRACT SPH
-## 壁面粒子の流速と圧力
-壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
-一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
+### 壁面粒子の流速と圧力
+
+壁粒子の流速を流体粒子の流速に応じて変化させると計算が煩雑になるので，壁面粒子の流速は常にゼロに設定する（ゼロで一定というのは不自然ではない）．
+一方，壁粒子の圧力がゼロだとするのは不自然で計算結果が悪化する．壁粒子の圧力は各ステップ毎に計算し直す必要がある．
 
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 */
 
-void mapValueOnWall(auto &net,
-                    const std::unordered_set<networkPoint *> &wall_p,
-                    const auto &RigidBodyObject,
-                    const Tiii &indicater = {1, 0, 1}) {
-   setPressureSPP(net, RigidBodyObject);
-   auto [first, second, do_add] = indicater;
-   Timer watch;
-   auto initialize = [](networkPoint *PW) {
-      PW->div_U_ = PW->volume_ = PW->rho_ = PW->p_SPH_ = PW->total_weight = PW->total_weight_ = 0;
-      PW->U_SPH_ = PW->tmp_U_SPH_ = PW->grad_div_U_ = {0., 0., 0.};
-      PW->DUDt_SPH_ = PW->gradP_SPH_ = {0., 0., 0.};
-      PW->tmp_X = PW->X;
-   };
-
-   auto initializeAll = [&]() {
-      for (const auto &PW : wall_p)
-         initialize(PW);
-   };
-
-   double POW, a = 1.;
-   bool applyToWall = false;
-   bool mirroring = false;
-   bool account_volume = false;
-   bool do_spp = false;
-   // b$ ---------------------------------- calc ---------------------------------- */
-   auto calc = [&]() {
-#pragma omp parallel
-      for (const auto &PW : wall_p)
-#pragma omp single nowait
-      {
-         const Tddd markerX = PW->X + 2 * PW->normal_SPH;
-         double W;
-         int count = 0;
-         // initialize(PW);
-         /* -------------------------------------------------------------------------- */
-         auto func = [&](const networkPoint *PF, const Tddd &nearX, const bool spp = false) {
-#ifdef USE_SPP_Wall
-            double cU = spp ? SPP_U_coef_of_Wall : 1.;
-            double cp = spp ? SPP_p_coef_of_Wall : 1.;
-            double cRho = spp ? SPP_rho_coef_of_Wall : 1.;
-#else
-            double cU = 1.;
-            double cp = 1.;
-            double cRho = 1.;
-#endif
-            // if (PF->getNetwork()->isFluid)
-            if (PF->isCaptured) {
-               W = w_Bspline(Norm(nearX - markerX), PW->radius_SPH * a);
-               PW->total_N += W;
-               PW->total_weight += W;
-               PW->total_weight_ += W;
-               PW->U_SPH_ += cU * PF->U_SPH * W;
-               PW->tmp_U_SPH_ += cU * PF->tmp_U_SPH * W;
-               PW->grad_div_U_ += PF->grad_div_U * W;
-               PW->p_SPH_ += cp * (spp ? PF->p_SPH : PF->p_SPH) * W;
-               PW->div_U_ += cU * PF->div_U * W;
-               PW->rho_ += cRho * PF->rho * W;
-               PW->volume_ += PF->volume * W;
-               PW->DUDt_SPH_ += PF->DUDt_SPH * W;
-               PW->gradP_SPH_ += PF->gradP_SPH * W;
-            }
-            count++;
-         };
-         /* -------------------------------------------------------------------------- */
-         net->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &PF) {
-            func(PF, PF->X);
-#ifdef USE_SPP_Wall
-            if (do_spp && PF->isSurface) {
-               // if (canSetSPP(net, RigidBodyObject, PF))
-               func(PF, SPP_X(PF), true);
-               // func(PF, SPP_X(PF, 2.), true);
-            }
-#endif
-         });
-         for (const auto &[obj, _] : RigidBodyObject)
-            obj->BucketPoints.apply(markerX, PW->radius_SPH, [&](const auto &PF) { func(PF, PF->X); });
-      }
-   };
-   // b% ----------------------------------- set ---------------------------------- */
-   auto set = [&]() {
-      for (const auto &PW : wall_p) {
-         {
-            PW->p_SPH = PW->p_SPH_ / PW->total_weight;
-            PW->U_SPH = PW->U_SPH_ / PW->total_weight;
-            PW->tmp_U_SPH = PW->tmp_U_SPH_ / PW->total_weight;
-            PW->grad_div_U = PW->grad_div_U_ / PW->total_weight;
-            PW->div_U = PW->div_U_ / PW->total_weight;
-            PW->DUDt_SPH = PW->DUDt_SPH_ / PW->total_weight;
-         }
-         std::vector<bool> Bools = {!isFinite(PW->p_SPH), !isFinite(PW->rho), !isFinite(PW->volume), !isFinite(PW->U_SPH), !isFinite(PW->tmp_U_SPH)};
-         if (std::ranges::any_of(Bools, [](bool b) { return b; })) {
-            std::stringstream ss;
-            ss << Bools << std::endl;
-            ss << "PW->total_weight = " << PW->total_weight << std::endl;
-            ss << "PW->p_SPH = " << PW->p_SPH << std::endl;
-            ss << "PW->isFluid = " << PW->isFluid << std::endl;
-            ss << "PW->rho = " << PW->rho << std::endl;
-            ss << "PW->volume = " << PW->volume << std::endl;
-            // ss << "PW->lap_tmpU = " << PW->lap_tmpU << std::endl;
-            ss << "PW->U_SPH = " << PW->U_SPH << std::endl;
-            ss << "PW->tmp_U_SPH = " << PW->tmp_U_SPH << std::endl;
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not a finite" + ss.str());
-         }
-      }
-   };
-   // b% -------------------------------------------------------------------------- */
-   POW = 1.;  // ２などとしてはいけない
-   a = 1.;
-   initializeAll();
-   applyToWall = false;
-   mirroring = false;
-   account_volume = true;
-   do_spp = false;
-   // for (auto i = 0; i < 2; i++) {
-   calc();
-   set();
-   // }
-   setNormal_Surface_(net, wall_p, RigidBodyObject);
-   //! ------------------------------- apply condition! ------------------------------ */
-   for (const auto &PW : wall_p) {
-
-      // free-slip
-      // PW->U_SPH = Reflect(PW->U_SPH, PW->normal_SPH);
-      // PW->tmp_U_SPH = Reflect(PW->tmp_U_SPH, PW->normal_SPH);
-
-      // no-slip
-      // PW->U_SPH *= -1.;
-      // PW->tmp_U_SPH *= -1.;
-
-      PW->U_SPH *= 0.;
-      PW->tmp_U_SPH *= 0.;
-
-      // if (Norm(PW->normal_SPH) < 1E-12) {
-      //    PW->U_SPH *= 0;
-      //    PW->tmp_U_SPH *= 0;
-      // }
-
-      // ゼロとした方が，悪い影響を受けないのではないだろうか？
-      // PW->lap_tmpU_ = Projection(PW->lap_tmpU_, PW->normal_SPH);
-      // PW->U_SPH = Projection(PW->U_SPH, PW->normal_SPH);
-      // PW->tmp_U_SPH = Projection(PW->tmp_U_SPH, PW->normal_SPH);
-
-      //
-      // all-slip
-      // 壁面上に粒子を設定した場合，壁上で流速とDUDtをゼロとするのは，妥当な設定
-      // PW->lap_tmpU *= 0.;これはおかしい，ここでのDUDtは粘性と重力のみを考慮したものにすぎない．
-      // PW->U_SPH *= 0.;
-      // PW->tmp_U_SPH *= 0.;
-
-      if (do_add) {
-         Tddd accel = {0., 0., 0.};
-         PW->p_SPH = PW->p_SPH + _WATER_DENSITY_ * Dot(PW->ViscousAndGravityForce - accel, -2 * PW->normal_SPH);
-         // PW->p_SPH = PW->p_SPH + _WATER_DENSITY_ * Dot(PW->tmp_ViscousAndGravityForce - accel, -2 * PW->normal_SPH);
-         // PW->p_SPH = PW->p_SPH + _WATER_DENSITY_ * Dot(PW->mu_SPH / PW->rho * PW->lap_tmpU - PW->grad_div_U /*/ dtは入れ込み済み*/ + _GRAVITY3_ - accel, -2 * PW->normal_SPH);
-         // PW->p_SPH = PW->p_SPH + _WATER_DENSITY_ * Dot(PW->DUDt_SPH - accel, -2 * PW->normal_SPH);
-         // auto nu = PW->mu_SPH / PW->rho;
-         // PW->p_SPH = PW->p_SPH + _WATER_DENSITY_ * Dot(nu * PW->lap_tmpU + _GRAVITY3_ - accel, -2 * PW->normal_SPH);
-      }
-   }
-   DebugPrint(_green, "Elapsed time: ", _red, watch(), "s ", Magenta, "壁面粒子の圧力を計算", (do_add ? ", DUDtを考慮した圧力" : ""));
-};
-
-/* -------------------------------------------------------------------------- */
-
 #define Morikawa2019
 #define new_method
 
 /*DOC_EXTRACT SPH
-
 ### $\nabla^2 {\bf u}$の計算
 
 ラプラシアンの計算方法：
