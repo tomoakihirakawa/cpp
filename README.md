@@ -1,3 +1,5 @@
+# Project Documentation
+
 # Contents
 
 - [Runge-Kutta Integration of ODE](#Runge-Kutta-Integration-of-ODE)
@@ -6,6 +8,7 @@
 - [前準備](#前準備)
 - [フラクショナルステップを使って初期値問題を解く](#フラクショナルステップを使って初期値問題を解く)
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
+- [$`\nabla^2 {\bf u}`$の計算](#$`\nabla^2-{\bf-u}`$の計算)
 - [`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
 - [圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
 - [Bucketを用いた粒子探索のテスト](#Bucketを用いた粒子探索のテスト)
@@ -18,6 +21,8 @@
 ---
 
 ---
+
+## ODE
 ## Runge-Kutta Integration of ODE
 This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
 ![](builds/build_ODE/runge_kutta/res.png)
@@ -27,6 +32,8 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+
+## BEM
 [![Banner](builds/build_bem/banner.png)](banner.png)
 
 # BEM
@@ -39,6 +46,8 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+
+## newton
 ## 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 
@@ -56,6 +65,8 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+
+## SPH
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
 # ISPHとEISPH
@@ -101,6 +112,14 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
 
+## $`\nabla^2 {\bf u}`$の計算
+
+CHEKED: $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j), A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+
+
+[./builds/build_sph/SPH_Functions.hpp#L391](./builds/build_sph/SPH_Functions.hpp#L391)
+
+
 ## `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
 $$
@@ -130,7 +149,7 @@ $$
 **✅**$`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L457](./builds/build_sph/SPH_Functions.hpp#L457)
+[./builds/build_sph/SPH_Functions.hpp#L465](./builds/build_sph/SPH_Functions.hpp#L465)
 
 
 計算を安定化させるために，$`{\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
@@ -151,7 +170,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L487](./builds/build_sph/SPH_Functions.hpp#L487)
+[./builds/build_sph/SPH_Functions.hpp#L495](./builds/build_sph/SPH_Functions.hpp#L495)
 
 
 ## 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -163,7 +182,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 **✅**$`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L584](./builds/build_sph/SPH_Functions.hpp#L584)
+[./builds/build_sph/SPH_Functions.hpp#L592](./builds/build_sph/SPH_Functions.hpp#L592)
 
 
 ## 核関数
@@ -176,6 +195,8 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 
 
 ---
+
+## space_partitioning
 ## Bucketを用いた粒子探索のテスト
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．
@@ -194,6 +215,8 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 
 ---
+
+## CSR
 ## Compressed Sparse Row (CSR)
 
 CSRは行列を表現する方法の一つである．
@@ -206,6 +229,8 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 
 
 ---
+
+## solve_linear_systems
 ## 一般化最小残差法(GMRES)
 
 - ヘッセンベルグ行列$`H`$
@@ -220,6 +245,8 @@ ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessク
 
 
 ---
+
+## ArnoldiProcess
 ## ArnoldiProcess
    ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
    GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．

@@ -388,6 +388,14 @@ void mapValueOnWall(auto &net,
 #define Morikawa2019
 #define new_method
 
+/*DOC_EXTRACT SPH
+
+## $\nabla^2 {\bf u}$の計算
+
+CHEKED: $\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j), A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+
+*/
+
 // b$ ------------------------------------------------------ */
 // b$                    ∇.∇UとU*を計算                       */
 // b$ ------------------------------------------------------ */
@@ -406,7 +414,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
 #if defined(Morikawa2019)
             const auto Uij = A->U_SPH - coef * B->U_SPH;
-            A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
+            A->lap_U += 2 / A->rho * B->mass * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
 #elif defined(Nomeritae2016)
             const auto Uij = coef * B->U_SPH - A->U_SPH;
             const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
