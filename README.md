@@ -95,8 +95,9 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 
 ### ⚓️ 壁面粒子の流速と圧力
 
-壁粒子の流速を流体粒子の流速に応じて変化させると計算が煩雑になるので，壁面粒子の流速は常にゼロに設定する（ゼロで一定というのは不自然ではない）．
-一方，壁粒子の圧力がゼロだとするのは不自然で計算結果が悪化する．壁粒子の圧力は各ステップ毎に計算し直す必要がある．
+壁粒子の流速を流体粒子の流速に応じて変化させると計算が煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにした（ゼロで一定というのは不自然ではない）．
+一方，壁粒子の圧力がゼロだとするのは不自然で計算結果が悪化する．
+なので．壁粒子の圧力は各ステップ毎に計算し直す必要がある．
 
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
@@ -111,7 +112,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 ✅ $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L228](./builds/build_sph/SPH_Functions.hpp#L228)
+[./builds/build_sph/SPH_Functions.hpp#L229](./builds/build_sph/SPH_Functions.hpp#L229)
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -142,7 +143,7 @@ $$
 ✅ $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L302](./builds/build_sph/SPH_Functions.hpp#L302)
+[./builds/build_sph/SPH_Functions.hpp#L303](./builds/build_sph/SPH_Functions.hpp#L303)
 
 
 ### ⚓️ 圧力の安定化
@@ -165,7 +166,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L331](./builds/build_sph/SPH_Functions.hpp#L331)
+[./builds/build_sph/SPH_Functions.hpp#L332](./builds/build_sph/SPH_Functions.hpp#L332)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -177,7 +178,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L430](./builds/build_sph/SPH_Functions.hpp#L430)
+[./builds/build_sph/SPH_Functions.hpp#L431](./builds/build_sph/SPH_Functions.hpp#L431)
 
 
 ## ⛵️ 核関数
