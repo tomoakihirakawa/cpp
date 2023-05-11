@@ -454,7 +454,7 @@ void setTmpDensity(const std::unordered_set<networkPoint *> &points, const doubl
 
 // b% -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT
+/*DOC_EXTRACT SPH
 ### `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
 
 $$
