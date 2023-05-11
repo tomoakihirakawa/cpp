@@ -127,6 +127,7 @@ $$
 $$
 
 このように$`{{\bf b}^n}`$を定義し，また，ここの$`b`$を`PoissonRHS`とする．
+仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$
 
 発散の計算方法：
 
@@ -168,7 +169,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L332](./builds/build_sph/SPH_Functions.hpp#L332)
+[./builds/build_sph/SPH_Functions.hpp#L333](./builds/build_sph/SPH_Functions.hpp#L333)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -180,7 +181,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L433](./builds/build_sph/SPH_Functions.hpp#L433)
+[./builds/build_sph/SPH_Functions.hpp#L434](./builds/build_sph/SPH_Functions.hpp#L434)
 
 
 ## ⛵️ 核関数
