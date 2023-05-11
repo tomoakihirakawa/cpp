@@ -20,7 +20,7 @@
    }
 </style>
 
-<h1 align="center">
+<h1 align="center" background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50))>
 Boundary Element Method (BEM-MEL)
 </h1>
 
