@@ -332,7 +332,7 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 /*DOC_EXTRACT SPH
 ### 圧力の安定化
 
-計算を安定化させるために，$b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．この安定化は，簡単に言えば，
+計算を安定化させるために，$b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．
 
 $$
 \begin{equation}
@@ -342,7 +342,8 @@ $$
 \end{equation}
 $$
 
-であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，$b \mathrel{*{=}} (1- \alpha)$を意味している．
+であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，
+この安定化を簡単に言えば，$b \mathrel{*{=}} (1- \alpha)$を意味している．$\alpha$は適当な値を設定する．
 
 ただ，$\rho^*$の計算方法が，`PoissonRHS`,$b$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
