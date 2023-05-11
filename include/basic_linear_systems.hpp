@@ -675,7 +675,7 @@ V_d Dot(const std::unordered_set<T *> &A, const std::unordered_set<T *> &V_crs) 
 /* ------------------------------------------------------ */
 template <typename Matrix>
 struct ArnoldiProcess {
-   /*DOC_EXTRACT
+   /*DOC_EXTRACT ArnoldiProcess
    ## ArnoldiProcess
    ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
    GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．

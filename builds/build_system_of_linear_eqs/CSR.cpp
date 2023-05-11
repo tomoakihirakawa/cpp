@@ -1,4 +1,4 @@
-/*DOC_EXTRACT
+/*DOC_EXTRACT CSR
 
 ## Compressed Sparse Row (CSR)
 

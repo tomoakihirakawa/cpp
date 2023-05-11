@@ -8,7 +8,7 @@ from typing import List, Tuple, Iterator, Dict
 # Constant patterns
 CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
-HEADER_PATTERN = re.compile(r'(##+.*?)\n', re.DOTALL)
+HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 
 def convert_inline_math(text: str) -> str:
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
@@ -69,36 +69,52 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
     
     extracted_comments = []
 
+    # Sort and group comments based on
+    extracted_comments = []
+
     # Sort and group comments based on keyword
     for keyword in sorted(keyword_comments.keys()):
         extracted_comments.extend(keyword_comments[keyword])
         headers_info.append((keyword, len(keyword_comments[keyword])))
-        
+
     return keyword_comments, headers_info
 
 
-def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool=False) -> str:
+def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:
     contents_table = '# Contents\n\n'
     curr_section = 1
     curr_subsection = 0
     curr_subsubsection = 0
+    prev_section_level = 0
     for header, line_num in headers_info:
-        if header.startswith("## "):
+        header_level = header.count('#')
+
+        if header_level == 2:
+            if prev_section_level == 3:
+                curr_section += 1
+                curr_subsection = 0
+                curr_subsubsection = 0
             prefix = f"{curr_section}. " if numbered else "- "
             contents_table += f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
             curr_section += 1
-            curr_subsection = 0
-        elif header.startswith("### "):
-            curr_subsection += 1
+        elif header_level == 3:
+            if prev_section_level == 2:
+                curr_subsection = 1
+                curr_subsubsection = 0
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
             contents_table += f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
-            curr_subsubsection = 0
-        elif header.startswith("#### "):
-            curr_subsubsection += 1
-            prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "        - "
+            curr_subsection += 1
+        elif header_level == 4:
+            prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection + 1}. " if numbered else "        - "
             contents_table += f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
-        contents_table += "\n"
-    return contents_table + '\n\n'
+            curr_subsubsection += 1
+
+        prev_section_level = header_level
+
+    contents_table += "\n"
+
+    return contents_table
+
 
 def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
     files = []
@@ -107,6 +123,7 @@ def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
             if filename.endswith(extensions):
                 files.append(os.path.join(dirpath, filename))
     return sorted(files)  # return sorted file paths
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -131,7 +148,7 @@ if __name__ == "__main__":
                     all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
 
-    contents_table = generate_contents_table(all_headers_info)
+    contents_table = generate_contents_table(all_headers_info) + "\n---\n"
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
