@@ -489,9 +489,9 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 
 $$
 \begin{equation}
-\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
+\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
+\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
+\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
 \end{equation}
 $$
 
@@ -561,7 +561,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 #if defined(Morikawa2019)
       const double alpha = 0.1 * dt;
       // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
-      A->PoissonRHS *= 0.5;
+      A->PoissonRHS *= 1.5;
 #endif
 
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;

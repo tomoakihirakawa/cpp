@@ -79,7 +79,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_sph/SPH.hpp#L214](./builds/build_sph/SPH.hpp#L214)
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-         $`\nabla \cdot {\bf u}^*`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^*`$となるように決める必要はない．
+         $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 [./builds/build_sph/SPH.hpp#L390](./builds/build_sph/SPH.hpp#L390)
 
@@ -139,21 +139,21 @@ $`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 
 [./builds/build_sph/SPH_Functions.hpp#L457](./builds/build_sph/SPH_Functions.hpp#L457)
 
-計算を安定化させるために，$`PoissonRHS += \alpha (\rho - \rho^*) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
+計算を安定化させるために，$`PoissonRHS += \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
 \begin{equation}
-\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
+\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
+\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
+\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
 \end{equation}
 $$
 
-であることから，$`(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t`$なので，結局，
+であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，結局，
 
 $`PoissonRHS *= (1- \alpha)`$．
 
-と同じである．ただ，$`\rho^*`$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
+と同じである．ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 [./builds/build_sph/SPH_Functions.hpp#L487](./builds/build_sph/SPH_Functions.hpp#L487)

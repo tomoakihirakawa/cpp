@@ -102,11 +102,21 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+
+
 def convert_inline_math(text):
     # This pattern will find all instances of $math expression$ but not $`math expression`$, $$math equation$$, and \$somthing\$
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
+
+    # Function to process each matched math expression
+    def process_math_expression(match):
+        math_expr = match.group(1)
+        # Replace ^* with ^\ast in the math expression
+        math_expr = math_expr.replace("^*", "^\\ast")
+        return f"$`{math_expr}`$"
+
     # Replace matched patterns with new format
-    text = re.sub(pattern, r"$`\1`$", text)
+    text = re.sub(pattern, process_math_expression, text)
     return text
 
 def highlight_keywords(text):
