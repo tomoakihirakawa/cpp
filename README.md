@@ -60,12 +60,12 @@ ISPH EISPH
 </h1>
 
 ## 概要
-**🚢**前準備
+**⚓️**前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
-**🚢**フラクショナルステップを使って初期値問題を解く
+**⚓️**フラクショナルステップを使って初期値問題を解く
 
 4. $`{{\bf u}^\ast}`$と $`{{\bf x}^\ast}`$を計算
 5. 流速の発散 $`{\nabla \cdot {\bf u}^\ast}`$の計算
@@ -101,7 +101,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
 
-**🚢**$`\nabla^2 {\bf u}`$の計算
+**⚓️**$`\nabla^2 {\bf u}`$の計算
 
 ラプラシアンの計算方法：
 
@@ -111,7 +111,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 [./builds/build_sph/SPH_Functions.hpp#L391](./builds/build_sph/SPH_Functions.hpp#L391)
 
 
-**🚢**`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
+**⚓️**`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
 $$
 \begin{align*}
@@ -143,7 +143,7 @@ $$
 [./builds/build_sph/SPH_Functions.hpp#L466](./builds/build_sph/SPH_Functions.hpp#L466)
 
 
-**🚢**圧力の安定化
+**⚓️**圧力の安定化
 
 計算を安定化させるために，$`{\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^\ast) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
 
@@ -166,7 +166,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 [./builds/build_sph/SPH_Functions.hpp#L496](./builds/build_sph/SPH_Functions.hpp#L496)
 
 
-**🚢**圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
+**⚓️**圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
 勾配の計算方法：
 
