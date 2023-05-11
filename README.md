@@ -1,25 +1,25 @@
 # Contents
 
-- [⛴️ Runge-Kutta Integration of ODE](#⛴️-Runge-Kutta-Integration-of-ODE)
-- [⛴️ 準ニュートン法](#⛴️-準ニュートン法)
-- [⛴️ ヘッセ行列を利用したニュートン法](#⛴️-ヘッセ行列を利用したニュートン法)
-- [⛴️ 概要](#⛴️-概要)
+- [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
+- [⛵️ 準ニュートン法](#⛵️-準ニュートン法)
+- [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
+- [⛵️ 概要](#⛵️-概要)
     - [⚓️ 前準備](#⚓️-前準備)
     - [⚓️ フラクショナルステップを使って初期値問題を解く](#⚓️-フラクショナルステップを使って初期値問題を解く)
-- [⛴️ 壁面粒子の流速と圧力](#⛴️-壁面粒子の流速と圧力)
+- [⛵️ 壁面粒子の流速と圧力](#⛵️-壁面粒子の流速と圧力)
     - [⚓️ $`\nabla^2 {\bf u}`$の計算](#⚓️-$`\nabla^2-{\bf-u}`$の計算)
     - [⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
     - [⚓️ 圧力の安定化](#⚓️-圧力の安定化)
     - [⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#⚓️-圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
-- [⛴️ Bucketを用いた粒子探索のテスト](#⛴️-Bucketを用いた粒子探索のテスト)
-- [⛴️ 核関数](#⛴️-核関数)
-- [⛴️ Compressed Sparse Row (CSR)](#⛴️-Compressed-Sparse-Row-(CSR))
-- [⛴️ 一般化最小残差法(GMRES)](#⛴️-一般化最小残差法(GMRES))
+- [⛵️ Bucketを用いた粒子探索のテスト](#⛵️-Bucketを用いた粒子探索のテスト)
+- [⛵️ 核関数](#⛵️-核関数)
+- [⛵️ Compressed Sparse Row (CSR)](#⛵️-Compressed-Sparse-Row-(CSR))
+- [⛵️ 一般化最小残差法(GMRES)](#⛵️-一般化最小残差法(GMRES))
 - [ArnoldiProcess](#ArnoldiProcess)
 
 
 ---
-## ⛴️ Runge-Kutta Integration of ODE
+## ⛵️ Runge-Kutta Integration of ODE
 This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
 ![](builds/build_ODE/runge_kutta/res.png)
 
@@ -41,14 +41,14 @@ Boundary Element Method (BEM-MEL)
 
 
 ---
-## ⛴️ 準ニュートン法
+## ⛵️ 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 
 
 [./builds/build_root_finding/example_Broyden.cpp#L1](./builds/build_root_finding/example_Broyden.cpp#L1)
 
 
-## ⛴️ ヘッセ行列を利用したニュートン法
+## ⛵️ ヘッセ行列を利用したニュートン法
 **最適か否かを判断するための関数**は１つだけで，**最適化したい変数は複数**である場合でも，
 最適化は，ヘッセ行列を利用したニュートン法によって可能である．
 この方法で，変数は，関数を根とするのではなく，関数を最大最小（停留点）とする値へと収束する．
@@ -65,7 +65,7 @@ Smoothed Particle Hydrodynamics (SPH) <br>
 ISPH EISPH
 </h1>
 
-## ⛴️ 概要
+## ⛵️ 概要
 ### ⚓️ 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
@@ -97,7 +97,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 [./builds/build_sph/SPH.hpp#L397](./builds/build_sph/SPH.hpp#L397)
 
 
-## ⛴️ 壁面粒子の流速と圧力
+## ⛵️ 壁面粒子の流速と圧力
 壁面粒子の流速は常にゼロとすることは自然なこと．常にゼロとするならば，壁面粒子の流速をマップする方法に悩む必要はない．
 一方，壁面粒子の圧力は，各ステップ毎に計算し直す必要がある．
 
@@ -184,7 +184,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 [./builds/build_sph/SPH_Functions.hpp#L595](./builds/build_sph/SPH_Functions.hpp#L595)
 
 
-## ⛴️ 核関数
+## ⛵️ 核関数
 3次スプライン関数と5次スプライン関数の実装とテストコード
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
@@ -194,7 +194,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 
 
 ---
-## ⛴️ Bucketを用いた粒子探索のテスト
+## ⛵️ Bucketを用いた粒子探索のテスト
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．
 
@@ -212,7 +212,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 
 ---
-## ⛴️ Compressed Sparse Row (CSR)
+## ⛵️ Compressed Sparse Row (CSR)
 
 CSRは行列を表現する方法の一つである．
 このCSRクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．
@@ -224,7 +224,7 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 
 
 ---
-## ⛴️ 一般化最小残差法(GMRES)
+## ⛵️ 一般化最小残差法(GMRES)
 
 - ヘッセンベルグ行列$`H`$
 - クリロフ部分空間の直交基底$`V`$
