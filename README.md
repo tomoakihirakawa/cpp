@@ -3,8 +3,9 @@
 - [Runge-Kutta Integration of ODE](#Runge-Kutta-Integration-of-ODE)
 - [準ニュートン法](#準ニュートン法)
 - [ヘッセ行列を利用したニュートン法](#ヘッセ行列を利用したニュートン法)
-- [前準備](#前準備)
-- [フラクショナルステップを使って初期値問題を解く](#フラクショナルステップを使って初期値問題を解く)
+- [概要](#概要)
+    - [前準備](#前準備)
+    - [フラクショナルステップを使って初期値問題を解く](#フラクショナルステップを使って初期値問題を解く)
 - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 - [$`\nabla^2 {\bf u}`$の計算](#$`\nabla^2-{\bf-u}`$の計算)
 - [`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
@@ -58,18 +59,19 @@ Boundary Element Method (BEM-MEL)
 ---
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
-<h1 align="center" style="font-style: italic;">
-  Smoothed Particle Hydrodynamics (SPH) <br>
-  ISPH EISPH
+<h1 align="center">
+Smoothed Particle Hydrodynamics (SPH) <br>
+ISPH EISPH
 </h1>
 
-
-## 前準備
+## 概要
+### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
-## フラクショナルステップを使って初期値問題を解く
+### フラクショナルステップを使って初期値問題を解く
+
 4. $`{{\bf u}^\ast}`$と $`{{\bf x}^\ast}`$を計算
 5. 流速の発散 $`{\nabla \cdot {\bf u}^\ast}`$の計算
 
@@ -91,7 +93,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
         $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L396](./builds/build_sph/SPH.hpp#L396)
+[./builds/build_sph/SPH.hpp#L397](./builds/build_sph/SPH.hpp#L397)
 
 
 ## 壁面粒子の流速と圧力

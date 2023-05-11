@@ -214,18 +214,19 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 /*DOC_EXTRACT SPH
 [![Banner](banner.png)](banner.png)
 
-<h1 align="center" style="font-style: italic;">
-  Smoothed Particle Hydrodynamics (SPH) <br>
-  ISPH EISPH
+<h1 align="center">
+Smoothed Particle Hydrodynamics (SPH) <br>
+ISPH EISPH
 </h1>
 
-
-## 前準備
+## 概要
+### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $\Delta t$を設定
 
-## フラクショナルステップを使って初期値問題を解く
+### フラクショナルステップを使って初期値問題を解く
+
 4. ${{\bf u}^\ast}$と ${{\bf x}^\ast}$を計算
 5. 流速の発散 ${\nabla \cdot {\bf u}^\ast}$の計算
 
