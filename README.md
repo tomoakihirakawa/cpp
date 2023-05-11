@@ -143,9 +143,9 @@ $`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 
 $$
 \begin{equation}
-\rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
-\frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
-\nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
+\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
 \end{equation}
 $$
 
