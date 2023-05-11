@@ -58,10 +58,11 @@ Boundary Element Method (BEM-MEL)
 ---
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
-<h1 align="center">
+<h1 align="center" style="font-style: italic;">
   Smoothed Particle Hydrodynamics (SPH) <br>
   ISPH EISPH
 </h1>
+
 
 ## 前準備
 1. バケットの生成
@@ -90,7 +91,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
         $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L395](./builds/build_sph/SPH.hpp#L395)
+[./builds/build_sph/SPH.hpp#L396](./builds/build_sph/SPH.hpp#L396)
 
 
 ## 壁面粒子の流速と圧力
