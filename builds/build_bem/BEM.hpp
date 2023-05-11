@@ -8,10 +8,10 @@
 #include "Network.hpp"
 
 /*DOC_EXTRACT BEM
+[![Banner](banner.png)](banner.png)
 
 # BEM
 
-[![Banner](banner.png)](banner.png)
 
 これから
 

@@ -212,10 +212,10 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 };
 
 /*DOC_EXTRACT SPH
+[![Banner](banner.png)](banner.png)
 
 # ISPHとEISPH
 
-[![Banner](banner.png)](banner.png)
 
 ## 前準備
 1. バケットの生成
