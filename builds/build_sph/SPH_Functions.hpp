@@ -472,7 +472,7 @@ $$
 
 CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
-$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
+`PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
 今の所，次の順で計算すること．
 
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
@@ -485,7 +485,7 @@ CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} =
 */
 
 /*DOC_EXTRACT
-計算を安定化させるために，${\mathtt{PoissonRHS}} \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
+計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
 \begin{equation}
@@ -497,7 +497,7 @@ $$
 
 であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
 
-${\mathtt{PoissonRHS}} \mathrel{*{=}} (1- \alpha)$．
+${\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)$．
 
 と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
