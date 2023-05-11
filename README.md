@@ -28,17 +28,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ---
 [![Banner](builds/build_bem/banner.png)](banner.png)
 
-<style>
-   h1 {
-   font-weight: 600;
-   background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50));
-   color: transparent;
-   background-clip: text;
-   -webkit-background-clip: text;
-   }
-</style>
-
-<h1 align="center" background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50))>
+<h1 align="center">
 Boundary Element Method (BEM-MEL)
 </h1>
 
@@ -68,9 +58,9 @@ Boundary Element Method (BEM-MEL)
 ---
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
-<h1 align="center">
-Smoothed Particle Hydrodynamics (SPH) <br>
-ISPH EISPH
+<h1 align="center" style="font-size: 2.5em; font-weight: bold; color: #553c9a; text-shadow: 1px 1px 2px #b393d3;">
+  Smoothed Particle Hydrodynamics (SPH) <br>
+  ISPH EISPH
 </h1>
 
 ## 前準備
