@@ -10,17 +10,7 @@
 /*DOC_EXTRACT BEM
 [![Banner](banner.png)](banner.png)
 
-<style>
-   h1 {
-   font-weight: 600;
-   background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50));
-   color: transparent;
-   background-clip: text;
-   -webkit-background-clip: text;
-   }
-</style>
-
-<h1 align="center" background-image: linear-gradient(to left, rgba(215, 215, 215, 215), rgba(10, 10, 10, 50))>
+<h1 align="center">
 Boundary Element Method (BEM-MEL)
 </h1>
 

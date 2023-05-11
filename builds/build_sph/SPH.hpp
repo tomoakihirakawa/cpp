@@ -214,9 +214,9 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 /*DOC_EXTRACT SPH
 [![Banner](banner.png)](banner.png)
 
-<h1 align="center">
-Smoothed Particle Hydrodynamics (SPH) <br>
-ISPH EISPH
+<h1 align="center" style="font-size: 2.5em; font-weight: bold; color: #553c9a; text-shadow: 1px 1px 2px #b393d3;">
+  Smoothed Particle Hydrodynamics (SPH) <br>
+  ISPH EISPH
 </h1>
 
 ## 前準備
