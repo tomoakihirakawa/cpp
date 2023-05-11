@@ -20,7 +20,7 @@
 ---
 ## Runge-Kutta Integration of ODE
 This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
-![](builds/build_ODE/runge_kutta/result.png)
+![](builds/build_ODE/runge_kutta/res.png)
 
 
 [./builds/build_ODE/runge_kutta/main.cpp#L1](./builds/build_ODE/runge_kutta/main.cpp#L1)
