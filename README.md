@@ -27,9 +27,10 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+[![Banner](builds/build_bem/banner.png)](banner.png)
+
 # BEM
 
-[![Banner](builds/build_bem/banner.png)](banner.png)
 
 これから
 
@@ -55,9 +56,10 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+[![Banner](builds/build_sph/banner.png)](banner.png)
+
 # ISPHとEISPH
 
-[![Banner](builds/build_sph/banner.png)](banner.png)
 
 ## 前準備
 1. バケットの生成
