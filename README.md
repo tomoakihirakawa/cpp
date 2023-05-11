@@ -28,7 +28,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ---
 [![Banner](builds/build_bem/banner.png)](banner.png)
 
-# BEM
+<h1 align="center">Boundary Element Method (BEM-MEL) </h1>
 
 
 これから
@@ -57,7 +57,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ---
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
-<h1 align="center">ISPHとEISPH</h1>
+<h1 align="center">ISPH EISPH</h1>
 
 ## 前準備
 1. バケットの生成
