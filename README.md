@@ -158,11 +158,9 @@ $$
 \end{equation}
 $$
 
-であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，結局，
+であることから，$`(\rho - \rho^\ast) / \Delta t = \frac{D\rho^\ast}{Dt} = - b \Delta t`$なので，結局，$`b \mathrel{*{=}} (1- \alpha)`$を意味している．
 
-$`b \mathrel{*{=}} (1- \alpha)`$を意味している．
-
-と同じである．ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
+ただ，$`\rho^\ast`$の計算方法が，`PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
@@ -178,7 +176,7 @@ $`b \mathrel{*{=}} (1- \alpha)`$を意味している．
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L431](./builds/build_sph/SPH_Functions.hpp#L431)
+[./builds/build_sph/SPH_Functions.hpp#L429](./builds/build_sph/SPH_Functions.hpp#L429)
 
 
 ## ⛵️ 核関数
