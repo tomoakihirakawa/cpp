@@ -12,7 +12,7 @@
 
     - [壁面粒子の流速と圧力](#壁面粒子の流速と圧力)
 
-    - [`PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
+    - [`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
 
     - [圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
 
@@ -110,7 +110,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 [./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
 
-### `PoissonRHS`と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
+### `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 $$
 \begin{align*}
 &&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
