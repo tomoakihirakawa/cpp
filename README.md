@@ -142,9 +142,11 @@ $`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 計算を安定化させるために，$`PoissonRHS += \alpha (\rho - \rho^*) / {\Delta t}^2`$とする場合がある．上の安定化は，簡単に言えば，
 
 $$
+\begin{equation}
 \rho^* = \rho + \frac{D\rho^*}{Dt}\Delta t,\quad
 \frac{D\rho^*}{Dt} = - \rho \nabla\cdot{\bf u}^*,\quad
 \nabla\cdot{\bf u}^* = \frac{\Delta t}{\rho} b
+\begin{end}
 $$
 
 であることから，$`(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t`$なので，結局，
@@ -163,7 +165,7 @@ $`PoissonRHS *= (1- \alpha)`$．
 
 **✅ CHECKED:** $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
-[./builds/build_sph/SPH_Functions.hpp#L583](./builds/build_sph/SPH_Functions.hpp#L583)
+[./builds/build_sph/SPH_Functions.hpp#L585](./builds/build_sph/SPH_Functions.hpp#L585)
 
 
  --- 
