@@ -392,7 +392,9 @@ void mapValueOnWall(auto &net,
 
 ## $\nabla^2 {\bf u}$の計算
 
-CHEKED: $\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j), A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+ラプラシアンの計算方法：
+
+CHECKED: $\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 */
 
@@ -410,11 +412,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //$ ------------------------------------------ */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
          const auto rij = qX - A->X;
-         if (Between(Norm(rij), {1E-10, A->radius_SPH})) {
-
+         if (Between(Norm(rij), {1E-12, A->radius_SPH})) {
 #if defined(Morikawa2019)
             const auto Uij = A->U_SPH - coef * B->U_SPH;
-            A->lap_U += 2 / A->rho * B->mass * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
+            A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
 #elif defined(Nomeritae2016)
             const auto Uij = coef * B->U_SPH - A->U_SPH;
             const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
@@ -476,7 +477,7 @@ $$
 
 ここの$b$を`PoissonRHS`とする．
 
-発散の計算：
+発散の計算方法：
 
 CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
@@ -489,29 +490,9 @@ CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\
 
 ラプラシアンの計算方法：
 
-CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2}{\rho_i}m_j\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 */
 
-/*DOC_EXTRACT SPH
-
-計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
-
-$$
-\begin{equation}
-\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
-\end{equation}
-$$
-
-であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
-
-${\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)$．
-
-と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
-もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
-
-*/
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
                      const double dt,
@@ -567,6 +548,26 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
             }
          });
 
+/*DOC_EXTRACT SPH
+
+計算を安定化させるために，${\mathtt{PoissonRHS}},b \mathrel{+{=}} \alpha (\rho - \rho^*) / {\Delta t}^2$とする場合がある．上の安定化は，簡単に言えば，
+
+$$
+\begin{equation}
+\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
+\end{equation}
+$$
+
+であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，結局，
+
+${\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)$．
+
+と同じである．ただ，$\rho^*$の計算方法が，`PoissonRHS`の計算方法と同じである場合に限る．
+もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+
+*/
 #if defined(Morikawa2019)
       const double alpha = 0.1 * dt;
       // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);

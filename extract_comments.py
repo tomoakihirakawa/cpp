@@ -6,13 +6,8 @@ from pathlib import Path
 from typing import List, Tuple, Iterator, Dict
 
 # Constant patterns
-COMMENT_PATTERNS = {
-    '.cpp': re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL),
-    '.hpp': re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL),
-    # '.py': re.compile(r"'''(.*?)'''", re.DOTALL),
-    # '.java': re.compile(r'/\*\*(.*?)\*/', re.DOTALL),
-    # '.js': re.compile(r'/\*\*(.*?)\*/', re.DOTALL),
-}
+CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
+PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 
 def convert_inline_math(text: str) -> str:
@@ -42,11 +37,11 @@ def highlight_keywords(text: str) -> str:
 
     return text
 
-def extract_markdown_comments(input_file: str, file_extension: str) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
-    with open(input_file, 'r', encoding='utf-8', errors='ignore') as file:
+def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
+    with open(input_file, 'r') as file:
         content = file.read()
 
-    markdown_comments = list(COMMENT_PATTERNS.get(file_extension, COMMENT_PATTERNS['.cpp']).finditer(content))
+    markdown_comments = list(CPP_COMMENT_PATTERN.finditer(content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
     
     # Initialize dictionary to store comments based on keywords
     keyword_comments = defaultdict(list)
@@ -55,6 +50,7 @@ def extract_markdown_comments(input_file: str, file_extension: str) -> Tuple[Dic
     for match in markdown_comments:
         comment = match.group(1)
         start_line = content[:match.start()].count('\n') + 1
+
         # Extract the keyword at the top of the comment and remove it from the comment
         keyword = comment.split()[0] if comment.split() else "DEFAULT"
         comment = comment.replace(keyword, '', 1) if keyword != "DEFAULT" else comment
@@ -121,10 +117,12 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
 
 
 def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
+    files = []
     for dirpath, _, filenames in os.walk(directory):
         for filename in filenames:
-            if any(filename.endswith(ext) for ext in extensions):
-                yield os.path.join(dirpath, filename)
+            if filename.endswith(extensions):
+                files.append(os.path.join(dirpath, filename))
+    return sorted(files)  # return sorted file paths
 
 
 if __name__ == "__main__":
@@ -134,16 +132,14 @@ if __name__ == "__main__":
 
     output_file = sys.argv[1]
     search_directory = sys.argv[2]
-    file_extensions = (".cpp", ".hpp", ".py", ".java", ".js")
+    file_extensions = (".cpp", ".hpp")
 
     all_extracted_comments = defaultdict(list)
     no_keyword_comments = []
     all_headers_info = []
 
     for input_file in sorted(search_files(search_directory, file_extensions)):  # Sort file paths alphabetically
-        file_extension = Path(input_file).suffix
-        extracted_comments, headers_info = extract_markdown_comments(input_file, file_extension)
-        
+        extracted_comments, headers_info = extract_markdown_comments(input_file)
         if extracted_comments:
             for keyword, comments in extracted_comments.items():
                 if keyword == 'DEFAULT':
@@ -155,10 +151,9 @@ if __name__ == "__main__":
     contents_table = generate_contents_table(all_headers_info) + "\n---\n"+ "\n---\n"
 
     with open(output_file, 'w') as md_file:
-        md_file.write("# Project Documentation\n\n")
         md_file.write(contents_table)
         for keyword, comments in all_extracted_comments.items():
-            md_file.write(f"\n## {keyword}\n")
+            # md_file.write(f"\n## {keyword}\n")
             md_file.write("\n".join(comments))
             md_file.write("\n---\n")  # Horizontal line after the entire group
         for comment in no_keyword_comments:
