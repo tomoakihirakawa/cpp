@@ -58,7 +58,7 @@ Boundary Element Method (BEM-MEL)
 ---
 [![Banner](builds/build_sph/banner.png)](banner.png)
 
-<h1 align="center" style="font-size: 2.5em; font-weight: bold; color: #553c9a; text-shadow: 1px 1px 2px #b393d3;">
+<h1 align="center">
   Smoothed Particle Hydrodynamics (SPH) <br>
   ISPH EISPH
 </h1>
