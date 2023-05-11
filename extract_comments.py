@@ -148,7 +148,7 @@ if __name__ == "__main__":
                     all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
 
-    contents_table = generate_contents_table(all_headers_info) + "\n---\n"
+    contents_table = generate_contents_table(all_headers_info) + "\n---\n"+ "\n---\n"
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
