@@ -42,7 +42,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         content = file.read()
 
     markdown_comments = list(CPP_COMMENT_PATTERN.finditer(content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
-
+    
     # Initialize dictionary to store comments based on keywords
     keyword_comments = defaultdict(list)
     headers_info = []
@@ -51,31 +51,31 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         comment = match.group(1)
         start_line = content[:match.start()].count('\n') + 1
 
-        # Extract the keyword at the top of the comment
-        comment_parts = comment.split(maxsplit=1)
-        keyword = comment_parts[0] if comment_parts else "DEFAULT"
-        
-        # Remove the keyword from the comment
-        cleaned_comment = comment_parts[1] if len(comment_parts) > 1 else ""
+        # Extract the keyword at the top of the comment and remove it from the comment
+        keyword = comment.split()[0] if comment.split() else "DEFAULT"
+        comment = comment.replace(keyword, '', 1) if keyword != "DEFAULT" else comment
 
-        cleaned_comment = highlight_keywords(cleaned_comment)
+        cleaned_comment = highlight_keywords(comment)
 
         cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
 
-        header_line = ""
-        header_match = HEADER_PATTERN.search(cleaned_comment)
-        if header_match:
-            header_line = header_match.group(0)
-            cleaned_comment = cleaned_comment.replace(header_line, '')
-            headers_info.append((header_line.strip(), start_line))
-
-        if header_line:
-            keyword_comments[keyword].append(header_line)
-
         keyword_comments[keyword].append(cleaned_comment.strip() + '\n\n')
         keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+
+        # Extract header information for the contents table
+        headers = re.findall(HEADER_PATTERN, cleaned_comment)
+        for header in headers:
+            headers_info.append((header.strip(), start_line))
     
+    extracted_comments = []
+
+    # Sort and group comments based on keyword
+    for keyword in sorted(keyword_comments.keys()):
+        extracted_comments.extend(keyword_comments[keyword])
+        headers_info.append((keyword, len(keyword_comments[keyword])))
+        
     return keyword_comments, headers_info
+
 
 def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool=False) -> str:
     contents_table = '# Contents\n\n'
