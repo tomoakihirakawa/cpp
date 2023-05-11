@@ -44,6 +44,8 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
+[![Banner](builds/build_sph/https:/github.com/tomoakihirakawa/cpp/blob/test4/builds/build_sph/banner.pdf)](https://github.com/tomoakihirakawa/cpp/blob/test4/builds/build_sph/banner.pdf)
+
 # ISPHとEISPH
 
 ## 前準備
@@ -73,7 +75,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
          $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L391](./builds/build_sph/SPH.hpp#L391)
+[./builds/build_sph/SPH.hpp#L393](./builds/build_sph/SPH.hpp#L393)
 
 
 ## 壁面粒子の流速と圧力
