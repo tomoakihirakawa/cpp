@@ -1,124 +1,28 @@
-# # python3 extract_comments.py README.md ./
-
-# import os
-# import re
-# import sys
-# from pathlib import Path
-
-# def highlight_keywords(text):
-#     keyword_patterns = {
-#         'NOTE': (r'(?i)(NOTE:?)', '💡'),
-#         'WARNING': (r'(?i)(WARNING:?)', '⚠️'),
-#         'TODO': (r'(?i)(TODO:?)', '📝'),
-#         'IMPORTANT': (r'(?i)(IMPORTANT:?)', '❗'),
-#         'TIP': (r'(?i)(TIP:?)', '🌟'),
-#     }
-
-#     for keyword, (pattern, emoji) in keyword_patterns.items():
-#         text = re.sub(pattern, f'**{emoji} {keyword}:**', text)
-
-#     return text
-
-# def insert_space(match):
-#     return ' ' + match.group(0) if match.group(1) != '\n' else match.group(0)
-
-# def extract_markdown_comments(input_file):
-#     cpp_comment_pattern = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
-#     python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
-
-#     with open(input_file, 'r') as file:
-#         content = file.read()
-
-#     cpp_comments = cpp_comment_pattern.finditer(content)
-#     python_comments = python_comment_pattern.finditer(content)
-#     markdown_comments = list(cpp_comments) + list(python_comments)
-#     extracted_comments = ""
-
-#     for match in markdown_comments:
-#         comment = match.group(1)
-#         start_line = content[:match.start()].count('\n') + 1
-
-#         # Remove leading asterisks and whitespace
-#         cleaned_comment = comment
-
-#         cleaned_comment = highlight_keywords(cleaned_comment)
-
-#         # Replace the relative image path with the correct path
-#         cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({os.path.join(os.path.dirname(input_file), m.group(2))})', cleaned_comment)
-
-#         header_line = ""
-
-#         header_match = re.search(r'## (.*?)\n', cleaned_comment)
-#         if header_match:
-#             header_line = header_match.group(0)
-#             cleaned_comment = cleaned_comment.replace(header_line, '')
-
-#         if header_line:
-#             extracted_comments += header_line
-#         extracted_comments += cleaned_comment.strip() + '\n\n'
-#         extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n'
-
-#     return extracted_comments
-
-
-# def search_files(directory, extensions):
-#     for dirpath, _, filenames in os.walk(directory):
-#         for filename in filenames:
-#             if filename.endswith(extensions):
-#                 yield os.path.join(dirpath, filename)
-
-
-# if __name__ == "__main__":
-#     if len(sys.argv) < 3:
-#         print("Usage: python extract_comments.py output_file.md search_directory")
-#         sys.exit(1)
-
-#     output_file = sys.argv[1]
-#     search_directory = sys.argv[2]
-#     # file_extensions = (".cpp", ".c", ".h", ".py")
-#     file_extensions = (".cpp", ".hpp")
-
-#     all_extracted_comments = ""
-
-#     for input_file in search_files(search_directory, file_extensions):
-#         extracted_comments = extract_markdown_comments(input_file)
-#         if extracted_comments:
-#             file_link_name = f'## {input_file}\n\n'
-#             all_extracted_comments += extracted_comments
-#             all_extracted_comments += '\n --- \n'
-    
-#     with open(output_file, 'w') as md_file:
-#         md_file.write(all_extracted_comments)
-
-
-
-
-
-# python3 extract_comments.py README.md ./
-
 import os
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import List, Tuple, Iterator, Dict
 
-def convert_inline_math(text):
-    # This pattern will find all instances of $math expression$ but not $`math expression`$, $$math equation$$, and \$somthing\$
+# Constant patterns
+CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
+PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
+HEADER_PATTERN = re.compile(r'(##+.*?)\n', re.DOTALL)
+
+def convert_inline_math(text: str) -> str:
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
-    # Replace matched patterns with new format
     text = re.sub(pattern, r"$`\1`$", text)
     return text
 
-def convert_math_star(text):
-    # This pattern will find all instances of "^*" in $`math expression`$, $$math equation$$
+def convert_math_star(text: str) -> str:
     pattern = r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))"
-    # Replace matched patterns with new format
     text = re.sub(pattern, lambda m: m.group().replace("^*", "^\\ast"), text)
     return text
 
-def highlight_keywords(text):
-    text = convert_inline_math(text)  # Add this line to call the function before other replacements
-    text = convert_math_star(text)  # Add this line to call the new function after convert_inline_math
+def highlight_keywords(text: str) -> str:
+    text = convert_inline_math(text)
+    text = convert_math_star(text)
     keyword_patterns = {
         'NOTE': (r'(?i)(NOTE:?)', '💡'),
         'WARNING': (r'(?i)(WARNING:?)', '⚠️'),
@@ -133,10 +37,7 @@ def highlight_keywords(text):
 
     return text
 
-def insert_space(match):
-    return ' ' + match.group(0) if match.group(1) != '\n' else match.group(0)
-
-def generate_contents_table(headers_info, numbered=False):
+def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool=False) -> str:
     contents_table = '# Contents\n\n'
     curr_section = 1
     curr_subsection = 0
@@ -159,52 +60,49 @@ def generate_contents_table(headers_info, numbered=False):
         contents_table += "\n"
     return contents_table + '\n\n'
 
-
-
-def extract_markdown_comments(input_file):
-    cpp_comment_pattern = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
-    python_comment_pattern = re.compile(r"'''(.*?)'''", re.DOTALL)
-
+def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
     with open(input_file, 'r') as file:
         content = file.read()
 
-    cpp_comments = cpp_comment_pattern.finditer(content)
-    python_comments = python_comment_pattern.finditer(content)
-    markdown_comments = list(cpp_comments) + list(python_comments)
-    extracted_comments = ""
+    markdown_comments = list(CPP_COMMENT_PATTERN.finditer(content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
+    
+    # Initialize dictionary to store comments based on keywords
+    keyword_comments = defaultdict(list)
     headers_info = []
 
     for match in markdown_comments:
         comment = match.group(1)
         start_line = content[:match.start()].count('\n') + 1
+        cleaned_comment = highlight_keywords(comment)
 
-        # Remove leading asterisks and whitespace
-        cleaned_comment = comment
-
-        cleaned_comment = highlight_keywords(cleaned_comment)
-
-        # Replace the relative image path with the correct path
-        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({os.path.join(os.path.dirname(input_file), m.group(2))})', cleaned_comment)
+        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
 
         header_line = ""
-        header_match = re.search(r'(##+.*?)\n', cleaned_comment)
+        header_match = HEADER_PATTERN.search(cleaned_comment)
         if header_match:
             header_line = header_match.group(0)
             cleaned_comment = cleaned_comment.replace(header_line, '')
             headers_info.append((header_line.strip(), start_line))
 
+        # Extract the keyword at the top of the comment
+        keyword = comment.split()[0] if comment.split() else "DEFAULT"
+        
         if header_line:
-            extracted_comments += header_line
-        extracted_comments += cleaned_comment.strip() + '\n\n'
-        extracted_comments += f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n'
+            keyword_comments[keyword].append(header_line)
 
-    return extracted_comments, headers_info
+        keyword_comments[keyword].append(cleaned_comment.strip() + '\n\n')
+        keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
 
-def search_files(directory, extensions):
+    return keyword_comments, headers_info
+
+
+def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
+    files = []
     for dirpath, _, filenames in os.walk(directory):
         for filename in filenames:
             if filename.endswith(extensions):
-                yield os.path.join(dirpath, filename)
+                files.append(os.path.join(dirpath, filename))
+    return sorted(files)  # return sorted file paths
 
 
 if __name__ == "__main__":
@@ -216,18 +114,28 @@ if __name__ == "__main__":
     search_directory = sys.argv[2]
     file_extensions = (".cpp", ".hpp")
 
-    all_extracted_comments = ""
+    all_extracted_comments = defaultdict(list)
+    no_keyword_comments = []
     all_headers_info = []
 
-    for input_file in search_files(search_directory, file_extensions):
+    for input_file in sorted(search_files(search_directory, file_extensions)):  # Sort file paths alphabetically
         extracted_comments, headers_info = extract_markdown_comments(input_file)
         if extracted_comments:
-            all_extracted_comments += extracted_comments
-            all_extracted_comments += '\n --- \n'
+            for keyword, comments in extracted_comments.items():
+                if keyword == 'DEFAULT':
+                    no_keyword_comments.extend(comments)
+                else:
+                    all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
 
     contents_table = generate_contents_table(all_headers_info)
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
-        md_file.write(all_extracted_comments)
+        for keyword, comments in all_extracted_comments.items():
+            md_file.write(f"\n## {keyword}\n")
+            md_file.write("\n".join(comments))
+            md_file.write("\n---\n")  # Horizontal line after the entire group
+        for comment in no_keyword_comments:
+            md_file.write(comment)
+            md_file.write("\n---\n")  # Horizontal line after each comment without a keyword
