@@ -84,7 +84,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-         $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
+        $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
 [./builds/build_sph/SPH.hpp#L393](./builds/build_sph/SPH.hpp#L393)
@@ -160,7 +160,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L551](./builds/build_sph/SPH_Functions.hpp#L551)
+[./builds/build_sph/SPH_Functions.hpp#L496](./builds/build_sph/SPH_Functions.hpp#L496)
 
 
 ## 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -230,13 +230,13 @@ ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessク
 
 ---
 ## ArnoldiProcess
-   ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
-   GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．
-   x0は初期値
+  ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
+  GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．
+  x0は初期値
 
-   アーノルディ法は固有値問題の数値解法であり反復解法．
-   一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
-   https://en.wikipedia.org/wiki/Arnoldi_iteration
+  アーノルディ法は固有値問題の数値解法であり反復解法．
+  一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
+  https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
 [./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
