@@ -150,7 +150,7 @@ $`{\mathtt{PoissonRHS}},b \mathrel{*{=}} (1- \alpha)`$．
 **✅**$`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L586](./builds/build_sph/SPH_Functions.hpp#L586)
+[./builds/build_sph/SPH_Functions.hpp#L584](./builds/build_sph/SPH_Functions.hpp#L584)
 
 
 ## 核関数
