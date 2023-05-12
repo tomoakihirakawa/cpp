@@ -64,18 +64,18 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 BIEを離散化すると
 
 $$
-\left( \phi_n \right)_{k_{\vartriangle},j}
+\left( \phi_n \right)_{k_{\triangle},j}
 $$
 
 
 $$
-\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} = \sum_{k_\vartriangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\vartriangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right)
+\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} = \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right)
 $$
 
 $$
 \begin{aligned}
-\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} &= \sum_{k_\vartriangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\vartriangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right) \\
-&- \sum_{k_\vartriangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j =0}^2 \left( \phi \right)_{k_\vartriangle,j} N_{j}\left( \bm{\xi } \right) w_0 w_1 \frac{\mathbf{x}_{i_\circ} - \mathbf{x}\left( \bm{\xi } \right)}{\| \mathbf{x}\left( \bm{\xi} \right) - \mathbf{x}_{i_\circ}\|^3} \cdot \left(\frac{\partial \mathbf{x}}{\partial {\xi_0}} \times \frac{\partial \mathbf{x}}{\partial {\xi_1}} \right) \right)
+\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} &= \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right) \\
+&- \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j =0}^2 \left( \phi \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) w_0 w_1 \frac{\mathbf{x}_{i_\circ} - \mathbf{x}\left( \bm{\xi } \right)}{\| \mathbf{x}\left( \bm{\xi} \right) - \mathbf{x}_{i_\circ}\|^3} \cdot \left(\frac{\partial \mathbf{x}}{\partial {\xi_0}} \times \frac{\partial \mathbf{x}}{\partial {\xi_1}} \right) \right)
 \end{aligned}
 $$
 
