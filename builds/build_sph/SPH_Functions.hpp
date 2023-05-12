@@ -323,7 +323,7 @@ $$
 
 発散の計算方法：
 
-CHECKED: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}\frac{({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+CHECKED: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
 
 `PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
 今の所，次の順で計算すること．
@@ -374,18 +374,19 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       double Aij, sum_Aij = 0, sum_Aij_Pj = 0;
       A->PoissonRHS = 0;
       std::array<double, 3> B_VALUE;
-      const auto A_VALUE = (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_);
+
+      auto b = [&](const auto &A) { return (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_); };
+      const auto A_VALUE = b(A);
       //
       A->column_value.clear();
       auto markerX = A->X;
       double total_weight = 0, P_wall = 0, dP;
       if (isWall)
-         markerX += 1. * A->normal_SPH;
+         markerX += 2. * A->normal_SPH;
       //
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-         B_VALUE = (B->rho / dt * B->U_SPH) + (B->mu_SPH * B->lap_U) + (B->rho * _GRAVITY3_);
-         A->PoissonRHS += B->volume * Dot(B_VALUE - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
+         A->PoissonRHS += B->volume * Dot(b(B) - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
 #if defined(Morikawa2019)
          Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
@@ -398,16 +399,14 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          A->increment(B, -Aij);
          A->increment(A, Aij);
-
          // for mapping to wall
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
          dP = Dot(A->X - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
          P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
-         //
       };
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) {
+            if (B->isCaptured && A != B) {
                add(B, B->X);
 #ifdef USE_SPP_Fluid
                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
@@ -417,7 +416,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 #if defined(Morikawa2019)
       const double alpha = 0.1 * dt;
       // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
-      A->PoissonRHS *= 0.5;
+      A->PoissonRHS *= 0.1;
 #endif
       //% ------------------------------------------------------- */
       A->div_tmpU = A->PoissonRHS * dt / A->rho;
