@@ -64,7 +64,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 BIEを離散化すると
 
 $$
-\left( \phi_n \right)_{k_\vartriangle,j}
+\left( \phi_n \right)_{k_{\vartriangle},j}
 $$
 
 
