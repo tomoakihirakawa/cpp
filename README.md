@@ -61,6 +61,29 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
+$$
+\begin{aligned}
+{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
+&=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+\left\|
+\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
+\right\|} \right\}} }\\
+   &- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}
+   {w_0}{w_1}
+   \frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
+  {{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+   \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
+   \times
+   \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+   \right)
+   } \right\}} }
+\end{aligned}
+$$
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
+
+
 ---
 ## ⛵️ 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
