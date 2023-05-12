@@ -64,8 +64,10 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 BIEを離散化すると
 
 $`
+\begin{aligned}
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left\{ {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right\} \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t),
+\end{aligned}
 `$
 
 $$
