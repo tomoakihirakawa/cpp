@@ -313,7 +313,7 @@ $$
 \begin{align*}
 &&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
 &\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
-&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p^{n+1} &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p^{n+1} &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}^n+\rho {\bf g}\right)\\
 &\rightarrow& \nabla^2 p^{n+1} &= b, \quad b = \nabla \cdot {{\bf b}^n} = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
@@ -323,7 +323,7 @@ $$
 
 発散の計算方法：
 
-CHECKED: $\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+CHECKED: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}\frac{({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 `PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
 今の所，次の順で計算すること．
@@ -378,7 +378,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       //
       A->column_value.clear();
       auto markerX = A->X;
-      double total_weight = 0, P = 0;
+      double total_weight = 0, P_wall = 0, dP;
       if (isWall)
          markerX += 1. * A->normal_SPH;
       //
@@ -387,11 +387,11 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          B_VALUE = (B->rho / dt * B->U_SPH) + (B->mu_SPH * B->lap_U) + (B->rho * _GRAVITY3_);
          A->PoissonRHS += B->volume * Dot(B_VALUE - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
 #if defined(Morikawa2019)
-         Aij = 2. * B->mass / _WATER_DENSITY_ * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+         Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
          Aij = 2. * B->mass / std::pow((B->rho_ + A->rho_) / 2., 2.) * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH) * A->rho_;
 #elif defined(Barcarolo2013)
-         Aij = 2. * B->mass / _WATER_DENSITY_ * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+         Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #endif
          sum_Aij += Aij;
          sum_Aij_Pj += Aij * B->p_SPH;
@@ -401,13 +401,10 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          // for mapping to wall
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
-         P += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
+         dP = Dot(A->X - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
+         P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
+         //
       };
-      A->div_tmpU = A->PoissonRHS * dt / A->rho;
-      A->DrhoDt_SPH = -A->rho * A->div_tmpU;
-      A->rho_ = A->rho += A->DrhoDt_SPH * dt;
-      //% ------------------------------------------------------- */
-
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured) {
@@ -417,17 +414,20 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 #endif
             }
          });
-
 #if defined(Morikawa2019)
       const double alpha = 0.1 * dt;
       // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
       A->PoissonRHS *= 0.5;
 #endif
+      //% ------------------------------------------------------- */
+      A->div_tmpU = A->PoissonRHS * dt / A->rho;
+      A->DrhoDt_SPH = -A->rho * A->div_tmpU;
+      A->rho_ = A->rho + A->DrhoDt_SPH * dt;
 
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
       if (isWall) {
          if (total_weight > 1E-13)
-            A->p_SPH_ = P / total_weight;
+            A->p_SPH_ = P_wall / total_weight;
          else
             A->p_SPH_ = 0;
       }
@@ -467,7 +467,6 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          A->gradP_SPH += A->rho * B->mass * (coef * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, qX, A->radius_SPH);
 #endif
       };
-      //% ------------------------------------------ */
       auto FUNC = [&](const auto &B) {
          if (B->isCaptured) {
             func(B, B->X);
@@ -479,9 +478,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       for (const auto &net : target_nets)
          net->BucketPoints.apply(A->X, A->radius_SPH, FUNC);
-
+         //% ------------------------------------------ */
 #if defined(Morikawa2019)
-      A->DUDt_SPH -= A->gradP_SPH / _WATER_DENSITY_;
+      A->DUDt_SPH -= A->gradP_SPH / A->rho;
 #elif defined(Nomeritae2016)
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 #endif
@@ -495,7 +494,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
 
-void updateParticles(const auto &points, const auto &RigidBodyObject, const double &particle_spacing, const double dt) {
+void updateParticles(const auto &points,
+                     const std::unordered_set<Network *> &target_nets,
+                     const auto &RigidBodyObject, const double &particle_spacing, const double dt) {
    DebugPrint("粒子の時間発展", Green);
 #pragma omp parallel
    for (const auto &p : points)
@@ -555,6 +556,29 @@ void updateParticles(const auto &points, const auto &RigidBodyObject, const doub
          }
       };
 #endif
+   }
+#pragma omp parallel
+   for (const auto &A : points)
+#pragma omp single nowait
+   {
+      A->div_U = 0.;
+      //% ----------------- div_U ------------------------- */
+      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
+         A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
+      };
+      for (const auto &net : target_nets)
+         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+            if (B->isCaptured) {
+               add(B, B->X);
+#ifdef USE_SPP_Fluid
+               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
+#endif
+            }
+         });
+      //% ------------------------------------------------ */
+      A->DrhoDt_SPH = -A->rho * A->div_U;
+      A->RK_rho.push(A->DrhoDt_SPH);  // 密度
+      A->setDensity(A->RK_rho.getX());
    }
 }
 

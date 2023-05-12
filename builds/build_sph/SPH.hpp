@@ -280,7 +280,7 @@ void developByEISPH(Network *net,
       DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
       for (const auto &p : net->getPoints()) {
          // p->C_SML = C_SML * std::pow(_WATER_DENSITY_ / p->rho, 3);  // C_SMLを密度の応じて変えてみる．
-         p->setDensity(_WATER_DENSITY_);
+         // p->setDensity(_WATER_DENSITY_);
          p->isFreeFalling = false;
          p->isInsideOfBody = false;
          p->p_SPH_SPP = 0;
@@ -342,6 +342,7 @@ void developByEISPH(Network *net,
          p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
          p->RK_X.initialize(dt, real_time, p->X, RK_order);
          p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
+         p->RK_rho.initialize(dt, real_time, p->rho, RK_order);
       }
       // b# ======================================================= */
       // b#                  ルンゲクッタを使った時間積分                 */
@@ -353,9 +354,8 @@ void developByEISPH(Network *net,
             if (p->isSurface)
                p->p_SPH = 0;
 #endif
-
-         for (const auto &p : net->getPoints())
-            p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+         // for (const auto &p : net->getPoints())
+         //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
          dt = (*net->getPoints().begin())->RK_X.getdt();
          std::cout << "dt = " << dt << std::endl;
          for (const auto &p : wall_p) {
@@ -388,7 +388,7 @@ void developByEISPH(Network *net,
          setPressure(net->getPoints());
          // setPressure(wall_as_fluid);
 
-// #define ISPH
+#define ISPH
 #ifdef ISPH
          /*DOC_EXTRACT SPH
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
@@ -407,19 +407,19 @@ void developByEISPH(Network *net,
                p->setIndexCSR(i++);
                p->exclude(true);
             }
-            for (const auto &p : wall_as_fluid) {
-               points.emplace(p);
-               p->setIndexCSR(i++);
-               p->exclude(true);
-            }
+            // for (const auto &p : wall_as_fluid) {
+            //    points.emplace(p);
+            //    p->setIndexCSR(i++);
+            //    p->exclude(true);
+            // }
 
-            for (const auto &p : net->getPoints())
-               if (p->isSurface) {
-                  p->column_value.clear();
-                  p->increment(p, 1.);
-                  p->PoissonRHS = 0.;
-                  p->p_SPH = 0.;
-               }
+            // for (const auto &p : net->getPoints())
+            //    if (p->isSurface && p->isFluid) {
+            //       p->column_value.clear();
+            //       p->increment(p, 1.);
+            //       p->PoissonRHS = 0.;
+            //       p->p_SPH = 0.;
+            //    }
 
             for (const auto &p : points) {
                b[p->getIndexCSR()] = p->PoissonRHS;
@@ -427,11 +427,12 @@ void developByEISPH(Network *net,
             }
 
             std::cout << "gmres" << std::endl;
-            gmres gm(points, b, x0, 100);
+            gmres gm(points, b, x0, 200);
             std::cout << "gm.err : " << gm.err << std::endl;
 
             for (const auto &p : points) {
                p->p_SPH = gm.x[p->getIndexCSR()];
+               p->column_value.clear();
             }
          }
 #endif
@@ -447,7 +448,7 @@ void developByEISPH(Network *net,
          //@ -------------------------------------------------------- */
 
          DebugPrint("粒子の時間発展", Green);
-         updateParticles(net->getPoints(), RigidBodyObject, particle_spacing, dt);
+         updateParticles(net->getPoints(), Append(net_RigidBody, net), RigidBodyObject, particle_spacing, dt);
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粒子の時間発展");
          real_time = (*net->getPoints().begin())->RK_X.gett();
@@ -551,11 +552,17 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
       div_U_error[p] = p->div_U_error;
    vtp.addPointData("div U error", div_U_error);
    //
-   std::unordered_map<networkPoint *, double> density;
-   density.reserve(Fluid->getPoints().size());
+   std::unordered_map<networkPoint *, double> rho;
+   rho.reserve(Fluid->getPoints().size());
    for (const auto &p : Fluid->getPoints())
-      density[p] = p->rho_;
-   vtp.addPointData("temporal density", density);
+      rho[p] = p->rho;
+   vtp.addPointData("rho", rho);
+   //
+   std::unordered_map<networkPoint *, double> volume;
+   volume.reserve(Fluid->getPoints().size());
+   for (const auto &p : Fluid->getPoints())
+      volume[p] = p->volume;
+   vtp.addPointData("volume", volume);
    //
    std::unordered_map<networkPoint *, double> pressure;
    pressure.reserve(Fluid->getPoints().size());

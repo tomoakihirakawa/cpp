@@ -126,7 +126,7 @@ $$
 \begin{align*}
 &&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
 &\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
-&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p^{n+1} &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p^{n+1} &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}^n+\rho {\bf g}\right)\\
 &\rightarrow& \nabla^2 p^{n+1} &= b, \quad b = \nabla \cdot {{\bf b}^n} = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
@@ -136,7 +136,7 @@ $$
 
 発散の計算方法：
 
-✅ $`\nabla\cdot{\bf u}=\sum_{j}\frac{m_j}{\rho_j} \frac{{\bf x}_{ij}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ $`\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}\frac{({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 `PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 今の所，次の順で計算すること．

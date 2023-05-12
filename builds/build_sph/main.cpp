@@ -217,6 +217,7 @@ int main(int arg, char **argv) {
    for (const auto &p : Fluid->getPoints()) {
       // auto rand = RandomRealTddd(-particle_spacing * 1E-14, particle_spacing * 1E-14);
       // p->setX(p->X + rand);
+         p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
       p->setX(p->X);
    }
    // b# -------------------------------------------------------------------------- */
