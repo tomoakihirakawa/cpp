@@ -313,7 +313,7 @@ $$
 $$
 
 このように${{\bf b}^n}$を定義し，また，ここの$b$を`PoissonRHS`とする．
-仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$
+仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$である．
 
 発散の計算方法：
 
@@ -339,7 +339,7 @@ $$
 \begin{equation}
 \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
 \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b
+\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
 \end{equation}
 $$
 
