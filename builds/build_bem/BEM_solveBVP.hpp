@@ -223,6 +223,29 @@ void setPhiPhin(Network &water) {
 // b@                                   BEM_BVP                                  */
 // b@ -------------------------------------------------------------------------- */
 
+/*DOC_EXTRACT BEM
+
+$$
+\begin{aligned}
+{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
+&=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+\left\|
+\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
+\right\|} \right\}} }\\
+   &- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}
+   {w_0}{w_1}
+   \frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
+  {{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+   \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
+   \times
+   \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+   \right)
+   } \right\}} }
+\end{aligned}
+$$
+
+*/
+
 struct BEM_BVP {
    const bool Neumann = false;
    const bool Dirichlet = true;
@@ -518,8 +541,8 @@ struct BEM_BVP {
          std::cout << "lapack lu decomposition" << std::endl;
          this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       }
-      // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-      // std::cout << err << std::endl;
+         // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
+         // std::cout << err << std::endl;
 #elif defined(use_lapack)
       std::cout << "lapack lu decomposition" << std::endl;
       this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
@@ -544,11 +567,11 @@ struct BEM_BVP {
 #endif
 
 #ifdef _OPENMP
-#pragma omp parallel
+   #pragma omp parallel
 #endif
       for (const auto &[PBF, i] : PBF_index)
 #ifdef _OPENMP
-#pragma omp single nowait
+   #pragma omp single nowait
 #endif
       {
          auto [p, F] = PBF;
