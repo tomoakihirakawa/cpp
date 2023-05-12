@@ -228,7 +228,7 @@ void setPhiPhin(Network &water) {
 BIEを離散化すると
 
 $$
-\sum_{k_\vartriangle}\sum_{{\xi_1}} \sum_{{\xi_0}} ( \sum_{j=0}^2 \left( \phi_n \right)_{k_\vartriangle,j} N_{j}
+\vartriangle
 $$
 
 
