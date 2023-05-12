@@ -343,7 +343,7 @@ $$
 \end{equation}
 $$
 
-であることから，$(\rho - \rho^*) / \Delta t = \frac{D\rho^*}{Dt} = - b \Delta t$なので，
+であることから，$(\rho - \rho^*) / {\Delta t^2} = -\nabla\cdot{\bf b}^n$なので，
 この安定化は，$b \mathrel{*{=}} (1- \alpha)$と同じことになる．$\alpha$は適当に値を設定する．
 
 $\rho^*$を計算する際に，$\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
