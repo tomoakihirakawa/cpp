@@ -6,7 +6,7 @@
 
 #define REFLECTION
 
-#define surface_zero_pressure
+// #define surface_zero_pressure
 
 /* -------------------------------------------------------------------------- */
 
@@ -388,13 +388,13 @@ void developByEISPH(Network *net,
          setPressure(net->getPoints());
          // setPressure(wall_as_fluid);
 
-#define ISPH
+// #define ISPH
 #ifdef ISPH
          /*DOC_EXTRACT SPH
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
           */
-         if (real_time > 0.0) {
+         if (real_time > 0.001) {
             DebugPrint("activate");
             V_d b, x0;
             size_t i = 0;
@@ -407,19 +407,20 @@ void developByEISPH(Network *net,
                p->setIndexCSR(i++);
                p->exclude(true);
             }
-            // for (const auto &p : wall_as_fluid) {
-            //    points.emplace(p);
-            //    p->setIndexCSR(i++);
-            //    p->exclude(true);
-            // }
 
-            // for (const auto &p : net->getPoints())
-            //    if (p->isSurface && p->isFluid) {
-            //       p->column_value.clear();
-            //       p->increment(p, 1.);
-            //       p->PoissonRHS = 0.;
-            //       p->p_SPH = 0.;
-            //    }
+            for (const auto &p : wall_as_fluid) {
+               points.emplace(p);
+               p->setIndexCSR(i++);
+               p->exclude(true);
+            }
+
+            for (const auto &p : net->getPoints())
+               if (p->isSurface && p->isFluid) {
+                  p->column_value.clear();
+                  p->increment(p, 1.);
+                  p->PoissonRHS = 0.;
+                  p->p_SPH = 0.;
+               }
 
             for (const auto &p : points) {
                b[p->getIndexCSR()] = p->PoissonRHS;
