@@ -72,12 +72,12 @@ $$
 \alpha\_{i\_{\circ}}\left( \phi \right)\_{i\_\circ} = \sum\_{k\_\triangle}\sum\_{{\xi\_1}} \sum\_{{\xi\_0}} \left( \sum\_{j=0}^2 \left( \phi\_n \right)\_{k\_\triangle,j} N\_{j}\left( \bm{\xi } \right) \frac{w\_0 w\_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}\_{i\_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi\_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi\_1}} \right\| \right)
 $$
 
-$$
+$`
 \begin{aligned}
-\alpha\_{i\_{\circ}}\left( \phi \right)\_{i\_\circ} &= \sum\_{k\_\triangle}\sum\_{{\xi\_1}} \sum\_{{\xi\_0}} \left( \sum\_{j=0}^2 \left( \phi\_n \right)\_{k\_\triangle,j} N\_{j}\left( \bm{\xi } \right) \frac{w\_0 w\_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}\_{i\_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi\_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi\_1}} \right\| \right) \\
-&- \sum\_{k\_\triangle}\sum\_{{\xi\_1}} \sum\_{{\xi\_0}} \left( \sum\_{j =0}^2 \left( \phi \right)\_{k\_\triangle,j} N\_{j}\left( \bm{\xi } \right) w\_0 w\_1 \frac{\mathbf{x}\_{i\_\circ} - \mathbf{x}\left( \bm{\xi } \right)}{\| \mathbf{x}\left( \bm{\xi} \right) - \mathbf{x}\_{i\_\circ}\|^3} \cdot \left(\frac{\partial \mathbf{x}}{\partial {\xi\_0}} \times \frac{\partial \mathbf{x}}{\partial {\xi\_1}} \right) \right)
+\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} &= \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right) \\
+&- \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j =0}^2 \left( \phi \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) w_0 w_1 \frac{\mathbf{x}_{i_\circ} - \mathbf{x}\left( \bm{\xi } \right)}{\| \mathbf{x}\left( \bm{\xi} \right) - \mathbf{x}_{i_\circ}\|^3} \cdot \left(\frac{\partial \mathbf{x}}{\partial {\xi_0}} \times \frac{\partial \mathbf{x}}{\partial {\xi_1}} \right) \right)
 \end{aligned}
-$$
+`$
 
 
 [./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
