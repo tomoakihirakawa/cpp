@@ -335,7 +335,7 @@ CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_
 /*DOC_EXTRACT SPH
 ### 圧力の安定化
 
-$b =(1-\alpha) \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
+$b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
 $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
 
 $$
@@ -346,12 +346,12 @@ $$
 \end{equation}
 $$
 
-であることから，$(\rho - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
+であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
 
 しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
 計算上のようにはまとめることができない．
 
-$\rho^*$を計算する際に，$\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
+$\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
 実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
 
 `PoissonRHS`,$b$の計算方法と同じである場合に限る．
@@ -369,20 +369,26 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
    {
       double Aij, sum_Aij = 0, sum_Aij_Pj = 0;
       A->PoissonRHS = 0;
-      std::array<double, 3> B_VALUE;
-
       auto b = [&](const auto &A) { return (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_); };
       const auto A_VALUE = b(A);
       //
       A->column_value.clear();
       auto markerX = A->X;
       double total_weight = 0, P_wall = 0, dP;
-      if (isWall)
+      if (isWall) {
+// #define ISPH
+#if defined(ISPH)
+         markerX += 1.1 * A->normal_SPH;
+#else
          markerX += 1. * A->normal_SPH;
+#endif
+      }
       //
+      A->density_based_on_positions = 0;
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
          A->PoissonRHS += B->volume * Dot(b(B) - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
+         A->density_based_on_positions += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
 #if defined(Morikawa2019)
          Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
@@ -402,7 +408,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       };
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured && A != B) {
+            if (B->isCaptured) {
                add(B, B->X);
 #ifdef USE_SPP_Fluid
                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
@@ -410,9 +416,11 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
             }
          });
 #if defined(Morikawa2019)
-      const double alpha = 0.1 * dt;
-      // A->PoissonRHS += alpha * (A->rho - A->rho_) / (dt * dt);
-      A->PoissonRHS *= 0.1;
+      if (A->isFluid) {
+         // const double alpha = 0.1 * dt;
+         // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
+         A->PoissonRHS *= 0.2;
+      }
 #endif
       //% ------------------------------------------------------- */
       A->div_tmpU = A->PoissonRHS * dt / A->rho;

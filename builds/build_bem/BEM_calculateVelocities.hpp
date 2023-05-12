@@ -345,12 +345,19 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    return {0., 0., 0.};
 };
 
+/*DOC_EXTRACT BEM
+
+## 修正流速
+
+求めた流速から，次の時刻の境界面$\Omega(t+\Delta t)$を見積もり，その面上で節点を移動させ歪さを解消する．
+修正ベクトルは，$\Delta t$で割り，求めた流速$\nabla \phi$に足し合わせて，節点を時間発展させる．
+
+ノイマン節点も修正流速を加え時間発展させる．
+ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
+
+*/
+
 void calculateVecToSurface(const Network &net, const int loop = 10) {
-   /*
-   @ この方法なら，次の時刻における任意の場所でのポテンシャルを見積もることができる．
-   @ このことは，任意のノイマン面上に節点を維持する上で便利である．
-   @ Ω(t+δt)をまず見積もり，その面上で最適な格子配置となるように流速を修正する．
-   */
    for (const auto &p : net.getPoints()) {
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface.fill(0.);

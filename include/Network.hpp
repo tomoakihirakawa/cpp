@@ -458,7 +458,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    T6d &A = this->acceleration;
    T6d &V = this->velocity;
    /* ------------------------------------------------------ */
-   double density, density_;
+   double density, density_, density_based_on_positions;
    double &rho = this->density;
    double &rho_ = this->density_;
    double volume, volume_;

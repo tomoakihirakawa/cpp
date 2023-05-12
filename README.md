@@ -1,6 +1,7 @@
 # Contents
 
 - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
+- [⛵️ 修正流速](#⛵️-修正流速)
 - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
 - [⛵️ 準ニュートン法](#⛵️-準ニュートン法)
 - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
@@ -37,9 +38,24 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)
 
 
+## ⛵️ 修正流速
+
+求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
+修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
+
+ノイマン節点も修正流速を加え時間発展させる．
+ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
+
+
+[./builds/build_bem/BEM_calculateVelocities.hpp#L348](./builds/build_bem/BEM_calculateVelocities.hpp#L348)
+
+
 ## ⛵️ 境界条件の設定
 
-here write document
+1. 流体節点が接触する構造物面を保存する
+2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
+3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet面，それ以外はCORNERとする．
+4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
 
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
@@ -153,7 +169,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-$`b =(1-\alpha) \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
+$`b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
 $`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$と近似すると，
 
 $$
@@ -164,12 +180,12 @@ $$
 \end{equation}
 $$
 
-であることから，$`(\rho - \rho^\ast) / {\Delta t^2}`$は，$`\nabla\cdot{\bf b}^n`$となって同じになる．
+であることから，$`(\rho_w - \rho^\ast) / {\Delta t^2}`$は，$`\nabla\cdot{\bf b}^n`$となって同じになる．
 
 しかし，実際には，$`\rho^\ast`$は，$`\nabla \cdot {{\bf b}^n} `$を使わずに，つまり発散演算を行わずに評価するので，
 計算上のようにはまとめることができない．
 
-$`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
+$`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
 実際に粒子を仮位置に移動させその配置から$`\rho^\ast`$を計算した場合は，数値計算上のようにまとめることはできない．
 
 `PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
@@ -186,7 +202,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 ✅ 勾配の計算方法: $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L438](./builds/build_sph/SPH_Functions.hpp#L438)
+[./builds/build_sph/SPH_Functions.hpp#L446](./builds/build_sph/SPH_Functions.hpp#L446)
 
 
 ## ⛵️ 核関数

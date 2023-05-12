@@ -7,7 +7,10 @@
 /*DOC_EXTRACT BEM
 ## 境界条件の設定
 
-here write document
+1. 流体節点が接触する構造物面を保存する
+2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
+3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet面，それ以外はCORNERとする．
+4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
 */
 
