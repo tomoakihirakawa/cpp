@@ -30,8 +30,8 @@
 
 #define POWER 1.
 
-const double reflection_factor = .5;
-const double asobi = 0.;
+const double reflection_factor = 1.;
+const double asobi = 0.1;
 
 #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */

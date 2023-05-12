@@ -1,6 +1,7 @@
 # Contents
 
 - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
+- [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
 - [⛵️ 準ニュートン法](#⛵️-準ニュートン法)
 - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
 - [⛵️ 概要](#⛵️-概要)
@@ -30,14 +31,18 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ---
 [![Banner](builds/build_bem/banner.png)](banner.png)
 
-<h1 align="center">
-Boundary Element Method (BEM-MEL)
-</h1>
-
-これから
+<h1 align="center">Boundary Element Method (BEM-MEL)</h1>
 
 
-[./builds/build_bem/BEM.hpp#L10](./builds/build_bem/BEM.hpp#L10)
+[./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)
+
+
+## ⛵️ 境界条件の設定
+
+here write document
+
+
+[./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
 ---
@@ -107,9 +112,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 
 ### ⚓️ $`\nabla^2 {\bf u}`$の計算
 
-ラプラシアンの計算方法：
-
-✅ $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L229](./builds/build_sph/SPH_Functions.hpp#L229)
@@ -134,9 +137,7 @@ $$
 このように$`{{\bf b}^n}`$を定義し，また，ここの$`b`$を`PoissonRHS`とする．
 仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$である．
 
-発散の計算方法：
-
-✅ $`\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
+✅ 発散の計算方法: $`\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
 
 `PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 今の所，次の順で計算すること．
@@ -144,12 +145,10 @@ $$
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
 2. 流体粒子の圧力$`p^{n+1}`$の計算
 
-ラプラシアンの計算方法：
-
-✅ $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L303](./builds/build_sph/SPH_Functions.hpp#L303)
+[./builds/build_sph/SPH_Functions.hpp#L301](./builds/build_sph/SPH_Functions.hpp#L301)
 
 
 ### ⚓️ 圧力の安定化
@@ -177,19 +176,17 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L339](./builds/build_sph/SPH_Functions.hpp#L339)
+[./builds/build_sph/SPH_Functions.hpp#L335](./builds/build_sph/SPH_Functions.hpp#L335)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
-勾配の計算方法：
+✅ 勾配の計算方法: $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
 
-✅ $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
-
-✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
+✅ 勾配の計算方法: $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L442](./builds/build_sph/SPH_Functions.hpp#L442)
+[./builds/build_sph/SPH_Functions.hpp#L438](./builds/build_sph/SPH_Functions.hpp#L438)
 
 
 ## ⛵️ 核関数

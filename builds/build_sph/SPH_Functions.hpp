@@ -229,9 +229,7 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
 /*DOC_EXTRACT SPH
 ### $\nabla^2 {\bf u}$の計算
 
-ラプラシアンの計算方法：
-
-CHECKED: $\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+CHECKED: ラプラシアンの計算方法: $\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
 
 */
 
@@ -321,9 +319,7 @@ $$
 このように${{\bf b}^n}$を定義し，また，ここの$b$を`PoissonRHS`とする．
 仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$である．
 
-発散の計算方法：
-
-CHECKED: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
+CHECKED: 発散の計算方法: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
 
 `PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
 今の所，次の順で計算すること．
@@ -331,10 +327,10 @@ CHECKED: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
 2. 流体粒子の圧力$p^{n+1}$の計算
 
-ラプラシアンの計算方法：
-
-CHECKED: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 */
+
+/* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT SPH
 ### 圧力の安定化
@@ -382,7 +378,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       auto markerX = A->X;
       double total_weight = 0, P_wall = 0, dP;
       if (isWall)
-         markerX += 2. * A->normal_SPH;
+         markerX += 1. * A->normal_SPH;
       //
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
@@ -443,11 +439,9 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 
 ### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
 
-勾配の計算方法：
+CHECKED: 勾配の計算方法: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
-CHECKED: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
-
-CHECKED: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
+CHECKED: 勾配の計算方法: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
 */
 void gradP(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets) {
@@ -538,17 +532,9 @@ void updateParticles(const auto &points,
                if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
                   p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                   p->RK_U.repush(p->DUDt_SPH);  // 速度
-                  p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
-                  p->RK_X.repush(p->U_SPH);     // 位置
+                  p->U_SPH = p->RK_U.getX();
+                  p->RK_X.repush(p->U_SPH);  // 位置
                   p->setXSingle(p->tmp_X = p->RK_X.getX());
-                  //
-
-                  // p->DUDt_SPH += (ovre_run * closest_wall_point->normal_SPH) / dt / dt;
-                  // p->RK_U.repush(p->DUDt_SPH);  // 速度
-                  // p->U_SPH = p->RK_U.getX();    //* 0.5 + U * 0.5;
-                  // p->RK_X.repush(p->U_SPH);     // 位置
-                  // p->setXSingle(p->tmp_X = p->RK_X.getX());
-
                   isReflected = true;
                }
             }
@@ -556,29 +542,31 @@ void updateParticles(const auto &points,
       };
 #endif
    }
-#pragma omp parallel
-   for (const auto &A : points)
-#pragma omp single nowait
-   {
-      A->div_U = 0.;
-      //% ----------------- div_U ------------------------- */
-      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-         A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
-      };
-      for (const auto &net : target_nets)
-         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) {
-               add(B, B->X);
-#ifdef USE_SPP_Fluid
-               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
-#endif
-            }
-         });
-      //% ------------------------------------------------ */
-      A->DrhoDt_SPH = -A->rho * A->div_U;
-      A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      A->setDensity(A->RK_rho.getX());
-   }
+   // #pragma omp parallel
+   //    for (const auto &A : points)
+   // #pragma omp single nowait
+   //    {
+   //       A->div_U = 0.;
+   //       A->rho_ = 0.;
+   //       //% ----------------- div_U ------------------------- */
+   //       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
+   //          A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
+   //          // A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
+   //       };
+   //       for (const auto &net : target_nets)
+   //          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+   //             if (B->isCaptured) {
+   //                add(B, B->X);
+   // #ifdef USE_SPP_Fluid
+   //                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
+   // #endif
+   //             }
+   //          });
+   //       //% ------------------------------------------------ */
+   //       A->DrhoDt_SPH = -A->rho * A->div_U;
+   //       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
+   //       A->setDensity(A->RK_rho.getX());
+   //    }
 }
 
 #endif
