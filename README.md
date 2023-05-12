@@ -162,6 +162,12 @@ $$
 であることから，$`(\rho - \rho^\ast) / {\Delta t^2} = -\nabla\cdot{\bf b}^n`$なので，
 この安定化は何もしておらず，本来の$`b`$の計算方法$`b =\nabla \cdot {{\bf b}^n} `$と同じように見える．
 
+こうなってしまうのは，$`\nabla \cdot {{\bf b}^n}`$と同じように，
+$`\rho^\ast`$を$`\rho + \frac{D\rho^\ast}{Dt}\Delta t`$と$`\frac{D\rho^\ast}{Dt}\Delta t`$を通して，
+発散演算を使って計算したため．
+
+
+
 $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
 実際に粒子を仮位置に移動させその配置から$`\rho^\ast`$を計算した場合は，数値計算上のようにまとめることはできない．
 
@@ -181,7 +187,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L434](./builds/build_sph/SPH_Functions.hpp#L434)
+[./builds/build_sph/SPH_Functions.hpp#L440](./builds/build_sph/SPH_Functions.hpp#L440)
 
 
 ## ⛵️ 核関数
