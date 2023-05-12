@@ -117,12 +117,17 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
+次の時刻の流れ場が発散なし$`\nabla\cdot{\bf u}^{n+1}=0`$であることを保証してくれる圧力を使って，
+$`\frac{D {\bf u}}{D t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}`$を決定し，時間発展させたい．
+そのような圧力を$`p^{n+1}`$と書くことにする．
+そのような圧力の条件は，次のようになる．
+
 $$
 \begin{align*}
-&&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-&\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla P+\nu \nabla^2 {\bf u}+{\bf g}\\
-&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
-&\rightarrow& \nabla^2 p &= b, \quad b = \nabla \cdot {{\bf b}^n} = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
+&&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
+&\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
+&\rightarrow& \nabla \cdot\left(\frac{\rho}{\Delta t} {\bf u}^{n+1}\right) + \nabla^2 p^{n+1} &= \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)\\
+&\rightarrow& \nabla^2 p^{n+1} &= b, \quad b = \nabla \cdot {{\bf b}^n} = \nabla \cdot \left(\frac{\rho}{\Delta t} {\bf u}^n+\mu \nabla^2 {\bf u}+\rho {\bf g}\right)
 \end{align*}
 $$
 
@@ -150,6 +155,7 @@ $$
 ### ⚓️ 圧力の安定化
 
 $`b =(1-\alpha) \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
+$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$と近似すると，
 
 $$
 \begin{equation}
@@ -159,8 +165,7 @@ $$
 \end{equation}
 $$
 
-であることから，$`(\rho - \rho^\ast) / {\Delta t^2} = -\nabla\cdot{\bf b}^n`$なので，
-この安定化は何もしておらず，本来の$`b`$の計算方法$`b =\nabla \cdot {{\bf b}^n} `$と同じように見える．
+であることから，$`(\rho - \rho^\ast) / {\Delta t^2}`$は，$`\nabla\cdot{\bf b}^n`$となって同じになる．
 
 しかし，実際には，$`\rho^\ast`$は，$`\nabla \cdot {{\bf b}^n} `$を使わずに，つまり発散演算を行わずに評価するので，
 計算上のようにはまとめることができない．
@@ -172,7 +177,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L333](./builds/build_sph/SPH_Functions.hpp#L333)
+[./builds/build_sph/SPH_Functions.hpp#L339](./builds/build_sph/SPH_Functions.hpp#L339)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -184,7 +189,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\
 ✅ $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L437](./builds/build_sph/SPH_Functions.hpp#L437)
+[./builds/build_sph/SPH_Functions.hpp#L443](./builds/build_sph/SPH_Functions.hpp#L443)
 
 
 ## ⛵️ 核関数
