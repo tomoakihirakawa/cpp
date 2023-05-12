@@ -61,6 +61,8 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
+BIEを離散化すると
+
 $$
 \begin{aligned}
 {\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
@@ -79,6 +81,10 @@ $$
    } \right\}} }
 \end{aligned}
 $$
+
+```math
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+```
 
 
 [./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
