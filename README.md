@@ -28,16 +28,6 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 
 ---
-境界値問題←境界要素法（BEM）
-| 周波数領域解析（船舶工学分野で主流の方法） | 時間領域解析 |
-|---------------------------------------|-----------|
-| 低次の非線形を考慮	                      | 完全非線形  |
-| ●計算コストが低い <br> ▲浮体洋上風力発電の動揺解析において，揺れや荷重を過小評価する傾向がある． | ▲時間ステップ毎に境界値問題を解く必要があり計算が遅い <br> ◉高速多重極展開（FMM）：O(N2)　→　O(N) <br> ▲数値的な不安定が生じやすい（特に喫水線付近で）（saw-tooth instability：波長がグリッドサイズの倍） <br> ◉平滑化（filtering）アドホックな方法でしかない． |
-
-
-[./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)
-
-
 [![Banner](builds/build_bem/banner.png)](banner.png)
 
 <h1 align="center">
@@ -47,7 +37,7 @@ Boundary Element Method (BEM-MEL)
 これから
 
 
-[./builds/build_bem/BEM.hpp#L17](./builds/build_bem/BEM.hpp#L17)
+[./builds/build_bem/BEM.hpp#L10](./builds/build_bem/BEM.hpp#L10)
 
 
 ---
