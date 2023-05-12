@@ -64,19 +64,24 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 BIEを離散化すると
 
 $$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left\{ {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right\} \cdot {\bf{n}}({\bf{x}})dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t),
+$$
+
+$$
 \begin{aligned}
-{\alpha\_{i\_{\circ}}}{\left( \phi  \right)\_{i\_\circ}}
-&=\sum\limits\_{k\_\vartriangle}\sum\limits\_{{\xi\_1}} {\sum\limits\_{{\xi\_0}} {\left\{ {\left\{ {\sum\limits\_{j=0}^2 {{{\left( {{\phi\_n}} \right)}\_{k\_\vartriangle,j }}{N\_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w\_0}{w\_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}\_{i\_\circ}}} \|}}
+{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
+&=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 \left\|
-\frac{{\partial{\bf{x}}}}{{\partial{\xi\_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi\_1}}}
+\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
 \right\|} \right\}} }\\
-&- \sum\limits\_{k\_\vartriangle}\sum\limits\_{{\xi\_1}} {\sum\limits\_{{\xi\_0}} {\left\{ {\left\{ {\sum\limits\_{j =0}^2{{{\left( \phi  \right)}\_{k\_\vartriangle,j }}{N\_{j }}\left( \pmb{\xi } \right)} } \right\}
-{w\_0}{w\_1}
-\frac{{{{\bf x}\_{i\_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
-{{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}\_{i\_\circ}}}\|}^3}}} \cdot
-\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi\_0}}}
+&- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}
+{w_0}{w_1}
+\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
+{{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
 \times
-\frac{{\partial {\bf{x}}}}{{\partial {\xi\_1}}}
+\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
 \right)
 } \right\}} }
 \end{aligned}
