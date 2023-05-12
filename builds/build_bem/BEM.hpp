@@ -1,11 +1,10 @@
 /*DOC_EXTRACT BEM
- 境界値問題←境界要素法（BEM）
-| 周波数領域解析（船舶工学分野で主流の方法） | 時間領域解析 |
-|-------------|-----------|
-| 多くの場合低次の非線形を考慮　| 比較的簡単に完全非線形解析ができる　|
-| ●計算コストが低い
-▲浮体洋上風力発電の動揺解析において，揺れや荷重を過小評価する傾向がある． | ▲時間ステップ毎に境界値問題を解く必要があり計算が遅い <br> ◉高速多重極展開（FMM）：O(N2)　→　O(N) <br> ▲数値的な不安定が生じやすい（特に喫水線付近で）（saw-tooth instability：波長がグリッドサイズの倍） <br> ◉平滑化（filtering）アドホックな方法でしかない． |
+[![Banner](banner.png)](banner.png)
+
+<h1 align="center">Boundary Element Method (BEM-MEL)</h1>
+
 */
+
 #ifndef BEM_H
 #define BEM_H
 
@@ -14,17 +13,6 @@
 #include "BEM_solveBVP.hpp"
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
-
-/*DOC_EXTRACT BEM
-[![Banner](banner.png)](banner.png)
-
-<h1 align="center">
-Boundary Element Method (BEM-MEL)
-</h1>
-
-これから
-
-*/
 
 // b! ------------------------------------------------------ */
 // b!            格子のdivide, merge．それに伴うΦ，Φnの付与          */

@@ -4,6 +4,13 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
+/*DOC_EXTRACT BEM
+## 境界条件の設定
+
+here write document
+
+*/
+
 void setBoundaryConditions(Network &water, const std::vector<Network *> &objects) {
    /* -------------------------------------------------------------------------- */
    /*                             f,l,pの境界条件を決定                             */
