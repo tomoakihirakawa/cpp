@@ -155,7 +155,7 @@ $$
 \begin{equation}
 \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
 \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} b = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
+\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
 \end{equation}
 $$
 
