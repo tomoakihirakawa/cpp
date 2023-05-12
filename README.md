@@ -63,19 +63,12 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 BIEを離散化すると
 
-$$
-\left( \phi_n \right)\_{k\_{\triangle},j}
-$$
-
-
-$$
-\alpha\_{i\_{\circ}}\left( \phi \right)\_{i\_\circ} = \sum\_{k\_\triangle}\sum\_{{\xi\_1}} \sum\_{{\xi\_0}} \left( \sum\_{j=0}^2 \left( \phi\_n \right)\_{k\_\triangle,j} N\_{j}\left( \bm{\xi } \right) \frac{w\_0 w\_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}\_{i\_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi\_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi\_1}} \right\| \right)
-$$
-
 $`
 \begin{aligned}
-\alpha_{i_{\circ}}\left( \phi \right)_{i_\circ} &= \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j=0}^2 \left( \phi_n \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) \frac{w_0 w_1}{\| \mathbf{x}\left( \bm{\xi } \right) - \mathbf{x}_{i_\circ} \|} \left\| \frac{\partial\mathbf{x}}{\partial{\xi_0}} \times \frac{\partial\mathbf{x}}{\partial{\xi_1}} \right\| \right) \\
-&- \sum_{k_\triangle}\sum_{{\xi_1}} \sum_{{\xi_0}} \left( \sum_{j =0}^2 \left( \phi \right)_{k_\triangle,j} N_{j}\left( \bm{\xi } \right) w_0 w_1 \frac{\mathbf{x}_{i_\circ} - \mathbf{x}\left( \bm{\xi } \right)}{\| \mathbf{x}\left( \bm{\xi} \right) - \mathbf{x}_{i_\circ}\|^3} \cdot \left(\frac{\partial \mathbf{x}}{\partial {\xi_0}} \times \frac{\partial \mathbf{x}}{\partial {\xi_1}} \right) \right)
+{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}&=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right\}} }\\
+&- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}{w_0}{w_1}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)} \right\}} }
 \end{aligned}
 `$
 
