@@ -227,10 +227,10 @@ void setPhiPhin(Network &water) {
 
 BIEを離散化すると
 
-$$`
+$`
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left\{ {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right\} \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t),
-`$$
+`$
 
 $$
 \begin{aligned}
