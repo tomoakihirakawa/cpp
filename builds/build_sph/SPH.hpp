@@ -31,7 +31,7 @@
 #define POWER 1.
 
 const double reflection_factor = 1.;
-const double asobi = 0.1;
+const double asobi = 0.01;
 
 #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
@@ -314,7 +314,7 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.8) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.) {
                      q->isFluid = true;
                   }
                }
