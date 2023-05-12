@@ -579,8 +579,8 @@ struct CSR {
    std::array<double, 3> value3d;
    size_t __index__;
    void setIndexCSR(size_t i) {
-      __index__ = i;
-      __is_active__ = true;
+      this->__index__ = i;
+      this->__is_active__ = true;
    };
    size_t getIndexCSR() const { return __index__; };
    void deactivate() { __is_active__ = false; };
@@ -588,17 +588,17 @@ struct CSR {
    std::unordered_map<CSR *, double> column_value;
    CSR() : __is_active__(false){};
    void clear() { this->column_value.clear(); }
-   double at(CSR *const p) { return column_value.at(p); };
-   bool contains(CSR *const p) { return column_value.contains(p); };
-   void increment(CSR *const p, double v) {
+   double at(CSR *const p) const { return column_value.at(p); };
+   bool contains(CSR *const p) const { return column_value.contains(p); };
+   void increment(CSR *const p, const double v) {
       if (__exclude__)
          if (!p->__is_active__)
             return;
-      auto it = column_value.find(p);
-      if (it != column_value.end())
+      auto it = this->column_value.find(p);
+      if (it != this->column_value.end())
          (*it).second += v;
       else
-         column_value[p] = v;
+         this->column_value[p] = v;
    };
 };
 template <typename T>
