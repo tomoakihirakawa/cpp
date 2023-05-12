@@ -347,7 +347,7 @@ $$
 この安定化は何もしておらず，本来の$b$の計算方法$b =\nabla \cdot {{\bf b}^n} $と同じように見える．
 
 こうなってしまうのは，$\nabla \cdot {{\bf b}^n}$と同じように，
-$\rho^\ast$を$\rho + \frac{D\rho^\ast}{Dt}\Delta t$と$\frac{D\rho^\ast}{Dt}\Delta t$を通して，
+$\rho^\ast$を$\rho + \frac{D\rho^\ast}{Dt}\Delta t$のように，$\frac{D\rho^\ast}{Dt}\Delta t$を通して，
 発散演算を使って計算したため．
 
 
