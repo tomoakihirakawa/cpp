@@ -90,7 +90,7 @@ $$
 $$
 
 $$
-\phi\_{k_\vartriangle,j}
+\phi _{k _\vartriangle,j}
 $$
 
 
