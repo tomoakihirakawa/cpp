@@ -225,28 +225,33 @@ void setPhiPhin(Network &water) {
 
 /*DOC_EXTRACT BEM
 
-BIEを離散化すると
+## BIEの離散化
 
-$`
-\begin{aligned}
+$\phi$と$\phi_n$に関するBIEは，
+
+$$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left\{ {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right\} \cdot {\bf{n}}({\bf{x}})dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t),
-\end{aligned}
-`$
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
 
-$`
+これを線形三角要素とGauss-Legendre積分で離散化すると，
+
+$$
 \begin{aligned}
-{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
-=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+{\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
+&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 \left\|
 \frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
-\right\|} \right\}} } \\- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}{w_0}{w_1}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
-{{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
-\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
-\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
-\right)} \right\}} }
+\right\|} \right\}} }\\
+   &+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+   \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
+   \times
+   \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+   \right)
+   } \right\}} }
 \end{aligned}
-`$
+$$
+
 */
 
 struct BEM_BVP {
@@ -323,26 +328,27 @@ struct BEM_BVP {
             for (auto &[_, __, igign] : ret)
                igign *= c;
             for (const auto &[p, which_side_f, igign] : ret) {
-               /**
-                *
-               このループでは，
-               ある面integ_fに隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
+               /*DOC_EXTRACT BEM
+
+               ### 多重節点
+               このループでは，ある面`integ_f`に隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
                （p0が多重接点の場合，適切にp0と同じ位置に別の変数が設定されており，別の面の積分の際にq0が参照される．）
                p0は，{面,補間添字}で決定することもできる．
                {面,補間添字0}->p0,{面,補間添字1}->p1,{面,補間添字2}->p2というように．
-               //@ 多重節点：
+
                {面A,補間添字},{面B,補間添字},{面C,補間添字}が全て同じ節点p0を指していたとする．
                普通の節点なら，IGIGn[origin,{p0,nullptr}]を指す．
                多重節点なら，IGIGn[origin,{p0,面A}],IGIGn[origin,{p0,面B}]を指すようにする．
                この操作を言葉で言い換えると，
                「nが不連続に変化する点では，その点の隣接面にそれぞれ対してφnを求めるべきである（φは同じでも）．」
                「nが不連続に変化する点では，どの面を積分するかに応じて，参照するφnを区別し切り替える必要がある．」
-               //
+
                //@ さて，この段階でp0が多重節点であるかどうか判断できるだろうか？
+
                {節点，面}-> 列ベクトルのインデックス を決めれるか？
-               //
+
                面を区別するかどうかが先にわからないので，face*のまsまかnullptrとすべきかわからないということ．．．．
-               //
+
                PBF_index[{p, Dirichlet, ある要素}]
                は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
                */

@@ -3,6 +3,8 @@
 - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
 - [⛵️ 修正流速](#⛵️-修正流速)
 - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
+- [⛵️ BIEの離散化](#⛵️-BIEの離散化)
+    - [⚓️ 多重節点](#⚓️-多重節点)
 - [⛵️ 準ニュートン法](#⛵️-準ニュートン法)
 - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
 - [⛵️ 概要](#⛵️-概要)
@@ -17,7 +19,7 @@
 - [⛵️ 核関数](#⛵️-核関数)
 - [⛵️ Compressed Sparse Row (CSR)](#⛵️-Compressed-Sparse-Row-(CSR))
 - [⛵️ 一般化最小残差法(GMRES)](#⛵️-一般化最小残差法(GMRES))
-- [ArnoldiProcess](#ArnoldiProcess)
+- [⛵️ ArnoldiProcess](#⛵️-ArnoldiProcess)
 
 
 ---
@@ -61,31 +63,61 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
-BIEを離散化すると
+## ⛵️ BIEの離散化
 
-$`
-\begin{aligned}
+$`\phi`$と$`\phi_n`$に関するBIEは，
+
+$$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left\{ {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right\} \cdot {\bf{n}}({\bf{x}})dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t),
-\end{aligned}
-`$
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
 
-$`
+これを線形三角要素とGauss-Legendre積分で離散化すると，
+
+$$
 \begin{aligned}
-{\alpha_{i_{\circ}}}{\left( \phi  \right)_{i_\circ}}
-=\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{w_0}{w_1}}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+{\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
+&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 \left\|
 \frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
-\right\|} \right\}} } \\- \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}{w_0}{w_1}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}
-{{{{\| {{\bf{x}}\left( \pmb{\xi} \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+\right\|} \right\}} }\\
+&+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
 \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
-\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
-\right)} \right\}} }
+\times
+\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+\right)
+} \right\}} }
 \end{aligned}
-`$
+$$
 
 
 [./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
+
+
+### ⚓️ 多重節点
+このループでは，ある面`integ_f`に隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
+（p0が多重接点の場合，適切にp0と同じ位置に別の変数が設定されており，別の面の積分の際にq0が参照される．）
+p0は，{面,補間添字}で決定することもできる．
+{面,補間添字0}->p0,{面,補間添字1}->p1,{面,補間添字2}->p2というように．
+
+{面A,補間添字},{面B,補間添字},{面C,補間添字}が全て同じ節点p0を指していたとする．
+普通の節点なら，IGIGn[origin,{p0,nullptr}]を指す．
+多重節点なら，IGIGn[origin,{p0,面A}],IGIGn[origin,{p0,面B}]を指すようにする．
+この操作を言葉で言い換えると，
+「nが不連続に変化する点では，その点の隣接面にそれぞれ対してφnを求めるべきである（φは同じでも）．」
+「nが不連続に変化する点では，どの面を積分するかに応じて，参照するφnを区別し切り替える必要がある．」
+
+//@ さて，この段階でp0が多重節点であるかどうか判断できるだろうか？
+
+{節点，面}-> 列ベクトルのインデックス を決めれるか？
+
+面を区別するかどうかが先にわからないので，face*のまsまかnullptrとすべきかわからないということ．．．．
+
+PBF_index[{p, Dirichlet, ある要素}]
+は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L331](./builds/build_bem/BEM_solveBVP.hpp#L331)
 
 
 ---
@@ -125,8 +157,8 @@ ISPH EISPH
 5. `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 6. 流速の発散から密度 $`{\rho}^\ast`$を計算
 7. 次の時刻の圧力 $`p^{n+1}`$を計算
-   1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
-   2. 流体粒子の圧力$`p^{n+1}`$の計算
+1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
+2. 流体粒子の圧力$`p^{n+1}`$の計算
 8. $`\nabla {p^{n+1}}`$が計算でき， $`\frac{D{\bf u}}{D t}=-\frac{1}{\rho}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}`$（粘性率が一定の非圧縮性流れの加速度）を得る．
 9. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
@@ -135,7 +167,7 @@ ISPH EISPH
 
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-        $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
+$`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
 [./builds/build_sph/SPH.hpp#L393](./builds/build_sph/SPH.hpp#L393)
@@ -247,13 +279,13 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 このコードでは，Bucketを用いた粒子探索のテストを行う．
 
 結果はVTKファイルに出力される．
-   * 全ての粒子を表示したものは`all.vtp`
-   * 中心の粒子を表示したものは`center*.vtp`
-   * 中心の粒子が探査したセル内にある粒子を表示したものは`inCell*.vtp`
-   * セル内かつ球内にある粒子を表示したものは`inSphere*.vtp`
+* 全ての粒子を表示したものは`all.vtp`
+* 中心の粒子を表示したものは`center*.vtp`
+* 中心の粒子が探査したセル内にある粒子を表示したものは`inCell*.vtp`
+* セル内かつ球内にある粒子を表示したものは`inSphere*.vtp`
 
-   - 各セルにある粒子を表示したものは`each_cell*.vtp`
-   - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
+- 各セルにある粒子を表示したものは`each_cell*.vtp`
+- 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
 
 [./builds/build_sph/test_Buckets.cpp#L1](./builds/build_sph/test_Buckets.cpp#L1)
@@ -286,14 +318,14 @@ ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessク
 
 
 ---
-## ArnoldiProcess
-  ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
-  GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．
-  x0は初期値
+## ⛵️ ArnoldiProcess
+ヘッセンベルグ行列$`H[0:k-1]`$は，Aと相似なベクトルであり，同じ固有値を持つ
+GMRESで使う場合，$`V0`$にはNormalize(b-A.x0)を与える．
+x0は初期値
 
-  アーノルディ法は固有値問題の数値解法であり反復解法．
-  一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
-  https://en.wikipedia.org/wiki/Arnoldi_iteration
+アーノルディ法は固有値問題の数値解法であり反復解法．
+一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
+https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
 [./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
