@@ -83,8 +83,8 @@ $$
 
 $$
 \begin{aligned}
-{\sum\limits\_{{\xi\_0}} {( {{w\_0}{w\_1}( {\sum\limits\_{j=0}^2 {{{( {{\phi\_n}} )}\_{k\_\vartriangle,j }}{N\_{j }}( \pmb{\xi } )} } )\frac{1}{{\| {{\bf{x}}( \pmb{\xi } ) - {{\bf x}\_{i_\circ}}} \|}}
-\|\frac{{\partial{\bf{x}}}}{{\partial{\xi\_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
+{\sum\limits _{{\xi _0}} {( {{w _0}{w _1}( {\sum\limits _{j=0}^2 {{{( {{\phi _n}} )} _{k _\vartriangle,j }}{N _{j }}( \pmb{\xi } )} } )\frac{1}{{\| {{\bf{x}}( \pmb{\xi } ) - {{\bf x} _{i_\circ}}} \|}}
+\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
 \|} )}}
 \end{aligned}
 $$
