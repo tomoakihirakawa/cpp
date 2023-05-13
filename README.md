@@ -65,10 +65,10 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 
 ### ⚓️ BIEの離散化
 
-$`\phi`$と$`\phi_n`$に関するBIEは，
+$`\phi`$と$`\phi _n`$に関するBIEは，
 
 $$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint  _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
@@ -76,15 +76,15 @@ $$
 
 $$
 \begin{aligned}
-{\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
-&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+{\alpha  _{i  _\circ}}{\left( \phi  \right)  _{i  _\circ}}
+&=-\sum\limits  _{k  _\vartriangle}\sum\limits  _{{\xi  _1}} {\sum\limits  _{{\xi  _0}} {\left( {{w  _0}{w  _1}\left( {\sum\limits  _{j=0}^2 {{{\left( {{\phi  _n}} \right)}  _{k  _\vartriangle,j }}{N  _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}  _{i  _\circ}}} \|}}
 \left\|
-\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
+\frac{{\partial{\bf{x}}}}{{\partial{\xi  _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi  _1}}}
 \right\|} \right)} }\\
-&+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
-\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
+&+ \sum\limits  _{k  _\vartriangle}\sum\limits  _{{\xi  _1}} {\sum\limits  _{{\xi  _0}} {\left( {{w  _0}{w  _1}\left( {\sum\limits  _{j =0}^2{{{\left( \phi  \right)}  _{k  _\vartriangle,j }}{N  _{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}  _{i  _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}  _{i  _\circ}}}\|}^3}}} \cdot
+\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi  _0}}}
 \times
-\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+\frac{{\partial {\bf{x}}}}{{\partial {\xi  _1}}}
 \right)
 } \right)} }
 \end{aligned}
@@ -187,7 +187,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 
 ### ⚓️ $`\nabla^2 {\bf u}`$の計算
 
-✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u}=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L230](./builds/build_sph/SPH_Functions.hpp#L230)
@@ -211,7 +211,7 @@ $$
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$である．）
 
-✅ 発散の計算方法: $`b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
+✅ 発散の計算方法: $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
 `PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 
@@ -220,7 +220,7 @@ $$
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
 2. 流体粒子の圧力$`p^{n+1}`$の計算
 
-✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
+✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L302](./builds/build_sph/SPH_Functions.hpp#L302)
@@ -228,7 +228,7 @@ $$
 
 ### ⚓️ 圧力の安定化
 
-$`b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
+$`b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho _w - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
 $`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$と近似すると，
 
 $$
@@ -237,12 +237,12 @@ $$
 \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
 $$
 
-であることから，$`(\rho_w - \rho^\ast) / {\Delta t^2}`$は，$`\nabla\cdot{\bf b}^n`$となって同じになる．
+であることから，$`(\rho _w - \rho^\ast) / {\Delta t^2}`$は，$`\nabla\cdot{\bf b}^n`$となって同じになる．
 
 しかし，実際には，$`\rho^\ast`$は，$`\nabla \cdot {{\bf b}^n} `$を使わずに，つまり発散演算を行わずに評価するので，
 計算上のようにはまとめることができない．
 
-$`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
+$`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{Dt}\Delta t`$を使った場合，確かに上のようになるが，
 実際に粒子を仮位置に移動させその配置から$`\rho^\ast`$を計算した場合は，数値計算上のようにまとめることはできない．
 
 `PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
@@ -254,9 +254,9 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
-✅ 勾配の計算方法: $`\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}`$
+✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
-✅ 勾配の計算方法: $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
+✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L450](./builds/build_sph/SPH_Functions.hpp#L450)
