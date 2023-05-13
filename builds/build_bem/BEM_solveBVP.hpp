@@ -378,11 +378,18 @@ struct BEM_BVP {
             // 未知変数の係数行列は左，既知変数の係数行列は右
             if (isNeumannID_BEM(j_col))
                igign = {-std::get<1>(igign), -std::get<0>(igign)};
-            /*
+            /*DOC_EXTRACT BEM
             IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
-            IG*φn = IGn*φ
-            移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
-            移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
+            $IG \phi_n = IGn \phi$
+
+            移項前:
+
+            $\begin{bmatrix}IG0 & IG1 & IG2 & IG3\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} = \begin{bmatrix}IG _{n0} & IG _{n1} & IG _{n2} & IG _{n3}\end{bmatrix} \begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}$
+
+            移項後:
+
+            $\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} = \begin{bmatrix}IG _{n0} & -IG _1 & IGn _2 & IG _{n0}\end{bmatrix} \begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}$
+
             */
             mat_ukn[i][j] = std::get<0>(igign);
             mat_kn[i][j] = std::get<1>(igign);
