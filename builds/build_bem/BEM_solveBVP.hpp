@@ -236,9 +236,7 @@ $$
 
 これを線形三角要素とGauss-Legendre積分で離散化すると，
 
-*/
 
-/*
 $$
 \begin{aligned}
 {\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
