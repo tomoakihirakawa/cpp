@@ -77,16 +77,16 @@ $$
 $$
 \begin{aligned}
 {\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
-&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 \left\|
 \frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
-\right\|} \right\}} }\\
-&+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left\{ {{w_0}{w_1}\left\{ {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right\}\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+\right\|} \right)} }\\
+&+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
 \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
 \times
 \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
 \right)
-} \right\}} }
+} \right)} }
 \end{aligned}
 $$
 
@@ -163,14 +163,14 @@ ISPH EISPH
 9. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./builds/build_sph/SPH.hpp#L214](./builds/build_sph/SPH.hpp#L214)
+[./builds/build_sph/SPH.hpp#L211](./builds/build_sph/SPH.hpp#L211)
 
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
 $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L393](./builds/build_sph/SPH.hpp#L393)
+[./builds/build_sph/SPH.hpp#L390](./builds/build_sph/SPH.hpp#L390)
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -182,7 +182,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L215](./builds/build_sph/SPH_Functions.hpp#L215)
+[./builds/build_sph/SPH_Functions.hpp#L216](./builds/build_sph/SPH_Functions.hpp#L216)
 
 
 ### ⚓️ $`\nabla^2 {\bf u}`$の計算
@@ -190,7 +190,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u}=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L229](./builds/build_sph/SPH_Functions.hpp#L229)
+[./builds/build_sph/SPH_Functions.hpp#L230](./builds/build_sph/SPH_Functions.hpp#L230)
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -209,13 +209,13 @@ $$
 \end{align*}
 $$
 
-このように$`{{\bf b}^n}`$を定義し，また，ここの$`b`$を`PoissonRHS`とする．
-仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$である．
+この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$である．）
 
-✅ 発散の計算方法: $`\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
+✅ 発散の計算方法: $`b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
 
 `PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
-今の所，次の順で計算すること．
+
+壁粒子の圧力は時間発展させないので，壁粒子の$`p^n`$を計算する必要がある．順で計算する．
 
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
 2. 流体粒子の圧力$`p^{n+1}`$の計算
@@ -223,7 +223,7 @@ $$
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L301](./builds/build_sph/SPH_Functions.hpp#L301)
+[./builds/build_sph/SPH_Functions.hpp#L302](./builds/build_sph/SPH_Functions.hpp#L302)
 
 
 ### ⚓️ 圧力の安定化
@@ -249,7 +249,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L335](./builds/build_sph/SPH_Functions.hpp#L335)
+[./builds/build_sph/SPH_Functions.hpp#L336](./builds/build_sph/SPH_Functions.hpp#L336)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -259,7 +259,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt
 ✅ 勾配の計算方法: $`\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L444](./builds/build_sph/SPH_Functions.hpp#L444)
+[./builds/build_sph/SPH_Functions.hpp#L450](./builds/build_sph/SPH_Functions.hpp#L450)
 
 
 ## ⛵️ 核関数

@@ -57,22 +57,20 @@ int main(int arg, char **argv) {
    JSON settingJSON(std::ifstream(input_directory + input_main_file));
    for (const auto &line : settingJSON())
       std::cout << Red << std::setw(30) << line.first << " : " << line.second << colorOff << std::endl;
-   if (!settingJSON.find("output_directory"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no output_directory");
-   if (!settingJSON.find("CSML"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no CSML");
-   if (!settingJSON.find("end_time_step"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no end_time_step");
-   if (!settingJSON.find("end_time"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no end_time");
-   if (!settingJSON.find("max_dt"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no max_dt");
-   if (!settingJSON.find("RK_order"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no RK_order");
-   if (!settingJSON.find("initial_surface_z_position"))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no initial_surface_z_position");
-   //
+
+   // Check for the existence of required keys in the JSON file
+   const std::vector<std::string> required_keys = {"output_directory", "CSML", "end_time", "end_time_step", "max_dt", "RK_order", "initial_surface_z_position"};
+   for (const auto &key : required_keys)
+      if (!settingJSON.find(key))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have " + key);
+
    const auto output_directory = settingJSON["output_directory"][0] + id + "/";
+   const double CSML = stod(settingJSON["CSML"])[0];
+   const double end_time_step = stod(settingJSON["end_time_step"])[0];
+   const double end_time = stod(settingJSON["end_time"])[0];
+   const double max_dt = stod(settingJSON["max_dt"])[0];
+   const int RK_order = stoi(settingJSON["RK_order"])[0];
+   const double initial_surface_z_position = stod(settingJSON["initial_surface_z_position"])[0];
    //
    std::filesystem::path output_path = output_directory;
    if (!std::filesystem::exists(output_path)) {
@@ -84,22 +82,15 @@ int main(int arg, char **argv) {
    }
    /* --------------------- copy input directory and files --------------------- */
    {
-      std::filesystem::path output_directory(settingJSON["output_directory"][0] + id + "/");
+      std::filesystem::path output_directory_path(output_directory);
       std::cout << "copy input directory and files" << std::endl;
       for (const auto &file : Append(settingJSON["input_files"], input_main_file)) {
          std::filesystem::path source(input_directory + file);
-         auto new_path = output_directory / std::filesystem::relative(source, ".");
+         auto new_path = output_directory_path / std::filesystem::relative(source, ".");
          std::filesystem::create_directories(new_path.parent_path());
          std::filesystem::copy(source, new_path, std::filesystem::copy_options::overwrite_existing);
       }
    }
-   /* -------------------------------------------------------------------------- */
-   const double CSML = stod(settingJSON["CSML"])[0];
-   const double end_time_step = stod(settingJSON["end_time_step"])[0];
-   const double end_time = stod(settingJSON["end_time"])[0];
-   const double max_dt = stod(settingJSON["max_dt"])[0];
-   const int RK_order = stoi(settingJSON["RK_order"])[0];
-   const double initial_surface_z_position = stod(settingJSON["initial_surface_z_position"])[0];
    // b! -------------------------------------------------------------------------- */
    Timer timer;
    int minDepth = 1, maxDepth = 5;
@@ -156,13 +147,6 @@ int main(int arg, char **argv) {
       }
    }
    //
-   // new networkPoint(probe, {1610 / 1000., 150 / 2. / 1000., 3 / 1000.});
-   // new networkPoint(probe, {1610 / 1000., 150 / 2. / 1000., 15 / 1000.});
-   // new networkPoint(probe, {1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.});
-   // new networkPoint(probe, {1610 / 1000., 150 / 2. / 1000., 30 / 1000.});
-   // new networkPoint(probe, {1610 / 1000., 150 / 2. / 1000., 80 / 1000.});
-   // net2PVD[probe] = new PVDWriter(output_directory + "probe.pvd");
-   //
    double particle_spacing = stod(settingJSON["particle_spacing"])[0];
    double &ps = particle_spacing;
    double volume = std::pow(particle_spacing, 3);
@@ -217,7 +201,7 @@ int main(int arg, char **argv) {
    for (const auto &p : Fluid->getPoints()) {
       // auto rand = RandomRealTddd(-particle_spacing * 1E-14, particle_spacing * 1E-14);
       // p->setX(p->X + rand);
-         p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+      p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
       p->setX(p->X);
    }
    // b# -------------------------------------------------------------------------- */
@@ -233,7 +217,7 @@ int main(int arg, char **argv) {
             // p->normal_SPH = poly->interpolateVector(p->X);
             auto [X, f] = Nearest_(p->X, poly->getFaces());
             // p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 2.) * particle_spacing * Normalize(X - p->X);
-            p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1E-20) * particle_spacing * Normalize(X - p->X);
+            p->vector_to_wall_SPH = p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1E-20) * particle_spacing * Normalize(X - p->X);
             // p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 4.) * particle_spacing * Normalize(X - p->X);
             // p->normal_SPH = X - p->X;
             p->mirroring_face = f;
@@ -293,7 +277,7 @@ int main(int arg, char **argv) {
       std::cout << "real_time = " << real_time << std::endl;
       //------------------------------------------
       // 出力
-      if (time_step % 5 == 0) {
+      if (time_step % 10 == 0) {
          {
             vtkPolygonWriter<networkPoint *> vtp;
             vtp.add(ToVector(Fluid->getPoints()));
