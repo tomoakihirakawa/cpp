@@ -12,10 +12,20 @@ PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 
 def convert_math_underscore(text: str) -> str:
-    patterns = [r"(?<=\$\$)(.*?)(?=\$\$)", r"(?<=\$\$\$)(.*?)(?=\$\$\$)", r"(?<=`math\s)(.*?)(?=`)"]
+    patterns = [
+        r"(?<=\$\$)(.*?)(?=\$\$)",  # between $$
+        r"(?<=\$\$\$)(.*?)(?=\$\$\$)",  # between $$$$
+        r"(?<=`math\s)(.*?)(?=`)",  # between `math`
+        r"(?<=\$)(.*?)(?=\$)"  # between single $
+    ]
     for pattern in patterns:
-        text = re.sub(pattern, lambda m: m.group().replace("_", "_{"), text)
+        matches = list(re.finditer(pattern, text, re.DOTALL))
+        for match in reversed(matches):
+            start, end = match.span()
+            new_text = match.group().replace("_", " _")
+            text = text[:start] + new_text + text[end:]
     return text
+
 
 def convert_inline_math(text: str) -> str:
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
@@ -25,7 +35,7 @@ def convert_inline_math(text: str) -> str:
 def convert_math_star(text: str) -> str:
     pattern = r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))"
     text = re.sub(pattern, lambda m: m.group().replace("^*", "^\\ast"), text)
-    return convert_math_underscore(text)
+    return text
 
 def highlight_keywords(text: str) -> str:
     text = convert_math_underscore(text)
