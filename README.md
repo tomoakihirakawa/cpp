@@ -101,7 +101,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L333](./builds/build_bem/BEM_solveBVP.hpp#L333)
+[./builds/build_bem/BEM_solveBVP.hpp#L379](./builds/build_bem/BEM_solveBVP.hpp#L379)
 
 
 ---
