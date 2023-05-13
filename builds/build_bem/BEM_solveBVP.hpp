@@ -238,30 +238,18 @@ $$
 
 $$
 \begin{aligned}
-{\alpha_{i_\circ}}{( \phi  )_{i_\circ}}
-&+\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {( {{w_0}{w_1}( {\sum\limits_{j =0}^2{{{( \phi  )}_{k_\vartriangle,j }}{N_{j }}( \pmb{\xi } )} } )\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}( \pmb{\xi } )}}{{{{\| {{\bf{x}}( \pmb{\xi } ) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}})})}}
+{\alpha_{i_\circ}}{\left( \phi  \right)_{i_\circ}}
+&=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+\left\|
+\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
+\right\|} \right)} }\\
+   &+ \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot
+   \left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
+   \times
+   \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
+   \right)
+   } \right)} }
 \end{aligned}
-$$
-
-$$
-\begin{aligned}
-{\sum\limits _{{\xi _0}} {( {{w _0}{w _1}( {\sum\limits _{j=0}^2 {{{( {{\phi _n}} )} _{k _\vartriangle,j }}{N _{j }}( \pmb{\xi } )} } )\frac{1}{{\| {{\bf{x}}( \pmb{\xi } ) - {{\bf x} _{i _\circ}}} \|}}
-\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
-\|} )}}
-\end{aligned}
-$$
-
-$$
-\phi _{k _\vartriangle,j}
-$$
-
-
-$$
-\cdot
-(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}
-\times
-\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
-)
 $$
 
 */
