@@ -339,11 +339,9 @@ $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$と�
 $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
 
 $$
-\begin{equation}
 \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
 \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
 \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
-\end{equation}
 $$
 
 であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
