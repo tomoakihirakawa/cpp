@@ -1,3 +1,4 @@
+import markdown
 import os
 import re
 import sys
@@ -139,7 +140,7 @@ def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python extract_comments.py output_file.md search_directory")
+        print("Usage: python extract_comments.py output_file search_directory")
         sys.exit(1)
 
     output_file = sys.argv[1]
@@ -165,9 +166,34 @@ if __name__ == "__main__":
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
         for keyword, comments in all_extracted_comments.items():
-            # md_file.write(f"\n## {keyword}\n")
             md_file.write("\n".join(comments))
             md_file.write("\n---\n")  # Horizontal line after the entire group
         for comment in no_keyword_comments:
             md_file.write(comment)
             md_file.write("\n---\n")  # Horizontal line after each comment without a keyword
+
+    if output_file.endswith('.html'):
+        with open(output_file, 'r') as md_file:
+            md_content = md_file.read()
+
+        html_content = markdown.markdown(md_content)
+
+        mathjax_script = """
+        <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+        """
+
+        html_content = f"""
+        <html>
+        <head>
+        {mathjax_script}
+        </head>
+        <body>
+        {html_content}
+        </body>
+        </html>
+        """
+
+        with open(output_file, 'w') as html_file:
+            html_file.write(html_content)
