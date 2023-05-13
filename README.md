@@ -68,7 +68,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 $`\phi`$と$`\phi _n`$に関するBIEは，
 
 $$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint  _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
@@ -76,15 +76,15 @@ $$
 
 $$
 \begin{aligned}
-{\alpha  _{i  _\circ}}{\left( \phi  \right)  _{i  _\circ}}
-&=-\sum\limits  _{k  _\vartriangle}\sum\limits  _{{\xi  _1}} {\sum\limits  _{{\xi  _0}} {\left( {{w  _0}{w  _1}\left( {\sum\limits  _{j=0}^2 {{{\left( {{\phi  _n}} \right)}  _{k  _\vartriangle,j }}{N  _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}  _{i  _\circ}}} \|}}
+{\alpha _{i _\circ}}{\left( \phi  \right) _{i _\circ}}
+&=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} {\sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}
 \left\|
-\frac{{\partial{\bf{x}}}}{{\partial{\xi  _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi  _1}}}
+\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}
 \right\|} \right)} }\\
-&+ \sum\limits  _{k  _\vartriangle}\sum\limits  _{{\xi  _1}} {\sum\limits  _{{\xi  _0}} {\left( {{w  _0}{w  _1}\left( {\sum\limits  _{j =0}^2{{{\left( \phi  \right)}  _{k  _\vartriangle,j }}{N  _{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}  _{i  _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}  _{i  _\circ}}}\|}^3}}} \cdot
-\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi  _0}}}
+&+ \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} {\sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot
+\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}
 \times
-\frac{{\partial {\bf{x}}}}{{\partial {\xi  _1}}}
+\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}
 \right)
 } \right)} }
 \end{aligned}

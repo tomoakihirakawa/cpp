@@ -22,10 +22,10 @@ def convert_math_underscore(text: str) -> str:
         matches = list(re.finditer(pattern, text, re.DOTALL))
         for match in reversed(matches):
             start, end = match.span()
-            new_text = match.group().replace("_", " _")
+            # Replace underscores that do not have a space before them
+            new_text = re.sub(r"(?<! )_", " _", match.group())
             text = text[:start] + new_text + text[end:]
     return text
-
 
 def convert_inline_math(text: str) -> str:
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
