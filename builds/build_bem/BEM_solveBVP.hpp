@@ -265,7 +265,7 @@ $$
    \times
    \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
    \right)
-   } \right)} }
+   } \right)}
 \end{aligned}
 $$
 
@@ -275,7 +275,7 @@ $$
 &=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1}} {\sum\limits_{{\xi_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 \left\|
 \frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}
-\right\|} \right)} }\\
+\right\|} \right)} \\
 \end{aligned}
 $$
 
@@ -285,7 +285,7 @@ $$
    \times
    \frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}
    \right)
-   } \right)} }
+   } \right)}
 $$
 
 
