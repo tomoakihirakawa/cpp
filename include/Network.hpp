@@ -490,7 +490,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
    //
    double total_weight, total_weight_, total_weight__, total_N;
-   Tddd normal_SPH;
+   Tddd normal_SPH, vector_to_wall_SPH;
    networkFace *mirroring_face;
    double d_empty_center;
    double pn_SPH;

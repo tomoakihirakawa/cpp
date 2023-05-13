@@ -6,7 +6,7 @@
 
 #define REFLECTION
 
-// #define surface_zero_pressure
+#define surface_zero_pressure
 
 /* -------------------------------------------------------------------------- */
 
@@ -29,9 +29,6 @@
 /* -------------------------------------------------------------------------- */
 
 #define POWER 1.
-
-const double reflection_factor = 1.;
-const double asobi = 0.01;
 
 #include "SPH_Functions.hpp"
 /* -------------------------------------------------------------------------- */
@@ -314,7 +311,7 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 2.) {
                      q->isFluid = true;
                   }
                }
@@ -380,13 +377,13 @@ void developByEISPH(Network *net,
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
 
-         PoissonEquation(wall_p, {net}, dt, true);
+         PoissonEquation(wall_p, {net}, dt, true, particle_spacing);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt);
-         // PoissonEquation(wall_as_fluid, Append(net_RigidBody, net), dt);
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing);
+         // PoissonEquation(wall_p, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
-         // setPressure(wall_as_fluid);
+         // setPressure(wall_p);
 
 // #define ISPH
 #ifdef ISPH

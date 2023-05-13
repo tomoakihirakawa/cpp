@@ -2,6 +2,7 @@
 #define SPH_Functions_H
 
 #include "Network.hpp"
+
 /* -------------------------------------------------------------------------- */
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
@@ -316,13 +317,13 @@ $$
 \end{align*}
 $$
 
-このように${{\bf b}^n}$を定義し，また，ここの$b$を`PoissonRHS`とする．
-仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$である．
+この$b$を`PoissonRHS`とする．（仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$である．）
 
-CHECKED: 発散の計算方法: $\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
+CHECKED: 発散の計算方法: $b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
 
 `PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
-今の所，次の順で計算すること．
+
+壁粒子の圧力は時間発展させないので，壁粒子の$p^n$を計算する必要がある．順で計算する．
 
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
 2. 流体粒子の圧力$p^{n+1}$の計算
@@ -356,10 +357,13 @@ $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delt
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 */
+const double reflection_factor = 0.5;
+const double asobi = 0.;
 
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
                      const double dt,
+                     const double &particle_spacing,
                      const bool isWall = false) {
 #pragma omp parallel
    for (const auto &A : points)
@@ -373,15 +377,15 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       A->column_value.clear();
       auto markerX = A->X;
       double total_weight = 0, P_wall = 0, dP;
-      if (isWall) {
+
 // #define ISPH
 #if defined(ISPH)
+      if (isWall)
          markerX += 1.1 * A->normal_SPH;
 #else
-         markerX += 1. * A->normal_SPH;
+      if (isWall)
+         markerX += 2. * A->normal_SPH;  // - asobi * particle_spacing * Normalize(A->normal_SPH);
 #endif
-      }
-      //
       A->density_based_on_positions = 0;
       //% ----------------- PoissonRHS ------------------------- */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
@@ -403,6 +407,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
          dP = Dot(A->X - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
          P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
+         // P_wall += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
       };
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
@@ -417,7 +422,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       if (A->isFluid) {
          // const double alpha = 0.1 * dt;
          // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
-         A->PoissonRHS *= 0.2;
+         A->PoissonRHS *= .5;
       }
 #endif
       //% ------------------------------------------------------- */
@@ -426,8 +431,9 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       A->rho_ = A->rho + A->DrhoDt_SPH * dt;
 
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+
       if (isWall) {
-         if (total_weight > 1E-13)
+         if (total_weight > 0.01)
             A->p_SPH_ = P_wall / total_weight;
          else
             A->p_SPH_ = 0;
@@ -495,7 +501,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
-                     const auto &RigidBodyObject, const double &particle_spacing, const double dt) {
+                     const auto &RigidBodyObject,
+                     const double &particle_spacing,
+                     const double dt) {
    DebugPrint("粒子の時間発展", Green);
 #pragma omp parallel
    for (const auto &p : points)
