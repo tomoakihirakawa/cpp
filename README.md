@@ -1,9 +1,9 @@
 # Contents
 
 - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
-- [⛵️ 修正流速](#⛵️-修正流速)
-- [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
-- [⛵️ BIEの離散化](#⛵️-BIEの離散化)
+    - [⚓️ 修正流速](#⚓️-修正流速)
+    - [⚓️ 境界条件の設定](#⚓️-境界条件の設定)
+    - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
     - [⚓️ 多重節点](#⚓️-多重節点)
 - [⛵️ 準ニュートン法](#⛵️-準ニュートン法)
 - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
@@ -40,7 +40,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)
 
 
-## ⛵️ 修正流速
+### ⚓️ 修正流速
 
 求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
 修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
@@ -52,7 +52,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM_calculateVelocities.hpp#L348](./builds/build_bem/BEM_calculateVelocities.hpp#L348)
 
 
-## ⛵️ 境界条件の設定
+### ⚓️ 境界条件の設定
 
 1. 流体節点が接触する構造物面を保存する
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
@@ -63,7 +63,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
-## ⛵️ BIEの離散化
+### ⚓️ BIEの離散化
 
 $`\phi`$と$`\phi_n`$に関するBIEは，
 

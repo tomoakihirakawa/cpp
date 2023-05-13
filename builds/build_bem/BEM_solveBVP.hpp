@@ -225,7 +225,7 @@ void setPhiPhin(Network &water) {
 
 /*DOC_EXTRACT BEM
 
-## BIEの離散化
+### BIEの離散化
 
 $\phi$と$\phi_n$に関するBIEは，
 
