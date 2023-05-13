@@ -252,7 +252,7 @@ $$
 $$
 
 $$
-{\phi}<sub>{k_\vartriangle,j}</sub>
+\phi\_{k_\vartriangle,j}
 $$
 
 
