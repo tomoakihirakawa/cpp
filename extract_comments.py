@@ -61,6 +61,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
 
         # Remove leading whitespace from all lines
         comment_lines = [line[min_indent:] for line in comment_lines]
+        comment_lines = [line.lstrip() for line in comment_lines]
 
 
         # Try to extract "DOC_EXTRACT" keyword from the first line
@@ -72,6 +73,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
             comment_lines = comment_lines[1:]
         else:
             keyword = comment_lines[0].split()[0] if comment_lines and comment_lines[0].split() else 'DEFAULT'
+
         comment = '\n'.join(comment_lines)
 
         comment = comment.replace(keyword, '', 1) if keyword != 'DEFAULT' else comment
@@ -101,7 +103,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
     return keyword_comments, headers_info
 
 
-def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:
+def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:    
     contents_table = '# Contents\n\n'
     curr_section = 1
     curr_subsection = 0
@@ -157,7 +159,7 @@ if __name__ == "__main__":
                 else:
                     all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
-
+    
     contents_table = generate_contents_table(all_headers_info) + "\n---\n"
 
     with open(output_file, 'w') as md_file:
