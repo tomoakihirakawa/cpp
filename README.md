@@ -108,6 +108,21 @@ PBF_index[{p, Dirichlet, ある要素}]
 [./builds/build_bem/BEM_solveBVP.hpp#L319](./builds/build_bem/BEM_solveBVP.hpp#L319)
 
 
+IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
+$`IG \phi _n = IGn \phi`$
+
+移項前:
+
+$`\begin{bmatrix}IG0 & IG1 & IG2 & IG3\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} = \begin{bmatrix}IG _{n0} & IG _{n1} & IG _{n2} & IG _{n3}\end{bmatrix} \begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+
+移項後:
+
+$`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} = \begin{bmatrix}IG _{n0} & -IG _1 & IGn _2 & IG _{n0}\end{bmatrix} \begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L381](./builds/build_bem/BEM_solveBVP.hpp#L381)
+
+
 ---
 ## ⛵️ 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
