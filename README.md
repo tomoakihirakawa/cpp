@@ -20,6 +20,7 @@
         - [⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
         - [⚓️ 圧力の安定化](#⚓️-圧力の安定化)
         - [⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#⚓️-圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
+    - [⛵️ 注意点](#⛵️-注意点)
     - [⛵️ Bucketを用いた粒子探索のテスト](#⛵️-Bucketを用いた粒子探索のテスト)
     - [⛵️ 核関数](#⛵️-核関数)
     - [⛵️ Compressed Sparse Row (CSR)](#⛵️-Compressed-Sparse-Row-(CSR))
@@ -189,7 +190,7 @@ ISPHを使えば，水面粒子の圧力を簡単にゼロにすることがで�
 $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L389](./builds/build_sph/SPH.hpp#L389)
+[./builds/build_sph/SPH.hpp#L383](./builds/build_sph/SPH.hpp#L383)
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -215,7 +216,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L213](./builds/build_sph/SPH_Functions.hpp#L213)
+[./builds/build_sph/SPH_Functions.hpp#L211](./builds/build_sph/SPH_Functions.hpp#L211)
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
@@ -223,7 +224,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L227](./builds/build_sph/SPH_Functions.hpp#L227)
+[./builds/build_sph/SPH_Functions.hpp#L225](./builds/build_sph/SPH_Functions.hpp#L225)
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -256,7 +257,7 @@ $$
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L299](./builds/build_sph/SPH_Functions.hpp#L299)
+[./builds/build_sph/SPH_Functions.hpp#L297](./builds/build_sph/SPH_Functions.hpp#L297)
 
 
 ### ⚓️ 圧力の安定化
@@ -282,7 +283,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L394](./builds/build_sph/SPH_Functions.hpp#L394)
+[./builds/build_sph/SPH_Functions.hpp#L392](./builds/build_sph/SPH_Functions.hpp#L392)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -292,7 +293,19 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L446](./builds/build_sph/SPH_Functions.hpp#L446)
+[./builds/build_sph/SPH_Functions.hpp#L444](./builds/build_sph/SPH_Functions.hpp#L444)
+
+
+## ⛵️ 注意点
+
+計算がうまく行く設定を知るために，次の箇所をチェックする．
+
+- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L312)
+- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L357)
+- [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
+
+
+[./builds/build_sph/SPH_Functions.hpp#L584](./builds/build_sph/SPH_Functions.hpp#L584)
 
 
 ## ⛵️ 核関数

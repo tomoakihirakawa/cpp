@@ -11,6 +11,22 @@ CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 
+def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
+    label_pattern = re.compile(r'\\label\{(.*?)\}')
+    labels = {}
+    for dirpath, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith(extensions):
+                file_path = os.path.join(dirpath, filename)
+                with open(file_path, 'r') as file:
+                    content = file.read()
+                for match in label_pattern.finditer(content):
+                    label = match.group(1)
+                    start_line = content[:match.start()].count('\n') + 1
+                    labels[label] = (file_path, start_line)
+    return labels
+
+
 def convert_math_underscore(text: str) -> str:
     patterns = [
         r"(?<=\$\$)(.*?)(?=\$\$)",  # between $$
@@ -55,6 +71,16 @@ def highlight_keywords(text: str) -> str:
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
         text = re.sub(pattern, f'{emoji} ', text, flags=re.MULTILINE)
+
+
+    def replace_label(match):
+        label = match.group(1)
+        text = match.group(2)
+        file, line = labels.get(label, ('#', ''))
+        return f'[{text}]({file}#L{line})' if file != '#' else f'[{text}](not found)'
+
+    # text = re.sub(r'\\ref\{(.*?)\}\{(.*?)\}', replace_label, text)
+    text = re.sub(r'\\ref\{(.*?)\}\{(.*?)\}', replace_label, text)
 
     return text
 
@@ -182,6 +208,9 @@ if __name__ == "__main__":
     search_directory = sys.argv[2]
     file_extensions = (".cpp", ".hpp")
 
+    # Add the search_labels line here
+    labels = search_labels(search_directory, file_extensions)
+
     all_extracted_comments = defaultdict(list)
     no_keyword_comments = []
     all_headers_info = []
@@ -206,29 +235,3 @@ if __name__ == "__main__":
         for comment in no_keyword_comments:
             md_file.write(comment)
             md_file.write("\n---\n")  # Horizontal line after each comment without a keyword
-
-    if output_file.endswith('.html'):
-        with open(output_file, 'r') as md_file:
-            md_content = md_file.read()
-
-        html_content = markdown.markdown(md_content)
-
-        mathjax_script = """
-        <script type="text/javascript" async
-        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
-        </script>
-        """
-
-        html_content = f"""
-        <html>
-        <head>
-        {mathjax_script}
-        </head>
-        <body>
-        {html_content}
-        </body>
-        </html>
-        """
-
-        with open(output_file, 'w') as html_file:
-            html_file.write(html_content)

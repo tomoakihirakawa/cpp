@@ -184,10 +184,8 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
             if (obj->BucketPoints.any_of(p->X, radius, surface_condition1))
                p->isSurface = false;
 
-#ifdef surface_zero_pressure
       if (p->isSurface)
-         p->p_SPH = 0;
-#endif
+         p->p_SPH = 0;  //\label{SPH:water_surface_pressure}
    }
 
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
@@ -356,7 +354,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          markerX += 1.1 * A->normal_SPH;
 #else
       if (isWall)
-         markerX += (2 - 1E-10) * A->normal_SPH;  // - asobi * particle_spacing * Normalize(A->normal_SPH);
+         markerX += (2 - 1E-10) * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
 #endif
       A->density_based_on_positions = 0;
       //% ----------------- PoissonRHS ------------------------- */
@@ -582,5 +580,17 @@ void updateParticles(const auto &points,
       // A->setDensity(A->rho_);
    }
 }
+
+/*DOC_EXTRACT SPH
+
+## 注意点
+
+計算がうまく行く設定を知るために，次の箇所をチェックする．
+
+- \ref{SPH:select_wall_as_fluid}{流体として扱う壁粒子を設定するかどうか}
+- \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
+- \ref{SPH:water_surface_pressure}{水面粒子の圧力をゼロにするかどうか}
+
+*/
 
 #endif

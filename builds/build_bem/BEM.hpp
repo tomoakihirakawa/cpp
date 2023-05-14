@@ -19,6 +19,7 @@
 // b! ------------------------------------------------------ */
 
 Tdd estimate_phiphin(const networkLine *const l) {
+
    // auto fs = l->getFaces();
    // interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_0(fs[0], l);
    // interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_1(fs[1], l);
@@ -33,7 +34,6 @@ Tdd estimate_phiphin(const networkLine *const l) {
 };
 
 /* ------------------------------------------------------ */
-
 void remesh(Network &water,
             const Tdd &limit_angle_D,
             const Tdd &limit_angle_N,

@@ -401,11 +401,6 @@ struct BEM_BVP {
             mat_ukn[i][j] = std::get<0>(igign);
             mat_kn[i][j] = std::get<1>(igign);
          }
-         /*
-            移項前:{IG0,IG1,IG2,IG3} . {φn0,φn1,φn2,φn3} = {IGn0,IGn1,IGn2,IGn3} . {φ0,φ1,φ2,φ3}
-            移項後:{IG0,-IGn1,IG2,IG3} . {φn0,φ1,φn2,φn3} = {IGn0,-IG1,IGn2,IGn3} . {φ0,φn1,φ2,φ3}
-            多重節点:{0, 1, 0, 0} . {φn0,φ1,φn2,φn3} = {0, 0, 0, 1} . {φ0,φn1,φ2,φ3}
-         */
          auto [a, _] = i_row;
          if (a->CORNER && isNeumannID_BEM(i_row) /*行の変更*/) {
             std::ranges::fill(mat_ukn[i], 0.);
