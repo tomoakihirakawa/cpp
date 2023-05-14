@@ -309,9 +309,8 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5)  //\label{SPH:select_wall_as_fluid}
                      q->isFluid = true;
-                  }
                }
             });
          }
@@ -345,11 +344,6 @@ void developByEISPH(Network *net,
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       do {
          setNormal_Surface(net, wall_p, RigidBodyObject);
-#ifdef surface_zero_pressure
-         for (const auto &p : net->getPoints())
-            if (p->isSurface)
-               p->p_SPH = 0;
-#endif
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
          dt = (*net->getPoints().begin())->RK_X.getdt();
