@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     output_file = sys.argv[1]
     search_directory = sys.argv[2]
-    file_extensions = (".cpp", ".hpp")
+    file_extensions = (".cpp", ".hpp", "r.py")
 
     # Add the search_labels line here
     labels = search_labels(search_directory, file_extensions)
