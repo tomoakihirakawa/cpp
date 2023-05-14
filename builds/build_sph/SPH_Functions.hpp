@@ -416,7 +416,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       if (A->isFluid) {
          const double alpha = 0.1 * dt;
          A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-         A->PoissonRHS *= 1.;
+         A->PoissonRHS *= 1.;  //\label{SPH:pressure_stabilization}
       }
 #endif
       //% ------------------------------------------------------- */
@@ -507,8 +507,8 @@ void updateParticles(const auto &points,
       auto U = p->U_SPH;
       auto X_last = p->X;
       p->RK_U.push(p->DUDt_SPH);  // 速度
-      p->U_SPH = p->RK_U.getX();  // * 0.5 + U * 0.5;
-      p->RK_X.push(p->U_SPH);     // 位置
+      p->U_SPH = p->RK_U.getX();
+      p->RK_X.push(p->U_SPH);  // 位置
       p->setXSingle(p->tmp_X = p->RK_X.getX());
       // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
       /* -------------------------------------------------------------------------- */
@@ -592,6 +592,7 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
 - \ref{SPH:water_surface_pressure}{水面粒子の圧力をゼロにするかどうか}
 - \ref{SPH:update_density}{密度を更新するかどうか}
+- \ref{SPH:pressure_stabilization}{圧力の安定化をするかどうか}
 
 */
 
