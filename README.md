@@ -8,6 +8,10 @@
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
         - [⚓️ 多重節点](#⚓️-多重節点)
+- [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
+    - [⛵️ Usage](#⛵️-Usage)
+    - [⛵️ Customization](#⛵️-Customization)
+    - [⛵️ Output](#⛵️-Output)
 - [🐋 準ニュートン法](#🐋-準ニュートン法)
     - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
 - [🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](#🐋-Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
@@ -305,7 +309,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 - [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
 - [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L553)
 - [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L419)
-- [ルンゲクッタの段数](not found)
+- [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
 
 
 [./builds/build_sph/SPH_Functions.hpp#L585](./builds/build_sph/SPH_Functions.hpp#L585)
@@ -376,6 +380,64 @@ https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
 [./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
+
+
+---
+# 🐋 Input Generator for BEM Simulation
+
+This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+
+## ⛵️ Usage
+
+1. Make sure the required dependencies are installed.
+2. Run the script using the following command:
+
+```
+python3 input_generator.py
+```
+
+Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
+
+## ⛵️ Customization
+
+To customize the input file generation for a specific case, follow these steps:
+
+1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
+2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
+3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
+4. Update the `inputfiles` variable with the new input objects created for the custom case.
+
+After customizing the script, run it again to generate the input files for the new case.
+
+## ⛵️ Output
+
+The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
+
+
+---
+[./builds/build_bem/input_generator.py#L1](./builds/build_bem/input_generator.py#L1)
+
+
+---
+プログラムを回す際に面倒な事は，入力ファイルの設定．
+入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
+例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
+このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
+
+
+---
+[./builds/build_bem/input_generator.py#L50](./builds/build_bem/input_generator.py#L50)
+
+
+---
+プログラムを回す際に面倒な事は，入力ファイルの設定方法．
+入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
+例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
+このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
+
+
+---
+[./builds/build_sph/input_generator.py#L18](./builds/build_sph/input_generator.py#L18)
 
 
 ---
