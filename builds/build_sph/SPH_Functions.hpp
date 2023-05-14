@@ -331,32 +331,6 @@ CHECKED: 発散の計算方法: $b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_
 CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 */
 
-/* -------------------------------------------------------------------------- */
-
-/*DOC_EXTRACT SPH
-### 圧力の安定化
-
-$b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
-$\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
-
-$$
-\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-\frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-\nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
-$$
-
-であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
-
-しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
-計算上のようにはまとめることができない．
-
-$\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
-実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
-
-`PoissonRHS`,$b$の計算方法と同じである場合に限る．
-もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
-
-*/
 const double reflection_factor = 0.5;
 const double asobi = 0.;
 
@@ -419,6 +393,30 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
             }
          });
 #if defined(Morikawa2019)
+      /*DOC_EXTRACT SPH
+      ### 圧力の安定化
+
+      $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
+      $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
+
+      $$
+      \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+      \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+      \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
+      $$
+
+      であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
+
+      しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
+      計算上のようにはまとめることができない．
+
+      $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
+      実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
+
+      `PoissonRHS`,$b$の計算方法と同じである場合に限る．
+      もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+
+      */
       if (A->isFluid) {
          // const double alpha = 0.1 * dt;
          // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
