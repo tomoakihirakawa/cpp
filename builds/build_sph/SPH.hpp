@@ -4,10 +4,6 @@
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
 
-#define REFLECTION
-
-#define surface_zero_pressure
-
 /* -------------------------------------------------------------------------- */
 
 // #define USE_SPP_Fluid

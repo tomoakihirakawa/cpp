@@ -187,14 +187,14 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./builds/build_sph/SPH.hpp#L211](./builds/build_sph/SPH.hpp#L211)
+[./builds/build_sph/SPH.hpp#L207](./builds/build_sph/SPH.hpp#L207)
 
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
 $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L383](./builds/build_sph/SPH.hpp#L383)
+[./builds/build_sph/SPH.hpp#L379](./builds/build_sph/SPH.hpp#L379)
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -287,7 +287,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L392](./builds/build_sph/SPH_Functions.hpp#L392)
+[./builds/build_sph/SPH_Functions.hpp#L389](./builds/build_sph/SPH_Functions.hpp#L389)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -297,22 +297,23 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L444](./builds/build_sph/SPH_Functions.hpp#L444)
+[./builds/build_sph/SPH_Functions.hpp#L441](./builds/build_sph/SPH_Functions.hpp#L441)
 
 
 ## ⛵️ 注意点
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
-- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L312)
-- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L357)
+- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L308)
+- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L354)
 - [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
-- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L553)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L419)
+- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L550)
+- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L416)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
+- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L513)
 
 
-[./builds/build_sph/SPH_Functions.hpp#L585](./builds/build_sph/SPH_Functions.hpp#L585)
+[./builds/build_sph/SPH_Functions.hpp#L582](./builds/build_sph/SPH_Functions.hpp#L582)
 
 
 ## ⛵️ 核関数
