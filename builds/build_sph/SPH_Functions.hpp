@@ -550,6 +550,7 @@ void updateParticles(const auto &points,
       };
 #endif
    }
+   //\label{SPH:update_density}
 #pragma omp parallel
    for (const auto &A : points)
 #pragma omp single nowait
@@ -590,6 +591,7 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 - \ref{SPH:select_wall_as_fluid}{流体として扱う壁粒子を設定するかどうか}
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
 - \ref{SPH:water_surface_pressure}{水面粒子の圧力をゼロにするかどうか}
+- \ref{SPH:update_density}{密度を更新するかどうか}
 
 */
 
