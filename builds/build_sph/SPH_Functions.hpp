@@ -104,14 +104,6 @@ auto canSetSPP(const auto &target_nets, const auto &p) {
 #endif
 };
 
-/*DOC_EXTRACT SPH
-
-### 法線方向の計算と水面の判定
-
-CHECKED 単位法線ベクトル: ${\bf n}_i = -{\rm Normalize}\left(\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)$
-
-*/
-
 #define Morikawa2019
 #define new_method
 
@@ -127,6 +119,14 @@ void setNormal_Surface(auto &net,
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
    {
+      /*DOC_EXTRACT SPH
+
+      ### 法線方向の計算と水面の判定
+
+      CHECKED 単位法線ベクトル: ${\bf n}_i = -{\rm Normalize}\left(\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)$
+
+      */
+
       // 初期化
       p->COM_SPH.fill(0.);
       p->interpolated_normal_SPH_original.fill(0.);
@@ -166,29 +166,30 @@ void setNormal_Surface(auto &net,
          p->interpolated_normal_SPH = {0., 0., 1.};
          p->interpolated_normal_SPH_all = {0., 0., 1.};
       }
-      // 水面の判定
 
+      // 水面の判定
+      /*DOC_EXTRACT SPH
+
+      `surface_condition0,1`の両方を満たす場合，水面とする．
+
+      */
       p->isSurface = true;
       const auto radius = (p->radius_SPH / p->C_SML) * 3.;
 
-      auto surface_condition = [&](const auto &q) {
-         if (Distance(p, q) < radius)
-            return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < std::numbers::pi / 4);
-         return false;
+      auto surface_condition0 = [&](const auto &q) {
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < std::numbers::pi / 4);
       };
 
-      auto rigid_body_condition = [&](const auto &q) {
-         if (Distance(p, q) < radius)
-            return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < std::numbers::pi / 180. * 60);
-         return false;
+      auto surface_condition1 = [&](const auto &q) {
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < std::numbers::pi / 180. * 60);
       };
 
-      if (net->BucketPoints.any_of(p->X, radius, surface_condition))
+      if (net->BucketPoints.any_of(p->X, radius, surface_condition0))
          p->isSurface = false;
 
       if (p->isSurface)
          for (const auto &[obj, poly] : RigidBodyObject)
-            if (obj->BucketPoints.any_of(p->X, radius, rigid_body_condition))
+            if (obj->BucketPoints.any_of(p->X, radius, surface_condition1))
                p->isSurface = false;
 
 #ifdef surface_zero_pressure
@@ -208,7 +209,6 @@ void setNormal_Surface(auto &net,
          p->interpolated_normal_SPH_original = {0., 0., 0.};
          for (const auto &[obj, poly] : RigidBodyObject)
             obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-               // if (Between(Distance(p, q), {1E-8, p->radius_SPH}))
                p->interpolated_normal_SPH_original -= grad_w_Bspline(p->X, q->X, p->radius_SPH);
             });
          p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);
