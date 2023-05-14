@@ -307,8 +307,8 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 - [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L308)
 - [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L354)
 - [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
-- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L550)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L416)
+- [密度$`\rho`$を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L550)
+- [圧力$`p`$の安定化をするかどうか](not found)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
 - [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L513)
 
