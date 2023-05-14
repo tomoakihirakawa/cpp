@@ -585,7 +585,7 @@ void updateParticles(const auto &points,
 
 ## 注意点
 
-計算がうまく行く設定を知るために，次の箇所をチェックする．
+WARNING: 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
 - \ref{SPH:select_wall_as_fluid}{流体として扱う壁粒子を設定するかどうか}
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
