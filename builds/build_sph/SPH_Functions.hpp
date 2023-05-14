@@ -185,7 +185,7 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
                p->isSurface = false;
 
       if (p->isSurface)
-         p->p_SPH = 0;  //\label{SPH:water_surface_pressure}
+         p->p_SPH = 0.;  //\label{SPH:water_surface_pressure}
    }
 
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
@@ -412,8 +412,8 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       */
       if (A->isFluid) {
          const double alpha = 0.1 * dt;
-         A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-         A->PoissonRHS *= .1;  //\label{SPH:pressure_stabilization}
+         // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
+         A->PoissonRHS *= 1.;  //\label{SPH:pressure_stabilization}
       }
 #endif
       //% ------------------------------------------------------- */
@@ -424,7 +424,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       A->p_SPH_ = (A->PoissonRHS + sum_Aij_Pj) / sum_Aij;
 
       if (isWall) {
-         if (total_weight > 0.01)
+         if (total_weight > 0.001)
             A->p_SPH_ = P_wall / total_weight;
          else
             A->p_SPH_ = 0;
@@ -511,7 +511,7 @@ void updateParticles(const auto &points,
       /* -------------------------------------------------------------------------- */
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = 1.;
+      const double reflection_factor = .5;
       const double asobi = 0.;
       auto closest = [&]() {
          double distance = 1E+20;
@@ -547,7 +547,7 @@ void updateParticles(const auto &points,
          }
       };
    }
-   //\label{SPH:update_density}
+// \label{SPH:update_density}
 #pragma omp parallel
    for (const auto &A : points)
 #pragma omp single nowait
@@ -573,7 +573,7 @@ void updateParticles(const auto &points,
    for (const auto &A : points) {
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      A->setDensity(A->RK_rho.getX());
+      A->setDensity((A->RK_rho.getX() + A->rho) / 2.);
 
       // A->setDensity(A->rho_);
    }
@@ -588,8 +588,8 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 - \ref{SPH:select_wall_as_fluid}{流体として扱う壁粒子を設定するかどうか}
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
 - \ref{SPH:water_surface_pressure}{水面粒子の圧力をゼロにするかどうか}
-- \ref{SPH:update_density}{密度を更新するかどうか}
-- \ref{SPH:pressure_stabilization}{圧力の安定化をするかどうか}
+- \ref{SPH:update_density}{密度$\rho$を更新するかどうか}
+- \ref{SPH:pressure_stabilization}{圧力$p$の安定化をするかどうか}
 - \ref{SPH:RK_order}{ルンゲクッタの段数}
 - \ref{SPH:reflection}{反射の計算方法}
 
