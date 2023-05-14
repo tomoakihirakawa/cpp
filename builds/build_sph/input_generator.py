@@ -140,7 +140,7 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 1,  # \ref{SPH:RK_order}
+        setting = {"RK_order": 1,  # \label{SPH:RK_order}
                    "max_dt": 0.0001,
                    "end_time_step": 50000,
                    "end_time": 0.5,
