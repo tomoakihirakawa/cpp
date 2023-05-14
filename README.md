@@ -304,7 +304,8 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 - [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L357)
 - [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
 - [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L553)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L419)
+- [圧力の安定化をするかどうか](not found)
+- ルンゲクッタの段数
 
 
 [./builds/build_sph/SPH_Functions.hpp#L585](./builds/build_sph/SPH_Functions.hpp#L585)
