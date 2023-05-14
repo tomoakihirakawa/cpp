@@ -327,9 +327,6 @@ CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_
 
 */
 
-const double reflection_factor = 1.;
-const double asobi = 0.;
-
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
                      const double dt,
@@ -513,7 +510,9 @@ void updateParticles(const auto &points,
       // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
       /* -------------------------------------------------------------------------- */
       int count = 0;
-#if defined(REFLECTION)
+      //\label{SPH:reflection}
+      const double reflection_factor = 1.;
+      const double asobi = 0.;
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
@@ -530,7 +529,6 @@ void updateParticles(const auto &points,
       };
       bool isReflected = true;
       while (isReflected && count++ < 30) {
-         // const auto X = p->RK_X.getX(p->U_SPH);
          isReflected = false;
          networkPoint *closest_wall_point;
          if (closest_wall_point = closest()) {
@@ -548,7 +546,6 @@ void updateParticles(const auto &points,
             }
          }
       };
-#endif
    }
    //\label{SPH:update_density}
 #pragma omp parallel
@@ -594,6 +591,7 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 - \ref{SPH:update_density}{密度を更新するかどうか}
 - \ref{SPH:pressure_stabilization}{圧力の安定化をするかどうか}
 - \ref{SPH:RK_order}{ルンゲクッタの段数}
+- \ref{SPH:reflection}{反射の計算方法}
 
 */
 
