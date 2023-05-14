@@ -1,7 +1,7 @@
 /*DOC_EXTRACT BEM
 [![Banner](banner.png)](banner.png)
 
-<h1 align="center">Boundary Element Method (BEM-MEL)</h1>
+# Boundary Element Method (BEM-MEL)
 
 */
 

@@ -50,6 +50,7 @@ def highlight_keywords(text: str) -> str:
         'CHECKED': (r'^CHECKED:?\s*', '✅'),
         '###': (r'^###:?\s*', '### ⚓️'),
         '##': (r'^## :?\s*', '## ⛵️'),
+        '#': (r'^# :?\s*', '# 🐋'),
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
@@ -127,20 +128,37 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
     curr_subsection = 0
     curr_subsubsection = 0
     for header, line_num in headers_info:
-        if header.startswith("## "):
-            prefix = f"{curr_section}. " if numbered else "- "
-            contents_table += f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
+        if header.startswith("# "):
+            prefix = f"{curr_section}. " if numbered else "- "            
+            added = f"{prefix}[{header[2:]}](#{header[2:].replace(' ', '-')})\n"
+            contents_table += added
             curr_section += 1
             curr_subsection = 0
-        elif header.startswith("### "):
+            print("added =",added)
+        elif header.startswith("## "):
             curr_subsection += 1
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
-            contents_table += f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
+            added = f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
+            contents_table += added
             curr_subsubsection = 0
+            print("added =",added)
+        elif header.startswith("### "):
+            curr_subsection += 1
+            prefix = f"        {curr_section - 1}.{curr_subsection}. " if numbered else "        - "
+            added = f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
+            contents_table += added
+            curr_subsubsection = 0
+            print("added =",added)
         elif header.startswith("#### "):
-            curr_subsubsection += 1
-            prefix = f"        {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "        - "
-            contents_table += f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
+            curr_subsubsection += 1            
+            prefix = f"            {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "            - "
+            added = f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
+            contents_table += added
+            print("added =",added)
+        print("header =", header)
+        print("prefix =", prefix)
+        
+
     contents_table += "\n"
 
     return contents_table

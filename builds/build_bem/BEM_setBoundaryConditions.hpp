@@ -5,7 +5,7 @@
 #include "Network.hpp"
 
 /*DOC_EXTRACT BEM
-### 境界条件の設定
+## 境界条件の設定
 
 1. 流体節点が接触する構造物面を保存する
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
