@@ -225,6 +225,8 @@ void setPhiPhin(Network &water) {
 
 /*DOC_EXTRACT BEM
 
+## 境界値問題
+
 ### BIEの離散化
 
 $\phi$と$\phi_n$に関するBIEは，

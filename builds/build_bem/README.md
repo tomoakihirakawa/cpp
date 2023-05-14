@@ -1,18 +1,27 @@
 # Contents
 
-    - [⚓️ 修正流速](#⚓️-修正流速)
-    - [⚓️ 境界条件の設定](#⚓️-境界条件の設定)
-    - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
-    - [⚓️ 多重節点](#⚓️-多重節点)
+- [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
+    - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
+        - [⚓️ 修正流速](#⚓️-修正流速)
+    - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
+    - [⛵️ 境界値問題](#⛵️-境界値問題)
+        - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
+        - [⚓️ 多重節点](#⚓️-多重節点)
 
 
 ---
 [![Banner](banner.png)](banner.png)
 
-<h1 align="center">Boundary Element Method (BEM-MEL)</h1>
+# 🐋 Boundary Element Method (BEM-MEL)
 
 
 [./BEM.hpp#L1](./BEM.hpp#L1)
+
+
+## ⛵️ 流速の計算方法
+
+
+[./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
 
 
 ### ⚓️ 修正流速
@@ -24,10 +33,10 @@
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
 
-[./BEM_calculateVelocities.hpp#L348](./BEM_calculateVelocities.hpp#L348)
+[./BEM_calculateVelocities.hpp#L354](./BEM_calculateVelocities.hpp#L354)
 
 
-### ⚓️ 境界条件の設定
+## ⛵️ 境界条件の設定
 
 1. 流体節点が接触する構造物面を保存する
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
@@ -37,6 +46,8 @@
 
 [./BEM_setBoundaryConditions.hpp#L7](./BEM_setBoundaryConditions.hpp#L7)
 
+
+## ⛵️ 境界値問題
 
 ### ⚓️ BIEの離散化
 
@@ -80,7 +91,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./BEM_solveBVP.hpp#L319](./BEM_solveBVP.hpp#L319)
+[./BEM_solveBVP.hpp#L321](./BEM_solveBVP.hpp#L321)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -96,7 +107,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L381](./BEM_solveBVP.hpp#L381)
+[./BEM_solveBVP.hpp#L383](./BEM_solveBVP.hpp#L383)
 
 
 ---
