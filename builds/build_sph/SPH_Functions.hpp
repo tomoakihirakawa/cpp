@@ -3,54 +3,6 @@
 
 #include "Network.hpp"
 
-/* -------------------------------------------------------------------------- */
-
-double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
-   double dt = dt_IN;
-   const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
-   for (const auto &p : net->getPoints()) {
-      // 速度に関するCFL条件
-      auto dt_C_CFL = [&](const auto &q) {
-         if (p != q) {
-            auto pq = Normalize(p->X - q->X);
-            auto distance = Distance(p, q);
-            /* ------------------------------------------------ */
-            // 相対速度
-            double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
-            // double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
-            // 絶対速度
-            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
-            /* ------------------------------------------------ */
-            // 相対速度
-            double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
-            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
-            if (dt > max_dt_acc && isFinite(max_dt_acc))
-               dt = max_dt_acc;
-            // 絶対速度
-            max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
-            if (dt > max_dt_acc && isFinite(max_dt_acc))
-               dt = max_dt_acc;
-         }
-      };
-      net->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
-      for (const auto &[obj, poly] : RigidBodyObject)
-         obj->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
-      double max_dt_vel = C_CFL_velocity * (p->radius_SPH / p->C_SML) / Norm(p->U_SPH);
-      if (dt > max_dt_vel && isFinite(max_dt_vel))
-         dt = max_dt_vel;
-      double max_dt_acc = C_CFL_accel * std::sqrt((p->radius_SPH / p->C_SML) / Norm(p->DUDt_SPH));
-      if (dt > max_dt_acc && isFinite(max_dt_acc))
-         dt = max_dt_acc;
-   }
-   return dt;
-}
-/* -------------------------------------------------------------------------- */
-
 Tddd SPP_X(const networkPoint *p, const double c = 1.0) {
    // return p - (p->COM_SPH - p);
    // return p->X - 2 * p->COM_SPH;
@@ -104,17 +56,57 @@ auto canSetSPP(const auto &target_nets, const auto &p) {
 #endif
 };
 
+double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
+   double dt = dt_IN;
+   const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
+   for (const auto &p : net->getPoints()) {
+      // 速度に関するCFL条件
+      auto dt_C_CFL = [&](const auto &q) {
+         if (p != q) {
+            auto pq = Normalize(p->X - q->X);
+            auto distance = Distance(p, q);
+            /* ------------------------------------------------ */
+            // 相対速度
+            double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
+            // double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
+            // 絶対速度
+            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
+            /* ------------------------------------------------ */
+            // 相対速度
+            double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
+            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
+            if (dt > max_dt_acc && isFinite(max_dt_acc))
+               dt = max_dt_acc;
+            // 絶対速度
+            max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
+            if (dt > max_dt_acc && isFinite(max_dt_acc))
+               dt = max_dt_acc;
+         }
+      };
+      net->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
+      for (const auto &[obj, poly] : RigidBodyObject)
+         obj->BucketPoints.apply(p->X, p->radius_SPH, dt_C_CFL);
+      double max_dt_vel = C_CFL_velocity * (p->radius_SPH / p->C_SML) / Norm(p->U_SPH);
+      if (dt > max_dt_vel && isFinite(max_dt_vel))
+         dt = max_dt_vel;
+      double max_dt_acc = C_CFL_accel * std::sqrt((p->radius_SPH / p->C_SML) / Norm(p->DUDt_SPH));
+      if (dt > max_dt_acc && isFinite(max_dt_acc))
+         dt = max_dt_acc;
+   }
+   return dt;
+}
+
 #define Morikawa2019
 #define new_method
 
-void setNormal_Surface(auto &net,
-                       const std::unordered_set<networkPoint *> &wall_p,
-                       const auto &RigidBodyObject) {
-   // b# ------------------------------------------------------ */
-   // b#             流体粒子の法線方向の計算，水面の判定              */
-   // b# ------------------------------------------------------ */
-   // b#  A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
+void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall_p, const auto &RigidBodyObject) {
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
+   // refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -337,7 +329,7 @@ CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_
 
 */
 
-const double reflection_factor = 0.5;
+const double reflection_factor = 1.;
 const double asobi = 0.;
 
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
@@ -426,7 +418,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       if (A->isFluid) {
          const double alpha = 0.1 * dt;
          A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-         A->PoissonRHS *= 0.1;
+         A->PoissonRHS *= 1.;
       }
 #endif
       //% ------------------------------------------------------- */
@@ -560,35 +552,35 @@ void updateParticles(const auto &points,
       };
 #endif
    }
-   // #pragma omp parallel
-   //    for (const auto &A : points)
-   // #pragma omp single nowait
-   //    {
-   //       A->div_U = 0.;
-   //       A->rho_ = 0.;
-   //       //% ----------------- div_U ------------------------- */
-   //       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-   //          A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
-   //          A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
-   //       };
-   //       for (const auto &net : target_nets)
-   //          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-   //             if (B->isCaptured) {
-   //                add(B, B->X);
-   // #ifdef USE_SPP_Fluid
-   //                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
-   // #endif
-   //             }
-   //          });
-   //       //% ------------------------------------------------ */
-   //    };
-   //    for (const auto &A : points) {
-   //       A->DrhoDt_SPH = -A->rho * A->div_U;
-   //       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-   //       A->setDensity(A->RK_rho.getX());
+#pragma omp parallel
+   for (const auto &A : points)
+#pragma omp single nowait
+   {
+      A->div_U = 0.;
+      A->rho_ = 0.;
+      //% ----------------- div_U ------------------------- */
+      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
+         A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
+         A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
+      };
+      for (const auto &net : target_nets)
+         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+            if (B->isCaptured) {
+               add(B, B->X);
+#ifdef USE_SPP_Fluid
+               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
+#endif
+            }
+         });
+      //% ------------------------------------------------ */
+   };
+   for (const auto &A : points) {
+      A->DrhoDt_SPH = -A->rho * A->div_U;
+      A->RK_rho.push(A->DrhoDt_SPH);  // 密度
+      A->setDensity(A->RK_rho.getX());
 
-   //       // A->setDensity(A->rho_);
-   //    }
+      // A->setDensity(A->rho_);
+   }
 }
 
 #endif
