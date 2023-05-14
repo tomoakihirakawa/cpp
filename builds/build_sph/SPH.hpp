@@ -308,7 +308,7 @@ void developByEISPH(Network *net,
                if (Distance(p, q) < p->radius_SPH * C) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 2.) {
+                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5) {
                      q->isFluid = true;
                   }
                }
@@ -324,7 +324,7 @@ void developByEISPH(Network *net,
          }
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
 
-      // b# --------------- CFL条件を満たすようにタイムステップ間隔dtを設定 ----------------- */
+      // b# ----------- CFL条件を満たすようにタイムステップ間隔dtを設定 ------------ */
 
       DebugPrint("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
       double dt = dt_CFL(max_dt, net, RigidBodyObject);
@@ -343,6 +343,7 @@ void developByEISPH(Network *net,
       // b# ======================================================= */
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       do {
+         setNormal_Surface(net, wall_p, RigidBodyObject);
 #ifdef surface_zero_pressure
          for (const auto &p : net->getPoints())
             if (p->isSurface)
@@ -388,7 +389,7 @@ void developByEISPH(Network *net,
          ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
          $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
           */
-         if (real_time > 0.001) {
+         if (real_time > 0.00) {
             DebugPrint("activate");
             V_d b, x0;
             size_t i = 0;
