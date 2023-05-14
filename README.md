@@ -192,7 +192,13 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L107](./builds/build_sph/SPH_Functions.hpp#L107)
+[./builds/build_sph/SPH_Functions.hpp#L122](./builds/build_sph/SPH_Functions.hpp#L122)
+
+
+`surface_condition0,1`の両方を満たす場合，水面とする．
+
+
+[./builds/build_sph/SPH_Functions.hpp#L171](./builds/build_sph/SPH_Functions.hpp#L171)
 
 
 ### ⚓️ 壁面粒子の流速と圧力
