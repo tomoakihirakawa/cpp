@@ -201,12 +201,12 @@ void setNormal_Surface(auto &net,
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints())
-         p->interpolated_normal_SPH_original = {0, 0, 0};
+         p->interpolated_normal_SPH_original.fill(0.);
 #pragma omp parallel
    for (const auto &p : wall_p) {
 #pragma omp single nowait
       {
-         p->interpolated_normal_SPH_original = {0., 0., 0.};
+         p->interpolated_normal_SPH_original.fill(0.);
          for (const auto &[obj, poly] : RigidBodyObject)
             obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
                p->interpolated_normal_SPH_original -= grad_w_Bspline(p->X, q->X, p->radius_SPH);
@@ -253,17 +253,17 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //$ ------------------------------------------ */
       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
          const auto rij = qX - A->X;
-         if (Between(Norm(rij), {1E-12, A->radius_SPH})) {
 #if defined(Morikawa2019)
-            const auto Uij = A->U_SPH - coef * B->U_SPH;
-            A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
+         const auto Uij = A->U_SPH - coef * B->U_SPH;
+         A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
 #elif defined(Nomeritae2016)
-            const auto Uij = coef * B->U_SPH - A->U_SPH;
-            const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
-            A->lap_U += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
-                        ((B->rho + A->rho) * Dot(rij, rij));
+         const auto Uij = coef * B->U_SPH - A->U_SPH;
+         const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
+         A->lap_U += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
+                     ((B->rho + A->rho) * Dot(rij, rij));
 #endif
-            // just counting
+         // just counting
+         if (Between(Norm(rij), {1E-12, A->radius_SPH})) {
             A->checked_points_in_radius_SPH++;
             if (B->getNetwork()->isFluid || B->isFluid)
                A->checked_points_in_radius_of_fluid_SPH++;
@@ -426,7 +426,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       if (A->isFluid) {
          const double alpha = 0.1 * dt;
          A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-         // A->PoissonRHS *= 0.1;
+         A->PoissonRHS *= 0.1;
       }
 #endif
       //% ------------------------------------------------------- */

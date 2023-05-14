@@ -102,7 +102,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
 
         keyword_comments[keyword].append(cleaned_comment.strip() + '\n\n')
-        keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+        keyword_comments[keyword].append(f'<p align=\'right\'>[{input_file}#L{start_line}]({input_file}#L{start_line})</p>\n\n')
 
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)

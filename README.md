@@ -33,7 +33,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ![](builds/build_ODE/runge_kutta/res.png)
 
 
-[./builds/build_ODE/runge_kutta/main.cpp#L1](./builds/build_ODE/runge_kutta/main.cpp#L1)
+<p align='right'>[./builds/build_ODE/runge_kutta/main.cpp#L1](./builds/build_ODE/runge_kutta/main.cpp#L1)</p>
 
 
 ---
@@ -42,13 +42,13 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 # 🐋 Boundary Element Method (BEM-MEL)
 
 
-[./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)
+<p align='right'>[./builds/build_bem/BEM.hpp#L1](./builds/build_bem/BEM.hpp#L1)</p>
 
 
 ## ⛵️ 流速の計算方法
 
 
-[./builds/build_bem/BEM_calculateVelocities.hpp#L7](./builds/build_bem/BEM_calculateVelocities.hpp#L7)
+<p align='right'>[./builds/build_bem/BEM_calculateVelocities.hpp#L7](./builds/build_bem/BEM_calculateVelocities.hpp#L7)</p>
 
 
 ### ⚓️ 修正流速
@@ -60,7 +60,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
 
-[./builds/build_bem/BEM_calculateVelocities.hpp#L354](./builds/build_bem/BEM_calculateVelocities.hpp#L354)
+<p align='right'>[./builds/build_bem/BEM_calculateVelocities.hpp#L354](./builds/build_bem/BEM_calculateVelocities.hpp#L354)</p>
 
 
 ## ⛵️ 境界条件の設定
@@ -71,7 +71,7 @@ This C++ program demonstrates the application of various Runge-Kutta methods (fi
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
 
-[./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
+<p align='right'>[./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)</p>
 
 
 ## ⛵️ 境界値問題
@@ -92,7 +92,7 @@ $$
 $$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
+<p align='right'>[./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)</p>
 
 
 ### ⚓️ 多重節点
@@ -118,7 +118,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L321](./builds/build_bem/BEM_solveBVP.hpp#L321)
+<p align='right'>[./builds/build_bem/BEM_solveBVP.hpp#L321](./builds/build_bem/BEM_solveBVP.hpp#L321)</p>
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -134,7 +134,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L383](./builds/build_bem/BEM_solveBVP.hpp#L383)
+<p align='right'>[./builds/build_bem/BEM_solveBVP.hpp#L383](./builds/build_bem/BEM_solveBVP.hpp#L383)</p>
 
 
 ---
@@ -142,7 +142,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 
 
-[./builds/build_root_finding/example_Broyden.cpp#L1](./builds/build_root_finding/example_Broyden.cpp#L1)
+<p align='right'>[./builds/build_root_finding/example_Broyden.cpp#L1](./builds/build_root_finding/example_Broyden.cpp#L1)</p>
 
 
 ## ⛵️ ヘッセ行列を利用したニュートン法
@@ -151,7 +151,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 この方法で，変数は，関数を根とするのではなく，関数を最大最小（停留点）とする値へと収束する．
 
 
-[./builds/build_root_finding/example_NewtonRaphson.cpp#L1](./builds/build_root_finding/example_NewtonRaphson.cpp#L1)
+<p align='right'>[./builds/build_root_finding/example_NewtonRaphson.cpp#L1](./builds/build_root_finding/example_NewtonRaphson.cpp#L1)</p>
 
 
 ---
@@ -177,14 +177,14 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 9. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./builds/build_sph/SPH.hpp#L211](./builds/build_sph/SPH.hpp#L211)
+<p align='right'>[./builds/build_sph/SPH.hpp#L211](./builds/build_sph/SPH.hpp#L211)</p>
 
 
 ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
 $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
 
 
-[./builds/build_sph/SPH.hpp#L388](./builds/build_sph/SPH.hpp#L388)
+<p align='right'>[./builds/build_sph/SPH.hpp#L388](./builds/build_sph/SPH.hpp#L388)</p>
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -192,13 +192,13 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L122](./builds/build_sph/SPH_Functions.hpp#L122)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L122](./builds/build_sph/SPH_Functions.hpp#L122)</p>
 
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L171](./builds/build_sph/SPH_Functions.hpp#L171)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L171](./builds/build_sph/SPH_Functions.hpp#L171)</p>
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -210,7 +210,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L221](./builds/build_sph/SPH_Functions.hpp#L221)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L221](./builds/build_sph/SPH_Functions.hpp#L221)</p>
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
@@ -218,7 +218,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L235](./builds/build_sph/SPH_Functions.hpp#L235)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L235](./builds/build_sph/SPH_Functions.hpp#L235)</p>
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -251,7 +251,7 @@ $$
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L307](./builds/build_sph/SPH_Functions.hpp#L307)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L307](./builds/build_sph/SPH_Functions.hpp#L307)</p>
 
 
 ### ⚓️ 圧力の安定化
@@ -277,7 +277,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L402](./builds/build_sph/SPH_Functions.hpp#L402)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L402](./builds/build_sph/SPH_Functions.hpp#L402)</p>
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
@@ -287,7 +287,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L454](./builds/build_sph/SPH_Functions.hpp#L454)
+<p align='right'>[./builds/build_sph/SPH_Functions.hpp#L454](./builds/build_sph/SPH_Functions.hpp#L454)</p>
 
 
 ## ⛵️ 核関数
@@ -296,7 +296,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 * 体積積分が1になるかどうかを確認．
 
 
-[./builds/build_sph/test_KernelFunctions.cpp#L1](./builds/build_sph/test_KernelFunctions.cpp#L1)
+<p align='right'>[./builds/build_sph/test_KernelFunctions.cpp#L1](./builds/build_sph/test_KernelFunctions.cpp#L1)</p>
 
 
 ---
@@ -314,7 +314,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
 
-[./builds/build_sph/test_Buckets.cpp#L1](./builds/build_sph/test_Buckets.cpp#L1)
+<p align='right'>[./builds/build_sph/test_Buckets.cpp#L1](./builds/build_sph/test_Buckets.cpp#L1)</p>
 
 
 ---
@@ -326,7 +326,7 @@ std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 
 
-[./builds/build_system_of_linear_eqs/CSR.cpp#L1](./builds/build_system_of_linear_eqs/CSR.cpp#L1)
+<p align='right'>[./builds/build_system_of_linear_eqs/CSR.cpp#L1](./builds/build_system_of_linear_eqs/CSR.cpp#L1)</p>
 
 
 ---
@@ -340,7 +340,7 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
 
 
-[./builds/build_system_of_linear_eqs/GMRES.cpp#L1](./builds/build_system_of_linear_eqs/GMRES.cpp#L1)
+<p align='right'>[./builds/build_system_of_linear_eqs/GMRES.cpp#L1](./builds/build_system_of_linear_eqs/GMRES.cpp#L1)</p>
 
 
 ---
@@ -354,7 +354,7 @@ x0は初期値
 https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
-[./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
+<p align='right'>[./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)</p>
 
 
 ---
