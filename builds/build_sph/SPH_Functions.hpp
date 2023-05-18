@@ -422,8 +422,8 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       各粒子$A$に対して，圧力を決定するための方程式を作成する．各粒子$A$が，流体か壁か補助粒子か水面かによって，方程式が異なる．
 
-      | | |
-      |---------|--|
+      |||
+      |:---------|---|
       | IMPLEMENTED  \ref{SPH:PoissonEquation}{ポアソン方程式}              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
       | IMPLEMENTED  \ref{SPH:AuxiliaryEquation}{補助方程式}               | 水面上部に粒子を補い，水面での圧力が大気圧になるように圧力を決定する． |
       | NOTIMPLEMENTED  \ref{SPH:ImpermeableCondition}{不透過条件}         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
