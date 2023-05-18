@@ -40,7 +40,9 @@
 
 ## ⛵️ 減衰調和振動子/Damped Harmonic Oscillatorの例
 
-減衰調和振動子の式から，次のように$`f(x,v)`$を定義して，
+減衰調和振動子の式から，
+次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
+[プログラム中で宣言](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L40)し，
 
 $$
 \begin{align*}
@@ -56,9 +58,9 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 |:---:|:---:|:---:|
 |$`N=25`$ evaluations|$`N=50`$ evaluations|the sum of differences|
 
-* [後退オイラー](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L67)の１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
-* [リープフロッグ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L88)の１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．[LeapFrog](./include/integrationOfODE.hpp#L11)
-* [4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L106)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKutta](./include/integrationOfODE.hpp#L280)
+* [後退オイラー](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L70)の１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
+* [リープフロッグ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L91)の１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．[LeapFrogのクラス](./include/integrationOfODE.hpp#L11)
+* [4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L109)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKuttaのクラス](./include/integrationOfODE.hpp#L280)
 
 
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4)
