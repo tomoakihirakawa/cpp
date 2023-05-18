@@ -314,6 +314,8 @@ class LeapFrog {
    T x, v;
 };
 
+/* -------------------------------------------------------------------------- */
+
 template <typename T>
 class VelocityVerlet {
   public:
@@ -335,6 +337,8 @@ class VelocityVerlet {
    double dt, t;
    T x, v, a;
 };
+
+/* -------------------------------------------------------------------------- */
 
 template <typename T>
 class Beeman {
@@ -361,6 +365,8 @@ class Beeman {
    T x, v, a, old_a;
 };
 
+/* -------------------------------------------------------------------------- */
+
 template <typename T>
 class Gear {
   public:
@@ -385,5 +391,7 @@ class Gear {
    double dt, t;
    T x, v, a;
 };
+
+/* -------------------------------------------------------------------------- */
 
 #endif
