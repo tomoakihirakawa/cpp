@@ -385,7 +385,9 @@ class networkPoint : public CoordinateBounds, public CSR {
    RungeKutta<Tddd> RK_U;
    RungeKutta<double> RK_rho;
    RungeKutta<double> RK_P;
-
+   //
+   // なぜか，SPHでルンゲクッタがうまくいかないので（多分dtがDUDtに入ってくるから整合性が取れない）リープフロッグを使ってみる
+   LeapFrog<Tddd> LPFG_X;
    /* -------------------------------------------------------------------------- */
   public:
    V_netLp getLinesCORNER() const {
