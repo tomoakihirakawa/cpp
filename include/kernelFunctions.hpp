@@ -116,6 +116,35 @@ double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
    else
       return Dot(Xij / (r * r), grad_w_Bspline5(xi, xj, h));
 };
+
+// double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
+//    constexpr double a = 2187. / (40. * std::numbers::pi);
+//    constexpr double one_third = 1.0 / 3.0;
+//    constexpr double two_thirds = 2.0 / 3.0;
+
+//    const Tddd Xij = xi - xj;
+//    const double r = Norm(Xij);
+//    const double q = r / h;
+
+//    if (q > 1. || r < 1E-13)
+//       return 0.;
+
+//    Tddd grad;
+
+//    if (q < one_third) {
+//       const double dinom = h * h * h * r * h;
+//       if (dinom == 0.0)
+//          grad = {0., 0., 0.};
+//       else
+//          grad = Xij * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4) - 75. * std::pow(one_third - q, 4)) * a / dinom;
+//    } else if (q < two_thirds)
+//       grad = Xij * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4)) * a / (h * h * h * r * h);
+//    else
+//       grad = Xij * (-5 * std::pow(1. - q, 4)) * a / (h * h * h * r * h);
+
+//    return Dot(Xij / (r * r), grad);
+// }
+
 //! --------------------------------- 3次スプライン -------------------------------- */
 #include <numbers>
 double w_Bspline3(const double &r, const double &h) {
@@ -164,11 +193,12 @@ double Dot_grad_w_Bspline3_Dot(const Tddd &xi, const Tddd &xj, const double h) {
       return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 };
 
-// auto &w_Bspline = w_Bspline5;
-// auto &grad_w_Bspline = grad_w_Bspline5;
+auto &w_Bspline = w_Bspline5;
+auto &grad_w_Bspline = grad_w_Bspline5;
+auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
 
-auto &w_Bspline = w_Bspline3;
-auto &grad_w_Bspline = grad_w_Bspline3;
-auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
+// auto &w_Bspline = w_Bspline3;
+// auto &grad_w_Bspline = grad_w_Bspline3;
+// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
 
 #endif

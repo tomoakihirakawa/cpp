@@ -57,9 +57,12 @@ struct RungeKuttaCommon {
       else
          return this->Xinit + this->dX;
    };
+   T get_x() const { return getX(); };
 
    T getdX() const { return this->dX; };
    double gett() const { return this->t_init + this->dt; };
+   T get_t() const { return gett(); };
+
    double getTime() const { return this->t_init + this->dt; };
    double getNextTime() const { return this->t_init + this->getdt(); };
    double getdt() const {
@@ -273,6 +276,115 @@ template <std::size_t N>
 struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<double, N>> {
    RungeKutta(const double dt_IN, const double t0, const std::array<double, N> &X0, int stepsIN) : RungeKuttaCommon<std::array<double, N>>(dt_IN, t0, X0, stepsIN) { this->dX.fill(0.); };
    RungeKutta() : RungeKuttaCommon<std::array<double, N>>(){};
+};
+/* -------------------------------------------------------------------------- */
+
+template <typename T>
+class LeapFrog {
+  public:
+   LeapFrog(double dt, double t0, const T &x0, const T &v0) : dt(dt), t(t0), x(x0), v(v0), is_first(true){};
+
+   bool is_first;
+   T v_full;
+
+   // The Leapfrog method (also known as the midpoint method)
+   void push(const T &a) {
+      double half_dt = 0.5 * dt;
+      if (is_first) {
+         // give a = a(get_t(),get_x())
+         v_full = v + dt * a;
+         v += half_dt * a;  // half-step update of v
+         x += dt * v;       // full-step update of x
+         t += dt;
+         is_first = false;
+      } else {
+         // give a = a(get_t(),get_x())
+         v += half_dt * a;  // half-step update of v
+         v_full = v;
+         is_first = true;
+      }
+   }
+
+   const double get_t() const { return t; }
+   const T &get_x() const { return x; }
+   const T &get_v() const { return v; }
+   const T &get_v_full() const { return v_full; }
+
+  private:
+   double dt, t;
+   T x, v;
+};
+
+template <typename T>
+class VelocityVerlet {
+  public:
+   VelocityVerlet(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0){};
+
+   void push(const T &new_a) {
+      v += dt * (a + new_a) * 0.5;  // this should be perfomed after x is updated though this sometimes stabilizes the calculation
+      x += dt * v + 0.5 * dt * dt * new_a;
+      t += dt;
+      a = new_a;
+   }
+
+   const double get_t() const { return t; }
+   const T &get_x() const { return x; }
+   const T &get_v() const { return v; }
+   const T &get_a() const { return a; }
+
+  private:
+   double dt, t;
+   T x, v, a;
+};
+
+template <typename T>
+class Beeman {
+  public:
+   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0, const T &old_a) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(old_a){};
+   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(a0){};
+
+   void push(const T &new_a) {
+      x += v * dt + (2.0 / 3) * a * dt * dt - (1.0 / 6) * old_a * dt * dt;
+      T old_v = v;
+      v += (1.0 / 3) * new_a * dt + (5.0 / 6) * a * dt - (1.0 / 6) * old_a * dt;
+      t += dt;
+      old_a = a;
+      a = new_a;
+   }
+
+   double get_t() const { return t; }
+   const T &get_x() const { return x; }
+   const T &get_v() const { return v; }
+   const T &get_a() const { return a; }
+
+  private:
+   double dt, t;
+   T x, v, a, old_a;
+};
+
+template <typename T>
+class Gear {
+  public:
+   Gear(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0){};
+
+   void push(const T &new_a) {
+      T pred_x = x + v * dt + 0.5 * a * dt * dt;
+      T pred_v = v + a * dt;
+      T error = new_a - a;
+      x = pred_x + (1.0 / 6) * error * dt * dt;
+      v = pred_v + 0.5 * error * dt;
+      t += dt;
+      a = new_a;
+   }
+
+   double get_t() const { return t; }
+   const T &get_x() const { return x; }
+   const T &get_v() const { return v; }
+   const T &get_a() const { return a; }
+
+  private:
+   double dt, t;
+   T x, v, a;
 };
 
 #endif

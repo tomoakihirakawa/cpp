@@ -6,6 +6,10 @@ CSRは行列を表現する方法の一つである．
 このCSRクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．
 std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
+
+\ref{ArnoldiProcess:matrix-vector}{ArnoldiProcessの行列-ベクトル積}は特に計算コストが高い．
+\ref{CSR:parrallel}{CSRのDot積を並列化}すれば，かなり高速化できる．
+
 */
 
 #include "basic_IO.hpp"

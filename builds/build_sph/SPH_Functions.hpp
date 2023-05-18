@@ -3,59 +3,6 @@
 
 #include "Network.hpp"
 
-Tddd SPP_X(const networkPoint *p, const double c = 1.0) {
-   // return p - (p->COM_SPH - p);
-   // return p->X - 2 * p->COM_SPH;
-   return p->X + c * p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
-};
-
-Tddd SPP_X_tmp(const networkPoint *p, const double c = 1.0) {
-   return p->tmp_X + c * p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
-};
-
-auto canSetSPP(const auto &target_nets, const auto &p) {
-
-#if defined(USE_SPP_Fluid)
-   auto X = SPP_X(p);
-   auto range = p->radius_SPH / p->C_SML;
-   if (!p->isSurface)
-      return false;
-
-   // auto d = Distance(p, X);
-
-   // auto func = [&](const auto &q) { return p != q && Distance(q, X) < d; };
-
-   // if (net->BucketPoints.any_of(X, d, func))
-   //    return false;
-   // for (const auto &[obj, poly] : RigidBodyObject)
-   //    if (obj->BucketPoints.any_of(X, d, func))
-   //       return false;
-
-   const double C = 1.2;
-   for (const auto &net : target_nets)
-      if (net->BucketPoints.any_of(X, C * range,
-                                   [&](const auto &q) { return p != q && Distance(q, X) < C * range; }))
-         return false;
-
-   // {
-   //    const double C = 1.2;
-   //    auto func = [&](const auto &q) { return p != q && Distance(q, X) < C * range; };
-   //    if (net->BucketPoints.any_of(X, C * range, func))
-   //       return false;
-   // }
-   // {
-   //    const double C = 1.2;
-   //    auto func = [&](const auto &q) { return p != q && Distance(q, X) < C * range; };
-   //    for (const auto &[obj, poly] : RigidBodyObject)
-   //       if (obj->BucketPoints.any_of(X, C * range, func))
-   //          return false;
-   // }
-   return true;
-#else
-   return false;
-#endif
-};
-
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
    const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
@@ -104,9 +51,14 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 #define Morikawa2019
 #define new_method
 
+Tddd X_SPP(const networkPoint *p, const double c = 1.) {
+   return p->X + c * p->interpolated_normal_SPH * p->radius_SPH / p->C_SML;
+};
+
 void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall_p, const auto &RigidBodyObject) {
+
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
-   // refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
+// refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -183,10 +135,38 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
          for (const auto &[obj, poly] : RigidBodyObject)
             if (obj->BucketPoints.any_of(p->X, radius, surface_condition1))
                p->isSurface = false;
-
-      if (p->isSurface)
-         p->p_SPH = 0.;  //\label{SPH:water_surface_pressure}
    }
+
+   /* -------------------------------------------------------------------------- */
+   // 水面ネットワークの初期化
+   for (const auto &p : net->getPoints())
+      p->auxiliaryPoints.fill(nullptr);
+
+   DebugPrint("水面ネットワークの初期化", Green);
+   if (net->surfaceNet != nullptr)
+      delete net->surfaceNet;
+
+   net->surfaceNet = new Network();
+
+   DebugPrint("水面粒子の作成", Green);
+   for (const auto &p : net->getPoints()) {
+      double d = 0;
+      if (p->isSurface) {
+         for (auto &auxp : p->auxiliaryPoints) {
+            d += 1.;
+            auxp = new networkPoint(net->surfaceNet, X_SPP(p, d));
+            auxp->surfacePoint = p;
+            auxp->isAuxiliary = true;
+            auxp->p_SPH = p->p_SPH;
+            auxp->U_SPH = p->U_SPH;
+            auxp->rho = p->rho;
+            auxp->volume = p->volume;
+         }
+         p->isAuxiliary = false;
+      }
+   }
+   net->surfaceNet->setGeometricProperties();
+   /* -------------------------------------------------------------------------- */
 
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
    for (const auto &[obj, poly] : RigidBodyObject)
@@ -241,17 +221,23 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = A->checked_points_SPH = 0;
       A->lap_U.fill(0.);
       //$ ------------------------------------------ */
-      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
+      auto add = [&](const auto &B, const auto &qX, const double c = 1.) {
          const auto rij = qX - A->X;
 #if defined(Morikawa2019)
-         const auto Uij = A->U_SPH - coef * B->U_SPH;
-         A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH) * Uij;
+         const auto Uij = A->U_SPH - c * B->U_SPH;
+         A->lap_U += 2 * B->mass / A->rho * Uij * Dot_grad_w_Bspline_Dot(A->X, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
-         const auto Uij = coef * B->U_SPH - A->U_SPH;
+         const auto Uij = c * B->U_SPH - A->U_SPH;
          const auto nu_nu = B->mu_SPH / B->rho + A->mu_SPH / A->rho;
          A->lap_U += 1 / (A->mu_SPH / A->rho) * B->mass * 8 * nu_nu * Dot(Uij, rij) * grad_w_Bspline(A->X, qX, A->radius_SPH) /
                      ((B->rho + A->rho) * Dot(rij, rij));
 #endif
+
+         // 水面
+         // if (B->isSurface)
+         //    for (const auto &AUX : B->auxiliaryPoints)
+         //       A->lap_U += 2 * B->mass / A->rho * Dot_grad_w_Bspline_Dot(A->X, AUX->X, A->radius_SPH) * Uij;
+
          // just counting
          if (Between(Norm(rij), {1E-12, A->radius_SPH})) {
             A->checked_points_in_radius_SPH++;
@@ -263,16 +249,11 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //$ ------------------------------------------ */
       for (const auto &net : target_nets)
          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) {
-               add(B, B->X);
-#ifdef USE_SPP_Fluid
-               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_U_coef);
-#endif
-            }
+            if (B->isCaptured) add(B, B->X);
          });
       //$ ------------------------------------------ */
-      A->DUDt_SPH_ = A->lap_U * (A->mu_SPH / A->rho) + _GRAVITY3_;  // 後で修正されるDUDt
-      A->ViscousAndGravityForce = A->DUDt_SPH = A->DUDt_SPH_;
+      A->DUDt_SPH_ = A->DUDt_SPH;
+      A->ViscousAndGravityForce = A->DUDt_SPH = A->lap_U * (A->mu_SPH / A->rho) + _GRAVITY3_;  // 後で修正されるDUDt
       A->tmp_U_SPH = A->U_SPH + A->DUDt_SPH * dt;
       A->tmp_X = A->X + A->tmp_U_SPH * dt;
    }
@@ -329,8 +310,8 @@ CHECKED: ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_
 
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::unordered_set<Network *> &target_nets,
-                     const double dt,
-                     const double &particle_spacing,
+                     const double dt, const double &particle_spacing,
+                     const std::function<Tddd(const networkPoint *)> &getX,
                      const bool isWall = false) {
 #pragma omp parallel
    for (const auto &A : points)
@@ -339,82 +320,132 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       double Aij, sum_Aij = 0, sum_Aij_Pj = 0;
       A->PoissonRHS = 0;
       auto b = [&](const auto &A) { return (A->rho / dt * A->U_SPH) + (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_); };
-      const auto A_VALUE = b(A);
+      // auto b_ = [&](const auto &A) { return (A->mu_SPH * A->lap_U) + (A->rho * _GRAVITY3_); };
+      auto b_at_X = b(A);
+      auto a = A;
       //
       A->column_value.clear();
-      auto markerX = A->X;
+      auto markerX = getX(A);
       double total_weight = 0, P_wall = 0, dP;
 
-// #define ISPH
-#if defined(ISPH)
-      if (isWall)
-         markerX += 1.1 * A->normal_SPH;
-#else
-      if (isWall)
-         markerX += (2 - 1E-10) * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
-#endif
+      if (isWall) {
+         // markerX += 1. * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
+         markerX = A->X + A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
+         markerX -= 0.1 * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
+      }
+      if (A->isAuxiliary) {
+         markerX = A->surfacePoint->X + 0.5 * particle_spacing * Normalize(A->X - A->surfacePoint->X);  //\label{SPH:map_fluid_pressure_to_wall}
+         a = A->surfacePoint;
+         b_at_X = b(a);
+      }
+      if (isWall || A->isAuxiliary) {
+         b_at_X.fill(0.);
+         auto process = [&](const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+            b_at_X += b(B) * B->volume * w_Bspline(Norm(qX - markerX), B->radius_SPH);
+         };
+         for (const auto &net : target_nets)
+            net->BucketPoints.apply(markerX, a->radius_SPH, [&](const auto &B) {
+               if (B->isCaptured) {
+                  process(B, getX(B));
+                  if (B->isSurface)
+                     for (const auto &AUX : B->auxiliaryPoints)
+                        process(B, AUX->X);
+               }
+            });
+      }
       A->density_based_on_positions = 0;
       //% ----------------- PoissonRHS ------------------------- */
-      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-         A->PoissonRHS += B->volume * Dot(b(B) - A_VALUE, grad_w_Bspline(markerX, qX, A->radius_SPH));
-         A->density_based_on_positions += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
+      // setting Poisson Equation
+      auto process = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+         // A->PoissonRHS += B->volume * Dot(b(B) - b_at_X, grad_w_Bspline(markerX, qX, a->radius_SPH));
+         A->PoissonRHS += B->volume * Dot(b(B), grad_w_Bspline(markerX, qX, a->radius_SPH));
+         A->density_based_on_positions += B->volume * w_Bspline(Norm(markerX - qX), a->radius_SPH);
 #if defined(Morikawa2019)
-         Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+         Aij = 2. * B->mass / a->rho * Dot_grad_w_Bspline_Dot(markerX, qX, a->radius_SPH);
 #elif defined(Nomeritae2016)
          Aij = 2. * B->mass / std::pow((B->rho_ + A->rho_) / 2., 2.) * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH) * A->rho_;
 #elif defined(Barcarolo2013)
          Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
 #endif
-         sum_Aij += Aij;
          sum_Aij_Pj += Aij * B->p_SPH;
-
-         A->increment(B, -Aij);
+         sum_Aij += Aij;
+         A->increment(ID, -Aij);
          A->increment(A, Aij);
+      };
+
+      // setting impermeable boundary condition
+      const double c = 1.;
+      auto process_wall = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+         // A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
+
+         A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
+
+         auto coeff = B->volume * Dot(grad_w_Bspline(markerX, qX, a->radius_SPH), Normalize(A->normal_SPH));  // こっちはOKだろう．
+         A->increment(ID, c * coeff);
+      };
+
+      auto process_sum_zero = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+         // A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
+
+         A->PoissonRHS = 0;
+         A->increment(ID, B->volume * w_Bspline(Norm(markerX - qX), a->radius_SPH));
+      };
+
+      auto add = [&](const auto &B, const auto &qX) {
+         if (A->isAuxiliary) {
+            process_sum_zero(B, B, qX);
+            if (B->isSurface)
+               for (const auto &AUX : B->auxiliaryPoints)
+                  process_sum_zero(AUX, B, AUX->X);
+         } else {
+            process(B, B, qX);
+            if (B->isSurface)
+               for (const auto &AUX : B->auxiliaryPoints)
+                  process(AUX, B, AUX->X);
+         }
          // for mapping to wall
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
-         dP = Dot(A->X - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
+         dP = Dot(getX(A) - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
          P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
          // P_wall += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
       };
+      //% ------------------------------------------------------- */
       for (const auto &net : target_nets)
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) {
-               add(B, B->X);
-#ifdef USE_SPP_Fluid
-               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
-#endif
-            }
+            if (B->isCaptured)
+               add(B, getX(B));
          });
 #if defined(Morikawa2019)
-      /*DOC_EXTRACT SPH
-      ### 圧力の安定化
+            /*DOC_EXTRACT SPH
+            ### 圧力の安定化
 
-      $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
-      $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
+            $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
+            $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
 
-      $$
-      \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-      \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-      \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
-      $$
+            $$
+            \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+            \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+            \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
+            $$
 
-      であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
+            であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
 
-      しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
-      計算上のようにはまとめることができない．
+            しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
+            計算上のようにはまとめることができない．
 
-      $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
-      実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
+            $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
+            実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
 
-      `PoissonRHS`,$b$の計算方法と同じである場合に限る．
-      もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+            `PoissonRHS`,$b$の計算方法と同じである場合に限る．
+            もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-      */
-      if (A->isFluid) {
-         const double alpha = 0.1 * dt;
-         // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
-         A->PoissonRHS *= 1.;  //\label{SPH:pressure_stabilization}
-      }
+            */
+            // if (A->isFluid) {
+            //    // \label{SPH:pressure_stabilization}
+            //    const double alpha = 0.1 * dt;
+            //    // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
+            //    A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
+            // }
 #endif
       //% ------------------------------------------------------- */
       A->div_tmpU = A->PoissonRHS * dt / A->rho;
@@ -431,10 +462,97 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       }
    };
 };
+
+/* -------------------------------------------------------------------------- */
+
 void setPressure(const std::unordered_set<networkPoint *> &points) {
    for (const auto &p : points)
       p->p_SPH = p->p_SPH_;
 }
+
+/* -------------------------------------------------------------------------- */
+/*DOC_EXTRACT SPH
+
+### ISPH
+
+TODO: ISPHの解がもとまらないのはなぜか？
+
+- \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力を計算する位置には留意する}
+
+*/
+void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
+                  const std::unordered_set<networkPoint *> &wall_as_fluid,
+                  const std::unordered_set<Network *> &target_nets) {
+   size_t i = 0;
+   std::unordered_set<networkPoint *> points;
+   points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
+
+   DebugPrint("fluid_particle", Green);
+   for (const auto &A : fluid_particle) {
+      points.emplace(A);
+
+      if (A->isSurface)
+         for (const auto &AUX : A->auxiliaryPoints)
+            points.emplace(AUX);
+   }
+
+   DebugPrint("wall_as_fluid", Green);
+   for (const auto &p : wall_as_fluid)
+      points.emplace(p);
+
+   for (const auto &p : points)
+      p->setIndexCSR(i++);
+
+   // for (const auto &p : fluid_particle)
+   //    if (p->isSurface) {
+   //       auto max = 0;
+   //       for (const auto &[_, v] : p->column_value)
+   //          if (std::abs(v) > max)
+   //             max = std::abs(v);
+   //       p->column_value.clear();
+   //       p->increment(p, max);
+   //       p->PoissonRHS = 0.;
+   //       p->p_SPH = 0;
+   //    }
+
+   // for (const auto &p : fluid_particle)
+   //    if (p->isSurface) {
+   //       auto a0 = p->auxiliaryPoints[0];
+   //       a0->column_value.clear();
+   //       // std::cout << "max : " << max << std::endl;
+   //       // a0->increment(p, -max);
+   //       a0->increment(a0, 10.);
+   //       p->PoissonRHS = 0.;
+   //       p->p_SPH = 0;
+   //    }
+
+   V_d b, x0;
+   b.resize(points.size());
+   x0.resize(points.size());
+   int count = 0;
+   for (const auto &p : points) {
+      if (p->column_value.empty())
+         count++;
+   }
+
+   DebugPrint("set b and x0", Green);
+   for (const auto &p : points) {
+      b[p->getIndexCSR()] = p->PoissonRHS;
+      x0[p->getIndexCSR()] = 0;  // p->p_SPH;
+   }
+
+   DebugPrint("gmres", Green);
+   gmres gm(points, b, x0, 100);
+   std::cout << "gm.err : " << gm.err << std::endl;
+
+   for (const auto &p : points) {
+      p->p_SPH = gm.x[p->getIndexCSR()];
+      p->column_value.clear();
+   }
+};
+
+/* -------------------------------------------------------------------------- */
+
 // b% ------------------------------------------------------ */
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
@@ -443,6 +561,8 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 ### 圧力勾配$\nabla p^{n+1}$の計算 -> ${D {\bf u}}/{Dt}$の計算
 
 CHECKED: 勾配の計算方法: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
+
+CHECKED: 勾配の計算方法: $\nabla p_i = \rho_i \sum_{j} m_j \left(p_j - p_i\right) \nabla W_{ij}$
 
 CHECKED: 勾配の計算方法: $\nabla p_i = \sum_{j} \frac{m_j}{\rho_j} p_j \nabla W_{ij}$
 
@@ -454,26 +574,30 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
    {
       A->gradP_SPH.fill(0.);
       //% ------------------------------------------ */
-      auto func = [&](const auto &B, const auto &qX, const double coef = 1.) {
+      auto func = [&](const auto &B, const auto &qX, const double c = 1.) {
 #if defined(Morikawa2019)
-         A->gradP_SPH += A->rho * B->mass * (coef * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, qX, A->radius_SPH);
+         // A->gradP_SPH += A->rho * B->mass * (c * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, qX, A->radius_SPH);
+         A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, qX, A->radius_SPH);
+            // A->gradP_SPH += B->mass / A->rho * (B->p_SPH - A->p_SPH) * grad_w_Bspline(A->X, qX, A->radius_SPH);
 #elif defined(Nomeritae2016)
-         A->gradP_SPH += B->volume * B->p_SPH * grad_w_Bspline(A->X, qX, A->radius_SPH);
+         A->gradP_SPH += B->volume * c * B->p_SPH * grad_w_Bspline(A->X, qX, A->radius_SPH);
 #elif defined(Barcarolo2013)
-         A->gradP_SPH += A->rho * B->mass * (coef * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, qX, A->radius_SPH);
+         A->gradP_SPH += A->rho * B->mass * (c * B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, qX, A->radius_SPH);
 #endif
-      };
-      auto FUNC = [&](const auto &B) {
-         if (B->isCaptured) {
-            func(B, B->X);
-#ifdef USE_SPP_Fluid
-            if (B->isSurface && canSetSPP(target_nets, B)) func(B, SPP_X(B), SPP_p_coef);
-#endif
-         }
+
+         if (B->isSurface)
+            for (const auto &AUX : B->auxiliaryPoints) {
+               // A->gradP_SPH += A->rho * B->mass * (c * AUX->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, AUX->X, A->radius_SPH);
+               A->gradP_SPH += AUX->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, AUX->X, A->radius_SPH);
+               // A->gradP_SPH += B->mass / A->rho * (AUX->p_SPH - A->p_SPH) * grad_w_Bspline(A->X, AUX->X, A->radius_SPH);
+            }
       };
 
       for (const auto &net : target_nets)
-         net->BucketPoints.apply(A->X, A->radius_SPH, FUNC);
+         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+            if (B->isCaptured)
+               func(B, B->X);
+         });
          //% ------------------------------------------ */
 #if defined(Morikawa2019)
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
@@ -489,7 +613,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 //@ -------------------------------------------------------- */
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
-
+#define REFLECTION
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const auto &RigidBodyObject,
@@ -503,22 +627,37 @@ void updateParticles(const auto &points,
       // テスト
       auto U = p->U_SPH;
       auto X_last = p->X;
+      /* -------------------------------------------------------------------------- */
       p->RK_U.push(p->DUDt_SPH);  // 速度
       p->U_SPH = p->RK_U.getX();
+
       p->RK_X.push(p->U_SPH);  // 位置
       p->setXSingle(p->tmp_X = p->RK_X.getX());
+      auto getX = [&](const auto &p) { return p->X; };
+      /* -------------------------------------------------------------------------- */
+      // p->RK_X.push(p->U_SPH);  // 位置
+      // p->setXSingle(p->tmp_X = p->RK_X.getX());
+
+      // p->RK_U.push(p->DUDt_SPH);  // 速度
+      // p->U_SPH = p->RK_U.getX();
+      // const double _dt_ = p->RK_U.getdt();
+      // auto getX = [&](const auto &p) { return p->X + p->U_SPH * _dt_; };
+      /* -------------------------------------------------------------------------- */
+
       // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
       /* -------------------------------------------------------------------------- */
+
+#if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = .5;
-      const double asobi = 0.;
+      const double reflection_factor = 1.;
+      const double asobi = 0.001;
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
          for (const auto &[obj, poly] : RigidBodyObject) {
-            obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-               auto tmp = Distance(p->X, q);
+            obj->BucketPoints.apply(getX(p), p->radius_SPH, [&](const auto &q) {
+               auto tmp = Distance(getX(p), q);
                if (distance > tmp) {
                   distance = tmp;
                   P = q;
@@ -532,51 +671,62 @@ void updateParticles(const auto &points,
          isReflected = false;
          networkPoint *closest_wall_point;
          if (closest_wall_point = closest()) {
-            auto ovre_run = ((1. - asobi) * particle_spacing - Distance(closest_wall_point->X, p->X)) / 2.;
+            auto ovre_run = ((1. - asobi) * particle_spacing - Distance(closest_wall_point->X, getX(p))) / 2.;
             if (ovre_run > 0.) {
-               auto normal_distance = Norm(Projection(p->X - closest_wall_point->X, closest_wall_point->normal_SPH));
+               auto normal_distance = Norm(Projection(getX(p) - closest_wall_point->X, closest_wall_point->normal_SPH));
                if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
+
                   p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                   p->RK_U.repush(p->DUDt_SPH);  // 速度
                   p->U_SPH = p->RK_U.getX();
                   p->RK_X.repush(p->U_SPH);  // 位置
                   p->setXSingle(p->tmp_X = p->RK_X.getX());
                   isReflected = true;
+                  /* -------------------------------------------------------------------------- */
+                  // p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                  // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                  // p->U_SPH = p->RK_U.getX();
+                  // // p->RK_X.repush(p->U_SPH);  // 位置
+                  // // p->setXSingle(p->tmp_X = p->RK_X.getX());
+                  // isReflected = true;
+                  /* -------------------------------------------------------------------------- */
                }
             }
          }
       };
-   }
-// \label{SPH:update_density}
-#pragma omp parallel
-   for (const auto &A : points)
-#pragma omp single nowait
-   {
-      A->div_U = 0.;
-      A->rho_ = 0.;
-      //% ----------------- div_U ------------------------- */
-      auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-         A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
-         A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
-      };
-      for (const auto &net : target_nets)
-         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) {
-               add(B, B->X);
-#ifdef USE_SPP_Fluid
-               if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
-#endif
-            }
-         });
-      //% ------------------------------------------------ */
-   };
-   for (const auto &A : points) {
-      A->DrhoDt_SPH = -A->rho * A->div_U;
-      A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      A->setDensity((A->RK_rho.getX() + A->rho) / 2.);
 
-      // A->setDensity(A->rho_);
+#endif
    }
+   // // // \label{SPH:update_density}
+   // #pragma omp parallel
+   //    for (const auto &A : points)
+   // #pragma omp single nowait
+   //    {
+   //       A->div_U = 0.;
+   //       A->rho_ = 0.;
+   //       //% ----------------- div_U ------------------------- */
+   //       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
+   //          A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
+   //          A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
+   //       };
+   //       for (const auto &net : target_nets)
+   //          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+   //             if (B->isCaptured) {
+   //                add(B, B->X);
+   // #ifdef USE_SPP_Fluid
+   //                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
+   // #endif
+   //             }
+   //          });
+   //       //% ------------------------------------------------ */
+   //    };
+   //    for (const auto &A : points) {
+   //       A->DrhoDt_SPH = -A->rho * A->div_U;
+   //       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
+   //       A->setDensity(A->RK_rho.getX());
+
+   //       // A->setDensity(A->rho_);
+   //    }
 }
 
 /*DOC_EXTRACT SPH
@@ -588,10 +738,12 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 - \ref{SPH:select_wall_as_fluid}{流体として扱う壁粒子を設定するかどうか}
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
 - \ref{SPH:water_surface_pressure}{水面粒子の圧力をゼロにするかどうか}
-- \ref{SPH:update_density}{密度$\rho$を更新するかどうか}
-- \ref{SPH:pressure_stabilization}{圧力$p$の安定化をするかどうか}
+- \ref{SPH:update_density}{密度を更新するかどうか}
+- \ref{SPH:pressure_stabilization}{圧力の安定化をするかどうか}
 - \ref{SPH:RK_order}{ルンゲクッタの段数}
 - \ref{SPH:reflection}{反射の計算方法}
+
+壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 */
 

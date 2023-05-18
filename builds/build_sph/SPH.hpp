@@ -283,6 +283,7 @@ void developByEISPH(Network *net,
       wall_as_fluid.clear();
       wall_p.clear();
 
+      // 初期化
       for (const auto &[obj, poly] : RigidBodyObject)
          for (const auto &p : obj->getPoints()) {
             p->setDensityVolume(0, 0);
@@ -295,17 +296,20 @@ void developByEISPH(Network *net,
             p->tmp_X = p->X;
          }
       DebugPrint("関連する壁粒子をマーク", Green);
-      double C = 1.2;
+      // capture wall particles
 #pragma omp parallel
       for (const auto &p : net->getPoints())
 #pragma omp single nowait
       {
+         const double captureRange = p->radius_SPH;
+         const double captureRange_wall_as_fluid = p->radius_SPH;
+         //
          for (const auto &[obj, poly] : RigidBodyObject) {
-            obj->BucketPoints.apply(p->X, p->radius_SPH * C, [&](const auto &q) {
-               if (Distance(p, q) < p->radius_SPH * C) {
+            obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
+               if (Distance(p, q) < captureRange) {
                   q->isCaptured = true;
                   q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < p->radius_SPH / p->C_SML * 0.5)  //\label{SPH:select_wall_as_fluid}
+                  if (Distance(p, q) < captureRange_wall_as_fluid)  //\label{SPH:select_wall_as_fluid}
                      q->isFluid = true;
                }
             });
@@ -348,9 +352,10 @@ void developByEISPH(Network *net,
             p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
             p->tmp_U_SPH.fill(0.);
             p->U_SPH.fill(0.);
+            p->DUDt_SPH.fill(0.);
             p->DUDt_SPH_.fill(0.);
-            p->tmp_X = p->X;
             p->lap_U.fill(0.);
+            p->tmp_X = p->X;
             p->rho_ = p->rho;
          }
 
@@ -361,68 +366,23 @@ void developByEISPH(Network *net,
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          setTmpDensity(net->getPoints(), dt);
-         setTmpDensity(wall_as_fluid, dt);
+         setTmpDensity(wall_p, dt);
 
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
 
-         PoissonEquation(wall_p, {net}, dt, true, particle_spacing);
+         PoissonEquation(
+             wall_p, {net}, dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; }, true);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing);
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; });
+
+         // debug of surfaceNet
+         std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
+         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; });
          // PoissonEquation(wall_p, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
          // setPressure(wall_p);
-
-// #define ISPH
-#ifdef ISPH
-         /*DOC_EXTRACT SPH
-         ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-         $\nabla \cdot {\bf u}^*$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$\nabla \cdot {\bf u}^*$となるように決める必要はない．
-          */
-         if (real_time > 0.00) {
-            DebugPrint("activate");
-            V_d b, x0;
-            size_t i = 0;
-            std::unordered_set<networkPoint *> points;
-            points.reserve(net->getPoints().size() + wall_as_fluid.size());
-            b.resize(net->getPoints().size() + wall_as_fluid.size());
-            x0.resize(net->getPoints().size() + wall_as_fluid.size());
-            for (const auto &p : net->getPoints()) {
-               points.emplace(p);
-               p->setIndexCSR(i++);
-               p->exclude(true);
-            }
-
-            for (const auto &p : wall_as_fluid) {
-               points.emplace(p);
-               p->setIndexCSR(i++);
-               p->exclude(true);
-            }
-
-            for (const auto &p : net->getPoints())
-               if (p->isSurface && p->isFluid) {
-                  p->column_value.clear();
-                  p->increment(p, 1.);
-                  p->PoissonRHS = 0.;
-                  p->p_SPH = 0.;
-               }
-
-            for (const auto &p : points) {
-               b[p->getIndexCSR()] = p->PoissonRHS;
-               x0[p->getIndexCSR()] = p->p_SPH;
-            }
-
-            std::cout << "gmres" << std::endl;
-            gmres gm(points, b, x0, 200);
-            std::cout << "gm.err : " << gm.err << std::endl;
-
-            for (const auto &p : points) {
-               p->p_SPH = gm.x[p->getIndexCSR()];
-               p->column_value.clear();
-            }
-         }
-#endif
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
@@ -430,15 +390,16 @@ void developByEISPH(Network *net,
          //
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
 
-         //@ -------------------------------------------------------- */
-         //@                        粒子の時間発展                      */
-         //@ -------------------------------------------------------- */
+         solvePoisson(net->getPoints(), wall_p, Append(net_RigidBody, net));
 
+         //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);
          updateParticles(net->getPoints(), Append(net_RigidBody, net), RigidBodyObject, particle_spacing, dt);
+         net->setGeometricProperties();
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粒子の時間発展");
          real_time = (*net->getPoints().begin())->RK_X.gett();
+
       } while (!((*net->getPoints().begin())->RK_X.finished));
 
       Print(Yellow, "Elapsed time: ", Red, watch(), "s １タイムステップ終了");
@@ -527,6 +488,11 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
    for (const auto &p : Fluid->getPoints())
       U[p] = p->U_SPH;
    vtp.addPointData("U", U);
+
+   std::unordered_map<networkPoint *, double> len_column_value;
+   for (const auto &p : Fluid->getPoints())
+      len_column_value[p] = p->column_value.size();
+   vtp.addPointData("len_column_value", len_column_value);
 
    std::unordered_map<networkPoint *, double> C_SML;
    for (const auto &p : Fluid->getPoints())

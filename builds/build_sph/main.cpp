@@ -119,29 +119,22 @@ int main(int arg, char **argv) {
          net2PVD[tmp] = new PVDWriter(output_directory + J["name"][0] + ".pvd");
       } else {
          auto polyNet = new Network(J["objfile"][0], J["name"][0]);
-         // polyNet->translate({-0.1, -0.1, 0.});
+         auto particlesNet = new Network;
          //
          auto ofs = std::ofstream(output_directory + J["name"][0] + "_init.vtp");
          vtkPolygonWrite(ofs, ToX(polyNet->getFaces()));
          ofs.close();
          //
          polyNet->genOctreeOfFaces({minDepth, maxDepth}, 1);
-         polyNet->translate(Tddd{1E-5, 1E-5, 1E-5} * std::numbers::pi);
-         auto particlesNet = new Network;
          all_objects.push_back({particlesNet, polyNet, J});
          if (J["type"][0] == "RigidBody") {
             RigidBodies.push_back({particlesNet, polyNet, J});
-            particlesNet->isFluid = false;
-            polyNet->isFluid = false;
-            particlesNet->isRigidBody = true;
-            polyNet->isRigidBody = true;
+            particlesNet->isFluid = polyNet->isFluid = false;
+            particlesNet->isRigidBody = polyNet->isRigidBody = true;
          } else if (J["type"][0] == "Fluid") {
-            particlesNet->isFluid = true;
-            polyNet->isFluid = true;
-            particlesNet->isRigidBody = false;
-            polyNet->isRigidBody = false;
+            particlesNet->isFluid = polyNet->isFluid = true;
+            particlesNet->isRigidBody = polyNet->isRigidBody = false;
          }
-         //
          net2PVD[particlesNet] = new PVDWriter(output_directory + J["name"][0] + "_Particle_SPH.pvd");
          net2PVD[polyNet] = new PVDWriter(output_directory + J["name"][0] + "_Polygon_SPH.pvd");
       }
@@ -152,8 +145,10 @@ int main(int arg, char **argv) {
    double volume = std::pow(particle_spacing, 3);
    //
    CoordinateBounds range;
-   for (const auto &[object, polygon, _] : all_objects)
+   for (const auto &[object, polygon, _] : all_objects) {
+      polygon->setGeometricProperties();
       range += CoordinateBounds(polygon->getBounds());
+   }
    auto [rangeX, rangeY, rangeZ] = range.bounds;
    //
    auto [rX0, rX1] = rangeX;
@@ -188,8 +183,8 @@ int main(int arg, char **argv) {
                   p->setDensityVolume(_WATER_DENSITY_, volume);  // 質量(mass)は関数内部で自動で決められる
                   p->radius_SPH = CSML * ps;
                   p->C_SML = CSML;
+                  p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
-                  p->rho = p->rho_;
                   break;
                }
             }
@@ -256,28 +251,29 @@ int main(int arg, char **argv) {
 
       // int N = 1000;
 
-      // // if (time_step == N) {
-      // for (const auto &[object, _, __] : all_objects)
-      //    for (const auto &p : object->getPoints())
-      //       p->mu_SPH = _WATER_MU_10deg_;
+      // if (time_step == N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_;
       // } else if (time_step < N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
       //          p->mu_SPH = _WATER_MU_10deg_ * 10;
       // }
-
+      //
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
                      RigidBodies,
                      real_time,
                      CSML,
                      particle_spacing,
-                     time_step < 50 ? max_dt / 10 : max_dt,
+                     time_step < 10 ? max_dt / 10 : max_dt,
                      RK_order);
+
       std::cout << "real_time = " << real_time << std::endl;
-      //------------------------------------------
+
       // 出力
-      if (time_step % 10 == 0) {
+      if (time_step % 5 == 0) {
          {
             vtkPolygonWriter<networkPoint *> vtp;
             vtp.add(ToVector(Fluid->getPoints()));
@@ -291,14 +287,14 @@ int main(int arg, char **argv) {
             i++;
          }
          {  // SPP
-            std::vector<Tddd> VEC;
+            std::vector<Tddd> SPP;
             for (const auto &q : Fluid->getPoints()) {
-               auto tmp = SPP_X(q);
+               auto tmp = X_SPP(q);
                if (q->isSurface && isFinite(tmp))
-                  VEC.emplace_back(tmp);
+                  SPP.emplace_back(tmp);
             }
             std::ofstream ofs(output_directory + "SPP" + std::to_string(l) + ".vtp");
-            vtkPolygonWrite(ofs, VEC);
+            vtkPolygonWrite(ofs, SPP);
             ofs.close();
             //
             PVD_SPP->push("./SPP" + std::to_string(l) + ".vtp", real_time);

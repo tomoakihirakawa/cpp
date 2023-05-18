@@ -572,33 +572,24 @@ struct QR {
 };
 
 /* -------------------------------------------------------------------------- */
-
 struct CSR {
-   bool __is_active__, __exclude__;
    double value;
+   double tmp_value;
    std::array<double, 3> value3d;
    size_t __index__;
    void setIndexCSR(size_t i) {
       this->__index__ = i;
-      this->__is_active__ = true;
    };
    size_t getIndexCSR() const { return __index__; };
-   void deactivate() { __is_active__ = false; };
-   void exclude(bool torf) { __exclude__ = torf; };
    std::unordered_map<CSR *, double> column_value;
-   CSR() : __is_active__(false){};
+   CSR(){};
    void clear() { this->column_value.clear(); }
    double at(CSR *const p) const { return column_value.at(p); };
    bool contains(CSR *const p) const { return column_value.contains(p); };
    void increment(CSR *const p, const double v) {
-      if (__exclude__)
-         if (!p->__is_active__)
-            return;
-      auto it = this->column_value.find(p);
-      if (it != this->column_value.end())
-         (*it).second += v;
-      else
-         this->column_value[p] = v;
+      auto [it, inserted] = this->column_value.insert({p, v});
+      if (!inserted)
+         it->second += v;
    };
 };
 template <typename T>
@@ -606,9 +597,7 @@ template <typename T>
 double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V) {
    double ret = 0.;
    for (const auto &[crs, value] : column_value) {
-      if (crs->__is_active__) {
-         ret += value * V[crs->__index__];
-      }
+      ret += value * V[crs->__index__];
    }
    return ret;
 };
@@ -617,14 +606,22 @@ template <typename T>
    requires std::derived_from<T, CSR>
 double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs) {
    double ret = 0.;
-   for (const auto &[crs, value] : column_value) {
-      if (crs->__is_active__) {
-         auto it = V_crs.find(crs);
-         if (it != V_crs.end() && (*it)->__is_active__) {
-            ret += value * (*it)->value;
+
+   if (V_crs.size() <= column_value.size()) {
+      for (const auto &crs : V_crs) {
+         auto it = column_value.find(crs);
+         if (it != column_value.end()) {
+            ret += crs->value * it->second;
+         }
+      }
+   } else {
+      for (const auto &[crs, value] : column_value) {
+         if (V_crs.find(crs) != V_crs.end()) {
+            ret += value * crs->value;
          }
       }
    }
+
    return ret;
 };
 
@@ -633,12 +630,9 @@ template <typename T>
 V_d Dot(const std::unordered_set<T *> &V_crs) {
    V_d ret(V_crs.size(), 0.);
    for (const auto &crs0 : V_crs) {
-      if (crs0->__is_active__) {
-         auto &tmp = ret[crs0->__index__];
-         for (const auto &[crs1, value] : crs0->column_value) {
-            if (crs1->__is_active__)
-               tmp += value * crs1->value;
-         }
+      auto &tmp = ret[crs0->__index__];
+      for (const auto &[crs1, value] : crs0->column_value) {
+         tmp += value * crs1->value;
       }
    }
    return ret;
@@ -648,11 +642,23 @@ template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
    V_d ret(V.size(), 0.);
-   for (const auto &crs : A) {
-      if (crs->__is_active__) {
-         ret[crs->__index__] += Dot(crs->column_value, V);
-      }
-   }
+   // for (const auto &crs : A) {
+   //    ret[crs->__index__] += Dot(crs->column_value, V);
+   // }
+
+   // \label{CSR:parrallel}
+   for (const auto &crs : A)
+      crs->tmp_value = 0;
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+      crs->tmp_value += Dot(crs->column_value, V);
+
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+      ret[crs->__index__] = crs->tmp_value;
+
    return ret;
 };
 
@@ -660,15 +666,94 @@ template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &A, const std::unordered_set<T *> &V_crs) {
    V_d ret(V_crs.size(), 0.);
-   for (const auto &crs : A) {
-      if (crs->__is_active__) {
-         ret[crs->__index__] += Dot(crs->column_value, V_crs);
-      }
-   }
+   // for (const auto &crs : A) {
+   //    ret[crs->__index__] += Dot(crs->column_value, V_crs);
+   // }
+
+   // \label{CSR:parrallel}
+   for (const auto &crs : A)
+      crs->tmp_value = 0;
+
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+      crs->tmp_value += Dot(crs->column_value, V_crs);
+
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+      ret[crs->__index__] = crs->tmp_value;
+
    return ret;
 };
 
 /* -------------------------------------------------------------------------- */
+struct ILU {
+   std::vector<CSR *> LU;
+
+   ILU(const std::unordered_set<CSR *> &A) {
+      LU.reserve(A.size());
+
+      for (const auto &a : A) {
+         LU.push_back(new CSR(*a));  // assuming CSR has a copy constructor
+      }
+
+      size_t n = LU.size();
+
+      for (size_t k = 0; k < n; ++k) {
+         if (!LU[k]->contains(LU[k])) {
+            throw std::runtime_error("Zero diagonal element in ILU factorization.");
+         }
+         double diag = LU[k]->at(LU[k]);
+
+         for (auto &[i, lij] : LU[k]->column_value) {
+            if (i->getIndexCSR() > k) {
+               lij /= diag;
+
+               for (auto &[j, ljk] : LU[i->getIndexCSR()]->column_value) {
+                  if (j->getIndexCSR() > i->getIndexCSR()) {
+                     LU[k]->increment(j, -lij * ljk);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   ~ILU() {
+      for (auto lu : LU) {
+         delete lu;
+      }
+   }
+
+   V_d solve(const V_d &b) {
+      size_t n = LU.size();
+      V_d x(n), y(n);
+
+      // Forward solve Ly = b
+      for (size_t i = 0; i < n; ++i) {
+         y[i] = b[i];
+         for (auto &[j, lij] : LU[i]->column_value) {
+            if (j->getIndexCSR() < i) {
+               y[i] -= lij * y[j->getIndexCSR()];
+            }
+         }
+      }
+
+      // Backward solve Ux = y
+      for (int i = n - 1; i >= 0; --i) {
+         x[i] = y[i];
+         for (auto &[j, uij] : LU[i]->column_value) {
+            if (j->getIndexCSR() > i) {
+               x[i] -= uij * x[j->getIndexCSR()];
+            }
+         }
+         x[i] /= LU[i]->at(LU[i]);
+      }
+
+      return x;
+   }
+};
 
 /* ------------------------------------------------------ */
 /*                          GMRES                         */
@@ -698,15 +783,17 @@ struct ArnoldiProcess {
          H(VV_d(nIN + 1, V_d(nIN, 0.))),
          V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
          w(A.size()) {
+      Print("ArnoldiProcess");
       size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
+         // \label{ArnoldiProcess:matrix-vector}
          w = Dot(A, V[j]);  //@ 行列-ベクトル積
          for (i = 0; i < j + 1; ++i)
             w -= (H[i][j] = Dot(V[i], w)) * V[i];  //@ ベクトル内積
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
          // MatrixForm(H);
       }
-      // Print("done");
+      Print("done");
    };
 };
 
@@ -745,6 +832,28 @@ struct gmres : public ArnoldiProcess<Matrix> {
       for (i = 0; i < n; ++i)
          this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
    };
+   // gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN, const auto ILU)
+   //     : ArnoldiProcess<Matrix>(A, ILU(A).solve(b - Dot(A, x0)) /*行列-ベクトル積*/, nIN),
+   //       n(nIN),
+   //       x(x0),
+   //       y(b.size()),
+   //       qr(ArnoldiProcess<Matrix>::H),
+   //       g(qr.Q.size()),
+   //       err(0.) {
+   //    if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
+   //       return;
+   //    //
+   //    size_t i = 0;
+   //    for (const auto &q : qr.Q)
+   //       g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
+
+   //    err = g.back();  // 予想される誤差
+   //    g.pop_back();
+   //    this->y = back_substitution(qr.R, g, g.size());
+   //    i = 0;
+   //    for (i = 0; i < n; ++i)
+   //       this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+   // };
 };
 
 #endif

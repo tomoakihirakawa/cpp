@@ -153,6 +153,7 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
     curr_section = 1
     curr_subsection = 0
     curr_subsubsection = 0
+    prefix = ""
     for header, line_num in headers_info:
         if header.startswith("# "):
             prefix = f"{curr_section}. " if numbered else "- "            

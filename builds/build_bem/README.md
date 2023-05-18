@@ -7,6 +7,10 @@
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
         - [⚓️ 多重節点](#⚓️-多重節点)
+- [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
+    - [⛵️ Usage](#⛵️-Usage)
+    - [⛵️ Customization](#⛵️-Customization)
+    - [⛵️ Output](#⛵️-Output)
 
 
 ---
@@ -61,7 +65,11 @@ $$
 これを線形三角要素とGauss-Legendre積分で離散化すると，
 
 $$
-\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} {\sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i \ _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} \sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i \ _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} {\sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
+$$
+
+$$
+-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1}} \sum\limits _{{\xi _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 $$
 
 
@@ -91,7 +99,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./BEM_solveBVP.hpp#L321](./BEM_solveBVP.hpp#L321)
+[./BEM_solveBVP.hpp#L325](./BEM_solveBVP.hpp#L325)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -107,7 +115,54 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L383](./BEM_solveBVP.hpp#L383)
+[./BEM_solveBVP.hpp#L387](./BEM_solveBVP.hpp#L387)
+
+
+---
+# 🐋 Input Generator for BEM Simulation
+
+This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+
+## ⛵️ Usage
+
+1. Make sure the required dependencies are installed.
+2. Run the script using the following command:
+
+```
+python3 input_generator.py
+```
+
+Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
+
+## ⛵️ Customization
+
+To customize the input file generation for a specific case, follow these steps:
+
+1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
+2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
+3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
+4. Update the `inputfiles` variable with the new input objects created for the custom case.
+
+After customizing the script, run it again to generate the input files for the new case.
+
+## ⛵️ Output
+
+The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
+
+
+---
+[./input_generator.py#L1](./input_generator.py#L1)
+
+
+---
+プログラムを回す際に面倒な事は，入力ファイルの設定．
+入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
+例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
+このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
+
+
+---
+[./input_generator.py#L50](./input_generator.py#L50)
 
 
 ---
