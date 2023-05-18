@@ -1,7 +1,7 @@
 # Contents
 
-- [🐋 ODE](#🐋-ODE)
-    - [⛵️ 減衰調和振動子/Damped Harmonic Oscillator](#⛵️-減衰調和振動子/Damped-Harmonic-Oscillator)
+- [🐋 ODEの初期値問題](#🐋-ODEの初期値問題)
+    - [⛵️ 減衰調和振動子/Damped Harmonic Oscillatorの例](#⛵️-減衰調和振動子/Damped-Harmonic-Oscillatorの例)
     - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
 - [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
     - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
@@ -36,22 +36,37 @@
 
 
 ---
-# 🐋 ODE
+# 🐋 ODEの初期値問題
 
-## ⛵️ 減衰調和振動子/Damped Harmonic Oscillator
+## ⛵️ 減衰調和振動子/Damped Harmonic Oscillatorの例
 
-$`m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x = 0`$
+減衰調和振動子の式から，次のように$`f(x,v)`$を定義して，
 
-| ![](builds/build_ODE/example_DampedHrmonicOscillator.png) | ![](builds/build_ODE/example_DampedHrmonicOscillator_last.png) |
-|:---:|:---:|
+$$
+\begin{align*}
+m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x &= 0\\
+\rightarrow a(x,v) &= -\gamma v - \omega^2 x, \quad v=\frac{dx}{dt},\quad \gamma=\frac{b}{m}, \quad \omega^2=\frac{k}{m}
+\end{align*}
+$$
+
+$`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
+加速度の評価回数を$`N`$として合わせて比較した例：
+
+| ![](builds/build_ODE/figN25.png) | ![](builds/build_ODE/figN50.png) |  ![](builds/build_ODE/figError.png) |
+|:---:|:---:|:---:|
+|$`N=25`$ evaluations|$`N=50`$ evaluations|the sum of differences|
+
+* [後退オイラー](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L67)の１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
+* [リープフロッグ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L88)の１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．[LeapFrog](./include/integrationOfODE.hpp#L11)
+* [4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L106)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKutta](./include/integrationOfODE.hpp#L280)
 
 
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4)
 
 
 ## ⛵️ Runge-Kutta Integration of ODE
-This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
-![](builds/build_ODE/res.png)
+
+![](builds/build_ODE/RK.png)
 
 
 [./builds/build_ODE/example_RungeKutta.cpp#L1](./builds/build_ODE/example_RungeKutta.cpp#L1)
