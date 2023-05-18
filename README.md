@@ -1,7 +1,8 @@
 # Contents
 
+- [🐋 ODE](#🐋-ODE)
     - [⛵️ 減衰調和振動子/Damped Harmonic Oscillator](#⛵️-減衰調和振動子/Damped-Harmonic-Oscillator)
-- [🐋 Runge-Kutta Integration of ODE](#🐋-Runge-Kutta-Integration-of-ODE)
+    - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
 - [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
     - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
         - [⚓️ 修正流速](#⚓️-修正流速)
@@ -35,9 +36,11 @@
 
 
 ---
+# 🐋 ODE
+
 ## ⛵️ 減衰調和振動子/Damped Harmonic Oscillator
 
-$`m * \frac{d^2x}{dt^2} + b * \frac{dx}{dt} + k * x = 0`$
+$`m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x = 0`$
 
 | ![](builds/build_ODE/example_DampedHrmonicOscillator.png) | ![](builds/build_ODE/example_DampedHrmonicOscillator_last.png) |
 |:---:|:---:|
@@ -46,7 +49,7 @@ $`m * \frac{d^2x}{dt^2} + b * \frac{dx}{dt} + k * x = 0`$
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4)
 
 
-# 🐋 Runge-Kutta Integration of ODE
+## ⛵️ Runge-Kutta Integration of ODE
 This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
 ![](builds/build_ODE/res.png)
 

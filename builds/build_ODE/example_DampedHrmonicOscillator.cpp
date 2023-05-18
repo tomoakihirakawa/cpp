@@ -3,9 +3,11 @@
 
 /*DOC_EXTRACT ODE
 
+# ODE
+
 ## 減衰調和振動子/Damped Harmonic Oscillator
 
-$m * \frac{d^2x}{dt^2} + b * \frac{dx}{dt} + k * x = 0$
+$m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x = 0$
 
 | ![](example_DampedHrmonicOscillator.png) | ![](example_DampedHrmonicOscillator_last.png) |
 |:---:|:---:|
