@@ -424,10 +424,10 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       | | |
       |---------|--|
-      | IMPLEMENTED  \ref{SPH:PoissonEquation}{ポアソン方程式} | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-      | IMPLEMENTED  \ref{SPH:AuxiliaryEquation}{補助方程式} | 水面上部に粒子を補い，水面での圧力が大気圧になるように圧力を決定する． |
-      | NOTIMPLEMENTED  \ref{SPH:ImpermeableCondition}{不透過条件} | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-      | NOTIMPLEMENTED  \ref{SPH:AtmosphericPressureCondition}{大気圧条件}　| この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
+      | IMPLEMENTED  \ref{SPH:PoissonEquation}{ポアソン方程式}              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+      | IMPLEMENTED  \ref{SPH:AuxiliaryEquation}{補助方程式}               | 水面上部に粒子を補い，水面での圧力が大気圧になるように圧力を決定する． |
+      | NOTIMPLEMENTED  \ref{SPH:ImpermeableCondition}{不透過条件}         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+      | NOTIMPLEMENTED  \ref{SPH:AtmosphericPressureCondition}{大気圧条件} | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
 
       各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
