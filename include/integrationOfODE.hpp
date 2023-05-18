@@ -8,9 +8,7 @@ using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
 
-//* ----------------- 新しく作ったルンゲクッタのプログラム2021/05/01 ----------------- */
-//* ベクトルに拡張した
-//* 注意：入力はスカラーでもいいが，getXはベクトルしか返せない
+// \label{ODE:RungeKutta}
 template <typename T>
 struct RungeKuttaCommon {
    double dt_fixed;  // 基本となるステップ間隔,固定
@@ -279,6 +277,7 @@ struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<do
 };
 /* -------------------------------------------------------------------------- */
 
+// \label{ODE:LeapFrog}
 template <typename T>
 class LeapFrog {
   public:
