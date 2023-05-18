@@ -7,7 +7,9 @@
 
 ## 減衰調和振動子/Damped Harmonic Oscillatorの例
 
-減衰調和振動子の式から，次のように$f(x,v)$を定義して，
+減衰調和振動子の式から，
+次のような加速度$a(x,v)=\frac{d^2x}{dt^2}$を
+\ref{DampedHrmonicOscillator:declOfAccel}{プログラム中で宣言}し，
 
 $$
 \begin{align*}
@@ -24,8 +26,8 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
 
    * \ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
-   * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:RungeKutta}{LeapFrog}
-   * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:LeapFrog}{RungeKutta}
+   * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:RungeKutta}{LeapFrogのクラス}
+   * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:LeapFrog}{RungeKuttaのクラス}
 
 */
 
@@ -35,6 +37,7 @@ const double omega = 10;
 const double b = gamma * m;
 const double k = omega * omega * m;
 
+// \label{DampedHrmonicOscillator:declOfAccel}
 double acceleration(double x, double v) {
    return -(b * v + k * x) / m;
 }
