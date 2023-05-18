@@ -64,6 +64,8 @@ def highlight_keywords(text: str) -> str:
         'IMPORTANT': (r'^IMPORTANT:?\s*', '❗'),
         'TIP': (r'^TIP:?\s*', '🌟'),
         'CHECKED': (r'^CHECKED:?\s*', '✅'),
+        'NOTIMPLEMENTED': (r'NOTIMPLEMENTED:?\s*', '☐'),
+        'IMPLEMENTED': (r'IMPLEMENTED?\s*', '☑️'),
         '###': (r'^###:?\s*', '### ⚓️'),
         '##': (r'^## :?\s*', '## ⛵️'),
         '#': (r'^# :?\s*', '# 🐋'),
