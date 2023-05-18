@@ -50,7 +50,7 @@ m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x &= 0\\
 $$
 
 $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
-加速度の評価回数を$`N`$として合わせて比較した例：
+加速度の評価回数$`N`$を合わせて比較した例：
 
 | ![](builds/build_ODE/figN25.png) | ![](builds/build_ODE/figN50.png) |  ![](builds/build_ODE/figError.png) |
 |:---:|:---:|:---:|
