@@ -1,5 +1,6 @@
 # Contents
 
+    - [⛵️ 減衰調和振動子/Damped Harmonic Oscillator](#⛵️-減衰調和振動子/Damped-Harmonic-Oscillator)
 - [🐋 Runge-Kutta Integration of ODE](#🐋-Runge-Kutta-Integration-of-ODE)
 - [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
     - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
@@ -23,6 +24,7 @@
         - [⚓️ $`\nabla^2 {\bf u} _i`$の計算](#⚓️-$`\nabla^2-{\bf-u}-_i`$の計算)
         - [⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
         - [⚓️ 圧力の安定化](#⚓️-圧力の安定化)
+        - [⚓️ ISPH](#⚓️-ISPH)
         - [⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#⚓️-圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
     - [⛵️ 注意点](#⛵️-注意点)
     - [⛵️ Bucketを用いた粒子探索のテスト](#⛵️-Bucketを用いた粒子探索のテスト)
@@ -33,12 +35,23 @@
 
 
 ---
+## ⛵️ 減衰調和振動子/Damped Harmonic Oscillator
+
+$`m * \frac{d^2x}{dt^2} + b * \frac{dx}{dt} + k * x = 0`$
+
+| ![](builds/build_ODE/example_DampedHrmonicOscillator.png) | ![](builds/build_ODE/example_DampedHrmonicOscillator_last.png) |
+|:---:|:---:|
+
+
+[./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4)
+
+
 # 🐋 Runge-Kutta Integration of ODE
 This C++ program demonstrates the application of various Runge-Kutta methods (first to fourth order) for solving a first-order ordinary differential equation (ODE).
-![](builds/build_ODE/runge_kutta/res.png)
+![](builds/build_ODE/res.png)
 
 
-[./builds/build_ODE/runge_kutta/main.cpp#L1](./builds/build_ODE/runge_kutta/main.cpp#L1)
+[./builds/build_ODE/example_RungeKutta.cpp#L1](./builds/build_ODE/example_RungeKutta.cpp#L1)
 
 
 ---
@@ -190,25 +203,18 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 [./builds/build_sph/SPH.hpp#L207](./builds/build_sph/SPH.hpp#L207)
 
 
-ISPHを使えば，水面粒子の圧力を簡単にゼロにすることができる．
-$`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，壁面表層粒子の圧力を，壁面表層粒子上で$`\nabla \cdot {\bf u}^\ast`$となるように決める必要はない．
-
-
-[./builds/build_sph/SPH.hpp#L379](./builds/build_sph/SPH.hpp#L379)
-
-
 ### ⚓️ 法線方向の計算と水面の判定
 
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L114](./builds/build_sph/SPH_Functions.hpp#L114)
+[./builds/build_sph/SPH_Functions.hpp#L66](./builds/build_sph/SPH_Functions.hpp#L66)
 
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L163](./builds/build_sph/SPH_Functions.hpp#L163)
+[./builds/build_sph/SPH_Functions.hpp#L115](./builds/build_sph/SPH_Functions.hpp#L115)
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -220,7 +226,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L211](./builds/build_sph/SPH_Functions.hpp#L211)
+[./builds/build_sph/SPH_Functions.hpp#L191](./builds/build_sph/SPH_Functions.hpp#L191)
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
@@ -228,7 +234,7 @@ $`\nabla \cdot {\bf u}^\ast`$は流ればで満たされれば十分であり，
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L225](./builds/build_sph/SPH_Functions.hpp#L225)
+[./builds/build_sph/SPH_Functions.hpp#L205](./builds/build_sph/SPH_Functions.hpp#L205)
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -261,7 +267,7 @@ $$
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L297](./builds/build_sph/SPH_Functions.hpp#L297)
+[./builds/build_sph/SPH_Functions.hpp#L278](./builds/build_sph/SPH_Functions.hpp#L278)
 
 
 ### ⚓️ 圧力の安定化
@@ -287,33 +293,47 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L389](./builds/build_sph/SPH_Functions.hpp#L389)
+[./builds/build_sph/SPH_Functions.hpp#L419](./builds/build_sph/SPH_Functions.hpp#L419)
+
+
+### ⚓️ ISPH
+
+📝 ISPHの解がもとまらないのはなぜか？
+
+- [壁粒子の圧力を計算する位置には留意する](./builds/build_sph/SPH_Functions.hpp#L337)
+
+
+[./builds/build_sph/SPH_Functions.hpp#L474](./builds/build_sph/SPH_Functions.hpp#L474)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
 ✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
+✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L441](./builds/build_sph/SPH_Functions.hpp#L441)
+[./builds/build_sph/SPH_Functions.hpp#L559](./builds/build_sph/SPH_Functions.hpp#L559)
 
 
 ## ⛵️ 注意点
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
-- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L308)
-- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L354)
-- [水面粒子の圧力をゼロにするかどうか](./builds/build_sph/SPH_Functions.hpp#L188)
-- [密度$`\rho`$を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L550)
-- [圧力$`p`$の安定化をするかどうか](not found)
+- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L312)
+- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L337)
+- [水面粒子の圧力をゼロにするかどうか](not found)
+- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L700)
+- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L444)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
-- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L513)
+- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L652)
+
+壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./builds/build_sph/SPH_Functions.hpp#L582](./builds/build_sph/SPH_Functions.hpp#L582)
+[./builds/build_sph/SPH_Functions.hpp#L732](./builds/build_sph/SPH_Functions.hpp#L732)
 
 
 ## ⛵️ 核関数
@@ -351,6 +371,9 @@ CSRは行列を表現する方法の一つである．
 std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 
+[ArnoldiProcessの行列-ベクトル積](./include/basic_linear_systems.hpp#L789)は特に計算コストが高い．
+[CSRのDot積を並列化](./include/basic_linear_systems.hpp#L673)すれば，かなり高速化できる．
+
 
 [./builds/build_system_of_linear_eqs/CSR.cpp#L1](./builds/build_system_of_linear_eqs/CSR.cpp#L1)
 
@@ -380,7 +403,7 @@ x0は初期値
 https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
-[./include/basic_linear_systems.hpp#L678](./include/basic_linear_systems.hpp#L678)
+[./include/basic_linear_systems.hpp#L763](./include/basic_linear_systems.hpp#L763)
 
 
 ---

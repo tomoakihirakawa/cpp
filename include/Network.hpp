@@ -484,6 +484,9 @@ class networkPoint : public CoordinateBounds, public CSR {
       this->mass = this->volume * this->density;
    };
 
+   // 2023/05/16
+   std::array<networkPoint *, 3> auxiliaryPoints;
+   networkPoint *surfacePoint;
    double W;
    /////////////////////////
    // 物性
@@ -498,6 +501,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    bool isSurface;
    bool isInsideOfBody;
    bool isCaptured, isCaptured_, isFluid;
+   bool isAuxiliary;
    bool isFreeFalling;
    double radius_SPH;
    double C_SML;
@@ -3138,6 +3142,10 @@ Tddd Nearest(const networkPoint *p, const std::unordered_set<networkFace *> &fac
 //%  @-@-@
 //% ========================================================================== */
 class Network : public CoordinateBounds {
+
+  public:
+   Network *surfaceNet;
+
    // b# -------------------------------------------------------------------------- */
    // b#                                 octreeに関する                               */
    // b# -------------------------------------------------------------------------- */
@@ -3804,7 +3812,8 @@ class Network : public CoordinateBounds {
          velocity_name_start({"fixed", 0.}),
          inputJSON(),
          octreeOfFaces(nullptr),
-         octreeOfPoints(nullptr) {
+         octreeOfPoints(nullptr),
+         surfaceNet(nullptr) {
       // load obj
       if (filename.contains(".obj")) {
          std::vector<std::vector<std::string>> read_line;

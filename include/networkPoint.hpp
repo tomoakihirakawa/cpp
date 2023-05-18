@@ -1084,6 +1084,8 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    // std::cout << "done" << std::endl;
    /* ------------------------------------------------------ */
 #ifdef DEM
+   this->isAuxiliary = false;
+   this->auxiliaryPoints.fill(nullptr);
    this->contactP = {};
    this->mass = 1.;
    this->radius = 1.;
