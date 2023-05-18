@@ -281,37 +281,70 @@ struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<do
 template <typename T>
 class LeapFrog {
   public:
-   LeapFrog(double dt, double t0, const T &x0, const T &v0) : dt(dt), t(t0), x(x0), v(v0), is_first(true){};
+   LeapFrog() : is_first(true), finished(false){};
+   LeapFrog(double dt, double t0, const T &x0, const T &v0) : dt(dt), t(t0), x(x0), v(v0), is_first(true), finished(false){};
 
-   bool is_first;
+   void initialize(double dt, double t0, const T &x0, const T &v0) {
+      this->dt = dt;
+      this->t = t0;
+      this->x = x0;
+      this->v = v0;
+      this->is_first = true;
+      this->finished = false;
+   }
+
+   bool is_first, finished;
    T v_full;
 
-   // The Leapfrog method (also known as the midpoint method)
    void push(const T &a) {
       double half_dt = 0.5 * dt;
       if (is_first) {
          // give a = a(get_t(),get_x())
-         v_full = v + dt * a;
+         v_old = v;
+         a_old = a;
          v += half_dt * a;  // half-step update of v
          x += dt * v;       // full-step update of x
          t += dt;
          is_first = false;
+         finished = false;
       } else {
          // give a = a(get_t(),get_x())
+         v_old = v;
+         a_old = a;
          v += half_dt * a;  // half-step update of v
-         v_full = v;
          is_first = true;
+         finished = true;
+      }
+   }
+
+   // The Leapfrog method (also known as the midpoint method)
+   void repush(const T &a) {
+      double half_dt = 0.5 * dt;
+      if (!is_first) {
+         // give a = a(get_t(),get_x())
+         v_old = v;
+         a_old = a;
+         v += half_dt * (a - a_old);  // half-step update of v
+         x += dt * (v - v_old);       // full-step update of x
+         is_first = false;
+         finished = false;
+      } else {
+         // give a = a(get_t(),get_x())
+         v_old = v;
+         a_old = a;
+         v += half_dt * (a - a_old);  // half-step update of v
+         is_first = true;
+         finished = true;
       }
    }
 
    const double get_t() const { return t; }
    const T &get_x() const { return x; }
    const T &get_v() const { return v; }
-   const T &get_v_full() const { return v_full; }
 
   private:
    double dt, t;
-   T x, v;
+   T x, v, a_old, v_old;
 };
 
 /* -------------------------------------------------------------------------- */

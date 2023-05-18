@@ -4,10 +4,12 @@
     - [⛵️ 概要](#⛵️-概要)
         - [⚓️ 前準備](#⚓️-前準備)
         - [⚓️ フラクショナルステップを使って初期値問題を解く](#⚓️-フラクショナルステップを使って初期値問題を解く)
+        - [⚓️ CFL条件の設定](#⚓️-CFL条件の設定)
         - [⚓️ 法線方向の計算と水面の判定](#⚓️-法線方向の計算と水面の判定)
         - [⚓️ 壁面粒子の流速と圧力](#⚓️-壁面粒子の流速と圧力)
         - [⚓️ $`\nabla^2 {\bf u} _i`$の計算](#⚓️-$`\nabla^2-{\bf-u}-_i`$の計算)
         - [⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
+        - [⚓️ 圧力を決定するための方程式を作成](#⚓️-圧力を決定するための方程式を作成)
         - [⚓️ 圧力の安定化](#⚓️-圧力の安定化)
         - [⚓️ ISPH](#⚓️-ISPH)
         - [⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算](#⚓️-圧力勾配$`\nabla-p^{n+1}`$の計算-->-$`{D-{\bf-u}}/{Dt}`$の計算)
@@ -40,7 +42,17 @@
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./SPH.hpp#L207](./SPH.hpp#L207)
+[./SPH.hpp#L209](./SPH.hpp#L209)
+
+
+### ⚓️ CFL条件の設定
+
+$`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$
+
+を満たすように，毎時刻$`\Delta t`$を設定する．
+
+
+[./SPH_Functions.hpp#L6](./SPH_Functions.hpp#L6)
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -48,13 +60,13 @@
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-[./SPH_Functions.hpp#L61](./SPH_Functions.hpp#L61)
+[./SPH_Functions.hpp#L75](./SPH_Functions.hpp#L75)
 
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./SPH_Functions.hpp#L110](./SPH_Functions.hpp#L110)
+[./SPH_Functions.hpp#L124](./SPH_Functions.hpp#L124)
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -66,7 +78,7 @@
 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./SPH_Functions.hpp#L160](./SPH_Functions.hpp#L160)
+[./SPH_Functions.hpp#L200](./SPH_Functions.hpp#L200)
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
@@ -74,7 +86,7 @@
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./SPH_Functions.hpp#L174](./SPH_Functions.hpp#L174)
+[./SPH_Functions.hpp#L214](./SPH_Functions.hpp#L214)
 
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -107,7 +119,22 @@ $$
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./SPH_Functions.hpp#L244](./SPH_Functions.hpp#L244)
+[./SPH_Functions.hpp#L287](./SPH_Functions.hpp#L287)
+
+
+### ⚓️ 圧力を決定するための方程式を作成
+
+各粒子$`A`$に対して，圧力を決定するための方程式を作成する．各粒子$`A`$が，流体か壁か補助粒子か水面かによって，方程式が異なる．
+
+- [x] [ポアソン方程式](./SPH_Functions.hpp#L368)　次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する．
+- [x] [補助方程式](./SPH_Functions.hpp#L386)　水面上部に粒子を補い，水面での圧力が大気圧になるように圧力を決定する．
+- [] [不透過条件](./SPH_Functions.hpp#L404) この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない．
+- [] [大気圧条件](./SPH_Functions.hpp#L412)　この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない．
+
+各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
+
+
+[./SPH_Functions.hpp#L419](./SPH_Functions.hpp#L419)
 
 
 ### ⚓️ 圧力の安定化
@@ -133,45 +160,47 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./SPH_Functions.hpp#L331](./SPH_Functions.hpp#L331)
+[./SPH_Functions.hpp#L459](./SPH_Functions.hpp#L459)
 
 
 ### ⚓️ ISPH
 
 📝 ISPHの解がもとまらないのはなぜか？
 
-- [壁粒子の圧力を計算する位置には留意する](./SPH_Functions.hpp#L298)
+- [壁粒子の圧力を計算する位置には留意する](./SPH_Functions.hpp#L346)
 
 
-[./SPH_Functions.hpp#L383](./SPH_Functions.hpp#L383)
+[./SPH_Functions.hpp#L514](./SPH_Functions.hpp#L514)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
 ✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
+✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./SPH_Functions.hpp#L456](./SPH_Functions.hpp#L456)
+[./SPH_Functions.hpp#L600](./SPH_Functions.hpp#L600)
 
 
 ## ⛵️ 注意点
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
-- [流体として扱う壁粒子を設定するかどうか](./SPH.hpp#L312)
-- [壁粒子の圧力をどのように壁面にマッピングするか](./SPH_Functions.hpp#L298)
-- [水面粒子の圧力をゼロにするかどうか](./SPH_Functions.hpp#L135)
-- [密度を更新するかどうか](./SPH_Functions.hpp#L584)
-- [圧力の安定化をするかどうか](./SPH_Functions.hpp#L356)
+- [流体として扱う壁粒子を設定するかどうか](./SPH.hpp#L314)
+- [壁粒子の圧力をどのように壁面にマッピングするか](./SPH_Functions.hpp#L346)
+- [水面粒子の圧力をゼロにするかどうか](not found)
+- [密度を更新するかどうか](./SPH_Functions.hpp#L745)
+- [圧力の安定化をするかどうか](./SPH_Functions.hpp#L484)
 - [ルンゲクッタの段数](./input_generator.py#L143)
-- [反射の計算方法](./SPH_Functions.hpp#L538)
+- [反射の計算方法](./SPH_Functions.hpp#L688)
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./SPH_Functions.hpp#L616](./SPH_Functions.hpp#L616)
+[./SPH_Functions.hpp#L777](./SPH_Functions.hpp#L777)
 
 
 ## ⛵️ 核関数

@@ -210,7 +210,7 @@ if __name__ == "__main__":
     file_extensions = (".cpp", ".hpp", "r.py")
 
     # Add the search_labels line here
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 4:
         labels = search_labels(sys.argv[3], file_extensions)
     else:
         labels = search_labels(search_directory, file_extensions)

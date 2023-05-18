@@ -1,6 +1,8 @@
 #ifndef SPH_weightingFunctions_H
 #define SPH_weightingFunctions_H
 
+#define USE_LeapFrog
+
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
 
@@ -331,22 +333,31 @@ void developByEISPH(Network *net,
       std::cout << "dt = " << dt << std::endl;
 
       // b# --------------------------- ルンゲクッタの準備 ------------------- */
-
       for (const auto &p : net->getPoints()) {
-         p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
-         p->RK_X.initialize(dt, real_time, p->X, RK_order);
-         p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
-         p->RK_rho.initialize(dt, real_time, p->rho, RK_order);
+#if defined(USE_RungeKutta)
+// p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
+// p->RK_X.initialize(dt, real_time, p->X, RK_order);
+// p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
+// p->RK_rho.initialize(dt, real_time, p->rho, RK_order);
+//
+#elif defined(USE_LeapFrog)
+         p->LPFG_X.initialize(dt, real_time, p->X, p->U_SPH);
+#endif
       }
       // b# ======================================================= */
       // b#                  ルンゲクッタを使った時間積分                 */
       // b# ======================================================= */
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
+      bool finished = false;
       do {
          setNormal_Surface(net, wall_p, RigidBodyObject);
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+#if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
+#elif defined(USE_LeapFrog)
+            // dt is fixed
+#endif
          std::cout << "dt = " << dt << std::endl;
          for (const auto &p : wall_p) {
             p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
@@ -398,9 +409,15 @@ void developByEISPH(Network *net,
          net->setGeometricProperties();
 
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粒子の時間発展");
-         real_time = (*net->getPoints().begin())->RK_X.gett();
 
-      } while (!((*net->getPoints().begin())->RK_X.finished));
+#if defined(USE_RungeKutta)
+         real_time = (*net->getPoints().begin())->RK_X.get_t();
+         finished = (*net->getPoints().begin())->RK_X.finished;
+#elif defined(USE_LeapFrog)
+         real_time = (*net->getPoints().begin())->LPFG_X.get_t();
+         finished = (*net->getPoints().begin())->LPFG_X.finished;
+#endif
+      } while (!finished);
 
       Print(Yellow, "Elapsed time: ", Red, watch(), "s １タイムステップ終了");
    } catch (std::exception &e) {

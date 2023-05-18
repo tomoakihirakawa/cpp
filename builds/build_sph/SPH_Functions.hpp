@@ -3,6 +3,15 @@
 
 #include "Network.hpp"
 
+/*DOC_EXTRACT SPH
+
+### CFL条件の設定
+
+$\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h$
+
+を満たすように，毎時刻$\Delta t$を設定する．
+
+*/
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
    const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
@@ -330,11 +339,11 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       if (isWall) {
          // markerX += 1. * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
-         markerX = A->X + A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
-         markerX -= 0.1 * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
+         markerX = A->X + 1.8 * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
+         // markerX = 0.1 * A->normal_SPH;  //\label{SPH:map_fluid_pressure_to_wall}
       }
       if (A->isAuxiliary) {
-         markerX = A->surfacePoint->X + 0.5 * particle_spacing * Normalize(A->X - A->surfacePoint->X);  //\label{SPH:map_fluid_pressure_to_wall}
+         markerX = A->surfacePoint->X;  // + 0.00001 * particle_spacing * Normalize(A->surfacePoint->X - A->X);  //\label{SPH:map_fluid_pressure_to_wall}
          a = A->surfacePoint;
          b_at_X = b(a);
       }
@@ -353,12 +362,13 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                }
             });
       }
+
       A->density_based_on_positions = 0;
       //% ----------------- PoissonRHS ------------------------- */
-      // setting Poisson Equation
-      auto process = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
-         // A->PoissonRHS += B->volume * Dot(b(B) - b_at_X, grad_w_Bspline(markerX, qX, a->radius_SPH));
-         A->PoissonRHS += B->volume * Dot(b(B), grad_w_Bspline(markerX, qX, a->radius_SPH));
+      // \label{SPH:PoissonEquation}
+      auto PoissonEquation = [&](const auto &ID /*column id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+         A->PoissonRHS += B->volume * Dot(b(B) - b_at_X, grad_w_Bspline(markerX, qX, a->radius_SPH));
+         // A->PoissonRHS += B->volume * Dot(b(B), grad_w_Bspline(markerX, qX, a->radius_SPH));
          A->density_based_on_positions += B->volume * w_Bspline(Norm(markerX - qX), a->radius_SPH);
 #if defined(Morikawa2019)
          Aij = 2. * B->mass / a->rho * Dot_grad_w_Bspline_Dot(markerX, qX, a->radius_SPH);
@@ -373,79 +383,109 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          A->increment(A, Aij);
       };
 
-      // setting impermeable boundary condition
+      // \label{SPH:AuxiliaryEquation}
+      auto AuxiliaryEquation = [&](const auto &ID /*column id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+         A->PoissonRHS += B->volume * Dot(/*b(B)*/ -b_at_X, grad_w_Bspline(markerX, qX, a->radius_SPH));
+         // A->PoissonRHS += B->volume * Dot(b(B), grad_w_Bspline(markerX, qX, a->radius_SPH));
+         A->density_based_on_positions += B->volume * w_Bspline(Norm(markerX - qX), a->radius_SPH);
+#if defined(Morikawa2019)
+         Aij = 2. * B->mass / a->rho * Dot_grad_w_Bspline_Dot(markerX, qX, a->radius_SPH);
+#elif defined(Nomeritae2016)
+         Aij = 2. * B->mass / std::pow((B->rho_ + A->rho_) / 2., 2.) * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH) * A->rho_;
+#elif defined(Barcarolo2013)
+         Aij = 2. * B->mass / A->rho * Dot_grad_w_Bspline_Dot(markerX, qX, A->radius_SPH);
+#endif
+         sum_Aij_Pj += Aij * B->p_SPH;
+         sum_Aij += Aij;
+         A->increment(ID, -Aij);
+         A->increment(A, Aij);
+      };
+
+      // \label{SPH:ImpermeableCondition}
       const double c = 1.;
-      auto process_wall = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
-         // A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
-
+      auto ImpermeableCondition = [&](const auto &ID /*column id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
          A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
-
          auto coeff = B->volume * Dot(grad_w_Bspline(markerX, qX, a->radius_SPH), Normalize(A->normal_SPH));  // こっちはOKだろう．
          A->increment(ID, c * coeff);
       };
 
-      auto process_sum_zero = [&](const auto &ID /*id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
+      // \label{SPH:AtmosphericPressureCondition}
+      auto AtmosphericPressureCondition = [&](const auto &ID /*column id*/, const auto &B /*use this property, p, U, rho, lap_U*/, const auto &qX /*use this position*/) {
          // A->PoissonRHS -= c * (B->volume * Dot(b(B), Normalize(A->normal_SPH)) * w_Bspline(Norm(markerX - qX), a->radius_SPH));
-
          A->PoissonRHS = 0;
          A->increment(ID, B->volume * w_Bspline(Norm(markerX - qX), a->radius_SPH));
       };
 
+      /*DOC_EXTRACT SPH
+
+      ### 圧力を決定するための方程式を作成
+
+      各粒子$A$に対して，圧力を決定するための方程式を作成する．各粒子$A$が，流体か壁か補助粒子か水面かによって，方程式が異なる．
+
+         - [x] \ref{SPH:PoissonEquation}{ポアソン方程式}　次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する．
+         - [x] \ref{SPH:AuxiliaryEquation}{補助方程式}　水面上部に粒子を補い，水面での圧力が大気圧になるように圧力を決定する．
+         - [] \ref{SPH:ImpermeableCondition}{不透過条件} この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない．
+         - [] \ref{SPH:AtmosphericPressureCondition}{大気圧条件}　この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない．
+
+      各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
+
+      */
       auto add = [&](const auto &B, const auto &qX) {
          if (A->isAuxiliary) {
-            process_sum_zero(B, B, qX);
+            AtmosphericPressureCondition(B, B, qX);
             if (B->isSurface)
                for (const auto &AUX : B->auxiliaryPoints)
-                  process_sum_zero(AUX, B, AUX->X);
+                  AtmosphericPressureCondition(AUX, B, AUX->X);
          } else {
-            process(B, B, qX);
+            PoissonEquation(B, B, qX);
             if (B->isSurface)
                for (const auto &AUX : B->auxiliaryPoints)
-                  process(AUX, B, AUX->X);
+                  AuxiliaryEquation(AUX, B, AUX->X);
          }
          // for mapping to wall
          total_weight += B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
          dP = Dot(getX(A) - markerX, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
          P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
-         // P_wall += B->p_SPH * B->volume * w_Bspline(Norm(markerX - qX), A->radius_SPH);
       };
       //% ------------------------------------------------------- */
-      for (const auto &net : target_nets)
+      for (const auto &net : target_nets) {
          net->BucketPoints.apply(markerX, A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured)
                add(B, getX(B));
          });
+      }
+      /* -------------------------------------------------------------------------- */
 #if defined(Morikawa2019)
-            /*DOC_EXTRACT SPH
-            ### 圧力の安定化
+         /*DOC_EXTRACT SPH
+         ### 圧力の安定化
 
-            $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
-            $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
+         $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
+         $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
 
-            $$
-            \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-            \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-            \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
-            $$
+         $$
+         \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+         \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+         \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
+         $$
 
-            であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
+         であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
 
-            しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
-            計算上のようにはまとめることができない．
+         しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
+         計算上のようにはまとめることができない．
 
-            $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
-            実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
+         $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
+         実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
 
-            `PoissonRHS`,$b$の計算方法と同じである場合に限る．
-            もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+         `PoissonRHS`,$b$の計算方法と同じである場合に限る．
+         もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-            */
-            // if (A->isFluid) {
-            //    // \label{SPH:pressure_stabilization}
-            //    const double alpha = 0.1 * dt;
-            //    // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
-            //    A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-            // }
+         */
+         // if (A->isFluid) {
+         //    // \label{SPH:pressure_stabilization}
+         //    const double alpha = 0.1 * dt;
+         //    // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
+         //    A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
+         // }
 #endif
       //% ------------------------------------------------------- */
       A->div_tmpU = A->PoissonRHS * dt / A->rho;
@@ -515,6 +555,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    //       p->p_SPH = 0;
    //    }
 
+   //
    // for (const auto &p : fluid_particle)
    //    if (p->isSurface) {
    //       auto a0 = p->auxiliaryPoints[0];
@@ -627,31 +668,26 @@ void updateParticles(const auto &points,
       // テスト
       auto U = p->U_SPH;
       auto X_last = p->X;
-      /* -------------------------------------------------------------------------- */
+#if defined(USE_RungeKutta)
       p->RK_U.push(p->DUDt_SPH);  // 速度
       p->U_SPH = p->RK_U.getX();
 
       p->RK_X.push(p->U_SPH);  // 位置
       p->setXSingle(p->tmp_X = p->RK_X.getX());
       auto getX = [&](const auto &p) { return p->X; };
-      /* -------------------------------------------------------------------------- */
-      // p->RK_X.push(p->U_SPH);  // 位置
-      // p->setXSingle(p->tmp_X = p->RK_X.getX());
-
-      // p->RK_U.push(p->DUDt_SPH);  // 速度
-      // p->U_SPH = p->RK_U.getX();
-      // const double _dt_ = p->RK_U.getdt();
-      // auto getX = [&](const auto &p) { return p->X + p->U_SPH * _dt_; };
-      /* -------------------------------------------------------------------------- */
-
-      // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-      /* -------------------------------------------------------------------------- */
+         // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
+#elif defined(USE_LeapFrog)
+      p->LPFG_X.push(p->DUDt_SPH);  // 速度
+      p->U_SPH = p->LPFG_X.get_v();
+      p->setXSingle(p->tmp_X = p->LPFG_X.get_x());
+      auto getX = [&](const auto &p) { return p->X; };
+#endif
 
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = 1.;
-      const double asobi = 0.001;
+      const double asobi = 0.;
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
@@ -671,27 +707,36 @@ void updateParticles(const auto &points,
          isReflected = false;
          networkPoint *closest_wall_point;
          if (closest_wall_point = closest()) {
+            auto modify_position = particle_spacing * Normalize(getX(p) - closest_wall_point->X) + closest_wall_point->X;
             auto ovre_run = ((1. - asobi) * particle_spacing - Distance(closest_wall_point->X, getX(p))) / 2.;
-            if (ovre_run > 0.) {
-               auto normal_distance = Norm(Projection(getX(p) - closest_wall_point->X, closest_wall_point->normal_SPH));
-               if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
-
-                  p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
-                  p->RK_U.repush(p->DUDt_SPH);  // 速度
-                  p->U_SPH = p->RK_U.getX();
-                  p->RK_X.repush(p->U_SPH);  // 位置
-                  p->setXSingle(p->tmp_X = p->RK_X.getX());
-                  isReflected = true;
-                  /* -------------------------------------------------------------------------- */
-                  // p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
-                  // p->RK_U.repush(p->DUDt_SPH);  // 速度
-                  // p->U_SPH = p->RK_U.getX();
-                  // // p->RK_X.repush(p->U_SPH);  // 位置
-                  // // p->setXSingle(p->tmp_X = p->RK_X.getX());
-                  // isReflected = true;
-                  /* -------------------------------------------------------------------------- */
+            if (Distance(closest_wall_point->X, getX(p)) < particle_spacing)
+               if (ovre_run > 0.) {
+                  auto normal_distance = Norm(Projection(getX(p) - closest_wall_point->X, closest_wall_point->normal_SPH));
+                  if (Dot(p->U_SPH, closest_wall_point->normal_SPH) < 0) {
+   #if defined(USE_RungeKutta)
+                     p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                     p->RK_U.repush(p->DUDt_SPH);  // 速度
+                     p->U_SPH = p->RK_U.getX();
+                     p->RK_X.repush(p->U_SPH);  // 位置
+                     p->setXSingle(p->tmp_X = p->RK_X.getX());
+                     isReflected = true;
+   #elif defined(USE_LeapFrog)
+                     p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                     p->LPFG_X.repush(p->DUDt_SPH);  // 速度
+                     p->U_SPH = p->LPFG_X.get_v();
+                     p->setXSingle(p->tmp_X = modify_position);
+                     isReflected = true;
+   #endif
+                     /* -------------------------------------------------------------------------- */
+                     // p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                     // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                     // p->U_SPH = p->RK_U.getX();
+                     // // p->RK_X.repush(p->U_SPH);  // 位置
+                     // // p->setXSingle(p->tmp_X = p->RK_X.getX());
+                     // isReflected = true;
+                     /* -------------------------------------------------------------------------- */
+                  }
                }
-            }
          }
       };
 
