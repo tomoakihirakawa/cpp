@@ -272,6 +272,12 @@ int main(int arg, char **argv) {
 
       std::cout << "real_time = " << real_time << std::endl;
 
+      // freeze particle a while
+      for (const auto &p : Fluid->getPoints()) {
+         if (time_step < 10)
+            p->U_SPH.fill(0.);
+      }
+
       // 出力
       if (time_step % 5 == 0) {
          {
