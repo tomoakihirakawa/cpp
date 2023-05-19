@@ -24,7 +24,7 @@
         - [⚓️ 法線方向の計算と水面の判定](#⚓️-法線方向の計算と水面の判定)
         - [⚓️ 壁面粒子の流速と圧力](#⚓️-壁面粒子の流速と圧力)
         - [⚓️ $`\nabla^2 {\bf u} _i`$の計算](#⚓️-$`\nabla^2-{\bf-u}-_i`$の計算)
-        - [⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
+        - [⚓️ 圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#⚓️-圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
         - [⚓️ 圧力を決定するための方程式を作成](#⚓️-圧力を決定するための方程式を作成)
         - [⚓️ 圧力の安定化](#⚓️-圧力の安定化)
         - [⚓️ ISPH](#⚓️-ISPH)
@@ -65,7 +65,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 * [4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L109)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKuttaのクラス](./include/integrationOfODE.hpp#L280)
 
 
-<p align="right"><a href="./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4">./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4</a></p>
+<p align="right"><small><a href="./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4">./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4</a></small></p>
 
 
 ## ⛵️ Runge-Kutta Integration of ODE
@@ -73,7 +73,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ![](builds/build_ODE/RK.png)
 
 
-<p align="right"><a href="./builds/build_ODE/example_RungeKutta.cpp#L1">./builds/build_ODE/example_RungeKutta.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_ODE/example_RungeKutta.cpp#L1">./builds/build_ODE/example_RungeKutta.cpp#L1</a></small></p>
 
 
 ---
@@ -82,13 +82,13 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 # 🐋 Boundary Element Method (BEM-MEL)
 
 
-<p align="right"><a href="./builds/build_bem/BEM.hpp#L1">./builds/build_bem/BEM.hpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM.hpp#L1">./builds/build_bem/BEM.hpp#L1</a></small></p>
 
 
 ## ⛵️ 流速の計算方法
 
 
-<p align="right"><a href="./builds/build_bem/BEM_calculateVelocities.hpp#L7">./builds/build_bem/BEM_calculateVelocities.hpp#L7</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_calculateVelocities.hpp#L7">./builds/build_bem/BEM_calculateVelocities.hpp#L7</a></small></p>
 
 
 ### ⚓️ 修正流速
@@ -100,7 +100,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
 
-<p align="right"><a href="./builds/build_bem/BEM_calculateVelocities.hpp#L354">./builds/build_bem/BEM_calculateVelocities.hpp#L354</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_calculateVelocities.hpp#L354">./builds/build_bem/BEM_calculateVelocities.hpp#L354</a></small></p>
 
 
 ## ⛵️ 境界条件の設定
@@ -111,7 +111,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
 
-<p align="right"><a href="./builds/build_bem/BEM_setBoundaryConditions.hpp#L7">./builds/build_bem/BEM_setBoundaryConditions.hpp#L7</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_setBoundaryConditions.hpp#L7">./builds/build_bem/BEM_setBoundaryConditions.hpp#L7</a></small></p>
 
 
 ## ⛵️ 境界値問題
@@ -136,7 +136,7 @@ $$
 $$
 
 
-<p align="right"><a href="./builds/build_bem/BEM_solveBVP.hpp#L226">./builds/build_bem/BEM_solveBVP.hpp#L226</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_solveBVP.hpp#L226">./builds/build_bem/BEM_solveBVP.hpp#L226</a></small></p>
 
 
 ### ⚓️ 多重節点
@@ -162,7 +162,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-<p align="right"><a href="./builds/build_bem/BEM_solveBVP.hpp#L325">./builds/build_bem/BEM_solveBVP.hpp#L325</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_solveBVP.hpp#L325">./builds/build_bem/BEM_solveBVP.hpp#L325</a></small></p>
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -178,7 +178,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-<p align="right"><a href="./builds/build_bem/BEM_solveBVP.hpp#L387">./builds/build_bem/BEM_solveBVP.hpp#L387</a></p>
+<p align="right"><small><a href="./builds/build_bem/BEM_solveBVP.hpp#L387">./builds/build_bem/BEM_solveBVP.hpp#L387</a></small></p>
 
 
 ---
@@ -186,7 +186,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
 
 
-<p align="right"><a href="./builds/build_root_finding/example_Broyden.cpp#L1">./builds/build_root_finding/example_Broyden.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_root_finding/example_Broyden.cpp#L1">./builds/build_root_finding/example_Broyden.cpp#L1</a></small></p>
 
 
 ## ⛵️ ヘッセ行列を利用したニュートン法
@@ -195,7 +195,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 この方法で，変数は，関数を根とするのではなく，関数を最大最小（停留点）とする値へと収束する．
 
 
-<p align="right"><a href="./builds/build_root_finding/example_NewtonRaphson.cpp#L1">./builds/build_root_finding/example_NewtonRaphson.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_root_finding/example_NewtonRaphson.cpp#L1">./builds/build_root_finding/example_NewtonRaphson.cpp#L1</a></small></p>
 
 
 ---
@@ -222,7 +222,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-<p align="right"><a href="./builds/build_sph/SPH.hpp#L209">./builds/build_sph/SPH.hpp#L209</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH.hpp#L209">./builds/build_sph/SPH.hpp#L209</a></small></p>
 
 
 ### ⚓️ CFL条件の設定
@@ -230,7 +230,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$を満たすように，毎時刻$`\Delta t`$を設定する．
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L6">./builds/build_sph/SPH_Functions.hpp#L6</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L6">./builds/build_sph/SPH_Functions.hpp#L6</a></small></p>
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -238,13 +238,13 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L73">./builds/build_sph/SPH_Functions.hpp#L73</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L73">./builds/build_sph/SPH_Functions.hpp#L73</a></small></p>
 
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L121">./builds/build_sph/SPH_Functions.hpp#L121</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L121">./builds/build_sph/SPH_Functions.hpp#L121</a></small></p>
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -256,7 +256,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 📝 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L199">./builds/build_sph/SPH_Functions.hpp#L199</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L199">./builds/build_sph/SPH_Functions.hpp#L199</a></small></p>
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
@@ -264,10 +264,10 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L213">./builds/build_sph/SPH_Functions.hpp#L213</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L213">./builds/build_sph/SPH_Functions.hpp#L213</a></small></p>
 
 
-### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
+### ⚓️ 圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
 次の時刻の流れ場が発散なし$`\nabla\cdot{\bf u}^{n+1}=0`$であることを保証してくれる圧力を使って，
 $`\frac{D {\bf u}}{D t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}`$を決定し，時間発展させたい．
@@ -283,21 +283,30 @@ $$
 \end{align*}
 $$
 
-この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$である．）
 
-✅ 発散の計算方法: $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
+**右辺について**
 
-`PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
+この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．`PoissonRHS`,$`b`$の計算の前に，$`\mu \nabla^2{\bf u}`$を予め計算しておく．
 
-壁粒子の圧力は時間発展させないので，壁粒子の$`p^n`$を計算する必要がある．順で計算する．
+✅ [発散の計算方法](./builds/build_sph/SPH_Functions.hpp#L406): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
+
+
+**左辺について**
+
+壁粒子の圧力は時間積分して計算しないので，毎時刻，壁粒子の$`p^n`$を計算する必要がある．
+
+EISPH
 
 1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
 2. 流体粒子の圧力$`p^{n+1}`$の計算
 
-✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+ISPH
+- ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
+
+✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L410): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L274">./builds/build_sph/SPH_Functions.hpp#L274</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L275">./builds/build_sph/SPH_Functions.hpp#L275</a></small></p>
 
 
 ### ⚓️ 圧力を決定するための方程式を作成
@@ -308,14 +317,14 @@ $$
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L393)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L373)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L382) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
+| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L404)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L384)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L393) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L355">./builds/build_sph/SPH_Functions.hpp#L355</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L366">./builds/build_sph/SPH_Functions.hpp#L366</a></small></p>
 
 
 ### ⚓️ 圧力の安定化
@@ -341,29 +350,29 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L427">./builds/build_sph/SPH_Functions.hpp#L427</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L438">./builds/build_sph/SPH_Functions.hpp#L438</a></small></p>
 
 
 ### ⚓️ ISPH
 
 📝 ISPHの解がもとまらないのはなぜか？
 
-- [壁粒子の圧力を計算する位置には留意する](./builds/build_sph/SPH_Functions.hpp#L345)
+- [壁粒子の圧力を計算する位置には留意する](not found)
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L482">./builds/build_sph/SPH_Functions.hpp#L482</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L493">./builds/build_sph/SPH_Functions.hpp#L493</a></small></p>
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
-✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L567): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
-✅ 勾配の計算方法: $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L568): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
 
-✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L569): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L537">./builds/build_sph/SPH_Functions.hpp#L537</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L548">./builds/build_sph/SPH_Functions.hpp#L548</a></small></p>
 
 
 ## ⛵️ 注意点
@@ -371,17 +380,17 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
 - [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L314)
-- [壁粒子の圧力をどのように壁面にマッピングするか](./builds/build_sph/SPH_Functions.hpp#L345)
+- [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [水面粒子の圧力をゼロにするかどうか](not found)
-- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L672)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L452)
+- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L684)
+- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L463)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
-- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L615)
+- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L627)
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-<p align="right"><a href="./builds/build_sph/SPH_Functions.hpp#L709">./builds/build_sph/SPH_Functions.hpp#L709</a></p>
+<p align="right"><small><a href="./builds/build_sph/SPH_Functions.hpp#L721">./builds/build_sph/SPH_Functions.hpp#L721</a></small></p>
 
 
 ## ⛵️ 核関数
@@ -390,7 +399,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 * 体積積分が1になるかどうかを確認．
 
 
-<p align="right"><a href="./builds/build_sph/test_KernelFunctions.cpp#L1">./builds/build_sph/test_KernelFunctions.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_sph/test_KernelFunctions.cpp#L1">./builds/build_sph/test_KernelFunctions.cpp#L1</a></small></p>
 
 
 ---
@@ -408,7 +417,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
 
-<p align="right"><a href="./builds/build_sph/test_Buckets.cpp#L1">./builds/build_sph/test_Buckets.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_sph/test_Buckets.cpp#L1">./builds/build_sph/test_Buckets.cpp#L1</a></small></p>
 
 
 ---
@@ -423,7 +432,7 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 [CSRのDot積を並列化](./include/basic_linear_systems.hpp#L673)すれば，かなり高速化できる．
 
 
-<p align="right"><a href="./builds/build_system_of_linear_eqs/CSR.cpp#L1">./builds/build_system_of_linear_eqs/CSR.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_system_of_linear_eqs/CSR.cpp#L1">./builds/build_system_of_linear_eqs/CSR.cpp#L1</a></small></p>
 
 
 ---
@@ -437,7 +446,7 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
 
 
-<p align="right"><a href="./builds/build_system_of_linear_eqs/GMRES.cpp#L1">./builds/build_system_of_linear_eqs/GMRES.cpp#L1</a></p>
+<p align="right"><small><a href="./builds/build_system_of_linear_eqs/GMRES.cpp#L1">./builds/build_system_of_linear_eqs/GMRES.cpp#L1</a></small></p>
 
 
 ---
@@ -451,7 +460,7 @@ x0は初期値
 https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
-<p align="right"><a href="./include/basic_linear_systems.hpp#L763">./include/basic_linear_systems.hpp#L763</a></p>
+<p align="right"><small><a href="./include/basic_linear_systems.hpp#L763">./include/basic_linear_systems.hpp#L763</a></small></p>
 
 
 ---
@@ -487,7 +496,7 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-<p align="right"><a href="./builds/build_bem/input_generator.py#L1">./builds/build_bem/input_generator.py#L1</a></p>
+<p align="right"><small><a href="./builds/build_bem/input_generator.py#L1">./builds/build_bem/input_generator.py#L1</a></small></p>
 
 
 ---
@@ -498,7 +507,7 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-<p align="right"><a href="./builds/build_bem/input_generator.py#L50">./builds/build_bem/input_generator.py#L50</a></p>
+<p align="right"><small><a href="./builds/build_bem/input_generator.py#L50">./builds/build_bem/input_generator.py#L50</a></small></p>
 
 
 ---
@@ -509,7 +518,7 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-<p align="right"><a href="./builds/build_sph/input_generator.py#L18">./builds/build_sph/input_generator.py#L18</a></p>
+<p align="right"><small><a href="./builds/build_sph/input_generator.py#L18">./builds/build_sph/input_generator.py#L18</a></small></p>
 
 
 ---
