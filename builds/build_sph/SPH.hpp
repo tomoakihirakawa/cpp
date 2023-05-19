@@ -383,10 +383,10 @@ void developByEISPH(Network *net,
          DebugPrint("圧力 p^n+1の計算", Magenta);
 
          PoissonEquation(
-             wall_p, {net}, dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; }, true);
+             wall_p, {net}, dt, particle_spacing, [&](const auto &p) { return p->X /*  + dt * p->U_SPH  + 0.5 * dt * dt * p->DUDt_SPH_*/; }, true);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; });
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH  + 0.5 * dt * dt * p->DUDt_SPH_*/; });
 
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
@@ -394,14 +394,12 @@ void developByEISPH(Network *net,
          // PoissonEquation(wall_p, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
          // setPressure(wall_p);
+         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
+         solvePoisson(net->getPoints(), wall_p, Append(net_RigidBody, net));
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
          gradP(net->getPoints(), Append(net_RigidBody, net));
-         //
-         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
-
-         solvePoisson(net->getPoints(), wall_p, Append(net_RigidBody, net));
 
          //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);

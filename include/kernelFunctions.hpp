@@ -193,12 +193,12 @@ double Dot_grad_w_Bspline3_Dot(const Tddd &xi, const Tddd &xj, const double h) {
       return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 };
 
-auto &w_Bspline = w_Bspline5;
-auto &grad_w_Bspline = grad_w_Bspline5;
-auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
+// auto &w_Bspline = w_Bspline5;
+// auto &grad_w_Bspline = grad_w_Bspline5;
+// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
 
-// auto &w_Bspline = w_Bspline3;
-// auto &grad_w_Bspline = grad_w_Bspline3;
-// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
+auto &w_Bspline = w_Bspline3;
+auto &grad_w_Bspline = grad_w_Bspline3;
+auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
 
 #endif
