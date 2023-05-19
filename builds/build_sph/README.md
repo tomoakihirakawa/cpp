@@ -43,25 +43,25 @@
 11. $`\nabla {p^{n+1}}`$が計算でき， $`\frac{D{\bf u}}{D t}=-\frac{1}{\rho}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}`$（粘性率が一定の非圧縮性流れの加速度）を得る．
 12. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
+<p align="right">
 [./SPH.hpp#L209](./SPH.hpp#L209)
-
-<p align="right">Right aligned text.</p>
+</p>
 
 ### ⚓️ CFL 条件の設定
 
 $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$を満たすように，毎時刻$`\Delta t`$を設定する．
 
-[./SPH_Functions.hpp#L6](./SPH_Functions.hpp#L6)
+<p align="right">[./SPH_Functions.hpp#L6](./SPH_Functions.hpp#L6)</p>
 
 ### ⚓️ 法線方向の計算と水面の判定
 
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
-[./SPH_Functions.hpp#L73](./SPH_Functions.hpp#L73)
+<p align="right">[./SPH_Functions.hpp#L73](./SPH_Functions.hpp#L73)</p>
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
-[./SPH_Functions.hpp#L121](./SPH_Functions.hpp#L121)
+<p align="right">[./SPH_Functions.hpp#L121](./SPH_Functions.hpp#L121)</p>
 
 ### ⚓️ 壁面粒子の流速と圧力
 
@@ -71,13 +71,13 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 
 📝 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
-[./SPH_Functions.hpp#L199](./SPH_Functions.hpp#L199)
+<p align="right">[./SPH_Functions.hpp#L199](./SPH_Functions.hpp#L199)</p>
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
 
 ✅ ラプラシアンの計算方法: $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-[./SPH_Functions.hpp#L213](./SPH_Functions.hpp#L213)
+<p align="right">[./SPH_Functions.hpp#L213](./SPH_Functions.hpp#L213)</p>
 
 ### ⚓️ `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 
@@ -108,7 +108,7 @@ $$
 
 ✅ ラプラシアンの計算方法: $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-[./SPH_Functions.hpp#L274](./SPH_Functions.hpp#L274)
+<p align="right">[./SPH_Functions.hpp#L274](./SPH_Functions.hpp#L274)</p>
 
 ### ⚓️ 圧力を決定するための方程式を作成
 
@@ -124,7 +124,7 @@ $$
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
-[./SPH_Functions.hpp#L355](./SPH_Functions.hpp#L355)
+<p align="right">[./SPH_Functions.hpp#L355](./SPH_Functions.hpp#L355)</p>
 
 ### ⚓️ 圧力の安定化
 
@@ -148,7 +148,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 `PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-[./SPH_Functions.hpp#L427](./SPH_Functions.hpp#L427)
+<p align="right">[./SPH_Functions.hpp#L427](./SPH_Functions.hpp#L427)</p>
 
 ### ⚓️ ISPH
 
@@ -156,7 +156,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 
 - [壁粒子の圧力を計算する位置には留意する](../../builds/build_sph/SPH_Functions.hpp#L345)
 
-[./SPH_Functions.hpp#L482](./SPH_Functions.hpp#L482)
+<p align="right">[./SPH_Functions.hpp#L482](./SPH_Functions.hpp#L482)</p>
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算 -> $`{D {\bf u}}/{Dt}`$の計算
 
@@ -166,7 +166,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 
 ✅ 勾配の計算方法: $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
-[./SPH_Functions.hpp#L537](./SPH_Functions.hpp#L537)
+<p align="right">[./SPH_Functions.hpp#L537](./SPH_Functions.hpp#L537)</p>
 
 ## ⛵️ 注意点
 
@@ -182,7 +182,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 
 壁の wall_as_fluid は繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L709](./SPH_Functions.hpp#L709)
+<p align="right">[./SPH_Functions.hpp#L709](./SPH_Functions.hpp#L709)</p>
 
 ## ⛵️ 核関数
 
@@ -191,7 +191,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 - 関数の形状を確認．
 - 体積積分が 1 になるかどうかを確認．
 
-[./test_KernelFunctions.cpp#L1](./test_KernelFunctions.cpp#L1)
+<p align="right">[./test_KernelFunctions.cpp#L1](./test_KernelFunctions.cpp#L1)</p>
 
 ---
 
@@ -210,7 +210,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 * 各セルにある粒子を表示したものは`each_cell*.vtp`
 * 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
-[./test_Buckets.cpp#L1](./test_Buckets.cpp#L1)
+<p align="right">[./test_Buckets.cpp#L1](./test_Buckets.cpp#L1)</p>
 
 ---
 
@@ -221,6 +221,6 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 ---
 
-[./input_generator.py#L18](./input_generator.py#L18)
+<p align="right">[./input_generator.py#L18](./input_generator.py#L18)</p>
 
 ---
