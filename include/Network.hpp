@@ -487,7 +487,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    };
 
    // 2023/05/16
-   std::array<networkPoint *, 1> auxiliaryPoints;
+   std::array<networkPoint *, 3> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
