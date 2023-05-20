@@ -135,8 +135,8 @@ int main(int arg, char **argv) {
             particlesNet->isFluid = polyNet->isFluid = true;
             particlesNet->isRigidBody = polyNet->isRigidBody = false;
          }
-         net2PVD[particlesNet] = new PVDWriter(output_directory + J["name"][0] + "_Particle_SPH.pvd");
-         net2PVD[polyNet] = new PVDWriter(output_directory + J["name"][0] + "_Polygon_SPH.pvd");
+         net2PVD[particlesNet] = new PVDWriter(output_directory + J["name"][0] + "_particle.pvd");
+         net2PVD[polyNet] = new PVDWriter(output_directory + J["name"][0] + "_polygon.pvd");
       }
    }
    //
@@ -280,33 +280,33 @@ int main(int arg, char **argv) {
 
       // 出力
       if (time_step % 5 == 0) {
-         {
-            vtkPolygonWriter<networkPoint *> vtp;
-            vtp.add(ToVector(Fluid->getPoints()));
-            setData(vtp, Fluid);
-            std::ofstream ofs(output_directory + "FluidSPH" + std::to_string(i) + ".vtp");
-            vtp.write(ofs);
-            ofs.close();
-            //
-            net2PVD[Fluid]->push("./FluidSPH" + std::to_string(i) + ".vtp", real_time);
-            net2PVD[Fluid]->output();
-            i++;
-         }
-         {  // SPP
-            std::vector<Tddd> SPP;
-            for (const auto &q : Fluid->getPoints()) {
-               auto tmp = X_SPP(q);
-               if (q->isSurface && isFinite(tmp))
-                  SPP.emplace_back(tmp);
+         auto Output = [&](Network *Fluid, const std::string &name, const int i) {
+            if (Fluid != nullptr) {
+               vtkPolygonWriter<networkPoint *> vtp;
+               vtp.add(ToVector(Fluid->getPoints()));
+               setDataOmitted(vtp, Fluid);
+               std::ofstream ofs(output_directory + name + std::to_string(i) + ".vtp");
+               vtp.write(ofs);
+               ofs.close();
+
+               if (net2PVD.find(Fluid) != net2PVD.end()) {
+                  auto pvd = net2PVD[Fluid];
+                  pvd->push("./" + name + std::to_string(i) + ".vtp", real_time);
+                  pvd->output();
+               } else {
+                  if (net2PVD.find(nullptr) == net2PVD.end())
+                     net2PVD.insert({nullptr, new PVDWriter(output_directory + "other.pvd")});
+
+                  net2PVD[nullptr]->push("./" + name + std::to_string(i) + ".vtp", real_time);
+                  net2PVD[nullptr]->output();
+               }
             }
-            std::ofstream ofs(output_directory + "SPP" + std::to_string(l) + ".vtp");
-            vtkPolygonWrite(ofs, SPP);
-            ofs.close();
-            //
-            PVD_SPP->push("./SPP" + std::to_string(l) + ".vtp", real_time);
-            PVD_SPP->output();
-            l++;
-         }
+         };
+
+         Output(Fluid, "FluidSPH", i);
+         Output(Fluid->surfaceNet, "surdaceNet", i);
+
+         i++;
 
          int count = 0;
          std::vector<networkPoint *> a_wall_p = {};

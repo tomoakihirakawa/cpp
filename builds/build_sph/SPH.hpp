@@ -373,7 +373,8 @@ void developByEISPH(Network *net,
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
          calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), dt);
-
+         calcLaplacianU(net->surfaceNet->getPoints(), Append(net_RigidBody, net), dt);
+         calcLaplacianU(wall_p, Append(net_RigidBody, net), dt);
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          setTmpDensity(net->getPoints(), dt);
@@ -382,15 +383,16 @@ void developByEISPH(Network *net,
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
 
-         PoissonEquation(
-             wall_p, {net}, dt, particle_spacing, [&](const auto &p) { return p->X /*  + dt * p->U_SPH  + 0.5 * dt * dt * p->DUDt_SPH_*/; }, true);
+         auto getX = [&](const auto &p) { return p->X + dt * p->U_SPH /* + 0.5 * dt * dt * p->DUDt_SPH*/; };
+
+         PoissonEquation(wall_p, {net}, dt, particle_spacing, getX, true);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH  + 0.5 * dt * dt * p->DUDt_SPH_*/; });
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, getX);
 
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
-         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, [&](const auto &p) { return p->X /*+ dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_*/; });
+         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), dt, particle_spacing, getX);
          // PoissonEquation(wall_p, Append(net_RigidBody, net), dt);
          setPressure(net->getPoints());
          // setPressure(wall_p);
@@ -399,7 +401,7 @@ void developByEISPH(Network *net,
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
-         gradP(net->getPoints(), Append(net_RigidBody, net));
+         gradP(net->getPoints(), Append(net_RigidBody, net), getX);
 
          //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);
@@ -578,8 +580,18 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
    // //
    std::unordered_map<networkPoint *, Tddd> lap_U;
    for (const auto &p : Fluid->getPoints())
-      lap_U[p] = p->lap_U;
-   vtp.addPointData("lap_U", lap_U);
+      lap_U[p] = p->mu_SPH / p->rho * p->lap_U;
+   vtp.addPointData("nu*lapU", lap_U);
+   // //
+   std::unordered_map<networkPoint *, Tddd> lap_U__GRAVITY3_;
+   for (const auto &p : Fluid->getPoints())
+      lap_U__GRAVITY3_[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("nu*lapU + g", lap_U__GRAVITY3_);
+   // //
+   std::unordered_map<networkPoint *, Tddd> dudt;
+   for (const auto &p : Fluid->getPoints())
+      dudt[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("- grad(U)/rho + nu*lapU + g", dudt);
    // //
    std::unordered_map<networkPoint *, Tddd> DUDt;
    for (const auto &p : Fluid->getPoints())

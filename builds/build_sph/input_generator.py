@@ -56,7 +56,7 @@ match SimulationCase:
 
         setting = {"RK_order": 1,
                    "max_dt": 0.0005,
-                   "CSML": 2.4,
+                   "CSML": 3.1,
                    "end_time_step": 10000,
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
