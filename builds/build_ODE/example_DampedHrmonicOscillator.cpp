@@ -29,9 +29,9 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
    * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:LeapFrog}{LeapFrogのクラス}
    * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:RungeKutta}{RungeKuttaのクラス}
 
-## \ref{ODE:LeapFrog}{LeapFrog}
+## LeapFrog
 
-時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている．
+時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrog}）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 
 
