@@ -2,7 +2,7 @@
 
 - [🐋 ODEの初期値問題](#🐋-ODEの初期値問題)
     - [⛵️ 減衰調和振動子/Damped Harmonic Oscillatorの例](#⛵️-減衰調和振動子/Damped-Harmonic-Oscillatorの例)
-    - [⛵️ [LeapFrog](../../include/integrationOfODE.hpp#L280)](#⛵️-[LeapFrog](../../include/integrationOfODE.hpp#L280))
+    - [⛵️ LeapFrog](#⛵️-LeapFrog)
     - [⛵️ Runge-Kutta Integration of ODE](#⛵️-Runge-Kutta-Integration-of-ODE)
 
 
@@ -33,9 +33,9 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 * [リープフロッグ](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L97)の１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．[LeapFrogのクラス](../../include/integrationOfODE.hpp#L280)
 * [4次のルンゲクッタ](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L115)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKuttaのクラス](../../include/integrationOfODE.hpp#L11)
 
-## ⛵️ [LeapFrog](../../include/integrationOfODE.hpp#L280)
+## ⛵️ LeapFrog
 
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrog](../../include/integrationOfODE.hpp#L280)）．
 $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 
 
