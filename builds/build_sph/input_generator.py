@@ -56,12 +56,12 @@ match SimulationCase:
 
         setting = {"RK_order": 1,
                    "max_dt": 0.0005,
-                   "CSML": 3.1,
+                   "CSML": 2.4,
                    "end_time_step": 10000,
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
                    # "particle_spacing": 0.00625,
-                   "particle_spacing": 0.2/20,
+                   "particle_spacing": 0.2/25,
                    "input_files": [x["name"]+".json" for x in input_files]}
     case "Lobovsky2014":
 

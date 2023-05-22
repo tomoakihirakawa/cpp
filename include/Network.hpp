@@ -388,6 +388,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    //
    // なぜか，SPHでルンゲクッタがうまくいかないので（多分dtがDUDtに入ってくるから整合性が取れない）リープフロッグを使ってみる
    LeapFrog<Tddd> LPFG_X;
+   LeapFrog<double> LPFG_rho;
    /* -------------------------------------------------------------------------- */
   public:
    V_netLp getLinesCORNER() const {
@@ -487,7 +488,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    };
 
    // 2023/05/16
-   std::array<networkPoint *, 3> auxiliaryPoints;
+   std::array<networkPoint *, 2> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
@@ -566,6 +567,8 @@ class networkPoint : public CoordinateBounds, public CSR {
    double div_U, div_U_, div_tmpU, div_tmpU_, PoissonRHS;
    Tddd grad_div_U, grad_div_U_;
    Tddd gradP_SPH, gradP_SPH_;
+   std::unordered_map<networkPoint *, Tddd> grad_coeff;
+   std::unordered_map<networkPoint *, Tddd> grad_coeff_next;
    //////////////////////////
    netFp face_org;
    double a_viscosity;
