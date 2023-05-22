@@ -278,16 +278,6 @@ struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<do
 /* -------------------------------------------------------------------------- */
 
 // \label{ODE:LeapFrog}
-
-/*DOC_EXTRACT ODE
-
-## LeapFrog
-
-時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている．
-$\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-
-*/
-
 template <typename T>
 class LeapFrog {
   public:

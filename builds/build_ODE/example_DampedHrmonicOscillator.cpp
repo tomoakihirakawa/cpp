@@ -26,8 +26,14 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
 
    * \ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
-   * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:RungeKutta}{LeapFrogのクラス}
-   * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:LeapFrog}{RungeKuttaのクラス}
+   * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:LeapFrog}{LeapFrogのクラス}
+   * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:RungeKutta}{RungeKuttaのクラス}
+
+## \ref{ODE:LeapFrog}{LeapFrog}
+
+時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている．
+$\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
+
 
 */
 
