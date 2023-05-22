@@ -34,7 +34,7 @@
     - [⛵️ Compressed Sparse Row (CSR)](#⛵️-Compressed-Sparse-Row-(CSR))
     - [⛵️ 一般化最小残差法(GMRES)](#⛵️-一般化最小残差法(GMRES))
     - [⛵️ ArnoldiProcess](#⛵️-ArnoldiProcess)
-        - [⚓️ LeapFrog](#⚓️-LeapFrog)
+    - [⛵️ LeapFrog](#⛵️-LeapFrog)
 
 
 ---
@@ -76,13 +76,13 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 [./builds/build_ODE/example_RungeKutta.cpp#L1](./builds/build_ODE/example_RungeKutta.cpp#L1)
 
 
-### ⚓️ LeapFrog
+## ⛵️ LeapFrog
 
 時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている．
 $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 
 
-[./include/integrationOfODE.hpp#L281](./include/integrationOfODE.hpp#L281)
+[./include/integrationOfODE.hpp#L282](./include/integrationOfODE.hpp#L282)
 
 
 ---
