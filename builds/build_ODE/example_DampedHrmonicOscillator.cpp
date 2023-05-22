@@ -31,7 +31,7 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 
 ## LeapFrog
 
-時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrog}）．
+時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 
 
