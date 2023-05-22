@@ -8,16 +8,38 @@
 
 int main() {
    double r = 2.;
-   std::ofstream output("data.txt");
-
-   // Calculate and output w_Bspline3 and w_Bspline5 values for different x
-   for (const auto &x : Subdivide({-1.0, 1.0}, 50)) {
-      double bspline3_value = w_Bspline3(std::abs(x), r);
-      double bspline5_value = w_Bspline5(std::abs(x), r);
-      output << x << " " << bspline3_value << " " << bspline5_value << std::endl;
+   {
+      std::ofstream output("data.txt");
+      // Calculate and output w_Bspline3 and w_Bspline5 values for different x
+      for (const auto &x : Subdivide({-r, r}, 25)) {
+         double bspline3_value = w_Bspline3(std::abs(x), r);
+         double bspline5_value = w_Bspline5(std::abs(x), r);
+         output << x << " " << bspline3_value << " " << bspline5_value << std::endl;
+      }
+      output.close();
    }
-   output.close();
-
+   {
+      std::ofstream output("Dot_grad_w_Bspline3_Dot.txt");
+      // Calculate and output Dot_grad_w_Bspline3_Dot values for different x and y for gnuplot splot
+      for (const auto &x : Subdivide({-r, r}, 25)) {
+         for (const auto &y : Subdivide({-r, r}, 25)) {
+            output << x << " " << y << " " << Dot_grad_w_Bspline3_Dot({0., 0., 0.}, {x, y, 0.}, r) << std::endl;
+         }
+         output << std::endl;  // empty line for gnuplot to understand different y-blocks
+      }
+      output.close();
+   }
+   {
+      std::ofstream output("Dot_grad_w_Bspline5_Dot.txt");
+      // Calculate and output Dot_grad_w_Bspline3_Dot values for different x and y for gnuplot splot
+      for (const auto &x : Subdivide({-r, r}, 25)) {
+         for (const auto &y : Subdivide({-r, r}, 25)) {
+            output << x << " " << y << " " << Dot_grad_w_Bspline5_Dot({0., 0., 0.}, {x, y, 0.}, r) << std::endl;
+         }
+         output << std::endl;  // empty line for gnuplot to understand different y-blocks
+      }
+      output.close();
+   }
    // Check integration
    auto w = std::setw(10);
    const std::array<double, 3> A = {0.0, 0.0, 0.0};  // center

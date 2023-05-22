@@ -260,23 +260,23 @@ int main(int arg, char **argv) {
       //       for (const auto &p : object->getPoints())
       //          p->mu_SPH = _WATER_MU_10deg_ * 10;
       // }
-      //
+
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
                      RigidBodies,
                      real_time,
                      CSML,
                      particle_spacing,
-                     time_step < 10 ? max_dt / 10 : max_dt,
+                     time_step < 5 ? max_dt / 100 : max_dt,
                      RK_order);
 
       std::cout << "real_time = " << real_time << std::endl;
 
       // freeze particle a while
-      for (const auto &p : Fluid->getPoints()) {
-         if (time_step < 10)
-            p->U_SPH.fill(0.);
-      }
+      // for (const auto &p : Fluid->getPoints()) {
+      //    if (time_step < 10)
+      //       p->U_SPH.fill(0.);
+      // }
 
       // 出力
       if (time_step % 5 == 0) {

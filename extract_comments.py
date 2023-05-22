@@ -130,10 +130,9 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
 
         keyword_comments[keyword].append(cleaned_comment.strip() + '\n\n')
-        # keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+        keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
         # keyword_comments[keyword].append('<p align="right">' + f'[{input_file}#L{start_line}]({input_file}#L{start_line})' + '</p>\n\n')
-        keyword_comments[keyword].append('<p align="right"><small><a href="' + f'{input_file}#L{start_line}' + '">' + f'{input_file}#L{start_line}' + '</a></small></p>\n\n')
-
+        # keyword_comments[keyword].append('<p align="right"><small><a href="' + f'{input_file}#L{start_line}' + '">' + f'{input_file}#L{start_line}' + '</a></small></p>\n\n')
 
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)
@@ -166,29 +165,29 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
             contents_table += added
             curr_section += 1
             curr_subsection = 0
-            print("added =",added)
+            # print("added =",added)
         elif header.startswith("## "):
             curr_subsection += 1
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
             added = f"{prefix}[{header[3:]}](#{header[3:].replace(' ', '-')})\n"
             contents_table += added
             curr_subsubsection = 0
-            print("added =",added)
+            # print("added =",added)
         elif header.startswith("### "):
             curr_subsection += 1
             prefix = f"        {curr_section - 1}.{curr_subsection}. " if numbered else "        - "
             added = f"{prefix}[{header[4:]}](#{header[4:].replace(' ', '-')})\n"
             contents_table += added
             curr_subsubsection = 0
-            print("added =",added)
+            # print("added =",added)
         elif header.startswith("#### "):
             curr_subsubsection += 1            
             prefix = f"            {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "            - "
             added = f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
             contents_table += added
-            print("added =",added)
-        print("header =", header)
-        print("prefix =", prefix)
+            # print("added =",added)
+        # print("header =", header)
+        # print("prefix =", prefix)
         
 
     contents_table += "\n"
