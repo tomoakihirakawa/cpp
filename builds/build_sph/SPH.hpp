@@ -359,7 +359,7 @@ void developByEISPH(Network *net,
 #elif defined(USE_LeapFrog)
             // dt is fixed
 #endif
-         const auto DT = dt;
+         const auto DT = dt / 2.;
 
          std::cout << "DT = " << DT << std::endl;
          for (const auto &p : wall_p) {
