@@ -727,7 +727,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = 1.;
-      const double asobi = 0.;
+      const double asobi = 0.1;
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
