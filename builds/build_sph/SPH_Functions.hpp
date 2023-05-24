@@ -3,6 +3,22 @@
 
 #include "Network.hpp"
 
+networkPoint *getClosestExcludeRigidBody(networkPoint *p, auto &target_nets) {
+   double distance = 1E+20;
+   networkPoint *P = nullptr;
+   for (const auto &obj : target_nets)
+      if (!obj->isRigidBody) {
+         obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+            auto tmp = Distance(p, q);
+            if (distance > tmp) {
+               distance = tmp;
+               P = q;
+            }
+         });
+      }
+   return P;
+};
+
 /*DOC_EXTRACT SPH
 
 ### CFL条件の設定
@@ -267,6 +283,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       };
       auto add_lap_U = [&](const auto &B) {
          if (!B->isAuxiliary) {
+
             const auto Uij = A->U_SPH - B->U_SPH;
             A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, B->X, A->radius_SPH));
             A->lap_U += 2 * B->mass / A->rho * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);  //\label{SPH:lapU}
@@ -402,7 +419,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
    // これは現在の粒子位置で計算するが，この微分は次時刻の粒子位置で計算する
    auto Poisson_b_ = [&](const networkPoint *A, const double dt) {
-      return A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
+      return A->RK_U.get_U0_for_SPH() / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
    };
 
    auto Poisson_b = [&](const Tddd origin_x, const double radius, const double dt, const auto &target_nets) {
@@ -444,8 +461,10 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       } else if (A->getNetwork()->isRigidBody) {
          origin_x = getX(A);  // + 1.5 * A->normal_SPH;
          origin_b = Poisson_b_(A, dt);
-         // origin_x = getX(A) + A->normal_SPH;
-         // origin_b = Poisson_b(origin_x, A->radius_SPH, dt, target_nets);
+         // auto origin = getClosestExcludeRigidBody(A, target_nets);
+         // origin_x = getX(origin);
+         // origin_b = Poisson_b_(origin, dt);
+         // origin_b = Poisson_b(origin_x, origin->radius_SPH, dt, target_nets);
       } else {
          origin_x = getX(A);
          origin_b = Poisson_b_(A, dt);
@@ -655,8 +674,9 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
          v /= p->diagonal_value;
    }
 
-   DebugPrint("gmres", Green);
-   gmres gm(points, b, x0, 100);
+   int N = 400;
+   DebugPrint("gmres iteration ", N, Green);
+   gmres gm(points, b, x0, N);
    std::cout << "gm.err : " << gm.err << std::endl;
 
    for (const auto &p : points)
@@ -745,7 +765,7 @@ void gradP(const std::unordered_set<networkPoint *> &points,
 //@ -------------------------------------------------------- */
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
-// #define REFLECTION
+#define REFLECTION
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const auto &RigidBodyObject,
@@ -762,10 +782,10 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       p->RK_X.push(p->U_SPH);  // 位置
       p->setXSingle(p->tmp_X = p->RK_X.getX());
-      auto getX = [&](const auto &p) { return p->X; };
       //
       p->RK_U.push(p->DUDt_SPH);  // 速度
       p->U_SPH = p->RK_U.getX();
+      auto getX = [&](const auto &p) { return p->RK_X.getX(p->U_SPH); };
          // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
 #elif defined(USE_LeapFrog)
       p->LPFG_X.push(p->DUDt_SPH);  // 速度
@@ -779,10 +799,11 @@ void updateParticles(const auto &points,
       //\label{SPH:reflection}
       const double reflection_factor = .5;
       const double asobi = 0.;
+
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
-         for (const auto &[obj, poly] : RigidBodyObject) {
+         for (const auto &[obj, _] : RigidBodyObject) {
             obj->BucketPoints.apply(getX(p), p->radius_SPH, [&](const auto &q) {
                auto tmp = Distance(getX(p), q);
                if (distance > tmp) {
@@ -793,6 +814,7 @@ void updateParticles(const auto &points,
          }
          return P;
       };
+
       bool isReflected = true;
       while (isReflected && count++ < 30) {
          isReflected = false;
@@ -808,8 +830,9 @@ void updateParticles(const auto &points,
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                      p->RK_U.repush(p->DUDt_SPH);  // 速度
                      p->U_SPH = p->RK_U.getX();
-                     p->RK_X.repush(p->U_SPH);  // 位置
-                     p->setXSingle(p->tmp_X = p->RK_X.getX());
+                     //
+                     // p->RK_X.repush(p->U_SPH);  // 位置
+                     // p->setXSingle(p->tmp_X = p->RK_X.getX());
                      isReflected = true;
    #elif defined(USE_LeapFrog)
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;

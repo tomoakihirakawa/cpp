@@ -61,7 +61,7 @@ match SimulationCase:
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
                    # "particle_spacing": 0.00625,
-                   "particle_spacing": 0.2/25,
+                   "particle_spacing": 0.2/20,
                    "input_files": [x["name"]+".json" for x in input_files]}
     case "Lobovsky2014":
 

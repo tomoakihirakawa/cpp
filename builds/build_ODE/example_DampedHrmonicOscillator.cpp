@@ -65,7 +65,7 @@ int main() {
    /*DOC_EXTRACT ODE
    **後退オイラー**
 
-   \ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
+   後退オイラーの１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
    */
    // \label{DampedHrmonicOscillator:BackwardEuler}
    auto result_BKE = [&](auto N) {
@@ -91,7 +91,7 @@ int main() {
    /*DOC_EXTRACT ODE
    **LeapFrog**
 
-   \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
+   リープフロッグの１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
    時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
    $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
    \ref{ODE:LeapFrog}{LeapFrogのクラス}
@@ -114,15 +114,26 @@ int main() {
    };
    /* -------------------------------------------------------------------------- */
    // Runge-Kutta
-   // \label{DampedHrmonicOscillator:RungeKutta}
    /*DOC_EXTRACT ODE
    **Runge-Kutta**
 
-   \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．
+   4次のルンゲクッタの１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．
    しかし，加速度を4階も計算する必要がある．
    このように，ルンゲクッタを使って２階微分方程式を解く場合，
    ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
    後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
+
+   \ref{ODE:RungeKutta4}{4次のRunge-Kutta}の場合，次のようになる．
+   $$
+   \begin{align*}
+   k_1 &= \frac{dx}{dt}(t_n, x_n)\\
+   k_2 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_1)\\
+   k_3 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_2)\\
+   k_4 &= \frac{dx}{dt}(t_n + \Delta t, x_n + \Delta t k_3)\\
+   x_{n+1} &= x_n + \frac{\Delta t}{6} (k_1 + 2 k_2 + 2 k_3 + k_4)
+   \end{align*}
+   $$
+
    \ref{ODE:RungeKutta}{RungeKuttaのクラス}
    */
    const int order = 4;
@@ -135,12 +146,12 @@ int main() {
          RungeKutta RK_x(dt, t, x, order);
          RungeKutta RK_v(dt, t, v, order);
          do {
-            t = RK_x.get_t();
             // good
-            x = RK_x.get_x();
-            v = RK_v.get_x();
-            RK_x.push(v);
-            RK_v.push(acceleration(x, v));
+            x = RK_x.get_x();               // get value at this stage
+            v = RK_v.get_x();               // get value at this stage
+            RK_x.push(v);                   // value at this stage is used to calculate next stage
+            RK_v.push(acceleration(x, v));  // value at this stage is used to calculate next stage
+                                            // Already RK_x can know x at next stage
          } while (!RK_x.finished);
          t = RK_x.get_t();
          x = RK_x.get_x();
@@ -159,6 +170,7 @@ int main() {
       exact_v.push_back({t, solution_v(t)});
    }
    /* -------------------------------------------------------------------------- */
+   std::cout << "plot time vs position" << std::endl;
    {
       // plot time vs position
       GNUPLOT plot;
@@ -172,6 +184,7 @@ int main() {
    }
    /* -------------------------------------------------------------------------- */
    // plot error
+   std::cout << "plot error" << std::endl;
    {
       std::vector<std::vector<double>> error_BKE, error_LPFG, error_RK;
       for (auto N = 10; N < 100; ++N) {

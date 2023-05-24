@@ -619,7 +619,7 @@ struct BEM_BVP {
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+                  phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
                } else {
                   auto n = p->getNormalNeumann_BEM();
                   auto netInContact = NearestContactFace(p)->getNetwork();
@@ -630,7 +630,7 @@ struct BEM_BVP {
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
+                  phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
                }
                std::get<1>(p->phiphin_t) = phin_t;
             }
@@ -648,7 +648,48 @@ struct BEM_BVP {
          return false;
    };
    /* ------------------------------------------------------ */
-   V_d Func(V_d ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) {
+
+   V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
+      V_d ACCELS_init;
+      for (const auto &net : rigidbodies) {
+         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+            if (net->inputJSON.at("velocity").size() > 1) {
+               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
+               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
+               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
+               if (real_time < start_time)
+                  net->acceleration.fill(0.);
+               else
+                  std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+            } else
+               std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+         } else
+            net->acceleration.fill(0.);
+      }
+      return ACCELS_init;
+   }
+
+   void insertAcceleration(const std::vector<Network *> &rigidbodies, const V_d &BM_X) {
+      int i = 0;
+      for (const auto &net : rigidbodies) {
+         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+            if (net->inputJSON.at("velocity").size() > 1) {
+               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
+               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
+               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
+               if (real_time < start_time) {
+                  net->acceleration.fill(0.);
+               } else
+                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
+            } else
+               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
+         } else
+            net->acceleration.fill(0.);
+      }
+   }
+
+   /* -------------------------------------------------------------------------- */
+   V_d Func(const auto &ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) {
       auto ACCELS = ACCELS_IN;
       {
          int i = 0;
@@ -725,51 +766,72 @@ struct BEM_BVP {
       return ACCELS - ACCELS_IN;
    };
 
-   /* ------------------------------------------------------ */
-
-   V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
-      V_d ACCELS_init;
-      for (const auto &net : rigidbodies) {
-         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-            if (net->inputJSON.at("velocity").size() > 1) {
-               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
-               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
-               if (real_time < start_time)
-                  net->acceleration.fill(0.);
-               else
-                  std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
-            } else
-               std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
-         } else
-            net->acceleration.fill(0.);
-      }
-      return ACCELS_init;
-   }
-
-   void insertAcceleration(const std::vector<Network *> &rigidbodies, const V_d &BM_X) {
-      int i = 0;
-      for (const auto &net : rigidbodies) {
-         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-            if (net->inputJSON.at("velocity").size() > 1) {
-               std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
-               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-               std::cout << Red << "start_time = " << start_time << colorOff << std::endl;
-               if (real_time < start_time) {
-                  net->acceleration.fill(0.);
-               } else
-                  std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
-            } else
-               std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
-         } else
-            net->acceleration.fill(0.);
-      }
-   }
-
    //@ --------------------------------------------------- */
    //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
    //@ --------------------------------------------------- */
 
+   /*DOC_EXTRACT BEM
+
+   ## 浮体動揺解析
+
+   浮体の運動方程式は，以下のように書ける．
+
+   $$
+   \begin{aligned}
+   m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F}_{\text {ext }}+\boldsymbol{F}_{\text {hydro }} \\
+   \boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} &= \boldsymbol{T}_{\text {ext }}+\boldsymbol{T}_{\text {hydro }}
+   \end{aligned}
+   $$
+
+   流体から浮体が受ける力$\boldsymbol{F}_{\text {hydro }}$は，浮体表面の圧力を積分することで得られる：
+
+   $$
+   \boldsymbol{F}_{\text {hydro }}=\int_{S} p\boldsymbol{n}  d S
+   $$
+
+   圧力$p$は，速度ポテンシャル$\phi$を用いて，以下のように書ける．
+
+   $$
+   p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+   $$
+
+   $\frac{\partial \phi}{\partial t}$を$\phi_t$と書くことにする．この$\phi_t$は陽には求められない．
+   そこで，$\phi$と似た方法，BIEを使った方法で$\phi_t$を求める．$\phi$と$\phi_n$の間に成り立つ境界積分方程式と全く同じ式が，$\phi_t$と$\phi_{nt}$の間にも成り立つ：
+
+   $$
+   \alpha ({\bf{a}})\phi_t ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi_t ({\bf{x}}) - \phi_t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+   \quad\text{on}\quad{\bf x} \in \Gamma(t).
+   $$
+
+   ここで，$\phi_t\cdot{\bf n}$が$\phi_{nt}$．$\phi_{nt}$は，構造物などの動かない境界面や動きがわかっている境界面では簡単に設定できる．
+   一方，水の力を受けて動く浮体の境界面では，$\phi_{nt}$は，浮体の運動方程式とBIEを連立して解くことで求めなければならない．
+
+
+   連立方程式を立てて解くこともできるだろうが，BIEの係数行列の逆行列が既に計算されているので，これを利用して，適当な初期値から解へと収束させる方法をここでは使うことにする．
+
+
+   現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$\phi_{nt}$が知りたいわけではない．しかし，$\phi_{nt}$をBIEを$\phi_t$について解き，圧力$p$が得られないと，$\boldsymbol{F}_{\text {hydro }}$が得られないという状況になっている．
+
+   浮体の加速度と加速度の変数を$\boldsymbol{A}$とすると，次の境界条件から，浮体表面における$\phi_{nt}$を求めることができる．
+
+   $$
+   \begin{aligned}
+   &&{\bf u} &= \nabla \phi\\
+   &\rightarrow& {\bf n}\cdot{\bf u} &=  {\bf n} \cdot \nabla \phi\\
+   &\rightarrow& \frac{d}{dt}({{\bf n}\cdot{\bf u}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
+   &\rightarrow& \frac{d{\bf n}}{dt}\cdot{\bf u} + {\bf n}\cdot\frac{d\bf u}{dt} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
+   &\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d\bf u}{dt}\right)\\
+   &\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\phi_t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d\bf u}{dt}\right)\\
+   &\rightarrow& \phi_{nt} &= {\boldsymbol \omega} \cdot{({\bf u} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi - {\boldsymbol A} \right)
+   \end{aligned}
+   $$
+
+   上の式から$\boldsymbol A$を使って，$\phi_{nt}$を求め，
+   次にBIEから$\phi_t$を求め，次に圧力$p$を求める．
+   そして，浮体の重さと慣性モーメントを考慮して圧力から，$\boldsymbol A$を求め直すと，
+   入力した$\boldsymbol A$と一致しなければならない．
+
+   */
    void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {
 
       auto ACCELS_init = initializeAcceleration(rigidbodies);
@@ -783,7 +845,6 @@ struct BEM_BVP {
       tmp[0] += 1E-10;
       BroydenMethod BM(ACCELS_init, tmp);
       for (auto j = 0; j < 20; ++j) {
-
          auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
          std::cout << "func_ = " << func_ << std::endl;
          auto func = Func(BM.X, water, rigidbodies);
