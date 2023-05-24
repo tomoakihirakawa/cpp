@@ -120,7 +120,11 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 
 
 $$
-\nabla {\bf u} = \nabla \nabla \phi = \begin{bmatrix} \phi _{xx} & \phi _{xy} & \phi _{xz} \\ \phi _{yx} & \phi _{yy} & \phi _{yz} \\ \phi _{zx} & \phi _{zy} & \phi _{zz} \end{bmatrix}
+\nabla {\bf u} = \nabla \nabla \phi =
+\begin{bmatrix} \phi _{xx} & \phi _{xy} & \phi _{xz} \\
+\phi _{yx} & \phi _{yy} & \phi _{yz} \\
+\phi _{zx} & \phi _{zy} & \phi _{zz}
+\end{bmatrix}
 $$
 
 
@@ -193,10 +197,10 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
 入力した$`\frac{d^2\boldsymbol r}{dt^2}`$と一致しなければならない．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L617)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L621)で与えている．
 
 
-[./BEM_solveBVP.hpp#L781](./BEM_solveBVP.hpp#L781)
+[./BEM_solveBVP.hpp#L785](./BEM_solveBVP.hpp#L785)
 
 
 ---
