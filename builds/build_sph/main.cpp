@@ -267,7 +267,7 @@ int main(int arg, char **argv) {
                      real_time,
                      CSML,
                      particle_spacing,
-                     time_step < 5 ? max_dt / 100 : max_dt,
+                     time_step < 10 ? max_dt / 10 : max_dt,
                      RK_order);
 
       std::cout << "real_time = " << real_time << std::endl;

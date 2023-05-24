@@ -488,7 +488,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    };
 
    // 2023/05/16
-   std::array<networkPoint *, 2> auxiliaryPoints;
+   std::array<networkPoint *, 1> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
@@ -905,7 +905,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    void setX(const V_d &xyz_IN);
    void setX(const Tddd &xyz_IN);
    void setXSingle(const Tddd &xyz_IN) {
-      this->pre_X = this->X;
+      // this->pre_X = this->X;
       CoordinateBounds::setBounds(xyz_IN);
    };
    // bool setXcarefully(const V_d &xyz_IN);

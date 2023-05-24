@@ -10,6 +10,7 @@
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
         - [⚓️ 多重節点](#⚓️-多重節点)
+    - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
 - [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
     - [⛵️ Usage](#⛵️-Usage)
     - [⛵️ Customization](#⛵️-Customization)
@@ -65,7 +66,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 
 **後退オイラー**
 
-[後退オイラー](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L70)の１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
+後退オイラーの１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
 
 
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L65](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L65)
@@ -73,10 +74,10 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 
 **LeapFrog**
 
-[リープフロッグ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L99)の１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](./include/integrationOfODE.hpp#L280)）．
+リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](./include/integrationOfODE.hpp#L294)）．
 $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](./include/integrationOfODE.hpp#L280)
+[LeapFrogのクラス](./include/integrationOfODE.hpp#L294)
 
 
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L91](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L91)
@@ -84,15 +85,27 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 
 **Runge-Kutta**
 
-[4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L117)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．
+4次のルンゲクッタの１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．
 しかし，加速度を4階も計算する必要がある．
 このように，ルンゲクッタを使って２階微分方程式を解く場合，
 ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
+
+[4次のRunge-Kutta](./include/integrationOfODE.hpp#L154)の場合，次のようになる．
+$$
+\begin{align*}
+k _1 &= \frac{dx}{dt}(t _n, x _n)\\
+k _2 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _1)\\
+k _3 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _2)\\
+k _4 &= \frac{dx}{dt}(t _n + \Delta t, x _n + \Delta t k _3)\\
+x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
+\end{align*}
+$$
+
 [RungeKuttaのクラス](./include/integrationOfODE.hpp#L11)
 
 
-[./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L118](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L118)
+[./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L117](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L117)
 
 
 ## ⛵️ Runge-Kutta Integration of ODE
@@ -208,6 +221,69 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 [./builds/build_bem/BEM_solveBVP.hpp#L387](./builds/build_bem/BEM_solveBVP.hpp#L387)
 
 
+## ⛵️ 浮体動揺解析
+
+浮体の運動方程式は，以下のように書ける．
+
+$$
+\begin{aligned}
+m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }} \\
+\boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} &= \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
+\end{aligned}
+$$
+
+流体から浮体が受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力を積分することで得られる：
+
+$$
+\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S
+$$
+
+圧力$`p`$は，速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
+
+$$
+p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+$$
+
+$`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．この$`\phi _t`$は陽には求められない．
+そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
+
+$$
+\alpha ({\bf{a}})\phi _t ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi _t ({\bf{x}}) - \phi _t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+ここで，$`\phi _t\cdot{\bf n}`$が$`\phi _{nt}`$．$`\phi _{nt}`$は，構造物などの動かない境界面や動きがわかっている境界面では簡単に設定できる．
+一方，水の力を受けて動く浮体の境界面では，$`\phi _{nt}`$は，浮体の運動方程式とBIEを連立して解くことで求めなければならない．
+
+
+連立方程式を立てて解くこともできるだろうが，BIEの係数行列の逆行列が既に計算されているので，これを利用して，適当な初期値から解へと収束させる方法をここでは使うことにする．
+
+
+現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$`\phi _{nt}`$が知りたいわけではない．しかし，$`\phi _{nt}`$をBIEを$`\phi _t`$について解き，圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られないという状況になっている．
+
+浮体の加速度と加速度の変数を$`\boldsymbol{A}`$とすると，次の境界条件から，浮体表面における$`\phi _{nt}`$を求めることができる．
+
+$$
+\begin{aligned}
+&&{\bf u} &= \nabla \phi\\
+&\rightarrow& {\bf n}\cdot{\bf u} &=  {\bf n} \cdot \nabla \phi\\
+&\rightarrow& \frac{d}{dt}({{\bf n}\cdot{\bf u}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{\bf u} + {\bf n}\cdot\frac{d\bf u}{dt} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d\bf u}{dt}\right)\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\phi _t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d\bf u}{dt}\right)\\
+&\rightarrow& \phi _{nt} &= {\boldsymbol \omega} \cdot{({\bf u} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi - {\boldsymbol A} \right)
+\end{aligned}
+$$
+
+上の式から$`\boldsymbol A`$を使って，$`\phi _{nt}`$を求め，
+次にBIEから$`\phi _t`$を求め，次に圧力$`p`$を求める．
+そして，浮体の重さと慣性モーメントを考慮して圧力から，$`\boldsymbol A`$を求め直すと，
+入力した$`\boldsymbol A`$と一致しなければならない．
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L773](./builds/build_bem/BEM_solveBVP.hpp#L773)
+
+
 ---
 # 🐋 準ニュートン法
 ニュートン法で使うヤコビアンなどを別のものに置き換えた方法．
@@ -249,7 +325,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./builds/build_sph/SPH.hpp#L210](./builds/build_sph/SPH.hpp#L210)
+[./builds/build_sph/SPH.hpp#L209](./builds/build_sph/SPH.hpp#L209)
 
 
 ### ⚓️ CFL条件の設定
@@ -257,7 +333,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$を満たすように，毎時刻$`\Delta t`$を設定する．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L6](./builds/build_sph/SPH_Functions.hpp#L6)
+[./builds/build_sph/SPH_Functions.hpp#L22](./builds/build_sph/SPH_Functions.hpp#L22)
 
 
 ### ⚓️ 法線方向の計算と水面の判定
@@ -265,13 +341,13 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L73](./builds/build_sph/SPH_Functions.hpp#L73)
+[./builds/build_sph/SPH_Functions.hpp#L89](./builds/build_sph/SPH_Functions.hpp#L89)
 
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L121](./builds/build_sph/SPH_Functions.hpp#L121)
+[./builds/build_sph/SPH_Functions.hpp#L137](./builds/build_sph/SPH_Functions.hpp#L137)
 
 
 ### ⚓️ 壁面粒子の流速と圧力
@@ -283,12 +359,12 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 📝 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L211](./builds/build_sph/SPH_Functions.hpp#L211)
+[./builds/build_sph/SPH_Functions.hpp#L227](./builds/build_sph/SPH_Functions.hpp#L227)
 
 
 ### ⚓️ $`\nabla^2 {\bf u} _i`$の計算
 
-✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L272): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L289): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 <details>
 <summary>見出し部分。ここをクリック。</summary>
@@ -298,7 +374,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 </details>
 
 
-[./builds/build_sph/SPH_Functions.hpp#L225](./builds/build_sph/SPH_Functions.hpp#L225)
+[./builds/build_sph/SPH_Functions.hpp#L241](./builds/build_sph/SPH_Functions.hpp#L241)
 
 
 ### ⚓️ 圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
@@ -356,10 +432,10 @@ EISPH
 ISPH
 - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
-✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L509): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L528): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L319](./builds/build_sph/SPH_Functions.hpp#L319)
+[./builds/build_sph/SPH_Functions.hpp#L336](./builds/build_sph/SPH_Functions.hpp#L336)
 
 
 ### ⚓️ 圧力を決定するための方程式を作成
@@ -370,14 +446,14 @@ ISPH
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L496)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L476)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L484) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
+| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L515)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L495)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L503) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L458](./builds/build_sph/SPH_Functions.hpp#L458)
+[./builds/build_sph/SPH_Functions.hpp#L477](./builds/build_sph/SPH_Functions.hpp#L477)
 
 
 ### ⚓️ 圧力の安定化
@@ -403,43 +479,43 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L556](./builds/build_sph/SPH_Functions.hpp#L556)
+[./builds/build_sph/SPH_Functions.hpp#L575](./builds/build_sph/SPH_Functions.hpp#L575)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L715): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L735): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L717): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L737): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L718): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L738): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L676](./builds/build_sph/SPH_Functions.hpp#L676)
+[./builds/build_sph/SPH_Functions.hpp#L696](./builds/build_sph/SPH_Functions.hpp#L696)
 
 
 $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$が計算できた．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L734](./builds/build_sph/SPH_Functions.hpp#L734)
+[./builds/build_sph/SPH_Functions.hpp#L754](./builds/build_sph/SPH_Functions.hpp#L754)
 
 
 ## ⛵️ 注意点
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
-- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L315)
+- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L314)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [水面粒子の圧力をゼロにするかどうか](not found)
-- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L836)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L581)
+- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L859)
+- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L600)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
-- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L779)
+- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L799)
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./builds/build_sph/SPH_Functions.hpp#L873](./builds/build_sph/SPH_Functions.hpp#L873)
+[./builds/build_sph/SPH_Functions.hpp#L896](./builds/build_sph/SPH_Functions.hpp#L896)
 
 
 ## ⛵️ 核関数

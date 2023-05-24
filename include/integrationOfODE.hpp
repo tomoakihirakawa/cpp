@@ -69,7 +69,7 @@ struct RungeKuttaCommon {
       if (this->steps == 1)
          return dt_fixed;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:
                return dt_fixed;
             case 1:
@@ -78,7 +78,7 @@ struct RungeKuttaCommon {
                return dt_fixed;
          }
       } else if (this->steps == 3) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed / 2.;
             case 1:
@@ -89,7 +89,7 @@ struct RungeKuttaCommon {
                return dt_fixed;
          }
       } else if (this->steps == 4) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
@@ -106,29 +106,29 @@ struct RungeKuttaCommon {
    };
 
    bool repush(const T &dXdt_IN) {
-      if (!_dX.empty())
+      if (current_step != 0) {
          _dX.pop_back();
+         current_step--;
+      }
       return this->push(dXdt_IN);
    };
 
    bool push(const T &dXdt_IN) {
-      // _dX.insert(_dX.begin(), dXdt_IN * dt_fixed);
       _dX.push_back(dXdt_IN * dt_fixed);
-      current_step++;
       if (this->steps == 1) {
-         switch (_dX.size()) {
-            case 1:  // -> {f1(t,v(t))}
+         switch (current_step++) {
+            case 0:  // -> {f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed);
                return this->finished = true;
             default:
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
          }
       } else if (this->steps == 2) {
-         switch (_dX.size()) {
-            case 1:  // -> {f1(t,v(t))}
+         switch (current_step++) {
+            case 0:  // -> {f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed);
                return this->finished = false;
-            case 2:  // -> {f3, f2, f1(t,v(t))}
+            case 1:  // -> {f3, f2, f1(t,v(t))}
                dX = (_dX[0] + _dX[1]) / 2.;
                dt = dt_fixed;
                return this->finished = true;
@@ -136,14 +136,14 @@ struct RungeKuttaCommon {
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
          }
       } else if (this->steps == 3) {
-         switch (_dX.size()) {
-            case 1:  // -> {f1(t,v(t))}
+         switch (current_step++) {
+            case 0:  // -> {f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed / 2.);
                return finished = false;
-            case 2:  // -> {f2, f1(t,v(t))}
+            case 1:  // -> {f2, f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed);
                return finished = false;
-            case 3:  // -> {f3, f2, f1(t,v(t))}
+            case 2:  // -> {f3, f2, f1(t,v(t))}
                dX = (_dX[0] + 4. * _dX[1] + _dX[2]) / 6.;
                dt = dt_fixed;
                return finished = true;
@@ -151,17 +151,18 @@ struct RungeKuttaCommon {
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
          }
       } else if (this->steps == 4) {
-         switch (_dX.size()) {
-            case 1:  // -> {f1(t,v(t))}
+         // \label{ODE:RungeKutta4}
+         switch (current_step++) {
+            case 0:  // -> {f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed / 2.);
                return finished = false;
-            case 2:  // -> {f2, f1(t,v(t))}
+            case 1:  // -> {f2, f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed / 2.);
                return finished = false;
-            case 3:  // -> {f3, f2, f1(t,v(t))}
+            case 2:  // -> {f3, f2, f1(t,v(t))}
                dX = dXdt_IN * (dt = dt_fixed);
                return finished = false;
-            case 4:  // -> dXdt[1][] = {f4, f3, f2, f1(t,v(t))}
+            case 3:  // -> dXdt[1][] = {f4, f3, f2, f1(t,v(t))}
                dX = (_dX[0] + 2. * _dX[1] + 2. * _dX[2] + _dX[3]) / 6.;
                dt = dt_fixed;
                return finished = true;
@@ -173,6 +174,19 @@ struct RungeKuttaCommon {
       }
    };
 
+   T get_U0_for_SPH() const {
+      if (current_step == 0)
+         return this->Xinit;
+      else if (current_step == 1)
+         return this->Xinit;
+      else if (current_step == 2)
+         return this->Xinit;
+      else if (current_step == 3)
+         return this->Xinit + (_dX[0] + 2. * _dX[1] + 2. * _dX[2]) / 6.;
+      else
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "currecnt_stepが4以上になっている．");
+   };
+
    /* ------------------------------------------------------ */
    /*            微分を与えて，次の時刻に使うべきXを返す            */
    /* ------------------------------------------------------ */
@@ -180,14 +194,14 @@ struct RungeKuttaCommon {
       if (this->steps == 1)
          return this->Xinit + dXdt_IN * dt_fixed;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed;
             default:
                return this->Xinit + (_dX[0] + dXdt_IN * dt_fixed) / 2.;
          }
       } else if (this->steps == 3) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
@@ -196,7 +210,7 @@ struct RungeKuttaCommon {
                return this->Xinit + (_dX[0] + 4. * _dX[1] + dXdt_IN * dt_fixed) / 6.;
          }
       } else if (this->steps == 4) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return this->Xinit + dXdt_IN * dt_fixed / 2.;
             case 1:  // -> {f2, f1(t,v(t))}
@@ -217,14 +231,14 @@ struct RungeKuttaCommon {
       if (this->steps == 1)
          return dXdt_IN;  //! 何もプッシュしていない初期状態
       else if (this->steps == 2) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN * dt_fixed;
             default:
                return (_dX[0] / dt_fixed + dXdt_IN);
          }
       } else if (this->steps == 3) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN;
             case 1:  // -> {f2, f1(t,v(t))}
@@ -233,7 +247,7 @@ struct RungeKuttaCommon {
                return (_dX[0] / dt_fixed + 4. * _dX[1] / dt_fixed + dXdt_IN) / 6.;
          }
       } else if (this->steps == 4) {
-         switch (_dX.size()) {
+         switch (current_step) {
             case 0:  //! 何もプッシュしていない初期状態
                return dXdt_IN;
             case 1:  // -> {f2, f1(t,v(t))}

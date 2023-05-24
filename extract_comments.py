@@ -11,6 +11,7 @@ CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 
+
 def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
     label_pattern = re.compile(r'\\label\{(.*?)\}')
     labels = {}
@@ -43,15 +44,18 @@ def convert_math_underscore(text: str) -> str:
             text = text[:start] + new_text + text[end:]
     return text
 
+
 def convert_inline_math(text: str) -> str:
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
     text = re.sub(pattern, r"$`\1`$", text)
     return text
 
+
 def convert_math_star(text: str) -> str:
     pattern = r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))"
     text = re.sub(pattern, lambda m: m.group().replace("^*", "^\\ast"), text)
     return text
+
 
 def highlight_keywords(text: str) -> str:
     text = convert_math_underscore(text)
@@ -74,7 +78,6 @@ def highlight_keywords(text: str) -> str:
     for keyword, (pattern, emoji) in keyword_patterns.items():
         text = re.sub(pattern, f'{emoji} ', text, flags=re.MULTILINE)
 
-
     def replace_label(match):
         label = match.group(1)
         text = match.group(2)
@@ -86,11 +89,13 @@ def highlight_keywords(text: str) -> str:
 
     return text
 
+
 def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
     with open(input_file, 'r') as file:
         content = file.read()
 
-    markdown_comments = list(CPP_COMMENT_PATTERN.finditer(content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
+    markdown_comments = list(CPP_COMMENT_PATTERN.finditer(
+        content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
 
     # Initialize dictionary to store comments based on keywords
     keyword_comments = defaultdict(list)
@@ -104,12 +109,12 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         comment_lines = comment.split('\n')
 
         # Get the minimum number of leading spaces from all lines
-        min_indent = min((len(re.match(r'^(\s*)', line).group(1)) for line in comment_lines if line.strip()), default=0)
+        min_indent = min((len(re.match(r'^(\s*)', line).group(1))
+                         for line in comment_lines if line.strip()), default=0)
 
         # Remove leading whitespace from all lines
         comment_lines = [line[min_indent:] for line in comment_lines]
         comment_lines = [line.lstrip() for line in comment_lines]
-
 
         # Try to extract "DOC_EXTRACT" keyword from the first line
         doc_extract_pattern = re.compile(r'^DOC_EXTRACT\s*(.*)')
@@ -119,18 +124,22 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
             # Remove the first line from the comment
             comment_lines = comment_lines[1:]
         else:
-            keyword = comment_lines[0].split()[0] if comment_lines and comment_lines[0].split() else 'DEFAULT'
+            keyword = comment_lines[0].split(
+            )[0] if comment_lines and comment_lines[0].split() else 'DEFAULT'
 
         comment = '\n'.join(comment_lines)
 
-        comment = comment.replace(keyword, '', 1) if keyword != 'DEFAULT' else comment
+        comment = comment.replace(
+            keyword, '', 1) if keyword != 'DEFAULT' else comment
 
         cleaned_comment = highlight_keywords(comment)
 
-        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
+        cleaned_comment = re.sub(
+            r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
 
         keyword_comments[keyword].append(cleaned_comment.strip() + '\n\n')
-        keyword_comments[keyword].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+        keyword_comments[keyword].append(
+            f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
         # keyword_comments[keyword].append('<p align="right">' + f'[{input_file}#L{start_line}]({input_file}#L{start_line})' + '</p>\n\n')
         # keyword_comments[keyword].append('<p align="right"><small><a href="' + f'{input_file}#L{start_line}' + '">' + f'{input_file}#L{start_line}' + '</a></small></p>\n\n')
 
@@ -138,7 +147,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
         headers = re.findall(HEADER_PATTERN, cleaned_comment)
         for header in headers:
             headers_info.append((header.strip(), start_line))
-    
+
     extracted_comments = []
 
     # Sort and group comments based on
@@ -152,7 +161,7 @@ def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], Li
     return keyword_comments, headers_info
 
 
-def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:    
+def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:
     contents_table = '# Contents\n\n'
     curr_section = 1
     curr_subsection = 0
@@ -160,7 +169,7 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
     prefix = ''
     for header, line_num in headers_info:
         if header.startswith("# "):
-            prefix = f"{curr_section}. " if numbered else "- "            
+            prefix = f"{curr_section}. " if numbered else "- "
             added = f"{prefix}[{header[2:]}](#{header[2:].replace(' ', '-')})\n"
             contents_table += added
             curr_section += 1
@@ -181,14 +190,13 @@ def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool 
             curr_subsubsection = 0
             # print("added =",added)
         elif header.startswith("#### "):
-            curr_subsubsection += 1            
+            curr_subsubsection += 1
             prefix = f"            {curr_section - 1}.{curr_subsection}.{curr_subsubsection}. " if numbered else "            - "
             added = f"{prefix}[{header[5:]}](#{header[5:].replace(' ', '-')})\n"
             contents_table += added
             # print("added =",added)
         # print("header =", header)
         # print("prefix =", prefix)
-        
 
     contents_table += "\n"
 
@@ -223,8 +231,10 @@ if __name__ == "__main__":
     no_keyword_comments = []
     all_headers_info = []
 
-    for input_file in sorted(search_files(search_directory, file_extensions)):  # Sort file paths alphabetically
-        extracted_comments, headers_info = extract_markdown_comments(input_file)
+    # Sort file paths alphabetically
+    for input_file in sorted(search_files(search_directory, file_extensions)):
+        extracted_comments, headers_info = extract_markdown_comments(
+            input_file)
         if extracted_comments:
             for keyword, comments in extracted_comments.items():
                 if keyword == 'DEFAULT':
@@ -232,7 +242,7 @@ if __name__ == "__main__":
                 else:
                     all_extracted_comments[keyword].extend(comments)
             all_headers_info.extend(headers_info)
-    
+
     contents_table = generate_contents_table(all_headers_info) + "\n---\n"
 
     with open(output_file, 'w') as md_file:
@@ -242,4 +252,5 @@ if __name__ == "__main__":
             md_file.write("\n---\n")  # Horizontal line after the entire group
         for comment in no_keyword_comments:
             md_file.write(comment)
-            md_file.write("\n---\n")  # Horizontal line after each comment without a keyword
+            # Horizontal line after each comment without a keyword
+            md_file.write("\n---\n")

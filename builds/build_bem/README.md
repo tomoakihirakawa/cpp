@@ -7,6 +7,7 @@
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
         - [⚓️ 多重節点](#⚓️-多重節点)
+    - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
 - [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
     - [⛵️ Usage](#⛵️-Usage)
     - [⛵️ Customization](#⛵️-Customization)
@@ -116,6 +117,69 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 
 
 [./BEM_solveBVP.hpp#L387](./BEM_solveBVP.hpp#L387)
+
+
+## ⛵️ 浮体動揺解析
+
+浮体の運動方程式は，以下のように書ける．
+
+$$
+\begin{aligned}
+m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }} \\
+\boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} &= \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
+\end{aligned}
+$$
+
+流体から浮体が受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力を積分することで得られる：
+
+$$
+\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S
+$$
+
+圧力$`p`$は，速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
+
+$$
+p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+$$
+
+$`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．この$`\phi _t`$は陽には求められない．
+そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
+
+$$
+\alpha ({\bf{a}})\phi _t ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi _t ({\bf{x}}) - \phi _t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+ここで，$`\phi _t\cdot{\bf n}`$が$`\phi _{nt}`$．$`\phi _{nt}`$は，構造物などの動かない境界面や動きがわかっている境界面では簡単に設定できる．
+一方，水の力を受けて動く浮体の境界面では，$`\phi _{nt}`$は，浮体の運動方程式とBIEを連立して解くことで求めなければならない．
+
+
+連立方程式を立てて解くこともできるだろうが，BIEの係数行列の逆行列が既に計算されているので，これを利用して，適当な初期値から解へと収束させる方法をここでは使うことにする．
+
+
+現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$`\phi _{nt}`$が知りたいわけではない．しかし，$`\phi _{nt}`$をBIEを$`\phi _t`$について解き，圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られないという状況になっている．
+
+浮体の加速度と加速度の変数を$`\boldsymbol{A}`$とすると，次の境界条件から，浮体表面における$`\phi _{nt}`$を求めることができる．
+
+$$
+\begin{aligned}
+&&{\bf u} &= \nabla \phi\\
+&\rightarrow& {\bf n}\cdot{\bf u} &=  {\bf n} \cdot \nabla \phi\\
+&\rightarrow& \frac{d}{dt}({{\bf n}\cdot{\bf u}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{\bf u} + {\bf n}\cdot\frac{d\bf u}{dt} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d\bf u}{dt}\right)\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\phi _t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d\bf u}{dt}\right)\\
+&\rightarrow& \phi _{nt} &= {\boldsymbol \omega} \cdot{({\bf u} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi - {\boldsymbol A} \right)
+\end{aligned}
+$$
+
+上の式から$`\boldsymbol A`$を使って，$`\phi _{nt}`$を求め，
+次にBIEから$`\phi _t`$を求め，次に圧力$`p`$を求める．
+そして，浮体の重さと慣性モーメントを考慮して圧力から，$`\boldsymbol A`$を求め直すと，
+入力した$`\boldsymbol A`$と一致しなければならない．
+
+
+[./BEM_solveBVP.hpp#L773](./BEM_solveBVP.hpp#L773)
 
 
 ---
