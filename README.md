@@ -231,13 +231,14 @@ $$
 
 ## ⛵️ 浮体動揺解析
 
-浮体の運動方程式：
+浮体の重心の運動方程式：
 
 $$
-m \frac{d \boldsymbol{U}}{d t} = \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }}, \quad
-\boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
+m \frac{d {\boldsymbol U} _{\rm c}}{d t} = \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }}, \quad
+\boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
 $$
 
+$`{\boldsymbol U} _{\rm c}`$は浮体の移動速度．
 $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{\text {hydro }}`$は水の力，$`\boldsymbol{T} _{\text {ext }}`$は外力によるトルク，$`\boldsymbol{T} _{\text {hydro }}`$は水の力によるトルク．
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
@@ -264,18 +265,29 @@ $$
 
 現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$`\phi _{nt}`$が知りたいわけではない．しかし，$`\phi _{nt}`$をBIEを$`\phi _t`$について解き，圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られないという状況になっている．
 
-浮体の加速度と加速度の変数を$`\boldsymbol{A}`$とすると，次の境界条件から，浮体表面における$`\phi _{nt}`$を求めることができる．
+浮体表面のある位置ベクトルを$`\boldsymbol r`$とする．
+表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
+
+$$
+{\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi
+$$
+
+これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
 
 $$
 \begin{aligned}
-&&{\bf u} &= \nabla \phi\\
-&\rightarrow& {\bf n}\cdot{\bf u} &=  {\bf n} \cdot \nabla \phi\\
-&\rightarrow& \frac{d}{dt}({{\bf n}\cdot{\bf u}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
-&\rightarrow& \frac{d{\bf n}}{dt}\cdot{\bf u} + {\bf n}\cdot\frac{d\bf u}{dt} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
-&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d\bf u}{dt}\right)\\
-&\rightarrow& \frac{d{\bf n}}{dt}\cdot{({\bf u} - \nabla \phi)} & ={\bf n} \cdot \left(\phi _t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d\bf u}{dt}\right)\\
-&\rightarrow& \phi _{nt} &= {\boldsymbol \omega} \cdot{({\bf u} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi - {\boldsymbol A} \right)
+&\rightarrow& \frac{d}{dt}({{\bf n}\cdot\frac{d\boldsymbol r}{dt}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot\frac{d\boldsymbol r}{dt} + {\bf n}\cdot\frac{d^2{\boldsymbol r}}{dt^2} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\phi _t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
+&\rightarrow& \phi _{nt} &= \frac{d{\bf n}}{dt} \cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi -\frac{d^2{\boldsymbol r}}{dt^2}\right)
 \end{aligned}
+$$
+
+ここの$`\frac{d{\bf n}}{dt}`$と$`\frac{d^2\boldsymbol r}{dt^2}`$は，$`{\boldsymbol U} _{\rm c}`$と$`\boldsymbol \Omega _{\rm c}`$を用いて，
+
+$$
+\frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}
 $$
 
 上の式から$`\boldsymbol A`$を使って，$`\phi _{nt}`$を求め，
