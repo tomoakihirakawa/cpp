@@ -785,10 +785,8 @@ struct BEM_BVP {
    浮体の運動方程式は，以下のように書ける．
 
    $$
-   \begin{aligned}
-   m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F}_{\text {ext }}+\boldsymbol{F}_{\text {hydro }} \\
+   m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F}_{\text {ext }}+\boldsymbol{F}_{\text {hydro }} \quad
    \boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} &= \boldsymbol{T}_{\text {ext }}+\boldsymbol{T}_{\text {hydro }}
-   \end{aligned}
    $$
 
    流体から浮体が受ける力$\boldsymbol{F}_{\text {hydro }}$は，浮体表面の圧力を積分することで得られる：
