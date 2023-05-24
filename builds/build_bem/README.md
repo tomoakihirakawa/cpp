@@ -129,24 +129,19 @@ $$
 
 ## ⛵️ 浮体動揺解析
 
-浮体の運動方程式は，以下のように書ける．
+浮体の運動方程式：
 
 $$
-\begin{aligned}
-m \frac{d \boldsymbol{U}}{d t} &= \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }} \\
-\boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} &= \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
-\end{aligned}
+m \frac{d \boldsymbol{U}}{d t} = \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }}, \quad
+\boldsymbol{I} \frac{d \boldsymbol{\Omega}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
 $$
 
-流体から浮体が受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力を積分することで得られる：
+$`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{\text {hydro }}`$は水の力，$`\boldsymbol{T} _{\text {ext }}`$は外力によるトルク，$`\boldsymbol{T} _{\text {hydro }}`$は水の力によるトルク．
+浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
+また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
 $$
-\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S
-$$
-
-圧力$`p`$は，速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
-
-$$
+\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S, \quad
 p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
 $$
 
