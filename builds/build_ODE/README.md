@@ -42,6 +42,13 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 [./example_DampedHrmonicOscillator.cpp#L4](./example_DampedHrmonicOscillator.cpp#L4)
 
 
+このように，ルンゲクッタを使って２階微分方程式を解く場合，
+２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
+
+
+[./example_DampedHrmonicOscillator.cpp#L116](./example_DampedHrmonicOscillator.cpp#L116)
+
+
 ## ⛵️ Runge-Kutta Integration of ODE
 
 ![](RK.png)

@@ -54,8 +54,8 @@ match SimulationCase:
 
         input_files = [wavetank, water]
 
-        setting = {"RK_order": 1,
-                   "max_dt": 0.0005,
+        setting = {"RK_order": 4,
+                   "max_dt": 0.001,
                    "CSML": 2.4,
                    "end_time_step": 10000,
                    "end_time": 10,

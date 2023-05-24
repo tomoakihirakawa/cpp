@@ -574,6 +574,7 @@ struct QR {
 /* -------------------------------------------------------------------------- */
 struct CSR {
    double value;
+   double diagonal_value;
    double tmp_value;
    std::array<double, 3> value3d;
    size_t __index__;
