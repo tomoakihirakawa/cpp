@@ -59,7 +59,7 @@ struct RungeKuttaCommon {
 
    T getdX() const { return this->dX; };
    double gett() const { return this->t_init + this->dt; };
-   T get_t() const { return gett(); };
+   double get_t() const { return gett(); };
 
    double getTime() const { return this->t_init + this->dt; };
    double getNextTime() const { return this->t_init + this->getdt(); };

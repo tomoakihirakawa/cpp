@@ -113,6 +113,10 @@ int main() {
    /* -------------------------------------------------------------------------- */
    // Runge-Kutta
    // \label{DampedHrmonicOscillator:RungeKutta}
+   /*DOC_EXTRACT ODE
+   このように，ルンゲクッタを使って２階微分方程式を解く場合，
+   ２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
+   */
    const int order = 4;
    auto result_RK = [&](auto N_IN) {
       auto N = (int)(N_IN / order);
@@ -124,6 +128,7 @@ int main() {
          RungeKutta RK_v(dt, t, v, order);
          do {
             t = RK_x.get_t();
+            // good
             x = RK_x.get_x();
             v = RK_v.get_x();
             RK_x.push(v);

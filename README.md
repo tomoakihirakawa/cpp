@@ -73,6 +73,13 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 [./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L4)
 
 
+このように，ルンゲクッタを使って２階微分方程式を解く場合，
+２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
+
+
+[./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L116](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L116)
+
+
 ## ⛵️ Runge-Kutta Integration of ODE
 
 ![](builds/build_ODE/RK.png)
@@ -227,7 +234,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-[./builds/build_sph/SPH.hpp#L209](./builds/build_sph/SPH.hpp#L209)
+[./builds/build_sph/SPH.hpp#L210](./builds/build_sph/SPH.hpp#L210)
 
 
 ### ⚓️ CFL条件の設定
@@ -334,7 +341,7 @@ EISPH
 ISPH
 - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
-✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L494): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](./builds/build_sph/SPH_Functions.hpp#L509): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
 [./builds/build_sph/SPH_Functions.hpp#L319](./builds/build_sph/SPH_Functions.hpp#L319)
@@ -348,14 +355,14 @@ ISPH
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L481)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L461)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L469) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
+| ☑️ [ポアソン方程式](./builds/build_sph/SPH_Functions.hpp#L496)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](./builds/build_sph/SPH_Functions.hpp#L476)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](./builds/build_sph/SPH_Functions.hpp#L484) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$`h/2`$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L443](./builds/build_sph/SPH_Functions.hpp#L443)
+[./builds/build_sph/SPH_Functions.hpp#L458](./builds/build_sph/SPH_Functions.hpp#L458)
 
 
 ### ⚓️ 圧力の安定化
@@ -381,43 +388,43 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L536](./builds/build_sph/SPH_Functions.hpp#L536)
+[./builds/build_sph/SPH_Functions.hpp#L556](./builds/build_sph/SPH_Functions.hpp#L556)
 
 
 ### ⚓️ 圧力勾配$`\nabla p^{n+1}`$の計算
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L665): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L715): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L666): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L717): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L667): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
+✅ [勾配の計算方法](./builds/build_sph/SPH_Functions.hpp#L718): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./builds/build_sph/SPH_Functions.hpp#L637](./builds/build_sph/SPH_Functions.hpp#L637)
+[./builds/build_sph/SPH_Functions.hpp#L676](./builds/build_sph/SPH_Functions.hpp#L676)
 
 
 $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$が計算できた．
 
 
-[./builds/build_sph/SPH_Functions.hpp#L683](./builds/build_sph/SPH_Functions.hpp#L683)
+[./builds/build_sph/SPH_Functions.hpp#L734](./builds/build_sph/SPH_Functions.hpp#L734)
 
 
 ## ⛵️ 注意点
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
-- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L314)
+- [流体として扱う壁粒子を設定するかどうか](./builds/build_sph/SPH.hpp#L315)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [水面粒子の圧力をゼロにするかどうか](not found)
-- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L785)
-- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L561)
+- [密度を更新するかどうか](./builds/build_sph/SPH_Functions.hpp#L836)
+- [圧力の安定化をするかどうか](./builds/build_sph/SPH_Functions.hpp#L581)
 - [ルンゲクッタの段数](./builds/build_sph/input_generator.py#L143)
-- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L728)
+- [反射の計算方法](./builds/build_sph/SPH_Functions.hpp#L779)
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./builds/build_sph/SPH_Functions.hpp#L824](./builds/build_sph/SPH_Functions.hpp#L824)
+[./builds/build_sph/SPH_Functions.hpp#L873](./builds/build_sph/SPH_Functions.hpp#L873)
 
 
 ## ⛵️ 核関数
@@ -455,8 +462,8 @@ CSRは行列を表現する方法の一つである．
 std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 
-[ArnoldiProcessの行列-ベクトル積](./include/basic_linear_systems.hpp#L789)は特に計算コストが高い．
-[CSRのDot積を並列化](./include/basic_linear_systems.hpp#L673)すれば，かなり高速化できる．
+[ArnoldiProcessの行列-ベクトル積](./include/basic_linear_systems.hpp#L790)は特に計算コストが高い．
+[CSRのDot積を並列化](./include/basic_linear_systems.hpp#L674)すれば，かなり高速化できる．
 
 
 [./builds/build_system_of_linear_eqs/CSR.cpp#L1](./builds/build_system_of_linear_eqs/CSR.cpp#L1)
@@ -487,7 +494,7 @@ x0は初期値
 https://en.wikipedia.org/wiki/Arnoldi_iteration
 
 
-[./include/basic_linear_systems.hpp#L763](./include/basic_linear_systems.hpp#L763)
+[./include/basic_linear_systems.hpp#L764](./include/basic_linear_systems.hpp#L764)
 
 
 ---

@@ -1,7 +1,8 @@
 #ifndef SPH_weightingFunctions_H
 #define SPH_weightingFunctions_H
 
-#define USE_LeapFrog
+// #define USE_LeapFrog
+#define USE_RungeKutta
 
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
@@ -333,18 +334,18 @@ void developByEISPH(Network *net,
       std::cout << "dt = " << dt << std::endl;
 
       // b# --------------------------- ルンゲクッタの準備 ------------------- */
-      for (const auto &p : net->getPoints()) {
-#if defined(USE_RungeKutta)
-// p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
-// p->RK_X.initialize(dt, real_time, p->X, RK_order);
-// p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
-// p->RK_rho.initialize(dt, real_time, p->rho, RK_order);
-//
-#elif defined(USE_LeapFrog)
-         p->LPFG_X.initialize(dt, real_time, p->X, p->U_SPH);
-         p->LPFG_rho.initialize(dt, real_time, p->rho, p->DrhoDt_SPH);
-#endif
-      }
+      for(auto & N:Append(net_RigidBody, net))
+         for (const auto &p : N->getPoints()) {
+   #if defined(USE_RungeKutta)
+            p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
+            p->RK_X.initialize(dt, real_time, p->X, RK_order);
+            p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
+            p->RK_rho.initialize(dt, real_time, p->rho, RK_order);
+   #elif defined(USE_LeapFrog)
+            p->LPFG_X.initialize(dt, real_time, p->X, p->U_SPH);
+            p->LPFG_rho.initialize(dt, real_time, p->rho, p->DrhoDt_SPH);
+   #endif
+         }
       // b# ======================================================= */
       // b#                  ルンゲクッタを使った時間積分                 */
       // b# ======================================================= */
@@ -356,10 +357,11 @@ void developByEISPH(Network *net,
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
 #if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
+         const auto DT = dt;
 #elif defined(USE_LeapFrog)
+         const auto DT = dt / 2.;
             // dt is fixed
 #endif
-         const auto DT = dt / 2.;
 
          std::cout << "DT = " << DT << std::endl;
          for (const auto &p : wall_p) {
@@ -382,15 +384,25 @@ void developByEISPH(Network *net,
 
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
-
+#if defined(USE_RungeKutta)
+         auto getX = [&](const auto p) {
+            if(p->isAuxiliary)
+               return p->surfacePoint->RK_X.getX(p->surfacePoint->U_SPH) + (p->X - p->surfacePoint->X);            
+            else if(p->getNetwork()->isRigidBody)
+               return p->X;
+            else
+               return p->RK_X.getX(p->U_SPH);
+         };
+#elif defined(USE_LeapFrog)
          auto getX = [&](const auto p) {
             if (p->LPFG_X.is_first)
-               return p->X + dt * p->U_SPH + 0.5 * dt * dt * p->DUDt_SPH_;
+               return p->X + dt * p->U_SPH;// + 0.5 * dt * dt * p->DUDt_SPH_;
             else
                return p->X;
          };
-
-         PoissonEquation(wall_p, {net}, DT, particle_spacing, getX, true);
+#endif
+         DebugPrint("ポアソン方程式を立てる", Magenta);
+         PoissonEquation(wall_p, {net}, DT, particle_spacing, getX);
          setPressure(wall_p);
 
          PoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing, getX);
@@ -406,7 +418,7 @@ void developByEISPH(Network *net,
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
-         gradP(net->getPoints(), Append(net_RigidBody, net));
+         gradP(net->getPoints(), Append(net_RigidBody, net),getX);
 
          //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);
@@ -450,7 +462,12 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints())
       interpolated_normal_SPH_original[p] = p->interpolated_normal_SPH_original;
    vtp.addPointData("interpolated_normal_SPH_original", interpolated_normal_SPH_original);
-   //
+   // 
+   std::unordered_map<networkPoint *, double> contains_diagonal;
+   for (const auto &p : Fluid->getPoints())
+      contains_diagonal[p] = (double)(p->column_value.find(p) != p->column_value.end());
+   vtp.addPointData("contains diagonal", contains_diagonal);
+   //   
    std::unordered_map<networkPoint *, Tddd> U;
    for (const auto &p : Fluid->getPoints())
       U[p] = p->U_SPH;
