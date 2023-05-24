@@ -24,18 +24,6 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 | ![](figN25.png) | ![](figN50.png) |  ![](figError.png) |
 |:---:|:---:|:---:|
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
-
-**後退オイラー**
-
-\ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
-
-**LeapFrog**
-
-\ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
-時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
-$\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-\ref{ODE:LeapFrog}{LeapFrogのクラス}
-
 */
 
 const double m = 1;
@@ -74,6 +62,11 @@ int main() {
 
    /* -------------------------------------------------------------------------- */
    // Backward Euler
+   /*DOC_EXTRACT ODE
+   **後退オイラー**
+
+   \ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
+   */
    // \label{DampedHrmonicOscillator:BackwardEuler}
    auto result_BKE = [&](auto N) {
       double dt = 1. / N;
@@ -95,6 +88,14 @@ int main() {
    };
    /* -------------------------------------------------------------------------- */
    // LeapFrog
+   /*DOC_EXTRACT ODE
+   **LeapFrog**
+
+   \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
+   時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
+   $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
+   \ref{ODE:LeapFrog}{LeapFrogのクラス}
+   */
    // \label{DampedHrmonicOscillator:LeapFrog}
    auto result_LPFG = [&](auto N_IN) {
       auto N = (int)(N_IN / 2);
