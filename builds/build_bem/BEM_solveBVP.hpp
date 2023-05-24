@@ -835,8 +835,8 @@ struct BEM_BVP {
 
    $$
    \begin{align*}
-   &&\frac{d\boldsymbol U_{\rm c}}{dt} = F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
-   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) = \frac{d\boldsymbol U_{\rm c}}{dt} - F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
+   &&\frac{d\boldsymbol U_{\rm c}}{dt}& = F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
+   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) &= \frac{d\boldsymbol U_{\rm c}}{dt} - F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
    \end{align*}
    $$
 
