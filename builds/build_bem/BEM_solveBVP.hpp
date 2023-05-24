@@ -602,11 +602,19 @@ struct BEM_BVP {
             //    phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
             //    std::get<1>(p->phiphin_t) =  phin_t;
             // }
-
-            /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
             // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
+
+            /*DOC_EXTRACT BEM
+
+            $$
+            \nabla {\bf u} = \nabla \nabla \phi = \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\ \phi_{yx} & \phi_{yy} & \phi_{yz} \\ \phi_{zx} & \phi_{zy} & \phi_{zz} \end{bmatrix}
+            $$
+
+            */
+
+            // \label{BEM:setphint}
             for (auto &[f, phin_t] : p->phintOnFace) {
                auto use_face = (f != nullptr);
                if (use_face) {
@@ -830,6 +838,8 @@ struct BEM_BVP {
    次にBIEから$\phi_t$を求め，次に圧力$p$を求める．
    そして，浮体の重さと慣性モーメントを考慮して圧力から，$\boldsymbol A$を求め直すと，
    入力した$\boldsymbol A$と一致しなければならない．
+
+   $\phi_{nt}$は，\ref{BEM:setphint}{ここ}で与えている．
 
    */
    void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {

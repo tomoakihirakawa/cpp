@@ -119,6 +119,14 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 [./BEM_solveBVP.hpp#L387](./BEM_solveBVP.hpp#L387)
 
 
+$$
+\nabla {\bf u} = \nabla \nabla \phi = \begin{bmatrix} \phi _{xx} & \phi _{xy} & \phi _{xz} \\ \phi _{yx} & \phi _{yy} & \phi _{yz} \\ \phi _{zx} & \phi _{zy} & \phi _{zz} \end{bmatrix}
+$$
+
+
+[./BEM_solveBVP.hpp#L609](./BEM_solveBVP.hpp#L609)
+
+
 ## ⛵️ 浮体動揺解析
 
 浮体の運動方程式は，以下のように書ける．
@@ -178,8 +186,10 @@ $$
 そして，浮体の重さと慣性モーメントを考慮して圧力から，$`\boldsymbol A`$を求め直すと，
 入力した$`\boldsymbol A`$と一致しなければならない．
 
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L617)で与えている．
 
-[./BEM_solveBVP.hpp#L773](./BEM_solveBVP.hpp#L773)
+
+[./BEM_solveBVP.hpp#L781](./BEM_solveBVP.hpp#L781)
 
 
 ---
