@@ -64,7 +64,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 * [4次のルンゲクッタ](./builds/build_ODE/example_DampedHrmonicOscillator.cpp#L116)の１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．しかし，加速度を4階も計算する必要がある．[RungeKuttaのクラス](./include/integrationOfODE.hpp#L11)
 
 
-** LeapFrog **
+**LeapFrog**
 
 時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](./include/integrationOfODE.hpp#L280)）．
 $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
@@ -74,6 +74,7 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 
 
 **Runge-Kutta**
+
 このように，ルンゲクッタを使って２階微分方程式を解く場合，
 ２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
 
