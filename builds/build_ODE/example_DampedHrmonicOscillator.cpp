@@ -25,16 +25,16 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 |:---:|:---:|:---:|
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
 
-   * \ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
-   * \ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．\ref{ODE:LeapFrog}{LeapFrogのクラス}
-   * \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．しかし，加速度を4階も計算する必要がある．\ref{ODE:RungeKutta}{RungeKuttaのクラス}
+**後退オイラー**
 
+\ref{DampedHrmonicOscillator:BackwardEuler}{後退オイラー}の１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
 
 **LeapFrog**
 
+\ref{DampedHrmonicOscillator:LeapFrog}{リープフロッグ}の１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
 時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-
+\ref{ODE:LeapFrog}{LeapFrogのクラス}
 
 */
 
@@ -117,8 +117,12 @@ int main() {
    /*DOC_EXTRACT ODE
    **Runge-Kutta**
 
+   \ref{DampedHrmonicOscillator:RungeKutta}{4次のルンゲクッタ}の１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．
+   しかし，加速度を4階も計算する必要がある．
    このように，ルンゲクッタを使って２階微分方程式を解く場合，
-   ２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
+   ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
+   後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
+   \ref{ODE:RungeKutta}{RungeKuttaのクラス}
    */
    const int order = 4;
    auto result_RK = [&](auto N_IN) {
