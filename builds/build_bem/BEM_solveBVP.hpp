@@ -609,7 +609,11 @@ struct BEM_BVP {
             /*DOC_EXTRACT BEM
 
             $$
-            \nabla {\bf u} = \nabla \nabla \phi = \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\ \phi_{yx} & \phi_{yy} & \phi_{yz} \\ \phi_{zx} & \phi_{zy} & \phi_{zz} \end{bmatrix}
+            \nabla {\bf u} = \nabla \nabla \phi =
+            \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
+            　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
+            　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}
+            \end{bmatrix}
             $$
 
             */
