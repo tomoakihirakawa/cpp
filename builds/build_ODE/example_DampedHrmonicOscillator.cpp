@@ -115,7 +115,7 @@ int main() {
    // Runge-Kutta
    // \label{DampedHrmonicOscillator:RungeKutta}
    /*DOC_EXTRACT ODE
-   ** Runge-Kutta **
+   **Runge-Kutta**
    このように，ルンゲクッタを使って２階微分方程式を解く場合，
    ２階微分を２つの1階微分にわけて考え，互いに独立した２つのルンゲクッタを用意し，変数を独立して更新する必要がある．
    */
