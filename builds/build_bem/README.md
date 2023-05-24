@@ -128,7 +128,7 @@ $$
 $$
 
 
-[./BEM_solveBVP.hpp#L609](./BEM_solveBVP.hpp#L609)
+[./BEM_solveBVP.hpp#L593](./BEM_solveBVP.hpp#L593)
 
 
 ## ⛵️ 浮体動揺解析
@@ -165,7 +165,10 @@ $$
 連立方程式を立てて解くこともできるだろうが，BIEの係数行列の逆行列が既に計算されているので，これを利用して，適当な初期値から解へと収束させる方法をここでは使うことにする．
 
 
-現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$`\phi _{nt}`$が知りたいわけではない．しかし，$`\phi _{nt}`$をBIEを$`\phi _t`$について解き，圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られないという状況になっている．
+現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけ．
+全て節点上の$`\phi _{nt}`$が知りたいわけではない．
+しかし，$`\phi _{nt}`$をBIEを$`\phi _t`$について解き，浮体の没水面上にある節点での圧力$`p`$が得られないと，
+$`\boldsymbol{F} _{\text {hydro }}`$が得られず，浮体加速度が計算できないという状況．
 
 浮体表面のある位置ベクトルを$`\boldsymbol r`$とする．
 表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
@@ -197,10 +200,10 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
 入力した$`\frac{d^2\boldsymbol r}{dt^2}`$と一致しなければならない．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L621)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L605)で与えている．
 
 
-[./BEM_solveBVP.hpp#L785](./BEM_solveBVP.hpp#L785)
+[./BEM_solveBVP.hpp#L769](./BEM_solveBVP.hpp#L769)
 
 
 ---

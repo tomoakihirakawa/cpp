@@ -585,23 +585,7 @@ struct BEM_BVP {
          if (isDirichletID_BEM(PBF))
             p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
          if (isNeumannID_BEM(PBF)) {
-            // /* ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T */
-            // // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
-            // // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-            // // b* setBoundaryConditionsで決めている．
-            // for (auto &[f, phin_t] : p->phintOnFace) {
-            //    auto use_face = (f != nullptr);
-            //    auto n = use_face ? f->normal : p->getNormalNeumann_BEM();
-            //    auto netInContact = use_face ? NearestContactFace(f)->getNetwork() : NearestContactFace(p)->getNetwork();
-            //    auto w = netInContact->velocityRotational();
-            //    auto U = uNeumann(p);
-            //    phin_t = Dot(w, U - p->U_BEM) + Dot(n, accelNeumann(p));
-            //    auto s0s1s2 = OrthogonalBasis(n);
-            //    auto [s0, s1, s2] = s0s1s2;
-            //    auto Hessian = use_face ? grad_U_LinearElement(f, s0s1s2) : grad_U_LinearElement(p, s0s1s2);
-            //    phin_t -= std::get<0>(Dot(Tddd{{Dot(U, s0), Dot(U, s1), Dot(U, s2)}}, Hessian));
-            //    std::get<1>(p->phiphin_t) =  phin_t;
-            // }
+
             // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
             // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
             // b* setBoundaryConditionsで決めている．
@@ -818,7 +802,10 @@ struct BEM_BVP {
    連立方程式を立てて解くこともできるだろうが，BIEの係数行列の逆行列が既に計算されているので，これを利用して，適当な初期値から解へと収束させる方法をここでは使うことにする．
 
 
-   現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけある．$\phi_{nt}$が知りたいわけではない．しかし，$\phi_{nt}$をBIEを$\phi_t$について解き，圧力$p$が得られないと，$\boldsymbol{F}_{\text {hydro }}$が得られないという状況になっている．
+   現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけ．
+   全て節点上の$\phi_{nt}$が知りたいわけではない．
+   しかし，$\phi_{nt}$をBIEを$\phi_t$について解き，浮体の没水面上にある節点での圧力$p$が得られないと，
+   $\boldsymbol{F}_{\text {hydro }}$が得られず，浮体加速度が計算できないという状況．
 
    浮体表面のある位置ベクトルを$\boldsymbol r$とする．
    表面上のある点の移動速度$\frac{d\boldsymbol r}{dt}$と流体粒子の流速$\nabla \phi$の間には，次の境界条件が成り立つ．
