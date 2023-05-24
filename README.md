@@ -290,10 +290,10 @@ $$
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}
 $$
 
-上の式から$`\boldsymbol A`$を使って，$`\phi _{nt}`$を求め，
+$`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$`p`$を求める．
-そして，浮体の重さと慣性モーメントを考慮して圧力から，$`\boldsymbol A`$を求め直すと，
-入力した$`\boldsymbol A`$と一致しなければならない．
+そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
+入力した$`\frac{d^2\boldsymbol r}{dt^2}`$と一致しなければならない．
 
 $`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L617)で与えている．
 
