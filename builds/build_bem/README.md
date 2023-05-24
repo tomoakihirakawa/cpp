@@ -193,6 +193,17 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 しかし，浮体の没水面上にある節点での圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られず，運動方程式から浮体加速度が計算できない．
 圧力を計算するためには，$`\phi _t`$が必要で，$`\phi _t`$は簡単には得られない，という状況．
 
+物体の加速度は， 節点における$`\{\phi _{nt0},\phi _{nt1},\phi _{nt2},..\} = \Phi _{nt}`$が分かれば求まるが，
+逆に$`\Phi _{nt}`$は$`\frac{d\boldsymbol U _{\rm c}}{dt}`$が分かれば求まるので
+
+$$
+\begin{align*}
+&&\frac{d\boldsymbol U _{\rm c}}{dt} = F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right)\\
+&\rightarrow& Q\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right) = \frac{d\boldsymbol U _{\rm c}}{dt} - F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right) =0
+\end{align*}
+$$
+
+のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
 $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L605)で与えている．
 
 

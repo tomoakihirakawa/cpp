@@ -830,6 +830,17 @@ struct BEM_BVP {
    しかし，浮体の没水面上にある節点での圧力$p$が得られないと，$\boldsymbol{F}_{\text {hydro }}$が得られず，運動方程式から浮体加速度が計算できない．
    圧力を計算するためには，$\phi_t$が必要で，$\phi_t$は簡単には得られない，という状況．
 
+   物体の加速度は， 節点における$\{\phi_{nt0},\phi_{nt1},\phi_{nt2},..\} = \Phi_{nt}$が分かれば求まるが，
+   逆に$\Phi_{nt}$は$\frac{d\boldsymbol U_{\rm c}}{dt}$が分かれば求まるので
+
+   $$
+   \begin{align*}
+   &&\frac{d\boldsymbol U_{\rm c}}{dt} = F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
+   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) = \frac{d\boldsymbol U_{\rm c}}{dt} - F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
+   \end{align*}
+   $$
+
+   のように，ある関数$Q$のゼロを探す，根探し問題になる．
    $\phi_{nt}$は，\ref{BEM:setphint}{ここ}で与えている．
 
    */
