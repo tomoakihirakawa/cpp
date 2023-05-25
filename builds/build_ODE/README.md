@@ -63,11 +63,11 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 
 $$
 \begin{align*}
-k_1 &= \frac{dx}{dt}(t_n, x_n)\\
-k_2 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_1)\\
-k_3 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_2)\\
-k_4 &= \frac{dx}{dt}(t_n + \Delta t, x_n + \Delta t k_3)\\
-x_{n+1} &= x_n + \frac{\Delta t}{6} (k_1 + 2 k_2 + 2 k_3 + k_4)
+k _1 &= \frac{dx}{dt}(t _n, x _n)\\
+k _2 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _1)\\
+k _3 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _2)\\
+k _4 &= \frac{dx}{dt}(t _n + \Delta t, x _n + \Delta t k _3)\\
+x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 \end{align*}
 $$
 
