@@ -95,11 +95,11 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 
 $$
 \begin{align*}
-k _1 &= \frac{dx}{dt}(t _n, x _n)\\
-k _2 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _1)\\
-k _3 &= \frac{dx}{dt}(t _n + \frac{\Delta t}{2}, x _n + \frac{\Delta t}{2} k _2)\\
-k _4 &= \frac{dx}{dt}(t _n + \Delta t, x _n + \Delta t k _3)\\
-x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
+k_1 &= \frac{dx}{dt}(t_n, x_n)\\
+k_2 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_1)\\
+k_3 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_2)\\
+k_4 &= \frac{dx}{dt}(t_n + \Delta t, x_n + \Delta t k_3)\\
+x_{n+1} &= x_n + \frac{\Delta t}{6} (k_1 + 2 k_2 + 2 k_3 + k_4)
 \end{align*}
 $$
 
@@ -185,18 +185,18 @@ PBF_index[{p, Dirichlet, ある要素}]
 $`\phi`$と$`\phi _n`$に関するBIEは，
 
 $$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
 これを線形三角要素とGauss-Legendre積分で離散化すると，
 
 $$
-\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
+\alpha_{i_\circ}(\phi)_{i_\circ}=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }
 $$
 
 $$
--\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x}_{i_\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
 $$
 
 
@@ -211,7 +211,7 @@ $$
 | Variable | Description |
 |:--------:|:-----------:|
 | `origin` | 原点となる節点$`i _\circ`$ |
-| `integ _f` | Element $`k _{\triangle}`$ |
+| `integ_f` | Element $`k _{\triangle}`$ |
 | `t0, t1, ww` | Gaussian points and thier wieghts $`\xi _0, \xi _1, w _0 w _1`$ |
 | `p0, p1, p2` | Node of the element $`k _{\triangle}`$ |
 | `N012` | Shape function $`\pmb{N} _j`$ |
@@ -245,8 +245,8 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 浮体の重心の運動方程式：
 
 $$
-m \frac{d {\boldsymbol U} _{\rm c}}{d t} = \boldsymbol{F} _{\text {ext }}+\boldsymbol{F} _{\text {hydro }}, \quad
-\boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
+m \frac{d {\boldsymbol U}_{\rm c}}{d t} = \boldsymbol{F}_{\text {ext }}+\boldsymbol{F}_{\text {hydro }}, \quad
+\boldsymbol{I} \frac{d {\boldsymbol \Omega}_{\rm c}}{d t} = \boldsymbol{T}_{\text {ext }}+\boldsymbol{T}_{\text {hydro }}
 $$
 
 $`{\boldsymbol U} _{\rm c}`$は浮体の移動速度．
@@ -255,7 +255,7 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
 $$
-\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S, \quad
+\boldsymbol{F}_{\text {hydro }}=\int_{S} p\boldsymbol{n}  d S, \quad
 p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
 $$
 
@@ -263,7 +263,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
 
 $$
-\alpha ({\bf{a}})\phi _t ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi _t ({\bf{x}}) - \phi _t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\alpha ({\bf{a}})\phi_t ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi_t ({\bf{x}}) - \phi_t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
@@ -283,15 +283,15 @@ $$
 &\rightarrow& \frac{d}{dt}({{\bf n}\cdot\frac{d\boldsymbol r}{dt}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
 &\rightarrow& \frac{d{\bf n}}{dt}\cdot\frac{d\boldsymbol r}{dt} + {\bf n}\cdot\frac{d^2{\boldsymbol r}}{dt^2} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
 &\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
-&\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\phi _t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
-&\rightarrow& \phi _{nt} &= \frac{d{\bf n}}{dt} \cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi -\frac{d^2{\boldsymbol r}}{dt^2}\right)
+&\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\phi_t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
+&\rightarrow& \phi_{nt} &= \frac{d{\bf n}}{dt} \cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi -\frac{d^2{\boldsymbol r}}{dt^2}\right)
 \end{aligned}
 $$
 
 ここの$`\frac{d{\bf n}}{dt}`$と$`\frac{d^2\boldsymbol r}{dt^2}`$は，$`{\boldsymbol U} _{\rm c}`$と$`\boldsymbol \Omega _{\rm c}`$を用いて，
 
 $$
-\frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
+\frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U}_{\rm c} + \boldsymbol \Omega_{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega}_{\rm c}\times{\bf n}
 $$
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
@@ -308,8 +308,8 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 
 $$
 \begin{align*}
-&&\frac{d\boldsymbol U _{\rm c}}{dt}& = F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right)\\
-&\rightarrow& Q\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right) &= \frac{d\boldsymbol U _{\rm c}}{dt} - F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right) =0
+&&\frac{d\boldsymbol U_{\rm c}}{dt}& = F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
+&\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) &= \frac{d\boldsymbol U_{\rm c}}{dt} - F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
 \end{align*}
 $$
 
@@ -322,9 +322,9 @@ $`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L662)で与え�
 
 $$
 \nabla {\bf u} = \nabla \nabla \phi =
-\begin{bmatrix} \phi _{xx} & \phi _{xy} & \phi _{xz} \\
-\phi _{yx} & \phi _{yy} & \phi _{yz} \\
-\phi _{zx} & \phi _{zy} & \phi _{zz}
+\begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
+\phi_{yx} & \phi_{yy} & \phi_{yz} \\
+\phi_{zx} & \phi_{zy} & \phi_{zz}
 \end{bmatrix}
 $$
 

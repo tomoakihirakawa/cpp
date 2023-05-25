@@ -28,20 +28,32 @@ def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tupl
     return labels
 
 
+# def convert_math_underscore(text: str) -> str:
+#     patterns = [
+#         r"(?<=\$\$)(.*?)(?=\$\$)",  # between $$
+#         r"(?<=\$\$\$)(.*?)(?=\$\$\$)",  # between $$$$
+#         r"(?<=`math\s)(.*?)(?=`)",  # between `math`
+#         r"(?<=\$)(.*?)(?=\$)"  # between single $
+#     ]
+#     for pattern in patterns:
+#         matches = list(re.finditer(pattern, text, re.DOTALL))
+#         for match in reversed(matches):
+#             start, end = match.span()
+#             # Replace underscores that do not have a space before them
+#             # Check for non-space characters around the underscore
+#             new_text = re.sub(r"(?<!\s)_(?!\s)", " _", match.group())
+#             text = text[:start] + new_text + text[end:]
+#     return text
+
 def convert_math_underscore(text: str) -> str:
-    patterns = [
-        r"(?<=\$\$)(.*?)(?=\$\$)",  # between $$
-        r"(?<=\$\$\$)(.*?)(?=\$\$\$)",  # between $$$$
-        r"(?<=`math\s)(.*?)(?=`)",  # between `math`
-        r"(?<=\$)(.*?)(?=\$)"  # between single $
-    ]
-    for pattern in patterns:
-        matches = list(re.finditer(pattern, text, re.DOTALL))
-        for match in reversed(matches):
-            start, end = match.span()
-            # Replace underscores that do not have a space before them
-            new_text = re.sub(r"(?<! )_", " _", match.group())
-            text = text[:start] + new_text + text[end:]
+    math_expr_pattern = r"(\$.*?\$)|(`math\s.*?`)"
+    matches = list(re.finditer(math_expr_pattern, text, re.DOTALL))
+    for match in reversed(matches):
+        start, end = match.span()
+        # Replace underscores that do not have a space before them
+        # Check for non-space characters around the underscore
+        new_text = re.sub(r"(?<!\s)_(?!\s)", " _", match.group())
+        text = text[:start] + new_text + text[end:]
     return text
 
 
