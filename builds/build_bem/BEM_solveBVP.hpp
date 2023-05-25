@@ -275,6 +275,26 @@ struct BEM_BVP {
       Timer timer;
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
       std::cout << Magenta << timer() << colorOff << std::endl;
+      /*DOC_EXTRACT BEM
+
+      このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
+      `IGIGn`は，ある節点$i_\circ$（係数行列の行インデックス）に対する
+      他の節点$j_\circ$（係数行列の列インデックス）の影響度合いのようなものである．
+      その影響度合いは，他の節点$j_\circ$の所属する要素までの距離や向きによって決まることが離散化された式からわかる．
+
+      | Variable | Description |
+      |:--------:|:-----------:|
+      | `origin` | 原点となる節点$i_\circ$ |
+      | `integ_f` | Element $k_{\triangle}$ |
+      | `t0, t1, ww` | Gaussian points and thier wieghts $\xi_0, \xi_1, w_0 w_1$ |
+      | `p0, p1, p2` | Node of the element $k_{\triangle}$ |
+      | `N012` | Shape function $\pmb{N}_j$ |
+      | `IGIGn` | Coefficient matrices of the left and right sides |
+      | `nr` | $\| \pmb{x} - \pmb{x}_{i\circ } \|$ |
+      | `tmp` | $w_0 w_1 \frac{1 - \xi_0}{\| \pmb{x} - \pmb{x}_{i\circ } \|}$ |
+      | `cross` | $\frac{\partial \pmb{x}}{\partial \xi_0} \times \frac{\partial \pmb{x}}{\partial \xi_1}$ |
+
+      */
 #pragma omp parallel
       for (const auto &[PBF, index] : PBF_index)
 #pragma omp single nowait
@@ -286,26 +306,6 @@ struct BEM_BVP {
          std::array<double, 2> IGIGn, c;
          std::array<double, 3> X0, X1, X2, A, cross, N012;
          for (const auto &integ_f : water.getFaces()) {
-            /*DOC_EXTRACT BEM
-
-            このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
-            `IGIGn`は，ある節点$i_\circ$（係数行列の行インデックス）に対する
-            他の節点$j_\circ$（係数行列の列インデックス）の影響度合いのようなものである．
-            その影響度合いは，他の節点$j_\circ$の所属する要素までの距離や向きによって決まることが離散化された式からわかる．
-
-            | Variable | Description |
-            |:--------:|:-----------:|
-            | `origin` | 原点となる節点$i_\circ$ |
-            | `integ_f` | Element $k_{\triangle}$ |
-            | `t0, t1, ww` | Gaussian points and thier wieghts $\xi_0, \xi_1, w_0 w_1$ |
-            | `p0, p1, p2` | Node of the element $k_{\triangle}$ |
-            | `N012` | Shape function $\pmb{N}_j$ |
-            | `IGIGn` | Coefficient matrices of the left and right sides |
-            | `nr` | $\| \pmb{x} - \pmb{x}_{i\circ } \|$ |
-            | `tmp` | $w_0 w_1 \frac{1 - \xi_0}{\| \pmb{x} - \pmb{x}_{i\circ } \|}$ |
-            | `cross` | $\frac{\partial \pmb{x}}{\partial \xi_0} \times \frac{\partial \pmb{x}}{\partial \xi_1}$ |
-
-            */
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}},
                                                                                                     {p1, integ_f, {0., 0.}},
