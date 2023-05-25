@@ -77,9 +77,9 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "velocity": ["floating", 0., ]}
+                 "velocity": ["floating", 0.05]}
 
-        float["mass"] = m = 7.0559
+        float["mass"] = m = 7.056
         float["reverseNormal"] = True
         float["COM"] = [0., 0., 0.1*D + 900/1000]  # 今回は重要ではない
         float["radius_of_gyration"] = [10**10, 10**10, 10**10]
@@ -95,7 +95,7 @@ match SimulationCase:
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,

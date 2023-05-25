@@ -421,14 +421,4 @@ T3Tddd grad_U_LinearElementNeuamnn(const networkPoint *const p, const T3Tddd &or
    return H / Atot;
 };
 
-void setIsMultipleNode(const auto &p) {
-   if (p->CORNER)
-      p->isMultipleNode = true;
-   else if (p->Neumann) {
-      auto n = p->getNormalNeumann_BEM();
-      p->isMultipleNode = std::ranges::any_of(p->getFacesNeumann(), [&n](const auto &f) { return !isFlat(n, f->normal, M_PI / 180. * 20); });
-   } else
-      p->isMultipleNode = false;
-};
-
 #endif

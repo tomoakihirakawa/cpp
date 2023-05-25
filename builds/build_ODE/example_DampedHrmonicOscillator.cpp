@@ -124,6 +124,7 @@ int main() {
    後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
    \ref{ODE:RungeKutta4}{4次のRunge-Kutta}の場合，次のようになる．
+
    $$
    \begin{align*}
    k_1 &= \frac{dx}{dt}(t_n, x_n)\\
