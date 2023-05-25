@@ -156,6 +156,7 @@ $$
 
 これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
 [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
+
 $$
 \begin{aligned}
 &\rightarrow& \frac{d}{dt}({{\bf n}\cdot\frac{d\boldsymbol r}{dt}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
@@ -192,7 +193,7 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L684)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L685)で与えている．
 
 
 [./BEM_solveBVP.hpp#L570](./BEM_solveBVP.hpp#L570)
@@ -207,7 +208,7 @@ $$
 $$
 
 
-[./BEM_solveBVP.hpp#L672](./BEM_solveBVP.hpp#L672)
+[./BEM_solveBVP.hpp#L673](./BEM_solveBVP.hpp#L673)
 
 
 ---
