@@ -286,10 +286,25 @@ struct BEM_BVP {
          std::array<double, 2> IGIGn, c;
          std::array<double, 3> X0, X1, X2, A, cross, N012;
          for (const auto &integ_f : water.getFaces()) {
-            /* ------------------------------ 2023/04/03 -------------------------------- */
-            /*
-            このfor loopでは連立一次方程式の計数行列を作成する作業を行なっている．
-            これは，原点をある節点(origin)に固定し，originと各面との位置や向きの関係に依存する，値を各節点に分配する作業である．
+            /*DOC_EXTRACT BEM
+
+            このループでは，BIEの連立一次方程式の係数行列を作成する作業を行なっている．
+            これは，ある節点$i_\circ$（係数行列の行インデックス）に対する
+            他の節点$j_\circ$（係数行列の列インデックス）の影響度が係数となる計算している．
+            その影響度合いは，他の節点$j_\circ$の所属する要素までの距離や向きによって決まる．
+
+            | Variable | Description |
+            |:--------:|:-----------:|
+            | `origin` | 原点となる節点$i_\circ$ |
+            | `integ_f` | Element $k_{\triangle}$ |
+            | `t0, t1, ww` | Gaussian points and thier wieghts $\xi_0, \xi_1, w_0 w_1$ |
+            | `p0, p1, p2` | Node of the element $k_{\triangle}$ |
+            | `N012` | Shape function $\pmb{N}_j$ |
+            | `IGIGn` | Coefficient matrices of the left and right sides |
+            | `nr` | $\| \pmb{x} - \pmb{x}_{i\circ } \|$ |
+            | `tmp` | $w_0 w_1 \frac{1 - \xi_0}{\| \pmb{x} - \pmb{x}_{i\circ } \|}$ |
+            | `cross` | $\frac{\partial \pmb{x}}{\partial \xi_0} \times \frac{\partial \pmb{x}}{\partial \xi_1}$ |
+
             */
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}},

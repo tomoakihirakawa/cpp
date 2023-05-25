@@ -8,7 +8,6 @@
         - [⚓️ 修正流速](#⚓️-修正流速)
     - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
         - [⚓️ 多重節点](#⚓️-多重節点)
-        - [⚓️ 多重節点](#⚓️-多重節点)
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
     - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
@@ -152,13 +151,6 @@ $$
 3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet面，それ以外はCORNERとする．
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
-
-### ⚓️ 多重節点
-
-
-[./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
-
-
 ### ⚓️ 多重節点
 
 💡 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi _n`$を計算できるようにする
@@ -183,7 +175,7 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./builds/build_bem/BEM_setBoundaryConditions.hpp#L33](./builds/build_bem/BEM_setBoundaryConditions.hpp#L33)
+[./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
 
 
 ## ⛵️ 境界値問題
@@ -211,6 +203,27 @@ $$
 [./builds/build_bem/BEM_solveBVP.hpp#L213](./builds/build_bem/BEM_solveBVP.hpp#L213)
 
 
+このループでは，BIEの連立一次方程式の係数行列を作成する作業を行なっている．
+これは，ある節点$`i _\circ`$（係数行列の行インデックス）に対する
+他の節点$`j _\circ`$（係数行列の列インデックス）の影響度が係数となる計算している．
+その影響度合いは，他の節点$`j _\circ`$の所属する要素までの距離や向きによって決まる．
+
+| Variable | Description |
+|:--------:|:-----------:|
+| `origin` | 原点となる節点$`i _\circ`$ |
+| `integ _f` | Element $`k _{\triangle}`$ |
+| `t0, t1, ww` | Gaussian points and thier wieghts $`\xi _0, \xi _1, w _0 w _1`$ |
+| `p0, p1, p2` | Node of the element $`k _{\triangle}`$ |
+| `N012` | Shape function $`\pmb{N} _j`$ |
+| `IGIGn` | Coefficient matrices of the left and right sides |
+| `nr` | $`\| \pmb{x} - \pmb{x} _{i\circ } \|`$ |
+| `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
+| `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L289](./builds/build_bem/BEM_solveBVP.hpp#L289)
+
+
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
 $`IG \phi _n = IGn \phi`$
 
@@ -224,7 +237,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L351](./builds/build_bem/BEM_solveBVP.hpp#L351)
+[./builds/build_bem/BEM_solveBVP.hpp#L366](./builds/build_bem/BEM_solveBVP.hpp#L366)
 
 
 ## ⛵️ 浮体動揺解析
@@ -301,10 +314,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L649)で与えている．
+$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L664)で与えている．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L534](./builds/build_bem/BEM_solveBVP.hpp#L534)
+[./builds/build_bem/BEM_solveBVP.hpp#L549](./builds/build_bem/BEM_solveBVP.hpp#L549)
 
 
 $$
@@ -316,7 +329,7 @@ $$
 $$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L637](./builds/build_bem/BEM_solveBVP.hpp#L637)
+[./builds/build_bem/BEM_solveBVP.hpp#L652](./builds/build_bem/BEM_solveBVP.hpp#L652)
 
 
 ---
