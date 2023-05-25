@@ -606,6 +606,7 @@ struct BEM_BVP {
 
    これを微分することで，$\phi_{nt}$を$\phi$と加速度$\frac{d{\boldsymbol U}_{\rm c}}{dt}$と角加速度$\frac{d{\boldsymbol \Omega}_{\rm c}}{dt}$を使って表すことができる．
    [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
+
    $$
    \begin{aligned}
    &\rightarrow& \frac{d}{dt}({{\bf n}\cdot\frac{d\boldsymbol r}{dt}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
