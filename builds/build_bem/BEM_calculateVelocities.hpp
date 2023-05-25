@@ -380,7 +380,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
          for (const auto &p : net.getPoints())
 #pragma omp single nowait
          {
-            auto scale = (p->Neumann ? 0.01 : 0.1);
+            auto scale = ((p->isMultipleNode && p->CORNER) ? 0.01 : 0.2);
             p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
          }
          for (const auto &p : net.getPoints()) {
