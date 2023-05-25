@@ -60,6 +60,7 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
 [4次のRunge-Kutta](../../include/integrationOfODE.hpp#L154)の場合，次のようになる．
+
 $$
 \begin{align*}
 k _1 &= \frac{dx}{dt}(t _n, x _n)\\

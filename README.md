@@ -7,9 +7,10 @@
     - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
         - [⚓️ 修正流速](#⚓️-修正流速)
     - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
+        - [⚓️ 多重節点](#⚓️-多重節点)
+        - [⚓️ 多重節点](#⚓️-多重節点)
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
-        - [⚓️ 多重節点](#⚓️-多重節点)
     - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
 - [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
     - [⛵️ Usage](#⛵️-Usage)
@@ -92,6 +93,7 @@ $`\Delta t`$が変化する場合，"半分蹴って-移動-半分蹴って"，"
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
 [4次のRunge-Kutta](./include/integrationOfODE.hpp#L154)の場合，次のようになる．
+
 $$
 \begin{align*}
 k _1 &= \frac{dx}{dt}(t _n, x _n)\\
@@ -151,32 +153,10 @@ $$
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
 
 
+### ⚓️ 多重節点
+
+
 [./builds/build_bem/BEM_setBoundaryConditions.hpp#L7](./builds/build_bem/BEM_setBoundaryConditions.hpp#L7)
-
-
-## ⛵️ 境界値問題
-
-### ⚓️ BIEの離散化
-
-$`\phi`$と$`\phi _n`$に関するBIEは，
-
-$$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
-
-これを線形三角要素とGauss-Legendre積分で離散化すると，
-
-$$
-\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
-$$
-
-$$
--\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
-$$
-
-
-[./builds/build_bem/BEM_solveBVP.hpp#L226](./builds/build_bem/BEM_solveBVP.hpp#L226)
 
 
 ### ⚓️ 多重節点
@@ -203,7 +183,32 @@ PBF_index[{p, Dirichlet, ある要素}]
 は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L325](./builds/build_bem/BEM_solveBVP.hpp#L325)
+[./builds/build_bem/BEM_setBoundaryConditions.hpp#L33](./builds/build_bem/BEM_setBoundaryConditions.hpp#L33)
+
+
+## ⛵️ 境界値問題
+
+### ⚓️ BIEの離散化
+
+$`\phi`$と$`\phi _n`$に関するBIEは，
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+これを線形三角要素とGauss-Legendre積分で離散化すると，
+
+$$
+\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
+$$
+
+$$
+-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+$$
+
+
+[./builds/build_bem/BEM_solveBVP.hpp#L213](./builds/build_bem/BEM_solveBVP.hpp#L213)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -219,7 +224,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L389](./builds/build_bem/BEM_solveBVP.hpp#L389)
+[./builds/build_bem/BEM_solveBVP.hpp#L351](./builds/build_bem/BEM_solveBVP.hpp#L351)
 
 
 ## ⛵️ 浮体動揺解析
@@ -296,10 +301,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L687)で与えている．
+$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L649)で与えている．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L572](./builds/build_bem/BEM_solveBVP.hpp#L572)
+[./builds/build_bem/BEM_solveBVP.hpp#L534](./builds/build_bem/BEM_solveBVP.hpp#L534)
 
 
 $$
@@ -311,7 +316,7 @@ $$
 $$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L675](./builds/build_bem/BEM_solveBVP.hpp#L675)
+[./builds/build_bem/BEM_solveBVP.hpp#L637](./builds/build_bem/BEM_solveBVP.hpp#L637)
 
 
 ---
