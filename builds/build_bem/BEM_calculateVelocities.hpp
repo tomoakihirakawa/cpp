@@ -361,6 +361,16 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
+Here is a simple flow chart:
+
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
 */
 
 void calculateVecToSurface(const Network &net, const int loop = 10) {
@@ -380,7 +390,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
          for (const auto &p : net.getPoints())
 #pragma omp single nowait
          {
-            auto scale = ((p->isMultipleNode && p->CORNER) ? 0.01 : 0.2);
+            auto scale = ((p->isMultipleNode || p->CORNER) ? 0.01 : 0.2);
             p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
          }
          for (const auto &p : net.getPoints()) {
