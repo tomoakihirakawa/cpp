@@ -3,7 +3,7 @@
 #include "basic_alias.hpp"
 /* ----------------- physical properties ---------------- */
 
-const double _WATER_DENSITY_ = 998.2;
+const double _WATER_DENSITY_ = 998.21;
 const double _WATER_MU_10deg_ = 0.001307;  // 10 deg
 const double _GRAVITY_ = 9.82;
 #include <array>
@@ -529,11 +529,11 @@ const static VV_Tddd __GWGW_beta2__ = {__GWGW_beta2_0__,
                                        __GWGW_beta2_14__};
 
 #ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES
-#include <cmath>
-#ifndef M_PI
-#define M_PI (3.14159265358979323846)
-#endif
+   #define _USE_MATH_DEFINES
+   #include <cmath>
+   #ifndef M_PI
+      #define M_PI (3.14159265358979323846)
+   #endif
 #endif
 
 #endif

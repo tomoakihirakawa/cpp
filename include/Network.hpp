@@ -3522,6 +3522,21 @@ class Network : public CoordinateBounds {
    T6d inertia;
    T6d &I = this->inertia;
    /* ------------------------------------------------------ */
+   double mass_tmp;
+   T6d inertia_tmp;
+   // make it very heavy to stop moving
+   void makeImmovable() {
+      this->mass_tmp = this->mass;
+      this->inertia_tmp = this->inertia;
+      this->mass = 1e+20;
+      this->inertia = {1e+20, 1e+20, 1e+20, 1e+20, 1e+20, 1e+20};
+   };
+   // release
+   void makeMovable() {
+      this->mass = this->mass_tmp;
+      this->inertia = this->inertia_tmp;
+   };
+   /* ------------------------------------------------------ */
    void RigidBodyMovePoints() {
       // center_of_massとquaternionに従って計算
       // Tddd trans = this->center_of_mass - this->ICOM;
