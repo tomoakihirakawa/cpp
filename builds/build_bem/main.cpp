@@ -71,7 +71,7 @@ double real_time = 0;
 #include "minMaxOfFunctions.hpp"
 #include "rootFinding.hpp"
 
-pvd cpg_pvd("./vtu/bem.pvd");
+// pvd cpg_pvd("./vtu/bem.pvd");
 
 #include "BEM.hpp"
 #include "svd.hpp"
@@ -381,7 +381,10 @@ int main(int arg, char **argv) {
             }
             // b$ --------------------------------------------------- */
             std::cout << Green << "name:" << water->getName() << ": setBounds" << colorOff << std::endl;
-            water->setGeometricProperties();
+
+            for (auto &nets : {FluidObject, RigidBodyObject, SoftBodyObject})
+               for (auto &net : nets)
+                  net->setGeometricProperties();
 
             std::ofstream ofs(output_directory + "/water" + std::to_string(RK_step) + ".obj");
             creteOBJ(ofs, *water);
@@ -395,17 +398,17 @@ int main(int arg, char **argv) {
 
          /* ------------------------------------------------------ */
 
-         {
-            double mean_phi = 0.;
-            for (const auto &p : water->getPoints())
-               mean_phi += std::get<0>(p->phiphin);
-            mean_phi /= water->getPoints().size();
-            for (const auto &p : water->getPoints()) {
-               p->phi_Dirichlet -= mean_phi;
-               // p->phi_Neumann -= mean_phi;
-               std::get<0>(p->phiphin) -= mean_phi;
-            }
-         }
+         // {
+         //    double mean_phi = 0.;
+         //    for (const auto &p : water->getPoints())
+         //       mean_phi += std::get<0>(p->phiphin);
+         //    mean_phi /= water->getPoints().size();
+         //    for (const auto &p : water->getPoints()) {
+         //       p->phi_Dirichlet -= mean_phi;
+         //       // p->phi_Neumann -= mean_phi;
+         //       std::get<0>(p->phiphin) -= mean_phi;
+         //    }
+         // }
 
          /* ------------------------------------------------------ */
 

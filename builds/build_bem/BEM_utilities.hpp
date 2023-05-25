@@ -385,7 +385,7 @@ T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal
    auto f_s1_tag = gradTangential_LinearElement(U_(P1) /*s座標の流速*/, X012);
    auto f_s2_tag = gradTangential_LinearElement(U_(P2) /*s座標の流速*/, X012);
    // s座標に置き換える
-   // auto f_s0s0 = Dot(f_s0_tag, s0);  // n方向なので成分はないはず
+   // auto f_s0s0 = Dot(f_s0_tag, s0);  // n方向なので成分はないはず. n is s0 direction
    auto f_s0s1 = Dot(f_s0_tag, s1);
    auto f_s0s2 = Dot(f_s0_tag, s2);
    //

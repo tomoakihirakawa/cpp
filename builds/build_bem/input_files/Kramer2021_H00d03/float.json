@@ -3,9 +3,9 @@
     "type": "RigidBody",
     "velocity": [
         "floating",
-        0.05
+        0.0
     ],
-    "mass": 7.056,
+    "mass": 7.0559,
     "reverseNormal": true,
     "COM": [
         0.0,
@@ -18,9 +18,9 @@
         10000000000
     ],
     "MOI": [
-        7.056e+20,
-        7.056e+20,
-        7.056e+20
+        7.0559e+20,
+        7.0559e+20,
+        7.0559e+20
     ],
     "translate": [
         0.0,
