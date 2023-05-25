@@ -307,9 +307,7 @@ struct BEM_BVP {
          std::array<double, 3> X0, X1, X2, A, cross, N012;
          for (const auto &integ_f : water.getFaces()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}},
-                                                                                                    {p1, integ_f, {0., 0.}},
-                                                                                                    {p2, integ_f, {0., 0.}}}};
+            std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
             for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
                N012 = ModTriShape<3>(t0, t1);
                tmp = ww * (1. - t0) / (nr = Norm(N012[0] * p0->X + N012[1] * p1->X + N012[2] * p2->X - origin->X));

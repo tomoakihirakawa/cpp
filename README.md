@@ -221,7 +221,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L289](./builds/build_bem/BEM_solveBVP.hpp#L289)
+[./builds/build_bem/BEM_solveBVP.hpp#L278](./builds/build_bem/BEM_solveBVP.hpp#L278)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -237,7 +237,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L366](./builds/build_bem/BEM_solveBVP.hpp#L366)
+[./builds/build_bem/BEM_solveBVP.hpp#L364](./builds/build_bem/BEM_solveBVP.hpp#L364)
 
 
 ## ⛵️ 浮体動揺解析
@@ -314,10 +314,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L664)で与えている．
+$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L662)で与えている．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L549](./builds/build_bem/BEM_solveBVP.hpp#L549)
+[./builds/build_bem/BEM_solveBVP.hpp#L547](./builds/build_bem/BEM_solveBVP.hpp#L547)
 
 
 $$
@@ -329,7 +329,7 @@ $$
 $$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L652](./builds/build_bem/BEM_solveBVP.hpp#L652)
+[./builds/build_bem/BEM_solveBVP.hpp#L650](./builds/build_bem/BEM_solveBVP.hpp#L650)
 
 
 ---
