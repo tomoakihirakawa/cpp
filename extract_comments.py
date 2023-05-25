@@ -46,7 +46,7 @@ def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tupl
 #     return text
 
 def convert_math_underscore(text: str) -> str:
-    math_expr_pattern = r"(\$.*?\$)|(`math\s.*?`)"
+    math_expr_pattern = r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)"
     matches = list(re.finditer(math_expr_pattern, text, re.DOTALL))
     for match in reversed(matches):
         start, end = match.span()
