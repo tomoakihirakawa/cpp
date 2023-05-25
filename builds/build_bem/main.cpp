@@ -330,7 +330,7 @@ int main(int arg, char **argv) {
             // b*                    微分∇ΦやDUDtを計算                    */
             // b* ------------------------------------------------------ */
             std::cout << Green << "微分∇ΦやDUDtを計算" << colorOff << std::endl;
-            calculateVelocities(*water, time_step % 3 == 0 ? 10 : 0);
+            calculateVelocities(*water);
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
             // b* ------------------------------------------------------ */
             // b*           　境界値問題を解く-> {Φt,Φtn}が決まる               */
