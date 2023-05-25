@@ -321,31 +321,33 @@ struct BEM_BVP {
             c = {Norm(cross), Dot(origin->X - p0->X, cross)};
             for (auto &[_, __, igign] : ret)
                igign *= c;
+
+            /*DOC_EXTRACT BEM
+
+            ### 多重節点
+
+            NOTE: 面の向き$\bf n$がカクッと不連続に変わる節点には，$\phi$は同じでも，隣接面にそれぞれ対して異なる$\phi_n$を計算できるようにする
+
+            NOTE: $\bf n$が不連続に変化する節点まわりの要素は，自分のために用意された$\phi_n$を選択し補間に用いなければならない
+
+            これを多重節点という．
+
+            このループでは，ある面`integ_f`に隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
+            （p0が多重接点の場合，適切にp0と同じ位置に別の変数が設定されており，別の面の積分の際にq0が参照される．）
+            p0は，{面,補間添字}で決定することもできる．
+            {面,補間添字0}->p0,{面,補間添字1}->p1,{面,補間添字2}->p2というように．
+
+            {面A,補間添字},{面B,補間添字},{面C,補間添字}が全て同じ節点p0を指していたとする．
+            普通の節点なら，IGIGn[origin,{p0,nullptr}]を指す．
+            多重節点なら，IGIGn[origin,{p0,面A}],IGIGn[origin,{p0,面B}]を指すようにする．
+            この操作を言葉で言い換えると，
+
+            面を区別するかどうかが先にわからないので，face*のまsまかnullptrとすべきかわからないということ．．．．
+
+            PBF_index[{p, Dirichlet, ある要素}]
+            は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
+            */
             for (const auto &[p, which_side_f, igign] : ret) {
-               /*DOC_EXTRACT BEM
-
-               ### 多重節点
-               このループでは，ある面`integ_f`に隣接する節点{p0,p1,p2}の列,IGIGn[origin(fixed),p0],...に値が追加されていく．
-               （p0が多重接点の場合，適切にp0と同じ位置に別の変数が設定されており，別の面の積分の際にq0が参照される．）
-               p0は，{面,補間添字}で決定することもできる．
-               {面,補間添字0}->p0,{面,補間添字1}->p1,{面,補間添字2}->p2というように．
-
-               {面A,補間添字},{面B,補間添字},{面C,補間添字}が全て同じ節点p0を指していたとする．
-               普通の節点なら，IGIGn[origin,{p0,nullptr}]を指す．
-               多重節点なら，IGIGn[origin,{p0,面A}],IGIGn[origin,{p0,面B}]を指すようにする．
-               この操作を言葉で言い換えると，
-               「nが不連続に変化する点では，その点の隣接面にそれぞれ対してφnを求めるべきである（φは同じでも）．」
-               「nが不連続に変化する点では，どの面を積分するかに応じて，参照するφnを区別し切り替える必要がある．」
-
-               //@ さて，この段階でp0が多重節点であるかどうか判断できるだろうか？
-
-               {節点，面}-> 列ベクトルのインデックス を決めれるか？
-
-               面を区別するかどうかが先にわからないので，face*のまsまかnullptrとすべきかわからないということ．．．．
-
-               PBF_index[{p, Dirichlet, ある要素}]
-               は存在しないだろう．Dirichlet節点は，{p, ある要素}からの寄与を，ある面に
-               */
                IGIGn_Row[pf2Index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
                if (p != origin)                                 // for use_rigid_mode
                   origin_ign_rigid_mode -= std::get<1>(igign);  // for use_rigid_mode
@@ -723,12 +725,11 @@ struct BEM_BVP {
       else
          return false;
    };
-   /* ------------------------------------------------------ */
 
    V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
       V_d ACCELS_init;
       for (const auto &net : rigidbodies) {
-         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+         if (isTarget(net)) {
             if (net->inputJSON.at("velocity").size() > 1) {
                std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
                double start_time = std::stod(net->inputJSON.at("velocity")[1]);
@@ -748,7 +749,7 @@ struct BEM_BVP {
    void insertAcceleration(const std::vector<Network *> &rigidbodies, const V_d &BM_X) {
       int i = 0;
       for (const auto &net : rigidbodies) {
-         if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
+         if (isTarget(net)) {
             if (net->inputJSON.at("velocity").size() > 1) {
                std::cout << Red << "net->inputJSON[\" velocity \"][1] = " << net->inputJSON.at("velocity")[1] << colorOff << std::endl;
                double start_time = std::stod(net->inputJSON.at("velocity")[1]);
@@ -819,6 +820,8 @@ struct BEM_BVP {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
+         if (isDirichletID_BEM(PBF))
+            p->pressure_BEM = 0;
       }
 
       //* --------------------------------------------------- */
@@ -831,14 +834,7 @@ struct BEM_BVP {
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
             auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
             auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
-            auto force = tmp.surfaceIntegralOfPressure();  // + _GRAVITY3_ * net->mass;
-
-            if (net->inputJSON.at("velocity").size() > 1) {
-               double start_time = std::stod(net->inputJSON.at("velocity")[1]);
-               if (real_time >= start_time)
-                  force += _GRAVITY3_ * net->mass;
-            }
-
+            auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
             std::cout << "force_check:" << tmp.force_check << std::endl;
             auto torque = tmp.getFroudeKrylovTorque(net->COM);
             auto [a0, a1, a2] = force / Tddd{mx, my, mz};
