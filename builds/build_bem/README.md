@@ -271,8 +271,6 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-![./sample.gif](sample.gif)
-
 
 [./main.cpp#L1](./main.cpp#L1)
 
@@ -287,7 +285,7 @@ The simulation results will be stored in the specified output directory.
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L248](./main.cpp#L248)
+[./main.cpp#L246](./main.cpp#L246)
 
 
 ---
