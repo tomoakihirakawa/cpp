@@ -1,17 +1,23 @@
-# 三角比構造格子の細分化
+# Contents
+
+- [🐋 メッシュの細分化](#🐋-メッシュの細分化)
+
+
+---
+# 🐋 メッシュの細分化
+
+`n`回の細分化を行う．
 
 ```
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-```
-```
-$ make
-```
-input.jsonに細分化したい"objfile"を入力し，出力先"outputdir"を入力する．
-
-```
-$ ./main
+./remesh input_file output_dir output_name n
 ```
 
-## 細分化の例
+出力は，`output_dir/output_name*.vtu`と`output_dir/output_name*.obj`．
 
-![細分化](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_divide_merge/anim.gif)
+![./sample.gif](sample.gif)
+
+
+[./remesh.cpp#L3](./remesh.cpp#L3)
+
+
+---
