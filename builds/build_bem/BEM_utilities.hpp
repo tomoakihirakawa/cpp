@@ -365,43 +365,95 @@ T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &
            grad_LinearElement(std::get<2>(F012), X012, std::get<2>(F_n))};
 };
 
-T3Tddd OrthogonalBasis(const Tddd &n) {
+T3Tddd OrthogonalBasis(const Tddd &n_IN) {
+   auto n = Normalize(n_IN);
    Tddd s0 = Chop(Tddd{1, 0, 0}, n);
-   if (Norm(s0) < 1E-1)
+   if (Norm(s0) < 1E-3)
       s0 = Chop(Tddd{0, 1, 0}, n);
    s0 = Normalize(s0);
    Tddd s1 = Normalize(Cross(n, s0));
    return {n, s0, s1};
 };
 
-//! 注意 成分がx,y,z成分ではないので注意
+// \label{BEM:grad_U_LinearElement}
 T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal_basis) {
    auto [s0, s1, s2] = orthogonal_basis;
-   auto U_ = [&](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
+   auto U_in_s012 = [s0, s1, s2](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
+   auto X_in_s012 = [s0, s1, s2](const auto &X) { return Tddd{Dot(X, s0), Dot(X, s1), Dot(X, s2)}; };
    auto [P0, P1, P2] = F->getPoints();
-   T3Tddd X012 = {P0->X, P1->X, P2->X};
+
+   // P0->Xを原点に取る
+   auto X0 = Tddd{0, 0, 0};
+   auto X1 = X_in_s012(P1->X - P0->X);
+   auto X2 = X_in_s012(P2->X - P0->X);
+
+   auto X012_in_s012 = T3Tddd{X0, X1, X2};
    // 接線方向微分
-   auto f_s0_tag = gradTangential_LinearElement(U_(P0) /*s座標の流速*/, X012);
-   auto f_s1_tag = gradTangential_LinearElement(U_(P1) /*s座標の流速*/, X012);
-   auto f_s2_tag = gradTangential_LinearElement(U_(P2) /*s座標の流速*/, X012);
+   auto [g0_s0, g0_s1, g0_s2] = U_in_s012(P0);
+   auto [g1_s0, g1_s1, g1_s2] = U_in_s012(P1);
+   auto [g2_s0, g2_s1, g2_s2] = U_in_s012(P2);
+   auto grad_g_s0_tag = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0} /*s座標の流速*/, X012_in_s012);
+   auto grad_g_s1_tag = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1} /*s座標の流速*/, X012_in_s012);
+   auto grad_g_s2_tag = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2} /*s座標の流速*/, X012_in_s012);
    // s座標に置き換える
-   // auto f_s0s0 = Dot(f_s0_tag, s0);  // n方向なので成分はないはず. n is s0 direction
-   auto f_s0s1 = Dot(f_s0_tag, s1);
-   auto f_s0s2 = Dot(f_s0_tag, s2);
+   // auto g_s0s0 = Dot(grad_g_s0_tag, s0);  // n方向なので成分はないはず. n is s0 direction
+   // std::cout << "g_s0s0 = " << g_s0s0 << std::endl;
+   auto g_s0s1 = Dot(grad_g_s0_tag, s1);
+   auto g_s0s2 = Dot(grad_g_s0_tag, s2);
    //
-   // auto f_s1s0 = Dot(f_s1_tag, s0);  // n方向なので成分はないはず
-   auto f_s1s1 = Dot(f_s1_tag, s1);
-   auto f_s1s2 = Dot(f_s1_tag, s2);
+   // auto g_s1s0 = Dot(grad_g_s1_tag, s0);  // n方向なので成分はないはず
+   auto g_s1s1 = Dot(grad_g_s1_tag, s1);
+   auto g_s1s2 = Dot(grad_g_s1_tag, s2);
    //
-   // auto f_s2s0 = Dot(f_s2_tag, s0);  // n方向なので成分はないはず
-   auto f_s2s1 = Dot(f_s2_tag, s1);
-   auto f_s2s2 = Dot(f_s2_tag, s2);
+   // auto g_s2s0 = Dot(grad_g_s2_tag, s0);  // n方向なので成分はないはず
+   auto g_s2s1 = Dot(grad_g_s2_tag, s1);
+   auto g_s2s2 = Dot(grad_g_s2_tag, s2);
    //
-   // n方向成分の微分は計算できていないが，接線方向微分でわかる
-   auto f_s0s0 = -f_s1s1 - f_s2s2;
-   return T3Tddd{{{f_s0s0, f_s0s1, f_s0s2},
-                  {f_s0s1, f_s1s1, f_s1s2},
-                  {f_s0s2, f_s2s1, f_s2s2}}};
+   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1, g_s0s2},
+                  {g_s0s1, g_s1s1, g_s1s2},
+                  {g_s0s2, g_s2s1, g_s2s2}}};
+};
+
+// \label{BEM:grad_U_LinearElement}
+double n_U_H(const networkFace *const F, const T3Tddd &orthogonal_basis) {
+   auto [s0, s1, s2] = orthogonal_basis;
+   auto U_in_s012 = [s0, s1, s2](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
+   auto X_in_s012 = [s0, s1, s2](const auto &X) { return Tddd{Dot(X, s0), Dot(X, s1), Dot(X, s2)}; };
+   auto [P0, P1, P2] = F->getPoints();
+   // P0->Xを原点に取る
+   auto X0 = Tddd{0, 0, 0};
+   auto X1 = X_in_s012(P1->X - P0->X);
+   auto X2 = X_in_s012(P2->X - P0->X);
+   auto X012_in_s012 = T3Tddd{X0, X1, X2};
+
+   // u.nのgradTangential_LinearElement
+
+   auto [g_nn, g_nt0, g_nt1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s0), Dot(P1->U_BEM, s0), Dot(P2->U_BEM, s0)}, X012_in_s012);
+
+   // u.t0のgradTangential_LinearElement
+
+   auto [g_t0n, g_t0t0, g_t0t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s1), Dot(P1->U_BEM, s1), Dot(P2->U_BEM, s1)}, X012_in_s012);
+
+   // u.t1のgradTangential_LinearElement
+
+   auto [g_t1n, g_t1t0, g_t1t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s2), Dot(P1->U_BEM, s2), Dot(P2->U_BEM, s2)}, X012_in_s012);
+
+   return Dot(Dot(orthogonal_basis, (P0->U_BEM + P1->U_BEM + P2->U_BEM) / 3.), Tddd{-g_t0t0 - g_t1t1, g_nt0, g_nt1});
+};
+
+double n_U_H(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
+   /*
+   スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
+   しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
+   ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T
+   */
+   double nUH = 0;
+   double Atot = 0;
+   for (const auto &f : p->getFacesNeumann()) {
+      nUH += f->area * n_U_H(f, orthogonal_basis);
+      Atot += f->area;
+   }
+   return nUH / Atot;
 };
 
 T3Tddd grad_U_LinearElement(const networkFace *const F) { return grad_U_LinearElement(F, OrthogonalBasis(F->normal)); };

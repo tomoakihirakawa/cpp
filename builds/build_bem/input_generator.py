@@ -65,7 +65,7 @@ match SimulationCase:
 
         D = 300/1000
         H0 = D*0.1
-        id = "H0"+str(H0).replace(".", "d")
+        id = "H0"+str(H0).replace(".", "d") + "_small"
 
         input_directory += SimulationCase + "_" + id
         os.makedirs(input_directory, exist_ok=True)
@@ -77,21 +77,21 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "velocity": ["floating", 0.05]}
+                 "velocity": ["floating", 0.04]}
 
         float["mass"] = m = 7.056
-        float["reverseNormal"] = True
+        # float["reverseNormal"] = True
         float["COM"] = [0., 0., 0.1*D + 900/1000]  # 今回は重要ではない
         float["radius_of_gyration"] = [10**10, 10**10, 10**10]
         float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
                         m*math.pow(float["radius_of_gyration"][1], 2),
                         m*math.pow(float["radius_of_gyration"][2], 2)]
-        float["translate"] = [0., 0., 0.1*D + 900/1000]
+        # float["translate"] = [0., 0., 0.1*D + 900/1000]
 
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
-        water["objfile"] = objfolder + "/water200_mod.obj"
+        water["objfile"] = objfolder + "/water300_mod.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
-        float["objfile"] = objfolder+"/sphere_divide26.obj"
+        float["objfile"] = objfolder+"/sphere0.obj"
 
         inputfiles = [tank, water, float]
 

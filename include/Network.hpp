@@ -3443,7 +3443,7 @@ class Network : public CoordinateBounds {
       //
       double min;
       for (const auto &f : this->getFaces()) {
-         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 2.}) / 2.;
+         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 2.}) / 3.;
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
             this->BucketFaces.add(xyz, f);
       }
@@ -4532,7 +4532,7 @@ inline void networkLine::Delete() {
          this->Point_B = nullptr;
       }
       // this->Faces.clear();
-      std::cout << "delete line " << this << std::endl;
+      // std::cout << "delete line " << this << std::endl;
    }
 };
 // inline void networkLine::Delete() {

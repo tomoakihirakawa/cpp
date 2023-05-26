@@ -3,7 +3,7 @@
     "type": "RigidBody",
     "velocity": [
         "floating",
-        0.05
+        0.0
     ],
     "mass": 7.056,
     "reverseNormal": true,

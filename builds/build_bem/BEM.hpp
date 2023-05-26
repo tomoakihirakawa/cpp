@@ -262,6 +262,9 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
       uomap_P_d P_phin = p_d0;
+      uomap_P_d P_phi_t = p_d0;
+      uomap_P_d P_phin_t = p_d0;
+      uomap_P_d P_phin_t_from_Hessian = p_d0;
       uomap_P_d P_pressure = p_d0;
       uomap_P_d P_DphiDt = p_d0;
       uomap_P_d P_ContactFaces = p_d0;
@@ -280,6 +283,9 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_isMultipleNode[p] = p->isMultipleNode;
             P_phi[p] = std::get<0>(p->phiphin);
             P_phin[p] = std::get<1>(p->phiphin);
+            P_phi_t[p] = std::get<0>(p->phiphin_t);
+            P_phin_t[p] = std::get<1>(p->phiphin_t);
+            P_phin_t_from_Hessian[p] = n_U_H(p, OrthogonalBasis(p->getNormalNeumann_BEM()));
             P_normal_BEM[p] = p->getNormal_BEM();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
             P_BC[p] = p->isMultipleNode ? 3 : (p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.)));
@@ -305,6 +311,9 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},
+             {"φt", P_phi_t},
+             {"φnt", P_phin_t},
+             {"φnt hess", P_phin_t_from_Hessian},
              {"boundary condition", P_BC},
              {"pressure", P_pressure}};
          return data;
