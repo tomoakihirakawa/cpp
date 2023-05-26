@@ -293,7 +293,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       }
 
       // to_structure_faceを計算
-      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 2));
+      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
       auto p_next_X = to_corner + RK_with_Ubuff(p);
       Tddd to_structure_face;
       if (!next_Vrtx.empty()) {
@@ -462,7 +462,9 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop = 10) {
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
+
       p->U_update_BEM = p->U_BEM + p->vecToSurface / p->RK_X.getdt();
+
       if (!isFinite(p->U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
          std::cout << "p->X = " << p->X << std::endl;
          std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;

@@ -586,11 +586,11 @@ struct BEM_BVP {
 
    $$
    \begin{aligned}
-   &\rightarrow& \frac{d}{dt}({{\bf n}\cdot\frac{d\boldsymbol r}{dt}}) & = \frac{d}{dt}({{\bf n} \cdot \nabla \phi})\\
-   &\rightarrow& \frac{d{\bf n}}{dt}\cdot\frac{d\boldsymbol r}{dt} + {\bf n}\cdot\frac{d^2{\boldsymbol r}}{dt^2} & = \frac{d{\bf n}}{dt} \cdot \nabla \phi + {\bf n} \cdot \frac{d}{dt}{\nabla \phi}\\
-   &\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\frac{d}{dt}{\nabla \phi}- \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
-   &\rightarrow& \frac{d{\bf n}}{dt}\cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} & ={\bf n} \cdot \left(\phi_t + \nabla \phi\cdot \nabla\nabla \phi - \frac{d^2{\boldsymbol r}}{dt^2}\right)\\
-   &\rightarrow& \phi_{nt} &= \frac{d{\bf n}}{dt} \cdot{(\frac{d\boldsymbol r}{dt} - \nabla \phi)} -{\bf n} \cdot \left(\nabla \phi\cdot \nabla\nabla \phi -\frac{d^2{\boldsymbol r}}{dt^2}\right)
+   &\rightarrow& 0& =\frac{d}{dt}\left({\bf n}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\right) \\
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \frac{d}{dt}\left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\\
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\frac{d}{dt}\nabla \phi\right)\\
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi_t - \nabla \phi \cdot \nabla\nabla \phi}\right)\\
+   &\rightarrow& \phi_{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \nabla \phi \cdot \nabla\nabla \phi\right)
    \end{aligned}
    $$
 
@@ -657,6 +657,11 @@ struct BEM_BVP {
             \end{bmatrix}
             $$
 
+            ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する\ref{BEM:grad_U_LinearElement}{`grad_U_LinearElement`}を用いる．
+            節点における変数を$v$とすると，$\nabla v-{\bf n}({\bf n}\cdot\nabla v)$が計算できる．
+            要素の法線方向${\bf n}$が$x$軸方向${(1,0,0)}$である場合，$\nabla v - (\frac{\partial}{\partial x},0,0)v$なので，
+            $(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})$が得られる．
+
             */
 
             // \label{BEM:setphint}
@@ -672,7 +677,8 @@ struct BEM_BVP {
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElement(f, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+                  // phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+                  phin_t -= n_U_H(f, s0s1s2);
                } else {
                   auto n = p->getNormalNeumann_BEM();
                   auto netInContact = NearestContactFace(p)->getNetwork();
@@ -683,7 +689,8 @@ struct BEM_BVP {
                   auto s0s1s2 = OrthogonalBasis(n);
                   auto [s0, s1, s2] = s0s1s2;
                   auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
-                  phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+                  // phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+                  phin_t -= n_U_H(p, s0s1s2);
                }
                std::get<1>(p->phiphin_t) = phin_t;
             }
@@ -840,7 +847,20 @@ struct BEM_BVP {
          std::cout << "func_ = " << func_ << std::endl;
          auto func = Func(BM.X, water, rigidbodies);
          std::cout << "func = " << func_ << std::endl;
+
+         BM.X[0] = 0;
+         BM.X[1] = 0;
+         BM.X[3] = 0;
+         BM.X[4] = 0;
+         BM.X[5] = 0;
+
          BM.update(func, func_, j < 1 ? 1E-10 : 1.);
+
+         BM.X[0] = 0;
+         BM.X[1] = 0;
+         BM.X[3] = 0;
+         BM.X[4] = 0;
+         BM.X[5] = 0;
 
          insertAcceleration(rigidbodies, BM.X);
 
