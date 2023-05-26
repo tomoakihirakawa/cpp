@@ -48,7 +48,7 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-![](./anim.gif)
+![./anim.gif](./anim.gif)
 
 */
 // #define _debugging_
