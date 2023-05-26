@@ -93,27 +93,6 @@ void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not finite");
 };
 
-T3Tddd nextBodyVertex(const networkFace *f) {
-   auto net = f->getNetwork();
-   auto [p0, p1, p2] = f->getPoints();
-   if (net->isRigidBody) {
-      Quaternion q;
-      q = q.d_dt(net->velocityRotational());
-      auto COM = net->RK_COM.getX(net->velocityTranslational());
-      Quaternion Q(net->RK_Q.getX(q()));
-      auto X0 = Q.Rv(p0->initialX - p0->getNetwork()->ICOM) + COM;
-      auto X1 = Q.Rv(p1->initialX - p1->getNetwork()->ICOM) + COM;
-      auto X2 = Q.Rv(p2->initialX - p2->getNetwork()->ICOM) + COM;
-      return T3Tddd{X0, X1, X2};
-   } else if (net->isSoftBody) {
-      auto X0 = p0->RK_X.getX(p0->velocityTranslational());
-      auto X1 = p1->RK_X.getX(p1->velocityTranslational());
-      auto X2 = p2->RK_X.getX(p2->velocityTranslational());
-      return T3Tddd{X0, X1, X2};
-   } else
-      return ToX(f);
-};
-
 std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs) {
    std::vector<T3Tddd> ret(Fs.size());
    int i = 0;
@@ -123,9 +102,13 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
       if (net->isFixed)
          ret[i] = ToX(f);
       else if (net->isRigidBody) {
+         // 加速度net->accelerationがもとまったとして，
+         auto AW = net->RK_Velocity.getX(net->acceleration);
+         std::array<double, 3> A = {{AW[0], AW[1], AW[2]}};
+         std::array<double, 3> W = {{AW[3], AW[4], AW[5]}};
          Quaternion q;
-         q = q.d_dt(net->velocityRotational());
-         auto COM = net->RK_COM.getX(net->velocityTranslational());
+         q = q.d_dt(W);
+         auto COM = net->RK_COM.getX(A);
          Quaternion Q(net->RK_Q.getX(q()));
          auto X0 = Q.Rv(p0->initialX - p0->getNetwork()->ICOM) + COM;
          auto X1 = Q.Rv(p1->initialX - p1->getNetwork()->ICOM) + COM;
@@ -361,15 +344,9 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-Here is a simple flow chart:
+`calculateVecToSurface`で$\Omega(t+\Delta t)$上へのベクトルを計算する．
+まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$\Omega(t+\Delta t)$上へのベクトルを計算する．
 
-```mermaid
-graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
-```
 
 */
 
@@ -380,10 +357,6 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
    }
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      //$ ------------------------------------------------------ */
-      //$           　　　　 vectorTangentialShift   　 　         */
-      //$          ラプラス平滑化と引っ張り合わせた接線方向にシフト      */
-      //$ ------------------------------------------------------ */
       for (auto ii = 0; ii < 30; ++ii) {
          // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
 #pragma omp parallel
@@ -399,10 +372,6 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
          }
       }
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
-      //$ ------------------------------------------------------ */
-      //$              　　　vectorToNextSurface                  */
-      //$           　　　   周辺ディリクレ面に移動        　　　　    */
-      //$ ------------------------------------------------------ */
 #pragma omp parallel
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
@@ -481,19 +450,18 @@ Tddd gradPhi(const networkPoint *const p) {
 //    };
 // };
 
-void calculateVelocities(const Network &net, const int loop = 10) {
+void calculateCurrentVelocities(const Network &net) {
 #pragma omp parallel
    for (const auto &p : net.getPoints())
 #pragma omp single nowait
    {
       p->U_BEM = gradPhi(p);
    }
+}
 
-   std::cout << "p->U_BEM = gradPhi(p)を計算✅" << std::endl;
-   //@ この後, U_update_BEMをclingなどを使って修正する
-   //@ ルンゲクッタに従って次のΩ(t+δt)を予測する
+void calculateCurrentUpdateVelocities(const Network &net, const int loop = 10) {
+
    calculateVecToSurface(net, loop);
-   std::cout << "calculateVecToSurface✅" << std::endl;
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();

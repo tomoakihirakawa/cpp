@@ -241,107 +241,47 @@ int main(int arg, char **argv) {
             net->RK_Q.initialize(dt, real_time, net->Q(), RK_order);
             net->RK_Velocity.initialize(dt, real_time, net->velocity, RK_order);
          }
-         // b$ --------------------------------------------------- */
          for (const auto &net : SoftBodyObject) {
             // !いらないはずのもの
             for (const auto &p : net->getPoints())
                p->RK_X.initialize(dt, real_time, ToX(p), RK_order);
          }
-
+         // b@ ----------------------------------------------------- */
          int RK_step = 0;
          BEM_BVP BVP;
+         /*DOC_EXTRACT BEM
+
+         ### 計算の流れ
+
+         浮体のように運動方程式から加速度を計算し，初めて次時刻の移動先がわかるような境界面を扱う場合は，修正流速の計算は最後に行わなければならないことに注意．
+
+         1. 境界条件の設定
+         2. 境界値問題（BIE）を解き，$\phi$と$\phi_n$を求める
+         3. 三角形の線形補間を使って節点の流速を計算する
+         4. 浮体の加速度を計算する．境界値問題（BIE）を解き，$\phi_t$と$\phi_{nt}$を求め，浮体面上の圧力$p$を計算する必要がある
+         5. 次時刻の$\Omega(t+\Delta t)$がわかるので，修正流速を計算する
+         6. 全境界面の節点の位置を更新．ディリクレ境界では$\phi$を次時刻の値へ更新
+
+         */
          do {
-            //! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
             auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
-            // b# ------------------------------------------------------ */
-            // b#      物体のノイマン境界の速度 u(t) at Neumann を設定         */
-            // b# ------------------------------------------------------ */
-            for (const auto &net : RigidBodyObject) {
-               std::cout << "----------------" << std::endl;
-               std::cout << net->getName() << "　の流速の計算方法" << std::endl;
-               if (net->isFixed) {
-                  net->mass = 1E+20;
-                  net->inertia.fill(1E+20);
-                  net->COM.fill(0.);
-                  net->initial_center_of_mass.fill(0.);
-               }
 
-               if (net->inputJSON.find("velocity")) {
-                  std::string move_name = net->inputJSON["velocity"][0];
-                  std::cout << "move_name = " << move_name << std::endl;
-                  if (move_name == "fixed") {
-                     net->velocity.fill(0.);
-                     net->acceleration.fill(0.);
-                  } else if (move_name != "floating") {
-                     net->velocity = velocity(move_name, net->inputJSON["velocity"], RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
-                                                                                                // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
-                  } else if (move_name == "floating") {
-                     std::cout << "floatingの場合は，加速度の時間積分によってシミュレートされる" << std::endl;
-                  }
-               } else {
-                  std::cout << "指定がないので速度はゼロ" << std::endl;
-                  net->velocity.fill(0.);
-                  net->acceleration.fill(0.);
-               }
-               std::cout << "----------------" << std::endl;
-            }
-            // b$ --------------------------------------------------- */
-            for (const auto &net : SoftBodyObject) {
-               std::cout << "----------------" << std::endl;
-               std::cout << net->getName() << "　の流速の計算方法．soft bodyの場合，各節点に速度を与える．" << std::endl;
-               net->velocity.fill(0.);
-               net->acceleration.fill(0.);
-               if (net->inputJSON.find("velocity")) {
-                  std::string move_name = net->inputJSON["velocity"][0];
-                  std::cout << "move_name = " << move_name << std::endl;
-                  if (move_name == "fixed") {
-                     for (const auto &p : net->getPoints()) {
-                        p->velocity.fill(0.);
-                        p->acceleration.fill(0.);
-                     }
-                  } else {
-                     for (const auto &p : net->getPoints())
-                        p->velocity = velocity(move_name, net->inputJSON["velocity"], p, RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
-                  }
-               } else {
-                  std::cout << "指定がないので速度はゼロ" << std::endl;
-                  for (const auto &p : net->getPoints()) {
-                     p->velocity.fill(0.);
-                     p->acceleration.fill(0.);
-                  }
-               }
-               std::cout << "----------------" << std::endl;
-            }
-            // やはり，ルンゲクッタは3回目に同じ場所での計算を行うわけなので，角点に関しては，毎回の時間発展＆修正はまずいだろう．
-            // 予測するΩ(t+δt)は，ルンゲクッタに合わせたものでないとおかしいだろう．つまり，RK4なら　Ω(t0),Ω(t1),Ω(t2=t1),Ω(t3)でないといけないだろう．
-            // b% -------------------------------------------------------- */
-            // b%            境界条件（角点・ディリクレ・ノイマン）の決定               */
-            // b% -------------------------------------------------------- */
             setBoundaryConditions(*water, Join(RigidBodyObject, SoftBodyObject));
-            std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // b! ------------------------------------------------------ */
-            // b!           　境界値問題を解く-> {Φ,Φn}が決まる                */
-            // b! ------------------------------------------------------ */
-            std::cout << Green << "境界値問題を解く-> {Φ,Φn}が決まる" << colorOff << std::endl;
+            std::cout << Green << "setBoundaryConditions" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
             BVP.solve(*water, FMM_BucketsPoints, FMM_BucketsFaces);
-            std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // b* ------------------------------------------------------ */
-            // b*                    微分∇ΦやDUDtを計算                    */
-            // b* ------------------------------------------------------ */
-            std::cout << Green << "微分∇ΦやDUDtを計算" << colorOff << std::endl;
-            calculateVelocities(*water);
-            std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // b* ------------------------------------------------------ */
-            // b*           　境界値問題を解く-> {Φt,Φtn}が決まる               */
-            // b* ------------------------------------------------------ */
-            std::cout << Green << "境界値問題を解く-> {Φt,Φtn}が決まる" << colorOff << std::endl;
+            std::cout << Green << "BVP.solve -> {Φ,Φn}が決まる" << Blue << "\nElapsed time: " << Red << watch() << " s\n";
+
+            calculateCurrentVelocities(*water);
+            std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
             BVP.solveForPhiPhin_t(water, RigidBodyObject);
-            std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
-            // @ -------------------------------------------------------- */
-            // @                 ディリクレ境界ではΦを時間積分                 */
-            // @ -------------------------------------------------------- */
-            std::cout << Green << "ディリクレ境界ではΦを時間積分，ノイマン境界ではΦnを陽に与える" << colorOff << std::endl;
+            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
+            calculateCurrentUpdateVelocities(*water);
+            std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
             // b$ --------------------------------------------------- */
             for (const auto &net : RigidBodyObject) {
                std::cout << "name:" << net->getName() << std::endl;
@@ -392,6 +332,8 @@ int main(int arg, char **argv) {
 
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
          } while (!((*Points.begin())->RK_X.finished));
+
+         /* -------------------------------------------------------------------------- */
 
          for (const auto &net : SoftBodyObject)
             AreaWeightedSmoothingPreserveShape(net->getPoints(), 1);
