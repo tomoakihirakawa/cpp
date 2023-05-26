@@ -406,7 +406,10 @@ The simulation results will be stored in the specified output directory.
 ./remesh input_file output_dir output_name n
 ```
 
+![./sample2.gif](builds/build_divide_merge/sample2.gif)
+
 出力は，`output_dir/output_name*.vtu`と`output_dir/output_name*.obj`．
+
 
 ![./sample.gif](builds/build_divide_merge/sample.gif)
 
