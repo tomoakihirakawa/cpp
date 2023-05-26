@@ -271,7 +271,7 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-![./anim.gif](anim.gif)
+![./sample.gif](sample.gif)
 
 
 [./main.cpp#L1](./main.cpp#L1)

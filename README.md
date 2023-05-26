@@ -374,7 +374,7 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-![./anim.gif](builds/build_bem/anim.gif)
+![./sample.gif](builds/build_bem/sample.gif)
 
 
 [./builds/build_bem/main.cpp#L1](./builds/build_bem/main.cpp#L1)
