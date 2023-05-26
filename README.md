@@ -374,8 +374,6 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-![./sample.gif](builds/build_bem/sample.gif)
-
 
 [./builds/build_bem/main.cpp#L1](./builds/build_bem/main.cpp#L1)
 
@@ -390,7 +388,7 @@ The simulation results will be stored in the specified output directory.
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./builds/build_bem/main.cpp#L248](./builds/build_bem/main.cpp#L248)
+[./builds/build_bem/main.cpp#L246](./builds/build_bem/main.cpp#L246)
 
 
 ---
