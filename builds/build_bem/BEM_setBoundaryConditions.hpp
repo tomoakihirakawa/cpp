@@ -6,7 +6,7 @@
 
 /*DOC_EXTRACT BEM
 
-## 境界条件の設定
+## 境界条件の設定の流れ
 
 1. 流体節点が接触する構造物面を保存する
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
@@ -23,6 +23,74 @@ NOTE: $\bf n$が不連続に変化する節点まわりの要素は，自分の�
 
 */
 
+void setNeumannVelocity(const std::vector<Network *> &objects) {
+   // b# ------------------------------------------------------ */
+   // b#      物体のノイマン境界の速度 u(t) at Neumann を設定         */
+   // b# ------------------------------------------------------ */
+   for (const auto &net : objects) {
+      //! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
+      if (net->isRigidBody) {
+         auto RK_time = net->RK_COM.gett();  //%各ルンゲクッタの時刻を使う
+         std::cout << "----------------" << std::endl;
+         std::cout << net->getName() << "　の流速の計算方法" << std::endl;
+         if (net->isFixed) {
+            net->mass = 1E+20;
+            net->inertia.fill(1E+20);
+            net->COM.fill(0.);
+            net->initial_center_of_mass.fill(0.);
+         }
+
+         if (net->inputJSON.find("velocity")) {
+            std::string move_name = net->inputJSON["velocity"][0];
+            std::cout << "move_name = " << move_name << std::endl;
+            if (move_name == "fixed") {
+               net->velocity.fill(0.);
+               net->acceleration.fill(0.);
+            } else if (move_name != "floating") {
+               net->velocity = velocity(move_name, net->inputJSON["velocity"], RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+                                                                                          // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
+            } else if (move_name == "floating") {
+               std::cout << "floatingの場合は，加速度の時間積分によってシミュレートされる" << std::endl;
+            }
+         } else {
+            std::cout << "指定がないので速度はゼロ" << std::endl;
+            net->velocity.fill(0.);
+            net->acceleration.fill(0.);
+         }
+         std::cout << "----------------" << std::endl;
+      }
+      // b$ --------------------------------------------------- */
+      if (net->isSoftBody) {
+         std::cout << "----------------" << std::endl;
+         std::cout << net->getName() << "　の流速の計算方法．soft bodyの場合，各節点に速度を与える．" << std::endl;
+         net->velocity.fill(0.);
+         net->acceleration.fill(0.);
+         if (net->inputJSON.find("velocity")) {
+            std::string move_name = net->inputJSON["velocity"][0];
+            std::cout << "move_name = " << move_name << std::endl;
+            if (move_name == "fixed") {
+               for (const auto &p : net->getPoints()) {
+                  p->velocity.fill(0.);
+                  p->acceleration.fill(0.);
+               }
+            } else {
+               for (const auto &p : net->getPoints()) {
+                  auto RK_time = p->RK_X.gett();                                              //%各ルンゲクッタの時刻を使う
+                  p->velocity = velocity(move_name, net->inputJSON["velocity"], p, RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+               }
+            }
+         } else {
+            std::cout << "指定がないので速度はゼロ" << std::endl;
+            for (const auto &p : net->getPoints()) {
+               p->velocity.fill(0.);
+               p->acceleration.fill(0.);
+            }
+         }
+         std::cout << "----------------" << std::endl;
+      }
+   }
+}
+
 void setIsMultipleNode(const auto &p) {
    if (p->CORNER)
       p->isMultipleNode = true;
@@ -34,10 +102,13 @@ void setIsMultipleNode(const auto &p) {
 };
 
 void setBoundaryConditions(Network &water, const std::vector<Network *> &objects) {
-   water.setGeometricProperties();
+
    /* -------------------------------------------------------------------------- */
    /*                             f,l,pの境界条件を決定                             */
    /* -------------------------------------------------------------------------- */
+
+   water.setGeometricProperties();
+
    auto radius = Mean(extLength(water.getLines()));
    Print("makeBucketFaces", Green);
    for (const auto &net : objects) {

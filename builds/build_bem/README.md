@@ -3,7 +3,7 @@
 - [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
     - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
         - [⚓️ 修正流速](#⚓️-修正流速)
-    - [⛵️ 境界条件の設定](#⛵️-境界条件の設定)
+    - [⛵️ 境界条件の設定の流れ](#⛵️-境界条件の設定の流れ)
         - [⚓️ 多重節点](#⚓️-多重節点)
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
@@ -12,6 +12,7 @@
     - [⛵️ Usage](#⛵️-Usage)
     - [⛵️ Customization](#⛵️-Customization)
     - [⛵️ Output](#⛵️-Output)
+        - [⚓️ 計算の流れ](#⚓️-計算の流れ)
 
 
 ---
@@ -37,21 +38,14 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-Here is a simple flow chart:
-
-```mermaid
-graph TD;
-A-->B;
-A-->C;
-B-->D;
-C-->D;
-```
+`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L354](./BEM_calculateVelocities.hpp#L354)
+[./BEM_calculateVelocities.hpp#L337](./BEM_calculateVelocities.hpp#L337)
 
 
-## ⛵️ 境界条件の設定
+## ⛵️ 境界条件の設定の流れ
 
 1. 流体節点が接触する構造物面を保存する
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
@@ -222,6 +216,21 @@ $$
 
 
 [./BEM_solveBVP.hpp#L650](./BEM_solveBVP.hpp#L650)
+
+
+### ⚓️ 計算の流れ
+
+浮体のように運動方程式から加速度を計算し，初めて次時刻の移動先がわかるような境界面を扱う場合は，修正流速の計算は最後に行わなければならないことに注意．
+
+1. 境界条件の設定
+2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+3. 三角形の線形補間を使って節点の流速を計算する
+4. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
+5. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+
+
+[./main.cpp#L252](./main.cpp#L252)
 
 
 ---
