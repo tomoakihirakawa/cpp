@@ -15,6 +15,11 @@
     - [⛵️ Usage](#⛵️-Usage)
     - [⛵️ Customization](#⛵️-Customization)
     - [⛵️ Output](#⛵️-Output)
+    - [⛵️ BEM Simulation Code](#⛵️-BEM-Simulation-Code)
+        - [⚓️ Prerequisites](#⚓️-Prerequisites)
+        - [⚓️ Building the Code](#⚓️-Building-the-Code)
+        - [⚓️ Running the Simulation](#⚓️-Running-the-Simulation)
+        - [⚓️ Output](#⚓️-Output)
         - [⚓️ 計算の流れ](#⚓️-計算の流れ)
 - [🐋 準ニュートン法](#🐋-準ニュートン法)
     - [⛵️ ヘッセ行列を利用したニュートン法](#⛵️-ヘッセ行列を利用したニュートン法)
@@ -145,7 +150,7 @@ $$
 まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./builds/build_bem/BEM_calculateVelocities.hpp#L337](./builds/build_bem/BEM_calculateVelocities.hpp#L337)
+[./builds/build_bem/BEM_calculateVelocities.hpp#L334](./builds/build_bem/BEM_calculateVelocities.hpp#L334)
 
 
 ## ⛵️ 境界条件の設定の流れ
@@ -321,19 +326,71 @@ $$
 [./builds/build_bem/BEM_solveBVP.hpp#L650](./builds/build_bem/BEM_solveBVP.hpp#L650)
 
 
-### ⚓️ 計算の流れ
+## ⛵️ BEM Simulation Code
 
-浮体のように運動方程式から加速度を計算し，初めて次時刻の移動先がわかるような境界面を扱う場合は，修正流速の計算は最後に行わなければならないことに注意．
+This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
+
+### ⚓️ Prerequisites
+
+- CMake
+- LAPACK library
+- Python 3 for input generation
+
+### ⚓️ Building the Code
+
+1. Clean the build directory:
+
+```
+sh clean
+```
+
+2. Configure the build using CMake:
+
+```
+cmake -DCMAKE_BUILD_TYPE=Release ../
+```
+
+3. Compile the code:
+
+```
+make
+```
+
+### ⚓️ Running the Simulation
+
+1. Generate input files using the `input_generator.py` script:
+
+```
+python3 ./input_generator.py
+```
+
+2. Run the simulation with the generated input files:
+
+```
+./main ./input_files/Kramer2021_H00d03
+```
+
+### ⚓️ Output
+
+The simulation results will be stored in the specified output directory.
+
+![](builds/build_bem/anim.gif)
+
+
+[./builds/build_bem/main.cpp#L1](./builds/build_bem/main.cpp#L1)
+
+
+### ⚓️ 計算の流れ
 
 1. 境界条件の設定
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
 3. 三角形の線形補間を使って節点の流速を計算する
-4. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-5. **次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する**
+4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./builds/build_bem/main.cpp#L252](./builds/build_bem/main.cpp#L252)
+[./builds/build_bem/main.cpp#L248](./builds/build_bem/main.cpp#L248)
 
 
 ---

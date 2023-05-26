@@ -1,15 +1,16 @@
-/**
-# BEM Simulation Code
+/*DOC_EXTRACT BEM
+
+## BEM Simulation Code
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
-## Prerequisites
+### Prerequisites
 
 - CMake
 - LAPACK library
 - Python 3 for input generation
 
-## Building the Code
+### Building the Code
 
 1. Clean the build directory:
 
@@ -29,7 +30,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-## Running the Simulation
+### Running the Simulation
 
 1. Generate input files using the `input_generator.py` script:
 
@@ -43,16 +44,11 @@ python3 ./input_generator.py
 ./main ./input_files/Kramer2021_H00d03
 ```
 
-## Output
+### Output
 
 The simulation results will be stored in the specified output directory.
 
-
-![](https://github.com/tomoakihirakawa/cpp/blob/main/builds/build_bem/anim.gif)
-
-![](WATCHME_settingjson.mov)
-
-![](WATCHME_settingBEM.mov)
+![](./anim.gif)
 
 */
 // #define _debugging_
@@ -253,13 +249,11 @@ int main(int arg, char **argv) {
 
          ### 計算の流れ
 
-         浮体のように運動方程式から加速度を計算し，初めて次時刻の移動先がわかるような境界面を扱う場合は，修正流速の計算は最後に行わなければならないことに注意．
-
          1. 境界条件の設定
          2. 境界値問題（BIE）を解き，$\phi$と$\phi_n$を求める
          3. 三角形の線形補間を使って節点の流速を計算する
-         4. 浮体の加速度を計算する．境界値問題（BIE）を解き，$\phi_t$と$\phi_{nt}$を求め，浮体面上の圧力$p$を計算する必要がある
-         5. **次時刻の$\Omega(t+\Delta t)$がわかるので，修正流速を計算する**
+         4. 次時刻の$\Omega(t+\Delta t)$がわかるので，修正流速を計算する
+         5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$\phi_t$と$\phi_{nt}$を求め，浮体面上の圧力$p$を計算する必要がある
          6. 全境界面の節点の位置を更新．ディリクレ境界では$\phi$を次時刻の値へ更新
 
          */
@@ -276,16 +270,16 @@ int main(int arg, char **argv) {
             calculateCurrentVelocities(*water);
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
-            BVP.solveForPhiPhin_t(water, RigidBodyObject);
-            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
-
             calculateCurrentUpdateVelocities(*water);
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
+            BVP.solveForPhiPhin_t(water, RigidBodyObject);
+            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
             // b$ --------------------------------------------------- */
             for (const auto &net : RigidBodyObject) {
-               std::cout << "name:" << net->getName() << std::endl;
                if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] != "fixed") {
+                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
                   net->RK_COM.push(net->velocityTranslational());
                   net->COM = net->RK_COM.getX();
                   Quaternion q;
@@ -294,6 +288,7 @@ int main(int arg, char **argv) {
                   net->Q = net->RK_Q.getX();
                }
                if (!net->inputJSON.find("acceleration") || (net->inputJSON.find("acceleration") && net->inputJSON["acceleration"][0] != "fixed")) {
+                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) acceleration" << std::endl;
                   net->RK_Velocity.push(net->acceleration);
                   net->velocity = net->RK_Velocity.getX();
                }
@@ -301,7 +296,7 @@ int main(int arg, char **argv) {
             }
             // b$ --------------------------------------------------- */
             for (const auto &net : SoftBodyObject) {
-               std::cout << "name:" << net->getName() << std::endl;
+               std::cout << "updating " << net->getName() << "'s (SoftBodyObject) position" << std::endl;
                for (const auto &p : net->getPoints()) {
                   p->RK_X.push(p->velocityTranslational());  //@ 位置xの時間発展
                   // p->setXSingle(p->RK_X.getX());
