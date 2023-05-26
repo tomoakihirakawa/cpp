@@ -12,7 +12,7 @@
 
 出力は，`output_dir/output_name*.vtu`と`output_dir/output_name*.obj`．
 
-![./remesh.gif](./remesh.gif)
+![./sample.gif](./sample.gif)
 
 */
 
