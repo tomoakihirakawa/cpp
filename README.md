@@ -166,10 +166,22 @@ $$
 
 ## ⛵️ 境界条件の設定の流れ
 
-1. 流体節点が接触する構造物面を保存する
+1. 流体節点が接触する構造物面を保存
+(流体節点) → [構造物面]
+
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
-3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet面，それ以外はCORNERとする．
+(3点接触流体面) → [Neumann面]
+(それ以外の面) → [Dirichlet面]
+
+3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
+(2面がNeumann面を含む辺) → [Neumann辺]
+(2面がDirichlet面を含む辺) → [Dirichlet辺]
+(それ以外の辺) → [CORNER]
+
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
+(全ての面がNeumann面を含む点) → [Neumann点]
+(全ての面がDirichlet面を含む点) → [Dirichlet点]
+(それ以外の点) → [CORNER]
 
 ### ⚓️ 多重節点
 
@@ -215,12 +227,12 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L161](./builds/build_bem/BEM_solveBVP.hpp#L161)
+[./builds/build_bem/BEM_solveBVP.hpp#L7](./builds/build_bem/BEM_solveBVP.hpp#L7)
 
 
 ### ⚓️ BIEの離散化
 
-これを線形三角要素とGauss-Legendre積分で離散化すると，
+BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 $$
 \alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
@@ -231,7 +243,7 @@ $$
 $$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L199](./builds/build_bem/BEM_solveBVP.hpp#L199)
+[./builds/build_bem/BEM_solveBVP.hpp#L201](./builds/build_bem/BEM_solveBVP.hpp#L201)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -252,7 +264,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L255](./builds/build_bem/BEM_solveBVP.hpp#L255)
+[./builds/build_bem/BEM_solveBVP.hpp#L257](./builds/build_bem/BEM_solveBVP.hpp#L257)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -268,7 +280,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L341](./builds/build_bem/BEM_solveBVP.hpp#L341)
+[./builds/build_bem/BEM_solveBVP.hpp#L343](./builds/build_bem/BEM_solveBVP.hpp#L343)
 
 
 ## ⛵️ 浮体動揺解析
@@ -345,10 +357,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L625)で与えている．
+$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L627)で与えている．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L505](./builds/build_bem/BEM_solveBVP.hpp#L505)
+[./builds/build_bem/BEM_solveBVP.hpp#L507](./builds/build_bem/BEM_solveBVP.hpp#L507)
 
 
 $$
@@ -365,7 +377,7 @@ $$
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L608](./builds/build_bem/BEM_solveBVP.hpp#L608)
+[./builds/build_bem/BEM_solveBVP.hpp#L610](./builds/build_bem/BEM_solveBVP.hpp#L610)
 
 
 ### ⚓️ 境界値問題の未知変数
