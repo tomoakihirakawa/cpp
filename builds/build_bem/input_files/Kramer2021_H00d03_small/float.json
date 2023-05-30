@@ -3,10 +3,9 @@
     "type": "RigidBody",
     "velocity": [
         "floating",
-        0.04
+        0.0
     ],
     "mass": 7.056,
-    "reverseNormal": true,
     "COM": [
         0.0,
         0.0,
@@ -21,11 +20,6 @@
         7.056e+20,
         7.056e+20,
         7.056e+20
-    ],
-    "translate": [
-        0.0,
-        0.0,
-        0.93
     ],
     "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Kramer2021_H00d03_small/sphere0.obj"
 }

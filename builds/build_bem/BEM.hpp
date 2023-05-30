@@ -3,6 +3,13 @@
 
 # Boundary Element Method (BEM-MEL)
 
+| 項目 | 詳細|
+|---:|:---|
+| 要素 | 線形三角要素 |
+| 時間発展方法 | 4次のルンゲクッタ |
+| 解析領域 | 時間領域 |
+| 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
+
 */
 
 #ifndef BEM_H
@@ -285,7 +292,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_phin[p] = std::get<1>(p->phiphin);
             P_phi_t[p] = std::get<0>(p->phiphin_t);
             P_phin_t[p] = std::get<1>(p->phiphin_t);
-            P_phin_t_from_Hessian[p] = n_U_H(p, OrthogonalBasis(p->getNormalNeumann_BEM()));
+            P_phin_t_from_Hessian[p] = n_U_H(p);
             P_normal_BEM[p] = p->getNormal_BEM();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
             P_BC[p] = p->isMultipleNode ? 3 : (p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.)));

@@ -14,8 +14,8 @@
 //$                         calculateVecToSurface                              */
 //$ -------------------------------------------------------------------------- */
 
-Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_BEM + p->vecToSurface / p->RK_X.getdt()); };
-Tddd RK_with_Ubuff(const networkPoint *p, const Tddd &vecToSurface) { return p->RK_X.getX(p->U_BEM + vecToSurface / p->RK_X.getdt()); };
+Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM + p->vecToSurface / p->RK_X.getdt()); };
+Tddd RK_with_Ubuff(const networkPoint *p, const Tddd &vecToSurface) { return p->RK_X.getX(p->U_update_BEM + vecToSurface / p->RK_X.getdt()); };
 T3Tddd RK_with_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}; };
 T3Tddd RK_with_Ubuff(const T_PPP &p012) { return {RK_with_Ubuff(p012[0]), RK_with_Ubuff(p012[1]), RK_with_Ubuff(p012[2])}; };
 T3Tddd RK_with_Ubuff(const networkFace *f) { return RK_with_Ubuff(f->getPoints()); };
@@ -32,7 +32,7 @@ Tddd RK_with_Ubuff_Normal(const networkPoint *p) {
    return Normalize(normal / total);
 };
 
-Tddd RK_without_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_BEM); };
+Tddd RK_without_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM); };
 T3Tddd RK_without_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2)}; };
 T3Tddd RK_without_Ubuff(const T_PPP &p012) { return RK_without_Ubuff(std::get<0>(p012), std::get<1>(p012), std::get<2>(p012)); };
 T3Tddd RK_without_Ubuff(const networkFace *f) { return RK_without_Ubuff(f->getPoints()); };
@@ -360,7 +360,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
          for (const auto &p : net.getPoints())
 #pragma omp single nowait
          {
-            auto scale = ((p->isMultipleNode || p->CORNER) ? 0.01 : 0.2);
+            auto scale = ((p->isMultipleNode || p->CORNER) ? 0.01 : 0.15);
             p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
          }
          for (const auto &p : net.getPoints()) {
@@ -386,28 +386,6 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 // b! -------------------------------------------------------------------------- */
 // b!                               calculateVelocities                          */
 // b! -------------------------------------------------------------------------- */
-Tddd gradPhi(const networkPoint *const p) {
-   try {
-      Tddd u, grad;
-      grad.fill(0.);
-      V_Tddd V;
-      V_d weights;
-      double w;
-      for (const auto &f : p->getFaces()) {
-         auto [p0, p1, p2] = f->getPoints(p);
-         u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-         u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
-         w = f->area * (f->Dirichlet ? 10 : 1.);
-         V.emplace_back(u);
-         weights.emplace_back(w);
-      }
-      return optimumVector(V, {0., 0., 0.}, weights);
-
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
 
 // Tddd gradPhi(const networkPoint *const p) {
 //    try {
@@ -452,7 +430,9 @@ void calculateCurrentVelocities(const Network &net) {
    for (const auto &p : net.getPoints())
 #pragma omp single nowait
    {
-      p->U_BEM = gradPhi(p);
+      p->U_update_BEM = p->U_BEM = gradPhi(p);
+      if (p->Neumann)
+         p->U_update_BEM = uNeumann(p);
    }
 }
 
@@ -462,8 +442,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop = 10) {
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
-
-      p->U_update_BEM = p->U_BEM + p->vecToSurface / p->RK_X.getdt();
+      p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
 
       if (!isFinite(p->U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
          std::cout << "p->X = " << p->X << std::endl;

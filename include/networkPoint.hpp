@@ -169,30 +169,31 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 
 */
 
-const double contact_angle = 30. * std::numbers::pi / 180.;
+const double contact_angle = 40. * std::numbers::pi / 180.;
+
+bool isCloseNormal(const Tddd &n1, const Tddd &n2) {
+   return isFlat(n1, -n2, contact_angle) || isFlat(n1, n2, contact_angle);
+};
 
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
-   bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
-   bool anyCloseNormal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
-                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
-   return isinradius && (isCloseNormal || anyCloseNormal);
+   bool is_close_normal = isCloseNormal(p->getNormal_BEM(), TriangleNormal(f_target));
+   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isCloseNormal(F->normal, TriangleNormal(f_target)); });
+   return isinradius && (is_close_normal || any_close_normal);
 };
 
 bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(pX - Nearest(pX, f_target));
-   bool isCloseNormal = isFlat(p->getNormal_BEM(), -TriangleNormal(f_target), contact_angle) || isFlat(p->getNormal_BEM(), TriangleNormal(f_target), contact_angle);
-   bool anyCloseNormal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFlat(F->normal, -TriangleNormal(f_target), contact_angle) ||
-                                                                                   isFlat(F->normal, TriangleNormal(f_target), contact_angle); });
-   return isinradius && (isCloseNormal || anyCloseNormal);
+   bool is_close_normal = isCloseNormal(p->getNormal_BEM(), TriangleNormal(f_target));
+   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isCloseNormal(F->normal, TriangleNormal(f_target)); });
+   return isinradius && (is_close_normal || any_close_normal);
 };
 
 bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/,
                  const T3Tddd &f_target,
                  const double &range) {
    // nとf_targetの法線が近いかどうかを判定する．次に，最も近い点がrange以内にあるかどうかを判定する．
-   auto N = TriangleNormal(f_target);
-   if (!(isFlat(n, -N, contact_angle) || isFlat(n, N, contact_angle)))
+   if (!isCloseNormal(n, TriangleNormal(f_target)))
       return false;  // not close normal!
    if (!(range > Norm(X - Nearest(X, f_target))))
       return false;  // not in range!

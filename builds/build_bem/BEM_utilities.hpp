@@ -305,6 +305,7 @@ Tddd uNeumann(const networkFace *const f_normal) {
    auto [p0, p1, p2] = f_normal->getPoints();
    return (uNeumann(p0, f_normal) + uNeumann(p1, f_normal) + uNeumann(p2, f_normal)) / 3.;
 };
+
 Tddd accelNeumann(const networkFace *const f_normal) {
    auto [p0, p1, p2] = f_normal->getPoints();
    return (accelNeumann(p0, f_normal) + accelNeumann(p1, f_normal) + accelNeumann(p2, f_normal)) / 3.;
@@ -375,102 +376,213 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
    return {n, s0, s1};
 };
 
-// \label{BEM:grad_U_LinearElement}
-T3Tddd grad_U_LinearElement(const networkFace *const F, const T3Tddd &orthogonal_basis) {
-   auto [s0, s1, s2] = orthogonal_basis;
-   auto U_in_s012 = [s0, s1, s2](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
-   auto X_in_s012 = [s0, s1, s2](const auto &X) { return Tddd{Dot(X, s0), Dot(X, s1), Dot(X, s2)}; };
-   auto [P0, P1, P2] = F->getPoints();
+/* -------------------------------------------------------------------------- */
 
-   // P0->Xを原点に取る
-   auto X0 = Tddd{0, 0, 0};
-   auto X1 = X_in_s012(P1->X - P0->X);
-   auto X2 = X_in_s012(P2->X - P0->X);
+Tddd gradPhi(const networkPoint *const p) {
+   try {
+      Tddd u, grad;
+      grad.fill(0.);
+      V_Tddd V;
+      V_d weights;
+      double w;
+      for (const auto &f : p->getFaces()) {
+         auto [p0, p1, p2] = f->getPoints(p);
+         u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+         u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
+         w = f->area * (f->Dirichlet ? 10 : 1.);
+         V.emplace_back(u);
+         weights.emplace_back(w);
+      }
+      return optimumVector(V, {0., 0., 0.}, weights);
 
-   auto X012_in_s012 = T3Tddd{X0, X1, X2};
-   // 接線方向微分
-   auto [g0_s0, g0_s1, g0_s2] = U_in_s012(P0);
-   auto [g1_s0, g1_s1, g1_s2] = U_in_s012(P1);
-   auto [g2_s0, g2_s1, g2_s2] = U_in_s012(P2);
-   auto grad_g_s0_tag = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0} /*s座標の流速*/, X012_in_s012);
-   auto grad_g_s1_tag = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1} /*s座標の流速*/, X012_in_s012);
-   auto grad_g_s2_tag = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2} /*s座標の流速*/, X012_in_s012);
-   // s座標に置き換える
-   // auto g_s0s0 = Dot(grad_g_s0_tag, s0);  // n方向なので成分はないはず. n is s0 direction
-   // std::cout << "g_s0s0 = " << g_s0s0 << std::endl;
-   auto g_s0s1 = Dot(grad_g_s0_tag, s1);
-   auto g_s0s2 = Dot(grad_g_s0_tag, s2);
-   //
-   // auto g_s1s0 = Dot(grad_g_s1_tag, s0);  // n方向なので成分はないはず
-   auto g_s1s1 = Dot(grad_g_s1_tag, s1);
-   auto g_s1s2 = Dot(grad_g_s1_tag, s2);
-   //
-   // auto g_s2s0 = Dot(grad_g_s2_tag, s0);  // n方向なので成分はないはず
-   auto g_s2s1 = Dot(grad_g_s2_tag, s1);
-   auto g_s2s2 = Dot(grad_g_s2_tag, s2);
-   //
-   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1, g_s0s2},
-                  {g_s0s1, g_s1s1, g_s1s2},
-                  {g_s0s2, g_s2s1, g_s2s2}}};
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorOff << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   };
 };
 
+Tddd gradPhi(const networkFace *const f) {
+   double phi_n = 0;
+   for (auto &p : f->getPoints()) {
+      auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
+      if (iter != p->phinOnFace.end())
+         phi_n += iter->second;
+      else
+         phi_n += p->phinOnFace.at(nullptr);
+   }
+   phi_n /= 3.;
+   auto [p0, p1, p2] = f->getPoints();
+   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}}) + phi_n * f->normal;
+};
+
+/* -------------------------------------------------------------------------- */
+
+/*DOC_EXTRACT BEM
+
+### 境界値問題の未知変数
+
+`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
+
+*/
+
+bool isNeumannID_BEM(const auto p, const auto f) {
+   if (p->Neumann || p->CORNER) {
+      if (p->isMultipleNode) {
+         if (p->MemberQ(f))
+            return f->Neumann;
+         else
+            return false;
+      } else
+         return (f == nullptr);
+   } else
+      return false;
+};
+
+bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) { return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+
+bool isDirichletID_BEM(const auto p, const auto f) {
+   if (p->Dirichlet || p->CORNER)
+      return (f == nullptr);
+   else
+      return false;
+};
+
+bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) { return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+
+std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
+   /**
+   NOTE: non-multiple node ID is {p,nullptr}
+   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
+    */
+   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
+      return {const_cast<networkPoint *>(p), nullptr};
+   else
+      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+}
+
+std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
+   //{p,f}を変換
+   // f cannot be nullptr
+   //  {p,f} --o--> {p,nullptr}
+   //  {p,f} <--x-- {p,nullptr}
+
+   std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
+   for (const auto &f : p->getFaces())
+      ret.emplace(pf2ID(p, f));
+   return ret;
+};
+
+/*DOC_EXTRACT BEM
+
+### $\phi_{nt}$の計算で必要となる${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) $について．
+
+$\nabla$を，$(x,y,z)$の座標系ではなく，
+面の法線方向${\bf n}$を$x$の代わりにとり，
+面に水平な方向を$t_0,t_1$とする座標系で考えることにして，$\nabla^*$と書くことにする．
+${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)$では，${\bf n}$方向成分だけをとる操作をしているので，
+新しい座標系でも同じようにすれば，結果は変わらない．
+
+$$
+{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right).
+\quad
+\nabla^* \phi = \left(\phi_n, \phi_{t_0}, \phi_{t_1}\right),
+\quad \nabla^*\nabla^* \phi = \begin{bmatrix} \phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\ \phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\ \phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1} \end{bmatrix}
+$$
+
+最後に第１成分だけが残るので，
+
+$$
+\begin{align*}
+{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi_{nn}, \phi_{t_0n}, \phi_{t_1n})\\
+\end{align*}
+$$
+
+$\phi_{nn}$は，直接計算できないが，ラプラス方程式から$\phi_{nn}=- \phi_{t_0t_0}- \phi_{t_1t_1}$となるので，水平方向の勾配の計算から求められる．
+
+*/
+
 // \label{BEM:grad_U_LinearElement}
-double n_U_H(const networkFace *const F, const T3Tddd &orthogonal_basis) {
-   auto [s0, s1, s2] = orthogonal_basis;
-   auto U_in_s012 = [s0, s1, s2](const auto &p) { return Tddd{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}; };
-   auto X_in_s012 = [s0, s1, s2](const auto &X) { return Tddd{Dot(X, s0), Dot(X, s1), Dot(X, s2)}; };
+double n_U_H(networkFace *F) {
+
+   T3Tddd orthogonal_basis = OrthogonalBasis(F->normal);
+
+   auto [n, t0, t1] = orthogonal_basis;
+   auto into_nt0t1 = [n, t0, t1](const auto &X) { return Tddd{Dot(X, n), Dot(X, t0), Dot(X, t1)}; };
    auto [P0, P1, P2] = F->getPoints();
+
    // P0->Xを原点に取る
-   auto X0 = Tddd{0, 0, 0};
-   auto X1 = X_in_s012(P1->X - P0->X);
-   auto X2 = X_in_s012(P2->X - P0->X);
-   auto X012_in_s012 = T3Tddd{X0, X1, X2};
+   auto X012 = T3Tddd{Dot(orthogonal_basis, P0->X), Dot(orthogonal_basis, P1->X), Dot(orthogonal_basis, P2->X)};
 
    // u.nのgradTangential_LinearElement
+   auto phin = [&F](const auto &P) { return isNeumannID_BEM(P, F) ? P->phinOnFace.at(F) : P->phinOnFace.at(nullptr); };
 
-   auto [g_nn, g_nt0, g_nt1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s0), Dot(P1->U_BEM, s0), Dot(P2->U_BEM, s0)}, X012_in_s012);
-
+   auto [_, g_nt0, g_nt1] = gradTangential_LinearElement(Tddd{phin(P0), phin(P1), phin(P2)}, X012);
    // u.t0のgradTangential_LinearElement
-
-   auto [g_t0n, g_t0t0, g_t0t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s1), Dot(P1->U_BEM, s1), Dot(P2->U_BEM, s1)}, X012_in_s012);
-
+   auto [__, g_t0t0, ___] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, t0), Dot(P1->U_BEM, t0), Dot(P2->U_BEM, t0)}, X012);
    // u.t1のgradTangential_LinearElement
+   auto [____, _____, g_t1t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, t1), Dot(P1->U_BEM, t1), Dot(P2->U_BEM, t1)}, X012);
 
-   auto [g_t1n, g_t1t0, g_t1t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, s2), Dot(P1->U_BEM, s2), Dot(P2->U_BEM, s2)}, X012_in_s012);
-
-   return Dot(Dot(orthogonal_basis, (P0->U_BEM + P1->U_BEM + P2->U_BEM) / 3.), Tddd{-g_t0t0 - g_t1t1, g_nt0, g_nt1});
+   auto U = Dot(orthogonal_basis, (P0->U_BEM + P1->U_BEM + P2->U_BEM) / 3.);
+   return Dot({(phin(P0) + phin(P1) + phin(P2)) / 3., U[1], U[2]},
+              Tddd{-g_t0t0 - g_t1t1, g_nt0, g_nt1});
 };
 
-double n_U_H(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
-   /*
-   スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
-   しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
-   ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T
-   */
+double n_U_H(const networkPoint *const p) {
    double nUH = 0;
    double Atot = 0;
    for (const auto &f : p->getFacesNeumann()) {
-      nUH += f->area * n_U_H(f, orthogonal_basis);
+      nUH += f->area * n_U_H(f);
       Atot += f->area;
    }
    return nUH / Atot;
 };
 
-T3Tddd grad_U_LinearElement(const networkFace *const F) { return grad_U_LinearElement(F, OrthogonalBasis(F->normal)); };
+/* -------------------------------------------------------------------------- */
+// \label{BEM:grad_U_LinearElement}
+T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
+   auto [P0, P1, P2] = F->getPoints();
+   auto X012 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
 
-T3Tddd grad_U_LinearElementNeuamnn(const networkPoint *const p, const T3Tddd &orthogonal_basis) {
-   /*
-   スカラー量の接線方向勾配を計算することはできるが，法線方向はわからない．
-   しかし，連続の式を使えば，phiの法線方向の勾配は，接線方向の勾配から計算することができる．
-   ∇U=∇∇f={{fxx, fyx, fzx},{fxy, fyy, fzy},{fxz, fyz, fzz}}, ∇∇f=∇∇f^T
-   */
-   T3Tddd H{{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
-   double Atot = 0;
+   // 接線方向微分
+   auto [g0_s0, g0_s1, g0_s2] = Dot(basis, P0->U_BEM);
+   auto [g1_s0, g1_s1, g1_s2] = Dot(basis, P1->U_BEM);
+   auto [g2_s0, g2_s1, g2_s2] = Dot(basis, P2->U_BEM);
+
+   // ここで，{g0_s0,g1_s0,g2_s0}はphinに対応する．
+
+   // auto [g_s0s0, g_s0s1, g_s0s2] = Dot(basis, grad_g_s0);
+   auto phin = [&F](const auto &P) { return isNeumannID_BEM(P, F) ? P->phinOnFace.at(F) : P->phinOnFace.at(nullptr); };
+   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{phin(P0), phin(P1), phin(P2)}, X012);
+
+   auto [g_s1s0, g_s1s1, g_s1s2] = Dot(basis, gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012));
+   auto [g_s2s0, g_s2s1, g_s2s2] = Dot(basis, gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012));
+
+   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1, g_s0s2},
+                  {g_s0s1, g_s1s1, g_s1s2},
+                  {g_s0s2, g_s2s1, g_s2s2}}};
+   // return T3Tddd{{{0, g_s0s1, g_s0s2},
+   //                {g_s0s1, 0, 0},
+   //                {g_s0s2, 0, 0}}};
+};
+
+Tddd gradPhi_dot_HessianOfPhi(auto F) {
+   auto basis = OrthogonalBasis(F->normal);
+   return Dot(Dot(basis, gradPhi(F)), HessianOfPhi(F, basis));
+};
+
+double gradPhi_dot_HessianOfPhi_dot_n(networkFace *F) {
+   auto basis = OrthogonalBasis(F->normal);
+   return Dot(Dot(basis, F->normal), Dot(Dot(basis, gradPhi(F)), HessianOfPhi(F, basis)));
+};
+
+double gradPhi_dot_HessianOfPhi_dot_n(const networkPoint *const p) {
+   double nUH = 0, Atot = 0;
    for (const auto &f : p->getFacesNeumann()) {
-      H += f->area * grad_U_LinearElement(f, orthogonal_basis);
+      nUH += f->area * gradPhi_dot_HessianOfPhi_dot_n(f);
       Atot += f->area;
    }
-   return H / Atot;
+   return nUH / Atot;
 };
 
 #endif
