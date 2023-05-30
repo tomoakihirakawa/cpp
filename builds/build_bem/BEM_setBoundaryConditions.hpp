@@ -8,10 +8,22 @@
 
 ## 境界条件の設定の流れ
 
-1. 流体節点が接触する構造物面を保存する
+1. 流体節点が接触する構造物面を保存
+   (流体節点) → [構造物面]
+
 2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
-3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet面，それ以外はCORNERとする．
+   (3点接触流体面) → [Neumann面]
+   (それ以外の面) → [Dirichlet面]
+
+3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
+   (2面がNeumann面を含む辺) → [Neumann辺]
+   (2面がDirichlet面を含む辺) → [Dirichlet辺]
+   (それ以外の辺) → [CORNER]
+
 4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
+   (全ての面がNeumann面を含む点) → [Neumann点]
+   (全ての面がDirichlet面を含む点) → [Dirichlet点]
+   (それ以外の点) → [CORNER]
 
 ### 多重節点
 

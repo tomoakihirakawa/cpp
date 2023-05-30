@@ -338,18 +338,13 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 
 /* ------------------------------------------------------ */
 
-double dt_CFL(const Network &water, double min_dt, const Tdd coeff = {0.4, 1}) {
-   auto [c0, c1] = coeff;
-   for (const auto &p : water.getPoints()) {
+double dt_CFL(const Network &water, double min_dt, const double c) {
+   for (const auto &p : water.getPoints())
       for (const auto &q : p->getNeighbors()) {
-         if (min_dt > c0 * Norm(ToX(p) - q->getXtuple()) / Norm(p->U_update_BEM - q->U_update_BEM)) {
-            min_dt = c0 * Norm(ToX(p) - q->getXtuple()) / Norm(p->U_update_BEM - q->U_update_BEM);
-         }
-         if (min_dt > c1 * Norm(ToX(p) - q->getXtuple()) / Norm(p->U_update_BEM)) {
-            min_dt = c1 * Norm(ToX(p) - q->getXtuple()) / Norm(p->U_update_BEM);
-         }
+         auto dt = c * Norm(ToX(p) - ToX(q)) / Norm(p->U_BEM - q->U_BEM);
+         if (min_dt > dt)
+            min_dt = dt;
       }
-   }
    return min_dt;
 };
 
