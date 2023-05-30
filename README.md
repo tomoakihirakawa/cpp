@@ -267,14 +267,22 @@ $$
 [./builds/build_bem/BEM_solveBVP.hpp#L257](./builds/build_bem/BEM_solveBVP.hpp#L257)
 
 
-IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
-$`IG \phi _n = IGn \phi`$
+係数行列'IGIGn'は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
+
+$$
+(I _G) _{i _\circ,j _\circ} (\phi _n) _{j _\circ} = (I _{Gn}) _{i _\circ,j _\circ}  \phi _{j _\circ}
+$$
+
+境界条件に応じて，未知変数は$`\phi,\phi _n`$のどちらかに決まる．
+未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
+係数行列'IGIGn'中で対応する列を符号変えて入れ替えることで移項したことになる．
+
 
 移項前:
-$`\begin{bmatrix}IG _0 & IG _1 & IG _2 & IG _3\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}IG _{n0} & IG _{n1} & IG _{n2} & IG _{n3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+$`\begin{bmatrix}I _{G0} & I _{G1} & I _{G2} & I _{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & I _{Gn1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 移項後:
-$`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}IG _{n0} & -IG _1 & IGn _2 & IG _{n3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+$`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & -I _{G1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 多重節点(1と3が多重節点の場合):
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
@@ -357,10 +365,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L627)で与えている．
+$`\phi _{nt}`$は，[ここ](./builds/build_bem/BEM_solveBVP.hpp#L636)で与えている．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L507](./builds/build_bem/BEM_solveBVP.hpp#L507)
+[./builds/build_bem/BEM_solveBVP.hpp#L516](./builds/build_bem/BEM_solveBVP.hpp#L516)
 
 
 $$
@@ -377,7 +385,7 @@ $$
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./builds/build_bem/BEM_solveBVP.hpp#L610](./builds/build_bem/BEM_solveBVP.hpp#L610)
+[./builds/build_bem/BEM_solveBVP.hpp#L619](./builds/build_bem/BEM_solveBVP.hpp#L619)
 
 
 ### ⚓️ 境界値問題の未知変数
