@@ -484,7 +484,7 @@ ${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)$では，${\bf 
 新しい座標系でも同じようにすれば，結果は変わらない．
 
 $$
-{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right).
+{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
 \quad
 \nabla^* \phi = \left(\phi_n, \phi_{t_0}, \phi_{t_1}\right),
 \quad \nabla^*\nabla^* \phi = \begin{bmatrix} \phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\ \phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\ \phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1} \end{bmatrix}
