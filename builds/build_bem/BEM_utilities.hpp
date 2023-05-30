@@ -491,8 +491,8 @@ $$
 \begin{bmatrix}
 \phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\
 \phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\
-\phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1
- \end{bmatrix}
+\phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1}
+\end{bmatrix}
 $$
 
 最後に第１成分だけが残るので，

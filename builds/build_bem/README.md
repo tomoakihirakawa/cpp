@@ -309,7 +309,7 @@ $$
 \begin{bmatrix}
 \phi _{nn} & \phi _{nt _0} & \phi _{nt _1} \\
 \phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\
-\phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1
+\phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1}
 \end{bmatrix}
 $$
 
