@@ -342,7 +342,7 @@ struct BEM_BVP {
                igign = {-std::get<1>(igign), -std::get<0>(igign)};
             /*DOC_EXTRACT BEM
 
-            係数行列'IGIGn'は，左辺の$I_G \phi_n$，右辺の$I_{G_n}\phi$の係数．
+            係数行列`IGIGn`は，左辺の$I_G \phi_n$，右辺の$I_{G_n}\phi$の係数．
 
             $$
             (I_G)_{i_\circ,j_\circ} (\phi_n)_{j_\circ} = (I_{Gn})_{i_\circ,j_\circ}  \phi_{j_\circ}
@@ -350,7 +350,7 @@ struct BEM_BVP {
 
             境界条件に応じて，未知変数は$\phi,\phi_n$のどちらかに決まる．
             未知変数が$\phi$の場合（Dirichlet境界条件の場合），
-            係数行列'IGIGn'中で対応する列を符号変えて入れ替えることで移項したことになる．
+            係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
 
 
             移項前:
