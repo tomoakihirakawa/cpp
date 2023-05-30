@@ -493,9 +493,7 @@ $$
 最後に第１成分だけが残るので，
 
 $$
-\begin{align*}
-{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi_{nn}, \phi_{t_0n}, \phi_{t_1n})\\
-\end{align*}
+{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi_{nn}, \phi_{t_0n}, \phi_{t_1n})
 $$
 
 $\phi_{nn}$は，直接計算できないが，ラプラス方程式から$\phi_{nn}=- \phi_{t_0t_0}- \phi_{t_1t_1}$となるので，水平方向の勾配の計算から求められる．
