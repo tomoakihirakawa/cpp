@@ -267,7 +267,7 @@ $$
 [./builds/build_bem/BEM_solveBVP.hpp#L257](./builds/build_bem/BEM_solveBVP.hpp#L257)
 
 
-係数行列'IGIGn'は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
+係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
 $$
 (I _G) _{i _\circ,j _\circ} (\phi _n) _{j _\circ} = (I _{Gn}) _{i _\circ,j _\circ}  \phi _{j _\circ}
@@ -275,7 +275,7 @@ $$
 
 境界条件に応じて，未知変数は$`\phi,\phi _n`$のどちらかに決まる．
 未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
-係数行列'IGIGn'中で対応する列を符号変えて入れ替えることで移項したことになる．
+係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
 
 
 移項前:
