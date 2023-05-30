@@ -65,7 +65,8 @@ def convert_inline_math(text: str) -> str:
 
 def convert_math_star(text: str) -> str:
     pattern = r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))"
-    text = re.sub(pattern, lambda m: m.group().replace("^*", "^\\ast"), text)
+    text = re.sub(pattern, lambda m: m.group().replace(
+        "\nabla^*", "\nabla^\\ast").replace("^*", "^\\ast"), text)
     return text
 
 
@@ -84,7 +85,7 @@ def highlight_keywords(text: str) -> str:
         'IMPLEMENTED': (r'IMPLEMENTED?\s*', '☑️'),
         '###': (r'^###:?\s*', '### ⚓️'),
         '##': (r'^## :?\s*', '## ⛵️'),
-        '#': (r'^# :?\s*', '# 🐋'),
+        '#': (r'^# :?\s*', '# 🐋')
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
