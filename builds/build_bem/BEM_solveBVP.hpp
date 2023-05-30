@@ -4,6 +4,41 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
+/*DOC_EXTRACT BEM
+
+## 境界値問題
+
+### 基礎方程式
+
+$$
+\begin{align}
+\nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
+\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{(\rm D)}(t),\\
+\phi_n + {{\bf u}_b}\cdot{{\bf n}_b} &=0&&\text{on}&&{\bf x}\in \Gamma^{(\rm N)}(t),
+\end{align}
+$$
+
+ここで，
+${\bf x} ={(x,y,z)}$は空間座標，${\bf u}_b$は物体の流速，
+${\bf n}_b$は物体の外向き単位法線ベクトル，
+$\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})$
+である．
+また，$\phi_n$は境界面上での外向き法線方向の流速を表し，
+境界面上の外向き単位法線ベクトル$\bf n$を使えば$\phi_n ={\nabla\phi}\cdot {\bf n}$で表される．
+
+ラプラス方程式とグリーンの定理を合わせると，$\phi$と$\phi_n$に関するBIEが得られる．
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+ここで，${\bf a}$は境界面上の位置ベクトルであり，この原点${\bf a}$を固定し${\bf x}$について面積分される．
+$G$は任意のスカラー関数で$G=1/\|{\bf x}-{\bf a}\|$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
+原点での立体角$\alpha\left( {\bf{a}} \right)$とポテンシャル$\phi( {\bf{a}})$の積だけが残る．
+
+*/
+
 // #define solve_equations_on_all_points
 // #define solve_equations_on_all_points_rigid_mode
 // #define solveBVP_debug
@@ -90,53 +125,6 @@ struct calculateFroudeKrylovForce {
    };
 };
 
-bool isNeumannID_BEM(const auto &p, const auto &f) {
-   if (p->Neumann || p->CORNER) {
-      if (p->isMultipleNode) {
-         if (p->MemberQ(f))
-            return f->Neumann;
-         else
-            return false;
-      } else
-         return (f == nullptr);
-   } else
-      return false;
-};
-
-bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) { return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF)); };
-
-bool isDirichletID_BEM(const auto &p, const auto &f) {
-   if (p->Dirichlet || p->CORNER)
-      return (f == nullptr);
-   else
-      return false;
-};
-
-bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) { return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF)); };
-
-std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
-   /**
-   NOTE: non-multiple node ID is {p,nullptr}
-   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
-    */
-   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
-      return {const_cast<networkPoint *>(p), nullptr};
-   else
-      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-}
-
-std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
-   //{p,f}を変換
-   // f cannot be nullptr
-   //  {p,f} --o--> {p,nullptr}
-   //  {p,f} <--x-- {p,nullptr}
-
-   std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
-   for (const auto &f : p->getFaces())
-      ret.emplace(pf2ID(p, f));
-   return ret;
-};
-
 void setPhiPhin(Network &water) {
    /**
    \phi on Dirichlet nodes have been updated by RK method. \phi_n on Neumann nodes are calculated in this function.
@@ -178,10 +166,10 @@ void setPhiPhin(Network &water) {
 
       p->phiOnFace.clear();
       p->phitOnFace.clear();
-
       p->phinOnFace.clear();
       p->phintOnFace.clear();
 
+      // 全ての組{p,f}を調べ，使えるものをチェックする
       setNeumann(nullptr);
       for (const auto &f : p->getFaces())
          setNeumann(f);
@@ -212,18 +200,9 @@ void setPhiPhin(Network &water) {
 
 /*DOC_EXTRACT BEM
 
-## 境界値問題
-
 ### BIEの離散化
 
-$\phi$と$\phi_n$に関するBIEは，
-
-$$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
-
-これを線形三角要素とGauss-Legendre積分で離散化すると，
+BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 $$
 \alpha_{i_\circ}(\phi)_{i_\circ}=-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }
@@ -388,56 +367,37 @@ struct BEM_BVP {
       }
    };
 
-   void storePhiPhin(Network &water, const auto &ans) const {
-      std::cout << "store ans" << std::endl;
+   template <typename T1, typename T2, typename T3>
+   void storePhiPhinCommon(const Network &water, const V_d &ans, T1 phiphinProperty, T2 phiOnFaceProperty, T3 phinOnFaceProperty) const {
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF)) {
-            p->phinOnFace.at(f) = std::get<1>(p->phiphin) = p->phin_Dirichlet = ans[i];
-            p->phiOnFace.at(f) = std::get<0>(p->phiphin);
+            (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
+            (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);
          }
          if (isNeumannID_BEM(PBF))
-            p->phiOnFace.at(f) = std::get<0>(p->phiphin) = ans[i];
+            (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty) = ans[i];
       }
-      std::cout << "Neumannに限りphiを代入." << std::endl;
+
       for (const auto &p : water.getPoints())
          if (p->Neumann) {
             double total = 0;
-            std::get<0>(p->phiphin) = 0;
+            std::get<0>(p->*phiphinProperty) = 0;
             std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
             for (const auto &f : p->getFaces()) {
-               if (p->phiOnFace.count(f))
-                  std::get<0>(p->phiphin) += p->phiOnFace.at(f) * f->area / total;
+               if ((p->*phiOnFaceProperty).count(f))
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(f) * f->area / total;
                else
-                  std::get<0>(p->phiphin) += p->phiOnFace.at(nullptr) * f->area / total;
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(nullptr) * f->area / total;
             }
          }
    }
+   void storePhiPhin(const Network &water, const V_d &ans) const {
+      storePhiPhinCommon(water, ans, &networkPoint::phiphin, &networkPoint::phiOnFace, &networkPoint::phinOnFace);
+   }
 
-   void storePhiPhin_t(const auto &water, const auto &ans) const {
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(PBF)) {
-            p->phintOnFace.at(f) = std::get<1>(p->phiphin_t) = ans[i];
-            p->phitOnFace.at(f) = std::get<0>(p->phiphin_t);
-         }
-         if (isNeumannID_BEM(PBF))
-            p->phitOnFace.at(f) = std::get<0>(p->phiphin_t) = ans[i];
-      }
-
-      //\phi_tを代入. Neumannに限る
-      for (const auto &p : water->getPoints())
-         if (p->Neumann) {
-            double total = 0;
-            std::get<0>(p->phiphin_t) = 0;
-            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
-            for (const auto &f : p->getFaces()) {
-               if (p->phitOnFace.count(f))
-                  std::get<0>(p->phiphin_t) += p->phitOnFace.at(f) * f->area / total;
-               else
-                  std::get<0>(p->phiphin_t) += p->phitOnFace.at(nullptr) * f->area / total;
-            }
-         }
+   void storePhiPhin_t(const Network &water, const V_d &ans) const {
+      storePhiPhinCommon(water, ans, &networkPoint::phiphin_t, &networkPoint::phitOnFace, &networkPoint::phintOnFace);
    }
 
    void isSolutionFinite(const auto &water) const {
@@ -674,11 +634,15 @@ struct BEM_BVP {
                   auto U = uNeumann(p, f);
                   auto A = accelNeumann(p, f);
                   phin_t = Dot(Cross(Omega, n), U - p->U_BEM) + Dot(n, A);
-                  auto s0s1s2 = OrthogonalBasis(n);
-                  auto [s0, s1, s2] = s0s1s2;
-                  auto Hessian = grad_U_LinearElement(f, s0s1s2);
-                  // phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
-                  phin_t -= n_U_H(f, s0s1s2);
+                  // auto s0s1s2 = OrthogonalBasis(n);
+                  // auto [s0, s1, s2] = s0s1s2;
+                  // auto Hessian = grad_U_LinearElement(f, s0s1s2);
+                  // phin_t -= 0.5 * std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+
+                  // phin_t -= gradPhi_dot_HessianOfPhi_dot_n(f);
+
+                  phin_t -= gradPhi_dot_HessianOfPhi_dot_n(f);
+
                } else {
                   auto n = p->getNormalNeumann_BEM();
                   auto netInContact = NearestContactFace(p)->getNetwork();
@@ -686,11 +650,14 @@ struct BEM_BVP {
                   auto U = uNeumann(p);
                   auto A = accelNeumann(p);
                   phin_t = Dot(Cross(Omega, n), U - p->U_BEM) + Dot(n, A);
-                  auto s0s1s2 = OrthogonalBasis(n);
-                  auto [s0, s1, s2] = s0s1s2;
-                  auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
-                  // phin_t -= std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
-                  phin_t -= n_U_H(p, s0s1s2);
+                  // auto s0s1s2 = OrthogonalBasis(n);
+                  // auto [s0, s1, s2] = s0s1s2;
+                  // auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
+                  // phin_t -= 0.5 * std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
+
+                  // phin_t -= gradPhi_dot_HessianOfPhi_dot_n(p);
+
+                  phin_t -= gradPhi_dot_HessianOfPhi_dot_n(p);
                }
                std::get<1>(p->phiphin_t) = phin_t;
             }
@@ -748,7 +715,7 @@ struct BEM_BVP {
    }
 
    /* -------------------------------------------------------------------------- */
-   V_d Func(const auto &ACCELS_IN, const Network *water, const std::vector<Network *> &rigidbodies) {
+   V_d Func(const auto &ACCELS_IN, const Network &water, const std::vector<Network *> &rigidbodies) {
       auto ACCELS = ACCELS_IN;
       {
          int i = 0;
@@ -768,7 +735,7 @@ struct BEM_BVP {
          if (isDirichletID_BEM(PBF))
             knowns[i] = p->phitOnFace.at(f);
          if (isNeumannID_BEM(PBF))
-            knowns[i] = p->phintOnFace.at(f);  // はいってない？はいってた．
+            knowns[i] = p->phintOnFace.at(f);
       }
 
       std::cout << "加速度 --> phiphin_t" << std::endl;
@@ -814,7 +781,7 @@ struct BEM_BVP {
          if (isTarget(net)) {
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
-            auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
+            auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
             auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
             auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
             std::cout << "force_check:" << tmp.force_check << std::endl;
@@ -827,10 +794,12 @@ struct BEM_BVP {
       return ACCELS - ACCELS_IN;
    };
 
+   /* -------------------------------------------------------------------------- */
+
    //@ --------------------------------------------------- */
    //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
    //@ --------------------------------------------------- */
-   void solveForPhiPhin_t(const Network *water, const std::vector<Network *> &rigidbodies) {
+   void solveForPhiPhin_t(const Network &water, const std::vector<Network *> &rigidbodies) {
 
       auto ACCELS_init = initializeAcceleration(rigidbodies);
 
@@ -848,23 +817,25 @@ struct BEM_BVP {
          auto func = Func(BM.X, water, rigidbodies);
          std::cout << "func = " << func_ << std::endl;
 
-         BM.X[0] = 0;
-         BM.X[1] = 0;
-         BM.X[3] = 0;
-         BM.X[4] = 0;
-         BM.X[5] = 0;
+         double alpha = 1.;
+         if (j < 1)
+            alpha = 1E-10;
 
-         BM.update(func, func_, j < 1 ? 1E-10 : 1.);
+         BM.update(func, func_, alpha);
 
-         BM.X[0] = 0;
-         BM.X[1] = 0;
-         BM.X[3] = 0;
-         BM.X[4] = 0;
-         BM.X[5] = 0;
+         int i = 0;
+         for (auto &a : BM.X)
+            if (i++ != 2)
+               a = 0;
+         i = 0;
+         for (auto &a : BM.dX)
+            if (i++ != 2)
+               a = 0;
 
          insertAcceleration(rigidbodies, BM.X);
 
-         std::cout << "j = " << j << ", " << Red << Norm(func) << colorOff << std::endl;
+         std::cout << "j = " << j << ", " << Red << ", Norm(func) : " << Norm(func) << colorOff << std::endl;
+         std::cout << " alpha = " << alpha << std::endl;
          std::cout << Red << "func_ = " << func_ << colorOff << std::endl;
          std::cout << Red << "func = " << func << colorOff << std::endl;
          std::cout << Red << "BM.X = " << BM.X << colorOff << std::endl;

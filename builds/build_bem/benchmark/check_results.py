@@ -1,52 +1,3 @@
-# import json
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import os
-# import pandas as pd
-
-# # Load JSON data
-# json_file_path = os.path.expanduser("~/BEM/Kramer2021_H00d03/result.json")
-# with open(json_file_path, 'r') as file:
-#     data = json.load(file)
-
-# # Extract the data
-# float_COM = np.array(data['float_COM'])
-# time = np.array(data['time'])
-# z = float_COM[:, 2]
-
-# # Load text data
-# txt_file_paths = ['./Datafile/Experimental_results/01D_CI95_Normalized.txt',
-#                   './Datafile/Experimental_results/03D_Measured1_Normalized.txt',
-#                   './Datafile/Experimental_results/05D_Measured1_Normalized.txt']
-# txt_data_list = []
-
-# for txt_file_path in txt_file_paths:
-#     txt_data = pd.read_csv(txt_file_path, sep='\s+',
-#                            engine='python', header=None, skiprows=1)
-#     print(txt_data.shape)
-#     txt_data.columns = [
-#         't/Te0 [-]', 'x3/H_{0,m} [-]', 'WG1/H_{0,m} [-]', 'WG2/H_{0,m} [-]', 'WG3/H_{0,m} [-]']
-#     txt_data_list.append(txt_data)
-
-# # Extract text data
-# txt_time_list = [txt_data['t/Te0 [-]'] for txt_data in txt_data_list]
-# txt_z_list = [txt_data['x3/H_{0,m} [-]'] for txt_data in txt_data_list]
-
-# # Plot JSON data
-# plt.figure()
-# plt.plot(time, z, label="JSON data")
-
-# # Plot text data
-# for i, (txt_time, txt_z) in enumerate(zip(txt_time_list, txt_z_list)):
-#     plt.plot(txt_time, txt_z, label=f"Text data {i+1}")
-
-# plt.xlabel("Time")
-# plt.ylabel("Value")
-# plt.title("Float Position Data")
-# plt.legend()
-# plt.show()
-
-
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -54,40 +5,49 @@ import os
 import pandas as pd
 
 # Load JSON data
-json_file_path = os.path.expanduser("~/BEM/Kramer2021_H00d03/result.json")
+file = "~/BEM/Kramer2021_H00d03_small/result.json"
+# file = "~/BEM/Kramer2021_H00d03/result.json"
+json_file_path = os.path.expanduser(file)
 with open(json_file_path, 'r') as file:
     data = json.load(file)
 
 # Extract the data
 float_COM = np.array(data['float_COM'])
-float_COM = (float_COM - 0.9) / 0.074*2.5
-time = np.array(data['time'])
-z = float_COM[:, 2]
+Te0 = 0.76
+time = np.array(data['time'])/Te0
+H0 = 30/1000
+z = (float_COM[:, 2] - 900 / 1000) / H0
 
 # Load text data
-txt_file_path = './Datafile/Experimental_results/03D_Measured1_Normalized.txt'
-
-# txt_data = pd.read_csv(txt_file_path, sep='\s+', engine='python')
-txt_data = pd.read_csv(txt_file_path, sep='\s+',
+txt_file_path = './Datafile/Experimental_results/01D_CI95_Normalized.txt'
+exp_data = pd.read_csv(txt_file_path, sep='\s+',
                        engine='python', header=None, skiprows=1)
-txt_data.columns = ['t/Te0 [-]', 'x3/H_{0,m} [-]',
-                    'WG1/H_{0,m} [-]', 'WG2/H_{0,m} [-]', 'WG3/H_{0,m} [-]']
+exp_data.columns = ['t/Te0 [-]',
+                    'x3/H_{0,m} (mean) [-]',
+                    'Lower 95% CI bound [-]',
+                    'Upper 95% CI bound [-]']
 
-print(txt_data.columns)
+print(exp_data.columns)
 
 # Extract text data
-txt_time = txt_data['t/Te0 [-]']
-txt_z = txt_data['x3/H_{0,m} [-]']
+txt_time = exp_data['t/Te0 [-]']
+txt_z = exp_data['x3/H_{0,m} (mean) [-]']
+
 
 # Plot JSON data
 plt.figure()
-plt.plot(time, z, label="JSON data")
+plt.plot(time, z, 'go-', label="JSON data")
+
 
 # Plot text data
 plt.plot(txt_time, txt_z, label="Text data")
 
 plt.xlabel("Time")
 plt.ylabel("Value")
+
+plt.ylim([-1.1, 1.1])
+plt.xlim([0, 2])
+
 plt.title("Float Position Data")
 plt.legend()
 plt.show()

@@ -114,12 +114,69 @@ struct GradientMethod {
    };
 
    /* ------------------------------------------------------ */
-   GradientMethod(){};
-   V_d minimize(const std::function<double(V_d)> &F,
-                const std::function<V_d(V_d)> &dF,
-                V_d Xinit,
-                double initial_step = 1E-12,
-                int max_loop = 100) {
+   GradientMethod() {}
+   void initialize(const V_d &Xin) {
+      X = Xin;
+      isFirst = true;
+   }
+   V_d X, dX, dFdX_last, s, s_last;
+   bool isFirst;
+
+   V_d update(const V_d &dFdX /*direction*/, const double a = 1.) {
+      return X -= (dX = a * dFdX);
+   };
+
+   V_d getFletcherReevesCD(const V_d &dFdX) {
+      auto dX = -dFdX;
+      auto dX_last = -dFdX_last;
+      double beta = Dot(dX, dX) / Dot(dX_last, dX_last);
+      this->dFdX_last = dFdX;
+      if (isFirst) {
+         s_last = V_d(dFdX.size(), 0.);
+         isFirst = false;
+      }
+      return s = s_last = -dFdX + beta * s_last;
+   };
+
+   V_d getPolakRibiereCD(const V_d &dFdX) {
+      auto dX = -dFdX;
+      auto dX_last = -dFdX_last;
+      double beta = Dot(dX, dX - dX_last) / Dot(dX_last, dX_last);
+      this->dFdX_last = dFdX;
+      if (isFirst) {
+         s_last = V_d(dFdX.size(), 0.);
+         isFirst = false;
+      }
+      return s = s_last = -dFdX + beta * s_last;
+   };
+
+   // V_d update(const V_d &F, const V_d &dF_X) {
+   //    V_d X_last = X, m(X.size(), 0.);
+   //    double min = 1E+10;
+   //    int size = 50;
+   //    double d, f, S, extend = 2;
+   //    for (auto k = 0; k < size; ++k) {
+   //       d = 2. * extend * step / (size - 1);
+   //       S = d * k - extend * step;
+   //       f = F(X_last + S * m);
+   //       if (k == 0 || min >= f) {
+   //          min = f;
+   //          step = S;
+   //       }
+   //    }
+   //    X = X_last + step * m;
+   //    if (this->isFirst) {
+   //       dF_X_last = dF_X;
+   //       m = dF_X;
+   //    } else {
+   //       double a = -Dot(dF_X, dF_X - dF_X_last) / Dot(dF_X_last, dF_X_last);
+   //       m = dF_X + a * m;
+   //    }
+   //    dF_X_last = dF_X;
+   //    return X;
+   // };
+
+   V_d minimize(const std::function<double(V_d)> &F, const std::function<V_d(V_d)> &dF, V_d Xinit, double initial_step = 1E-12, int max_loop = 100) {
       V_d X = Xinit, X_last = Xinit, m(X.size(), 0.);
       double s = initial_step;
       for (auto i = 0; i < max_loop; ++i) {
@@ -192,10 +249,11 @@ using VVd = std::vector<std::vector<double>>;
 template <>
 struct BroydenMethod<Vd> {
    Vd X, dX;
-   VVd J;
+   VVd J, Inv_J;
 
    BroydenMethod(const Vd &Xin, const Vd &Xin_) : X(Xin), dX(Xin_ - Xin), J(VVd(Xin.size(), Vd(Xin.size()))) {
       IdentityMatrix(J);
+      Inv_J = J;
    }
 
    void initialize(const Vd &Xin) { X = Xin; }
@@ -204,7 +262,14 @@ struct BroydenMethod<Vd> {
       auto dot = Dot(dX, dX);
       if (dot != static_cast<double>(0.))
          J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
-      X += (dX = -alpha * Dot(Inverse(J), F));
+
+      auto dF = F - F_;
+      // good Broyden's method
+      if (Dot(dF, dF) != static_cast<double>(0.))
+         Inv_J += TensorProduct((dX - Dot(Inv_J, dF)), Dot(dX, Inv_J)) / Dot(dX, Dot(Inv_J, dF));
+
+      X += (dX = -alpha * Dot(Inv_J, F));
+      // X += (dX = -alpha * Dot(Inverse(J), F));
    }
 };
 

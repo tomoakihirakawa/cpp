@@ -6,8 +6,11 @@
     - [⛵️ 境界条件の設定の流れ](#⛵️-境界条件の設定の流れ)
         - [⚓️ 多重節点](#⚓️-多重節点)
     - [⛵️ 境界値問題](#⛵️-境界値問題)
+        - [⚓️ 基礎方程式](#⚓️-基礎方程式)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
     - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
+        - [⚓️ 境界値問題の未知変数](#⚓️-境界値問題の未知変数)
+        - [⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#⚓️-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
 - [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
     - [⛵️ Usage](#⛵️-Usage)
     - [⛵️ Customization](#⛵️-Customization)
@@ -24,6 +27,13 @@
 [![Banner](banner.png)](banner.png)
 
 # 🐋 Boundary Element Method (BEM-MEL)
+
+| 項目 | 詳細|
+|---:|:---|
+| 要素 | 線形三角要素 |
+| 時間発展方法 | 4次のルンゲクッタ |
+| 解析領域 | 時間領域 |
+| 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
 
 
 [./BEM.hpp#L1](./BEM.hpp#L1)
@@ -71,14 +81,40 @@
 
 ## ⛵️ 境界値問題
 
-### ⚓️ BIEの離散化
+### ⚓️ 基礎方程式
 
-$`\phi`$と$`\phi _n`$に関するBIEは，
+$$
+\begin{align}
+\nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
+\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{(\rm D)}(t),\\
+\phi _n + {{\bf u} _b}\cdot{{\bf n} _b} &=0&&\text{on}&&{\bf x}\in \Gamma^{(\rm N)}(t),
+\end{align}
+$$
+
+ここで，
+$`{\bf x} ={(x,y,z)}`$は空間座標，$`{\bf u} _b`$は物体の流速，
+$`{\bf n} _b`$は物体の外向き単位法線ベクトル，
+$`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})`$
+である．
+また，$`\phi _n`$は境界面上での外向き法線方向の流速を表し，
+境界面上の外向き単位法線ベクトル$`\bf n`$を使えば$`\phi _n ={\nabla\phi}\cdot {\bf n}`$で表される．
+
+ラプラス方程式とグリーンの定理を合わせると，$`\phi`$と$`\phi _n`$に関するBIEが得られる．
 
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
+
+ここで，$`{\bf a}`$は境界面上の位置ベクトルであり，この原点$`{\bf a}`$を固定し$`{\bf x}`$について面積分される．
+$`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
+原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
+
+
+[./BEM_solveBVP.hpp#L161](./BEM_solveBVP.hpp#L161)
+
+
+### ⚓️ BIEの離散化
 
 これを線形三角要素とGauss-Legendre積分で離散化すると，
 
@@ -91,7 +127,7 @@ $$
 $$
 
 
-[./BEM_solveBVP.hpp#L213](./BEM_solveBVP.hpp#L213)
+[./BEM_solveBVP.hpp#L199](./BEM_solveBVP.hpp#L199)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -112,7 +148,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L278](./BEM_solveBVP.hpp#L278)
+[./BEM_solveBVP.hpp#L255](./BEM_solveBVP.hpp#L255)
 
 
 IGIGn は 左辺に IG*φn が右辺に IGn*φ が来るように計算しているため，移項する場合，符号を変える必要がある．
@@ -128,7 +164,7 @@ $`\begin{bmatrix}IG _0 & -IG _{n1} & IG _2 & IG _3\end{bmatrix}\begin{bmatrix}\p
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L364](./BEM_solveBVP.hpp#L364)
+[./BEM_solveBVP.hpp#L341](./BEM_solveBVP.hpp#L341)
 
 
 ## ⛵️ 浮体動揺解析
@@ -205,10 +241,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L667)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L625)で与えている．
 
 
-[./BEM_solveBVP.hpp#L547](./BEM_solveBVP.hpp#L547)
+[./BEM_solveBVP.hpp#L505](./BEM_solveBVP.hpp#L505)
 
 
 $$
@@ -219,13 +255,51 @@ $$
 \end{bmatrix}
 $$
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L417)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L542)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L650](./BEM_solveBVP.hpp#L650)
+[./BEM_solveBVP.hpp#L608](./BEM_solveBVP.hpp#L608)
+
+
+### ⚓️ 境界値問題の未知変数
+
+`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
+
+
+[./BEM_utilities.hpp#L420](./BEM_utilities.hpp#L420)
+
+
+### ⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．
+
+$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
+面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
+面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
+$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
+新しい座標系でも同じようにすれば，結果は変わらない．
+
+$$
+{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right).
+\quad
+\nabla^* \phi = \left(\phi _n, \phi _{t _0}, \phi _{t _1}\right),
+\quad \nabla^*\nabla^* \phi = \begin{bmatrix} \phi _{nn} & \phi _{nt _0} & \phi _{nt _1} \\ \phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\ \phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1} \end{bmatrix}
+$$
+
+最後に第１成分だけが残るので，
+
+$$
+\begin{align*}
+{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^*\nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})\\
+\end{align*}
+$$
+
+$`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
+
+
+[./BEM_utilities.hpp#L476](./BEM_utilities.hpp#L476)
 
 
 ## ⛵️ BEM Simulation Code

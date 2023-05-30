@@ -77,7 +77,7 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "velocity": ["floating", 0.04]}
+                 "velocity": ["floating", 0.01]}
 
         float["mass"] = m = 7.056
         # float["reverseNormal"] = True
@@ -91,11 +91,11 @@ match SimulationCase:
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
         water["objfile"] = objfolder + "/water300_mod.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
-        float["objfile"] = objfolder+"/sphere0.obj"
+        float["objfile"] = objfolder+"/sphere.obj"
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,

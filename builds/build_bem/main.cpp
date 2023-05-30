@@ -271,7 +271,7 @@ int main(int arg, char **argv) {
             calculateCurrentUpdateVelocities(*water);
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
-            BVP.solveForPhiPhin_t(water, RigidBodyObject);
+            BVP.solveForPhiPhin_t(*water, RigidBodyObject);
             std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
             // b$ --------------------------------------------------- */
@@ -333,17 +333,17 @@ int main(int arg, char **argv) {
 
          /* ------------------------------------------------------ */
 
-         // {
-         //    double mean_phi = 0.;
-         //    for (const auto &p : water->getPoints())
-         //       mean_phi += std::get<0>(p->phiphin);
-         //    mean_phi /= water->getPoints().size();
-         //    for (const auto &p : water->getPoints()) {
-         //       p->phi_Dirichlet -= mean_phi;
-         //       // p->phi_Neumann -= mean_phi;
-         //       std::get<0>(p->phiphin) -= mean_phi;
-         //    }
-         // }
+         {
+            double mean_phi = 0.;
+            for (const auto &p : water->getPoints())
+               mean_phi += std::get<0>(p->phiphin);
+            mean_phi /= water->getPoints().size();
+            for (const auto &p : water->getPoints()) {
+               p->phi_Dirichlet -= mean_phi;
+               // p->phi_Neumann -= mean_phi;
+               std::get<0>(p->phiphin) -= mean_phi;
+            }
+         }
 
          /* ------------------------------------------------------ */
 
