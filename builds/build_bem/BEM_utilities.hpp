@@ -487,7 +487,12 @@ $$
 {\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
 \quad
 \nabla^* \phi = \left(\phi_n, \phi_{t_0}, \phi_{t_1}\right),
-\quad \nabla^* \nabla^* \phi = \begin{bmatrix} \phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\ \phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\ \phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1} \end{bmatrix}
+\quad \nabla^* \nabla^* \phi =
+\begin{bmatrix}
+\phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\
+\phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\
+\phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1
+ \end{bmatrix}
 $$
 
 最後に第１成分だけが残るので，
