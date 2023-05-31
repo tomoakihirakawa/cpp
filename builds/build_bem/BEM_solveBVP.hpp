@@ -542,6 +542,8 @@ struct BEM_BVP {
    \quad\text{on}\quad{\bf x} \in \Gamma(t).
    $$
 
+   ### ノイマン境界面における$\phi_{nt}$の求め方
+
    境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
    境界面上の位置ベクトルを$\boldsymbol r$とする．
    表面上のある点の移動速度$\frac{d\boldsymbol r}{dt}$と流体粒子の流速$\nabla \phi$の間には，次の境界条件が成り立つ．
@@ -593,6 +595,22 @@ struct BEM_BVP {
 
    */
 
+   /*DOC_EXTRACT BEM
+
+   $$
+   \nabla {\bf u} = \nabla \nabla \phi =
+   \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
+   　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
+   　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}
+   \end{bmatrix}
+   $$
+
+   ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する\ref{BEM:grad_U_LinearElement}{`grad_U_LinearElement`}を用いる．
+   節点における変数を$v$とすると，$\nabla v-{\bf n}({\bf n}\cdot\nabla v)$が計算できる．
+   要素の法線方向${\bf n}$が$x$軸方向${(1,0,0)}$である場合，$\nabla v - (\frac{\partial}{\partial x},0,0)v$なので，
+   $(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})$が得られる．
+
+   */
    void setPhiPhin_t() const {
 #ifdef derivatives_debug
       std::cout << "φtとφntを一部計算👇" << std::endl;
@@ -610,66 +628,9 @@ struct BEM_BVP {
          //!!ノイマンの場合はこれでDphiDtは計算できませんよ
          if (isDirichletID_BEM(PBF))
             p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
-         if (isNeumannID_BEM(PBF)) {
-
-            // b* p->phintOnFaceは，std::unordered_map<networkFace *, double>
-            // b* 節点のphinを保存する．また，多重節点かどうかも，面がnullptrかどうかで判別できる．
-            // b* setBoundaryConditionsで決めている．
-
-            /*DOC_EXTRACT BEM
-
-            $$
-            \nabla {\bf u} = \nabla \nabla \phi =
-            \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
-            　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
-            　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}
-            \end{bmatrix}
-            $$
-
-            ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する\ref{BEM:grad_U_LinearElement}{`grad_U_LinearElement`}を用いる．
-            節点における変数を$v$とすると，$\nabla v-{\bf n}({\bf n}\cdot\nabla v)$が計算できる．
-            要素の法線方向${\bf n}$が$x$軸方向${(1,0,0)}$である場合，$\nabla v - (\frac{\partial}{\partial x},0,0)v$なので，
-            $(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})$が得られる．
-
-            */
-
-            // \label{BEM:setphint}
-            for (auto &[f, phin_t] : p->phintOnFace) {
-               auto use_face = (f != nullptr);
-               if (use_face) {
-                  auto n = f->normal;
-                  auto netInContact = NearestContactFace(f)->getNetwork();
-                  auto Omega = netInContact->velocityRotational();
-                  auto U = uNeumann(p, f);
-                  auto A = accelNeumann(p, f);
-                  phin_t = Dot(Cross(Omega, n), U - p->U_BEM) + Dot(n, A);
-                  // auto s0s1s2 = OrthogonalBasis(n);
-                  // auto [s0, s1, s2] = s0s1s2;
-                  // auto Hessian = grad_U_LinearElement(f, s0s1s2);
-                  // phin_t -= 0.5 * std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
-
-                  // phin_t -= gradPhi_dot_HessianOfPhi_dot_n(f);
-
-                  phin_t -= gradPhi_dot_HessianOfPhi_dot_n(f);
-
-               } else {
-                  auto n = p->getNormalNeumann_BEM();
-                  auto netInContact = NearestContactFace(p)->getNetwork();
-                  auto Omega = netInContact->velocityRotational();
-                  auto U = uNeumann(p);
-                  auto A = accelNeumann(p);
-                  phin_t = Dot(Cross(Omega, n), U - p->U_BEM) + Dot(n, A);
-                  // auto s0s1s2 = OrthogonalBasis(n);
-                  // auto [s0, s1, s2] = s0s1s2;
-                  // auto Hessian = grad_U_LinearElementNeuamnn(p, s0s1s2);
-                  // phin_t -= 0.5 * std::get<0>(Dot(Tddd{{Dot(p->U_BEM, s0), Dot(p->U_BEM, s1), Dot(p->U_BEM, s2)}}, Hessian));
-
-                  // phin_t -= gradPhi_dot_HessianOfPhi_dot_n(p);
-
-                  phin_t -= gradPhi_dot_HessianOfPhi_dot_n(p);
-               }
-               std::get<1>(p->phiphin_t) = phin_t;
-            }
+         else if (isNeumannID_BEM(PBF)) {
+            for (auto &[f, phin_t] : p->phintOnFace)
+               phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
          }
       }
    };
@@ -819,6 +780,7 @@ struct BEM_BVP {
 
       auto tmp = ACCELS_init;
       tmp[0] += 1E-10;
+      int count = 0;
       BroydenMethod BM(ACCELS_init, tmp);
       for (auto j = 0; j < 20; ++j) {
          auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
@@ -852,6 +814,11 @@ struct BEM_BVP {
 
          if (Norm(func) < 1E-10)
             break;
+         if (Norm(BM.dX) < 1E-13) {
+            if (count++ > 4)
+               break;
+         } else
+            count = 0;
       }
    };
 };
