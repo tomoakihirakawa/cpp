@@ -80,8 +80,8 @@ int main() {
    std::array<double, 3> A = {5, 5, 5};
    std::array<double, 3> X = {0, 0, 0};
 
-   for (double x = -20.0; x <= 20.0; x += .5) {
-      for (double y = -20.0; y <= 20.0; y += .5) {
+   for (double x = -20.0; x <= 20.0; x += .1) {
+      for (double y = -20.0; y <= 20.0; y += .1) {
          double z = 0;
          std::array<double, 3> center = {x, y, z};
          auto error = std::log(std::abs(G(X - center, A - center) - G_approx(9, X - center, A - center)));
