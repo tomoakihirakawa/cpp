@@ -1,10 +1,16 @@
 # set output format
-set terminal pngcairo
+set terminal pngcairo size 800,600
 
 # set labels
 set xlabel "X"
 set ylabel "Y"
 set title "Error of G_approx from G"
+
+# set margins
+set lmargin at screen 0.15
+set rmargin at screen 0.95
+set bmargin at screen 0.15
+set tmargin at screen 0.95
 
 # enable contouring
 set pm3d
