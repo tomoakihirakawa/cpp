@@ -385,13 +385,13 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 ある三角要素$k\triangle$上の接線流速$\nabla \phi_{\parallel}$は，線形三角要素補間を使って次のように計算する．
 
 $$
-(\nabla \phi_{\parallel})_{k\triangle} = \frac{\bf n}{2A} \times (({\bf x}_2 - {\bf x}_1) \phi_0 +({\bf x}_0 - {\bf x}_2) \phi_1 + ({\bf x}_1 - {\bf x}_0) \phi_2)
+\nabla \phi_{\parallel} = \frac{\bf n}{2A} \times (({\bf x}_2 - {\bf x}_1) \phi_0 +({\bf x}_0 - {\bf x}_2) \phi_1 + ({\bf x}_1 - {\bf x}_0) \phi_2)
 $$
 
 三角要素$k\triangle$上の流速$\nabla \phi$は，次のように計算する．
 
 $$
-(\nabla \phi)_{k\triangle} = \frac{(\phi_n)_{k\triangle,0}+(\phi_n)_{k\triangle,1}+(\phi_n)_{k\triangle,2}}{3} {\bf n} + \nabla \phi_{\parallel}
+\nabla \phi = \frac{(\phi_n)_{k\triangle,0}+(\phi_n)_{k\triangle,1}+(\phi_n)_{k\triangle,2}}{3} {\bf n} + \nabla \phi_{\parallel}
 $$
 
 */
