@@ -5,7 +5,7 @@ set terminal pngcairo
 set xlabel "X"
 set ylabel "Y"
 set title "Error of G_approx from G"
-set zrange [-20:0]
+set cbrange [-20:0]
 
 # enable contouring
 set pm3d
