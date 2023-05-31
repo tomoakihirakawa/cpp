@@ -36,15 +36,30 @@ $$
 G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|}
 $$
 
-$G_{approx}({\bf x- \bf c},{\bf a - \bf c}) = \frac{1}{\|{\bf x}-{\bf a}\|}$
+近似解 $G_{approx}({\bf x- \bf c},{\bf a - \bf c})$ を以下の式で定義する：
+
+$$
+G_{approx}(n, {\bf x- \bf c},{\bf a - \bf c}) \approx \sum_{k=0}^{n} \sum_{m=-k}^{k} \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})
+$$
+
+$$
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}}(-1)^m P_k^{|m|}(\cos(a)) \left(\cos(m b) - i \sin(m b)\right)
+$$
+
+ここで，
+
+- $Y(k, m, a, b)$ は球面調和関数
+- $r_{near}$ と $r_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ のノルム
+- $a_{near}$, $b_{near}$, $a_{far}$, $b_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ の球面座標
+
 ${\bf c}=(x,y,0)$を変化させてプロットした結果：
+
 
 | | ${\bf x} = (0,0,0),{\bf a} = (5,5,5)$ | ${\bf x} = (0,0,0),{\bf a} = (10,10,10)$ |
 |:----:|:---:|:---:|
 | **n=3** | ![n3_A_5_5_5](output_n3_A_5_5_5.png)  | ![n3_A_10_10_10](output_n3_A_10_10_10.png) |
 | **n=6** | ![n6_A_5_5_5](output_n6_A_5_5_5.png)  | ![n6_A_10_10_10](output_n6_A_10_10_10.png) |
 | **n=9** | ![n9_A_5_5_5](output_n9_A_5_5_5.png)  | ![n9_A_10_10_10](output_n9_A_10_10_10.png) |
-
 
 */
 
