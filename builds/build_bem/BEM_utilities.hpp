@@ -377,30 +377,6 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 };
 
 /* -------------------------------------------------------------------------- */
-
-Tddd gradPhi(const networkPoint *const p) {
-   try {
-      Tddd u, grad;
-      grad.fill(0.);
-      V_Tddd V;
-      V_d weights;
-      double w;
-      for (const auto &f : p->getFaces()) {
-         auto [p0, p1, p2] = f->getPoints(p);
-         u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-         u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
-         w = f->area * (f->Dirichlet ? 10 : 1.);
-         V.emplace_back(u);
-         weights.emplace_back(w);
-      }
-      return optimumVector(V, {0., 0., 0.}, weights);
-
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
-
 Tddd gradPhi(const networkFace *const f) {
    double phi_n = 0;
    for (auto &p : f->getPoints()) {
@@ -415,6 +391,24 @@ Tddd gradPhi(const networkFace *const f) {
    return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}}) + phi_n * f->normal;
 };
 
+Tddd gradPhi(const networkPoint *const p) {
+   Tddd u, u_acum;
+   u_acum.fill(0.);
+   V_Tddd V;
+   V_d W;
+   double w_acum = 0.;
+   for (const auto &f : p->getFaces()) {
+      u = gradPhi(f);
+      //
+      V.emplace_back(u);
+      W.push_back(f->area * (f->Dirichlet ? 10 : 1.));
+      //
+      u_acum += f->area * u;
+      w_acum += f->area;
+   }
+   // 角点における綾境界条件の流速の整合性を保つために，最適化する
+   return optimumVector(V, u_acum / w_acum, W);
+};
 /* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT BEM
@@ -564,25 +558,22 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1, g_s0s2},
                   {g_s0s1, g_s1s1, g_s1s2},
                   {g_s0s2, g_s2s1, g_s2s2}}};
-   // return T3Tddd{{{0, g_s0s1, g_s0s2},
-   //                {g_s0s1, 0, 0},
-   //                {g_s0s2, 0, 0}}};
 };
 
-Tddd gradPhi_dot_HessianOfPhi(auto F) {
+double phint_Neumann(networkFace *F) {
+   auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
+   auto grad_phi = gradPhi(F);
+   auto ret = Dot(Cross(Omega, F->normal), uNeumann(F) - grad_phi);
+   //
    auto basis = OrthogonalBasis(F->normal);
-   return Dot(Dot(basis, gradPhi(F)), HessianOfPhi(F, basis));
+   ret += Dot(F->normal, accelNeumann(F)) - Dot(Dot(basis, F->normal), Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+   return ret;
 };
 
-double gradPhi_dot_HessianOfPhi_dot_n(networkFace *F) {
-   auto basis = OrthogonalBasis(F->normal);
-   return Dot(Dot(basis, F->normal), Dot(Dot(basis, gradPhi(F)), HessianOfPhi(F, basis)));
-};
-
-double gradPhi_dot_HessianOfPhi_dot_n(const networkPoint *const p) {
+double phint_Neumann(const networkPoint *const p) {
    double nUH = 0, Atot = 0;
    for (const auto &f : p->getFacesNeumann()) {
-      nUH += f->area * gradPhi_dot_HessianOfPhi_dot_n(f);
+      nUH += f->area * phint_Neumann(f);
       Atot += f->area;
    }
    return nUH / Atot;
