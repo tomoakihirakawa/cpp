@@ -5,7 +5,6 @@ set terminal pngcairo
 set xlabel "X"
 set ylabel "Y"
 set title "Error of G_approx from G"
-set cbrange [-20:0]
 
 # enable contouring
 set pm3d
@@ -17,6 +16,9 @@ set cntrparam levels auto 10
 
 # set color palette
 set palette rgb 33,13,10
+
+# set colorbox range
+set cbrange [-20:0]
 
 # plot commands for different n values
 set output 'output_n3_A_10_10_10.png'
