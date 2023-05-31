@@ -292,7 +292,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_phin[p] = std::get<1>(p->phiphin);
             P_phi_t[p] = std::get<0>(p->phiphin_t);
             P_phin_t[p] = std::get<1>(p->phiphin_t);
-            P_phin_t_from_Hessian[p] = n_U_H(p);
+            P_phin_t_from_Hessian[p] = phint_Neumann(p);
             P_normal_BEM[p] = p->getNormal_BEM();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
             P_BC[p] = p->isMultipleNode ? 3 : (p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.)));

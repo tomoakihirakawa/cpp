@@ -63,6 +63,9 @@ ${\bf c}=(x,y,0)$を変化させてプロットした結果：
 この結果からわかるように，Green関数の実際の値は，${\bf c}$によって変わらないが，$G_{approx}$の値は${\bf c}$によって変化し，
 ${\bf c}$が${\bf x}$に近いところでは，$G_{approx}$の値は$G$の値に近づく．
 
+$a_{near},b_{near}$は，より小さければ精度が良く，
+また，$a_{far},b_{far}$は，より大きければ精度が良くなる．
+
 */
 
 std::array<double, 3> ToSphericalCoordinates(const std::array<double, 3>& X) {
