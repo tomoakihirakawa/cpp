@@ -506,8 +506,24 @@ $$
 G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|}
 $$
 
-$`G _{approx}({\bf x- \bf c},{\bf a - \bf c}) = \frac{1}{\|{\bf x}-{\bf a}\|}`$
+近似解 $`G _{approx}({\bf x- \bf c},{\bf a - \bf c})`$ を以下の式で定義する：
+
+$$
+G _{approx}(n, {\bf x- \bf c},{\bf a - \bf c}) \approx \sum _{k=0}^{n} \sum _{m=-k}^{k} \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})
+$$
+
+$$
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}}(-1)^m P _k^{|m|}(\cos(a)) \left(\cos(m b) - i \sin(m b)\right)
+$$
+
+ここで，
+
+- $`Y(k, m, a, b)`$ は球面調和関数
+- $`r _{near}`$ と $`r _{far}`$ はベクトル $`{\bf x - c}`$ と $`{\bf a - c}`$ のノルム
+- $`a _{near}`$, $`b _{near}`$, $`a _{far}`$, $`b _{far}`$ はベクトル $`{\bf x - c}`$ と $`{\bf a - c}`$ の球面座標
+
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
+
 
 | | $`{\bf x} = (0,0,0),{\bf a} = (5,5,5)`$ | $`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$ |
 |:----:|:---:|:---:|
