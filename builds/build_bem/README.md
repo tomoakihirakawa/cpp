@@ -10,6 +10,7 @@
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
     - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
         - [⚓️ ノイマン境界面における$`\phi _{nt}`$の求め方](#⚓️-ノイマン境界面における$`\phi-_{nt}`$の求め方)
+        - [⚓️ 流速の計算](#⚓️-流速の計算)
         - [⚓️ 境界値問題の未知変数](#⚓️-境界値問題の未知変数)
         - [⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#⚓️-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
 - [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
@@ -278,7 +279,7 @@ $$
 \end{bmatrix}
 $$
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L539)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L519)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -287,13 +288,31 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 [./BEM_solveBVP.hpp#L598](./BEM_solveBVP.hpp#L598)
 
 
+### ⚓️ 流速の計算
+
+ある三角要素$`k\triangle`$上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
+
+$$
+(\nabla \phi _{\parallel}) _{k\triangle} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
+$$
+
+三角要素$`k\triangle`$上の流速$`\nabla \phi`$は，次のように計算する．
+
+$$
+(\nabla \phi) _{k\triangle} = \frac{(\phi _n) _{k\triangle,0}+(\phi _n) _{k\triangle,1}+(\phi _n) _{k\triangle,2}}{3} {\bf n} + \nabla \phi _{\parallel}
+$$
+
+
+[./BEM_utilities.hpp#L381](./BEM_utilities.hpp#L381)
+
+
 ### ⚓️ 境界値問題の未知変数
 
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
 多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L414](./BEM_utilities.hpp#L414)
+[./BEM_utilities.hpp#L430](./BEM_utilities.hpp#L430)
 
 
 ### ⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．
@@ -325,7 +344,7 @@ $$
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L470](./BEM_utilities.hpp#L470)
+[./BEM_utilities.hpp#L486](./BEM_utilities.hpp#L486)
 
 
 ## ⛵️ BEM Simulation Code

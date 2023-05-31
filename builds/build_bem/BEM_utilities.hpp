@@ -377,6 +377,25 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 };
 
 /* -------------------------------------------------------------------------- */
+
+/*DOC_EXTRACT BEM
+
+### 流速の計算
+
+ある三角要素$k\triangle$上の接線流速$\nabla \phi_{\parallel}$は，線形三角要素補間を使って次のように計算する．
+
+$$
+(\nabla \phi_{\parallel})_{k\triangle} = \frac{\bf n}{2A} \times (({\bf x}_2 - {\bf x}_1) \phi_0 +({\bf x}_0 - {\bf x}_2) \phi_1 + ({\bf x}_1 - {\bf x}_0) \phi_2)
+$$
+
+三角要素$k\triangle$上の流速$\nabla \phi$は，次のように計算する．
+
+$$
+(\nabla \phi)_{k\triangle} = \frac{(\phi_n)_{k\triangle,0}+(\phi_n)_{k\triangle,1}+(\phi_n)_{k\triangle,2}}{3} {\bf n} + \nabla \phi_{\parallel}
+$$
+
+*/
+
 Tddd gradPhi(const networkFace *const f) {
    double phi_n = 0;
    for (auto &p : f->getPoints()) {
@@ -392,23 +411,20 @@ Tddd gradPhi(const networkFace *const f) {
 };
 
 Tddd gradPhi(const networkPoint *const p) {
-   Tddd u, u_acum;
-   u_acum.fill(0.);
+   Tddd u, grad;
+   grad.fill(0.);
    V_Tddd V;
    V_d W;
-   double w_acum = 0.;
    for (const auto &f : p->getFaces()) {
-      u = gradPhi(f);
-      //
+      auto [p0, p1, p2] = f->getPoints(p);
+      u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+      u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
       V.emplace_back(u);
       W.push_back(f->area * (f->Dirichlet ? 10 : 1.));
-      //
-      u_acum += f->area * u;
-      w_acum += f->area;
    }
-   // 角点における綾境界条件の流速の整合性を保つために，最適化する
-   return optimumVector(V, u_acum / w_acum, W);
+   return optimumVector(V, {0., 0., 0.}, W);
 };
+
 /* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT BEM
@@ -499,42 +515,6 @@ $\phi_{nn}$は，直接計算できないが，ラプラス方程式から$\phi_
 
 */
 
-// \label{BEM:grad_U_LinearElement}
-double n_U_H(networkFace *F) {
-
-   T3Tddd orthogonal_basis = OrthogonalBasis(F->normal);
-
-   auto [n, t0, t1] = orthogonal_basis;
-   auto into_nt0t1 = [n, t0, t1](const auto &X) { return Tddd{Dot(X, n), Dot(X, t0), Dot(X, t1)}; };
-   auto [P0, P1, P2] = F->getPoints();
-
-   // P0->Xを原点に取る
-   auto X012 = T3Tddd{Dot(orthogonal_basis, P0->X), Dot(orthogonal_basis, P1->X), Dot(orthogonal_basis, P2->X)};
-
-   // u.nのgradTangential_LinearElement
-   auto phin = [&F](const auto &P) { return isNeumannID_BEM(P, F) ? P->phinOnFace.at(F) : P->phinOnFace.at(nullptr); };
-
-   auto [_, g_nt0, g_nt1] = gradTangential_LinearElement(Tddd{phin(P0), phin(P1), phin(P2)}, X012);
-   // u.t0のgradTangential_LinearElement
-   auto [__, g_t0t0, ___] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, t0), Dot(P1->U_BEM, t0), Dot(P2->U_BEM, t0)}, X012);
-   // u.t1のgradTangential_LinearElement
-   auto [____, _____, g_t1t1] = gradTangential_LinearElement(Tddd{Dot(P0->U_BEM, t1), Dot(P1->U_BEM, t1), Dot(P2->U_BEM, t1)}, X012);
-
-   auto U = Dot(orthogonal_basis, (P0->U_BEM + P1->U_BEM + P2->U_BEM) / 3.);
-   return Dot({(phin(P0) + phin(P1) + phin(P2)) / 3., U[1], U[2]},
-              Tddd{-g_t0t0 - g_t1t1, g_nt0, g_nt1});
-};
-
-double n_U_H(const networkPoint *const p) {
-   double nUH = 0;
-   double Atot = 0;
-   for (const auto &f : p->getFacesNeumann()) {
-      nUH += f->area * n_U_H(f);
-      Atot += f->area;
-   }
-   return nUH / Atot;
-};
-
 /* -------------------------------------------------------------------------- */
 // \label{BEM:grad_U_LinearElement}
 T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
@@ -560,13 +540,16 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
                   {g_s0s2, g_s2s1, g_s2s2}}};
 };
 
+// 最適化を入れる！？
+// どうやって最適化をいれるのか？
+
 double phint_Neumann(networkFace *F) {
    auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
    auto grad_phi = gradPhi(F);
    auto ret = Dot(Cross(Omega, F->normal), uNeumann(F) - grad_phi);
    //
    auto basis = OrthogonalBasis(F->normal);
-   ret += Dot(F->normal, accelNeumann(F)) - Dot(Dot(basis, F->normal), Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+   ret += Dot(F->normal, accelNeumann(F)) - Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
    return ret;
 };
 
