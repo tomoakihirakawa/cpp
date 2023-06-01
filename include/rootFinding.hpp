@@ -147,6 +147,44 @@ std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sa
    for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
    return result;
 }
+
+double optimumValue(const std::vector<double> &sample_values,
+                    const double init_value,
+                    std::vector<double> weights,
+                    const double tolerance = 1E-12) {
+   if (weights.size() != sample_values.size())
+      throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
+
+   double m = 0;
+   for (const auto &max : weights)
+      if (m < std::abs(max))
+         m = std::abs(max);
+   weights /= m;
+   NewtonRaphson<double> NRs;
+   NRs.X = init_value;
+
+   double Fs, dFs;
+   double w, drdx;
+   for (int iteration = 0; iteration < 500; ++iteration) {
+      Fs = 0;
+      dFs = 0;
+      for (size_t i = 0; i < sample_values.size(); ++i) {
+         w = weights[i];
+         drdx = -w;
+         Fs += w * (sample_values[i] - NRs.X) * drdx;
+         dFs += drdx * drdx;
+      }
+
+      bool converged = true;
+      NRs.update(Fs, dFs);
+      if (std::abs(NRs.dX) >= tolerance)
+         converged = false;
+      if (converged) break;
+   }
+
+   return NRs.X;
+}
+
 /* -------------------------------------------------------------------------- */
 struct DispersionRelation {
    double w;

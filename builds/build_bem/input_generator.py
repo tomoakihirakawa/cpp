@@ -44,9 +44,6 @@ if platform.system() == "Linux":
 else:
     program_home = home + "/Dropbox/code/"
 
-rho = 1000.
-g = 9.81
-
 '''
 プログラムを回す際に面倒な事は，入力ファイルの設定．
 入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
@@ -95,7 +92,7 @@ match SimulationCase:
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.005,
+        setting = {"max_dt": 0.001,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,

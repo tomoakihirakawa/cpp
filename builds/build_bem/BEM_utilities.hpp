@@ -359,6 +359,11 @@ Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
    return gradTangential_LinearElement(F012, X012) + F_n;
 };
 
+Tddd grad_phi_tangential(const networkFace *const f) {
+   auto [p0, p1, p2] = f->getPoints();
+   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+};
+
 T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
    //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
    return {grad_LinearElement(std::get<0>(F012), X012, std::get<0>(F_n)),
@@ -376,51 +381,57 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
    return {n, s0, s1};
 };
 
+double getPhin(const networkPoint *p, const networkFace *f) {
+   auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
+   if (iter != p->phinOnFace.end())
+      return iter->second;
+   else
+      return p->phinOnFace.at(nullptr);
+};
+
 /* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT BEM
 
 ### 流速の計算
 
-ある三角要素$k\triangle$上の接線流速$\nabla \phi_{\parallel}$は，線形三角要素補間を使って次のように計算する．
+ある三角要素上の接線流速$\nabla \phi_{\parallel}$は，線形三角要素補間を使って次のように計算する．
 
 $$
 \nabla \phi_{\parallel} = \frac{\bf n}{2A} \times (({\bf x}_2 - {\bf x}_1) \phi_0 +({\bf x}_0 - {\bf x}_2) \phi_1 + ({\bf x}_1 - {\bf x}_0) \phi_2)
 $$
 
-三角要素$k\triangle$上の流速$\nabla \phi$は，次のように計算する．
+三角要素上の流速$\nabla \phi$は，次のように計算する．
 
 $$
-\nabla \phi = \frac{(\phi_n)_{k\triangle,0}+(\phi_n)_{k\triangle,1}+(\phi_n)_{k\triangle,2}}{3} {\bf n} + \nabla \phi_{\parallel}
+\nabla \phi = \frac{(\phi_n)_0+(\phi_n)_1+(\phi_n)_2}{3} {\bf n} + \nabla \phi_{\parallel}
 $$
 
 */
 
 Tddd gradPhi(const networkFace *const f) {
    double phi_n = 0;
-   for (auto &p : f->getPoints()) {
-      auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
-      if (iter != p->phinOnFace.end())
-         phi_n += iter->second;
-      else
-         phi_n += p->phinOnFace.at(nullptr);
-   }
-   phi_n /= 3.;
-   auto [p0, p1, p2] = f->getPoints();
-   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}}) + phi_n * f->normal;
+   for (const auto &p : f->getPoints())
+      phi_n += getPhin(p, f);
+   return grad_phi_tangential(f) + phi_n / 3. * f->normal;
 };
 
 Tddd gradPhi(const networkPoint *const p) {
-   Tddd u, grad;
-   grad.fill(0.);
+   Tddd u;
    V_Tddd V;
    V_d W;
    for (const auto &f : p->getFaces()) {
-      auto [p0, p1, p2] = f->getPoints(p);
-      u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-      u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
+
+      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+
       V.emplace_back(u);
+#if defined(use_angle_weigted_normal)
+      W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
+#elif defined(use_area_weigted_normal)
       W.push_back(f->area * (f->Dirichlet ? 10 : 1.));
+#else
+      W.push_back(f->Dirichlet ? 10 : 1.);
+#endif
    }
    return optimumVector(V, {0., 0., 0.}, W);
 };
@@ -521,45 +532,56 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    auto [P0, P1, P2] = F->getPoints();
    auto X012 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
 
-   // 接線方向微分
    auto [g0_s0, g0_s1, g0_s2] = Dot(basis, P0->U_BEM);
    auto [g1_s0, g1_s1, g1_s2] = Dot(basis, P1->U_BEM);
    auto [g2_s0, g2_s1, g2_s2] = Dot(basis, P2->U_BEM);
 
-   // ここで，{g0_s0,g1_s0,g2_s0}はphinに対応する．
+   // auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{getPhin(P0, F), getPhin(P1, F), getPhin(P2, F)}, X012);
 
-   // auto [g_s0s0, g_s0s1, g_s0s2] = Dot(basis, grad_g_s0);
-   auto phin = [&F](const auto &P) { return isNeumannID_BEM(P, F) ? P->phinOnFace.at(F) : P->phinOnFace.at(nullptr); };
-   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{phin(P0), phin(P1), phin(P2)}, X012);
+   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0}, X012);
+   auto [g_s1s0, g_s1s1, g_s1s2] = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012);
+   auto [g_s2s0, g_s2s1, g_s2s2] = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012);
 
-   auto [g_s1s0, g_s1s1, g_s1s2] = Dot(basis, gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012));
-   auto [g_s2s0, g_s2s1, g_s2s2] = Dot(basis, gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012));
+   // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
+   //                {g_s1s0, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
+   //                {g_s2s0, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 
-   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1, g_s0s2},
-                  {g_s0s1, g_s1s1, g_s1s2},
-                  {g_s0s2, g_s2s1, g_s2s2}}};
+   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
+                  {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
+                  {(g_s0s2 + g_s2s0) * 0.5, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 };
-
-// 最適化を入れる！？
-// どうやって最適化をいれるのか？
 
 double phint_Neumann(networkFace *F) {
    auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
    auto grad_phi = gradPhi(F);
    auto ret = Dot(Cross(Omega, F->normal), uNeumann(F) - grad_phi);
-   //
+   ret += Dot(F->normal, accelNeumann(F));
    auto basis = OrthogonalBasis(F->normal);
-   ret += Dot(F->normal, accelNeumann(F)) - Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+   ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
    return ret;
 };
 
 double phint_Neumann(const networkPoint *const p) {
-   double nUH = 0, Atot = 0;
+   double phint_acum = 0, W_acum = 0, w, phint;
+   V_d Phin, W;
    for (const auto &f : p->getFacesNeumann()) {
-      nUH += f->area * phint_Neumann(f);
-      Atot += f->area;
+#if defined(use_angle_weigted_normal)
+      w = f->getAngle(p);
+#elif defined(use_area_weigted_normal)
+      w = f->area;
+#else
+      w = 1.;
+#endif
+
+      phint = phint_Neumann(f);
+      phint_acum += w * phint;
+      W_acum += w;
+
+      Phin.push_back(phint);
+      W.push_back(w);
    }
-   return nUH / Atot;
+   // return phint_acum / W_acum;
+   return optimumValue(Phin, 0., W);
 };
 
 #endif
