@@ -46,10 +46,12 @@ def generate_summary_readme(readme_files):
 
 
 if __name__ == "__main__":
-    directories = ["./builds/build_sph",
-                   "./builds/build_bem",
-                   "./builds/build_ODE",
-                   "./builds/build_divide_merge"]
-    readme_files = [os.path.join(directory, "README.md")
-                    for directory in directories]
+    build_directories = os.listdir("./builds")
+    directories = [os.path.join("./builds", build_dir)
+                   for build_dir in build_directories]
+    readme_files = []
+    for directory in directories:
+        readme_file = os.path.join(directory, "README.md")
+        if os.path.exists(readme_file) and os.path.isfile(readme_file):
+            readme_files.append(readme_file)
     generate_summary_readme(readme_files)

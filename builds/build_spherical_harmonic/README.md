@@ -1,10 +1,10 @@
 # Contents
 
-    - [多重極展開(Multipole Expansion)](#多重極展開(Multipole-Expansion))
+- [多重極展開(Multipole Expansion)](#多重極展開(Multipole-Expansion))
 
 
 ---
-## 多重極展開(Multipole Expansion)
+# 多重極展開(Multipole Expansion)
 
 Green関数を次のようにする．
 
