@@ -83,9 +83,9 @@ def highlight_keywords(text: str) -> str:
         'CHECKED': (r'^CHECKED:?\s*', '✅'),
         'NOTIMPLEMENTED': (r'NOTIMPLEMENTED:?\s*', '☐'),
         'IMPLEMENTED': (r'IMPLEMENTED?\s*', '☑️'),
-        '###': (r'^###:?\s*', '### ⚓️'),
-        '##': (r'^## :?\s*', '## ⛵️'),
-        '#': (r'^# :?\s*', '# 🐋')
+        # '###': (r'^###:?\s*', '### ⚓️'),
+        # '##': (r'^## :?\s*', '## ⛵️'),
+        # '#': (r'^# :?\s*', '# 🐋')
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
