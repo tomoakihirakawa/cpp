@@ -1,35 +1,35 @@
 # Contents
 
-- [🐋 Boundary Element Method (BEM-MEL)](#🐋-Boundary-Element-Method-(BEM-MEL))
-    - [⛵️ 流速の計算方法](#⛵️-流速の計算方法)
-        - [⚓️ 修正流速](#⚓️-修正流速)
-    - [⛵️ 境界条件の設定の流れ](#⛵️-境界条件の設定の流れ)
-        - [⚓️ 多重節点](#⚓️-多重節点)
-    - [⛵️ 境界値問題](#⛵️-境界値問題)
-        - [⚓️ 基礎方程式](#⚓️-基礎方程式)
-        - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
-        - [⚓️ リジッドモードテクニック](#⚓️-リジッドモードテクニック)
-    - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
-        - [⚓️ ノイマン境界面における$`\phi _{nt}`$の求め方](#⚓️-ノイマン境界面における$`\phi-_{nt}`$の求め方)
-        - [⚓️ 流速の計算](#⚓️-流速の計算)
-        - [⚓️ 境界値問題の未知変数](#⚓️-境界値問題の未知変数)
-        - [⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#⚓️-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
-- [🐋 Input Generator for BEM Simulation](#🐋-Input-Generator-for-BEM-Simulation)
-    - [⛵️ Usage](#⛵️-Usage)
-    - [⛵️ Customization](#⛵️-Customization)
-    - [⛵️ Output](#⛵️-Output)
-    - [⛵️ BEM Simulation Code](#⛵️-BEM-Simulation-Code)
-        - [⚓️ Prerequisites](#⚓️-Prerequisites)
-        - [⚓️ Building the Code](#⚓️-Building-the-Code)
-        - [⚓️ Running the Simulation](#⚓️-Running-the-Simulation)
-        - [⚓️ Output](#⚓️-Output)
-        - [⚓️ 計算の流れ](#⚓️-計算の流れ)
+- [Boundary Element Method (BEM-MEL)](#Boundary-Element-Method-(BEM-MEL))
+    - [流速の計算方法](#流速の計算方法)
+        - [修正流速](#修正流速)
+    - [境界条件の設定の流れ](#境界条件の設定の流れ)
+        - [多重節点](#多重節点)
+    - [境界値問題](#境界値問題)
+        - [基礎方程式](#基礎方程式)
+        - [BIEの離散化](#BIEの離散化)
+        - [リジッドモードテクニック](#リジッドモードテクニック)
+    - [浮体動揺解析](#浮体動揺解析)
+        - [ノイマン境界面における$`\phi _{nt}`$の求め方](#ノイマン境界面における$`\phi-_{nt}`$の求め方)
+        - [流速の計算](#流速の計算)
+        - [境界値問題の未知変数](#境界値問題の未知変数)
+        - [$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
+- [Input Generator for BEM Simulation](#Input-Generator-for-BEM-Simulation)
+    - [Usage](#Usage)
+    - [Customization](#Customization)
+    - [Output](#Output)
+    - [BEM Simulation Code](#BEM-Simulation-Code)
+        - [Prerequisites](#Prerequisites)
+        - [Building the Code](#Building-the-Code)
+        - [Running the Simulation](#Running-the-Simulation)
+        - [Output](#Output)
+        - [計算の流れ](#計算の流れ)
 
 
 ---
 [![Banner](banner.png)](banner.png)
 
-# 🐋 Boundary Element Method (BEM-MEL)
+# Boundary Element Method (BEM-MEL)
 
 | 項目 | 詳細|
 |---:|:---|
@@ -42,13 +42,13 @@
 [./BEM.hpp#L1](./BEM.hpp#L1)
 
 
-## ⛵️ 流速の計算方法
+## 流速の計算方法
 
 
 [./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
 
 
-### ⚓️ 修正流速
+### 修正流速
 
 求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
 修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
@@ -63,7 +63,7 @@
 [./BEM_calculateVelocities.hpp#L334](./BEM_calculateVelocities.hpp#L334)
 
 
-## ⛵️ 境界条件の設定の流れ
+## 境界条件の設定の流れ
 
 1. 流体節点が接触する構造物面を保存
 - (接触した流体節点) → [構造物面]
@@ -82,7 +82,7 @@
 - (全ての面がDirichlet面を含む点) → [Dirichlet点]
 - (それ以外の点) → [CORNER]
 
-### ⚓️ 多重節点
+### 多重節点
 
 💡 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi _n`$を計算できるようにする
 
@@ -94,9 +94,9 @@
 [./BEM_setBoundaryConditions.hpp#L7](./BEM_setBoundaryConditions.hpp#L7)
 
 
-## ⛵️ 境界値問題
+## 境界値問題
 
-### ⚓️ 基礎方程式
+### 基礎方程式
 
 $$
 \begin{align}
@@ -129,7 +129,7 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
 
 
-### ⚓️ BIEの離散化
+### BIEの離散化
 
 BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
@@ -165,7 +165,7 @@ $$
 [./BEM_solveBVP.hpp#L256](./BEM_solveBVP.hpp#L256)
 
 
-### ⚓️ リジッドモードテクニック
+### リジッドモードテクニック
 
 全て$`\phi=1`$とすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，これを離散化すると，数値積分による評価が難しかった係数行列の対角成分がより精確に計算できる．
 これはリジッドモードテクニックと呼ばれている．
@@ -199,7 +199,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 [./BEM_solveBVP.hpp#L352](./BEM_solveBVP.hpp#L352)
 
 
-## ⛵️ 浮体動揺解析
+## 浮体動揺解析
 
 浮体の重心の運動方程式：
 
@@ -226,7 +226,7 @@ $$
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
-### ⚓️ ノイマン境界面における$`\phi _{nt}`$の求め方
+### ノイマン境界面における$`\phi _{nt}`$の求め方
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
 境界面上の位置ベクトルを$`\boldsymbol r`$とする．
@@ -298,7 +298,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 [./BEM_solveBVP.hpp#L607](./BEM_solveBVP.hpp#L607)
 
 
-### ⚓️ 流速の計算
+### 流速の計算
 
 ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
 
@@ -316,7 +316,7 @@ $$
 [./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
 
 
-### ⚓️ 境界値問題の未知変数
+### 境界値問題の未知変数
 
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
 多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
@@ -325,7 +325,7 @@ $$
 [./BEM_utilities.hpp#L441](./BEM_utilities.hpp#L441)
 
 
-### ⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．
+### $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．
 
 $`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
 面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
@@ -357,17 +357,17 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 [./BEM_utilities.hpp#L497](./BEM_utilities.hpp#L497)
 
 
-## ⛵️ BEM Simulation Code
+## BEM Simulation Code
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
-### ⚓️ Prerequisites
+### Prerequisites
 
 - CMake
 - LAPACK library
 - Python 3 for input generation
 
-### ⚓️ Building the Code
+### Building the Code
 
 1. Clean the build directory:
 
@@ -387,7 +387,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-### ⚓️ Running the Simulation
+### Running the Simulation
 
 1. Generate input files using the `input_generator.py` script:
 
@@ -401,7 +401,7 @@ python3 ./input_generator.py
 ./main ./input_files/Kramer2021_H00d03
 ```
 
-### ⚓️ Output
+### Output
 
 The simulation results will be stored in the specified output directory.
 
@@ -409,7 +409,7 @@ The simulation results will be stored in the specified output directory.
 [./main.cpp#L1](./main.cpp#L1)
 
 
-### ⚓️ 計算の流れ
+### 計算の流れ
 
 1. 境界条件の設定
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
@@ -423,11 +423,11 @@ The simulation results will be stored in the specified output directory.
 
 
 ---
-# 🐋 Input Generator for BEM Simulation
+# Input Generator for BEM Simulation
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 
-## ⛵️ Usage
+## Usage
 
 1. Make sure the required dependencies are installed.
 2. Run the script using the following command:
@@ -438,7 +438,7 @@ python3 input_generator.py
 
 Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
 
-## ⛵️ Customization
+## Customization
 
 To customize the input file generation for a specific case, follow these steps:
 
@@ -449,7 +449,7 @@ To customize the input file generation for a specific case, follow these steps:
 
 After customizing the script, run it again to generate the input files for the new case.
 
-## ⛵️ Output
+## Output
 
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
