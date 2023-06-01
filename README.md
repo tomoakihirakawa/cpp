@@ -24,37 +24,12 @@ This is a summary README.md file with links to other README.md files in this rep
 
 - [Contents](./builds/build_spherical_harmonic/README.md#Contents)
 - [多重極展開(Multipole Expansion)](./builds/build_spherical_harmonic/README.md#多重極展開(Multipole-Expansion))
-## [build_sph_before20221120](./builds/build_sph_before20221120/README.md)
-
-- [コンパイルのやり方](./builds/build_sph_before20221120/README.md#コンパイルのやり方)
-- [Fusion360でOBJファイルの作り方](./builds/build_sph_before20221120/README.md#Fusion360でOBJファイルの作り方)
-- [接触の確認](./builds/build_sph_before20221120/README.md#接触の確認)
 ## [build_divide_merge](./builds/build_divide_merge/README.md)
 
 - [Contents](./builds/build_divide_merge/README.md#Contents)
 - [メッシュの細分化](./builds/build_divide_merge/README.md#メッシュの細分化)
-## [build_bem_back20221206](./builds/build_bem_back20221206/README.md)
-
-- [コンパイルのやり方](./builds/build_bem_back20221206/README.md#コンパイルのやり方)
-- [settingBEM.py](./builds/build_bem_back20221206/README.md#settingBEM.py)
-- [RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える](./builds/build_bem_back20221206/README.md#RKのtime-step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える)
-- [remesh（再配置）の条件](./builds/build_bem_back20221206/README.md#remesh（再配置）の条件)
-    - [flip,divide,mergeに共通する条件](./builds/build_bem_back20221206/README.md#flip,divide,mergeに共通する条件)
-    - [flipの条件](./builds/build_bem_back20221206/README.md#flipの条件)
-    - [divideの条件](./builds/build_bem_back20221206/README.md#divideの条件)
-    - [mergeの条件](./builds/build_bem_back20221206/README.md#mergeの条件)
 ## [build_JSON](./builds/build_JSON/README.md)
 
-## [build_bem_back20221207](./builds/build_bem_back20221207/README.md)
-
-- [コンパイルのやり方](./builds/build_bem_back20221207/README.md#コンパイルのやり方)
-- [settingBEM.py](./builds/build_bem_back20221207/README.md#settingBEM.py)
-- [RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える](./builds/build_bem_back20221207/README.md#RKのtime-step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える)
-- [remesh（再配置）の条件](./builds/build_bem_back20221207/README.md#remesh（再配置）の条件)
-    - [flip,divide,mergeに共通する条件](./builds/build_bem_back20221207/README.md#flip,divide,mergeに共通する条件)
-    - [flipの条件](./builds/build_bem_back20221207/README.md#flipの条件)
-    - [divideの条件](./builds/build_bem_back20221207/README.md#divideの条件)
-    - [mergeの条件](./builds/build_bem_back20221207/README.md#mergeの条件)
 ## [build_bem](./builds/build_bem/README.md)
 
 - [Contents](./builds/build_bem/README.md#Contents)
