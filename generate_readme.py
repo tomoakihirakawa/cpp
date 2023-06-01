@@ -21,14 +21,14 @@ def generate_contents_table(readme: str, headers_info: List[Tuple[str, int]], nu
     for header, line_num in headers_info:
         if header.startswith("# "):
             prefix = f"{curr_section}. " if numbered else "- "
-            added = f"{prefix}[{header[2:]}](#{readme}#L{line_num})\n"
+            added = f"{prefix}[{header[2:]}]({readme}#{header[2:].replace(' ', '-')})\n"
             contents_table += added
             curr_section += 1
             curr_subsection = 0
         elif header.startswith("## "):
             curr_subsection += 1
             prefix = f"    {curr_section - 1}.{curr_subsection}. " if numbered else "    - "
-            added = f"{prefix}[{header[3:]}](#{readme}#L{line_num})\n"
+            added = f"{prefix}[{header[3:]}]({readme}#{header[3:].replace(' ', '-')})\n"
             contents_table += added
     return contents_table
 
