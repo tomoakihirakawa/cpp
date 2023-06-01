@@ -1,10 +1,10 @@
 # set output format
-set terminal pngcairo enhanced font "Times-New-Roman,10" size 600,400 
+set terminal pngcairo enhanced font "Times-New-Roman,10" size 400,400 
 
 # set labels
 set xlabel "x" font "Times-New-Roman:Italic,15"
 set ylabel "y" font "Times-New-Roman:Italic,15"
-set title "Error of \|G_{approx}(x,a) - G(x,a)\|" font "Times-New-Roman,15"
+set title "Error of \log_{10}(\|G_{approx}(x,a) - G\|)" font "Times-New-Roman,15"
 
 # enable contouring
 set pm3d

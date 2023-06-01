@@ -885,7 +885,6 @@ inline Tddd networkPoint::getNormalDirichlet_BEM() const {
 };
 
 inline Tddd networkPoint::getNormalNeumann_BEM() const {
-   //@ これはEMTに使うので，やはりAngle Averagedがいい
 #if defined(use_angle_weigted_normal)
    return getNormalNeumannAngleAveraged();
 #elif defined(use_subarea_weigted_normal)

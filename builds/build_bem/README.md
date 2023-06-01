@@ -8,6 +8,7 @@
     - [⛵️ 境界値問題](#⛵️-境界値問題)
         - [⚓️ 基礎方程式](#⚓️-基礎方程式)
         - [⚓️ BIEの離散化](#⚓️-BIEの離散化)
+        - [⚓️ リジッドモードテクニック](#⚓️-リジッドモードテクニック)
     - [⛵️ 浮体動揺解析](#⛵️-浮体動揺解析)
         - [⚓️ ノイマン境界面における$`\phi _{nt}`$の求め方](#⚓️-ノイマン境界面における$`\phi-_{nt}`$の求め方)
         - [⚓️ 流速の計算](#⚓️-流速の計算)
@@ -133,11 +134,10 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 $$
-\alpha _{i _\circ}(\phi) _{i _\circ}=-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }
-$$
-
-$$
--\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{{\bf x} _{i _\circ}} - {\bf{x}}\left( \pmb{\xi } \right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\begin{align*}
+\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=\\
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\end{align*}
 $$
 
 
@@ -162,7 +162,17 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L257](./BEM_solveBVP.hpp#L257)
+[./BEM_solveBVP.hpp#L256](./BEM_solveBVP.hpp#L256)
+
+
+### ⚓️ リジッドモードテクニック
+
+全て$`\phi=1`$とすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，これを離散化すると，数値積分による評価が難しかった係数行列の対角成分がより精確に計算できる．
+これはリジッドモードテクニックと呼ばれている．
+$`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
+
+
+[./BEM_solveBVP.hpp#L310](./BEM_solveBVP.hpp#L310)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -186,7 +196,7 @@ $`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmat
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L343](./BEM_solveBVP.hpp#L343)
+[./BEM_solveBVP.hpp#L352](./BEM_solveBVP.hpp#L352)
 
 
 ## ⛵️ 浮体動揺解析
@@ -265,10 +275,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L633)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L642)で与えている．
 
 
-[./BEM_solveBVP.hpp#L516](./BEM_solveBVP.hpp#L516)
+[./BEM_solveBVP.hpp#L525](./BEM_solveBVP.hpp#L525)
 
 
 $$
@@ -279,31 +289,31 @@ $$
 \end{bmatrix}
 $$
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L519)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L530)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L598](./BEM_solveBVP.hpp#L598)
+[./BEM_solveBVP.hpp#L607](./BEM_solveBVP.hpp#L607)
 
 
 ### ⚓️ 流速の計算
 
-ある三角要素$`k\triangle`$上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
+ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
 
 $$
-(\nabla \phi _{\parallel}) _{k\triangle} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
+\nabla \phi _{\parallel} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
 $$
 
-三角要素$`k\triangle`$上の流速$`\nabla \phi`$は，次のように計算する．
+三角要素上の流速$`\nabla \phi`$は，次のように計算する．
 
 $$
-(\nabla \phi) _{k\triangle} = \frac{(\phi _n) _{k\triangle,0}+(\phi _n) _{k\triangle,1}+(\phi _n) _{k\triangle,2}}{3} {\bf n} + \nabla \phi _{\parallel}
+\nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
 $$
 
 
-[./BEM_utilities.hpp#L381](./BEM_utilities.hpp#L381)
+[./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
 
 
 ### ⚓️ 境界値問題の未知変数
@@ -312,7 +322,7 @@ $$
 多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L430](./BEM_utilities.hpp#L430)
+[./BEM_utilities.hpp#L441](./BEM_utilities.hpp#L441)
 
 
 ### ⚓️ $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．
@@ -344,7 +354,7 @@ $$
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L486](./BEM_utilities.hpp#L486)
+[./BEM_utilities.hpp#L497](./BEM_utilities.hpp#L497)
 
 
 ## ⛵️ BEM Simulation Code
@@ -456,7 +466,7 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-[./input_generator.py#L50](./input_generator.py#L50)
+[./input_generator.py#L47](./input_generator.py#L47)
 
 
 ---
