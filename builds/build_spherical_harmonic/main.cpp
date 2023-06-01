@@ -28,7 +28,7 @@ std::complex<double> G(const std::array<double, 3>& X_near, const std::array<dou
 
 /*DOC_EXTRACT BEM
 
-## 多重極展開(Multipole Expansion)
+# 多重極展開(Multipole Expansion)
 
 Green関数を次のようにする．
 
