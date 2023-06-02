@@ -37,6 +37,7 @@
     - [⛵️境界条件の設定の流れ](./builds/build_bem/README.md#⛵️境界条件の設定の流れ)
     - [⛵️境界値問題](./builds/build_bem/README.md#⛵️境界値問題)
     - [⛵️浮体動揺解析](./builds/build_bem/README.md#⛵️浮体動揺解析)
+    - [⛵️初期値問題](./builds/build_bem/README.md#⛵️初期値問題)
 - [🐋入力ファイル生成 `input_generator.py`](./builds/build_bem/README.md#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](./builds/build_bem/README.md#⛵️Usage)
     - [⛵️Customization](./builds/build_bem/README.md#⛵️Customization)

@@ -393,7 +393,15 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 /*DOC_EXTRACT BEM
 
-### 流速の計算
+## 初期値問題
+
+節点の位置と速度ポテンシャル$\phi$に関する初期値問題を解いて行くことが，シミュレーションである．
+言い換えると，節点位置$\frac{d\bf x}{dt}$と速度ポテンシャル$\frac{d\phi}{dt}$を少しずつ$\Delta t$ずつ時間積分することが，シミュレーションである．
+ちなみに，$\frac{d\bf x}{dt}$や$\frac{d\phi}{dt}$を計算するには，境界値問題を解く必要がある．
+
+ある時刻において，境界値問題が解けたら，$\frac{d\bf x}{dt}$と$\frac{d\phi}{dt}$はどのように計算できるだろうか．
+
+### 流速$\frac{d\bf x}{dt}$の計算
 
 ある三角要素上の接線流速$\nabla \phi_{\parallel}$は，線形三角要素補間を使って次のように計算する．
 
@@ -406,6 +414,18 @@ $$
 $$
 \nabla \phi = \frac{(\phi_n)_0+(\phi_n)_1+(\phi_n)_2}{3} {\bf n} + \nabla \phi_{\parallel}
 $$
+
+### 速度ポテンシャル$\frac{d\phi}{dt}$の計算
+
+NOTE: $\phi=\phi(t,{\bf x})$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$\frac{d \phi}{d t}$は，$\frac{\partial \phi}{\partial t}$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$\phi=\phi(t,{\bf x}(t))$と一時的に考えなおし，そして，時間微分する．そうすると$\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi$となる．
+
+ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$\frac{D \phi}{D t}$は，次のように計算できる．
+
+$$
+\frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
+$$
+
+ここの$\frac{\partial \phi}{\partial t}$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$\frac{\partial \phi}{\partial t}$を消去する．
 
 */
 
