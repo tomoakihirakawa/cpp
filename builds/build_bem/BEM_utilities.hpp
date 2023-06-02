@@ -415,7 +415,7 @@ $$
 \nabla \phi = \frac{(\phi_n)_0+(\phi_n)_1+(\phi_n)_2}{3} {\bf n} + \nabla \phi_{\parallel}
 $$
 
-### 速度ポテンシャル$\frac{d\phi}{dt}$の計算
+### $\frac{d\phi}{dt}$の計算
 
 ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$\frac{D \phi}{D t}$は，次のように計算できる．
 

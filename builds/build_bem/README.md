@@ -14,7 +14,7 @@
         - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
     - [⛵️初期値問題](#⛵️初期値問題)
         - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
-        - [🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算](#🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算)
+        - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
         - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
@@ -336,7 +336,7 @@ $$
 \nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
 $$
 
-### 🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算 
+### 🪸$`\frac{d\phi}{dt}`$の計算 
 
 ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
 
