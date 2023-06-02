@@ -1,13 +1,14 @@
 # Contents
 
-- [🐋線形連立一次方程式の解法](#🐋線形連立一次方程式の解法)
+- [🐋連立一次方程式の解法](#🐋連立一次方程式の解法)
     - [⛵️一般化最小残差法(GMRES)](#⛵️一般化最小残差法(GMRES))
         - [🪸実行方法](#🪸実行方法)
+    - [⛵️LU分解(LAPACK)](#⛵️LU分解(LAPACK))
     - [⛵️Compressed Sparse Row (CSR)](#⛵️Compressed-Sparse-Row-(CSR))
 
 
 ---
-# 🐋線形連立一次方程式の解法 
+# 🐋連立一次方程式の解法 
 
 ## ⛵️一般化最小残差法(GMRES) 
 
@@ -24,6 +25,12 @@ ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessク
 
 
 [./test0_GMRES.cpp#L1](./test0_GMRES.cpp#L1)
+
+
+## ⛵️LU分解(LAPACK)
+
+
+[./test0_LAPACK.cpp#L1](./test0_LAPACK.cpp#L1)
 
 
 EigenのGMRESを使った結果と比較．
