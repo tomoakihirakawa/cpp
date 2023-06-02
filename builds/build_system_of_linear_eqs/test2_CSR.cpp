@@ -1,4 +1,4 @@
-/*DOC_EXTRACT CSR
+/*DOC_EXTRACT solve_linear_systems1
 
 ## Compressed Sparse Row (CSR)
 

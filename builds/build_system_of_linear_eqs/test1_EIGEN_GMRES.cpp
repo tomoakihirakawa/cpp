@@ -1,8 +1,13 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include <iostream>
-//
 #include "EIGEN_GMRES.hpp"
+
+/*DOC_EXTRACT solve_linear_systems0
+
+EigenのGMRESを使った結果と比較．
+
+*/
 
 int main() {
    // Define a 4x4 matrix

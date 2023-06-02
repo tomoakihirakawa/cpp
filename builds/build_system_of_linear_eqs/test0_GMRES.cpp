@@ -1,4 +1,7 @@
-/*DOC_EXTRACT solve_linear_systems
+/*DOC_EXTRACT solve_linear_systems0
+
+# 線形連立一次方程式の解法
+
 ## 一般化最小残差法(GMRES)
 
 - ヘッセンベルグ行列$H$
