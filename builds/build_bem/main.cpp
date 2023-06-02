@@ -1,6 +1,6 @@
 /*DOC_EXTRACT BEM_HOW_TO_USE
 
-# 使い方
+# コンパイルと計算の実行方法
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
