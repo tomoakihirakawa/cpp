@@ -93,7 +93,7 @@ match SimulationCase:
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.001,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,
