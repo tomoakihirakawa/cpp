@@ -1,10 +1,10 @@
 /*DOC_EXTRACT BEM
 
-## BEM Simulation Code
+# BEM Simulation Code
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
-### Prerequisites
+## Prerequisites
 
 - CMake
 - LAPACK library
@@ -30,7 +30,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-### Running the Simulation
+## Running the Simulation
 
 1. Generate input files using the `input_generator.py` script:
 
@@ -44,7 +44,7 @@ python3 ./input_generator.py
 ./main ./input_files/Kramer2021_H00d03
 ```
 
-### Output
+## Output
 
 The simulation results will be stored in the specified output directory.
 
