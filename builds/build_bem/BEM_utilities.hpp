@@ -654,9 +654,9 @@ $$
 
 よって，
 
-$$
+```math
 \iiint_\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint_\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-$$
+```
 
 ---
 

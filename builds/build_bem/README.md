@@ -441,9 +441,9 @@ $$
 
 よって，
 
-$$
+```math
 \iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-$$
+```
 
 ---
 
