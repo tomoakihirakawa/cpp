@@ -18,6 +18,7 @@
     - [⛵️その他](#⛵️その他)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
         - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
+    - [⛵️エネルギー保存則](#⛵️エネルギー保存則)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](#⛵️Usage)
     - [⛵️Customization](#⛵️Customization)
@@ -401,6 +402,64 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 
 [./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
+
+
+## ⛵️エネルギー保存則 
+
+流体全体のエネルギーは，
+ラプラス方程式と発散定理を使うと，
+次のように境界面に沿った積分で表される．
+
+$$
+E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+また，流体の位置エネルギーは，次のように表される．
+
+$$
+E _P = \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
+$$
+
+
+<details>
+
+---
+
+<summary>
+💡 なぜか？
+</summary>
+
+テンソルを使って考えてみると
+
+$$
+\begin{align*}
+\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x _i} \frac{\partial\phi}{\partial x _i} + \phi \frac{\partial^2\phi}{\partial x _i \partial x _i}\\
+&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
+&= \nabla \phi \cdot \nabla \phi
+\end{align*}
+$$
+
+よって，
+
+$$
+\iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+---
+
+$$
+E _P = \rho g \iiint _\Omega (z - z _0) \Omega
+= \rho g \iiint _\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z _0)^2) d\Omega
+= \rho g \iint _\Gamma \frac{1}{2} (0,0,(z - z _0)^2) \cdot {\bf n} d\Gamma
+= \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
+$$
+
+---
+
+</details>
+
+
+[./BEM_utilities.hpp#L618](./BEM_utilities.hpp#L618)
 
 
 ### 🪸計算の流れ 
