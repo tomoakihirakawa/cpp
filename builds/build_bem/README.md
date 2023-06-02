@@ -18,11 +18,11 @@
     - [Usage](#Usage)
     - [Customization](#Customization)
     - [Output](#Output)
-    - [BEM Simulation Code](#BEM-Simulation-Code)
-        - [Prerequisites](#Prerequisites)
+- [BEM Simulation Code](#BEM-Simulation-Code)
+    - [Prerequisites](#Prerequisites)
         - [Building the Code](#Building-the-Code)
-        - [Running the Simulation](#Running-the-Simulation)
-        - [Output](#Output)
+    - [Running the Simulation](#Running-the-Simulation)
+    - [Output](#Output)
         - [計算の流れ](#計算の流れ)
 
 
@@ -357,11 +357,11 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 [./BEM_utilities.hpp#L497](./BEM_utilities.hpp#L497)
 
 
-## BEM Simulation Code
+# BEM Simulation Code
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
-### Prerequisites
+## Prerequisites
 
 - CMake
 - LAPACK library
@@ -387,7 +387,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-### Running the Simulation
+## Running the Simulation
 
 1. Generate input files using the `input_generator.py` script:
 
@@ -401,7 +401,7 @@ python3 ./input_generator.py
 ./main ./input_files/Kramer2021_H00d03
 ```
 
-### Output
+## Output
 
 The simulation results will be stored in the specified output directory.
 
