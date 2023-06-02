@@ -1,4 +1,4 @@
-/*DOC_EXTRACT BEM_HOW_TO_USE
+/*DOC_EXTRACT HOW_TO_RUN
 
 # コンパイルと計算の実行方法
 

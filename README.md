@@ -31,7 +31,7 @@
 ## [build_bem](./builds/build_bem/README.md)
 
 - [Contents](./builds/build_bem/README.md#Contents)
-- [Boundary Element Method (BEM-MEL)](./builds/build_bem/README.md#Boundary-Element-Method-(BEM-MEL))
+- [BEM-MEL](./builds/build_bem/README.md#BEM-MEL)
     - [流速の計算方法](./builds/build_bem/README.md#流速の計算方法)
     - [境界条件の設定の流れ](./builds/build_bem/README.md#境界条件の設定の流れ)
     - [境界値問題](./builds/build_bem/README.md#境界値問題)
