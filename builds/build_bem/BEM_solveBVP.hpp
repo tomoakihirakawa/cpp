@@ -26,7 +26,21 @@ $\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}
 また，$\phi_n$は境界面上での外向き法線方向の流速を表し，
 境界面上の外向き単位法線ベクトル$\bf n$を使えば$\phi_n ={\nabla\phi}\cdot {\bf n}$で表される．
 
-ラプラス方程式とグリーンの定理を合わせると，$\phi$と$\phi_n$に関するBIEが得られる．
+### 境界積分方程式（BIE）
+
+**グリーンの定理**
+
+任意の$\phi$，$G$に対して次が成り立つ．
+
+$$
+\iiint_\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
+= \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+$$
+
+
+
+$\phi$がラプラス方程式$\nabla^2\phi=0$を満たし，$G=1/\|{\bf x}-{\bf a}\|$とすると，
+グリーンの定理から$\phi$と$\phi_n$の関係式，BIEが得られる．
 
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}

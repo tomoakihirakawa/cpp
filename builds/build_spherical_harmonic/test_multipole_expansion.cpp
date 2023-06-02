@@ -1,95 +1,130 @@
 #include <array>
 #include <cmath>
 #include <complex>
-#include <fstream>
 #include <iostream>
 #include "basic_arithmetic_array_operations.hpp"
 
-// Compute the factorial of a given number
-int factorial(int n) {
+// Compute the factorial of a_near given number
+constexpr int factorial(const int n) {
+   if (n < 0)
+      throw std::runtime_error("factorial of negative number");
    if (n == 0 || n == 1)
       return 1;
    return n * factorial(n - 1);
 }
 
-// Compute the spherical harmonic function sph(k, m, theta, phi)
-std::complex<double> Y(int k, int m, double theta, double phi) {
+// Compute the spherical harmonic function sph(k, m, a_far, b_far)
+constexpr std::complex<double> Y(const int k, const int m, const double a_far, const double b_far) {
    if (k < 0 || abs(m) > k) {
       return std::complex<double>(0.0, 0.0);
    }
-
-   double assocLegendre = std::sqrt(static_cast<double>(factorial(k - abs(m))) / (factorial(k + abs(m)))) * std::pow(-1., m) * std::assoc_legendre(k, abs(m), std::cos(theta));
-   double realPart = assocLegendre * std::cos(m * phi);
-   double imagPart = -assocLegendre * std::sin(m * phi);
-
+   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - abs(m)) / factorial(k + abs(m)))) * std::pow(-1, m) * std::assoc_legendre(k, abs(m), std::cos(a_far));
+   const double realPart = assocLegendre * std::cos(m * b_far);
+   const double imagPart = -assocLegendre * std::sin(m * b_far);
    return std::complex<double>(realPart, imagPart);
 }
 
-std::complex<double> G(const std::array<double, 3>& x0y0z0, const std::array<double, 3>& x1y1z1) { return 1 / Norm(x0y0z0 - x1y1z1); }
+std::complex<double> G(const std::array<double, 3>& X_near, const std::array<double, 3>& X_far) { return 1 / Norm(X_near - X_far); }
+
+/*DOC_EXTRACT BEM
+
+# 多重極展開(Multipole Expansion)
+
+Green関数を次のようにする．
+
+$$
+G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|}
+$$
+
+近似解 $G_{approx}({\bf x- \bf c},{\bf a - \bf c})$ を以下の式で定義する：
+
+$$
+G_{approx}(n, {\bf x- \bf c},{\bf a - \bf c}) \approx \sum_{k=0}^{n} \sum_{m=-k}^{k} \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})
+$$
+
+$$
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}}(-1)^m P_k^{|m|}(\cos(a)) \left(\cos(m b) - i \sin(m b)\right)
+$$
+
+ここで，
+
+- $Y(k, m, a, b)$ は球面調和関数
+- $r_{near}$ と $r_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ のノルム
+- $a_{near}$, $b_{near}$, $a_{far}$, $b_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ の球面座標
+
+${\bf c}=(x,y,0)$を変化させてプロットした結果：
+
+| | **n=3** | **n=6** | **n=9** |
+|:----:|:---:|:---:|:---:|
+| **$`{\bf x} = (0,0,0),{\bf a} = (5,5,5)`$** | ![n3_A_5_5_5](./output_n3_A_5_5_5.png) | ![n6_A_5_5_5](./output_n6_A_5_5_5.png) | ![n9_A_5_5_5](./output_n9_A_5_5_5.png) |
+| **$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$** | ![n3_A_10_10_10](./output_n3_A_10_10_10.png) | ![n6_A_10_10_10](./output_n6_A_10_10_10.png) | ![n9_A_10_10_10](./output_n9_A_10_10_10.png) |
+
+この結果からわかるように，Green関数の実際の値は，${\bf c}$によって変わらないが，$G_{approx}$の値は${\bf c}$によって変化し，
+${\bf c}$が${\bf x}$に近いところでは，$G_{approx}$の値は$G$の値に近づく．
+
+$a_{near},b_{near}$は，より小さければ精度が良く，
+また，$a_{far},b_{far}$は，より大きければ精度が良くなる．
+
+*/
+
+std::array<double, 3> ToSphericalCoordinates(const std::array<double, 3>& X) {
+   return {Norm(X),
+           std::atan2(std::sqrt(std::get<0>(X) * std::get<0>(X) + std::get<1>(X) * std::get<1>(X)), std::get<2>(X)),
+           std::atan2(std::get<1>(X), std::get<0>(X))};
+};
 
 std::complex<double> G_approx(unsigned p,
-                              const std::array<double, 3>& x0y0z0,
-                              const std::array<double, 3>& x1y1z1) {
-   auto [x0, y0, z0] = x0y0z0;
-   auto [x1, y1, z1] = x1y1z1;
-   //
-   auto r0 = Norm(x0y0z0);
-   auto a = std::atan2(sqrt(x0 * x0 + y0 * y0), z0);
-   auto b = std::atan2(y0, x0);
-   //
-   auto r1 = Norm(x1y1z1);
-   auto theta = std::atan2(sqrt(x1 * x1 + y1 * y1), z1);
-   auto phi = std::atan2(y1, x1);
+                              const std::array<double, 3>& X_near,
+                              const std::array<double, 3>& X_far) {
+   auto [r_near, a_near, b_near] = ToSphericalCoordinates(X_near);
+   auto [r_far, a_far, b_far] = ToSphericalCoordinates(X_far);
 
-   auto inv_r = 1. / r1;
-   auto r0_inv_r = r0 * inv_r;
+   auto r_far_inv_r = 1. / r_far;
+   auto r_near_inv_r = r_near * r_far_inv_r;
    std::complex<double> accum = 0;
    for (int k = 0; k <= p; ++k)
       for (int m = -k; m <= k; ++m)
-         accum += std::pow(r0_inv_r, k) * inv_r * Y(k, -m, a, b) * Y(k, m, theta, phi);
+         accum += std::pow(r_near_inv_r, k) * r_far_inv_r * Y(k, -m, a_near, b_near) * Y(k, m, a_far, b_far);
    return accum;
 }
 
+// int main() {
+//    std::array<double, 3> X_near = {1, 1, 0};
+//    std::array<double, 3> X_far = {100, 100, 100};
+//    std::cout << "  G  ,   G_approx " << std::endl;
+//    for (int i = 1; i < 40; i++) {
+//       std::cout << G(X_near, X_far) << " , " << G_approx(i, X_near, X_far) << "\n";
+//    }
+// }
+
 int main() {
+   std::array<double, 3> A = {5, 5, 5};
+   std::array<double, 3> X = {0, 0, 0};
 
-   std::array<double, 3> A = {0, 0, 0};
-   std::array<double, 3> V0 = {0, 0, 0};
-   std::array<double, 3> V1 = {100, 100, 100};
-   std::array<double, 3> x0y0z0 = V0 + A;
-   std::array<double, 3> x1y1z1 = V1 + A;
-
-   // Open a file to output the data
-   std::ofstream dataFile("fmm_error_data.dat");
-
-   // Write headers for the data file
-   dataFile << "# Order Error" << std::endl;
-
-   // Calculate the exact potential
-   auto exact_potential = G(x0y0z0, x1y1z1);
-
-   for (int i = 1; i < 100; i++) {
-      // Calculate the approximated potential
-      auto approx_potential = G_approx(i, x0y0z0, x1y1z1);
-
-      // Calculate the error between the exact potential and the approximated potential
-      double error = std::abs(exact_potential - approx_potential);
-      std::cout << "Order: " << i << " Error: " << error << std::endl;
-
-      // Write the data to the file
-      dataFile << i << " " << error << std::endl;
+   for (double x = -20.0; x <= 20.0; x += .1) {
+      for (double y = -20.0; y <= 20.0; y += .1) {
+         double z = 0;
+         std::array<double, 3> center = {x, y, z};
+         auto error = std::log(std::abs(G(X - center, A - center) - G_approx(9, X - center, A - center)));
+         std::cout << x << " " << y << " " << 0 << " " << error << "\n";
+      }
+      std::cout << "\n";
    }
-
-   // Close the data file
-   dataFile.close();
-
-   // Create a Gnuplot script file
-   std::ofstream scriptFile("fmm_error_plot.gp");
-   scriptFile << "set xlabel 'Expansion Order'\n";
-   scriptFile << "set ylabel 'Error'\n";
-   scriptFile << "set logscale y\n";
-   scriptFile << "set title 'FMM Potential Approximation Error'\n";
-   scriptFile << "plot 'fmm_error_data.dat' using 1:2 with linespoints title 'Error'\n";
-   scriptFile.close();
-
-   return 0;
 }
+
+/*DOC_EXTRACT BEM
+
+## 境界要素法への応用
+
+境界要素法で最も計算時間を要するのは，連立１次方程式の**係数行列の作成**と**それを解く**ことである．
+
+反復法を使えば，方程式を早く解けそうだが，実際そこまで速く解けない．
+その理由は，BEMの係数行列が密行列であるために，反復法で最も時間を要する行列-ベクトル積の時間が短縮できないためである．
+ナイーブなBEMでは，反復解法の利点を十分に活かせない．
+
+しかし，
+多重極展開を使えば，
+**BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
+反復解法を高速に実行できる．**
+
+*/
