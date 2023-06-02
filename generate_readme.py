@@ -35,9 +35,7 @@ def generate_contents_table(readme: str, headers_info: List[Tuple[str, int]], nu
 
 def generate_summary_readme(readme_files):
     with open("README.md", "w") as f:
-        f.write("# Summary README\n\n")
-        f.write(
-            "This is a summary README.md file with links to other README.md files in this repository.\n\n")
+        f.write("# Contents\n\n")
 
         for readme in readme_files:
             headers_info = parse_headers(readme)

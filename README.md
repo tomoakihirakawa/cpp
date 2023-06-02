@@ -1,6 +1,4 @@
-# Summary README
-
-This is a summary README.md file with links to other README.md files in this repository.
+# Contents
 
 ## [build_ODE](./builds/build_ODE/README.md)
 
@@ -38,11 +36,12 @@ This is a summary README.md file with links to other README.md files in this rep
     - [境界条件の設定の流れ](./builds/build_bem/README.md#境界条件の設定の流れ)
     - [境界値問題](./builds/build_bem/README.md#境界値問題)
     - [浮体動揺解析](./builds/build_bem/README.md#浮体動揺解析)
-- [BEM Simulation Code](./builds/build_bem/README.md#BEM-Simulation-Code)
-    - [Prerequisites](./builds/build_bem/README.md#Prerequisites)
-    - [Running the Simulation](./builds/build_bem/README.md#Running-the-Simulation)
-    - [Output](./builds/build_bem/README.md#Output)
-- [Input Generator for BEM Simulation](./builds/build_bem/README.md#Input-Generator-for-BEM-Simulation)
+    - [Input Generator for BEM Simulation](./builds/build_bem/README.md#Input-Generator-for-BEM-Simulation)
     - [Usage](./builds/build_bem/README.md#Usage)
     - [Customization](./builds/build_bem/README.md#Customization)
+    - [Output](./builds/build_bem/README.md#Output)
+- [使い方](./builds/build_bem/README.md#使い方)
+    - [Prerequisites](./builds/build_bem/README.md#Prerequisites)
+    - [Building the Code](./builds/build_bem/README.md#Building-the-Code)
+    - [Running the Simulation](./builds/build_bem/README.md#Running-the-Simulation)
     - [Output](./builds/build_bem/README.md#Output)
