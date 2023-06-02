@@ -117,7 +117,7 @@ $`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial
 
 **グリーンの定理**
 
-任意の$`\phi`$，$`G`$に対して次が成り立つ．
+任意の$`\phi`$，$`G`$に対して次が成り立つ（**グリーンの定理**）．
 
 $$
 \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
