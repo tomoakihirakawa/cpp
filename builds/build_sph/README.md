@@ -1,34 +1,34 @@
 # Contents
 
-- [&#128011;Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](#&#128011;Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
-    - [&#129422;概要](#&#129422;概要)
-        - [&#129408;前準備](#&#129408;前準備)
-        - [&#129408;フラクショナルステップを使って初期値問題を解く](#&#129408;フラクショナルステップを使って初期値問題を解く)
-        - [&#129408;CFL条件の設定](#&#129408;CFL条件の設定)
-        - [&#129408;法線方向の計算と水面の判定](#&#129408;法線方向の計算と水面の判定)
-        - [&#129408;壁面粒子の流速と圧力](#&#129408;壁面粒子の流速と圧力)
-        - [&#129408;$`\nabla^2 {\bf u} _i`$の計算](#&#129408;$`\nabla^2-{\bf-u}-_i`$の計算)
-        - [&#129408;圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#&#129408;圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
-        - [&#129408;圧力を決定するための方程式を作成](#&#129408;圧力を決定するための方程式を作成)
-        - [&#129408;圧力の安定化](#&#129408;圧力の安定化)
-        - [&#129408;圧力勾配$`\nabla p^{n+1}`$の計算](#&#129408;圧力勾配$`\nabla-p^{n+1}`$の計算)
-    - [&#129422;注意点](#&#129422;注意点)
-    - [&#129422;Bucketを用いた粒子探索のテスト](#&#129422;Bucketを用いた粒子探索のテスト)
-    - [&#129422;核関数](#&#129422;核関数)
+- [🐋Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](#🐋Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
+    - [⛵️概要](#⛵️概要)
+        - [🪸前準備](#🪸前準備)
+        - [🪸フラクショナルステップを使って初期値問題を解く](#🪸フラクショナルステップを使って初期値問題を解く)
+        - [🪸CFL条件の設定](#🪸CFL条件の設定)
+        - [🪸法線方向の計算と水面の判定](#🪸法線方向の計算と水面の判定)
+        - [🪸壁面粒子の流速と圧力](#🪸壁面粒子の流速と圧力)
+        - [🪸$`\nabla^2 {\bf u} _i`$の計算](#🪸$`\nabla^2-{\bf-u}-_i`$の計算)
+        - [🪸圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算](#🪸圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2-p^{n+1}`$における$`p^{n+1}`$の係数の計算)
+        - [🪸圧力を決定するための方程式を作成](#🪸圧力を決定するための方程式を作成)
+        - [🪸圧力の安定化](#🪸圧力の安定化)
+        - [🪸圧力勾配$`\nabla p^{n+1}`$の計算](#🪸圧力勾配$`\nabla-p^{n+1}`$の計算)
+    - [⛵️注意点](#⛵️注意点)
+    - [⛵️Bucketを用いた粒子探索のテスト](#⛵️Bucketを用いた粒子探索のテスト)
+    - [⛵️核関数](#⛵️核関数)
 
 
 ---
 [![Banner](banner.png)](banner.png)
 
-# &#128011;Smoothed Particle Hydrodynamics (SPH) ISPH EISPH 
+# 🐋Smoothed Particle Hydrodynamics (SPH) ISPH EISPH 
 
-## &#129422;概要 
-### &#129408;前準備 
+## ⛵️概要 
+### 🪸前準備 
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
-### &#129408;フラクショナルステップを使って初期値問題を解く 
+### 🪸フラクショナルステップを使って初期値問題を解く 
 
 4. 水面の判定
 5. $`\nabla^2 {\bf u}`$の計算
@@ -44,7 +44,7 @@
 [./SPH.hpp#L209](./SPH.hpp#L209)
 
 
-### &#129408;CFL条件の設定 
+### 🪸CFL条件の設定 
 
 $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$を満たすように，毎時刻$`\Delta t`$を設定する．
 
@@ -52,7 +52,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 [./SPH_Functions.hpp#L22](./SPH_Functions.hpp#L22)
 
 
-### &#129408;法線方向の計算と水面の判定 
+### 🪸法線方向の計算と水面の判定 
 
 ✅ 単位法線ベクトル: $`{\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
@@ -66,7 +66,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 [./SPH_Functions.hpp#L137](./SPH_Functions.hpp#L137)
 
 
-### &#129408;壁面粒子の流速と圧力 
+### 🪸壁面粒子の流速と圧力 
 
 壁粒子の流速を流体粒子の流速に応じて変化させると計算が煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにした（ゼロで一定というのは不自然ではない）．
 一方，壁粒子の圧力がゼロだとするのは不自然で，流体粒子の圧力$`p^{n+1}`$の計算に悪影響を及ぼす．
@@ -78,7 +78,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 [./SPH_Functions.hpp#L227](./SPH_Functions.hpp#L227)
 
 
-### &#129408;$`\nabla^2 {\bf u} _i`$の計算 
+### 🪸$`\nabla^2 {\bf u} _i`$の計算 
 
 ✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L289): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
@@ -93,7 +93,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 [./SPH_Functions.hpp#L241](./SPH_Functions.hpp#L241)
 
 
-### &#129408;圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算 
+### 🪸圧力の計算　`PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算 
 
 次の時刻の流れ場が発散なし$`\nabla\cdot{\bf u}^{n+1}=0`$であることを保証してくれる圧力を使って，
 $`\frac{D {\bf u}}{D t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}`$を決定し，時間発展させたい．
@@ -154,7 +154,7 @@ ISPH
 [./SPH_Functions.hpp#L336](./SPH_Functions.hpp#L336)
 
 
-### &#129408;圧力を決定するための方程式を作成 
+### 🪸圧力を決定するための方程式を作成 
 
 💡 '次の時刻における流速の発散はゼロになるように'というルールに従えば，次時刻の発散の演算は次時刻の粒子位置において行われるため，今作成するポアソン方程式の発散の演算は，次時刻の粒子位置において行われるべきだ．
 
@@ -172,7 +172,7 @@ ISPH
 [./SPH_Functions.hpp#L477](./SPH_Functions.hpp#L477)
 
 
-### &#129408;圧力の安定化 
+### 🪸圧力の安定化 
 
 $`b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho _w - \rho^\ast}{{\Delta t}^2}`$として計算を安定化させる場合がある．
 $`\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t`$と近似すると，
@@ -198,7 +198,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 [./SPH_Functions.hpp#L575](./SPH_Functions.hpp#L575)
 
 
-### &#129408;圧力勾配$`\nabla p^{n+1}`$の計算 
+### 🪸圧力勾配$`\nabla p^{n+1}`$の計算 
 
 ✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L735): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
@@ -216,7 +216,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 [./SPH_Functions.hpp#L754](./SPH_Functions.hpp#L754)
 
 
-## &#129422;注意点 
+## ⛵️注意点 
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
@@ -234,7 +234,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 [./SPH_Functions.hpp#L896](./SPH_Functions.hpp#L896)
 
 
-## &#129422;核関数 
+## ⛵️核関数 
 3次スプライン関数と5次スプライン関数の実装とテストコード
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
@@ -244,7 +244,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 
 
 ---
-## &#129422;Bucketを用いた粒子探索のテスト 
+## ⛵️Bucketを用いた粒子探索のテスト 
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．
 
