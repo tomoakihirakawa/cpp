@@ -1,14 +1,14 @@
 # Contents
 
-- [🐋ODEの初期値問題](#🐋ODEの初期値問題)
-    - [🪼減衰調和振動子/Damped Harmonic Oscillatorの例](#🪼減衰調和振動子/Damped-Harmonic-Oscillatorの例)
-    - [🪼Runge-Kutta Integration of ODE](#🪼Runge-Kutta-Integration-of-ODE)
+- [🐋 ODEの初期値問題](#🐋-ODEの初期値問題)
+    - [🪼 減衰調和振動子/Damped Harmonic Oscillatorの例](#🪼-減衰調和振動子/Damped-Harmonic-Oscillatorの例)
+    - [🪼 Runge-Kutta Integration of ODE](#🪼-Runge-Kutta-Integration-of-ODE)
 
 
 ---
-# 🐋ODEの初期値問題 
+# 🐋 ODEの初期値問題 
 
-## 🪼減衰調和振動子/Damped Harmonic Oscillatorの例 
+## 🪼 減衰調和振動子/Damped Harmonic Oscillatorの例 
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
@@ -77,7 +77,7 @@ $$
 [./example_DampedHrmonicOscillator.cpp#L117](./example_DampedHrmonicOscillator.cpp#L117)
 
 
-## 🪼Runge-Kutta Integration of ODE 
+## 🪼 Runge-Kutta Integration of ODE 
 
 ![](RK.png)
 
