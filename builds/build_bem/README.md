@@ -14,11 +14,11 @@
         - [流速の計算](#流速の計算)
         - [境界値問題の未知変数](#境界値問題の未知変数)
         - [$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
-    - [Input Generator for BEM Simulation](#Input-Generator-for-BEM-Simulation)
+- [入力ファイル生成 `input_generator.py`](#入力ファイル生成-`input_generator.py`)
     - [Usage](#Usage)
     - [Customization](#Customization)
     - [Output](#Output)
-- [使い方](#使い方)
+- [コンパイルと計算の実行方法](#コンパイルと計算の実行方法)
     - [Prerequisites](#Prerequisites)
     - [Building the Code](#Building-the-Code)
     - [Running the Simulation](#Running-the-Simulation)
@@ -371,7 +371,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 
 ---
-## Input Generator for BEM Simulation
+# 入力ファイル生成 `input_generator.py`
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 
@@ -405,7 +405,7 @@ The script will generate input files in JSON format for the specified simulation
 [./input_generator.py#L1](./input_generator.py#L1)
 
 
-# 使い方
+# コンパイルと計算の実行方法
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
