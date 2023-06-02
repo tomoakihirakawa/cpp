@@ -1,5 +1,4 @@
 /*DOC_EXTRACT BEM
-[![Banner](banner.png)](banner.png)
 
 # BEM-MEL
 

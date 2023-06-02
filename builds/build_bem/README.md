@@ -27,8 +27,6 @@
 
 
 ---
-[![Banner](banner.png)](banner.png)
-
 # 🐋BEM-MEL 
 
 | 項目 | 詳細|
@@ -368,7 +366,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L246](./main.cpp#L246)
+[./main.cpp#L249](./main.cpp#L249)
 
 
 ---
@@ -454,6 +452,8 @@ python3 ./input_generator.py
 ## ⛵️Output 
 
 The simulation results will be stored in the specified output directory.
+
+[![Banner](banner.png)](banner.png)
 
 
 [./main.cpp#L1](./main.cpp#L1)
