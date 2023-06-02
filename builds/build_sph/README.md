@@ -1,7 +1,7 @@
 # Contents
 
 - [🐋Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](#🐋Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
-    - [🐢概要](#🐢概要)
+    - [🪼概要](#🪼概要)
         - [🪸前準備](#🪸前準備)
         - [🪸フラクショナルステップを使って初期値問題を解く](#🪸フラクショナルステップを使って初期値問題を解く)
         - [🪸CFL条件の設定](#🪸CFL条件の設定)
@@ -12,9 +12,9 @@
         - [🪸圧力を決定するための方程式を作成](#🪸圧力を決定するための方程式を作成)
         - [🪸圧力の安定化](#🪸圧力の安定化)
         - [🪸圧力勾配$`\nabla p^{n+1}`$の計算](#🪸圧力勾配$`\nabla-p^{n+1}`$の計算)
-    - [🐢注意点](#🐢注意点)
-    - [🐢Bucketを用いた粒子探索のテスト](#🐢Bucketを用いた粒子探索のテスト)
-    - [🐢核関数](#🐢核関数)
+    - [🪼注意点](#🪼注意点)
+    - [🪼Bucketを用いた粒子探索のテスト](#🪼Bucketを用いた粒子探索のテスト)
+    - [🪼核関数](#🪼核関数)
 
 
 ---
@@ -22,7 +22,7 @@
 
 # 🐋Smoothed Particle Hydrodynamics (SPH) ISPH EISPH 
 
-## 🐢概要 
+## 🪼概要 
 ### 🪸前準備 
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
@@ -216,7 +216,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 [./SPH_Functions.hpp#L754](./SPH_Functions.hpp#L754)
 
 
-## 🐢注意点 
+## 🪼注意点 
 
 ⚠️ 計算がうまく行く設定を知るために，次の箇所をチェックする．
 
@@ -234,7 +234,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 [./SPH_Functions.hpp#L896](./SPH_Functions.hpp#L896)
 
 
-## 🐢核関数 
+## 🪼核関数 
 3次スプライン関数と5次スプライン関数の実装とテストコード
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
@@ -244,7 +244,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 
 
 ---
-## 🐢Bucketを用いた粒子探索のテスト 
+## 🪼Bucketを用いた粒子探索のテスト 
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．
 

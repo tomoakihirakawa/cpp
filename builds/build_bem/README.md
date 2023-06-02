@@ -1,28 +1,28 @@
 # Contents
 
 - [🐋BEM-MEL](#🐋BEM-MEL)
-    - [🐢流速の計算方法](#🐢流速の計算方法)
+    - [🪼流速の計算方法](#🪼流速の計算方法)
         - [🪸修正流速](#🪸修正流速)
-    - [🐢境界条件の設定の流れ](#🐢境界条件の設定の流れ)
+    - [🪼境界条件の設定の流れ](#🪼境界条件の設定の流れ)
         - [🪸多重節点](#🪸多重節点)
-    - [🐢境界値問題](#🐢境界値問題)
+    - [🪼境界値問題](#🪼境界値問題)
         - [🪸基礎方程式](#🪸基礎方程式)
         - [🪸BIEの離散化](#🪸BIEの離散化)
         - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
-    - [🐢浮体動揺解析](#🐢浮体動揺解析)
+    - [🪼浮体動揺解析](#🪼浮体動揺解析)
         - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
         - [🪸流速の計算](#🪸流速の計算)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
         - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
-    - [🐢Usage](#🐢Usage)
-    - [🐢Customization](#🐢Customization)
-    - [🐢Output](#🐢Output)
+    - [🪼Usage](#🪼Usage)
+    - [🪼Customization](#🪼Customization)
+    - [🪼Output](#🪼Output)
 - [🐋コンパイルと計算の実行方法](#🐋コンパイルと計算の実行方法)
-    - [🐢Prerequisites](#🐢Prerequisites)
-    - [🐢Building the Code](#🐢Building-the-Code)
-    - [🐢Running the Simulation](#🐢Running-the-Simulation)
-    - [🐢Output](#🐢Output)
+    - [🪼Prerequisites](#🪼Prerequisites)
+    - [🪼Building the Code](#🪼Building-the-Code)
+    - [🪼Running the Simulation](#🪼Running-the-Simulation)
+    - [🪼Output](#🪼Output)
         - [🪸計算の流れ](#🪸計算の流れ)
 
 
@@ -42,7 +42,7 @@
 [./BEM.hpp#L1](./BEM.hpp#L1)
 
 
-## 🐢流速の計算方法
+## 🪼流速の計算方法
 
 
 [./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
@@ -63,7 +63,7 @@
 [./BEM_calculateVelocities.hpp#L334](./BEM_calculateVelocities.hpp#L334)
 
 
-## 🐢境界条件の設定の流れ 
+## 🪼境界条件の設定の流れ 
 
 1. 流体節点が接触する構造物面を保存
 - (接触した流体節点) → [構造物面]
@@ -94,7 +94,7 @@
 [./BEM_setBoundaryConditions.hpp#L7](./BEM_setBoundaryConditions.hpp#L7)
 
 
-## 🐢境界値問題 
+## 🪼境界値問題 
 
 ### 🪸基礎方程式 
 
@@ -200,7 +200,7 @@ $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 
 [./BEM_solveBVP.hpp#L354](./BEM_solveBVP.hpp#L354)
 
 
-## 🐢浮体動揺解析 
+## 🪼浮体動揺解析 
 
 浮体の重心の運動方程式：
 
@@ -376,7 +376,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 
-## 🐢Usage 
+## 🪼Usage 
 
 1. Make sure the required dependencies are installed.
 2. Run the script using the following command:
@@ -387,7 +387,7 @@ python3 input_generator.py
 
 Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
 
-## 🐢Customization 
+## 🪼Customization 
 
 To customize the input file generation for a specific case, follow these steps:
 
@@ -398,7 +398,7 @@ To customize the input file generation for a specific case, follow these steps:
 
 After customizing the script, run it again to generate the input files for the new case.
 
-## 🐢Output 
+## 🪼Output 
 
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
@@ -411,13 +411,13 @@ The script will generate input files in JSON format for the specified simulation
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
-## 🐢Prerequisites 
+## 🪼Prerequisites 
 
 - CMake
 - LAPACK library
 - Python 3 for input generation
 
-## 🐢Building the Code 
+## 🪼Building the Code 
 
 1. Clean the build directory:
 
@@ -437,7 +437,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-## 🐢Running the Simulation 
+## 🪼Running the Simulation 
 
 1. Generate input files using the `input_generator.py` script:
 
@@ -451,7 +451,7 @@ python3 ./input_generator.py
 ./main ./input_files/Kramer2021_H00d03
 ```
 
-## 🐢Output 
+## 🪼Output 
 
 The simulation results will be stored in the specified output directory.
 
