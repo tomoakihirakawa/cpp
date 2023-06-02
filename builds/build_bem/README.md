@@ -12,7 +12,9 @@
         - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
     - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
         - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
-        - [🪸流速の計算](#🪸流速の計算)
+    - [⛵️初期値問題](#⛵️初期値問題)
+        - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
+        - [🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算](#🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
         - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
@@ -303,7 +305,7 @@ $$
 \end{bmatrix}
 $$
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L530)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L550)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -312,7 +314,15 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 [./BEM_solveBVP.hpp#L623](./BEM_solveBVP.hpp#L623)
 
 
-### 🪸流速の計算 
+## ⛵️初期値問題 
+
+節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
+言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
+ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
+
+ある時刻において，境界値問題が解けたら，$`\frac{d\bf x}{dt}`$と$`\frac{d\phi}{dt}`$はどのように計算できるだろうか．
+
+### 🪸流速$`\frac{d\bf x}{dt}`$の計算 
 
 ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
 
@@ -326,6 +336,18 @@ $$
 \nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
 $$
 
+### 🪸速度ポテンシャル$`\frac{d\phi}{dt}`$の計算 
+
+💡 $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$`\frac{d \phi}{d t}`$は，$`\frac{\partial \phi}{\partial t}`$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$`\phi=\phi(t,{\bf x}(t))`$と一時的に考えなおし，そして，時間微分する．そうすると$`\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi`$となる．
+
+ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
+
+$$
+\frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
+$$
+
+ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
+
 
 [./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
 
@@ -336,7 +358,7 @@ $$
 多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L441](./BEM_utilities.hpp#L441)
+[./BEM_utilities.hpp#L461](./BEM_utilities.hpp#L461)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について． 
@@ -368,7 +390,7 @@ $$
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L497](./BEM_utilities.hpp#L497)
+[./BEM_utilities.hpp#L517](./BEM_utilities.hpp#L517)
 
 
 ### 🪸計算の流れ 
