@@ -2,6 +2,7 @@
 
 - [🐋線形連立一次方程式の解法](#🐋線形連立一次方程式の解法)
     - [⛵️一般化最小残差法(GMRES)](#⛵️一般化最小残差法(GMRES))
+        - [🪸実行方法](#🪸実行方法)
     - [⛵️Compressed Sparse Row (CSR)](#⛵️Compressed-Sparse-Row-(CSR))
 
 
@@ -16,6 +17,10 @@
 - $`g`$は行列$`Q`$の最初の列
 
 ArnoldiProcessによって，$`H`$と$`V`$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
+
+### 🪸実行方法 
+
+![](WATCHME.gif)
 
 
 [./test0_GMRES.cpp#L1](./test0_GMRES.cpp#L1)

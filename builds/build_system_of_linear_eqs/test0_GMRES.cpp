@@ -11,6 +11,10 @@
 
 ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
 
+### 実行方法
+
+![](./WATCHME.gif)
+
 */
 #include "basic_IO.hpp"
 #include "basic_linear_systems.hpp"
