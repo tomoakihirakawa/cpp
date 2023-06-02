@@ -467,6 +467,8 @@ Tddd gradPhi(const networkPoint *const p) {
 
 /*DOC_EXTRACT BEM
 
+## その他
+
 ### 境界値問題の未知変数
 
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
