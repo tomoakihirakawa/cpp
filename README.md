@@ -48,6 +48,7 @@
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 
 - [Contents](./builds/build_system_of_linear_eqs/README.md#Contents)
-- [🐋線形連立一次方程式の解法](./builds/build_system_of_linear_eqs/README.md#🐋線形連立一次方程式の解法)
+- [🐋連立一次方程式の解法](./builds/build_system_of_linear_eqs/README.md#🐋連立一次方程式の解法)
     - [⛵️一般化最小残差法(GMRES)](./builds/build_system_of_linear_eqs/README.md#⛵️一般化最小残差法(GMRES))
+    - [⛵️LU分解(LAPACK)](./builds/build_system_of_linear_eqs/README.md#⛵️LU分解(LAPACK))
     - [⛵️Compressed Sparse Row (CSR)](./builds/build_system_of_linear_eqs/README.md#⛵️Compressed-Sparse-Row-(CSR))

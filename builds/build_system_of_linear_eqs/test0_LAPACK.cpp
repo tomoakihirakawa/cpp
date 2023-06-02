@@ -1,26 +1,11 @@
 /*DOC_EXTRACT solve_linear_systems0
 
-# 連立一次方程式の解法
-
-## 一般化最小残差法(GMRES)
-
-- ヘッセンベルグ行列$H$
-- クリロフ部分空間の直交基底$V$
-- $H$をQR分解した行列$Q$と$R$
-- $g$は行列$Q$の最初の列
-
-ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
-
-### 実行方法
-
-![](./WATCHME.gif)
+## LU分解(LAPACK)
 
 */
-#include "basic_IO.hpp"
 #include "basic_linear_systems.hpp"
 #include "basic_mathematical_functions.hpp"
 #include "lib_measurement.hpp"
-#include "minMaxOfFunctions.hpp"
 
 int main() {
 
@@ -53,19 +38,8 @@ int main() {
 
    Timer timer;
    std::cout << "time:" << timer() << std::endl;
-   bool finished = false;
-   double error;
-   for (auto restart = 0; restart < 1; ++restart) {
-      for (auto i = 200; i <= 1000; i += 100) {
-         gmres gm(A, b, x0, i);
-         std::cout << "time:" << timer() << std::endl;
-         x0 = gm.x;
-         std::cout << "       Restart : " << restart << std::endl;
-         std::cout << "             i : " << i << std::endl;
-         std::cout << "estimate error : " << gm.err << std::endl;
-         std::cout << "  actual error : " << Norm(Dot(A, x0) - b) << std::endl;
-         std::cout << Red << "--------------------------------" << colorOff << std::endl;
-      }
-   }
+   lapack_lu lu(A);
+   lu.solve(b, x0);
+   std::cout << "error " << Norm(Dot(A, x0) - b) << std::endl;
    std::cout << "time:" << timer() << std::endl;
 };
