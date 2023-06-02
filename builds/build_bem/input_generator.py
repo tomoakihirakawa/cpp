@@ -1,5 +1,6 @@
-'''
-# Input Generator for BEM Simulation
+'''DOC_EXTRACT BEM_HOW_TO_USE
+
+## Input Generator for BEM Simulation
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 

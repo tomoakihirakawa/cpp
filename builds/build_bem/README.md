@@ -14,13 +14,13 @@
         - [流速の計算](#流速の計算)
         - [境界値問題の未知変数](#境界値問題の未知変数)
         - [$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
-- [Input Generator for BEM Simulation](#Input-Generator-for-BEM-Simulation)
+    - [Input Generator for BEM Simulation](#Input-Generator-for-BEM-Simulation)
     - [Usage](#Usage)
     - [Customization](#Customization)
     - [Output](#Output)
-- [BEM Simulation Code](#BEM-Simulation-Code)
+- [使い方](#使い方)
     - [Prerequisites](#Prerequisites)
-        - [Building the Code](#Building-the-Code)
+    - [Building the Code](#Building-the-Code)
     - [Running the Simulation](#Running-the-Simulation)
     - [Output](#Output)
         - [計算の流れ](#計算の流れ)
@@ -357,7 +357,55 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 [./BEM_utilities.hpp#L497](./BEM_utilities.hpp#L497)
 
 
-# BEM Simulation Code
+### 計算の流れ
+
+1. 境界条件の設定
+2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+3. 三角形の線形補間を使って節点の流速を計算する
+4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
+6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+
+
+[./main.cpp#L246](./main.cpp#L246)
+
+
+---
+## Input Generator for BEM Simulation
+
+This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+
+## Usage
+
+1. Make sure the required dependencies are installed.
+2. Run the script using the following command:
+
+```
+python3 input_generator.py
+```
+
+Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
+
+## Customization
+
+To customize the input file generation for a specific case, follow these steps:
+
+1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
+2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
+3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
+4. Update the `inputfiles` variable with the new input objects created for the custom case.
+
+After customizing the script, run it again to generate the input files for the new case.
+
+## Output
+
+The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
+
+
+[./input_generator.py#L1](./input_generator.py#L1)
+
+
+# 使い方
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
@@ -367,7 +415,7 @@ This is a C++ implementation of a BEM simulation code. Follow the instructions b
 - LAPACK library
 - Python 3 for input generation
 
-### Building the Code
+## Building the Code
 
 1. Clean the build directory:
 
@@ -407,66 +455,6 @@ The simulation results will be stored in the specified output directory.
 
 
 [./main.cpp#L1](./main.cpp#L1)
-
-
-### 計算の流れ
-
-1. 境界条件の設定
-2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
-3. 三角形の線形補間を使って節点の流速を計算する
-4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
-5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
-
-
-[./main.cpp#L246](./main.cpp#L246)
-
-
----
-# Input Generator for BEM Simulation
-
-This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
-
-## Usage
-
-1. Make sure the required dependencies are installed.
-2. Run the script using the following command:
-
-```
-python3 input_generator.py
-```
-
-Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
-
-## Customization
-
-To customize the input file generation for a specific case, follow these steps:
-
-1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
-2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
-3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
-4. Update the `inputfiles` variable with the new input objects created for the custom case.
-
-After customizing the script, run it again to generate the input files for the new case.
-
-## Output
-
-The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
-
-
----
-[./input_generator.py#L1](./input_generator.py#L1)
-
-
----
-プログラムを回す際に面倒な事は，入力ファイルの設定．
-入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
-例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
-このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
-
-
----
-[./input_generator.py#L47](./input_generator.py#L47)
 
 
 ---

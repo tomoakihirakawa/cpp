@@ -1,6 +1,6 @@
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT BEM_HOW_TO_USE
 
-# BEM Simulation Code
+# 使い方
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
 
@@ -10,7 +10,7 @@ This is a C++ implementation of a BEM simulation code. Follow the instructions b
 - LAPACK library
 - Python 3 for input generation
 
-### Building the Code
+## Building the Code
 
 1. Clean the build directory:
 
