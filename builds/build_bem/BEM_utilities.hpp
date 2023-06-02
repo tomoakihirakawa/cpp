@@ -633,6 +633,13 @@ $$
 E_P = \frac{1}{2}\rho g \iint_\Gamma (z - z_0)^2 n_z d\Gamma
 $$
 
+全エネルギーは，
+
+$$
+E_K + E_P = \frac{\rho}{2}  \iint_\Gamma \phi\nabla\phi + (0,0,g(z - z_0)^2) \cdot {\bf n} d\Gamma
+$$
+
+
 
 <details>
 
@@ -654,9 +661,9 @@ $$
 
 よって，
 
-```math
+$$
 \iiint_\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint_\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-```
+$$
 
 ---
 
