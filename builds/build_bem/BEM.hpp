@@ -1,7 +1,7 @@
 /*DOC_EXTRACT BEM
 [![Banner](banner.png)](banner.png)
 
-# Boundary Element Method (BEM-MEL)
+# BEM-MEL
 
 | 項目 | 詳細|
 |---:|:---|

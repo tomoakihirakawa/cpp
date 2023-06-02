@@ -1,4 +1,4 @@
-'''DOC_EXTRACT BEM_HOW_TO_USE
+'''DOC_EXTRACT HOW_TO_MAKE_INPUT_FILES
 
 # 入力ファイル生成 `input_generator.py`
 

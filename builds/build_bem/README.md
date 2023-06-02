@@ -1,6 +1,6 @@
 # Contents
 
-- [Boundary Element Method (BEM-MEL)](#Boundary-Element-Method-(BEM-MEL))
+- [BEM-MEL](#BEM-MEL)
     - [流速の計算方法](#流速の計算方法)
         - [修正流速](#修正流速)
     - [境界条件の設定の流れ](#境界条件の設定の流れ)
@@ -29,7 +29,7 @@
 ---
 [![Banner](banner.png)](banner.png)
 
-# Boundary Element Method (BEM-MEL)
+# BEM-MEL
 
 | 項目 | 詳細|
 |---:|:---|
@@ -405,6 +405,7 @@ The script will generate input files in JSON format for the specified simulation
 [./input_generator.py#L1](./input_generator.py#L1)
 
 
+---
 # コンパイルと計算の実行方法
 
 This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
