@@ -615,4 +615,62 @@ double phint_Neumann(const networkPoint *const p) {
    return optimumValue(Phin, 0., W);
 };
 
+/*DOC_EXTRACT BEM
+
+## エネルギー保存則
+
+流体全体のエネルギーは，
+ラプラス方程式と発散定理を使うと，
+次のように境界面に沿った積分で表される．
+
+$$
+E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+また，流体の位置エネルギーは，次のように表される．
+
+$$
+E_P = \frac{1}{2}\rho g \iint_\Gamma (z - z_0)^2 n_z d\Gamma
+$$
+
+
+<details>
+
+---
+
+<summary>
+NOTE: なぜか？
+</summary>
+
+テンソルを使って考えてみると
+
+$$
+\begin{align*}
+\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x_i} \frac{\partial\phi}{\partial x_i} + \phi \frac{\partial^2\phi}{\partial x_i \partial x_i}\\
+&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
+&= \nabla \phi \cdot \nabla \phi
+\end{align*}
+$$
+
+よって，
+
+$$
+\iiint_\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint_\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+---
+
+$$
+E_P = \rho g \iiint_\Omega (z - z_0) \Omega
+= \rho g \iiint_\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z_0)^2) d\Omega
+= \rho g \iint_\Gamma \frac{1}{2} (0,0,(z - z_0)^2) \cdot {\bf n} d\Gamma
+= \frac{1}{2}\rho g \iint_\Gamma (z - z_0)^2 n_z d\Gamma
+$$
+
+---
+
+</details>
+
+*/
+
 #endif
