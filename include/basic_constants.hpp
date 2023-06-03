@@ -6,6 +6,7 @@
 const double _WATER_DENSITY_ = 998.21;
 const double _WATER_MU_10deg_ = 0.001307;  // 10 deg
 const double _GRAVITY_ = 9.82;
+
 #include <array>
 #include <tuple>
 const Tddd _GRAVITY3_ = {0., 0., -_GRAVITY_};

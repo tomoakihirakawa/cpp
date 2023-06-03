@@ -52,11 +52,14 @@ else:
 このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
 '''
 
+rho = 998.21
+g = 9.82
+
 input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Kramer2021"
+SimulationCase = "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
 
 match SimulationCase:
     case "Kramer2021":
@@ -93,7 +96,7 @@ match SimulationCase:
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.005,
+        setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,
@@ -301,7 +304,7 @@ match SimulationCase:
                             "velocity": "floating"}
 
         A = 2450.00
-        floatingbody["mass"] = m = (1000.*g*7.5*A)/g
+        floatingbody["mass"] = m = (rho*g*7.5*A)/g
         floatingbody["COM"] = [100., 50., 75.]
         floatingbody["radius_of_gyration"] = [20., 20., 20.]
         floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),

@@ -238,15 +238,15 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          double a = magicalValue(p, f) + variance2(p, f);
 
          if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-            a *= std::pow(2., 3);
+            a *= std::pow(1.5, 3);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
-            a *= std::pow(2., 2);
+            a *= std::pow(1.5, 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
                           return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
                        });
                     })) {
-            a *= 2.;
+            a *= 1.5;
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
@@ -278,8 +278,6 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       // to_cornerを計算
       Tddd to_corner = {0., 0., 0.};
       if (p->CORNER) {
-         std::vector<Tddd> F_clings;
-         std::vector<double> distance;
          Tddd to_corner_tmp;
          to_corner_tmp.fill(1E+20);
          for (const auto &l : p->getLines())
@@ -352,23 +350,24 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface.fill(0.);
    }
-   TimeWatch watch;
-   for (auto kk = 0; kk < loop; ++kk) {
-      for (auto ii = 0; ii < 30; ++ii) {
-         // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
+
+   auto addVectorTangentialShift = [&]() {
+   // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
 #pragma omp parallel
-         for (const auto &p : net.getPoints())
+      for (const auto &p : net.getPoints())
 #pragma omp single nowait
-         {
-            auto scale = ((p->isMultipleNode || p->CORNER) ? 0.01 : 0.15);
-            p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
-         }
-         for (const auto &p : net.getPoints()) {
-            add_vecToSurface_BUFFER_to_vecToSurface(p);
-            p->vecToSurface_BUFFER.fill(0.);
-         }
+      {
+         bool multiple_node_but_corner = (p->isMultipleNode && !p->CORNER);
+         auto scale = (multiple_node_but_corner ? 0.01 : 0.1);
+         p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
-      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
+      for (const auto &p : net.getPoints()) {
+         add_vecToSurface_BUFFER_to_vecToSurface(p);
+         p->vecToSurface_BUFFER.fill(0.);
+      }
+   };
+
+   auto addVectorToNextSurface = [&]() {
 #pragma omp parallel
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
@@ -378,8 +377,18 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);
          p->vecToSurface_BUFFER.fill(0.);
       }
+   };
+
+   TimeWatch watch;
+   for (auto kk = 0; kk < loop; ++kk) {
+      addVectorTangentialShift();
+      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
+
+      addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
    }
+   for (auto ii = 0; ii < 3; ++ii)
+      addVectorToNextSurface();
 };
 
 //$ -------------------------------------------------------------------------- */
@@ -456,5 +465,111 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop = 10) {
       }
    }
 }
+
+/*DOC_EXTRACT BEM
+
+## エネルギー保存則
+
+流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
+
+$$
+E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+また，流体の位置エネルギーは，次のように表される．
+
+$$
+E_P = \frac{\rho}{2} \iint_\Gamma (0,0,g(z - z_0)^2) \cdot {\bf n} d\Gamma
+$$
+
+<details>
+
+---
+
+<summary>
+NOTE: なぜか？
+</summary>
+
+テンソルを使って考えてみると
+
+$$
+\begin{align*}
+\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x_i} \frac{\partial\phi}{\partial x_i} + \phi \frac{\partial^2\phi}{\partial x_i \partial x_i}\\
+&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
+&= \nabla \phi \cdot \nabla \phi
+\end{align*}
+$$
+
+よって，
+
+$$
+\iiint_\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint_\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+---
+
+$$
+E_P = \rho g \iiint_\Omega (z - z_0) d\Omega
+= \rho g \iiint_\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z_0)^2) d\Omega
+= \rho g \iint_\Gamma \frac{1}{2} (0,0,(z - z_0)^2) \cdot {\bf n} d\Gamma
+= \frac{1}{2}\rho g \iint_\Gamma (z - z_0)^2 n_z d\Gamma
+$$
+
+---
+
+</details>
+
+*/
+
+double KinematicEnergy(const std::unordered_set<networkFace *> &faces) {
+   double EK = 0;
+   for (const auto &f : faces) {
+      auto [p0, p1, p2] = f->getPoints();
+      EK += Dot((p0->phiphin[0] + p1->phiphin[0] + p2->phiphin[0]) / 3. * gradPhi(f), f->normal) * f->area;
+   }
+   return _WATER_DENSITY_ * EK / 2.;
+};
+
+double PotentialEnergy(const std::unordered_set<networkFace *> &faces) {
+   double EP = 0;
+   for (const auto &f : faces) {
+      auto [p0, p1, p2] = f->getPoints();
+      auto intpX = interpolationTriangleLinear0101(T3Tddd{p0->X, p1->X, p2->X});
+      for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+         EP += std::pow(intpX(x0, x1)[2], 2) * f->normal[2] * w0w1 * intpX.J(x0, x1);
+   }
+   return _WATER_DENSITY_ * EP / 2.;
+};
+
+double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
+   double EK = 0, EP = 0;
+   for (const auto &f : faces) {
+      auto [p0, p1, p2] = f->getPoints();
+      EK += Dot((p0->phiphin[0] + p1->phiphin[0] + p2->phiphin[0]) / 3. * gradPhi(f), f->normal);
+      auto intpX = interpolationTriangleLinear0101(T3Tddd{p0->X, p1->X, p2->X});
+      for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+         EP += std::pow(intpX(x0, x1)[2], 2) * f->normal[2] * w0w1 * intpX.J(x0, x1);
+   }
+   return (EK + EP) * _WATER_DENSITY_ / 2.;
+};
+
+/*DOC_EXTRACT BEM
+
+## 内部流速の計算方法
+
+[Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
+流体内部の流速$\nabla \phi$は，BIEを微分して求めることができる．
+
+$$
+\begin{align*}
+\nabla \phi &= \frac{\partial \phi}{\partial x_i} \\
+&= \frac{\partial}{\partial x_i} \left( \frac{1}{2\pi} \iint_\Gamma \phi \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \right) \\
+&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \\
+&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \frac{x_j - x_j'}{|{\bf x} - {\bf x}'|^2} d\Gamma' \\
+&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \frac{x_j - x_j'}{r^2} d\Gamma' \\
+\end{align*}
+$$
+
+*/
 
 #endif

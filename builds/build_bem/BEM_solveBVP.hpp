@@ -819,14 +819,14 @@ struct BEM_BVP {
 
          BM.update(func, func_, alpha);
 
-         int i = 0;
-         for (auto &a : BM.X)
-            if (i++ != 2)
-               a = 0;
-         i = 0;
-         for (auto &a : BM.dX)
-            if (i++ != 2)
-               a = 0;
+         // int i = 0;
+         // for (auto &a : BM.X)
+         //    if (i++ != 2)
+         //       a = 0;
+         // i = 0;
+         // for (auto &a : BM.dX)
+         //    if (i++ != 2)
+         //       a = 0;
 
          insertAcceleration(rigidbodies, BM.X);
 

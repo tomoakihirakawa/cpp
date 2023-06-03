@@ -6,24 +6,23 @@
 
 /*DOC_EXTRACT BEM
 
-## 境界条件の設定の流れ
+## 境界のタイプを決定する
 
-1. 流体節点が接触する構造物面を保存
-   - (接触した流体節点) → [構造物面]
+まず，流体節点が接触する構造物面を保存しておく．つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
-2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
-   - (3点接触流体面) → [Neumann面]
-   - (それ以外の面) → [Dirichlet面]
+1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
+   - Neumann面$\Gamma^{({\rm N})}$ : 3点接触流体面
+   - Dirichlet面$\Gamma^{({\rm D})}$ : それ以外の面
 
-3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
-   - (2面がNeumann面を含む辺) → [Neumann辺]
-   - (2面がDirichlet面を含む辺) → [Dirichlet辺]
-   - (それ以外の辺) → [CORNER]
+2. 辺の境界条件 : 辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
+   - Neumann辺 : 隣接面2面がNeumann面の辺
+   - Dirichlet辺 : 隣接面2面がDirichlet面の辺
+   - CORNER辺 : それ以外の辺（Neumann面とDirichlet面の間にある辺）
 
-4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
-   - (全ての面がNeumann面を含む点) → [Neumann点]
-   - (全ての面がDirichlet面を含む点) → [Dirichlet点]
-   - (それ以外の点) → [CORNER]
+3. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
+   - Neumann点 : 隣接面全てがNeumann面である点
+   - Dirichlet点 : 隣接面全てがDirichlet面である点
+   - CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
 
 ### 多重節点
 
@@ -113,7 +112,7 @@ void setIsMultipleNode(const auto &p) {
       p->isMultipleNode = false;
 };
 
-void setBoundaryConditions(Network &water, const std::vector<Network *> &objects) {
+void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    /* -------------------------------------------------------------------------- */
    /*                             f,l,pの境界条件を決定                             */

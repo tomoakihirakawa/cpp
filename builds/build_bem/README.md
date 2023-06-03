@@ -3,7 +3,9 @@
 - [🐋BEM-MEL](#🐋BEM-MEL)
     - [⛵️流速の計算方法](#⛵️流速の計算方法)
         - [🪸修正流速](#🪸修正流速)
-    - [⛵️境界条件の設定の流れ](#⛵️境界条件の設定の流れ)
+    - [⛵️エネルギー保存則](#⛵️エネルギー保存則)
+    - [⛵️内部流速の計算方法](#⛵️内部流速の計算方法)
+    - [⛵️境界のタイプを決定する](#⛵️境界のタイプを決定する)
         - [🪸多重節点](#🪸多重節点)
     - [⛵️境界値問題](#⛵️境界値問題)
         - [🪸基礎方程式](#🪸基礎方程式)
@@ -18,7 +20,6 @@
     - [⛵️その他](#⛵️その他)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
         - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
-    - [⛵️エネルギー保存則](#⛵️エネルギー保存則)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](#⛵️Usage)
     - [⛵️Customization](#⛵️Customization)
@@ -63,27 +64,100 @@
 まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L334](./BEM_calculateVelocities.hpp#L334)
+[./BEM_calculateVelocities.hpp#L332](./BEM_calculateVelocities.hpp#L332)
 
 
-## ⛵️境界条件の設定の流れ 
+## ⛵️エネルギー保存則 
 
-1. 流体節点が接触する構造物面を保存
-- (接触した流体節点) → [構造物面]
+流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
 
-2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
-- (3点接触流体面) → [Neumann面]
-- (それ以外の面) → [Dirichlet面]
+$$
+E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
 
-3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
-- (2面がNeumann面を含む辺) → [Neumann辺]
-- (2面がDirichlet面を含む辺) → [Dirichlet辺]
-- (それ以外の辺) → [CORNER]
+また，流体の位置エネルギーは，次のように表される．
 
-4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
-- (全ての面がNeumann面を含む点) → [Neumann点]
-- (全ての面がDirichlet面を含む点) → [Dirichlet点]
-- (それ以外の点) → [CORNER]
+$$
+E _P = \frac{\rho}{2} \iint _\Gamma (0,0,g(z - z _0)^2) \cdot {\bf n} d\Gamma
+$$
+
+<details>
+
+---
+
+<summary>
+💡 なぜか？
+</summary>
+
+テンソルを使って考えてみると
+
+$$
+\begin{align*}
+\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x _i} \frac{\partial\phi}{\partial x _i} + \phi \frac{\partial^2\phi}{\partial x _i \partial x _i}\\
+&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
+&= \nabla \phi \cdot \nabla \phi
+\end{align*}
+$$
+
+よって，
+
+$$
+\iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+$$
+
+---
+
+$$
+E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
+= \rho g \iiint _\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z _0)^2) d\Omega
+= \rho g \iint _\Gamma \frac{1}{2} (0,0,(z - z _0)^2) \cdot {\bf n} d\Gamma
+= \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
+$$
+
+---
+
+</details>
+
+
+[./BEM_calculateVelocities.hpp#L469](./BEM_calculateVelocities.hpp#L469)
+
+
+## ⛵️内部流速の計算方法 
+
+[Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
+流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
+
+$$
+\begin{align*}
+\nabla \phi &= \frac{\partial \phi}{\partial x _i} \\
+&= \frac{\partial}{\partial x _i} \left( \frac{1}{2\pi} \iint _\Gamma \phi \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \right) \\
+&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \\
+&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \frac{x _j - x _j'}{|{\bf x} - {\bf x}'|^2} d\Gamma' \\
+&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \frac{x _j - x _j'}{r^2} d\Gamma' \\
+\end{align*}
+$$
+
+
+[./BEM_calculateVelocities.hpp#L556](./BEM_calculateVelocities.hpp#L556)
+
+
+## ⛵️境界のタイプを決定する 
+
+まず，流体節点が接触する構造物面を保存しておく．つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
+
+1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
+- Neumann面$`\Gamma^{({\rm N})}`$ : 3点接触流体面
+- Dirichlet面$`\Gamma^{({\rm D})}`$ : それ以外の面
+
+2. 辺の境界条件 : 辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
+- Neumann辺 : 隣接面2面がNeumann面の辺
+- Dirichlet辺 : 隣接面2面がDirichlet面の辺
+- CORNER辺 : それ以外の辺（Neumann面とDirichlet面の間にある辺）
+
+3. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
+- Neumann点 : 隣接面全てがNeumann面である点
+- Dirichlet点 : 隣接面全てがDirichlet面である点
+- CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
 
 ### 🪸多重節点 
 
@@ -94,7 +168,7 @@
 これを多重節点という．
 
 
-[./BEM_setBoundaryConditions.hpp#L7](./BEM_setBoundaryConditions.hpp#L7)
+[./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 
 ## ⛵️境界値問題 
@@ -404,64 +478,6 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 [./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
 
 
-## ⛵️エネルギー保存則 
-
-流体全体のエネルギーは，
-ラプラス方程式と発散定理を使うと，
-次のように境界面に沿った積分で表される．
-
-$$
-E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-$$
-
-また，流体の位置エネルギーは，次のように表される．
-
-$$
-E _P = \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
-$$
-
-
-<details>
-
----
-
-<summary>
-💡 なぜか？
-</summary>
-
-テンソルを使って考えてみると
-
-$$
-\begin{align*}
-\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x _i} \frac{\partial\phi}{\partial x _i} + \phi \frac{\partial^2\phi}{\partial x _i \partial x _i}\\
-&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
-&= \nabla \phi \cdot \nabla \phi
-\end{align*}
-$$
-
-よって，
-
-```math
-\iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-```
-
----
-
-$$
-E _P = \rho g \iiint _\Omega (z - z _0) \Omega
-= \rho g \iiint _\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z _0)^2) d\Omega
-= \rho g \iint _\Gamma \frac{1}{2} (0,0,(z - z _0)^2) \cdot {\bf n} d\Gamma
-= \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
-$$
-
----
-
-</details>
-
-
-[./BEM_utilities.hpp#L618](./BEM_utilities.hpp#L618)
-
-
 ### 🪸計算の流れ 
 
 1. 境界条件の設定
@@ -472,7 +488,7 @@ $$
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L249](./main.cpp#L249)
+[./main.cpp#L251](./main.cpp#L251)
 
 
 ---
@@ -560,6 +576,8 @@ python3 ./input_generator.py
 The simulation results will be stored in the specified output directory.
 
 [![Banner](banner.png)](banner.png)
+
+[![Banner](sample0.gif)](sample0.gif)
 
 
 [./main.cpp#L1](./main.cpp#L1)

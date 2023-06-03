@@ -15,7 +15,7 @@
 #define BEM_H
 
 #include "BEM_calculateVelocities.hpp"
-#include "BEM_setBoundaryConditions.hpp"
+#include "BEM_setBoundaryTypes.hpp"
 #include "BEM_solveBVP.hpp"
 #include "BEM_utilities.hpp"
 #include "Network.hpp"

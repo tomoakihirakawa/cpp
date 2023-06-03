@@ -1,0 +1,22 @@
+{
+    "name": "floatingbody",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 18342108.75,
+    "COM": [
+        100.0,
+        50.0,
+        75.0
+    ],
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
+    ],
+    "MOI": [
+        7336843500.0,
+        7336843500.0,
+        7336843500.0
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_re/floatingbody100.obj"
+}

@@ -50,6 +50,8 @@ The simulation results will be stored in the specified output directory.
 
 [![Banner](banner.png)](banner.png)
 
+[![Banner](sample0.gif)](sample0.gif)
+
 
 */
 // #define _debugging_
@@ -200,7 +202,7 @@ int main(int arg, char **argv) {
          show_info(*water);
          //! 体積を保存するようにリメッシュする必要があるだろう．
          // auto radius = Mean(extLength(water->getLines()));
-         setBoundaryConditions(*water, Join(RigidBodyObject, SoftBodyObject));
+         setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
          // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
          flipIf(*water, {10 * rad, rad}, {10 * rad /*結構小さく*/, rad}, false);
@@ -219,9 +221,9 @@ int main(int arg, char **argv) {
          double spacing = Mean(extLength(water->getLines())) * 3;
          Buckets<networkFace *> FMM_BucketsFaces(water->bounds, spacing);
          Buckets<networkPoint *> FMM_BucketsPoints(water->bounds, spacing);
-         for (const auto &f : water->getFaces()) {
+         for (const auto &f : water->getFaces())
             FMM_BucketsFaces.add(f->getXtuple(), f);
-         }
+
          for (const auto &p : water->getPoints())
             FMM_BucketsPoints.add(ToX(p), p);
 
@@ -262,8 +264,10 @@ int main(int arg, char **argv) {
             auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
 
-            setBoundaryConditions(*water, Join(RigidBodyObject, SoftBodyObject));
-            std::cout << Green << "setBoundaryConditions" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+            setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+            std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
+            setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
 
             BVP.solve(*water, FMM_BucketsPoints, FMM_BucketsFaces);
             std::cout << Green << "BVP.solve -> {Φ,Φn}が決まる" << Blue << "\nElapsed time: " << Red << watch() << " s\n";
@@ -296,6 +300,7 @@ int main(int arg, char **argv) {
                net->RigidBodyMovePoints();
             }
             // b$ --------------------------------------------------- */
+
             for (const auto &net : SoftBodyObject) {
                std::cout << "updating " << net->getName() << "'s (SoftBodyObject) position" << std::endl;
                for (const auto &p : net->getPoints()) {
@@ -307,7 +312,7 @@ int main(int arg, char **argv) {
             // b$ --------------------------------------------------- */
             for (const auto &p : Points) {
                //@ Φの時間発展，Φnの時間発展はない
-               if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，何からわない．*/) {
+               if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
                   p->RK_phi.push(p->DphiDt(p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
                }
@@ -368,7 +373,14 @@ int main(int arg, char **argv) {
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
          jsonout.push("time", real_time);
+
+         // water
          jsonout.push(water->getName() + "_volume", water->getVolume());
+         jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
+         jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getFaces()));
+         jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
+
+         // bodies
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
@@ -381,6 +393,8 @@ int main(int arg, char **argv) {
                jsonout.push(net->getName() + "_velocity", net->velocity);
                jsonout.push(net->getName() + "_COM", net->COM);
                jsonout.push(net->getName() + "_area", tmp.area);
+               jsonout.push(net->getName() + "_EK", Dot(net->velocity, net->velocity) * net->mass / 2.);
+               jsonout.push(net->getName() + "_EP", net->mass * _GRAVITY_ * (net->COM[2] - net->ICOM[2]));
             }
          }
          std::ofstream os(output_directory + "/result.json");

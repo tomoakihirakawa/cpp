@@ -2190,7 +2190,6 @@ std::string ToString(const JSON &json) {
 }
 
 /* ------------------------------------------------------ */
-
 struct JSONoutput {
    std::map<std::string, std::vector<T6d>> map_S_T6d;
    std::map<std::string, std::vector<Tddd>> map_S_Tddd;
@@ -2203,105 +2202,169 @@ struct JSONoutput {
    const Tddd notfinite_tddd = {notfinite, notfinite, notfinite};
    const T6d notfinite_t6d = {notfinite, notfinite, notfinite, notfinite, notfinite, notfinite};
 
-   void push(std::string s, const T6d d) {
-      auto D = (isFinite(d) ? d : notfinite_t6d);
-      if (this->map_S_T6d.find(s) != this->map_S_T6d.end())
-         this->map_S_T6d[s].emplace_back(D);
-      else
-         this->map_S_T6d[s] = {D};
-   };
-   void push(std::string s, const Tddd d) {
-      auto D = (isFinite(d) ? d : notfinite_tddd);
-      if (this->map_S_Tddd.find(s) != this->map_S_Tddd.end())
-         this->map_S_Tddd[s].emplace_back(D);
-      else
-         this->map_S_Tddd[s] = {D};
-   };
-   void push(std::string s, double d) {
-      auto D = (isFinite(d) ? d : notfinite);
-      if (this->map_S_D.find(s) != this->map_S_D.end())
-         this->map_S_D[s].emplace_back(D);
-      else
-         this->map_S_D[s] = {D};
-   };
-   void push(std::string s, int I) {
-      if (this->map_S_I.find(s) != this->map_S_I.end())
-         this->map_S_I[s].emplace_back(I);
-      else
-         this->map_S_I[s] = {I};
-   };
-   void push(std::string s, std::string S) {
-      if (this->map_S_S.find(s) != this->map_S_S.end())
-         this->map_S_S[s].emplace_back(S);
-      else
-         this->map_S_S[s] = {S};
-   };
+   void push(const std::string &s, const T6d &d) {
+      map_S_T6d[s].emplace_back(isFinite(d) ? d : notfinite_t6d);
+   }
+
+   void push(const std::string &s, const Tddd &d) {
+      map_S_Tddd[s].emplace_back(isFinite(d) ? d : notfinite_tddd);
+   }
+
+   void push(const std::string &s, double d) {
+      map_S_D[s].emplace_back(isFinite(d) ? d : notfinite);
+   }
+
+   void push(const std::string &s, int I) {
+      map_S_I[s].emplace_back(I);
+   }
+
+   void push(const std::string &s, const std::string &S) {
+      map_S_S[s].emplace_back(S);
+   }
 
    void output(std::ofstream &os) {
-      os << "{" << std::endl;
-      {
-         // int size = this->map_S_T6d.size();
-         int i = 0;
-         for (const auto &[key, V] : this->map_S_T6d)  // for eacn name
-         {
-            os << "\"" << key << "\":[";
-            for (auto j = 0; j < V.size(); ++j)  // for eacn time step
-            {
-               auto [V0, V1, V2, V3, V4, V5] = V[j];
-               os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << ", " << V3 << ", " << V4 << ", " << V5 << "]";
-               if (j != V.size() - 1)
-                  os << ",\n";
-               else
-                  os << "],\n";
-            }
+      os << "{\n";
+      for (const auto &[key, V] : map_S_T6d) {
+         os << "\"" << key << "\":[";
+         for (size_t j = 0; j < V.size(); ++j) {
+            auto [V0, V1, V2, V3, V4, V5] = V[j];
+            os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << ", " << V3 << ", " << V4 << ", " << V5 << "]" << (j != V.size() - 1 ? ",\n" : "],\n");
          }
       }
-      {
-         // int size = this->map_S_Tddd.size();
-         // int i = 0;
-         for (const auto &[key, V] : this->map_S_Tddd) {
-            os << "\"" << key << "\":[";
-            for (auto j = 0; j < V.size(); ++j) {
-               auto [V0, V1, V2] = V[j];
-               os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << "]";
-               if (j != V.size() - 1)
-                  os << ",\n";
-               else
-                  os << "],\n";
-            }
+      for (const auto &[key, V] : map_S_Tddd) {
+         os << "\"" << key << "\":[";
+         for (size_t j = 0; j < V.size(); ++j) {
+            auto [V0, V1, V2] = V[j];
+            os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << "]" << (j != V.size() - 1 ? ",\n" : "],\n");
          }
       }
-      {
-         int size = this->map_S_D.size();
-         int i = 0;
-         for (const auto &[key, V] : this->map_S_D) {
-            os << "\"" << key << "\":[";
-            for (auto j = 0; j < V.size(); ++j)
-               os << std::setprecision(15) << V[j] << (j != V.size() - 1 ? "," : "]");
-            if (i == size - 1)
-               os << "\n";
-            else
-               os << ",\n";
-            i++;
-         }
+      for (const auto &[key, V] : map_S_D) {
+         os << "\"" << key << "\":[";
+         for (size_t j = 0; j < V.size(); ++j)
+            os << std::setprecision(15) << V[j] << (j != V.size() - 1 ? "," : "]");
+         os << ((&key != &map_S_D.rbegin()->first) ? ",\n" : "\n");
       }
-      {
-         int size = this->map_S_I.size();
-         int i = 0;
-         for (const auto &[key, V] : this->map_S_I) {
-            os << "\"" << key << "\":[";
-            for (auto j = 0; j < V.size(); ++j)
-               os << V[j] << (j != V.size() - 1 ? "," : "]");
-            if (i == size - 1)
-               os << "\n";
-            else
-               os << ",\n";
-            i++;
-         }
+      for (const auto &[key, V] : map_S_I) {
+         os << "\"" << key << "\":[";
+         for (size_t j = 0; j < V.size(); ++j)
+            os << V[j] << (j != V.size() - 1 ? "," : "]");
+         os << ((&key != &map_S_I.rbegin()->first) ? ",\n" : "\n");
       }
-      os << "\n}" << std::endl;
-   };
+      os << "}\n";
+   }
 };
+
+// struct JSONoutput {
+//    std::map<std::string, std::vector<T6d>> map_S_T6d;
+//    std::map<std::string, std::vector<Tddd>> map_S_Tddd;
+//    std::map<std::string, std::vector<double>> map_S_D;
+//    std::map<std::string, std::vector<int>> map_S_I;
+//    std::map<std::string, std::vector<std::string>> map_S_S;
+//    JSONoutput(){};
+
+//    const double notfinite = 1E+30;
+//    const Tddd notfinite_tddd = {notfinite, notfinite, notfinite};
+//    const T6d notfinite_t6d = {notfinite, notfinite, notfinite, notfinite, notfinite, notfinite};
+
+//    void push(std::string s, const T6d d) {
+//       auto D = (isFinite(d) ? d : notfinite_t6d);
+//       if (this->map_S_T6d.find(s) != this->map_S_T6d.end())
+//          this->map_S_T6d[s].emplace_back(D);
+//       else
+//          this->map_S_T6d[s] = {D};
+//    };
+//    void push(std::string s, const Tddd d) {
+//       auto D = (isFinite(d) ? d : notfinite_tddd);
+//       if (this->map_S_Tddd.find(s) != this->map_S_Tddd.end())
+//          this->map_S_Tddd[s].emplace_back(D);
+//       else
+//          this->map_S_Tddd[s] = {D};
+//    };
+//    void push(std::string s, double d) {
+//       auto D = (isFinite(d) ? d : notfinite);
+//       if (this->map_S_D.find(s) != this->map_S_D.end())
+//          this->map_S_D[s].emplace_back(D);
+//       else
+//          this->map_S_D[s] = {D};
+//    };
+//    void push(std::string s, int I) {
+//       if (this->map_S_I.find(s) != this->map_S_I.end())
+//          this->map_S_I[s].emplace_back(I);
+//       else
+//          this->map_S_I[s] = {I};
+//    };
+//    void push(std::string s, std::string S) {
+//       if (this->map_S_S.find(s) != this->map_S_S.end())
+//          this->map_S_S[s].emplace_back(S);
+//       else
+//          this->map_S_S[s] = {S};
+//    };
+
+//    void output(std::ofstream &os) {
+//       os << "{" << std::endl;
+//       {
+//          // int size = this->map_S_T6d.size();
+//          int i = 0;
+//          for (const auto &[key, V] : this->map_S_T6d)  // for eacn name
+//          {
+//             os << "\"" << key << "\":[";
+//             for (auto j = 0; j < V.size(); ++j)  // for eacn time step
+//             {
+//                auto [V0, V1, V2, V3, V4, V5] = V[j];
+//                os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << ", " << V3 << ", " << V4 << ", " << V5 << "]";
+//                if (j != V.size() - 1)
+//                   os << ",\n";
+//                else
+//                   os << "],\n";
+//             }
+//          }
+//       }
+//       {
+//          // int size = this->map_S_Tddd.size();
+//          // int i = 0;
+//          for (const auto &[key, V] : this->map_S_Tddd) {
+//             os << "\"" << key << "\":[";
+//             for (auto j = 0; j < V.size(); ++j) {
+//                auto [V0, V1, V2] = V[j];
+//                os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << "]";
+//                if (j != V.size() - 1)
+//                   os << ",\n";
+//                else
+//                   os << "],\n";
+//             }
+//          }
+//       }
+//       {
+//          int size = this->map_S_D.size();
+//          int i = 0;
+//          for (const auto &[key, V] : this->map_S_D) {
+//             os << "\"" << key << "\":[";
+//             for (auto j = 0; j < V.size(); ++j)
+//                os << std::setprecision(15) << V[j] << (j != V.size() - 1 ? "," : "]");
+//             if (i == size - 1)
+//                os << "\n";
+//             else
+//                os << ",\n";
+//             i++;
+//          }
+//       }
+//       {
+//          int size = this->map_S_I.size();
+//          int i = 0;
+//          for (const auto &[key, V] : this->map_S_I) {
+//             os << "\"" << key << "\":[";
+//             for (auto j = 0; j < V.size(); ++j)
+//                os << V[j] << (j != V.size() - 1 ? "," : "]");
+//             if (i == size - 1)
+//                os << "\n";
+//             else
+//                os << ",\n";
+//             i++;
+//          }
+//       }
+//       os << "\n}" << std::endl;
+//    };
+// };
 
 //============================================================
 //========================= Load  ============================
