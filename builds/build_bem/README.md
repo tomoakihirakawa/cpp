@@ -119,7 +119,7 @@ $$
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L469](./BEM_calculateVelocities.hpp#L469)
+[./BEM_calculateVelocities.hpp#L470](./BEM_calculateVelocities.hpp#L470)
 
 
 ## ⛵️内部流速の計算方法 
@@ -136,12 +136,18 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 $$
 
 
-[./BEM_calculateVelocities.hpp#L556](./BEM_calculateVelocities.hpp#L556)
+[./BEM_calculateVelocities.hpp#L557](./BEM_calculateVelocities.hpp#L557)
 
 
 ## ⛵️境界のタイプを決定する 
 
-まず，流体節点が接触する構造物面を保存しておく．つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
+0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
+['networkPoint::contact_angle'](../../include/networkPoint.hpp#L172)，
+['networkPoint::isInContact'](../../include/networkPoint.hpp#L179)，
+['networkPoint::addContactFaces'](../../include/networkPoint.hpp#L290)
+を使って接触判定を行っている．
+
+つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
 - Neumann面$`\Gamma^{({\rm N})}`$ : 3点接触流体面
@@ -250,9 +256,7 @@ $$
 $$
 
 $$
-\sum _{i=0}^2 \alpha _{i _\circ}(\phi) _{i _\circ}
--
-\sum _{i=0}^2\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\sum _{i=0}^2 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum _{i=0}^2\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 $$
 
 
@@ -277,7 +281,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L296](./BEM_solveBVP.hpp#L296)
+[./BEM_solveBVP.hpp#L294](./BEM_solveBVP.hpp#L294)
 
 
 ### 🪸リジッドモードテクニック 
@@ -287,7 +291,7 @@ $$
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L350](./BEM_solveBVP.hpp#L350)
+[./BEM_solveBVP.hpp#L367](./BEM_solveBVP.hpp#L367)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -311,7 +315,7 @@ $`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmat
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L392](./BEM_solveBVP.hpp#L392)
+[./BEM_solveBVP.hpp#L404](./BEM_solveBVP.hpp#L404)
 
 
 ## ⛵️浮体動揺解析 
@@ -390,10 +394,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L682)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L694)で与えている．
 
 
-[./BEM_solveBVP.hpp#L565](./BEM_solveBVP.hpp#L565)
+[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
 
 
 $$
@@ -410,7 +414,7 @@ $$
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L647](./BEM_solveBVP.hpp#L647)
+[./BEM_solveBVP.hpp#L659](./BEM_solveBVP.hpp#L659)
 
 
 ## ⛵️初期値問題 

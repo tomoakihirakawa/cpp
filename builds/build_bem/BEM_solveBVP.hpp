@@ -321,17 +321,36 @@ struct BEM_BVP {
          double nr, tmp;
          std::array<double, 2> IGIGn, c;
          std::array<double, 3> X0, X1, X2, A, cross, N012;
+         //
+         double sum_area = 0;
+         int n = 0;
+         for (const auto &f : origin->getFaces()) {
+            sum_area += f->area;
+            n++;
+         }
+         double r = std::sqrt(sum_area / n);
+         //
          for (const auto &integ_f : water.getFaces()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
-            for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-               N012 = ModTriShape<3>(t0, t1);
-               tmp = ww * (1. - t0) / (nr = Norm(N012[0] * p0->X + N012[1] * p1->X + N012[2] * p2->X - origin->X));
-               IGIGn = {tmp, tmp / (nr * nr)};
-               std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-               std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-               std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-            }
+            if ((Norm(integ_f->center - origin->X) > 10 * r))
+               for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+                  N012 = ModTriShape<3>(t0, t1);
+                  tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
+                  IGIGn = {tmp, tmp / (nr * nr)};
+                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+               }
+            else
+               for (const auto &[t0, t1, ww] : __array_GW8xGW8__) {
+                  N012 = ModTriShape<3>(t0, t1);
+                  tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
+                  IGIGn = {tmp, tmp / (nr * nr)};
+                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+               }
             /* -------------------------------------------------------------------------- */
             cross = Cross(p0->X - p2->X, p1->X - p2->X);
             c = {Norm(cross), Dot(origin->X - p0->X, cross)};
@@ -358,11 +377,6 @@ struct BEM_BVP {
 #if defined(use_rigid_mode)
          std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
 #else
-         /*
-         @ ∇^2(1/r)=-1/(4pi)δ(r)
-         @ IG*φn=-aφ+IGn*φ
-         @ IG*φn=(IGn-a)*φ
-         */
          std::get<1>(IGIGn_Row[index]) += origin->getSolidAngle();
 #endif
       }

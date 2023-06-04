@@ -8,7 +8,13 @@
 
 ## 境界のタイプを決定する
 
-まず，流体節点が接触する構造物面を保存しておく．つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
+0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
+   \ref{contact_angle}{'networkPoint::contact_angle'}，
+   \ref{isInContact}{'networkPoint::isInContact'}，
+   \ref{addContactFaces}{'networkPoint::addContactFaces'}
+   を使って接触判定を行っている．
+
+つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
    - Neumann面$\Gamma^{({\rm N})}$ : 3点接触流体面
@@ -138,11 +144,6 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
          p->radius = (Mean(extLength(p->getLines())) + radius) / 3.;
-         // auto toF = extXtuple(ToVector(p->getFaces())) - ToX(p);
-         // auto toP = extXtuple(p->getNeighbors()) - ToX(p);
-         // double a = Norm(*std::min_element(toP.begin(), toP.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
-         // double b = Norm(*std::min_element(toF.begin(), toF.end(), [](const auto &a, const auto &b) { return Norm(a) < Norm(b); }));
-         // p->radius = Mean(extLength(extractLines(Flatten(BFS(p, 2))))) / 5.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }
