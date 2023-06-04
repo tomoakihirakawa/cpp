@@ -358,7 +358,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 #pragma omp single nowait
       {
          bool multiple_node_but_corner = (p->isMultipleNode && !p->CORNER);
-         auto scale = (multiple_node_but_corner ? 0.01 : 0.1);
+         auto scale = (multiple_node_but_corner ? 0.01 : 0.05);
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
       for (const auto &p : net.getPoints()) {
@@ -381,7 +381,8 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      addVectorTangentialShift();
+      for (auto ii = 0; ii < 3; ++ii)
+         addVectorTangentialShift();
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
 
       addVectorToNextSurface();
@@ -561,13 +562,11 @@ double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
 流体内部の流速$\nabla \phi$は，BIEを微分して求めることができる．
 
 $$
-\begin{align*}
-\nabla \phi &= \frac{\partial \phi}{\partial x_i} \\
-&= \frac{\partial}{\partial x_i} \left( \frac{1}{2\pi} \iint_\Gamma \phi \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \right) \\
-&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \\
-&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \frac{x_j - x_j'}{|{\bf x} - {\bf x}'|^2} d\Gamma' \\
-&= \frac{1}{2\pi} \iint_\Gamma \frac{\partial \phi}{\partial x_i} \frac{x_j - x_j'}{r^2} d\Gamma' \\
-\end{align*}
+u({\bf a}) = \nabla\phi({\bf a}) = \int_{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
+$$
+
+$$
+Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 $$
 
 */
