@@ -249,17 +249,6 @@ $$
 $$
 
 
-ガラーキン法による離散化：
-
-$$
-\sum _{i=0}^2 N _i \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
-$$
-
-$$
-\sum _{i=0}^2 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum _{i=0}^2\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
-$$
-
-
 [./BEM_solveBVP.hpp#L218](./BEM_solveBVP.hpp#L218)
 
 
@@ -281,7 +270,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L294](./BEM_solveBVP.hpp#L294)
+[./BEM_solveBVP.hpp#L283](./BEM_solveBVP.hpp#L283)
 
 
 ### 🪸リジッドモードテクニック 
@@ -291,7 +280,7 @@ $$
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L367](./BEM_solveBVP.hpp#L367)
+[./BEM_solveBVP.hpp#L356](./BEM_solveBVP.hpp#L356)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -315,7 +304,7 @@ $`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmat
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L404](./BEM_solveBVP.hpp#L404)
+[./BEM_solveBVP.hpp#L393](./BEM_solveBVP.hpp#L393)
 
 
 ## ⛵️浮体動揺解析 
@@ -394,10 +383,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L694)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L683)で与えている．
 
 
-[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
+[./BEM_solveBVP.hpp#L566](./BEM_solveBVP.hpp#L566)
 
 
 $$
@@ -414,7 +403,7 @@ $$
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L659](./BEM_solveBVP.hpp#L659)
+[./BEM_solveBVP.hpp#L648](./BEM_solveBVP.hpp#L648)
 
 
 ## ⛵️初期値問題 
