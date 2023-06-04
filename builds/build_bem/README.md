@@ -119,7 +119,7 @@ $$
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L469](./BEM_calculateVelocities.hpp#L469)
+[./BEM_calculateVelocities.hpp#L470](./BEM_calculateVelocities.hpp#L470)
 
 
 ## ⛵️内部流速の計算方法 
@@ -128,22 +128,26 @@ $$
 流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
 
 $$
-\begin{align*}
-\nabla \phi &= \frac{\partial \phi}{\partial x _i} \\
-&= \frac{\partial}{\partial x _i} \left( \frac{1}{2\pi} \iint _\Gamma \phi \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \right) \\
-&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \log \frac{1}{|{\bf x} - {\bf x}'|} d\Gamma' \\
-&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \frac{x _j - x _j'}{|{\bf x} - {\bf x}'|^2} d\Gamma' \\
-&= \frac{1}{2\pi} \iint _\Gamma \frac{\partial \phi}{\partial x _i} \frac{x _j - x _j'}{r^2} d\Gamma' \\
-\end{align*}
+u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
+$$
+
+$$
+Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 $$
 
 
-[./BEM_calculateVelocities.hpp#L556](./BEM_calculateVelocities.hpp#L556)
+[./BEM_calculateVelocities.hpp#L557](./BEM_calculateVelocities.hpp#L557)
 
 
 ## ⛵️境界のタイプを決定する 
 
-まず，流体節点が接触する構造物面を保存しておく．つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
+0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
+['networkPoint::contact_angle'](../../include/networkPoint.hpp#L172)，
+['networkPoint::isInContact'](../../include/networkPoint.hpp#L179)，
+['networkPoint::addContactFaces'](../../include/networkPoint.hpp#L290)
+を使って接触判定を行っている．
+
+つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
 - Neumann面$`\Gamma^{({\rm N})}`$ : 3点接触流体面
@@ -203,7 +207,6 @@ $$
 $$
 
 
-
 $`\phi`$がラプラス方程式$`\nabla^2\phi=0`$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
 グリーンの定理から$`\phi`$と$`\phi _n`$の関係式，BIEが得られる．
 
@@ -215,6 +218,10 @@ $$
 ここで，$`{\bf a}`$は境界面上の位置ベクトルであり，この原点$`{\bf a}`$を固定し$`{\bf x}`$について面積分される．
 $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
 原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
+
+この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
+この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
+$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
 
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
@@ -232,8 +239,28 @@ $$
 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 $$
 
+ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
+$`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
 
-[./BEM_solveBVP.hpp#L215](./BEM_solveBVP.hpp#L215)
+形状関数$`{\pmb N} _j({\pmb \xi}),{\pmb \xi}=(\xi _0,\xi _1)`$は，$`\xi _0,\xi _1`$が$`0`$から$`1`$動くことで，範囲で三角要素全体を動くように定義している．
+
+$$
+{\pmb N}({\pmb \xi}) = (N _0({\pmb \xi}),N _1({\pmb \xi}),N _2({\pmb \xi})) = (\xi _0, - \xi _1 (\xi _0 - 1), (\xi _0-1)(\xi _1-1))
+$$
+
+
+ガラーキン法による離散化：
+
+$$
+\sum _{i=0}^2 N _i \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
+$$
+
+$$
+\sum _{i=0}^2 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum _{i=0}^2\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+$$
+
+
+[./BEM_solveBVP.hpp#L218](./BEM_solveBVP.hpp#L218)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -254,7 +281,7 @@ $$
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L272](./BEM_solveBVP.hpp#L272)
+[./BEM_solveBVP.hpp#L294](./BEM_solveBVP.hpp#L294)
 
 
 ### 🪸リジッドモードテクニック 
@@ -264,7 +291,7 @@ $$
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L326](./BEM_solveBVP.hpp#L326)
+[./BEM_solveBVP.hpp#L367](./BEM_solveBVP.hpp#L367)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -288,7 +315,7 @@ $`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmat
 $`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
 
 
-[./BEM_solveBVP.hpp#L368](./BEM_solveBVP.hpp#L368)
+[./BEM_solveBVP.hpp#L404](./BEM_solveBVP.hpp#L404)
 
 
 ## ⛵️浮体動揺解析 
@@ -367,10 +394,10 @@ $$
 $$
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L658)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L694)で与えている．
 
 
-[./BEM_solveBVP.hpp#L541](./BEM_solveBVP.hpp#L541)
+[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
 
 
 $$
@@ -387,7 +414,7 @@ $$
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L623](./BEM_solveBVP.hpp#L623)
+[./BEM_solveBVP.hpp#L659](./BEM_solveBVP.hpp#L659)
 
 
 ## ⛵️初期値問題 

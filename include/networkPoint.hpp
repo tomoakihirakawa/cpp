@@ -169,12 +169,14 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 
 */
 
+// \label{contact_angle}
 const double contact_angle = 20. * std::numbers::pi / 180.;
 
 bool isCloseNormal(const Tddd &n1, const Tddd &n2) {
    return isFlat(n1, -n2, contact_angle) || isFlat(n1, n2, contact_angle);
 };
 
+// \label{isInContact}
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
    bool is_close_normal = isCloseNormal(p->getNormal_BEM(), TriangleNormal(f_target));
@@ -285,7 +287,7 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
    }
    return ret;
 };
-
+// \label{addContactFaces}
 inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
    /*
     b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
