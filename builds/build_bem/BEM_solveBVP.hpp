@@ -38,7 +38,6 @@ $$
 $$
 
 
-
 $\phi$がラプラス方程式$\nabla^2\phi=0$を満たし，$G=1/\|{\bf x}-{\bf a}\|$とすると，
 グリーンの定理から$\phi$と$\phi_n$の関係式，BIEが得られる．
 
@@ -50,6 +49,10 @@ $$
 ここで，${\bf a}$は境界面上の位置ベクトルであり，この原点${\bf a}$を固定し${\bf x}$について面積分される．
 $G$は任意のスカラー関数で$G=1/\|{\bf x}-{\bf a}\|$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
 原点での立体角$\alpha\left( {\bf{a}} \right)$とポテンシャル$\phi( {\bf{a}})$の積だけが残る．
+
+この式は，流体内部では，$\alpha ({\bf{a}})$は$1$とできる．
+この式は，$\bf{a}$におけるポテンシャル$\phi ({\bf{a}})$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
+$G=1/\|{\bf x}-{\bf a}\|$がラプラス法廷式の基本解であり，$\phi$は境界におけるポテンシャルの分布である．
 
 */
 
@@ -226,6 +229,27 @@ $$
 \alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
 $$
 
+ここで，$\phi_{k_\vartriangle,j}$における$k_\vartriangle$は三角形要素の番号，$j$は三角形要素の頂点番号．
+$N_j$は三角形要素の形状関数，$\pmb{\xi}$は三角形要素の内部座標，$w_0,w_1$はGauss-Legendre積分の重み，$\alpha_{i_\circ}$は原点$i_\circ$における立体角，$\phi$はポテンシャル，$\phi_n$は法線方向のポテンシャル，$\bf{x}$は空間座標，${\bf x}_{i_\circ}$は原点の空間座標である．
+
+形状関数${\pmb N}_j({\pmb \xi}),{\pmb \xi}=(\xi_0,\xi_1)$は，$\xi_0,\xi_1$が$0$から$1$動くことで，範囲で三角要素全体を動くように定義している．
+
+$$
+{\pmb N}({\pmb \xi}) = (N_0({\pmb \xi}),N_1({\pmb \xi}),N_2({\pmb \xi})) = (\xi_0, - \xi_1 (\xi_0 - 1), (\xi_0-1)(\xi_1-1))
+$$
+
+
+ガラーキン法による離散化：
+
+$$
+\sum_{i=0}^2 N_i \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=
+$$
+
+$$
+\sum_{i=0}^2 \alpha_{i_\circ}(\phi)_{i_\circ}
+-
+\sum_{i=0}^2\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
+$$
 
 */
 
