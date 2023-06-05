@@ -83,6 +83,17 @@ int main() {
 
     ここで，$c_1, c_2, L, \omega$は定数である．
 
+   | variable | meaning |
+   |:---:|:---:|
+   | $L$ | 全長 |
+   | $\omega$ | 角周波数 |
+   | $k$ | 波数 |
+   | $c_1$ | 振幅1 |
+   | $c_2$ | 振幅2 |
+   | $n$ | number of nodes of the robot |
+   | $r$ | length of a node of the robot |
+   | $\theta_i$ | angle of the $i$-th node of the robot |
+
     ロボットの$i$番目の節の位置は，${\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)$である．
     次の関数を使って表すことにする．
 
