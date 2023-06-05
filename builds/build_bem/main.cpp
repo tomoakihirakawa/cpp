@@ -49,9 +49,9 @@ python3 ./input_generator.py
 The simulation results will be stored in the specified output directory.
 
 
-[![Banner](sample0.gif)](sample0.gif)
-
-[![Banner](sample1.gif)](sample1.gif)
+| | |
+|:----:|:----:|
+|　[![Banner](sample0.gif)](sample0.gif) | [![Banner](sample1.gif)](sample1.gif) |
 
 
 */

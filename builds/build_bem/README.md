@@ -5,6 +5,8 @@
         - [🪸修正流速](#🪸修正流速)
     - [⛵️エネルギー保存則](#⛵️エネルギー保存則)
     - [⛵️内部流速の計算方法](#⛵️内部流速の計算方法)
+    - [⛵️境界条件の設定の流れ](#⛵️境界条件の設定の流れ)
+        - [🪸多重節点](#🪸多重節点)
     - [⛵️境界のタイプを決定する](#⛵️境界のタイプを決定する)
         - [🪸多重節点](#🪸多重節点)
     - [⛵️境界値問題](#⛵️境界値問題)
@@ -137,6 +139,37 @@ $$
 
 
 [./BEM_calculateVelocities.hpp#L556](./BEM_calculateVelocities.hpp#L556)
+
+
+## ⛵️境界条件の設定の流れ 
+
+1. 流体節点が接触する構造物面を保存
+- (接触した流体節点) → [構造物面]
+
+2. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする
+- (3点接触流体面) → [Neumann面]
+- (それ以外の面) → [Dirichlet面]
+
+3. 辺の境界条件：辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
+- (2面がNeumann面を含む辺) → [Neumann辺]
+- (2面がDirichlet面を含む辺) → [Dirichlet辺]
+- (それ以外の辺) → [CORNER]
+
+4. 点の境界条件：点を含む面全てがNeumann面ならNeumann点，面全てがDirichlet面ならDirichlet点，それ以外はCORNERとする．
+- (全ての面がNeumann面を含む点) → [Neumann点]
+- (全ての面がDirichlet面を含む点) → [Dirichlet点]
+- (それ以外の点) → [CORNER]
+
+### 🪸多重節点 
+
+💡 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi _n`$を計算できるようにする
+
+💡 $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi _n`$を選択し補間に用いなければならない
+
+これを多重節点という．
+
+
+[./BEM_setBoundaryConditions.hpp#L7](./BEM_setBoundaryConditions.hpp#L7)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -504,7 +537,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L251](./main.cpp#L251)
+[./main.cpp#L252](./main.cpp#L252)
 
 
 ---
@@ -591,9 +624,10 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
-[![Banner](banner.png)](banner.png)
 
-[![Banner](sample0.gif)](sample0.gif)
+| | |
+|:----:|:----:|
+|　[![Banner](sample0.gif)](sample0.gif) | [![Banner](sample1.gif)](sample1.gif) |
 
 
 [./main.cpp#L1](./main.cpp#L1)
