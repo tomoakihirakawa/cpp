@@ -38,8 +38,10 @@ $$
 
 💡 この目的関数$`f`$には，前の節の位置を与える必要がある．節の位置は，後ろの節の位置によって変わらないので，この目的関数を先頭から順番に最適化することは問題ない．
 
+![./output_lighthill/robot_movement.gif](output_lighthill/robot_movement.gif)
 
-[./example01_NewtonRaphson.cpp#L8](./example01_NewtonRaphson.cpp#L8)
+
+[./example01_NewtonRaphson.cpp#L73](./example01_NewtonRaphson.cpp#L73)
 
 
 ## ⛵️ニュートン法 

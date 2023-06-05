@@ -3,6 +3,71 @@
 
 auto w = std::setw(20);
 
+// struct that put nodes of a robot on the LightHill curve
+
+struct LightHillRobot {
+   double L;
+   double w;
+   double k;
+   double c1;
+   double c2;
+   int n;
+
+   LightHillRobot(double L, double w, double k, double c1, double c2, int n)
+       : L(L), w(w), k(k), c1(c1), c2(c2), n(n){};
+
+   auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
+
+   auto X_RB(const std::array<double, 2> a, const double q) {
+      double r = L / n;
+      return a + r * std::array<double, 2>{cos(q), sin(q)};
+   };
+
+   auto f(const std::array<double, 2> a, const double q, const double t) {
+      auto [x, y] = X_RB(a, q);
+      return yLH(x, t) - y;
+   };
+
+   auto ddx_yLH(const double x, const double t) {
+      return (c1 / L + 2 * c2 * x / std::pow(L, 2)) * sin(k * (x / L) - w * t) +
+             (c1 / L * x + c2 * std::pow(x / L, 2)) * cos(k * (x / L) - w * t) * k / L;
+   };
+
+   auto ddq_f(const double q, const double t) {
+      double r = L / n;
+      double x = r * cos(q);
+      return -r * sin(q) * ddx_yLH(x, t) - r * cos(q);
+   };
+
+   V_d getAngles(const double t) {
+      std::vector<double> Q(n, 0.);  // thetas
+      std::array<double, 2> a{{0., 0.}};
+      double error = 0;
+      for (auto i = 1; i < Q.size(); i++) {
+         NewtonRaphson nr(Q[i - 1]);
+         error = 0;
+         for (auto k = 0; k < 50; k++) {
+            auto F = f(a, nr.X, t);
+            nr.update(F * F / 2., F * ddq_f(nr.X, t));
+            if ((error = std::abs(F)) < 1E-5)
+               break;
+         }
+         Q[i] = nr.X;
+         a = X_RB(a, Q[i]);
+      }
+      return Q;
+   };
+
+   std::vector<std::array<double, 2>> anglesToX(const V_d Q) {
+      std::array<double, 2> a = {0., 0.};
+      std::vector<std::array<double, 2>> ret(Q.size());
+      ret[0] = a;
+      for (auto i = 1; i < Q.size(); i++)
+         ret[i] = (a = X_RB(a, Q[i]));
+      return ret;
+   };
+};
+
 int main() {
 
    /*DOC_EXTRACT newton
@@ -39,62 +104,33 @@ int main() {
 
     NOTE: この目的関数$f$には，前の節の位置を与える必要がある．節の位置は，後ろの節の位置によって変わらないので，この目的関数を先頭から順番に最適化することは問題ない．
 
+   ![./output_lighthill/robot_movement.gif](./output_lighthill/robot_movement.gif)
+
     */
 
    TimeWatch time;
 
-   const double L = 0.71;
-   const double w = 2. * M_PI * 1.0;
-   const double k = 2. * M_PI * 2.0;
-   const double c1 = 0.05;
-   const double c2 = 0.05;
-   const int n = 100;
-   const double r = L / n;
-   const double t = 0.;
-
-   auto yLH = [&](const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
-
-   auto X_RB = [&](const std::array<double, 2> a, const double q) { return a + r * std::array<double, 2>{cos(q), sin(q)}; };
-
-   auto f = [&](const std::array<double, 2> a, const double q, const double t) {
-      auto [x, y] = X_RB(a, q);
-      return yLH(x, t) - y;
-   };
-
-   auto ddx_yLH = [&](const double x, const double t) {
-      return (c1 / L + 2 * c2 * x / std::pow(L, 2)) * sin(k * (x / L) - w * t) +
-             (c1 / L * x + c2 * std::pow(x / L, 2)) * cos(k * (x / L) - w * t) * k / L;
-   };
-
-   auto ddq_f = [&](const double q, const double t) {
-      double x = r * cos(q);
-      return -r * sin(q) * ddx_yLH(x, t) - r * cos(q);
-   };
-
-   std::vector<double> Q(n, 0.);  // thetas
-   std::array<double, 2> a{{0., 0.}};
-   double error = 0;
-   for (auto i = 1; i < Q.size(); i++) {
-      NewtonRaphson nr(0.);
-      error = 0;
-      for (auto k = 0; k < 50; k++) {
-         nr.update(f(a, nr.X, t), ddq_f(nr.X, t), 1.);
-         if ((error = std::abs(f(a, nr.X, t))) < 1E-10)
-            break;
-      }
-      Q[i] = nr.X;
-      a = X_RB(a, Q[i]);
-   }
-
    std::cout << time() << std::endl;
 
-   {
-      std::ofstream outFile("lighthill.txt");
-      std::array<double, 2> a{{0., 0.}};
-      outFile << a[0] << " " << a[1] << " " << yLH(a[0], t) << std::endl;
-      for (auto i = 1; i < Q.size(); i++) {
-         auto [x, y] = a = X_RB(a, Q[i]);
-         outFile << x << " " << y << " " << yLH(x, t) << std::endl;
+   double L = 0.71;
+   double w = 2. * M_PI * 1.0;
+   double k = 2. * M_PI * 2.0;
+   double c1 = 0.05;
+   double c2 = 0.05;
+   int nodes = 10;
+   int steps = 20;
+
+   LightHillRobot lhr(L, w, k, c1, c2, nodes);
+
+   for (auto i = 0; i < steps; i++) {
+      std::ofstream outFile("./output_lighthill/lighthill" + std::to_string(i) + ".txt");
+      double t = (double)i / steps;
+      auto Q = lhr.getAngles(t);
+      auto xy = lhr.anglesToX(Q);
+      for (auto j = 0; j < xy.size(); j++) {
+         auto [x, y] = xy[j];
+         outFile << x << " " << y << " " << Q[j] << std::endl;
+         std::cout << x << " " << y << " " << Q[j] << std::endl;
       }
       outFile.close();
    }
