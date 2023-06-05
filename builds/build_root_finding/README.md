@@ -49,12 +49,14 @@ $$
 
 💡 この目的関数$`f`$には，前の節の位置を与える必要がある．節の位置は，後ろの節の位置によって変わらないので，この目的関数を先頭から順番に最適化することは問題ない．
 
-![sample.gif](sample.gif)
+| $`n=5`$ | $`n=10`$ | $`n=50`$ |
+|:---:|:---:|:---:|
+| ![sample5.gif](sample5.gif)  | ![sample10.gif](sample10.gif) | ![sample50.gif](sample50.gif) |
 
 💡 ただし，$`f`$を目的関数とすると根への収束が良くなかったので，$`f^2/2`$を目的関数として計算した．目的関数の微分は，$`f \frac{df}{d\theta}`$としている．
 
 
-[./example01_NewtonRaphson.cpp#L73](./example01_NewtonRaphson.cpp#L73)
+[./example01_NewtonRaphson.cpp#L74](./example01_NewtonRaphson.cpp#L74)
 
 
 ## ⛵️ニュートン法 
