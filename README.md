@@ -16,8 +16,10 @@
     - [⛵️Bucketを用いた粒子探索のテスト](./builds/build_sph/README.md#⛵️Bucketを用いた粒子探索のテスト)
 ## [build_root_finding](./builds/build_root_finding/README.md)
 
-- [Newton法](./builds/build_root_finding/README.md#Newton法)
-    - [割線法 Secant method](./builds/build_root_finding/README.md#割線法-Secant-method)
+- [Contents](./builds/build_root_finding/README.md#Contents)
+    - [⛵️ロボットの節の位置をLightHillの曲線上に乗せる](./builds/build_root_finding/README.md#⛵️ロボットの節の位置をLightHillの曲線上に乗せる)
+    - [⛵️ニュートン法](./builds/build_root_finding/README.md#⛵️ニュートン法)
+    - [⛵️準ニュートン法](./builds/build_root_finding/README.md#⛵️準ニュートン法)
 ## [build_spherical_harmonic](./builds/build_spherical_harmonic/README.md)
 
 - [Contents](./builds/build_spherical_harmonic/README.md#Contents)

@@ -238,15 +238,15 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          double a = magicalValue(p, f) + variance2(p, f);
 
          if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-            a *= std::pow(1.5, 3);
+            a *= std::pow(2, 3);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
-            a *= std::pow(1.5, 2);
+            a *= std::pow(2, 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
                           return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
                        });
                     })) {
-            a *= 1.5;
+            a *= 2;
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
@@ -345,7 +345,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 */
 
-void calculateVecToSurface(const Network &net, const int loop = 10) {
+void calculateVecToSurface(const Network &net, const int loop) {
    for (const auto &p : net.getPoints()) {
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface.fill(0.);
@@ -358,7 +358,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 #pragma omp single nowait
       {
          bool multiple_node_but_corner = (p->isMultipleNode && !p->CORNER);
-         auto scale = (multiple_node_but_corner ? 0.01 : 0.05);
+         auto scale = (multiple_node_but_corner ? 0.01 : 0.15);
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
       for (const auto &p : net.getPoints()) {
@@ -381,8 +381,7 @@ void calculateVecToSurface(const Network &net, const int loop = 10) {
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      for (auto ii = 0; ii < 3; ++ii)
-         addVectorTangentialShift();
+      addVectorTangentialShift();
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
 
       addVectorToNextSurface();
@@ -446,7 +445,7 @@ void calculateCurrentVelocities(const Network &net) {
    }
 }
 
-void calculateCurrentUpdateVelocities(const Network &net, const int loop = 10) {
+void calculateCurrentUpdateVelocities(const Network &net, const int loop = 20) {
 
    calculateVecToSurface(net, loop);
 

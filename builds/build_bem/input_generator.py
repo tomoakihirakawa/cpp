@@ -59,7 +59,7 @@ input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
+SimulationCase = "Kramer2021"
 
 match SimulationCase:
     case "Kramer2021":
@@ -96,7 +96,7 @@ match SimulationCase:
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.005,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,

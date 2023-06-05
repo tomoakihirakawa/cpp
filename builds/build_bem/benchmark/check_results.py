@@ -14,7 +14,7 @@ with open(json_file_path, 'r') as file:
 # Extract the data
 float_COM = np.array(data['float_COM'])
 Te0 = 0.76
-time = np.array(data['time'])/Te0
+time = np.array(data['time'])/Te0-0.025
 H0 = 30/1000
 z = (float_COM[:, 2] - 900 / 1000) / H0
 
