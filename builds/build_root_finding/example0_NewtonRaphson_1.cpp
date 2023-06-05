@@ -48,13 +48,36 @@ $$
 \frac{df}{d\theta} = -r \sin\theta\frac{d y^{\rm LH} }{dx}-r\cos\theta
 $$
 
+ただ，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算する．目的関数の微分は，$f \frac{df}{d\theta}$としている．
+
 NOTE: この目的関数$f$には，前の節の位置が含まれているが，この目的関数を使って，先頭から順番に角度を決めていけば，各最適化において見積もる角度は常に１つだけとなる．
 
 | $n=5$ | $n=10$ | $n=50$ |
 |:---:|:---:|:---:|
 | ![sample5.gif](sample5.gif)  | ![sample10.gif](sample10.gif) | ![sample50.gif](sample50.gif) |
 
-NOTE: ただし，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算した．目的関数の微分は，$f \frac{df}{d\theta}$としている．
+### 工夫点
+
+愚直にニュートン法を適用すると，比較的振幅が大きい場合，正しい角度が得られない．
+例えば以下のケース．
+
+```
+double L = 0.71;
+double w = 2. * M_PI * 1.0;
+double k = 2. * M_PI * 2.0;
+double c1 = 0.1;
+double c2 = 0.1;
+int nodes = 10;
+int steps = 20;
+```
+
+そのような場合，\ref{LightHillRobot:scale}{ここ}のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+
+| | $n=5$ | $n=10$ | $n=50$ |
+|:---:|:---:|:---:|:---:|
+| `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
+| `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif)  | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
+
 
 */
 
@@ -95,10 +118,10 @@ struct LightHillRobot {
    V_d getAngles(const double t) {
       std::vector<double> Q(n, 0.);  // thetas
       std::array<double, 2> a{{0., 0.}};
-      double error = 0, F;
-      double scale = 0.25, q0;
+      double error = 0, F, q0;
+      double scale = 0.3;  //\label{LightHillRobot:scale}
       for (auto i = 0; i < Q.size(); i++) {
-         q0 = atan(ddx_yLH(a[0], t));
+         q0 = atan(ddx_yLH(std::get<0>(a), t));
          NewtonRaphson nr(q0);
          error = 0;
          for (auto k = 0; k < 100; k++) {
@@ -131,7 +154,7 @@ int main() {
    double k = 2. * M_PI * 2.0;
    double c1 = 0.1;
    double c2 = 0.1;
-   int nodes = 10;
+   int nodes = 5;
    int steps = 20;
 
    LightHillRobot lhr(L, w, k, c1, c2, nodes);
