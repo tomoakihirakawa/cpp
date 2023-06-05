@@ -51,6 +51,8 @@ $$
 
 ![sample.gif](sample.gif)
 
+💡 ただし，$`f`$を目的関数とすると根への収束が良くなかったので，$`f^2/2`$を目的関数として計算した．目的関数の微分は，$`f \frac{df}{d\theta}`$としている．
+
 
 [./example01_NewtonRaphson.cpp#L73](./example01_NewtonRaphson.cpp#L73)
 

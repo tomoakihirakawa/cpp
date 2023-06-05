@@ -117,6 +117,8 @@ int main() {
 
    ![sample.gif](sample.gif)
 
+   NOTE: ただし，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算した．目的関数の微分は，$f \frac{df}{d\theta}$としている．
+
     */
 
    TimeWatch time;
