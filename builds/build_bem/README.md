@@ -537,7 +537,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L252](./main.cpp#L252)
+[./main.cpp#L250](./main.cpp#L250)
 
 
 ---
@@ -624,10 +624,9 @@ python3 ./input_generator.py
 
 The simulation results will be stored in the specified output directory.
 
+[![Banner](sample0.gif)](sample0.gif)
 
-| | |
-|:----:|:----:|
-|　[![Banner](sample0.gif)](sample0.gif) | [![Banner](sample1.gif)](sample1.gif) |
+[![Banner](sample1.gif)](sample1.gif)
 
 
 [./main.cpp#L1](./main.cpp#L1)
