@@ -71,4 +71,4 @@ for file_name in files:
     images.append(imageio.imread(dir_name + file_name + ".png"))
 
 # Save as a GIF
-imageio.mimsave(dir_name + 'robot_movement.gif', images)
+imageio.mimsave(dir_name + 'robot_movement.gif', images, loop=0)
