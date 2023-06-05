@@ -81,7 +81,7 @@ int main() {
     y^{\rm LH}(x,t) = \left( \frac{c_1}{L} x + {c_2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
     $$
 
-    ここで，$c_1, c_2, L, \omega$は定数である．
+    ここで，変数の意味は以下の通り．
 
    | variable | meaning |
    |:---:|:---:|
@@ -90,9 +90,9 @@ int main() {
    | $k$ | 波数 |
    | $c_1$ | 振幅1 |
    | $c_2$ | 振幅2 |
-   | $n$ | number of nodes of the robot |
-   | $r$ | length of a node of the robot |
-   | $\theta_i$ | angle of the $i$-th node of the robot |
+   | $n$ | ロボットの関節の数$-1$ |
+   | $r$ | ロボットの関節間の長さ |
+   | $\theta_i$ | $i$番目の関節が進行方向となす角度 |
 
     ロボットの$i$番目の節の位置は，${\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)$である．
     次の関数を使って表すことにする．
