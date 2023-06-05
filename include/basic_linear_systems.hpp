@@ -184,7 +184,7 @@ extern "C" void dgetrs_(const char *TRANS,
 struct lapack_lu {
    std::vector<double> a;
    const int dim;
-   const int nrhs = 1, LDA, LDB;
+   const int nrhs = 1, LDB, LDA;
    int info;
    std::vector<int> ipiv;
    ~lapack_lu(){};
