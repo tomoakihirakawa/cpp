@@ -3,7 +3,60 @@
 
 auto w = std::setw(20);
 
-// struct that put nodes of a robot on the LightHill curve
+/*DOC_EXTRACT newton
+
+## 例）ロボットの節をLightHillの曲線上に乗せる
+
+LightHillの式：
+
+$$
+{\bf x}^{\rm LH}(x,t) = (x,y^{\rm LH}(x,t)),\quad
+y^{\rm LH}(x,t) = \left( \frac{c_1}{L} x + {c_2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
+$$
+
+ロボットの$i$番目の節の位置：
+
+$$
+{\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)
+$$
+
+ここで，変数の意味は以下の通り．
+
+| variable | meaning |
+|:---:|:---:|
+| $L$ | 全長 |
+| $\omega$ | 角周波数 |
+| $k$ | 波数 |
+| $c_1$ | 振幅1 |
+| $c_2$ | 振幅2 |
+| $n$ | ロボットの関節の数 |
+| $r$ | ロボットの関節間の長さ |
+| $\theta_i$ | $i$番目の関節が進行方向となす角度 |
+
+### 目的関数$f$
+
+LightHillの式にこの節を乗せるには，どのような目的関数$f$を用いればよいだろうか．
+最適化する節の一つ前の節の位置を${\bf a}=(a_x,a_y)$とすると，次の目的関数$f$が考えられる．
+
+$$
+f(\theta) = y^{\rm LH}(x,t) - a_y - r \sin \theta
+$$
+
+ニュートン法には微分が必要．
+
+$$
+\frac{df}{d\theta} = -r \sin\theta\frac{d y^{\rm LH} }{dx}-r\cos\theta
+$$
+
+NOTE: この目的関数$f$には，前の節の位置が含まれているが，この目的関数を使って，先頭から順番に角度を決めていけば，各最適化において見積もる角度は常に１つだけとなる．
+
+| $n=5$ | $n=10$ | $n=50$ |
+|:---:|:---:|:---:|
+| ![sample5.gif](sample5.gif)  | ![sample10.gif](sample10.gif) | ![sample50.gif](sample50.gif) |
+
+NOTE: ただし，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算した．目的関数の微分は，$f \frac{df}{d\theta}$としている．
+
+*/
 
 struct LightHillRobot {
    double L;
@@ -43,13 +96,15 @@ struct LightHillRobot {
       std::vector<double> Q(n, 0.);  // thetas
       std::array<double, 2> a{{0., 0.}};
       double error = 0, F;
+      double scale = 0.25, q0;
       for (auto i = 0; i < Q.size(); i++) {
-         NewtonRaphson nr(Q[i - 1]);
+         q0 = atan(ddx_yLH(a[0], t));
+         NewtonRaphson nr(q0);
          error = 0;
-         for (auto k = 0; k < 50; k++) {
+         for (auto k = 0; k < 100; k++) {
             F = f(a, nr.X, t);
-            nr.update(F * F / 2., F * ddq_f(nr.X, t));
-            if ((error = std::abs(F)) < 1E-4)
+            nr.update(F * F / 2., F * ddq_f(nr.X, t), scale);
+            if ((error = std::abs(F)) < 1E-10)
                break;
          }
          Q[i] = nr.X;
@@ -71,67 +126,16 @@ struct LightHillRobot {
 
 int main() {
 
-   /*DOC_EXTRACT newton
-
-    ## ロボットの節の位置をLightHillの曲線上に乗せる
-
-    LightHillの式は以下のようになる．
-
-    $$
-    {\bf x}^{\rm LH}(x,t) = (x,y^{\rm LH}(x,t)),\quad
-    y^{\rm LH}(x,t) = \left( \frac{c_1}{L} x + {c_2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
-    $$
-
-    ここで，変数の意味は以下の通り．
-
-   | variable | meaning |
-   |:---:|:---:|
-   | $L$ | 全長 |
-   | $\omega$ | 角周波数 |
-   | $k$ | 波数 |
-   | $c_1$ | 振幅1 |
-   | $c_2$ | 振幅2 |
-   | $n$ | ロボットの関節の数$-1$ |
-   | $r$ | ロボットの関節間の長さ |
-   | $\theta_i$ | $i$番目の関節が進行方向となす角度 |
-
-    ロボットの$i$番目の節の位置は，${\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)$である．
-    次の関数を使って表すことにする．
-
-    $$
-    {\bf x}_{i}^{\rm rb} = X^{\rm rb}({\bf x}_{i-1}^{\rm rb},r,\theta_i),
-    \quad X^{\rm rb}({\bf a},r,\theta) = {\bf a} + r \left( \cos \theta, \sin \theta \right)
-    $$
-
-    ここで，$r$はロボットの節の長さ，$\theta_i$はロボットの節の角度である．
-    頭の位置を$X_{0}^{\rm rb}=(0,0)$とする．
-    次の節の位置は，$X_{1}^{\rm rb} = r (\cos \theta_1, \sin \theta_1)$である．
-    さらに次の節の位置は，$X_{2}^{\rm rb} = X_{1}^{\rm rb} + r (\cos \theta_2, \sin \theta_2)$となる．
-
-    目的関数$f$の微分は，
-
-    $$
-    \frac{df}{d\theta} = -r \sin\theta\frac{d y^{\rm LH} }{dx}-r\cos\theta
-    $$
-
-    NOTE: この目的関数$f$には，前の節の位置を与える必要がある．節の位置は，後ろの節の位置によって変わらないので，この目的関数を先頭から順番に最適化することは問題ない．
-
-   | $n=5$ | $n=10$ | $n=50$ |
-   |:---:|:---:|:---:|
-   | ![sample5.gif](sample5.gif)  | ![sample10.gif](sample10.gif) | ![sample50.gif](sample50.gif) |
-
-   NOTE: ただし，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算した．目的関数の微分は，$f \frac{df}{d\theta}$としている．
-
-    */
-
    double L = 0.71;
    double w = 2. * M_PI * 1.0;
    double k = 2. * M_PI * 2.0;
-   double c1 = 0.05;
-   double c2 = 0.05;
-   int nodes = 5;
+   double c1 = 0.1;
+   double c2 = 0.1;
+   int nodes = 10;
    int steps = 20;
+
    LightHillRobot lhr(L, w, k, c1, c2, nodes);
+
    for (auto i = 0; i < steps; i++) {
       std::ofstream outFile("./output_lighthill/lighthill" + std::to_string(i) + ".txt");
       TimeWatch time;

@@ -30,7 +30,7 @@ def plot_data(file_name, analitical_file_name):
 
     # Set range
     ax.set_xlim(0., 0.8)
-    ax.set_ylim(-0.1, 0.1)
+    ax.set_ylim(-0.2, 0.2)
 
     # Plot point with larger size
     ax.scatter(x_data[1:-1], y_data[1:-1], s=50, label='node')
@@ -45,11 +45,11 @@ def plot_data(file_name, analitical_file_name):
     # Grid
     ax.grid()
 
-    # Plot line
-    ax.plot(x_data, y_data, label='Numerical Solution')
-
     # Plot analytical solution
     ax.plot(x_analitical, y_analitical, label='Analytical Solution')
+
+    # Plot line
+    ax.plot(x_data, y_data, label='Numerical Solution')
 
     # Labels and title with larger font size and times
     ax.set_xlabel('x', fontsize=12, fontname='Times New Roman')
