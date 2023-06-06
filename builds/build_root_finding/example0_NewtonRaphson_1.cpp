@@ -14,7 +14,7 @@ $$
 y^{\rm LH}(x,t) = \left( \frac{c_1}{L} x + {c_2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
 $$
 
-ロボットの$i$番目の節の位置：
+ロボットの$i$番目の節の位置ベクトル：
 
 $$
 {\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)
@@ -116,13 +116,14 @@ struct LightHillRobot {
    };
 
    V_d getAngles(const double t) {
-      std::vector<double> Q(n, 0.);  // thetas
+      std::vector<double> Q(n, 0.);
       std::array<double, 2> a{{0., 0.}};
       double error = 0, F, q0;
       double scale = 0.3;  //\label{LightHillRobot:scale}
+      NewtonRaphson nr(0.);
       for (auto i = 0; i < Q.size(); i++) {
          q0 = atan(ddx_yLH(std::get<0>(a), t));
-         NewtonRaphson nr(q0);
+         nr.initialize(q0);
          error = 0;
          for (auto k = 0; k < 100; k++) {
             F = f(a, nr.X, t);

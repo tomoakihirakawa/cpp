@@ -30,6 +30,8 @@
 
 - [Contents](./builds/build_divide_merge/README.md#Contents)
 - [🐋メッシュの細分化](./builds/build_divide_merge/README.md#🐋メッシュの細分化)
+    - [⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）](./builds/build_divide_merge/README.md#⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）)
+    - [⛵️実行方法](./builds/build_divide_merge/README.md#⛵️実行方法)
 ## [build_JSON](./builds/build_JSON/README.md)
 
 ## [build_bem](./builds/build_bem/README.md)
