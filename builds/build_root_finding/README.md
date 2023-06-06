@@ -32,7 +32,7 @@ $$
 y^{\rm LH}(x,t) = \left( \frac{c _1}{L} x + {c _2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
 $$
 
-ロボットの$`i`$番目の節の位置：
+ロボットの$`i`$番目の節の位置ベクトル：
 
 $$
 {\bf x} _{i}^{\rm rb} = {\bf x} _{i-1}^{\rm rb} + r \left( \cos \theta _i, \sin \theta _i \right)
