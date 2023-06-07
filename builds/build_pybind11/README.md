@@ -18,7 +18,7 @@ make
 `run_robot.py`にあるように`import`して利用できる．
 
 
-[./LightHillRobot_pybind.cpp#L1](./LightHillRobot_pybind.cpp#L1)
+[./lightHillRobot_pybind.cpp#L1](./lightHillRobot_pybind.cpp#L1)
 
 
 ---
