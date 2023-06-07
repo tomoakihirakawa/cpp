@@ -1,8 +1,12 @@
 /*DOC_EXTRACT SPH
+
 ## 核関数
-3次スプライン関数と5次スプライン関数の実装とテストコード
+
+プログラムした\ref{SPH:w_Bspline3}{3次スプライン関数}と\ref{SPH:w_Bspline5}{5次スプライン関数}のテストコード
+
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
+
 */
 #include "kernelFunctions.hpp"
 

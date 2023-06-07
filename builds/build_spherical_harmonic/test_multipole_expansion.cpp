@@ -18,21 +18,27 @@ G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
 \quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
 $$
 
-近似解 $G_{\rm apx}({\bf x- \bf c},{\bf a - \bf c})$ を以下の式で定義する：
+近似解 $G_{\rm apx}({\bf x},{\bf a},{\bf c})$ を以下の式で定義する：
 
 $$
-G_{\rm apx}(n, {\bf x- \bf c},{\bf a - \bf c}) \approx \sum_{k=0}^{n} \sum_{m=-k}^{k} \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})
+\begin{align*}
+G_{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum_{k=0}^{n} \sum_{m=-k}^{k} \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})\\
+&={\bf Y^*}({\bf x}-{\bf c})\cdot{\bf Y}({\bf a}-{\bf c})
+\end{align*}
 $$
 
+ここで，$(r_{near},a_{near},b_{near})$は，球面座標系に${\bf x}-{\bf c}$を変換したものであり，
+$(r_{far},a_{far},b_{far})$は，球面座標系に${\bf a}-{\bf c}$を変換したもの．$Y(k, m, a, b)$は球面調和関数：
+
 $$
-Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}}(-1)^m P_k^{|m|}(\cos(a)) e^{i mb}
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P_k^{|m|}(\cos(a)) e^{i mb}
 $$
 
-ここで，
+$P_k^m(x)$はルジャンドル陪関数：
 
-- $Y(k, m, a, b)$ は球面調和関数
-- $r_{near}$ と $r_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ のノルム
-- $a_{near}$, $b_{near}$, $a_{far}$, $b_{far}$ はベクトル ${\bf x - c}$ と ${\bf a - c}$ の球面座標
+$$
+P_k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+$$
 
 */
 
@@ -53,6 +59,7 @@ r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan
 $$
 
 $r_\parallel=\sqrt{x^2+y^2}$とする．$\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}$なので，
+$(r,a,b)$の$(x,y,z)$に関する勾配は次のようになる．
 
 $$
 \nabla r = \frac{\bf x}{r},\quad
@@ -140,7 +147,7 @@ double Gapx(unsigned p,
 
 /*DOC_EXTRACT BEM
 
-### $G_{\rm apx}$の勾配$\nabla G_{\rm apx}$
+### $G_{\rm apx}$の勾配$\nabla G_{\rm apx}$の精度
 
 $\nabla G_{\rm apx}$は，$\nabla_{\rm \circ}=(\frac{\partial}{\partial r},\frac{\partial}{\partial a},\frac{\partial}{\partial b})$とすると，
 
@@ -150,7 +157,42 @@ $$
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
 $$
 
-### $\nabla G_{\rm apx}$の精度
+具体的には`gradGapx`のように
+
+$$
+\begin{align*}
+\nabla_{\circ} G_{\rm apx}(n, {\bf x},{\bf a},{\bf c})
+& = \sum_{k=0}^{n} \sum_{m=-k}^{k}
+\nabla_{\circ}
+\left(
+r^k Y(k, -m, a, b)
+\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
+\frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
+\end{align*}
+$$
+
+$$
+\begin{align*}
+\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)
+= \left(
+k r^{k-1} Y,
+r^k \frac{\partial Y}{\partial a},
+r^k \frac{\partial Y}{\partial b},
+\right)
+\end{align*}
+$$
+
+$$
+\frac{\partial Y}{\partial a} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} \frac{d P_k^{|m|}}{d x}(x)_{x=\cos(a) } e^{i mb}\\
+$$
+
+$$
+\frac{\partial Y}{\partial b} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P_k^{|m|}(\cos(a)) i m e^{i mb}
+$$
+
+$$
+\frac{d P_k^{m}}{d x}(x) = \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P_k^{m}(x) + P_k^{m+1}(x) \right)
+$$
 
 ${\bf c}=(x,y,0)$を変化させてプロットした結果：
 
@@ -265,5 +307,24 @@ int main() {
 多重極展開を使えば，
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G_{\rm apx}({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G_{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x}-{\bf c})} \right) \cdot{\bf Y}({\bf a}-{\bf c}) dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+
+$$
+\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
+$$
+
+$$
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+$$
 
 */
