@@ -119,7 +119,7 @@ $$
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L469](./BEM_calculateVelocities.hpp#L469)
+[./BEM_calculateVelocities.hpp#L473](./BEM_calculateVelocities.hpp#L473)
 
 
 ## ⛵️内部流速の計算方法 
@@ -136,7 +136,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 $$
 
 
-[./BEM_calculateVelocities.hpp#L556](./BEM_calculateVelocities.hpp#L556)
+[./BEM_calculateVelocities.hpp#L560](./BEM_calculateVelocities.hpp#L560)
 
 
 ## ⛵️境界のタイプを決定する 

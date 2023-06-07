@@ -357,7 +357,10 @@ void calculateVecToSurface(const Network &net, const int loop) {
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
       {
-         if ((p->isMultipleNode && !p->CORNER))
+         double scale = 0.1;
+         if (p->isMultipleNode && !p->CORNER)
+            scale = 0.01;
+         else if (p->Neumann)
             scale = 0.01;
          else
             scale = 0.1;
@@ -383,7 +386,8 @@ void calculateVecToSurface(const Network &net, const int loop) {
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      addVectorTangentialShift();
+      for (auto i = 0; i < 10; ++i)
+         addVectorTangentialShift();
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
