@@ -362,6 +362,8 @@ void calculateVecToSurface(const Network &net, const int loop) {
             scale = 0.01;
          else if (p->Neumann)
             scale = 0.01;
+         else if (p->CORNER)
+            scale = 0.01;
          else
             scale = 0.1;
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);

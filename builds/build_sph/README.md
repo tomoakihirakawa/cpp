@@ -235,7 +235,9 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 
 
 ## ⛵️核関数 
-3次スプライン関数と5次スプライン関数の実装とテストコード
+
+プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L122)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
+
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
 

@@ -587,8 +587,8 @@ double phint_Neumann(networkFace *F) {
    auto ret = Dot(Cross(Omega, F->normal), U_body - grad_phi);
    ret += Dot(F->normal, accelNeumann(F));
    auto basis = OrthogonalBasis(F->normal);
-   // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
-   ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+   ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+   // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
    return ret;
 };
 

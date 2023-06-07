@@ -70,7 +70,7 @@ double laplacian_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
 };
 
 //! --------------------------------- ５次スプライン -------------------------------- */
-
+// \label{SPH:w_Bspline5}
 double w_Bspline5(double q, const double &h) {
    constexpr double a = 2187. / (40. * std::numbers::pi);
    constexpr double one_third = 1.0 / 3.0;
@@ -117,35 +117,9 @@ double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
       return Dot(Xij / (r * r), grad_w_Bspline5(xi, xj, h));
 };
 
-// double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
-//    constexpr double a = 2187. / (40. * std::numbers::pi);
-//    constexpr double one_third = 1.0 / 3.0;
-//    constexpr double two_thirds = 2.0 / 3.0;
-
-//    const Tddd Xij = xi - xj;
-//    const double r = Norm(Xij);
-//    const double q = r / h;
-
-//    if (q > 1. || r < 1E-13)
-//       return 0.;
-
-//    Tddd grad;
-
-//    if (q < one_third) {
-//       const double dinom = h * h * h * r * h;
-//       if (dinom == 0.0)
-//          grad = {0., 0., 0.};
-//       else
-//          grad = Xij * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4) - 75. * std::pow(one_third - q, 4)) * a / dinom;
-//    } else if (q < two_thirds)
-//       grad = Xij * (-5 * std::pow(1. - q, 4) + 30. * std::pow(two_thirds - q, 4)) * a / (h * h * h * r * h);
-//    else
-//       grad = Xij * (-5 * std::pow(1. - q, 4)) * a / (h * h * h * r * h);
-
-//    return Dot(Xij / (r * r), grad);
-// }
-
 //! --------------------------------- 3次スプライン -------------------------------- */
+
+// \label{SPH:w_Bspline3}
 #include <numbers>
 double w_Bspline3(const double &r, const double &h) {
    const double q = r / h;
@@ -158,19 +132,6 @@ double w_Bspline3(const double &r, const double &h) {
 };
 
 Tddd grad_w_Bspline3(const Tddd &xi, const Tddd &xj, const double h) {
-   // const auto r = Norm(xi - xj);
-   // const double q = r / h;
-   // if (q > 1.)
-   //    return {0., 0., 0.};
-   // else if (q < 0.5) {
-   //    const double dinom = std::numbers::pi * h * h * h * r * h;
-   //    if (dinom == 0.0)
-   //       return {0., 0., 0.};
-   //    else
-   //       return 8. * (xi - xj) * 6 * (-2 * q + 3 * q * q) / dinom;
-   // } else
-   //    return -8. * (xi - xj) * 6. * std::pow(1 - q, 2) / (std::numbers::pi * h * h * h * r * h);
-   //
    const auto r = Norm(xi - xj);
    const double q = r / h;
    const Tddd dqdr = (xi - xj) / (r * h);

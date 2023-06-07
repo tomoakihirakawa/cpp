@@ -4,8 +4,7 @@
     - [⛵️Green関数の多重極展開](#⛵️Green関数の多重極展開)
         - [🪸球面座標系への変換](#🪸球面座標系への変換)
         - [🪸$`G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の精度)
-        - [🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$](#🪸$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$)
-        - [🪸$`\nabla G _{\rm apx}`$の精度](#🪸$`\nabla-G-_{\rm-apx}`$の精度)
+        - [🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
     - [⛵️境界要素法への応用](#⛵️境界要素法への応用)
 
 
@@ -21,21 +20,27 @@ G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
 \quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
 $$
 
-近似解 $`G _{\rm apx}({\bf x- \bf c},{\bf a - \bf c})`$ を以下の式で定義する：
+近似解 $`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$ を以下の式で定義する：
 
 $$
-G _{\rm apx}(n, {\bf x- \bf c},{\bf a - \bf c}) \approx \sum _{k=0}^{n} \sum _{m=-k}^{k} \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})
+\begin{align*}
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum _{k=0}^{n} \sum _{m=-k}^{k} \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})\\
+&={\bf Y^*}({\bf x}-{\bf c})\cdot{\bf Y}({\bf a}-{\bf c})
+\end{align*}
 $$
 
+ここで，$`(r _{near},a _{near},b _{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{far},a _{far},b _{far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+
 $$
-Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}}(-1)^m P _k^{|m|}(\cos(a)) e^{i mb}
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
 $$
 
-ここで，
+$`P _k^m(x)`$はルジャンドル陪関数：
 
-- $`Y(k, m, a, b)`$ は球面調和関数
-- $`r _{near}`$ と $`r _{far}`$ はベクトル $`{\bf x - c}`$ と $`{\bf a - c}`$ のノルム
-- $`a _{near}`$, $`b _{near}`$, $`a _{far}`$, $`b _{far}`$ はベクトル $`{\bf x - c}`$ と $`{\bf a - c}`$ の球面座標
+$$
+P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+$$
 
 
 [./test_multipole_expansion.cpp#L8](./test_multipole_expansion.cpp#L8)
@@ -50,6 +55,7 @@ r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan
 $$
 
 $`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 
 $$
 \nabla r = \frac{\bf x}{r},\quad
@@ -58,7 +64,7 @@ $$
 $$
 
 
-[./test_multipole_expansion.cpp#L45](./test_multipole_expansion.cpp#L45)
+[./test_multipole_expansion.cpp#L51](./test_multipole_expansion.cpp#L51)
 
 
 ### 🪸$`G _{\rm apx}`$の精度 
@@ -77,10 +83,10 @@ $`a _{near},b _{near}`$は，より小さければ精度が良く，
 また，$`a _{far},b _{far}`$は，より大きければ精度が良くなる．
 
 
-[./test_multipole_expansion.cpp#L81](./test_multipole_expansion.cpp#L81)
+[./test_multipole_expansion.cpp#L88](./test_multipole_expansion.cpp#L88)
 
 
-### 🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$ 
+### 🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度 
 
 $`\nabla G _{\rm apx}`$は，$`\nabla _{\rm \circ}=(\frac{\partial}{\partial r},\frac{\partial}{\partial a},\frac{\partial}{\partial b})`$とすると，
 
@@ -90,7 +96,42 @@ $$
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
 $$
 
-### 🪸$`\nabla G _{\rm apx}`$の精度 
+具体的には`gradGapx`のように
+
+$$
+\begin{align*}
+\nabla _{\circ} G _{\rm apx}(n, {\bf x},{\bf a},{\bf c})
+& = \sum _{k=0}^{n} \sum _{m=-k}^{k}
+\nabla _{\circ}
+\left(
+r^k Y(k, -m, a, b)
+\right) _{(r,a,b)=(r _{near},a _{near},b _{near})}
+\frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})\\
+\end{align*}
+$$
+
+$$
+\begin{align*}
+\nabla _{\circ}\left(r^k Y(k, -m, a, b)\right)
+= \left(
+k r^{k-1} Y,
+r^k \frac{\partial Y}{\partial a},
+r^k \frac{\partial Y}{\partial b},
+\right)
+\end{align*}
+$$
+
+$$
+\frac{\partial Y}{\partial a} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} \frac{d P _k^{|m|}}{d x}(x) _{x=\cos(a) } e^{i mb}\\
+$$
+
+$$
+\frac{\partial Y}{\partial b} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) i m e^{i mb}
+$$
+
+$$
+\frac{d P _k^{m}}{d x}(x) = \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P _k^{m}(x) + P _k^{m+1}(x) \right)
+$$
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
@@ -100,7 +141,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 | **$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$** | ![n4_A_10_10_10](output_n4_A_10_10_10_grad.png) | ![n5_A_10_10_10](output_n5_A_10_10_10_grad.png) | ![n6_A_10_10_10](output_n6_A_10_10_10_grad.png) | ![n7_A_10_10_10](output_n7_A_10_10_10_grad.png) | ![n8_A_10_10_10](output_n8_A_10_10_10_grad.png) |
 
 
-[./test_multipole_expansion.cpp#L141](./test_multipole_expansion.cpp#L141)
+[./test_multipole_expansion.cpp#L148](./test_multipole_expansion.cpp#L148)
 
 
 ## ⛵️境界要素法への応用 
@@ -116,8 +157,27 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
 
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G _{\rm apx}({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G _{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
 
-[./test_multipole_expansion.cpp#L254](./test_multipole_expansion.cpp#L254)
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x}-{\bf c})} \right) \cdot{\bf Y}({\bf a}-{\bf c}) dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+
+$$
+\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
+$$
+
+$$
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+$$
+
+
+[./test_multipole_expansion.cpp#L296](./test_multipole_expansion.cpp#L296)
 
 
 ---
