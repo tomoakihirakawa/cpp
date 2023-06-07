@@ -241,6 +241,14 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
 
+| N   | Sum for 3rd Order | Sum for 5th Order |
+| --- | ----------------- | ----------------- |
+| 5   | 1.00527           | 0.999206          |
+| 10  | 1.00011           | 1.00005           |
+| 15  | 0.999972          | 0.999999          |
+| 20  | 1                 | 1                 |
+| 25  | 1                 | 1                 |
+
 
 [./test_KernelFunctions.cpp#L1](./test_KernelFunctions.cpp#L1)
 
