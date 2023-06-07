@@ -241,7 +241,7 @@ $`\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
 
-| N   | Sum for 3rd Order | Sum for 5th Order |
+| 分割数$`N`$，体積$`V=(\frac{2r}{N})^3`$   | Sum for 3rd Order | Sum for 5th Order |
 | --- | ----------------- | ----------------- |
 | 5   | 1.00527           | 0.999206          |
 | 10  | 1.00011           | 1.00005           |

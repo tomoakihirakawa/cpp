@@ -6,6 +6,7 @@
         - [🪸$`G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の精度)
         - [🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
     - [⛵️境界要素法への応用](#⛵️境界要素法への応用)
+        - [🪸境界積分方程式](#🪸境界積分方程式)
 
 
 ---
@@ -157,23 +158,49 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
 
+### 🪸境界積分方程式 
+
+ラプラス法廷式とグリーンの定理を合わせて，境界積分方程式は次のように書ける．
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t).
+$$
+
+グリーン関数$`G`$を多重極展開によって近似すると，
+
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G _{\rm apx}({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G _{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
+\quad\text{on}\quad{\bf x} \in \Gamma(t)
+$$
+
+となり，原点$`{\bf a}`$と積分変数$`{\bf x}`$が分離できる．
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}})
+= {\bf Y}({\bf a}-{\bf c})\cdot\iint _\Gamma {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x}-{\bf c})} \right) dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
-$$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x}-{\bf c})} \right) \cdot{\bf Y}({\bf a}-{\bf c}) dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
+ここで，$`{\bf Y}({\bf a-c})`$は，$`{\bf Y}=\{Y(0,-k,a,b),Y(0,-k+1,a,b),Y(0,-k+2,a,b),...,Y(n,k,a,b)\}`$のようなベクトル．
 
+ただ，十分な精度でグリーン関数を近似するためには，
+$`\|{\bf x - \bf c}\|`$が$`\|{\bf a - \bf c}\|`$よりも十分に小さい必要がある．
+
+$`\bf c`$は，空間分割してできるセルの中心にとることにすると，
+原点$`{\bf a}`$を含むセルや近傍のセルに含まれる要素の積分においては，
+$`\|{\bf x - \bf c}\|`$は$`\|{\bf a - \bf c}\|`$よりも十分に小さくならない．
+そのため，原点$`{\bf a}`$の近傍のセルに含まれる要素の積分においては，
+多重極展開を使かわずに，元々のグリーン関数を使って計算する．
 
 $$
-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
-$$
-
-$$
-\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\begin{align*}
+\alpha ({\bf{a}})\phi ({\bf{a}})
+=& \iint _{\Gamma _{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
+&+ \iint _{\Gamma _{\rm far filed}} {\left( {G _{\rm apx}({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G _{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
+=& \iint _{\Gamma _{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
+&+ {\bf Y}({\bf a}-{\bf c})\cdot\iint _{\Gamma _{\rm far filed}} {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x}-{\bf c})} \right) dS}
+\end{align*}
 $$
 
 
