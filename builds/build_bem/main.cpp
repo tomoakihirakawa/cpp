@@ -274,7 +274,9 @@ int main(int arg, char **argv) {
             calculateCurrentVelocities(*water);
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
-            calculateCurrentUpdateVelocities(*water);
+            calculateCurrentUpdateVelocities(*water, 10, (RK_step == 4));
+            if (RK_step == 4)
+               std::cout << Green << "do shift" << colorOff << " s\n";
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
             BVP.solveForPhiPhin_t(*water, RigidBodyObject);

@@ -345,7 +345,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 */
 
-void calculateVecToSurface(const Network &net, const int loop) {
+void calculateVecToSurface(const Network &net, const int loop, const bool do_shift = true) {
    for (const auto &p : net.getPoints()) {
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface.fill(0.);
@@ -388,8 +388,9 @@ void calculateVecToSurface(const Network &net, const int loop) {
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      for (auto i = 0; i < 10; ++i)
-         addVectorTangentialShift();
+      if (do_shift)
+         for (auto i = 0; i < 10; ++i)
+            addVectorTangentialShift();
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
@@ -451,9 +452,9 @@ void calculateCurrentVelocities(const Network &net) {
    }
 }
 
-void calculateCurrentUpdateVelocities(const Network &net, const int loop = 20) {
+void calculateCurrentUpdateVelocities(const Network &net, const int loop, const bool do_shift = true) {
 
-   calculateVecToSurface(net, loop);
+   calculateVecToSurface(net, loop, do_shift);
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();

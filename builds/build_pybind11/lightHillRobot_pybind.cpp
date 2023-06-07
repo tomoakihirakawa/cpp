@@ -1,10 +1,27 @@
+/*DOC_EXTRACT pybind11
+
+# pybind11の例
+
+この例は，c++のNewton法を利用して作ったLight Hill Robotをpythonで使うためのもの.
+以下をターミナルで実行して`make`すると，Macだと`LightHillRobot_pybind.cpython-311-darwin.so`が作られる.
+
+```
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./
+make
+```
+
+`run_robot.py`にあるように`import`して利用できる．
+
+*/
+
 #define NOMINMAX
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "minMaxOfFunctions.hpp"
-#include "rootFinding.hpp"
+#include "../../include/minMaxOfFunctions.hpp"
+#include "../../include/rootFinding.hpp"
 
 struct LightHillRobot {
    double L;
@@ -74,9 +91,11 @@ struct LightHillRobot {
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(lightHillRobot, m) {
+PYBIND11_MODULE(LightHillRobot_pybind, m) {
    py::class_<LightHillRobot>(m, "LightHillRobot")
        .def(py::init<double, double, double, double, double, int>())
+       .def_readwrite("c1", &LightHillRobot::c1)
+       .def_readwrite("c2", &LightHillRobot::c2)
        .def("yLH", &LightHillRobot::yLH)
        .def("X_RB", &LightHillRobot::X_RB)
        .def("f", &LightHillRobot::f)
