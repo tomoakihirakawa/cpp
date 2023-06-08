@@ -186,6 +186,7 @@ double optimumValue(const std::vector<double> &sample_values,
 }
 
 /* -------------------------------------------------------------------------- */
+
 struct DispersionRelation {
    double w;
    double T;
@@ -205,6 +206,76 @@ struct DispersionRelation {
 
    double domegadk(const double k, const double h) {
       return (_GRAVITY_ * (h * k * Power(Sech(h * k), 2) + Tanh(h * k))) / (2. * Sqrt(_GRAVITY_ * k * Tanh(h * k)));
+   };
+};
+
+/* -------------------------------------------------------------------------- */
+
+// \label{newton:LighthillRobot}
+struct LighthillRobot {
+   double L;
+   double w;
+   double k;
+   double c1;
+   double c2;
+   int n;  // node + 1 (head node is dummy)
+
+   LighthillRobot(double L, double w, double k, double c1, double c2, int n)
+       : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1){};
+
+   auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
+
+   auto X_RB(const std::array<double, 2> &a, const double q) {
+      double r = L / n;
+      return a + r * std::array<double, 2>{cos(q), sin(q)};
+   };
+
+   auto f(const std::array<double, 2> &a, const double q, const double t) {
+      auto [x, y] = X_RB(a, q);
+      return yLH(x, t) - y;
+   };
+
+   auto ddx_yLH(const double x, const double t) {
+      return (c1 / L + 2 * c2 * x / std::pow(L, 2)) * sin(k * (x / L) - w * t) +
+             (c1 / L * x + c2 * std::pow(x / L, 2)) * cos(k * (x / L) - w * t) * k / L;
+   };
+
+   auto ddq_f(const double q, const double t) {
+      double r = L / n;
+      double x = r * cos(q);
+      return -r * sin(q) * ddx_yLH(x, t) - r * cos(q);
+   };
+
+   V_d getAngles(const double t) {
+      std::vector<double> Q(n, 0.);
+      std::array<double, 2> a{{0., 0.}};
+      double error = 0, F, q0;
+      double scale = 0.3;  //\label{LighthillRobot:scale}
+      NewtonRaphson nr(0.);
+      for (auto i = 0; i < Q.size(); i++) {
+         q0 = atan(ddx_yLH(std::get<0>(a), t));
+         nr.initialize(q0);
+         error = 0;
+         for (auto k = 0; k < 100; k++) {
+            F = f(a, nr.X, t);
+            nr.update(F * F / 2., F * ddq_f(nr.X, t), scale);
+            if ((error = std::abs(F)) < 1E-10)
+               break;
+         }
+         Q[i] = nr.X;
+         a = X_RB(a, Q[i]);
+      }
+      return Q;
+   };
+
+   std::vector<std::array<double, 2>> anglesToX(const V_d &Q) {
+      std::array<double, 2> a = {0., 0.};
+      std::vector<std::array<double, 2>> ret;
+      ret.reserve(Q.size() + 1);
+      ret.push_back(a);
+      for (auto i = 0; i < Q.size(); i++)
+         ret.push_back(a = X_RB(a, Q[i]));
+      return ret;
    };
 };
 

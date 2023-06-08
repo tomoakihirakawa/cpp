@@ -12,7 +12,8 @@
 
 ### 🪸コンパイル方法 
 
-この例は，c++のNewton法を利用して作ったLighthill Robotをpythonで使うためのもの.
+この例は，c++のNewton法を利用して作った[Lighthill Robot](../../include/rootFinding.hpp#L214)をpythonで使うためのもの.
+
 以下をターミナルで実行して`make`すると，Macだと`LighthillRobot_pybind.cpython-311-darwin.so`が作られる.
 
 ```
@@ -36,7 +37,7 @@ py::class_<class_name_declared_in_cpp>(m, "class_name_read_from_python")
 ```
 
 
-[./LightHillRobot.cpp#L98](./LightHillRobot.cpp#L98)
+[./LightHillRobot.cpp#L33](./LightHillRobot.cpp#L33)
 
 
 ---
