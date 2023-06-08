@@ -4,6 +4,10 @@
 
 ## Lighthill Robot
 
+ラズパイでサーボモーターを動かすには，pythonを使うのが簡単．
+ただ，pythonの数値計算速度は遅く，面倒．
+そこで，pybind11を使って，pythonからでも読み込める共有ライブラリをc++を元に作る．
+
 ### コンパイル方法
 
 この例は，c++のNewton法を利用して作った\ref{newton:LighthillRobot}{Lighthill Robot}をpythonで使うためのもの.
