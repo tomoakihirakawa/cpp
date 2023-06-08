@@ -30,7 +30,8 @@
 ## [build_pybind11](./builds/build_pybind11/README.md)
 
 - [Contents](./builds/build_pybind11/README.md#Contents)
-- [🐋pybind11の例](./builds/build_pybind11/README.md#🐋pybind11の例)
+- [🐋pybind11の使い方](./builds/build_pybind11/README.md#🐋pybind11の使い方)
+    - [⛵️Light Hill Robot](./builds/build_pybind11/README.md#⛵️Light-Hill-Robot)
 ## [build_divide_merge](./builds/build_divide_merge/README.md)
 
 - [Contents](./builds/build_divide_merge/README.md#Contents)

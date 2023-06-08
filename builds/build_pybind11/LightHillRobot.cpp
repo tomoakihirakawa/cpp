@@ -1,17 +1,21 @@
 /*DOC_EXTRACT pybind11
 
-# pybind11の例
+# pybind11の使い方
+
+## Light Hill Robot
+
+### コンパイル方法
 
 この例は，c++のNewton法を利用して作ったLight Hill Robotをpythonで使うためのもの.
 以下をターミナルで実行して`make`すると，Macだと`LightHillRobot_pybind.cpython-311-darwin.so`が作られる.
 
 ```
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ./
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LightHillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
 make
 ```
 
-`run_robot.py`にあるように`import`して利用できる．
+\ref{PYBIND11:HOW_TO_IMPORT}{このように}`import`して利用できる．
 
 */
 
@@ -91,7 +95,19 @@ struct LightHillRobot {
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(LightHillRobot_pybind, m) {
+/*DOC_EXTRACT pybind11
+
+WARNING `cmake`の`-DOUTPUT`オプションで指定した名前と同じ`shared_file_name_that_will_be_generated`を指定する．
+
+```
+PYBIND11_MODULE(shared_file_name_that_will_be_generated, m) {
+   py::class_<class_name_declared_in_cpp>(m, "class_name_read_from_python")
+...
+```
+
+*/
+
+PYBIND11_MODULE(LightHillRobot, m) {
    py::class_<LightHillRobot>(m, "LightHillRobot")
        .def(py::init<double, double, double, double, double, int>())
        .def_readwrite("c1", &LightHillRobot::c1)
