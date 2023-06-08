@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 # \label{PYBIND11:HOW_TO_IMPORT}
-import LightHillRobot as LHR
+import LighthillRobot as LHR
 
 L = .71
 w = 2.*math.pi
@@ -22,8 +22,8 @@ c1 = 0.2
 c2 = 0.2
 n = 10
 
-# Create a LightHillRobot object
-robot = LHR.LightHillRobot(L, w, k, c1, c2, n)
+# Create a LighthillRobot object
+robot = LHR.LighthillRobot(L, w, k, c1, c2, n)
 
 fig, ax = plt.subplots()
 
@@ -59,6 +59,6 @@ t_values = np.arange(0, T_max, dt)  # Array of time values
 ani = animation.FuncAnimation(
     fig, update, frames=t_values, init_func=init, blit=True, interval=1000/50)
 
-ani.save("sample.gif", writer='pillow')
+# ani.save("sample.gif", writer='pillow')
 
 plt.show()

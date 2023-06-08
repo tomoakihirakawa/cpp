@@ -2,7 +2,7 @@
 
 - [🐋ニュートン法](#🐋ニュートン法)
     - [⛵️ニュートン法](#⛵️ニュートン法)
-    - [⛵️例）ロボットの節をLightHillの曲線上に乗せる](#⛵️例）ロボットの節をLightHillの曲線上に乗せる)
+    - [⛵️例）ロボットの節をLighthillの曲線上に乗せる](#⛵️例）ロボットの節をLighthillの曲線上に乗せる)
         - [🪸目的関数$`f`$](#🪸目的関数$`f`$)
         - [🪸工夫点](#🪸工夫点)
     - [⛵️準ニュートン法](#⛵️準ニュートン法)
@@ -23,9 +23,20 @@
 [./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
 
 
-## ⛵️例）ロボットの節をLightHillの曲線上に乗せる 
+## ⛵️例）ロボットの節をLighthillの曲線上に乗せる 
 
-LightHillの式：
+筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
+多くの魚が持つ後部の細い尾柄はその力を主に後方へと伝達する役割を持っていることがわかっている．
+
+魚の泳ぎは複雑で，様々なアプローチから研究されてきたが，
+多くの場合，Lighthillの*細長い体の理論(Elongated Body Theory)*，またはその発展版が使われている．
+[Lighthill 1969](https://www.annualreviews.org/doi/10.1146/annurev.fl.01.010169.002213)
+[Lighthill 1971](https://royalsocietypublishing.org/doi/10.1098/rspb.1971.0085)
+[Porez et al. 2014](https://journals.sagepub.com/doi/abs/10.1177/0278364914525811)
+
+([Yong Zhong et al. 2018](https://ieeexplore.ieee.org/document/8329488))
+
+Lighthillの式：
 
 $$
 {\bf x}^{\rm LH}(x,t) = (x,y^{\rm LH}(x,t)),\quad
@@ -53,7 +64,7 @@ $$
 
 ### 🪸目的関数$`f`$ 
 
-LightHillの式にこの節を乗せるには，どのような目的関数$`f`$を用いればよいだろうか．
+Lighthillの式にこの節を乗せるには，どのような目的関数$`f`$を用いればよいだろうか．
 最適化する節の一つ前の節の位置を$`{\bf a}=(a _x,a _y)`$とすると，次の目的関数$`f`$が考えられる．
 
 $$
@@ -89,7 +100,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L123)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L134)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 | | $`n=5`$ | $`n=10`$ | $`n=50`$ |
 |:---:|:---:|:---:|:---:|
