@@ -19,7 +19,7 @@
 - [Contents](./builds/build_root_finding/README.md#Contents)
 - [🐋ニュートン法](./builds/build_root_finding/README.md#🐋ニュートン法)
     - [⛵️ニュートン法](./builds/build_root_finding/README.md#⛵️ニュートン法)
-    - [⛵️例）ロボットの節をLightHillの曲線上に乗せる](./builds/build_root_finding/README.md#⛵️例）ロボットの節をLightHillの曲線上に乗せる)
+    - [⛵️例）ロボットの節をLighthillの曲線上に乗せる](./builds/build_root_finding/README.md#⛵️例）ロボットの節をLighthillの曲線上に乗せる)
     - [⛵️準ニュートン法](./builds/build_root_finding/README.md#⛵️準ニュートン法)
 ## [build_spherical_harmonic](./builds/build_spherical_harmonic/README.md)
 
@@ -31,7 +31,7 @@
 
 - [Contents](./builds/build_pybind11/README.md#Contents)
 - [🐋pybind11の使い方](./builds/build_pybind11/README.md#🐋pybind11の使い方)
-    - [⛵️Light Hill Robot](./builds/build_pybind11/README.md#⛵️Light-Hill-Robot)
+    - [⛵️Lighthill Robot](./builds/build_pybind11/README.md#⛵️Lighthill-Robot)
 ## [build_divide_merge](./builds/build_divide_merge/README.md)
 
 - [Contents](./builds/build_divide_merge/README.md#Contents)

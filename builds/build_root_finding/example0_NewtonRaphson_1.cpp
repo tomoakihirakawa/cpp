@@ -5,9 +5,20 @@ auto w = std::setw(20);
 
 /*DOC_EXTRACT newton
 
-## 例）ロボットの節をLightHillの曲線上に乗せる
+## 例）ロボットの節をLighthillの曲線上に乗せる
 
-LightHillの式：
+筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
+多くの魚が持つ後部の細い尾柄はその力を主に後方へと伝達する役割を持っていることがわかっている．
+
+魚の泳ぎは複雑で，様々なアプローチから研究されてきたが，
+多くの場合，Lighthillの*細長い体の理論(Elongated Body Theory)*，またはその発展版が使われている．
+[Lighthill 1969](https://www.annualreviews.org/doi/10.1146/annurev.fl.01.010169.002213)
+[Lighthill 1971](https://royalsocietypublishing.org/doi/10.1098/rspb.1971.0085)
+[Porez et al. 2014](https://journals.sagepub.com/doi/abs/10.1177/0278364914525811)
+
+([Yong Zhong et al. 2018](https://ieeexplore.ieee.org/document/8329488))
+
+Lighthillの式：
 
 $$
 {\bf x}^{\rm LH}(x,t) = (x,y^{\rm LH}(x,t)),\quad
@@ -35,7 +46,7 @@ $$
 
 ### 目的関数$f$
 
-LightHillの式にこの節を乗せるには，どのような目的関数$f$を用いればよいだろうか．
+Lighthillの式にこの節を乗せるには，どのような目的関数$f$を用いればよいだろうか．
 最適化する節の一つ前の節の位置を${\bf a}=(a_x,a_y)$とすると，次の目的関数$f$が考えられる．
 
 $$
@@ -71,7 +82,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，\ref{LightHillRobot:scale}{ここ}のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，\ref{LighthillRobot:scale}{ここ}のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 | | $n=5$ | $n=10$ | $n=50$ |
 |:---:|:---:|:---:|:---:|
@@ -82,7 +93,7 @@ int steps = 20;
 
 */
 
-struct LightHillRobot {
+struct LighthillRobot {
    double L;
    double w;
    double k;
@@ -90,7 +101,7 @@ struct LightHillRobot {
    double c2;
    int n;  // node + 1 (head node is dummy)
 
-   LightHillRobot(double L, double w, double k, double c1, double c2, int n)
+   LighthillRobot(double L, double w, double k, double c1, double c2, int n)
        : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1){};
 
    auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
@@ -120,7 +131,7 @@ struct LightHillRobot {
       std::vector<double> Q(n, 0.);
       std::array<double, 2> a{{0., 0.}};
       double error = 0, F, q0;
-      double scale = 0.3;  //\label{LightHillRobot:scale}
+      double scale = 0.3;  //\label{LighthillRobot:scale}
       NewtonRaphson nr(0.);
       for (auto i = 0; i < Q.size(); i++) {
          q0 = atan(ddx_yLH(std::get<0>(a), t));
@@ -159,7 +170,7 @@ int main() {
    int nodes = 5;
    int steps = 20;
 
-   LightHillRobot lhr(L, w, k, c1, c2, nodes);
+   LighthillRobot lhr(L, w, k, c1, c2, nodes);
 
    for (auto i = 0; i < steps; i++) {
       std::ofstream outFile("./output_lighthill/lighthill" + std::to_string(i) + ".txt");

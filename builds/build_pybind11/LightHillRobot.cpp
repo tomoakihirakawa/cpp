@@ -2,16 +2,16 @@
 
 # pybind11の使い方
 
-## Light Hill Robot
+## Lighthill Robot
 
 ### コンパイル方法
 
-この例は，c++のNewton法を利用して作ったLight Hill Robotをpythonで使うためのもの.
-以下をターミナルで実行して`make`すると，Macだと`LightHillRobot_pybind.cpython-311-darwin.so`が作られる.
+この例は，c++のNewton法を利用して作ったLighthill Robotをpythonで使うためのもの.
+以下をターミナルで実行して`make`すると，Macだと`LighthillRobot_pybind.cpython-311-darwin.so`が作られる.
 
 ```
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LightHillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
 make
 ```
 
@@ -27,7 +27,7 @@ make
 #include "../../include/minMaxOfFunctions.hpp"
 #include "../../include/rootFinding.hpp"
 
-struct LightHillRobot {
+struct LighthillRobot {
    double L;
    double w;
    double k;
@@ -35,7 +35,7 @@ struct LightHillRobot {
    double c2;
    int n;  // node + 1 (head node is dummy)
 
-   LightHillRobot(double L, double w, double k, double c1, double c2, int n)
+   LighthillRobot(double L, double w, double k, double c1, double c2, int n)
        : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1){};
 
    auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
@@ -107,16 +107,16 @@ PYBIND11_MODULE(shared_file_name_that_will_be_generated, m) {
 
 */
 
-PYBIND11_MODULE(LightHillRobot, m) {
-   py::class_<LightHillRobot>(m, "LightHillRobot")
+PYBIND11_MODULE(LighthillRobot, m) {
+   py::class_<LighthillRobot>(m, "LighthillRobot")
        .def(py::init<double, double, double, double, double, int>())
-       .def_readwrite("c1", &LightHillRobot::c1)
-       .def_readwrite("c2", &LightHillRobot::c2)
-       .def("yLH", &LightHillRobot::yLH)
-       .def("X_RB", &LightHillRobot::X_RB)
-       .def("f", &LightHillRobot::f)
-       .def("ddx_yLH", &LightHillRobot::ddx_yLH)
-       .def("ddq_f", &LightHillRobot::ddq_f)
-       .def("getAngles", &LightHillRobot::getAngles)
-       .def("anglesToX", &LightHillRobot::anglesToX);
+       .def_readwrite("c1", &LighthillRobot::c1)
+       .def_readwrite("c2", &LighthillRobot::c2)
+       .def("yLH", &LighthillRobot::yLH)
+       .def("X_RB", &LighthillRobot::X_RB)
+       .def("f", &LighthillRobot::f)
+       .def("ddx_yLH", &LighthillRobot::ddx_yLH)
+       .def("ddq_f", &LighthillRobot::ddq_f)
+       .def("getAngles", &LighthillRobot::getAngles)
+       .def("anglesToX", &LighthillRobot::anglesToX);
 }
