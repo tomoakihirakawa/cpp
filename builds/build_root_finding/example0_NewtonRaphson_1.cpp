@@ -7,9 +7,12 @@ auto w = std::setw(20);
 
 ## 例）ロボットの節をLighthillの曲線上に乗せる
 
+<div style="overflow: hidden;">
 <p align="center">
-  <img src="sample_aquarium.gif"  width="40%" height="40%">
+  <img src="sample_aquarium.gif" style="object-fit: cover; width: 40%; height: 40%; margin-bottom: -20%;">
 </p>
+</div>
+
 
 筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
 多くの魚が持つ後部の細い尾柄はその力を主に後方へと伝達する役割を持っていることがわかっている．

@@ -25,9 +25,12 @@
 
 ## ⛵️例）ロボットの節をLighthillの曲線上に乗せる 
 
+<div style="overflow: hidden;">
 <p align="center">
-<img src="sample_aquarium.gif"  width="40%" height="40%">
+<img src="sample_aquarium.gif" style="object-fit: cover; width: 40%; height: 40%; margin-bottom: -20%;">
 </p>
+</div>
+
 
 筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
 多くの魚が持つ後部の細い尾柄はその力を主に後方へと伝達する役割を持っていることがわかっている．
@@ -102,7 +105,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L134)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L137)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 | | $`n=5`$ | $`n=10`$ | $`n=50`$ |
 |:---:|:---:|:---:|:---:|
