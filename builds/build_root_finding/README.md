@@ -2,9 +2,10 @@
 
 - [🐋ニュートン法](#🐋ニュートン法)
     - [⛵️ニュートン法](#⛵️ニュートン法)
-    - [⛵️例）ロボットの節をLighthillの曲線上に乗せる](#⛵️例）ロボットの節をLighthillの曲線上に乗せる)
+    - [⛵️ロボットの節をLighthillの曲線上に乗せる](#⛵️ロボットの節をLighthillの曲線上に乗せる)
         - [🪸目的関数$`f`$](#🪸目的関数$`f`$)
         - [🪸工夫点](#🪸工夫点)
+        - [🪸ロボットのエネルギー効率について](#🪸ロボットのエネルギー効率について)
     - [⛵️準ニュートン法](#⛵️準ニュートン法)
 
 
@@ -23,7 +24,7 @@
 [./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
 
 
-## ⛵️例）ロボットの節をLighthillの曲線上に乗せる 
+## ⛵️ロボットの節をLighthillの曲線上に乗せる 
 
 <div style="overflow: hidden;">
 <p align="center">
@@ -107,12 +108,26 @@ int steps = 20;
 
 そのような場合，[ここ](../../include/rootFinding.hpp#L253)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
-| | $`n=5`$ | $`n=10`$ | $`n=50`$ |
+
+| `scale` | $`n=5`$ | $`n=10`$ | $`n=50`$ |
 |:---:|:---:|:---:|:---:|
 | `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
-| `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif)  | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
+| `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif) | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
+
 
 LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L214)で宣言している．
+
+### 🪸ロボットのエネルギー効率について 
+
+話がNewton法から離れるが，ロボットのエネルギー効率について．この内容は後で移動しておく．
+
+ロボットの運動エネルギーは，$`\frac{1}{2}m v^2`$．
+ロボットの出力は，この時間変化，$`m v\frac{dv}{dt}`$となる．
+供給電力$`P`$は，電流$`I`$と電圧$`V`$の積$`P = I V`$なので，ロボットのエネルギー効率は，
+
+$$
+\eta = \frac{m v a}{I V}
+$$
 
 
 [./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)
