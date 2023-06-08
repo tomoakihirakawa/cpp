@@ -102,6 +102,8 @@ LighthillRobotのクラスは，\ref{newton:LighthillRobot}{ここ}で宣言し�
 
 話がNewton法から離れるが，ロボットのエネルギー効率について．この内容は後で移動しておく．
 
+ロボットが抵抗を受けず推進でき，
+ロボット周りの流体の平均流速速度がゼロとすると，
 ロボットの運動エネルギーは，$\frac{1}{2}m v^2$．
 ロボットの出力は，この時間変化，$m v\frac{dv}{dt}$となる．
 供給電力$P$は，電流$I$と電圧$V$の積$P = I V$なので，ロボットのエネルギー効率は，
@@ -109,6 +111,8 @@ LighthillRobotのクラスは，\ref{newton:LighthillRobot}{ここ}で宣言し�
 $$
 \eta = \frac{m v a}{I V}
 $$
+
+
 
 */
 
