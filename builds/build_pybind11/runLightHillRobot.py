@@ -4,7 +4,7 @@
 
 |水族館の魚|ロボット|
 |:---:|:---:|
-| ![sample1.gif](sample1.gif) | ![sample.gif](sample.gif) |
+| <img src="sample_aquarium.gif"  width="80%" height="80%"> | ![sample.gif](sample.gif) |
 
 '''
 
