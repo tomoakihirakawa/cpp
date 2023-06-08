@@ -25,14 +25,16 @@
 
 ## ⛵️例）ロボットの節をLighthillの曲線上に乗せる 
 
+<p align="center">
+<img src="sample_aquarium.gif"  width="40%" height="40%">
+</p>
+
 筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
 多くの魚が持つ後部の細い尾柄はその力を主に後方へと伝達する役割を持っていることがわかっている．
 
 魚の泳ぎは複雑で，様々なアプローチから研究されてきたが，
 多くの場合，Lighthillの*細長い体の理論(Elongated Body Theory)*，またはその発展版が使われている．
-[Lighthill 1969](https://www.annualreviews.org/doi/10.1146/annurev.fl.01.010169.002213)
-[Lighthill 1971](https://royalsocietypublishing.org/doi/10.1098/rspb.1971.0085)
-[Porez et al. 2014](https://journals.sagepub.com/doi/abs/10.1177/0278364914525811)
+([Lighthill 1969](https://www.annualreviews.org/doi/10.1146/annurev.fl.01.010169.002213)，[Lighthill 1971](https://royalsocietypublishing.org/doi/10.1098/rspb.1971.0085)，[Porez et al. 2014](https://journals.sagepub.com/doi/abs/10.1177/0278364914525811))
 
 ([Yong Zhong et al. 2018](https://ieeexplore.ieee.org/document/8329488))
 
@@ -106,8 +108,6 @@ int steps = 20;
 |:---:|:---:|:---:|:---:|
 | `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif)  | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
-
-<img src="sample_aquarium.gif"  width="50%" height="50%">
 
 
 [./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)
