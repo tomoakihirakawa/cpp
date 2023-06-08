@@ -89,12 +89,14 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L122)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[ここ](../../builds/build_root_finding/example0_NewtonRaphson_1.cpp#L123)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 | | $`n=5`$ | $`n=10`$ | $`n=50`$ |
 |:---:|:---:|:---:|:---:|
 | `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif)  | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
+
+<img src="sample_aquarium.gif"  width="50%" height="50%">
 
 
 [./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)

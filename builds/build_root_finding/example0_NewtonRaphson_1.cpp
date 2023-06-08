@@ -78,6 +78,7 @@ int steps = 20;
 | `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif)  | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
 
+<img src="sample_aquarium.gif"  width="50%" height="50%">
 
 */
 
