@@ -10,7 +10,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import LightHillRobot_pybind as LightHillRobot
+# \label{PYBIND11:HOW_TO_IMPORT}
+import LightHillRobot as LHR
 
 L = .71
 w = 2.*math.pi
@@ -20,7 +21,7 @@ c2 = 0.2
 n = 10
 
 # Create a LightHillRobot object
-robot = LightHillRobot.LightHillRobot(L, w, k, c1, c2, n)
+robot = LHR.LightHillRobot(L, w, k, c1, c2, n)
 
 fig, ax = plt.subplots()
 
@@ -37,8 +38,8 @@ def init():
 
 
 def update(t):
-    robot.c1 = 0.2*math.sin(t)
-    robot.c2 = 0.2*math.sin(t)
+    # robot.c1 = 0.2*math.sin(t)
+    # robot.c2 = 0.2*math.sin(t)
     angles = robot.getAngles(t)
     positions = robot.anglesToX(angles)
     positions_x = [pos[0] for pos in positions]
