@@ -21,7 +21,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LightHillRobot.cpp -DOUTPUT=shared_f
 make
 ```
 
-[このように](../../builds/build_pybind11/runLightHillRobot.py#L13)`import`して利用できる．
+[このように](../../builds/build_pybind11/runLightHillRobot.py#L15)`import`して利用できる．
 
 
 [./LightHillRobot.cpp#L1](./LightHillRobot.cpp#L1)
@@ -42,7 +42,9 @@ py::class_<class_name_declared_in_cpp>(m, "class_name_read_from_python")
 ---
 出力結果
 
-![sample.gif](sample.gif)
+|水族館の魚|ロボット|
+|:---:|:---:|
+| ![sample1.gif](sample1.gif) | ![sample.gif](sample.gif) |
 
 
 [./runLightHillRobot.py#L1](./runLightHillRobot.py#L1)

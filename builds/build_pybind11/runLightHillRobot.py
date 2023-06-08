@@ -2,7 +2,9 @@
 
 出力結果
 
-![sample.gif](sample.gif)
+|水族館の魚|ロボット|
+|:---:|:---:|
+| ![sample1.gif](sample1.gif) | ![sample.gif](sample.gif) |
 
 '''
 
