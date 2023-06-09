@@ -121,9 +121,15 @@ def convert_math_underscore(text: str) -> str:
 
 
 def convert_inline_math(text: str) -> str:
+    def replace(match):
+        math_expr = match.group(1)
+        if "`" in math_expr:
+            return f"${math_expr}$"
+        else:
+            return f"$`{math_expr}`$"
+
     pattern = r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)"
-    text = re.sub(pattern, r"$`\1`$", text)
-    return text
+    return re.sub(pattern, replace, text)
 
 
 def convert_math_star(text: str) -> str:
