@@ -3,6 +3,7 @@
 - [🐋ニュートン法](#🐋ニュートン法)
     - [⛵️ニュートン法](#⛵️ニュートン法)
     - [⛵️ロボットの節をLighthillの曲線上に乗せる](#⛵️ロボットの節をLighthillの曲線上に乗せる)
+        - [🪸レビュー](#🪸レビュー)
         - [🪸Lighthillの式](#🪸Lighthillの式)
         - [🪸目的関数$`f`$](#🪸目的関数$`f`$)
         - [🪸工夫点](#🪸工夫点)
@@ -32,6 +33,10 @@
 <img src="sample_aquarium.gif" style="object-fit: cover; width: 40%; height: 40%; margin-bottom: -20%;">
 </p>
 </div>
+
+### 🪸レビュー 
+
+[REVIEW.md](./REVIEW.md)
 
 ### 🪸Lighthillの式 
 
