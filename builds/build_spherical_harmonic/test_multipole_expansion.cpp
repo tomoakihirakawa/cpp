@@ -156,7 +156,7 @@ $\nabla G_{\rm apx}$は，$\nabla_{\rm \circ}=(\frac{\partial}{\partial r},\frac
 
 具体的には`gradGapx`のように
 
-$$
+```math
 \begin{align*}
 \nabla_{\circ} G_{\rm apx}(n, {\bf x},{\bf a},{\bf c})
 & = \sum_{k=0}^{n} \sum_{m=-k}^{k}\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
@@ -168,11 +168,11 @@ $$
 \frac{\partial Y}{\partial b} &= \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P_k^{|m|}(\cos(a)) i m e^{i mb}\\
 \frac{d P_k^{m}}{d x}(x) &= \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P_k^{m}(x) + P_k^{m+1}(x) \right)
 \end{align*}
-$$
+```
 
 勾配の座標変換は，$Y(k,m,a_{far},b_{far})$には影響しない．
 
-$$
+```math
 \begin{align*}
 \nabla G_{\rm apx}
 &= \nabla_{\circ} G_{\rm apx} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}\\
@@ -180,7 +180,7 @@ $$
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
 \frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})
 \end{align*}
-$$
+```
 
 ${\bf c}=(x,y,0)$を変化させてプロットした結果：
 
