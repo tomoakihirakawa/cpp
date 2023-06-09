@@ -319,22 +319,21 @@ $$
 
 ここで，${\bf Y}({\bf a},{\bf c})$は，
 ${\bf Y}=\{
-   \frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),
+\frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),
 \frac{1}{r_{far}^{-k+1+1}}Y(0,-k+1,a,b),
 \frac{1}{r_{far}^{-k+2+1}}Y(0,-k+2,a,b),...,
-\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$のようなベクトル．
+\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$
+のようなベクトル．
 
 $$
 \begin{align*}
 {\bf n}({\bf x})\cdot\nabla G_{\rm apx}({\bf x},{\bf a},{\bf c})
 & = \sum_{k=0}^{n} \sum_{m=-k}^{k}
-{\bf n}({\bf x})
-\cdot
+{\bf n}({\bf x}) \cdot
 \left\{
 \nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
-\right\}
-\frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
+\right\} \frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
 &={\bf Y}_n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 \end{align*}
 $$
@@ -361,8 +360,9 @@ $$
 $$
 \begin{align*}
 \alpha ({\bf{a}})\phi ({\bf{a}})
-=& \iint_{\Gamma_{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}}) G_n({\bf{x}},{\bf{a}})} \right)dS}\\
-&+ \sum_{\square i}
+=& \iint_{\Gamma_{\rm near-filed}}
+\left( {G({\bf x},{\bf a})\phi_n ({\bf x}) - \phi (\bf x) G_n({\bf x},{\bf a})} \right)dS\\
+& + \sum_{\square i}
 \left\{
 {\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x},{\bf c}_{\square i})} \right) dS}
 \right\}
