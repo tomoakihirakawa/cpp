@@ -1,3 +1,9 @@
+<div style="overflow: hidden;">
+<p align="center">
+  <img src="sample_aquarium.gif" style="object-fit: cover; width: 40%; height: 40%; margin-bottom: -20%;">
+</p>
+</div>
+
 ### はじめに
 
 筋電図を使って魚の筋力分布を測定したところ，力は主に前部と中部の筋肉で発生しており，
