@@ -319,10 +319,8 @@ ${\bf Y}=\{\frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r_{far}^{-k+1+1}}Y(0,-k+
 のようなベクトル．
 
 $$
-\begin{align*}
-{\bf n}({\bf x})\cdot\nabla G_{\rm apx}({\bf x},{\bf a},{\bf c}) & = \sum_{k=0}^{n} \sum_{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
-&={\bf Y}_n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
-\end{align*}
+{\bf n}({\bf x})\cdot\nabla G_{\rm apx}({\bf x},{\bf a},{\bf c}) = \sum_{k=0}^{n} \sum_{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})
+={\bf Y}_n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 $$
 
 ただ，十分な精度でグリーン関数を近似するためには，
