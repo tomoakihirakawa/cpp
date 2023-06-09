@@ -318,11 +318,7 @@ $$
 $$
 
 ここで，${\bf Y}({\bf a},{\bf c})$は，
-${\bf Y}=\{
-\frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),
-\frac{1}{r_{far}^{-k+1+1}}Y(0,-k+1,a,b),
-\frac{1}{r_{far}^{-k+2+1}}Y(0,-k+2,a,b),...,
-\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$
+${\bf Y}=\{\frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r_{far}^{-k+1+1}}Y(0,-k+1,a,b),\frac{1}{r_{far}^{-k+2+1}}Y(0,-k+2,a,b),...,\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$
 のようなベクトル．
 
 $$
