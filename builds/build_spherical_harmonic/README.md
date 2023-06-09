@@ -174,13 +174,7 @@ $`{\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,
 
 $$
 \begin{align*}
-{\bf n}({\bf x})\cdot\nabla G _{\rm apx}({\bf x},{\bf a},{\bf c})
-& = \sum _{k=0}^{n} \sum _{m=-k}^{k}
-{\bf n}({\bf x}) \cdot
-\left\{
-\nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})}
-\begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
-\right\} \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})\\
+{\bf n}({\bf x})\cdot\nabla G _{\rm apx}({\bf x},{\bf a},{\bf c}) & = \sum _{k=0}^{n} \sum _{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})\\
 &={\bf Y} _n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 \end{align*}
 $$
