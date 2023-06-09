@@ -170,8 +170,7 @@ $`{\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,
 のようなベクトル．
 
 $$
-{\bf n}({\bf x})\cdot\nabla G _{\rm apx}({\bf x},{\bf a},{\bf c}) = \sum _{k=0}^{n} \sum _{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})
-={\bf Y} _n^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+{\bf n}({\bf x})\cdot\nabla G _{\rm apx}({\bf x},{\bf a},{\bf c}) = \sum _{k=0}^{n} \sum _{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})={\bf Y} _n^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 $$
 
 ただ，十分な精度でグリーン関数を近似するためには，
@@ -191,18 +190,8 @@ $$
 
 $$
 \begin{align*}
-\alpha ({\bf{a}})\phi ({\bf{a}})
-=& \iint _{\Gamma _{\rm near-filed}}
-\left( {G({\bf x},{\bf a})\phi _n ({\bf x}) - \phi (\bf x) G _n({\bf x},{\bf a})} \right)dS\\
-& + \sum _{\square i}
-\left\{
-{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}
-{
-\left(
-{{{\bf Y}^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})}
-\right)
-dS}
-\right\}
+\alpha ({\bf{a}})\phi ({\bf{a}})=& \iint _{\Gamma _{\rm near-filed}}\left( {G({\bf x},{\bf a})\phi _n ({\bf x}) - \phi (\bf x) G _n({\bf x},{\bf a})} \right)dS\\
+& + \sum _{\square i}\left\{{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}{\left({{{\bf Y}^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})}\right)dS}\right\}
 \end{align*}
 $$
 
