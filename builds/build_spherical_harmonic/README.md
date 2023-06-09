@@ -27,7 +27,7 @@ $$
 $$
 \begin{align*}
 G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum _{k=0}^{n} \sum _{m=-k}^{k} \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})\\
-&={\bf Y^*}({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+&={\bf Y}^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 \end{align*}
 $$
 
