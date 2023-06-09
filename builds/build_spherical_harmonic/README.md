@@ -25,7 +25,7 @@ $$
 近似解 $`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$ を以下の式で定義する：
 
 $$
-G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) \approx \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})={\bf Y}^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) \approx \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})={\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 $$
 
 ここで，$`(r _{near},a _{near},b _{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
@@ -161,7 +161,7 @@ $$
 
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}})
-= {\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{\bf Y^*}({\bf x},{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x},{\bf c})} \right) dS}
+= {\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{\bf Y^\ast}({\bf x},{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c})} \right) dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
@@ -171,7 +171,7 @@ $`{\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,
 
 $$
 {\bf n}({\bf x})\cdot\nabla G _{\rm apx}({\bf x},{\bf a},{\bf c}) = \sum _{k=0}^{n} \sum _{m=-k}^{k} {\bf n}({\bf x}) \cdot \left\{ \nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right\} \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})
-={\bf Y} _n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+={\bf Y} _n^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 $$
 
 ただ，十分な精度でグリーン関数を近似するためには，
@@ -184,7 +184,7 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 そうすると，
 
 $$
-\alpha ({\bf a})\phi ({\bf a})=\sum _{\square i} {\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}{\left( {{\bf Y^*}({\bf x},{\bf c} _{\square i})\phi _n ({\bf x}) - \phi ({\bf x}){{\bf Y} _n^*}({\bf x},{\bf c} _{\square i})} \right) dS}
+\alpha ({\bf a})\phi ({\bf a})=\sum _{\square i} {\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}{\left( {{\bf Y^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf x}) - \phi ({\bf x}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})} \right) dS}
 $$
 
 さらに，原点の近傍セルの積分は，多重極展開を使わずに，元々のグリーン関数を使って計算することにすると，
@@ -196,7 +196,7 @@ $$
 \left( {G({\bf x},{\bf a})\phi _n ({\bf x}) - \phi (\bf x) G _n({\bf x},{\bf a})} \right)dS\\
 & + \sum _{\square i}
 \left\{
-{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^*}({\bf x},{\bf c} _{\square i})} \right) dS}
+{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})} \right) dS}
 \right\}
 \end{align*}
 $$
