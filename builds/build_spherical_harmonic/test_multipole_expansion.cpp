@@ -148,11 +148,11 @@ double Gapx(unsigned p,
 
 $\nabla G_{\rm apx}$は，$\nabla_{\rm \circ}=(\frac{\partial}{\partial r},\frac{\partial}{\partial a},\frac{\partial}{\partial b})$とすると，
 
-$$
+```math
 \nabla G_{\rm apx} =
 \nabla_{\rm \circ} G_{\rm apx}
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
-$$
+```
 
 具体的には`gradGapx`のように
 
@@ -308,20 +308,20 @@ $$
 
 となり，原点${\bf a}$と積分変数${\bf x}$が分離できる．
 
-$$
+```math
 \alpha ({\bf{a}})\phi ({\bf{a}})={\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{{\bf Y}^\ast}({\bf x},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c})} \right) dS}\quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
+```
 
 ここで，${\bf Y}({\bf a},{\bf c})$は，
 ${\bf Y}=\{\frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r_{far}^{-k+1+1}}Y(0,-k+1,a,b),\frac{1}{r_{far}^{-k+2+1}}Y(0,-k+2,a,b),...,\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$
 のようなベクトル．
 
-$$
+```math
 {\bf n}({\bf x})\cdot\nabla G_{\rm apx}({\bf x},{\bf a},{\bf c})=\sum_{k=0}^n \sum_{m=-k}^k
-{\bf n}({\bf x}) \cdot ( \nabla_{\circ}(r^k Y(k, -m, a, b))_{(r,a,b)=(r_{near},a_{near},b_{near})}
-\begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} )
+{\bf n}({\bf x}) \cdot \left( \nabla_{\circ}(r^k Y(k, -m, a, b))_{(r,a,b)=(r_{near},a_{near},b_{near})}
+\begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix} \right)
 \frac{1}{r_{far}^{k+1}} Y(k,m,a_{far}, b_{far})={\bf Y}_n^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
-$$
+```
 
 ただ，十分な精度でグリーン関数を近似するためには，
 $\|{\bf x - \bf c}\|$が$\|{\bf a - \bf c}\|$よりも十分に小さい必要がある．
@@ -332,17 +332,17 @@ $\bf c$を一つに固定するのではなく，空間を分割して，それ�
 各セルのインデックスを$\square i$として，その中心座標を${\bf c}_{\square i}$のように表す．
 そうすると，
 
-$$
+```math
 \alpha ({\bf a})\phi ({\bf a})=\sum_{\square i} {\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint_{\Gamma_{\square i}}{( {{{\bf Y}^\ast}({\bf x},{\bf c}_{\square i})\phi_n ({\bf x}) - \phi ({\bf x}){{\bf Y}_n^\ast}({\bf x},{\bf c}_{\square i})} ) dS}
-$$
+```
 
 さらに，原点の近傍セルの積分は，多重極展開を使わずに，元々のグリーン関数を使って計算することにすると，
 
-$$
+```math
 \begin{align*}
 \alpha ({\bf{a}})\phi ({\bf{a}})=& \iint_{\Gamma_{\rm near-filed}}( {G({\bf x},{\bf a})\phi_n ({\bf x}) - \phi (\bf x) G_n({\bf x},{\bf a})})dS\\
 & + \sum_{\square i}\{{\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}}{({{{\bf Y}^\ast}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c}_{\square i})})dS}\}
 \end{align*}
-$$
+```
 
 */
