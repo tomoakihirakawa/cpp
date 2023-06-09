@@ -759,18 +759,26 @@ struct ILU {
 /* ------------------------------------------------------ */
 /*                          GMRES                         */
 /* ------------------------------------------------------ */
+/*DOC_EXTRACT ArnoldiProcess
+
+## ArnoldiProcess
+
+ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
+GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．
+x0は初期値
+
+アーノルディ法は固有値問題の数値解法であり反復解法．
+一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
+
+   1. 正規化した${\bf v}_0$を与えておく．
+   2. $\quad\quad\quad\quad\quad{\bf v}_1 = {\rm Normalize}(A{\bf v}_0 - ((A{\bf v}_0) \cdot {\bf v}_0){\bf v}_0)$を計算する．
+   3. $\quad\quad\quad{\bf v}_2 = {\rm Normalize}((w=A{\bf v}_1 - ((A{\bf v}_1) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)$を計算する．
+   4. ${\bf v}_3 = {\rm Normalize}((w=((w=A{\bf v}_2 - ((A{\bf v}_2) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)) - (w \cdot {\bf v}_2){\bf v}_2)$を計算する．
+
+*/
 template <typename Matrix>
 struct ArnoldiProcess {
-   /*DOC_EXTRACT ArnoldiProcess
-   ## ArnoldiProcess
-   ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
-   GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．
-   x0は初期値
 
-   アーノルディ法は固有値問題の数値解法であり反復解法．
-   一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
-   https://en.wikipedia.org/wiki/Arnoldi_iteration
-   */
    int n;  // the number of interation
    double beta;
    V_d v0;
@@ -787,12 +795,12 @@ struct ArnoldiProcess {
       Print("ArnoldiProcess");
       size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
-         // \label{ArnoldiProcess:matrix-vector}
-         w = Dot(A, V[j]);  //@ 行列-ベクトル積
-         for (i = 0; i < j + 1; ++i)
-            w -= (H[i][j] = Dot(V[i], w)) * V[i];  //@ ベクトル内積
+         w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+
+         // orthogonalization
+         for (i = 0; i <= j; ++i)
+            w -= (H[i][j] = Dot(V[i], w)) * V[i];
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
-         // MatrixForm(H);
       }
       Print("done");
    };

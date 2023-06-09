@@ -11,11 +11,20 @@ from typing import List, Tuple, Iterator, Dict
 CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''DOC_EXTRACT(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
+INSERT_PATTERN = re.compile(r'\\insert\{(.*?)\}')
 
 
-def extract_markdown_comments(input_file: str) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
-    with open(input_file, 'r') as file:
-        content = file.read()
+def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str:
+    """
+    Replaces \insert{keyword} in the content with its corresponding replacement if exists
+    """
+    return INSERT_PATTERN.sub(lambda m: replacements.get(m.group(1), m.group()), content)
+
+
+def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
+    if content is None:
+        with open(input_file, 'r') as file:
+            content = file.read()
 
     markdown_comments = list(CPP_COMMENT_PATTERN.finditer(
         content)) + list(PYTHON_COMMENT_PATTERN.finditer(content))
@@ -214,7 +223,7 @@ def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python extract_comments.py output_file search_directory")
+        print("Usage: python extract_comments.py output_file search_directory [replacements_directory]")
         sys.exit(1)
 
     output_file = sys.argv[1]
@@ -231,10 +240,23 @@ if __name__ == "__main__":
     no_keyword_comments = []
     all_headers_info = []
 
+    replacements = {}
+
+    # If a replacements directory is specified, extract the replacements
+    if len(sys.argv) >= 4:
+        replacements_dir = sys.argv[3]
+        for input_file in sorted(search_files(replacements_dir, file_extensions)):
+            extracted_comments, _ = extract_markdown_comments(input_file)
+            for keyword, comments in extracted_comments.items():
+                replacements[keyword[0]] = ' '.join(comments) # Comment replacement should be the content
+
     # Sort file paths alphabetically
     for input_file in sorted(search_files(search_directory, file_extensions)):
-        extracted_comments, headers_info = extract_markdown_comments(
-            input_file)
+        with open(input_file, 'r') as file:
+            content = file.read()
+        content = replace_insert_statements(content, replacements)
+        extracted_comments, headers_info = extract_markdown_comments(input_file, content)
+        
         if extracted_comments:
             for keyword, comments in extracted_comments.items():
                 if keyword == 'DEFAULT':
