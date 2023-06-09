@@ -7,12 +7,6 @@ auto w = std::setw(20);
 
 ## ロボットの節をLighthillの曲線上に乗せる
 
-<div style="overflow: hidden;">
-<p align="center">
-  <img src="sample_aquarium.gif" style="object-fit: cover; width: 40%; height: 40%; margin-bottom: -20%;">
-</p>
-</div>
-
 ### レビュー
 
 [REVIEW.md](./REVIEW.md)
