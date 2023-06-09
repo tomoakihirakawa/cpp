@@ -771,7 +771,7 @@ x0は初期値
 一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
 
    1. 正規化した${\bf v}_0$を与えておく．
-   2. $\quad\quad\quad\quad\quad{\bf v}_1 = {\rm Normalize}(A{\bf v}_0 - ((A{\bf v}_0) \cdot {\bf v}_0){\bf v}_0)$を計算する．
+   2. $\,\,\quad\quad\quad\quad\quad{\bf v}_1 = {\rm Normalize}(A{\bf v}_0 - ((A{\bf v}_0) \cdot {\bf v}_0){\bf v}_0)$を計算する．
    3. $\quad\quad\quad{\bf v}_2 = {\rm Normalize}((w=A{\bf v}_1 - ((A{\bf v}_1) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)$を計算する．
    4. ${\bf v}_3 = {\rm Normalize}((w=((w=A{\bf v}_2 - ((A{\bf v}_2) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)) - (w \cdot {\bf v}_2){\bf v}_2)$を計算する．
 
