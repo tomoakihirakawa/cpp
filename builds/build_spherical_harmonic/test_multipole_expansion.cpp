@@ -23,7 +23,7 @@ $$
 $$
 \begin{align*}
 G_{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum_{k=0}^{n} \sum_{m=-k}^{k} \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})\\
-&={\bf Y^*}({\bf x}-{\bf c})\cdot{\bf Y}({\bf a}-{\bf c})
+&={\bf Y^*}({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 \end{align*}
 $$
 
@@ -162,36 +162,27 @@ $$
 $$
 \begin{align*}
 \nabla_{\circ} G_{\rm apx}(n, {\bf x},{\bf a},{\bf c})
-& = \sum_{k=0}^{n} \sum_{m=-k}^{k}
-\nabla_{\circ}
-\left(
-r^k Y(k, -m, a, b)
-\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
+& = \sum_{k=0}^{n} \sum_{m=-k}^{k}\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
 \frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
+\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)
+&= \left(k r^{k-1} Y, r^k \frac{\partial Y}{\partial a}, r^k \frac{\partial Y}{\partial b},
+\right)\\
+\frac{\partial Y}{\partial a} &= \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} \frac{d P_k^{|m|}}{d x}(x)_{x=\cos(a) } e^{i mb}\\
+\frac{\partial Y}{\partial b} &= \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P_k^{|m|}(\cos(a)) i m e^{i mb}\\
+\frac{d P_k^{m}}{d x}(x) &= \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P_k^{m}(x) + P_k^{m+1}(x) \right)
 \end{align*}
 $$
+
+勾配の座標変換は，$Y(k,m,a_{far},b_{far})$には影響しない．
 
 $$
 \begin{align*}
-\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)
-= \left(
-k r^{k-1} Y,
-r^k \frac{\partial Y}{\partial a},
-r^k \frac{\partial Y}{\partial b},
-\right)
+\nabla G_{\rm apx}
+&= \nabla_{\circ} G_{\rm apx} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}\\
+& = \sum_{k=0}^{n} \sum_{m=-k}^{k}\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
+\begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
+\frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})
 \end{align*}
-$$
-
-$$
-\frac{\partial Y}{\partial a} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} \frac{d P_k^{|m|}}{d x}(x)_{x=\cos(a) } e^{i mb}\\
-$$
-
-$$
-\frac{\partial Y}{\partial b} = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P_k^{|m|}(\cos(a)) i m e^{i mb}
-$$
-
-$$
-\frac{d P_k^{m}}{d x}(x) = \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P_k^{m}(x) + P_k^{m+1}(x) \right)
 $$
 
 ${\bf c}=(x,y,0)$を変化させてプロットした結果：
@@ -310,17 +301,11 @@ int main() {
 
 ### 境界積分方程式
 
-ラプラス法廷式とグリーンの定理を合わせて，境界積分方程式は次のように書ける．
+ラプラス方程式とグリーンの定理を合わせて，境界積分方程式が得られる．
+これのグリーン関数$G$を多重極展開によって$G_{\rm apx}$で置き換えると，
 
 $$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
-
-グリーン関数$G$を多重極展開によって近似すると，
-
-$$
-\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G_{\rm apx}({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G_{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}
+\alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G_{\rm apx}({\bf{x}},{\bf a},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G_{\rm apx}({\bf{x}},{\bf a},{\bf c})\cdot {\bf{n}}(\bf x)} \right)dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t)
 $$
 
@@ -328,28 +313,59 @@ $$
 
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}})
-= {\bf Y}({\bf a}-{\bf c})\cdot\iint _\Gamma {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x}-{\bf c})} \right) dS}
+= {\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{\bf Y^*}({\bf x},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x},{\bf c})} \right) dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
-ここで，${\bf Y}({\bf a-c})$は，${\bf Y}=\{Y(0,-k,a,b),Y(0,-k+1,a,b),Y(0,-k+2,a,b),...,Y(n,k,a,b)\}$のようなベクトル．
+ここで，${\bf Y}({\bf a},{\bf c})$は，
+${\bf Y}=\{
+   \frac{1}{r_{far}^{-k+1}}Y(0,-k,a,b),
+\frac{1}{r_{far}^{-k+1+1}}Y(0,-k+1,a,b),
+\frac{1}{r_{far}^{-k+2+1}}Y(0,-k+2,a,b),...,
+\frac{1}{r_{far}^{k+1}}Y(n,k,a,b)\}$のようなベクトル．
+
+$$
+\begin{align*}
+{\bf n}({\bf x})\cdot\nabla G_{\rm apx}({\bf x},{\bf a},{\bf c})
+& = \sum_{k=0}^{n} \sum_{m=-k}^{k}
+{\bf n}({\bf x})
+\cdot
+\left\{
+\nabla_{\circ}\left(r^k Y(k, -m, a, b)\right)_{(r,a,b)=(r_{near},a_{near},b_{near})}
+\begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
+\right\}
+\frac{1}{r_{far}^{k+1}} Y(k, m, a_{far}, b_{far})\\
+&={\bf Y}_n^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+\end{align*}
+$$
 
 ただ，十分な精度でグリーン関数を近似するためには，
 $\|{\bf x - \bf c}\|$が$\|{\bf a - \bf c}\|$よりも十分に小さい必要がある．
 
-$\bf c$は，空間分割してできるセルの中心にとることにすると，
-原点${\bf a}$を含むセルや近傍のセルに含まれる要素の積分においては，
-$\|{\bf x - \bf c}\|$は$\|{\bf a - \bf c}\|$よりも十分に小さくならない．
-そのため，原点${\bf a}$の近傍のセルに含まれる要素の積分においては，
-多重極展開を使かわずに，元々のグリーン関数を使って計算する．
+### 空間分割
+
+$\bf c$を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において${\bf c}$を固定する．
+各セルのインデックスを$\square i$として，その中心座標を${\bf c}_{\square i}$のように表す．
+そうすると，
+
+$$
+\alpha ({\bf{a}})\phi ({\bf{a}})
+= \sum_{\square i}
+\left\{
+{\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x},{\bf c}_{\square i})} \right) dS}
+\right\}
+$$
+
+さらに，原点の近傍セルの積分は，多重極展開を使わずに，元々のグリーン関数を使って計算することにすると，
 
 $$
 \begin{align*}
 \alpha ({\bf{a}})\phi ({\bf{a}})
-=& \iint_{\Gamma_{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
-&+ \iint_{\Gamma_{\rm far filed}} {\left( {G_{\rm apx}({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G_{\rm apx}({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
-=& \iint_{\Gamma_{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})\cdot {\bf{n}}} \right)dS}\\
-&+ {\bf Y}({\bf a}-{\bf c})\cdot\iint _{\Gamma_{\rm far filed}} {\left( {{\bf Y^*}({\bf x}-{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x}-{\bf c})} \right) dS}
+=& \iint_{\Gamma_{\rm near filed}} {\left( {G({\bf{x}},{\bf{a}})\phi_n ({\bf{x}}) - \phi ({\bf{x}}) G_n({\bf{x}},{\bf{a}})} \right)dS}\\
+&+ \sum_{\square i}
+\left\{
+{\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^*}({\bf x},{\bf c}_{\square i})} \right) dS}
+\right\}
 \end{align*}
 $$
 
