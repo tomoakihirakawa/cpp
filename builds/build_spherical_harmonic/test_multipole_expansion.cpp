@@ -309,9 +309,7 @@ $$
 となり，原点${\bf a}$と積分変数${\bf x}$が分離できる．
 
 $$
-\alpha ({\bf{a}})\phi ({\bf{a}})
-= {\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{{\bf Y}^\ast}({\bf x},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c})} \right) dS}
-\quad\text{on}\quad{\bf x} \in \Gamma(t).
+\alpha ({\bf{a}})\phi ({\bf{a}})={\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{{\bf Y}^\ast}({\bf x},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c})} \right) dS}\quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
 ここで，${\bf Y}({\bf a},{\bf c})$は，
