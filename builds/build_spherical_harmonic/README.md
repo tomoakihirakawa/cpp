@@ -97,7 +97,7 @@ $`\nabla G _{\rm apx}`$は，$`\nabla _{\rm \circ}=(\frac{\partial}{\partial r},
 
 具体的には`gradGapx`のように
 
-$$
+```math
 \begin{align*}
 \nabla _{\circ} G _{\rm apx}(n, {\bf x},{\bf a},{\bf c})
 & = \sum _{k=0}^{n} \sum _{m=-k}^{k}\nabla _{\circ}\left(r^k Y(k, -m, a, b)\right) _{(r,a,b)=(r _{near},a _{near},b _{near})}
@@ -109,11 +109,11 @@ $$
 \frac{\partial Y}{\partial b} &= \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) i m e^{i mb}\\
 \frac{d P _k^{m}}{d x}(x) &= \frac{(-1)^m}{\sqrt{1-x^2}} \left( \frac{m x}{\sqrt{1-x^2}} P _k^{m}(x) + P _k^{m+1}(x) \right)
 \end{align*}
-$$
+```
 
 勾配の座標変換は，$`Y(k,m,a _{far},b _{far})`$には影響しない．
 
-$$
+```math
 \begin{align*}
 \nabla G _{\rm apx}
 &= \nabla _{\circ} G _{\rm apx} \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}\\
@@ -121,7 +121,7 @@ $$
 \begin{bmatrix} \nabla r \\ \nabla a \\ \nabla b \end{bmatrix}
 \frac{1}{r _{far}^{k+1}} Y(k, m, a _{far}, b _{far})
 \end{align*}
-$$
+```
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
