@@ -141,7 +141,7 @@ def convert_math_star(text: str) -> str:
 
 def highlight_keywords(text: str) -> str:
     text = convert_math_underscore(text)
-    text = convert_inline_math(text)
+    # text = convert_inline_math(text)
     text = convert_math_star(text)
     keyword_patterns = {
         'NOTE': (r'^NOTE:?\s*', '💡'),
