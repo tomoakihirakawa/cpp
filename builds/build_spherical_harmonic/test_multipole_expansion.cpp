@@ -338,7 +338,7 @@ $\bf c$を一つに固定するのではなく，空間を分割して，それ�
 そうすると，
 
 $$
-\alpha ({\bf a})\phi ({\bf a}) = \sum_{\square i} \left\{{\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c}_{\square i})\phi_n ({\bf x}) - \phi ({\bf x}){{\bf Y}_n^*}({\bf x},{\bf c}_{\square i})} \right) dS} \right\}
+\alpha ({\bf a})\phi ({\bf a}) = \sum_{\square i} {\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}} {\left( {{\bf Y^*}({\bf x},{\bf c}_{\square i})\phi_n ({\bf x}) - \phi ({\bf x}){{\bf Y}_n^*}({\bf x},{\bf c}_{\square i})} \right) dS}
 $$
 
 さらに，原点の近傍セルの積分は，多重極展開を使わずに，元々のグリーン関数を使って計算することにすると，
