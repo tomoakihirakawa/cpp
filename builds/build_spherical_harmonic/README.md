@@ -25,10 +25,7 @@ $$
 近似解 $`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$ を以下の式で定義する：
 
 $$
-\begin{align*}
-G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})\\
-&={\bf Y}^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
-\end{align*}
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) &\approx \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})={\bf Y}^*({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 $$
 
 ここで，$`(r _{near},a _{near},b _{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
@@ -66,7 +63,7 @@ $$
 $$
 
 
-[./test_multipole_expansion.cpp#L51](./test_multipole_expansion.cpp#L51)
+[./test_multipole_expansion.cpp#L48](./test_multipole_expansion.cpp#L48)
 
 
 ### 🪸$`G _{\rm apx}`$の精度 
@@ -85,7 +82,7 @@ $`a _{near},b _{near}`$は，より小さければ精度が良く，
 また，$`a _{far},b _{far}`$は，より大きければ精度が良くなる．
 
 
-[./test_multipole_expansion.cpp#L88](./test_multipole_expansion.cpp#L88)
+[./test_multipole_expansion.cpp#L85](./test_multipole_expansion.cpp#L85)
 
 
 ### 🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度 
@@ -134,7 +131,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 | **$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$** | ![n4_A_10_10_10](output_n4_A_10_10_10_grad.png) | ![n5_A_10_10_10](output_n5_A_10_10_10_grad.png) | ![n6_A_10_10_10](output_n6_A_10_10_10_grad.png) | ![n7_A_10_10_10](output_n7_A_10_10_10_grad.png) | ![n8_A_10_10_10](output_n8_A_10_10_10_grad.png) |
 
 
-[./test_multipole_expansion.cpp#L148](./test_multipole_expansion.cpp#L148)
+[./test_multipole_expansion.cpp#L145](./test_multipole_expansion.cpp#L145)
 
 
 ## ⛵️境界要素法への応用 
@@ -207,7 +204,7 @@ $$
 $$
 
 
-[./test_multipole_expansion.cpp#L287](./test_multipole_expansion.cpp#L287)
+[./test_multipole_expansion.cpp#L284](./test_multipole_expansion.cpp#L284)
 
 
 ---
