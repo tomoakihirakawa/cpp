@@ -2,14 +2,11 @@
 
 # 連立一次方程式の解法
 
-## 一般化最小残差法(GMRES)
+\insert{ArnoldiProcess}
 
-- ヘッセンベルグ行列$H$
-- クリロフ部分空間の直交基底$V$
-- $H$をQR分解した行列$Q$と$R$
-- $g$は行列$Q$の最初の列
+\insert{GMRES}
 
-ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
+### テスト
 
 <details>
 <summary>HOW TO USE</summary>
@@ -17,8 +14,6 @@ ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラ�
 ![](./WATCHME.gif)
 
 </details>
-
-\insert{ArnoldiProcess}
 
 */
 #include "basic_IO.hpp"

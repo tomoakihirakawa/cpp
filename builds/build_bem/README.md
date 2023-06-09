@@ -13,13 +13,13 @@
         - [🪸BIEの離散化](#🪸BIEの離散化)
         - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
     - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
-        - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
+        - [🪸ノイマン境界面における$\phi _{nt}$の求め方](#🪸ノイマン境界面における$\phi-_{nt}$の求め方)
     - [⛵️初期値問題](#⛵️初期値問題)
-        - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
-        - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
+        - [🪸流速$\frac{d\bf x}{dt}$の計算](#🪸流速$\frac{d\bf-x}{dt}$の計算)
+        - [🪸$\frac{d\phi}{dt}$の計算](#🪸$\frac{d\phi}{dt}$の計算)
     - [⛵️その他](#⛵️その他)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
-        - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-`$について．)
+        - [🪸$\phi _{nt}$の計算で必要となる${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) $について．](#🪸$\phi-_{nt}$の計算で必要となる${\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-$について．)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](#⛵️Usage)
     - [⛵️Customization](#⛵️Customization)
@@ -54,14 +54,14 @@
 
 ### 🪸修正流速 
 
-求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
-修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
+求めた流速から，次の時刻の境界面$\Omega(t+\Delta t)$を見積もり，その面上で節点を移動させ歪さを解消する．
+修正ベクトルは，$\Delta t$で割り，求めた流速$\nabla \phi$に足し合わせて，節点を時間発展させる．
 
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
-まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+`calculateVecToSurface`で$\Omega(t+\Delta t)$上へのベクトルを計算する．
+まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$\Omega(t+\Delta t)$上へのベクトルを計算する．
 
 
 [./BEM_calculateVelocities.hpp#L332](./BEM_calculateVelocities.hpp#L332)
@@ -125,7 +125,7 @@ $$
 ## ⛵️内部流速の計算方法 
 
 [Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
-流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
+流体内部の流速$\nabla \phi$は，BIEを微分して求めることができる．
 
 $$
 u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
@@ -150,8 +150,8 @@ $$
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
-- Neumann面$`\Gamma^{({\rm N})}`$ : 3点接触流体面
-- Dirichlet面$`\Gamma^{({\rm D})}`$ : それ以外の面
+- Neumann面$\Gamma^{({\rm N})}$ : 3点接触流体面
+- Dirichlet面$\Gamma^{({\rm D})}$ : それ以外の面
 
 2. 辺の境界条件 : 辺を含む２面がNeumann面ならNeumann辺，２面がDirichlet面ならDirichlet辺，それ以外はCORNERとする．
 - Neumann辺 : 隣接面2面がNeumann面の辺
@@ -165,9 +165,9 @@ $$
 
 ### 🪸多重節点 
 
-💡 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi _n`$を計算できるようにする
+💡 面の向き$\bf n$がカクッと不連続に変わる節点には，$\phi$は同じでも，隣接面にそれぞれ対して異なる$\phi _n$を計算できるようにする
 
-💡 $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi _n`$を選択し補間に用いなければならない
+💡 $\bf n$が不連続に変化する節点まわりの要素は，自分のために用意された$\phi _n$を選択し補間に用いなければならない
 
 これを多重節点という．
 
@@ -188,18 +188,18 @@ $$
 $$
 
 ここで，
-$`{\bf x} ={(x,y,z)}`$は空間座標，$`{\bf u} _b`$は物体の流速，
-$`{\bf n} _b`$は物体の外向き単位法線ベクトル，
-$`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})`$
+${\bf x} ={(x,y,z)}$は空間座標，${\bf u} _b$は物体の流速，
+${\bf n} _b$は物体の外向き単位法線ベクトル，
+$\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})$
 である．
-また，$`\phi _n`$は境界面上での外向き法線方向の流速を表し，
-境界面上の外向き単位法線ベクトル$`\bf n`$を使えば$`\phi _n ={\nabla\phi}\cdot {\bf n}`$で表される．
+また，$\phi _n$は境界面上での外向き法線方向の流速を表し，
+境界面上の外向き単位法線ベクトル$\bf n$を使えば$\phi _n ={\nabla\phi}\cdot {\bf n}$で表される．
 
 ### 🪸境界積分方程式（BIE） 
 
 **グリーンの定理**
 
-任意の$`\phi`$，$`G`$に対して次が成り立つ（**グリーンの定理**）．
+任意の$\phi$，$G$に対して次が成り立つ（**グリーンの定理**）．
 
 $$
 \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
@@ -207,21 +207,21 @@ $$
 $$
 
 
-$`\phi`$がラプラス方程式$`\nabla^2\phi=0`$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
-グリーンの定理から$`\phi`$と$`\phi _n`$の関係式，BIEが得られる．
+$\phi$がラプラス方程式$\nabla^2\phi=0$を満たし，$G=1/\|{\bf x}-{\bf a}\|$とすると，
+グリーンの定理から$\phi$と$\phi _n$の関係式，BIEが得られる．
 
 $$
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
-ここで，$`{\bf a}`$は境界面上の位置ベクトルであり，この原点$`{\bf a}`$を固定し$`{\bf x}`$について面積分される．
-$`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
-原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
+ここで，${\bf a}$は境界面上の位置ベクトルであり，この原点${\bf a}$を固定し${\bf x}$について面積分される．
+$G$は任意のスカラー関数で$G=1/\|{\bf x}-{\bf a}\|$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
+原点での立体角$\alpha\left( {\bf{a}} \right)$とポテンシャル$\phi( {\bf{a}})$の積だけが残る．
 
-この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
-この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
-$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
+この式は，流体内部では，$\alpha ({\bf{a}})$は$1$とできる．
+この式は，$\bf{a}$におけるポテンシャル$\phi ({\bf{a}})$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
+$G=1/\|{\bf x}-{\bf a}\|$がラプラス法廷式の基本解であり，$\phi$は境界におけるポテンシャルの分布である．
 
 
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
@@ -239,10 +239,10 @@ $$
 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 $$
 
-ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
-$`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
+ここで，$\phi _{k _\vartriangle,j}$における$k _\vartriangle$は三角形要素の番号，$j$は三角形要素の頂点番号．
+$N _j$は三角形要素の形状関数，$\pmb{\xi}$は三角形要素の内部座標，$w _0,w _1$はGauss-Legendre積分の重み，$\alpha _{i _\circ}$は原点$i _\circ$における立体角，$\phi$はポテンシャル，$\phi _n$は法線方向のポテンシャル，$\bf{x}$は空間座標，${\bf x} _{i _\circ}$は原点の空間座標である．
 
-形状関数$`{\pmb N} _j({\pmb \xi}),{\pmb \xi}=(\xi _0,\xi _1)`$は，$`\xi _0,\xi _1`$が$`0`$から$`1`$動くことで，範囲で三角要素全体を動くように定義している．
+形状関数${\pmb N} _j({\pmb \xi}),{\pmb \xi}=(\xi _0,\xi _1)$は，$\xi _0,\xi _1$が$0$から$1$動くことで，範囲で三角要素全体を動くように定義している．
 
 $$
 {\pmb N}({\pmb \xi}) = (N _0({\pmb \xi}),N _1({\pmb \xi}),N _2({\pmb \xi})) = (\xi _0, - \xi _1 (\xi _0 - 1), (\xi _0-1)(\xi _1-1))
@@ -253,21 +253,21 @@ $$
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
-`IGIGn`は，ある節点$`i _\circ`$（係数行列の行インデックス）に対する
-他の節点$`j _\circ`$（係数行列の列インデックス）の影響度合いのようなものである．
-その影響度合いは，他の節点$`j _\circ`$の所属する要素までの距離や向きによって決まることが離散化された式からわかる．
+`IGIGn`は，ある節点$i _\circ$（係数行列の行インデックス）に対する
+他の節点$j _\circ$（係数行列の列インデックス）の影響度合いのようなものである．
+その影響度合いは，他の節点$j _\circ$の所属する要素までの距離や向きによって決まることが離散化された式からわかる．
 
 | Variable | Description |
 |:--------:|:-----------:|
-| `origin` | 原点となる節点$`i _\circ`$ |
-| `integ_f` | Element $`k _{\triangle}`$ |
-| `t0, t1, ww` | Gaussian points and thier wieghts $`\xi _0, \xi _1, w _0 w _1`$ |
-| `p0, p1, p2` | Node of the element $`k _{\triangle}`$ |
-| `N012` | Shape function $`\pmb{N} _j`$ |
+| `origin` | 原点となる節点$i _\circ$ |
+| `integ_f` | Element $k _{\triangle}$ |
+| `t0, t1, ww` | Gaussian points and thier wieghts $\xi _0, \xi _1, w _0 w _1$ |
+| `p0, p1, p2` | Node of the element $k _{\triangle}$ |
+| `N012` | Shape function $\pmb{N} _j$ |
 | `IGIGn` | Coefficient matrices of the left and right sides |
-| `nr` | $`\| \pmb{x} - \pmb{x} _{i\circ } \|`$ |
-| `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
-| `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
+| `nr` | $\| \pmb{x} - \pmb{x} _{i\circ } \|$ |
+| `tmp` | $w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}$ |
+| `cross` | $\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}$ |
 
 
 [./BEM_solveBVP.hpp#L283](./BEM_solveBVP.hpp#L283)
@@ -275,33 +275,33 @@ $$
 
 ### 🪸リジッドモードテクニック 
 
-全て$`\phi=1`$とすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，これを離散化すると，数値積分による評価が難しかった係数行列の対角成分がより精確に計算できる．
+全て$\phi=1$とすると，$\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}$となり，これを離散化すると，数値積分による評価が難しかった係数行列の対角成分がより精確に計算できる．
 これはリジッドモードテクニックと呼ばれている．
-$`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
+${\bf x} _{i\circ}$が${\bf x}({\pmb \xi})$に近い場合，$G$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
 [./BEM_solveBVP.hpp#L356](./BEM_solveBVP.hpp#L356)
 
 
-係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
+係数行列`IGIGn`は，左辺の$I _G \phi _n$，右辺の$I _{G _n}\phi$の係数．
 
 $$
 (I _G) _{i _\circ,j _\circ} (\phi _n) _{j _\circ} = (I _{Gn}) _{i _\circ,j _\circ}  \phi _{j _\circ}
 $$
 
-境界条件に応じて，未知変数は$`\phi,\phi _n`$のどちらかに決まる．
-未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
+境界条件に応じて，未知変数は$\phi,\phi _n$のどちらかに決まる．
+未知変数が$\phi$の場合（Dirichlet境界条件の場合），
 係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
 
 
 移項前:
-$`\begin{bmatrix}I _{G0} & I _{G1} & I _{G2} & I _{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & I _{Gn1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+$\begin{bmatrix}I _{G0} & I _{G1} & I _{G2} & I _{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & I _{Gn1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}$
 
 移項後:
-$`\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & -I _{G1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+$\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & -I _{G1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}$
 
 多重節点(1と3が多重節点の場合):
-$`\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}`$
+$\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}$
 
 
 [./BEM_solveBVP.hpp#L393](./BEM_solveBVP.hpp#L393)
@@ -316,35 +316,35 @@ m \frac{d {\boldsymbol U} _{\rm c}}{d t} = \boldsymbol{F} _{\text {ext }}+\bolds
 \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}
 $$
 
-$`{\boldsymbol U} _{\rm c}`$は浮体の移動速度．
-$`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{\text {hydro }}`$は水の力，$`\boldsymbol{T} _{\text {ext }}`$は外力によるトルク，$`\boldsymbol{T} _{\text {hydro }}`$は水の力によるトルク．
-浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
-また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
+${\boldsymbol U} _{\rm c}$は浮体の移動速度．
+$\boldsymbol{F} _{\text {ext }}$は重力などの外力，$\boldsymbol{F} _{\text {hydro }}$は水の力，$\boldsymbol{T} _{\text {ext }}$は外力によるトルク，$\boldsymbol{T} _{\text {hydro }}$は水の力によるトルク．
+浮体が流体から受ける力$\boldsymbol{F} _{\text {hydro }}$は，浮体表面の圧力$p$を積分することで得られ，
+また圧力$p$は速度ポテンシャル$\phi$を用いて，以下のように書ける．
 
 $$
 \boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S, \quad
 p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
 $$
 
-$`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．この$`\phi _t`$は陽には求められない．
-そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
+$\frac{\partial \phi}{\partial t}$を$\phi _t$と書くことにする．この$\phi _t$は陽には求められない．
+そこで，$\phi$と似た方法，BIEを使った方法で$\phi _t$を求める．$\phi$と$\phi _n$の間に成り立つ境界積分方程式と全く同じ式が，$\phi _t$と$\phi _{nt}$の間にも成り立つ：
 
 $$
 \alpha ({\bf{a}})\phi _t ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi _t ({\bf{x}}) - \phi _t ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 $$
 
-### 🪸ノイマン境界面における$`\phi _{nt}`$の求め方 
+### 🪸ノイマン境界面における$\phi _{nt}$の求め方 
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
-境界面上の位置ベクトルを$`\boldsymbol r`$とする．
-表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
+境界面上の位置ベクトルを$\boldsymbol r$とする．
+表面上のある点の移動速度$\frac{d\boldsymbol r}{dt}$と流体粒子の流速$\nabla \phi$の間には，次の境界条件が成り立つ．
 
 $$
 {\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi
 $$
 
-これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
+これを微分することで，$\phi _{nt}$を$\phi$と加速度$\frac{d{\boldsymbol U} _{\rm c}}{dt}$と角加速度$\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}$を使って表すことができる．
 [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
 
 $$
@@ -357,23 +357,23 @@ $$
 \end{aligned}
 $$
 
-ここの$`\frac{d{\bf n}}{dt}`$と$`\frac{d^2\boldsymbol r}{dt^2}`$は，$`{\boldsymbol U} _{\rm c}`$と$`\boldsymbol \Omega _{\rm c}`$を用いて，
+ここの$\frac{d{\bf n}}{dt}$と$\frac{d^2\boldsymbol r}{dt^2}$は，${\boldsymbol U} _{\rm c}$と$\boldsymbol \Omega _{\rm c}$を用いて，
 
 $$
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 $$
 
-$`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
-次にBIEから$`\phi _t`$を求め，次に圧力$`p`$を求める．
-そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
-入力した$`\frac{d^2\boldsymbol r}{dt^2}`$と一致しなければならない．
+$\frac{d^2\boldsymbol r}{dt^2}$を上の式に代入し，$\phi _{nt}$を求め，
+次にBIEから$\phi _t$を求め，次に圧力$p$を求める．
+そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$\frac{d^2\boldsymbol r}{dt^2}$は，
+入力した$\frac{d^2\boldsymbol r}{dt^2}$と一致しなければならない．
 
 現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけ．
-しかし，浮体の没水面上にある節点での圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られず，運動方程式から浮体加速度が計算できない．
-圧力を計算するためには，$`\phi _t`$が必要で，$`\phi _t`$は簡単には得られない，という状況．
+しかし，浮体の没水面上にある節点での圧力$p$が得られないと，$\boldsymbol{F} _{\text {hydro }}$が得られず，運動方程式から浮体加速度が計算できない．
+圧力を計算するためには，$\phi _t$が必要で，$\phi _t$は簡単には得られない，という状況．
 
-物体の加速度は， 節点における$`\{\phi _{nt0},\phi _{nt1},\phi _{nt2},..\} = \Phi _{nt}`$が分かれば求まるが，
-逆に$`\Phi _{nt}`$は$`\frac{d\boldsymbol U _{\rm c}}{dt}`$が分かれば求まるので
+物体の加速度は， 節点における$\{\phi _{nt0},\phi _{nt1},\phi _{nt2},..\} = \Phi _{nt}$が分かれば求まるが，
+逆に$\Phi _{nt}$は$\frac{d\boldsymbol U _{\rm c}}{dt}$が分かれば求まるので
 
 $$
 \begin{align*}
@@ -382,8 +382,8 @@ $$
 \end{align*}
 $$
 
-のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L683)で与えている．
+のように，ある関数$Q$のゼロを探す，根探し問題になる．
+$\phi _{nt}$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L683)で与えている．
 
 
 [./BEM_solveBVP.hpp#L566](./BEM_solveBVP.hpp#L566)
@@ -398,9 +398,9 @@ $$
 $$
 
 ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L559)を用いる．
-節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
-要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
-$`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
+節点における変数を$v$とすると，$\nabla v-{\bf n}({\bf n}\cdot\nabla v)$が計算できる．
+要素の法線方向${\bf n}$が$x$軸方向${(1,0,0)}$である場合，$\nabla v - (\frac{\partial}{\partial x},0,0)v$なので，
+$(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})$が得られる．
 
 
 [./BEM_solveBVP.hpp#L648](./BEM_solveBVP.hpp#L648)
@@ -408,29 +408,29 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 
 ## ⛵️初期値問題 
 
-節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
-言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
-ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
+節点の位置と速度ポテンシャル$\phi$に関する初期値問題を解いて行くことが，シミュレーションである．
+言い換えると，節点位置$\frac{d\bf x}{dt}$と速度ポテンシャル$\frac{d\phi}{dt}$を少しずつ$\Delta t$ずつ時間積分することが，シミュレーションである．
+ちなみに，$\frac{d\bf x}{dt}$や$\frac{d\phi}{dt}$を計算するには，境界値問題を解く必要がある．
 
-ある時刻において，境界値問題が解けたら，$`\frac{d\bf x}{dt}`$と$`\frac{d\phi}{dt}`$はどのように計算できるだろうか．
+ある時刻において，境界値問題が解けたら，$\frac{d\bf x}{dt}$と$\frac{d\phi}{dt}$はどのように計算できるだろうか．
 
-### 🪸流速$`\frac{d\bf x}{dt}`$の計算 
+### 🪸流速$\frac{d\bf x}{dt}$の計算 
 
-ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
+ある三角要素上の接線流速$\nabla \phi _{\parallel}$は，線形三角要素補間を使って次のように計算する．
 
 $$
 \nabla \phi _{\parallel} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
 $$
 
-三角要素上の流速$`\nabla \phi`$は，次のように計算する．
+三角要素上の流速$\nabla \phi$は，次のように計算する．
 
 $$
 \nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
 $$
 
-### 🪸$`\frac{d\phi}{dt}`$の計算 
+### 🪸$\frac{d\phi}{dt}$の計算 
 
-ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
+ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$\frac{D \phi}{D t}$は，次のように計算できる．
 
 $$
 \frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
@@ -441,11 +441,11 @@ $$
 💡 オイラー的記述
 </summary>
 
-$`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$`\frac{d \phi}{d t}`$は，$`\frac{\partial \phi}{\partial t}`$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$`\phi=\phi(t,{\bf x}(t))`$と一時的に考えなおし，そして，時間微分する．そうすると$`\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi`$となる．
+$\phi=\phi(t,{\bf x})$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$\frac{d \phi}{d t}$は，$\frac{\partial \phi}{\partial t}$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$\phi=\phi(t,{\bf x}(t))$と一時的に考えなおし，そして，時間微分する．そうすると$\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi$となる．
 
 </details>
 
-ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
+ここの$\frac{\partial \phi}{\partial t}$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$\frac{\partial \phi}{\partial t}$を消去する．
 
 
 [./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
@@ -462,12 +462,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 [./BEM_utilities.hpp#L468](./BEM_utilities.hpp#L468)
 
 
-### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) `$について． 
+### 🪸$\phi _{nt}$の計算で必要となる${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) $について． 
 
-$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
-面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
-面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
-$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
+$\nabla$を，$(x,y,z)$の座標系ではなく，
+面の法線方向${\bf n}$を$x$の代わりにとり，
+面に水平な方向を$t _0,t _1$とする座標系で考えることにして，$\nabla^*$と書くことにする．
+${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)$では，${\bf n}$方向成分だけをとる操作をしているので，
 新しい座標系でも同じようにすれば，結果は変わらない．
 
 $$
@@ -488,7 +488,7 @@ $$
 {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
 $$
 
-$`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
+$\phi _{nn}$は，直接計算できないが，ラプラス方程式から$\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}$となるので，水平方向の勾配の計算から求められる．
 
 
 [./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
@@ -497,11 +497,11 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 ### 🪸計算の流れ 
 
 1. 境界条件の設定
-2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+2. 境界値問題（BIE）を解き，$\phi$と$\phi _n$を求める
 3. 三角形の線形補間を使って節点の流速を計算する
-4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
-5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+4. 次時刻の$\Omega(t+\Delta t)$がわかるので，修正流速を計算する
+5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$\phi _t$と$\phi _{nt}$を求め，浮体面上の圧力$p$を計算する必要がある
+6. 全境界面の節点の位置を更新．ディリクレ境界では$\phi$を次時刻の値へ更新
 
 
 [./main.cpp#L250](./main.cpp#L250)

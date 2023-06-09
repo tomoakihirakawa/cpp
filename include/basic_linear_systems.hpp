@@ -805,22 +805,6 @@ A V_n = V_{n+1} \tilde H_n, \quad V_n = [v_1|v_2|...|v_n],
 これをArnoldi分解という．ここで，$[v_1|v_2|...|v_n]$
 の$|$は列ベクトルを連結して行列を形成することを示している．
 
-```math
-A V_n {\bf y}_n = V_{n+1} \tilde H_n {\bf y}_n
-```
-
-```math
-{\bf b} - A V_n {\bf y}_n = {\bf b} - V_{n+1} \tilde H_n {\bf y}_n
-```
-
-答えとして，$\|{\bf b} - V_{n+1} \tilde H_n {\bf y}_n\|$を最小とするような，
-${\bf y}_n$を求める．
-
-```math
-{\bf x}_n \approx V_n {\bf y}_n
-```
-
-
 */
 template <typename Matrix>
 struct ArnoldiProcess {
@@ -851,6 +835,46 @@ struct ArnoldiProcess {
       Print("done");
    };
 };
+
+/*DOC_EXTRACT GMRES
+
+## 一般化最小残差法/GMRES
+
+- ヘッセンベルグ行列$H$
+- クリロフ部分空間の直交基底$V$
+- $H$をQR分解した行列$Q$と$R$
+- $g$は行列$Q$の最初の列
+
+ArnoldiProcessによって，$H$と$V$を求める．このArnoldiProcessクラスの派生クラスとしてGMRESを定義している．
+
+残差${\bf r} = {\bf b} - A{\bf x}_n$を最小とするような${\bf x}_n$を求める．
+
+```math
+{\bf r} = {\bf b} - A{\bf x}_n
+```
+
+```math
+{\bf r} = {\bf b} - A V_n {\bf y}_n
+```
+
+
+```math
+A V_n {\bf y}_n = V_{n+1} \tilde H_n {\bf y}_n
+```
+
+```math
+{\bf b} - A V_n {\bf y}_n = {\bf b} - V_{n+1} \tilde H_n {\bf y}_n
+```
+
+答えとして，$\|{\bf b} - V_{n+1} \tilde H_n {\bf y}_n\|$を最小とするような，
+${\bf y}_n$を求める．
+
+```math
+{\bf x}_n \approx V_n {\bf y}_n
+```
+
+
+*/
 
 template <typename Matrix>
 struct gmres : public ArnoldiProcess<Matrix> {
