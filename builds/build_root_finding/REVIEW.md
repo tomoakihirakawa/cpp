@@ -22,6 +22,9 @@ EBTの発展版として，Newman & Wu 1973やNewman1973がフィンを考慮し
 LAEBTは，生体流体力学の分野で，魚の泳ぎの基礎となる理論として広く受け入れられている(Weihs 1972, Lighthill 1975).
 ロボットに関しては，Boyer et al. 2008を参照．
 
-しかし，数値解析結果との比較を通して，LAEBTは，
+しかし，数値解析結果との比較を通して，LAEBTは，実際の流れと大きく異なることがわかった(Wolfgang 1999, Triantafyllou et al. 2000)．
+
+そこで，[Candelier et al. 2018](https://www.cambridge.org/core/product/identifier/S002211201000649X/type/journal_article)は，LAEBTに対応する実際の流れを調べ，さらにその３次元版を提案している．
+
 
 REFERENCE: [Candelier et al. 2018](https://www.cambridge.org/core/product/identifier/S002211201000649X/type/journal_article)
