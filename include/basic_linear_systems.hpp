@@ -761,7 +761,7 @@ struct ILU {
 /* ------------------------------------------------------ */
 /*DOC_EXTRACT ArnoldiProcess
 
-## ArnoldiProcess
+## Arnoldi Process
 
 ヘッセンベルグ行列$H[0:k-1]$は，Aと相似なベクトルであり，同じ固有値を持つ
 GMRESで使う場合，$V0$にはNormalize(b-A.x0)を与える．
@@ -770,10 +770,37 @@ x0は初期値
 アーノルディ法は固有値問題の数値解法であり反復解法．
 一般的な行列の固有ベクトルと固有値をクリロフ空間の直行基底によって近似する方法計算する方法．
 
-   1. 正規化した${\bf v}_0$を与えておく．
-   2. $\,\,\quad\quad\quad\quad\quad{\bf v}_1 = {\rm Normalize}(A{\bf v}_0 - ((A{\bf v}_0) \cdot {\bf v}_0){\bf v}_0)$を計算する．
-   3. $\quad\quad\quad{\bf v}_2 = {\rm Normalize}((w=A{\bf v}_1 - ((A{\bf v}_1) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)$を計算する．
-   4. ${\bf v}_3 = {\rm Normalize}((w=((w=A{\bf v}_2 - ((A{\bf v}_2) \cdot {\bf v}_0){\bf v}_0)) - (w \cdot {\bf v}_1){\bf v}_1)) - (w \cdot {\bf v}_2){\bf v}_2)$を計算する．
+1. 正規化した${\bf v}_1$を与えておく．
+2. ${\bf v}_2 = {\rm Normalize}(\,\,\,\quad\quad\quad\quad\quad A{\bf v}_1 - ((A{\bf v}_1) \cdot {\bf v}_1){\bf v}_1\,\,\qquad\qquad\qquad\qquad\qquad\qquad)$を計算する．
+3. ${\bf v}_3 = {\rm Normalize}(\quad\quad\quad({\bf w}=A{\bf v}_2 - ((A{\bf v}_2) \cdot {\bf v}_1){\bf v}_1)) - ({\bf w} \cdot {\bf v}_2){\bf v}_2\quad\quad\quad\quad\quad\quad)$を計算する．
+4. ${\bf v}_4 = {\rm Normalize}(({\bf w}=(({\bf w}=A{\bf v}_3 - ((A{\bf v}_3) \cdot {\bf v}_1){\bf v}_1)) - ({\bf w} \cdot {\bf v}_2){\bf v}_2)) - ({\bf w} \cdot {\bf v}_3){\bf v}_3)$を計算する．
+
+言い換えると，
+
+1. 正規化した${\bf v}_1$を与えておく．
+2. ${\bf w}=A{\bf v}_1$として，${\bf v}_2 = {\rm Normalize}({\rm Chop}({\bf w},{\bf v}_1))$を計算する．
+3. ${\bf w}=A{\bf v}_2$として，${\bf v}_3 = {\rm Normalize}({\rm Chop}({\rm Chop}({\bf w}, {\bf v}_1), {\bf v}_2))$を計算する．
+4. ${\bf w}=A{\bf v}_3$として，${\bf v}_4 = {\rm Normalize}({\rm Chop}({\rm Chop}({\rm Chop}({\bf w}, {\bf v}_1), {\bf v}_2), {\bf v}_3))$を計算する．
+
+$A{\bf v}_i$の直交化の際に，
+それに含まれる各基底${\bf v}_0,{\bf v}_1,...,{\bf v}_i$の成分を計算している．
+この成分からなる行列が，Hessenberg行列$H$である．
+
+$$
+\begin{align*}
+A{\bf v}_1 & = H_{1,1} {\bf v}_1 + H_{2,1} {\bf v}_2\\
+A{\bf v}_2 & = H_{1,2} {\bf v}_1 + H_{2,2} {\bf v}_2 + H_{3,2} {\bf v}_3\\
+& \dots\\
+A{\bf v}_{n} & = H_{1,n} {\bf v}_1 + H_{2,n} {\bf v}_2 + \cdots + H_{n,n+1} {\bf v}_{n+1}
+\end{align*}
+$$
+
+$$
+A Q = Q H, \quad Q = [v_1|v_2|...|v_n], \quad H = \begin{bmatrix} H_{1,1} & H_{1,2} & \cdots & H_{1,n} & H_{1,n+1} \\ H_{2,1} & H_{2,2} & \cdots & H_{2,n} & H_{2,n+1} \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ H_{n,1} & H_{n,2} & \cdots & H_{n,n} & H_{n,n+1} \\ 0 & 0 & \cdots & 0 & H_{n+1,n+1} \end{bmatrix}
+$$
+
+ここで，$[v_1|v_2|...|v_n]$の$|$は列ベクトルを連結して行列を形成することを示している．
+
 
 */
 template <typename Matrix>
