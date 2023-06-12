@@ -225,13 +225,13 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
 };
 
 /*DOC_EXTRACT SPH
+
 ### 壁面粒子の流速と圧力
 
-壁粒子の流速を流体粒子の流速に応じて変化させると計算が煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにした（ゼロで一定というのは不自然ではない）．
-一方，壁粒子の圧力がゼロだとするのは不自然で，流体粒子の圧力$p^{n+1}$の計算に悪影響を及ぼす．
-なので．壁粒子の圧力は各ステップ毎に計算し直す必要がある．
+壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，
+**ここでは**壁面粒子の流速は常にゼロに設定することにする．
 
-TODO: 壁面粒子の圧力は，壁面法線方向流速をゼロにするように設定されるべきだろう．
+壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
 
 */
 
@@ -239,16 +239,10 @@ TODO: 壁面粒子の圧力は，壁面法線方向流速をゼロにするよ�
 #define new_method
 
 /*DOC_EXTRACT SPH
-### $\nabla^2 {\bf u}_i$の計算
 
-CHECKED: \ref{SPH:lapU}{ラプラシアンの計算方法}: $\nabla^2 {\bf u}_i=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}$
+## $`\nabla^2 {\bf u}_i`$の計算
 
-<details>
-<summary>見出し部分。ここをクリック。</summary>
-<div>
-ここが隠れてる部分。
-</div>
-</details>
+CHECKED: \ref{SPH:lapU}{ラプラシアンの計算方法}: $`\nabla^2 {\bf u}_i=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
 */
 
@@ -267,6 +261,15 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       A->grad_coeff.clear();
       A->grad_coeff_next.clear();
       //$ ------------------------------------------ */
+      /*DOC_EXTRACT SPH
+
+      ### 高速化のための工夫
+
+      何度か行う勾配の計算は，変数は違えど，変数の係数は同じである．
+      ここで，その係数を`std::unordered_map`で保存しておくことにする．
+      `A->grad_coeff`と`A->grad_coeff_next`に保存する．
+
+      */
       auto add_to_unmap = [&](const auto &key, const Tddd coef) {
          auto it = A->grad_coeff.find(key);
          if (it != A->grad_coeff.end())
@@ -281,6 +284,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          else
             A->grad_coeff_next.emplace_hint(it, key, coef);
       };
+      //$ ------------------------------------------ */
       auto add_lap_U = [&](const auto &B) {
          if (!B->isAuxiliary) {
 
@@ -335,59 +339,59 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
 /*DOC_EXTRACT SPH
 
-### 圧力の計算　`PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
+## ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$
 
-次の時刻の流れ場が発散なし$\nabla\cdot{\bf u}^{n+1}=0$であることを保証してくれる圧力を使って，
-$\frac{D {\bf u}}{D t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}$を決定し，時間発展させたい．
-そのような圧力を$p^{n+1}$と書くことにする．
-そのような圧力の条件は，次のようになる．
+### ポアソン方程式
 
-$$
-\begin{align*}
-&&\frac{D {\bf u}}{D t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}\\
-&\rightarrow& \frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} &=-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}
-\end{align*}
-$$
+次の時刻の流れ場を発散なし$`\nabla\cdot{\bf u}^{n+1}=0`$としてくれる
+$`\frac{D {\bf u}}{D t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}`$を使って，流速と粒子位置を時間発展させたい．
+そのためには，圧力$`p^{n+1}`$を適切に決める必要がある．
 
-非圧縮流体なので，$\nabla \cdot{\bf u}^{n}$はゼロであるべきだが，計算誤差が蓄積しゼロからずれてしまう．
-そこで次の時刻の$\nabla \cdot{\bf u}^{n+1}$をゼロにするように圧力を決定する．
+$`\frac{D {\bf u}}{D t}`$は．$`\frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t}`$と離散化し条件を考えてみる．
 
-次時刻の発散の演算は，次時刻における粒子配置に基づき行われる．
-なので，現在の粒子配置に基づく演算とは区別すべきである．
-現在の微分演算を$\nabla^{n}$とし，次時刻の微分演算を$\nabla^{n+1}$としよう．
+```math
+\frac{{\bf u}^{n+1} - {\bf u}^{n}}{\Delta t} =-\frac{1}{\rho} \nabla p^{n+1}+\nu \nabla^2 {\bf u}^n+{\bf g}
+```
 
-$$
+次時刻の発散の演算は，次時刻における粒子配置に基づき行われるので，現在の粒子配置に基づく発散演算とは区別すべきである．
+現在の微分演算を$`\nabla^{n}`$とし，次時刻の微分演算を$`\nabla^{n+1}`$とする．
+$`\nabla^{n+1}`$を上の式に作用させると，
+
+```math
 \nabla^{n+1}\cdot {\bf u}^{n+1} = \nabla^{n+1} \cdot{\bf u}^{n} - \Delta t \nabla^{n+1} \cdot\left(\frac{1}{\rho} \nabla^{n} p^{n+1}-\nu \nabla^{n2} {\bf u}^n-{\bf g}\right)
-$$
+```
 
-次時刻の流速の発散がゼロになるには
+次時刻の流速の発散がゼロ，$`\nabla^{n+1}{\bf u}^{n+1}=0`$になるには
 
-$$
+```math
 \begin{align*}
-&&\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) &= \frac{1}{\Delta t}\nabla^{n+1} \cdot{\bf u}^{n} + \nabla^{n+1} \cdot\left(\nu^n \nabla^{n2} {\bf u}^n  + {\bf g}\right)\\
+&&0 &= \nabla^{n+1} \cdot{\bf u}^{n} - \Delta t \nabla^{n+1} \cdot\left(\frac{1}{\rho} \nabla^{n} p^{n+1}-\nu \nabla^{n2} {\bf u}^n-{\bf g}\right)\\
+&\rightarrow&\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) &= \frac{1}{\Delta t}\nabla^{n+1} \cdot{\bf u}^{n} + \nabla^{n+1} \cdot\left(\nu^n \nabla^{n2} {\bf u}^n  + {\bf g}\right)\\
 &\rightarrow& \nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) &= \nabla^{n+1} \cdot\left(\frac{1}{\Delta t}{\bf u}^{n} +\nu^n \nabla^{n2} {\bf u}^n  + {\bf g}\right)\\
 &\rightarrow& \nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) &= b = \nabla^{n+1} \cdot {\bf b}^n,\quad  {\bf b}^n=\frac{1}{\Delta t}{\bf u}^{n} +\nu^n \nabla^{n2} {\bf u}^n
 \end{align*}
-$$
+```
 
 重力の発散はゼロなので消した．
 
-**右辺について**
+### 右辺，$`b`$，`PoissonRHS`について
 
-この$b$を`PoissonRHS`とする．（仮流速は${\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n$と同じ）．`PoissonRHS`,$b$の計算の前に，$\mu \nabla^2{\bf u}$を予め計算しておく．
+この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
+`PoissonRHS`,$`b`$の計算の前に，$`{\bf b}^n`$を予め計算しておく．
 
-CHECKED: \ref{SPH:divb}{発散の計算方法}: $b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}$
+CHECKED: \ref{SPH:divb0}{発散の計算方法}: $`b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
 
-**左辺について**
+### 左辺について
 
-壁粒子の圧力は時間積分して計算しないので，毎時刻，壁粒子の$p^n$を計算する必要がある．
+壁粒子の圧力は時間積分して計算しないので，毎時刻，壁粒子の$`p^{n+1}`$を計算する必要がある．
 
-EISPH
+**EISPH**
 
-   1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
-   2. 流体粒子の圧力$p^{n+1}$の計算
+   1. 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
+   2. 流体粒子の圧力$`p^{n+1}`$の計算
 
-ISPH
+**ISPH**
+
    - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
 CHECKED: \ref{SPH:lapP}{ラプラシアンの計算方法}: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
@@ -404,8 +408,13 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          return p->mass / p->rho;
       } else if (p->getNetwork()->isRigidBody)
          return p->mass / p->rho;
-      else
+      else {
+#if defined(USE_RungeKutta)
          return p->mass / p->RK_rho.getX(-p->rho * p->div_U);
+#else
+         return p->mass / p->rho;
+#endif
+      }
    };
 
    auto rho_next = [&](const auto &p) {
@@ -413,28 +422,37 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          return p->rho;
       } else if (p->getNetwork()->isRigidBody)
          return p->rho;
-      else
+      else {
+#if defined(USE_RungeKutta)
          return p->RK_rho.getX(-p->rho * p->div_U);
+#else
+         return p->mass / p->rho;
+#endif
+      }
    };
 
    // これは現在の粒子位置で計算するが，この微分は次時刻の粒子位置で計算する
-   auto Poisson_b_ = [&](const networkPoint *A, const double dt) {
-      return A->RK_U.get_U0_for_SPH() / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
+   // auto Poisson_b_vector = [&](const networkPoint *A, const double dt) {
+   //    return A->RK_U.get_U0_for_SPH() / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
+   // };
+
+   auto Poisson_b_vector = [&](const networkPoint *A, const double dt) {
+      return A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
    };
 
-   auto Poisson_b = [&](const Tddd origin_x, const double radius, const double dt, const auto &target_nets) {
-      Tddd b = {0., 0., 0.};
-      for (const auto &net : target_nets)
-         net->BucketPoints.apply(origin_x, radius, [&](const auto &B) {
-            if (B->isCaptured) {
-               b += Poisson_b_(B, dt) * B->volume * w_Bspline(Norm(B->X - origin_x), B->radius_SPH);
-               // if (B->isSurface)
-               //    for (const auto &AUX : B->auxiliaryPoints)
-               //       b += Poisson_b_(AUX, dt) * AUX->volume * w_Bspline(Norm(getX(AUX) - origin_x), AUX->radius_SPH);
-            }
-         });
-      return b;
-   };
+   // auto Poisson_b = [&](const Tddd origin_x, const double radius, const double dt, const auto &target_nets) {
+   //    Tddd b = {0., 0., 0.};
+   //    for (const auto &net : target_nets)
+   //       net->BucketPoints.apply(origin_x, radius, [&](const auto &B) {
+   //          if (B->isCaptured) {
+   //             b += Poisson_b_vector(B, dt) * B->volume * w_Bspline(Norm(B->X - origin_x), B->radius_SPH);
+   //             // if (B->isSurface)
+   //             //    for (const auto &AUX : B->auxiliaryPoints)
+   //             //       b += Poisson_b_vector(AUX, dt) * AUX->volume * w_Bspline(Norm(getX(AUX) - origin_x), AUX->radius_SPH);
+   //          }
+   //       });
+   //    return b;
+   // };
 
 #pragma omp parallel
    for (const auto &A : points)
@@ -445,42 +463,47 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       A->column_value.clear();
       Tddd origin_x, origin_b;
 
+      /*DOC_EXTRACT SPH
+
+      ### ポアソン方程式の作成のコーディング
+
+      各粒子`A`に対して，方程式を作成する．
+
+      まずは，\ref{SPH:whereToMakeTheEquation}{方程式を立てる位置を決める．}
+      */
+
       // \label{SPH:whereToMakeTheEquation}
       if (A->isAuxiliary) {
          origin_x = getX(A->surfacePoint);
-         origin_b = Poisson_b_(A->surfacePoint, dt);
+         origin_b = Poisson_b_vector(A->surfacePoint, dt);
 
          // origin_x = getX(A);
-         // origin_b = Poisson_b_(A, dt);
+         // origin_b = Poisson_b_vector(A, dt);
 
          // auto i = (int)(Norm(A->surfacePoint->X - A->X) / particle_spacing - 1E-10);
          // origin_x = getX(A->surfacePoint) + 0.2 * i * particle_spacing * Normalize(A->surfacePoint->X - A->X);
-         // origin_b = Poisson_b_(A->surfacePoint, dt);
+         // origin_b = Poisson_b_vector(A->surfacePoint, dt);
          // origin_b = Poisson_b(origin_x, A->radius_SPH, dt, target_nets);
 
       } else if (A->getNetwork()->isRigidBody) {
          origin_x = getX(A);  // + 1.5 * A->normal_SPH;
-         origin_b = Poisson_b_(A, dt);
+         origin_b = Poisson_b_vector(A, dt);
          // auto origin = getClosestExcludeRigidBody(A, target_nets);
          // origin_x = getX(origin);
-         // origin_b = Poisson_b_(origin, dt);
+         // origin_b = Poisson_b_vector(origin, dt);
          // origin_b = Poisson_b(origin_x, origin->radius_SPH, dt, target_nets);
       } else {
          origin_x = getX(A);
-         origin_b = Poisson_b_(A, dt);
+         origin_b = Poisson_b_vector(A, dt);
          // origin_b = Poisson_b(origin_x, A->radius_SPH, dt, target_nets);
       }
 
       double total_weight = 0, P_wall = 0, dP;
       A->density_based_on_positions = 0;
-      //% ----------------- PoissonRHS ------------------------- */
+
       /*DOC_EXTRACT SPH
 
-      ### 圧力を決定するための方程式を作成
-
-      NOTE: '次の時刻における流速の発散はゼロになるように'というルールに従えば，次時刻の発散の演算は次時刻の粒子位置において行われるため，今作成するポアソン方程式の発散の演算は，次時刻の粒子位置において行われるべきだ．
-
-      各粒子$A$に対して，圧力を決定するための方程式を作成する．各粒子$A$が，流体か壁か補助粒子か水面かによって，方程式が異なる．
+      各粒子`A`が，流体か壁か補助粒子か水面かによって，方程式が異なる．
 
       |方程式|目的|
       |:---------|---|
@@ -494,7 +517,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:ImpermeableCondition}
       auto ImpermeableCondition = [&](const auto &B /*column id*/) {
-         A->PoissonRHS -= (V_next(B) * Dot(Poisson_b_(B, dt), Normalize(A->normal_SPH)) * w_Bspline(Norm(origin_x - B->X), A->radius_SPH));
+         A->PoissonRHS -= (V_next(B) * Dot(Poisson_b_vector(B, dt), Normalize(A->normal_SPH)) * w_Bspline(Norm(origin_x - B->X), A->radius_SPH));
          auto coeff = V_next(B) * Dot(grad_w_Bspline(origin_x, B->X, A->radius_SPH), Normalize(A->normal_SPH));  // こっちはOKだろう．
          A->increment(B, coeff);
       };
@@ -511,13 +534,14 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          A->increment(B, V_next(B) * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH));
       };
 
-#define lapP_case1
       // \label{SPH:PoissonEquation}
       auto PoissonEquation = [&](const auto &B /*column id*/) {
          if (!B->isAuxiliary) {
-            A->PoissonRHS += V_next(B) * Dot(Poisson_b_(B, dt) - origin_b, grad_w_Bspline(origin_x, getX(B), A->radius_SPH));
+            // \label{SPH:divb0}
+            A->PoissonRHS += V_next(B) * Dot(Poisson_b_vector(B, dt) - origin_b, grad_w_Bspline(origin_x, getX(B), A->radius_SPH));
             A->density_based_on_positions += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
          }
+#define lapP_case0
 #if defined(lapP_case0)
          auto COEFF = V_next(B) * grad_w_Bspline(origin_x, getX(B), A->radius_SPH);
          for (const auto &[b, coeff] : B->grad_coeff) {
@@ -572,7 +596,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          /* -------------------------------------------------------------------------- */
 #if defined(Morikawa2019)
-            /*DOC_EXTRACT SPH
+            /* SPH
             ### 圧力の安定化
 
             $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
@@ -624,6 +648,14 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
       p->p_SPH = p->p_SPH_;
 }
 
+/*DOC_EXTRACT SPH
+
+## ポアソン方程式の解法
+
+ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES法}を使う．
+
+*/
+
 void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid,
                   const std::unordered_set<Network *> &target_nets) {
@@ -674,14 +706,32 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
          v /= p->diagonal_value;
    }
 
-   int N = 400;
+   int N = 300;
    DebugPrint("gmres iteration ", N, Green);
-   gmres gm(points, b, x0, N);
-   std::cout << "gm.err : " << gm.err << std::endl;
+   gmres gm(points, b, x0, N);  //\label{SPH:gmres}
+
+   // for (auto j = 0; j < 10; ++j) {
+   //    std::cout << "j = " << j << std::endl;
+   //    for (auto i = 0; i < 100; ++i) {
+   //       std::cout << "i = " << i << std::endl;
+   //       gm.Iterate(points);
+   //       if (std::abs(gm.err) < 1)
+   //          break;
+   //       std::cout << "i, j = " << i << ", " << j << " gm.err : " << gm.err << std::endl;
+   //    }
+   //    x0 = gm.x;
+   //    if (std::abs(gm.err) < 1)
+   //       break;
+   //    else
+   //       gm.Restart(points, b, x0, N);
+
+   //    std::cout << "j = " << j << " gm.err : " << gm.err << std::endl;
+   // }
 
    for (const auto &p : points)
       x0[p->getIndexCSR()] = p->p_SPH = gm.x[p->getIndexCSR()];
 
+   std::cout << " gm.err : " << gm.err << std::endl;
    std::cout << "actual error : " << Norm(b - Dot(points, x0)) << std::endl;
 
    // for (const auto &p : points)
@@ -695,7 +745,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 // b% ------------------------------------------------------ */
 /*DOC_EXTRACT SPH
 
-### 圧力勾配$\nabla p^{n+1}$の計算
+## 圧力勾配$\nabla p^{n+1}$の計算
 
 CHECKED: \ref{SPH:gradP1}{勾配の計算方法}: $\nabla p_i = \rho_i \sum_{j} m_j (\frac{p_i}{\rho_i^2} + \frac{p_j}{\rho_j^2}) \nabla W_{ij}$
 
@@ -717,7 +767,11 @@ void gradP(const std::unordered_set<networkPoint *> &points,
       } else if (p->getNetwork()->isRigidBody)
          return p->mass / p->rho;
       else
+#if defined(USE_RungeKutta)
          return p->mass / p->RK_rho.getX(-p->rho * p->div_U);
+#else
+         return p->mass / p->rho;
+#endif
    };
 
 #pragma omp parallel
@@ -752,7 +806,10 @@ void gradP(const std::unordered_set<networkPoint *> &points,
 #endif
 
       /*DOC_EXTRACT SPH
-      $\frac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}$が計算できた．
+
+      $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
+      が計算できた．
+
       */
 
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
@@ -885,8 +942,8 @@ void updateParticles(const auto &points,
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
       A->setDensity(A->RK_rho.getX());
 #elif defined(USE_LeapFrog)
-      // A->DrhoDt_SPH = -A->rho * A->div_U;
       A->DrhoDt_SPH = -A->rho * A->div_U;
+      A->LPFG_rho.push(A->DrhoDt_SPH);
       A->setDensity(A->rho + A->DrhoDt_SPH * dt);
 #endif
       // A->setDensity(A->rho_);

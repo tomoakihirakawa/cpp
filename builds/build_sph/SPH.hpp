@@ -1,7 +1,8 @@
 #ifndef SPH_weightingFunctions_H
 #define SPH_weightingFunctions_H
 
-#define USE_RungeKutta
+// #define USE_RungeKutta
+#define USE_LeapFrog
 
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
@@ -220,13 +221,13 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 
 4. 水面の判定
 5. $`\nabla^2 {\bf u}`$の計算
-6. `PoissonRHS`,$b$と$`\nabla^2 p^{n+1}$における$p^{n+1}`$の係数の計算
+6. `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
 7. 流速の発散から密度 $`{\rho}^\ast`$を計算
-8. 次の時刻の圧力 $p^{n+1}$を計算
-   1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
-   2. 流体粒子の圧力$p^{n+1}$の計算
-9. $\nabla {p^{n+1}}$が計算でき， $\frac{D{\bf u}}{D t}=-\frac{1}{\rho}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}$（粘性率が一定の非圧縮性流れの加速度）を得る．
-10. $\frac{D\bf u}{Dt}$を使って，流速を更新．流速を使って位置を更新
+8. 次の時刻の圧力 $`p^{n+1}`$を計算
+   * 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
+   * 流体粒子の圧力$`p^{n+1}`$の計算
+9. $`\nabla {p^{n+1}}`$が計算でき， $`\frac{D{\bf u}}{D t}=-\frac{1}{\rho}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}`$（粘性率が一定の非圧縮性流れの加速度）を得る．
+10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 */
 
