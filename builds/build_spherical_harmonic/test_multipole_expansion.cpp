@@ -307,7 +307,7 @@ int main() {
 \quad\text{on}\quad{\bf x} \in \Gamma(t)
 ```
 
-となり，原点${\bf a}$と積分変数${\bf x}$が分離できる．
+となり，原点$`{\bf a}`$と積分変数$`{\bf x}`$が分離できる．
 
 ```math
 \alpha ({\bf{a}})\phi ({\bf{a}})={\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{{\bf Y}^\ast}({\bf x},{\bf c})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c})} \right) dS}\quad\text{on}\quad{\bf x} \in \Gamma(t).
@@ -329,8 +329,8 @@ $`\|{\bf x - \bf c}\|`$が$`\|{\bf a - \bf c}\|`$よりも十分に小さい必�
 
 ### 空間分割
 
-$`\bf c$`を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において${\bf c}$を固定する．
-各セルのインデックスを$\square i$として，その中心座標を${\bf c}_{\square i}$のように表す．
+$`\bf c`$を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において$`{\bf c}`$を固定する．
+各セルのインデックスを$`\square i`$として，その中心座標を$`{\bf c}_{\square i}`$のように表す．
 そうすると，
 
 ```math
