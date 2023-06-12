@@ -50,11 +50,11 @@ int main() {
    V_d ans = {6.875, 5.625, 5.625, 6.875};
 #endif
    /* -------------------------------------------------------------------------- */
-   //    auto v = diagonal_scaling_vector(A);
-   //    for (auto i = 0; i < v.size(); ++i) {
-   //       A[i] *= v[i];
-   //       b[i] *= v[i];
-   //    }
+   // auto v = diagonal_scaling_vector(A);
+   // for (auto i = 0; i < v.size(); ++i) {
+   //    A[i] *= v[i];
+   //    b[i] *= v[i];
+   // }
 
    Timer timer;
    std::cout << "time:" << timer() << std::endl;
@@ -69,7 +69,7 @@ int main() {
       for (auto i = n_begin + 1; i <= n_max; i++) {
          // gmres gm(A, b, x0, i);
          gm_iterate.Iterate(A);
-         
+
          std::cout << "time:" << timer() << std::endl;
          std::cout << "       Restart : " << restart << std::endl;
          std::cout << "             i : " << i << std::endl;
