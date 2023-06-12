@@ -17,29 +17,29 @@
 
 次のGreen関数を考える．
 
-$$
+```math
 G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
 \quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
-$$
+```
 
-近似解 $G _{\rm apx}({\bf x},{\bf a},{\bf c})$ を以下の式で定義する：
+近似解 $`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$ を以下の式で定義する：
 
-$$
+```math
 G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) \approx \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})={\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
-$$
+```
 
-ここで，$(r _{near},a _{near},b _{near})$は，球面座標系に${\bf x}-{\bf c}$を変換したものであり，
-$(r _{far},a _{far},b _{far})$は，球面座標系に${\bf a}-{\bf c}$を変換したもの．$Y(k, m, a, b)$は球面調和関数：
+ここで，$`(r _{near},a _{near},b _{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{far},a _{far},b _{far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
 
-$$
+```math
 Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
-$$
+```
 
-$P _k^m(x)$はルジャンドル陪関数：
+$`P _k^m(x)`$はルジャンドル陪関数：
 
-$$
+```math
 P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
-$$
+```
 
 
 [./test_multipole_expansion.cpp#L8](./test_multipole_expansion.cpp#L8)
@@ -49,18 +49,18 @@ $$
 
 $`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
 
-$$
+```math
 r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
-$$
+```
 
-$r _\parallel=\sqrt{x^2+y^2}$とする．$\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}$なので，
-$(r,a,b)$の$(x,y,z)$に関する勾配は次のようになる．
+$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 
-$$
+```math
 \nabla r = \frac{\bf x}{r},\quad
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
-$$
+```
 
 
 [./test_multipole_expansion.cpp#L48](./test_multipole_expansion.cpp#L48)
