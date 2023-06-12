@@ -775,6 +775,8 @@ struct ILU {
 3. $`{\bf w}=A{\bf v}_2, {\bf v}_3 = {\rm Normalize}({\rm Chop}({\rm Chop}({\bf w}, {\bf v}_1), {\bf v}_2))`$を計算する．
 4. $`{\bf w}=A{\bf v}_3, {\bf v}_4 = {\rm Normalize}({\rm Chop}({\rm Chop}({\rm Chop}({\bf w}, {\bf v}_1), {\bf v}_2), {\bf v}_3))`$を計算する．
 
+NOTE: ここで最も計算コストがかかるのは，$`{\bf w}=A{\bf v}_i`$の行列-ベクトル積である．
+
 $`A{\bf v}_i`$の直交化の際に，
 それに含まれる各基底$`{\bf v}_0,{\bf v}_1,...,{\bf v}_i`$の成分を計算している．
 この成分からなる行列が，Hessenberg行列$H$である．
@@ -796,6 +798,8 @@ A V_n = V_{n+1} \tilde H_n, \quad V_n = [v_1|v_2|...|v_n],
 ```
 
 これをArnoldi分解という．ここで，$`[v_1|v_2|...|v_n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
+
+
 
 */
 template <typename Matrix>
@@ -826,28 +830,69 @@ struct ArnoldiProcess {
       }
       Print("done");
    };
+
+   void AddBasisVector(const Matrix &A) {
+      size_t i;
+      // update n, V, H
+      n++;
+      V.push_back(v0);
+      H.push_back(V_d(n, 0.));
+      w = Dot(A, V[n - 1]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+      // orthogonalization
+      for (i = 0; i < n; ++i) {
+         H[i].push_back(0.);
+         w -= (H[i][n - 1] = Dot(V[i], w)) * V[i];
+      }
+      V[n] = w / (H[n][n - 1] = Norm(w));
+   };
 };
 
 /*DOC_EXTRACT GMRES
 
 ## 一般化最小残差法/GMRES
 
-残差$`\|{\bf b} - A{\bf x}_n\|`$を最小とするような$`{\bf x}_n`$を求める．
+残差$`\|{\bf b} - A{\bf x}\|`$を最小とするような$`{\bf x}`$を求めるたい．
+そのような$`{\bf x}`$を，クリロフ部分空間の正規直交基底を用いた，$`{\bf x}_n = V_n {\bf y}_n`$の形で近似解を追い求めていく．
+$`n`$はこの表現での展開項数である．
+
+クリロフ部分空間の正規直交基底$`V_n = \{{\bf v}_1,{\bf v}_2,...,{\bf v}_n\}`$は，アーノルディ過程によって計算する．
+
 
 ```math
 \begin{align*}
 \|{\bf b} - A{\bf x}_n\| & = \|{\bf b} - A V_n {\bf y}_n\|\\
 & = \|{\bf b} - V_{n+1} \tilde H_n {\bf y}_n\|\quad \text{(use Arnoldi decomposition)}\\
 & = \|V_{n+1} (\|{\bf b}\| {\bf e}_1 - \tilde H_n {\bf y}_n)\|\\
-& = \|\|{\bf b}\| {\bf e}_1 - \tilde H_n {\bf y}_n\|\\
+& = \|\|{\bf b}\| {\bf e}_1 - \tilde H_n {\bf y}_n\|\quad \text{(the dimension has been reduced!)}\\
 & = \|\|{\bf b}\| {\bf e}_1 - QR {\bf y}_n\|\quad \text{(use QR decomposition)}\\
 \end{align*}
 ```
 
 1. クリロフ部分空間法の考えから，$`\|{\bf b} - A V_n {\bf y}_n\|`$を最小とするような，$`{\bf y}_n`$を求める問題に書き換える．
-2. Arnoldi分解を使って，$`A V_n = V_{n+1} \tilde H_n`$と書き換える．
+2. $`A V_n = V_{n+1} \tilde H_n`$（アーノルディ分解）と書き換える．
 3. $`V_{n+1}`$でくくる．
 4. QR分解を使って，$`{\bf y}_n`$に関する最小二乗問題を$`{\bf y}_n`$について解く．
+
+
+<details>
+<summary>なぜ，アーノルディ分解をするのか</summary>
+
+* $`A`$は$`m \times m`$とすると
+* $`{\bf x}`$と$`{\bf b}`$は，$`m \times 1`$ベクトル（列ベクトル）.
+* $`V_n`$は，$`m \times n`$行列で，$`A`$のクリロフ部分空間の基底ベクトルを列に持つ行列．
+* $`{\bf y}_n`$は$`n \times 1`$ベクトル．
+* $`\tilde H_n`$は$`(n+1) \times n`$行列．
+
+従って，$`n`$が$`m`$よりも大幅に小さい場合，
+アーノルディ分解によって作られた問題$`\min\|{\bf b} - V_{n+1}{\tilde H}_n {\bf y}_n\|`$は，
+元の問題$`\min\|{\bf b}-A{\bf x}\|`$より計算量が少ない問題となる．
+
+$`A{\bf x} = {\bf b}`$の問題を解くよりも，
+$`{\tilde H}_n {\bf y}_n = {\bf b}`$という問題を解く方が計算量が少ない．
+
+</details>
+
+NOTE: 展開項数$`n`$を$`n+1`$と大きくする際に，始めから計算しなおす必要はない．$V_{n+1}$と${\tilde H}_{n+1}$は，$V_n$と${\tilde H}_n$を使って計算できる．
 
 */
 
@@ -858,15 +903,15 @@ struct gmres : public ArnoldiProcess<Matrix> {
    to find {r0,A.r0,A^2.r0,...}
    Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
    */
-   int n;  // th number of interation
+   // int n;  // th number of interation
    V_d x, y;
    double err;
-   const QR qr;
+   QR qr;
    V_d g;
    ~gmres(){};
    gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN)
        : ArnoldiProcess<Matrix>(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN),
-         n(nIN),
+         // n(nIN),
          x(x0),
          y(b.size()),
          qr(ArnoldiProcess<Matrix>::H),
@@ -883,9 +928,34 @@ struct gmres : public ArnoldiProcess<Matrix> {
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
       i = 0;
-      for (i = 0; i < n; ++i)
+      for (i = 0; i < ArnoldiProcess<Matrix>::n; ++i)
          this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
    };
+
+   void Iterate(const Matrix &A) {
+      // do not change v0
+      ArnoldiProcess<Matrix>::AddBasisVector(A);
+      this->qr = QR(ArnoldiProcess<Matrix>::H);
+      g.resize(qr.Q.size());
+      err = 0.;
+      if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
+         return;
+      //
+      size_t i = 0;
+      for (const auto &q : this->qr.Q)
+         g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
+      err = g.back();  // 予想される誤差
+      g.pop_back();
+      // this->y = back_substitution(this->qr.R, g, g.size());
+      // i = ArnoldiProcess<Matrix>::n - 1;
+      // this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+
+      this->x = V_d(this->x.size(), 0.);
+      this->y = back_substitution(this->qr.R, g, g.size());
+      for (i = 0; i < ArnoldiProcess<Matrix>::n; ++i)
+         this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+   };
+
    // gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN, const auto ILU)
    //     : ArnoldiProcess<Matrix>(A, ILU(A).solve(b - Dot(A, x0)) /*行列-ベクトル積*/, nIN),
    //       n(nIN),

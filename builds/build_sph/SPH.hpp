@@ -207,7 +207,6 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 };
 
 /*DOC_EXTRACT SPH
-[![Banner](banner.png)](banner.png)
 
 # Smoothed Particle Hydrodynamics (SPH) ISPH EISPH
 
@@ -215,14 +214,14 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 ### 前準備
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
-3. CFL条件を満たすようにタイムステップ間隔 $\Delta t$を設定
+3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
 
 ### フラクショナルステップを使って初期値問題を解く
 
 4. 水面の判定
-5. $\nabla^2 {\bf u}$の計算
-6. `PoissonRHS`,$b$と$\nabla^2 p^{n+1}$における$p^{n+1}$の係数の計算
-7. 流速の発散から密度 ${\rho}^\ast$を計算
+5. $`\nabla^2 {\bf u}`$の計算
+6. `PoissonRHS`,$b$と$`\nabla^2 p^{n+1}$における$p^{n+1}`$の係数の計算
+7. 流速の発散から密度 $`{\rho}^\ast`$を計算
 8. 次の時刻の圧力 $p^{n+1}$を計算
    1. 壁粒子の圧力の計算（流体粒子の現在の圧力$p^n$だけを使って近似）
    2. 流体粒子の圧力$p^{n+1}$の計算
