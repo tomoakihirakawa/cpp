@@ -60,16 +60,15 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   int n_max = 50;
+   int n_max = 51;
    int n_begin = 1;
    auto x0_for_iterate = x0;
+   gmres gm_ful(A, b, x0, n_max);
+   gmres gm_iterate(A, b, x0_for_iterate, n_begin);
    for (auto restart = 0; restart < 5; ++restart) {
-      gmres gm_ful(A, b, x0, n_max);
-      gmres gm_iterate(A, b, x0_for_iterate, n_begin);
+      gm_iterate.Restart(A, b, x0_for_iterate, n_begin);
       for (auto i = n_begin + 1; i <= n_max; i++) {
-         // gmres gm(A, b, x0, i);
          gm_iterate.Iterate(A);
-
          std::cout << "time:" << timer() << std::endl;
          std::cout << "       Restart : " << restart << std::endl;
          std::cout << "             i : " << i << std::endl;
@@ -79,8 +78,8 @@ int main() {
          std::cout << "estimate error (iterate) : " << gm_iterate.err << std::endl;
          std::cout << "  actual error (iterate) : " << Norm(Dot(A, gm_iterate.x) - b) << std::endl;
          std::cout << Red << "--------------------------------" << colorOff << std::endl;
+         x0_for_iterate = gm_iterate.x;
       }
-      x0_for_iterate = gm_iterate.x;
    }
    std::cout << "time:" << timer() << std::endl;
 };

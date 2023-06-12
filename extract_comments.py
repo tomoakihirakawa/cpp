@@ -6,13 +6,34 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Tuple, Iterator, Dict
 
-
-# Modified patterns
+# Regex patterns compiled at module level
 CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''DOC_EXTRACT(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 INSERT_PATTERN = re.compile(r'\\insert\{(.*?)\}')
+LABEL_PATTERN = re.compile(r'\\label\{(.*?)\}')
+MATH_EXPR_PATTERN = re.compile(r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)", re.DOTALL)
+INLINE_MATH_PATTERN = re.compile(r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)")
+MATH_STAR_PATTERN = re.compile(r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))")
 
+# Reduced multiple calls to `file.read()`
+def read_file_content(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
+
+# Inserted LABEL_PATTERN in search_labels()
+def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
+    labels = {}
+    for dirpath, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith(extensions):
+                file_path = os.path.join(dirpath, filename)
+                content = read_file_content(file_path)
+                for match in LABEL_PATTERN.finditer(content):
+                    label = match.group(1)
+                    start_line = content[:match.start()].count('\n') + 1
+                    labels[label] = (file_path, start_line)
+    return labels
 
 def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str:
     """
@@ -90,23 +111,6 @@ def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str
     headers_info = sorted(headers_info, key=lambda x: x[1])
 
     return sorted_comments_dict, headers_info
-
-
-def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
-    label_pattern = re.compile(r'\\label\{(.*?)\}')
-    labels = {}
-    for dirpath, _, filenames in os.walk(directory):
-        for filename in filenames:
-            if filename.endswith(extensions):
-                file_path = os.path.join(dirpath, filename)
-                with open(file_path, 'r') as file:
-                    content = file.read()
-                for match in label_pattern.finditer(content):
-                    label = match.group(1)
-                    start_line = content[:match.start()].count('\n') + 1
-                    labels[label] = (file_path, start_line)
-    return labels
-
 
 def convert_math_underscore(text: str) -> str:
     math_expr_pattern = r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)"
@@ -256,10 +260,9 @@ if __name__ == "__main__":
             for keyword, comments in extracted_comments.items():
                 replacements[keyword[0]] = ' '.join(comments) # Comment replacement should be the content
 
-    # Sort file paths alphabetically
+
     for input_file in sorted(search_files(search_directory, file_extensions)):
-        with open(input_file, 'r') as file:
-            content = file.read()
+        content = read_file_content(input_file)
         content = replace_insert_statements(content, replacements)
         extracted_comments, headers_info = extract_markdown_comments(input_file, content)
         

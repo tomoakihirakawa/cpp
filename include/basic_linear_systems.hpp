@@ -503,10 +503,22 @@ V_d back_substitution(const VV_d &mat, V_d b, const int mat_size) {
 
 struct QR {
    VV_d Q, R, A;
-   QR(const VV_d &AIN)
-       : R(AIN),
-         A(AIN),
-         Q(AIN.size(), V_d(AIN.size(), 0.)) {
+
+   // Copy constructor
+   QR(const QR &other)
+       : Q(other.Q),
+         R(other.R),
+         A(other.A) {
+      // No need to repeat computation; copy the computed Q, R, and A
+   }
+
+   QR(const VV_d &AIN) : R(AIN), A(AIN), Q(AIN.size(), V_d(AIN.size(), 0.)) { Initialize(AIN, true); };
+
+   void Initialize(const VV_d &AIN, const bool constractor = false) {
+      if (!constractor) {
+         A = R = AIN;
+         Q.resize(AIN.size(), V_d(AIN.size(), 0.));
+      }
       IdentityMatrix(Q);
       // MatrixForm(A, std::setw(10));
       int n = AIN.size();
@@ -562,6 +574,7 @@ struct QR {
          }
       }
    };
+
    void IdentityMatrix(VV_d &mat) {
       size_t i = 0;
       for (auto &m : mat) {
@@ -818,7 +831,7 @@ struct ArnoldiProcess {
          H(VV_d(nIN + 1, V_d(nIN, 0.))),
          V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
          w(A.size()) {
-      Print("ArnoldiProcess");
+      // Print("ArnoldiProcess");
       size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
          w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
@@ -828,22 +841,36 @@ struct ArnoldiProcess {
             w -= (H[i][j] = Dot(V[i], w)) * V[i];
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
       }
-      Print("done");
+      // Print("done");
+   };
+
+   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN) {
+      // std::cout << "Initialize" << std::endl;
+      ArnoldiProcess<Matrix> AP(A, v0IN, nIN);
+      this->n = AP.n;
+      this->beta = AP.beta;
+      this->v0 = AP.v0;
+      this->H = AP.H;
+      this->V = AP.V;
+      this->w = AP.w;
+      // std::cout << "done" << std::endl;
    };
 
    void AddBasisVector(const Matrix &A) {
+      // std::cout << "AddBasisVector" << std::endl;
       size_t i;
       // update n, V, H
-      n++;
-      V.push_back(v0);
+      this->n++;
       H.push_back(V_d(n, 0.));
       w = Dot(A, V[n - 1]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
       // orthogonalization
+      // std::cout << "orthogonalization" << std::endl;
       for (i = 0; i < n; ++i) {
          H[i].push_back(0.);
          w -= (H[i][n - 1] = Dot(V[i], w)) * V[i];
       }
-      V[n] = w / (H[n][n - 1] = Norm(w));
+      V.push_back(w / (H[n][n - 1] = Norm(w)));
+      // std::cout << "done" << std::endl;
    };
 };
 
@@ -913,43 +940,66 @@ struct gmres : public ArnoldiProcess<Matrix> {
          qr(ArnoldiProcess<Matrix>::H),
          g(qr.Q.size()),
          err(0.) {
-      if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
+      if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       //
       size_t i = 0;
       for (const auto &q : qr.Q)
-         g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
+         g[i++] = q[0] * this->beta;
 
       err = g.back();  // 予想される誤差
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
       i = 0;
-      for (i = 0; i < ArnoldiProcess<Matrix>::n; ++i)
-         this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+      for (i = 0; i < this->n; ++i)
+         this->x += this->y[i] * this->V[i];
    };
 
-   void Iterate(const Matrix &A) {
-      // do not change v0
-      ArnoldiProcess<Matrix>::AddBasisVector(A);
-      this->qr = QR(ArnoldiProcess<Matrix>::H);
-      g.resize(qr.Q.size());
-      err = 0.;
-      if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
+   void Restart(const Matrix &A, const V_d &b, const V_d &x0, const int nIN) {
+      // std::cout << "Restart" << std::endl;
+      this->Initialize(A, b - Dot(A, x0), nIN);
+      this->x = x0;
+      // this->y.resize(b.size());
+      this->qr.Initialize(this->H);
+      this->g.resize(this->qr.Q.size());
+      if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
-      //
-      size_t i = 0;
-      for (const auto &q : this->qr.Q)
-         g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
+      for (size_t i = 0; const auto &q : qr.Q)
+         g[i++] = q[0] * this->beta;
+
       err = g.back();  // 予想される誤差
       g.pop_back();
-      // this->y = back_substitution(this->qr.R, g, g.size());
-      // i = ArnoldiProcess<Matrix>::n - 1;
-      // this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+      this->y = back_substitution(qr.R, g, g.size());
+      for (size_t i = 0; i < this->n; ++i)
+         this->x += this->y[i] * this->V[i];
+      // std::cout << "done" << std::endl;
+   }
 
-      this->x = V_d(this->x.size(), 0.);
+   void Iterate(const Matrix &A) {
+      // std::cout << "Iterate" << std::endl;
+      // do not change v0
+      this->AddBasisVector(A);
+      this->qr = QR(this->H);
+      g.resize(qr.Q.size());
+      err = 0.;
+      if (this->beta /*initial error*/ == static_cast<double>(0.))
+         return;
+      // std::cout << "g.size() = " << g.size() << std::endl;
+      size_t i = 0;
+      for (const auto &q : this->qr.Q)
+         g[i++] = q[0] * this->beta;
+      err = g.back();  // 予想される誤差
+      g.pop_back();
+      // std::cout << "back_substitution" << std::endl;
+      // this->y = back_substitution(this->qr.R, g, g.size());
+      // i = this->n - 1;
+      // this->x += this->y[i] * this->V[i];
+
+      std::fill(this->x.begin(), this->x.end(), 0);
       this->y = back_substitution(this->qr.R, g, g.size());
-      for (i = 0; i < ArnoldiProcess<Matrix>::n; ++i)
-         this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
+      for (i = 0; i < this->n; ++i)
+         this->x += this->y[i] * this->V[i];
+      // std::cout << "done" << std::endl;
    };
 
    // gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN, const auto ILU)

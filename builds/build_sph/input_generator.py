@@ -24,7 +24,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "static_pressure"
+SimulationCase = "Kamra2019"
 id = ""
 match SimulationCase:
     case "static_pressure":
