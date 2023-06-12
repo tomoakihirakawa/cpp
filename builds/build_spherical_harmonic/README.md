@@ -3,7 +3,7 @@
 - [🐋多重極展開(Multipole Expansion)](#🐋多重極展開(Multipole-Expansion))
     - [⛵️Green関数の多重極展開](#⛵️Green関数の多重極展開)
         - [🪸球面座標系への変換](#🪸球面座標系への変換)
-        - [🪸$G _{\rm apx}$の精度](#🪸$G-_{\rm-apx}$の精度)
+        - [🪸$`G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の精度)
         - [🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
     - [⛵️境界要素法への応用](#⛵️境界要素法への応用)
         - [🪸境界積分方程式](#🪸境界積分方程式)
@@ -66,7 +66,7 @@ $$
 [./test_multipole_expansion.cpp#L48](./test_multipole_expansion.cpp#L48)
 
 
-### 🪸$G _{\rm apx}$の精度 
+### 🪸$`G _{\rm apx}`$の精度 
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
@@ -111,7 +111,7 @@ $`\nabla G _{\rm apx}`$は，$`\nabla _{\rm \circ}=(\frac{\partial}{\partial r},
 \end{align*}
 ```
 
-勾配の座標変換は，$Y(k,m,a _{far},b _{far})$には影響しない．
+勾配の座標変換は，$`Y(k,m,a _{far},b _{far})`$には影響しない．
 
 ```math
 \begin{align*}
@@ -123,7 +123,7 @@ $`\nabla G _{\rm apx}`$は，$`\nabla _{\rm \circ}=(\frac{\partial}{\partial r},
 \end{align*}
 ```
 
-${\bf c}=(x,y,0)$を変化させてプロットした結果：
+$`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
 | | **n=4** | **n=5** | **n=6** | **n=7** | **n=8** |
 |:----:|:---:|:---:|:---:|:---:|:---:|
@@ -150,12 +150,12 @@ ${\bf c}=(x,y,0)$を変化させてプロットした結果：
 ### 🪸境界積分方程式 
 
 ラプラス方程式とグリーンの定理を合わせて，境界積分方程式が得られる．
-これのグリーン関数$G$を多重極展開によって$G _{\rm apx}$で置き換えると，
+これのグリーン関数$G$を多重極展開によって$`G _{\rm apx}`$で置き換えると，
 
-$$
+```math
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G _{\rm apx}({\bf{x}},{\bf a},{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}})\nabla G _{\rm apx}({\bf{x}},{\bf a},{\bf c})\cdot {\bf{n}}(\bf x)} \right)dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t)
-$$
+```
 
 となり，原点${\bf a}$と積分変数${\bf x}$が分離できる．
 
@@ -163,8 +163,8 @@ $$
 \alpha ({\bf{a}})\phi ({\bf{a}})={\bf Y}({\bf a},{\bf c})\cdot\iint _\Gamma {\left( {{{\bf Y}^\ast}({\bf x},{\bf c})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c})} \right) dS}\quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-ここで，${\bf Y}({\bf a},{\bf c})$は，
-${\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,-k+1,a,b),\frac{1}{r _{far}^{-k+2+1}}Y(0,-k+2,a,b),...,\frac{1}{r _{far}^{k+1}}Y(n,k,a,b)\}$
+ここで，$`{\bf Y}({\bf a},{\bf c})`$は，
+$`{\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,-k+1,a,b),\frac{1}{r _{far}^{-k+2+1}}Y(0,-k+2,a,b),...,\frac{1}{r _{far}^{k+1}}Y(n,k,a,b)\}`$
 のようなベクトル．
 
 ```math
@@ -175,11 +175,11 @@ ${\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,-
 ```
 
 ただ，十分な精度でグリーン関数を近似するためには，
-$\|{\bf x - \bf c}\|$が$\|{\bf a - \bf c}\|$よりも十分に小さい必要がある．
+$`\|{\bf x - \bf c}\|`$が$`\|{\bf a - \bf c}\|`$よりも十分に小さい必要がある．
 
 ### 🪸空間分割 
 
-$\bf c$を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において${\bf c}$を固定する．
+$`\bf c$`を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において${\bf c}$を固定する．
 各セルのインデックスを$\square i$として，その中心座標を${\bf c} _{\square i}$のように表す．
 そうすると，
 
