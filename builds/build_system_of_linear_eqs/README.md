@@ -92,7 +92,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 </details>
 
-💡 展開項数$`n`$を$`n+1`$と大きくする際に，始めから計算しなおす必要はない．$V _{n+1}$と${\tilde H} _{n+1}$は，$V _n$と${\tilde H} _n$を使って計算できる．
+💡 展開項数$`n`$を$`n+1`$と大きくする際に，始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を使って計算できる．
 
 [../../include/basic_linear_systems.hpp#L850](../../include/basic_linear_systems.hpp#L850)
 
