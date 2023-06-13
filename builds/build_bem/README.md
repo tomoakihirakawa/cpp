@@ -60,7 +60,7 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-`calculateVecToSurface`で$\Omega(t+\Delta t)$上へのベクトルを計算する．
+`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
@@ -199,7 +199,7 @@ $`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial
 
 **グリーンの定理**
 
-任意の$`\phi`$，$G$に対して次が成り立つ（**グリーンの定理**）．
+任意の$`\phi`$，$`G`$に対して次が成り立つ（**グリーンの定理**）．
 
 ```math
 \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
@@ -207,7 +207,7 @@ $`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial
 ```
 
 
-$`\phi`$がラプラス方程式$\nabla^2\phi=0$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
+$`\phi`$がラプラス方程式$`\nabla^2\phi=0`$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
 グリーンの定理から$`\phi`$と$`\phi _n`$の関係式，BIEが得られる．
 
 ```math
@@ -323,7 +323,7 @@ m \frac{d {\boldsymbol U} _{\rm c}}{d t} = \boldsymbol{F} _{\text {ext }}+\bolds
 
 $`{\boldsymbol U} _{\rm c}`$は浮体の移動速度．
 $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{\text {hydro }}`$は水の力，$`\boldsymbol{T} _{\text {ext }}`$は外力によるトルク，$`\boldsymbol{T} _{\text {hydro }}`$は水の力によるトルク．
-浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$p$を積分することで得られ，
+浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
 ```math
@@ -342,14 +342,14 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 ### 🪸ノイマン境界面における$`\phi _{nt}`$の求め方 
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
-境界面上の位置ベクトルを$\boldsymbol r$とする．
-表面上のある点の移動速度$\frac{d\boldsymbol r}{dt}$と流体粒子の流速$\nabla \phi$の間には，次の境界条件が成り立つ．
+境界面上の位置ベクトルを$`\boldsymbol r`$とする．
+表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
 
 ```math
 {\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi
 ```
 
-これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$\frac{d{\boldsymbol U} _{\rm c}}{dt}$と角加速度$\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}$を使って表すことができる．
+これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
 [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
 
 ```math
@@ -370,11 +370,11 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
-そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$\frac{d^2\boldsymbol r}{dt^2}$は，
-入力した$\frac{d^2\boldsymbol r}{dt^2}$と一致しなければならない．
+そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
+入力した$`\frac{d^2\boldsymbol r}{dt^2}`$と一致しなければならない．
 
 現状を整理すると，この浮体動揺解析において，知りたい未知変数は，浮体の加速度と角加速度だけ．
-しかし，浮体の没水面上にある節点での圧力$p$が得られないと，$\boldsymbol{F} _{\text {hydro }}$が得られず，運動方程式から浮体加速度が計算できない．
+しかし，浮体の没水面上にある節点での圧力$`p`$が得られないと，$`\boldsymbol{F} _{\text {hydro }}`$が得られず，運動方程式から浮体加速度が計算できない．
 圧力を計算するためには，$`\phi _t`$が必要で，$`\phi _t`$は簡単には得られない，という状況．
 
 物体の加速度は， 節点における$`\{\phi _{nt0},\phi _{nt1},\phi _{nt2},..\} = \Phi _{nt}`$が分かれば求まるが，
@@ -387,7 +387,7 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 \end{align*}
 ```
 
-のように，ある関数$Q$のゼロを探す，根探し問題になる．
+のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
 $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与えている．
 
 
@@ -403,7 +403,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 ```
 
 ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L559)を用いる．
-節点における変数を$v$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
+節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
