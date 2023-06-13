@@ -8,26 +8,26 @@
 ## 減衰調和振動子/Damped Harmonic Oscillatorの例
 
 減衰調和振動子の式から，
-次のような加速度$a(x,v)=\frac{d^2x}{dt^2}$を
+次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
 \ref{DampedHrmonicOscillator:declOfAccel}{プログラム中で宣言}し，
 
-$$
+```math
 \begin{align*}
 m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x &= 0\\
 \rightarrow a(x,v) &= -\gamma v - \omega^2 x, \quad v=\frac{dx}{dt},\quad \gamma=\frac{b}{m}, \quad \omega^2=\frac{k}{m}
 \end{align*}
-$$
+```
 
-$\gamma = 1, \omega = 10$として，初期値問題をといてみる．
-加速度の評価回数$N$を合わせて比較した例：
+$`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
+加速度の評価回数$`N`$を合わせて比較した例：
 
 | ![](figN25.png) | ![](figN50.png) |  ![](figError.png) |
 |:---:|:---:|:---:|
-|$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
+|$`N=25`$ evaluations|$`N=50`$ evaluations|the sum of differences|
 
 ### 後退オイラー
 
-後退オイラーの１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
+後退オイラーの１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
 
 \insert{ODE::LeapFrog}
 
