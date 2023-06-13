@@ -10,21 +10,21 @@
 
 ### 基礎方程式
 
-$$
+```math
 \begin{align}
 \nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
 \frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{(\rm D)}(t),\\
 \phi_n + {{\bf u}_b}\cdot{{\bf n}_b} &=0&&\text{on}&&{\bf x}\in \Gamma^{(\rm N)}(t),
 \end{align}
-$$
+```
 
 ここで，
-${\bf x} ={(x,y,z)}$は空間座標，${\bf u}_b$は物体の流速，
-${\bf n}_b$は物体の外向き単位法線ベクトル，
-$\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})$
+$`{\bf x} ={(x,y,z)}`$は空間座標，$`{\bf u}_b`$は物体の流速，
+$`{\bf n}_b`$は物体の外向き単位法線ベクトル，
+$`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})`$
 である．
 また，$`\phi_n`$は境界面上での外向き法線方向の流速を表し，
-境界面上の外向き単位法線ベクトル$\bf n$を使えば$\phi_n ={\nabla\phi}\cdot {\bf n}$で表される．
+境界面上の外向き単位法線ベクトル$`\bf n`$を使えば$`\phi_n ={\nabla\phi}\cdot {\bf n}`$で表される．
 
 ### 境界積分方程式（BIE）
 
@@ -32,27 +32,27 @@ $\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}
 
 任意の$`\phi`$，$G$に対して次が成り立つ（**グリーンの定理**）．
 
-$$
+```math
 \iiint_\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
 = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-$$
+```
 
 
-$`\phi`$がラプラス方程式$\nabla^2\phi=0$を満たし，$G=1/\|{\bf x}-{\bf a}\|$とすると，
+$`\phi`$がラプラス方程式$\nabla^2\phi=0$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
 グリーンの定理から$`\phi`$と$`\phi_n`$の関係式，BIEが得られる．
 
-$$
+```math
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint_\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
+```
 
-ここで，${\bf a}$は境界面上の位置ベクトルであり，この原点${\bf a}$を固定し${\bf x}$について面積分される．
-$G$は任意のスカラー関数で$G=1/\|{\bf x}-{\bf a}\|$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
-原点での立体角$\alpha\left( {\bf{a}} \right)$とポテンシャル$\phi( {\bf{a}})$の積だけが残る．
+ここで，$`{\bf a}`$は境界面上の位置ベクトルであり，この原点$`{\bf a}`$を固定し$`{\bf x}`$について面積分される．
+$`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
+原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
 
-この式は，流体内部では，$\alpha ({\bf{a}})$は$1$とできる．
-この式は，$\bf{a}$におけるポテンシャル$\phi ({\bf{a}})$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
-$G=1/\|{\bf x}-{\bf a}\|$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
+この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
+この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
+$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
 */
 
@@ -223,6 +223,8 @@ BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 ```math
 \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=
+```
+```math
 \alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
 ```
 

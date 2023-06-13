@@ -179,21 +179,21 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 
 ### 🪸基礎方程式 
 
-$$
+```math
 \begin{align}
 \nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
 \frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{(\rm D)}(t),\\
 \phi _n + {{\bf u} _b}\cdot{{\bf n} _b} &=0&&\text{on}&&{\bf x}\in \Gamma^{(\rm N)}(t),
 \end{align}
-$$
+```
 
 ここで，
-${\bf x} ={(x,y,z)}$は空間座標，${\bf u} _b$は物体の流速，
-${\bf n} _b$は物体の外向き単位法線ベクトル，
-$\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})$
+$`{\bf x} ={(x,y,z)}`$は空間座標，$`{\bf u} _b`$は物体の流速，
+$`{\bf n} _b`$は物体の外向き単位法線ベクトル，
+$`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}{\partial z})`$
 である．
 また，$`\phi _n`$は境界面上での外向き法線方向の流速を表し，
-境界面上の外向き単位法線ベクトル$\bf n$を使えば$\phi _n ={\nabla\phi}\cdot {\bf n}$で表される．
+境界面上の外向き単位法線ベクトル$`\bf n`$を使えば$`\phi _n ={\nabla\phi}\cdot {\bf n}`$で表される．
 
 ### 🪸境界積分方程式（BIE） 
 
@@ -201,27 +201,27 @@ $\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial}
 
 任意の$`\phi`$，$G$に対して次が成り立つ（**グリーンの定理**）．
 
-$$
+```math
 \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 \phi({\bf x}) - \phi({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
 = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-$$
+```
 
 
-$`\phi`$がラプラス方程式$\nabla^2\phi=0$を満たし，$G=1/\|{\bf x}-{\bf a}\|$とすると，
+$`\phi`$がラプラス方程式$\nabla^2\phi=0$を満たし，$`G=1/\|{\bf x}-{\bf a}\|`$とすると，
 グリーンの定理から$`\phi`$と$`\phi _n`$の関係式，BIEが得られる．
 
-$$
+```math
 \alpha ({\bf{a}})\phi ({\bf{a}}) = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla \phi ({\bf{x}}) - \phi ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
-$$
+```
 
-ここで，${\bf a}$は境界面上の位置ベクトルであり，この原点${\bf a}$を固定し${\bf x}$について面積分される．
-$G$は任意のスカラー関数で$G=1/\|{\bf x}-{\bf a}\|$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
-原点での立体角$\alpha\left( {\bf{a}} \right)$とポテンシャル$\phi( {\bf{a}})$の積だけが残る．
+ここで，$`{\bf a}`$は境界面上の位置ベクトルであり，この原点$`{\bf a}`$を固定し$`{\bf x}`$について面積分される．
+$`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
+原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
 
-この式は，流体内部では，$\alpha ({\bf{a}})$は$1$とできる．
-この式は，$\bf{a}$におけるポテンシャル$\phi ({\bf{a}})$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
-$G=1/\|{\bf x}-{\bf a}\|$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
+この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
+この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
+$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
 
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
@@ -233,6 +233,8 @@ BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 ```math
 \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
+```
+```math
 \alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 ```
 
@@ -267,7 +269,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L280](./BEM_solveBVP.hpp#L280)
+[./BEM_solveBVP.hpp#L282](./BEM_solveBVP.hpp#L282)
 
 
 ### 🪸リジッドモードテクニック 
@@ -277,7 +279,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L353](./BEM_solveBVP.hpp#L353)
+[./BEM_solveBVP.hpp#L355](./BEM_solveBVP.hpp#L355)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -307,7 +309,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L390](./BEM_solveBVP.hpp#L390)
+[./BEM_solveBVP.hpp#L392](./BEM_solveBVP.hpp#L392)
 
 
 ## ⛵️浮体動揺解析 
@@ -386,10 +388,10 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 ```
 
 のように，ある関数$Q$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L686)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L688)で与えている．
 
 
-[./BEM_solveBVP.hpp#L569](./BEM_solveBVP.hpp#L569)
+[./BEM_solveBVP.hpp#L571](./BEM_solveBVP.hpp#L571)
 
 
 ```math
@@ -406,7 +408,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L686)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L651](./BEM_solveBVP.hpp#L651)
+[./BEM_solveBVP.hpp#L653](./BEM_solveBVP.hpp#L653)
 
 
 ## ⛵️初期値問題 
