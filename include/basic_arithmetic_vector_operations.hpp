@@ -38,31 +38,41 @@ std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> ret) {
 // vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator*(std::vector<T> v, const T din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   // std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   for (auto &u : v)
+      u *= din;
    return v;
 };
 //! matrix * scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator*(std::vector<std::vector<T>> v, const T din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   for (auto &u : v)
+      u *= din;
    return v;
 };
 //@ scaler * vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator*(const T din, std::vector<T> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   // std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   for (auto &u : v)
+      u *= din;
    return v;
 };
 //! scaler * matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator*(const T din, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   for (auto &u : v)
+      u *= din;
    return v;
 };
 // matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<std::vector<T>>> operator*(std::vector<std::vector<std::vector<T>>> v, const T &din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
+   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
+   for (auto &u : v)
+      u *= din;
    return v;
 };
 // matrix
@@ -169,11 +179,18 @@ std::vector<T> &operator/=(std::vector<T> &v, const std::vector<T> &w) { return 
 // };
 /////////////////////////////////////////////////
 //@ vector - scaler
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<T> operator-(std::vector<T> v, const T din) {
+//    std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return tmp - din; });
+//    return v;
+// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(std::vector<T> v, const T din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return tmp - din; });
+   for (auto &u : v)
+      u -= din;
    return v;
 };
+
 //! matrix - scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const T &din) {
@@ -181,23 +198,36 @@ std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const T &di
    return v;
 };
 //@ scaler - vector
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<T> operator-(const T din, std::vector<T> v) {
+//    std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return din - tmp; });
+//    return v;
+// };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(const T din, std::vector<T> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return din - tmp; });
+   for (auto &u : v)
+      u = din - u;
    return v;
 };
+
 //! scaler - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(const T din, std::vector<std::vector<T>> v) {
    std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return din - tmp; });
    return v;
 };
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::vector<T> &operator-=(std::vector<T> &v, const std::vector<T> &w) {
+   for (auto i = 0; auto &u : v)
+      u -= w[i++];
+   return v;
+};
 //@ vector - vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(std::vector<T> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const T a, const T b) { return a - b; });
-   return v;
+   return v -= w;
 };
+
 //! matrix - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const std::vector<std::vector<T>> &w) {
@@ -218,8 +248,12 @@ std::vector<std::vector<T>> operator-(const std::vector<T> &w, std::vector<std::
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> &operator-=(std::vector<T> &v, const T &w) { return (v = v - w); };
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-std::vector<T> &operator-=(std::vector<T> &v, const std::vector<T> &w) { return (v = v - w); };
+
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<T> &operator-=(std::vector<T> &v, const std::vector<T> &w) {
+//    return (v = v - w);
+// };
+
 //! matrix -= matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> &operator-=(std::vector<std::vector<T>> &v, const std::vector<std::vector<T>> &w) {

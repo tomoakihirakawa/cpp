@@ -146,7 +146,7 @@ match SimulationCase:
                    "end_time": 0.5,
                    "CSML": 3.0,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.01,
+                   "particle_spacing": 0.015,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #

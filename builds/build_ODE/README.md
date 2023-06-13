@@ -29,14 +29,16 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
 
 
-<p  align="right"><a href="./example_DampedHrmonicOscillator.cpp#L4">./example_DampedHrmonicOscillator.cpp#L4</a></p>
+[./example_DampedHrmonicOscillator.cpp#L4](./example_DampedHrmonicOscillator.cpp#L4)
+
 
 **後退オイラー**
 
 後退オイラーの１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
 
 
-<p  align="right"><a href="./example_DampedHrmonicOscillator.cpp#L65">./example_DampedHrmonicOscillator.cpp#L65</a></p>
+[./example_DampedHrmonicOscillator.cpp#L65](./example_DampedHrmonicOscillator.cpp#L65)
+
 
 **LeapFrog**
 
@@ -46,7 +48,8 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 [LeapFrogのクラス](../../include/integrationOfODE.hpp#L294)
 
 
-<p  align="right"><a href="./example_DampedHrmonicOscillator.cpp#L91">./example_DampedHrmonicOscillator.cpp#L91</a></p>
+[./example_DampedHrmonicOscillator.cpp#L91](./example_DampedHrmonicOscillator.cpp#L91)
+
 
 **Runge-Kutta**
 
@@ -71,13 +74,15 @@ $$
 [RungeKuttaのクラス](../../include/integrationOfODE.hpp#L11)
 
 
-<p  align="right"><a href="./example_DampedHrmonicOscillator.cpp#L117">./example_DampedHrmonicOscillator.cpp#L117</a></p>
+[./example_DampedHrmonicOscillator.cpp#L117](./example_DampedHrmonicOscillator.cpp#L117)
+
 
 ## ⛵️Runge-Kutta Integration of ODE 
 
 ![](RK.png)
 
 
-<p  align="right"><a href="./example_RungeKutta.cpp#L1">./example_RungeKutta.cpp#L1</a></p>
+[./example_RungeKutta.cpp#L1](./example_RungeKutta.cpp#L1)
+
 
 ---
