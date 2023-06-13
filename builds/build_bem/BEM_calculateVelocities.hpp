@@ -339,7 +339,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-`calculateVecToSurface`で$\Omega(t+\Delta t)$上へのベクトルを計算する．
+`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
