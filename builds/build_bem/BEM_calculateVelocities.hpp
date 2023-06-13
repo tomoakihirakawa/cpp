@@ -331,7 +331,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 /*DOC_EXTRACT BEM
 
-### 修正流速
+### 修正流速（これがないと激しい波の計算は難しい）
 
 求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
 修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
