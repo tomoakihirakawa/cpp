@@ -137,9 +137,9 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ## ⛵️境界のタイプを決定する 
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
-['networkPoint::contact_angle'](../../include/networkPoint.hpp#L172)，
-['networkPoint::isInContact'](../../include/networkPoint.hpp#L179)，
-['networkPoint::addContactFaces'](../../include/networkPoint.hpp#L290)
+[`networkPoint::contact_angle`](../../include/networkPoint.hpp#L172)，
+[`networkPoint::isInContact`](../../include/networkPoint.hpp#L179)，
+[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L290)
 を使って接触判定を行っている．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
@@ -400,7 +400,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 
 ## ⛵️初期値問題 
 
-節点の位置と速度ポテンシャル`$\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
+節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
 言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
 ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
 
