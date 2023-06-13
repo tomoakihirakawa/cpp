@@ -23,8 +23,7 @@
 最適化の問題の多くは，目的関数の最大最小を求めることなので，ヘッセ行列を利用したニュートン法を用いる．
 
 
-[./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
-
+<p  align="right"><a href="./example0_NewtonRaphson_0.cpp#L1">./example0_NewtonRaphson_0.cpp#L1</a></p>
 
 ## ⛵️ロボットの節をLighthillの曲線上に乗せる 
 
@@ -123,15 +122,13 @@ $$
 $$
 
 
-[./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)
-
+<p  align="right"><a href="./example0_NewtonRaphson_1.cpp#L6">./example0_NewtonRaphson_1.cpp#L6</a></p>
 
 ## ⛵️準ニュートン法 
 
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
 
 
-[./example1_Broyden.cpp#L1](./example1_Broyden.cpp#L1)
-
+<p  align="right"><a href="./example1_Broyden.cpp#L1">./example1_Broyden.cpp#L1</a></p>
 
 ---
