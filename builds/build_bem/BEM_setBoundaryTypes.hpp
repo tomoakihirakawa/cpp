@@ -9,9 +9,9 @@
 ## 境界のタイプを決定する
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
-   \ref{contact_angle}{'networkPoint::contact_angle'}，
-   \ref{isInContact}{'networkPoint::isInContact'}，
-   \ref{addContactFaces}{'networkPoint::addContactFaces'}
+   \ref{contact_angle}{`networkPoint::contact_angle`}，
+   \ref{isInContact}{`networkPoint::isInContact`}，
+   \ref{addContactFaces}{`networkPoint::addContactFaces`}
    を使って接触判定を行っている．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
