@@ -475,7 +475,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
 
 /*DOC_EXTRACT BEM
 
-## エネルギー保存則
+### エネルギー保存則（計算精度のチェックに利用できる）
 
 流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
 
@@ -562,7 +562,7 @@ double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
 
 /*DOC_EXTRACT BEM
 
-## 内部流速の計算方法
+### 内部流速の計算方法（使わなくてもいい）
 
 [Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
 流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．

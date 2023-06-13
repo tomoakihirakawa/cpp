@@ -49,8 +49,6 @@
 - [Contents](./builds/build_bem/README.md#Contents)
 - [🐋BEM-MEL](./builds/build_bem/README.md#🐋BEM-MEL)
     - [⛵️流速の計算方法](./builds/build_bem/README.md#⛵️流速の計算方法)
-    - [⛵️エネルギー保存則](./builds/build_bem/README.md#⛵️エネルギー保存則)
-    - [⛵️内部流速の計算方法](./builds/build_bem/README.md#⛵️内部流速の計算方法)
     - [⛵️境界のタイプを決定する](./builds/build_bem/README.md#⛵️境界のタイプを決定する)
     - [⛵️境界値問題](./builds/build_bem/README.md#⛵️境界値問題)
     - [⛵️浮体動揺解析](./builds/build_bem/README.md#⛵️浮体動揺解析)
