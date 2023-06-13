@@ -49,7 +49,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
 
-<a href="../../include/basic_linear_systems.hpp#L775" align="right">../../include/basic_linear_systems.hpp#L775</a>
+<p><a href="../../include/basic_linear_systems.hpp#L775" align="right">../../include/basic_linear_systems.hpp#L775</a></p>
 
 
 ## ⛵️⛵️一般化最小残差法/GMRES  
@@ -93,7 +93,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，近似解$`{\bf x} _n`$を$`{\bf x} _{n+1}`$に更新できる．
 
-<a href="../../include/basic_linear_systems.hpp#L876" align="right">../../include/basic_linear_systems.hpp#L876</a>
+<p><a href="../../include/basic_linear_systems.hpp#L876" align="right">../../include/basic_linear_systems.hpp#L876</a></p>
 
 
 ### 🪸テスト 
@@ -106,17 +106,17 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 
-<a href="./test0_GMRES.cpp#L1" align="right">./test0_GMRES.cpp#L1</a>
+<p><a href="./test0_GMRES.cpp#L1" align="right">./test0_GMRES.cpp#L1</a></p>
 
 ## ⛵️LU分解(LAPACK)
 
 
-<a href="./test0_LAPACK.cpp#L1" align="right">./test0_LAPACK.cpp#L1</a>
+<p><a href="./test0_LAPACK.cpp#L1" align="right">./test0_LAPACK.cpp#L1</a></p>
 
 EigenのGMRESを使った結果と比較．
 
 
-<a href="./test1_EIGEN_GMRES.cpp#L6" align="right">./test1_EIGEN_GMRES.cpp#L6</a>
+<p><a href="./test1_EIGEN_GMRES.cpp#L6" align="right">./test1_EIGEN_GMRES.cpp#L6</a></p>
 
 ---
 ## ⛵️Compressed Sparse Row (CSR) 
@@ -130,6 +130,6 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 [CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L687)すれば，かなり高速化できる．
 
 
-<a href="./test2_CSR.cpp#L1" align="right">./test2_CSR.cpp#L1</a>
+<p><a href="./test2_CSR.cpp#L1" align="right">./test2_CSR.cpp#L1</a></p>
 
 ---
