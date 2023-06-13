@@ -389,6 +389,7 @@ struct BEM_BVP {
             // 未知変数の係数行列は左，既知変数の係数行列は右
             if (isNeumannID_BEM(j_col))
                igign = {-std::get<1>(igign), -std::get<0>(igign)};
+               
             /*DOC_EXTRACT BEM
 
             係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．

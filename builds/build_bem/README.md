@@ -15,11 +15,11 @@
     - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
         - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
     - [⛵️初期値問題](#⛵️初期値問題)
-        - [🪸流速$\frac{d\bf x}{dt}$の計算](#🪸流速$\frac{d\bf-x}{dt}$の計算)
-        - [🪸$\frac{d\phi}{dt}$の計算](#🪸$\frac{d\phi}{dt}$の計算)
+        - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
+        - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
     - [⛵️その他](#⛵️その他)
         - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
-        - [🪸$\phi _{nt}$の計算で必要となる${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) $について．](#🪸$\phi-_{nt}$の計算で必要となる${\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)-$について．)
+        - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
 - [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](#⛵️Usage)
     - [⛵️Customization](#⛵️Customization)
@@ -309,7 +309,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L392](./BEM_solveBVP.hpp#L392)
+[./BEM_solveBVP.hpp#L393](./BEM_solveBVP.hpp#L393)
 
 
 ## ⛵️浮体動揺解析 
@@ -388,10 +388,10 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 ```
 
 のように，ある関数$Q$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L688)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与えている．
 
 
-[./BEM_solveBVP.hpp#L571](./BEM_solveBVP.hpp#L571)
+[./BEM_solveBVP.hpp#L572](./BEM_solveBVP.hpp#L572)
 
 
 ```math
@@ -408,49 +408,49 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L688)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L653](./BEM_solveBVP.hpp#L653)
+[./BEM_solveBVP.hpp#L654](./BEM_solveBVP.hpp#L654)
 
 
 ## ⛵️初期値問題 
 
-節点の位置と速度ポテンシャル$\phi$に関する初期値問題を解いて行くことが，シミュレーションである．
-言い換えると，節点位置$\frac{d\bf x}{dt}$と速度ポテンシャル$\frac{d\phi}{dt}$を少しずつ$\Delta t$ずつ時間積分することが，シミュレーションである．
-ちなみに，$\frac{d\bf x}{dt}$や$\frac{d\phi}{dt}$を計算するには，境界値問題を解く必要がある．
+節点の位置と速度ポテンシャル`$\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
+言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
+ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
 
-ある時刻において，境界値問題が解けたら，$\frac{d\bf x}{dt}$と$\frac{d\phi}{dt}$はどのように計算できるだろうか．
+ある時刻において，境界値問題が解けたら，$`\frac{d\bf x}{dt}`$と$`\frac{d\phi}{dt}`$はどのように計算できるだろうか．
 
-### 🪸流速$\frac{d\bf x}{dt}$の計算 
+### 🪸流速$`\frac{d\bf x}{dt}`$の計算 
 
-ある三角要素上の接線流速$\nabla \phi _{\parallel}$は，線形三角要素補間を使って次のように計算する．
+ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
 
-$$
+```math
 \nabla \phi _{\parallel} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
-$$
+```
 
-三角要素上の流速$\nabla \phi$は，次のように計算する．
+三角要素上の流速$`\nabla \phi`$は，次のように計算する．
 
-$$
+```math
 \nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
-$$
+```
 
-### 🪸$\frac{d\phi}{dt}$の計算 
+### 🪸$`\frac{d\phi}{dt}`$の計算 
 
-ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$\frac{D \phi}{D t}$は，次のように計算できる．
+ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
 
-$$
+```math
 \frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
-$$
+```
 
 <details>
 <summary>
 💡 オイラー的記述
 </summary>
 
-$\phi=\phi(t,{\bf x})$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$\frac{d \phi}{d t}$は，$\frac{\partial \phi}{\partial t}$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$\phi=\phi(t,{\bf x}(t))$と一時的に考えなおし，そして，時間微分する．そうすると$\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi$となる．
+$`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$`\frac{d \phi}{d t}`$は，$`\frac{\partial \phi}{\partial t}`$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$`\phi=\phi(t,{\bf x}(t))`$と一時的に考えなおし，そして，時間微分する．そうすると$`\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi`$となる．
 
 </details>
 
-ここの$\frac{\partial \phi}{\partial t}$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$\frac{\partial \phi}{\partial t}$を消去する．
+ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
 [./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
@@ -461,21 +461,21 @@ $\phi=\phi(t,{\bf x})$のように書き表し，位置と空間を独立させ�
 ### 🪸境界値問題の未知変数 
 
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-多重節点でない場合は，{p,nullptr}が変数のキーとなり，多重節点の場合は，{p,f}が変数のキーとなる．
+多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
 [./BEM_utilities.hpp#L468](./BEM_utilities.hpp#L468)
 
 
-### 🪸$\phi _{nt}$の計算で必要となる${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) $について． 
+### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
 
-$\nabla$を，$(x,y,z)$の座標系ではなく，
-面の法線方向${\bf n}$を$x$の代わりにとり，
-面に水平な方向を$t _0,t _1$とする座標系で考えることにして，$\nabla^*$と書くことにする．
-${\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)$では，${\bf n}$方向成分だけをとる操作をしているので，
+$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
+面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
+面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
+$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
 新しい座標系でも同じようにすれば，結果は変わらない．
 
-$$
+```math
 {\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
 \quad
 \nabla^* \phi = \left(\phi _n, \phi _{t _0}, \phi _{t _1}\right),
@@ -485,15 +485,15 @@ $$
 \phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\
 \phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1}
 \end{bmatrix}
-$$
+```
 
 最後に第１成分だけが残るので，
 
-$$
+```math
 {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
-$$
+```
 
-$\phi _{nn}$は，直接計算できないが，ラプラス方程式から$\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}$となるので，水平方向の勾配の計算から求められる．
+$`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
 [./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
