@@ -46,6 +46,7 @@ make
 ![./sample.gif](sample.gif)
 
 
-<p  align="right"><a href="./remesh.cpp#L3">./remesh.cpp#L3</a></p>
+[./remesh.cpp#L3](./remesh.cpp#L3)
+
 
 ---

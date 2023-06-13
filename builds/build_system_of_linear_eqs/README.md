@@ -49,7 +49,8 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
 
-<p  align="right"><a href="../../include/basic_linear_systems.hpp#L775">../../include/basic_linear_systems.hpp#L775</a></p>
+[../../include/basic_linear_systems.hpp#L740](../../include/basic_linear_systems.hpp#L740)
+
 
 
 ## ⛵️⛵️一般化最小残差法/GMRES  
@@ -93,7 +94,8 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，近似解$`{\bf x} _n`$を$`{\bf x} _{n+1}`$に更新できる．
 
-<p  align="right"><a href="../../include/basic_linear_systems.hpp#L876">../../include/basic_linear_systems.hpp#L876</a></p>
+[../../include/basic_linear_systems.hpp#L867](../../include/basic_linear_systems.hpp#L867)
+
 
 
 ### 🪸テスト 
@@ -106,17 +108,20 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 
-<p  align="right"><a href="./test0_GMRES.cpp#L1">./test0_GMRES.cpp#L1</a></p>
+[./test0_GMRES.cpp#L1](./test0_GMRES.cpp#L1)
+
 
 ## ⛵️LU分解(LAPACK)
 
 
-<p  align="right"><a href="./test0_LAPACK.cpp#L1">./test0_LAPACK.cpp#L1</a></p>
+[./test0_LAPACK.cpp#L1](./test0_LAPACK.cpp#L1)
+
 
 EigenのGMRESを使った結果と比較．
 
 
-<p  align="right"><a href="./test1_EIGEN_GMRES.cpp#L6">./test1_EIGEN_GMRES.cpp#L6</a></p>
+[./test1_EIGEN_GMRES.cpp#L6](./test1_EIGEN_GMRES.cpp#L6)
+
 
 ---
 ## ⛵️Compressed Sparse Row (CSR) 
@@ -126,10 +131,11 @@ CSRは行列を表現する方法の一つである．
 std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 
-[ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L864)は特に計算コストが高い．
-[CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L687)すれば，かなり高速化できる．
+[ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L855)は特に計算コストが高い．
+[CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L660)すれば，かなり高速化できる．
 
 
-<p  align="right"><a href="./test2_CSR.cpp#L1">./test2_CSR.cpp#L1</a></p>
+[./test2_CSR.cpp#L1](./test2_CSR.cpp#L1)
+
 
 ---

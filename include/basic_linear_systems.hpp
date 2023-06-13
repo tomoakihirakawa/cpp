@@ -606,6 +606,7 @@ struct CSR {
          it->second += v;
    };
 };
+
 template <typename T>
    requires std::derived_from<T, CSR>
 double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V) {
@@ -655,48 +656,12 @@ V_d Dot(const std::unordered_set<T *> &V_crs) {
 template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
-   V_d ret(V.size(), 0.);
-   // for (const auto &crs : A) {
-   //    ret[crs->__index__] += Dot(crs->column_value, V);
-   // }
-
+   V_d ret(V.size());
    // \label{CSR:parrallel}
-   for (const auto &crs : A)
-      crs->tmp_value = 0;
 #pragma omp parallel
    for (const auto &crs : A)
 #pragma omp single nowait
-      crs->tmp_value += Dot(crs->column_value, V);
-
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-      ret[crs->__index__] = crs->tmp_value;
-
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CSR>
-V_d Dot(const std::unordered_set<T *> &A, const std::unordered_set<T *> &V_crs) {
-   V_d ret(V_crs.size(), 0.);
-   // for (const auto &crs : A) {
-   //    ret[crs->__index__] += Dot(crs->column_value, V_crs);
-   // }
-
-   // \label{CSR:parrallel}
-   for (const auto &crs : A)
-      crs->tmp_value = 0;
-
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-      crs->tmp_value += Dot(crs->column_value, V_crs);
-
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-      ret[crs->__index__] = crs->tmp_value;
+      ret[crs->__index__] = Dot(crs->column_value, V);
 
    return ret;
 };
@@ -814,6 +779,8 @@ A V_n = V_{n+1} \tilde H_n, \quad V_n = [v_1|v_2|...|v_n],
 
 */
 
+// #define DEBUG_GMRES
+
 template <typename Matrix>
 struct ArnoldiProcess {
 
@@ -830,21 +797,43 @@ struct ArnoldiProcess {
          H(VV_d(nIN + 1, V_d(nIN, 0.))),
          V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
          w(A.size()) {
-      // Print("ArnoldiProcess");
+#if defined(DEBUG_GMRES)
+      TimeWatch watch;
+      std::cout << "ArnoldiProcess" << std::endl;
+#endif
       size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
          w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
-
+#if defined(DEBUG_GMRES)
+         std::cout << "Elapsed time for Dot(A, V[j]) " << watch() << std::endl;
+#endif
          // orthogonalization
-         for (i = 0; i <= j; ++i)
-            w -= (H[i][j] = Dot(V[i], w)) * V[i];
+         // for (i = 0; i <= j; ++i)
+         //    w -= (H[i][j] = Dot(V[i], w)) * V[i];
+         //
+         for (auto i = 0; const auto &v : V) {
+            if (i <= j) {
+               w -= (H[i][j] = Dot(v, w)) * v;
+               i++;
+            } else
+               break;
+         }
+         //
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
+#if defined(DEBUG_GMRES)
+         std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
+#endif
       }
-      // Print("done");
+#if defined(DEBUG_GMRES)
+      std::cout << "Elapsed time" << watch() << std::endl;
+#endif
    };
 
    void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN) {
-      // std::cout << "Initialize" << std::endl;
+#if defined(DEBUG_GMRES)
+      TimeWatch watch;
+      std::cout << "ArnoldiProcess::Initialize" << std::endl;
+#endif
       ArnoldiProcess<Matrix> AP(A, v0IN, nIN);
       this->n = AP.n;
       this->beta = AP.beta;
@@ -852,7 +841,9 @@ struct ArnoldiProcess {
       this->H = AP.H;
       this->V = AP.V;
       this->w = AP.w;
-      // std::cout << "done" << std::endl;
+#if defined(DEBUG_GMRES)
+      std::cout << "Elapsed time" << watch() << std::endl;
+#endif
    };
 
    void AddBasisVector(const Matrix &A) {
@@ -939,6 +930,10 @@ struct gmres : public ArnoldiProcess<Matrix> {
          qr(ArnoldiProcess<Matrix>::H),
          g(qr.Q.size()),
          err(0.) {
+#if defined(DEBUG_GMRES)
+      TimeWatch watch;
+      std::cout << "gmres" << std::endl;
+#endif
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       //
@@ -952,6 +947,9 @@ struct gmres : public ArnoldiProcess<Matrix> {
       i = 0;
       for (i = 0; i < this->n; ++i)
          this->x += this->y[i] * this->V[i];
+#if defined(DEBUG_GMRES)
+      std::cout << "Elapsed time" << watch() << std::endl;
+#endif
    };
 
    void Restart(const Matrix &A, const V_d &b, const V_d &x0, const int nIN) {
@@ -1000,29 +998,6 @@ struct gmres : public ArnoldiProcess<Matrix> {
          this->x += this->y[i] * this->V[i];
       // std::cout << "done" << std::endl;
    };
-
-   // gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN, const auto ILU)
-   //     : ArnoldiProcess<Matrix>(A, ILU(A).solve(b - Dot(A, x0)) /*行列-ベクトル積*/, nIN),
-   //       n(nIN),
-   //       x(x0),
-   //       y(b.size()),
-   //       qr(ArnoldiProcess<Matrix>::H),
-   //       g(qr.Q.size()),
-   //       err(0.) {
-   //    if (ArnoldiProcess<Matrix>::beta /*initial error*/ == static_cast<double>(0.))
-   //       return;
-   //    //
-   //    size_t i = 0;
-   //    for (const auto &q : qr.Q)
-   //       g[i++] = q[0] * ArnoldiProcess<Matrix>::beta;
-
-   //    err = g.back();  // 予想される誤差
-   //    g.pop_back();
-   //    this->y = back_substitution(qr.R, g, g.size());
-   //    i = 0;
-   //    for (i = 0; i < n; ++i)
-   //       this->x += this->y[i] * ArnoldiProcess<Matrix>::V[i];
-   // };
 };
 
 #endif

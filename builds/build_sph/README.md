@@ -13,6 +13,7 @@
         - [🪸ポアソン方程式](#🪸ポアソン方程式)
         - [🪸右辺，$`b`$，`PoissonRHS`について](#🪸右辺，$`b`$，`PoissonRHS`について)
         - [🪸左辺について](#🪸左辺について)
+        - [🪸水面の計算補助粒子`auxiliaryPoints`](#🪸水面の計算補助粒子`auxiliaryPoints`)
         - [🪸ポアソン方程式の作成のコーディング](#🪸ポアソン方程式の作成のコーディング)
     - [⛵️ポアソン方程式の解法](#⛵️ポアソン方程式の解法)
     - [⛵️圧力勾配$\nabla p^{n+1}$の計算](#⛵️圧力勾配$\nabla-p^{n+1}$の計算)
@@ -43,26 +44,30 @@
 10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
 
 
-<p  align="right"><a href="./SPH.hpp#L210">./SPH.hpp#L210</a></p>
+[./SPH.hpp#L210](./SPH.hpp#L210)
+
 
 ### 🪸CFL条件の設定 
 
 $\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h$を満たすように，毎時刻$\Delta t$を設定する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L22">./SPH_Functions.hpp#L22</a></p>
+[./SPH_Functions.hpp#L22](./SPH_Functions.hpp#L22)
+
 
 ### 🪸法線方向の計算と水面の判定 
 
 ✅ 単位法線ベクトル: ${\bf n} _i = -{\rm Normalize}\left(\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)$
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L89">./SPH_Functions.hpp#L89</a></p>
+[./SPH_Functions.hpp#L89](./SPH_Functions.hpp#L89)
+
 
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L137">./SPH_Functions.hpp#L137</a></p>
+[./SPH_Functions.hpp#L137](./SPH_Functions.hpp#L137)
+
 
 ### 🪸壁面粒子の流速と圧力 
 
@@ -72,14 +77,16 @@ $\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} 
 壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L227">./SPH_Functions.hpp#L227</a></p>
+[./SPH_Functions.hpp#L227](./SPH_Functions.hpp#L227)
+
 
 ## ⛵️$`\nabla^2 {\bf u} _i`$の計算 
 
 ✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L295): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L241">./SPH_Functions.hpp#L241</a></p>
+[./SPH_Functions.hpp#L241](./SPH_Functions.hpp#L241)
+
 
 ### 🪸高速化のための工夫 
 
@@ -90,7 +97,8 @@ $\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} 
 💡 `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L264">./SPH_Functions.hpp#L264</a></p>
+[./SPH_Functions.hpp#L264](./SPH_Functions.hpp#L264)
+
 
 ## ⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$ 
 
@@ -130,9 +138,9 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪸右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L437)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L443)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
-✅ [発散の計算方法](../../builds/build_sph/SPH_Functions.hpp#L512): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
+✅ [発散の計算方法](../../builds/build_sph/SPH_Functions.hpp#L518): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
 ### 🪸左辺について 
 
@@ -147,56 +155,68 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L
 
 - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L516): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L522): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+
+### 🪸水面の計算補助粒子`auxiliaryPoints` 
+
+水面においては，流速の発散ゼロ$`\nabla^{n+1} {\bf u}^{n+1}=0`$と$`p^{n+1}=0`$が満たされる必要がある．
+水面外部には，粒子がないので，求めた水面圧力は，ゼロであっても，圧力勾配は誤差を含み，$`\nabla^{n+1} {\bf u}^{n+1}=0`$は満足されない．
+そこで，[水面の計算補助粒子](../../include/Network.hpp#L491)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L342">./SPH_Functions.hpp#L342</a></p>
+[./SPH_Functions.hpp#L342](./SPH_Functions.hpp#L342)
+
 
 ### 🪸ポアソン方程式の作成のコーディング 
 
 各粒子`A`に対して，方程式を作成する．
 
-まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_Functions.hpp#L461)
+まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_Functions.hpp#L467)
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L451">./SPH_Functions.hpp#L451</a></p>
+[./SPH_Functions.hpp#L457](./SPH_Functions.hpp#L457)
+
 
 各粒子`A`が，流体か壁か補助粒子か水面かによって，方程式が異なる．
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_Functions.hpp#L509)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](../../builds/build_sph/SPH_Functions.hpp#L490)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](../../builds/build_sph/SPH_Functions.hpp#L498) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
+| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_Functions.hpp#L515)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](../../builds/build_sph/SPH_Functions.hpp#L496)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](../../builds/build_sph/SPH_Functions.hpp#L504) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L476">./SPH_Functions.hpp#L476</a></p>
+[./SPH_Functions.hpp#L482](./SPH_Functions.hpp#L482)
+
 
 ## ⛵️ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_Functions.hpp#L666)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_Functions.hpp#L667)を使う．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L606">./SPH_Functions.hpp#L606</a></p>
+[./SPH_Functions.hpp#L607](./SPH_Functions.hpp#L607)
+
 
 ## ⛵️圧力勾配$\nabla p^{n+1}$の計算 
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L737): $\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L747): $\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}$
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L739): $\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L749): $\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}$
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L740): $\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L750): $\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}$
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L701">./SPH_Functions.hpp#L701</a></p>
+[./SPH_Functions.hpp#L711](./SPH_Functions.hpp#L711)
+
 
 $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
 が計算できた．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L754">./SPH_Functions.hpp#L754</a></p>
+[./SPH_Functions.hpp#L764](./SPH_Functions.hpp#L764)
+
 
 ## ⛵️注意点 
 
@@ -205,15 +225,16 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH.hpp#L314)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [水面粒子の圧力をゼロにするかどうか](not found)
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L862)
-- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_Functions.hpp#L579)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L872)
+- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_Functions.hpp#L580)
 - [ルンゲクッタの段数](../../builds/build_sph/input_generator.py#L143)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L802)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L812)
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L899">./SPH_Functions.hpp#L899</a></p>
+[./SPH_Functions.hpp#L909](./SPH_Functions.hpp#L909)
+
 
 ## ⛵️核関数 
 
@@ -231,7 +252,8 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 | 25  | 1                 | 1                 |
 
 
-<p  align="right"><a href="./test_KernelFunctions.cpp#L1">./test_KernelFunctions.cpp#L1</a></p>
+[./test_KernelFunctions.cpp#L1](./test_KernelFunctions.cpp#L1)
+
 
 ---
 ## ⛵️Bucketを用いた粒子探索のテスト 
@@ -248,6 +270,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 - 各セルの中心位置を表示したものは`each_cell_position*.vtp`
 
 
-<p  align="right"><a href="./test_Buckets.cpp#L1">./test_Buckets.cpp#L1</a></p>
+[./test_Buckets.cpp#L1](./test_Buckets.cpp#L1)
+
 
 ---

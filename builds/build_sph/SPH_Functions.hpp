@@ -398,6 +398,12 @@ CHECKED: \ref{SPH:div_b_vector}{発散の計算方法}: $`b=\nabla\cdot{\bf b}^n
 
 CHECKED: \ref{SPH:lapP}{ラプラシアンの計算方法}: $`\nabla^2 p^{n+1}=\sum_{j}A_{ij}(p_i^{n+1} - p_j^{n+1}),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
+### 水面の計算補助粒子`auxiliaryPoints`
+
+水面においては，流速の発散ゼロ$`\nabla^{n+1} {\bf u}^{n+1}=0`$と$`p^{n+1}=0`$が満たされる必要がある．
+水面外部には，粒子がないので，求めた水面圧力は，ゼロであっても，圧力勾配は誤差を含み，$`\nabla^{n+1} {\bf u}^{n+1}=0`$は満足されない．
+そこで，\ref{SPH:auxiliaryPoints}{水面の計算補助粒子}を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
+
 */
 
 void PoissonEquation(const std::unordered_set<networkPoint *> &points,
@@ -524,11 +530,6 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          sum_Aij += Aij;
       };
 
-      // if (A->isSurface) {
-      //    A->PoissonRHS = 0;
-      //    A->increment(A, 1.);
-      // }
-
       if (A->isAuxiliary) {
          A->PoissonRHS = 0;
          A->increment(A->surfacePoint, 1.);
@@ -540,7 +541,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                   if (B->isSurface)
                      for (const auto &AUX : B->auxiliaryPoints)
                         PoissonEquation(AUX);
-                        
+
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
                   dP = Dot(getX(A) - origin_x, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
@@ -644,26 +645,35 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    for (const auto &p : points)
       b[p->getIndexCSR()] = p->PoissonRHS;
 
-   // store diagonal value
-   for (const auto &p : points) {
-      // find max
-      double max = 0;
-      for (const auto &[_, v] : p->column_value)
-         if (std::abs(v) > max)
-            max = std::abs(v);
-      p->diagonal_value = max;
-   }
+   // // store diagonal value
+   // for (const auto &p : points) {
+   //    // find max
+   //    double max = 0;
+   //    for (const auto &[_, v] : p->column_value)
+   //       if (std::abs(v) > max)
+   //          max = std::abs(v);
+   //    p->diagonal_value = max;
+   // }
 
-   // preconditioning using diagonal value
-   for (const auto &p : points) {
-      b[p->getIndexCSR()] /= p->diagonal_value;
-      for (auto &[_, v] : p->column_value)
-         v /= p->diagonal_value;
-   }
+   // // preconditioning using diagonal value
+   // for (const auto &p : points) {
+   //    b[p->getIndexCSR()] /= p->diagonal_value;
+   //    for (auto &[_, v] : p->column_value)
+   //       v /= p->diagonal_value;
+   // }
 
-   int N = 400;
+   int N = 120;
    DebugPrint("gmres iteration ", N, Green);
    gmres gm(points, b, x0, N);  //\label{SPH:gmres}
+   std::cout << " gm.err : " << gm.err << std::endl;
+   gm.Restart(points, b, gm.x, N);
+   std::cout << " gm.err : " << gm.err << std::endl;
+   gm.Restart(points, b, gm.x, N);
+   std::cout << " gm.err : " << gm.err << std::endl;
+   gm.Restart(points, b, gm.x, N);
+   std::cout << " gm.err : " << gm.err << std::endl;
+   gm.Restart(points, b, gm.x, N);
+   std::cout << " gm.err : " << gm.err << std::endl;
 
    // for (auto j = 0; j < 5; ++j) {
    //    std::cout << "j = " << j << std::endl;
