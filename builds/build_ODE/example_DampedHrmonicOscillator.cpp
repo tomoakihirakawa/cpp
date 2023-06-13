@@ -24,6 +24,15 @@ $\gamma = 1, \omega = 10$として，初期値問題をといてみる．
 | ![](figN25.png) | ![](figN50.png) |  ![](figError.png) |
 |:---:|:---:|:---:|
 |$N=25$ evaluations|$N=50$ evaluations|the sum of differences|
+
+### 後退オイラー
+
+後退オイラーの１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
+
+\insert{ODE::LeapFrog}
+
+\insert{ODE::Runge-Kutta}
+
 */
 
 const double m = 1;
@@ -62,11 +71,6 @@ int main() {
 
    /* -------------------------------------------------------------------------- */
    // Backward Euler
-   /*DOC_EXTRACT ODE
-   **後退オイラー**
-
-   後退オイラーの１回の計算で溜まる誤差は$O(\Delta t^2)$．次時刻における速度と加速度が正確に計算できなければ使えない．
-   */
    // \label{DampedHrmonicOscillator:BackwardEuler}
    auto result_BKE = [&](auto N) {
       double dt = 1. / N;
@@ -88,14 +92,6 @@ int main() {
    };
    /* -------------------------------------------------------------------------- */
    // LeapFrog
-   /*DOC_EXTRACT ODE
-   **LeapFrog**
-
-   リープフロッグの１回の計算で溜まる誤差は$O({\Delta t}^3)$となる．
-   時間間隔$\Delta t$が変化する場合でも使える形でプログラムしている（\ref{ODE:LeapFrog}{LeapFrogのクラス}）．
-   $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-   \ref{ODE:LeapFrog}{LeapFrogのクラス}
-   */
    // \label{DampedHrmonicOscillator:LeapFrog}
    auto result_LPFG = [&](auto N_IN) {
       auto N = (int)(N_IN / 2);
@@ -114,29 +110,6 @@ int main() {
    };
    /* -------------------------------------------------------------------------- */
    // Runge-Kutta
-   /*DOC_EXTRACT ODE
-   **Runge-Kutta**
-
-   4次のルンゲクッタの１回の計算で溜まる誤差は$O({\Delta t}^5)$となる．
-   しかし，加速度を4階も計算する必要がある．
-   このように，ルンゲクッタを使って２階微分方程式を解く場合，
-   ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
-   後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
-
-   \ref{ODE:RungeKutta4}{4次のRunge-Kutta}の場合，次のようになる．
-
-   $$
-   \begin{align*}
-   k_1 &= \frac{dx}{dt}(t_n, x_n)\\
-   k_2 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_1)\\
-   k_3 &= \frac{dx}{dt}(t_n + \frac{\Delta t}{2}, x_n + \frac{\Delta t}{2} k_2)\\
-   k_4 &= \frac{dx}{dt}(t_n + \Delta t, x_n + \Delta t k_3)\\
-   x_{n+1} &= x_n + \frac{\Delta t}{6} (k_1 + 2 k_2 + 2 k_3 + k_4)
-   \end{align*}
-   $$
-
-   \ref{ODE:RungeKutta}{RungeKuttaのクラス}
-   */
    const int order = 4;
    auto result_RK = [&](auto N_IN) {
       auto N = (int)(N_IN / order);
