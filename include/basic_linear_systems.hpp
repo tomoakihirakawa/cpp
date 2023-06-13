@@ -812,9 +812,8 @@ A V_n = V_{n+1} \tilde H_n, \quad V_n = [v_1|v_2|...|v_n],
 
 これをArnoldi分解という．ここで，$`[v_1|v_2|...|v_n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
 
-
-
 */
+
 template <typename Matrix>
 struct ArnoldiProcess {
 

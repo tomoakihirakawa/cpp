@@ -95,8 +95,13 @@ def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str
 
         keyword_comments[(keyword, order)].append(
             cleaned_comment.strip() + '\n\n')
+
+        # keyword_comments[(keyword, order)].append(
+        #     f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+
         keyword_comments[(keyword, order)].append(
-            f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+            f'<div align="right>\n<p align="right">\n<a href="{input_file}#L{start_line}">{input_file}#L{start_line}</a>\n</p>\n</div>\n\n')
+
 
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)

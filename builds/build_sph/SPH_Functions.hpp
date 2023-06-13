@@ -269,6 +269,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       ここで，その係数を`std::unordered_map`で保存しておくことにする．
       `A->grad_coeff`と`A->grad_coeff_next`に保存する．
 
+      NOTE: `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
+
       */
       auto add_to_unmap = [&](const auto &key, const Tddd coef) {
          auto it = A->grad_coeff.find(key);
@@ -377,9 +379,9 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 右辺，$`b`$，`PoissonRHS`について
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^* = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-`PoissonRHS`,$`b`$の計算の前に，$`{\bf b}^n`$を予め計算しておく．
+$`{\bf b}^n`$ （\ref{SPH:Poisson_b_vector}{`Poisson_b_vector`}）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
-CHECKED: \ref{SPH:divb0}{発散の計算方法}: $`b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
+CHECKED: \ref{SPH:div_b_vector}{発散の計算方法}: $`b=\nabla\cdot{\bf b}^n=\sum_{j}\frac{m_j}{\rho_j}({\bf b}_j^n-{\bf b}_i^n)\cdot\nabla W_{ij}`$
 
 ### 左辺について
 
@@ -404,9 +406,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                      const std::function<Tddd(const networkPoint *)> &getX) {
 
    auto V_next = [&](const auto &p) {
-      if (p->isAuxiliary) {
-         return p->mass / p->rho;
-      } else if (p->getNetwork()->isRigidBody)
+      if (p->isAuxiliary || p->getNetwork()->isRigidBody)
          return p->mass / p->rho;
       else {
 #if defined(USE_RungeKutta)
@@ -418,9 +418,7 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
    };
 
    auto rho_next = [&](const auto &p) {
-      if (p->isAuxiliary) {
-         return p->rho;
-      } else if (p->getNetwork()->isRigidBody)
+      if (p->isAuxiliary || p->getNetwork()->isRigidBody)
          return p->rho;
       else {
 #if defined(USE_RungeKutta)
@@ -436,23 +434,10 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
    //    return A->RK_U.get_U0_for_SPH() / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
    // };
 
+   // \label{SPH:Poisson_b_vector}
    auto Poisson_b_vector = [&](const networkPoint *A, const double dt) {
-      return A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);
+      return A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + (A->rho * _GRAVITY3_);//
    };
-
-   // auto Poisson_b = [&](const Tddd origin_x, const double radius, const double dt, const auto &target_nets) {
-   //    Tddd b = {0., 0., 0.};
-   //    for (const auto &net : target_nets)
-   //       net->BucketPoints.apply(origin_x, radius, [&](const auto &B) {
-   //          if (B->isCaptured) {
-   //             b += Poisson_b_vector(B, dt) * B->volume * w_Bspline(Norm(B->X - origin_x), B->radius_SPH);
-   //             // if (B->isSurface)
-   //             //    for (const auto &AUX : B->auxiliaryPoints)
-   //             //       b += Poisson_b_vector(AUX, dt) * AUX->volume * w_Bspline(Norm(getX(AUX) - origin_x), AUX->radius_SPH);
-   //          }
-   //       });
-   //    return b;
-   // };
 
 #pragma omp parallel
    for (const auto &A : points)
@@ -470,32 +455,19 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       各粒子`A`に対して，方程式を作成する．
 
       まずは，\ref{SPH:whereToMakeTheEquation}{方程式を立てる位置を決める．}
+
       */
 
       // \label{SPH:whereToMakeTheEquation}
       if (A->isAuxiliary) {
          origin_x = getX(A->surfacePoint);
          origin_b = Poisson_b_vector(A->surfacePoint, dt);
-
-         // origin_x = getX(A);
-         // origin_b = Poisson_b_vector(A, dt);
-
-         // auto i = (int)(Norm(A->surfacePoint->X - A->X) / particle_spacing - 1E-10);
-         // origin_x = getX(A->surfacePoint) + 0.2 * i * particle_spacing * Normalize(A->surfacePoint->X - A->X);
-         // origin_b = Poisson_b_vector(A->surfacePoint, dt);
-         // origin_b = Poisson_b(origin_x, A->radius_SPH, dt, target_nets);
-
       } else if (A->getNetwork()->isRigidBody) {
-         origin_x = getX(A);  // + 1.5 * A->normal_SPH;
+         origin_x = getX(A);
          origin_b = Poisson_b_vector(A, dt);
-         // auto origin = getClosestExcludeRigidBody(A, target_nets);
-         // origin_x = getX(origin);
-         // origin_b = Poisson_b_vector(origin, dt);
-         // origin_b = Poisson_b(origin_x, origin->radius_SPH, dt, target_nets);
       } else {
          origin_x = getX(A);
          origin_b = Poisson_b_vector(A, dt);
-         // origin_b = Poisson_b(origin_x, A->radius_SPH, dt, target_nets);
       }
 
       double total_weight = 0, P_wall = 0, dP;
@@ -537,30 +509,26 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
       // \label{SPH:PoissonEquation}
       auto PoissonEquation = [&](const auto &B /*column id*/) {
          if (!B->isAuxiliary) {
-            // \label{SPH:divb0}
-            A->PoissonRHS += V_next(B) * Dot(Poisson_b_vector(B, dt) - origin_b, grad_w_Bspline(origin_x, getX(B), A->radius_SPH));
+            A->PoissonRHS += V_next(B) * Dot(Poisson_b_vector(B, dt) - origin_b, grad_w_Bspline(origin_x, getX(B), A->radius_SPH));  // \label{SPH:div_b_vector}
             A->density_based_on_positions += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
          }
-#define lapP_case0
-#if defined(lapP_case0)
-         auto COEFF = V_next(B) * grad_w_Bspline(origin_x, getX(B), A->radius_SPH);
-         for (const auto &[b, coeff] : B->grad_coeff) {
-            A->increment(b, Dot(COEFF, coeff) / A->rho);   // for ISPH
-            A->increment(A, -Dot(COEFF, coeff) / A->rho);  // for ISPH
-         }
-#elif defined(lapP_case1)
+
          Aij = 2. * B->mass / rho_next(A) * Dot_grad_w_Bspline_Dot(origin_x, getX(B), A->radius_SPH);  //\label{SPH:lapP}
-         A->increment(A, Aij / A->rho);                                                                // for ISPH
-         A->increment(B, -Aij / A->rho);                                                               // for ISPH
-#endif
-         sum_Aij_Pj += Aij * B->p_SPH;  // for EISPH
-         sum_Aij += Aij;                // for EISPH
+
+         // for ISPH
+         A->increment(A, Aij / A->rho);
+         A->increment(B, -Aij / A->rho);
+
+         // for EISPH
+         sum_Aij_Pj += Aij * B->p_SPH;
+         sum_Aij += Aij;
       };
 
       // if (A->isSurface) {
       //    A->PoissonRHS = 0;
       //    A->increment(A, 1.);
       // }
+
       if (A->isAuxiliary) {
          A->PoissonRHS = 0;
          A->increment(A->surfacePoint, 1.);
@@ -568,24 +536,11 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          for (const auto &net : target_nets) {
             net->BucketPoints.apply(origin_x, A->radius_SPH * 1.1, [&](const auto &B) {
                if (B->isCaptured) {
-                  /* -------------------------------------------------------------------------- */
-                  {
-                     PoissonEquation(B);
-                     if (B->isSurface)
-                        for (const auto &AUX : B->auxiliaryPoints)
-                           PoissonEquation(AUX);
-                  }
-                  /* -------------------------------------------------------------------------- */
-                  // if (A->isSurface) {
-                  //    A->PoissonRHS = 0;
-                  //    A->increment(A->surfacePoint, 1.);
-                  // } else {
-                  //    PoissonEquation(B);
-                  //    if (B->isSurface)
-                  //       for (const auto &AUX : B->auxiliaryPoints)
-                  //          PoissonEquation(AUX);
-                  // }
-                  /* -------------------------------------------------------------------------- */
+                  PoissonEquation(B);
+                  if (B->isSurface)
+                     for (const auto &AUX : B->auxiliaryPoints)
+                        PoissonEquation(AUX);
+                        
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
                   dP = Dot(getX(A) - origin_x, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
@@ -706,11 +661,11 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
          v /= p->diagonal_value;
    }
 
-   int N = 300;
+   int N = 400;
    DebugPrint("gmres iteration ", N, Green);
    gmres gm(points, b, x0, N);  //\label{SPH:gmres}
 
-   // for (auto j = 0; j < 10; ++j) {
+   // for (auto j = 0; j < 5; ++j) {
    //    std::cout << "j = " << j << std::endl;
    //    for (auto i = 0; i < 100; ++i) {
    //       std::cout << "i = " << i << std::endl;
@@ -755,8 +710,6 @@ CHECKED: \ref{SPH:gradP3}{勾配の計算方法}: $\nabla p_i = \sum_{j} \frac{m
 
 */
 
-// #define USE_grad_coeff
-
 void gradP(const std::unordered_set<networkPoint *> &points,
            const std::unordered_set<Network *> &target_nets,
            const std::function<Tddd(const networkPoint *)> &getX) {
@@ -780,11 +733,6 @@ void gradP(const std::unordered_set<networkPoint *> &points,
    {
       A->gradP_SPH.fill(0.);
 
-#if defined(USE_grad_coeff)
-      for (const auto &[p, coef] : A->grad_coeff) {
-         A->gradP_SPH += coef * p->p_SPH;
-      }
-#else
       auto add_gradP_SPH = [&](const auto &B) {
          // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
@@ -802,8 +750,6 @@ void gradP(const std::unordered_set<networkPoint *> &points,
             }
          });
       }
-
-#endif
 
       /*DOC_EXTRACT SPH
 
