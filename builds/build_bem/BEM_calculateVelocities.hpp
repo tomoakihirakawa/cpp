@@ -333,14 +333,14 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 ### 修正流速
 
-求めた流速から，次の時刻の境界面$\Omega(t+\Delta t)$を見積もり，その面上で節点を移動させ歪さを解消する．
-修正ベクトルは，$\Delta t$で割り，求めた流速$\nabla \phi$に足し合わせて，節点を時間発展させる．
+求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
+修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
 
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
 `calculateVecToSurface`で$\Omega(t+\Delta t)$上へのベクトルを計算する．
-まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$\Omega(t+\Delta t)$上へのベクトルを計算する．
+まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
 */
@@ -479,15 +479,15 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
 
 流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
 
-$$
+```math
 E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-$$
+```
 
 また，流体の位置エネルギーは，次のように表される．
 
-$$
+```math
 E_P = \frac{\rho}{2} \iint_\Gamma (0,0,g(z - z_0)^2) \cdot {\bf n} d\Gamma
-$$
+```
 
 <details>
 
@@ -499,28 +499,28 @@ NOTE: なぜか？
 
 テンソルを使って考えてみると
 
-$$
+```math
 \begin{align*}
 \nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x_i} \frac{\partial\phi}{\partial x_i} + \phi \frac{\partial^2\phi}{\partial x_i \partial x_i}\\
 &= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
 &= \nabla \phi \cdot \nabla \phi
 \end{align*}
-$$
+```
 
 よって，
 
-$$
+```math
 \iiint_\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint_\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-$$
+```
 
 ---
 
-$$
+```math
 E_P = \rho g \iiint_\Omega (z - z_0) d\Omega
 = \rho g \iiint_\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z_0)^2) d\Omega
 = \rho g \iint_\Gamma \frac{1}{2} (0,0,(z - z_0)^2) \cdot {\bf n} d\Gamma
 = \frac{1}{2}\rho g \iint_\Gamma (z - z_0)^2 n_z d\Gamma
-$$
+```
 
 ---
 
@@ -565,15 +565,15 @@ double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
 ## 内部流速の計算方法
 
 [Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
-流体内部の流速$\nabla \phi$は，BIEを微分して求めることができる．
+流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
 
-$$
+```math
 u({\bf a}) = \nabla\phi({\bf a}) = \int_{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
-$$
+```
 
-$$
+```math
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
-$$
+```
 
 */
 
