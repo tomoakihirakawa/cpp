@@ -1,13 +1,15 @@
 /*DOC_EXTRACT SPH
 
-## 核関数
+# テスト
+
+## 核関数のテスト
 
 プログラムした\ref{SPH:w_Bspline3}{3次スプライン関数}と\ref{SPH:w_Bspline5}{5次スプライン関数}のテストコード
 
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．
 
-| 分割数$N$，体積$V=(\frac{2r}{N})^3$   | Sum for 3rd Order | Sum for 5th Order |
+| 分割数$N$，体積$`V=(\frac{2r}{N})^3`$   | Sum for 3rd Order | Sum for 5th Order |
 | --- | ----------------- | ----------------- |
 | 5   | 1.00527           | 0.999206          |
 | 10  | 1.00011           | 1.00005           |
@@ -16,6 +18,7 @@
 | 25  | 1                 | 1                 |
 
 */
+
 #include "kernelFunctions.hpp"
 
 int main() {
