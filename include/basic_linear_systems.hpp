@@ -2,6 +2,9 @@
 #define basic_linear_systems_H
 
 #include <concepts>
+#include <execution>
+#include <numeric>  // for std::transform_reduce
+//
 #include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
@@ -611,9 +614,8 @@ template <typename T>
    requires std::derived_from<T, CSR>
 double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V) {
    double ret = 0.;
-   for (const auto &[crs, value] : column_value) {
+   for (const auto &[crs, value] : column_value)
       ret += value * V[crs->__index__];
-   }
    return ret;
 };
 
@@ -622,20 +624,9 @@ template <typename T>
 double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs) {
    double ret = 0.;
 
-   if (V_crs.size() <= column_value.size()) {
-      for (const auto &crs : V_crs) {
-         auto it = column_value.find(crs);
-         if (it != column_value.end()) {
-            ret += crs->value * it->second;
-         }
-      }
-   } else {
-      for (const auto &[crs, value] : column_value) {
-         if (V_crs.find(crs) != V_crs.end()) {
-            ret += value * crs->value;
-         }
-      }
-   }
+   for (const auto &[crs, value] : column_value)
+      if (V_crs.contains(crs))
+         ret += crs->value * value;
 
    return ret;
 };
@@ -647,22 +638,40 @@ V_d Dot(const std::unordered_set<T *> &V_crs) {
    for (const auto &crs0 : V_crs) {
       auto &tmp = ret[crs0->__index__];
       for (const auto &[crs1, value] : crs0->column_value) {
-         tmp += value * crs1->value;
+         tmp += crs1->value * value;
       }
    }
    return ret;
 };
 
+// template <typename T>
+//    requires std::derived_from<T, CSR>
+// V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
+//    V_d ret(V.size());
+//    // \label{CSR:parrallel}
+
+// #pragma omp parallel
+//    for (const auto &crs : A)
+// #pragma omp single nowait
+//       ret[crs->__index__] = Dot(crs->column_value, V);
+
+//    return ret;
+// };
+
 template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
-   V_d ret(V.size());
+   V_d ret(A.size());
    // \label{CSR:parrallel}
 #pragma omp parallel
    for (const auto &crs : A)
 #pragma omp single nowait
-      ret[crs->__index__] = Dot(crs->column_value, V);
-
+   {
+      double tmp = 0.;
+      for (const auto &[crs_local, value] : crs->column_value)
+         tmp += value * V[crs_local->__index__];
+      ret[crs->__index__] = tmp;
+   }
    return ret;
 };
 
@@ -808,20 +817,16 @@ struct ArnoldiProcess {
          std::cout << "Elapsed time for Dot(A, V[j]) " << watch() << std::endl;
 #endif
          // orthogonalization
-         // for (i = 0; i <= j; ++i)
-         //    w -= (H[i][j] = Dot(V[i], w)) * V[i];
-         //
-         for (auto i = 0; const auto &v : V) {
-            if (i <= j) {
-               w -= (H[i][j] = Dot(v, w)) * v;
-               i++;
-            } else
-               break;
-         }
-         //
-         V[j + 1] = w / (H[j + 1][j] = Norm(w));
+         for (i = 0; i <= j; ++i)
+            w -= (H[i][j] = Dot(V[i], w)) * V[i];
 #if defined(DEBUG_GMRES)
          std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
+#endif
+         //
+         // normalize w
+         V[j + 1] = w / (H[j + 1][j] = Norm(w));
+#if defined(DEBUG_GMRES)
+         std::cout << "Elapsed time for normalizing w " << watch() << std::endl;
 #endif
       }
 #if defined(DEBUG_GMRES)

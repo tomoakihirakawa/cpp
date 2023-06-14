@@ -218,10 +218,11 @@ std::vector<std::vector<T>> operator-(const T din, std::vector<std::vector<T>> v
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> &operator-=(std::vector<T> &v, const std::vector<T> &w) {
-   for (auto i = 0; auto &u : v)
-      u -= w[i++];
+   for (size_t i = 0; i < v.size(); ++i)
+      v[i] -= w[i];
    return v;
 };
+
 //@ vector - vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(std::vector<T> v, const std::vector<T> &w) {

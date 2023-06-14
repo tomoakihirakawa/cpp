@@ -16,10 +16,11 @@
 </details>
 
 */
+#include "lib_measurement.hpp"
+//
 #include "basic_IO.hpp"
 #include "basic_linear_systems.hpp"
 #include "basic_mathematical_functions.hpp"
-#include "lib_measurement.hpp"
 #include "minMaxOfFunctions.hpp"
 
 #define USE_RANDOM_MATRIX
