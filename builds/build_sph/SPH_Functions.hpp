@@ -23,9 +23,11 @@ networkPoint *getClosestExcludeRigidBody(networkPoint *p, auto &target_nets) {
 
 ### CFL条件の設定
 
-$\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h$を満たすように，毎時刻$\Delta t$を設定する．
+$`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h`$
+を満たすように，毎時刻$`\Delta t`$を設定する．
 
 */
+
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
    const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
@@ -78,6 +80,12 @@ Tddd X_SPP(const networkPoint *p, const double c = 1.) {
    return p->X + c * Normalize(p->interpolated_normal_SPH);
 };
 
+/*DOC_EXTRACT SPH
+
+## 法線方向の計算と水面の判定
+
+*/
+
 void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall_p, const auto &RigidBodyObject) {
 
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
@@ -86,19 +94,21 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
    {
-      /*DOC_EXTRACT SPH
-
-      ### 法線方向の計算と水面の判定
-
-      CHECKED 単位法線ベクトル: ${\bf n}_i = -{\rm Normalize}\left(\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)$
-
-      */
-
       // 初期化
       p->COM_SPH.fill(0.);
       p->interpolated_normal_SPH_original.fill(0.);
       p->interpolated_normal_SPH_original_all.fill(0.);
       double total_vol = 0, w;
+
+      /*DOC_EXTRACT SPH
+
+      ### 法線方向の計算
+
+      CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: ${\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)$
+
+      単位法線ベクトルは，`interpolated_normal_SPH`としている．
+
+      */
 
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
@@ -121,7 +131,7 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
          });
 
       p->COM_SPH /= total_vol;
-      p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);
+      p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);  //\label{SPH:interpolated_normal_SPH}
       p->interpolated_normal_SPH_all = Normalize(p->interpolated_normal_SPH_original_all);
 
       for (const auto &n : normal_of_near_wall_particle) {
@@ -135,6 +145,8 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
       }
 
       /*DOC_EXTRACT SPH
+
+      ### 水面の判定
 
       `surface_condition0,1`の両方を満たす場合，水面とする．
 
@@ -171,7 +183,7 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
 
    net->surfaceNet = new Network();
 
-   DebugPrint("水面粒子の作成", Green);
+   DebugPrint("水面補助粒子の作成", Green);
    for (const auto &p : net->getPoints()) {
       double d = 0;
       if (p->isSurface) {
@@ -662,7 +674,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    //       v /= p->diagonal_value;
    // }
 
-   int N = 120;
+   int N = 200;
    DebugPrint("gmres iteration ", N, Green);
    gmres gm(points, b, x0, N);  //\label{SPH:gmres}
    std::cout << " gm.err : " << gm.err << std::endl;
@@ -829,7 +841,7 @@ void updateParticles(const auto &points,
       };
 
       bool isReflected = true;
-      while (isReflected && count++ < 30) {
+      while (isReflected && count++ < 1) {
          isReflected = false;
          networkPoint *closest_wall_point;
          if (closest_wall_point = closest()) {
@@ -851,7 +863,7 @@ void updateParticles(const auto &points,
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                      p->LPFG_X.repush(p->DUDt_SPH);  // 速度
                      p->U_SPH = p->LPFG_X.get_v();
-                     p->setXSingle(p->tmp_X = modify_position);
+                     // p->setXSingle(p->tmp_X = modify_position);
                      isReflected = true;
    #endif
                      /* -------------------------------------------------------------------------- */
@@ -869,41 +881,20 @@ void updateParticles(const auto &points,
 
 #endif
    }
+
    // \label{SPH:update_density}
-   // #pragma omp parallel
-   //    for (const auto &A : points)
-   // #pragma omp single nowait
-   //    {
-   //       A->div_U = 0.;
-   //       A->rho_ = 0.;
-   //       //% ----------------- div_U ------------------------- */
-   //       auto add = [&](const auto &B, const auto &qX, const double coef = 1.) {
-   //          A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, qX, A->radius_SPH));
-   //          A->rho_ += B->volume * w_Bspline(Norm(A->X - qX), A->radius_SPH);
-   //       };
-   //       for (const auto &net : target_nets)
-   //          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-   //             if (B->isCaptured) {
-   //                add(B, B->X);
-   // #ifdef USE_SPP_Fluid
-   //                if (B->isSurface && canSetSPP(target_nets, B)) add(B, SPP_X(B), SPP_p_coef);
+
+   //    for (const auto &A : points) {
+   // #if defined(USE_RungeKutta)
+   //       A->DrhoDt_SPH = -A->rho * A->div_U;
+   //       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
+   //       A->setDensity(A->RK_rho.getX());
+   // #elif defined(USE_LeapFrog)
+   //       A->DrhoDt_SPH = -A->rho * A->div_U;
+   //       A->LPFG_rho.push(A->DrhoDt_SPH);
+   //       A->setDensity(A->rho + A->DrhoDt_SPH * dt);
    // #endif
-   //             }
-   //          });
-   //       //% ------------------------------------------------ */
-   //    };
-   for (const auto &A : points) {
-#if defined(USE_RungeKutta)
-      A->DrhoDt_SPH = -A->rho * A->div_U;
-      A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      A->setDensity(A->RK_rho.getX());
-#elif defined(USE_LeapFrog)
-      A->DrhoDt_SPH = -A->rho * A->div_U;
-      A->LPFG_rho.push(A->DrhoDt_SPH);
-      A->setDensity(A->rho + A->DrhoDt_SPH * dt);
-#endif
-      // A->setDensity(A->rho_);
-   }
+   //    }
 }
 
 /*DOC_EXTRACT SPH

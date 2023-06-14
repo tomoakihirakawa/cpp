@@ -11,6 +11,7 @@
 - [Contents](./builds/build_sph/README.md#Contents)
 - [🐋Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](./builds/build_sph/README.md#🐋Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
     - [⛵️概要](./builds/build_sph/README.md#⛵️概要)
+    - [⛵️法線方向の計算と水面の判定](./builds/build_sph/README.md#⛵️法線方向の計算と水面の判定)
     - [⛵️$`\nabla^2 {\bf u} _i`$の計算](./builds/build_sph/README.md#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
     - [⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$](./builds/build_sph/README.md#⛵️ポアソン方程式$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho^n}-\nabla^{n}-p^{n+1}\right)-=-b`$)
     - [⛵️ポアソン方程式の解法](./builds/build_sph/README.md#⛵️ポアソン方程式の解法)

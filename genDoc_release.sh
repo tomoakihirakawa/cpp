@@ -17,7 +17,7 @@ echo '(cd builds/build_divide_merge; python3 ../../extract_comments_release.py R
 
 (cd builds/build_spherical_harmonic; python3 ../../extract_comments_release.py README.md ./ ../../)
 echo '(cd builds/build_spherical_harmonic; python3 ../../extract_comments_release.py README.md ./ ../../)'
-\nabla \nabla 
+
 (cd builds/build_system_of_linear_eqs; python3 ../../extract_comments_release.py README.md ./ ../../)
 echo '(cd builds/build_system_of_linear_eqs; python3 ../../extract_comments_release.py README.md ./ ../../)'
 
