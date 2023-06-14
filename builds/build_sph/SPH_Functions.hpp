@@ -74,7 +74,6 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 }
 
 #define Morikawa2019
-#define new_method
 
 Tddd X_SPP(const networkPoint *p, const double c = 1.) {
    return p->X + c * Normalize(p->interpolated_normal_SPH);
@@ -238,7 +237,7 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
 
 /*DOC_EXTRACT SPH
 
-### 壁面粒子の流速と圧力
+## 壁面粒子の流速と圧力
 
 壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，
 **ここでは**壁面粒子の流速は常にゼロに設定することにする．
@@ -247,8 +246,50 @@ void setNormal_Surface(auto &net, const std::unordered_set<networkPoint *> &wall
 
 */
 
-#define Morikawa2019
-#define new_method
+void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_spacing, auto &wall_p) {
+   // wall_as_fluid.clear();
+   wall_p.clear();
+
+   // 初期化
+   for (const auto &[obj, poly] : RigidBodyObject)
+      for (const auto &p : obj->getPoints()) {
+         p->setDensityVolume(0, 0);
+         p->isFluid = false;
+         p->isFreeFalling = false;
+         p->isCaptured = p->isCaptured_ = false;
+         p->isSurface = false;
+         p->p_SPH = 0;
+         p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
+         p->tmp_X = p->X;
+      }
+   DebugPrint("関連する壁粒子をマーク", Green);
+   // capture wall particles
+#pragma omp parallel
+   for (const auto &p : net->getPoints())
+#pragma omp single nowait
+   {
+      const double captureRange = p->radius_SPH;
+      const double captureRange_wall_as_fluid = p->radius_SPH;
+      //
+      for (const auto &[obj, poly] : RigidBodyObject) {
+         obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
+            if (Distance(p, q) < captureRange) {
+               q->isCaptured = true;
+               q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
+               // if (Distance(p, q) < captureRange_wall_as_fluid)  //\label{SPH:select_wall_as_fluid}
+               //    q->isFluid = true;
+            }
+         });
+      }
+   };
+   for (const auto &[obj, poly] : RigidBodyObject)
+      for (const auto &p : obj->getPoints()) {
+         if (p->isCaptured)
+            wall_p.emplace(p);
+         // if (p->isFluid)
+         //    wall_as_fluid.emplace(p);
+      }
+};
 
 /*DOC_EXTRACT SPH
 
@@ -481,8 +522,16 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
          origin_x = getX(A->surfacePoint);
          origin_b = Poisson_b_vector(A->surfacePoint, dt);
       } else if (A->getNetwork()->isRigidBody) {
-         origin_x = getX(A);
-         origin_b = Poisson_b_vector(A, dt);
+         // origin_x = getX(A) + 0.999 * A->normal_SPH;
+         // origin_b = Poisson_b_vector(A, dt);
+         //
+         origin_x = getX(A) + A->normal_SPH + RandomReal({-1., 1.}) * 1E-10;
+         // auto origin = getClosestExcludeRigidBody(A, target_nets);
+         origin_b *= 0;  // Poisson_b_vector(origin, dt);
+
+         // origin_x = getX(origin);
+         // origin_b = Poisson_b_vector(origin, dt);
+         // origin_b = Poisson_b(origin_x, origin->radius_SPH, dt, target_nets);
       } else {
          origin_x = getX(A);
          origin_b = Poisson_b_vector(A, dt);
@@ -505,47 +554,41 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       */
 
-      // \label{SPH:ImpermeableCondition}
-      auto ImpermeableCondition = [&](const auto &B /*column id*/) {
+      auto ImpermeableCondition = [&](const auto &B /*column id*/) {  // \label{SPH:ImpermeableCondition}
          A->PoissonRHS -= (V_next(B) * Dot(Poisson_b_vector(B, dt), Normalize(A->normal_SPH)) * w_Bspline(Norm(origin_x - B->X), A->radius_SPH));
          auto coeff = V_next(B) * Dot(grad_w_Bspline(origin_x, B->X, A->radius_SPH), Normalize(A->normal_SPH));  // こっちはOKだろう．
          A->increment(B, coeff);
       };
 
-      // 壁付近の水面との違いが出るので修正し，完全にゼロとする．
-      //  \label{SPH:AtmosphericPressureCondition}
-      // auto AtmosphericPressureCondition = [&]() {
-      //    A->PoissonRHS = 0;
-      //    A->increment(A, 1.);
-      // };
-
-      auto AtmosphericPressureCondition = [&](const auto &B /*column id*/) {
+      auto AtmosphericPressureCondition = [&](const auto &p) {  //  \label{SPH:AtmosphericPressureCondition}
+         // pの圧力を完全にゼロにする条件
          A->PoissonRHS = 0;
-         A->increment(B, V_next(B) * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH));
+         A->increment(p, 1.);
       };
 
-      // \label{SPH:PoissonEquation}
-      auto PoissonEquation = [&](const auto &B /*column id*/) {
+      auto PoissonEquation = [&](const auto &B /*column id*/) {  // \label{SPH:PoissonEquation}
          if (!B->isAuxiliary) {
             A->PoissonRHS += V_next(B) * Dot(Poisson_b_vector(B, dt) - origin_b, grad_w_Bspline(origin_x, getX(B), A->radius_SPH));  // \label{SPH:div_b_vector}
             A->density_based_on_positions += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
          }
-
          Aij = 2. * B->mass / rho_next(A) * Dot_grad_w_Bspline_Dot(origin_x, getX(B), A->radius_SPH);  //\label{SPH:lapP}
-
          // for ISPH
          A->increment(A, Aij / A->rho);
          A->increment(B, -Aij / A->rho);
-
          // for EISPH
          sum_Aij_Pj += Aij * B->p_SPH;
          sum_Aij += Aij;
       };
 
+      /*DOC_EXTRACT SPH
+
+      ### ポアソン方程式の作成
+
+      */
+
       if (A->isAuxiliary) {
-         A->PoissonRHS = 0;
-         A->increment(A->surfacePoint, 1.);
-      } else
+         AtmosphericPressureCondition(A->surfacePoint);
+      } else if (A->getNetwork()->isRigidBody) {
          for (const auto &net : target_nets) {
             net->BucketPoints.apply(origin_x, A->radius_SPH * 1.1, [&](const auto &B) {
                if (B->isCaptured) {
@@ -553,7 +596,6 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                   if (B->isSurface)
                      for (const auto &AUX : B->auxiliaryPoints)
                         PoissonEquation(AUX);
-
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
                   dP = Dot(getX(A) - origin_x, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
@@ -561,39 +603,54 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
                }
             });
          }
-
-         /* -------------------------------------------------------------------------- */
+      } else {
+         for (const auto &net : target_nets) {
+            net->BucketPoints.apply(origin_x, A->radius_SPH * 1.1, [&](const auto &B) {
+               if (B->isCaptured) {
+                  PoissonEquation(B);
+                  if (B->isSurface)
+                     for (const auto &AUX : B->auxiliaryPoints)
+                        PoissonEquation(AUX);
+                  // for mapping to wall
+                  total_weight += B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
+                  dP = Dot(getX(A) - origin_x, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
+                  P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(origin_x - getX(B)), A->radius_SPH);
+               }
+            });
+         }
+      }
+      /* -------------------------------------------------------------------------- */
 #if defined(Morikawa2019)
-            /* SPH
-            ### 圧力の安定化
+         /* SPH
+         ### 圧力の安定化
 
-            $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
-            $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
+         $b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}$として計算を安定化させる場合がある．
+         $\rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t$と近似すると，
 
-            $$
-            \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
-            \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
-            \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
-            $$
+         $$
+         \rho^\ast = \rho + \frac{D\rho^\ast}{Dt}\Delta t,\quad
+         \frac{D\rho^\ast}{Dt} = - \rho \nabla\cdot{\bf u}^\ast,\quad
+         \nabla\cdot{\bf u}^\ast = \frac{\Delta t}{\rho} \nabla\cdot{\bf b}^n
+         $$
 
-            であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
+         であることから，$(\rho_w - \rho^*) / {\Delta t^2}$は，$\nabla\cdot{\bf b}^n$となって同じになる．
 
-            しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
-            計算上のようにはまとめることができない．
+         しかし，実際には，$\rho^*$は，$\nabla \cdot {{\bf b}^n} $を使わずに，つまり発散演算を行わずに評価するので，
+         計算上のようにはまとめることができない．
 
-            $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
-            実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
+         $\rho^*$を計算する際に，$\rho^\ast = \rho_w + \frac{D\rho^\ast}{Dt}\Delta t$を使った場合，確かに上のようになるが，
+         実際に粒子を仮位置に移動させその配置から$\rho^*$を計算した場合は，数値計算上のようにまとめることはできない．
 
-            `PoissonRHS`,$b$の計算方法と同じである場合に限る．
-            もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
+         `PoissonRHS`,$b$の計算方法と同じである場合に限る．
+         もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-            */
-            // if (A->isFluid) {
-            //    // \label{SPH:pressure_stabilization}
-            //    const double alpha = 0.1 * dt;
-            //    // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
-            //    A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
-            // }
+         */
+         // if (A->isFluid) {
+         //    // \label{SPH:pressure_stabilization}
+         //    const double alpha = 0.1 * dt;
+         //    // A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->density_based_on_positions) / (dt * dt);
+         //    A->PoissonRHS += alpha * (_WATER_DENSITY_ - A->rho) / (dt * dt);
+         // }
 #endif
       //% ------------------------------------------------------- */
       // A->div_tmpU = A->PoissonRHS * dt / A->rho;
@@ -624,95 +681,79 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 
 */
 
+#define USE_LAPACK
+
 void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid,
                   const std::unordered_set<Network *> &target_nets) {
 
-   size_t i = 0;
    std::unordered_set<networkPoint *> points;
    points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
 
-   for (const auto &A : fluid_particle) {
-      points.emplace(A);
-
-      if (A->isSurface)
-         for (const auto &AUX : A->auxiliaryPoints) {
+   for (const auto &p : fluid_particle) {
+      points.emplace(p);
+      if (p->isSurface)
+         for (const auto &AUX : p->auxiliaryPoints)
             points.emplace(AUX);
-            // respect AUX's pressure
-            double c = 1.;
-            AUX->PoissonRHS *= c;
-            for (auto &[_, v] : AUX->column_value)
-               v *= c;
-         }
    }
 
    for (const auto &p : wall_as_fluid)
       points.emplace(p);
 
-   for (const auto &p : points)
+   for (auto i = 0; const auto &p : points)
       p->setIndexCSR(i++);
 
    V_d b(points.size()), x0(points.size(), 0);
 
-   for (const auto &p : points)
+   for (const auto &p : points) {
       b[p->getIndexCSR()] = p->PoissonRHS;
+      x0[p->getIndexCSR()] = p->p_SPH;
+   }
 
-   // // store diagonal value
-   // for (const auto &p : points) {
-   //    // find max
-   //    double max = 0;
-   //    for (const auto &[_, v] : p->column_value)
-   //       if (std::abs(v) > max)
-   //          max = std::abs(v);
-   //    p->diagonal_value = max;
-   // }
-
-   // // preconditioning using diagonal value
-   // for (const auto &p : points) {
-   //    b[p->getIndexCSR()] /= p->diagonal_value;
-   //    for (auto &[_, v] : p->column_value)
-   //       v /= p->diagonal_value;
-   // }
-
-   int N = 200;
-   DebugPrint("gmres iteration ", N, Green);
-   gmres gm(points, b, x0, N);  //\label{SPH:gmres}
+   /* ------------------ preconditioning using diagonal value ------------------ */
+   for (const auto &p : points) {
+      double max = 0;
+      // find max
+      for (const auto &[_, v] : p->column_value)
+         if (std::abs(v) > max)
+            max = std::abs(v);
+      // normalize
+      b[p->getIndexCSR()] /= max;
+      for (auto &[_, v] : p->column_value)
+         v /= max;
+   }
+#if defined(USE_GMRES)
+   for (auto i = 1; i < 5; i++) {
+      gmres gm(points, b, x0, 100);  //\label{SPH:gmres}
+      x0 = gm.x;
+      std::cout << " gm.err : " << gm.err << std::endl;
+   }
+   gmres gm(points, b, x0, 100);
    std::cout << " gm.err : " << gm.err << std::endl;
-   gm.Restart(points, b, gm.x, N);
-   std::cout << " gm.err : " << gm.err << std::endl;
-   gm.Restart(points, b, gm.x, N);
-   std::cout << " gm.err : " << gm.err << std::endl;
-   gm.Restart(points, b, gm.x, N);
-   std::cout << " gm.err : " << gm.err << std::endl;
-   gm.Restart(points, b, gm.x, N);
-   std::cout << " gm.err : " << gm.err << std::endl;
-
-   // for (auto j = 0; j < 5; ++j) {
-   //    std::cout << "j = " << j << std::endl;
-   //    for (auto i = 0; i < 100; ++i) {
-   //       std::cout << "i = " << i << std::endl;
-   //       gm.Iterate(points);
-   //       if (std::abs(gm.err) < 1)
-   //          break;
-   //       std::cout << "i, j = " << i << ", " << j << " gm.err : " << gm.err << std::endl;
-   //    }
-   //    x0 = gm.x;
-   //    if (std::abs(gm.err) < 1)
-   //       break;
-   //    else
-   //       gm.Restart(points, b, x0, N);
-
-   //    std::cout << "j = " << j << " gm.err : " << gm.err << std::endl;
-   // }
 
    for (const auto &p : points)
       x0[p->getIndexCSR()] = p->p_SPH = gm.x[p->getIndexCSR()];
 
    std::cout << " gm.err : " << gm.err << std::endl;
+#elif defined(USE_LAPACK)
+   VV_d A(b.size(), V_d(b.size(), 0.));
+   for (const auto &p : points) {
+      auto i = p->getIndexCSR();
+      for (const auto &[q, v] : p->column_value) {
+         auto j = q->getIndexCSR();
+         A[i][j] = v;
+      }
+   }
+   lapack_lu lu(A);
+   lu.solve(b, x0);
+   for (const auto &p : points)
+      p->p_SPH = x0[p->getIndexCSR()];
+#endif
+
    std::cout << "actual error : " << Norm(b - Dot(points, x0)) << std::endl;
 
-   // for (const auto &p : points)
-   //    p->column_value.clear();
+   for (const auto &p : points)
+      p->column_value.clear();
 };
 
 /* -------------------------------------------------------------------------- */

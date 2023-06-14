@@ -43,7 +43,8 @@ P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^
 ```
 
 
-<p  align="right"><a href="./test_multipole_expansion.cpp#L8">./test_multipole_expansion.cpp#L8</a></p>
+[./test_multipole_expansion.cpp#L8](./test_multipole_expansion.cpp#L8)
+
 
 ### 🪸球面座標系への変換 
 
@@ -63,7 +64,8 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 ```
 
 
-<p  align="right"><a href="./test_multipole_expansion.cpp#L49">./test_multipole_expansion.cpp#L49</a></p>
+[./test_multipole_expansion.cpp#L49](./test_multipole_expansion.cpp#L49)
+
 
 ### 🪸$`G _{\rm apx}`$の精度 
 
@@ -81,7 +83,8 @@ $`a _{near},b _{near}`$は，より小さければ精度が良く，
 また，$`a _{far},b _{far}`$は，より大きければ精度が良くなる．
 
 
-<p  align="right"><a href="./test_multipole_expansion.cpp#L86">./test_multipole_expansion.cpp#L86</a></p>
+[./test_multipole_expansion.cpp#L86](./test_multipole_expansion.cpp#L86)
+
 
 ### 🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度 
 
@@ -129,7 +132,8 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 | **$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$** | ![n4_A_10_10_10](output_n4_A_10_10_10_grad.png) | ![n5_A_10_10_10](output_n5_A_10_10_10_grad.png) | ![n6_A_10_10_10](output_n6_A_10_10_10_grad.png) | ![n7_A_10_10_10](output_n7_A_10_10_10_grad.png) | ![n8_A_10_10_10](output_n8_A_10_10_10_grad.png) |
 
 
-<p  align="right"><a href="./test_multipole_expansion.cpp#L146">./test_multipole_expansion.cpp#L146</a></p>
+[./test_multipole_expansion.cpp#L146](./test_multipole_expansion.cpp#L146)
+
 
 ## ⛵️境界要素法への応用 
 
@@ -194,6 +198,7 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 ```
 
 
-<p  align="right"><a href="./test_multipole_expansion.cpp#L285">./test_multipole_expansion.cpp#L285</a></p>
+[./test_multipole_expansion.cpp#L285](./test_multipole_expansion.cpp#L285)
+
 
 ---

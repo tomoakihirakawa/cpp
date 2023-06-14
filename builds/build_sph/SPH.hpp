@@ -231,7 +231,6 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 
 */
 
-std::unordered_set<networkPoint *> wall_as_fluid;
 std::unordered_set<networkPoint *> wall_p;
 
 void developByEISPH(Network *net,
@@ -281,50 +280,6 @@ void developByEISPH(Network *net,
          p->isCaptured = true;
          p->tmp_X = p->X;
       }
-      /* ---------------------------- 流れの計算に関与する壁粒子を保存 ---------------------------- */
-      wall_as_fluid.clear();
-      wall_p.clear();
-
-      // 初期化
-      for (const auto &[obj, poly] : RigidBodyObject)
-         for (const auto &p : obj->getPoints()) {
-            p->setDensityVolume(0, 0);
-            p->isFluid = false;
-            p->isFreeFalling = false;
-            p->isCaptured = p->isCaptured_ = false;
-            p->isSurface = false;
-            p->p_SPH = 0;
-            p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
-            p->tmp_X = p->X;
-         }
-      DebugPrint("関連する壁粒子をマーク", Green);
-      // capture wall particles
-#pragma omp parallel
-      for (const auto &p : net->getPoints())
-#pragma omp single nowait
-      {
-         const double captureRange = p->radius_SPH;
-         const double captureRange_wall_as_fluid = p->radius_SPH;
-         //
-         for (const auto &[obj, poly] : RigidBodyObject) {
-            obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
-               if (Distance(p, q) < captureRange) {
-                  q->isCaptured = true;
-                  q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-                  if (Distance(p, q) < captureRange_wall_as_fluid)  //\label{SPH:select_wall_as_fluid}
-                     q->isFluid = true;
-               }
-            });
-         }
-      };
-      for (const auto &[obj, poly] : RigidBodyObject)
-         for (const auto &p : obj->getPoints()) {
-            if (p->isCaptured)
-               wall_p.emplace(p);
-            if (p->isFluid)
-               wall_as_fluid.emplace(p);
-         }
-      DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
 
       // b# ----------- CFL条件を満たすようにタイムステップ間隔dtを設定 ------------ */
 
@@ -351,6 +306,10 @@ void developByEISPH(Network *net,
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       bool finished = false;
       do {
+         /* ---------------------------- 流れの計算に関与する壁粒子を保存 ---------------------------- */
+         setWall(net, RigidBodyObject, particle_spacing, wall_p);
+         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
+
          setNormal_Surface(net, wall_p, RigidBodyObject);
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
@@ -369,10 +328,10 @@ void developByEISPH(Network *net,
          const auto DT = dt / 2.;
          // dt is fixed
          auto getX = [&](const auto p) {
-            if (p->LPFG_X.is_first)
-               return p->X + dt * p->U_SPH;  // + 0.5 * dt * dt * p->DUDt_SPH_;
-            else
-               return p->X;
+            // if (p->LPFG_X.is_first)
+            //    return p->X + dt * p->U_SPH;  // + 0.5 * dt * dt * p->DUDt_SPH_;
+            // else
+            return p->X;
          };
 #endif
 

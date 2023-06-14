@@ -23,7 +23,6 @@ make
 \ref{PYBIND11:HOW_TO_IMPORT}{このように}`import`して利用できる．
 
 */
-
 #define NOMINMAX
 #define _CRT_SECURE_NO_WARNINGS
 
