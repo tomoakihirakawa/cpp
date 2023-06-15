@@ -1,6 +1,6 @@
 # /bin/bash
 
 rm -r ./CMakeFiles
-rm -r ./CMakeCahe*
+rm -r ./CMakeCache*
 rm -r ./cmake*
 rm -r ./Makefile

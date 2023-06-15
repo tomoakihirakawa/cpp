@@ -41,7 +41,7 @@ py::class_<class_name_declared_in_cpp>(m, "class_name_read_from_python")
 ```
 
 
-[./LighthillRobot.cpp#L37](./LighthillRobot.cpp#L37)
+[./LighthillRobot.cpp#L36](./LighthillRobot.cpp#L36)
 
 
 ---

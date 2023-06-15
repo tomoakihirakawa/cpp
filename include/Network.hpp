@@ -198,10 +198,10 @@ class networkLine : public CoordinateBounds {
    bool canflip(const double) const;
    bool flip();
    bool flipIfIllegal();
-   bool flipIfBetter(const double min_degree_to_flat = std::numbers::pi / 180.,
-                     const double min_inner_angle = std::numbers::pi / 180.);
-   bool flipIfTopologicalyBetter(const double min_degree_of_line = std::numbers::pi / 180.,
-                                 const double min_degree_of_face = std::numbers::pi / 180,
+   bool flipIfBetter(const double min_degree_to_flat = M_PI / 180.,
+                     const double min_inner_angle = M_PI / 180.);
+   bool flipIfTopologicalyBetter(const double min_degree_of_line = M_PI / 180.,
+                                 const double min_degree_of_face = M_PI / 180,
                                  const int s_meanIN = 6);
    void divideIfIllegal();
    bool isFlat(const double) const;
@@ -214,7 +214,7 @@ class networkLine : public CoordinateBounds {
    bool isGoodForQuadInterp_Geo() const {
       // 線の中心位置を決めるために，線が２次補間で近似できるか，
       // 周辺の三角形の状況から判断する
-      if (this->Neumann && !this->isFlat(std::numbers::pi / 3.))
+      if (this->Neumann && !this->isFlat(M_PI / 3.))
          return false;
       if (this->CORNER)
          return false;
@@ -483,7 +483,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    void setParticle(double volume_IN, double densityIN) {
       this->density = densityIN;
       this->volume = volume_IN;
-      this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
+      this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
       this->mass = this->volume * this->density;
    };
 
@@ -545,25 +545,25 @@ class networkPoint : public CoordinateBounds, public CSR {
       this->density = den;
       this->volume = v;
       this->mass = v * den;
-      this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
+      this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
    void setDensity(const double &den) {
       // 質量は保存
       this->density = den;
       this->volume = this->mass / this->density;
-      this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
+      this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
    void setDensity_ConstantVolume(const double &den) {
       // 質量は保存
       this->density = den;
       this->mass = this->volume * this->density;
-      this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
+      this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
    void setVolume(const double &v) {
       // 質量は保存
       this->volume = v;
       this->density = this->mass / this->volume;
-      this->radius = std::pow(this->volume / (4. * std::numbers::pi / 3.), 1 / 3.);
+      this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
    double div_U, div_U_, div_tmpU, div_tmpU_, PoissonRHS;
    Tddd grad_div_U, grad_div_U_;
@@ -581,8 +581,9 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd mu_lap_rho_g_SPH;
    Tddd interpolated_normal_SPH, interpolated_normal_SPH_original;
    Tddd COM_SPH;
-   Tddd interpolated_normal_SPH_all, interpolated_normal_SPH_original_all;
+   Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
+   Tddd b_vector;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;
@@ -3061,9 +3062,9 @@ std::tuple<bool, networkTetra *> genTetra(Network *const net,
          return {false, t1};
       else {
          auto tet = new networkTetra(net, T_4P{p0, p1, p2, p3}, T_6L{l0, l1, l2, l3, l4, l5}, T_4F{f0, f1, f2, f3});
-         // std::cout << "Total(tet->solidangles/std::numbers::pi) = " << Total(tet->solidangles) / (4. * std::numbers::pi) << std::endl;
-         // std::cout << "Mean(tet->solidangles/std::numbers::pi) = " << Mean(tet->solidangles) / (4. * std::numbers::pi) << std::endl;
-         // std::cout << "tet->solidangles = " << tet->solidangles / (4. * std::numbers::pi) << std::endl;
+         // std::cout << "Total(tet->solidangles/M_PI) = " << Total(tet->solidangles) / (4. * M_PI) << std::endl;
+         // std::cout << "Mean(tet->solidangles/M_PI) = " << Mean(tet->solidangles) / (4. * M_PI) << std::endl;
+         // std::cout << "tet->solidangles = " << tet->solidangles / (4. * M_PI) << std::endl;
          return {true, tet};
       }
    } else
@@ -3327,7 +3328,7 @@ class Network : public CoordinateBounds {
          ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, f->getXVertices());
          // ret += SolidAngle(X, f->getXVertices());
       }
-      return ret / (4. * std::numbers::pi);
+      return ret / (4. * M_PI);
    };
 
    bool isInside(const Tddd &X) const {
@@ -3348,7 +3349,7 @@ class Network : public CoordinateBounds {
             ret[i] += SolidAngle_VanOosteromAandStrackeeJ1983(Xs[i], V);
       }
       for (auto &r : ret)
-         r /= (4. * std::numbers::pi);
+         r /= (4. * M_PI);
       return ret;
    };
 
@@ -3689,9 +3690,9 @@ class Network : public CoordinateBounds {
    const double move_amplitude = 0.4;
    T6d velocityPredefined() {
       double t = _current_time_;
-      double s = std::numbers::pi / 2.;
+      double s = M_PI / 2.;
       // double a = move_amplitude;
-      double k = std::numbers::pi / 1.;
+      double k = M_PI / 1.;
       /* ------------------------------------------------------ */
       // T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
       // T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
@@ -3707,8 +3708,8 @@ class Network : public CoordinateBounds {
 
    Tddd translationPredefined() {
       double t = _current_time_;
-      double s = std::numbers::pi / 2.;
-      double k = std::numbers::pi / 1.;
+      double s = M_PI / 2.;
+      double k = M_PI / 1.;
       /* ------------------------------------------------------ */
       // Tddd move_dir = {cos(k * t), sin(k * t), 0.};
       // return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
@@ -4753,7 +4754,7 @@ inline V_netPp Network::linkXPoints(Network &water, Network &obj) {
    }
    return accumXPoints;
 };
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*XNetwork_code*/
@@ -4772,15 +4773,16 @@ inline netFp networkFace::divide(netLp DivL /*this*/, netLp newDivL, netLp newMi
    auto newF = new networkFace(this);
    auto fL = oldF->getLineFront(DivL);
    auto bL = oldF->getLineBack(DivL);
+   //
    //          /     \                     /     \
-  //         /       \                   /       \
-  //        /         \                 /         \
-  //       /    / \    \               /    / \    \
-  // bL<--/--- /   \----\-->fL   bL<--/----/   \----\-->fL
+   //         /       \                   /       \
+   //        /         \                 /         \
+   //       /    / \    \               /    / \    \
+   // bL<--/--- /   \----\-->fL   bL<--/----/   \----\-->fL
    //   --/--->/oldF \<---\--         /    /newF \    \
-  //    /     --|A---     \         /     --|----     \
-  //   /        V|         \       /        V          \
-  //    -------DivL-------         --------DivL---------
+   //    /     --|A---     \         /     --|----     \
+   //   /        V|         \       /        V          \
+   //    -------DivL-------         --------DivL---------
    //
    if (oldF->replace(fL, newMidL)) {  // oldFのfLをnewMidLに繋ぎ直し，fLはnewFと繋げる
       std::stringstream ss;
@@ -4808,7 +4810,9 @@ inline netFp networkFace::divide(netLp DivL /*this*/, netLp newDivL, netLp newMi
    //    /     --|A---     \         /     --|----     \
 	//   /        V|         \       /        V          \
 	//    -------DivL-------         --------DivL---------
+   //
    newMidL->set(oldF, newF);
+
    //          /     \                     /     \
 	//         /       \                   /       \
 	//        /         \                 /         \

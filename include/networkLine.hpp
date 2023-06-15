@@ -1446,11 +1446,11 @@ inline bool networkLine::flip() {
          if (!isLinkedDoubly(l, B))
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 
-            // std::cout << "Abl->getPoints() = " << Abl->getPoints() << std::endl;
-            // std::cout << "Afl->getPoints() = " << Afl->getPoints() << std::endl;
-            // std::cout << "Bfl->getPoints() = " << Bfl->getPoints() << std::endl;
-            // std::cout << "Bbl->getPoints() = " << Bbl->getPoints() << std::endl;
-            // std::cout << "this->getPoints() = " << this->getPoints() << std::endl;
+               // std::cout << "Abl->getPoints() = " << Abl->getPoints() << std::endl;
+               // std::cout << "Afl->getPoints() = " << Afl->getPoints() << std::endl;
+               // std::cout << "Bfl->getPoints() = " << Bfl->getPoints() << std::endl;
+               // std::cout << "Bbl->getPoints() = " << Bbl->getPoints() << std::endl;
+               // std::cout << "this->getPoints() = " << this->getPoints() << std::endl;
 #endif
 
       Afl->setBoundsSingle();  // lineのセット
@@ -1485,14 +1485,14 @@ inline bool networkLine::islegal() const {
 
       auto [Ap0, Ap1, Ap2] = ToX(fs[0]->getPoints(this));
       auto [Bp0, Bp1, Bp2] = ToX(fs[1]->getPoints(this));
-      // double sumangleA = std::numbers::pi - std::abs(MyVectorAngle(Aps[2] - Aps[1], Aps[0] - Aps[2]));
-      // double sumangleB = std::numbers::pi - std::abs(MyVectorAngle(Bps[2] - Bps[1], Bps[0] - Bps[2]));
+      // double sumangleA = M_PI - std::abs(MyVectorAngle(Aps[2] - Aps[1], Aps[0] - Aps[2]));
+      // double sumangleB = M_PI - std::abs(MyVectorAngle(Bps[2] - Bps[1], Bps[0] - Bps[2]));
 
       double sumangle = std::abs(MyVectorAngle(Ap1 - Ap2, Ap0 - Ap2));
       sumangle += std::abs(MyVectorAngle(Bp1 - Bp2, Bp0 - Bp2));
-      if (sumangle > 2. * std::numbers::pi || 0. > sumangle)
+      if (sumangle > 2. * M_PI || 0. > sumangle)
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      else if (std::numbers::pi /*180.0.....1 若干大きい場合はOKとする*/ > sumangle)
+      else if (M_PI /*180.0.....1 若干大きい場合はOKとする*/ > sumangle)
          return true /*正*/;
       else
          return false /*不正*/;
@@ -1508,7 +1508,7 @@ inline bool networkLine::flipIfIllegal() {
       return false;
 };
 
-inline bool networkLine::isFlat(const double minangle = std::numbers::pi / 180.) const {
+inline bool networkLine::isFlat(const double minangle = M_PI / 180.) const {
    auto fs = this->getFaces();
    if (fs.size() != 2)
       return false;
@@ -1518,7 +1518,7 @@ inline bool networkLine::isFlat(const double minangle = std::numbers::pi / 180.)
       return false;
 };
 
-inline bool networkLine::canflip(const double min_inner_angle = std::numbers::pi / 180.) const {
+inline bool networkLine::canflip(const double min_inner_angle = M_PI / 180.) const {
    try {
       /*
                  f2 *------* f1,F0
@@ -1630,7 +1630,7 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
          @ <---- flip -----|--- topology --|----- none -----
          */
          // if (min_init < min_later)
-         // if (std::abs(min_init - min_later) < std::numbers::pi / 180. * 5)
+         // if (std::abs(min_init - min_later) < M_PI / 180. * 5)
          // {
          // 	this->flipIfTopologicalyBetter(min_degree_to_flat);
          // 	return true;
@@ -1737,25 +1737,25 @@ inline void networkLine::divideIfIllegal() {
       this->divide();
 };
 
-   // inline bool networkLine::isXLine() const
-   // {
-   //     auto fs = this->Faces;
-   //     if (this->Points.size() == 2)
-   //     {
-   //         if (fs.size() < 2)
-   //             return false;
-   //         else
-   //         {
-   //             for (auto i = 0; i < fs.size(); i++)
-   //                 for (auto j = i + 1; j < fs.size(); j++)
-   //                     if (fs[i]->getNetwork() != fs[j]->getNetwork())
-   //                         return true;
-   //             return false;
-   //         }
-   //     }
-   //     else
-   //         return false;
-   //     /*face-face intersection*/
-   // };
+// inline bool networkLine::isXLine() const
+// {
+//     auto fs = this->Faces;
+//     if (this->Points.size() == 2)
+//     {
+//         if (fs.size() < 2)
+//             return false;
+//         else
+//         {
+//             for (auto i = 0; i < fs.size(); i++)
+//                 for (auto j = i + 1; j < fs.size(); j++)
+//                     if (fs[i]->getNetwork() != fs[j]->getNetwork())
+//                         return true;
+//             return false;
+//         }
+//     }
+//     else
+//         return false;
+//     /*face-face intersection*/
+// };
 
 #endif

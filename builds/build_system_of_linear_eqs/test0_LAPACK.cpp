@@ -2,6 +2,9 @@
 
 ## LU分解(LAPACK)
 
+* LU分解は直接的な方法で，あらゆる種類の行列（対称、非対称、正定値、非正定値）に適用できる．
+* この方法は反復的な方法よりも計算コストが高くなる可能性があるが，反復法とは異なり，収束性の問題がない．
+
 */
 #include "basic_linear_systems.hpp"
 #include "basic_mathematical_functions.hpp"
