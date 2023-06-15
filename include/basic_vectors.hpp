@@ -1581,7 +1581,7 @@ T VectorAngle(const std::vector<T> &X1, const std::vector<T> &X2) {
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T VectorAngleDirected(const std::vector<T> &X1, const std::vector<T> &X2) {
    T a = VectorAngle(X1, X2, {0., 0.});
-   return (a < 0) ? (2 * std::numbers::pi - a) : a;
+   return (a < 0) ? (2 * M_PI - a) : a;
 };
 // template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // T DirectedArea(const std::vector<T> &vec1,

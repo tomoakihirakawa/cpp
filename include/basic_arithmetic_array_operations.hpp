@@ -631,7 +631,7 @@ constexpr std::array<T, N> ModTriShape(const T& t0, const T& t1, const auto& p0p
                               -4 * t0m1 * t0 * t1,
                               -4 * std::pow(t0m1, 2) * t1m1 * t1,
                               4 * t1m1 * t0m1 * t0}};
-      static const auto TriShape3 = TriShape<3>(static_cast<T>(1), static_cast<T>(1));
+      const auto TriShape3 = TriShape<3>(static_cast<T>(1), static_cast<T>(1));
       if (!std::get<0>(p0p1p2)) {
          auto [M0_0, M0_1, M0_2] = deflt[0] * TriShape3;
          deflt[0] = 0;

@@ -262,7 +262,6 @@ void developByEISPH(Network *net,
       DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "バケットの生成");
 
       // test_Bucket(net, Append(net_RigidBody, net), "./test_SPH_Bucket/", bucket_spacing);
-
       // void setDataOmitted(auto &vtp, const auto &Fluid) {
       //    std::unordered_map<networkPoint *, Tddd> normal_SPH;
       //    for (const auto &p : Fluid->getPoints())
@@ -270,6 +269,8 @@ void developByEISPH(Network *net,
       //    vtp.addPointData("normal_SPH", normal_SPH);}
 
       DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
+
+      // 初期化
       for (const auto &p : net->getPoints()) {
          // p->C_SML = C_SML * std::pow(_WATER_DENSITY_ / p->rho, 3);  // C_SMLを密度の応じて変えてみる．
          // p->setDensity(_WATER_DENSITY_);
@@ -281,13 +282,12 @@ void developByEISPH(Network *net,
          p->tmp_X = p->X;
       }
 
-      // b# ----------- CFL条件を満たすようにタイムステップ間隔dtを設定 ------------ */
-
+      // CFL条件を満たすようにタイムステップ間隔dtを設定
       DebugPrint("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
       double dt = dt_CFL(max_dt, net, RigidBodyObject);
       std::cout << "dt = " << dt << std::endl;
 
-      // b# --------------------------- ルンゲクッタの準備 ------------------- */
+      // ルンゲクッタの準備
       for (auto &N : Append(net_RigidBody, net))
          for (const auto &p : N->getPoints()) {
 #if defined(USE_RungeKutta)
@@ -300,39 +300,25 @@ void developByEISPH(Network *net,
             p->LPFG_rho.initialize(dt, real_time, p->rho, p->DrhoDt_SPH);
 #endif
          }
-      // b# ======================================================= */
-      // b#                  ルンゲクッタを使った時間積分                 */
-      // b# ======================================================= */
+
+      // ルンゲクッタを使った時間積分
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       bool finished = false;
       do {
-         /* ---------------------------- 流れの計算に関与する壁粒子を保存 ---------------------------- */
+
+         // 流れの計算に関与する壁粒子を保存
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
 
-         setNormal_Surface(net, wall_p, RigidBodyObject);
+         setFreeSurface(net, RigidBodyObject);
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+
 #if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
          const auto DT = dt;
-         auto getX = [&](const auto p) {
-            if (p->isAuxiliary)
-               return p->surfacePoint->RK_X.getX(p->surfacePoint->U_SPH) + (p->X - p->surfacePoint->X);
-            else if (p->getNetwork()->isRigidBody)
-               return p->X;
-            else
-               return p->RK_X.getX(p->U_SPH);
-         };
 #elif defined(USE_LeapFrog)
          const auto DT = dt / 2.;
-         // dt is fixed
-         auto getX = [&](const auto p) {
-            // if (p->LPFG_X.is_first)
-            //    return p->X + dt * p->U_SPH;  // + 0.5 * dt * dt * p->DUDt_SPH_;
-            // else
-            return p->X;
-         };
 #endif
 
          std::cout << "DT = " << DT << std::endl;
@@ -355,14 +341,14 @@ void developByEISPH(Network *net,
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
-         PoissonEquation(wall_p, {net}, DT, particle_spacing, getX);
+         PoissonEquation(wall_p, {net}, DT, particle_spacing);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing, getX);
+         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
 
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
-         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing, getX);
+         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
          // PoissonEquation(wall_p, Append(net_RigidBody, net), DT);
          // setPressure(net->getPoints());
          // setPressure(wall_p);
@@ -374,7 +360,7 @@ void developByEISPH(Network *net,
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
-         gradP(net->getPoints(), Append(net_RigidBody, net), getX);
+         gradP(net->getPoints(), Append(net_RigidBody, net));
 
          //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);

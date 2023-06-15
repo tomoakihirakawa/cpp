@@ -392,6 +392,16 @@ class LeapFrog {
    const T &get_x() const { return x; }
    const T &get_v() const { return v; }
 
+   T get_x(const T &a) {
+      if (is_first) {
+         double half_dt = 0.5 * dt;
+         auto V = v + half_dt * a;  // half-step update of v
+         return x + dt * V;         // full-step update of x
+      } else {
+         return x;
+      }
+   };
+
   private:
    double dt, t;
    T x, v, a_old, v_old;

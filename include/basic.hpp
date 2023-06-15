@@ -28,7 +28,7 @@ double real_sph(const int l, const int m, const double theta, const double psi) 
    return std::sph_legendre(std::abs(l), std::abs(l), theta) * std::cos(psi);
 };
 double real_sph_scale_ommited(const int l, const int m, const double theta, const double psi) {
-   return real_sph(l, m, theta, psi) / std::sqrt((2. * std::abs(l) + 1.) / (4. * std::numbers::pi));
+   return real_sph(l, m, theta, psi) / std::sqrt((2. * std::abs(l) + 1.) / (4. * M_PI));
 };
 /* ------------------------------------------------------ */
 /*              表示方法に関するライブラリ                     */
@@ -790,7 +790,7 @@ std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
+      z = cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -821,7 +821,7 @@ VV_d GaussianQuadratureWeights(const int n,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
+      z = cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -868,7 +868,7 @@ void gauleg(const double x1, const double x2,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (int i = 0; i < m; i++) {
-      z = cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
+      z = cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -1311,7 +1311,7 @@ class glLINES {
             double y = (-1. + 2. / (row - 1) * i);
             samp3X[i][j] = x * scale;
             samp3Y[i][j] = y * scale;
-            samp3Z[i][j] = sin(2. * std::numbers::pi * x) * sin(2. * std::numbers::pi * y);
+            samp3Z[i][j] = sin(2. * M_PI * x) * sin(2. * M_PI * y);
          }
       }
       /* gl.LINESでメッシュがかけるような形式で格納 */

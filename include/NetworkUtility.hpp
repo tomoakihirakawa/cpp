@@ -63,7 +63,7 @@ bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double ang
                       ToVector(ToX(p1) - ToX(p2))) < angle);
 };
 ///////////////////////////////////////////////////////////
-bool isFlat(const netPp p, double minangle = std::numbers::pi / 180.) {
+bool isFlat(const netPp p, double minangle = M_PI / 180.) {
    if (p->getLines().empty()) {
       // mk_vtu("./vtu/p->getLines().empty().vtu", {{p}});
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
@@ -80,7 +80,7 @@ bool isFlat(const netPp p, double minangle = std::numbers::pi / 180.) {
    return true;
 };
 ///////////
-bool isFlat(const netLp line, double minangle = std::numbers::pi / 180.) {
+bool isFlat(const netLp line, double minangle = M_PI / 180.) {
    auto fs = line->getFaces();
    if (fs.size() != 2)
       return false;
@@ -222,7 +222,7 @@ Tddd vectorTangentialShift_(const networkPoint *p, const double scale = 1.) {
                                                                                       [&](const auto &F) { return std::ranges::any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
             a *= 2;
          auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
-         auto X = Norm(np2x - np1x) * n * sin(std::numbers::pi / 3.) + (np2x + np1x) / 2.;
+         auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;
          vectorToCenter += a * (X - np0x);  //[m]
          s += a;
       }
@@ -261,13 +261,13 @@ Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
    normals.reserve(2 * faces.size());
    for (auto i = 0; i < faces.size(); i++)
       for (auto j = i; j < faces.size(); j++)
-         if (!isFlat(faces[i]->normal, faces[j]->normal, 1E-2 * std::numbers::pi / 180.))
+         if (!isFlat(faces[i]->normal, faces[j]->normal, 1E-2 * M_PI / 180.))
             normals.push_back({faces[i]->normal, faces[j]->normal});
    //
    // std::vector<std::tuple<Tddd, Tddd>> normals;
    // for (const auto &f : p->getFaces())
    // 	for (const auto &F : p->getFaces())
-   // 		if (!isFlat(f->normal, F->normal, 1E-2 * std::numbers::pi / 180.))
+   // 		if (!isFlat(f->normal, F->normal, 1E-2 * M_PI / 180.))
    // 			normals.push_back({f->normal, F->normal});
    Tddd c;
    for (const auto &[N0, N1] : normals) {
@@ -298,7 +298,7 @@ void AreaWeightedSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
                auto [p0, p1, p2] = faces[j]->getPoints(p);
                auto triangle = T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)};
                N1 = TriangleNormal(triangle);
-               if (!isFlat(N0, N1, 1E-2 * std::numbers::pi / 180.)) {
+               if (!isFlat(N0, N1, 1E-2 * M_PI / 180.)) {
                   allflat = false;
                   break;
                }
@@ -317,7 +317,7 @@ void AreaWeightedSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
                   isfinitenormal = isFinite(N);
                   if (allflat) {
                      // 全てフラットなので，反転しなければいい．
-                     if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, std::numbers::pi / 180.)) {
+                     if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, M_PI / 180.)) {
                         isflat = false;
                         break;
                      }
@@ -359,7 +359,7 @@ void LaplacianSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
          Tddd N;
          for (const auto &f : p->getFaces())
             for (const auto &F : p->getFaces())
-               if (!isFlat(f->normal, F->normal, 1E-2 * std::numbers::pi / 180.)) {
+               if (!isFlat(f->normal, F->normal, 1E-2 * M_PI / 180.)) {
                   allflat = false;
                   break;
                }
@@ -381,7 +381,7 @@ void LaplacianSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
                N = TriangleNormal(T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)});
                if (allflat) {
                   // 全てフラットなので，反転しなければいい．
-                  if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, std::numbers::pi / 180.)) {
+                  if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, M_PI / 180.)) {
                      isflat = false;
                      break;
                   }
@@ -411,7 +411,7 @@ void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &p
 };
 /* ------------------------------------------------------ */
 
-void flipIf(Network &water, double limit_angle = std::numbers::pi / 180., bool force = false, int times = 0) {
+void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0) {
    try {
       // 2022/04/13こっちにBEMのmainから持ってきた
       std::cout << "flipIf" << std::endl;
@@ -427,7 +427,7 @@ void flipIf(Network &water, double limit_angle = std::numbers::pi / 180., bool f
             if (force && (times == 0 || count < times)) {
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
-               isfound = l->flipIfTopologicalyBetter(limit_angle, std::numbers::pi / 180. * 10.);
+               isfound = l->flipIfTopologicalyBetter(limit_angle, M_PI / 180. * 10.);
                if (isfound)
                   count++;
             } else {
