@@ -42,8 +42,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 [LeapFrogのクラス](../../include/integrationOfODE.hpp#L329)
 
-[../../include/integrationOfODE.hpp#L319](../../include/integrationOfODE.hpp#L319)
-
+<p  align="right"><a href="../../include/integrationOfODE.hpp#L319">../../include/integrationOfODE.hpp#L319</a></p>
 
 
 ### 🪸🪸Runge-Kutta  
@@ -68,18 +67,16 @@ x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 
 [RungeKuttaのクラス](../../include/integrationOfODE.hpp#L37)
 
-[../../include/integrationOfODE.hpp#L11](../../include/integrationOfODE.hpp#L11)
+<p  align="right"><a href="../../include/integrationOfODE.hpp#L11">../../include/integrationOfODE.hpp#L11</a></p>
 
 
-[./example_DampedHrmonicOscillator.cpp#L4](./example_DampedHrmonicOscillator.cpp#L4)
-
+<p  align="right"><a href="./example_DampedHrmonicOscillator.cpp#L4">./example_DampedHrmonicOscillator.cpp#L4</a></p>
 
 ## ⛵️Runge-Kutta Integration of ODE 
 
 ![](RK.png)
 
 
-[./example_RungeKutta.cpp#L1](./example_RungeKutta.cpp#L1)
-
+<p  align="right"><a href="./example_RungeKutta.cpp#L1">./example_RungeKutta.cpp#L1</a></p>
 
 ---
