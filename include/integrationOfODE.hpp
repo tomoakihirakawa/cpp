@@ -315,7 +315,9 @@ struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<do
    RungeKutta(const double dt_IN, const double t0, const std::array<double, N> &X0, int stepsIN) : RungeKuttaCommon<std::array<double, N>>(dt_IN, t0, X0, stepsIN) { this->dX.fill(0.); };
    RungeKutta() : RungeKuttaCommon<std::array<double, N>>(){};
 };
+
 /* -------------------------------------------------------------------------- */
+
 /*DOC_EXTRACT ODE::LeapFrog
 
 ### LeapFrog

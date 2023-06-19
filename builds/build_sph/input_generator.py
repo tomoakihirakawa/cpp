@@ -104,7 +104,7 @@ match SimulationCase:
                        sensor1, sensor2, sensor2L, sensor3, sensor4]
 
         setting = {"RK_order": 1,
-                   "max_dt": 0.001,
+                   "max_dt": 0.0005,
                    "end_time_step": 20000,
                    "end_time": 1,
                    "CSML": 3.05,
