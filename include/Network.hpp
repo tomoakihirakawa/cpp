@@ -575,6 +575,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_;
+   std::array<std::tuple<doubel, Tddd>, 3> t_U_SPH;
    Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X, pre_X;
    double tmp_density;
    Tddd pre_U_SPH;
@@ -584,6 +585,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
+   std::array<Tddd, 3> b_vector3;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;

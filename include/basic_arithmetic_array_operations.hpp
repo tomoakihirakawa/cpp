@@ -611,6 +611,40 @@ constexpr std::array<T, N> TriShape(T t0, T t1) noexcept {
 template <size_t N>
 constexpr std::array<double, N> TriShape(double t0, double t1) noexcept { return TriShape<double, N>(t0, t1); }
 
+/*DOC_EXTRACT interpolation:ModTriShape
+
+## 範囲を修正した三角形形状関数
+
+普通の三角形形状関数は，$`{\mathbf N}=(N_0,N_1,N_2) = (t_0,t_1,1-t_0-t_1)`$．
+これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X_0},{\mathbf X_1},{\mathbf X_2}\})`$は，$`t_0,t_1=[0,1]`$で平行四辺形を作る．
+$`t_0,t_1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
+そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
+変更した形状関数は，`ModTriShape`にあるように，
+3点の場合は，
+
+```math
+\begin{align}
+N_0 &= t_0 \\
+N_1 &= -t_1(t_0-1) \\
+N_2 &= (t_0-1)(t_1-1)
+\end{align}
+```
+
+6点の場合は，
+
+```math
+\begin{align}
+N_0 &= t_0(2t_0-1) \\
+N_1 &= t_1(2t_1-1) \\
+N_2 &= (1-t_0-t_1)(2(1-t_0-t_1)-1) \\
+N_3 &= 4t_0t_1 \\
+N_4 &= 4t_1(1-t_0-t_1) \\
+N_5 &= 4t_0(1-t_0-t_1)
+\end{align}
+```
+
+*/
+
 template <typename T, size_t N>
 constexpr std::array<T, N> ModTriShape(const T& t0, const T& t1, const auto& p0p1p2) noexcept {
    // b! どのポインターにどれだけの係数を加えるかを得られるようにする
@@ -662,6 +696,10 @@ constexpr std::array<double, N> ModTriShape(double t0, double t1) noexcept { ret
 
 template <typename T, size_t N>
 constexpr std::array<T, N> ModTriShape(T t0, T t1) noexcept { return ModTriShape<T, N>(t0, t1, std::array<bool, 3>{true, true, true}); }
+
+/* -------------------------------------------------------------------------- */
+
+
 
 /* -------------------------------------------------------------------------- */
 

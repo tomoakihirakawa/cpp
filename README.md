@@ -1,5 +1,14 @@
 # Contents
 
+## [build_interpolation](./builds/build_interpolation/README.md)
+
+- [Contents](./builds/build_interpolation/README.md#Contents)
+- [🐋補間](./builds/build_interpolation/README.md#🐋補間)
+    - [⛵️三角形補間](./builds/build_interpolation/README.md#⛵️三角形補間)
+    - [⛵️⛵️範囲を修正した三角形形状関数](./builds/build_interpolation/README.md#⛵️⛵️範囲を修正した三角形形状関数)
+    - [⛵️ラグランジュ補間](./builds/build_interpolation/README.md#⛵️ラグランジュ補間)
+    - [⛵️三角形補間](./builds/build_interpolation/README.md#⛵️三角形補間)
+    - [⛵️⛵️範囲を修正した三角形形状関数](./builds/build_interpolation/README.md#⛵️⛵️範囲を修正した三角形形状関数)
 ## [build_ODE](./builds/build_ODE/README.md)
 
 - [Contents](./builds/build_ODE/README.md#Contents)
@@ -17,15 +26,7 @@
     - [⛵️$`\nabla^2 {\bf u} _i`$の計算](./builds/build_sph/README.md#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
     - [⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$](./builds/build_sph/README.md#⛵️ポアソン方程式$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho^n}-\nabla^{n}-p^{n+1}\right)-=-b`$)
     - [⛵️ポアソン方程式の解法](./builds/build_sph/README.md#⛵️ポアソン方程式の解法)
-    - [⛵️圧力勾配$\nabla p^{n+1}$の計算](./builds/build_sph/README.md#⛵️圧力勾配$\nabla-p^{n+1}$の計算)
-    - [⛵️注意点](./builds/build_sph/README.md#⛵️注意点)
-    - [⛵️壁面粒子の流速と圧力](./builds/build_sph/README.md#⛵️壁面粒子の流速と圧力)
-    - [⛵️法線方向の計算と水面の判定](./builds/build_sph/README.md#⛵️法線方向の計算と水面の判定)
-    - [⛵️水面補助粒子の作成](./builds/build_sph/README.md#⛵️水面補助粒子の作成)
-    - [⛵️$`\nabla^2 {\bf u} _i`$の計算](./builds/build_sph/README.md#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
-    - [⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$](./builds/build_sph/README.md#⛵️ポアソン方程式$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho^n}-\nabla^{n}-p^{n+1}\right)-=-b`$)
-    - [⛵️ポアソン方程式の解法](./builds/build_sph/README.md#⛵️ポアソン方程式の解法)
-    - [⛵️圧力勾配$\nabla p^{n+1}$の計算](./builds/build_sph/README.md#⛵️圧力勾配$\nabla-p^{n+1}$の計算)
+    - [⛵️圧力勾配$`\nabla p^{n+1}`$の計算](./builds/build_sph/README.md#⛵️圧力勾配$`\nabla-p^{n+1}`$の計算)
     - [⛵️注意点](./builds/build_sph/README.md#⛵️注意点)
     - [⛵️壁面粒子の流速と圧力](./builds/build_sph/README.md#⛵️壁面粒子の流速と圧力)
     - [⛵️法線方向の計算と水面の判定](./builds/build_sph/README.md#⛵️法線方向の計算と水面の判定)
