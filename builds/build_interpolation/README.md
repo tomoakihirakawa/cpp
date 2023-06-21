@@ -67,11 +67,10 @@ f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq
 f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
 ```
 
-
 ![](sample_lag.png)
 
 
-[./LagrangianInterpolation.cpp#L10](./LagrangianInterpolation.cpp#L10)
+[./LagrangianInterpolation.cpp#L11](./LagrangianInterpolation.cpp#L11)
 
 
 ## ⛵️三角形補間 

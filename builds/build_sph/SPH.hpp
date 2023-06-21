@@ -341,14 +341,14 @@ void developByEISPH(Network *net,
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
-         PoissonEquation(wall_p, {net}, DT, particle_spacing);
+         setPoissonEquation(wall_p, {net}, DT, particle_spacing);
          setPressure(wall_p);
 
-         PoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
+         setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
 
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
-         PoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
+         setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
          // PoissonEquation(wall_p, Append(net_RigidBody, net), DT);
          // setPressure(net->getPoints());
          // setPressure(wall_p);
