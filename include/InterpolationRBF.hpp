@@ -149,55 +149,55 @@ struct InterpolationBspline {
 
 /* ---------------------- ラグランジュ補間 ---------------------- */
 
-template <typename T>
-struct InterpolationLagrange {
-   std::vector<std::tuple<double, T>> XY;
-   std::vector<double> denominotor;
-   InterpolationLagrange(const std::vector<std::tuple<double, T>> &V_xy)
-       : XY(V_xy), denominotor(V_xy.size(), 1.) {
-      this->set(V_xy);
-   };
+// template <typename T>
+// struct InterpolationLagrange {
+//    std::vector<std::tuple<double, T>> XY;
+//    std::vector<double> denominotor;
+//    InterpolationLagrange(const std::vector<std::tuple<double, T>> &V_xy)
+//        : XY(V_xy), denominotor(V_xy.size(), 1.) {
+//       this->set(V_xy);
+//    };
 
-   void set(const std::vector<std::tuple<double, T>> &V_xy) {
-      this->XY = V_xy;
-      denominotor.clear();
-      denominotor = V_d(XY.size(), 1.);
-      for (auto i = 0; i < XY.size(); ++i)
-         for (auto j = 0; j < XY.size(); ++j)
-            if (i != j)
-               denominotor[i] *= (std::get<0>(XY[i]) - std::get<0>(XY[j]));
-   };
+//    void set(const std::vector<std::tuple<double, T>> &V_xy) {
+//       this->XY = V_xy;
+//       denominotor.clear();
+//       denominotor = V_d(XY.size(), 1.);
+//       for (auto i = 0; i < XY.size(); ++i)
+//          for (auto j = 0; j < XY.size(); ++j)
+//             if (i != j)
+//                denominotor[i] *= (std::get<0>(XY[i]) - std::get<0>(XY[j]));
+//    };
 
-   T operator()(const double x) {
-      std::vector<T> ret(XY.size());
-      for (auto i = 0; i < XY.size(); ++i) {
-         ret[i] = (std::get<1>(this->XY[i]) / this->denominotor[i]);
-         for (auto j = 0; j < XY.size(); ++j)
-            if (i != j)
-               ret[i] *= (x - std::get<0>(XY[j]));
-      }
-      return Total(ret);
-   };
+//    T operator()(const double x) {
+//       std::vector<T> ret(XY.size());
+//       for (auto i = 0; i < XY.size(); ++i) {
+//          ret[i] = (std::get<1>(this->XY[i]) / this->denominotor[i]);
+//          for (auto j = 0; j < XY.size(); ++j)
+//             if (i != j)
+//                ret[i] *= (x - std::get<0>(XY[j]));
+//       }
+//       return Total(ret);
+//    };
 
-   T D(const double x) {
-      std::vector<T> ret(XY.size());
-      for (auto i = 0; i < XY.size(); ++i) {
-         ret[i] = 0;
-         for (auto k = 0; k < XY.size(); ++k) {
-            auto tmp = (std::get<1>(this->XY[i]) / this->denominotor[i]);
-            for (auto j = 0; j < XY.size(); ++j)
-               if (i != j) {
-                  if (k == j)
-                     tmp *= (-std::get<0>(XY[j]));
-                  else
-                     tmp *= (x - std::get<0>(XY[j]));
-               }
-            ret[i] += tmp;
-         }
-      }
-      return Total(ret);
-   };
-};
+//    T D(const double x) {
+//       std::vector<T> ret(XY.size());
+//       for (auto i = 0; i < XY.size(); ++i) {
+//          ret[i] = 0;
+//          for (auto k = 0; k < XY.size(); ++k) {
+//             auto tmp = (std::get<1>(this->XY[i]) / this->denominotor[i]);
+//             for (auto j = 0; j < XY.size(); ++j)
+//                if (i != j) {
+//                   if (k == j)
+//                      tmp *= (-std::get<0>(XY[j]));
+//                   else
+//                      tmp *= (x - std::get<0>(XY[j]));
+//                }
+//             ret[i] += tmp;
+//          }
+//       }
+//       return Total(ret);
+//    };
+// };
 
 #include "kernelFunctions.hpp"
 //* ------------------------------------------------------ */

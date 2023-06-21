@@ -54,7 +54,7 @@ match SimulationCase:
 
         input_files = [wavetank, water]
 
-        setting = {"RK_order": 4,
+        setting = {"RK_order": 2,
                    "max_dt": 0.001,
                    "CSML": 2.4,
                    "end_time_step": 10000,
@@ -144,7 +144,7 @@ match SimulationCase:
                    "max_dt": 0.0001,
                    "end_time_step": 50000,
                    "end_time": 0.5,
-                   "CSML": 2.4,
+                   "CSML": 2.7,
                    "initial_surface_z_position": 0.2,
                    "particle_spacing": 0.02,
                    "input_files": [x["name"]+".json" for x in input_files]}
