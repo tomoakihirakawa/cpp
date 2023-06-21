@@ -230,8 +230,8 @@ double V_next(const auto &p) {
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   // return p->X;
-   return X_next_(p);
+   return p->X;
+   // return X_next_(p);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -590,15 +590,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->tmp_X = A->X + A->tmp_U_SPH * dt;
          A->DrhoDt_SPH = -A->rho * A->div_U;
       }
-      // 予めb_vectorを計算するようにした．
-      //     どっちがいいのか
-      //         しかし，これはsumを取る必要がない．
-      //             だたこれで，任意の場所でb_vectorを計算しやすくなる．
-      //                 Laplacianが水面補助粒子を考慮していないこと，
-      //                     補助粒子が密度変化を考慮できないこと
-      //                         など
-      //                             gradが
-
       //$ ------------------------------------------ */
       // \label{SPH:Poisson_b_vector}
 
@@ -1133,9 +1124,8 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       if (p->RK_X.steps == 1) {
          p->RK_U.push(p->DUDt_SPH);  // 速度
-         p->U_SPH = (p->U_SPH + p->RK_U.getX()) / 2.;
-         //
-         p->RK_X.push(p->U_SPH);  // 位置
+         p->U_SPH = p->RK_U.getX();
+         p->RK_X.push((p->U_SPH + U) * 0.5);  // 位置
          p->setXSingle(p->tmp_X = p->RK_X.getX());
       } else {
          p->RK_X.push(p->U_SPH);  // 位置
@@ -1188,7 +1178,7 @@ void updateParticles(const auto &points,
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                      p->RK_U.repush(p->DUDt_SPH);  // 速度
                      if (p->RK_X.steps == 1) {
-                        p->U_SPH = (p->U_SPH + p->RK_U.getX()) / 2.;
+                        p->U_SPH = (U + p->RK_U.getX()) / 2.;
                         p->RK_X.repush(p->U_SPH);  // 位置
                         p->setXSingle(p->tmp_X = p->RK_X.getX());
                      } else {
