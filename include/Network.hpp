@@ -586,10 +586,10 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
-   std::array<Tddd, 3> b_vector3;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;
+   Tddd DUDt_modify_SPH;
    Tddd ViscousAndGravityForce_, tmp_ViscousAndGravityForce_;
    Tddd ViscousAndGravityForce, tmp_ViscousAndGravityForce;
    Tddd repulsive_force_SPH;

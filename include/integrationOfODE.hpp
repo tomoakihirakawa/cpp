@@ -89,6 +89,7 @@ struct RungeKuttaCommon {
 
    double getTime() const { return this->t_init + this->dt; };
    double getNextTime() const { return this->t_init + this->getdt(); };
+   double get_dt() { return this->getdt(); };
    double getdt() const {
       // 次の計算は，t+dtを狙って計算することになる．
       // ここでのdtを返す
