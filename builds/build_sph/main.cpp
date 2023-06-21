@@ -249,17 +249,16 @@ int main(int arg, char **argv) {
       if (end_time < real_time)
          break;
 
-      // int N = 1000;
-
-      // if (time_step == N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_;
-      // } else if (time_step < N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_ * 10;
-      // }
+      int N = 1000;
+      if (time_step == N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_;
+      } else if (time_step < N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_ * 10;
+      }
 
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
