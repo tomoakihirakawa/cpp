@@ -43,14 +43,12 @@
 | 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
 
 
-[./BEM.hpp#L1](./BEM.hpp#L1)
-
+<p  align="right"><a href="./BEM.hpp#L1">./BEM.hpp#L1</a></p>
 
 ## ⛵️流速の計算方法
 
 
-[./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
-
+<p  align="right"><a href="./BEM_calculateVelocities.hpp#L7">./BEM_calculateVelocities.hpp#L7</a></p>
 
 ### 🪸修正流速（これがないと激しい波の計算は難しい） 
 
@@ -64,8 +62,7 @@
 まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L332](./BEM_calculateVelocities.hpp#L332)
-
+<p  align="right"><a href="./BEM_calculateVelocities.hpp#L332">./BEM_calculateVelocities.hpp#L332</a></p>
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
 
@@ -119,8 +116,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L476](./BEM_calculateVelocities.hpp#L476)
-
+<p  align="right"><a href="./BEM_calculateVelocities.hpp#L476">./BEM_calculateVelocities.hpp#L476</a></p>
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
 
@@ -136,8 +132,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L563](./BEM_calculateVelocities.hpp#L563)
-
+<p  align="right"><a href="./BEM_calculateVelocities.hpp#L563">./BEM_calculateVelocities.hpp#L563</a></p>
 
 ## ⛵️境界のタイプを決定する 
 
@@ -172,8 +167,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 これを多重節点という．
 
 
-[./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
-
+<p  align="right"><a href="./BEM_setBoundaryTypes.hpp#L7">./BEM_setBoundaryTypes.hpp#L7</a></p>
 
 ## ⛵️境界値問題 
 
@@ -224,8 +218,7 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
 
-[./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L7">./BEM_solveBVP.hpp#L7</a></p>
 
 ### 🪸BIEの離散化 
 
@@ -248,8 +241,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 ```
 
 
-[./BEM_solveBVP.hpp#L218](./BEM_solveBVP.hpp#L218)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L218">./BEM_solveBVP.hpp#L218</a></p>
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
 `IGIGn`は，ある節点$`i _\circ`$（係数行列の行インデックス）に対する
@@ -269,8 +261,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L282](./BEM_solveBVP.hpp#L282)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L282">./BEM_solveBVP.hpp#L282</a></p>
 
 ### 🪸リジッドモードテクニック 
 
@@ -279,8 +270,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L355](./BEM_solveBVP.hpp#L355)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L355">./BEM_solveBVP.hpp#L355</a></p>
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
@@ -309,8 +299,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L393](./BEM_solveBVP.hpp#L393)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L393">./BEM_solveBVP.hpp#L393</a></p>
 
 ## ⛵️浮体動揺解析 
 
@@ -391,8 +380,7 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与えている．
 
 
-[./BEM_solveBVP.hpp#L572](./BEM_solveBVP.hpp#L572)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L572">./BEM_solveBVP.hpp#L572</a></p>
 
 ```math
 \nabla {\bf u} = \nabla \nabla \phi =
@@ -408,8 +396,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L654](./BEM_solveBVP.hpp#L654)
-
+<p  align="right"><a href="./BEM_solveBVP.hpp#L654">./BEM_solveBVP.hpp#L654</a></p>
 
 ## ⛵️初期値問題 
 
@@ -453,8 +440,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
-
+<p  align="right"><a href="./BEM_utilities.hpp#L394">./BEM_utilities.hpp#L394</a></p>
 
 ## ⛵️その他 
 
@@ -464,8 +450,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L468](./BEM_utilities.hpp#L468)
-
+<p  align="right"><a href="./BEM_utilities.hpp#L468">./BEM_utilities.hpp#L468</a></p>
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
 
@@ -496,8 +481,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
-
+<p  align="right"><a href="./BEM_utilities.hpp#L526">./BEM_utilities.hpp#L526</a></p>
 
 ### 🪸計算の流れ 
 
@@ -509,8 +493,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L250](./main.cpp#L250)
-
+<p  align="right"><a href="./main.cpp#L250">./main.cpp#L250</a></p>
 
 ---
 # 🐋入力ファイル生成 `input_generator.py` 
@@ -544,8 +527,7 @@ After customizing the script, run it again to generate the input files for the n
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
 
-[./input_generator.py#L1](./input_generator.py#L1)
-
+<p  align="right"><a href="./input_generator.py#L1">./input_generator.py#L1</a></p>
 
 ---
 # 🐋コンパイルと計算の実行方法 
@@ -601,7 +583,6 @@ The simulation results will be stored in the specified output directory.
 [![Banner](sample1.gif)](sample1.gif)
 
 
-[./main.cpp#L1](./main.cpp#L1)
-
+<p  align="right"><a href="./main.cpp#L1">./main.cpp#L1</a></p>
 
 ---
