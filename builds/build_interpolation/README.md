@@ -58,11 +58,15 @@ N _5 &= 4t _0(1-t _0-t _1)
 与えられたデータ点を通る多項式を求める方法の一つにラグランジュ補間がある．
 
 ```math
-f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
+f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i,j\neq k}^n{(x _i - x _j)}}y _i
 ```
 
-補間の式の分母は，補間したい横軸$`x`$に依存せず，与えられた横軸データのみに依存するので，
-データが与えられたら1度だけ計算しておけばよい．
+微分は，
+
+```math
+f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
+```
+
 
 ![](sample_lag.png)
 

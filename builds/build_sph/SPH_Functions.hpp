@@ -3,6 +3,94 @@
 
 #include "Network.hpp"
 
+template <typename T>
+struct InterpolationLagrange {
+   std::vector<double> abscissas;
+   std::vector<T> values;
+   std::vector<double> denominotor;
+
+   InterpolationLagrange(const std::vector<double> abscissas)
+       : abscissas(abscissas){};
+
+   InterpolationLagrange(const std::vector<double> abscissas, const std::vector<T> values)
+       : abscissas(abscissas), values(values) {
+      if (abscissas.size() != values.size()) {
+         throw std::invalid_argument("Size of abscissas and values vectors must be the same");
+      }
+      this->set();
+   };
+
+   void set() {
+      denominotor.resize(abscissas.size(), 1.);
+      for (auto i = 0; i < abscissas.size(); ++i)
+         for (auto j = 0; j < abscissas.size(); ++j)
+            if (i != j)
+               denominotor[i] *= (abscissas[i] - abscissas[j]);
+   };
+
+   T operator()(const double x) {
+      T ret, N = 1;
+      ret *= 0.;
+      for (auto i = 0; i < abscissas.size(); ++i) {
+         for (auto j = 0; j < abscissas.size(); ++j) {
+            if (i != j)
+               N *= (x - this->abscissas[j]) / (this->abscissas[i] - this->abscissas[j]);
+         }
+         ret += N * this->values[i];
+         N = 1;
+      }
+      return ret;
+   };
+
+   T D(const double x) {
+      T ret;
+      ret *= 0.;
+      for (auto i = 0; i < abscissas.size(); ++i) {
+         for (auto j = 0; j < abscissas.size(); ++j) {
+            if (i != j) {
+               T temp = this->values[i] / (this->abscissas[i] - this->abscissas[j]);
+               for (auto k = 0; k < abscissas.size(); ++k) {
+                  if (k != i && k != j) {
+                     temp *= (x - this->abscissas[k]) / (this->abscissas[i] - this->abscissas[k]);
+                  }
+               }
+               ret += temp;
+            }
+         }
+      }
+      return ret;
+   }
+
+   std::vector<T> N(const double x) {
+      std::vector<T> ret(abscissas.size(), 1.);
+      for (auto i = 0; i < abscissas.size(); ++i) {
+         for (auto j = 0; j < abscissas.size(); ++j)
+            if (i != j)
+               ret[i] *= (x - this->abscissas[j]) / (this->abscissas[i] - this->abscissas[j]);
+         // ret[i] *= this->values[i];
+      }
+      return ret;
+   };
+
+   std::vector<T> DN(const double x) {
+      std::vector<T> ret(abscissas.size(), 0.);
+      for (auto i = 0; i < abscissas.size(); ++i) {
+         for (auto j = 0; j < abscissas.size(); ++j) {
+            if (i != j) {
+               T temp = 1. / (this->abscissas[i] - this->abscissas[j]);
+               for (auto k = 0; k < abscissas.size(); ++k) {
+                  if (k != i && k != j) {
+                     temp *= (x - this->abscissas[k]) / (this->abscissas[i] - this->abscissas[k]);
+                  }
+               }
+               ret[i] += temp;
+            }
+         }
+      }
+      return ret;
+   };
+};
+
 networkPoint *getClosestExcludeRigidBody(networkPoint *p, auto &target_nets) {
    double distance = 1E+20;
    networkPoint *P = nullptr;
@@ -174,14 +262,14 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          p->tmp_X = p->X;
       }
    DebugPrint("関連する壁粒子をマーク", Green);
-   // capture wall particles
+// capture wall particles
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
    {
       // ここでも結構変わる
-      const double captureRange = p->radius_SPH;  // / p->C_SML * 2.4;
-                                                  // const double captureRange_wall_as_fluid = p->radius_SPH;
+      const double captureRange = p->radius_SPH;
+      // const double captureRange_wall_as_fluid = p->radius_SPH;
       for (const auto &[obj, poly] : RigidBodyObject) {
          obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
             if (Distance(p, q) < captureRange) {
@@ -230,17 +318,17 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
-   // refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
+// refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
 
-   /*DOC_EXTRACT SPH
+/*DOC_EXTRACT SPH
 
-   ### 法線方向の計算
+### 法線方向の計算
 
-   CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)`$
+CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)`$
 
-   単位法線ベクトルは，`interpolated_normal_SPH`としている．
+単位法線ベクトルは，`interpolated_normal_SPH`としている．
 
-   */
+*/
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -500,6 +588,36 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //    });
 
       A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+
+      if (A->vec_time_SPH.size() > 10) {
+
+#if defined(USE_RungeKutta)
+         double current_time = A->RK_X.getTime();
+         double next_time = A->RK_X.getNextTime();
+#elif defined(USE_LeapFrog)
+         double current_time = A->LPFG_X.get_t();
+         double next_time = A->LPFG_X.get_t() + dt;
+
+#endif
+         std::vector<double> time3 = {next_time, current_time};
+         std::array<double, 3> U1, U2, U3;
+         U1 = A->U_SPH;
+         if (*(A->vec_time_SPH.rbegin()) == current_time) {
+            time3.push_back(*(A->vec_time_SPH.rbegin() + 1));
+            U2 = *(A->vec_U_SPH.rbegin() + 1);
+            time3.push_back(*(A->vec_time_SPH.rbegin() + 2));
+            U3 = *(A->vec_U_SPH.rbegin() + 2);
+         } else {
+            time3.push_back(*(A->vec_time_SPH.rbegin() + 0));
+            U2 = *(A->vec_U_SPH.rbegin() + 0);
+            time3.push_back(*(A->vec_time_SPH.rbegin() + 1));
+            U3 = *(A->vec_U_SPH.rbegin() + 1);
+         }
+         InterpolationLagrange<double> lag(time3);
+         auto D = lag.DN(current_time);
+         A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+      }
+
       //
       A->b_vector3[2] = A->b_vector3[1];
       A->b_vector3[1] = A->b_vector3[0];
@@ -698,7 +816,8 @@ void PoissonEquation(const std::unordered_set<networkPoint *> &points,
             A->PoissonRHS += V_next(B) * Dot(b_vector(B) - origin_b, grad_w_Bspline(origin_x, X_next(B), origin->radius_SPH));  // \label{SPH:div_b_vector}
             A->density_based_on_positions += B->volume * w_Bspline(Norm(origin_x - X_next(B)), origin->radius_SPH);
          }
-         Aij = 3. * B->mass / rho_next(origin) * Dot_grad_w_Bspline_Dot(origin_x, X_next(B), origin->radius_SPH);  //\label{SPH:lapP}
+         Aij = 2. * B->mass / rho_next(origin) * Dot_grad_w_Bspline_Dot(origin_x, X_next(B), origin->radius_SPH);  //\label{SPH:lapP}
+         // Aij = 3. * B->mass / rho_next(origin) * Dot_grad_w_Bspline_Dot(origin_x, X_next(B), origin->radius_SPH);  //\label{SPH:lapP}
          // for ISPH
          A->increment(origin, Aij / origin->rho);
          A->increment(B, -Aij / origin->rho);
@@ -875,6 +994,19 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    lu.solve(b, x0);
    for (const auto &p : points)
       p->p_SPH = x0[p->getIndexCSR()];
+#elif defined(USE_LAPACK_SVD)
+   VV_d A(b.size(), V_d(b.size(), 0.));
+   for (const auto &p : points) {
+      auto i = p->getIndexCSR();
+      for (const auto &[q, v] : p->column_value) {
+         auto j = q->getIndexCSR();
+         A[i][j] = v;
+      }
+   }
+   lapack_svd svd(A);
+   svd.solve(b, x0);
+   for (const auto &p : points)
+      p->p_SPH = x0[p->getIndexCSR()];
 #endif
 
    auto error = Norm(b - Dot(points, x0));
@@ -915,6 +1047,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       auto add_gradP_SPH = [&](const auto &B) {
          // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}0.2647
+
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
          //\label{SPH:gradP2}は，Aij = 1*..を使うと，0.132
          //\label{SPH:gradP2}は，Aij = 3*..を使うと，0.221
@@ -923,8 +1056,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //   A->gradP_SPH += (B->p_SPH - A->p_SPH) * V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP2}
          A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP3}0.34
          //\label{SPH:gradP3}は，Aij = 2*..を使うと，0.34
+         //\label{SPH:gradP3}は，Aij = 2*..を使うと，Lagrangeを使うと，0.46
          //\label{SPH:gradP3}は，Aij = 3*..を使うと，0.49
-         //\label{SPH:gradP3}は，Aij = 3*..を使うと，0.49
+         //\label{SPH:gradP3}は，Aij = 3*..を使うと，Lagrangeを使うと，0.4は超えたが，綺麗な結果ではなく，つぶれた．
          //\label{SPH:gradP3}は，Aij = 3*.. さらに，_nextを使うと，0.24
          //\label{SPH:gradP3}は，Aij = 3*.. さらに，X_next以外の_nextを使うと，0.277>
          //\label{SPH:gradP3}は，Aij = 2*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.34
@@ -993,7 +1127,7 @@ void updateParticles(const auto &points,
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = .5;
+      const double reflection_factor = 1.;
       const double asobi = 0.;
 
       auto closest = [&]() {
@@ -1034,7 +1168,7 @@ void updateParticles(const auto &points,
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                      p->LPFG_X.repush(p->DUDt_SPH);  // 速度
                      p->U_SPH = p->LPFG_X.get_v();
-                     p->setXSingle(p->tmp_X = modify_position);
+                     // p->setXSingle(p->tmp_X = modify_position);
                      isReflected = true;
    #endif
                      /* -------------------------------------------------------------------------- */

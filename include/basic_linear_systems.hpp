@@ -262,6 +262,75 @@ struct lapack_lu {
    };
 };
 
+#include <algorithm>
+
+extern "C" void dgesvd_(const char *jobu, const char *jobvt,
+                        const int *m, const int *n,
+                        double *a, const int *lda,
+                        double *s,
+                        double *u, const int *ldu,
+                        double *vt, const int *ldvt,
+                        double *work, const int *lwork, int *info);
+
+struct lapack_svd {
+   std::vector<double> a;
+   const int m, n;
+   std::vector<double> s, u, vt, work;
+   int lwork;  // remove const
+   int info;
+
+   lapack_svd(const std::vector<std::vector<double>> &aIN)
+       : a(flatten(aIN)), m(aIN.size()), n(aIN[0].size()), s(std::min(m, n)), u(m * m), vt(n * n) {
+      char jobu = 'A', jobvt = 'A';
+      double work_query;
+      int lwork_query = -1;
+      dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+              s.data(), u.data(), &m, vt.data(), &n,
+              &work_query, &lwork_query, &info);
+      lwork = static_cast<int>(work_query);
+      work.resize(lwork);
+
+      dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+              s.data(), u.data(), &m, vt.data(), &n,
+              work.data(), &lwork, &info);
+      if (info != 0) {
+         throw std::runtime_error("Error in SVD computation");
+      }
+   };
+
+   template <typename Container>
+   std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
+      using ValueType = typename Container::value_type::value_type;
+      std::vector<ValueType> flattened;
+      flattened.reserve(mat.size() * mat[0].size());
+      for (const auto &part : mat)
+         flattened.insert(flattened.end(), part.begin(), part.end());
+      return flattened;
+   }
+
+   void solve(const std::vector<double> &b, std::vector<double> &x) {
+      if (m != b.size())
+         throw std::runtime_error("dimension mismatch");
+
+      // Compute S_inv * Ut * b
+      std::vector<double> tmp(m);
+      for (int i = 0; i < m; ++i) {
+         double inv_s = (s[i] > 1e-9) ? (1 / s[i]) : 0.0;
+         for (int j = 0; j < m; ++j) {
+            tmp[j] += u[j * m + i] * inv_s * b[j];
+         }
+      }
+
+      // Compute V * (S_inv * Ut * b)
+      x.resize(n);
+      for (int i = 0; i < n; ++i) {
+         for (int j = 0; j < n; ++j) {
+            x[i] += vt[j * n + i] * tmp[j];
+         }
+      }
+   }
+};
+
 // #endif
 
 struct ludcmp {
@@ -348,7 +417,7 @@ struct ludcmp {
          x[i] = sum / lu[i][i];
       }
    };
-   
+
    void solve(const VV_d &b, VV_d &x) {
       int i, j, m = b[0].size();
       if (b.size() != n || x.size() != n || b[0].size() != x.size())

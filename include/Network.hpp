@@ -489,7 +489,7 @@ class networkPoint : public CoordinateBounds, public CSR {
 
    // 2023/05/16
    //\label{SPH:auxiliaryPoints}
-   std::array<networkPoint *, 1> auxiliaryPoints;
+   std::array<networkPoint *, 0> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
@@ -575,7 +575,8 @@ class networkPoint : public CoordinateBounds, public CSR {
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_;
-   std::array<std::tuple<doubel, Tddd>, 3> t_U_SPH;
+   std::vector<double> vec_time_SPH;
+   std::vector<Tddd> vec_U_SPH;
    Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X, pre_X;
    double tmp_density;
    Tddd pre_U_SPH;
