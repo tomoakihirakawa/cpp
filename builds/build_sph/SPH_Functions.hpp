@@ -219,8 +219,8 @@ std::array<double, 3> X_next_(const auto &p) {
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // return rho_next_(p);
-   // return rho_next_(p);
-   return _WATER_DENSITY_;
+   return rho_next_(p);
+   // return _WATER_DENSITY_;
 };
 
 // \label{SPH:volume_next}
@@ -230,8 +230,8 @@ double V_next(const auto &p) {
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   return p->X;
-   // return X_next_(p);
+   // return p->X;
+   return X_next_(p);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -619,11 +619,11 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       if (A->vec_time_SPH.size() > 10) {
 
 #if defined(USE_RungeKutta)
-         double current_time = A->RK_X.getTime();
-         double next_time = A->RK_X.getNextTime();
+         double current_time = A->RK_X.get_t();
+         double next_time = current_time + A->RK_X.get_dt();
 #elif defined(USE_LeapFrog)
          double current_time = A->LPFG_X.get_t();
-         double next_time = A->LPFG_X.get_t() + dt;
+         double next_time = current_time + dt;
 #endif
          std::vector<double> time3 = {next_time, current_time};
          std::array<double, 3> U1, U2, U3;
@@ -643,11 +643,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          auto D = lag.DN(current_time);
          A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       }
-
-      //
-      A->b_vector3[2] = A->b_vector3[1];
-      A->b_vector3[1] = A->b_vector3[0];
-      A->b_vector3[0] = A->b_vector;
    }
 };
 
@@ -783,16 +778,16 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // origin_b = b_vector(A);
 
          // origin_b.fill(0.);
-         origin_x = X_next(A);  // + A->radius_SPH / 2. * Normalize(A->normal_SPH);
+         origin_x = X_next(origin);  // + A->radius_SPH / 2. * Normalize(A->normal_SPH);
          origin_b = b_vector(origin);
          // sum 計算
-         for (const auto &net : target_nets)
-            net->BucketPoints.apply(origin_x, A->radius_SPH, [&](const auto &B) {
-               if (B->isCaptured) {
-                  auto w = B->volume * w_Bspline(Norm(origin_x - B->X), A->radius_SPH);
-                  origin_b += B->b_vector * w;
-               }
-            });
+         // for (const auto &net : target_nets)
+         //    net->BucketPoints.apply(origin_x, A->radius_SPH, [&](const auto &B) {
+         //       if (B->isCaptured) {
+         //          auto w = B->volume * w_Bspline(Norm(origin_x - B->X), A->radius_SPH);
+         //          origin_b += B->b_vector * w;
+         //       }
+         //    });
 
          // origin_b = A->b_vector;
          //
@@ -1136,11 +1131,18 @@ void updateParticles(const auto &points,
       auto U = p->U_SPH;
       auto X_last = p->X;
 #if defined(USE_RungeKutta)
-      p->RK_X.push(p->U_SPH);  // 位置
-      p->setXSingle(p->tmp_X = p->RK_X.getX());
-      //
-      p->RK_U.push(p->DUDt_SPH);  // 速度
-      p->U_SPH = p->RK_U.getX();
+      if (p->RK_X.steps == 1) {
+         p->RK_U.push(p->DUDt_SPH);  // 速度
+         p->U_SPH = (p->U_SPH + p->RK_U.getX()) / 2.;
+         //
+         p->RK_X.push(p->U_SPH);  // 位置
+         p->setXSingle(p->tmp_X = p->RK_X.getX());
+      } else {
+         p->RK_X.push(p->U_SPH);  // 位置
+         p->setXSingle(p->tmp_X = p->RK_X.getX());
+         p->RK_U.push(p->DUDt_SPH);  // 速度
+         p->U_SPH = p->RK_U.getX();
+      }
          // auto getX = [&](const auto &p) { return p->RK_X.getX(p->U_SPH); };
          // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
 #elif defined(USE_LeapFrog)
@@ -1154,7 +1156,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = .5;
-      const double asobi = 0.;
+      const double asobi = 0;  // particle_spacing * 1E-2;
 
       auto closest = [&]() {
          double distance = 1E+20;
@@ -1185,13 +1187,20 @@ void updateParticles(const auto &points,
    #if defined(USE_RungeKutta)
                      p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
                      p->RK_U.repush(p->DUDt_SPH);  // 速度
-                     p->U_SPH = p->RK_U.getX();
+                     if (p->RK_X.steps == 1) {
+                        p->U_SPH = (p->U_SPH + p->RK_U.getX()) / 2.;
+                        p->RK_X.repush(p->U_SPH);  // 位置
+                        p->setXSingle(p->tmp_X = p->RK_X.getX());
+                     } else {
+                        p->U_SPH = p->RK_U.getX();
+                     }
                      //
                      // p->RK_X.repush(p->U_SPH);  // 位置
                      // p->setXSingle(p->tmp_X = p->RK_X.X_next());
                      isReflected = true;
    #elif defined(USE_LeapFrog)
-                     p->DUDt_SPH -= (1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                     p->DUDt_modify_SPH = -(1. + reflection_factor) * Projection(p->U_SPH, closest_wall_point->normal_SPH) / dt;
+                     p->DUDt_SPH += p->DUDt_modify_SPH;
                      p->LPFG_X.repush(p->DUDt_SPH);  // 速度
                      p->U_SPH = p->LPFG_X.get_v();
                      p->setXSingle(p->tmp_X = modify_position);
@@ -1218,7 +1227,8 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      A->setDensity(A->RK_rho.get_x());
+                                      // A->setDensity(A->RK_rho.get_x());
+      A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);
