@@ -7,6 +7,7 @@
 #include <vector>
 #include "basic.hpp"
 #include "basic_arithmetic_array_operations.hpp"
+#include "interpolations.hpp"
 
 /*DOC_EXTRACT interpolation
 
@@ -27,90 +28,6 @@ f(x) = \sum_{i=0}^n\dfrac{\sum_{k=0}^{n}\prod_{j=0,j\neq i}^n{(x - x_j)}}{\prod_
 ![](sample_lag.png)
 
 */
-
-template <typename T>
-struct InterpolationLagrange {
-   std::vector<double> abscissas;
-   std::vector<T> values;
-   std::vector<double> denominotor;
-   InterpolationLagrange(const std::vector<double> abscissas, const std::vector<T> values)
-       : abscissas(abscissas), values(values) {
-      if (abscissas.size() != values.size()) {
-         throw std::invalid_argument("Size of abscissas and values vectors must be the same");
-      }
-      this->set();
-   };
-
-   void set() {
-      denominotor.resize(abscissas.size(), 1.);
-      for (auto i = 0; i < abscissas.size(); ++i)
-         for (auto j = 0; j < abscissas.size(); ++j)
-            if (i != j)
-               denominotor[i] *= (abscissas[i] - abscissas[j]);
-   };
-
-   T operator()(const double x) {
-      T ret, N = 1;
-      ret *= 0.;
-      for (auto i = 0; i < abscissas.size(); ++i) {
-         for (auto j = 0; j < abscissas.size(); ++j) {
-            if (i != j)
-               N *= (x - this->abscissas[j]) / (this->abscissas[i] - this->abscissas[j]);
-         }
-         ret += N * this->values[i];
-         N = 1;
-      }
-      return ret;
-   };
-
-   T D(const double x) {
-      T ret;
-      ret *= 0.;
-      for (auto i = 0; i < abscissas.size(); ++i) {
-         for (auto j = 0; j < abscissas.size(); ++j) {
-            if (i != j) {
-               T temp = this->values[i] / (this->abscissas[i] - this->abscissas[j]);
-               for (auto k = 0; k < abscissas.size(); ++k) {
-                  if (k != i && k != j) {
-                     temp *= (x - this->abscissas[k]) / (this->abscissas[i] - this->abscissas[k]);
-                  }
-               }
-               ret += temp;
-            }
-         }
-      }
-      return ret;
-   }
-
-   std::vector<T> N(const double x) {
-      std::vector<T> ret(abscissas.size(), 1.);
-      for (auto i = 0; i < abscissas.size(); ++i) {
-         for (auto j = 0; j < abscissas.size(); ++j)
-            if (i != j)
-               ret[i] *= (x - this->abscissas[j]) / (this->abscissas[i] - this->abscissas[j]);
-         // ret[i] *= this->values[i];
-      }
-      return ret;
-   };
-
-   std::vector<T> DN(const double x) {
-      std::vector<T> ret(abscissas.size(), 0.);
-      for (auto i = 0; i < abscissas.size(); ++i) {
-         for (auto j = 0; j < abscissas.size(); ++j) {
-            if (i != j) {
-               T temp = 1. / (this->abscissas[i] - this->abscissas[j]);
-               for (auto k = 0; k < abscissas.size(); ++k) {
-                  if (k != i && k != j) {
-                     temp *= (x - this->abscissas[k]) / (this->abscissas[i] - this->abscissas[k]);
-                  }
-               }
-               ret[i] += temp;
-            }
-         }
-      }
-      return ret;
-   };
-};
 
 int main() {
 

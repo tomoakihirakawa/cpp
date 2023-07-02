@@ -334,7 +334,8 @@ template <typename T>
 class LeapFrog {
   public:
    LeapFrog() : is_first(true), finished(false){};
-   LeapFrog(double dt, double t0, const T &x0, const T &v0) : dt(dt), t(t0), x(x0), v(v0), is_first(true), finished(false){};
+   LeapFrog(double dt, double t0, const T &x0, const T &v0)
+       : dt(dt), t(t0), x(x0), v(v0), is_first(true), finished(false){};
 
    void initialize(double dt, double t0, const T &x0, const T &v0) {
       this->dt = dt;
@@ -351,7 +352,8 @@ class LeapFrog {
    void push(const T &a) {
       double half_dt = 0.5 * dt;
       if (is_first) {
-         // give a = a(get_t(),get_x())
+         t_old = t;
+         x_old = x;
          v_old = v;
          a_old = a;
          v += half_dt * a;  // half-step update of v
@@ -360,7 +362,8 @@ class LeapFrog {
          is_first = false;
          finished = false;
       } else {
-         // give a = a(get_t(),get_x())
+         t_old = t;
+         x_old = x;
          v_old = v;
          a_old = a;
          v += half_dt * a;  // half-step update of v
@@ -373,18 +376,13 @@ class LeapFrog {
    void repush(const T &a) {
       double half_dt = 0.5 * dt;
       if (!is_first) {
-         // give a = a(get_t(),get_x())
-         v_old = v;
-         a_old = a;
-         v += half_dt * (a - a_old);  // half-step update of v
-         x += dt * (v - v_old);       // full-step update of x
+         v = v_old + half_dt * a;  // half-step update of v
+         x = x_old + dt * v;       // full-step update of x
+         t = t_old + dt;
          is_first = false;
          finished = false;
       } else {
-         // give a = a(get_t(),get_x())
-         v_old = v;
-         a_old = a;
-         v += half_dt * (a - a_old);  // half-step update of v
+         v = v_old + half_dt * a;  // half-step update of v
          is_first = true;
          finished = true;
       }
@@ -406,8 +404,8 @@ class LeapFrog {
    };
 
   private:
-   double dt, t;
-   T x, v, a_old, v_old;
+   double dt, t, t_old;
+   T x, v, a_old, v_old, x_old;
 };
 
 /* -------------------------------------------------------------------------- */

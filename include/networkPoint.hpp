@@ -2,7 +2,6 @@
 #define networkPoint_H
 #pragma once
 
-#include "InterpolationRBF.hpp"
 #include "Network.hpp"
 
 /* ------------------------------------------------------ */

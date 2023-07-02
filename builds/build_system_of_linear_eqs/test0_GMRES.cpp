@@ -32,7 +32,7 @@
 int main() {
 
 #if defined(USE_RANDOM_MATRIX)
-   int s = 50;
+   int s = 1000;
    VV_d A(s, V_d(s));
    V_d b(s);
    #pragma omp parallel
@@ -64,7 +64,7 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   int n_max = 51;
+   int n_max = 500;
    int n_begin = 1;
    auto x0_for_iterate = x0;
    gmres gm_ful(A, b, x0, n_max);
@@ -73,15 +73,15 @@ int main() {
       gm_iterate.Restart(A, b, x0_for_iterate, n_begin);
       for (auto i = n_begin + 1; i <= n_max; i++) {
          gm_iterate.Iterate(A);
-         std::cout << "time:" << timer() << std::endl;
-         std::cout << "       Restart : " << restart << std::endl;
-         std::cout << "             i : " << i << std::endl;
-         std::cout << "estimate error (full) : " << gm_ful.err << std::endl;
-         std::cout << "  actual error (full) : " << Norm(Dot(A, gm_ful.x) - b) << std::endl;
-         //
-         std::cout << "estimate error (iterate) : " << gm_iterate.err << std::endl;
-         std::cout << "  actual error (iterate) : " << Norm(Dot(A, gm_iterate.x) - b) << std::endl;
-         std::cout << Red << "--------------------------------" << colorOff << std::endl;
+         // std::cout << "time:" << timer() << std::endl;
+         // std::cout << "       Restart : " << restart << std::endl;
+         // std::cout << "             i : " << i << std::endl;
+         // std::cout << "estimate error (full) : " << gm_ful.err << std::endl;
+         // std::cout << "  actual error (full) : " << Norm(Dot(A, gm_ful.x) - b) << std::endl;
+         // //
+         // std::cout << "estimate error (iterate) : " << gm_iterate.err << std::endl;
+         // std::cout << "  actual error (iterate) : " << Norm(Dot(A, gm_iterate.x) - b) << std::endl;
+         // std::cout << Red << "--------------------------------" << colorOff << std::endl;
          x0_for_iterate = gm_iterate.x;
       }
    }

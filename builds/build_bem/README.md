@@ -137,9 +137,9 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ## ⛵️境界のタイプを決定する 
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
-[`networkPoint::contact_angle`](../../include/networkPoint.hpp#L172)，
-[`networkPoint::isInContact`](../../include/networkPoint.hpp#L179)，
-[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L290)
+[`networkPoint::contact_angle`](../../include/networkPoint.hpp#L171)，
+[`networkPoint::isInContact`](../../include/networkPoint.hpp#L178)，
+[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L289)
 を使って接触判定を行っている．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）

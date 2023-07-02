@@ -52,7 +52,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
 
-<p  align="right"><a href="../../include/basic_linear_systems.hpp#L818">../../include/basic_linear_systems.hpp#L818</a></p>
+<p  align="right"><a href="../../include/basic_linear_systems.hpp#L890">../../include/basic_linear_systems.hpp#L890</a></p>
 
 
 ## ⛵️⛵️一般化最小残差法/GMRES  
@@ -96,7 +96,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
 
-<p  align="right"><a href="../../include/basic_linear_systems.hpp#L941">../../include/basic_linear_systems.hpp#L941</a></p>
+<p  align="right"><a href="../../include/basic_linear_systems.hpp#L1032">../../include/basic_linear_systems.hpp#L1032</a></p>
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
@@ -150,8 +150,8 @@ CSRは行列を表現する方法の一つである．
 std::unordered_mapのkeyはポインタであり，valueはdoubleである．
 CSRクラス自身が，行列の行番号を保存しており，keyであるCSRクラスは行列の列番号を保存している．
 
-[ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L929)は特に計算コストが高い．
-[CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L734)すれば，かなり高速化できる．
+[ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L1020)は特に計算コストが高い．
+[CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L802)すれば，かなり高速化できる．
 
 
 <p  align="right"><a href="./test2_CSR.cpp#L1">./test2_CSR.cpp#L1</a></p>
