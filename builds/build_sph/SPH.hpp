@@ -310,7 +310,6 @@ void developByEISPH(Network *net,
          // 流れの計算に関与する壁粒子を保存
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
-
          setFreeSurface(net, RigidBodyObject);
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
@@ -323,16 +322,6 @@ void developByEISPH(Network *net,
 #endif
 
          std::cout << "DT = " << DT << std::endl;
-         for (const auto &p : wall_p) {
-            p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
-            p->tmp_U_SPH.fill(0.);
-            p->U_SPH.fill(0.);
-            p->DUDt_SPH.fill(0.);
-            p->DUDt_SPH_.fill(0.);
-            p->lap_U.fill(0.);
-            p->tmp_X = p->X;
-            p->rho_ = p->rho;
-         }
 
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
@@ -342,7 +331,7 @@ void developByEISPH(Network *net,
          // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
-         setPoissonEquation(wall_p, {net}, DT, particle_spacing);
+         setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
          setPressure(wall_p);
 
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
@@ -350,7 +339,7 @@ void developByEISPH(Network *net,
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
          setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
-         // PoissonEquation(wall_p, Append(net_RigidBody, net), DT);
+         // setPoissonEquation(wall_p, Append(net_RigidBody, net), DT);
          // setPressure(net->getPoints());
          // setPressure(wall_p);
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
@@ -391,85 +380,70 @@ void developByEISPH(Network *net,
 /* -------------------------------------------------------------------------- */
 
 void setDataOmitted(auto &vtp, const auto &Fluid) {
-   std::unordered_map<networkPoint *, Tddd> normal_SPH;
-   for (const auto &p : Fluid->getPoints())
-      normal_SPH[p] = p->normal_SPH;
-   vtp.addPointData("normal_SPH", normal_SPH);
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH;
-   for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH[p] = p->interpolated_normal_SPH;
-   vtp.addPointData("interpolated_normal_SPH", interpolated_normal_SPH);
+   std::unordered_map<networkPoint *, double> uo_double;
+   std::unordered_map<networkPoint *, Tddd> uo_3d;
    //
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH_original;
-   interpolated_normal_SPH_original.reserve(Fluid->getPoints().size());
-   for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH_original[p] = p->interpolated_normal_SPH_original;
-   vtp.addPointData("interpolated_normal_SPH_original", interpolated_normal_SPH_original);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->normal_SPH;
+   vtp.addPointData("normal_SPH", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH;
+   vtp.addPointData("interpolated_normal_SPH", uo_3d);
    //
-   std::unordered_map<networkPoint *, double> contains_diagonal;
-   for (const auto &p : Fluid->getPoints())
-      contains_diagonal[p] = (double)(p->column_value.find(p) != p->column_value.end());
-   vtp.addPointData("contains diagonal", contains_diagonal);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original;
+   vtp.addPointData("interpolated_normal_SPH_original", uo_3d);
    //
-   std::unordered_map<networkPoint *, Tddd> U;
-   for (const auto &p : Fluid->getPoints())
-      U[p] = p->U_SPH;
-   vtp.addPointData("U", U);
-   std::unordered_map<networkPoint *, double> isFluid;
-   for (const auto &p : Fluid->getPoints())
-      isFluid[p] = p->isFluid;
-   vtp.addPointData("isFluid", isFluid);
-   std::unordered_map<networkPoint *, double> pressure;
-   for (const auto &p : Fluid->getPoints())
-      pressure[p] = p->p_SPH;
-   vtp.addPointData("pressure", pressure);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
+   vtp.addPointData("contains diagonal", uo_double);
    //
-   std::unordered_map<networkPoint *, double> density;
-   density.reserve(Fluid->getPoints().size());
-   for (const auto &p : Fluid->getPoints())
-      density[p] = p->rho;
-   vtp.addPointData("density", density);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->U_SPH;
+   vtp.addPointData("U", uo_3d);
    //
-   std::unordered_map<networkPoint *, Tddd> tmp_ViscousAndGravityForce;
-   for (const auto &p : Fluid->getPoints())
-      tmp_ViscousAndGravityForce[p] = Projection(p->tmp_ViscousAndGravityForce, p->normal_SPH);
-   vtp.addPointData("Projectioned　tmp_ViscousAndGravityForce", tmp_ViscousAndGravityForce);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFluid;
+   vtp.addPointData("isFluid", uo_double);
    //
-   std::unordered_map<networkPoint *, Tddd> ViscousAndGravityForce;
-   for (const auto &p : Fluid->getPoints())
-      ViscousAndGravityForce[p] = Projection(p->ViscousAndGravityForce, p->normal_SPH);
-   vtp.addPointData("Projectioned　ViscousAndGravityForce", ViscousAndGravityForce);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFirstWallLayer;
+   vtp.addPointData("isFirstWallLayer", uo_double);
    //
-   std::unordered_map<networkPoint *, Tddd> DUDt;
-   for (const auto &p : Fluid->getPoints())
-      DUDt[p] = p->DUDt_SPH;
-   vtp.addPointData("DUDt", DUDt);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
+   vtp.addPointData("isSurface", uo_double);
    //
-   std::unordered_map<networkPoint *, Tddd> gradP_SPH;
-   for (const auto &p : Fluid->getPoints())
-      gradP_SPH[p] = p->gradP_SPH / p->rho;
-   vtp.addPointData("gradP_SPH / rho", gradP_SPH);
-   // //
-   std::unordered_map<networkPoint *, Tddd> lap_U;
-   for (const auto &p : Fluid->getPoints())
-      lap_U[p] = p->mu_SPH / p->rho * p->lap_U;
-   vtp.addPointData("nu*lapU", lap_U);
-   // //
-   std::unordered_map<networkPoint *, Tddd> lap_U__GRAVITY3_;
-   for (const auto &p : Fluid->getPoints())
-      lap_U__GRAVITY3_[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-   vtp.addPointData("nu*lapU + g", lap_U__GRAVITY3_);
-   // //
-   std::unordered_map<networkPoint *, Tddd> dudt;
-   for (const auto &p : Fluid->getPoints())
-      dudt[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-   vtp.addPointData("- grad(U)/rho + nu*lapU + g", dudt);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->p_SPH;
+   vtp.addPointData("pressure", uo_double);
    //
-   std::unordered_map<networkPoint *, double> div_U;
-   div_U.reserve(Fluid->getPoints().size());
-   for (const auto &p : Fluid->getPoints())
-      div_U[p] = p->div_U;
-   vtp.addPointData("div U", div_U);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->rho;
+   vtp.addPointData("density", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->density_based_on_positions;
+   vtp.addPointData("density based on position", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->volume;
+   vtp.addPointData("volume", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->tmp_ViscousAndGravityForce, p->normal_SPH);
+   vtp.addPointData("Projectioned　tmp_ViscousAndGravityForce", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->normal_SPH);
+   vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_SPH;
+   vtp.addPointData("DUDt", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
+   vtp.addPointData("DUDt_modify_SPH", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->gradP_SPH / p->rho;
+   vtp.addPointData("gradP_SPH / rho", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U;
+   vtp.addPointData("nu*lapU", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("nu*lapU + g", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("- grad(U)/rho + nu*lapU + g", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->div_U;
+   vtp.addPointData("div U", uo_double);
 };
 
 void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}) {

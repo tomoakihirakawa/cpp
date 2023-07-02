@@ -504,6 +504,12 @@ std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> 
 };
 
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+void DotOutput(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec, std::vector<T> &output) {
+   for (auto i = 0; const auto &m : mat)
+      output[i++] = Dot(m, vec);
+};
+
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> Dot(const std::vector<T> &vec, const std::vector<std::vector<T>> &mat) {
    std::vector<T> ans(mat[0].size(), 0.);
    int j = 0, i = 0;

@@ -225,11 +225,25 @@ struct BroydenMethod<T> {
    T X, dX;
    std::array<T, std::tuple_size<T>::value> J;
 
+   // Default constructor
+   BroydenMethod() = default;
+
    BroydenMethod(const T &Xin, const T &Xin_) : X(Xin), dX(Xin_ - Xin), J(TensorProduct(Xin, Xin)) {
       IdentityMatrix(J);
    }
 
-   void initialize(const T &Xin) { X = Xin; }
+   void initialize(const T &Xin, const T &dXin) {
+      X = Xin;
+      dX = dXin;
+      J = TensorProduct(Xin, Xin);
+      IdentityMatrix(J);
+   }
+
+   void initialize(const T &Xin) {
+      X = Xin;
+      J = TensorProduct(Xin, Xin);
+      IdentityMatrix(J);
+   }
 
    void update(const T &F, const T &F_, const double alpha = 1.) {
       auto dot = Dot(dX, dX);
@@ -250,6 +264,9 @@ template <>
 struct BroydenMethod<Vd> {
    Vd X, dX;
    VVd J, Inv_J;
+
+   // Default constructor
+   BroydenMethod() = default;
 
    BroydenMethod(const Vd &Xin, const Vd &Xin_) : X(Xin), dX(Xin_ - Xin), J(VVd(Xin.size(), Vd(Xin.size()))) {
       IdentityMatrix(J);

@@ -584,6 +584,10 @@ struct QR {
       // No need to repeat computation; copy the computed Q, R, and A
    }
 
+   ~QR() {
+      std::cout << "QR destructor" << std::endl;
+   };
+
    QR(const VV_d &AIN) : R(AIN), A(AIN), Q(AIN.size(), V_d(AIN.size(), 0.)) { Initialize(AIN, true); };
 
    void Initialize(const VV_d &AIN, const bool constractor = false) {
@@ -661,6 +665,7 @@ struct CSR {
    double value;
    double diagonal_value;
    double tmp_value;
+   bool canUseVector;
    std::array<double, 3> value3d;
    size_t __index__;
    void setIndexCSR(size_t i) {
@@ -668,7 +673,7 @@ struct CSR {
    };
    size_t getIndexCSR() const { return __index__; };
    std::unordered_map<CSR *, double> column_value;
-   CSR(){};
+   CSR() : canUseVector(false){};
    void clear() { this->column_value.clear(); }
    double at(CSR *const p) const { return column_value.at(p); };
    bool contains(CSR *const p) const { return column_value.contains(p); };
@@ -676,6 +681,17 @@ struct CSR {
       auto [it, inserted] = this->column_value.insert({p, v});
       if (!inserted)
          it->second += v;
+      this->canUseVector = false;
+   };
+
+   // 高速化のために，vectorに変換する．
+   std::vector<std::tuple<int, double>> column_value_vector;
+   void setVectorCSR() {
+      column_value_vector.clear();
+      column_value_vector.reserve(column_value.size());
+      for (const auto &[crs, value] : column_value)
+         column_value_vector.push_back({crs->__index__, value});
+      this->canUseVector = true;
    };
 };
 
@@ -704,44 +720,100 @@ template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &V_crs) {
    V_d ret(V_crs.size(), 0.);
-   for (const auto &crs0 : V_crs) {
-      auto &tmp = ret[crs0->__index__];
-      for (const auto &[crs1, value] : crs0->column_value) {
+#pragma omp parallel
+   for (const auto &crs0 : V_crs)
+#pragma omp single nowait
+   {
+      double tmp = 0.;
+      for (const auto &[crs1, value] : crs0->column_value)
          tmp += crs1->value * value;
-      }
+      ret[crs0->__index__] = tmp;
    }
    return ret;
 };
 
-// template <typename T>
-//    requires std::derived_from<T, CSR>
-// V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
-//    V_d ret(V.size());
-//    // \label{CSR:parrallel}
-
-// #pragma omp parallel
-//    for (const auto &crs : A)
-// #pragma omp single nowait
-//       ret[crs->__index__] = Dot(crs->column_value, V);
-
-//    return ret;
-// };
-
 template <typename T>
    requires std::derived_from<T, CSR>
 V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
-   V_d ret(A.size());
+   V_d ret = V;
    // \label{CSR:parrallel}
 #pragma omp parallel
    for (const auto &crs : A)
 #pragma omp single nowait
    {
       double tmp = 0.;
-      for (const auto &[crs_local, value] : crs->column_value)
-         tmp += value * V[crs_local->__index__];
+      if (crs->canUseVector) {
+         for (const auto &[i, value] : crs->column_value_vector)
+            tmp += value * V[i];
+      } else {
+         for (const auto &[crs_local, value] : crs->column_value)
+            tmp += value * V[crs_local->__index__];
+      }
       ret[crs->__index__] = tmp;
    }
    return ret;
+};
+
+template <typename T>
+   requires std::derived_from<T, CSR>
+V_d Dot(const std::vector<T *> &A, const V_d &V) {
+   V_d ret = V;
+   // \label{CSR:parrallel}
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+   {
+      double tmp = 0.;
+      if (crs->canUseVector) {
+         for (const auto &[i, value] : crs->column_value_vector)
+            tmp += value * V[i];
+      } else {
+         for (const auto &[crs_local, value] : crs->column_value)
+            tmp += value * V[crs_local->__index__];
+      }
+      ret[crs->__index__] = tmp;
+   }
+   return ret;
+};
+
+template <typename T>
+   requires std::derived_from<T, CSR>
+void DotOutput(const std::unordered_set<T *> &A, const V_d &V, V_d &w) {
+   // \label{CSR:parrallel}
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+   {
+      double tmp = 0.;
+      if (crs->canUseVector) {
+         for (const auto &[i, value] : crs->column_value_vector)
+            tmp += value * V[i];
+      } else {
+         for (const auto &[crs_local, value] : crs->column_value)
+            tmp += value * V[crs_local->__index__];
+      }
+      w[crs->__index__] = tmp;
+   }
+};
+
+template <typename T>
+   requires std::derived_from<T, CSR>
+void DotOutput(const std::vector<T *> &A, const V_d &V, V_d &w) {
+   // \label{CSR:parrallel}
+#pragma omp parallel
+   for (const auto &crs : A)
+#pragma omp single nowait
+   {
+      double tmp = 0.;
+      if (crs->canUseVector) {
+         for (const auto &[i, value] : crs->column_value_vector)
+            tmp += value * V[i];
+      } else {
+         for (const auto &[crs_local, value] : crs->column_value)
+            tmp += value * V[crs_local->__index__];
+      }
+      w[crs->__index__] = tmp;
+   }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -868,6 +940,7 @@ struct ArnoldiProcess {
    VV_d H;  // ((n+1) x n) Hessenberg matrix
    VV_d V;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
    V_d w;
+   ~ArnoldiProcess() { std::cout << "destucting ArnoldiProcess" << std::endl; };
    ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN)
        : n(nIN),
          beta(Norm(v0IN)),
@@ -875,46 +948,64 @@ struct ArnoldiProcess {
          H(VV_d(nIN + 1, V_d(nIN, 0.))),
          V(VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/)),
          w(A.size()) {
+      Initialize(A, v0IN, nIN, false);
+   };
+
+   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN, const bool do_constract = true) {
+      if (do_constract) {
+         n = nIN;
+         beta = Norm(v0IN);
+         v0 = (v0IN / beta);
+         H = (VV_d(nIN + 1, V_d(nIN, 0.)));
+         V = (VV_d(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/));
+         w.resize(A.size());
+      }
 #if defined(DEBUG_GMRES)
       TimeWatch watch;
+      std::cout << "ArnoldiProcess::Initialize" << std::endl;
+#endif
+#if defined(DEBUG_GMRES)
+      TimeWatch watch;
+      std::array<double, 2> tmp;
+      double mean_elapsed_time_for_AV = 0., mean_elapsed_time_for_orthogonalization = 0., mean_elapsed_time_for_normalizing_w = 0.;
+      int mean_elapsed_time_for_AV_count = 0, mean_elapsed_time_for_orthogonalization_count = 0, mean_elapsed_time_for_normalizing_w_count = 0;
       std::cout << "ArnoldiProcess" << std::endl;
 #endif
       size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
-         w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+         DotOutput(A, V[j], w);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+                                 // w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
 #if defined(DEBUG_GMRES)
-         std::cout << "Elapsed time for Dot(A, V[j]) " << watch() << std::endl;
+         // std::cout << "Elapsed time for Dot(A, V[j]) " << tmp = watch() << std::endl;
+         tmp = watch();
+         mean_elapsed_time_for_AV += tmp[0];
+         mean_elapsed_time_for_AV_count++;
 #endif
          // orthogonalization
          for (i = 0; i <= j; ++i)
             w -= (H[i][j] = Dot(V[i], w)) * V[i];
 #if defined(DEBUG_GMRES)
-         std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
+         // std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
+         tmp = watch();
+         mean_elapsed_time_for_orthogonalization += tmp[0];
+         mean_elapsed_time_for_orthogonalization_count++;
 #endif
-         //
          // normalize w
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
 #if defined(DEBUG_GMRES)
-         std::cout << "Elapsed time for normalizing w " << watch() << std::endl;
+         // std::cout << "Elapsed time for normalizing w " << watch() << std::endl;
+         tmp = watch();
+         mean_elapsed_time_for_normalizing_w += tmp[0];
+         mean_elapsed_time_for_normalizing_w_count++;
 #endif
       }
 #if defined(DEBUG_GMRES)
       std::cout << "Elapsed time" << watch() << std::endl;
-#endif
-   };
+      std::cout << "mean_elapsed_time_for_AV = " << mean_elapsed_time_for_AV / mean_elapsed_time_for_AV_count << std::endl;
+      std::cout << "mean_elapsed_time_for_orthogonalization = " << mean_elapsed_time_for_orthogonalization / mean_elapsed_time_for_orthogonalization_count << std::endl;
+      std::cout << "mean_elapsed_time_for_normalizing_w = " << mean_elapsed_time_for_normalizing_w / mean_elapsed_time_for_normalizing_w_count << std::endl;
 
-   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN) {
-#if defined(DEBUG_GMRES)
-      TimeWatch watch;
-      std::cout << "ArnoldiProcess::Initialize" << std::endl;
 #endif
-      ArnoldiProcess<Matrix> AP(A, v0IN, nIN);
-      this->n = AP.n;
-      this->beta = AP.beta;
-      this->v0 = AP.v0;
-      this->H = AP.H;
-      this->V = AP.V;
-      this->w = AP.w;
 #if defined(DEBUG_GMRES)
       std::cout << "Elapsed time" << watch() << std::endl;
 #endif
@@ -995,7 +1086,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
    double err;
    QR qr;
    V_d g;
-   ~gmres(){};
+   ~gmres() { std::cout << "destucting gmres" << std::endl; };
    gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN)
        : ArnoldiProcess<Matrix>(A, b - Dot(A, x0) /*行列-ベクトル積*/, nIN),
          // n(nIN),
@@ -1043,7 +1134,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       this->y = back_substitution(qr.R, g, g.size());
       for (size_t i = 0; i < this->n; ++i)
          this->x += this->y[i] * this->V[i];
-      // std::cout << "done" << std::endl;
+      std::cout << "done" << std::endl;
    }
 
    void Iterate(const Matrix &A) {

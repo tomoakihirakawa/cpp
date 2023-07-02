@@ -1,7 +1,6 @@
 #ifndef NetworkUtility_H
 #define NetworkUtility_H
 
-#include "InterpolationRBF.hpp"
 #include "Network.hpp"
 
 /* -------------------------------------------------------------------------- */

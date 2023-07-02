@@ -45,7 +45,6 @@
                 <source_path>../../include/basic_vectors.hpp</source_path>
                 <source_path>../../include/basic.hpp</source_path>
                 <source_path>../../include/integrationOfODE.hpp</source_path>
-                <source_path>../../include/InterpolationRBF.hpp</source_path>
                 <source_path>../../include/kernelFunctions.hpp</source_path>
                 <source_path>../../include/lib_computationalGeometry.hpp</source_path>
                 <source_path>../../include/lib_measurement.hpp</source_path>
@@ -63,6 +62,8 @@
                 <source_path>../../include/searcher.hpp</source_path>
                 <source_path>../../include/vtkWriter.hpp</source_path>
                 <source_path>../../include/XML.hpp</source_path>
+                <source_path>SPH_setWall_Freesurface.hpp</source_path>
+                <source_path>SPH_FindPressure.hpp</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

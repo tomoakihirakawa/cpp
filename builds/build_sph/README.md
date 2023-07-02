@@ -4,14 +4,6 @@
     - [⛵️概要](#⛵️概要)
         - [🪸前準備](#🪸前準備)
         - [🪸フラクショナルステップを使って初期値問題を解く](#🪸フラクショナルステップを使って初期値問題を解く)
-        - [🪸CFL条件の設定](#🪸CFL条件の設定)
-    - [⛵️壁面粒子の流速と圧力](#⛵️壁面粒子の流速と圧力)
-    - [⛵️法線方向の計算と水面の判定](#⛵️法線方向の計算と水面の判定)
-        - [🪸法線方向の計算](#🪸法線方向の計算)
-        - [🪸水面の判定](#🪸水面の判定)
-    - [⛵️水面補助粒子の作成](#⛵️水面補助粒子の作成)
-    - [⛵️$`\nabla^2 {\bf u} _i`$の計算](#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
-        - [🪸高速化のための工夫](#🪸高速化のための工夫)
     - [⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$](#⛵️ポアソン方程式$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho^n}-\nabla^{n}-p^{n+1}\right)-=-b`$)
         - [🪸ポアソン方程式](#🪸ポアソン方程式)
         - [🪸右辺，$`b`$，`PoissonRHS`について](#🪸右辺，$`b`$，`PoissonRHS`について)
@@ -21,11 +13,22 @@
         - [🪸ポアソン方程式の作成のコーディング](#🪸ポアソン方程式の作成のコーディング)
         - [🪸ポアソン方程式の作成](#🪸ポアソン方程式の作成)
     - [⛵️ポアソン方程式の解法](#⛵️ポアソン方程式の解法)
+        - [🪸CFL条件の設定](#🪸CFL条件の設定)
+    - [⛵️$`\nabla^2 {\bf u} _i`$の計算](#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
+        - [🪸高速化のための工夫](#🪸高速化のための工夫)
     - [⛵️圧力勾配$`\nabla p^{n+1}`$の計算](#⛵️圧力勾配$`\nabla-p^{n+1}`$の計算)
     - [⛵️注意点](#⛵️注意点)
+    - [⛵️壁面粒子の流速と圧力](#⛵️壁面粒子の流速と圧力)
+    - [⛵️法線方向の計算と水面の判定](#⛵️法線方向の計算と水面の判定)
+        - [🪸法線方向の計算](#🪸法線方向の計算)
+        - [🪸水面の判定](#🪸水面の判定)
+    - [⛵️水面補助粒子の作成](#⛵️水面補助粒子の作成)
+- [🐋実行方法](#🐋実行方法)
     - [⛵️Bucketを用いた粒子探索のテスト](#⛵️Bucketを用いた粒子探索のテスト)
 - [🐋テスト](#🐋テスト)
     - [⛵️核関数のテスト](#⛵️核関数のテスト)
+    - [⛵️⛵️5次スプライン関数](#⛵️⛵️5次スプライン関数)
+    - [⛵️⛵️3次スプライン関数](#⛵️⛵️3次スプライン関数)
 
 
 ---
@@ -51,66 +54,6 @@
 
 
 <p  align="right"><a href="./SPH.hpp#L211">./SPH.hpp#L211</a></p>
-
-### 🪸CFL条件の設定 
-
-$`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$
-を満たすように，毎時刻$`\Delta t`$を設定する．
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L110">./SPH_Functions.hpp#L110</a></p>
-
-## ⛵️壁面粒子の流速と圧力 
-
-壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにする．
-壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L239">./SPH_Functions.hpp#L239</a></p>
-
-## ⛵️法線方向の計算と水面の判定
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L324">./SPH_Functions.hpp#L324</a></p>
-
-### 🪸法線方向の計算 
-
-✅ [単位法線ベクトル](../../builds/build_sph/SPH_Functions.hpp#L383): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
-
-単位法線ベクトルは，`interpolated_normal_SPH`としている．
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L335">./SPH_Functions.hpp#L335</a></p>
-
-### 🪸水面の判定 
-
-`surface_condition0,1`の両方を満たす場合，水面とする．
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L402">./SPH_Functions.hpp#L402</a></p>
-
-## ⛵️水面補助粒子の作成
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L430">./SPH_Functions.hpp#L430</a></p>
-
-## ⛵️$`\nabla^2 {\bf u} _i`$の計算 
-
-✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L541): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L486">./SPH_Functions.hpp#L486</a></p>
-
-### 🪸高速化のための工夫 
-
-何度か行う勾配の計算は，変数は違えど，変数の係数は同じである．
-ここで，その係数を`std::unordered_map`で保存しておくことにする．
-`A->grad_coeff`と`A->grad_coeff_next`に保存する．
-
-💡 `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
-
-
-<p  align="right"><a href="./SPH_Functions.hpp#L512">./SPH_Functions.hpp#L512</a></p>
 
 ## ⛵️ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$ 
 
@@ -150,9 +93,9 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪸右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L594)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L328)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
-✅ [発散の計算方法](../../builds/build_sph/SPH_Functions.hpp#L829): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
+✅ [発散の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L199): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
 ### 🪸左辺について 
 
@@ -167,7 +110,7 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L
 
 - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L832): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L206): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 ### 🪸水面の計算補助粒子`auxiliaryPoints` 
 
@@ -176,69 +119,95 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L
 そこで，[水面の計算補助粒子](../../include/Network.hpp#L491)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L642">./SPH_Functions.hpp#L642</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L7">./SPH_FindPressure.hpp#L7</a></p>
 
 ### 🪸次時刻の発散演算，$`\nabla^{n+1} \cdot {\bf b}^n = \sum _j \dfrac{m _j}{\rho _j^{n+1}}({\bf b} _j^n-{\bf b} _i^n)\cdot \nabla W({\bf x} _i^{n+1},{\bf x} _j^{n+1},h)`$ 
 
 $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} + {\bf u}^{n+1} \Delta t`$が必要である．
 
-* [次時刻の粒子体積](../../builds/build_sph/SPH_Functions.hpp#L226)
-* [次時刻の粒子密度](../../builds/build_sph/SPH_Functions.hpp#L219)
-* [次時刻の粒子位置](../../builds/build_sph/SPH_Functions.hpp#L231)
+* [次時刻の粒子体積](../../builds/build_sph/SPH_Functions.hpp#L189)
+* [次時刻の粒子密度](../../builds/build_sph/SPH_Functions.hpp#L182)
+* [次時刻の粒子位置](../../builds/build_sph/SPH_Functions.hpp#L194)
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L709">./SPH_Functions.hpp#L709</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L74">./SPH_FindPressure.hpp#L74</a></p>
 
 ### 🪸ポアソン方程式の作成のコーディング 
 
-各粒子`A`に対して，方程式を作成する．
+各粒子`ROW`に対して，方程式を作成する．
 
-まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_Functions.hpp#L760)
+まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_FindPressure.hpp#L243)
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L750">./SPH_Functions.hpp#L750</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L115">./SPH_FindPressure.hpp#L115</a></p>
 
-各粒子`A`が，流体か壁か補助粒子か水面かによって，方程式が異なる．
+各粒子`ROW`が，流体か壁か補助粒子か水面かによって，方程式が異なる．
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_Functions.hpp#L827)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](../../builds/build_sph/SPH_Functions.hpp#L815)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](../../builds/build_sph/SPH_Functions.hpp#L821) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
+| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_FindPressure.hpp#L196)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](../../builds/build_sph/SPH_FindPressure.hpp#L141)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](../../builds/build_sph/SPH_FindPressure.hpp#L190) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L801">./SPH_Functions.hpp#L801</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L127">./SPH_FindPressure.hpp#L127</a></p>
 
 ### 🪸ポアソン方程式の作成
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L841">./SPH_Functions.hpp#L841</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L237">./SPH_FindPressure.hpp#L237</a></p>
 
 ## ⛵️ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_Functions.hpp#L985)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_FindPressure.hpp#L395)を使う．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L934">./SPH_Functions.hpp#L934</a></p>
+<p  align="right"><a href="./SPH_FindPressure.hpp#L328">./SPH_FindPressure.hpp#L328</a></p>
+
+### 🪸CFL条件の設定 
+
+$`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a} h`$
+を満たすように，毎時刻$`\Delta t`$を設定する．
+
+
+<p  align="right"><a href="./SPH_Functions.hpp#L72">./SPH_Functions.hpp#L72</a></p>
+
+## ⛵️$`\nabla^2 {\bf u} _i`$の計算 
+
+✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L265): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+
+
+<p  align="right"><a href="./SPH_Functions.hpp#L206">./SPH_Functions.hpp#L206</a></p>
+
+### 🪸高速化のための工夫 
+
+何度か行う勾配の計算は，変数は違えど，変数の係数は同じである．
+ここで，その係数を`std::unordered_map`で保存しておくことにする．
+`A->grad_coeff`と`A->grad_coeff_next`に保存する．
+
+💡 `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
+
+
+<p  align="right"><a href="./SPH_Functions.hpp#L232">./SPH_Functions.hpp#L232</a></p>
 
 ## ⛵️圧力勾配$`\nabla p^{n+1}`$の計算 
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L1061): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L179): $`\nabla p _i = \rho _i \sum _{j} m _j (\frac{p _i}{\rho _i^2} + \frac{p _j}{\rho _j^2}) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L1068): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L180): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L1079): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L423): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L1040">./SPH_Functions.hpp#L1040</a></p>
+<p  align="right"><a href="./SPH_Functions.hpp#L384">./SPH_Functions.hpp#L384</a></p>
 
 $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
 が計算できた．
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L1093">./SPH_Functions.hpp#L1093</a></p>
+<p  align="right"><a href="./SPH_Functions.hpp#L444">./SPH_Functions.hpp#L444</a></p>
 
 ## ⛵️注意点 
 
@@ -246,13 +215,13 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **壁粒子**
 
-- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L577)
-- [圧力の計算方法](../../builds/build_sph/SPH_Functions.hpp#L721)
-- [どの位置において方程式を立てるか](../../builds/build_sph/SPH_Functions.hpp#L760)
-- [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH_Functions.hpp#L271)/[視野角に流体粒子が含まない壁粒子は除外する](../../builds/build_sph/SPH_Functions.hpp#L304)
+- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L311)
+- [圧力の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L86)
+- [どの位置において方程式を立てるか](../../builds/build_sph/SPH_FindPressure.hpp#L243)
+- [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L133)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
-- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH_Functions.hpp#L383)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L1147)
+- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L265)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L500)
 
 **水面粒子**
 
@@ -261,21 +230,178 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L1215)
-- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_Functions.hpp#L907)
-- [ルンゲクッタの段数](../../builds/build_sph/input_generator.py#L143)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L557)
+- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_FindPressure.hpp#L200)
+- [ルンゲクッタの段数](../../builds/build_sph/input_generator_old.py#L143)
 
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-<p  align="right"><a href="./SPH_Functions.hpp#L1231">./SPH_Functions.hpp#L1231</a></p>
+<p  align="right"><a href="./SPH_Functions.hpp#L573">./SPH_Functions.hpp#L573</a></p>
+
+## ⛵️壁面粒子の流速と圧力 
+
+壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにする．
+壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
+
+
+<p  align="right"><a href="./SPH_setWall_Freesurface.hpp#L42">./SPH_setWall_Freesurface.hpp#L42</a></p>
+
+## ⛵️法線方向の計算と水面の判定
+
+
+<p  align="right"><a href="./SPH_setWall_Freesurface.hpp#L194">./SPH_setWall_Freesurface.hpp#L194</a></p>
+
+### 🪸法線方向の計算 
+
+✅ [単位法線ベクトル](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L265): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
+
+単位法線ベクトルは，`interpolated_normal_SPH`としている．
+
+
+<p  align="right"><a href="./SPH_setWall_Freesurface.hpp#L207">./SPH_setWall_Freesurface.hpp#L207</a></p>
+
+### 🪸水面の判定 
+
+`surface_condition0,1`の両方を満たす場合，水面とする．
+
+
+<p  align="right"><a href="./SPH_setWall_Freesurface.hpp#L284">./SPH_setWall_Freesurface.hpp#L284</a></p>
+
+## ⛵️水面補助粒子の作成
+
+
+<p  align="right"><a href="./SPH_setWall_Freesurface.hpp#L312">./SPH_setWall_Freesurface.hpp#L312</a></p>
+
+# 🐋実行方法 
+
+ファイルをダウンロードして，`build_sph`ディレクトリに移動．
+
+```
+$ git clone https://github.com/tomoakihirakawa/cpp.git
+$ cd ./cpp/builds/build_sph
+```
+
+`clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
+`cmake`で`Makefile`を生成して，`make`でコンパイルする．
+
+```
+$ sh clean
+$ cmake -DCMAKE_BUILD_TYPE=Release ../
+$ make
+```
+
+次に，入力ファイルを生成．
+
+```
+$ python3 input_generator.py
+```
+
+例えば，`./input_files/static_pressure_PS0d0125_CSML2d4_RK1`が生成される．
+入力ファイルを指定して実行．
+
+```
+$ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
+```
+
+
+<p  align="right"><a href="./main.cpp#L1">./main.cpp#L1</a></p>
 
 # 🐋テスト 
 
 ## ⛵️核関数のテスト 
 
-プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L122)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
+## ⛵️⛵️5次スプライン関数  
+
+３次元のシミュレーションで用いられる，5次スプライン関数：
+
+```math
+W _{5}(q,h) = \frac{2187}{40\pi h^3}
+\begin{cases}
+(1-q)^5 - 6(\frac{2}{3}-q)^5 + 15(\frac{1}{3}-q)^5 & (0 \leq q < \frac{1}{3}) \\
+(1-q)^5 - 6(\frac{2}{3}-q)^5 & (\frac{1}{3} \leq q < \frac{2}{3}) \\
+(1-q)^5 & (\frac{2}{3} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+```
+
+その勾配は，
+
+```math
+\nabla W _{5}(q,h) = \frac{2187}{40\pi h^4}
+\begin{cases}
+-5(1-q)^4 + 30(\frac{2}{3}-q)^4 - 75(\frac{1}{3}-q)^4 & (0 \leq q < \frac{1}{3}) \\
+-5(1-q)^4 + 30(\frac{2}{3}-q)^4 & (\frac{1}{3} \leq q < \frac{2}{3}) \\
+-5(1-q)^4 & (\frac{2}{3} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+```
+
+ヘッシアンは，
+
+```math
+\nabla^2 W _{5}(q,h) = \frac{2187}{40\pi h^5}
+\begin{cases}
+20(1-q)^3 - 120(\frac{2}{3}-q)^3 + 300(\frac{1}{3}-q)^3 & (0 \leq q < \frac{1}{3}) \\
+20(1-q)^3 - 120(\frac{2}{3}-q)^3 & (\frac{1}{3} \leq q < \frac{2}{3}) \\
+20(1-q)^3 & (\frac{2}{3} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+```
+
+<p  align="right"><a href="../../include/kernelFunctions.hpp#L74">../../include/kernelFunctions.hpp#L74</a></p>
+## ⛵️⛵️3次スプライン関数  
+
+３次元のシミュレーションで用いられる，3次スプライン関数：
+
+```math
+W _{3}(q,h) = \frac{8}{\pi h^3}
+\begin{cases}
+(1-6q^2+6q^3) & (0 \leq q < \frac{1}{2}) \\
+2(1-q)^3 & (\frac{1}{2} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+```
+
+その勾配は，
+
+```math
+\nabla W _{3}(q,h) =
+-{\nabla q}\frac{48}{\pi h^4}
+\begin{cases}
+-2q+3q^2 & (0 \leq q < \frac{1}{2}) \\
+(1-q)^2 & (\frac{1}{2} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+,\quad
+\nabla q = \frac{\nabla r}{h} = \frac{{\bf x} _i - {\bf x} _j}{r h}
+```
+
+ヘッシアンは，
+
+```math
+\nabla\otimes\nabla W _{3}(q,h) =
+-\frac{48}{\pi h^4}
+\begin{cases}
+-2\nabla \otimes{(q\nabla q)}+3\nabla \otimes{(q^2\nabla q)} & (0 \leq q < \frac{1}{2}) \\
+\nabla \otimes ((1-q)^2\nabla q) & (\frac{1}{2} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+,\quad
+\nabla q = \frac{\nabla r}{h} = \frac{{\bf x} _i - {\bf x} _j}{r h}\\
+= -\frac{48}{\pi h^4}
+\begin{cases}
+-2\nabla \otimes{(\frac{r}{h}\frac{{\bf x} _i - {\bf x} _j}{r})}+3\nabla \otimes{(\frac{r^2}{h^2}\frac{{\bf x} _i - {\bf x} _j}{r})} & (0 \leq q < \frac{1}{2}) \\
+\nabla \otimes{(\frac{r^2}{h^2}\frac{{\bf x} _i - {\bf x} _j}{r})} & (\frac{1}{2} \leq q < 1) \\
+0 & (q \geq 1)
+\end{cases}
+```
+
+<p  align="right"><a href="../../include/kernelFunctions.hpp#L167">../../include/kernelFunctions.hpp#L167</a></p>
+
+
+プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L166)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
 
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．

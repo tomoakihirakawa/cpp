@@ -6,9 +6,9 @@
 #include <functional>
 #include <typeinfo>
 #include <unordered_set>
-#include "InterpolationRBF.hpp"
 #include "NetworkCommon.hpp"
 #include "basic.hpp"
+#include "interpolations.hpp"
 #include "rootFinding.hpp"
 
 class networkLine;
@@ -504,7 +504,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    bool pn_is_set;
    bool isSurface;
    bool isInsideOfBody;
-   bool isCaptured, isCaptured_, isFluid;
+   bool isCaptured, isCaptured_, isFluid, isFirstWallLayer;
    bool isAuxiliary;
    bool isFreeFalling;
    double radius_SPH;
@@ -583,6 +583,8 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd mu_lap_rho_g_SPH;
    Tddd interpolated_normal_SPH, interpolated_normal_SPH_original;
    Tddd COM_SPH;
+   double intp_density, ddr_intp_density;
+   double totalMass_SPH;
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
@@ -1301,11 +1303,14 @@ std::vector<Tdd> extPhiphin(const V_netPp &ps) {
 };
 
 #endif
+
 //@ ------------------------------------------------------ */
-//@ ------------------------------------------------------ */
+
 /*networkPoint_code*/
 double distance(const networkPoint *p0, const networkPoint *p1) { return Norm(p0->X - p1->X); };
+
 /* -------------------------------------------------------------------------- */
+
 netP *Point(const netL *const l0,
             const netL *const l1) {
    auto [a, b] = l0->getPoints();
@@ -2965,7 +2970,6 @@ std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine *> &l
    return ret;
 };
 /* -------------------------------------------------------------------------- */
-#include "InterpolationRBF.hpp"
 #include "searcher.hpp"
 /* -------------------------------------------------------------------------- */
 /*      @     */

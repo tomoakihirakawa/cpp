@@ -4,6 +4,8 @@
 
 ## 核関数のテスト
 
+\insert{SPH:kernelFunctions}
+
 プログラムした\ref{SPH:w_Bspline3}{3次スプライン関数}と\ref{SPH:w_Bspline5}{5次スプライン関数}のテストコード
 
 * 関数の形状を確認．
@@ -19,6 +21,7 @@
 
 */
 
+#include "basic_arithmetic_array_operations.hpp"
 #include "kernelFunctions.hpp"
 
 int main() {
