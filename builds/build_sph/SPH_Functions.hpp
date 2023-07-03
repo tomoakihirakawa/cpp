@@ -181,9 +181,9 @@ std::array<double, 3> X_next_(const auto &p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   return rho_next_(p);
    // return rho_next_(p);
-   // return _WATER_DENSITY_;
+   // return rho_next_(p);
+   return _WATER_DENSITY_;
 };
 
 // \label{SPH:volume_next}
@@ -240,21 +240,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       NOTE: `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
 
       */
-      //$ ------------------------------------------ */
-      auto add_to_unmap = [&](const auto &key, const Tddd coef) {
-         auto it = A->grad_coeff.find(key);
-         if (it != A->grad_coeff.end())
-            it->second += coef;
-         else
-            A->grad_coeff.emplace_hint(it, key, coef);
-      };
-      auto add_to_unmap_next = [&](const auto &key, const Tddd coef) {
-         auto it = A->grad_coeff_next.find(key);
-         if (it != A->grad_coeff_next.end())
-            it->second += coef;
-         else
-            A->grad_coeff_next.emplace_hint(it, key, coef);
-      };
 
       A->density_based_on_positions = 0;
 
@@ -273,17 +258,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP1}
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP2}
             // A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP3}
-
-            {
-               auto coef = B->mass / A->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);
-               add_to_unmap(A, -coef);
-               add_to_unmap(B, coef);
-            }
-            {
-               auto coef = B->mass / A->rho * grad_w_Bspline(A->X + dt * A->U_SPH, B->X + dt * B->U_SPH, A->radius_SPH);
-               add_to_unmap_next(A, -coef);
-               add_to_unmap_next(B, coef);
-            }
          }
          A->checked_points_SPH++;
       };
@@ -294,28 +268,28 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                // 全ての壁粒子の流速はゼロなのだから，isCapturedされていないものを含めても問題ない．
                // ただこの後の圧力の計算においては，isCapturedされていないものは含めない．圧力方程式をうまく立てれないから．
                add_lap_U(B);
-               // if (B->isSurface)
-               //    for (const auto &AUX : B->auxiliaryPoints)
-               //       add_lap_U(AUX);
+#if defined(USE_SHARED_AUX)
+               if (B->isSurface && B == A)
+                  for (const auto &AUX : B->auxiliaryPoints)
+                     add_lap_U(AUX);
+#endif
             }
          });
-      // #if defined(USE_SIMPLE_SINGLE_AUX)
-      //       if (A->isSurface) {
-      //          for (const auto &AUX : A->auxiliaryPoints) {
-      //             AUX->U_SPH = A->U_SPH;
-      //             add_lap_U(AUX);
-      //          }
-      //       }
-      // #endif
+#if defined(USE_SIMPLE_SINGLE_AUX)
+      if (A->isSurface)
+         for (const auto &AUX : A->auxiliaryPoints)
+            PoissonEquation(AUX);
+#endif
       //$ ------------------------------------------ */
       //\label{SPH:lapU_for_wall}
       if (A->getNetwork()->isRigidBody) {
-         A->DUDt_SPH_ *= 0;
+         A->DUDt_SPH_.fill(0.);
          double nu = A->mu_SPH / A->rho;
-         A->DUDt_SPH *= 0;
-         A->tmp_U_SPH *= 0;
+         A->DUDt_SPH.fill(0.);
+         A->tmp_U_SPH.fill(0.);
          A->tmp_X = A->X;
-         A->DrhoDt_SPH *= 0;
+         A->DrhoDt_SPH = 0;
+         A->b_vector.fill(0.);  // + _GRAVITY3_;
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -323,6 +297,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->tmp_U_SPH = A->U_SPH + A->DUDt_SPH * dt;
          A->tmp_X = A->X + A->tmp_U_SPH * dt;
          A->DrhoDt_SPH = -A->rho * A->div_U;
+         A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       }
       //$ ------------------------------------------ */
       // \label{SPH:Poisson_b_vector}
@@ -338,8 +313,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //          add_b_vector(B);
       //       }
       //    });
-
-      A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
 
       if (A->vec_time_SPH.size() > 10) {
 
@@ -428,34 +401,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             if (B->isCaptured) {
                add_gradP_SPH(B);
 #if defined(USE_SHARED_AUX)
-               if (B->isSurface) {
-                  if (B == A) {
-                     for (const auto &AUX : B->auxiliaryPoints)
-                        add_gradP_SPH(AUX);
-                  }
-                  //  else if (!A->isSurface) {
-                  //    for (const auto &AUX : B->auxiliaryPoints) {
-                  //       add_gradP_SPH(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
-                  //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
-                  //          add_gradP_SPH(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
-                  //       });
-                  //    }
-                  // }
-               }
-
-                  // if (B->isSurface) {
-                  //    for (const auto &AUX : B->auxiliaryPoints) {
-                  //       add_gradP_SPH(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
-                  //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
-                  //          // PoissonEquation(C, C->volume * w_Bspline(Norm(pO->X - C->X), C->radius_SPH));
-                  //          add_gradP_SPH(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
-                  //       });
-                  //    }
-                  // }
-
-                  // if (B->isSurface)
-                  //    for (const auto &AUX : B->auxiliaryPoints)
-                  //       add_gradP_SPH(AUX, B->volume * w_Bspline(Norm(A->X - AUX->X), B->radius_SPH) * AUX->volume);
+               if (B->isSurface && B == A)
+                  for (const auto &AUX : B->auxiliaryPoints)
+                     add_gradP_SPH(AUX);
 #endif
             }
          });
@@ -524,7 +472,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = .8;
-      const double asobi = 0.01;
+      const double asobi = 0.05;
 
       auto closest = [&]() {
          double distance = 1E+20;
