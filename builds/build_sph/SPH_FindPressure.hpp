@@ -161,65 +161,59 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          ROW->increment(pO, Dot(coeff, n) / (pO->rho * pO->rho));
       };
 
-      auto AtmosphericPressureSPHCondition = [&](const auto &p) {  //  \label{SPH:AtmosphericPressureCondition}
-         // pの圧力を完全にゼロにする条件
-         ROW->PoissonRHS = 0;
-         for (const auto &net : target_nets) {
-            net->BucketPoints.apply(pO_x, pO->radius_SPH * 1.5, [&](const auto &B) {
-               if (B->isCaptured) {
-                  auto w = B->volume * w_Bspline(Norm(pO_x - X_next(B)), pO->radius_SPH);
-                  ROW->increment(B, w);
-#ifndef USE_CENTER_OF_MASS
-                  if (pO == B && B->isSurface)
-                     for (const auto &AUX : B->auxiliaryPoints) {
-                        auto w = AUX->volume * w_Bspline(Norm(pO_x - X_next(AUX)), pO->radius_SPH);
-                        ROW->increment(AUX, w);
-                     }
-#endif
-               }
-            });
-         }
-      };
-
       auto AtmosphericPressureCondition = [&](const auto &p) {  //  \label{SPH:AtmosphericPressureCondition}
          // pの圧力を完全にゼロにする条件
          ROW->PoissonRHS = 0;
          ROW->increment(p, 1.);
       };
 
-      auto EquivalentPressure = [&](const auto &p) {  //  \label{SPH:AtmosphericPressureCondition}
+      auto EquivalentPressure = [&](const auto &p) {
          // pの圧力を完全にゼロにする条件
          ROW->PoissonRHS = 0;
          ROW->column_value = {{pO, 1.}, {ROW, -1.}};
       };
 
-      auto PoissonEquation = [&](const auto &B /*column id*/) {  // \label{SPH:PoissonEquation}
-         // if (!B->isAuxiliary)
-         {
-            ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH));  // \label{SPH:div_b_vector}
-            // \label{SPH:pressure_stabilization}
-            // if (pO->isFluid && !pO->isAuxiliary) {
-            //    const double alpha = 0.1;
-            //    ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
-            // }
+      // \label{SPH:PoissonEquation}
+      auto PoissonEquation = [&](const auto &B /*column id*/, const double &coef = 1.) {
+         if (Distance(pO, B) < pO->radius_SPH) {
+            // if (!B->isAuxiliary)
+            {
+               ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH)) * coef;  // \label{SPH:div_b_vector}
+               // \label{SPH:pressure_stabilization}
+               // if (pO->isFluid && !pO->isAuxiliary) {
+               //    const double alpha = 0.1;
+               //    ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
+               // }
+            }
+            Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP}
+            // for ISPH
+            ROW->increment(pO, Aij / pO->rho);
+            ROW->increment(B, -Aij / pO->rho);
+            // for EISPH
+            sum_Aij_Pj += Aij * B->p_SPH;
+            sum_Aij += Aij;
          }
-         Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH);  //\label{SPH:lapP}
-         // for ISPH
-         ROW->increment(pO, Aij / pO->rho);
-         ROW->increment(B, -Aij / pO->rho);
-         // for EISPH
-         sum_Aij_Pj += Aij * B->p_SPH;
-         sum_Aij += Aij;
       };
       auto addPoissonEquation = [&]() {
          for (const auto &net : target_nets) {
             net->BucketPoints.apply(pO_x, pO->radius_SPH * 1.5, [&](const auto &B) {
                if (B->isCaptured) {
                   PoissonEquation(B);
-#ifndef USE_CENTER_OF_MASS
-                  if (B->isSurface)
-                     for (const auto &AUX : B->auxiliaryPoints)
-                        PoissonEquation(AUX);
+#if defined(USE_SHARED_AUX)
+                  if (B->isSurface) {
+                     if (pO == B) {
+                        for (const auto &AUX : B->auxiliaryPoints)
+                           PoissonEquation(AUX);
+                     }
+                     //  else if (!pO->isSurface) {
+                     //    for (const auto &AUX : B->auxiliaryPoints) {
+                     //       PoissonEquation(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
+                     //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
+                     //          PoissonEquation(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
+                     //       });
+                     //    }
+                     // }
+                  }
 #endif
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(pO_x - X_next(B)), ROW->radius_SPH);
@@ -228,10 +222,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                }
             });
          }
-#if defined(USE_CENTER_OF_MASS)
+#if defined(USE_SIMPLE_SINGLE_AUX)
          if (pO->isSurface)
-            for (const auto &aux : pO->auxiliaryPoints)
-               PoissonEquation(aux);
+            for (const auto &AUX : pO->auxiliaryPoints)
+               PoissonEquation(AUX);
 #endif
       };
       /*DOC_EXTRACT SPH
@@ -305,11 +299,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       if (ROW->column_value.empty()) {
          // show detail of this particle
-         std::cout << "ROW->PoissonRHS : " << ROW->PoissonRHS << std::endl;
          std::cout << "sum_Aij_Pj : " << sum_Aij_Pj << std::endl;
          std::cout << "sum_Aij : " << sum_Aij << std::endl;
-         std::cout << "ROW->p_SPH_ : " << ROW->p_SPH_ << std::endl;
          std::cout << "total_weight : " << total_weight << std::endl;
+         std::cout << "ROW->PoissonRHS : " << ROW->PoissonRHS << std::endl;
+         std::cout << "ROW->p_SPH_ : " << ROW->p_SPH_ << std::endl;
          std::cout << "ROW->isFluid : " << ROW->isFluid << std::endl;
          std::cout << "ROW->isAuxiliary :" << ROW->isAuxiliary << std::endl;
          std::cout << "ROW->isSurface :" << ROW->isSurface << std::endl;

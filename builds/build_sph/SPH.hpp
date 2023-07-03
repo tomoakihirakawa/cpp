@@ -1,8 +1,8 @@
 #ifndef SPH_weightingFunctions_H
 #define SPH_weightingFunctions_H
 
-#define USE_RungeKutta
-// #define USE_LeapFrog
+// #define USE_RungeKutta
+#define USE_LeapFrog
 
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
