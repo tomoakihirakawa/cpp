@@ -49,18 +49,16 @@ std::array<double, 3> optimizeFunction(const std::array<double, 3> &X0,
 */
 
 void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_spacing, auto &wall_p) {
+
+   // 初期化
    std::vector<Network *> all_nets = {net};
    for (const auto &[obj, poly] : RigidBodyObject)
       all_nets.push_back(obj);
-   // wall_as_fluid.clear();
-   wall_p.clear();
-   std::unordered_set<networkPoint *> first_wall_p;
 
    for (const auto &p : net->getPoints()) {
       p->isFreeFalling = false;
       p->isFirstWallLayer = false;
    }
-   // 初期化
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints()) {
          p->setDensityVolume(0, 0);
@@ -72,15 +70,10 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
          p->tmp_X = p->X;
          p->isFirstWallLayer = false;
-         // auto close_p = getClosestParticle(p, net);
-         // if (close_p == nullptr)
-         //    p->U_SPH.fill(0.);
-         // else {
-         //    p->U_SPH = Reflect(close_p->U_SPH, p->interpolated_normal_SPH);
-         // }
       }
+
    DebugPrint("isFirstWallLayerを決める", Green);
-// capture wall particles
+
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -121,50 +114,12 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
       }
    };
 
-   DebugPrint("isCapturedを決める", Green);
-
-   // #pragma omp parallel
-   //    for (const auto &[OBJ, _] : RigidBodyObject)
-   //       for (const auto &p : OBJ->getPoints())
-   // #pragma omp single nowait
-   //          if (p->isFirstWallLayer) {
-   //             // ここでも結構変わる
-   //             const double captureRange = p->radius_SPH;  //\label{SPH:capture_condition_1st}
-   //                                                         // const double captureRange_wall_as_fluid = p->radius_SPH;
-   //             for (const auto &[obj, poly] : RigidBodyObject)
-   //                obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
-   //                   if (Distance(p, q) < captureRange) {
-
-   //                      q->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
-   //                      q->interpolated_normal_SPH_original.fill(0.);
-
-   //                      // captureされた点の法線方向を計算
-   //                      for (const auto &[obj, poly] : RigidBodyObject)
-   //                         obj->BucketPoints.apply(q->X, q->radius_SPH, [&](const auto &Q) {
-   //                            q->interpolated_normal_SPH_original -= grad_w_Bspline(q->X, Q->X, Q->radius_SPH);
-   //                         });
-   //                      q->interpolated_normal_SPH = Normalize(q->interpolated_normal_SPH_original);
-   //                      if (!isFinite(q->interpolated_normal_SPH))
-   //                         q->interpolated_normal_SPH = {0., 0., 1.};
-
-   //                      // capture
-   //                      auto nearWallCondition = [&](const auto &Q) { return (Q->isFluid || Q->isFirstWallLayer) && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6); };
-   //                      q->isCaptured = q->isFirstWallLayer;
-   //                      if (!q->isCaptured)
-   //                         q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
-   //                      for (const auto &[obj, poly] : RigidBodyObject)
-   //                         if (!q->isCaptured)
-   //                            q->isCaptured = obj->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
-   //                   }
-   //                });
-   //          };
-
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
+   wall_p.clear();
    for (const auto &[obj, poly] : RigidBodyObject)
-      for (const auto &p : obj->getPoints()) {
+      for (const auto &p : obj->getPoints())
          if (p->isCaptured)
             wall_p.emplace(p);
-      }
 };
 
 std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {
@@ -314,24 +269,49 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
    ## 水面補助粒子の作成
 
    */
-   DebugPrint("水面ネットワークの初期化", Green);
-   if (net->surfaceNet != nullptr)
-      delete net->surfaceNet;
 
-   net->surfaceNet = new Network();
+   DebugPrint("水面ネットワークの初期化", Green);
+   if (net->surfaceNet == nullptr)
+      net->surfaceNet = new Network();
+
+   DebugPrint("水面補助粒子の作成", Green);
+   for (const auto &p : net->getPoints()) {
+      p->isAuxiliary = false;
+      if (p->isSurface) {
+         for (auto &auxp : p->auxiliaryPoints) {
+            if (auxp == nullptr) {
+               auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
+               auxp->isAuxiliary = true;
+            }
+         }
+      } else
+         for (auto &auxp : p->auxiliaryPoints) {
+            if (auxp != nullptr) {
+               delete auxp;
+               auxp = nullptr;
+            }
+         }
+   }
+
+   // DebugPrint("水面ネットワークの初期化", Green);
+   // if (net->surfaceNet != nullptr)
+   //    delete net->surfaceNet;
+   // net->surfaceNet = new Network();
+
+   // DebugPrint("水面補助粒子の作成", Green);
+   // for (const auto &p : net->getPoints()) {
+   //    p->isAuxiliary = false;
+   //    p->auxiliaryPoints.fill(nullptr);
+   //    if (p->isSurface)
+   //       for (auto &auxp : p->auxiliaryPoints)
+   //          auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
+   // }
 
    std::vector<Network *> all_nets = {net};
    for (const auto &[obj, _] : RigidBodyObject)
       all_nets.push_back(obj);
 
    DebugPrint("水面補助粒子の作成", Green);
-   for (const auto &p : net->getPoints()) {
-      p->isAuxiliary = false;
-      p->auxiliaryPoints.fill(nullptr);
-      if (p->isSurface)
-         for (auto &auxp : p->auxiliaryPoints)
-            auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
-   }
 
 #pragma omp parallel
    for (const auto &p : net->getPoints())
@@ -364,17 +344,7 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->LPFG_X = p->LPFG_X;
             auxp->LPFG_rho = p->LPFG_rho;
 #endif
-         }
-      }
-   }
-
-#pragma omp parallel
-   for (const auto &p : net->getPoints())
-#pragma omp single nowait
-   {
-      double d = 0;
-      if (p->isSurface) {
-         for (auto &auxp : p->auxiliaryPoints) {
+            /* -------------------------------------------------------------------------- */
             auto VEC = -(p->COM_SPH - p->X);
             auxp->setXSingle(p->X + VEC);  // 初期値
             // auxp->setXSingle((p->X - p->radius_SPH / 2. * Normalize(p->COM_SPH - p->X)));  // 初期値
@@ -390,12 +360,10 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             // auto unit_normal = Normalize(p->interpolated_normal_SPH);
             auto unit_normal = Normalize(p->interpolated_normal_SPH_original);
             for (auto i = 1; i < 10000; ++i) {
-               auto R = p->radius_SPH * i / 10000.;
+               auto R = p->radius_SPH * i / 10000. / 2.;
                //
                vol = std::pow(2 * R, 3.);
-               // vol = std::pow(4 * R, 3.);
                auto dist = R + r0;
-               //
                auto X = p->X + dist * unit_normal;
                //
                // auto f = _WATER_DENSITY_ * vol * w_Bspline(dist, p->radius_SPH) + p->intp_density - _WATER_DENSITY_;

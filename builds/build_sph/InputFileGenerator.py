@@ -18,11 +18,9 @@ objfile_var = tk.StringVar(root)
 
 # Define object types and properties
 object_types = ["Fluid", "RigidBody", "SoftBody"]
-properties = {
-    "Fluid": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"],
-    "RigidBody": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"],
-    "SoftBody": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"]
-}
+properties = {"Fluid": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"],
+              "RigidBody": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"],
+              "SoftBody": ["name", "type", "objfile", "output_vtu_file_name", "output_pvd_file_name"]}
 
 # Define column titles for tree view
 titles = ("Name", "Type", "Obj file")
@@ -114,7 +112,8 @@ def view_3d_model(path_to_file):
     plotter.add_mesh(mesh)
 
     # Render the plotter
-    plotter.show()
+    plotter.show_axes()
+    plotter.show(auto_close=False)
 
 
 def load_properties(event):

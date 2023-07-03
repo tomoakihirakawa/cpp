@@ -200,20 +200,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                if (B->isCaptured) {
                   PoissonEquation(B);
 #if defined(USE_SHARED_AUX)
-                  if (B->isSurface) {
-                     if (pO == B) {
-                        for (const auto &AUX : B->auxiliaryPoints)
-                           PoissonEquation(AUX);
-                     }
-                     //  else if (!pO->isSurface) {
-                     //    for (const auto &AUX : B->auxiliaryPoints) {
-                     //       PoissonEquation(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
-                     //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
-                     //          PoissonEquation(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
-                     //       });
-                     //    }
-                     // }
-                  }
+                  if (B->isSurface && pO == B)
+                     for (const auto &AUX : B->auxiliaryPoints)
+                        PoissonEquation(AUX);
 #endif
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(pO_x - X_next(B)), ROW->radius_SPH);
