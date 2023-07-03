@@ -299,7 +299,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                //       add_lap_U(AUX);
             }
          });
-      // #if defined(USE_CENTER_OF_MASS)
+      // #if defined(USE_SIMPLE_SINGLE_AUX)
       //       if (A->isSurface) {
       //          for (const auto &AUX : A->auxiliaryPoints) {
       //             AUX->U_SPH = A->U_SPH;
@@ -400,8 +400,8 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #pragma omp single nowait
    {
       A->gradP_SPH.fill(0.);
-      auto add_gradP_SPH = [&](const auto &B) {
-         A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}0.2647
+      auto add_gradP_SPH = [&](const auto &B, const double &coef = 1.) {
+         A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}0.2647
 
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
 
@@ -427,15 +427,40 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured) {
                add_gradP_SPH(B);
-#ifndef USE_CENTER_OF_MASS
-               if (B->isSurface)
-                  for (const auto &AUX : B->auxiliaryPoints)
-                     add_gradP_SPH(AUX);
+#if defined(USE_SHARED_AUX)
+               if (B->isSurface) {
+                  if (B == A) {
+                     for (const auto &AUX : B->auxiliaryPoints)
+                        add_gradP_SPH(AUX);
+                  }
+                  //  else if (!A->isSurface) {
+                  //    for (const auto &AUX : B->auxiliaryPoints) {
+                  //       add_gradP_SPH(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
+                  //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
+                  //          add_gradP_SPH(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
+                  //       });
+                  //    }
+                  // }
+               }
+
+                  // if (B->isSurface) {
+                  //    for (const auto &AUX : B->auxiliaryPoints) {
+                  //       add_gradP_SPH(AUX, AUX->volume * w_Bspline(Norm(AUX->X - AUX->X), AUX->radius_SPH));
+                  //       net->BucketPoints.apply(AUX->X, AUX->radius_SPH, [&](const auto &C) {
+                  //          // PoissonEquation(C, C->volume * w_Bspline(Norm(pO->X - C->X), C->radius_SPH));
+                  //          add_gradP_SPH(C, C->volume * w_Bspline(Norm(C->X - AUX->X), AUX->radius_SPH));
+                  //       });
+                  //    }
+                  // }
+
+                  // if (B->isSurface)
+                  //    for (const auto &AUX : B->auxiliaryPoints)
+                  //       add_gradP_SPH(AUX, B->volume * w_Bspline(Norm(A->X - AUX->X), B->radius_SPH) * AUX->volume);
 #endif
             }
          });
       }
-#if defined(USE_CENTER_OF_MASS)
+#if defined(USE_SIMPLE_SINGLE_AUX)
       if (A->isSurface)
          for (const auto &AUX : A->auxiliaryPoints)
             add_gradP_SPH(AUX);

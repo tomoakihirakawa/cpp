@@ -69,7 +69,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          p->isCaptured = p->isCaptured_ = false;
          p->isSurface = false;
          p->p_SPH = 0;
-         p->DUDt_SPH = p->lap_U = {0, 0, 0};
+         p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
          p->tmp_X = p->X;
          p->isFirstWallLayer = false;
          // auto close_p = getClosestParticle(p, net);
@@ -78,7 +78,6 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          // else {
          //    p->U_SPH = Reflect(close_p->U_SPH, p->interpolated_normal_SPH);
          // }
-         p->U_SPH.fill(0.);
       }
    DebugPrint("isFirstWallLayerを決める", Green);
 // capture wall particles
@@ -197,7 +196,8 @@ std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, co
 
 */
 
-#define USE_CENTER_OF_MASS
+// #define USE_SIMPLE_SINGLE_AUX
+#define USE_SHARED_AUX
 
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
@@ -340,18 +340,6 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
       double d = 0;
       if (p->isSurface) {
          for (auto &auxp : p->auxiliaryPoints) {
-
-            // double distance = 1E+20;
-            // net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-            //    if (q != p) {
-            //       auto tmp = Distance(p->X, q);
-            //       if (distance > tmp) {
-            //          distance = tmp;
-            //       }
-            //    }
-            // });
-            // d = distance;
-            //
             auto radius_SPH = p->radius_SPH;
             auto C_SML = p->C_SML;
             d += radius_SPH / C_SML;
@@ -367,8 +355,26 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->DUDt_SPH.fill(0.);
             auxp->volume = d * d * d;
             auxp->setDensityVolume(p->rho, p->volume);
+#if defined(USE_RungeKutta)
+            auxp->RK_U = p->RK_U;
+            auxp->RK_X = p->RK_X;
+            auxp->RK_P = p->RK_P;
+            auxp->RK_rho = p->RK_rho;
+#elif defined(USE_LeapFrog)
+            auxp->LPFG_X = p->LPFG_X;
+            auxp->LPFG_rho = p->LPFG_rho;
+#endif
+         }
+      }
+   }
 
-#if defined(USE_CENTER_OF_MASS)
+#pragma omp parallel
+   for (const auto &p : net->getPoints())
+#pragma omp single nowait
+   {
+      double d = 0;
+      if (p->isSurface) {
+         for (auto &auxp : p->auxiliaryPoints) {
             auto VEC = -(p->COM_SPH - p->X);
             auxp->setXSingle(p->X + VEC);  // 初期値
             // auxp->setXSingle((p->X - p->radius_SPH / 2. * Normalize(p->COM_SPH - p->X)));  // 初期値
@@ -381,11 +387,13 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
             double min_f = 1E+20, best_vol, best_dist;
             auto vol = auxp->volume;
-            auto unit_normal = Normalize(p->interpolated_normal_SPH);
-            for (auto i = 1; i < 3000; ++i) {
-               auto R = p->radius_SPH * i / 3000. / 2.;
+            // auto unit_normal = Normalize(p->interpolated_normal_SPH);
+            auto unit_normal = Normalize(p->interpolated_normal_SPH_original);
+            for (auto i = 1; i < 10000; ++i) {
+               auto R = p->radius_SPH * i / 10000.;
                //
                vol = std::pow(2 * R, 3.);
+               // vol = std::pow(4 * R, 3.);
                auto dist = R + r0;
                //
                auto X = p->X + dist * unit_normal;
@@ -419,17 +427,6 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->volume = best_vol;
             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
             auxp->setXSingle(p->X + best_dist * unit_normal);  // 初期値
-#endif
-
-#if defined(USE_RungeKutta)
-            auxp->RK_U = p->RK_U;
-            auxp->RK_X = p->RK_X;
-            auxp->RK_P = p->RK_P;
-            auxp->RK_rho = p->RK_rho;
-#elif defined(USE_LeapFrog)
-            auxp->LPFG_X = p->LPFG_X;
-            auxp->LPFG_rho = p->LPFG_rho;
-#endif
          }
       }
    }
@@ -471,7 +468,7 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
    //             p->auxiliaryPoints[0]->setXSingle(aux_position(p));
    // }
 
-#if defined(USE_CENTER_OF_MASS)
+#if defined(USE_SIMPLE_SINGLE_AUX)
       // std::vector<Network *> all_nets = {net};
       // for (const auto &[obj, _] : RigidBodyObject)
       //    all_nets.push_back(obj);
