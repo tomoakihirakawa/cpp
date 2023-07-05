@@ -1,0 +1,22 @@
+{
+    "name": "floatingbody",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 294.072666,
+    "COM": [
+        2.11,
+        0.4,
+        0.4
+    ],
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
+    ],
+    "MOI": [
+        117629.06640000001,
+        117629.06640000001,
+        117629.06640000001
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2023Tamatu/floatingbody100.obj"
+}

@@ -59,9 +59,75 @@ input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Kramer2021"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
+    case "Hadzic2005":
+
+        FORCED_MOTION = True
+
+        start = 0.1
+        a = 0.
+        T = 4.5 + 0.5*8
+        h = 80
+        z_surface = 80
+
+        id = "a" + str(a).replace(".", "d")\
+            + "_T" + str(T).replace(".", "d")\
+            + "_h" + str(h).replace(".", "d")
+
+        if FORCED_MOTION:
+            id += "_forced_"
+
+        input_directory += SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/"+SimulationCase + "_" + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water", "type": "Fluid"}
+
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        if FORCED_MOTION:
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "isFixed": True}
+        else:
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+
+        if FORCED_MOTION:
+            floatingbody = {"name": "floatingbody",
+                            "type": "RigidBody",
+                            "velocity": ["sin", start, a, T]}
+        else:
+            floatingbody = {"name": "floatingbody",
+                            "type": "RigidBody",
+                            "velocity": "floating"}
+
+        A = 0.1 * 0.5
+        floatingbody["mass"] = m = rho * g * 0.03
+        floatingbody["COM"] = [-(4-2.11), 0.25, 0.4]
+        floatingbody["radius_of_gyration"] = [20., 20., 20.]
+        floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
+                               m*math.pow(floatingbody["radius_of_gyration"][1], 2),
+                               m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
+
+        objfolder = program_home + "/cpp/obj/2023Tamatu"
+        water["objfile"] = objfolder + "/water200.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker10.obj"
+        tank["objfile"] = objfolder + "/tank10.obj"
+        floatingbody["objfile"] = objfolder+"/floatingbody100.obj"
+
+        inputfiles = [tank, wavemaker, water, floatingbody]
+
+        setting = {"max_dt": 0.00001,
+                   "end_time_step": 1000,
+                   "end_time": 25,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
     case "Kramer2021":
 
         D = 300/1000
