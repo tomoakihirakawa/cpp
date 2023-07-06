@@ -52,11 +52,11 @@ else:
 このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
 '''
 
-rho = 998.21
-g = 9.82
+rho = 1000.
+g = 9.81
 
 input_directory = "./input_files/"
-# ---------------------------------------------------------------------------- #
+
 # ---------------------------------------------------------------------------- #
 
 SimulationCase = "Hadzic2005"
@@ -64,20 +64,9 @@ SimulationCase = "Hadzic2005"
 match SimulationCase:
     case "Hadzic2005":
 
-        FORCED_MOTION = True
+        start = 0.
 
-        start = 0.1
-        a = 0.
-        T = 4.5 + 0.5*8
-        h = 80
-        z_surface = 80
-
-        id = "a" + str(a).replace(".", "d")\
-            + "_T" + str(T).replace(".", "d")\
-            + "_h" + str(h).replace(".", "d")
-
-        if FORCED_MOTION:
-            id += "_forced_"
+        id = ""
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -85,45 +74,35 @@ match SimulationCase:
         os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
-
         tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
-        if FORCED_MOTION:
-            wavemaker = {"name": "wavemaker",
-                         "type": "RigidBody",
-                         "isFixed": True}
-        else:
-            wavemaker = {"name": "wavemaker",
-                         "type": "SoftBody",
-                         "isFixed": True,
-                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+        wavemaker = {"name": "wavemaker",
+                     "type": "RigidBody",
+                     "velocity": ["Hadzic2005", start],
+                     "COM": [-3.9, -0.25, 0]}
 
-        if FORCED_MOTION:
-            floatingbody = {"name": "floatingbody",
-                            "type": "RigidBody",
-                            "velocity": ["sin", start, a, T]}
-        else:
-            floatingbody = {"name": "floatingbody",
-                            "type": "RigidBody",
-                            "velocity": "floating"}
+        floatingbody = {"name": "floatingbody",
+                        "type": "RigidBody",
+                        "velocity": "floating"}
 
-        A = 0.1 * 0.5
-        floatingbody["mass"] = m = rho * g * 0.03
-        floatingbody["COM"] = [-(4-2.11), 0.25, 0.4]
+        A = 0.1 * 0.29
+        floatingbody["mass"] = m = rho * g * A * 0.003
+        floatingbody["COM"] = [-(4-2.11), 0., 0.3]
         floatingbody["radius_of_gyration"] = [20., 20., 20.]
         floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
                                m*math.pow(floatingbody["radius_of_gyration"][1], 2),
                                m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
+        # floatingbody["translate"] = [0., 0., 0.]
 
         objfolder = program_home + "/cpp/obj/2023Tamatu"
-        water["objfile"] = objfolder + "/water200.obj"
+        water["objfile"] = objfolder + "/water300.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker10.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
-        floatingbody["objfile"] = objfolder+"/floatingbody100.obj"
+        floatingbody["objfile"] = objfolder+"/floatingbody50.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.00001,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 1000,
                    "end_time": 25,
                    "output_directory": output_directory,

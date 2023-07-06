@@ -581,7 +581,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    double tmp_density;
    Tddd pre_U_SPH;
    Tddd mu_lap_rho_g_SPH;
-   Tddd interpolated_normal_SPH, interpolated_normal_SPH_original;
+   Tddd interpolated_normal_SPH, interpolated_normal_SPH_original, interpolated_normal_SPH_original_choped;
    Tddd COM_SPH;
    double intp_density, ddr_intp_density;
    double totalMass_SPH;

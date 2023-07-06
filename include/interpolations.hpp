@@ -117,7 +117,9 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits_{i=0}^{N-1}{{{w}_{
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
+
 /* ------------------------------------------------------ */
+
 struct InterpolationBspline {
    int K;
    std::vector<Tdd> sample;

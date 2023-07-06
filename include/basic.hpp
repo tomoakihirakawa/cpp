@@ -887,11 +887,10 @@ void gauleg(const double x1, const double x2,
       w[n - 1 - i] = w[i];
    }
 };
-//===========================================================
+
 // iはNコのデータがある場合，0<=i<=N-1となる
 // i=N-1の場合，q[N-1]=1.なのでh=1.はq[N-1]=1.<= h && h < q[N]
-
-//============= 20191222 Interpolation =============
+// \label{interpolation:Bspline}
 double Bspline(const double h, const V_d &q, const int i, const int K) {
    switch (K) {
       case 1:

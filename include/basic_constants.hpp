@@ -3,9 +3,9 @@
 #include "basic_alias.hpp"
 /* ----------------- physical properties ---------------- */
 
-const double _WATER_DENSITY_ = 998.21;
+const double _WATER_DENSITY_ = 1000.;      // 998.21;
 const double _WATER_MU_10deg_ = 0.001307;  // 10 deg
-const double _GRAVITY_ = 9.82;
+const double _GRAVITY_ = 9.81;
 
 #include <array>
 #include <tuple>

@@ -14,6 +14,7 @@
         - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
     - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
         - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
+    - [⛵️造波装置など](#⛵️造波装置など)
     - [⛵️初期値問題](#⛵️初期値問題)
         - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
         - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
@@ -402,13 +403,22 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L559)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L657)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
 [./BEM_solveBVP.hpp#L654](./BEM_solveBVP.hpp#L654)
+
+
+## ⛵️造波装置など 
+
+造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
+[強制運動を課す](../../builds/build_bem/main.cpp#L288)
+
+
+[./BEM_utilities.hpp#L14](./BEM_utilities.hpp#L14)
 
 
 ## ⛵️初期値問題 
@@ -453,7 +463,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L394](./BEM_utilities.hpp#L394)
+[./BEM_utilities.hpp#L492](./BEM_utilities.hpp#L492)
 
 
 ## ⛵️その他 
@@ -464,7 +474,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L468](./BEM_utilities.hpp#L468)
+[./BEM_utilities.hpp#L566](./BEM_utilities.hpp#L566)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -496,7 +506,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L526](./BEM_utilities.hpp#L526)
+[./BEM_utilities.hpp#L624](./BEM_utilities.hpp#L624)
 
 
 ### 🪸計算の流れ 

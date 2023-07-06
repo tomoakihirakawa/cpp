@@ -1,0 +1,11 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "velocity": [
+        "sin",
+        0.0,
+        0.01,
+        8.5
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2023Tamatu/wavemaker10.obj"
+}

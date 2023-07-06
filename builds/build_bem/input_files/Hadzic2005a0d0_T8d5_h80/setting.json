@@ -1,5 +1,5 @@
 {
-    "max_dt": 1e-05,
+    "max_dt": 0.2,
     "end_time_step": 1000,
     "end_time": 25,
     "output_directory": "/Users/tomoaki/BEM/Hadzic2005_a0d0_T8d5_h80",
