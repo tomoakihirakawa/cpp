@@ -14,6 +14,8 @@
    \ref{addContactFaces}{`networkPoint::addContactFaces`}
    を使って接触判定を行っている．
 
+ \ref{BEM:detection_range}{流体が構造物との接触を感知する半径}の設置も重要．
+
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
@@ -143,7 +145,8 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 #pragma omp single nowait
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         p->radius = (Mean(extLength(p->getLines())) + radius) / 5.;
+         // \label{BEM:detection_range}
+         p->radius = (Mean(extLength(p->getLines())) + radius) / 3.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }

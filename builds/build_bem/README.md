@@ -148,6 +148,8 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L289)
 を使って接触判定を行っている．
 
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L148)の設置も重要．
+
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
 1. 面の境界条件：３節点全てが接触している流体面はNeumann面，それ以外はDirichlet面とする．CORNER面は設定しない．
@@ -403,7 +405,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L657)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L661)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -416,6 +418,9 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L288)
+
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L195)では，Hadzic et al. 2005の造波板の動きを模擬している．
+角速度の原点は，板の`COM`としている．
 
 
 [./BEM_utilities.hpp#L14](./BEM_utilities.hpp#L14)
@@ -463,7 +468,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L492](./BEM_utilities.hpp#L492)
+[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
 
 
 ## ⛵️その他 
@@ -474,7 +479,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L566](./BEM_utilities.hpp#L566)
+[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -506,7 +511,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L624](./BEM_utilities.hpp#L624)
+[./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
 
 
 ### 🪸計算の流れ 
