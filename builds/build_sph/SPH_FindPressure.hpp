@@ -194,6 +194,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             sum_Aij += Aij;
          }
       };
+  
       auto addPoissonEquation = [&]() {
          for (const auto &net : target_nets) {
             net->BucketPoints.apply(pO_x, pO->radius_SPH * 1.5, [&](const auto &B) {
@@ -323,21 +324,22 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid,
                   const std::unordered_set<Network *> &target_nets) {
 
-   std::unordered_set<networkPoint *> points;
+   std::vector<networkPoint *> points;
    points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
 
    // 解く粒子の集合を保存
 
-   for (const auto &p : fluid_particle) {
-      points.emplace(p);
-      if (p->isSurface)
-         for (const auto &AUX : p->auxiliaryPoints)
-            points.emplace(AUX);
-   }
+   for (const auto &p : fluid_particle)
+      points.emplace_back(p);
 
    for (const auto &p : wall_as_fluid)
       // if (p->isFirstWallLayer)
-      points.emplace(p);
+      points.emplace_back(p);
+
+   for (const auto &p : fluid_particle)
+      if (p->isSurface)
+         for (const auto &AUX : p->auxiliaryPoints)
+            points.emplace_back(AUX);
 
    /* -------------------------------------------------------------------------- */
 
@@ -367,7 +369,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    }
 #if defined(USE_GMRES)
 
-   gmres gm(points, b, x0, 100);  //\label{SPH:gmres}
+   gmres gm(points, b, x0, 200);  //\label{SPH:gmres}
    for (auto i = 1; i < 10; i++) {
       x0 = gm.x;
       std::cout << " gm.err : " << gm.err << std::endl;
@@ -375,7 +377,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
       std::cout << "actual error : " << error << std::endl;
       if (gm.err < 1E-5)
          break;
-      gm.Restart(points, b, x0, 100);  //\label{SPH:gmres}
+      gm.Restart(points, b, x0, 200);  //\label{SPH:gmres}
    }
    // gmres gm(ToVector(points), b, x0, 100);
    // std::cout << " gm.err : " << gm.err << std::endl;

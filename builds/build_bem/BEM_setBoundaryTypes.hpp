@@ -143,7 +143,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 #pragma omp single nowait
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         p->radius = (Mean(extLength(p->getLines())) + radius) / 3.;
+         p->radius = (Mean(extLength(p->getLines())) + radius) / 5.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }

@@ -181,9 +181,9 @@ std::array<double, 3> X_next_(const auto &p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
+   return rho_next_(p);
    // return rho_next_(p);
-   // return rho_next_(p);
-   return _WATER_DENSITY_;
+   // return _WATER_DENSITY_;
 };
 
 // \label{SPH:volume_next}
@@ -281,7 +281,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             PoissonEquation(AUX);
 #endif
       //$ ------------------------------------------ */
-      //\label{SPH:lapU_for_wall}
+      // \label{SPH:lapU_for_wall}
       if (A->getNetwork()->isRigidBody) {
          A->DUDt_SPH_.fill(0.);
          double nu = A->mu_SPH / A->rho;
@@ -289,7 +289,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->tmp_U_SPH.fill(0.);
          A->tmp_X = A->X;
          A->DrhoDt_SPH = 0;
-         A->b_vector.fill(0.);  // + _GRAVITY3_;
+         A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -471,8 +471,8 @@ void updateParticles(const auto &points,
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = .8;
-      const double asobi = 0.05;
+      const double reflection_factor = 1.;
+      const double asobi = 0.;
 
       auto closest = [&]() {
          double distance = 1E+20;

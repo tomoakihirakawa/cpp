@@ -27,13 +27,10 @@ std::array<double, 3> optimizeFunction(const std::array<double, 3> &X0,
    // volとXを更新する
    auto normal = normal0 - _WATER_DENSITY_ * vol * grad_w_Bspline(X, p->X, radius);
    auto rho = rho0 + _WATER_DENSITY_ * vol * w_Bspline(Norm(X - p->X), radius);
-
    // std::cout << "zero is better, initial normal0 = " << normal0 / _WATER_DENSITY_ << std::endl;
    // std::cout << "1 is better, initial rho0 = " << (rho0 - _WATER_DENSITY_) / _WATER_DENSITY_ << std::endl;
-
    // std::cout << "zero is better, initial normal = " << normal / _WATER_DENSITY_ << std::endl;
    // std::cout << "1 is better, initial rho = " << (rho - _WATER_DENSITY_) / _WATER_DENSITY_ << std::endl;
-
    // auto tmp = p->radius_SPH / p->C_SML + std::pow(vol, 1. / 3.);
 
    return normal / _WATER_DENSITY_ + (rho - _WATER_DENSITY_) / _WATER_DENSITY_;  // + (Norm(X - p->X) - tmp) / tmp;
@@ -118,22 +115,45 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
    wall_p.clear();
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints())
-         if (p->isCaptured)
+         if (p->isCaptured) {
             wall_p.emplace(p);
+         }
+
+   for (const auto &p : wall_p) {
+      p->U_SPH.fill(0.);
+      double total_w = 0;
+      auto X = p->X + 2 * p->normal_SPH;
+      net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
+         if (Distance(X, q) < p->radius_SPH) {
+            auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
+            p->U_SPH += q->U_SPH * w;
+            total_w += w;
+         }
+      });
+      if (total_w == 0.)
+         p->U_SPH.fill(0.);
+      else
+         p->U_SPH /= total_w;
+      p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);
+   }
 };
 
 std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {
    // 法線方向ではない．単なる密度と密度勾配の補間
    std::array<double, 3> grad_rho = {0., 0., 0.};
    double rho = 0.;
+   std::vector<Tddd> near_wall_particle;
    for (const auto &net : all_nets)
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          if (Distance(p, q) < p->radius_SPH) {
-            // grad_rho += q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
-            grad_rho += p->rho * q->mass * (q->rho / (q->rho * q->rho) + p->rho / (p->rho * p->rho)) * grad_w_Bspline(p->X, q->X, p->radius_SPH);  //\label{SPH:gradP1}0.2647                                                                                                                                                       //
+            grad_rho += q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            // grad_rho += p->rho * q->mass * (q->rho / (q->rho * q->rho) + p->rho / (p->rho * p->rho)) * grad_w_Bspline(p->X, q->X, p->radius_SPH);  //\label{SPH:gradP1}
             // grad_rho += (q->rho - p->rho) * q->mass / p->rho * grad_w_Bspline(p->X, q->X, p->radius_SPH);  //\label{SPH:gradP2}
             rho += q->rho * q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
          }
+
+         if (Distance(p, q) < p->radius_SPH / p->C_SML)
+            near_wall_particle.emplace_back(q->normal_SPH);
          // このようにすることで，自身の補助点を無視して欠損のある方向を指す．
          // if (p != q && q->isSurface)
          //    for (const auto &Q : q->auxiliaryPoints)
@@ -142,6 +162,9 @@ std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, co
          //          rho += q->rho * Q->volume * w_Bspline(Norm(p->X - Q->X), p->radius_SPH);
          //       }
       });
+   // for (const auto &n : near_wall_particle)
+   //    grad_rho = Chop(grad_rho, n);
+
    return {rho, grad_rho};
 };
 
@@ -218,7 +241,10 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
 
       // \label{SPH:interpolated_normal_SPH}
       p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);  //\label{SPH:interpolated_normal_SPH}
+      p->interpolated_normal_SPH_original_choped = p->interpolated_normal_SPH_original;
+
       for (const auto &n : near_wall_particle) {
+         p->interpolated_normal_SPH_original_choped = Chop(p->interpolated_normal_SPH_original_choped, n);
          p->interpolated_normal_SPH = Normalize(Chop(p->interpolated_normal_SPH, n));
          if (!isFinite(p->interpolated_normal_SPH))
             p->interpolated_normal_SPH = {0., 0., 1.};
@@ -360,24 +386,23 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             // auto unit_normal = Normalize(p->interpolated_normal_SPH);
             auto unit_normal = Normalize(p->interpolated_normal_SPH_original);
             for (auto i = 1; i < 10000; ++i) {
-               auto R = p->radius_SPH * i / 10000. / 2.;
-               //
+               auto R = p->radius_SPH * i / 10000.;
                vol = std::pow(2 * R, 3.);
                auto dist = R + r0;
                auto X = p->X + dist * unit_normal;
                //
-               // auto f = _WATER_DENSITY_ * vol * w_Bspline(dist, p->radius_SPH) + p->intp_density - _WATER_DENSITY_;
-               // auto F = p->interpolated_normal_SPH_original - _WATER_DENSITY_ * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-
+               // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
+               // auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
+               // auto F = intp_grad_density + auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+               //
                auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-
-               auto f = intp_density + p->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-               auto F = intp_grad_density + p->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-
+               auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
+               auto F = p->interpolated_normal_SPH_original - auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+               //
                f /= _WATER_DENSITY_;
                F /= _WATER_DENSITY_;
                auto opt_func = 0;
-               opt_func += f * f;
+               // opt_func += f * f;
                opt_func += Dot(F, F);
                if (opt_func < min_f) {
                   min_f = opt_func;

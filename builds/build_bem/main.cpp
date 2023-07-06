@@ -283,7 +283,9 @@ int main(int arg, char **argv) {
             std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
             // b$ --------------------------------------------------- */
+
             for (const auto &net : RigidBodyObject) {
+               // \label{BEM:impose_velocity}
                if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] != "fixed") {
                   std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
                   net->RK_COM.push(net->velocityTranslational());
@@ -300,6 +302,7 @@ int main(int arg, char **argv) {
                }
                net->RigidBodyMovePoints();
             }
+
             // b$ --------------------------------------------------- */
 
             for (const auto &net : SoftBodyObject) {
@@ -310,7 +313,9 @@ int main(int arg, char **argv) {
                }
                net->setGeometricProperties();
             }
+
             // b$ --------------------------------------------------- */
+
             for (const auto &p : Points) {
                //@ Φの時間発展，Φnの時間発展はない
                if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {

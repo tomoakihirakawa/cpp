@@ -1,0 +1,6 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2023Tamatu/tank10.obj"
+}
