@@ -169,7 +169,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 10. * M_PI / 180.;
+const double contact_angle = 20. * M_PI / 180.;
 
 bool isCloseNormal(const Tddd &n1, const Tddd &n2) {
    return isFlat(n1, -n2, contact_angle);  // || isFlat(n1, n2, contact_angle);
