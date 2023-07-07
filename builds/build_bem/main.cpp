@@ -1,58 +1,44 @@
 /*DOC_EXTRACT HOW_TO_RUN
 
-# コンパイルと計算の実行方法
+# 実行方法
 
-This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
-
-## Prerequisites
-
-- CMake
-- LAPACK library
-- Python 3 for input generation
-
-## Building the Code
-
-1. Clean the build directory:
+ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
 ```
-sh clean
+$ git clone https://github.com/tomoakihirakawa/cpp.git
+$ cd ./cpp/builds/build_bem
 ```
 
-2. Configure the build using CMake:
+`clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
+`cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
 ```
-cmake -DCMAKE_BUILD_TYPE=Release ../
+$ sh clean
+$ cmake -DCMAKE_BUILD_TYPE=Release ../
+$ make
 ```
 
-3. Compile the code:
+次に，入力ファイルを生成．
 
 ```
-make
+$ python3 input_generator.py
 ```
 
-## Running the Simulation
-
-1. Generate input files using the `input_generator.py` script:
+例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
 ```
-python3 ./input_generator.py
+$ ./main ./input_files/Hadzic2005
 ```
 
-2. Run the simulation with the generated input files:
-
-```
-./main ./input_files/Kramer2021_H00d03
-```
-
-## Output
-
-The simulation results will be stored in the specified output directory.
 
 [![Banner](sample0.gif)](sample0.gif)
 
 [![Banner](sample1.gif)](sample1.gif)
 
+[![Banner](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
+
 */
+
 // #define _debugging_
 
 #define BEM
@@ -210,7 +196,7 @@ int main(int arg, char **argv) {
          // b# ------------------------------------------------------ */
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, 1.);
+         double dt = dt_CFL(*water, max_dt, .2);
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);
@@ -274,9 +260,12 @@ int main(int arg, char **argv) {
             calculateCurrentVelocities(*water);
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
-            calculateCurrentUpdateVelocities(*water, 10, (RK_step == 4));
-            if (RK_step == 4)
-               std::cout << Green << "do shift" << colorOff << " s\n";
+            // calculateCurrentUpdateVelocities(*water, 30, (RK_step == 4));
+            // if (RK_step == 4)
+            //    std::cout << Green << "do shift" << colorOff << " s\n";
+
+            calculateCurrentUpdateVelocities(*water, 30);
+
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
             BVP.solveForPhiPhin_t(*water, RigidBodyObject);

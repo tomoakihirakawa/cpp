@@ -238,15 +238,15 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          double a = magicalValue(p, f) + variance2(p, f);
 
          if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-            a *= std::pow(2, 3);
+            a *= std::pow(1.1, 3);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
-            a *= std::pow(2, 2);
+            a *= std::pow(1.1, 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
                           return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
                        });
                     })) {
-            a *= 2;
+            a *= 1.1;
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
@@ -389,8 +389,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
       if (do_shift)
-         for (auto i = 0; i < 10; ++i)
-            addVectorTangentialShift();
+         // for (auto i = 0; i < 10; ++i)
+         addVectorTangentialShift();
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;

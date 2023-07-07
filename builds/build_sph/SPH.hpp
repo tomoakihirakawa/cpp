@@ -332,7 +332,7 @@ void developByEISPH(Network *net,
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
          setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
-         setPressure(wall_p);
+         // setPressure(wall_p);
 
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
 

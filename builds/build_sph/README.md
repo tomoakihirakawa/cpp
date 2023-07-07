@@ -15,7 +15,6 @@
     - [⛵️ポアソン方程式の解法](#⛵️ポアソン方程式の解法)
         - [🪸CFL条件の設定](#🪸CFL条件の設定)
     - [⛵️$`\nabla^2 {\bf u} _i`$の計算](#⛵️$`\nabla^2-{\bf-u}-_i`$の計算)
-        - [🪸高速化のための工夫](#🪸高速化のための工夫)
     - [⛵️圧力勾配$`\nabla p^{n+1}`$の計算](#⛵️圧力勾配$`\nabla-p^{n+1}`$の計算)
     - [⛵️注意点](#⛵️注意点)
     - [⛵️壁面粒子の流速と圧力](#⛵️壁面粒子の流速と圧力)
@@ -94,9 +93,9 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪸右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L303)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L273)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
-✅ [発散の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L181): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
+✅ [発散の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L186): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
 ### 🪸左辺について 
 
@@ -111,7 +110,7 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH_Functions.hpp#L
 
 - ISPHは作ったポアソン方程式を作成し解くことで圧力を計算する
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L188): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L193): $`\nabla^2 p^{n+1}=\sum _{j}A _{ij}(p _i^{n+1} - p _j^{n+1}),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 ### 🪸水面の計算補助粒子`auxiliaryPoints` 
 
@@ -139,35 +138,35 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 各粒子`ROW`に対して，方程式を作成する．
 
-まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_FindPressure.hpp#L227)
+まずは，[方程式を立てる位置を決める．](../../builds/build_sph/SPH_FindPressure.hpp#L232)
 
 
-[./SPH_FindPressure.hpp#L115](./SPH_FindPressure.hpp#L115)
+[./SPH_FindPressure.hpp#L120](./SPH_FindPressure.hpp#L120)
 
 
 各粒子`ROW`が，流体か壁か補助粒子か水面かによって，方程式が異なる．
 
 |方程式|目的|
 |:---------|---|
-| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_FindPressure.hpp#L176)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
-| ☐ [不透過条件](../../builds/build_sph/SPH_FindPressure.hpp#L141)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
-| ☐ [大気圧条件](../../builds/build_sph/SPH_FindPressure.hpp#L164) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
+| ☑️ [ポアソン方程式](../../builds/build_sph/SPH_FindPressure.hpp#L181)              | 次時刻の流速の発散をゼロにする（非圧縮性を満たす）ように圧力を決定する． |
+| ☐ [不透過条件](../../builds/build_sph/SPH_FindPressure.hpp#L146)         | この式は圧力勾配がそれ以外の力を打ち消すように圧力を決定する．壁面付近の圧力が滑らかにならないため使わない． |
+| ☐ [大気圧条件](../../builds/build_sph/SPH_FindPressure.hpp#L169) | この式は水面粒子の圧力をゼロに固定する．圧力がゼロであるべき場所は水面から$h/2$上なので使わない． |
 
 各方程式は，`equation(列番号を指定する粒子ポインタ, 計算に使われる物性値を持つ粒子ポインタ, 方程式を立てる位置)`の形で使用する．
 
 
-[./SPH_FindPressure.hpp#L127](./SPH_FindPressure.hpp#L127)
+[./SPH_FindPressure.hpp#L132](./SPH_FindPressure.hpp#L132)
 
 
 ### 🪸ポアソン方程式の作成
 
 
-[./SPH_FindPressure.hpp#L221](./SPH_FindPressure.hpp#L221)
+[./SPH_FindPressure.hpp#L226](./SPH_FindPressure.hpp#L226)
 
 
 ## ⛵️ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_FindPressure.hpp#L380)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH_FindPressure.hpp#L391)を使う．
 
 
 [./SPH_FindPressure.hpp#L312](./SPH_FindPressure.hpp#L312)
@@ -184,22 +183,10 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 
 ## ⛵️$`\nabla^2 {\bf u} _i`$の計算 
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L250): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L238): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 
 [./SPH_Functions.hpp#L206](./SPH_Functions.hpp#L206)
-
-
-### 🪸高速化のための工夫 
-
-何度か行う勾配の計算は，変数は違えど，変数の係数は同じである．
-ここで，その係数を`std::unordered_map`で保存しておくことにする．
-`A->grad_coeff`と`A->grad_coeff_next`に保存する．
-
-💡 `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
-
-
-[./SPH_Functions.hpp#L232](./SPH_Functions.hpp#L232)
 
 
 ## ⛵️圧力勾配$`\nabla p^{n+1}`$の計算 
@@ -208,17 +195,17 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 
 ✅ [勾配の計算方法](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L151): $`\nabla p _i = \rho _i \sum _{j} m _j \left(p _j - p _i\right) \nabla W _{ij}`$
 
-✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L396): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
+✅ [勾配の計算方法](../../builds/build_sph/SPH_Functions.hpp#L384): $`\nabla p _i = \sum _{j} \frac{m _j}{\rho _j} p _j \nabla W _{ij}`$
 
 
-[./SPH_Functions.hpp#L357](./SPH_Functions.hpp#L357)
+[./SPH_Functions.hpp#L345](./SPH_Functions.hpp#L345)
 
 
 $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
 が計算できた．
 
 
-[./SPH_Functions.hpp#L417](./SPH_Functions.hpp#L417)
+[./SPH_Functions.hpp#L405](./SPH_Functions.hpp#L405)
 
 
 ## ⛵️注意点 
@@ -227,13 +214,13 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **壁粒子**
 
-- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L284)
-- [圧力の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L86)
-- [どの位置において方程式を立てるか](../../builds/build_sph/SPH_FindPressure.hpp#L227)
+- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH_Functions.hpp#L272)
+- [圧力の計算方法](../../builds/build_sph/SPH_FindPressure.hpp#L91)
+- [どの位置において方程式を立てるか](../../builds/build_sph/SPH_FindPressure.hpp#L232)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L79)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH_setWall_Freesurface.hpp#L243)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L473)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L461)
 
 **水面粒子**
 
@@ -242,15 +229,15 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L530)
-- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_FindPressure.hpp#L182)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L518)
+- [圧力の安定化をするかどうか](../../builds/build_sph/SPH_FindPressure.hpp#L187)
 - [ルンゲクッタの段数](../../builds/build_sph/input_generator_old.py#L143)
 
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./SPH_Functions.hpp#L546](./SPH_Functions.hpp#L546)
+[./SPH_Functions.hpp#L534](./SPH_Functions.hpp#L534)
 
 
 ## ⛵️壁面粒子の流速と圧力 

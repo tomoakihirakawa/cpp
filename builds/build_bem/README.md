@@ -25,11 +25,7 @@
     - [⛵️Usage](#⛵️Usage)
     - [⛵️Customization](#⛵️Customization)
     - [⛵️Output](#⛵️Output)
-- [🐋コンパイルと計算の実行方法](#🐋コンパイルと計算の実行方法)
-    - [⛵️Prerequisites](#⛵️Prerequisites)
-    - [⛵️Building the Code](#⛵️Building-the-Code)
-    - [⛵️Running the Simulation](#⛵️Running-the-Simulation)
-    - [⛵️Output](#⛵️Output)
+- [🐋実行方法](#🐋実行方法)
         - [🪸計算の流れ](#🪸計算の流れ)
 
 
@@ -417,7 +413,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L288)
+[強制運動を課す](../../builds/build_bem/main.cpp#L277)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L195)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -524,7 +520,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L250](./main.cpp#L250)
+[./main.cpp#L236](./main.cpp#L236)
 
 
 ---
@@ -563,57 +559,42 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-# 🐋コンパイルと計算の実行方法 
+# 🐋実行方法 
 
-This is a C++ implementation of a BEM simulation code. Follow the instructions below to build and run the simulation.
-
-## ⛵️Prerequisites 
-
-- CMake
-- LAPACK library
-- Python 3 for input generation
-
-## ⛵️Building the Code 
-
-1. Clean the build directory:
+ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
 ```
-sh clean
+$ git clone https://github.com/tomoakihirakawa/cpp.git
+$ cd ./cpp/builds/build_bem
 ```
 
-2. Configure the build using CMake:
+`clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
+`cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
 ```
-cmake -DCMAKE_BUILD_TYPE=Release ../
+$ sh clean
+$ cmake -DCMAKE_BUILD_TYPE=Release ../
+$ make
 ```
 
-3. Compile the code:
+次に，入力ファイルを生成．
 
 ```
-make
+$ python3 input_generator.py
 ```
 
-## ⛵️Running the Simulation 
-
-1. Generate input files using the `input_generator.py` script:
+例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
 ```
-python3 ./input_generator.py
+$ ./main ./input_files/Hadzic2005
 ```
 
-2. Run the simulation with the generated input files:
-
-```
-./main ./input_files/Kramer2021_H00d03
-```
-
-## ⛵️Output 
-
-The simulation results will be stored in the specified output directory.
 
 [![Banner](sample0.gif)](sample0.gif)
 
 [![Banner](sample1.gif)](sample1.gif)
+
+[![Banner](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
 
 
 [./main.cpp#L1](./main.cpp#L1)

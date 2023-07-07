@@ -279,7 +279,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       };
       double start = stod(strings[1] /*start*/);
       const auto intp = InterpolationBspline(3, sample);
-      return {0, 0., 0., 0., intp.D(t - start), 0.};
+      return {0, 0., 0., 0., intp.D(t - start) / 180. * 2 * M_PI, 0.};
    }
    return {0., 0., 0., 0., 0., 0.};
 };
