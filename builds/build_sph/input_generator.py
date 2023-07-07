@@ -24,7 +24,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "static_pressure"
+SimulationCase = "Kamra2019"
 id = ""
 match SimulationCase:
     case "static_pressure":
@@ -61,7 +61,7 @@ match SimulationCase:
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
                    # "particle_spacing": 0.00625,
-                   "particle_spacing": 0.2/16,
+                   "particle_spacing": 0.2/10,
                    "input_files": [x["name"]+".json" for x in input_files]}
     case "Lobovsky2014":
 
@@ -146,7 +146,7 @@ match SimulationCase:
                    "end_time": 0.5,
                    "CSML": 2.4,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.0125,
+                   "particle_spacing": 0.02,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #

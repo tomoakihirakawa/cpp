@@ -50,7 +50,7 @@ networkPoint *getClosestParticle(networkPoint *p, const std::vector<Network *> o
    return P;
 };
 
-networkPoint *getClosestFluid(networkPoint *p, auto &target_nets) {
+networkPoint *getClosestFluid(networkPoint *p, const auto &target_nets) {
    // std::cout << p << " getClosestFluid" << std::endl;
    double distance = 1E+20;
    networkPoint *P = nullptr;
@@ -181,9 +181,9 @@ std::array<double, 3> X_next_(const auto &p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   return rho_next_(p);
    // return rho_next_(p);
-   // return _WATER_DENSITY_;
+   // return rho_next_(p);
+   return _WATER_DENSITY_;
 };
 
 // \label{SPH:volume_next}
@@ -225,21 +225,9 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       A->div_U = 0.;
       A->lap_U.fill(0.);
       A->b_vector.fill(0.);
-      //
+
       A->grad_coeff.clear();
       A->grad_coeff_next.clear();
-      //$ ------------------------------------------ */
-      /*DOC_EXTRACT SPH
-
-      ### 高速化のための工夫
-
-      何度か行う勾配の計算は，変数は違えど，変数の係数は同じである．
-      ここで，その係数を`std::unordered_map`で保存しておくことにする．
-      `A->grad_coeff`と`A->grad_coeff_next`に保存する．
-
-      NOTE: `A->grad_coeff`と`A->grad_coeff_next`は，自身もキーとして含む．使う時に注意する．
-
-      */
 
       A->density_based_on_positions = 0;
 
@@ -282,6 +270,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 #endif
       //$ ------------------------------------------ */
       // \label{SPH:lapU_for_wall}
+      // \label{SPH:Poisson_b_vector}
       if (A->getNetwork()->isRigidBody) {
          A->DUDt_SPH_.fill(0.);
          double nu = A->mu_SPH / A->rho;
@@ -289,7 +278,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->tmp_U_SPH.fill(0.);
          A->tmp_X = A->X;
          A->DrhoDt_SPH = 0;
-         A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+         A->b_vector = A->U_SPH / dt;  // + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -300,7 +289,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       }
       //$ ------------------------------------------ */
-      // \label{SPH:Poisson_b_vector}
 
       // auto add_b_vector = [&](const auto &B) {
       //    auto w = B->volume * w_Bspline(Norm(A->X - B->X), A->radius_SPH);
@@ -343,7 +331,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          }
          InterpolationLagrange<double> lag(times);
          auto D = lag.DN(current_time);
-         A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3 /* + D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+         A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3 /*+ D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
       }
    }
 };
@@ -472,7 +460,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = 1.;
-      const double asobi = 0.;
+      const double asobi = 0.05;
 
       auto closest = [&]() {
          double distance = 1E+20;

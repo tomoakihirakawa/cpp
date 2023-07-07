@@ -75,11 +75,7 @@
     - [⛵️Usage](./builds/build_bem/README.md#⛵️Usage)
     - [⛵️Customization](./builds/build_bem/README.md#⛵️Customization)
     - [⛵️Output](./builds/build_bem/README.md#⛵️Output)
-- [🐋コンパイルと計算の実行方法](./builds/build_bem/README.md#🐋コンパイルと計算の実行方法)
-    - [⛵️Prerequisites](./builds/build_bem/README.md#⛵️Prerequisites)
-    - [⛵️Building the Code](./builds/build_bem/README.md#⛵️Building-the-Code)
-    - [⛵️Running the Simulation](./builds/build_bem/README.md#⛵️Running-the-Simulation)
-    - [⛵️Output](./builds/build_bem/README.md#⛵️Output)
+- [🐋実行方法](./builds/build_bem/README.md#🐋実行方法)
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 
 - [Contents](./builds/build_system_of_linear_eqs/README.md#Contents)

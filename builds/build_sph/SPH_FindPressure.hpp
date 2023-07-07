@@ -83,6 +83,11 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 */
 
+void setPressure(const std::unordered_set<networkPoint *> &points) {
+   for (const auto &p : points)
+      p->p_SPH = p->p_SPH_;
+}
+
 // \label{SPH:setPoissonEquation}
 void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                         const std::unordered_set<Network *> &target_nets,
@@ -122,7 +127,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       */
 
-      double total_weight = 0, dP = 0., P_wall = 0.;
+      double total_weight = 0, dP = 0., pressure_for_wall = 0.;
 
       /*DOC_EXTRACT SPH
 
@@ -194,7 +199,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             sum_Aij += Aij;
          }
       };
-  
+
       auto addPoissonEquation = [&]() {
          for (const auto &net : target_nets) {
             net->BucketPoints.apply(pO_x, pO->radius_SPH * 1.5, [&](const auto &B) {
@@ -208,7 +213,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   // for mapping to wall
                   total_weight += B->volume * w_Bspline(Norm(pO_x - X_next(B)), ROW->radius_SPH);
                   dP = Dot(X_next(ROW) - pO_x, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
-                  P_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(pO_x - X_next(B)), ROW->radius_SPH);
+                  pressure_for_wall += (B->p_SPH + dP) * B->volume * w_Bspline(Norm(pO_x - X_next(B)), ROW->radius_SPH);
                }
             });
          }
@@ -225,9 +230,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       */
 
       // \label{SPH:whereToMakeTheEquation}
-      if (ROW->isAuxiliary) {
-         pO = ROW->surfacePoint;  // Aが安定する．
-         // pO = ROW;  // Aが安定する．
+      if (ROW->isAuxiliary || ROW->isSurface) {
+         // pO = ROW->surfacePoint;  // Aが安定する．
+         pO = ROW;  // Aが安定する．
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
          AtmosphericPressureCondition(pO);
@@ -282,9 +287,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       if (ROW->getNetwork()->isRigidBody) {
          if (total_weight > 0.001)
-            ROW->p_SPH_ = P_wall / total_weight;
+            ROW->p_SPH = pressure_for_wall / total_weight;
          else
-            ROW->p_SPH_ = 0;
+            ROW->p_SPH = 0;
       }
 
       if (ROW->column_value.empty()) {
@@ -303,11 +308,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       }
    };
 };
-
-void setPressure(const std::unordered_set<networkPoint *> &points) {
-   for (const auto &p : points)
-      p->p_SPH = p->p_SPH_;
-}
 
 /*DOC_EXTRACT SPH
 
@@ -349,8 +349,18 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    V_d b(points.size()), x0(points.size(), 0);
 
    for (const auto &p : points) {
-      b[p->getIndexCSR()] = p->PoissonRHS;
-      x0[p->getIndexCSR()] = p->p_SPH;
+      int index = p->getIndexCSR();
+      b[index] = p->PoissonRHS;
+      x0[index] = p->p_SPH;
+      if (p->isSurface)
+         x0[index] = 0;
+      else if (!p->isFluid) {
+         auto q = getClosestFluid(p, target_nets);
+         if (q != nullptr)
+            x0[index] = q->p_SPH;
+         else
+            x0[index] = 0.;
+      }
    }
 
    /* ------------------ preconditioning using diagonal value ------------------ */
@@ -369,15 +379,16 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    }
 #if defined(USE_GMRES)
 
-   gmres gm(points, b, x0, 200);  //\label{SPH:gmres}
-   for (auto i = 1; i < 10; i++) {
+   gmres gm(points, b, x0, 500);  //\label{SPH:gmres}
+   for (auto i = 1; i < 3; i++) {
       x0 = gm.x;
       std::cout << " gm.err : " << gm.err << std::endl;
       auto error = Norm(b - Dot(points, x0));
       std::cout << "actual error : " << error << std::endl;
       if (gm.err < 1E-5)
          break;
-      gm.Restart(points, b, x0, 200);  //\label{SPH:gmres}
+
+      gm.Restart(points, b, x0, 500);  //\label{SPH:gmres}
    }
    // gmres gm(ToVector(points), b, x0, 100);
    // std::cout << " gm.err : " << gm.err << std::endl;

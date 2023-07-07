@@ -66,7 +66,7 @@ match SimulationCase:
 
         start = 0.
 
-        id = ""
+        id = "_300"
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -102,7 +102,7 @@ match SimulationCase:
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.01,
+        setting = {"max_dt": 0.02,
                    "end_time_step": 1000,
                    "end_time": 25,
                    "output_directory": output_directory,
