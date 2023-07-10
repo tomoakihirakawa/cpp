@@ -43,6 +43,10 @@ std::array<double, 3> optimizeFunction(const std::array<double, 3> &X0,
 壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにする．
 壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
 
+**フリースリップ条件の設定**
+
+\ref{SPH:freeslip}{フリースリップ条件の設定}
+
 */
 
 void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_spacing, auto &wall_p) {
@@ -76,7 +80,8 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 #pragma omp single nowait
    {
       // ここでも結構変わる
-      const double captureRange = p->radius_SPH * 1.2;  //\label{SPH:capture_condition_1st}
+      const double captureRange = p->radius_SPH;  //\label{SPH:capture_condition_1st}
+
       // const double captureRange_wall_as_fluid = p->radius_SPH;
       for (const auto &[obj, poly] : RigidBodyObject) {
          obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
@@ -97,13 +102,13 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                // captureされた点のうち流体粒子に近い点は第１層目としてマーク
                auto firstWallLayerCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange / 2. && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 8);
+                  return Distance(q, Q) < particle_spacing * 1.5 && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 8);
                };
                q->isFirstWallLayer = net->BucketPoints.any_of(q->X, q->radius_SPH, firstWallLayerCondition);
 
                // capture
                auto nearWallCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange && q != Q;  // && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 4);
+                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
                };
                q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
             }
@@ -119,23 +124,25 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             wall_p.emplace(p);
          }
 
-   for (const auto &p : wall_p) {
-      p->U_SPH.fill(0.);
-      double total_w = 0;
-      auto X = p->X + 2 * p->normal_SPH;
-      net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-         if (Distance(X, q) < p->radius_SPH) {
-            auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
-            p->U_SPH += q->U_SPH * w;
-            total_w += w;
-         }
-      });
-      if (total_w == 0.)
+   // \label{SPH:freeslip}
+   for (const auto &p : wall_p)
+      if (p->isFirstWallLayer) {
          p->U_SPH.fill(0.);
-      else
-         p->U_SPH /= total_w;
-      p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);
-   }
+         double total_w = 0;
+         auto X = p->X + 2 * p->normal_SPH;
+         net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
+            if (Distance(X, q) < p->radius_SPH) {
+               auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
+               p->U_SPH += q->U_SPH * w;
+               total_w += w;
+            }
+         });
+         if (total_w == 0.)
+            p->U_SPH.fill(0.);
+         else
+            p->U_SPH /= total_w;
+         p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      }
 };
 
 std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {
@@ -278,7 +285,7 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
       };
 
       auto surface_condition1 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH, -q->normal_SPH) < std::numbers::pi / 180. * 60);
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH, -q->normal_SPH) < std::numbers::pi / 180. * 45);
       };
 
       if (net->BucketPoints.any_of(p->X, radius, surface_condition0))
@@ -354,6 +361,7 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->C_SML = C_SML;
             auxp->surfacePoint = p;
             auxp->isAuxiliary = true;
+            auxp->isCaptured = true;
             auxp->isSurface = false;
             auxp->p_SPH = p->p_SPH;
             auxp->U_SPH = p->U_SPH;
@@ -385,8 +393,8 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auto vol = auxp->volume;
             // auto unit_normal = Normalize(p->interpolated_normal_SPH);
             auto unit_normal = Normalize(p->interpolated_normal_SPH_original);
-            for (auto i = 1; i < 10000; ++i) {
-               auto R = p->radius_SPH * i / 10000.;
+            for (auto i = 1; i < 1000; ++i) {
+               auto R = p->radius_SPH * i / 1000.;
                vol = std::pow(2 * R, 3.);
                auto dist = R + r0;
                auto X = p->X + dist * unit_normal;
