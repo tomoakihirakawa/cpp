@@ -126,6 +126,7 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 #define Morikawa2019
 
 /* -------------------------------------------------------------------------- */
+
 Tddd aux_position(const networkPoint *p, const double &c) {
    // auto c = p->radius_SPH / p->C_SML;
    return p->X + c * Normalize(p->interpolated_normal_SPH);
@@ -144,10 +145,8 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next_(auto p) {
-   if (p->isAuxiliary)
-      p = p->surfacePoint;
-   if (p->getNetwork()->isRigidBody)
-      return _WATER_DENSITY_;
+   if (p->isAuxiliary || p->getNetwork()->isRigidBody)
+      return p->rho;
    else {
 #if defined(USE_RungeKutta)
       return p->RK_rho.getX(p->DrhoDt_SPH);
@@ -181,9 +180,10 @@ std::array<double, 3> X_next_(const auto &p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   return rho_next_(p);
    // return rho_next_(p);
-   // return _WATER_DENSITY_;
+   // return rho_next_(p);
+   return _WATER_DENSITY_;
+   // return p->rho;
 };
 
 // \label{SPH:volume_next}
@@ -194,7 +194,6 @@ double V_next(const auto &p) {
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
    return p->X;
-   // return X_next_(p);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -250,7 +249,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = .5;
-      const double asobi = 0.1;
+      const double asobi = 0.;
 
       auto closest = [&]() {
          double distance = 1E+20;
@@ -268,7 +267,7 @@ void updateParticles(const auto &points,
       };
 
       bool isReflected = true;
-      while (isReflected && count++ < 1) {
+      while (isReflected && count++ < 10) {
          isReflected = false;
          for (const auto &[obj, _] : RigidBodyObject)
             obj->BucketPoints.apply(getX_next(p), p->radius_SPH, [&](const auto &Pwall) {
@@ -318,6 +317,7 @@ void updateParticles(const auto &points,
       A->LPFG_rho.push(A->DrhoDt_SPH);
       // A->setDensity(A->LPFG_rho.get_x());
       A->setDensity(_WATER_DENSITY_);
+         //
 #endif
    }
 }

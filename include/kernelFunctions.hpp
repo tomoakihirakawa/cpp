@@ -138,10 +138,10 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    const double dinom = h * h * h;
    const double c = a / dinom;
 
-   if (q > 1.)
+   if (q > 1. || r * h * h * h * h == 0.0)
       return {0., 0., 0.};
    else if (q < one_third) {
-      if (dinom == 0.0)
+      if (r * h * h * h * h == 0.0)
          return {0., 0., 0.};
       else
          return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;

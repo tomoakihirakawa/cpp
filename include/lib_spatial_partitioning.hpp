@@ -117,6 +117,14 @@ struct BaseBuckets {
       const auto ijk = this->indices(x);
       return this->buckets[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)];
    };
+
+   auto getBucket(const Tddd &x, const double &range) const {
+      const auto ijk = this->indices(x);
+      std::unordered_set<T> ret;
+      this->apply(x, range, [&](auto &a) { ret.emplace(a); });
+      return ret;
+   };
+
    void clear() {
       this->buckets.clear();
       this->all_stored_objects.clear();

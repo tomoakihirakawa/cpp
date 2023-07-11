@@ -1,7 +1,7 @@
 #include <utility>
 #define DEM
 #include "Network.hpp"
-#include "SPH_weightingFunctions.hpp"
+#include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
 
 std::vector<T4Tddd> toCubeFaces(const auto &accum) {
@@ -173,9 +173,9 @@ int main(int arg, char **argv) {
 
    auto accumulate = [&](const T_4P &ABCD, const T_2P &pq) {
       double ACCUM = 0.;
-      if (!(any_of(ABCD, [&](const auto &P) { return P == std::get<0>(pq); }) &&
-            any_of(ABCD, [&](const auto &P) { return P == std::get<1>(pq); })))
-         for_each(ToT4T3P(ABCD), [&](const auto &tri) {
+      if (!(std::ranges::any_of(ABCD, [&](const auto &P) { return P == std::get<0>(pq); }) &&
+            std::ranges::any_of(ABCD, [&](const auto &P) { return P == std::get<1>(pq); })))
+         std::ranges::for_each(ToT4T3P(ABCD), [&](const auto &tri) {
             auto t = Triangle(ToX(tri));
             if (IntersectQ(t.incenter, t.inradius, ToX(pq)))
                ACCUM += std::abs(t.inradius - Norm(t.incenter - Nearest(t.incenter, ToX(pq))));
@@ -224,10 +224,10 @@ int main(int arg, char **argv) {
                return ACCUM;
          } else if (
              tetra_buckets.none_of(T.incenter, 3 * particle_spacing, [&](const auto &t) { return IntersectQ(T, t->scaled(1 - 1E-10)); }) &&
-             all_of(ConnectedQ(a, b, c)) &&
-             all_of(ConnectedQ(a, b, d)) &&
-             all_of(ConnectedQ(a, c, d)) &&
-             all_of(ConnectedQ(b, c, d)))
+             std::ranges::all_of(ConnectedQ(a, b, c), [](auto v) { return v; }) &&
+             std::ranges::all_of(ConnectedQ(a, b, d), [](auto v) { return v; }) &&
+             std::ranges::all_of(ConnectedQ(a, c, d), [](auto v) { return v; }) &&
+             std::ranges::all_of(ConnectedQ(b, c, d), [](auto v) { return v; }))
             return 0.;
       }
       return 1E+50;
@@ -377,7 +377,7 @@ int main(int arg, char **argv) {
       if (I == 0) {
          for (const auto &f : initialFaces) {
             auto [ismade, tet] = gen1(f,
-                                      buckets.get(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
+                                      buckets.getBucket(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
                                       -f->normal);
             if (ismade) {
                tetras.emplace_back(tet);
@@ -399,7 +399,7 @@ int main(int arg, char **argv) {
       std::vector<networkTetra *> tetras_;
       for (const auto &f : object->getFaces()) {
          {
-            auto [ismade, tet] = gen1(f, buckets.get(Mean(ToX(f->getPoints())), 2. * particle_spacing));
+            auto [ismade, tet] = gen1(f, buckets.getBucket(Mean(ToX(f->getPoints())), 2. * particle_spacing));
             if (ismade) {
                tetras.emplace_back(tet);
                tetras_.emplace_back(tet);
@@ -449,207 +449,207 @@ int main(int arg, char **argv) {
       // }
    }
 };
-   // #elif defined(check_voronoi)
-   // Timer timer;
-   // /* ----------------------- 引数の読み込み ---------------------- */
-   // std::string name{argv[1]};  //"/Users/tomoaki/Dropbox/markdown/cpp/obj/cow.obj";
-   // int maxDepth = std::atoi(argv[2]);
-   // int minNumber = std::atoi(argv[3]);
-   // double spacing = std::atof(argv[4]);
-   // std::cout << "maxDepth = " << maxDepth << std::endl;
-   // std::cout << "minNumber = " << minNumber << std::endl;
-   // /* ------------------------------------------------------ */
-   // auto net = new Network;
-   // double particle_spacing = spacing;
-   // auto [xb0, xb1] = Tdd{-10., 10.};
-   // auto [yb0, yb1] = Tdd{-10., 10.};
-   // auto [zb0, zb1] = Tdd{-10., 10.};
-   // auto X = Subdivide(
-   //     xb0, xb1,
-   //     (int)std::round((xb1 - xb0) / particle_spacing));  // 粒子のX座標
-   // auto Y = Subdivide(
-   //     yb0, yb1,
-   //     (int)std::round((yb1 - yb0) / particle_spacing));  // 粒子のY座標
-   // auto Z = Subdivide(
-   //     zb0, zb1,
-   //     (int)std::round((zb1 - zb0) / particle_spacing));  // 粒子のZ座標
-   // Tdd r = {-0.1, 0.1};
-   // for (const auto &x : X)
-   //    for (const auto &y : Y)
-   //       for (const auto &z : Z)
-   //          new networkPoint(
-   //              net, net,
-   //              {x + RandomReal(r), y + RandomReal(r), z + RandomReal(r)});
-   // net->setGeometricProperties();
-   // std::cout << "net points size:" << net->getPoints().size() << std::endl;
-   // vtkPolygonWrite("./output/points.vtp", extX(net->getPoints()));
-   // /* ------------------------------------------------------ */
-   // octree<networkPoint *> tree(net->getBounds(), ToVector(net->getPoints()), {maxDepth, minNumber});  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
-   // std::cout << "timer : " << timer() << std::endl;
-   // auto tmp = tree.getDepth(maxDepth);
-   // std::cout << "deepest cells :" << tmp.size() << std::endl;
-   // vtkPolygonWrite("./output/cubeCenter.vtp", toX(tmp));
-   // /* ------------------------------------------------------ */
-   // std::unordered_map<networkPoint *, std::unordered_set<networkPoint *>> p_neighbors;  // テンプレートはさまざまな制約を生み，エラーの原因となる
-   // for (const auto &c : tmp) {
-   //    if (c->faces_.size() == 2) {
-   //       auto p0 = c->faces_[0];
-   //       auto p1 = c->faces_[1];
-   //       p_neighbors[p0].emplace(p1);
-   //       p_neighbors[p1].emplace(p0);
-   //    } else if (c->faces_.size() == 3) {
-   //       auto p0 = c->faces_[0];
-   //       auto p1 = c->faces_[1];
-   //       auto p2 = c->faces_[2];
-   //       p_neighbors[p0].emplace(p1);
-   //       p_neighbors[p1].emplace(p2);
-   //       p_neighbors[p2].emplace(p0);
-   //       p_neighbors[p0].emplace(p2);
-   //       p_neighbors[p1].emplace(p0);
-   //       p_neighbors[p2].emplace(p1);
-   //    }
-   // }
-   // std::vector<T2Tddd> lines;
-   // /* ----------------------- 引数の読み込み ---------------------- */
-   // std::string name{
-   //     argv[1]};  //"/Users/tomoaki/Dropbox/markdown/cpp/obj/cow.obj";
-   // int maxDepth = std::atoi(argv[2]);
-   // int minNumber = std::atoi(argv[3]);
-   // std::cout << "maxDepth = " << maxDepth << std::endl;
-   // std::cout << "minNumber = " << minNumber << std::endl;
-   // auto net = new Network;
-   // /* ------------------------------------------------------ */
-   // /*              八分木構造と球体の干渉のチェックと出力           */
-   // /* ------------------------------------------------------ */
-   // double particle_spacing = 0.4;
-   // auto [xb0, xb1] = Tdd{-1., 1.};
-   // auto [yb0, yb1] = Tdd{-1., 1.};
-   // auto [zb0, zb1] = Tdd{-1., 1.};
-   // auto X = Subdivide(xb0, xb1, (int)std::round((xb1 - xb0) / particle_spacing * 2));  // 粒子のX座標
-   // auto Y = Subdivide(yb0, yb1, (int)std::round((yb1 - yb0) / particle_spacing));      // 粒子のY座標
-   // auto Z = Subdivide(zb0, zb1, (int)std::round((zb1 - zb0) / particle_spacing));      // 粒子のZ座標
-   // Tdd r = {-0.1, 0.1};
-   // for (const auto &x : X)
-   //    for (const auto &y : Y)
-   //       for (const auto &z : Z)
-   //          new networkPoint(net, net, {x + RandomReal(r), y + RandomReal(r), z + RandomReal(r)});
-   // net->setGeometricProperties();
-   // octree tree(net->getBounds(), {maxDepth, minNumber}, ToX(net->getPoints()));  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
-   // vtkPolygonWrite("./output/points.vtp", ToX(net->getPoints()));
-   // vtkPolygonWrite("./output/cubeAll.vtp", toCubeFaces(tree.getAllDeepest()));
-   // }
-   // ;
-   // Timer timer;
-   // int minNumber = std::atoi(argv[3]);
-   // /* ---------------------- ポリゴンの読み込み --------------------- */
-   // auto net = new Network(name, "object");
-   // std::cout << "{maxDepth, minNumber} = " << Tii{maxDepth, minNumber} << std::endl;
-   // octree tree(net->getBounds(), {maxDepth, minNumber}, extVertices(net->getFaces()));  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
-   // tree.deleteOuside();
-   // std::cout << "timer : " << timer() << std::endl;
-   // {
-   //    // vtkPolygonWriter<key here>;
-   //    vtkPolygonWriter</*specidy key*/ networkPoint *> vtp;
-   //    std::unordered_map<networkPoint *, double> values, solidangles;
-   //    std::unordered_map<networkPoint *, Tddd> normals;
-   //    double v = 0;
-   //    for (const auto &f : net->getFaces()) {
-   //       auto [p0, p1, p2] = f->getPointsTuple();
-   //       vtp.add({p0, p1, p2});
-   //       vtp.addPolygon({p0, p1, p2});
-   //       for_each(f->getPointsTuple(), [&](auto &p) { values[p] = Norm(p->getXtuple()); });
-   //       for_each(f->getPointsTuple(), [&](auto &p) { normals[p] = p->getNormalTuple(); });
-   //       for_each(f->getPointsTuple(), [&](auto &p) { solidangles[p] = p->getSolidAngle(); });
-   //    }
-   //    vtp.addPointData("values", values);
-   //    vtp.addPointData("normals", normals);
-   //    vtp.addPointData("solidangles", solidangles);
-   //    std::ofstream ofs("./output/bunny.vtp");
-   //    vtp.write(ofs);
-   // }
+// #elif defined(check_voronoi)
+// Timer timer;
+// /* ----------------------- 引数の読み込み ---------------------- */
+// std::string name{argv[1]};  //"/Users/tomoaki/Dropbox/markdown/cpp/obj/cow.obj";
+// int maxDepth = std::atoi(argv[2]);
+// int minNumber = std::atoi(argv[3]);
+// double spacing = std::atof(argv[4]);
+// std::cout << "maxDepth = " << maxDepth << std::endl;
+// std::cout << "minNumber = " << minNumber << std::endl;
+// /* ------------------------------------------------------ */
+// auto net = new Network;
+// double particle_spacing = spacing;
+// auto [xb0, xb1] = Tdd{-10., 10.};
+// auto [yb0, yb1] = Tdd{-10., 10.};
+// auto [zb0, zb1] = Tdd{-10., 10.};
+// auto X = Subdivide(
+//     xb0, xb1,
+//     (int)std::round((xb1 - xb0) / particle_spacing));  // 粒子のX座標
+// auto Y = Subdivide(
+//     yb0, yb1,
+//     (int)std::round((yb1 - yb0) / particle_spacing));  // 粒子のY座標
+// auto Z = Subdivide(
+//     zb0, zb1,
+//     (int)std::round((zb1 - zb0) / particle_spacing));  // 粒子のZ座標
+// Tdd r = {-0.1, 0.1};
+// for (const auto &x : X)
+//    for (const auto &y : Y)
+//       for (const auto &z : Z)
+//          new networkPoint(
+//              net, net,
+//              {x + RandomReal(r), y + RandomReal(r), z + RandomReal(r)});
+// net->setGeometricProperties();
+// std::cout << "net points size:" << net->getPoints().size() << std::endl;
+// vtkPolygonWrite("./output/points.vtp", extX(net->getPoints()));
+// /* ------------------------------------------------------ */
+// octree<networkPoint *> tree(net->getBounds(), ToVector(net->getPoints()), {maxDepth, minNumber});  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
+// std::cout << "timer : " << timer() << std::endl;
+// auto tmp = tree.getDepth(maxDepth);
+// std::cout << "deepest cells :" << tmp.size() << std::endl;
+// vtkPolygonWrite("./output/cubeCenter.vtp", toX(tmp));
+// /* ------------------------------------------------------ */
+// std::unordered_map<networkPoint *, std::unordered_set<networkPoint *>> p_neighbors;  // テンプレートはさまざまな制約を生み，エラーの原因となる
+// for (const auto &c : tmp) {
+//    if (c->faces_.size() == 2) {
+//       auto p0 = c->faces_[0];
+//       auto p1 = c->faces_[1];
+//       p_neighbors[p0].emplace(p1);
+//       p_neighbors[p1].emplace(p0);
+//    } else if (c->faces_.size() == 3) {
+//       auto p0 = c->faces_[0];
+//       auto p1 = c->faces_[1];
+//       auto p2 = c->faces_[2];
+//       p_neighbors[p0].emplace(p1);
+//       p_neighbors[p1].emplace(p2);
+//       p_neighbors[p2].emplace(p0);
+//       p_neighbors[p0].emplace(p2);
+//       p_neighbors[p1].emplace(p0);
+//       p_neighbors[p2].emplace(p1);
+//    }
+// }
+// std::vector<T2Tddd> lines;
+// /* ----------------------- 引数の読み込み ---------------------- */
+// std::string name{
+//     argv[1]};  //"/Users/tomoaki/Dropbox/markdown/cpp/obj/cow.obj";
+// int maxDepth = std::atoi(argv[2]);
+// int minNumber = std::atoi(argv[3]);
+// std::cout << "maxDepth = " << maxDepth << std::endl;
+// std::cout << "minNumber = " << minNumber << std::endl;
+// auto net = new Network;
+// /* ------------------------------------------------------ */
+// /*              八分木構造と球体の干渉のチェックと出力           */
+// /* ------------------------------------------------------ */
+// double particle_spacing = 0.4;
+// auto [xb0, xb1] = Tdd{-1., 1.};
+// auto [yb0, yb1] = Tdd{-1., 1.};
+// auto [zb0, zb1] = Tdd{-1., 1.};
+// auto X = Subdivide(xb0, xb1, (int)std::round((xb1 - xb0) / particle_spacing * 2));  // 粒子のX座標
+// auto Y = Subdivide(yb0, yb1, (int)std::round((yb1 - yb0) / particle_spacing));      // 粒子のY座標
+// auto Z = Subdivide(zb0, zb1, (int)std::round((zb1 - zb0) / particle_spacing));      // 粒子のZ座標
+// Tdd r = {-0.1, 0.1};
+// for (const auto &x : X)
+//    for (const auto &y : Y)
+//       for (const auto &z : Z)
+//          new networkPoint(net, net, {x + RandomReal(r), y + RandomReal(r), z + RandomReal(r)});
+// net->setGeometricProperties();
+// octree tree(net->getBounds(), {maxDepth, minNumber}, ToX(net->getPoints()));  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
+// vtkPolygonWrite("./output/points.vtp", ToX(net->getPoints()));
+// vtkPolygonWrite("./output/cubeAll.vtp", toCubeFaces(tree.getAllDeepest()));
+// }
+// ;
+// Timer timer;
+// int minNumber = std::atoi(argv[3]);
+// /* ---------------------- ポリゴンの読み込み --------------------- */
+// auto net = new Network(name, "object");
+// std::cout << "{maxDepth, minNumber} = " << Tii{maxDepth, minNumber} << std::endl;
+// octree tree(net->getBounds(), {maxDepth, minNumber}, extVertices(net->getFaces()));  // 八分木構造を生成．ポリゴン外部のキューブは自動で内部で削除せれる
+// tree.deleteOuside();
+// std::cout << "timer : " << timer() << std::endl;
+// {
+//    // vtkPolygonWriter<key here>;
+//    vtkPolygonWriter</*specidy key*/ networkPoint *> vtp;
+//    std::unordered_map<networkPoint *, double> values, solidangles;
+//    std::unordered_map<networkPoint *, Tddd> normals;
+//    double v = 0;
+//    for (const auto &f : net->getFaces()) {
+//       auto [p0, p1, p2] = f->getPointsTuple();
+//       vtp.add({p0, p1, p2});
+//       vtp.addPolygon({p0, p1, p2});
+//       for_each(f->getPointsTuple(), [&](auto &p) { values[p] = Norm(p->getXtuple()); });
+//       for_each(f->getPointsTuple(), [&](auto &p) { normals[p] = p->getNormalTuple(); });
+//       for_each(f->getPointsTuple(), [&](auto &p) { solidangles[p] = p->getSolidAngle(); });
+//    }
+//    vtp.addPointData("values", values);
+//    vtp.addPointData("normals", normals);
+//    vtp.addPointData("solidangles", solidangles);
+//    std::ofstream ofs("./output/bunny.vtp");
+//    vtp.write(ofs);
+// }
 
-   // /* ------------------------- ボクセルの出力 ------------------------- */
-   // vtkPolygonWrite("./output/cubeAll.vtp", toCubeFaces(tree.getAllDeepestInside()));
-   // auto trees = tree.getAllDeepestInside();
-   // /* ------------------------------------------------------ */
-   // /*              八分木構造と球体の干渉のチェックと出力           */
-   // /* ------------------------------------------------------ */
-   // double particle_spacing = 0.04;
-   // auto [xb0, xb1] = Tdd{-0.05, 0.05};
-   // auto [yb0, yb1] = Tdd{0.05, 0.15};
-   // auto [zb0, zb1] = Tdd{0.06, 0.06 + 0.1};
-   // auto X = Subdivide(xb0, xb1, (int)std::round((xb1 - xb0) / particle_spacing));  // 粒子のX座標
-   // auto Y = Subdivide(yb0, yb1, (int)std::round((yb1 - yb0) / particle_spacing));  // 粒子のY座標
-   // auto Z = Subdivide(zb0, zb1, (int)std::round((zb1 - zb0) / particle_spacing));  // 粒子のZ座標
-   // int i = 0;
-   // for (const auto &x : X)
-   //    for (const auto &y : Y)
-   //       for (const auto &z : Z) {
-   //          Tddd xyz = {x, y, z};
-   //          std::cout << "timer : " << timer() << std::endl;
-   //          geometry::Sphere sp(xyz, 0.05);  // 球体オブジェク
-   //          vtkPolygonWrite("./output/cube" + std::to_string(i) + ".vtp", toCubeFaces(tree.getIntersectInside(sp)));
-   //          vtkPolygonWrite("./output/particle" + std::to_string(i) + ".vtp", xyz);
-   //          i++;
-   //       }
-   // //! ------------------------------------------------------ */
-   // //!                         vtpの出力                       */
-   // //! ------------------------------------------------------ */
-   // std::cout << "timer : " << timer() << std::endl;
-   // {
-   //    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
-   //    double v = 0;
-   //    Tddd u = {0., 0., 0.};
-   //    for (const auto &t : trees) {
-   //       auto [X0, X1, X2, X3, X4, X5, X6, X7] = t->getVertices();
-   //       std::shared_ptr<Tddd> x0(new Tddd(X0));
-   //       std::shared_ptr<Tddd> x1(new Tddd(X1));
-   //       std::shared_ptr<Tddd> x2(new Tddd(X2));
-   //       std::shared_ptr<Tddd> x3(new Tddd(X3));
-   //       std::shared_ptr<Tddd> x4(new Tddd(X4));
-   //       std::shared_ptr<Tddd> x5(new Tddd(X5));
-   //       std::shared_ptr<Tddd> x6(new Tddd(X6));
-   //       std::shared_ptr<Tddd> x7(new Tddd(X7));
-   //       vtp.add({x0, x1, x2, x3, x4, x5, x6, x7});
-   //       vtp.addPolygon({{x0, x1, x2, x3},
-   //                       {x4, x5, x6, x7},
-   //                       {x0, x1, x5, x4},
-   //                       {x2, x3, x7, x6},
-   //                       {x0, x4, x7, x3},
-   //                       {x1, x2, x6, x5}});
-   //       vtp.addPointData("scaler0", {{x0, v},
-   //                                    {x1, v},
-   //                                    {x2, v},
-   //                                    {x3, v},
-   //                                    {x4, v},
-   //                                    {x5, v},
-   //                                    {x6, v},
-   //                                    {x7, v}});
-   //       v += 1.;
-   //       vtp.addPointData("scaler1", {{x0, v},
-   //                                    {x1, v},
-   //                                    {x2, v},
-   //                                    {x3, v},
-   //                                    {x4, v},
-   //                                    {x5, v},
-   //                                    {x6, v},
-   //                                    {x7, v}});
-   //       v += 1.;
-   //       vtp.addPointData("vector", {{x0, X0 - u},
-   //                                   {x1, X1 - u},
-   //                                   {x2, X2 - u},
-   //                                   {x3, X3 - u},
-   //                                   {x4, X4 - u},
-   //                                   {x5, X5 - u},
-   //                                   {x6, X6 - u},
-   //                                   {x7, X7 - u}});
-   //    }
-   //    std::cout << vtp.verticies.size() << std::endl;
-   //    std::cout << "outputting " << std::endl;
-   //    std::ofstream ofs("./output/output2.vtp");
-   //    vtp.write(ofs);
-   // }
-   // }
-   // ;
+// /* ------------------------- ボクセルの出力 ------------------------- */
+// vtkPolygonWrite("./output/cubeAll.vtp", toCubeFaces(tree.getAllDeepestInside()));
+// auto trees = tree.getAllDeepestInside();
+// /* ------------------------------------------------------ */
+// /*              八分木構造と球体の干渉のチェックと出力           */
+// /* ------------------------------------------------------ */
+// double particle_spacing = 0.04;
+// auto [xb0, xb1] = Tdd{-0.05, 0.05};
+// auto [yb0, yb1] = Tdd{0.05, 0.15};
+// auto [zb0, zb1] = Tdd{0.06, 0.06 + 0.1};
+// auto X = Subdivide(xb0, xb1, (int)std::round((xb1 - xb0) / particle_spacing));  // 粒子のX座標
+// auto Y = Subdivide(yb0, yb1, (int)std::round((yb1 - yb0) / particle_spacing));  // 粒子のY座標
+// auto Z = Subdivide(zb0, zb1, (int)std::round((zb1 - zb0) / particle_spacing));  // 粒子のZ座標
+// int i = 0;
+// for (const auto &x : X)
+//    for (const auto &y : Y)
+//       for (const auto &z : Z) {
+//          Tddd xyz = {x, y, z};
+//          std::cout << "timer : " << timer() << std::endl;
+//          geometry::Sphere sp(xyz, 0.05);  // 球体オブジェク
+//          vtkPolygonWrite("./output/cube" + std::to_string(i) + ".vtp", toCubeFaces(tree.getIntersectInside(sp)));
+//          vtkPolygonWrite("./output/particle" + std::to_string(i) + ".vtp", xyz);
+//          i++;
+//       }
+// //! ------------------------------------------------------ */
+// //!                         vtpの出力                       */
+// //! ------------------------------------------------------ */
+// std::cout << "timer : " << timer() << std::endl;
+// {
+//    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+//    double v = 0;
+//    Tddd u = {0., 0., 0.};
+//    for (const auto &t : trees) {
+//       auto [X0, X1, X2, X3, X4, X5, X6, X7] = t->getVertices();
+//       std::shared_ptr<Tddd> x0(new Tddd(X0));
+//       std::shared_ptr<Tddd> x1(new Tddd(X1));
+//       std::shared_ptr<Tddd> x2(new Tddd(X2));
+//       std::shared_ptr<Tddd> x3(new Tddd(X3));
+//       std::shared_ptr<Tddd> x4(new Tddd(X4));
+//       std::shared_ptr<Tddd> x5(new Tddd(X5));
+//       std::shared_ptr<Tddd> x6(new Tddd(X6));
+//       std::shared_ptr<Tddd> x7(new Tddd(X7));
+//       vtp.add({x0, x1, x2, x3, x4, x5, x6, x7});
+//       vtp.addPolygon({{x0, x1, x2, x3},
+//                       {x4, x5, x6, x7},
+//                       {x0, x1, x5, x4},
+//                       {x2, x3, x7, x6},
+//                       {x0, x4, x7, x3},
+//                       {x1, x2, x6, x5}});
+//       vtp.addPointData("scaler0", {{x0, v},
+//                                    {x1, v},
+//                                    {x2, v},
+//                                    {x3, v},
+//                                    {x4, v},
+//                                    {x5, v},
+//                                    {x6, v},
+//                                    {x7, v}});
+//       v += 1.;
+//       vtp.addPointData("scaler1", {{x0, v},
+//                                    {x1, v},
+//                                    {x2, v},
+//                                    {x3, v},
+//                                    {x4, v},
+//                                    {x5, v},
+//                                    {x6, v},
+//                                    {x7, v}});
+//       v += 1.;
+//       vtp.addPointData("vector", {{x0, X0 - u},
+//                                   {x1, X1 - u},
+//                                   {x2, X2 - u},
+//                                   {x3, X3 - u},
+//                                   {x4, X4 - u},
+//                                   {x5, X5 - u},
+//                                   {x6, X6 - u},
+//                                   {x7, X7 - u}});
+//    }
+//    std::cout << vtp.verticies.size() << std::endl;
+//    std::cout << "outputting " << std::endl;
+//    std::ofstream ofs("./output/output2.vtp");
+//    vtp.write(ofs);
+// }
+// }
+// ;
 
 #endif

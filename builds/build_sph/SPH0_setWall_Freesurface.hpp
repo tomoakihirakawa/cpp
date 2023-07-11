@@ -108,7 +108,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                // capture
                auto nearWallCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
+                  return Distance(q, Q) < captureRange && q != Q;  // && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
                };
                q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
             }
@@ -125,24 +125,24 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          }
 
    // \label{SPH:freeslip}
-   for (const auto &p : wall_p)
-      if (p->isFirstWallLayer) {
-         p->U_SPH.fill(0.);
-         double total_w = 0;
-         auto X = p->X + 2 * p->normal_SPH;
-         net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-            if (Distance(X, q) < p->radius_SPH) {
-               auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
-               p->U_SPH += q->U_SPH * w;
-               total_w += w;
-            }
-         });
-         if (total_w == 0.)
-            p->U_SPH.fill(0.);
-         else
-            p->U_SPH /= total_w;
-         p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
-      }
+   // for (const auto &p : wall_p)
+   //    if (p->isFirstWallLayer) {
+   //       p->U_SPH.fill(0.);
+   //       double total_w = 0;
+   //       auto X = p->X + 2 * p->normal_SPH;
+   //       net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
+   //          if (Distance(X, q) < p->radius_SPH) {
+   //             auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
+   //             p->U_SPH += q->U_SPH * w;
+   //             total_w += w;
+   //          }
+   //       });
+   //       if (total_w == 0.)
+   //          p->U_SPH.fill(0.);
+   //       else
+   //          p->U_SPH /= total_w;
+   //       p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+   //    }
 };
 
 std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {

@@ -515,6 +515,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    double &p_SPH = this->pressure_SPH;
    double &p_SPH_ = this->pressure_SPH_;
    double &p_SPH__ = this->pressure_SPH__;
+   double p_EISPH;
    double dp_SPH, dp_SPH_;
    double p_SPH_SPP;
    double DPDt_SPH;
