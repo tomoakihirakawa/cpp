@@ -662,17 +662,19 @@ struct QR {
 
 /* -------------------------------------------------------------------------- */
 struct CSR {
+   std::unordered_map<CSR *, double> column_value;
+   void clearColumnValue() {
+      this->column_value.clear();
+      this->canUseVector = false;
+   };
    double value;
    double diagonal_value;
    double tmp_value;
    bool canUseVector;
    std::array<double, 3> value3d;
    size_t __index__;
-   void setIndexCSR(size_t i) {
-      this->__index__ = i;
-   };
+   void setIndexCSR(size_t i) { this->__index__ = i; };
    size_t getIndexCSR() const { return __index__; };
-   std::unordered_map<CSR *, double> column_value;
    CSR() : canUseVector(false){};
    void clear() { this->column_value.clear(); }
    double at(CSR *const p) const { return column_value.at(p); };
