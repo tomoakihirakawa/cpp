@@ -147,6 +147,7 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
+   // return p->rho;
    if (p->isAuxiliary || p->getNetwork()->isRigidBody)
       return p->rho;
    else {
@@ -164,19 +165,19 @@ double V_next(const auto &p) {
 };
 
 // \label{SPH:position_next}
-std::array<double, 3> X_next_(const auto &p) {
-   if (p->isAuxiliary)
-      return p->X + p->surfacePoint->LPFG_X.get_x(p->surfacePoint->U_SPH) - p->surfacePoint->X;
-   else if (p->getNetwork()->isRigidBody)
-      return p->X;
-   else
-#if defined(USE_RungeKutta)
-      return p->RK_X.getX(p->U_SPH);
-#elif defined(USE_LeapFrog)
-      return p->LPFG_X.get_x(p->U_SPH);
-         // return p->X + p->U_SPH * p->LPFG_X.get_dt();
-#endif
-};
+// std::array<double, 3> X_next_(const auto &p) {
+//    if (p->isAuxiliary)
+//       return p->X + p->surfacePoint->LPFG_X.get_x(p->surfacePoint->U_SPH) - p->surfacePoint->X;
+//    else if (p->getNetwork()->isRigidBody)
+//       return p->X;
+//    else
+// #if defined(USE_RungeKutta)
+//       return p->RK_X.getX(p->U_SPH);
+// #elif defined(USE_LeapFrog)
+//       return p->LPFG_X.get_x(p->U_SPH);
+//          // return p->X + p->U_SPH * p->LPFG_X.get_dt();
+// #endif
+// };
 
 std::array<double, 3> X_next(const auto &p) {
    return p->X;
@@ -303,7 +304,6 @@ void updateParticles(const auto &points,
       A->LPFG_rho.push(A->DrhoDt_SPH);
       // A->setDensity(A->LPFG_rho.get_x());
       A->setDensity(_WATER_DENSITY_);
-         //
 #endif
    }
 }

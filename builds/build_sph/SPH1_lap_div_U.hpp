@@ -78,6 +78,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          // \label{SPH:how_to_set_wall_b_vector}
          // A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
          A->b_vector.fill(0.);
+         //
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
