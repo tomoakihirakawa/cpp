@@ -394,7 +394,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             double vol, rho, dist, R;
             std::array<double, 3> X;
             // auto unit_normal = Normalize(p->interpolated_normal_SPH);
-            auto n_vec = (p->interpolated_normal_SPH_original + p->interpolated_normal_SPH_original_choped) / 2.;
+            // auto n_vec = (p->interpolated_normal_SPH_original + p->interpolated_normal_SPH_original_choped) / 2.;
+            auto n_vec = p->interpolated_normal_SPH_original;
             auto unit_normal = Normalize(n_vec);
             int N = 1000;
             for (auto i = 1; i < N; ++i) {
@@ -417,7 +418,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   // f /= _WATER_DENSITY_;
                   F /= _WATER_DENSITY_;
                   auto opt_func = 0;
-                  opt_func += f * f;
+                  // opt_func += f * f;
                   opt_func += Dot(F, F);
                   if (opt_func < min_f) {
                      min_f = opt_func;
