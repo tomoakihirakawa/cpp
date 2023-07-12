@@ -50,18 +50,31 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //\label{SPH:gradP3}は，Aij = 4*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.457
       };
 
+      networkPoint *closest_surface_point = nullptr;
+      double min_distance = 1e10, distance;
+
       for (const auto &net : target_nets) {
+
          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured) {
                add_gradP_SPH(B);
-#if defined(USE_SHARED_AUX)
-               if (B->isSurface && B == A)
-                  for (const auto &AUX : B->auxiliaryPoints)
-                     add_gradP_SPH(AUX);
-#endif
+
+               if (B->isSurface) {
+                  if ((distance = Distance(A->X, X_next(B))) < min_distance) {
+                     min_distance = distance;
+                     closest_surface_point = B;
+                  }
+               }
             }
          });
       }
+
+#if defined(USE_SHARED_AUX)
+      if (closest_surface_point != nullptr)
+         for (const auto &AUX : closest_surface_point->auxiliaryPoints)
+            add_gradP_SPH(AUX);
+#endif
+
 #if defined(USE_SIMPLE_SINGLE_AUX)
       if (A->isSurface)
          for (const auto &AUX : A->auxiliaryPoints)

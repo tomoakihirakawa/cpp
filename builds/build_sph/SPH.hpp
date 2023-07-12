@@ -391,6 +391,9 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original;
    vtp.addPointData("interpolated_normal_SPH_original", uo_3d);
    //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original_modified;
+   vtp.addPointData("interpolated_normal_SPH_original_modified", uo_3d);
+   //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
    vtp.addPointData("contains diagonal", uo_double);
    //
@@ -424,26 +427,26 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->normal_SPH);
    vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
    //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_SPH;
-   vtp.addPointData("DUDt", uo_3d);
-   //
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
    vtp.addPointData("DUDt_modify_SPH", uo_3d);
    //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->gradP_SPH / p->rho;
-   vtp.addPointData("gradP_SPH / rho", uo_3d);
-   //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U;
-   vtp.addPointData("nu*lapU", uo_3d);
-   //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-   vtp.addPointData("nu*lapU + g", uo_3d);
-   //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-   vtp.addPointData("- grad(U)/rho + nu*lapU + g", uo_3d);
-   //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->div_U;
    vtp.addPointData("div U", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_SPH;
+   vtp.addPointData("NS: DUDt", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U;
+   vtp.addPointData("NS: nu*lapU", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("NS: nu*lapU + g", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
+   vtp.addPointData("NS: - gradP/rho + nu*lapU + g", uo_3d);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = -p->gradP_SPH / p->rho;
+   vtp.addPointData("NS: - gradP/rho", uo_3d);
 };
 
 void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}) {

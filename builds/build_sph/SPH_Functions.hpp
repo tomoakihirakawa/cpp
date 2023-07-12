@@ -143,8 +143,10 @@ Tddd aux_position_next(const networkPoint *p) {
 #endif
 };
 
+/* -------------------------------------------------------------------------- */
+
 // \label{SPH:rho_next}
-double rho_next_(auto p) {
+double rho_next(auto p) {
    if (p->isAuxiliary || p->getNetwork()->isRigidBody)
       return p->rho;
    else {
@@ -157,7 +159,7 @@ double rho_next_(auto p) {
 };
 
 // \label{SPH:volume_next}
-double V_next_(const auto &p) {
+double V_next(const auto &p) {
    return p->mass / rho_next(p);
 };
 
@@ -176,22 +178,6 @@ std::array<double, 3> X_next_(const auto &p) {
 #endif
 };
 
-/* -------------------------------------------------------------------------- */
-
-// \label{SPH:rho_next}
-double rho_next(auto p) {
-   // return rho_next_(p);
-   // return rho_next_(p);
-   return _WATER_DENSITY_;
-   // return p->rho;
-};
-
-// \label{SPH:volume_next}
-double V_next(const auto &p) {
-   return p->mass / rho_next(p);
-};
-
-// \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
    return p->X;
 };
@@ -249,7 +235,7 @@ void updateParticles(const auto &points,
       int count = 0;
       //\label{SPH:reflection}
       const double reflection_factor = .5;
-      const double asobi = 0.;
+      const double asobi = 0.05;
 
       auto closest = [&]() {
          double distance = 1E+20;
