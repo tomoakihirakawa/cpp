@@ -125,24 +125,24 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          }
 
    // \label{SPH:freeslip}
-   // for (const auto &p : wall_p)
-   //    if (p->isFirstWallLayer) {
-   //       p->U_SPH.fill(0.);
-   //       double total_w = 0;
-   //       auto X = p->X + 2 * p->normal_SPH;
-   //       net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-   //          if (Distance(X, q) < p->radius_SPH) {
-   //             auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
-   //             p->U_SPH += q->U_SPH * w;
-   //             total_w += w;
-   //          }
-   //       });
-   //       if (total_w == 0.)
-   //          p->U_SPH.fill(0.);
-   //       else
-   //          p->U_SPH /= total_w;
-   //       p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
-   //    }
+   for (const auto &p : wall_p)
+      if (p->isFirstWallLayer) {
+         p->U_SPH.fill(0.);
+         double total_w = 0;
+         auto X = p->X + 2 * p->normal_SPH;
+         net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
+            if (Distance(X, q) < p->radius_SPH) {
+               auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
+               p->U_SPH += q->U_SPH * w;
+               total_w += w;
+            }
+         });
+         if (total_w == 0.)
+            p->U_SPH.fill(0.);
+         else
+            p->U_SPH /= total_w;
+         p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      }
 };
 
 std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {
@@ -187,17 +187,22 @@ std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, co
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
-// refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
+   // refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
 
-/*DOC_EXTRACT SPH
+   /*DOC_EXTRACT SPH
 
-### 法線方向の計算
+   ### 法線方向の計算
 
-CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)`$
+   CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)`$
 
-単位法線ベクトルは，`interpolated_normal_SPH`としている．
+   単位法線ベクトルは，`interpolated_normal_SPH`としている．
 
-*/
+   */
+
+   std::vector<Network *> all_nets = {net};
+   for (const auto &[obj, poly] : RigidBodyObject)
+      all_nets.push_back(obj);
+
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -340,10 +345,6 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
    //          auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
    // }
 
-   std::vector<Network *> all_nets = {net};
-   for (const auto &[obj, _] : RigidBodyObject)
-      all_nets.push_back(obj);
-
    DebugPrint("水面補助粒子の作成", Green);
 
 #pragma omp parallel
@@ -368,7 +369,7 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             auxp->b_vector.fill(0.);
             auxp->DUDt_SPH.fill(0.);
             auxp->volume = d * d * d;
-            auxp->setDensityVolume(p->rho, p->volume);
+            auxp->setDensityVolume(_WATER_DENSITY_, p->volume);
 #if defined(USE_RungeKutta)
             auxp->RK_U = p->RK_U;
             auxp->RK_X = p->RK_X;
@@ -389,255 +390,90 @@ CHECKED \ref{SPH:interpolated_normal_SPH}{単位法線ベクトル}: $`{\bf n}_i
             // optimizeFunction(auxp->X, auxp->volume, p, auxp->radius_SPH, auxp->C_SML);
             // auxp->volume = (_WATER_DENSITY_ - p->intp_density) / (_WATER_DENSITY_ * w_Bspline(Norm(auxp->X - p->X), p->radius_SPH));
             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-            double min_f = 1E+20, best_vol, best_dist;
-            auto vol = auxp->volume;
+            double min_f = 1E+20, best_vol, best_dist, best_rho;
+            double vol, rho, dist, R;
+            std::array<double, 3> X;
             // auto unit_normal = Normalize(p->interpolated_normal_SPH);
-            auto unit_normal = Normalize(p->interpolated_normal_SPH_original);
-            for (auto i = 1; i < 1000; ++i) {
-               auto R = p->radius_SPH * i / 1000.;
-               vol = std::pow(2 * R, 3.);
-               auto dist = R + r0;
-               auto X = p->X + dist * unit_normal;
-               //
-               // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-               // auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-               // auto F = intp_grad_density + auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-               //
-               auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-               auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-               auto F = p->interpolated_normal_SPH_original - auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-               //
-               f /= _WATER_DENSITY_;
-               F /= _WATER_DENSITY_;
-               auto opt_func = 0;
-               // opt_func += f * f;
-               opt_func += Dot(F, F);
-               if (opt_func < min_f) {
-                  min_f = opt_func;
-                  best_vol = vol;
-                  best_dist = dist;
-                  // std::cout << "auxp = " << auxp
-                  //           << ", Dot(F, F) = " << Dot(F, F)
-                  //           << ", f*f = " << f * f
-                  //           << ", opt_func = " << opt_func
-                  //           << ", dist = " << dist
-                  //           << ", r0 = " << r0 << std::endl;
+            auto n_vec = (p->interpolated_normal_SPH_original + p->interpolated_normal_SPH_original_choped) / 2.;
+            auto unit_normal = Normalize(n_vec);
+            int N = 1000;
+            for (auto i = 1; i < N; ++i) {
+               R = p->radius_SPH * i / (double)N;
+               dist = R + r0;
+               X = p->X + dist * unit_normal;
+               for (auto j = 1; j < N; ++j) {
+                  rho = _WATER_DENSITY_;
+                  vol = std::pow(2. * R, 3.) * (2 * j / (double)N);
+                  //
+                  // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
+                  // auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
+                  // auto F = intp_grad_density + auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+                  //
+                  // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
+                  auto f = p->intp_density + rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
+                  auto F = n_vec - rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+                  // auto F = p->interpolated_normal_SPH_original_choped - auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+                  //
+                  // f /= _WATER_DENSITY_;
+                  F /= _WATER_DENSITY_;
+                  auto opt_func = 0;
+                  opt_func += f * f;
+                  opt_func += Dot(F, F);
+                  if (opt_func < min_f) {
+                     min_f = opt_func;
+                     best_vol = vol;
+                     best_dist = dist;
+                     best_rho = rho;
+                     // std::cout << "auxp = " << auxp
+                     //           << ", Dot(F, F) = " << Dot(F, F)
+                     //           << ", f*f = " << f * f
+                     //           << ", opt_func = " << opt_func
+                     //           << ", dist = " << dist
+                     //           << ", r0 = " << r0 << std::endl;
+                  }
                }
             }
 
-            auxp->volume = best_vol;
-            auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
+            auxp->setDensityVolume(best_rho, best_vol);
             auxp->setXSingle(p->X + best_dist * unit_normal);  // 初期値
          }
       }
    }
 
-   // for (auto i = 0; i < 10; ++i) {
-   //    for (const auto &p : net->getPoints())
-   //       if (p->isSurface) {
-   //          p->COM_SPH.fill(0.);
-   //          double total_mass = 0;
-
-   //          auto add = [&](const auto &q) {
-   //             if (Distance(q, p) < p->radius_SPH) {
-   //                p->COM_SPH += q->mass * q->X;
-   //                total_mass += q->mass;
-   //             }
-   //          };
-
-   //          auto loop = [&](const auto &net) {
-   //             net->BucketPoints.apply(p->X, p->radius_SPH * 1.5, [&](const auto &B) {
-   //                if (B->isCaptured) {
-   //                   add(B);
-   //                   if (B->isSurface && B != p)
-   //                      for (const auto &AUX : B->auxiliaryPoints)
-   //                         add(AUX);
-   //                }
-   //             });
-   //          };
-
-   //          // 位置の修正
-   //          loop(net);
-   //          for (const auto &[obj, poly] : RigidBodyObject)
-   //             loop(obj);
-
-   //          p->COM_SPH /= total_mass;
-   //       }
-   //    For (Const Auto &P : net->getPoints())
-   //       if (p->isSurface)
-   //          if (!p->auxiliaryPoints.empty() && p->auxiliaryPoints[0] != nullptr)
-   //             p->auxiliaryPoints[0]->setXSingle(aux_position(p));
-   // }
-
-#if defined(USE_SIMPLE_SINGLE_AUX)
-      // std::vector<Network *> all_nets = {net};
-      // for (const auto &[obj, _] : RigidBodyObject)
-      //    all_nets.push_back(obj);
-
-      // for (auto i = 0; i < 100; ++i) {
-      //    for (const auto &p : net->getPoints())
-      //       if (p->isSurface)
-      //          for (const auto &auxp : p->auxiliaryPoints) {
-      //             auxp->volume = std::pow(p->radius_SPH / p->C_SML, 3);
-      //             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-      //             auto r0 = p->radius_SPH / p->C_SML / 2.;
-      //             // optimizeFunction(auxp->X, auxp->volume, p, auxp->radius_SPH, auxp->C_SML);
-      //             // auxp->volume = (_WATER_DENSITY_ - p->intp_density) / (_WATER_DENSITY_ * w_Bspline(Norm(auxp->X - p->X), p->radius_SPH));
-      //             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-      //             double min_f = 1E+20, best_vol, best_dist;
-      //             auto vol = auxp->volume;
-
-      //             auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-
-      //             auto direction = -intp_grad_density;      // Normalize(p->X - p->COM_SPH);
-      //             auto unit_normal = Normalize(direction);  // Normalize(p->X - p->COM_SPH);
-      //             //! search for best volume and position of auxiliary point
-
-      //             for (auto i = 1; i < 3000; ++i) {
-      //                auto R = p->radius_SPH * i / 3000. / 2.;
-      //                vol = std::pow(2 * R, 3.);
-      //                auto dist = R + r0;
-      //                auto X = p->X + dist * unit_normal;
-      //                //
-      //                // auto f = _WATER_DENSITY_ * vol * w_Bspline(dist, p->radius_SPH) + p->intp_density - _WATER_DENSITY_;
-      //                // auto F = p->interpolated_normal_SPH_original - _WATER_DENSITY_ * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-
-      //                auto f = intp_density + p->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-      //                auto F = intp_grad_density + p->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-
-      //                f /= _WATER_DENSITY_;
-      //                F /= _WATER_DENSITY_;
-      //                auto opt_func = 0;
-      //                opt_func += f * f;
-      //                opt_func += Dot(F, F);
-      //                if (opt_func < min_f) {
-      //                   min_f = opt_func;
-      //                   best_vol = vol;
-      //                   best_dist = dist;
-      //                   // std::cout << "auxp = " << auxp
-      //                   //           << ", Dot(F, F) = " << Dot(F, F)
-      //                   //           << ", f*f = " << f * f
-      //                   //           << ", opt_func = " << opt_func
-      //                   //           << ", dist = " << dist
-      //                   //           << ", r0 = " << r0 << std::endl;
-      //                }
-      //             }
-
-      //             double a = 0.001;
-      //             auto dist = Norm(auxp->X - p->X);
-      //             auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-      //             auxp->setXSingle(p->X + dist * unit_normal);  // 初期値
-      //          }
-      // }
-#else
-   DebugPrint("水面補助粒子の位置の調整", Green);
-   std::unordered_map<networkPoint *, std::array<double, 3>> map_p_X;
-   std::unordered_map<networkPoint *, BroydenMethod<std::array<double, 3>>> map_p_BM;
-   for (const auto &P : net->getPoints())
-      if (P->isSurface)
-         for (const auto &p : P->auxiliaryPoints)
-            if (p != nullptr) {
-               map_p_X[p] = {0., 0., 0.};
-               //
-               std::array<double, 3> dX = {1., 1., 1.};
-               dX *= 1E-10;
-               map_p_BM.emplace(p, BroydenMethod<std::array<double, 3>>(p->X, p->X + dX));
-               map_p_BM[p].initialize(p->X, dX);
+#pragma omp parallel
+   for (const auto &p : net->getPoints())
+#pragma omp single nowait
+   {
+      // 初期化
+      p->totalMass_SPH = 0.;
+      p->interpolated_normal_SPH_original_modified.fill(0.);
+      //
+      networkPoint *closest_surface_point = nullptr;
+      double min_distance = 1e10, distance;
+      //
+      for (const auto &net : all_nets)
+         net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+            // w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
+            if (Distance(p, q) < p->radius_SPH) {
+               auto w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
+               p->totalMass_SPH += q->mass;
+            }
+            if (q->isSurface) {
+               if ((distance = Distance(p->X, q->X)) < min_distance) {
+                  min_distance = distance;
+                  closest_surface_point = q;
+               }
             }
 
-   for (auto i = 0; i < 100; ++i) {
-      for (const auto &surfp : net->getPoints())
-         if (surfp->isSurface)
-            for (const auto &auxp : surfp->auxiliaryPoints)
-               if (auxp != nullptr) {
-                  double F = 0, lapF = 0;
-                  std::array<double, 3> gradF;
-                  gradF.fill(0.);
+            p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+         });
 
-                  auto add_F = [&](const auto &q) {
-                     if (Distance(q, surfp) < q->radius_SPH) {
-                        F += q->rho * q->volume * w_Bspline(Norm(surfp->X - q->X), surfp->radius_SPH);
-                        gradF += q->rho * q->mass * (q->rho / (q->rho * q->rho) + surfp->p_SPH / (surfp->rho * surfp->rho)) * grad_w_Bspline(surfp->X, q->X, surfp->radius_SPH);
-                        lapF += (surfp->rho - q->rho) * 2 * q->mass / q->rho * Dot_grad_w_Bspline_Dot(surfp->X, q->X, surfp->radius_SPH);
-                     }
-                  };
-
-                  auto loop = [&](const auto &net) {
-                     net->BucketPoints.apply(surfp->X, surfp->radius_SPH * 1.5, [&](const auto &B) {
-                        if (B->isCaptured) {
-                           add_F(B);
-                           if (B->isSurface)
-                              for (const auto &AUX : B->auxiliaryPoints)
-                                 add_F(AUX);
-                        }
-                     });
-                  };
-
-                  // 位置の修正
-                  loop(net);
-                  for (const auto &[obj, poly] : RigidBodyObject)
-                     loop(obj);
-
-                  /* -------------------------- */
-
-                  F -= _WATER_DENSITY_;
-                  // auto gradF_only = auxp->rho * auxp->mass * (auxp->rho / (auxp->rho * auxp->rho) + surfp->p_SPH / (surfp->rho * surfp->rho)) * grad_w_Bspline(surfp->X, auxp->X, surfp->radius_SPH);
-                  auto gradF_only = auxp->rho * auxp->volume * (surfp->X - auxp->X) / Norm(surfp->X - auxp->X) * grad_w_Bspline(surfp->X, auxp->X, surfp->radius_SPH);
-                  auto lapF_only = (surfp->rho - auxp->rho) * 2 * auxp->mass / auxp->rho * Dot_grad_w_Bspline_Dot(surfp->X, auxp->X, surfp->radius_SPH);
-                  double a = 0.3;
-                  auto dFdX = a * Normalize(F * gradF_only) + (1 - a) * Normalize(gradF * lapF_only);
-                  map_p_X[auxp] = auxp->X - Normalize(dFdX) * auxp->radius_SPH * 0.05;
-
-                  /* ----------------------------------------------------- */
-
-                  // auto FUNC = [&](const std::array<double, 3> &X_in) {
-                  //    double F = 0;
-                  //    std::array<double, 3> F_for_grad = {0., 0., 0.};
-                  //    auto add = [&](const auto &q) {
-                  //       if (Distance(q, surfp) < q->radius_SPH) {
-                  //          if (auxp == q)
-                  //             F_for_grad -= q->rho * q->volume * grad_w_Bspline(surfp->X, X_in, surfp->radius_SPH);
-                  //          else
-                  //             F_for_grad -= q->rho * q->volume * grad_w_Bspline(surfp->X, q->X, surfp->radius_SPH);
-                  //       }
-
-                  //       if (Distance(q, surfp) < q->radius_SPH) {
-                  //          F += q->rho * q->volume * w_Bspline(Norm(surfp->X - q->X), surfp->radius_SPH);
-                  //       }
-                  //    };
-                  //    auto loop = [&](const auto &net) {
-                  //       net->BucketPoints.apply(surfp->X, surfp->radius_SPH, [&](const auto &B) {
-                  //          if (B->isCaptured) {
-                  //             add(B);
-                  //             if (B->isSurface)
-                  //                for (const auto &AUX : B->auxiliaryPoints)
-                  //                   add(AUX);
-                  //          }
-                  //       });
-                  //    };
-                  //    loop(net);
-                  //    for (const auto &[obj, poly] : RigidBodyObject)
-                  //       loop(obj);
-
-                  //    return F_for_grad;
-
-                  //    // F -= _WATER_DENSITY_;
-                  //    // auto dFdX = auxp->rho * auxp->volume * grad_w_Bspline(surfp->X, X_in, surfp->radius_SPH);
-                  //    // return F * dFdX;
-                  // };
-
-                  // auto &BM = map_p_BM[auxp];
-                  // BM.update(FUNC(auxp->X), FUNC(auxp->X - BM.dX), i < 5 ? 0.01 : 1.);
-                  // map_p_X[auxp] = BM.X;
-               }
-      for (const auto &surfp : net->getPoints())
-         if (surfp->isSurface)
-            for (const auto &auxp : surfp->auxiliaryPoints)
-               if (auxp != nullptr)
-                  auxp->setXSingle(map_p_X[auxp]);
+      if (closest_surface_point != nullptr)
+         for (const auto &AUX : closest_surface_point->auxiliaryPoints) {
+            auto q = AUX;
+            p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+         }
    }
-
-#endif
 
    net->surfaceNet->setGeometricProperties();
 };
