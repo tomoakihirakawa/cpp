@@ -165,9 +165,9 @@ double V_next(const auto &p) {
 };
 
 // \label{SPH:position_next}
-// std::array<double, 3> X_next_(const auto &p) {
+// std::array<double, 3> X_next(const auto &p) {
 //    if (p->isAuxiliary)
-//       return p->X + p->surfacePoint->LPFG_X.get_x(p->surfacePoint->U_SPH) - p->surfacePoint->X;
+//       return p->X;  // + p->surfacePoint->LPFG_X.get_x(p->surfacePoint->U_SPH) - p->surfacePoint->X;
 //    else if (p->getNetwork()->isRigidBody)
 //       return p->X;
 //    else

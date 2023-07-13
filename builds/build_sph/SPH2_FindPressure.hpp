@@ -203,8 +203,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                //    // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
                // }
             }
-            Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
-            // Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
+            // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
+            Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
             // for ISPH
             ROW->increment(pO, Aij / pO->rho);
             ROW->increment(B, -Aij / pO->rho);
@@ -242,8 +242,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // if (B->isCaptured)
          if (Distance(markerX, X_next(B)) < ROW->radius_SPH) {
             auto w = B->volume * w_Bspline(Norm(X_next(B) - markerX), ROW->radius_SPH);
-            dP = Dot(Projection(ROW->X - X_next(B), n), B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
             ROW->increment(B, w);
+            dP = Dot(Projection(ROW->X - X_next(B), n), B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
             ROW->PoissonRHS -= dP * w;
          }
       };
@@ -286,15 +286,24 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:whereToMakeTheEquation}
       if (ROW->isAuxiliary) {
-         // pO = ROW->surfacePoint;  // Aが安定する．
-         pO = ROW;
+         pO = ROW->surfacePoint;  // Aが安定する．
+         // pO = ROW;
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
          AtmosphericPressureCondition(pO);
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = 0;
          pO->p_SPH = pO->p_EISPH = 0;
-      } else if (ROW->getNetwork()->isRigidBody) {
+      } else if (ROW->getNetwork()->isRigidBody && !ROW->isFirstWallLayer) {
+         // b% EISPH
+         EISPH_pressure(total_weight, pressure_for_wall);
+         if (ROW->getNetwork()->isRigidBody) {
+            if (total_weight == 0.)
+               ROW->p_SPH = ROW->p_EISPH = 0;
+            else
+               ROW->p_SPH = ROW->p_EISPH = pressure_for_wall / total_weight;
+         }
+         //
          // if (ROW->isFirstWallLayer) {
          //    // b$ ISPH
          //    pO = ROW;
@@ -314,14 +323,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             pO_x = pO->X + 2 * pO->normal_SPH;
             addPoissonEquation(ISPH_wall_pressure, pO_x);
             ROW->increment(ROW, -1.);
-         }
-         // b% EISPH
-         EISPH_pressure(total_weight, pressure_for_wall);
-         if (ROW->getNetwork()->isRigidBody) {
-            if (total_weight > 0.001)
-               ROW->p_SPH = ROW->p_EISPH = pressure_for_wall / total_weight;
-            else
-               ROW->p_SPH = ROW->p_EISPH = 0;
+
+            // b$ ISPH same as EISPH
+            // このように決めた壁面粒子の圧力は，EISPHと全く同じになる．
+            // ROW->PoissonRHS = ROW->p_EISPH;
+            // ROW->increment(ROW, 1.);
          }
       } else {
          // b$ ISPH
