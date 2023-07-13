@@ -141,7 +141,8 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             p->U_SPH.fill(0.);
          else
             p->U_SPH /= total_w;
-         p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+         // p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+         p->U_SPH = Projection(Reflect(p->U_SPH, p->normal_SPH), p->normal_SPH);  //\label{SPH:wall_particle_velocity}
       }
 };
 
@@ -415,10 +416,10 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   auto F = n_vec - rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
                   // auto F = p->interpolated_normal_SPH_original_choped - auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
                   //
-                  // f /= _WATER_DENSITY_;
+                  f /= _WATER_DENSITY_;
                   F /= _WATER_DENSITY_;
                   auto opt_func = 0;
-                  // opt_func += f * f;
+                  opt_func += f * f;
                   opt_func += Dot(F, F);
                   if (opt_func < min_f) {
                      min_f = opt_func;
