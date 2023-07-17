@@ -398,7 +398,8 @@ constexpr T Total(const std::array<T, N>& arr) noexcept {
 /* -------------------------------------------------------------------------- */
 
 template <typename T, size_t N1, size_t N2>
-constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1>& vec1, const std::array<T, N2>& vec2) noexcept {
+constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1>& vec1,
+                                                          const std::array<T, N2>& vec2) noexcept {
    std::array<std::array<T, N2>, N1> ret{};
    for (size_t m = 0; m < N1; ++m) {
       for (size_t j = 0; j < N2; ++j) {
@@ -698,8 +699,6 @@ template <typename T, size_t N>
 constexpr std::array<T, N> ModTriShape(T t0, T t1) noexcept { return ModTriShape<T, N>(t0, t1, std::array<bool, 3>{true, true, true}); }
 
 /* -------------------------------------------------------------------------- */
-
-
 
 /* -------------------------------------------------------------------------- */
 

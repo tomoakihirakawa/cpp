@@ -147,8 +147,9 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   // return p->rho;
-   if (p->isAuxiliary || p->getNetwork()->isRigidBody)
+   if (p->isAuxiliary)
+      return p->rho;
+   else if (p->getNetwork()->isRigidBody)
       return p->rho;
    else {
 #if defined(USE_RungeKutta)
@@ -161,27 +162,30 @@ double rho_next(auto p) {
 
 // \label{SPH:volume_next}
 double V_next(const auto &p) {
-   return p->mass / rho_next(p);
+   if (p->isAuxiliary)
+      return p->volume_next;
+   else
+      return p->mass / rho_next(p);
 };
 
 // \label{SPH:position_next}
-// std::array<double, 3> X_next(const auto &p) {
-//    if (p->isAuxiliary)
-//       return p->X;  // + p->surfacePoint->LPFG_X.get_x(p->surfacePoint->U_SPH) - p->surfacePoint->X;
-//    else if (p->getNetwork()->isRigidBody)
-//       return p->X;
-//    else
-// #if defined(USE_RungeKutta)
-//       return p->RK_X.getX(p->U_SPH);
-// #elif defined(USE_LeapFrog)
-//       return p->LPFG_X.get_x(p->U_SPH);
-//          // return p->X + p->U_SPH * p->LPFG_X.get_dt();
-// #endif
-// };
-
 std::array<double, 3> X_next(const auto &p) {
-   return p->X;
+   if (p->isAuxiliary)
+      return p->X_next;
+   else if (p->getNetwork()->isRigidBody)
+      return p->X;
+   else
+#if defined(USE_RungeKutta)
+      return p->RK_X.getX(p->U_SPH);
+#elif defined(USE_LeapFrog)
+      return p->LPFG_X.get_x(p->U_SPH);
+         // return p->X + p->U_SPH * p->LPFG_X.get_dt();
+#endif
 };
+
+// std::array<double, 3> X_next(const auto &p) {
+//    return p->X;
+// };
 
 /* -------------------------------------------------------------------------- */
 #include "SPH0_setWall_Freesurface.hpp"
@@ -235,8 +239,8 @@ void updateParticles(const auto &points,
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = .5;
-      const double asobi = 0.05;
+      const double reflection_factor = 0.1;
+      const double asobi = 0.01;
 
       auto closest = [&]() {
          double distance = 1E+20;
@@ -302,8 +306,11 @@ void updateParticles(const auto &points,
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);
-      // A->setDensity(A->LPFG_rho.get_x());
+
+      // if (A->LPFG_rho.finished)
       A->setDensity(_WATER_DENSITY_);
+         // else
+         //    A->setDensity(A->LPFG_rho.get_x());
 #endif
    }
 }

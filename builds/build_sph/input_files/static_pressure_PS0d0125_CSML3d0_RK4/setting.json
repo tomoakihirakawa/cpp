@@ -1,5 +1,5 @@
 {
-    "RK_order": 1,
+    "RK_order": 4,
     "max_dt": 0.002,
     "CSML": 3.0,
     "end_time_step": 10000,
@@ -10,5 +10,5 @@
         "wavetank.json",
         "water.json"
     ],
-    "output_directory": "/Users/tomoaki/SPH/static_pressure_PS0d0125_CSML3d0_RK1"
+    "output_directory": "/Users/tomoaki/SPH/static_pressure_PS0d0125_CSML3d0_RK4"
 }

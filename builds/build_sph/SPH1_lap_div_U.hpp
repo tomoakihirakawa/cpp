@@ -24,7 +24,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       A->div_U = 0.;
       A->lap_U.fill(0.);
       A->b_vector.fill(0.);
-
+      A->grad_corr_M.fill({0., 0., 0.});
       A->grad_coeff.clear();
       A->grad_coeff_next.clear();
 
@@ -34,8 +34,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          const auto Uij = A->U_SPH - B->U_SPH;
          A->density_based_on_positions += B->rho * B->volume * w_Bspline(Norm(A->X - B->X), A->radius_SPH);
          A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, B->X, A->radius_SPH));  //\label{SPH:divU}
-         A->lap_U += 2 * B->mass / A->rho * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);   //\label{SPH:lapU}
-
+         A->lap_U += 2 * B->volume * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);          //\label{SPH:lapU}
+         A->grad_corr_M += B->volume * TensorProduct(B->X - A->X, grad_w_Bspline(A->X, B->X, A->radius_SPH));
          // just counting
          if (Between(Distance(A, B), {1E-12, A->radius_SPH})) {
             A->checked_points_in_radius_SPH++;
@@ -66,17 +66,21 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             }
          });
 
-#if defined(USE_SHARED_AUX)
+#if defined(USE_ONE_AUXP)
+      // if (A->isSurface)
       if (closest_surface_point != nullptr)
          for (const auto &AUX : closest_surface_point->auxiliaryPoints)
-            add(AUX);
+            if (AUX != nullptr)
+               add(AUX);
 #endif
 
 #if defined(USE_SIMPLE_SINGLE_AUX)
       if (A->isSurface)
          for (const auto &AUX : A->auxiliaryPoints)
-            PoissonEquation(AUX);
+            if (AUX != nullptr)
+               PoissonEquation(AUX);
 #endif
+      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
       //$ ------------------------------------------ */
       // \label{SPH:lapU_for_wall}
       // \label{SPH:Poisson_b_vector}
@@ -90,13 +94,13 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          // \label{SPH:how_to_set_wall_b_vector}
          // A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
 
-         if (A->isFirstWallLayer)
-            A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
-         else {
+         // if (A->isFirstWallLayer)
+         //    A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+         // else
+         {
             A->lap_U.fill(0.);
             A->b_vector.fill(0.);
          }
-         //
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -107,7 +111,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
          // \label{SPH:how_to_set_fluid_b_vector}
          A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
-
+                                                                       //
          //          if (A->vec_time_SPH.size() > 10) {
          // #if defined(USE_RungeKutta)
          //             double current_time = A->RK_X.get_t();

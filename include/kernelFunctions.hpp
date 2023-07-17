@@ -290,6 +290,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
 //    else
 //       return c * 2. * 3 * std::pow(1. - q, 2) * (-grad_q);
 // };
+//
 
 double Dot_grad_w_Bspline3_Dot(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
    const std::array<double, 3> Xij = xi - xj;
@@ -301,13 +302,13 @@ double Dot_grad_w_Bspline3_Dot(const std::array<double, 3> &xi, const std::array
       return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 };
 
-auto &w_Bspline = w_Bspline5;
-auto &grad_w_Bspline = grad_w_Bspline5;
-auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
+// auto &w_Bspline = w_Bspline5;
+// auto &grad_w_Bspline = grad_w_Bspline5;
+// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
 
-// auto &w_Bspline = w_Bspline3;
-// auto &grad_w_Bspline = grad_w_Bspline3;
-// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
-// auto &ddr_w_Bspline = ddr_w_Bspline3;
+auto &w_Bspline = w_Bspline3;
+auto &grad_w_Bspline = grad_w_Bspline3;
+auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
+auto &ddr_w_Bspline = ddr_w_Bspline3;
 
 #endif
