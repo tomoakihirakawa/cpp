@@ -489,7 +489,7 @@ class networkPoint : public CoordinateBounds, public CSR {
 
    // 2023/05/16
    //\label{SPH:auxiliaryPoints}
-   std::array<networkPoint *, 1> auxiliaryPoints;
+   std::array<networkPoint *, 2> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
@@ -582,13 +582,19 @@ class networkPoint : public CoordinateBounds, public CSR {
    double tmp_density;
    Tddd pre_U_SPH;
    Tddd mu_lap_rho_g_SPH;
-   Tddd interpolated_normal_SPH, interpolated_normal_SPH_original, interpolated_normal_SPH_original_modified, interpolated_normal_SPH_original_choped;
+   Tddd interpolated_normal_SPH, interpolated_normal_SPH_original, interpolated_normal_SPH_original_modified, interpolated_normal_SPH_original_choped, interpolated_normal_SPH_original_next_choped;
+   Tddd interpolated_normal_SPH_water, interpolated_normal_SPH_water_next;
+   Tddd interpolated_normal_SPH_rigid, interpolated_normal_SPH_rigid_next;
+   Tddd X_next;
+   double volume_next, mass_next;
    Tddd COM_SPH;
    double intp_density, ddr_intp_density;
    double totalMass_SPH;
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
+   //
+   std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;

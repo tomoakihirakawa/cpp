@@ -28,9 +28,13 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
    {
       A->gradP_SPH.fill(0.);
       auto add_gradP_SPH = [&](const auto &B, const double &coef = 1.) {
-         A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}0.2647
+         A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
 
-         // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
+         // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+
+         // A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * Dot(grad_w_Bspline(A->X, B->X, A->radius_SPH), A->inv_grad_corr_M);  //\label{SPH:gradP1}
+
+         // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
 
          //\label{SPH:gradP2}は，Aij = 1*..を使うと，0.132
          //\label{SPH:gradP2}は，Aij = 3*..を使うと，0.221
@@ -59,26 +63,29 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             if (B->isCaptured) {
                add_gradP_SPH(B);
 
+#if defined(USE_ONE_AUXP)
                if (B->isSurface) {
                   if ((distance = Distance(A->X, X_next(B))) < min_distance) {
                      min_distance = distance;
                      closest_surface_point = B;
                   }
                }
+#elif defined(USE_ALL_AUXP)
+            if (B->isSurface)
+               for (const auto &AUX : B->auxiliaryPoints) 
+               if (AUX != nullptr)
+                  add_gradP_SPH(AUX);
+#endif
             }
          });
       }
-
-#if defined(USE_SHARED_AUX)
+//
+#if defined(USE_ONE_AUXP)
+      // if (A->isSurface)
       if (closest_surface_point != nullptr)
          for (const auto &AUX : closest_surface_point->auxiliaryPoints)
-            add_gradP_SPH(AUX);
-#endif
-
-#if defined(USE_SIMPLE_SINGLE_AUX)
-      if (A->isSurface)
-         for (const auto &AUX : A->auxiliaryPoints)
-            add_gradP_SPH(AUX);
+            if (AUX != nullptr)
+               add_gradP_SPH(AUX);
 #endif
 
       /*DOC_EXTRACT SPH
@@ -88,6 +95,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       */
 
+      // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+      //
+      //
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 
       if (!isFinite(A->DUDt_SPH))

@@ -192,25 +192,29 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:PoissonEquation}
       auto PoissonEquation = [&](const auto &B /*column id*/, const double &coef = 1.) {
-         if (Distance(pO_x, B) < pO->radius_SPH) {
+         if (Distance(pO_x, X_next(B)) < pO->radius_SPH * 1.1) {
             {
                // \label{SPH:how_to_use_b_vector_in_Poisson1}
                ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH)) * coef;  // \label{SPH:div_b_vector}
                // \label{SPH:pressure_stabilization}
-               // if (pO->isFluid && !pO->isAuxiliary) {
-               //    const double alpha = 0.5;
-               //    ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
-               //    // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
+               // if (pO->isSurface)
+               // {
+               // const double alpha = 0.01;
+               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->rho) / (dt * dt);
+               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
+               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
+               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
                // }
+               Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
+               // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
+               // Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
+               // for ISPH
+               ROW->increment(pO, Aij / pO->rho);
+               ROW->increment(B, -Aij / pO->rho);
+               // for EISPH
+               sum_Aij_Pj += Aij * B->p_SPH;
+               sum_Aij += Aij;
             }
-            // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
-            Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
-            // for ISPH
-            ROW->increment(pO, Aij / pO->rho);
-            ROW->increment(B, -Aij / pO->rho);
-            // for EISPH
-            sum_Aij_Pj += Aij * B->p_SPH;
-            sum_Aij += Aij;
          }
       };
 
@@ -248,6 +252,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          }
       };
 
+      bool find_any_in_dist = false;
+      double the_dist = ROW->radius_SPH / 2.5;
+
       auto addPoissonEquation = [&](const auto &PoissonEquation, const auto &pO_x) {
          // find closest surface point
          networkPoint *closest_surface_point = nullptr;
@@ -256,27 +263,31 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             net->BucketPoints.apply(pO_x, pO->radius_SPH, [&](const auto &B) {
                if (B->isCaptured) {
                   PoissonEquation(B);
-
+                  if (Distance(B, pO) < the_dist)
+                     find_any_in_dist = true;
+#if defined(USE_ONE_AUXP)
                   if (B->isSurface) {
                      if ((distance = Distance(pO_x, X_next(B))) < min_distance) {
                         min_distance = distance;
                         closest_surface_point = B;
                      }
                   }
+#elif defined(USE_ALL_AUXP)
+            if (B->isSurface) 
+               for (const auto &AUX : B->auxiliaryPoints) 
+               if (AUX != nullptr)
+                  PoissonEquation(AUX);
+#endif
                }
             });
          }
-
-#if defined(USE_SHARED_AUX)
+//
+#if defined(USE_ONE_AUXP)
+         // if (pO->isSurface)
          if (closest_surface_point != nullptr)
             for (const auto &AUX : closest_surface_point->auxiliaryPoints)
-               PoissonEquation(AUX);
-#endif
-
-#if defined(USE_SIMPLE_SINGLE_AUX)
-         if (pO->isSurface)
-            for (const auto &AUX : pO->auxiliaryPoints)
-               PoissonEquation(AUX);
+               if (AUX != nullptr)
+                  PoissonEquation(AUX);
 #endif
       };
 
@@ -294,7 +305,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = 0;
          pO->p_SPH = pO->p_EISPH = 0;
-      } else if (ROW->getNetwork()->isRigidBody && !ROW->isFirstWallLayer) {
+      } else if (ROW->getNetwork()->isRigidBody) {
          // b% EISPH
          EISPH_pressure(total_weight, pressure_for_wall);
          if (ROW->getNetwork()->isRigidBody) {
@@ -324,6 +335,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             addPoissonEquation(ISPH_wall_pressure, pO_x);
             ROW->increment(ROW, -1.);
 
+            // if (!find_any_in_dist) {
+            //    ROW->clearColumnValue();
+            //    ROW->PoissonRHS = 0;
+            //    ROW->increment(ROW, 1.);
+            // }
             // b$ ISPH same as EISPH
             // このように決めた壁面粒子の圧力は，EISPHと全く同じになる．
             // ROW->PoissonRHS = ROW->p_EISPH;
@@ -335,6 +351,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
          addPoissonEquation(PoissonEquation, pO_x);
+
+         // const double alpha = 0.01 * dt;
+         // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
+
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
       }
@@ -419,7 +439,8 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    for (const auto &p : fluid_particle)
       if (p->isSurface)
          for (const auto &AUX : p->auxiliaryPoints)
-            points.emplace_back(AUX);
+            if (AUX != nullptr)
+               points.emplace_back(AUX);
 
    /* -------------------------------------------------------------------------- */
 
@@ -452,7 +473,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 
 #if defined(USE_GMRES)
 
-   gmres gm(points, b, x0, 200);  //\label{SPH:gmres}
+   gmres gm(points, b, x0, 100);  //\label{SPH:gmres}
    for (auto i = 1; i < 3; i++) {
       x0 = gm.x;
       std::cout << " gm.err : " << gm.err << std::endl;
@@ -461,7 +482,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
       if (gm.err < 1E-5)
          break;
 
-      gm.Restart(points, b, x0, 200);  //\label{SPH:gmres}
+      gm.Restart(points, b, x0, 100);  //\label{SPH:gmres}
    }
    // gmres gm(ToVector(points), b, x0, 100);
    // std::cout << " gm.err : " << gm.err << std::endl;

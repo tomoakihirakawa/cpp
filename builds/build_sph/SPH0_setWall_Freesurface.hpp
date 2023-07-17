@@ -102,7 +102,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                // captureされた点のうち流体粒子に近い点は第１層目としてマーク
                auto firstWallLayerCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < particle_spacing * 1.5 && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 8);
+                  return Distance(q, Q) < particle_spacing * 1.8 && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
                };
                q->isFirstWallLayer = net->BucketPoints.any_of(q->X, q->radius_SPH, firstWallLayerCondition);
 
@@ -126,54 +126,26 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
    // \label{SPH:freeslip}
    for (const auto &p : wall_p)
-      if (p->isFirstWallLayer) {
-         p->U_SPH.fill(0.);
-         double total_w = 0;
-         auto X = p->X + 2 * p->normal_SPH;
-         net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-            if (Distance(X, q) < p->radius_SPH) {
-               auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
-               p->U_SPH += q->U_SPH * w;
-               total_w += w;
-            }
-         });
-         if (total_w == 0.)
-            p->U_SPH.fill(0.);
-         else
-            p->U_SPH /= total_w;
-         // p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
-         p->U_SPH = Projection(Reflect(p->U_SPH, p->normal_SPH), p->normal_SPH);  //\label{SPH:wall_particle_velocity}
-      }
-};
-
-std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, const auto &all_nets) {
-   // 法線方向ではない．単なる密度と密度勾配の補間
-   std::array<double, 3> grad_rho = {0., 0., 0.};
-   double rho = 0.;
-   std::vector<Tddd> near_wall_particle;
-   for (const auto &net : all_nets)
-      net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-         if (Distance(p, q) < p->radius_SPH) {
-            grad_rho += q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
-            // grad_rho += p->rho * q->mass * (q->rho / (q->rho * q->rho) + p->rho / (p->rho * p->rho)) * grad_w_Bspline(p->X, q->X, p->radius_SPH);  //\label{SPH:gradP1}
-            // grad_rho += (q->rho - p->rho) * q->mass / p->rho * grad_w_Bspline(p->X, q->X, p->radius_SPH);  //\label{SPH:gradP2}
-            rho += q->rho * q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
+   // if (p->isFirstWallLayer)
+   {
+      p->U_SPH.fill(0.);
+      double total_w = 0;
+      auto X = p->X + 2 * p->normal_SPH;
+      net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
+         {
+            auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
+            p->U_SPH += q->U_SPH * w;
+            total_w += w;
          }
-
-         if (Distance(p, q) < p->radius_SPH / p->C_SML)
-            near_wall_particle.emplace_back(q->normal_SPH);
-         // このようにすることで，自身の補助点を無視して欠損のある方向を指す．
-         // if (p != q && q->isSurface)
-         //    for (const auto &Q : q->auxiliaryPoints)
-         //       if (Q != nullptr) {
-         //          grad_rho += q->rho * Q->volume * grad_w_Bspline(p->X, Q->X, p->radius_SPH);
-         //          rho += q->rho * Q->volume * w_Bspline(Norm(p->X - Q->X), p->radius_SPH);
-         //       }
       });
-   // for (const auto &n : near_wall_particle)
-   //    grad_rho = Chop(grad_rho, n);
-
-   return {rho, grad_rho};
+      if (total_w == 0.)
+         p->U_SPH.fill(0.);
+      else
+         p->U_SPH /= total_w;
+      // p->U_SPH = -p->U_SPH;
+      p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      // p->U_SPH = Projection(Reflect(p->U_SPH, p->normal_SPH), p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+   }
 };
 
 /*DOC_EXTRACT SPH
@@ -182,8 +154,8 @@ std::tuple<double, std::array<double, 3>> interpDensityAndGrad(const auto &p, co
 
 */
 
-// #define USE_SIMPLE_SINGLE_AUX
-#define USE_SHARED_AUX
+#define USE_ONE_AUXP
+// #define USE_ALL_AUXP
 
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
@@ -213,7 +185,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       p->totalMass_SPH = 0.;
       p->intp_density = 0.;
       p->interpolated_normal_SPH_original.fill(0.);
+      p->interpolated_normal_SPH_water.fill(0.);
       p->interpolated_normal_SPH_original_next.fill(0.);
+      p->interpolated_normal_SPH_water_next.fill(0.);
+
+      p->interpolated_normal_SPH_rigid.fill(0.);
+      p->interpolated_normal_SPH_rigid_next.fill(0.);
+
       double w;
 
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
@@ -227,7 +205,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
          p->interpolated_normal_SPH_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
          p->interpolated_normal_SPH_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->radius_SPH);
       });
-
+      p->interpolated_normal_SPH_water = p->interpolated_normal_SPH_original;
+      p->interpolated_normal_SPH_water_next = p->interpolated_normal_SPH_original_next;
       std::vector<Tddd> near_wall_particle, near_wall_particle_next;
       for (const auto &[obj, poly] : RigidBodyObject)
          obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
@@ -243,10 +222,12 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.5)
                   near_wall_particle.emplace_back(q->normal_SPH);
                p->interpolated_normal_SPH_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+               p->interpolated_normal_SPH_rigid -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
 
                if (Distance(X_next(p), X_next(q)) < p->radius_SPH / p->C_SML * 1.5)
                   near_wall_particle_next.emplace_back(q->normal_SPH);
-               p->interpolated_normal_SPH_original_next -= q->rho * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->radius_SPH);
+               p->interpolated_normal_SPH_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->radius_SPH);
+               p->interpolated_normal_SPH_rigid_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->radius_SPH);
             }
          });
 
@@ -255,9 +236,11 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       // \label{SPH:interpolated_normal_SPH}
       p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);  //\label{SPH:interpolated_normal_SPH}
       p->interpolated_normal_SPH_original_choped = p->interpolated_normal_SPH_original;
+      p->interpolated_normal_SPH_original_next_choped = p->interpolated_normal_SPH_original_next;
 
       for (const auto &n : near_wall_particle) {
          p->interpolated_normal_SPH_original_choped = Chop(p->interpolated_normal_SPH_original_choped, n);
+         p->interpolated_normal_SPH_original_next_choped = Chop(p->interpolated_normal_SPH_original_next_choped, n);
          p->interpolated_normal_SPH = Normalize(Chop(p->interpolated_normal_SPH, n));
          if (!isFinite(p->interpolated_normal_SPH))
             p->interpolated_normal_SPH = {0., 0., 1.};
@@ -317,10 +300,22 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    for (const auto &p : net->getPoints()) {
       p->isAuxiliary = false;
       if (p->isSurface) {
+
+         int num = 0, count = 0;
+         if (Norm(p->interpolated_normal_SPH_rigid) > 1E-10)
+            num = 2;
+         else
+            num = 1;
+
          for (auto &auxp : p->auxiliaryPoints) {
-            if (auxp == nullptr) {
-               auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
-               auxp->isAuxiliary = true;
+            if (count++ < num) {
+               if (auxp == nullptr) {
+                  auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
+                  auxp->isAuxiliary = true;
+               }
+            } else if (auxp != nullptr) {
+               delete auxp;
+               auxp = nullptr;
             }
          }
       } else
@@ -354,94 +349,250 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    {
       double d = 0;
       if (p->isSurface) {
-         for (auto &auxp : p->auxiliaryPoints) {
-            auto radius_SPH = p->radius_SPH;
-            auto C_SML = p->C_SML;
-            d += radius_SPH / C_SML;
-            auxp->setXSingle(aux_position(p, d));
-            auxp->radius_SPH = radius_SPH;
-            auxp->C_SML = C_SML;
-            auxp->surfacePoint = p;
-            auxp->isAuxiliary = true;
-            auxp->isCaptured = true;
-            auxp->isSurface = false;
-            auxp->p_SPH = p->p_SPH;
-            auxp->U_SPH = p->U_SPH;
-            auxp->b_vector.fill(0.);
-            auxp->DUDt_SPH.fill(0.);
-            auxp->volume = d * d * d;
-            auxp->setDensityVolume(_WATER_DENSITY_, p->volume);
+         int count = 0;
+         for (auto &auxp : p->auxiliaryPoints)
+            if (auxp != nullptr)
+               count++;
+         for (auto &auxp : p->auxiliaryPoints)
+            if (auxp != nullptr) {
+               auto radius_SPH = p->radius_SPH;
+               auto C_SML = p->C_SML;
+               d += radius_SPH / C_SML;
+               auxp->setXSingle(aux_position(p, d));
+               auxp->radius_SPH = radius_SPH;
+               auxp->C_SML = C_SML;
+               auxp->surfacePoint = p;
+               auxp->isAuxiliary = true;
+               auxp->isCaptured = true;
+               auxp->isSurface = false;
+               auxp->p_SPH = p->p_SPH;
+               auxp->U_SPH = p->U_SPH;
+               auxp->b_vector = p->b_vector;
+               auxp->DUDt_SPH = p->DUDt_SPH;
+               auxp->volume = d * d * d;
+               auxp->setDensityVolume(_WATER_DENSITY_, p->volume);
 #if defined(USE_RungeKutta)
-            auxp->RK_U = p->RK_U;
-            auxp->RK_X = p->RK_X;
-            auxp->RK_P = p->RK_P;
-            auxp->RK_rho = p->RK_rho;
+               auxp->RK_U = p->RK_U;
+               auxp->RK_X = p->RK_X;
+               auxp->RK_P = p->RK_P;
+               auxp->RK_rho = p->RK_rho;
 #elif defined(USE_LeapFrog)
-            auxp->LPFG_X = p->LPFG_X;
-            auxp->LPFG_rho = p->LPFG_rho;
+               auxp->LPFG_X = p->LPFG_X;
+               auxp->LPFG_rho = p->LPFG_rho;
 #endif
-            /* -------------------------------------------------------------------------- */
-            auto VEC = -(p->COM_SPH - p->X);
-            auxp->setXSingle(p->X + VEC);  // 初期値
-            // auxp->setXSingle((p->X - p->radius_SPH / 2. * Normalize(p->COM_SPH - p->X)));  // 初期値
-            // 重心位置を使う場合
-            auxp->volume = std::pow(p->radius_SPH / p->C_SML, 3);
-            auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-            auto r0 = std::pow(p->volume, 1. / 3.) / 2.;
-            // optimizeFunction(auxp->X, auxp->volume, p, auxp->radius_SPH, auxp->C_SML);
-            // auxp->volume = (_WATER_DENSITY_ - p->intp_density) / (_WATER_DENSITY_ * w_Bspline(Norm(auxp->X - p->X), p->radius_SPH));
-            auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
-            double min_f = 1E+20, best_vol, best_dist, best_rho;
-            double vol, rho, dist, R;
-            std::array<double, 3> X;
-            // auto unit_normal = Normalize(p->interpolated_normal_SPH);
-            // auto n_vec = (p->interpolated_normal_SPH_original + p->interpolated_normal_SPH_original_choped) / 2.;
-            auto n_vec = p->interpolated_normal_SPH_original;
-            auto unit_normal = Normalize(n_vec);
-            int N = 1000;
-            for (auto i = 1; i < N; ++i) {
-               R = p->radius_SPH * i / (double)N;
-               dist = R + r0;
-               X = p->X + dist * unit_normal;
-               for (auto j = 1; j < N; ++j) {
-                  rho = _WATER_DENSITY_;
-                  vol = std::pow(2. * R, 3.) * (2 * j / (double)N);
+               /* -------------------------------------------------------------------------- */
+               auto VEC = -(p->COM_SPH - p->X);
+               auxp->setXSingle(p->X + VEC);  // 初期値
+               auxp->volume = std::pow(p->radius_SPH / p->C_SML, 3);
+               auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
+               auto r0 = std::pow(p->volume, 1. / 3.) / 2.;
+               auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
+
+               auto opt_func = [&](const auto &p, const std::array<double, 3> &p_X, const auto &n_vec, const std::array<double, 3> &q_X, const double &vol) {
+                  auto rho = _WATER_DENSITY_;
+                  auto f = p->intp_density + rho * vol * w_Bspline(Norm(p_X - q_X), p->radius_SPH) - rho;
+                  auto F = n_vec - rho * vol * grad_w_Bspline(p_X, q_X, p->radius_SPH);
+                  return Dot(F, F) + f * f;
+               };
+
+               auto opt_func2 = [&](const auto &p, const std::array<double, 3> &p_X,
+                                    const auto &n_vec1, const auto &n_vec2,
+                                    const std::array<double, 3> &q_X1, const std::array<double, 3> &q_X2,
+                                    const double &vol1, const double &vol2) {
+                  auto rho = _WATER_DENSITY_;
+                  auto f = p->intp_density + rho * vol1 * w_Bspline(Norm(p_X - q_X1), p->radius_SPH) + rho * vol2 * w_Bspline(Norm(p_X - q_X2), p->radius_SPH) - rho;
+                  auto F1 = n_vec1 - rho * vol1 * grad_w_Bspline(p_X, q_X1, p->radius_SPH) - rho * vol2 * grad_w_Bspline(p_X, q_X2, p->radius_SPH);
+                  auto F2 = n_vec2 - rho * vol1 * grad_w_Bspline(p_X, q_X1, p->radius_SPH) - rho * vol2 * grad_w_Bspline(p_X, q_X2, p->radius_SPH);
+                  // return Dot(F2, F2) + 0.1 * f * f;
+                  return Dot(F1, F1) + Dot(F2, F2) + f * f;
+                  // return Dot(F1, F1) + f * f;
+               };
+
+               // auto get_X_V = [&](const auto &n_vec, const auto &center, const auto &rho) {
+               //    // center p->X or X_next(p)
+               //    double min_f = 1E+20, best_vol, best_dist, best_rho, vol, dist, R, f, opt_value;
+               //    int N = 1000, M = 1000;
+               //    std::array<double, 3> X, F, best_X, unit_normal = Normalize(n_vec);
+               //    double a = 0.5;
+               //    for (auto i = 1; i < N; ++i) {
+               //       dist = p->radius_SPH * i / (double)N;
+               //       X = center + dist * unit_normal;
+               //       for (auto j = 1; j < M; ++j) {
+               //          vol = std::pow(2. * (dist - r0), 3.) * (2. * j / (double)M);
+               //          if ((opt_value = opt_func(p, center, n_vec, X, vol)) < min_f) {
+               //             min_f = opt_value;
+               //             best_vol = vol;
+               //             best_rho = rho;
+               //             best_X = X;
+               //          }
+               //       }
+               //    }
+               //    return std::tuple<Tddd, double, double>{best_X, best_vol, best_rho};
+               // };
+
+               auto get_X_V = [&](const auto &n_vec, const auto &center, const auto &rho) {
+                  // center p->X or X_next(p)
+                  double min_f = 1E+20, best_vol, best_dist, best_rho, vol = p->volume, dist, R, f, opt_value;
+                  int N = 10000;
+                  std::array<double, 3> X, F, best_X, unit_normal = Normalize(n_vec);
+                  for (auto i = 1; i < N; ++i) {
+                     dist = p->radius_SPH * (double)i / (double)N;
+                     X = center + dist * unit_normal;
+                     if ((opt_value = opt_func(p, center, n_vec, X, vol)) < min_f) {
+                        min_f = opt_value;
+                        best_vol = vol;
+                        best_rho = rho;
+                        best_X = X;
+                     }
+                  }
+
+                  const auto V = best_vol;
+                  for (auto i = 1; i < N; ++i) {
+                     // dist = p->radius_SPH * i / (double)N;
+                     // X = center + dist * unit_normal;
+                     vol = 5. * V * (double)i / (double)N;
+                     if ((opt_value = opt_func(p, center, n_vec, best_X, vol)) < min_f) {
+                        min_f = opt_value;
+                        best_vol = vol;
+                        // best_rho = rho;
+                        // best_X = X;
+                     }
+                  }
+                  return std::tuple<Tddd, double, double>{best_X, best_vol, best_rho};
+               };
+
+               // auto get_X_V2 = [&](const auto &n_vec1, const auto &n_vec2, const auto &center, const auto &rho) {
+               //    // center p->X or X_next(p)
+               //    double min_f = 1E+20, best_vol, best_rho, vol = p->volume, R, f, opt_value, best_vol1, best_vol2, vol1, vol2;
+               //    int N = 500;
+               //    std::array<double, 3> X1, X2, F, best_X1, best_X2, unit_normal1 = Normalize(n_vec1), unit_normal2 = Normalize(n_vec2);
+               //    for (auto i = 1; i < N; ++i) {
+               //       X1 = center + p->radius_SPH * (double)i / (double)N * unit_normal1;
+
+               //       auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+               //       unit_normal2 = Normalize(n_vec2_);
+               //       for (auto j = 1; j < N; ++j) {
+               //          X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+               //          if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, X1, X2, vol, vol)) < min_f) {
+               //             min_f = opt_value;
+               //             best_vol1 = vol;
+               //             best_vol2 = vol;
+               //             best_vol = vol;
+               //             best_rho = rho;
+               //             best_X1 = X1;
+               //             best_X2 = X2;
+               //          }
+               //       }
+               //    }
+
+               //    const auto V = best_vol;
+               //    N = 500;
+               //    for (auto i = 1; i < N; ++i) {
+               //       vol1 = 10. * V * (double)i / (double)N;
+
+               //       auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+               //       unit_normal2 = Normalize(n_vec2_);
+               //       for (auto j = 1; j < N; ++j) {
+               //          X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+               //          vol2 = 10. * V * (double)j / (double)N;
+               //          if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, best_X1, X2, vol1, vol2)) < min_f) {
+               //             min_f = opt_value;
+               //             best_vol1 = vol1;
+               //             best_vol2 = vol2;
+               //             best_X2 = X2;
+               //             // best_rho = rho;
+               //             // best_X = X;
+               //          }
+               //       }
+               //    }
+               //    return std::tuple<Tddd, Tddd, double, double, double>{best_X1, best_X2, best_vol1, best_vol2, best_rho};
+               // };
+
+               auto get_X_V2 = [&](const auto &n_vec1, const auto &n_vec2, const auto &center, const auto &rho) {
+                  // center p->X or X_next(p)
+                  double min_f = 1E+20, best_vol, best_rho, vol = p->volume, R, f, opt_value, best_vol1, best_vol2, vol1, vol2;
+                  int N = 500;
+                  std::array<double, 3> X1, X2, F, best_X1, best_X2, unit_normal1 = Normalize(n_vec1), unit_normal2 = Normalize(n_vec2);
+                  for (auto i = 1; i < N; ++i) {
+                     X1 = center + p->radius_SPH * (double)i / (double)N * unit_normal1;
+                     auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+                     unit_normal2 = Normalize(n_vec2_);
+                     for (auto j = 1; j < N; ++j) {
+                        X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+                        if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, X1, X2, vol, vol)) < min_f) {
+                           min_f = opt_value;
+                           best_vol1 = vol;
+                           best_vol2 = vol;
+                           best_vol = vol;
+                           best_rho = rho;
+                           best_X1 = X1;
+                           best_X2 = X2;
+                        }
+                     }
+                  }
+
+                  const auto V = best_vol;
+                  N = 500;
+                  for (auto i = 1; i < N; ++i) {
+                     vol1 = 10. * V * (double)i / (double)N;
+
+                     auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+                     unit_normal2 = Normalize(n_vec2_);
+                     for (auto j = 1; j < N; ++j) {
+                        X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+                        vol2 = 10. * V * (double)j / (double)N;
+                        if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, best_X1, X2, vol1, vol2)) < min_f) {
+                           min_f = opt_value;
+                           best_vol1 = vol1;
+                           best_vol2 = vol2;
+                           best_X2 = X2;
+                           // best_rho = rho;
+                           // best_X = X;
+                        }
+                     }
+                  }
+                  return std::tuple<Tddd, Tddd, double, double, double>{best_X1, best_X2, best_vol1, best_vol2, best_rho};
+               };
+
+               if (count == 1) {
+                  {
+                     auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original, p->X, p->rho);
+                     auxp->setDensityVolume(RHO, V);
+                     auxp->setXSingle(X);  // 初期値
+                  }
                   //
-                  // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-                  // auto f = intp_density + auxp->rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-                  // auto F = intp_grad_density + auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
+                  {
+                     auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original_next, X_next(p), rho_next(p));
+                     auxp->volume_next = V;
+                     auxp->X_next = X;
+                     auxp->mass_next = RHO * V;
+                  }
+               } else if (count == 2) {
+                  {
+                     // auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_rigid_next, p->interpolated_normal_SPH_water, p->X, p->rho);
+                     auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_original_choped, p->interpolated_normal_SPH_original, p->X, p->rho);
+                     p->auxiliaryPoints[0]->setDensityVolume(RHO, V1);
+                     p->auxiliaryPoints[1]->setDensityVolume(RHO, V2);
+                     p->auxiliaryPoints[0]->setXSingle(X1);  // 初期値
+                     p->auxiliaryPoints[1]->setXSingle(X2);  // 初期値
+                  }
                   //
-                  // auto [intp_density, intp_grad_density] = interpDensityAndGrad(p, all_nets);
-                  auto f = p->intp_density + rho * vol * w_Bspline(dist, p->radius_SPH) - p->rho;
-                  auto F = n_vec - rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-                  // auto F = p->interpolated_normal_SPH_original_choped - auxp->rho * vol * grad_w_Bspline(p->X, X, p->radius_SPH);
-                  //
-                  f /= _WATER_DENSITY_;
-                  F /= _WATER_DENSITY_;
-                  auto opt_func = 0;
-                  opt_func += f * f;
-                  opt_func += Dot(F, F);
-                  if (opt_func < min_f) {
-                     min_f = opt_func;
-                     best_vol = vol;
-                     best_dist = dist;
-                     best_rho = rho;
-                     // std::cout << "auxp = " << auxp
-                     //           << ", Dot(F, F) = " << Dot(F, F)
-                     //           << ", f*f = " << f * f
-                     //           << ", opt_func = " << opt_func
-                     //           << ", dist = " << dist
-                     //           << ", r0 = " << r0 << std::endl;
+                  {
+                     // auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_rigid_next, p->interpolated_normal_SPH_water_next, X_next(p), rho_next(p));
+                     auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_original_next_choped, p->interpolated_normal_SPH_original_next, p->X, p->rho);
+                     p->auxiliaryPoints[0]->volume_next = V1;
+                     p->auxiliaryPoints[1]->volume_next = V2;
+                     p->auxiliaryPoints[0]->X_next = X1;
+                     p->auxiliaryPoints[1]->X_next = X2;
+                     p->auxiliaryPoints[0]->mass_next = RHO * V1;
+                     p->auxiliaryPoints[1]->mass_next = RHO * V2;
                   }
                }
             }
-
-            auxp->setDensityVolume(best_rho, best_vol);
-            auxp->setXSingle(p->X + best_dist * unit_normal);  // 初期値
-         }
       }
    }
 
+//
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -460,21 +611,31 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auto w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
                p->totalMass_SPH += q->mass;
             }
+            p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+#if defined(USE_ONE_AUXP)
             if (q->isSurface) {
                if ((distance = Distance(p->X, q->X)) < min_distance) {
                   min_distance = distance;
                   closest_surface_point = q;
                }
             }
-
-            p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+#elif defined(USE_ALL_AUXP)
+                if (q->isSurface)
+                   for (const auto &AUX : q->auxiliaryPoints)
+                      if (AUX != nullptr)
+                         p->interpolated_normal_SPH_original_modified -= AUX->rho * AUX->volume * grad_w_Bspline(p->X, AUX->X, p->radius_SPH);
+#endif
          });
 
+#if defined(USE_ONE_AUXP)
+      // if (p->isSurface)
       if (closest_surface_point != nullptr)
-         for (const auto &AUX : closest_surface_point->auxiliaryPoints) {
-            auto q = AUX;
-            p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
-         }
+         for (const auto &AUX : closest_surface_point->auxiliaryPoints)
+            if (AUX != nullptr) {
+               auto q = AUX;
+               p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            }
+#endif
    }
 
    net->surfaceNet->setGeometricProperties();
