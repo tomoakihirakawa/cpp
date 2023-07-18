@@ -69,6 +69,24 @@ networkPoint *getClosestFluid(networkPoint *p, const auto &target_nets) {
    return P;
 };
 
+networkPoint *getClosest(const Tddd X, const double range, const auto &target_nets, const auto &condition) {
+   double distance = 1E+20;
+   networkPoint *P = nullptr;
+   for (const auto &obj : target_nets) {
+      if (obj->isFluid)
+         obj->BucketPoints.apply(X, range, [&](const auto &q) {
+            if (condition(q)) {
+               auto tmp = Distance(X, q);
+               if (distance > tmp) {
+                  distance = tmp;
+                  P = q;
+               }
+            }
+         });
+   }
+   return P;
+};
+
 /*DOC_EXTRACT SPH
 
 ### CFL条件の設定
@@ -239,8 +257,8 @@ void updateParticles(const auto &points,
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
-      const double reflection_factor = 0.1;
-      const double asobi = 0.01;
+      const double reflection_factor = 1.;
+      const double asobi = 0.05;
 
       auto closest = [&]() {
          double distance = 1E+20;
@@ -258,6 +276,7 @@ void updateParticles(const auto &points,
       };
 
       bool isReflected = true;
+      p->DUDt_modify_SPH.fill(0.);
       while (isReflected && count++ < 10) {
          isReflected = false;
          for (const auto &[obj, _] : RigidBodyObject)

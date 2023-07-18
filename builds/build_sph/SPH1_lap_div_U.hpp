@@ -65,7 +65,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             }
          });
-
+//
 #if defined(USE_ONE_AUXP)
       // if (A->isSurface)
       if (closest_surface_point != nullptr)
@@ -96,11 +96,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
          // if (A->isFirstWallLayer)
          //    A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
-         // else
-         {
-            A->lap_U.fill(0.);
-            A->b_vector.fill(0.);
-         }
+         // else {
+         A->lap_U.fill(0.);
+         A->b_vector.fill(0.);
+         // }
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -112,36 +111,36 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          // \label{SPH:how_to_set_fluid_b_vector}
          A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
                                                                        //
-         //          if (A->vec_time_SPH.size() > 10) {
-         // #if defined(USE_RungeKutta)
-         //             double current_time = A->RK_X.get_t();
-         //             double next_time = current_time + A->RK_X.get_dt();
-         // #elif defined(USE_LeapFrog)
-         //             double current_time = A->LPFG_X.get_t();
-         //             double next_time = current_time + dt;
-         // #endif
-         //             std::vector<double> times = {next_time, current_time};
-         //             std::array<double, 3> U1, U2, U3, U4;
-         //             U1 = A->U_SPH;
-         //             if (*(A->vec_time_SPH.rbegin()) == current_time) {
-         //                times.push_back(*(A->vec_time_SPH.rbegin() + 1));
-         //                U2 = *(A->vec_U_SPH.rbegin() + 1);
-         //                // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
-         //                // U3 = *(A->vec_U_SPH.rbegin() + 2);
-         //                // times.push_back(*(A->vec_time_SPH.rbegin() + 3));
-         //                // U4 = *(A->vec_U_SPH.rbegin() + 3);
-         //             } else {
-         //                times.push_back(*(A->vec_time_SPH.rbegin() + 0));
-         //                U2 = *(A->vec_U_SPH.rbegin() + 0);
-         //                // times.push_back(*(A->vec_time_SPH.rbegin() + 1));
-         //                // U3 = *(A->vec_U_SPH.rbegin() + 1);
-         //                // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
-         //                // U4 = *(A->vec_U_SPH.rbegin() + 2);
-         //             }
-         //             InterpolationLagrange<double> lag(times);
-         //             auto D = lag.DN(current_time);
-         //             A->b_vector = -(D[1] * U1 + D[2] * U2 /*+ D[3] * U3  + D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
-         //          }
+         if (A->vec_time_SPH.size() > 10) {
+#if defined(USE_RungeKutta)
+            double current_time = A->RK_X.get_t();
+            double next_time = current_time + A->RK_X.get_dt();
+#elif defined(USE_LeapFrog)
+            double current_time = A->LPFG_X.get_t();
+            double next_time = current_time + dt;
+#endif
+            std::vector<double> times = {next_time, current_time};
+            std::array<double, 3> U1, U2, U3, U4;
+            U1 = A->U_SPH;
+            if (*(A->vec_time_SPH.rbegin()) == current_time) {
+               times.push_back(*(A->vec_time_SPH.rbegin() + 1));
+               U2 = *(A->vec_U_SPH.rbegin() + 1);
+               times.push_back(*(A->vec_time_SPH.rbegin() + 2));
+               U3 = *(A->vec_U_SPH.rbegin() + 2);
+               // times.push_back(*(A->vec_time_SPH.rbegin() + 3));
+               // U4 = *(A->vec_U_SPH.rbegin() + 3);
+            } else {
+               times.push_back(*(A->vec_time_SPH.rbegin() + 0));
+               U2 = *(A->vec_U_SPH.rbegin() + 0);
+               times.push_back(*(A->vec_time_SPH.rbegin() + 1));
+               U3 = *(A->vec_U_SPH.rbegin() + 1);
+               // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
+               // U4 = *(A->vec_U_SPH.rbegin() + 2);
+            }
+            InterpolationLagrange<double> lag(times);
+            auto D = lag.DN(current_time);
+            A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3 /* + D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+         }
       }
 
       //$ ------------------------------------------ */

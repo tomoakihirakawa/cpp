@@ -108,7 +108,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                // capture
                auto nearWallCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange && q != Q;  // && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
+                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
                };
                q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
             }
@@ -301,11 +301,11 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       p->isAuxiliary = false;
       if (p->isSurface) {
 
-         int num = 0, count = 0;
-         if (Norm(p->interpolated_normal_SPH_rigid) > 1E-10)
-            num = 2;
-         else
-            num = 1;
+         int num = 2, count = 0;
+         // if (Norm(p->interpolated_normal_SPH_rigid) > 1E-10)
+         //    num = 2;
+         // else
+         //    num = 1;
 
          for (auto &auxp : p->auxiliaryPoints) {
             if (count++ < num) {
@@ -403,8 +403,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   auto f = p->intp_density + rho * vol1 * w_Bspline(Norm(p_X - q_X1), p->radius_SPH) + rho * vol2 * w_Bspline(Norm(p_X - q_X2), p->radius_SPH) - rho;
                   auto F1 = n_vec1 - rho * vol1 * grad_w_Bspline(p_X, q_X1, p->radius_SPH) - rho * vol2 * grad_w_Bspline(p_X, q_X2, p->radius_SPH);
                   auto F2 = n_vec2 - rho * vol1 * grad_w_Bspline(p_X, q_X1, p->radius_SPH) - rho * vol2 * grad_w_Bspline(p_X, q_X2, p->radius_SPH);
-                  // return Dot(F2, F2) + 0.1 * f * f;
-                  return Dot(F1, F1) + Dot(F2, F2) + f * f;
+                  return Dot(F2, F2) + f * f;
+                  // return Dot(F1, F1) + Dot(F2, F2) + f * f;
                   // return Dot(F1, F1) + f * f;
                };
 
@@ -511,19 +511,17 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auto get_X_V2 = [&](const auto &n_vec1, const auto &n_vec2, const auto &center, const auto &rho) {
                   // center p->X or X_next(p)
                   double min_f = 1E+20, best_vol, best_rho, vol = p->volume, R, f, opt_value, best_vol1, best_vol2, vol1, vol2;
-                  int N = 500;
-                  std::array<double, 3> X1, X2, F, best_X1, best_X2, unit_normal1 = Normalize(n_vec1), unit_normal2 = Normalize(n_vec2);
+                  int N = 300;
+                  std::array<double, 3> X1, X2, F, best_X1, best_X2, unit_normal1 = Normalize(n_vec1), unit_normal2 = Normalize(n_vec2), n_vec2_;
                   for (auto i = 1; i < N; ++i) {
                      X1 = center + p->radius_SPH * (double)i / (double)N * unit_normal1;
-                     auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+                     n_vec2_ = n_vec2 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
                      unit_normal2 = Normalize(n_vec2_);
                      for (auto j = 1; j < N; ++j) {
                         X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
                         if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, X1, X2, vol, vol)) < min_f) {
                            min_f = opt_value;
-                           best_vol1 = vol;
-                           best_vol2 = vol;
-                           best_vol = vol;
+                           best_vol2 = best_vol1 = best_vol = vol;
                            best_rho = rho;
                            best_X1 = X1;
                            best_X2 = X2;
@@ -532,45 +530,99 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   }
 
                   const auto V = best_vol;
-                  N = 500;
-                  for (auto i = 1; i < N; ++i) {
-                     vol1 = 10. * V * (double)i / (double)N;
 
-                     auto n_vec2_ = n_vec1 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+                  N = 300;
+                  for (auto i = 1; i < N; ++i) {
+                     vol1 = 5. * V * (double)i / (double)N;
+                     n_vec2_ = n_vec2 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
                      unit_normal2 = Normalize(n_vec2_);
                      for (auto j = 1; j < N; ++j) {
-                        X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
-                        vol2 = 10. * V * (double)j / (double)N;
+                        // X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+                        vol2 = 5. * V * (double)j / (double)N;
                         if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, best_X1, X2, vol1, vol2)) < min_f) {
                            min_f = opt_value;
                            best_vol1 = vol1;
                            best_vol2 = vol2;
                            best_X2 = X2;
-                           // best_rho = rho;
-                           // best_X = X;
                         }
                      }
                   }
                   return std::tuple<Tddd, Tddd, double, double, double>{best_X1, best_X2, best_vol1, best_vol2, best_rho};
                };
 
-               if (count == 1) {
-                  {
-                     auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original, p->X, p->rho);
-                     auxp->setDensityVolume(RHO, V);
-                     auxp->setXSingle(X);  // 初期値
-                  }
-                  //
-                  {
-                     auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original_next, X_next(p), rho_next(p));
-                     auxp->volume_next = V;
-                     auxp->X_next = X;
-                     auxp->mass_next = RHO * V;
-                  }
-               } else if (count == 2) {
+               // auto get_X_V2 = [&](const auto &n_vec1, const auto &n_vec2, const auto &center, const auto &rho) {
+               //    // center p->X or X_next(p)
+               //    double min_f = 1E+20, best_vol, best_rho, vol = p->volume, R, f, opt_value, best_vol1, best_vol2, vol1, vol2;
+               //    int N = 50;
+               //    int M = 50;
+               //    std::array<double, 3> X1, X2, F, best_X1, best_X2, unit_normal1 = Normalize(n_vec1), unit_normal2 = Normalize(n_vec2);
+               //    for (auto k = 0; k < 100; ++k) {
+               //       auto center1 = best_X1;
+               //       auto center2 = best_X2;
+               //       if (k == 0)
+               //          center1 = center + 0.5 * p->radius_SPH * unit_normal1;
+               //       for (auto i = 1; i < N; ++i) {
+               //          X1 = center1 + 0.5 * p->radius_SPH * (-1. + 2. * (double)i / (double)N) / std::pow(2., k) * unit_normal1;
+               //          auto n_vec2_ = n_vec2 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+               //          unit_normal2 = Normalize(n_vec2_);
+               //          for (auto j = 1; j < M; ++j) {
+               //             if (k == 0)
+               //                center2 = center + 0.5 * p->radius_SPH * unit_normal2;
+
+               //             X2 = center2 + 0.5 * p->radius_SPH * (-1. + 2. * (double)j / (double)M) / std::pow(2., k) * unit_normal2;
+
+               //             // X2 = center2 + p->radius_SPH * ((double)j / (double)M) * unit_normal2;
+               //             if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, X1, X2, vol, vol)) < min_f) {
+               //                min_f = opt_value;
+               //                best_vol = vol;
+               //                best_rho = rho;
+               //                best_X1 = X1;
+               //                best_X2 = X2;
+               //             }
+               //          }
+               //       }
+               //    }
+
+               //    const auto V = best_vol;
+               //    N = 1000;
+               //    for (auto i = 1; i < N; ++i) {
+               //       vol1 = 10. * V * (double)i / (double)N;
+               //       auto n_vec2_ = n_vec2 - rho * vol1 * grad_w_Bspline(center, X1, p->radius_SPH);
+               //       unit_normal2 = Normalize(n_vec2_);
+               //       for (auto j = 1; j < N; ++j) {
+               //          X2 = center + p->radius_SPH * (double)j / (double)N * unit_normal2;
+               //          vol2 = 10. * V * (double)j / (double)N;
+               //          if ((opt_value = opt_func2(p, center, n_vec1, n_vec2_, best_X1, X2, vol1, vol2)) < min_f) {
+               //             min_f = opt_value;
+               //             best_vol1 = vol1;
+               //             best_vol2 = vol2;
+               //             best_X2 = X2;
+               //             // best_rho = rho;
+               //             // best_X = X;
+               //          }
+               //       }
+               //    }
+               //    return std::tuple<Tddd, Tddd, double, double, double>{best_X1, best_X2, best_vol1, best_vol2, best_rho};
+               // };
+
+               // if (count == 1) {
+               //    {
+               //       auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original, p->X, p->rho);
+               //       auxp->setDensityVolume(RHO, V);
+               //       auxp->setXSingle(X);  // 初期値
+               //    }
+               //    //
+               //    {
+               //       auto [X, V, RHO] = get_X_V(p->interpolated_normal_SPH_original_next, X_next(p), rho_next(p));
+               //       auxp->volume_next = V;
+               //       auxp->X_next = X;
+               //       auxp->mass_next = RHO * V;
+               //    }
+               // } else if (count == 2)
+               {
                   {
                      // auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_rigid_next, p->interpolated_normal_SPH_water, p->X, p->rho);
-                     auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_original_choped, p->interpolated_normal_SPH_original, p->X, p->rho);
+                     auto [X1, X2, V1, V2, RHO] = get_X_V2(p->interpolated_normal_SPH_original_choped /*base direction*/, p->interpolated_normal_SPH_original /*minimize this by adding*/, p->X, p->rho);
                      p->auxiliaryPoints[0]->setDensityVolume(RHO, V1);
                      p->auxiliaryPoints[1]->setDensityVolume(RHO, V2);
                      p->auxiliaryPoints[0]->setXSingle(X1);  // 初期値
