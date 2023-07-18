@@ -94,9 +94,8 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       が計算できた．
 
       */
-
-      // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
-      //
+      // if (!A->isSurface)
+      //    A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
       //
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 

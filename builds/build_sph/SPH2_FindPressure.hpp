@@ -297,11 +297,20 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:whereToMakeTheEquation}
       if (ROW->isAuxiliary) {
-         pO = ROW->surfacePoint;  // Aが安定する．
-         // pO = ROW;
-         pO_x = X_next(pO);
-         pO_b = b_vector(pO);
-         AtmosphericPressureCondition(pO);
+         // pO = getClosest(ROW->X, ROW->radius_SPH, target_nets, [&](const networkPoint *p) { return (ROW != p && !p->isSurface && p->isCaptured && p->isFluid); });
+         // if (ROW->surfacePoint->auxiliaryPoints[1] == ROW) {
+         //    pO = ROW->surfacePoint->auxiliaryPoints[0];
+         //    pO_x = X_next(pO);
+         //    pO_b = b_vector(pO);
+         //    addPoissonEquation(PoissonEquation, pO_x);
+         // } else
+         {
+            pO = ROW->surfacePoint;
+            // pO = ROW;
+            pO_x = X_next(pO);
+            pO_b = b_vector(pO);
+            AtmosphericPressureCondition(pO);
+         }
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = 0;
          pO->p_SPH = pO->p_EISPH = 0;
@@ -351,10 +360,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
          addPoissonEquation(PoissonEquation, pO_x);
-
-         // const double alpha = 0.01 * dt;
-         // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
-
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
       }
