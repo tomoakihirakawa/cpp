@@ -15,6 +15,9 @@ struct BaseBuckets {
    Tddd center;
    ST3 dn;
    std::vector<std::vector<std::vector<std::unordered_set<T>>>> buckets;
+   std::vector<std::vector<std::vector<std::vector<T>>>> buckets_vector;
+   std::vector<std::vector<std::vector<bool>>> buckets_bool;
+   bool vector_is_set;
    std::unordered_set<T> all_stored_objects;
    std::unordered_map<T, ST3> map_to_ijk;
    double dL;
@@ -36,7 +39,9 @@ struct BaseBuckets {
       this->zsize = std::ceil((std::get<1>(this->zbounds) - std::get<0>(this->zbounds)) / this->dL);
       this->dn = {xsize, ysize, zsize};
       this->buckets.resize(xsize, std::vector</*y*/ std::vector</*z*/ std::unordered_set<T>>>(ysize, std::vector</*z*/ std::unordered_set<T>>(zsize, std::unordered_set<T>{})));
-
+      this->buckets_bool.resize(xsize, std::vector</*y*/ std::vector</*z*/ bool>>(ysize, std::vector</*z*/ bool>(zsize, false)));
+      this->vector_is_set = false;
+      //
       std::cout << "１バケット幅 = " << this->dL << std::endl;
       std::cout << "バウンド = " << this->bounds << std::endl;
       std::cout << "サイズ = " << this->dn << std::endl;
@@ -93,17 +98,33 @@ struct BaseBuckets {
       }
    };
    //@ -------------------------------------------------------------------------- */
+   // unordered_setをvectorにコピー
+   void setVector() {
+      this->buckets_vector.clear();
+      this->buckets_vector.resize(this->xsize, std::vector</*y*/ std::vector</*z*/ std::vector<T>>>(this->ysize, std::vector</*z*/ std::vector<T>>(this->zsize, std::vector<T>{})));
+      for (ST i = 0; i < this->xsize; ++i)
+         for (ST j = 0; j < this->ysize; ++j)
+            for (ST k = 0; k < this->zsize; ++k)
+               this->buckets_vector[i][j][k].assign(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
+      this->vector_is_set = true;
+   };
+   //@ -------------------------------------------------------------------------- */
    //! explicitly specify coordinates
    bool add_force(const ST3 &ijk, const T p) {
+      this->vector_is_set = false;
       const auto [i, j, k] = ijk;
       this->map_to_ijk[p] = ijk;
       const bool bucket_inserted = this->buckets[i][j][k].emplace(p).second;
       const bool all_objects_inserted = this->all_stored_objects.emplace(p).second;
       return bucket_inserted && all_objects_inserted;
    };
-   bool add(const Tddd &x, const T p) { return add_force(indices(x), p); };
+   bool add(const Tddd &x, const T p) {
+      this->vector_is_set = false;
+      return add_force(indices(x), p);
+   };
    //! automatically specify coordinates
    bool add(const std::unordered_set<T> &P) {
+      this->vector_is_set = false;
       bool ret = true;
       for (const auto &p : P) {
          auto ijk = indices(ToX(p));
@@ -126,6 +147,7 @@ struct BaseBuckets {
    };
 
    void clear() {
+      this->vector_is_set = false;
       this->buckets.clear();
       this->all_stored_objects.clear();
    };
@@ -139,14 +161,23 @@ struct BaseBuckets {
          return true;
       }
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-
-      return std::none_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
-         return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-            return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-               return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+      if (!this->vector_is_set) {
+         return std::none_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
             });
          });
-      });
+      } else {
+         return std::none_of(this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
+            });
+         });
+      }
    }
 
    //! all_of
@@ -156,13 +187,23 @@ struct BaseBuckets {
       }
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
 
-      return std::all_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
-         return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-            return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-               return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+      if (!this->vector_is_set) {
+         return std::all_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
             });
          });
-      });
+      } else {
+         return std::all_of(this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
+            });
+         });
+      }
    }
 
    //! any_of
@@ -172,28 +213,62 @@ struct BaseBuckets {
       }
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
 
-      return std::any_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
-         return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-            return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-               return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+      if (!this->vector_is_set) {
+         return std::any_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
             });
          });
-      });
+      } else {
+         return std::any_of(this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+               });
+            });
+         });
+      }
    }
 
    //! apply
    void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const {
       if (this->buckets.empty())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-      std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
-         std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
-            std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
-               for (const auto &p : Bijk) func(p);
+
+      if (!this->vector_is_set) {
+         std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+            std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
+               std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
+                  for (const auto &p : Bijk) func(p);
+               });
             });
          });
-      });
+      } else {
+         std::for_each(std::execution::unseq, this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+            std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
+               std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
+                  for (const auto &p : Bijk) func(p);
+               });
+            });
+         });
+      }
    };
+
+   //! apply
+   void apply(const Tddd &x, const double d, const std::function<void(const int, const int, const int)> &func) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
+      int i, j, k;
+      for (i = i_min; i <= i_max; ++i)
+         for (j = j_min; j <= j_max; ++j)
+            for (k = k_min; k <= k_max; ++k)
+               func(i, j, k);
+   }
 };
 
 template <typename T>

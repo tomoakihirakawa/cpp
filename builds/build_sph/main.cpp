@@ -220,6 +220,8 @@ int main(int arg, char **argv) {
                   p->C_SML = CSML;
                   p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
+                  p->isFluid = object->isFluid;
+                  p->isAir = false;
                   break;
                }
             }

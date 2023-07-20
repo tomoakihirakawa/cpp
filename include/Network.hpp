@@ -504,7 +504,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    bool pn_is_set;
    bool isSurface;
    bool isInsideOfBody;
-   bool isCaptured, isCaptured_, isFluid, isFirstWallLayer;
+   bool isCaptured, isCaptured_, isFluid, isAir, isFirstWallLayer;
    bool isAuxiliary;
    bool isFreeFalling;
    double radius_SPH;
@@ -588,7 +588,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd X_next;
    double volume_next, mass_next;
    Tddd COM_SPH;
-   double intp_density, ddr_intp_density;
+   double intp_density, intp_density_next, ddr_intp_density;
    double totalMass_SPH;
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
    Tddd cg_neighboring_particles_SPH;
@@ -904,7 +904,9 @@ class networkPoint : public CoordinateBounds, public CSR {
                 networkLine *xline_IN = nullptr,
                 networkFace *xface_IN = nullptr);
    ~networkPoint();
-   /* ------------------------------------------------------ */
+   /* -------------------------------------------------------------------------- */
+   NewtonRaphson<double> NR_double;
+   /* -------------------------------------------------------------------------- */
    V_d getFaceAreas() const;
    std::unordered_set<networkLine *> getLinesAround() const;
    std::unordered_set<networkLine *> getLinesOppsoite() const;
@@ -3463,6 +3465,8 @@ class Network : public CoordinateBounds {
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
             this->BucketFaces.add(xyz, f);
       }
+
+      this->BucketFaces.setVector();
    };
 
    void makeBucketPoints(const double spacing) {
@@ -3475,6 +3479,8 @@ class Network : public CoordinateBounds {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
       else
          std::cout << this->getName() << ", all points are added" << std::endl;
+
+      this->BucketPoints.setVector();
       // this->BucketPoints.hashing();
       // std::cout << this->getName() << ", hashing is done" << std::endl;
       // this->BucketPoints.shrink_to_fit();
