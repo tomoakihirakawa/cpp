@@ -165,7 +165,9 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   if (p->isAuxiliary)
+   if (p->isAir)
+      return p->rho;
+   else if (p->isAuxiliary)
       return p->rho;
    else if (p->getNetwork()->isRigidBody)
       return p->rho;
@@ -180,7 +182,9 @@ double rho_next(auto p) {
 
 // \label{SPH:volume_next}
 double V_next(const auto &p) {
-   if (p->isAuxiliary)
+   if (p->isAir)
+      return p->volume;
+   else if (p->isAuxiliary)
       return p->volume_next;
    else
       return p->mass / rho_next(p);
@@ -188,7 +192,9 @@ double V_next(const auto &p) {
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   if (p->isAuxiliary)
+   if (p->isAir)
+      return p->X;
+   else if (p->isAuxiliary)
       return p->X_next;
    else if (p->getNetwork()->isRigidBody)
       return p->X;

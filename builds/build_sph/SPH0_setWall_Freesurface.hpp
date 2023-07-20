@@ -153,9 +153,10 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 ## 法線方向の計算と水面の判定
 
 */
-
-#define USE_ONE_AUXP
+// #ifndef USE_AIR_PARTICLE
+// #define USE_ONE_AUXP
 // #define USE_ALL_AUXP
+// #endif
 
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
@@ -197,7 +198,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
       double w;
 
-      std::vector<networkPoint *> samples;
+      // std::vector<networkPoint *> samples;
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          // w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
          double w;
@@ -311,6 +312,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    */
 
+#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
    DebugPrint("水面ネットワークの初期化", Green);
    if (net->surfaceNet == nullptr)
       net->surfaceNet = new Network();
@@ -362,9 +364,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    DebugPrint("水面補助粒子の作成", Green);
 
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       double d = 0;
       if (p->isSurface) {
@@ -394,15 +396,15 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auxp->volume_next = auxp->volume;
                auxp->X_next = X_next(p) + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original_next);
                auxp->mass_next = _WATER_DENSITY_ * auxp->volume;
-#if defined(USE_RungeKutta)
+   #if defined(USE_RungeKutta)
                auxp->RK_U = p->RK_U;
                auxp->RK_X = p->RK_X;
                auxp->RK_P = p->RK_P;
                auxp->RK_rho = p->RK_rho;
-#elif defined(USE_LeapFrog)
+   #elif defined(USE_LeapFrog)
                auxp->LPFG_X = p->LPFG_X;
                auxp->LPFG_rho = p->LPFG_rho;
-#endif
+   #endif
                auto opt_func = [&](const auto &p,
                                    const std::array<double, 3> &p_X,
                                    const auto &grad_to_minimize_more,
@@ -497,112 +499,61 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       }
    }
 
-   // #pragma omp parallel
-   //    for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //    {
-   //       if (p->isSurface) {
-   //          for (auto &AUX : p->auxiliaryPoints) {
-   //             if (AUX != nullptr)
-   //                AUX->NR_double.initialize(AUX->volume);
-   //          }
-   //       }
-   //    }
-   //
-   //    for (auto i = 0; i <= 100; ++i) {
-   // #pragma omp parallel
-   //       for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //       {
-   //          if (p->isSurface) {
-   //             for (auto &AUX : p->auxiliaryPoints) {
-   //                auto F1 = p->interpolated_normal_SPH_original;
-   //                auto F2 = p->intp_density - _WATER_DENSITY_;
-   //                auto dF1dx = -AUX->rho * grad_w_Bspline(p->X, AUX->X, p->radius_SPH);
-   //                auto dF2dx = AUX->rho * w_Bspline(Norm(p->X - AUX->X), p->radius_SPH);
-   //                for (const auto &net : all_nets)
-   //                   net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-   //                      if (q->isSurface)
-   //                         for (const auto &aux : q->auxiliaryPoints)
-   //                            if (aux != nullptr) {
-   //                               F1 -= aux->rho * aux->volume * grad_w_Bspline(p->X, aux->X, p->radius_SPH);
-   //                               F2 += aux->rho * aux->volume * w_Bspline(Norm(p->X - aux->X), p->radius_SPH);
-   //                            }
-   //                   });
-   //                auto F = Dot(F1, F1) / 2. + F2 * F2 / 2.;
-   //                auto dFdx = Dot(dF1dx, F1) + dF2dx * F2;
-   //                AUX->NR_double.update(F, dFdx, 0.001);
-   //             }
-   //          }
-   //       }
-   // #pragma omp parallel
-   //       for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //          if (p->isSurface) {
-   //             for (auto &AUX : p->auxiliaryPoints) {
-   //                AUX->volume_next = AUX->volume = AUX->NR_double.X;
-   //                AUX->setDensityVolume(_WATER_DENSITY_, AUX->volume);
-   //                AUX->mass_next = _WATER_DENSITY_ * AUX->volume_next;
-   //             }
-   //          }
-   //    }
+      // #pragma omp parallel
+      //    for (const auto &p : net->getPoints())
+      // #pragma omp single nowait
+      //    {
+      //       if (p->isSurface) {
+      //          for (auto &AUX : p->auxiliaryPoints) {
+      //             if (AUX != nullptr)
+      //                AUX->NR_double.initialize(AUX->volume);
+      //          }
+      //       }
+      //    }
+      //
+      //    for (auto i = 0; i <= 100; ++i) {
+      // #pragma omp parallel
+      //       for (const auto &p : net->getPoints())
+      // #pragma omp single nowait
+      //       {
+      //          if (p->isSurface) {
+      //             for (auto &AUX : p->auxiliaryPoints) {
+      //                auto F1 = p->interpolated_normal_SPH_original;
+      //                auto F2 = p->intp_density - _WATER_DENSITY_;
+      //                auto dF1dx = -AUX->rho * grad_w_Bspline(p->X, AUX->X, p->radius_SPH);
+      //                auto dF2dx = AUX->rho * w_Bspline(Norm(p->X - AUX->X), p->radius_SPH);
+      //                for (const auto &net : all_nets)
+      //                   net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+      //                      if (q->isSurface)
+      //                         for (const auto &aux : q->auxiliaryPoints)
+      //                            if (aux != nullptr) {
+      //                               F1 -= aux->rho * aux->volume * grad_w_Bspline(p->X, aux->X, p->radius_SPH);
+      //                               F2 += aux->rho * aux->volume * w_Bspline(Norm(p->X - aux->X), p->radius_SPH);
+      //                            }
+      //                   });
+      //                auto F = Dot(F1, F1) / 2. + F2 * F2 / 2.;
+      //                auto dFdx = Dot(dF1dx, F1) + dF2dx * F2;
+      //                AUX->NR_double.update(F, dFdx, 0.001);
+      //             }
+      //          }
+      //       }
+      // #pragma omp parallel
+      //       for (const auto &p : net->getPoints())
+      // #pragma omp single nowait
+      //          if (p->isSurface) {
+      //             for (auto &AUX : p->auxiliaryPoints) {
+      //                AUX->volume_next = AUX->volume = AUX->NR_double.X;
+      //                AUX->setDensityVolume(_WATER_DENSITY_, AUX->volume);
+      //                AUX->mass_next = _WATER_DENSITY_ * AUX->volume_next;
+      //             }
+      //          }
+      //    }
 
-   /* -------------------------------------------------------------------------- */
+      /* -------------------------------------------------------------------------- */
 
-   // #pragma omp parallel
-   //    for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //    {
-   //       if (p->isSurface) {
-   //          for (auto &AUX : p->auxiliaryPoints) {
-   //             if (AUX != nullptr)
-   //                AUX->NR_double.initialize(AUX->volume_next);
-   //          }
-   //       }
-   //    }
-
-   //    for (auto i = 0; i <= 100; ++i) {
-   // #pragma omp parallel
-   //       for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //       {
-   //          if (p->isSurface) {
-   //             for (auto &AUX : p->auxiliaryPoints) {
-   //                auto F1 = p->interpolated_normal_SPH_original_next;
-   //                auto F2 = p->intp_density_next;
-   //                auto dF1dx = -rho_next(AUX) * grad_w_Bspline(X_next(p), X_next(AUX), p->radius_SPH);
-   //                auto dF2dx = rho_next(AUX) * w_Bspline(Norm(X_next(p) - X_next(AUX)), p->radius_SPH);
-   //                for (const auto &net : all_nets)
-   //                   net->BucketPoints.apply(p->X, p->radius_SPH * 1.1, [&](const auto &q) {
-   //                      if (q->isSurface)
-   //                         for (const auto &aux : q->auxiliaryPoints)
-   //                            if (aux != nullptr) {
-   //                               F1 -= rho_next(aux) * V_next(aux) * grad_w_Bspline(X_next(p), X_next(aux), p->radius_SPH);
-   //                               F2 += rho_next(aux) * V_next(aux) * w_Bspline(Norm(X_next(p) - X_next(aux)), p->radius_SPH);
-   //                            }
-   //                   });
-   //                auto F = Dot(F1, F1) / 2. + F2 * F2 / 2.;
-   //                auto dFdx = Dot(dF1dx, F1) + dF2dx * F2;
-   //                AUX->NR_double.update(F, dFdx, 0.001);
-   //             }
-   //          }
-   //       }
-   // #pragma omp parallel
-   //       for (const auto &p : net->getPoints())
-   // #pragma omp single nowait
-   //          if (p->isSurface) {
-   //             for (auto &AUX : p->auxiliaryPoints) {
-   //                AUX->volume_next = AUX->NR_double.X;
-   //                AUX->mass_next = _WATER_DENSITY_ * AUX->volume_next;
-   //             }
-   //          }
-   //    }
-
-   /* -------------------------------------------------------------------------- */
-
-#pragma omp parallel
+   #pragma omp parallel
    for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
    {
       // 初期化
       p->totalMass_SPH = 0.;
@@ -620,19 +571,19 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             }
             p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
             if (q->isSurface) {
-#if defined(USE_ONE_AUXP)
+   #if defined(USE_ONE_AUXP)
                if ((distance = Distance(p->X, q->X)) < min_distance) {
                   min_distance = distance;
                   closest_surface_point = q;
                }
-#elif defined(USE_ALL_AUXP)
+   #elif defined(USE_ALL_AUXP)
             for (const auto &AUX : q->auxiliaryPoints)
                if (AUX != nullptr) p->interpolated_normal_SPH_original_modified -= AUX->rho * AUX->volume * grad_w_Bspline(p->X, AUX->X, p->radius_SPH);
-#endif
+   #endif
             }
          });
 
-#if defined(USE_ONE_AUXP)
+   #if defined(USE_ONE_AUXP)
       // if (p->isSurface)
       if (closest_surface_point != nullptr)
          for (const auto &AUX : closest_surface_point->auxiliaryPoints)
@@ -640,10 +591,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auto q = AUX;
                p->interpolated_normal_SPH_original_modified -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
             }
-#endif
+   #endif
    }
-
    net->surfaceNet->setGeometricProperties();
+
+#endif
+
+   DebugPrint("水粒子のオブジェクト外向き法線方向を計算 done", Green);
 };
 
 #endif
