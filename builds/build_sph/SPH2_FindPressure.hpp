@@ -291,7 +291,14 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       */
 
       // \label{SPH:whereToMakeTheEquation}
-      if (ROW->isAuxiliary) {
+      if (ROW->isAir) {
+         pO = ROW;
+         pO_x = X_next(pO);
+         AtmosphericPressureCondition(pO);
+         // b% EISPH
+         ROW->p_SPH = ROW->p_EISPH = 0;
+         pO->p_SPH = pO->p_EISPH = 0;
+      } else if (ROW->isAuxiliary) {
          pO = ROW->surfacePoint;
          // pO = ROW;
          pO_x = X_next(pO);
@@ -411,10 +418,18 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 // #define USE_LAPACK
 #define USE_GMRES
 
+#if defined(USE_AIR_PARTICLE)
 void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid,
-                  const std::unordered_set<Network *> &target_nets) {
+                  const std::unordered_set<networkPoint *> &air_particle,
+                  const std::unordered_set<Network *> &target_nets)
+#else
+void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
+                  const std::unordered_set<networkPoint *> &wall_as_fluid,
+                  const std::unordered_set<Network *> &target_nets)
 
+#endif
+{
    std::vector<networkPoint *> points;
    points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
 
@@ -427,12 +442,19 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
       // if (p->isFirstWallLayer)
       points.emplace_back(p);
 
+#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
    for (const auto &p : fluid_particle)
       if (p->isSurface)
          for (const auto &AUX : p->auxiliaryPoints)
             if (AUX != nullptr)
                points.emplace_back(AUX);
+#endif
 
+#if defined(USE_AIR_PARTICLE)
+   for (const auto &p : air_particle)
+      // if (p->isFirstWallLayer)
+      points.emplace_back(p);
+#endif
    /* -------------------------------------------------------------------------- */
 
    for (auto i = 0; const auto &p : points)
@@ -442,6 +464,10 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 
    for (const auto &p : points) {
       int index = p->getIndexCSR();
+      if (!isFinite(p->PoissonRHS))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->PoissonRHS is not a finite");
+      if (!isFinite(p->p_SPH))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->p_SPH is not a finite");
       b[index] = p->PoissonRHS;
       x0[index] = p->p_SPH;
    }

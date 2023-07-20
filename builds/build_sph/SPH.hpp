@@ -4,6 +4,8 @@
 // #define USE_RungeKutta
 #define USE_LeapFrog
 
+#define USE_AIR_PARTICLE
+
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
 
@@ -317,7 +319,7 @@ void developByEISPH(Network *net,
          /* -------------------------------------------------------------------------- */
          auto air = new Network("air");
          air->BucketPoints.initialize(net->scaledBounds(net->expand_bounds), particle_spacing);
-
+         air->isRigidBody = false;
          for (const auto &p : net->getPoints())
             air->BucketPoints.apply(p->X, p->radius_SPH, [&](const int i, const int j, const int k) {
                air->BucketPoints.buckets_bool[i][j][k] = true;
@@ -338,20 +340,23 @@ void developByEISPH(Network *net,
                   if (air->BucketPoints.buckets_bool[i][j][k]) {
                      auto X = air->BucketPoints.itox(i, j, k);
                      auto p = new networkPoint(air, X);
+                     p->radius_SPH = C_SML * particle_spacing;
                      p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
                      p->isCaptured = true;
                      p->isFluid = false;
                      p->isFirstWallLayer = false;
                      p->isAir = true;
+                     p->isAuxiliary = false;
+                     p->isSurface = false;
                   }
-
+         air->BucketPoints.setVector();
          {
-            // vtkPolygonWriter<networkPoint *> vtp;
-            // for (const auto &p : air->getPoints())
-            //    vtp.add(p);
-            // std::ofstream ofs("./air.vtp");
-            // vtp.write(ofs);
-            // ofs.close();
+            vtkPolygonWriter<networkPoint *> vtp;
+            for (const auto &p : air->getPoints())
+               vtp.add(p);
+            std::ofstream ofs("~/SPH/air.vtp");
+            vtp.write(ofs);
+            ofs.close();
          }
          /* -------------------------------------------------------------------------- */
 #if defined(USE_RungeKutta)
@@ -366,20 +371,29 @@ void developByEISPH(Network *net,
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
 
-         //! AirやAuxiliaryの粒子に対してもは，calcLaplacianUは実行してもしなくても，結果は利用されないので
-         // calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), DT);
-         // calcLaplacianU(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT);
-         // calcLaplacianU(wall_p, Append(net_RigidBody, net), DT);
-         //! 以下と同じことになる
          calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), DT);
          calcLaplacianU(wall_p, Append(net_RigidBody, net), DT);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
+#if defined(USE_AIR_PARTICLE)
+         DebugPrint("wall_p", Magenta);
+         setPoissonEquation(wall_p, Append(Append(net_RigidBody, net), air), DT, particle_spacing);
+         DebugPrint("net", Magenta);
+         setPoissonEquation(net->getPoints(), Append(Append(net_RigidBody, net), air), DT, particle_spacing);
+         DebugPrint("air", Magenta);
+         setPoissonEquation(air->getPoints(), Append(Append(net_RigidBody, net), air), DT, particle_spacing);
+         //
+         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
+         //@ 圧力 p^n+1の計算
+         DebugPrint("圧力 p^n+1の計算", Magenta);
+         solvePoisson(net->getPoints(), wall_p, air->getPoints(), Append(net_RigidBody, net));
+
+         //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
+         DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
+         gradP(net->getPoints(), Append(net_RigidBody, net));
+#elif defined(USE_AIR_PARTICLE)
          setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
-         // setPressure(wall_p);
-
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
-
          // debug of surfaceNet
          std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
          setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
@@ -395,6 +409,7 @@ void developByEISPH(Network *net,
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
          gradP(net->getPoints(), Append(net_RigidBody, net));
+#endif
 
          //@ 粒子の時間発展
          DebugPrint("粒子の時間発展", Green);
