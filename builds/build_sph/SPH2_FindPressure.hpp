@@ -119,14 +119,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:how_to_use_b_vector_in_Poisson0}
       auto b_vector = [&](const auto &B) {
-         if (B->isAuxiliary) {
-            auto p = B->surfacePoint;
-            // return p->U_SPH / dt + p->mu_SPH / p->rho * p->lap_U;  // + _GRAVITY3_;
-            // return p->b_vector - p->mu_SPH / p->rho * p->lap_U;
-            return p->b_vector;
-            // return std::array<double, 3>{0., 0., 0.};
-         } else
-            return B->b_vector;
+         if (B->isAuxiliary || B->isAir)
+            throw std::runtime_error("using b_vector for air or auxiliary particles is not allowed.");
+         return B->b_vector;
       };
 
       double total_weight = 0, dP = 0., pressure_for_wall = 0.;
@@ -194,17 +189,19 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       auto PoissonEquation = [&](const auto &B /*column id*/, const double &coef = 1.) {
          if (Distance(pO_x, X_next(B)) < pO->radius_SPH * 1.1) {
             {
-               // \label{SPH:how_to_use_b_vector_in_Poisson1}
-               ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH)) * coef;  // \label{SPH:div_b_vector}
-               // \label{SPH:pressure_stabilization}
-               // if (pO->isSurface)
-               // {
-               // const double alpha = 0.01;
-               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->rho) / (dt * dt);
-               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
-               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
-               // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
-               // }
+               if (!B->isAir && !B->isAuxiliary) {
+                  // \label{SPH:how_to_use_b_vector_in_Poisson1}
+                  ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH)) * coef;  // \label{SPH:div_b_vector}
+                  // \label{SPH:pressure_stabilization}
+                  // if (pO->isSurface)
+                  // {
+                  // const double alpha = 0.01;
+                  // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->rho) / (dt * dt);
+                  // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - pO->density_based_on_positions) / (dt * dt);
+                  // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
+                  // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
+                  // }
+               }
                Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
                // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
                // Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
@@ -243,7 +240,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          double dP = 0;
          auto markerX = ROW->X + 2 * ROW->normal_SPH;
          auto n = Normalize(ROW->normal_SPH);
-         // if (B->isCaptured)
+         // if (!B->isAir && !B->isAuxiliary)
          if (Distance(markerX, X_next(B)) < ROW->radius_SPH) {
             auto w = B->volume * w_Bspline(Norm(X_next(B) - markerX), ROW->radius_SPH);
             ROW->increment(B, w);
@@ -265,19 +262,17 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   PoissonEquation(B);
                   if (Distance(B, pO) < the_dist)
                      find_any_in_dist = true;
-#if defined(USE_ONE_AUXP)
                   if (B->isSurface) {
+#if defined(USE_ONE_AUXP)
                      if ((distance = Distance(pO_x, X_next(B))) < min_distance) {
                         min_distance = distance;
                         closest_surface_point = B;
                      }
-                  }
 #elif defined(USE_ALL_AUXP)
-            if (B->isSurface) 
-               for (const auto &AUX : B->auxiliaryPoints) 
-               if (AUX != nullptr)
-                  PoissonEquation(AUX);
+                  for (const auto &AUX : B->auxiliaryPoints)
+                     if (AUX != nullptr) PoissonEquation(AUX);
 #endif
+                  }
                }
             });
          }
@@ -297,20 +292,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       // \label{SPH:whereToMakeTheEquation}
       if (ROW->isAuxiliary) {
-         // pO = getClosest(ROW->X, ROW->radius_SPH, target_nets, [&](const networkPoint *p) { return (ROW != p && !p->isSurface && p->isCaptured && p->isFluid); });
-         // if (ROW->surfacePoint->auxiliaryPoints[1] == ROW) {
-         //    pO = ROW->surfacePoint->auxiliaryPoints[0];
-         //    pO_x = X_next(pO);
-         //    pO_b = b_vector(pO);
-         //    addPoissonEquation(PoissonEquation, pO_x);
-         // } else
-         {
-            pO = ROW->surfacePoint;
-            // pO = ROW;
-            pO_x = X_next(pO);
-            pO_b = b_vector(pO);
-            AtmosphericPressureCondition(pO);
-         }
+         pO = ROW->surfacePoint;
+         // pO = ROW;
+         pO_x = X_next(pO);
+         pO_b = b_vector(pO);
+         AtmosphericPressureCondition(pO);
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = 0;
          pO->p_SPH = pO->p_EISPH = 0;

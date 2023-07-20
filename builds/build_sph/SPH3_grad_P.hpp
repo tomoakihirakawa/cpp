@@ -63,19 +63,17 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             if (B->isCaptured) {
                add_gradP_SPH(B);
 
-#if defined(USE_ONE_AUXP)
                if (B->isSurface) {
+#if defined(USE_ONE_AUXP)
                   if ((distance = Distance(A->X, X_next(B))) < min_distance) {
                      min_distance = distance;
                      closest_surface_point = B;
                   }
-               }
 #elif defined(USE_ALL_AUXP)
-            if (B->isSurface)
                for (const auto &AUX : B->auxiliaryPoints) 
-               if (AUX != nullptr)
-                  add_gradP_SPH(AUX);
+               if (AUX != nullptr) add_gradP_SPH(AUX);
 #endif
+               }
             }
          });
       }

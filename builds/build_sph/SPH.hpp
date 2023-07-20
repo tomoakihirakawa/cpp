@@ -314,6 +314,46 @@ void developByEISPH(Network *net,
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
 
+         /* -------------------------------------------------------------------------- */
+         auto air = new Network("air");
+         air->BucketPoints.initialize(net->scaledBounds(net->expand_bounds), particle_spacing);
+
+         for (const auto &p : net->getPoints())
+            air->BucketPoints.apply(p->X, p->radius_SPH, [&](const int i, const int j, const int k) {
+               air->BucketPoints.buckets_bool[i][j][k] = true;
+            });
+
+         // waterやrigidbodyの粒子が入るair->BucketPointsのbuckets_boolをfalseにする
+         for (const auto &N : Append(net_RigidBody, net))
+            for (const auto &p : N->getPoints())
+               if (air->BucketPoints.isInside(p->X)) {
+                  auto [i, j, k] = air->BucketPoints.indices(p->X);
+                  air->BucketPoints.buckets_bool[i][j][k] = false;
+               }
+
+         // air->BucketPoints.buckets_boolがtrueのところにair粒子を生成
+         for (auto i = 0; i < air->BucketPoints.xsize; ++i)
+            for (auto j = 0; j < air->BucketPoints.ysize; ++j)
+               for (auto k = 0; k < air->BucketPoints.zsize; ++k)
+                  if (air->BucketPoints.buckets_bool[i][j][k]) {
+                     auto X = air->BucketPoints.itox(i, j, k);
+                     auto p = new networkPoint(air, X);
+                     p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+                     p->isCaptured = true;
+                     p->isFluid = false;
+                     p->isFirstWallLayer = false;
+                     p->isAir = true;
+                  }
+
+         {
+            // vtkPolygonWriter<networkPoint *> vtp;
+            // for (const auto &p : air->getPoints())
+            //    vtp.add(p);
+            // std::ofstream ofs("./air.vtp");
+            // vtp.write(ofs);
+            // ofs.close();
+         }
+         /* -------------------------------------------------------------------------- */
 #if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
          const auto DT = dt;
@@ -325,10 +365,14 @@ void developByEISPH(Network *net,
 
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
+
+         //! AirやAuxiliaryの粒子に対してもは，calcLaplacianUは実行してもしなくても，結果は利用されないので
+         // calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), DT);
+         // calcLaplacianU(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT);
+         // calcLaplacianU(wall_p, Append(net_RigidBody, net), DT);
+         //! 以下と同じことになる
          calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), DT);
-         calcLaplacianU(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT);
          calcLaplacianU(wall_p, Append(net_RigidBody, net), DT);
-         // mapValueOnWall(net, wall_p, RigidBodyObject);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
          setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
@@ -366,6 +410,7 @@ void developByEISPH(Network *net,
          real_time = (*net->getPoints().begin())->LPFG_X.get_t();
          finished = (*net->getPoints().begin())->LPFG_X.finished;
 #endif
+         delete air;
       } while (!finished);
 
       Print(Yellow, "Elapsed time: ", Red, watch(), "s １タイムステップ終了");
