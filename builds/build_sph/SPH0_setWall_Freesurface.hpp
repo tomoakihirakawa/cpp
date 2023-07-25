@@ -80,8 +80,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 #pragma omp single nowait
    {
       // ここでも結構変わる
-      const double captureRange = p->radius_SPH;  //\label{SPH:capture_condition_1st}
-
+      const double captureRange = 1.1 * p->radius_SPH;  //\label{SPH:capture_condition_1st}
       // const double captureRange_wall_as_fluid = p->radius_SPH;
       for (const auto &[obj, poly] : RigidBodyObject) {
          obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
@@ -102,13 +101,20 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                // captureされた点のうち流体粒子に近い点は第１層目としてマーク
                auto firstWallLayerCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < particle_spacing * 1.8 && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6);
+                  return Distance(q, Q) < particle_spacing * 1.8 && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 5);
                };
                q->isFirstWallLayer = net->BucketPoints.any_of(q->X, q->radius_SPH, firstWallLayerCondition);
+               /* -------------------------------------------------------------------------- */
+               const auto r_short = (q->radius_SPH / q->C_SML) * 2.;
+               q->isNeumannSurface = net->BucketPoints.any_of(q->X, q->radius_SPH, [&](const auto &b) {
+                  return Distance(q, b) < r_short && q != b && (VectorAngle(q->interpolated_normal_SPH_original, b->X - q->X) < M_PI / 8);
+               });
+
+               /* -------------------------------------------------------------------------- */
 
                // capture
                auto nearWallCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange && q != Q /* && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 6)*/;
+                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 8);
                };
                q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
             }
@@ -131,19 +137,19 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
       p->U_SPH.fill(0.);
       double total_w = 0;
       auto X = p->X + 2 * p->normal_SPH;
-      net->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-         {
-            auto w = q->volume * w_Bspline(Norm(X - q->X), p->radius_SPH);
-            p->U_SPH += q->U_SPH * w;
-            total_w += w;
-         }
+      double r = p->radius_SPH;
+      net->BucketPoints.apply(X, 1.1 * r, [&](const auto &q) {
+         auto w = q->volume * w_Bspline(Norm(X - q->X), r);
+         p->U_SPH += q->U_SPH * w;
+         total_w += w;
       });
       if (total_w == 0.)
          p->U_SPH.fill(0.);
       else
          p->U_SPH /= total_w;
       // p->U_SPH = -p->U_SPH;
-      p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      p->U_SPH.fill(0.);
+      // p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
       // p->U_SPH = Projection(Reflect(p->U_SPH, p->normal_SPH), p->normal_SPH);  //\label{SPH:wall_particle_velocity}
    }
 };
@@ -154,6 +160,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
 */
 // #ifndef USE_AIR_PARTICLE
+#define USE_DOUBLED_AUXP
 // #define USE_ONE_AUXP
 // #define USE_ALL_AUXP
 // #endif
@@ -286,24 +293,42 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
       */
 
+      /* ------------------------ Neumann surface condition ----------------------- */
+
+      const auto r_short = (p->radius_SPH / p->C_SML) * 2.;
+
+      auto surface = net->BucketPoints.none_of(p->X, p->radius_SPH, [&](const auto &q) {
+         return Distance(p, q) < r_short && p != q && (VectorAngle(p->interpolated_normal_SPH_water, q->X - p->X) < M_PI / 5);
+      });
+
+      if (surface)
+         p->isNeumannSurface = std::ranges::any_of(RigidBodyObject, [&](const auto &net) {
+            return std::get<0>(net)->BucketPoints.any_of(p->X, p->radius_SPH, [&](const auto &q) {
+               return Distance(p, q) < r_short && p != q && (VectorAngle(p->interpolated_normal_SPH_water, q->X - p->X) < M_PI / 5);
+            });
+         });
+      else
+         p->isNeumannSurface = false;
+
+      /* ------------------------ Surface condition ----------------------- */
+
       p->isSurface = true;
+
       const auto radius = (p->radius_SPH / p->C_SML) * 3.;
 
       auto surface_condition0 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH, q->X - p->X) < std::numbers::pi / 4);
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 4);
       };
+
+      p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0);
 
       auto surface_condition1 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH, -q->normal_SPH) < std::numbers::pi / 180. * 45);
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 3);
       };
 
-      if (net->BucketPoints.any_of(p->X, radius, surface_condition0))
-         p->isSurface = false;
-
-      if (p->isSurface)
-         for (const auto &[obj, poly] : RigidBodyObject)
-            if (obj->BucketPoints.any_of(p->X, radius, surface_condition1))
-               p->isSurface = false;
+      for (const auto &[obj, poly] : RigidBodyObject)
+         if (p->isSurface)
+            p->isSurface = obj->BucketPoints.none_of(p->X, radius, surface_condition1);
    }
 
    /*DOC_EXTRACT SPH
@@ -312,7 +337,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    */
 
-#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
+#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP) || defined(USE_DOUBLED_AUXP)
    DebugPrint("水面ネットワークの初期化", Green);
    if (net->surfaceNet == nullptr)
       net->surfaceNet = new Network();
@@ -331,7 +356,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
          for (auto &auxp : p->auxiliaryPoints) {
             if (count++ < num) {
                if (auxp == nullptr) {
-                  auxp = new networkPoint(net->surfaceNet, {0., 0., 0.});
+                  auxp = new networkPoint(net->surfaceNet, p->X);
                   auxp->isAuxiliary = true;
                }
             } else if (auxp != nullptr) {
@@ -389,9 +414,10 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auxp->U_SPH = p->U_SPH;
                auxp->b_vector = p->b_vector;
                auxp->DUDt_SPH = p->DUDt_SPH;
-               auxp->volume = std::pow(p->radius_SPH / p->C_SML, 3);
-               auxp->setXSingle(p->X + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original));  // 初期値
-               auxp->setDensityVolume(_WATER_DENSITY_, auxp->volume);
+               auxp->volume = p->volume;
+               auxp->setXSingle(p->X);  // 初期値
+               // auxp->setXSingle(p->X + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original));  // 初期値
+               auxp->setDensityVolume(_WATER_DENSITY_, p->volume);
                //
                auxp->volume_next = auxp->volume;
                auxp->X_next = X_next(p) + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original_next);
@@ -472,28 +498,28 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   return std::tuple<Tddd, Tddd, double, double, double>{best_X1, best_X2, best_vol1, best_vol2, best_rho};
                };
 
-               {
-                  auto [X1, X2, V1, V2, RHO] = get_X_V(p->X,
-                                                       p->interpolated_normal_SPH_original_choped /*base direction*/,
-                                                       p->interpolated_normal_SPH_original /*minimize this by adding*/,
-                                                       p->intp_density);
-                  p->auxiliaryPoints[0]->setDensityVolume(RHO, V1);
-                  p->auxiliaryPoints[1]->setDensityVolume(RHO, V2);
-                  p->auxiliaryPoints[0]->setXSingle(X1);  // 初期値
-                  p->auxiliaryPoints[1]->setXSingle(X2);  // 初期値
-               }
-               {
-                  auto [X1, X2, V1, V2, RHO] = get_X_V(X_next(p),
-                                                       p->interpolated_normal_SPH_original_next_choped,
-                                                       p->interpolated_normal_SPH_original_next,
-                                                       p->intp_density_next);
-                  p->auxiliaryPoints[0]->volume_next = V1;
-                  p->auxiliaryPoints[1]->volume_next = V2;
-                  p->auxiliaryPoints[0]->X_next = X1;
-                  p->auxiliaryPoints[1]->X_next = X2;
-                  p->auxiliaryPoints[0]->mass_next = RHO * V1;
-                  p->auxiliaryPoints[1]->mass_next = RHO * V2;
-               }
+               // {
+               //    auto [X1, X2, V1, V2, RHO] = get_X_V(p->X,
+               //                                         p->interpolated_normal_SPH_original_choped /*base direction*/,
+               //                                         p->interpolated_normal_SPH_original /*minimize this by adding*/,
+               //                                         p->intp_density);
+               //    p->auxiliaryPoints[0]->setDensityVolume(RHO, V1);
+               //    p->auxiliaryPoints[1]->setDensityVolume(RHO, V2);
+               //    p->auxiliaryPoints[0]->setXSingle(X1);  // 初期値
+               //    p->auxiliaryPoints[1]->setXSingle(X2);  // 初期値
+               // }
+               // {
+               //    auto [X1, X2, V1, V2, RHO] = get_X_V(X_next(p),
+               //                                         p->interpolated_normal_SPH_original_next_choped,
+               //                                         p->interpolated_normal_SPH_original_next,
+               //                                         p->intp_density_next);
+               //    p->auxiliaryPoints[0]->volume_next = V1;
+               //    p->auxiliaryPoints[1]->volume_next = V2;
+               //    p->auxiliaryPoints[0]->X_next = X1;
+               //    p->auxiliaryPoints[1]->X_next = X2;
+               //    p->auxiliaryPoints[0]->mass_next = RHO * V1;
+               //    p->auxiliaryPoints[1]->mass_next = RHO * V2;
+               // }
             }
          }
       }

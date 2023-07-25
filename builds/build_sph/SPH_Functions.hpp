@@ -98,7 +98,7 @@ $`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.05;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_velocity = 0.01;  // dt = C_CFL_velocity*h/Max(U)
    const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
@@ -110,8 +110,8 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             // 相対速度
             double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
             // double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
+            // if (dt > max_dt_vel && isFinite(max_dt_vel))
+            //    dt = max_dt_vel;
             // 絶対速度
             max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
             if (dt > max_dt_vel && isFinite(max_dt_vel))
@@ -120,8 +120,8 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             // 相対速度
             double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
             // double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
-            if (dt > max_dt_acc && isFinite(max_dt_acc))
-               dt = max_dt_acc;
+            // if (dt > max_dt_acc && isFinite(max_dt_acc))
+            //    dt = max_dt_acc;
             // 絶対速度
             max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
             if (dt > max_dt_acc && isFinite(max_dt_acc))
@@ -165,15 +165,17 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   if (p->isAir)
-      return p->rho;
-   else if (p->isAuxiliary)
-      return p->rho;
+   // return _WATER_DENSITY_;
+   if (p->isAuxiliary)
+      return rho_next(p->surfacePoint);
    else if (p->getNetwork()->isRigidBody)
-      return p->rho;
+      return _WATER_DENSITY_;
    else {
 #if defined(USE_RungeKutta)
-      return p->RK_rho.getX(p->DrhoDt_SPH);
+      if (p->RK_rho.current_step == p->RK_rho.steps - 1)
+         return _WATER_DENSITY_;
+      else
+         return p->RK_rho.getX(p->DrhoDt_SPH);
 #elif defined(USE_LeapFrog)
       return p->LPFG_rho.get_x(p->DrhoDt_SPH);
 #endif
@@ -182,34 +184,31 @@ double rho_next(auto p) {
 
 // \label{SPH:volume_next}
 double V_next(const auto &p) {
-   if (p->isAir)
-      return p->volume;
-   else if (p->isAuxiliary)
-      return p->volume_next;
+   // if (p->isAir)
+   //    return p->volume;
+   // else if (p->isAuxiliary)
+   //    return p->volume_next;
+   // else
+   if (p->isAuxiliary)
+      return V_next(p->surfacePoint);
    else
       return p->mass / rho_next(p);
 };
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   if (p->isAir)
+   if (p->getNetwork()->isRigidBody)
       return p->X;
    else if (p->isAuxiliary)
-      return p->X_next;
-   else if (p->getNetwork()->isRigidBody)
-      return p->X;
-   else
+      return X_next(p->surfacePoint);
+   else {
 #if defined(USE_RungeKutta)
       return p->RK_X.getX(p->U_SPH);
 #elif defined(USE_LeapFrog)
-      return p->LPFG_X.get_x(p->U_SPH);
-         // return p->X + p->U_SPH * p->LPFG_X.get_dt();
+      return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
 #endif
+   }
 };
-
-// std::array<double, 3> X_next(const auto &p) {
-//    return p->X;
-// };
 
 /* -------------------------------------------------------------------------- */
 #include "SPH0_setWall_Freesurface.hpp"
@@ -263,8 +262,9 @@ void updateParticles(const auto &points,
 #if defined(REFLECTION)
       int count = 0;
       //\label{SPH:reflection}
+      // const double reflection_factor = .5;
       const double reflection_factor = 1.;
-      const double asobi = 0.05;
+      const double asobi = 0.01;
 
       auto closest = [&]() {
          double distance = 1E+20;
@@ -272,7 +272,7 @@ void updateParticles(const auto &points,
          for (const auto &[obj, _] : RigidBodyObject) {
             obj->BucketPoints.apply(X_next(p), p->radius_SPH, [&](const auto &q) {
                auto tmp = Distance(X_next(p), q);
-               if (distance > tmp) {
+               if (distance > tmp && Dot(p->U_SPH, q->interpolated_normal_SPH) < 0) {
                   distance = tmp;
                   P = q;
                }
@@ -283,38 +283,44 @@ void updateParticles(const auto &points,
 
       bool isReflected = true;
       p->DUDt_modify_SPH.fill(0.);
-      while (isReflected && count++ < 10) {
+      while (isReflected && count++ < 3) {
          isReflected = false;
-         for (const auto &[obj, _] : RigidBodyObject)
-            obj->BucketPoints.apply(getX_next(p), p->radius_SPH, [&](const auto &Pwall) {
-               auto dist = Distance(Pwall->X, getX_next(p));
-               if (dist < (1 - asobi) * particle_spacing) {
-                  auto alpha = (particle_spacing - dist) / particle_spacing;
-                  auto n = Pwall->interpolated_normal_SPH;
-                  if (Dot(p->U_SPH, n) < 0) {
-                     auto tmp = -(1. + reflection_factor) * Projection(p->U_SPH, n) / dt;
-                     p->DUDt_modify_SPH += tmp;
-                     p->DUDt_SPH += tmp;
+         auto closest_p = closest();
+         if (closest_p != nullptr) {
+            // for (const auto &[obj, _] : RigidBodyObject)
+            //    obj->BucketPoints.apply(X_next(p), p->radius_SPH, [&](const auto &Pwall) {
+            auto dist = Distance(X_next(closest_p), X_next(p));
+            if (dist < (1 - asobi) * particle_spacing) {
+               auto alpha = (particle_spacing - dist) / particle_spacing;
+               auto n = closest_p->interpolated_normal_SPH;
+               if (Dot(p->U_SPH, n) < 0) {
+                  auto tmp = -alpha * (1. + reflection_factor) * Projection(p->U_SPH, n) / dt;
+                  // auto tmp = -reflection_factor * Projection(p->U_SPH, n) / dt;
+                  //
+                  p->DUDt_modify_SPH += tmp;
+                  p->DUDt_SPH += tmp;
+                     // p->DUDt_SPH -= Projection(tmp, p->DUDt_SPH);
    #if defined(USE_RungeKutta)
+                  p->RK_U.repush(p->DUDt_SPH);  // 速度
+                  if (p->RK_X.steps == 1) {
+                     p->U_SPH = p->RK_U.getX();
+                     p->RK_X.repush(p->U_SPH);  // 位置
+                     p->setXSingle(p->tmp_X = p->RK_X.getX());
+                  } else {
                      p->RK_U.repush(p->DUDt_SPH);  // 速度
-                     if (p->RK_X.steps == 1) {
-                        p->U_SPH = p->RK_U.getX();
-                        p->RK_X.repush(p->U_SPH);  // 位置
-                        p->setXSingle(p->tmp_X = p->RK_X.getX());
-                     } else {
-                        p->RK_U.repush(p->DUDt_SPH);  // 速度
-                        p->U_SPH = p->RK_U.getX();
-                     }
-                     isReflected = true;
-   #elif defined(USE_LeapFrog)
-                     p->LPFG_X.repush(p->DUDt_SPH);  // 速度
-                     p->U_SPH = p->LPFG_X.get_v();
-                     p->setXSingle(p->tmp_X = p->LPFG_X.get_x());
-                     isReflected = true;
-   #endif
+                     p->U_SPH = p->RK_U.getX();
                   }
+                  isReflected = true;
+   #elif defined(USE_LeapFrog)
+                  p->LPFG_X.repush(p->DUDt_SPH);  // 速度
+                  p->U_SPH = p->LPFG_X.get_v();
+                  p->setXSingle(p->tmp_X = p->LPFG_X.get_x());
+                  isReflected = true;
+   #endif
                }
-            });
+            }
+         }
+         // });
       };
 
 #endif
@@ -325,9 +331,10 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-
-      // A->setDensity(A->RK_rho.get_x());
-      A->setDensity(_WATER_DENSITY_);
+      if (A->RK_rho.finished)
+         A->setDensity(_WATER_DENSITY_);
+      else
+         A->setDensity(A->RK_rho.get_x());
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);
@@ -335,7 +342,7 @@ void updateParticles(const auto &points,
       // if (A->LPFG_rho.finished)
       A->setDensity(_WATER_DENSITY_);
          // else
-         //    A->setDensity(A->LPFG_rho.get_x());
+         // A->setDensity(A->LPFG_rho.get_x());
 #endif
    }
 }

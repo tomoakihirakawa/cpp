@@ -1,10 +1,10 @@
 #ifndef SPH_weightingFunctions_H
 #define SPH_weightingFunctions_H
 
-// #define USE_RungeKutta
-#define USE_LeapFrog
+#define USE_RungeKutta
+// #define USE_LeapFrog
 
-#define USE_AIR_PARTICLE
+// #define USE_AIR_PARTICLE
 
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
@@ -28,7 +28,6 @@
 #endif
 
 /* -------------------------------------------------------------------------- */
-
 #define POWER 1.
 
 #include "SPH_Functions.hpp"
@@ -316,14 +315,20 @@ void developByEISPH(Network *net,
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
 
-         /* -------------------------------------------------------------------------- */
+         // b! -------------------------------------------------------------------------- */
+         double air_particle_spacing = particle_spacing / 2.;
          auto air = new Network("air");
-         air->BucketPoints.initialize(net->scaledBounds(net->expand_bounds), particle_spacing);
+         air->BucketPoints.initialize(net->scaledBounds(net->expand_bounds), air_particle_spacing);
          air->isRigidBody = false;
          for (const auto &p : net->getPoints())
-            air->BucketPoints.apply(p->X, p->radius_SPH, [&](const int i, const int j, const int k) {
-               air->BucketPoints.buckets_bool[i][j][k] = true;
-            });
+            if (p->isSurface)
+               air->BucketPoints.apply(p->X, p->radius_SPH, [&](const int i, const int j, const int k) {
+                  auto n = p->interpolated_normal_SPH_original_choped;
+                  if (Dot(air->BucketPoints.itox(i, j, k) - p->X, n) > 0. &&
+                      VectorAngle(air->BucketPoints.itox(i, j, k) - p->X, n) < M_PI / 180. * 60. &&
+                      Between(Distance(air->BucketPoints.itox(i, j, k), p->X), {(particle_spacing + air_particle_spacing) / 2., p->radius_SPH}))
+                     air->BucketPoints.buckets_bool[i][j][k] = true;  // air
+               });
 
          // waterやrigidbodyの粒子が入るair->BucketPointsのbuckets_boolをfalseにする
          for (const auto &N : Append(net_RigidBody, net))
@@ -333,37 +338,66 @@ void developByEISPH(Network *net,
                   air->BucketPoints.buckets_bool[i][j][k] = false;
                }
 
-         // air->BucketPoints.buckets_boolがtrueのところにair粒子を生成
+         // make air->BucketPoints[i][j][k] false if any surrounding points are false
          for (auto i = 0; i < air->BucketPoints.xsize; ++i)
             for (auto j = 0; j < air->BucketPoints.ysize; ++j)
-               for (auto k = 0; k < air->BucketPoints.zsize; ++k)
+               for (auto k = 0; k < air->BucketPoints.zsize; ++k) {
                   if (air->BucketPoints.buckets_bool[i][j][k]) {
+                     double intp_density = 0, r = particle_spacing * C_SML;
                      auto X = air->BucketPoints.itox(i, j, k);
-                     auto p = new networkPoint(air, X);
-                     p->radius_SPH = C_SML * particle_spacing;
-                     p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
-                     p->isCaptured = true;
-                     p->isFluid = false;
-                     p->isFirstWallLayer = false;
-                     p->isAir = true;
-                     p->isAuxiliary = false;
-                     p->isSurface = false;
+                     for (const auto &net : Append(net_RigidBody, net))
+                        net->BucketPoints.apply(X, r, [&](const auto &q) {
+                           intp_density += q->rho * q->volume * w_Bspline(Norm(X - q->X), r);
+                        });
+                     if (intp_density > _WATER_DENSITY_ * 0.5)
+                        air->BucketPoints.buckets_bool[i][j][k] = false;  // not air
                   }
-         air->BucketPoints.setVector();
-         {
-            vtkPolygonWriter<networkPoint *> vtp;
-            for (const auto &p : air->getPoints())
-               vtp.add(p);
-            std::ofstream ofs("~/SPH/air.vtp");
-            vtp.write(ofs);
-            ofs.close();
-         }
-         /* -------------------------------------------------------------------------- */
+               }
+               // air->BucketPoints.buckets_boolがtrueのところにair粒子を生成
+               // for (auto i = 0; i < air->BucketPoints.xsize; ++i)
+               //    for (auto j = 0; j < air->BucketPoints.ysize; ++j)
+               //       for (auto k = 0; k < air->BucketPoints.zsize; ++k)
+               //          if (air->BucketPoints.buckets_bool[i][j][k]) {
+               //             auto X = air->BucketPoints.itox(i, j, k);
+               //             auto p = new networkPoint(air, X);
+               //             p->radius_SPH = C_SML * particle_spacing;
+               //             p->setDensityVolume(_WATER_DENSITY_, std::pow(air_particle_spacing, 3));
+               //             p->isCaptured = true;
+               //             p->isFluid = false;
+               //             p->isFirstWallLayer = false;
+               //             p->isAir = true;
+               //             p->isAuxiliary = false;
+               //             p->isSurface = false;
+               //             p->p_SPH = 0;
+               //             p->isNeumannSurface = false;
+
+               //             p->U_SPH.fill(0.);
+               //             double w_tot = 0.;
+               //             net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &B) {
+               //                auto w = w_Bspline(Norm(p->X - B->X), p->radius_SPH);
+               //                w_tot += w;
+               //                p->U_SPH += B->U_SPH * B->volume * w;
+               //             });
+               //             if (w_tot != 0.)
+               //                p->U_SPH /= w_tot;
+               //          }
+               // // air->makeBucketPoints(air_particle_spacing);
+               // air->BucketPoints.setVector();
+               // {
+               //    vtkPolygonWriter<networkPoint *> vtp;
+               //    for (const auto &p : air->getPoints())
+               //       vtp.add(p);
+               //    std::ofstream ofs("/Users/tomoaki/SPH/air.vtp");
+               //    vtp.write(ofs);
+               //    ofs.close();
+               // }
+               // b! -------------------------------------------------------------------------- */
 #if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
          const auto DT = dt;
 #elif defined(USE_LeapFrog)
          const auto DT = dt / 2.;
+         delta_t = DT;
 #endif
 
          std::cout << "DT = " << DT << std::endl;
@@ -371,32 +405,32 @@ void developByEISPH(Network *net,
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
 
-         calcLaplacianU(net->getPoints(), Append(net_RigidBody, net), DT);
-         calcLaplacianU(wall_p, Append(net_RigidBody, net), DT);
+         calcLaplacianU(net->getPoints(), Append(Append(net_RigidBody, net), air), DT);
+         calcLaplacianU(wall_p, Append(Append(net_RigidBody, net), air), DT);
 
          DebugPrint("ポアソン方程式を立てる", Magenta);
 #if defined(USE_AIR_PARTICLE)
+         calcLaplacianU(air->getPoints(), Append(Append(net_RigidBody, net), air), DT);
          DebugPrint("wall_p", Magenta);
          setPoissonEquation(wall_p, Append(Append(net_RigidBody, net), air), DT, particle_spacing);
          DebugPrint("net", Magenta);
          setPoissonEquation(net->getPoints(), Append(Append(net_RigidBody, net), air), DT, particle_spacing);
          DebugPrint("air", Magenta);
          setPoissonEquation(air->getPoints(), Append(Append(net_RigidBody, net), air), DT, particle_spacing);
-         //
+
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
-         solvePoisson(net->getPoints(), wall_p, air->getPoints(), Append(net_RigidBody, net));
+         solvePoisson(net->getPoints(), wall_p);
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
-         gradP(net->getPoints(), Append(net_RigidBody, net));
-#elif defined(USE_AIR_PARTICLE)
+         gradP(net->getPoints(), Append(Append(net_RigidBody, net), air));
+#else
          setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
          // debug of surfaceNet
-         std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
-         setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
+         // std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
          // setPoissonEquation(wall_p, Append(net_RigidBody, net), DT);
          // setPressure(net->getPoints());
          // setPressure(wall_p);
@@ -404,7 +438,12 @@ void developByEISPH(Network *net,
 
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
-         solvePoisson(net->getPoints(), wall_p, Append(net_RigidBody, net));
+         solvePoisson(net->getPoints(), wall_p);
+
+         // set free surface pressure using EISPH way
+         // setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
+
+         checkIfPoissonEqIsSatisfied(net->getPoints());
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
@@ -468,6 +507,9 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
    vtp.addPointData("isSurface", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNeumannSurface;
+   vtp.addPointData("isNeumannSurface", uo_double);
    //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->p_SPH;
    vtp.addPointData("pressure", uo_double);

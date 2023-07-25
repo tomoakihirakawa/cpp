@@ -33,11 +33,16 @@ $ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
 
 */
 
+double delta_t;
+
 #define _debugging_
 #include <filesystem>
 #include <utility>
 #define DEM
 #include "Network.hpp"
+
+std::unordered_set<Network *> _ALL_NET_;
+
 #include "SPH.hpp"
 #include "vtkWriter.hpp"
 
@@ -77,6 +82,7 @@ double Distance(const T3Tddd &X012, const Tddd &X) {
  */
 /* -------------------------------------------------------------------------- */
 JSONoutput jsonout;
+
 int main(int arg, char **argv) {
    if (arg <= 1)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "argv <= 1. write input json file directory!\\ex.\\$ ./main ./input");
@@ -222,6 +228,7 @@ int main(int arg, char **argv) {
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   p->isFluid = object->isFluid;
                   p->isAir = false;
+                  p->isNeumannSurface = false;
                   break;
                }
             }
@@ -283,6 +290,11 @@ int main(int arg, char **argv) {
    // PVDWriter pvdWallSPH(output_directory + "Wall.pvd");q
    int time_step = 0, k = 0, i = 0, j = 0, l = 0;
    for (auto time_step = 0; time_step < end_time_step; ++time_step) {
+
+      _ALL_NET_.clear();
+      for (const auto &[particlesNet, _, __] : all_objects)
+         _ALL_NET_.emplace(particlesNet);
+
       if (end_time < real_time)
          break;
 

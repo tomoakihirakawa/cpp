@@ -34,13 +34,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          const auto Uij = A->U_SPH - B->U_SPH;
 
          A->density_based_on_positions += B->rho * B->volume * w_Bspline(Norm(A->X - B->X), A->radius_SPH);
-         if (!B->isAir && !B->isAuxiliary) {
-            A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, B->X, A->radius_SPH));  //\label{SPH:divU}
-            A->lap_U += 2 * B->volume * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);          //\label{SPH:lapU}
-         } else {
-            // 空気粒子の流速はAの流速と等しいので消える　A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, B->X, A->radius_SPH));  //\label{SPH:divU}
-            // 空気粒子の流速はAの流速と等しいので消える　A->lap_U += 2 * B->volume * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);          //\label{SPH:lapU}
-         }
+         A->div_U += B->volume * Dot(B->U_SPH - A->U_SPH, grad_w_Bspline(A->X, B->X, A->radius_SPH));  //\label{SPH:divU}
+         A->lap_U += 2 * B->volume * Uij * Dot_grad_w_Bspline_Dot(A->X, B->X, A->radius_SPH);          //\label{SPH:lapU}
          A->grad_corr_M += B->volume * TensorProduct(B->X - A->X, grad_w_Bspline(A->X, B->X, A->radius_SPH));
 
          // just counting
@@ -98,7 +93,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //$ ------------------------------------------ */
       // \label{SPH:lapU_for_wall}
       // \label{SPH:Poisson_b_vector}
-      if (A->getNetwork()->isRigidBody) {
+      if (A->isAir) {
+         A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
+         A->DrhoDt_SPH = 0;
+      } else if (A->getNetwork()->isRigidBody) {
          A->DUDt_SPH_.fill(0.);
          double nu = A->mu_SPH / A->rho;
          A->DUDt_SPH.fill(0.);
@@ -137,21 +135,21 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             if (*(A->vec_time_SPH.rbegin()) == current_time) {
                times.push_back(*(A->vec_time_SPH.rbegin() + 1));
                U2 = *(A->vec_U_SPH.rbegin() + 1);
-               times.push_back(*(A->vec_time_SPH.rbegin() + 2));
-               U3 = *(A->vec_U_SPH.rbegin() + 2);
+               // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
+               // U3 = *(A->vec_U_SPH.rbegin() + 2);
                // times.push_back(*(A->vec_time_SPH.rbegin() + 3));
                // U4 = *(A->vec_U_SPH.rbegin() + 3);
             } else {
                times.push_back(*(A->vec_time_SPH.rbegin() + 0));
                U2 = *(A->vec_U_SPH.rbegin() + 0);
-               times.push_back(*(A->vec_time_SPH.rbegin() + 1));
-               U3 = *(A->vec_U_SPH.rbegin() + 1);
+               // times.push_back(*(A->vec_time_SPH.rbegin() + 1));
+               // U3 = *(A->vec_U_SPH.rbegin() + 1);
                // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
                // U4 = *(A->vec_U_SPH.rbegin() + 2);
             }
             InterpolationLagrange<double> lag(times);
             auto D = lag.DN(current_time);
-            A->b_vector = -(D[1] * U1 + D[2] * U2 + D[3] * U3 /* + D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
+            A->b_vector = -(D[1] * U1 + D[2] * U2 /* + D[3] * U3  + D[4] * U4*/) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
          }
       }
 
