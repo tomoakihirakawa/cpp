@@ -162,18 +162,18 @@ struct BaseBuckets {
       }
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
       if (!this->vector_is_set) {
-         return std::none_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+         return !std::any_of(this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
                });
             });
          });
       } else {
-         return std::none_of(this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::none_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::none_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::none_of(Bijk.cbegin(), Bijk.cend(), func);
+         return !std::any_of(this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
                });
             });
          });

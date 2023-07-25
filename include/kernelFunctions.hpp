@@ -254,7 +254,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
    const double q = r / h;
    const std::array<double, 3> dqdr = (xi - xj) / (r * h);
    const double dinom = M_PI * h * h * h * h * r;
-   if (q > 1. || dinom < 1E-14)
+   if (q > 1. || dinom < 1E-13)
       return {0., 0., 0.};
    else if (q < 0.5)
       return (xi - xj) * (-96. + 144. * q) * q / dinom;
@@ -296,19 +296,19 @@ double Dot_grad_w_Bspline3_Dot(const std::array<double, 3> &xi, const std::array
    const std::array<double, 3> Xij = xi - xj;
    const double r = Norm(Xij);
    const double q = r / h;
-   if (q > 1. || r < 1E-14)
+   if (q > 1. || r < 1E-13)
       return 0.;
    else
       return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 };
 
-auto &w_Bspline = w_Bspline5;
-auto &grad_w_Bspline = grad_w_Bspline5;
-auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
+// auto &w_Bspline = w_Bspline5;
+// auto &grad_w_Bspline = grad_w_Bspline5;
+// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
 
-// auto &w_Bspline = w_Bspline3;
-// auto &grad_w_Bspline = grad_w_Bspline3;
-// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
-// auto &ddr_w_Bspline = ddr_w_Bspline3;
+auto &w_Bspline = w_Bspline3;
+auto &grad_w_Bspline = grad_w_Bspline3;
+auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
+auto &ddr_w_Bspline = ddr_w_Bspline3;
 
 #endif

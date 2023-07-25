@@ -27,9 +27,20 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #pragma omp single nowait
    {
       A->gradP_SPH.fill(0.);
+      A->grad_corr_M.fill({0., 0., 0.});
       auto add_gradP_SPH = [&](const auto &B, const double &coef = 1.) {
-         A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
+         // if (A->isSurface || (!A->isSurface && !B->isAir)) {
 
+         // A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
+         A->grad_corr_M += B->volume * TensorProduct(B->X - A->X, grad_w_Bspline(A->X, B->X, A->radius_SPH));
+
+         if (A->isSurface && A->auxiliaryPoints.size() > 0) {
+            auto a = A->auxiliaryPoints[0];
+            A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + a->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
+         } else
+            A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
+                                                                                                                                                                  //
+         // }
          // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
 
          // A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * Dot(grad_w_Bspline(A->X, B->X, A->radius_SPH), A->inv_grad_corr_M);  //\label{SPH:gradP1}
@@ -57,6 +68,12 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       networkPoint *closest_surface_point = nullptr;
       double min_distance = 1e10, distance;
 
+      // if (A->isSurface) {
+      //    auto X = A->X - (A->COM_SPH - A->X);
+      //    A->grad_corr_M += A->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
+      //    A->gradP_SPH += A->rho * A->mass * (A->p_SPH / (A->rho * A->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+      // }
+
       for (const auto &net : target_nets) {
 
          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
@@ -64,6 +81,11 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
                add_gradP_SPH(B);
 
                if (B->isSurface) {
+                  if ((distance = Distance(A->X, X_next(B))) < min_distance) {
+                     min_distance = distance;
+                     closest_surface_point = B;
+                  }
+
 #if defined(USE_ONE_AUXP)
                   if ((distance = Distance(A->X, X_next(B))) < min_distance) {
                      min_distance = distance;
@@ -77,6 +99,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             }
          });
       }
+
 //
 #if defined(USE_ONE_AUXP)
       // if (A->isSurface)
@@ -86,16 +109,30 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
                add_gradP_SPH(AUX);
 #endif
 
+      // if (closest_surface_point != nullptr) {
+      //    auto X = A->X - (A->COM_SPH - A->X);
+      //    A->grad_corr_M += A->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
+      //    A->gradP_SPH += A->rho * A->mass * (A->p_SPH / (A->rho * A->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+      // }
+
+      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+
       /*DOC_EXTRACT SPH
 
       $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
       が計算できた．
 
       */
-      // if (!A->isSurface)
-      //    A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
-      //
+
+      if (A->isSurface)
+         A->gradP_SPH = (A->gradP_SPH + Dot(A->gradP_SPH, A->inv_grad_corr_M)) / 2.;
+      else
+         A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
+
+      // if (A->isNeumannSurface)
+      //    A->DUDt_SPH = Chop(A->DUDt_SPH, A->interpolated_normal_SPH_water);
 
       if (!isFinite(A->DUDt_SPH))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
