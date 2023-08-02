@@ -35,7 +35,7 @@ $ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
 
 double delta_t;
 
-#define _debugging_
+// #define _debugging_
 #include <filesystem>
 #include <utility>
 #define DEM
@@ -248,6 +248,7 @@ int main(int arg, char **argv) {
    // b# -------------------------------------------------------------------------- */
    for (const auto &[particlesNet, poly, J] : all_objects) {
       particlesNet->makeBucketPoints(particle_spacing);
+      poly->makeBucketFaces(particle_spacing);
       //
       std::cout << "timer : " << timer() << std::endl;
 
@@ -306,16 +307,16 @@ int main(int arg, char **argv) {
       // } else if (time_step < N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_ * 10;
+      //          p->mu_SPH = _WATER_MU_10deg_ * 10.;
       // }
-      //
+
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
                      RigidBodies,
                      real_time,
                      CSML,
                      particle_spacing,
-                     time_step < 10 ? max_dt / 10 : max_dt,
+                     time_step < 10 ? max_dt / 100 : max_dt,
                      RK_order);
 
       std::cout << "real_time = " << real_time << std::endl;

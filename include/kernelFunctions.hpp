@@ -112,43 +112,41 @@ W_{5}(q,h) = \frac{2187}{40\pi h^3}
 ```
 
 */
-double w_Bspline5(double q, const double &h) {
+double w_Bspline5(const double r, const double h) {
    constexpr double a = 2187. / (40. * M_PI);
    constexpr double one_third = 1.0 / 3.0;
    constexpr double two_thirds = 2.0 / 3.0;
-
-   if ((q /= h) > 1.)
+   const double q = r / h;
+   const double c = a / h * h * h;
+   if (q > 1.)
       return 0;
    else if (q < one_third)
-      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5) + 15. * std::pow(one_third - q, 5)) * a / (h * h * h);
+      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5) + 15. * std::pow(one_third - q, 5)) * c;
    else if (q < two_thirds)
-      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5)) * a / (h * h * h);
+      return (std::pow(1 - q, 5) - 6. * std::pow(two_thirds - q, 5)) * c;
    else
-      return (std::pow(1 - q, 5)) * a / (h * h * h);
+      return (std::pow(1 - q, 5)) * c;
 };
 
 Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    constexpr double a = 2187. / (40. * M_PI);
    constexpr double one_third = 1.0 / 3.0;
    constexpr double two_thirds = 2.0 / 3.0;
+   constexpr std::array<double, 3> zeros = {0., 0., 0.};
 
    const double r = Norm(xi - xj);
    const double q = r / h;
    const Tddd grad_q = (xi - xj) / (r * h);
-   const double dinom = h * h * h;
-   const double c = a / dinom;
+   const double c = a / h * h * h;
 
-   if (q > 1. || r * h * h * h * h == 0.0)
-      return {0., 0., 0.};
-   else if (q < one_third) {
-      if (r * h * h * h * h == 0.0)
-         return {0., 0., 0.};
-      else
-         return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;
-   } else if (q < two_thirds)
-      return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4)) * c;
+   if (q > 1. || r < 1E-14)
+      return zeros;
+   else if (q < one_third)
+      return -grad_q * h * (5 * std::pow(1 - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;
+   else if (q < two_thirds)
+      return -grad_q * h * (5 * std::pow(1 - q, 4) - 30. * std::pow(two_thirds - q, 4)) * c;
    else
-      return grad_q * -(5 * std::pow(1. - q, 4)) * c;
+      return -grad_q * h * (5 * std::pow(1 - q, 4)) * c;
 };
 
 double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
@@ -159,6 +157,16 @@ double Dot_grad_w_Bspline5_Dot(const Tddd &xi, const Tddd &xj, const double h) {
       return 0.;
    else
       return Dot(Xij / (r * r), grad_w_Bspline5(xi, xj, h));
+};
+
+double Dot_grad_w_Bspline5_Dot_Modified(const Tddd &xi, const Tddd &xj, const double h, const std::array<Tddd, 3> &M) {
+   const Tddd Xij = xi - xj;
+   const double r = Norm(Xij);
+   const double q = r / h;
+   if (q > 1. || r < 1E-14)
+      return 0.;
+   else
+      return Dot(Xij / (r * r), Dot(M, grad_w_Bspline5(xi, xj, h)));
 };
 
 //! --------------------------------- 3次スプライン -------------------------------- */
@@ -230,7 +238,7 @@ double w_Bspline3(const double &r, const double &h) {
 double ddr_w_Bspline3(const double &r, const double &h) {
    const double q = r / h;
    const double dqdr = 1. / h;
-   if (q > 1.)
+   if (q > 1. || r < 1E-14)
       return 0.;
    else if (q < 0.5)
       return 8. * (-12. * q + 18. * q * q) * dqdr / (M_PI * h * h * h);
@@ -241,7 +249,7 @@ double ddr_w_Bspline3(const double &r, const double &h) {
 double ddr2_w_Bspline3(const double &r, const double &h) {
    const double q = r / h;
    const double dqdr = 1. / h;
-   if (q > 1.)
+   if (q > 1. || r < 1E-14)
       return 0.;
    else if (q < 0.5)
       return 8. * ((-12. + 36. * q) * dqdr) / (M_PI * h * h * h);
@@ -254,7 +262,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
    const double q = r / h;
    const std::array<double, 3> dqdr = (xi - xj) / (r * h);
    const double dinom = M_PI * h * h * h * h * r;
-   if (q > 1. || dinom < 1E-13)
+   if (q > 1. || r < 1E-14)
       return {0., 0., 0.};
    else if (q < 0.5)
       return (xi - xj) * (-96. + 144. * q) * q / dinom;
@@ -302,13 +310,25 @@ double Dot_grad_w_Bspline3_Dot(const std::array<double, 3> &xi, const std::array
       return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 };
 
+double Dot_grad_w_Bspline3_Dot_Modified(const Tddd &xi, const Tddd &xj, const double h, const std::array<Tddd, 3> &M) {
+   const std::array<double, 3> Xij = xi - xj;
+   const double r = Norm(Xij);
+   const double q = r / h;
+   if (q > 1. || r < 1E-13)
+      return 0.;
+   else
+      return Dot(Xij / (r * r), Dot(M, grad_w_Bspline3(xi, xj, h)));
+};
+
 // auto &w_Bspline = w_Bspline5;
 // auto &grad_w_Bspline = grad_w_Bspline5;
 // auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
+// auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline5_Dot_Modified;
 
 auto &w_Bspline = w_Bspline3;
 auto &grad_w_Bspline = grad_w_Bspline3;
 auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
 auto &ddr_w_Bspline = ddr_w_Bspline3;
+auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline3_Dot_Modified;
 
 #endif

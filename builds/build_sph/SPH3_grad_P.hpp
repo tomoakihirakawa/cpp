@@ -27,32 +27,54 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #pragma omp single nowait
    {
       A->gradP_SPH.fill(0.);
-      A->grad_corr_M.fill({0., 0., 0.});
-      auto add_gradP_SPH = [&](const auto &B, const double &coef = 1.) {
+      // A->grad_corr_M.fill({0., 0., 0.});
+      auto add_gradP_SPH_Where = [&](const auto &B, const Tddd &X) {
          // if (A->isSurface || (!A->isSurface && !B->isAir)) {
 
-         // A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
-         A->grad_corr_M += B->volume * TensorProduct(B->X - A->X, grad_w_Bspline(A->X, B->X, A->radius_SPH));
+         // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+         // A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
 
-         if (A->isSurface && A->auxiliaryPoints.size() > 0) {
-            auto a = A->auxiliaryPoints[0];
-            A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + a->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
-         } else
-            A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP1}
-                                                                                                                                                                  //
+         // if (A->isSurface || A->isNeumannSurface)
+         //    A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH_ / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+         // else
+
+         // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH_ / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+
+         // if (A->isSurface)
+         //    A->gradP_SPH += (B->p_SPH - A->p_SPH_) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
+         // else
+
+         // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
+         A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
+
+         //
          // }
          // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+#if defined(USE_MIRROR_PARTICLE)
+         // 綺麗に配列させ設置した壁粒子の圧力を，内部の流体粒子の圧力から決める際に，理想的な値を設定することが困難と思われる．
+         for (const auto &v : B->vector_to_polygon) {
+            auto X = B->X + 2. * v;
+            auto Bp = B->p_SPH;
+            auto dP = Dot(2. * v, B->rho * B->DUDt_SPH);  // 係数がマイナス　-Aij
+            // Bp += dP;
+            // A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
+            // A->gradP_SPH += A->rho * B->mass * (Bp / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+            // A->gradP_SPH += (Bp - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
 
-         // A->gradP_SPH += coef * A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * Dot(grad_w_Bspline(A->X, B->X, A->radius_SPH), A->inv_grad_corr_M);  //\label{SPH:gradP1}
+            A->gradP_SPH += (Bp - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
+         }
+#endif
 
-         // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP2}
+         // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * Dot(grad_w_Bspline(A->X, X, A->radius_SPH), A->inv_grad_corr_M);  //\label{SPH:gradP1}
+
+         // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
 
          //\label{SPH:gradP2}は，Aij = 1*..を使うと，0.132
          //\label{SPH:gradP2}は，Aij = 3*..を使うと，0.221
          //\label{SPH:gradP2}は，Aij = 2*..を使うと，0.21198
 
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP2}
-         // A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, B->X, A->radius_SPH);  //\label{SPH:gradP3}0.34
+         // A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP3}0.34
          //\label{SPH:gradP3}は，Aij = 2*..を使うと，0.34
          //\label{SPH:gradP3}は，Aij = 2*..を使うと，Lagrangeを使うと，0.46
          //\label{SPH:gradP3}は，Aij = 3*..を使うと，0.49
@@ -63,6 +85,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //\label{SPH:gradP3}は，Aij = 2.5*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.45
          //\label{SPH:gradP3}は，Aij = 3*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.49
          //\label{SPH:gradP3}は，Aij = 4*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.457
+      };
+
+      auto add_gradP_SPH = [&](const auto &B) {
+         return add_gradP_SPH_Where(B, B->X);
       };
 
       networkPoint *closest_surface_point = nullptr;
@@ -76,7 +102,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       for (const auto &net : target_nets) {
 
-         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+         net->BucketPoints.apply(A->X, 1.1 * A->radius_SPH, [&](const auto &B) {
             if (B->isCaptured) {
                add_gradP_SPH(B);
 
@@ -99,8 +125,6 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             }
          });
       }
-
-//
 #if defined(USE_ONE_AUXP)
       // if (A->isSurface)
       if (closest_surface_point != nullptr)
@@ -110,12 +134,13 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #endif
 
       // if (closest_surface_point != nullptr) {
+      //    auto B = closest_surface_point;
       //    auto X = A->X - (A->COM_SPH - A->X);
-      //    A->grad_corr_M += A->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
-      //    A->gradP_SPH += A->rho * A->mass * (A->p_SPH / (A->rho * A->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+      //    A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
+      //    A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
       // }
 
-      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+      // A->inv_grad_corr_M = Inverse(A->grad_corr_M);
 
       /*DOC_EXTRACT SPH
 
@@ -124,11 +149,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       */
 
-      if (A->isSurface)
-         A->gradP_SPH = (A->gradP_SPH + Dot(A->gradP_SPH, A->inv_grad_corr_M)) / 2.;
-      else
-         A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
-
+      // if (A->isSurface)
+      //    A->gradP_SPH = (A->gradP_SPH + Dot(A->gradP_SPH, A->inv_grad_corr_M)) / 2.;
+      // else
+      A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 
       // if (A->isNeumannSurface)

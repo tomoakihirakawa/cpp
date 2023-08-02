@@ -1667,7 +1667,7 @@ using V_i = std::vector<int>;
 using VV_i = std::vector<std::vector<int>>;
 /* ------------------------------------------------------ */
 
-double normalDirDistanceFromTriangle(const T3Tddd &ps, const Tddd &&a) {
+double normalDirDistanceFromTriangle(const T3Tddd &ps, const Tddd &a) {
    return Dot(TriangleNormal(ps), std::get<0>(ps) - a);
 };
 

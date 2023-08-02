@@ -55,13 +55,13 @@ match SimulationCase:
         input_files = [wavetank, water]
 
         setting = {"RK_order": 2,
-                   "max_dt": 0.001,
-                   "CSML": 2.4,
+                   "max_dt": 0.0005,
+                   "CSML": 2.7,
                    "end_time_step": 10000,
                    "end_time": 10,
                    "initial_surface_z_position": 0.1,
                    # "particle_spacing": 0.00625,
-                   "particle_spacing": 0.2/16,
+                   "particle_spacing": 0.2/20,
                    "input_files": [x["name"]+".json" for x in input_files]}
     case "Lobovsky2014":
 
@@ -141,12 +141,12 @@ match SimulationCase:
         input_files = [wavetank, water,  sensor1, sensor2]
 
         setting = {"RK_order": 2,  # \label{SPH:RK_order}
-                   "max_dt": 0.0005,
-                   "end_time_step": 50000,
-                   "end_time": 0.5,
-                   "CSML": 2.4,
+                   "max_dt": 0.0002,
+                   "end_time_step": 100000,
+                   "end_time": 4.,
+                   "CSML": 2.7,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.015,
+                   "particle_spacing": 0.0125,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #
