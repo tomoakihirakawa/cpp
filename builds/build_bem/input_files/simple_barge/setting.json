@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.25,
+    "end_time_step": 10000,
+    "end_time": 10000,
+    "output_directory": "/Users/tomoaki/BEM/simple_barge",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "floatingbody.json"
+    ]
+}

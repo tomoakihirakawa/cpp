@@ -150,6 +150,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }
+
    std::cout << "step2 面の境界条件を判定" << std::endl;
 #pragma omp parallel
    for (const auto &f : water.getFaces())

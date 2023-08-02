@@ -141,7 +141,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L171)，
 [`networkPoint::isInContact`](../../include/networkPoint.hpp#L178)，
-[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L289)
+[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L293)
 を使って接触判定を行っている．
 
 [流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L148)の設置も重要．
@@ -218,9 +218,9 @@ $`\phi`$がラプラス方程式$`\nabla^2\phi=0`$を満たし，$`G=1/\|{\bf x}
 $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
 原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
 
-この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
+この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`4\pi`$とできる．
 この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
-$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
+$`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
 
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
@@ -231,10 +231,10 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 ```math
-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
+\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}} \right)} }=
 ```
 ```math
-\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{(\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ}) \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} }\right)}
 ```
 
 ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
@@ -590,11 +590,11 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[![Banner](sample0.gif)](sample0.gif)
+[![simple_barge](sample0.gif)](sample0.gif)
 
-[![Banner](sample1.gif)](sample1.gif)
+[![Kramer2021](sample1.gif)](sample1.gif)
 
-[![Banner](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
+[![Hadzic2005](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
 
 
 [./main.cpp#L1](./main.cpp#L1)
