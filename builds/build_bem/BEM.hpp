@@ -263,6 +263,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
       uomap_P_Tddd P_position = p_tdd0;
       uomap_P_Tddd P_normal_BEM = p_tdd0;
       uomap_P_Tddd P_gradPhi = p_tdd0;
+      uomap_P_Tddd P_vecToSurface = p_tdd0;
       uomap_P_Tddd P_uNeumann = p_tdd0;
 
       uomap_P_d P_isMultipleNode = p_d0;
@@ -300,6 +301,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_uNeumann[p] = uNeumann(p);
             P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
             P_gradPhi[p] = p->U_BEM;
+            P_vecToSurface[p] = p->vecToSurface;
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
@@ -314,6 +316,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
              {"U_tangential_BEM", P_U_tangential_BEM},
              {"ContactFaces", P_ContactFaces},
              {"grad_phi", P_gradPhi},
+             {"vecToSurface", P_vecToSurface},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},

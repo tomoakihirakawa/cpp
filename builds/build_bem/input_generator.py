@@ -59,7 +59,7 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "moon_pool_large"
+SimulationCase = "Kramer2021"
 
 match SimulationCase:
     case "Hadzic2005":
@@ -135,7 +135,7 @@ match SimulationCase:
         # float["translate"] = [0., 0., 0.1*D + 900/1000]
 
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
-        water["objfile"] = objfolder + "/water300_mod.obj"
+        water["objfile"] = objfolder + "/water200_mod.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
         float["objfile"] = objfolder+"/sphere.obj"
 
