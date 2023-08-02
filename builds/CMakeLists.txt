@@ -40,26 +40,23 @@ endif()
 # Set project name
 project(ProjectName)
 
-# Check platform
-if(APPLE)
-  message(STATUS "platform is Apple\n")
+set(CXX_VERSIONS 15 14 13 12 11 10 9 8 7)
 
-  set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-13")
-  include_directories(/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3)
+# Find C++ compiler
+foreach(ver IN LISTS CXX_VERSIONS)
+  unset(CXX_COMPILER CACHE)
+  string(CONCAT CXX "g++-" ${ver})
+  find_program(CXX_COMPILER ${CXX})
 
-# set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-12")
-# set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-# set(CMAKE_C_COMPILER /usr/bin/clang)
-elseif(LINUX)
-  message(STATUS "platform is Linux\n")
-  set(CMAKE_CXX_COMPILER "/usr/bin/g++-13")
+  if(CXX_COMPILER)
+    message(STATUS "${Green}Found ${CXX}: ${Magenta}${CXX_COMPILER}${ColourReset}")
+    set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
+    break()
+  endif()
+endforeach()
 
-# set(CMAKE_C_COMPILER "/usr/bin/gcc-12")
-else()
-  message(STATUS "platform is Not Linux\n")
-  set(CMAKE_CXX_COMPILER "/usr/bin/g++-12")
-
-  # set(CMAKE_C_COMPILER "/usr/bin/gcc-12")
+if(NOT CXX_COMPILER)
+  message(FATAL_ERROR "No suitable g++ version found!")
 endif()
 
 # Set common compiler flags
