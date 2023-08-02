@@ -309,6 +309,7 @@ void developByEISPH(Network *net,
       do {
 
          // 流れの計算に関与する壁粒子を保存
+         setVectorToPolygon(net, RigidBodyObject, C_SML * particle_spacing);
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "関連する壁粒子をマークし，保存");
          setFreeSurface(net, RigidBodyObject);
@@ -402,14 +403,12 @@ void developByEISPH(Network *net,
 
          std::cout << "DT = " << DT << std::endl;
 
+#if defined(USE_AIR_PARTICLE)
          //@ ∇.∇UとU*を計算
          DebugPrint("∇.∇UとU*を計算");
-
          calcLaplacianU(net->getPoints(), Append(Append(net_RigidBody, net), air), DT);
          calcLaplacianU(wall_p, Append(Append(net_RigidBody, net), air), DT);
-
          DebugPrint("ポアソン方程式を立てる", Magenta);
-#if defined(USE_AIR_PARTICLE)
          calcLaplacianU(air->getPoints(), Append(Append(net_RigidBody, net), air), DT);
          DebugPrint("wall_p", Magenta);
          setPoissonEquation(wall_p, Append(Append(net_RigidBody, net), air), DT, particle_spacing);
@@ -426,9 +425,34 @@ void developByEISPH(Network *net,
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
          gradP(net->getPoints(), Append(Append(net_RigidBody, net), air));
+#elif defined(USE_MIRROR_PARTICLE)
+         //@ ∇.∇UとU*を計算
+         DebugPrint("∇.∇UとU*を計算");
+         calcLaplacianU(net->getPoints(), {net}, DT);
+
+         DebugPrint("ポアソン方程式を立てる", Magenta);
+         setPoissonEquation(net->getPoints(), {net}, DT, particle_spacing);
+         DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "圧力勾配∇Pを計算 & DU/Dtの計算");
+
+         //@ 圧力 p^n+1の計算
+         DebugPrint("圧力 p^n+1の計算", Magenta);
+         // if (real_time < 0.0001)
+         solvePoisson(net->getPoints());
+
+         // checkIfPoissonEqIsSatisfied(net);
+
+         //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
+         DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
+         gradP(net->getPoints(), {net});
 #else
-         setPoissonEquation(wall_p, Append(net_RigidBody, net), DT, particle_spacing);
-         setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
+         //@ ∇.∇UとU*を計算
+         DebugPrint("∇.∇UとU*を計算");
+         calcLaplacianU(net->getPoints(), Append(net_RigidBody, net));
+         calcLaplacianU(wall_p, Append(net_RigidBody, net));
+         DebugPrint("ポアソン方程式を立てる", Magenta);
+         //
+         setPoissonEquation(wall_p, Append(net_RigidBody, net), particle_spacing);
+         setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), particle_spacing);
          // debug of surfaceNet
          // std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
          // setPoissonEquation(wall_p, Append(net_RigidBody, net), DT);
@@ -439,11 +463,10 @@ void developByEISPH(Network *net,
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
          solvePoisson(net->getPoints(), wall_p);
-
          // set free surface pressure using EISPH way
          // setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
 
-         checkIfPoissonEqIsSatisfied(net->getPoints());
+         // checkIfPoissonEqIsSatisfied(net, Append(net_RigidBody, net));
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          DebugPrint("圧力勾配∇Pを計算 & DU/Dtの計算", Magenta);
@@ -517,8 +540,24 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->rho;
    vtp.addPointData("density", uo_double);
    //
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->density_based_on_positions;
-   vtp.addPointData("density based on position", uo_double);
+   for (auto i = 0; i < 6; i++) {
+      for (const auto &p : Fluid->getPoints()) {
+         if (p->vector_to_polygon.size() > i)
+            uo_3d[p] = p->vector_to_polygon[i];
+         else
+            uo_3d[p] = {0, 0, 0};
+      }
+      vtp.addPointData("vector_to_polygon" + std::to_string(i), uo_3d);
+   }
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->vector_to_polygon.size();
+   vtp.addPointData("vector_to_polygon size", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->getContactFaces().size();
+   vtp.addPointData("ContactFaces size", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->intp_density;
+   vtp.addPointData("intp_density", uo_double);
    //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->volume;
    vtp.addPointData("volume", uo_double);

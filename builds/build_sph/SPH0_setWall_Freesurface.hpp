@@ -4,6 +4,104 @@
 #include "Network.hpp"
 #include "minMaxOfFunctions.hpp"
 
+//! -------------------------------------------------------------------------- */
+
+void setVectorToPolygon(const auto &water, const auto &RigidBodyObject, const double particle_spacing) {
+
+   for (const auto &p : water->getPoints())
+      p->clearContactFaces();
+
+   //!!! 衝突の判定がよくエラーが出る箇所
+   for (const auto &[_, body] : RigidBodyObject) {
+#pragma omp parallel
+      for (const auto &p : water->getPoints())
+#pragma omp single nowait
+      {
+         //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
+         // \label{BEM:detection_range}
+         p->radius = particle_spacing;
+         p->addContactFaces(body->getBucketFaces(), false);
+      }
+   }
+
+   for (const auto &[_, body] : RigidBodyObject) {
+#pragma omp parallel
+      for (const auto &p : water->getPoints())
+#pragma omp single nowait
+      {
+         std::unordered_map<networkLine *, int> shared_lines;
+         std::unordered_map<networkPoint *, int> shared_points;
+         if (p->getContactFaces().size() > 1)
+            for (const auto &f : p->getContactFaces()) {
+               // count
+               for (const auto &l : f->getLines())
+                  if (shared_lines.find(l) != shared_lines.end())
+                     shared_lines[l]++;
+                  else
+                     shared_lines[l] = 1;
+
+               // count
+               for (const auto &p : f->getPoints())
+                  if (shared_points.find(p) != shared_points.end())
+                     shared_points[p]++;
+                  else
+                     shared_points[p] = 1;
+            }
+
+         // erase elements in shared_lines and shared_points if the number is 1
+         for (auto it = shared_lines.begin(); it != shared_lines.end();) {
+            if (it->first->isFlat(M_PI / 180))
+               it = shared_lines.erase(it);
+            else
+               ++it;
+         }
+
+         for (auto it = shared_points.begin(); it != shared_points.end();) {
+            if (it->second <= 2 || Between(it->first->getSolidAngle(), {2 * M_PI * 0.8, 2 * M_PI * 1.2}))
+               it = shared_points.erase(it);
+            else
+               ++it;
+         }
+
+         p->vector_to_polygon.clear();
+         p->vector_to_polygon_next.clear();
+         // store vectors to polygon into p->vector_to_polygon using Nearest function
+
+         // to faces
+         Tddd vec;
+         for (const auto &f : p->getContactFaces()) {
+            vec = Nearest(p->X, ToX(f)) - p->X;
+            if (Norm(vec) < p->radius && isFlat(vec, -f->normal, M_PI / 180. * 60)) {
+               p->vector_to_polygon.push_back(vec);
+               p->vector_to_polygon_next.push_back(Nearest(X_next(p), ToX(f)) - X_next(p));
+            }
+         }
+         // to lines
+         for (const auto &[l, _] : shared_lines) {
+            vec = Nearest(p->X, ToX(l)) - p->X;
+            if (Norm(vec) < p->radius && isFlat(vec, -l->getNormal(), M_PI / 180. * 60)) {
+               if (std::ranges::none_of(p->vector_to_polygon, [&](const auto &v) { return VectorAngle(v, vec) < M_PI / 180. * 20; })) {
+                  p->vector_to_polygon.push_back(vec);
+                  p->vector_to_polygon_next.push_back(Nearest(X_next(p), ToX(l)) - X_next(p));
+               }
+            }
+         }
+
+         // to points
+         for (const auto &[q, _] : shared_points) {
+            vec = q->X - p->X;
+            if (Norm(vec) < p->radius && VectorAngle(vec, -p->getNormal_BEM()) < M_PI / 180. * 20)
+               if (std::ranges::none_of(p->vector_to_polygon, [&](const auto &v) { return VectorAngle(v, vec) < M_PI / 180. * 20; })) {
+                  p->vector_to_polygon.push_back(vec);
+                  p->vector_to_polygon_next.push_back(q->X - X_next(p));
+               }
+         }
+      }
+   }
+};
+
+//! -------------------------------------------------------------------------- */
+
 std::array<double, 3> optimizeFunction(const std::array<double, 3> &X0,
                                        const double &vol0,
                                        const auto &p,
@@ -79,6 +177,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
    {
+      // 安定かを入れよう．
       // ここでも結構変わる
       const double captureRange = 1.1 * p->radius_SPH;  //\label{SPH:capture_condition_1st}
       // const double captureRange_wall_as_fluid = p->radius_SPH;
@@ -148,8 +247,10 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
       else
          p->U_SPH /= total_w;
       // p->U_SPH = -p->U_SPH;
-      p->U_SPH.fill(0.);
-      // p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      // p->U_SPH.fill(0.);
+      p->U_SPH = Reflect(p->U_SPH, p->normal_SPH);  //\label{SPH:wall_particle_velocity}
+      // if (p->isFirstWallLayer)
+      //    p->U_SPH = Chop(p->U_SPH, p->normal_SPH);
       // p->U_SPH = Projection(Reflect(p->U_SPH, p->normal_SPH), p->normal_SPH);  //\label{SPH:wall_particle_velocity}
    }
 };
@@ -160,11 +261,11 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
 */
 // #ifndef USE_AIR_PARTICLE
-#define USE_DOUBLED_AUXP
+// #define USE_MIRROR_PARTICLE
 // #define USE_ONE_AUXP
 // #define USE_ALL_AUXP
 // #endif
-
+//
 void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
@@ -184,6 +285,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    for (const auto &[obj, poly] : RigidBodyObject)
       all_nets.push_back(obj);
 
+   auto water = net;
+
 #pragma omp parallel
    for (const auto &p : net->getPoints())
 #pragma omp single nowait
@@ -202,9 +305,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       p->interpolated_normal_SPH_rigid_next.fill(0.);
       //
       // p->interpolated_skewness.fill(0.);
-
       double w;
-
       // std::vector<networkPoint *> samples;
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          // w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
@@ -314,7 +415,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
       p->isSurface = true;
 
-      const auto radius = (p->radius_SPH / p->C_SML) * 3.;
+      const auto radius = (p->radius_SPH / p->C_SML) * 2.;
 
       auto surface_condition0 = [&](const auto &q) {
          return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 4);
@@ -323,12 +424,19 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0);
 
       auto surface_condition1 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 3);
+         // 0.8よりも小さいものは，条件を厳しくする
+         // 0.8よりも大きいものは，条件を緩める
+         return ((p->intp_density / _WATER_DENSITY_ < 0.8) && Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 3)) ||
+                ((p->intp_density / _WATER_DENSITY_ > 0.8) && Distance(p, q) < radius * 1.2 && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 2));
       };
 
       for (const auto &[obj, poly] : RigidBodyObject)
-         if (p->isSurface)
+         if (p->isSurface) {
             p->isSurface = obj->BucketPoints.none_of(p->X, radius, surface_condition1);
+         }
+
+      if (p->intp_density / _WATER_DENSITY_ < 0.4)
+         p->isSurface = true;
    }
 
    /*DOC_EXTRACT SPH
@@ -337,7 +445,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
    */
 
-#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP) || defined(USE_DOUBLED_AUXP)
+#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
    DebugPrint("水面ネットワークの初期化", Green);
    if (net->surfaceNet == nullptr)
       net->surfaceNet = new Network();
@@ -415,8 +523,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                auxp->b_vector = p->b_vector;
                auxp->DUDt_SPH = p->DUDt_SPH;
                auxp->volume = p->volume;
-               auxp->setXSingle(p->X);  // 初期値
-               // auxp->setXSingle(p->X + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original));  // 初期値
+               auxp->setXSingle(p->X);                                                                                        // 初期値
+               auxp->setXSingle(p->X + (i + 1) * p->radius_SPH / p->C_SML * Normalize(p->interpolated_normal_SPH_original));  // 初期値
                auxp->setDensityVolume(_WATER_DENSITY_, p->volume);
                //
                auxp->volume_next = auxp->volume;

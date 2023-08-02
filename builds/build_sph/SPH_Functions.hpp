@@ -98,8 +98,8 @@ $`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.01;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -165,21 +165,19 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   // return _WATER_DENSITY_;
-   if (p->isAuxiliary)
-      return rho_next(p->surfacePoint);
-   else if (p->getNetwork()->isRigidBody)
-      return _WATER_DENSITY_;
-   else {
-#if defined(USE_RungeKutta)
-      if (p->RK_rho.current_step == p->RK_rho.steps - 1)
-         return _WATER_DENSITY_;
-      else
-         return p->RK_rho.getX(p->DrhoDt_SPH);
-#elif defined(USE_LeapFrog)
-      return p->LPFG_rho.get_x(p->DrhoDt_SPH);
-#endif
-   }
+   return _WATER_DENSITY_;
+   /* -------------------------------------------------------------------------- */
+   //    if (p->isAuxiliary)
+   //       return rho_next(p->surfacePoint);
+   //    else if (p->getNetwork()->isRigidBody)
+   //       return _WATER_DENSITY_;
+   //    else {
+   // #if defined(USE_RungeKutta)
+   //    return p->RK_rho.getX(p->DrhoDt_SPH);
+   // #elif defined(USE_LeapFrog)
+   //    return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
+   // #endif
+   //    }
 };
 
 // \label{SPH:volume_next}
@@ -197,17 +195,21 @@ double V_next(const auto &p) {
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   if (p->getNetwork()->isRigidBody)
-      return p->X;
-   else if (p->isAuxiliary)
-      return X_next(p->surfacePoint);
-   else {
-#if defined(USE_RungeKutta)
-      return p->RK_X.getX(p->U_SPH);
-#elif defined(USE_LeapFrog)
-      return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
-#endif
-   }
+   return p->X;
+   //    if (p->getNetwork()->isRigidBody)
+   //       return p->X;
+   //    else if (p->isAuxiliary)
+   //       return X_next(p->surfacePoint);
+   //    else {
+   // #if defined(USE_RungeKutta)
+
+   //       return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
+
+   //          // return p->RK_X.getX(p->U_SPH);
+   // #elif defined(USE_LeapFrog)
+   //       return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
+   // #endif
+   //    }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -237,7 +239,12 @@ void updateParticles(const auto &points,
       auto U = p->U_SPH;
       auto X_last = p->X;
 #if defined(USE_RungeKutta)
-      auto getX_next = [&](const auto &p) { return p->RK_X.getX(p->U_SPH); };
+      auto X_next = [&](const auto &p) {
+         if (p->RK_X.steps == 1)
+            return p->RK_X.getX();
+         else
+            return p->RK_X.getX(p->U_SPH);
+      };
       if (p->RK_X.steps == 1) {
          p->RK_U.push(p->DUDt_SPH);  // 速度
          p->U_SPH = p->RK_U.getX();
@@ -251,7 +258,7 @@ void updateParticles(const auto &points,
       }
          // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
 #elif defined(USE_LeapFrog)
-      auto getX_next = [&](const auto &p) { return X_next(p); };
+      auto X_next = [&](const auto &p) { return p->X; };
       p->DUDt_modify_SPH.fill(0.);
       p->LPFG_X.push(p->DUDt_SPH);  // 速度
       p->U_SPH = p->LPFG_X.get_v();
@@ -265,7 +272,6 @@ void updateParticles(const auto &points,
       // const double reflection_factor = .5;
       const double reflection_factor = 1.;
       const double asobi = 0.01;
-
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
@@ -283,7 +289,7 @@ void updateParticles(const auto &points,
 
       bool isReflected = true;
       p->DUDt_modify_SPH.fill(0.);
-      while (isReflected && count++ < 3) {
+      while (isReflected && count++ < 1) {
          isReflected = false;
          auto closest_p = closest();
          if (closest_p != nullptr) {
@@ -331,14 +337,19 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-      if (A->RK_rho.finished)
-         A->setDensity(_WATER_DENSITY_);
-      else
-         A->setDensity(A->RK_rho.get_x());
+                                      // if (A->RK_rho.finished)
+                                      //    A->setDensity(_WATER_DENSITY_);
+                                      // else
+                                      // A->setDensity(A->RK_rho.get_x());
+                                      // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
+                                      // A->setDensity(A->RK_rho.get_x());
+      A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);
-
+      // リープフロッグの密度更新はこれでほんとにいいのか？
+      // divの補正＆ぁプラしなんの補正
+      //     A->setDensity(_WATER_DENSITY_);
       // if (A->LPFG_rho.finished)
       A->setDensity(_WATER_DENSITY_);
          // else

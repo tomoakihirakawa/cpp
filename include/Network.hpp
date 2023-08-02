@@ -461,7 +461,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    T6d &A = this->acceleration;
    T6d &V = this->velocity;
    /* ------------------------------------------------------ */
-   double density, density_, density_based_on_positions;
+   double density, density_;
    double &rho = this->density;
    double &rho_ = this->density_;
    double volume, volume_;
@@ -489,7 +489,7 @@ class networkPoint : public CoordinateBounds, public CSR {
 
    // 2023/05/16
    //\label{SPH:auxiliaryPoints}
-   std::array<networkPoint *, 1> auxiliaryPoints;
+   std::array<networkPoint *, 0> auxiliaryPoints;
    networkPoint *surfacePoint;
    double W;
    /////////////////////////
@@ -540,6 +540,12 @@ class networkPoint : public CoordinateBounds, public CSR {
    };
    /////////////////////////
    Tddd lap_U, lap_U_;
+   T3Tddd grad_U;
+   T3Tddd Mat1, Mat2, Mat3, Mat_B;
+   std::unordered_map<networkPoint *, double> map_p_grad;
+   std::vector<std::tuple<networkPoint *, double>> vector_p_grad;
+   // std::unordered_map<networkPoint *, double> extra_storage;
+   // std::vector<std::tuple<networkPoint *, double>> extra_storage_vector;
    // void setLapU(const V_d &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setLapU(const Tddd &lap_U_IN) { this->lap_U = lap_U_IN; };
    void setDensityVolume(const double &den, const double &v) {
@@ -592,10 +598,13 @@ class networkPoint : public CoordinateBounds, public CSR {
    double intp_density, intp_density_next, ddr_intp_density;
    double totalMass_SPH;
    Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
+   std::vector<Tddd> vector_to_polygon;
+   std::vector<Tddd> vector_to_polygon_next;
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M;
+   std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;

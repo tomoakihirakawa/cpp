@@ -286,6 +286,10 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
    }
    return ret;
 };
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 // \label{addContactFaces}
 inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
    /*
@@ -293,32 +297,54 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
    */
    Tddd x;
    if (this->Lines.empty()) {
-      // b!まずは，衝突があり得そうな面を多めに保存する．
-      std::unordered_map<networkFace *, Tddd> tmpContactFaces;
-      // for (const auto &f : B.getObjects_unorderedset(this->X, 2. * this->radius))
-      for (const auto &f : B.getAll()) {
-         // auto [p0, p1, p2] = f->getXVertices();
-         // auto intxn = IntersectionSphereTriangle(this->X, 3. * this->radius, f->getXVertices());
-         // if (Norm(intxn.X - this->X) < 2. * this->radius)
-         //    tmpContactFaces[f] = intxn.X;
-         //
-         x = Nearest(this->X, ToX(f));
-         if (3 * this->radius > Norm(this->X - x))
-            tmpContactFaces[f] = x;
+
+      /* ------------------------------ for particle method ------------------------------ */
+
+      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
+      double dist;
+      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      std::unordered_set<networkFace *> faces;
+      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
+      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
+
+      auto isInContact = [&](const networkFace *f_target) {
+         auto [p0, p1, p2] = f_target->getPoints();
+         auto dist = Norm(this->X - Nearest(this->X, ToX(f_target)));
+         return dist < this->radius &&
+                std::ranges::any_of(f_target->getPoints(), [&](const auto &p) { return Dot(p->X - this->X, -f_target->normal); }) &&
+                normalDirDistanceFromTriangle(T3Tddd{p0->X, p1->X, p2->X}, this->X) < this->radius;
+      };
+
+      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
+
+      for (const auto &f : faces) {
+         if (f->getNetwork() != this->getNetwork()) {
+            if (isInContact(f)) {
+               auto dist = Norm(this->X - Nearest(this->X, ToX(f)));
+               std::tuple<networkFace *, double> T = {f, dist};
+               if (dist < this->radius) {
+                  auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
+                     return std::get<1>(a) < std::get<1>(b) - 1E-20;
+                  });
+                  f_dist_sort.insert(it, T);
+               }
+            }
+         }
       }
-      // b!各面について衝突があり得るか詳しく調べて判断する．
-      for (const auto &[f, intxnX] : tmpContactFaces) {
-         //@ 周りの点に隠れて面が見えない状況の場合，その面とは接し得ないので，考慮しない．
-         // auto [p0, p1, p2] = f->getPointsTuple();
-         // BEMのために導入したもの．周辺の点の方向にある面には衝突し得ないため，無視する．
-         // ただし修正面の方向をむくせんを抜き出す必要がある．
-         // auto n = f->normal;
-         auto thisPointToFace = intxnX - this->X;
-         // b$ 点が面を有していない場合（SPH用）
-         if (Dot(f->normal, thisPointToFace /* <--この点からfまでのベクトルを向き合いの判定に利用*/) < 0. /*少なくとも向き合っていなければいけない*/)
-            this->ContactFaces.emplace(f);
-      }
+
+      if (!f_dist_sort.empty()) {
+         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
+         for (const auto &[F, D] : f_dist_sort) {
+            if (std::ranges::none_of(this->ContactFaces, [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+               this->ContactFaces.emplace(F);
+            if (this->ContactFaces.size() > 10)
+               return;
+         };
+      } else
+         DebugPrint("faces is empty");
    } else {
+
+      /* ----------------------------- for mesh method ---------------------------- */
 
       // this->ContactFaces = ToUnorderedSet(selectionOfFaces(this, B.getObjects_unorderedset(this->X, this->radius), 20, false));
 
@@ -356,6 +382,9 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
          DebugPrint("faces is empty");
    }
 };
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 
 // 点なのに，sphereでインターセクションをチェックするのは効率的ではない．
 inline void networkPoint::addContactPoints(const Buckets<networkPoint *> &B,

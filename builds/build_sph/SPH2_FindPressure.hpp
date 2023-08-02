@@ -106,11 +106,18 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 // \label{SPH:setPoissonEquation}
 void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                         const std::unordered_set<Network *> &target_nets,
-                        const double dt, const double &particle_spacing) {
+                        const double &particle_spacing) {
 #pragma omp parallel
    for (const auto &ROW : points)
 #pragma omp single nowait
    {
+
+#if defined(USE_RungeKutta)
+      const double dt = ROW->RK_X.get_dt();
+#elif defined(USE_LeapFrog)
+      const double dt = ROW->LPFG_X.get_dt();
+#endif
+
       double Aij, sum_Aij = 0, sum_Aij_Pj = 0;
       ROW->PoissonRHS = 0;
       ROW->clearColumnValue();
@@ -147,22 +154,25 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // auto grad = Dot(grad_w_Bspline(A->X, B->X, A->radius_SPH), A->inv_grad_corr_M);
          // auto grad = grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);
 
-         auto grad = grad_w_Bspline(A->X, B->X, A->radius_SPH);
-         auto cB = -B->mass * (1. / (B->rho * B->rho)) * grad;
-         auto cA = -B->mass * (1. / (A->rho * A->rho)) * grad;
+         // auto grad = grad_w_Bspline(A->X, B->X, A->radius_SPH);
+         auto grad = Dot(grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH), A->inv_grad_corr_M_next);
+         auto cB = -B->mass * (1. / (rho_next(B) * rho_next(B))) * grad;
+         auto cA = -B->mass * (1. / (rho_next(A) * rho_next(A))) * grad;
 
-         // ROW->increment(B, Dot(Normalize(Chop(A->interpolated_normal_SPH_water, A->interpolated_normal_SPH_original_choped)), cB));
-         // ROW->increment(A, Dot(Normalize(Chop(A->interpolated_normal_SPH_water, A->interpolated_normal_SPH_original_choped)), cA));
+         auto n = Normalize(A->interpolated_normal_SPH_original_choped);
+         ROW->increment(B, Dot(n, cB));  // [Newton]
+         ROW->increment(A, Dot(n, cA));  // [Newton]
+         // next force by pressure gradient
 
-         ROW->increment(B, Dot(Normalize(A->interpolated_normal_SPH_water), cB));
-         ROW->increment(A, Dot(Normalize(A->interpolated_normal_SPH_water), cA));
+         // ROW->increment(B, Dot(Normalize(A->interpolated_normal_SPH_water), cB));
+         // ROW->increment(A, Dot(Normalize(A->interpolated_normal_SPH_water), cA));
 
          // auto dt = ROW->LPFG_X.get_dt();
          // ROW->PoissonRHS = Dot(A->interpolated_normal_SPH_water, -A->DUDt_SPH);
 
-         auto nu_lap_U_g = A->DUDt_SPH;
-
-         ROW->PoissonRHS = Dot(A->interpolated_normal_SPH_water, -nu_lap_U_g);
+         // auto nu_lap_U_g = A->DUDt_SPH;
+         // auto nu_lap_U_g = 0.;
+         ROW->PoissonRHS = 0;  // Dot(n, -nu_lap_U_g);
          // auto nu_lap_U_g = B->DUDt_SPH;
          // auto w = B->volume * w_Bspline(Norm(X_next(A) - X_next(B)), A->radius_SPH);
          // ROW->PoissonRHS += Dot(A->interpolated_normal_SPH_water, -nu_lap_U_g) * w;
@@ -178,14 +188,12 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          ROW->increment(p, 1.);
       };
 
-      // \label{SPH:PoissonEquation}
-      auto PoissonEquation = [&](const auto &B /*column id*/, const double &coef = 1.) {
-         if (Distance(pO_x, X_next(B)) < pO->radius_SPH) {
+      auto PoissonEquationWithX = [&](const auto &B /*column id*/, const Tddd &X, const bool isMirror = false) {
+         if (Distance(pO_x, X) < pO->radius_SPH) {
             {
-               // \label{SPH:how_to_use_b_vector_in_Poisson1}
-               ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH)) * coef;  // \label{SPH:div_b_vector}
-
-               // auto grad = Dot(grad_w_Bspline(pO_x, X_next(B), pO->radius_SPH), pO->inv_grad_corr_M);
+#define USE_LAPLACIAN_CORRECTION
+#ifdef USE_LAPLACIAN_CORRECTION
+               // auto grad = Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M);
                // ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad) * coef;  // \label{SPH:div_b_vector}
 
                // \label{SPH:pressure_stabilization}
@@ -195,22 +203,66 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
                // ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - rho_next(pO)) / (dt * dt);
 
-               // if (B->isAir || pO->isAir)
-               //    Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO->X, B->X, pO->radius_SPH) * coef;  //\label{SPH:lapP1}
-               // else
-               Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
+               Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X, pO->radius_SPH);  //\label{SPH:lapP1}
 
-               // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP1}
-               // Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X_next(B), pO->radius_SPH) * coef;  //\label{SPH:lapP2}
+               // Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot_Modified(pO_x, X, pO->radius_SPH, pO->inv_grad_corr_M_next);  //\label{SPH:lapP1}
+
+               // Aij = 2. * B->mass / rho_next(pO) * Dot_grad_w_Bspline_Dot(pO_x, X, pO->radius_SPH) * coef;  //\label{SPH:lapP1}
+               // Aij = 8. * B->mass * rho_next(pO) / std::pow(rho_next(pO) + rho_next(B), 2) * Dot_grad_w_Bspline_Dot(pO_x, X, pO->radius_SPH);  //\label{SPH:lapP2}
                // for ISPH
                Aij /= pO->rho;
                ROW->increment(pO, Aij);
                ROW->increment(B, -Aij);
+
+               for (const auto &[p, v] : pO->vector_p_grad) {
+                  ROW->increment(p, -Aij * v);
+               }
+
+               // \label{SPH:how_to_use_b_vector_in_Poisson1}
+               if (isMirror) {
+                  ROW->PoissonRHS += V_next(B) * Dot(Reflect(B->b_vector, X - pO_x) - pO_b, Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));  // \label{SPH:div_b_vector}
+                  // ROW->PoissonRHS += V_next(B) * Dot(Reflect(B->b_vector, X - pO_x) - pO_b, Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));  // \label{SPH:div_b_vector}
+                  // ROW->PoissonRHS += V_next(B) * Dot(Reflect(B->b_vector - (B->mu_SPH / B->rho * B->lap_U), X - pO_x) - pO_b, grad_w_Bspline(pO_x, X, pO->radius_SPH));  // \label{SPH:div_b_vector}
+                  auto dP = Dot(X - pO_x, B->rho * B->DUDt_SPH);  // 係数がマイナス　-Aij
+                  // ROW->PoissonRHS -= dP * -Aij;                   // 移項したのでマイナス
+               } else {
+                  // ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X, pO->radius_SPH));                             // \label{SPH:div_b_vector}
+                  ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));  // \label{SPH:div_b_vector}
+                  // ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));  // \label{SPH:div_b_vector}
+               }
+
+               // auto aij = Dot(pO_x - X, V_next(B) * Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));
+               // ROW->increment(pO, Aij * -aij);
+               // ROW->increment(B, Aij * aij);
+
                // for EISPH
+               // sum_Aij_Pj += Aij * (1 + aij) * B->p_SPH;
+               // sum_Aij += Aij * (1 - aij);
                sum_Aij_Pj += Aij * B->p_SPH;
                sum_Aij += Aij;
+#else
+               auto mat_Aij = 2. * V_next(B) * TensorProduct((pO_x - X) / Dot(pO_x - X, pO_x - X), grad_w_Bspline(pO_x, X, pO->radius_SPH));  //\label{SPH:lapP1}
+               mat_Aij /= pO->rho;
+               Aij = -Total(Total(Dot(pO->inv_grad_corr_M, mat_Aij)));
+               ROW->increment(pO, Aij);
+               ROW->increment(B, -Aij);
+               for (const auto &[p, v] : pO->vector_p_grad)
+                  ROW->increment(p, -Aij * v);
+               ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X, pO->radius_SPH));  // \label{SPH:div_b_vector}
+               sum_Aij_Pj += Aij * B->p_SPH;
+               sum_Aij += Aij;
+#endif
             }
          }
+      };
+      // \label{SPH:PoissonEquation}
+      auto PoissonEquation = [&](const auto &B /*column id*/) {
+         PoissonEquationWithX(B, X_next(B));
+#if defined(USE_MIRROR_PARTICLE)
+         // 綺麗に配列させ設置した壁粒子の圧力を，内部の流体粒子の圧力から決める際に，理想的な値を設定することが困難と思われる．
+         for (const auto &v : B->vector_to_polygon_next)
+            PoissonEquationWithX(B, X_next(B) + 2. * v, true);
+#endif
       };
 
       //\label{SPH:EISPH_wall_pressure}
@@ -251,8 +303,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          } };
 
       auto ISPH_wall_pressure_next = [&](const auto &B /*column id*/, const double &coef = 1.) {
-         auto normal = ROW->normal_SPH;
-         auto markerX = ROW->X + 2. * ROW->normal_SPH;
+         auto markerX = X_next(pO) + 2. * pO->normal_SPH;
          auto r = ROW->radius_SPH;
          if (Distance(markerX, X_next(B)) < r) {
             auto w = V_next(B) * w_Bspline(Norm(X_next(B) - markerX), r);
@@ -260,8 +311,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // w *= W;
             total_weight += w;
             ROW->increment(B, w);
-            auto dir = Projection(X_next(ROW) - X_next(B), Normalize(normal));
-            auto dP = Dot(dir, B->mu_SPH * B->lap_U + B->rho * _GRAVITY3_);
+            // auto dir = Projection(X_next(ROW) - X_next(B), Normalize(normal));
+            auto dir = X_next(ROW) - X_next(B);
+            auto dP = Dot(dir, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
+            // auto dP = Dot(dir, B->DUDt_SPH);//壁粒子は，B->DUDt_SPHを計算していない．
             ROW->PoissonRHS -= dP * w;
          }
       };
@@ -269,11 +322,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       bool find_any_in_dist = false;
       double the_dist = ROW->radius_SPH / 2.5;
 
-      auto addPoissonEquation = [&](const auto &PoissonEquation, const auto &pO_x) {
+      auto addPoissonEquation = [&](const auto &PoissonEquation, const auto &pO_x, const std::unordered_set<Network *> NETS) {
          // find closest surface point
          networkPoint *closest_surface_point = nullptr;
          double min_distance = 1e10, distance;
-         for (const auto &net : target_nets) {
+         for (const auto &net : NETS) {
             net->BucketPoints.apply(pO_x, pO->radius_SPH, [&](const auto &B) {
                if (pO->isAuxiliary && pO->surfacePoint == B) return;
                if (B->isCaptured) {
@@ -295,7 +348,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                }
             });
          }
-//
 #if defined(USE_ONE_AUXP)
          // if (pO->isSurface)
          if (closest_surface_point != nullptr)
@@ -308,6 +360,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       /*DOC_EXTRACT SPH
       ### ポアソン方程式の作成
       */
+
+      int type;
 
       // \label{SPH:whereToMakeTheEquation}
       // if (ROW->isFluid && ROW->isNeumannSurface && ROW->isSurface) {
@@ -337,6 +391,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       //    addPoissonEquation(ImpermeableCondition, pO_x);
       // } else
       if (ROW->isAir || ROW->isSurface) {
+         type = 0;
          pO = ROW;
          pO_x = X_next(pO);
          AtmosphericPressureCondition(pO);
@@ -360,16 +415,18 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // }
 
       } else if (ROW->isAuxiliary) {
+         type = 1;
          pO = ROW;
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
          pO->PoissonRHS = 0;
          pO->clearColumnValue();
-         addPoissonEquation(PoissonEquation, pO_x);
+         addPoissonEquation(PoissonEquation, pO_x, target_nets);
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
          std::cout << Blue << "isAuxiliary, ROW->p_SPH : " << ROW->p_SPH << std::endl;
       } else if (ROW->getNetwork()->isRigidBody) {
+         type = 2;
          // b% EISPH
          EISPH_wall_pressure();
          if (ROW->getNetwork()->isRigidBody) {
@@ -378,29 +435,49 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             else
                ROW->p_SPH = ROW->p_EISPH = pressure_for_wall / total_weight;
          }
-         auto p = getClosestFluid(ROW, target_nets);
-         if (p != nullptr && p->isSurface) {
-            // b$ ISPH
-            pO = ROW;
-            pO_x = X_next(pO);
-            AtmosphericPressureCondition(pO);
-            // b% EISPH
-            ROW->p_SPH = ROW->p_EISPH = 0;  //(ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
-         } else if (ROW->isFirstWallLayer) {
-            // b$ ISPH
-            pO = ROW;
-            pO_x = X_next(pO);
-            pO_b = b_vector(pO);
-            addPoissonEquation(PoissonEquation, pO_x);
-            // b% EISPH
-            ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
-         } else {
+         // auto p = getClosestFluid(ROW, target_nets);
+         // if (p != nullptr) {
+         //    type = 3;
+         //    // b$ ISPH
+         //    pO = ROW;
+         //    pO_x = X_next(pO);
+         //    ROW->increment(p, 1.);
+         //    ROW->increment(ROW, 1.);
+         //    // b% EISPH
+         //    ROW->p_SPH = ROW->p_EISPH = 0;
+         // } else if (p != nullptr && p->isSurface) {
+         //    type = 4;
+         //    // b$ ISPH
+         //    pO = ROW;
+         //    pO_x = X_next(pO);
+         //    AtmosphericPressureCondition(pO);
+         //    // b% EISPH
+         //    ROW->p_SPH = ROW->p_EISPH = 0;  //(ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+         // } else
+         // if (ROW->isFirstWallLayer) {
+         //    type = 5;
+         //    // b$ ISPH
+         //    pO = ROW;
+         //    pO_x = X_next(pO);
+         //    pO_b = b_vector(pO);
+         //    addPoissonEquation(PoissonEquation, pO_x, target_nets);
+         //    // b% EISPH
+         //    ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+         // } else
+         {
+            type = 6;
             // b$ ISPH like EISPH
             pO = ROW;
             pO_x = pO->X + 2. * pO->normal_SPH;
             total_weight = 0;
             pressure_for_wall = 0;
-            addPoissonEquation(ISPH_wall_pressure_next, pO_x);
+
+            std::unordered_set<Network *> nets;
+            for (const auto &n : target_nets)
+               if (n->isFluid)
+                  nets.emplace(n);
+
+            addPoissonEquation(ISPH_wall_pressure_next, pO_x, nets);
 
             if (total_weight != 0.) {
                for (auto &[_, v] : ROW->column_value)
@@ -447,12 +524,29 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // このように決めた壁面粒子の圧力は，EISPHと全く同じになる．
          // ROW->PoissonRHS = ROW->p_EISPH;
          // ROW->increment(ROW, 1.);
-      } else {
+      }
+      // else if (ROW->isNeumannSurface) {
+      //    // b$ ISPH
+      //    pO = ROW;
+      //    pO_x = X_next(pO);
+      //    pO_b = b_vector(pO);
+      //    addPoissonEquation(ImpermeableCondition, pO_x);
+      //    // b% EISPH
+      //    ROW->p_SPH = ROW->p_EISPH = 0;  //(ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+      // }
+      else {
+         type = 7;
          // b$ ISPH
          pO = ROW;
          pO_x = X_next(pO);
          pO_b = b_vector(pO);
-         addPoissonEquation(PoissonEquation, pO_x);
+
+         addPoissonEquation(PoissonEquation, pO_x, target_nets);
+
+         // const double alpha = 0.1 * dt;
+         // if (ROW->isFluid)
+         //    ROW->PoissonRHS += alpha * (_WATER_DENSITY_ - ROW->rho) / (dt * dt);
+
          // b% EISPH
          ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
       }
@@ -461,19 +555,23 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       if (!isFinite(pO->PoissonRHS)) {
          // check type of particle
+         std::cout << "pO->vector_to_polygon_next.size() : " << pO->vector_to_polygon_next.size() << std::endl;
          std::cout << "pO->isFluid : " << pO->isFluid << std::endl;
          std::cout << "pO->isAuxiliary : " << pO->isAuxiliary << std::endl;
          std::cout << "pO->isSurface : " << pO->isSurface << std::endl;
          std::cout << "pO->getNetwork()->isRigidBody : " << pO->getNetwork()->isRigidBody << std::endl;
          std::cout << "pO->isFirstWallLayer : " << pO->isFirstWallLayer << std::endl;
          std::cout << "pO->PoissonRHS : " << pO->PoissonRHS << std::endl;
+         std::cout << "pO->p_SPH : " << pO->p_SPH << std::endl;
+         std::cout << "type : " << type << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "pO->PoissonRHS is not a finite");
       }
 
       /* -------------------------------------------------------------------------- */
 
 #if defined(Morikawa2019)
-         /* SPH
+         /* DOC_EXTRACT SPH
+
          ### 圧力の安定化
 
          $`b = \nabla \cdot {{\bf b}^n} + \alpha \frac{\rho_w - \rho^*}{{\Delta t}^2}`$として計算を安定化させる場合がある．
@@ -535,6 +633,8 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid,
                   const std::unordered_set<networkPoint *> &air_particle = {})
+#elif defined(USE_MIRROR_PARTICLE)
+void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle)
 #else
 void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
                   const std::unordered_set<networkPoint *> &wall_as_fluid)
@@ -542,16 +642,22 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 #endif
 {
    std::vector<networkPoint *> points;
-   points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
 
+#if defined(USE_MIRROR_PARTICLE)
+   points.reserve(fluid_particle.size() + 1000);
+#else
+   points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
+#endif
    // 解く粒子の集合を保存
 
    for (const auto &p : fluid_particle)
       points.emplace_back(p);
 
+#ifndef USE_MIRROR_PARTICLE
    for (const auto &p : wall_as_fluid)
       // if (p->isFirstWallLayer)
       points.emplace_back(p);
+#endif
 
 #if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
    for (const auto &p : fluid_particle)
@@ -658,54 +764,78 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 
 /* --------------- check if the Poisson equation is satisfied. -------------- */
 
-void checkIfPoissonEqIsSatisfied(const std::unordered_set<networkPoint *> &fluid_particle) {
-
+void checkIfPoissonEqIsSatisfied(const auto &net, const auto &target_nets) {
    auto b_vector = [&](const auto &B) {
       if (B->isAuxiliary)
          return B->surfacePoint->b_vector;
       else
          return B->b_vector;
    };
+
    {
       double error_tot = 0;
-      for (const auto &A : fluid_particle)
-         if (A->isSurface) {
-            double eq = 0, Aij = 0, error = 0, Aij_tot = 0;
-            for (const auto &net : _ALL_NET_) {
-               net->BucketPoints.apply(X_next(A), A->radius_SPH, [&](const auto &B) {
-                  eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
-                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X_next(B), A->radius_SPH);
-                  Aij /= A->rho;
-                  eq -= -B->p_SPH * Aij;
-                  Aij_tot += Aij;
-               });
+      for (const auto &A : net->getPoints())
+      // if (A->isSurface)
+      {
+         double eq = 0, Aij = 0, error = 0, Aij_tot = 0;
+#if defined(USE_MIRROR_PARTICLE)
+         net->BucketPoints.apply(X_next(A), A->radius_SPH, [&](const auto &B) {
+            // 綺麗に配列させ設置した壁粒子の圧力を，内部の流体粒子の圧力から決める際に，理想的な値を設定することが困難と思われる．
+            eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
+            Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X_next(B), A->radius_SPH);
+            Aij /= A->rho;
+            eq -= -B->p_SPH * Aij;
+            Aij_tot += Aij;
+            for (const auto &v : B->vector_to_polygon_next) {
+               auto X = X_next(B) + 2. * v;
+               eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X, A->radius_SPH));
+               Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X, A->radius_SPH);
+               Aij /= A->rho;
+               eq -= -B->p_SPH * Aij;
+               Aij_tot += Aij;
             }
-            A->auxiliaryPoints[0]->p_SPH = eq / Aij_tot;
-         };
+         });
+#else
+         for (const auto &net : target_nets) {
+            net->BucketPoints.apply(X_next(A), A->radius_SPH, [&](const auto &B) {
+               eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
+               Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X_next(B), A->radius_SPH);
+               Aij /= A->rho;
+               eq -= -B->p_SPH * Aij;
+               Aij_tot += Aij;
+            });
+         }
+#endif
+         A->p_SPH_ = eq / Aij_tot;
+      };
       // これを満たしたとしても，制度が良くないため，非圧縮性を満たすことができない．
       // この方程式自体の精度を改善する必要がある．
+
+      // for (const auto &A : net->getPoints())
+      //    if (!A->isSurface)
+      //       A->p_SPH = A->p_SPH_;
    }
-   {
-      double error_tot = 0;
-      for (const auto &A : fluid_particle)
-         if (A->isSurface) {
-            double eq = 0, Aij = 0, error = 0;
-            for (const auto &net : _ALL_NET_) {
-               net->BucketPoints.apply(X_next(A), A->radius_SPH, [&](const auto &B) {
-                  eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
-                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X_next(B), A->radius_SPH);
-                  Aij /= A->rho;
-                  if (A->isSurface)
-                     eq -= A->auxiliaryPoints[0]->p_SPH * Aij;
-                  else
-                     eq -= A->p_SPH * Aij;
-                  eq -= -B->p_SPH * Aij;
-               });
-            }
-            error_tot += std::abs(eq);
-         };
-      std::cout << Red << "error_tot : " << error_tot << std::endl;
-   }
+   // {
+   //    double error_tot = 0;
+   //    for (const auto &A : net->getPoints())
+   //       if (A->isSurface) {
+   //          double eq = 0, Aij = 0, error = 0;
+   //          for (const auto &net : _ALL_NET_) {
+   //             net->BucketPoints.apply(X_next(A), A->radius_SPH, [&](const auto &B) {
+   //                eq += V_next(B) * Dot(b_vector(B) - b_vector(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
+   //                Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(X_next(A), X_next(B), A->radius_SPH);
+   //                Aij /= A->rho;
+   //                if (A->isSurface)
+   //                   eq -= A->auxiliaryPoints[0]->p_SPH * Aij;
+   //                else
+   //                   eq -= A->p_SPH * Aij;
+   //                eq -= -B->p_SPH * Aij;
+   //             });
+   //          }
+   //          error_tot += std::abs(eq);
+   //       };
+   //    std::cout << Red << "error_tot : " << error_tot << std::endl;
+   // }
 };
 
 #endif
