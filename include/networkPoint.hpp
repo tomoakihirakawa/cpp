@@ -169,7 +169,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 20. * M_PI / 180.;
+const double contact_angle = 30. * M_PI / 180.;
 
 bool isCloseNormal(const Tddd &n1, const Tddd &n2) {
    return isFlat(n1, -n2, contact_angle);  // || isFlat(n1, n2, contact_angle);
@@ -375,7 +375,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
             //                  this->ContactFaces.end(),
             //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
             this->ContactFaces.emplace(F);
-            if (this->ContactFaces.size() > 4)
+            if (this->ContactFaces.size() > 5)
                return;
          };
       } else
