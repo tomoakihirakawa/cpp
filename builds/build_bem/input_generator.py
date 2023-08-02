@@ -59,7 +59,7 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "moon_pool_large"
 
 match SimulationCase:
     case "Hadzic2005":
@@ -146,33 +146,24 @@ match SimulationCase:
                    "end_time": 4,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
-    case "moon_pool_large":
+    case "simple_barge":
 
-        FORCED_MOTION = False
-
-        start = 0.1
-        a = .5
-        T = 4.5 + 0.5*8
-        h = 80
-        z_surface = 80
-
-        id = "a" + str(a).replace(".", "d")\
-            + "_T" + str(T).replace(".", "d")\
-            + "_h" + str(h).replace(".", "d")
-
-        if FORCED_MOTION:
-            id += "_forced_"
-
-        input_directory += SimulationCase + id
+        input_directory += SimulationCase
         os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + "_" + id
+        output_directory = home + "/BEM/" + SimulationCase
         os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
 
         tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
-        if FORCED_MOTION:
+        start = 0.
+        a = 2.
+        T = 7.
+        h = 80
+        z_surface = 80
+
+        if False:
             wavemaker = {"name": "wavemaker",
                          "type": "RigidBody",
                          "isFixed": True}
@@ -182,14 +173,65 @@ match SimulationCase:
                          "isFixed": True,
                          "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
-        if FORCED_MOTION:
+        if False:
             floatingbody = {"name": "floatingbody",
                             "type": "RigidBody",
-                            "velocity": ["sin", start, a, T]}
+                            "velocity": ["sin", 0, a, T]}
         else:
             floatingbody = {"name": "floatingbody",
                             "type": "RigidBody",
                             "velocity": "floating"}
+
+        A = 2450.00
+        floatingbody["mass"] = m = (rho*g*7.5*A)/g
+        floatingbody["COM"] = [100., 50., 75.]
+        floatingbody["radius_of_gyration"] = [20., 20., 20.]
+        floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
+                               m*math.pow(floatingbody["radius_of_gyration"][1], 2),
+                               m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
+
+        objfolder = program_home + "/cpp/obj/tsukada2022_re"
+        water["objfile"] = objfolder + "/water100_mod.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
+        tank["objfile"] = objfolder + "/wavetank10.obj"
+        floatingbody["objfile"] = objfolder+"/floatingbody100.obj"
+
+        inputfiles = [tank, wavemaker, water, floatingbody]
+
+        setting = {"max_dt": 0.25,
+                   "end_time_step": 10000,
+                   "end_time": 10000,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
+    case "moon_pool_large":
+
+        start = 0.
+        a = 1.
+        T = 7.5
+        h = 80
+        z_surface = 80
+
+        id = "_a" + str(a).replace(".", "d")
+        id += "_T" + str(T).replace(".", "d")
+        id += "_h" + str(h)
+
+        input_directory += SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/" + SimulationCase + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water", "type": "Fluid"}
+
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        wavemaker = {"name": "wavemaker",
+                     "type": "SoftBody",
+                     "isFixed": True,
+                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}  # "isFixed": True}
+
+        floatingbody = {"name": "floatingbody",
+                        "type": "RigidBody",
+                        "velocity": "floating"}  # "velocity": ["sin", 0, a, T]}
 
         A = 1528.00
         floatingbody["mass"] = m = (1000.*g*7.5*A)/g
@@ -209,7 +251,7 @@ match SimulationCase:
 
         setting = {"max_dt": 0.2,
                    "end_time_step": 1000,
-                   "end_time": 25,
+                   "end_time": 100,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
     case "two_floatingbodies":
@@ -310,63 +352,6 @@ match SimulationCase:
         setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
                    "end_time": 4,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
-    case "2022Tsukada_flotingbody_without_moonpool_A0d75T7d0":
-
-        input_directory += SimulationCase
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/2022Tsukada_flotingbody_without_moonpool_A0d75T7d0"
-        os.makedirs(output_directory, exist_ok=True)
-
-        water = {"name": "water", "type": "Fluid"}
-
-        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
-
-        start = 0.
-        a = 2.
-        T = 7.
-        h = 80
-        z_surface = 80
-
-        if False:
-            wavemaker = {"name": "wavemaker",
-                         "type": "RigidBody",
-                         "isFixed": True}
-        else:
-            wavemaker = {"name": "wavemaker",
-                         "type": "SoftBody",
-                         "isFixed": True,
-                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
-
-        if False:
-            floatingbody = {"name": "floatingbody",
-                            "type": "RigidBody",
-                            "velocity": ["sin", 0, a, T]}
-        else:
-            floatingbody = {"name": "floatingbody",
-                            "type": "RigidBody",
-                            "velocity": "floating"}
-
-        A = 2450.00
-        floatingbody["mass"] = m = (rho*g*7.5*A)/g
-        floatingbody["COM"] = [100., 50., 75.]
-        floatingbody["radius_of_gyration"] = [20., 20., 20.]
-        floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][1], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
-
-        objfolder = program_home + "/cpp/obj/tsukada2022_re"
-        water["objfile"] = objfolder + "/water100_mod.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
-        tank["objfile"] = objfolder + "/wavetank10.obj"
-        floatingbody["objfile"] = objfolder+"/floatingbody100.obj"
-
-        inputfiles = [tank, wavemaker, water, floatingbody]
-
-        setting = {"max_dt": 0.25,
-                   "end_time_step": 10000,
-                   "end_time": 10000,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
     case "Tonegawa":
@@ -641,9 +626,10 @@ for INPUTS in inputfiles:
             print(f'{key: <{20}}', '\t', white, value, coloroff)
 
         if key == "objfile":
-            file_exist = os.path.exists(value)
-            if file_exist == False:
+            if os.path.exists(value) == False:
                 print(red, "! file does not exist", coloroff)
+            else:
+                print(green, "file exists", coloroff)
     print('------------------------------------')
     f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
     json.dump(INPUTS, f, ensure_ascii=True, indent=4)
