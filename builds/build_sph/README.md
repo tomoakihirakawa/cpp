@@ -94,14 +94,14 @@
 ## ⛵️水面補助粒子の作成
 
 
-[./SPH0_setWall_Freesurface.hpp#L435](./SPH0_setWall_Freesurface.hpp#L435)
+[./SPH0_setWall_Freesurface.hpp#L442](./SPH0_setWall_Freesurface.hpp#L442)
 
 
 ## ⛵️(1) $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
 
-✅ [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L153): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L150): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-✅ [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L152): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
+✅ [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L149): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
 
 
 [./SPH1_lap_div_U.hpp#L7](./SPH1_lap_div_U.hpp#L7)
@@ -145,7 +145,7 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪸右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L214)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L211)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
 ✅ [発散の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L251): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
@@ -266,11 +266,11 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 - [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L254)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L127)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L221)
-- どのように[壁粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L225)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L255)を作るか
+- どのように[壁粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L222)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L252)を作るか
 
 **壁粒子**
 
-- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L213)
+- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L210)
 - [圧力の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L106)
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L366)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L182)/[視野角に流体粒子が含まない壁粒子は除外する](not found)

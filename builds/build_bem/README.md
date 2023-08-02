@@ -26,6 +26,9 @@
     - [⛵️Customization](#⛵️Customization)
     - [⛵️Output](#⛵️Output)
 - [🐋実行方法](#🐋実行方法)
+    - [⛵️simple_barge](#⛵️simple_barge)
+    - [⛵️Kramer2021](#⛵️Kramer2021)
+    - [⛵️Hadzic2005](#⛵️Hadzic2005)
         - [🪸計算の流れ](#🪸計算の流れ)
 
 
@@ -413,7 +416,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L277)
+[強制運動を課す](../../builds/build_bem/main.cpp#L282)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L195)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -520,7 +523,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L236](./main.cpp#L236)
+[./main.cpp#L241](./main.cpp#L241)
 
 
 ---
@@ -589,10 +592,15 @@ $ python3 input_generator.py
 $ ./main ./input_files/Hadzic2005
 ```
 
+## ⛵️simple_barge 
 
 [![simple_barge](sample0.gif)](sample0.gif)
 
+## ⛵️Kramer2021 
+
 [![Kramer2021](sample1.gif)](sample1.gif)
+
+## ⛵️Hadzic2005 
 
 [![Hadzic2005](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
 
