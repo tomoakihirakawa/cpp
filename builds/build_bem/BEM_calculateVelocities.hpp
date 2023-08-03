@@ -394,8 +394,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
 #pragma omp single nowait
       {
          double scale = 0.1;
-         if (p->isMultipleNode && !p->CORNER)
-            scale = 0.05;
+         if (p->isMultipleNode && p->Neumann)  // 離れやすい
+            scale = 0.01;
          else if (p->Neumann)
             scale = 0.05;
          else if (p->CORNER)
