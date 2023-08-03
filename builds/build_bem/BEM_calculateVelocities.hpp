@@ -223,6 +223,7 @@ Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
    }
 };
 
+// \label{BEM:vectorTangentialShift2}
 Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    Tddd vector_to_optimum_X = {0., 0., 0.}, pX = RK_with_Ubuff(p);
    double s = 0;
@@ -238,15 +239,15 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          double a = magicalValue(p, f) + variance2(p, f);
 
          if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-            a *= std::pow(1.25, 3);
+            a *= std::pow(2., 3);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
-            a *= std::pow(1.25, 2);
+            a *= std::pow(2., 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
                           return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
                        });
                     })) {
-            a *= 1.25;
+            a *= 2.;
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
@@ -259,6 +260,7 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    return condition_Ua(scale * vector_to_optimum_X, p);
 };
 
+// \label{BEM:vectorToNextSurface}
 Tddd vectorToNextSurface(const networkPoint *p) {
    /*
    UartificialClingは，完璧にOmega(t+\delta t)に張り付くようにしなければ，
@@ -277,6 +279,8 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    } else if (p->Neumann || p->CORNER) {
       // to_cornerを計算
       Tddd to_corner = {0., 0., 0.};
+      Tddd to_structure_face = {0., 0., 0.};
+
       if (p->CORNER) {
          Tddd to_corner_tmp;
          to_corner_tmp.fill(1E+20);
@@ -287,50 +291,16 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                if (Norm(to_corner_tmp) >= Norm(X - pX))
                   to_corner_tmp = X - pX;
             }
-         to_corner = 0.5 * to_corner_tmp;
+         to_corner = to_corner_tmp;
       }
 
       // to_structure_faceを計算
       auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
-      auto p_next_X = to_corner + RK_with_Ubuff(p);
-      Tddd to_structure_face;
-      // if (!next_Vrtx.empty()) {//before2023/08/02
-      //    std::vector<Tddd> F_clings;
-      //    std::vector<double> distance, weights;
-      //    F_clings.reserve(4 * next_Vrtx.size());
-      //    distance.reserve(4 * next_Vrtx.size());
-      //    weights.reserve(4 * next_Vrtx.size());
-      //    Tddd to_closest_X, X;
-      //    for (const auto &f : p->getFacesNeumann() /*pの隣接面*/) {
-      //       // pの周りの面が干渉している構造物面のみを対象として，点に最も近い構造物面上の点を抽出する
-      //       bool found = false;
-      //       to_closest_X.fill(1E+20);
-      //       for (const auto &vertex : next_Vrtx)
-      //          if (isInContact(p_next_X, f->normal, vertex, p->radius)) {
-      //             X = Nearest(p_next_X, vertex);
-      //             if (Norm(to_closest_X) >= Norm(X - p_next_X)) {
-      //                to_closest_X = X - p_next_X;
-      //                found = true;
-      //             }
-      //          }
-      //       if (found) {
-      //          F_clings.push_back(Projection(to_closest_X, f->normal));  // この面fにとって，最も近くにある干渉点
-      //          distance.push_back(Norm(to_closest_X));
-      //       }
-      //    }
-
-      //    auto min = Min(distance);
-      //    for (const auto &d : distance)
-      //       weights.push_back(w_Bspline5(d, p->radius));
-      //    to_structure_face = !F_clings.empty() ? optimumVector(F_clings, {0., 0., 0.}, 1E-12) : Tddd{0., 0., 0.};
-      // }
+      auto p_next_X = pX;
 
       if (!next_Vrtx.empty()) {  // after2023/08/02
          std::vector<std::tuple<networkFace *, Tddd, double>> F_clings;
          std::vector<double> distance, weights;
-         F_clings.reserve(4 * next_Vrtx.size());
-         distance.reserve(4 * next_Vrtx.size());
-         weights.reserve(4 * next_Vrtx.size());
          Tddd to_closest_X, X;
          for (const auto &f : p->getFacesNeumann() /*pの隣接面*/) {
             // pの周りの面が干渉している構造物面のみを対象として，点に最も近い構造物面上の点を抽出する
@@ -384,27 +354,33 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          }
       }
 
-      return to_structure_face + to_corner;
+      return 0.5 * (to_structure_face + to_corner);
    }
    return {0., 0., 0.};
 };
 
 /*DOC_EXTRACT BEM
 
-### 修正流速（これがないと激しい波の計算は難しい）
+### 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）
+
+ディリクレ節点（水面）：
 
 求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
 修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
 
+ノイマン節点：
+
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
-まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+\ref{BEM:calculateVecToSurface}{`calculateVecToSurface`}で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
+1. まず，\ref{BEM:vectorTangentialShift2}{`vectorTangentialShift2`}で接線方向にシフトし，
+2. \ref{BEM:vectorToNextSurface}{`vectorToNextSurface`}で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 */
 
+// \label{BEM:calculateVecToSurface}
 void calculateVecToSurface(const Network &net, const int loop, const bool do_shift = true) {
    for (const auto &p : net.getPoints()) {
       p->vecToSurface_BUFFER.fill(0.);
@@ -419,11 +395,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       {
          double scale = 0.1;
          if (p->isMultipleNode && !p->CORNER)
-            scale = 0.01;
+            scale = 0.05;
          else if (p->Neumann)
-            scale = 0.01;
+            scale = 0.05;
          else if (p->CORNER)
-            scale = 0.01;
+            scale = 0.05;
 
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
@@ -449,7 +425,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    for (auto kk = 0; kk < loop; ++kk) {
       if (do_shift)
          // for (auto i = 0; i < 10; ++i)
-         addVectorTangentialShift();
+         addVectorTangentialShift();  // repeating this may led surface detaching
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;

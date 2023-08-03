@@ -6,9 +6,9 @@
         "linear_traveling_wave",
         0.0,
         1.0,
-        7.5,
+        5.5,
         80,
         80
     ],
-    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_large_pool/wavemaker100.obj"
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_no_pool/wavemaker100.obj"
 }

@@ -1,0 +1,158 @@
+----------
+Execution time: Thu Aug  3 12:20:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: calculateVecToSurfaceのscaleを大きくして球が沈み込む時に喫水線にNeumann点がぶつからないようにする
+----------
+Execution time: Thu Aug  3 12:20:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: calculateVecToSurfaceのscaleを大きくして球が沈み込む時に喫水線にNeumann点がぶつからないようにする
+----------
+Execution time: Thu Aug  3 12:15:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: calculateVecToSurfaceのscaleを大きくして球が沈み込む時に喫水線にNeumann点がぶつからないようにする
+----------
+Execution time: Thu Aug  3 12:15:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: calculateVecToSurfaceのscaleを大きくして球が沈み込む時に喫水線にNeumann点がぶつからないようにする
+----------
+Execution time: Thu Aug  3 11:08:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: 浮体のphintの計算にgradphiを使って再計算
+----------
+Execution time: Thu Aug  3 11:07:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T5d0_h80
+----------
+Execution time: Thu Aug  3 11:07:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T5d0_h80
+----------
+Execution time: Thu Aug  3 10:59:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T5d0_h80
+----------
+Execution time: Thu Aug  3 10:56:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T5d0_h80
+----------
+Execution time: Thu Aug  3 10:53:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T5d0_h80
+----------
+Execution time: Thu Aug  3 10:42:00 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: 以前のエラーはgrad_phiを使ったためではなく，addVectorTangentialShift();の繰り返しが原因だったんだろう
+----------
+Execution time: Thu Aug  3 10:41:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Thu Aug  3 10:41:08 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_smal
+----------
+Execution time: Thu Aug  3 10:19:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: input_files/Kramer2021_H00d03_small
+  arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
+Execution time: Thu Aug  3 10:16:48 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: input_files/Kramer2021_H00d03_small
+  arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
