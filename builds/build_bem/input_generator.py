@@ -41,7 +41,7 @@ import platform
 home = expanduser("~")
 
 if platform.system() == "Linux":
-    program_home = home + "/research/"
+    program_home = home + "/code/"
 else:
     program_home = home + "/Dropbox/code/"
 
@@ -206,7 +206,7 @@ match SimulationCase:
     case "moon_pool":
 
         start = 0.
-        a = 1.
+        a = 0.8
         T = 5.0
         h = 80
         z_surface = 80
@@ -244,7 +244,7 @@ match SimulationCase:
         # 浮体の種類
         if pool_size == "large":
             objfolder = program_home + "/cpp/obj/tsukada2022_large_pool"
-            water["objfile"] = objfolder + "/water300_.obj"
+            water["objfile"] = objfolder + "/water300_mod.obj"
             wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
             tank["objfile"] = objfolder + "/tank10.obj"
             floatingbody["objfile"] = objfolder+"/floating_body50.obj"
