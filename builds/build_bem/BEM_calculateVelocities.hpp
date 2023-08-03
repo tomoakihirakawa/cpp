@@ -278,7 +278,6 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    } else if (p->Neumann || p->CORNER) {
       Tddd to_corner = {0., 0., 0.};
       Tddd to_structure_face = {0., 0., 0.};
-      Tddd p_next_X = RK_with_Ubuff(p);
 
       if (p->CORNER) {
          for (const auto &l : p->getLines()) {
@@ -291,25 +290,37 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          }
       }
 
+      Tddd p_X_on_CORNER = pX + to_corner;
+
       auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
       if (!next_Vrtx.empty()) {
+         std::vector<networkFace *> pf_to_check;
+         for (const auto &pf : p->getFacesNeumann()) {
+            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f->normal) < M_PI / 180.; }))
+               pf_to_check.push_back(pf);
+         }
+
          std::vector<Tddd> projected_vec_for_each_p_f;
          // 面p_fが干渉する，最も近い構造物面を抽出
-         for (const auto &p_f : p->getFacesNeumann()) {
+         for (const auto &pf : pf_to_check) {
             Tddd vec_to_closest_struct_face = {1E+20, 1E+20, 1E+20};
+            bool found = false;
             for (const auto &struct_vertex : next_Vrtx) {
-               if (isInContact(p_next_X, p_f->normal, struct_vertex, p->radius)) {
-                  X = Nearest(p_next_X, struct_vertex);
-                  if (Norm(vec_to_closest_struct_face) >= Norm(X - p_next_X))
-                     vec_to_closest_struct_face = X - p_next_X;
+               if (isInContact(p_X_on_CORNER, pf->normal, struct_vertex, p->radius)) {
+                  X = Nearest(p_X_on_CORNER, struct_vertex);
+                  if (Norm(vec_to_closest_struct_face) >= Norm(X - p_X_on_CORNER)) {
+                     vec_to_closest_struct_face = X - p_X_on_CORNER;
+                     found = true;
+                  }
                }
             }
-            projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, p_f->normal));
+            if (found)
+               projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, pf->normal));
          }
          to_structure_face = optimumVector(projected_vec_for_each_p_f, {0., 0., 0.}, 1E-12);
       }
 
-      return 0.5 * (to_structure_face + to_corner);
+      return p_X_on_CORNER + to_structure_face - pX;
    }
    return {0., 0., 0.};
 };
@@ -350,12 +361,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       {
          double scale = 0.1;
          if (p->isMultipleNode && !p->CORNER)
-            scale = 0.05;
+            scale = 0.005;
          else if (p->Neumann)
-            scale = 0.05;
+            scale = 0.02;
          else if (p->CORNER)
-            scale = 0.05;
-
+            scale = 0.02;
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
       for (const auto &p : net.getPoints()) {
