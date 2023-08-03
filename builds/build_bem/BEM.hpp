@@ -343,7 +343,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 double dt_CFL(const Network &water, double min_dt, const double c) {
    for (const auto &p : water.getPoints())
       for (const auto &q : p->getNeighbors()) {
-         auto dt = c * Norm(ToX(p) - ToX(q)) / Norm(p->U_BEM - q->U_BEM);
+         auto dt = c * Distance(p, q) / Norm(q->U_BEM);
          if (min_dt > dt)
             min_dt = dt;
       }

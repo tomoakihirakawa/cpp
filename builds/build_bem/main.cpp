@@ -52,6 +52,10 @@ int time_step;
 double real_time = 0;
 
 #define simulation
+#include <sys/utsname.h>
+#include <unistd.h>
+#include <chrono>
+#include <ctime>
 #include <filesystem>
 #include <regex>
 #include "Network.hpp"
@@ -65,9 +69,71 @@ double real_time = 0;
 #include "BEM.hpp"
 #include "svd.hpp"
 
-int main(int arg, char **argv) {
-   if (arg <= 1)
+void logMachineInformation(std::ofstream &ofs) {
+   char hostname[256];
+   if (gethostname(hostname, sizeof(hostname)) != 0) {
+      ofs << "Failed to get hostname\n";
+      return;
+   }
+
+   struct utsname unameData;
+   if (uname(&unameData) != 0) {
+      ofs << "Failed to get system information\n";
+      return;
+   }
+
+   ofs << "Machine Information:" << std::endl;
+   ofs << "  Hostname: " << hostname << std::endl;
+   ofs << "  Operating System: " << unameData.sysname << " " << unameData.release << std::endl;
+   ofs << std::endl;  // Add a blank line for separation
+}
+
+int main(int argc, char **argv) {
+
+   /* -------------------------------------------------------------------------- */
+   // Read the contents of the existing log file
+   std::ifstream ifs("log.txt");
+   std::string existingContent;
+   if (ifs.is_open()) {
+      existingContent.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+   }
+
+   // Open log file in trunc mode to clear its contents
+   std::ofstream ofs("log.txt");
+   if (!ofs.is_open()) {
+      std::cerr << "Failed to open log file\n";
+      return 1;
+   }
+   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
+
+   // Get current time
+   auto now = std::chrono::system_clock::now();
+   std::time_t time = std::chrono::system_clock::to_time_t(now);
+   ofs << "Execution time: " << std::ctime(&time) << std::endl;
+
+   // Log machine information
+   logMachineInformation(ofs);
+
+   // Check command line arguments
+   if (argc <= 1) {
+      ofs << "No arguments provided. Write input JSON file directory.\n";
+      return 1;
+   }
+
+   // Write command line arguments to log file
+   ofs << "Command line arguments:" << std::endl;
+   for (int i = 1; i < argc; ++i) {
+      ofs << "  arg" << i << ": " << argv[i] << std::endl;
+   }
+
+   // Write the existing log content back to the log file after the new log entry
+   ofs << existingContent;
+   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
+   /* -------------------------------------------------------------------------- */
+
+   if (argc <= 1)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "argv <= 1. write input json file directory!\nex.\n$ ./main ./input");
+
    std::string input_directory(argv[1]);  // input directory
    input_directory += "/";
    std::cout << input_directory << std::endl;
@@ -196,12 +262,14 @@ int main(int arg, char **argv) {
          double rad = M_PI / 180;
          // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
          flipIf(*water, {10 * rad, rad}, {10 * rad /*結構小さく*/, rad}, false);
+
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
+
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, .2);
+         double dt = dt_CFL(*water, max_dt, .5);
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);

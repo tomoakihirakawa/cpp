@@ -2,7 +2,7 @@
 
 - [🐋BEM-MEL](#🐋BEM-MEL)
     - [⛵️流速の計算方法](#⛵️流速の計算方法)
-        - [🪸修正流速（これがないと激しい波の計算は難しい）](#🪸修正流速（これがないと激しい波の計算は難しい）)
+        - [🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）](#🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）)
         - [🪸エネルギー保存則（計算精度のチェックに利用できる）](#🪸エネルギー保存則（計算精度のチェックに利用できる）)
         - [🪸内部流速の計算方法（使わなくてもいい）](#🪸内部流速の計算方法（使わなくてもいい）)
     - [⛵️境界のタイプを決定する](#⛵️境界のタイプを決定する)
@@ -52,19 +52,25 @@
 [./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
 
 
-### 🪸修正流速（これがないと激しい波の計算は難しい） 
+### 🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
+
+ディリクレ節点（水面）：
 
 求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
 修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
 
+ノイマン節点：
+
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-`calculateVecToSurface`で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
-まず，`vectorTangentialShift2`で接線方向にシフトし，`vectorToNextSurface`で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L383)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+
+1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L226)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L263)で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L392](./BEM_calculateVelocities.hpp#L392)
+[./BEM_calculateVelocities.hpp#L362](./BEM_calculateVelocities.hpp#L362)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -119,7 +125,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L535](./BEM_calculateVelocities.hpp#L535)
+[./BEM_calculateVelocities.hpp#L511](./BEM_calculateVelocities.hpp#L511)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -136,7 +142,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L622](./BEM_calculateVelocities.hpp#L622)
+[./BEM_calculateVelocities.hpp#L598](./BEM_calculateVelocities.hpp#L598)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -416,7 +422,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L282)
+[強制運動を課す](../../builds/build_bem/main.cpp#L315)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L195)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -523,7 +529,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L241](./main.cpp#L241)
+[./main.cpp#L274](./main.cpp#L274)
 
 
 ---

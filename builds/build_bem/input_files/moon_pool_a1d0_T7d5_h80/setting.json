@@ -2,7 +2,7 @@
     "max_dt": 0.2,
     "end_time_step": 1000,
     "end_time": 100,
-    "output_directory": "/Users/tomoaki/BEM/moon_pool_large_a1d0_T7d5_h80",
+    "output_directory": "/Users/tomoaki/BEM/moon_pool_a1d0_T7d5_h80",
     "input_files": [
         "tank.json",
         "wavemaker.json",
