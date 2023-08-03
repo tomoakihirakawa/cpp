@@ -41,6 +41,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
             //           << ", z_surface = " << z_surface
             //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
             // t += M_PI / 2. / w;
+
             return {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
                         w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
                     0.,
@@ -377,7 +378,8 @@ Tddd uNeumann(const networkPoint *const p) {
       }
    }
    if (!V.empty()) {
-      auto ret = optimumVector(V, init, W);
+      // auto ret = optimumVector(V, init, W);
+      auto ret = optimumVector(V, init);
       if (isFinite(ret))
          return ret;
    }
@@ -396,7 +398,8 @@ Tddd accelNeumann(const networkPoint *const p) {
       }
    }
    if (!V.empty()) {
-      auto ret = optimumVector(V, init, W);
+      // auto ret = optimumVector(V, init, W);
+      auto ret = optimumVector(V, init);
       if (isFinite(ret))
          return ret;
    }
