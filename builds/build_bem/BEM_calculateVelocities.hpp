@@ -262,96 +262,51 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
 
 // \label{BEM:vectorToNextSurface}
 Tddd vectorToNextSurface(const networkPoint *p) {
-   /*
-   UartificialClingは，完璧にOmega(t+\delta t)に張り付くようにしなければ，
-   面からはなれることで計算の破綻を招く可能性がある．
-   */
-   Tddd pX = RK_with_Ubuff(p), X, ret = {1E+20, 1E+20, 1E+20};
+   Tddd pX = RK_with_Ubuff(p);
+   Tddd X, ret = {1E+20, 1E+20, 1E+20};
+
    if (p->Dirichlet) {
       for (const auto &f : p->getFaces()) {
          if ((p->Dirichlet && f->Dirichlet) || (p->Neumann && f->Neumann)) {
             auto actual_corner_face = RK_without_Ubuff(f);
-            if (Norm(ret) >= Norm((X = Nearest(pX, actual_corner_face)) - pX))
+            X = Nearest(pX, actual_corner_face);
+            if (Norm(ret) >= Norm(X - pX))
                ret = X - pX;
          }
       }
       return ret;
    } else if (p->Neumann || p->CORNER) {
-      // to_cornerを計算
       Tddd to_corner = {0., 0., 0.};
       Tddd to_structure_face = {0., 0., 0.};
+      Tddd p_next_X = RK_with_Ubuff(p);
 
       if (p->CORNER) {
-         Tddd to_corner_tmp;
-         to_corner_tmp.fill(1E+20);
-         for (const auto &l : p->getLines())
+         for (const auto &l : p->getLines()) {
             if (l->CORNER) {
                auto actual_corner_line = RK_without_Ubuff(p, (*l)(p));
-               auto X = Nearest(pX, actual_corner_line);
-               if (Norm(to_corner_tmp) >= Norm(X - pX))
-                  to_corner_tmp = X - pX;
+               X = Nearest(pX, actual_corner_line);
+               if (Norm(to_corner) >= Norm(X - pX))
+                  to_corner = X - pX;
             }
-         to_corner = to_corner_tmp;
+         }
       }
 
-      // to_structure_faceを計算
       auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
-      auto p_next_X = pX;
-
-      if (!next_Vrtx.empty()) {  // after2023/08/02
-         std::vector<std::tuple<networkFace *, Tddd, double>> F_clings;
-         std::vector<double> distance, weights;
-         Tddd to_closest_X, X;
-         for (const auto &f : p->getFacesNeumann() /*pの隣接面*/) {
-            // pの周りの面が干渉している構造物面のみを対象として，点に最も近い構造物面上の点を抽出する
-            bool found = false;
-            to_closest_X.fill(1E+20);
-            for (const auto &vertex : next_Vrtx)
-               if (isInContact(p_next_X, f->normal, vertex, p->radius)) {
-                  X = Nearest(p_next_X, vertex);
-                  if (Norm(to_closest_X) >= Norm(X - p_next_X)) {
-                     to_closest_X = X - p_next_X;
-                     found = true;
-                  }
+      if (!next_Vrtx.empty()) {
+         std::vector<Tddd> projected_vec_for_each_p_f;
+         // 面p_fが干渉する，最も近い構造物面を抽出
+         for (const auto &p_f : p->getFacesNeumann()) {
+            Tddd vec_to_closest_struct_face = {1E+20, 1E+20, 1E+20};
+            for (const auto &struct_vertex : next_Vrtx) {
+               if (isInContact(p_next_X, p_f->normal, struct_vertex, p->radius)) {
+                  X = Nearest(p_next_X, struct_vertex);
+                  if (Norm(vec_to_closest_struct_face) >= Norm(X - p_next_X))
+                     vec_to_closest_struct_face = X - p_next_X;
                }
-            if (found) {
-               F_clings.push_back(std::tuple<networkFace *, Tddd, double>{f,
-                                                                          Projection(to_closest_X, f->normal),
-                                                                          Norm(to_closest_X)});  // この面fにとって，最も近くにある干渉点
-               distance.push_back(Norm(to_closest_X));
             }
+            projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, p_f->normal));
          }
-
-         std::sort(F_clings.begin(), F_clings.end(),
-                   [](const std::tuple<networkFace *, Tddd, double> &a,
-                      const std::tuple<networkFace *, Tddd, double> &b) {
-                      return std::get<2>(a) < std::get<2>(b) + 1E-20;
-                   });
-
-         auto min = Min(distance);
-         std::vector<Tddd> F_clings2;
-         std::vector<networkFace *> F_clings3;
-         distance.clear();
-         for (const auto &[f, X, d] : F_clings) {
-            bool none_of_the_surface = std::ranges::none_of(F_clings3, [&](const auto &F) { return isFlat(F->normal, f->normal, M_PI / 180 * 20.); });
-            bool too_far = 2 * min < d;
-            if (none_of_the_surface && !too_far) {
-               F_clings3.push_back(f);
-               F_clings2.push_back(X);
-               distance.push_back(d);
-            }
-         }
-
-         if (F_clings2.empty()) {
-            to_structure_face = Tddd{0., 0., 0.};
-         } else if (F_clings2.size() == 1) {
-            to_structure_face = F_clings2[0];
-         } else {
-            // auto min = Min(distance);
-            // for (const auto &d : distance)
-            //    weights.push_back(w_Bspline5(d, 2. * min));
-            to_structure_face = optimumVector(F_clings2, {0., 0., 0.}, 1E-12);
-         }
+         to_structure_face = optimumVector(projected_vec_for_each_p_f, {0., 0., 0.}, 1E-12);
       }
 
       return 0.5 * (to_structure_face + to_corner);
@@ -394,8 +349,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
 #pragma omp single nowait
       {
          double scale = 0.1;
-         if (p->isMultipleNode && p->Neumann)  // 離れやすい
-            scale = 0.01;
+         if (p->isMultipleNode && !p->CORNER)
+            scale = 0.05;
          else if (p->Neumann)
             scale = 0.05;
          else if (p->CORNER)
