@@ -61,8 +61,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-// #define use_gmres 20
-#define use_lapack
+#define use_gmres 50
+// #define use_lapack
 
 // #define quad_element
 // #define linear_element
@@ -616,8 +616,8 @@ struct BEM_BVP {
    &\rightarrow& 0& =\frac{d}{dt}\left({\bf n}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\right) \\
    &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \frac{d}{dt}\left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\\
    &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\frac{d}{dt}\nabla \phi\right)\\
-   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi_t - \nabla \phi \cdot \nabla\nabla \phi}\right)\\
-   &\rightarrow& \phi_{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \nabla \phi \cdot \nabla\nabla \phi\right)
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi_t - (\nabla \phi \cdot \nabla)\nabla \phi}\right)\\
+   &\rightarrow& \phi_{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \nabla \phi \cdot (\nabla\otimes\nabla \phi) \right)
    \end{aligned}
    ```
 
@@ -654,7 +654,7 @@ struct BEM_BVP {
    /*DOC_EXTRACT BEM
 
    ```math
-   \nabla {\bf u} = \nabla \nabla \phi =
+   \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
    \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
    　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
    　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}

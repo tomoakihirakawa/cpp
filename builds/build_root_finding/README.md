@@ -22,6 +22,12 @@
 目的関数の根を見つける場合は，ヤコビ行列を使う．
 最適化の問題の多くは，目的関数の最大最小を求めることなので，ヘッセ行列を利用したニュートン法を用いる．
 
+```
+$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=example0 _NewtonRaphson _0.cpp
+$ make
+$ ./example0_NewtonRaphson_0
+```
+
 
 [./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
 
@@ -129,6 +135,14 @@ $$
 ## ⛵️準ニュートン法 
 
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
+
+```
+$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=example1 _Broyden.cpp
+$ make
+$ ./example1_Broyden
+```
+
+![broyden_newton.png](broyden_newton.png)
 
 
 [./example1_Broyden.cpp#L1](./example1_Broyden.cpp#L1)

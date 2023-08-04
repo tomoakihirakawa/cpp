@@ -3,6 +3,15 @@
 ## 準ニュートン法
 
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
+
+```
+$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_Broyden.cpp
+$ make
+$ ./example1_Broyden
+```
+
+![broyden_newton.png](broyden_newton.png)
+
 */
 #include "minMaxOfFunctions.hpp"
 

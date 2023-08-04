@@ -111,7 +111,7 @@ input_directory = "./input_files/"
 # ---------------------------------------------------------------------------- #
 
 
-SimulationCase = "moon_pool"
+SimulationCase = "Kramer2021"
 
 match SimulationCase:
     case "Hadzic2005":

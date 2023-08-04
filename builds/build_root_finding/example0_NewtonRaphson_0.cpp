@@ -10,6 +10,12 @@
 目的関数の根を見つける場合は，ヤコビ行列を使う．
 最適化の問題の多くは，目的関数の最大最小を求めることなので，ヘッセ行列を利用したニュートン法を用いる．
 
+```
+$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_NewtonRaphson_0.cpp
+$ make
+$ ./example0_NewtonRaphson_0
+```
+
 */
 
 #include "minMaxOfFunctions.hpp"
