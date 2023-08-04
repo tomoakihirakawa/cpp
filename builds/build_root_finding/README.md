@@ -132,6 +132,7 @@ $$
 [./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)
 
 
+---
 ## ⛵️準ニュートン法 
 
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
@@ -143,6 +144,11 @@ $ ./example1_Broyden
 ```
 
 ![broyden_newton.png](broyden_newton.png)
+
+Newton法では，勾配ベクトルとヘッセ行列を使ったが，Broyden法では，勾配ベクトルのみを使っている．
+勾配ベクトルを異なる点で計算して，ヘッセ行列の近似を行う．
+
+勾配ベクトルがゼロになる点を探すのではなく，目的関数ベクトルがゼロになる点を探すこともできるだろう．
 
 
 [./example1_Broyden.cpp#L1](./example1_Broyden.cpp#L1)
