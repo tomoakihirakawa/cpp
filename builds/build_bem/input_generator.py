@@ -1,3 +1,61 @@
+
+import platform
+from math import pi
+import json
+import math
+import os
+from os.path import expanduser
+
+
+def generate(inputfiles, setting):
+
+    white = '\033[90m'
+    red = '\033[91m'
+    blue = '\033[96m'
+    green = '\033[92m'
+    magenta = '\033[95m'
+    coloroff = '\033[0m'
+
+    # @ -------------------------------------------------------- #
+    # @           その他，water.json,tank.json などを出力           #
+    # @ -------------------------------------------------------- #
+    for INPUTS in inputfiles:
+        print('------------------------------------')
+        for key, value in INPUTS.items():
+            if value == "floating":
+                print(f'{key: <{20}}', '\t', green, value, coloroff)
+            elif value == "RigidBody":
+                print(f'{key: <{20}}', '\t', red, value, coloroff)
+            elif value == "Fluid":
+                print(f'{key: <{20}}', '\t', blue, value, coloroff)
+            else:
+                print(f'{key: <{20}}', '\t', white, value, coloroff)
+
+            if key == "objfile":
+                if os.path.exists(value) == False:
+                    print(red, "! file does not exist", coloroff)
+                else:
+                    print(green, "file exists", coloroff)
+        print('------------------------------------')
+        f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
+        json.dump(INPUTS, f, ensure_ascii=True, indent=4)
+        f.close()
+
+    # @ -------------------------------------------------------- #
+    # @                  setting.json を出力                      #
+    # @ -------------------------------------------------------- #
+    print('------------------------------------')
+    for key, value in setting.items():
+        print(f'{key: <{20}}', '\t', green, value, coloroff)
+    print('------------------------------------')
+    f = open(input_directory+"/setting.json", 'w')
+    json.dump(setting, f, ensure_ascii=True, indent=4)
+    f.close()
+
+    print("The directory for input files :",
+          magenta, input_directory, coloroff)
+
+
 '''DOC_EXTRACT HOW_TO_MAKE_INPUT_FILES
 
 # 入力ファイル生成 `input_generator.py`
@@ -31,13 +89,6 @@ After customizing the script, run it again to generate the input files for the n
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 '''
 
-from os.path import expanduser
-import os
-import math
-import json
-from math import pi
-import platform
-
 home = expanduser("~")
 
 if platform.system() == "Linux":
@@ -59,7 +110,8 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Kramer2021"
+
+SimulationCase = "moon_pool"
 
 match SimulationCase:
     case "Hadzic2005":
@@ -89,9 +141,9 @@ match SimulationCase:
         floatingbody["mass"] = m = rho * g * A * 0.003
         floatingbody["COM"] = [-(4-2.11), 0., 0.3]
         floatingbody["radius_of_gyration"] = [20., 20., 20.]
-        floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][1], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
+        # m*rog*rog=14*10**-1*10**-1 leads
+        rog = math.sqrt((14.*10.**-2.)/m)
+        floatingbody["MOI"] = [rog, rog, rog]
         # floatingbody["translate"] = [0., 0., 0.]
 
         objfolder = program_home + "/cpp/obj/2023Tamatu"
@@ -107,6 +159,9 @@ match SimulationCase:
                    "end_time": 25,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
+
+        generate(inputfiles, setting)
+
     case "Kramer2021":
 
         D = 300/1000
@@ -146,6 +201,9 @@ match SimulationCase:
                    "end_time": 4,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
+
+        generate(inputfiles, setting)
+
     case "simple_barge":
 
         input_directory += SimulationCase
@@ -203,77 +261,84 @@ match SimulationCase:
                    "end_time": 10000,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
+
+        generate(inputfiles, setting)
+
     case "moon_pool":
 
-        start = 0.
-        a = 0.8
-        T = 5.0
-        h = 80
-        z_surface = 80
+        for T in [5 + 0.5 * i for i in range(0, 11)]:
 
-        pool_size = "large"
-        # pool_size = "none"
+            input_directory = "./input_files/"
+            start = 0.
+            a = 1.0
+            h = 80
+            z_surface = 80
 
-        if pool_size == "large":
-            id = "_large"
-        elif pool_size == "none":
-            id = "_no"
+            pool_size = "large"
+            # pool_size = "none"
 
-        id += "_a" + str(a).replace(".", "d")
-        id += "_T" + str(T).replace(".", "d")
-        id += "_h" + str(h)
+            if pool_size == "large":
+                id = "_large"
+            elif pool_size == "none":
+                id = "_no"
 
-        input_directory += SimulationCase + id
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/" + SimulationCase + id
-        os.makedirs(output_directory, exist_ok=True)
+            id += "_a" + str(a).replace(".", "d")
+            id += "_T" + str(T).replace(".", "d")
+            id += "_h" + str(h)
 
-        water = {"name": "water", "type": "Fluid"}
+            input_directory += SimulationCase + id
+            os.makedirs(input_directory, exist_ok=True)
+            output_directory = home + "/BEM/" + SimulationCase + id
+            os.makedirs(output_directory, exist_ok=True)
 
-        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+            water = {"name": "water", "type": "Fluid"}
 
-        wavemaker = {"name": "wavemaker",
-                     "type": "SoftBody",
-                     "isFixed": True,
-                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}  # "isFixed": True}
+            tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
-        floatingbody = {"name": "floatingbody",
-                        "type": "RigidBody",
-                        "velocity": "floating"}  # "velocity": ["sin", 0, a, T]}
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}  # "isFixed": True}
 
-        # 浮体の種類
-        if pool_size == "large":
-            objfolder = program_home + "/cpp/obj/tsukada2022_large_pool"
-            water["objfile"] = objfolder + "/water300_mod.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
-            tank["objfile"] = objfolder + "/tank10.obj"
-            floatingbody["objfile"] = objfolder+"/floating_body50.obj"
-            A = 1528.00
-            floatingbody["mass"] = m = (1000.*g*7.5*A)/g
-            floatingbody["COM"] = [200., 75., 75.]
-            floatingbody["radius_of_gyration"] = [20., 20., 20.]
-        elif pool_size == "none" or pool_size == "no":
-            objfolder = program_home + "/cpp/obj/tsukada2022_no_pool"
-            water["objfile"] = objfolder + "/water_no_440_mod.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
-            tank["objfile"] = objfolder + "/tank10.obj"
-            floatingbody["objfile"] = objfolder+"/floating_body_310.obj"
-            A = 2450.00
-            floatingbody["mass"] = m = (rho*g*7.5*A)/g
-            floatingbody["COM"] = [200., 75., 75.]
-            floatingbody["radius_of_gyration"] = [20., 20., 20.]
+            floatingbody = {"name": "floatingbody",
+                            "type": "RigidBody",
+                            "velocity": "floating"}  # "velocity": ["sin", 0, a, T]}
 
-        floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][1], 2),
-                               m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
+            # 浮体の種類
+            if pool_size == "large":
+                objfolder = program_home + "/cpp/obj/tsukada2022_large_pool"
+                water["objfile"] = objfolder + "/water300_mod.obj"
+                wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+                tank["objfile"] = objfolder + "/tank10.obj"
+                floatingbody["objfile"] = objfolder+"/floating_body50.obj"
+                A = 1528.00
+                floatingbody["mass"] = m = (1000.*g*7.5*A)/g
+                floatingbody["COM"] = [200., 75., 75.]
+                floatingbody["radius_of_gyration"] = [20., 20., 20.]
+            elif pool_size == "none" or pool_size == "no":
+                objfolder = program_home + "/cpp/obj/tsukada2022_no_pool"
+                water["objfile"] = objfolder + "/water_no_440_mod.obj"
+                wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+                tank["objfile"] = objfolder + "/tank10.obj"
+                floatingbody["objfile"] = objfolder+"/floating_body_310.obj"
+                A = 2450.00
+                floatingbody["mass"] = m = (rho*g*7.5*A)/g
+                floatingbody["COM"] = [200., 75., 75.]
+                floatingbody["radius_of_gyration"] = [20., 20., 20.]
 
-        inputfiles = [tank, wavemaker, water, floatingbody]
+            floatingbody["MOI"] = [m*math.pow(floatingbody["radius_of_gyration"][0], 2),
+                                   m*math.pow(floatingbody["radius_of_gyration"][1], 2),
+                                   m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
 
-        setting = {"max_dt": 0.2,
-                   "end_time_step": 1000,
-                   "end_time": 100,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+            inputfiles = [tank, wavemaker, water, floatingbody]
+
+            setting = {"max_dt": 0.2,
+                       "end_time_step": 1000,
+                       "end_time": 100,
+                       "output_directory": output_directory,
+                       "input_files": [x["name"]+".json" for x in inputfiles]}
+
+            generate(inputfiles, setting)
     case "two_floatingbodies":
 
         start = 0.
@@ -620,50 +685,3 @@ match SimulationCase:
                    "end_time": 120,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
-
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-white = '\033[90m'
-red = '\033[91m'
-blue = '\033[96m'
-green = '\033[92m'
-magenta = '\033[95m'
-coloroff = '\033[0m'
-
-# @ -------------------------------------------------------- #
-# @           その他，water.json,tank.json などを出力           #
-# @ -------------------------------------------------------- #
-for INPUTS in inputfiles:
-    print('------------------------------------')
-    for key, value in INPUTS.items():
-        if value == "floating":
-            print(f'{key: <{20}}', '\t', green, value, coloroff)
-        elif value == "RigidBody":
-            print(f'{key: <{20}}', '\t', red, value, coloroff)
-        elif value == "Fluid":
-            print(f'{key: <{20}}', '\t', blue, value, coloroff)
-        else:
-            print(f'{key: <{20}}', '\t', white, value, coloroff)
-
-        if key == "objfile":
-            if os.path.exists(value) == False:
-                print(red, "! file does not exist", coloroff)
-            else:
-                print(green, "file exists", coloroff)
-    print('------------------------------------')
-    f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
-    json.dump(INPUTS, f, ensure_ascii=True, indent=4)
-    f.close()
-
-# @ -------------------------------------------------------- #
-# @                  setting.json を出力                      #
-# @ -------------------------------------------------------- #
-print('------------------------------------')
-for key, value in setting.items():
-    print(f'{key: <{20}}', '\t', green, value, coloroff)
-print('------------------------------------')
-f = open(input_directory+"/setting.json", 'w')
-json.dump(setting, f, ensure_ascii=True, indent=4)
-f.close()
-
-print("The directory for input files :", magenta, input_directory, coloroff)

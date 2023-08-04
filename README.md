@@ -76,9 +76,6 @@
     - [⛵️Customization](./builds/build_bem/README.md#⛵️Customization)
     - [⛵️Output](./builds/build_bem/README.md#⛵️Output)
 - [🐋実行方法](./builds/build_bem/README.md#🐋実行方法)
-    - [⛵️simple_barge](./builds/build_bem/README.md#⛵️simple_barge)
-    - [⛵️Kramer2021](./builds/build_bem/README.md#⛵️Kramer2021)
-    - [⛵️Hadzic2005](./builds/build_bem/README.md#⛵️Hadzic2005)
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 
 - [Contents](./builds/build_system_of_linear_eqs/README.md#Contents)
