@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
             // if (RK_step == 4)
             //    std::cout << Green << "do shift" << colorOff << " s\n";
 
-            calculateCurrentUpdateVelocities(*water, 20);
+            calculateCurrentUpdateVelocities(*water, 40);
 
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
