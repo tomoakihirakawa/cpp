@@ -1,4 +1,13 @@
 ----------
+Execution time: Fri Aug  4 15:01:49 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
 Execution time: Fri Aug  4 14:43:58 2023
 
 Machine Information:
@@ -409,6 +418,7 @@ Machine Information:
 Command line arguments:
   arg1: input_files/Kramer2021_H00d03_small
   arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
 ----------
 ----------
 ----------
