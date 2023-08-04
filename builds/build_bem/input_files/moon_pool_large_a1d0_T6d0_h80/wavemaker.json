@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        1.0,
+        6.0,
+        80,
+        80
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_large_pool/wavemaker100.obj"
+}

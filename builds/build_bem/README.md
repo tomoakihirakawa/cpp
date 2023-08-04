@@ -26,9 +26,6 @@
     - [⛵️Customization](#⛵️Customization)
     - [⛵️Output](#⛵️Output)
 - [🐋実行方法](#🐋実行方法)
-    - [⛵️simple_barge](#⛵️simple_barge)
-    - [⛵️Kramer2021](#⛵️Kramer2021)
-    - [⛵️Hadzic2005](#⛵️Hadzic2005)
         - [🪸計算の流れ](#🪸計算の流れ)
 
 
@@ -64,13 +61,13 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L383)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L354)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L226)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L263)で近の$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L268)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L362](./BEM_calculateVelocities.hpp#L362)
+[./BEM_calculateVelocities.hpp#L333](./BEM_calculateVelocities.hpp#L333)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -125,7 +122,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L511](./BEM_calculateVelocities.hpp#L511)
+[./BEM_calculateVelocities.hpp#L482](./BEM_calculateVelocities.hpp#L482)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -142,7 +139,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L598](./BEM_calculateVelocities.hpp#L598)
+[./BEM_calculateVelocities.hpp#L569](./BEM_calculateVelocities.hpp#L569)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -410,7 +407,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L661)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L581)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -422,13 +419,13 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L315)
+[強制運動を課す](../../builds/build_bem/main.cpp#L342)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L195)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L197)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 
-[./BEM_utilities.hpp#L14](./BEM_utilities.hpp#L14)
+[./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
 
 ## ⛵️初期値問題 
@@ -473,7 +470,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
+[./BEM_utilities.hpp#L416](./BEM_utilities.hpp#L416)
 
 
 ## ⛵️その他 
@@ -484,7 +481,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
+[./BEM_utilities.hpp#L490](./BEM_utilities.hpp#L490)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -516,7 +513,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
+[./BEM_utilities.hpp#L548](./BEM_utilities.hpp#L548)
 
 
 ### 🪸計算の流れ 
@@ -529,7 +526,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L274](./main.cpp#L274)
+[./main.cpp#L301](./main.cpp#L301)
 
 
 ---
@@ -564,7 +561,7 @@ After customizing the script, run it again to generate the input files for the n
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
 
-[./input_generator.py#L1](./input_generator.py#L1)
+[./input_generator.py#L59](./input_generator.py#L59)
 
 
 ---
@@ -598,17 +595,7 @@ $ python3 input_generator.py
 $ ./main ./input_files/Hadzic2005
 ```
 
-## ⛵️simple_barge 
-
-[![simple_barge](sample0.gif)](sample0.gif)
-
-## ⛵️Kramer2021 
-
-[![Kramer2021](sample1.gif)](sample1.gif)
-
-## ⛵️Hadzic2005 
-
-[![Hadzic2005](sample_Hazaic2005.gif)](sample_Hazaic2005.gif)
+**[See the Examples here!](EXAMPLES.md)**
 
 
 [./main.cpp#L1](./main.cpp#L1)

@@ -1,4 +1,94 @@
 ----------
+Execution time: Fri Aug  4 19:05:44 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 19:04:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 19:03:20 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 19:02:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 19:01:35 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 18:59:20 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 18:57:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 18:55:39 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 18:53:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
+Execution time: Fri Aug  4 18:51:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_300
+----------
 Execution time: Fri Aug  4 15:01:49 2023
 
 Machine Information:
@@ -418,6 +508,16 @@ Machine Information:
 Command line arguments:
   arg1: input_files/Kramer2021_H00d03_small
   arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------
