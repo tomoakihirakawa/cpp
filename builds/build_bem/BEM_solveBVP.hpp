@@ -61,8 +61,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-#define use_gmres 50
-// #define use_lapack
+// #define use_gmres 50
+#define use_lapack
 
 // #define quad_element
 // #define linear_element
@@ -119,6 +119,7 @@ struct calculateFroudeKrylovForce {
       return this->torque;
    };
 
+   // \label{BEM:surfaceIntegralOfPressure}
    Tddd surfaceIntegralOfPressure() {
       this->force.fill(0.);
       this->force_check.fill(0.);
@@ -590,6 +591,8 @@ struct BEM_BVP {
    p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
    ```
 
+   \ref{BEM:surfaceIntegralOfPressure}{ここで}積分している．
+
    $`\frac{\partial \phi}{\partial t}`$を$`\phi_t`$と書くことにする．この$`\phi_t`$は陽には求められない．
    そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi_t`$を求める．$`\phi`$と$`\phi_n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi_t`$と$`\phi_{nt}`$の間にも成り立つ：
 
@@ -641,8 +644,8 @@ struct BEM_BVP {
 
    ```math
    \begin{align*}
-   &&\frac{d\boldsymbol U_{\rm c}}{dt}& = F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
-   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) &= \frac{d\boldsymbol U_{\rm c}}{dt} - F\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
+   &\rightarrow& m \frac{d\boldsymbol U_{\rm c}}{dt}& = \boldsymbol{F} _{\text {ext }}+ F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
+   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) &= m \frac{d\boldsymbol U_{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
    \end{align*}
    ```
 
@@ -665,6 +668,10 @@ struct BEM_BVP {
    節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
    要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
    $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
+
+
+   \ref{quasi_newton:broyden}{Broyden法}を使って，$`Q`$のゼロを探す．
+
 
    */
    void setPhiPhin_t() const {
@@ -794,7 +801,7 @@ struct BEM_BVP {
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
-         p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + _GRAVITY_ * p->height() + Dot(p->U_BEM, p->U_BEM) / 2.);
+         p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
          if (isDirichletID_BEM(PBF))
             p->pressure_BEM = 0;
       }
@@ -809,10 +816,12 @@ struct BEM_BVP {
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
             auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
             auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
-            auto force = tmp.surfaceIntegralOfPressure() + _GRAVITY3_ * net->mass;
+            auto F_ext = _GRAVITY3_ * net->mass;
+            auto F_hydro = tmp.surfaceIntegralOfPressure();
+            auto F = F_hydro + F_ext;
             std::cout << "force_check:" << tmp.force_check << std::endl;
             auto torque = tmp.getFroudeKrylovTorque(net->COM);
-            auto [a0, a1, a2] = force / Tddd{mx, my, mz};
+            auto [a0, a1, a2] = F / net->mass;
             auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
             // net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
@@ -825,8 +834,8 @@ struct BEM_BVP {
    //@ --------------------------------------------------- */
    //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
    //@ --------------------------------------------------- */
-   void solveForPhiPhin_t(const Network &water, const std::vector<Network *> &rigidbodies) {
-
+   void solveForPhiPhin_t(Network &water, const std::vector<Network *> &rigidbodies) {
+      water.setGeometricProperties();
       auto ACCELS_init = initializeAcceleration(rigidbodies);
 
       if (ACCELS_init.empty()) {

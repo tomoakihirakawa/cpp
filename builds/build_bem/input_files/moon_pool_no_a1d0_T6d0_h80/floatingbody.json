@@ -5,8 +5,8 @@
     "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_no_pool/floating_body_310.obj",
     "mass": 18375000.0,
     "COM": [
-        100.0,
-        50.0,
+        200.0,
+        75.0,
         75.0
     ],
     "radius_of_gyration": [

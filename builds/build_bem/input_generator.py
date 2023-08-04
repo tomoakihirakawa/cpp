@@ -110,8 +110,7 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-
-SimulationCase = "Kramer2021"
+SimulationCase = "moon_poolsh"
 
 match SimulationCase:
     case "Hadzic2005":
@@ -161,7 +160,6 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 
         generate(inputfiles, setting)
-
     case "Kramer2021":
 
         D = 300/1000
@@ -203,7 +201,6 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 
         generate(inputfiles, setting)
-
     case "simple_barge":
 
         input_directory += SimulationCase
@@ -263,7 +260,6 @@ match SimulationCase:
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 
         generate(inputfiles, setting)
-
     case "moon_pool":
 
         for T in [5 + 0.5 * i for i in range(0, 11)]:
@@ -274,8 +270,8 @@ match SimulationCase:
             h = 80
             z_surface = 80
 
-            pool_size = "large"
-            # pool_size = "none"
+            # pool_size = "large"
+            pool_size = "none"
 
             if pool_size == "large":
                 id = "_large"

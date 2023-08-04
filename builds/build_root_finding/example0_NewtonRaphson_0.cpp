@@ -42,10 +42,10 @@ int main() {
    for (auto i = 0; i < 50; i++) {
       double x = nr.X[0];
       double y = nr.X[1];
-      V_d dFdX = {dFdx(x, y), dFdy(x, y)};
+      V_d gradF = {dFdx(x, y), dFdy(x, y)};
       VV_d Hessian = {{dFdxx(x, y), dFdxy(x, y)}, {dFdxy(x, y), dFdyy(x, y)}};
 
-      nr.update(dFdX, Hessian);
+      nr.update(gradF, Hessian);
       ofs_NM << x << " " << y << " " << F(x, y) << std::endl;
       std::cout << w << i << w << x << w << y << w << F(x, y) << w << Norm(nr.dX) << std::endl;
    }

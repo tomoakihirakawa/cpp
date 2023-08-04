@@ -253,7 +253,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 ```
 
 
-[./BEM_solveBVP.hpp#L218](./BEM_solveBVP.hpp#L218)
+[./BEM_solveBVP.hpp#L219](./BEM_solveBVP.hpp#L219)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -274,7 +274,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L282](./BEM_solveBVP.hpp#L282)
+[./BEM_solveBVP.hpp#L283](./BEM_solveBVP.hpp#L283)
 
 
 ### 🪸リジッドモードテクニック 
@@ -284,7 +284,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L355](./BEM_solveBVP.hpp#L355)
+[./BEM_solveBVP.hpp#L356](./BEM_solveBVP.hpp#L356)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -314,7 +314,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L393](./BEM_solveBVP.hpp#L393)
+[./BEM_solveBVP.hpp#L394](./BEM_solveBVP.hpp#L394)
 
 
 ## ⛵️浮体動揺解析 
@@ -335,6 +335,8 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 \boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S, \quad
 p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
 ```
+
+[ここで](../../builds/build_bem/BEM_solveBVP.hpp#L122)積分している．
 
 $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．この$`\phi _t`$は陽には求められない．
 そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
@@ -387,16 +389,16 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 
 ```math
 \begin{align*}
-&&\frac{d\boldsymbol U _{\rm c}}{dt}& = F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right)\\
-&\rightarrow& Q\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right) &= \frac{d\boldsymbol U _{\rm c}}{dt} - F\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right) =0
+&\rightarrow& m \frac{d\boldsymbol U _{\rm c}}{dt}& = \boldsymbol{F} _{\text {ext }}+ F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right)\\
+&\rightarrow& Q\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right) &= m \frac{d\boldsymbol U _{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right) =0
 \end{align*}
 ```
 
 のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L696)で与えている．
 
 
-[./BEM_solveBVP.hpp#L572](./BEM_solveBVP.hpp#L572)
+[./BEM_solveBVP.hpp#L573](./BEM_solveBVP.hpp#L573)
 
 
 ```math
@@ -413,7 +415,10 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L689)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L654](./BEM_solveBVP.hpp#L654)
+[Broyden法](../../builds/build_root_finding/example1_Broyden.cpp#L22)を使って，$`Q`$のゼロを探す．
+
+
+[./BEM_solveBVP.hpp#L657](./BEM_solveBVP.hpp#L657)
 
 
 ## ⛵️造波装置など 
