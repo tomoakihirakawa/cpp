@@ -1,4 +1,53 @@
 ----------
+Execution time: Fri Aug  4 13:37:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a0d8_T5d0_h80
+  arg2: solidangleが小さすぎる場合はto_cornerを使わない
+----------
+Execution time: Fri Aug  4 13:27:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a0d8_T5d0_h80
+  arg2: solidangleが小さすぎる場合はto_cornerを使わない
+----------
+Execution time: Fri Aug  4 13:03:54 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a0d8_T5d0_h80
+  arg2: cornerのscaleを小さくして，繰り返しを40にふやす．造波が安定するといいが
+----------
+Execution time: Fri Aug  4 12:53:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a0d8_T5d0_h80
+----------
+Execution time: Thu Aug  3 23:11:14 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: uNeumannやaccelNeumannのweightを消してKramerを計算
+----------
 Execution time: Thu Aug  3 17:32:54 2023
 
 Machine Information:
@@ -331,6 +380,11 @@ Machine Information:
 Command line arguments:
   arg1: input_files/Kramer2021_H00d03_small
   arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

@@ -211,8 +211,8 @@ match SimulationCase:
         h = 80
         z_surface = 80
 
-        # pool_size = "large"
-        pool_size = "none"
+        pool_size = "large"
+        # pool_size = "none"
 
         if pool_size == "large":
             id = "_large"

@@ -361,11 +361,12 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       {
          double scale = 0.1;
          if (p->isMultipleNode && !p->CORNER)
-            scale = 0.005;
+            scale = 0.01;
          else if (p->Neumann)
-            scale = 0.02;
+            scale = 0.01;
          else if (p->CORNER)
-            scale = 0.02;
+            scale = 0.01;
+
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }
       for (const auto &p : net.getPoints()) {
