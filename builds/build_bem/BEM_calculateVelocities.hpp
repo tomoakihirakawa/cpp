@@ -227,12 +227,13 @@ Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
 Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    Tddd vector_to_optimum_X = {0., 0., 0.}, pX = RK_with_Ubuff(p);
    double s = 0;
-   if (p->CORNER) {
-      for (const auto &l : p->getLinesCORNER()) {
-         vector_to_optimum_X += RK_with_Ubuff((*l)(p)) - pX;
-         s += 1.;
-      }
-   } else {
+   // if (p->CORNER) {
+   //    for (const auto &l : p->getLinesCORNER()) {
+   //       vector_to_optimum_X += RK_with_Ubuff((*l)(p)) - pX;
+   //       s += 1.;
+   //    }
+   // } else
+   {
       for (const auto &f : p->getFaces()) {
          auto nP012 = RK_with_Ubuff(f->getPoints(p));
          auto &[np0x, np1x, np2x] = nP012;
@@ -257,6 +258,10 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    }
 
    vector_to_optimum_X /= s;
+
+   if (p->CORNER)
+      vector_to_optimum_X /= 2.;
+
    return condition_Ua(scale * vector_to_optimum_X, p);
 };
 
