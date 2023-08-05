@@ -16,31 +16,37 @@ struct Hadzic2005 {
 
    int find_index(const double t) {
       for (auto i = 0; i < Hadzic2005_time_angle.size(); ++i)
-         if (t >= Hadzic2005_time_angle[i][0])
+         if (Hadzic2005_time_angle[i][0] >= t)
             return i;
       return Hadzic2005_time_angle.size();
    };
 
    std::array<double, 6> getVelocity(const double t) {
       int i = find_index(t);
-      // get 5 points before and after t
+      // get 2N points before and after t
       // i-2, i-1, i, i+1, i+2
       std::vector<std::array<double, 2>> sample;
       int shift = 0;
-      if (i - 2 < 0)
-         shift = i - 2;
-      else if (i + 2 - shift >= Hadzic2005_time_angle.size() - 1)
-         shift = i + 2 - Hadzic2005_time_angle.size() + 1;
+      int N = 10;
+      if (i - N < 0)
+         shift = i - N;
+      else if (i + N - shift >= Hadzic2005_time_angle.size() - 1)
+         shift = i + N - Hadzic2005_time_angle.size() + 1;
 
-      //   std::cout << "shift " << shift << std::endl;
-      //   std::cout << "begin " << i - 2 - shift << std::endl;
-      //   std::cout << "end " << i + 2 - shift << std::endl;
-      //   std::cout << "Hadzic2005_time_angle.size() " << Hadzic2005_time_angle.size() << std::endl;
-
-      for (auto j = i - 2 - shift; j <= i + 2 - shift; ++j)
+      for (auto j = i - N - shift; j <= i + N - shift; ++j) {
          sample.push_back(Hadzic2005_time_angle[j]);
-
+         std::cout << Hadzic2005_time_angle[j][0] << ", " << Hadzic2005_time_angle[j][1] << std::endl;
+      }
       const auto intp = InterpolationBspline(3, sample);
+
+      std::cout << "shift " << shift << std::endl;
+      std::cout << "begin " << i - 2 - shift << std::endl;
+      std::cout << "end " << i + 2 - shift << std::endl;
+      std::cout << "Hadzic2005_time_angle.size() " << Hadzic2005_time_angle.size() << std::endl;
+      std::cout << "t - start " << t - start << std::endl;
+      std::cout << "intp(t - start) / 180. * 2 * M_PI " << intp(t - start) / 180. * 2 * M_PI << std::endl;
+      std::cout << "intp.D(t - start) / 180. * 2 * M_PI " << intp.D(t - start) / 180. * 2 * M_PI << std::endl;
+
       return {0, 0., 0., 0., intp.D(t - start) / 180. * 2 * M_PI /*rad*/, 0.};
    };
 };

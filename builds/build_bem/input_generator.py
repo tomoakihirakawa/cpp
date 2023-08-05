@@ -110,18 +110,18 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "moon_poolsh"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
     case "Hadzic2005":
 
         start = 0.
 
-        id = "_300"
+        id = "_water300"
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + "_" + id
+        output_directory = home + "/BEM/"+SimulationCase + id
         os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
@@ -153,7 +153,7 @@ match SimulationCase:
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.05,
                    "end_time_step": 1000,
                    "end_time": 25,
                    "output_directory": output_directory,
