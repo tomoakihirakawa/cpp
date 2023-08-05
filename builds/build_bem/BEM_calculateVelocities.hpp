@@ -77,8 +77,10 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
    if (p->Dirichlet) {
       return Chop(VECTOR, RK_without_Ubuff_Normal(p));
    } else {
-      if (p->CORNER)
-         VECTOR = Projection(VECTOR, Cross(getNextNormalNeumann_BEM(p), getNextNormalDirichlet_BEM(p)));
+      if (p->CORNER) {
+         for (const auto &f : p->getFacesNeumann())
+            VECTOR = Projection(VECTOR, Cross(getNextNormalDirichlet_BEM(p), RK_without_Ubuff_Normal(f)));
+      }
       for (const auto &f : p->getFacesNeumann()) {
          VECTOR = Chop(VECTOR, RK_without_Ubuff_Normal(f));
          // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
@@ -252,6 +254,7 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
+         // vector_to_optimum_X += a * (optimum_position - pX);
          vector_to_optimum_X += a * (optimum_position - pX);
          s += a;
       }
