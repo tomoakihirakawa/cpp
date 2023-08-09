@@ -1,4 +1,551 @@
 ----------
+Execution time: Tue Aug  8 20:40:53 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T8d5_h80
+----------
+Execution time: Tue Aug  8 16:11:57 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Tue Aug  8 15:04:24 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: maxdt=0.005にして再計算
+----------
+Execution time: Tue Aug  8 14:59:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Tue Aug  8 14:19:01 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T8d0_h80
+----------
+Execution time: Tue Aug  8 11:54:14 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: GWGWを変更したので，もう一度grad_phiを使ってヘッシアンを計算する
+----------
+Execution time: Tue Aug  8 11:41:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Tue Aug  8 11:37:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Tue Aug  8 00:46:33 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T7d5_h80
+----------
+Execution time: Tue Aug  8 00:44:28 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: U_bodyに戻して再度チェック
+----------
+Execution time: Tue Aug  8 00:37:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: U_bodyに戻して再度チェック
+----------
+Execution time: Tue Aug  8 00:35:58 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: U_bodyに戻して再度チェック
+----------
+Execution time: Tue Aug  8 00:21:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: U_bodyに戻して再度チェック
+----------
+Execution time: Mon Aug  7 22:19:55 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+  arg2: U_body->grad_phiに変更してチェック
+----------
+Execution time: Mon Aug  7 19:23:11 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Mon Aug  7 18:31:28 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Mon Aug  7 18:27:56 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Mon Aug  7 17:48:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Mon Aug  7 16:48:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:43:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:17:27 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:14:23 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:10:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:06:03 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:00:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 16:00:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 15:57:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 03:39:12 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T7d0_h80
+----------
+Execution time: Mon Aug  7 00:28:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 00:26:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 00:26:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Mon Aug  7 00:22:28 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:55:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:38:24 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:26:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:21:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:19:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 23:08:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:41:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:39:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:39:08 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:34:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:31:55 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 22:30:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sun Aug  6 22:29:07 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sun Aug  6 21:17:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sun Aug  6 21:17:07 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sun Aug  6 20:37:55 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 11:38:59 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T6d5_h80
+----------
+Execution time: Sun Aug  6 11:03:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 07:25:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water500
+----------
+Execution time: Sun Aug  6 00:13:49 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sun Aug  6 00:07:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sat Aug  5 22:57:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T6d5_h80
+----------
+Execution time: Sat Aug  5 18:58:09 2023
+
+Machine Information:
+  Hostname: syo.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_large_a1d0_T6d0_h80
+----------
+Execution time: Sat Aug  5 16:35:06 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sat Aug  5 14:22:37 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sat Aug  5 14:21:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water400
+----------
+Execution time: Sat Aug  5 14:20:52 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Hadzic2005_water300
+----------
+Execution time: Sat Aug  5 13:34:16 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/moon_pool_no_a1d0_T6d0_h80
+----------
 Execution time: Sat Aug  5 12:13:01 2023
 
 Machine Information:
@@ -778,6 +1325,66 @@ Machine Information:
 Command line arguments:
   arg1: input_files/Kramer2021_H00d03_small
   arg2: phint_NeumannはU_bodyを使わないといけないのか？grad_phiを使うと止まった．
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

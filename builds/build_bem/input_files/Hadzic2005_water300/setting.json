@@ -1,7 +1,7 @@
 {
-    "max_dt": 0.05,
-    "end_time_step": 1000,
-    "end_time": 25,
+    "max_dt": 0.03,
+    "end_time_step": 10000,
+    "end_time": 9,
     "output_directory": "/Users/tomoaki/BEM/Hadzic2005_water300",
     "input_files": [
         "tank.json",

@@ -138,6 +138,17 @@ int main(int argc, char **argv) {
       for (auto &[key, value] : settingJSON())
          std::cout << key << ": " << value << std::endl;
 
+      // check optional setting
+      if (settingJSON.find("WATER_DENSITY")) {
+         _WATER_DENSITY_ = stod(settingJSON.at("WATER_DENSITY"))[0];
+         std::cout << "WATER_DENSITY: " << _WATER_DENSITY_ << std::endl;
+      }
+      if (settingJSON.find("GRAVITY")) {
+         _GRAVITY_ = stod(settingJSON.at("GRAVITY"))[0];
+         _GRAVITY3_ = {0., 0., -_GRAVITY_};
+         std::cout << "GRAVITY: " << _GRAVITY_ << std::endl;
+      }
+
       // Check for the existence of required keys in the JSON file
       const std::vector<std::string> required_keys = {"end_time_step", "end_time", "output_directory", "max_dt", "input_files"};
       for (const auto &key : required_keys)
@@ -428,21 +439,19 @@ int main(int argc, char **argv) {
          std::ofstream ofs(output_directory + "/water_current.obj");
          creteOBJ(ofs, *water);
          ofs.close();
-
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
          jsonout.push("time", real_time);
-
          // water
          jsonout.push(water->getName() + "_volume", water->getVolume());
          jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
          jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getFaces()));
          jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
-
          // bodies
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
-            if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
+            if ((net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") ||
+                (net->inputJSON.find("output") && std::ranges::any_of(net->inputJSON["output"], [](const auto &s) { return s == "json"; }))) {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
                jsonout.push(net->getName() + "_pitch", net->quaternion.pitch());
                jsonout.push(net->getName() + "_yaw", net->quaternion.yaw());
@@ -478,8 +487,8 @@ int main(int argc, char **argv) {
             VV_VarForOutput data;
             if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
-               //    uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
-               //    uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure;
+               uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
+               uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure;
 
                //    for (const auto &p : water->getPoints()) {
                //       P_accel[p] = net->accelRigidBody(ToX(p));
@@ -489,29 +498,29 @@ int main(int argc, char **argv) {
                //       P_pressure[p] = p->pressure;
                //    }
 
-               //    for (const auto &p : net->getPoints()) {
-               //       P_COM[p] = net->COM;
-               //       P_COM_p[p] = net->COM - ToX(p);
-               //       P_Pitch[p] = net->quaternion.pitch();
-               //       P_Yaw[p] = net->quaternion.yaw();
-               //       P_Roll[p] = net->quaternion.roll();
-               //       P_accel[p] = net->accelRigidBody(ToX(p));
-               //       P_velocity[p] = net->velocityRigidBody(ToX(p));
-               //       P_rotational_velocity[p] = net->velocityRotational();
-               //    }
+               for (const auto &p : net->getPoints()) {
+                  P_COM[p] = net->COM;
+                  P_COM_p[p] = net->COM - ToX(p);
+                  P_Pitch[p] = net->quaternion.pitch();
+                  P_Yaw[p] = net->quaternion.yaw();
+                  P_Roll[p] = net->quaternion.roll();
+                  P_accel[p] = net->accelRigidBody(ToX(p));
+                  P_velocity[p] = net->velocityRigidBody(ToX(p));
+                  P_rotational_velocity[p] = net->velocityRotational();
+               }
 
-               //    data = {
-               //        {"vector to COM", P_COM_p},
-               //        {"COM", P_COM},
-               //        {"pitch", P_Pitch},
-               //        {"yaw", P_Yaw},
-               //        {"roll", P_Roll},
-               //        {"velocity", P_accel},
-               //        {"acceleration", P_velocity},
-               //        {"rotational valocity", P_rotational_velocity},
-               //        {"rotational acceleration", P_rotational_accel},
-               //        {"pressure", P_pressure},
-               //        {"FroudeKrylovTorque", P_FroudeKrylovTorque}};
+               data = {
+                   {"vector to COM", P_COM_p},
+                   {"COM", P_COM},
+                   {"pitch", P_Pitch},
+                   {"yaw", P_Yaw},
+                   {"roll", P_Roll},
+                   {"velocity", P_accel},
+                   {"acceleration", P_velocity},
+                   {"rotational valocity", P_rotational_velocity},
+                   {"rotational acceleration", P_rotational_accel},
+                   {"pressure", P_pressure},
+                   {"FroudeKrylovTorque", P_FroudeKrylovTorque}};
                mk_vtu(output_directory + "/actingFacesOn" + NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu", tmp.actingFaces, data);
             }
             auto filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
