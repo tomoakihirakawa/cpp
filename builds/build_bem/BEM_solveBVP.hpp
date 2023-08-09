@@ -300,6 +300,8 @@ struct BEM_BVP {
       | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi_0} \times \frac{\partial \pmb{x}}{\partial \xi_1}`$ |
 
       */
+      water.setFacesVector();
+      water.setPointsVector();
 #pragma omp parallel
       for (const auto &[PBF, index] : PBF_index)
 #pragma omp single nowait
@@ -317,12 +319,13 @@ struct BEM_BVP {
             sum_area += f->area;
             n++;
          }
-         double r = std::sqrt(sum_area / n);
+         double r = std::sqrt(sum_area / M_PI);
          //
-         for (const auto &integ_f : water.getFaces()) {
+         std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret;
+         for (const auto &integ_f : water.getFacesVector()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
-            if ((Norm(integ_f->center - origin->X) > 10 * r))
+            ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
+            if ((Norm(integ_f->center - origin->X) > 20 * r))
                for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
                   N012 = ModTriShape<3>(t0, t1);
                   tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
@@ -332,7 +335,7 @@ struct BEM_BVP {
                   std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
                }
             else
-               for (const auto &[t0, t1, ww] : __array_GW8xGW8__) {
+               for (const auto &[t0, t1, ww] : __array_GW10xGW10__) {
                   N012 = ModTriShape<3>(t0, t1);
                   tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
                   IGIGn = {tmp, tmp / (nr * nr)};
@@ -554,7 +557,7 @@ struct BEM_BVP {
          // std::cout << err << std::endl;
 #elif defined(use_lapack)
       std::cout << "lapack lu decomposition" << std::endl;
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
 
       std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
@@ -601,15 +604,34 @@ struct BEM_BVP {
    \quad\text{on}\quad{\bf x} \in \Gamma(t).
    ```
 
-   ### ノイマン境界面における$`\phi_{nt}`$の求め方
+   */
+
+   /*DOC_EXTRACT BEM
+
+   ### $\phi_t$と$\phi_{nt}$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
+
+   $\phi_t$と$\phi_{nt}$に関するBIEを解くためには，ディリクレ境界には$\phi_t$を，ノイマン境界には$\phi_{nt}$を与える．
+
+   #### ディリクレ節点の$`\phi_{nt}`$の与え方(水面：圧力が既知，$\phi$が既知)
+
+   このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
+   ただし，壁が完全に固定されている場合，$`\phi_{nt}`$は0とする．
+
+   #### ディリクレ節点の$`\phi_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)
+
+   ディリクレ境界では$\phi_t$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi_t`$を求めることができる．
+
+   #### ノイマン節点での$`\phi_{nt}`$の与え方
 
    境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
-   境界面上の位置ベクトルを$`\boldsymbol r`$とする．
+   境界面上の点の位置ベクトルを$`\boldsymbol r`$とする．
    表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
 
    ```math
-   {\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi
+   {\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi,\quad \frac{d\boldsymbol r}{dt} = \boldsymbol U_{\rm c} + {\boldsymbol \Omega}_{\rm c} \times \boldsymbol r
    ```
+
+   物体上のある点ではこれが常に成り立つ．
 
    これを微分することで，$`\phi_{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U}_{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega}_{\rm c}}{dt}`$を使って表すことができる．
    [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
@@ -618,9 +640,9 @@ struct BEM_BVP {
    \begin{aligned}
    &\rightarrow& 0& =\frac{d}{dt}\left({\bf n}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\right) \\
    &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \frac{d}{dt}\left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\\
-   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\frac{d}{dt}\nabla \phi\right)\\
-   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi_t - (\nabla \phi \cdot \nabla)\nabla \phi}\right)\\
-   &\rightarrow& \phi_{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \nabla \phi \cdot (\nabla\otimes\nabla \phi) \right)
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\left(\frac{\partial}{\partial t}+\frac{d{\boldsymbol r}}{dt}\cdot\nabla\right)\nabla \phi\right)\\
+   &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi_t - \left(\frac{d\boldsymbol r}{dt} \cdot \nabla\right)\nabla \phi}\right)\\
+   &\rightarrow& \phi_{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \frac{d\boldsymbol r}{dt} \cdot (\nabla\otimes\nabla \phi) \right)
    \end{aligned}
    ```
 
@@ -640,16 +662,25 @@ struct BEM_BVP {
    圧力を計算するためには，$`\phi_t`$が必要で，$`\phi_t`$は簡単には得られない，という状況．
 
    物体の加速度は， 節点における$`\{\phi_{nt0},\phi_{nt1},\phi_{nt2},..\} = \Phi_{nt}`$が分かれば求まるが，
-   逆に$`\phi_{nt}`$は$`\frac{d\boldsymbol U_{\rm c}}{dt}`$が分かれば求まるので
+   逆に$`\phi_{nt}`$は$`\frac{d\boldsymbol U_{\rm c}}{dt}`$と$\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}$が分かれば求まる．また，物体の角加速度に関しても同様である．
 
    ```math
-   \begin{align*}
-   &\rightarrow& m \frac{d\boldsymbol U_{\rm c}}{dt}& = \boldsymbol{F} _{\text {ext }}+ F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right)\\
-   &\rightarrow& Q\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right) &= m \frac{d\boldsymbol U_{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt}\right)\right) =0
-   \end{align*}
+   m \frac{d\boldsymbol U_{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right),\quad
+   \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right)
    ```
 
-   のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
+   これを満たすように，$\Phi_{nt}$を求める．これは次のように書き換えて，根探し問題として解く．
+   このプログラムでは，\ref{quasi_newton:broyden}{Broyden法}を使って，根探している．
+
+   ```math
+   \boldsymbol{0} = m \frac{d\boldsymbol U_{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F_{\text {hydro}}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right),\quad
+   \boldsymbol{0} = \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} - \boldsymbol{T} _{\text {ext }} - \boldsymbol{T} _{\text {hydro }}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t} \right)\right)
+   ```
+
+   この式を，${\boldsymbol Q}\left(\dfrac{d {\boldsymbol U} _{\rm c}}{d t}, \dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)=(0,0,0,0,0,0)$
+   として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
+   $`\phi_{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
+
    $`\phi_{nt}`$は，\ref{BEM:setphint}{ここ}で与えている．
 
    */
@@ -668,10 +699,6 @@ struct BEM_BVP {
    節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
    要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
    $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
-
-
-   \ref{quasi_newton:broyden}{Broyden法}を使って，$`Q`$のゼロを探す．
-
 
    */
    void setPhiPhin_t() const {
@@ -785,7 +812,7 @@ struct BEM_BVP {
          this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       }
 #elif defined(use_lapack)
-      this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
       std::cout << "solved" << std::endl;
 
@@ -801,9 +828,10 @@ struct BEM_BVP {
 
       for (const auto &[PBF, i] : PBF_index) {
          auto [p, f] = PBF;
-         p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
          if (isDirichletID_BEM(PBF))
-            p->pressure_BEM = 0;
+            p->pressure = p->pressure_BEM = 0;
+         else
+            p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
       }
 
       //* --------------------------------------------------- */
@@ -820,11 +848,14 @@ struct BEM_BVP {
             auto F_hydro = tmp.surfaceIntegralOfPressure();
             auto F = F_hydro + F_ext;
             std::cout << "force_check:" << tmp.force_check << std::endl;
-            auto torque = tmp.getFroudeKrylovTorque(net->COM);
+            auto T_hydro = tmp.getFroudeKrylovTorque(net->COM);
             auto [a0, a1, a2] = F / net->mass;
-            auto [a3, a4, a5] = torque / Tddd{Ix, Iy, Iz};
-            // net->acceleration = T6d{a0, a1, a2, a3, a4, a5};
-            std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });
+            auto [a3, a4, a5] = T_hydro / Tddd{Ix, Iy, Iz};
+            std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
+
+            // write out details of the body
+            // std::cout << Green << "mass = " << net->mass << std::endl;
+            // std::cout << Green << "inertia = " << net->getInertiaGC() << std::endl;
          }
       return ACCELS - ACCELS_IN;
    };

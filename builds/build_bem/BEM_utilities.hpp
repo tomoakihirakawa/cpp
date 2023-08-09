@@ -597,9 +597,13 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    //                {g_s1s0, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
    //                {g_s2s0, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 
+   // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
+   //                {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
+   //                {(g_s0s2 + g_s2s0) * 0.5, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
+
    return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
-                  {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
-                  {(g_s0s2 + g_s2s0) * 0.5, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
+                  {g_s0s1, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
+                  {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 };
 
 double phint_Neumann(networkFace *F) {

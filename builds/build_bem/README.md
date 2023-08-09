@@ -13,7 +13,10 @@
         - [🪸BIEの離散化](#🪸BIEの離散化)
         - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
     - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
-        - [🪸ノイマン境界面における$`\phi _{nt}`$の求め方](#🪸ノイマン境界面における$`\phi-_{nt}`$の求め方)
+        - [🪸$\phi _t$と$\phi _{nt}$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪸$\phi-_t$と$\phi-_{nt}$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
+            - [ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$\phi$が既知)](#ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$\phi$が既知))
+            - [ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
+            - [ノイマン節点での$`\phi _{nt}`$の与え方](#ノイマン節点での$`\phi-_{nt}`$の与え方)
     - [⛵️造波装置など](#⛵️造波装置など)
     - [⛵️初期値問題](#⛵️初期値問題)
         - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
@@ -61,13 +64,13 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L354)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L357)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L226)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L268)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L271)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L333](./BEM_calculateVelocities.hpp#L333)
+[./BEM_calculateVelocities.hpp#L336](./BEM_calculateVelocities.hpp#L336)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -122,7 +125,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L482](./BEM_calculateVelocities.hpp#L482)
+[./BEM_calculateVelocities.hpp#L485](./BEM_calculateVelocities.hpp#L485)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -139,7 +142,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L569](./BEM_calculateVelocities.hpp#L569)
+[./BEM_calculateVelocities.hpp#L572](./BEM_calculateVelocities.hpp#L572)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -284,7 +287,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L356](./BEM_solveBVP.hpp#L356)
+[./BEM_solveBVP.hpp#L359](./BEM_solveBVP.hpp#L359)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -314,7 +317,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L394](./BEM_solveBVP.hpp#L394)
+[./BEM_solveBVP.hpp#L397](./BEM_solveBVP.hpp#L397)
 
 
 ## ⛵️浮体動揺解析 
@@ -346,15 +349,34 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-### 🪸ノイマン境界面における$`\phi _{nt}`$の求め方 
+
+[./BEM_solveBVP.hpp#L576](./BEM_solveBVP.hpp#L576)
+
+
+### 🪸$\phi _t$と$\phi _{nt}$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
+
+$\phi _t$と$\phi _{nt}$に関するBIEを解くためには，ディリクレ境界には$\phi _t$を，ノイマン境界には$\phi _{nt}$を与える．
+
+#### ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$\phi$が既知)
+
+このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
+ただし，壁が完全に固定されている場合，$`\phi _{nt}`$は0とする．
+
+#### ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)
+
+ディリクレ境界では$\phi _t$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi _t`$を求めることができる．
+
+#### ノイマン節点での$`\phi _{nt}`$の与え方
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
-境界面上の位置ベクトルを$`\boldsymbol r`$とする．
+境界面上の点の位置ベクトルを$`\boldsymbol r`$とする．
 表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
 
 ```math
-{\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi
+{\bf n}\cdot\frac{d\boldsymbol r}{dt} =  {\bf n} \cdot \nabla \phi,\quad \frac{d\boldsymbol r}{dt} = \boldsymbol U _{\rm c} + {\boldsymbol \Omega} _{\rm c} \times \boldsymbol r
 ```
+
+物体上のある点ではこれが常に成り立つ．
 
 これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
 [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
@@ -363,9 +385,9 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \begin{aligned}
 &\rightarrow& 0& =\frac{d}{dt}\left({\bf n}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\right) \\
 &\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \frac{d}{dt}\left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)\\
-&\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\frac{d}{dt}\nabla \phi\right)\\
-&\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi _t - (\nabla \phi \cdot \nabla)\nabla \phi}\right)\\
-&\rightarrow& \phi _{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \nabla \phi \cdot (\nabla\otimes\nabla \phi) \right)
+&\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}-\left(\frac{\partial}{\partial t}+\frac{d{\boldsymbol r}}{dt}\cdot\nabla\right)\nabla \phi\right)\\
+&\rightarrow& 0& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2}- {\nabla \phi _t - \left(\frac{d\boldsymbol r}{dt} \cdot \nabla\right)\nabla \phi}\right)\\
+&\rightarrow& \phi _{nt}& =\frac{d{\bf n}}{dt}\cdot \left(\frac{d\boldsymbol r}{dt}-\nabla \phi\right)+ {\bf n}\cdot \left(\frac{d^2\boldsymbol r}{dt^2} - \frac{d\boldsymbol r}{dt} \cdot (\nabla\otimes\nabla \phi) \right)
 \end{aligned}
 ```
 
@@ -385,20 +407,29 @@ $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求
 圧力を計算するためには，$`\phi _t`$が必要で，$`\phi _t`$は簡単には得られない，という状況．
 
 物体の加速度は， 節点における$`\{\phi _{nt0},\phi _{nt1},\phi _{nt2},..\} = \Phi _{nt}`$が分かれば求まるが，
-逆に$`\phi _{nt}`$は$`\frac{d\boldsymbol U _{\rm c}}{dt}`$が分かれば求まるので
+逆に$`\phi _{nt}`$は$`\frac{d\boldsymbol U _{\rm c}}{dt}`$と$\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}$が分かれば求まる．また，物体の角加速度に関しても同様である．
 
 ```math
-\begin{align*}
-&\rightarrow& m \frac{d\boldsymbol U _{\rm c}}{dt}& = \boldsymbol{F} _{\text {ext }}+ F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right)\\
-&\rightarrow& Q\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right) &= m \frac{d\boldsymbol U _{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt}\right)\right) =0
-\end{align*}
+m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right),\quad
+\boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right)
 ```
 
-のように，ある関数$`Q`$のゼロを探す，根探し問題になる．
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L696)で与えている．
+これを満たすように，$\Phi _{nt}$を求める．これは次のように書き換えて，根探し問題として解く．
+このプログラムでは，[Broyden法](../../builds/build_root_finding/example1_Broyden.cpp#L22)を使って，根探している．
+
+```math
+\boldsymbol{0} = m \frac{d\boldsymbol U _{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right),\quad
+\boldsymbol{0} = \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} - \boldsymbol{T} _{\text {ext }} - \boldsymbol{T} _{\text {hydro }}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t} \right)\right)
+```
+
+この式を，${\boldsymbol Q}\left(\dfrac{d {\boldsymbol U} _{\rm c}}{d t}, \dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)=(0,0,0,0,0,0)$
+として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
+$`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
+
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L723)で与えている．
 
 
-[./BEM_solveBVP.hpp#L573](./BEM_solveBVP.hpp#L573)
+[./BEM_solveBVP.hpp#L609](./BEM_solveBVP.hpp#L609)
 
 
 ```math
@@ -415,16 +446,13 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L696)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[Broyden法](../../builds/build_root_finding/example1_Broyden.cpp#L22)を使って，$`Q`$のゼロを探す．
-
-
-[./BEM_solveBVP.hpp#L657](./BEM_solveBVP.hpp#L657)
+[./BEM_solveBVP.hpp#L688](./BEM_solveBVP.hpp#L688)
 
 
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L342)
+[強制運動を課す](../../builds/build_bem/main.cpp#L353)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L197)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -531,7 +559,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L301](./main.cpp#L301)
+[./main.cpp#L312](./main.cpp#L312)
 
 
 ---
@@ -566,7 +594,7 @@ After customizing the script, run it again to generate the input files for the n
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
 
-[./input_generator.py#L59](./input_generator.py#L59)
+[./input_generator.py#L58](./input_generator.py#L58)
 
 
 ---

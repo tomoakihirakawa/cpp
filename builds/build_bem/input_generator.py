@@ -1,4 +1,3 @@
-
 import platform
 from math import pi
 import json
@@ -110,7 +109,7 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "moon_pool"
 
 match SimulationCase:
     case "Hadzic2005":
@@ -134,28 +133,43 @@ match SimulationCase:
 
         floatingbody = {"name": "floatingbody",
                         "type": "RigidBody",
+                        # "isFixed": True,
+                        # "output": "json"}
                         "velocity": "floating"}
 
-        A = 0.1 * 0.29
-        floatingbody["mass"] = m = rho * g * A * 0.003
-        floatingbody["COM"] = [-(4-2.11), 0., 0.3]
-        floatingbody["radius_of_gyration"] = [20., 20., 20.]
+        L = 0.1
+        W = 0.29
+        H = 0.05
+        A = L*W
+        V = A*H
+        d = 0.03
+        # floatingbody["mass"] = m = rho * g * d * A
+        buoyancy = rho * g * d * A
+        floatingbody["mass"] = m = rho * d * A
+        m0 = 680*V  # original mass
+        print("m0 =", m0, ", m =", m0)
+        MOI0 = 14.*(0.01*0.01)  # original kg*m*m
+        MOI = m/m0*MOI0
+        z_surface = 0.4
+        z_floatinbody_bottom = z_surface - d
+        floatingbody["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
+        print("COM ", floatingbody["COM"])
+        # floatingbody["radius_of_gyration"] = [rog, rog, rog]
         # m*rog*rog=14*10**-1*10**-1 leads
-        rog = math.sqrt((14.*10.**-2.)/m)
-        floatingbody["MOI"] = [rog, rog, rog]
+        floatingbody["MOI"] = [MOI, MOI, MOI]
         # floatingbody["translate"] = [0., 0., 0.]
 
         objfolder = program_home + "/cpp/obj/2023Tamatu"
-        water["objfile"] = objfolder + "/water300.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker10.obj"
+        water["objfile"] = objfolder + "/water300mod.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker50.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
         floatingbody["objfile"] = objfolder+"/floatingbody50.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.05,
-                   "end_time_step": 1000,
-                   "end_time": 25,
+        setting = {"max_dt": 0.03,
+                   "end_time_step": 10000,
+                   "end_time": 9,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 
@@ -180,7 +194,8 @@ match SimulationCase:
 
         float["mass"] = m = 7.056
         # float["reverseNormal"] = True
-        float["COM"] = [0., 0., 0.1*D + 900/1000]  # 今回は重要ではない
+        z_surface = 900/1000
+        float["COM"] = [0., 0., z_surface + 0.1*D]  # 今回は重要ではない
         float["radius_of_gyration"] = [10**10, 10**10, 10**10]
         float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
                         m*math.pow(float["radius_of_gyration"][1], 2),
@@ -190,11 +205,15 @@ match SimulationCase:
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
         water["objfile"] = objfolder + "/water300_mod.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
-        float["objfile"] = objfolder+"/sphere.obj"
+        float["objfile"] = objfolder + "/sphere.obj"
 
         inputfiles = [tank, water, float]
 
-        setting = {"max_dt": 0.01,
+        rho = 998.2
+        g = 9.82
+        setting = {"WATER_DENSITY": rho,
+                   "GRAVITY": g,
+                   "max_dt": 0.005,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,
@@ -270,8 +289,8 @@ match SimulationCase:
             h = 80
             z_surface = 80
 
-            # pool_size = "large"
-            pool_size = "none"
+            pool_size = "large"
+            # pool_size = "none"
 
             if pool_size == "large":
                 id = "_large"
