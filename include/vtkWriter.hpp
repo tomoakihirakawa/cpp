@@ -49,16 +49,18 @@ struct vtkPolygonWriter : XMLElement {
    };
    void add(const std::vector<std::vector<T>> &verts) {
       for (const auto &V : verts)
-         for (const auto &v : V)
-            std::get<1>(this->verticies[{v, 0}]) = ToX(v);
+         std::ranges::for_each(V, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
    };
+   template <std::size_t N>
+   void add(const std::array<T, N> &verts) {
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
+   };
+
    void add(const std::vector<T> &verts) {
-      for (const auto &v : verts)
-         std::get<1>(this->verticies[{v, 0}]) = ToX(v);
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
    };
    void add(const std::unordered_set<T> &verts) {
-      for (const auto &v : verts)
-         std::get<1>(this->verticies[{v, 0}]) = ToX(v);
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
    };
    void addLine(const std::vector<T> &conns) {
       std::vector<id> tmp(conns.size());
@@ -442,11 +444,11 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkTetra *> &uoTe
 };
 
 #endif
-   // template <typename T, typename U>
-   // void vtkPolygonWrite(const std::string &name, const std::unordered_set<T> &V, const std::unordered_map<T, U> &data_double) {
-   //    std::ofstream ofs(name);
-   //    vtkPolygonWrite(ofs, V, data_double);
-   //    ofs.close();
-   // };
+// template <typename T, typename U>
+// void vtkPolygonWrite(const std::string &name, const std::unordered_set<T> &V, const std::unordered_map<T, U> &data_double) {
+//    std::ofstream ofs(name);
+//    vtkPolygonWrite(ofs, V, data_double);
+//    ofs.close();
+// };
 
 #endif

@@ -22,6 +22,8 @@ using VV_netFp = std::vector<V_netFp>;
 \ref{BEM:Hadzic2005}{ここ}では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
+\ref{BEM:setNeumannVelocity}{`setNeumannVelocity`}で利用され，$\phi_{n}$を計算する．
+
 */
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
@@ -202,14 +204,34 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
    return {0., 0., 0., 0., 0., 0.};
 };
 
+T6d acceleration(const std::string &name, const std::vector<std::string> strings, const double t) {
+   // \label{BEM:Hadzic2005acceleration}
+   if (name.contains("Hadzic2005")) {
+      double start = stod(strings[1] /*start*/);
+      Hadzic2005 hadzic2005(start);
+      return hadzic2005.getAccel(t);
+   }
+   return {0., 0., 0., 0., 0., 0.};
+};
+
 /* -------------------------------------------------------------------------- */
 
+/*DOC_EXTRACT BEM
+
+## `getContactFaces()`の利用
+
+\ref{addContactFaces}{`networkPoint::addContactFaces()`}によって，接触面を`networkPoint::ContactFaces`に登録した．
+`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
+
+* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
+* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+
+これらは，`uNeumann()`や`accelNeumann()`で利用される．
+
+*/
+
 netFp NearestContactFace(const networkPoint *const p) { return std::get<1>(Nearest_(p->X, p->getContactFaces())); };
-netFp NearestContactFace(const networkFace *const f_IN) {
-   std::unordered_set<networkFace *> faces;
-   std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
-   return std::get<1>(Nearest_(f_IN->center, faces));
-};
+
 netFp NearestContactFace(const networkPoint *const p, const networkFace *const f_normal) {
    Tddd r = {1E+100, 1E+100, 1E+100}, X;
    networkFace *ret = nullptr;
@@ -223,6 +245,18 @@ netFp NearestContactFace(const networkPoint *const p, const networkFace *const f
       }
    return ret;
 };
+
+netFp NearestContactFace(const networkFace *const f_IN) {
+   std::unordered_set<networkFace *> faces;
+   // std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
+   std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) {
+      auto f = NearestContactFace(q, f_IN);
+      if (f != nullptr)
+         faces.emplace(f);
+   });
+   return std::get<1>(Nearest_(f_IN->center, faces));
+};
+
 std::tuple<netFp, Tddd> NearestContactFace_(const networkPoint *const p, const networkFace *const f_normal) {
    Tddd r = {1E+100, 1E+100, 1E+100}, X;
    networkFace *ret = nullptr;
@@ -275,13 +309,9 @@ std::tuple<Tddd, double> accelNeumann_(const networkPoint *const p, const networ
    return {{0., 0., 0.}, 0.};
 };
 
-Tddd uNeumann(const networkPoint *const p, const networkFace *const f_normal) {
-   return std::get<0>(uNeumann_(p, f_normal));
-};
+Tddd uNeumann(const networkPoint *const p, const networkFace *const f_normal) { return std::get<0>(uNeumann_(p, f_normal)); };
 
-Tddd accelNeumann(const networkPoint *const p, const networkFace *const f_normal) {
-   return std::get<0>(accelNeumann_(p, f_normal));
-};
+Tddd accelNeumann(const networkPoint *const p, const networkFace *const f_normal) { return std::get<0>(accelNeumann_(p, f_normal)); };
 
 Tddd uNeumann(const networkPoint *const p) {
    std::vector<Tddd> V;
@@ -413,7 +443,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT BEM_InitialValueProblem
 
 ## 初期値問題
 
@@ -578,7 +608,7 @@ $`\phi_{nn}`$は，直接計算できないが，ラプラス方程式から$`\p
 */
 
 /* -------------------------------------------------------------------------- */
-// \label{BEM:grad_U_LinearElement}
+// \label{BEM:HessianOfPhi}
 T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    auto [P0, P1, P2] = F->getPoints();
    auto X012 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
@@ -606,17 +636,51 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
                   {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 };
 
+// \label{BEM:phint_Neumann}
 double phint_Neumann(networkFace *F) {
    auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
    auto grad_phi = gradPhi(F);
    auto U_body = uNeumann(F);
-   auto ret = Dot(Cross(Omega, F->normal), U_body - grad_phi);
+   auto dndt = Cross(Omega, F->normal);
+   auto ret = Dot(dndt, U_body - grad_phi);
    ret += Dot(F->normal, accelNeumann(F));
    auto basis = OrthogonalBasis(F->normal);
    ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
    // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
    return ret;
 };
+
+// double phint_Neumann(const networkPoint *const p) {
+//    double phint_acum = 0, W_acum = 0, w, phint;
+//    V_d Phin, W;
+
+//    auto grad_phi = gradPhi(p);
+//    auto U_body = uNeumann(p);
+//    auto A_body = accelNeumann(p);
+//    auto phint_Neumann = [&](networkFace *F) {
+//       auto Omega = (NearestContactFace(p, F)->getNetwork())->velocityRotational();
+//       auto dndt = Cross(Omega, F->normal);
+//       auto basis = OrthogonalBasis(F->normal);
+//       return Dot(dndt, uNeumann(F) - gradPhi(F)) + Dot(F->normal, A_body) - Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+//    };
+//    //
+//    for (const auto &f : p->getFacesNeumann()) {
+// #if defined(use_angle_weigted_normal)
+//       w = f->getAngle(p);
+// #elif defined(use_area_weigted_normal)
+//       w = f->area;
+// #else
+//       w = 1.;
+// #endif
+//       phint = phint_Neumann(f);
+//       phint_acum += w * phint;
+//       W_acum += w;
+//       Phin.push_back(phint);
+//       W.push_back(w);
+//    }
+//    // return phint_acum / W_acum;
+//    return optimumValue(Phin, 0., W);
+// };
 
 double phint_Neumann(const networkPoint *const p) {
    double phint_acum = 0, W_acum = 0, w, phint;

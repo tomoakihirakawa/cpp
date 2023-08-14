@@ -1,16 +1,7 @@
-#! bin/sh
+#!/bin/sh
 
-make; ./main ./input_files/Hadzic2005_water300
-make; ./main ./input_files/Hadzic2005_water400
-make; ./main ./input_files/Hadzic2005_water500
-
-# ./main ./input_files/moon_pool_no_a1d0_T5d5_h80
-# ./main ./input_files/moon_pool_no_a1d0_T6d0_h80
-# ./main ./input_files/moon_pool_no_a1d0_T6d5_h80
-# ./main ./input_files/moon_pool_no_a1d0_T7d0_h80
-# ./main ./input_files/moon_pool_no_a1d0_T7d5_h80
-# ./main ./input_files/moon_pool_no_a1d0_T8d0_h80
-# ./main ./input_files/moon_pool_no_a1d0_T8d5_h80
-# ./main ./input_files/moon_pool_no_a1d0_T9d0_h80
-# ./main ./input_files/moon_pool_no_a1d0_T9d5_h80
-# ./main ./input_files/moon_pool_no_a1d0_T10d0_h80
+for T in 7d5 5d0 5d5 6d0 6d5 7d0 8d0 8d5 9d0 9d5 10d0; do
+  file="./input_files/moon_pool_large_a0d8_T${T}_h80_modified_mesh"
+  ./main ${file}
+  rsync -v ${file} Kelvin@10.0.1.14:~/BEM/
+done

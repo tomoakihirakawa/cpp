@@ -3709,6 +3709,7 @@ class Network : public CoordinateBounds {
    bool isFluid;
    bool isRigidBody;
    bool isSoftBody;
+   bool isFloatingBody;
 #ifdef BEM
   public:
    double _current_time_;
@@ -3761,6 +3762,8 @@ class Network : public CoordinateBounds {
    std::unordered_set<networkTetra *> Tetras;
    std::unordered_set<networkPoint *> Points;
    std::unordered_set<networkFace *> Faces;
+   std::vector<networkPoint *> Points_vector;
+   std::vector<networkFace *> Faces_vector;
    V_netPp PointGarbage;
    V_netFp FaceGarbage;
 
@@ -4085,6 +4088,22 @@ class Network : public CoordinateBounds {
       return ret;
    };
    const std::unordered_set<networkFace *> &getFaces() const { return this->Faces; };
+   //
+   const std::vector<networkFace *> &getFacesVector() const { return this->Faces_vector; }
+   const std::vector<networkPoint *> &getPointsVector() const { return this->Points_vector; }
+   // Update Faces_vector based on the contents of Faces
+   void setFacesVector() {
+      this->Faces_vector.clear();
+      this->Faces_vector.reserve(this->Faces.size());
+      this->Faces_vector.assign(this->Faces.begin(), this->Faces.end());
+   }
+   // Update Points_vector based on the contents of Points
+   void setPointsVector() {
+      this->Points_vector.clear();
+      this->Points_vector.reserve(this->Points.size());
+      this->Points_vector.assign(this->Points.begin(), this->Points.end());
+   }
+
    const std::unordered_set<networkTetra *> &getTetras() const { return this->Tetras; };
    std::unordered_set<networkPoint *> getParametricPoints() const {
       std::unordered_set<networkPoint *> ret, tmp;
