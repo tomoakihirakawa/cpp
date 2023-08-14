@@ -109,14 +109,14 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "moon_pool"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
     case "Hadzic2005":
 
         start = 0.
 
-        id = "_water300"
+        id = "_water300_new"
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -129,6 +129,7 @@ match SimulationCase:
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
                      "velocity": ["Hadzic2005", start],
+                     "acceleration": ["Hadzic2005", start],
                      "COM": [-3.9, -0.25, 0]}
 
         floatingbody = {"name": "floatingbody",
@@ -160,14 +161,14 @@ match SimulationCase:
         # floatingbody["translate"] = [0., 0., 0.]
 
         objfolder = program_home + "/cpp/obj/2023Tamatu"
-        water["objfile"] = objfolder + "/water300mod.obj"
+        water["objfile"] = objfolder + "/water300_mod2.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker50.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
         floatingbody["objfile"] = objfolder+"/floatingbody50.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.03,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,
@@ -176,9 +177,11 @@ match SimulationCase:
         generate(inputfiles, setting)
     case "Kramer2021":
 
+        start_t = max_dt = 0.02
         D = 300/1000
         H0 = D*0.1
         id = "H0"+str(H0).replace(".", "d") + "_small"
+        # id = "H0"+str(H0).replace(".", "d")
 
         input_directory += SimulationCase + "_" + id
         os.makedirs(input_directory, exist_ok=True)
@@ -190,7 +193,7 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "velocity": ["floating", 0.01]}
+                 "velocity": ["floating", start_t]}
 
         float["mass"] = m = 7.056
         # float["reverseNormal"] = True
@@ -203,7 +206,12 @@ match SimulationCase:
         # float["translate"] = [0., 0., 0.1*D + 900/1000]
 
         objfolder = program_home + "/cpp/obj/" + SimulationCase + "_" + id
-        water["objfile"] = objfolder + "/water300_mod.obj"
+
+        if id == "H00d03":
+            water["objfile"] = objfolder + "/water200_mod.obj"
+        else:
+            water["objfile"] = objfolder + "/water300_mod2.obj"
+
         tank["objfile"] = objfolder + "/tank10.obj"
         float["objfile"] = objfolder + "/sphere.obj"
 
@@ -213,7 +221,7 @@ match SimulationCase:
         g = 9.82
         setting = {"WATER_DENSITY": rho,
                    "GRAVITY": g,
-                   "max_dt": 0.005,
+                   "max_dt": max_dt,
                    "end_time_step": 10000,
                    "end_time": 4,
                    "output_directory": output_directory,
@@ -285,12 +293,12 @@ match SimulationCase:
 
             input_directory = "./input_files/"
             start = 0.
-            a = 1.0
+            a = 0.8
             h = 80
             z_surface = 80
 
-            pool_size = "large"
-            # pool_size = "none"
+            # pool_size = "large"
+            pool_size = "none"
 
             if pool_size == "large":
                 id = "_large"
@@ -300,6 +308,8 @@ match SimulationCase:
             id += "_a" + str(a).replace(".", "d")
             id += "_T" + str(T).replace(".", "d")
             id += "_h" + str(h)
+
+            id += "_modified_mesh"
 
             input_directory += SimulationCase + id
             os.makedirs(input_directory, exist_ok=True)
@@ -322,7 +332,7 @@ match SimulationCase:
             # 浮体の種類
             if pool_size == "large":
                 objfolder = program_home + "/cpp/obj/tsukada2022_large_pool"
-                water["objfile"] = objfolder + "/water300_mod.obj"
+                water["objfile"] = objfolder + "/water300_modmod.obj"
                 wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
                 tank["objfile"] = objfolder + "/tank10.obj"
                 floatingbody["objfile"] = objfolder+"/floating_body50.obj"

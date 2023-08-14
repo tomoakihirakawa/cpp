@@ -260,10 +260,17 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
       }
    }
 
+   if (p->CORNER)
+      for (const auto &l : p->getLinesCORNER()) {
+         auto mean_a = s / p->getFaces().size();
+         vector_to_optimum_X += mean_a * (RK_with_Ubuff((*l)(p)) - pX);
+         s += mean_a;
+      }
+
    vector_to_optimum_X /= s;
 
    if (p->CORNER)
-      vector_to_optimum_X /= 2.;
+      vector_to_optimum_X /= 5.;
 
    return condition_Ua(scale * vector_to_optimum_X, p);
 };
@@ -367,7 +374,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
       {
-         double scale = 0.1;
+         double scale = 0.05;
          if (p->isMultipleNode && !p->CORNER)
             scale = 0.01;
          else if (p->Neumann)

@@ -202,6 +202,10 @@ int main(int argc, char **argv) {
          net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
          for (auto i = 0; i < 10; ++i)
             AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
+
+         net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
+         net->isFloatingBody = net->isFloatingBody || (injson.find("acceleration") && injson.at("acceleration")[0] == "floating");
+
          net->resetInitialX();
          net->setGeometricProperties();
       };
@@ -336,11 +340,11 @@ int main(int argc, char **argv) {
             calculateCurrentVelocities(*water);
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
-            // calculateCurrentUpdateVelocities(*water, 30, (RK_step == 4));
+            // calculateCurrentUpdateVelocities(*water, 100, (RK_step == 4));
             // if (RK_step == 4)
             //    std::cout << Green << "do shift" << colorOff << " s\n";
-
-            calculateCurrentUpdateVelocities(*water, 40);
+            //
+            calculateCurrentUpdateVelocities(*water, 100);
 
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
@@ -349,22 +353,56 @@ int main(int argc, char **argv) {
 
             // b$ --------------------------------------------------- */
 
+            /*DOC_EXTRACT BEM_InitialValueProblem
+
+            ### 浮体の重心位置・姿勢・速度の更新
+
+            浮体の重心位置は，重心に関する運動方程式を解くことで求める．
+            姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
+
+
+            */
+
             for (const auto &net : RigidBodyObject) {
+
                // \label{BEM:impose_velocity}
-               if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] != "fixed") {
-                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
-                  net->RK_COM.push(net->velocityTranslational());
-                  net->COM = net->RK_COM.getX();
-                  Quaternion q;
-                  q = q.d_dt(net->velocityRotational());  // w->クォータニオン
-                  net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
-                  net->Q = net->RK_Q.getX();
+               //  重心位置と姿勢の時間発展
+               if (net->inputJSON.find("velocity")) {
+                  if (net->inputJSON.at("velocity")[0] != "fixed") {
+                     std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
+                     net->RK_COM.push(net->velocityTranslational());
+                     net->COM = net->RK_COM.getX();
+                     Quaternion q;
+                     q = q.d_dt(net->velocityRotational());  // w->クォータニオン
+                     net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
+                     net->Q = net->RK_Q.getX();
+                  }
+                  //
+                  // if (net->inputJSON.find("angle") && net->inputJSON.at("angle")[0] == "Hadzic2005") {
+                  //    auto axis = stod(net->inputJSON.at("angle")[1]);
+                  //    double start = stod(net->inputJSON.at("angle")[2]);
+                  //    Hadzic2005 hadzic(start);
+                  //    Quaternion q({0., 1., 0.}, hadzic.getAngle(net->RK_Q.get_t()));
+                  //    net->Q = q;
+                  // }
                }
-               if (!net->inputJSON.find("acceleration") || (net->inputJSON.find("acceleration") && net->inputJSON["acceleration"][0] != "fixed")) {
-                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) acceleration" << std::endl;
+
+               bool use_given_velocity = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] != "update" && net->inputJSON.at("velocity")[0] != "floating");
+               bool update_velocity_using_predetermined_accel = (net->inputJSON.find("velocity") && net->inputJSON.find("acceleration") && net->inputJSON.at("velocity")[0] == "update");
+               bool update_velocity_using_solved_accel = (net->inputJSON.find("acceleration") && net->inputJSON.at("acceleration")[0] == "floating");
+               bool update_velocity_using_solved_accel2 = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating");
+               if (use_given_velocity) {
+                  std::cout << "use " << net->getName() << "'s (RigidBodyObject) predetermiend velocity" << std::endl;
+               } else if (update_velocity_using_solved_accel || update_velocity_using_predetermined_accel || update_velocity_using_solved_accel2) {
+                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity from acceleration" << std::endl;
                   net->RK_Velocity.push(net->acceleration);
                   net->velocity = net->RK_Velocity.getX();
+                  std::cout << "acceleration = " << net->acceleration << std::endl;
+                  std::cout << "velocity = " << net->velocity << std::endl;
+               } else {
+                  std::cout << net->getName() << "'s (RigidBodyObject) velocity is not updated" << std::endl;
                }
+
                net->RigidBodyMovePoints();
             }
 
@@ -442,6 +480,7 @@ int main(int argc, char **argv) {
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
+         std::cout << "output JSON files" << std::endl;
          jsonout.push("time", real_time);
          // water
          jsonout.push(water->getName() + "_volume", water->getVolume());
@@ -450,8 +489,8 @@ int main(int argc, char **argv) {
          jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
          // bodies
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
-            if ((net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") ||
-                (net->inputJSON.find("output") && std::ranges::any_of(net->inputJSON["output"], [](const auto &s) { return s == "json"; }))) {
+            if ((net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") ||
+                (net->inputJSON.find("output") && std::ranges::any_of(net->inputJSON.at("output"), [](const auto &s) { return s == "json"; }))) {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
                jsonout.push(net->getName() + "_pitch", net->quaternion.pitch());
                jsonout.push(net->getName() + "_yaw", net->quaternion.yaw());
@@ -475,6 +514,7 @@ int main(int argc, char **argv) {
          // b# -------------------------------------------------------------------------- */
 
          auto data = dataForOutput(*water, dt);
+
          // 流体
          for (const auto &net : FluidObject) {
             auto filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
@@ -485,7 +525,7 @@ int main(int argc, char **argv) {
 
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             VV_VarForOutput data;
-            if (net->inputJSON.find("velocity") && net->inputJSON["velocity"][0] == "floating") {
+            if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
                uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
                uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure;

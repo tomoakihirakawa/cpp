@@ -2108,7 +2108,15 @@ struct JSON {
 
    std::vector<std::string> at(const std::string &key) const /*変更を許さない*/
    {
-      return this->map_S_S.at(key);
+      if (!this->find(key)) {
+         std::stringstream ss;
+         ss << key << " key not found" << std::endl;
+         ss << "keys: ";
+         for (auto it = this->map_S_S.begin(); it != this->map_S_S.end(); it++)
+            ss << it->first << " " << it->second << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      } else
+         return this->map_S_S.at(key);
    };
 
    bool find(const std::string &key) const { return this->map_S_S.contains(key); };

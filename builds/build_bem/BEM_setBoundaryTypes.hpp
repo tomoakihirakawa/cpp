@@ -42,41 +42,78 @@ NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分�
 
 */
 
+void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK_time) {
+   std::cout << "----------------" << std::endl;
+   std::cout << net->getName() << "　の流速の計算方法" << std::endl;
+   if (net->isFixed) {
+      net->mass = 1E+20;
+      net->inertia.fill(1E+20);
+      net->COM.fill(0.);
+      net->initial_center_of_mass.fill(0.);
+   }
+
+   std::cout << net->getName() << std::endl;
+   std::cout << "setting velocity" << std::endl;
+   std::string move_name_velocity;
+   if (net->inputJSON.find("velocity")) {
+      move_name_velocity = net->inputJSON["velocity"][0];
+      std::cout << "move_name_velocity = " << move_name_velocity << std::endl;
+      if (move_name_velocity == "update") {
+         std::cout << " velocity is already updated using acceleration" << std::endl;
+      } else if (move_name_velocity == "fixed") {
+         net->velocity.fill(0.);
+      } else if (move_name_velocity == "floating") {
+         std::cout << "floatingの場合は，加速度の時間積分によってシミュレートされる" << std::endl;
+      } else {
+         std::cout << "(RigidBodyObject) velocity is explicityly given as " << move_name_velocity << std::endl;
+         net->velocity = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time);
+         std::cout << "velocity = " << net->velocity << " at " << RK_time << std::endl;
+         // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+         // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
+      }
+   } else {
+      std::cout << "指定がないので速度はゼロ" << std::endl;
+      net->velocity.fill(0.);
+   }
+
+   std::cout << "setting acceleration" << std::endl;
+   std::string move_name_accel;
+   if (move_name_velocity == "fixed")
+      net->acceleration.fill(0.);
+   else if (move_name_velocity == "floating") {
+      std::cout << "floatingの場合は，加速度は計算する" << std::endl;
+   } else if (net->inputJSON.find("acceleration")) {
+      move_name_accel = net->inputJSON["acceleration"][0];
+      std::cout << "move_name_accel = " << move_name_accel << std::endl;
+      if (move_name_accel == "fixed") {
+         net->acceleration.fill(0.);
+      } else if (move_name_accel == "floating") {
+         std::cout << "floatingの場合は，加速度の時間積分によってシミュレートされる" << std::endl;
+      } else {
+         std::cout << "(RigidBodyObject) acceleration is explicityly given as " << move_name_accel << std::endl;
+         net->acceleration = acceleration(move_name_accel, net->inputJSON["acceleration"], RK_time);
+         std::cout << "acceleration = " << net->acceleration << " at " << RK_time << std::endl;
+         // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
+         // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
+      }
+   } else {
+      std::cout << "指定がないので加速度はゼロ" << std::endl;
+      net->acceleration.fill(0.);
+   }
+
+   std::cout << "----------------" << std::endl;
+};
+
+//\label{BEM:setNeumannVelocity}
 void setNeumannVelocity(const std::vector<Network *> &objects) {
    // b# ------------------------------------------------------ */
    // b#      物体のノイマン境界の速度 u(t) at Neumann を設定         */
    // b# ------------------------------------------------------ */
-   for (const auto &net : objects) {
+   for (auto net : objects) {
       //! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
       if (net->isRigidBody) {
          auto RK_time = net->RK_COM.gett();  //%各ルンゲクッタの時刻を使う
-         std::cout << "----------------" << std::endl;
-         std::cout << net->getName() << "　の流速の計算方法" << std::endl;
-         if (net->isFixed) {
-            net->mass = 1E+20;
-            net->inertia.fill(1E+20);
-            net->COM.fill(0.);
-            net->initial_center_of_mass.fill(0.);
-         }
-
-         if (net->inputJSON.find("velocity")) {
-            std::string move_name = net->inputJSON["velocity"][0];
-            std::cout << "move_name = " << move_name << std::endl;
-            if (move_name == "fixed") {
-               net->velocity.fill(0.);
-               net->acceleration.fill(0.);
-            } else if (move_name != "floating") {
-               net->velocity = velocity(move_name, net->inputJSON["velocity"], RK_time);  // T6d //@ Φnを計算するために，物体表面の速度forced_velocityは，保存しておく必要がある
-                                                                                          // net->acceleration = forced_motion::acceleration(RK_time); // T6d //@ 圧力を計算するために，物体表面の加速度は，保存しておく必要がある
-            } else if (move_name == "floating") {
-               std::cout << "floatingの場合は，加速度の時間積分によってシミュレートされる" << std::endl;
-            }
-         } else {
-            std::cout << "指定がないので速度はゼロ" << std::endl;
-            net->velocity.fill(0.);
-            net->acceleration.fill(0.);
-         }
-         std::cout << "----------------" << std::endl;
+         setRigidBodyVelocityAndAccel_IfPredetermined(net, RK_time);
       }
       // b$ --------------------------------------------------- */
       if (net->isSoftBody) {

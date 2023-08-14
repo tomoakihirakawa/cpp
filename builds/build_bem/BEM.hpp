@@ -257,6 +257,8 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 
       uomap_P_Tddd P_accel_body = p_tdd0;
       uomap_P_Tddd P_velocity_body = p_tdd0;
+
+      uomap_P_Tddd P_accelNeumann = p_tdd0;
       uomap_P_Tddd P_phin_Dirichlet = p_tdd0;
       uomap_P_Tddd P_U_BEM = p_tdd0;
       uomap_P_Tddd P_U_tangential_BEM = p_tdd0;
@@ -276,6 +278,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
       uomap_P_d P_pressure = p_d0;
       uomap_P_d P_DphiDt = p_d0;
       uomap_P_d P_ContactFaces = p_d0;
+      uomap_P_d P_facesNeuamnn = p_d0;
       uomap_P_d P_BC = p_d0;
 
       try {
@@ -283,10 +286,19 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
          for (const auto &p : water.getPoints())
 #pragma omp single nowait
          {
-            if (p->Neumann || p->CORNER) {
-               P_accel_body[p] = accelNeumann(p);
-               P_velocity_body[p] = uNeumann(p);
+
+            auto f = NearestContactFace(p);
+            if (f) {
+               // {
+               //    std::cout << Red << f->getNetwork()->getName() << std::endl;
+               //    std::cout << f->getNetwork()->velocityRigidBody(p->X) << std::endl;
+               //    std::cout << f->getNetwork()->velocity << std::endl;
+               // }
+               P_velocity_body[p] = f->getNetwork()->velocityRigidBody(p->X);
             }
+
+            P_accelNeumann[p] = accelNeumann(p);
+            P_uNeumann[p] = uNeumann(p);
             P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
             P_isMultipleNode[p] = p->isMultipleNode;
             P_phi[p] = std::get<0>(p->phiphin);
@@ -296,10 +308,10 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
             P_phin_t_from_Hessian[p] = phint_Neumann(p);
             P_normal_BEM[p] = p->getNormal_BEM();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
+            P_facesNeuamnn[p] = (double)p->getFacesNeumann().size();
             P_BC[p] = p->isMultipleNode ? 3 : (p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.)));
             P_position[p] = ToX(p);
             P_pressure[p] = p->pressure_BEM;
-            P_uNeumann[p] = uNeumann(p);
             P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
             P_gradPhi[p] = p->U_BEM;
             P_vecToSurface[p] = p->vecToSurface;
@@ -311,12 +323,15 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
       };
       try {
          VV_VarForOutput data = {
-             {"accel Neumann", P_accel_body},
-             {"velocity Neumann", P_velocity_body},
+             //  {"body accel", P_accel_body},
+             {"body velocity", P_velocity_body},
+             {"accelNeumann", P_accelNeumann},
+             {"uNeumann", P_uNeumann},
              {"isMultipleNode", P_isMultipleNode},
              {"U_BEM", P_U_BEM},
              {"U_tangential_BEM", P_U_tangential_BEM},
              {"ContactFaces", P_ContactFaces},
+             {"faces Neuamnn", P_facesNeuamnn},
              {"grad_phi", P_gradPhi},
              {"vecToSurface", P_vecToSurface},
              {"solidAngle", P_solidAngle},

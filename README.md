@@ -60,6 +60,10 @@
     - [⛵️実行方法](./builds/build_divide_merge/README.md#⛵️実行方法)
 ## [build_JSON](./builds/build_JSON/README.md)
 
+## [build_quaternion](./builds/build_quaternion/README.md)
+
+- [Contents](./builds/build_quaternion/README.md#Contents)
+- [🐋クォータニオンによる回転と平行移動](./builds/build_quaternion/README.md#🐋クォータニオンによる回転と平行移動)
 ## [build_bem](./builds/build_bem/README.md)
 
 - [Contents](./builds/build_bem/README.md#Contents)
@@ -69,8 +73,9 @@
     - [⛵️境界値問題](./builds/build_bem/README.md#⛵️境界値問題)
     - [⛵️浮体動揺解析](./builds/build_bem/README.md#⛵️浮体動揺解析)
     - [⛵️造波装置など](./builds/build_bem/README.md#⛵️造波装置など)
-    - [⛵️初期値問題](./builds/build_bem/README.md#⛵️初期値問題)
+    - [⛵️`getContactFaces()`の利用](./builds/build_bem/README.md#⛵️`getContactFaces()`の利用)
     - [⛵️その他](./builds/build_bem/README.md#⛵️その他)
+    - [⛵️初期値問題](./builds/build_bem/README.md#⛵️初期値問題)
 - [🐋入力ファイル生成 `input_generator.py`](./builds/build_bem/README.md#🐋入力ファイル生成-`input_generator.py`)
     - [⛵️Usage](./builds/build_bem/README.md#⛵️Usage)
     - [⛵️Customization](./builds/build_bem/README.md#⛵️Customization)

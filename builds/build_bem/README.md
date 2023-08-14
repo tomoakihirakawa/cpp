@@ -18,6 +18,7 @@
             - [ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
             - [ノイマン節点での$`\phi _{nt}`$の与え方](#ノイマン節点での$`\phi-_{nt}`$の与え方)
     - [⛵️造波装置など](#⛵️造波装置など)
+    - [⛵️`getContactFaces()`の利用](#⛵️`getContactFaces()`の利用)
     - [⛵️初期値問題](#⛵️初期値問題)
         - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
         - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
@@ -30,6 +31,7 @@
     - [⛵️Output](#⛵️Output)
 - [🐋実行方法](#🐋実行方法)
         - [🪸計算の流れ](#🪸計算の流れ)
+        - [🪸浮体の重心位置・姿勢・速度の更新](#🪸浮体の重心位置・姿勢・速度の更新)
 
 
 ---
@@ -64,13 +66,13 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L357)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L364)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L271)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L278)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L336](./BEM_calculateVelocities.hpp#L336)
+[./BEM_calculateVelocities.hpp#L343](./BEM_calculateVelocities.hpp#L343)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -125,7 +127,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L485](./BEM_calculateVelocities.hpp#L485)
+[./BEM_calculateVelocities.hpp#L492](./BEM_calculateVelocities.hpp#L492)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -142,7 +144,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L572](./BEM_calculateVelocities.hpp#L572)
+[./BEM_calculateVelocities.hpp#L579](./BEM_calculateVelocities.hpp#L579)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -153,7 +155,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L293)
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L148)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L185)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -287,7 +289,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L359](./BEM_solveBVP.hpp#L359)
+[./BEM_solveBVP.hpp#L358](./BEM_solveBVP.hpp#L358)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -317,7 +319,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L397](./BEM_solveBVP.hpp#L397)
+[./BEM_solveBVP.hpp#L396](./BEM_solveBVP.hpp#L396)
 
 
 ## ⛵️浮体動揺解析 
@@ -350,7 +352,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 ```
 
 
-[./BEM_solveBVP.hpp#L576](./BEM_solveBVP.hpp#L576)
+[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
 
 
 ### 🪸$\phi _t$と$\phi _{nt}$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
@@ -397,6 +399,8 @@ $\phi _t$と$\phi _{nt}$に関するBIEを解くためには，ディリクレ�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L639)で$\phi _{nt}$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
 そして，浮体の重さと慣性モーメントを考慮して圧力から求めた$`\frac{d^2\boldsymbol r}{dt^2}`$は，
@@ -426,10 +430,10 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L723)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与えている．
 
 
-[./BEM_solveBVP.hpp#L609](./BEM_solveBVP.hpp#L609)
+[./BEM_solveBVP.hpp#L610](./BEM_solveBVP.hpp#L610)
 
 
 ```math
@@ -440,27 +444,100 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L723)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`grad_U_LinearElement`](../../builds/build_bem/BEM_utilities.hpp#L581)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L611)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L688](./BEM_solveBVP.hpp#L688)
+[./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
 
 
 ## ⛵️造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L353)
+[強制運動を課す](../../builds/build_bem/main.cpp#L368)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L197)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L199)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
+
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L107)で利用され，$\phi _{n}$を計算する．
 
 
 [./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
 
+## ⛵️`getContactFaces()`の利用 
+
+[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
+`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
+
+* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
+* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+
+これらは，`uNeumann()`や`accelNeumann()`で利用される．
+
+
+[./BEM_utilities.hpp#L219](./BEM_utilities.hpp#L219)
+
+
+## ⛵️その他 
+
+### 🪸境界値問題の未知変数 
+
+`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
+
+
+[./BEM_utilities.hpp#L520](./BEM_utilities.hpp#L520)
+
+
+### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
+
+$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
+面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
+面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
+$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
+新しい座標系でも同じようにすれば，結果は変わらない．
+
+```math
+{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
+\quad
+\nabla^* \phi = \left(\phi _n, \phi _{t _0}, \phi _{t _1}\right),
+\quad \nabla^* \nabla^* \phi =
+\begin{bmatrix}
+\phi _{nn} & \phi _{nt _0} & \phi _{nt _1} \\
+\phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\
+\phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1}
+\end{bmatrix}
+```
+
+最後に第１成分だけが残るので，
+
+```math
+{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
+```
+
+$`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
+
+
+[./BEM_utilities.hpp#L578](./BEM_utilities.hpp#L578)
+
+
+### 🪸計算の流れ 
+
+1. 境界条件の設定
+2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+3. 三角形の線形補間を使って節点の流速を計算する
+4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
+6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+
+
+[./main.cpp#L316](./main.cpp#L316)
+
+
+---
 ## ⛵️初期値問題 
 
 節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
@@ -503,63 +580,16 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L416](./BEM_utilities.hpp#L416)
+[./BEM_utilities.hpp#L446](./BEM_utilities.hpp#L446)
 
 
-## ⛵️その他 
+### 🪸浮体の重心位置・姿勢・速度の更新 
 
-### 🪸境界値問題の未知変数 
-
-`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
+浮体の重心位置は，重心に関する運動方程式を解くことで求める．
+姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./BEM_utilities.hpp#L490](./BEM_utilities.hpp#L490)
-
-
-### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
-
-$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
-面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
-面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
-$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
-新しい座標系でも同じようにすれば，結果は変わらない．
-
-```math
-{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
-\quad
-\nabla^* \phi = \left(\phi _n, \phi _{t _0}, \phi _{t _1}\right),
-\quad \nabla^* \nabla^* \phi =
-\begin{bmatrix}
-\phi _{nn} & \phi _{nt _0} & \phi _{nt _1} \\
-\phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\
-\phi _{t _1n} & \phi _{t _1t _0} & \phi _{t _1t _1}
-\end{bmatrix}
-```
-
-最後に第１成分だけが残るので，
-
-```math
-{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
-```
-
-$`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
-
-
-[./BEM_utilities.hpp#L548](./BEM_utilities.hpp#L548)
-
-
-### 🪸計算の流れ 
-
-1. 境界条件の設定
-2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
-3. 三角形の線形補間を使って節点の流速を計算する
-4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
-5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
-
-
-[./main.cpp#L312](./main.cpp#L312)
+[./main.cpp#L356](./main.cpp#L356)
 
 
 ---

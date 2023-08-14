@@ -504,6 +504,16 @@ std::vector<T> Dot(const std::vector<std::vector<T>> &mat, const std::vector<T> 
 };
 
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::vector<T> ParallelDot(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec) {
+   std::vector<T> ans(mat.size());
+#pragma omp parallel for
+   for (size_t i = 0; i < mat.size(); ++i) {
+      ans[i] = Dot(mat[i], vec);
+   }
+   return ans;
+};
+
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 void DotOutput(const std::vector<std::vector<T>> &mat, const std::vector<T> &vec, std::vector<T> &output) {
    for (auto i = 0; const auto &m : mat)
       output[i++] = Dot(m, vec);
@@ -1282,6 +1292,39 @@ T Abs(const V_d &vec) {
 // }
 /* ------------------------------------------------------ */
 // 2021/06/14
+/*DOC_EXTRACT struct_Quaternion
+
+ある回転軸$v$に対して，角度$\theta$だけ回転するクォータニオン$q$は以下のように表される．
+
+```math
+\begin{aligned}
+q &= a + bi + cj + dk = \cos(\theta/2) +  \sin(\theta/2) \cdot \dfrac{v_x i + v_y k + v_z k}{\|v\|}\\
+v &= (v_x, v_y, v_z)
+\end{aligned}
+```
+
+`Rv()` a rotation transformation in the global coordinate system.
+
+```math
+Rv = \begin{bmatrix}
+a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c - 2 \cdot a \cdot d & 2 \cdot a \cdot c + 2 \cdot b \cdot d \\
+2 \cdot b \cdot c + 2 \cdot a \cdot d & a^2 - b^2 + c^2 - d^2 & -2 \cdot a \cdot b + 2 \cdot c \cdot d \\
+-2 \cdot a \cdot c + 2 \cdot b \cdot d & 2 \cdot a \cdot b + 2 \cdot c \cdot d & a^2 - b^2 - c^2 + d^2 \\
+\end{bmatrix}
+```
+
+The `Rs()` function looks like it's used to calculate how the global coordinates move relative to the object's coordinates, through rotation.
+The matrix representation is:
+
+```math
+Rs = \begin{bmatrix}
+a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot c + 2 \cdot b \cdot d \\
+2 \cdot b \cdot c - 2 \cdot a \cdot d & a^2 - b^2 + c^2 - d^2 & 2 \cdot a \cdot b + 2 \cdot c \cdot d \\
+2 \cdot a \cdot c + 2 \cdot b \cdot d & -2 \cdot a \cdot b + 2 \cdot c \cdot d & a^2 - b^2 - c^2 + d^2 \\
+\end{bmatrix}
+```
+
+*/
 struct Quaternion {
    Tddd v;
    double a, b, c, d;
