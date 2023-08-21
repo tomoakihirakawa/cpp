@@ -118,16 +118,6 @@ int main(int arg, char **argv) {
       }
    };
    /* -------------------------------------------------------------------------- */
-   auto subtetras = [](const Tetrahedron &tet) {
-      auto [a, b, c, d] = tet.verticies;
-      Tetrahedron tet0({a, a / 2. + b / 2., a / 2. + c / 2., a / 2. + d / 2.});
-      Tetrahedron tet1({b, b / 2. + a / 2., b / 2. + c / 2., b / 2. + d / 2.});
-      Tetrahedron tet2({c, c / 2. + a / 2., c / 2. + b / 2., c / 2. + d / 2.});
-      Tetrahedron tet3({d, d / 2. + a / 2., d / 2. + b / 2., d / 2. + c / 2.});
-      return std::vector<Tetrahedron>{tet, tet0, tet1, tet2, tet3};
-   };
-
-   /* -------------------------------------------------------------------------- */
    /*                           最短距離にある２点を繋ぐ                             */
    /* -------------------------------------------------------------------------- */
    Print("最短距離にある２点を繋ぐ", Red);
@@ -164,7 +154,7 @@ int main(int arg, char **argv) {
    }
    std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
    {
-      std::ofstream ofs("./output/first_lines.vtp");
+      std::ofstream ofs(_HOME_DIR_ + "/output/first_lines.vtp");
       vtkPolygonWrite(ofs, object->getLines());
    }
    check();
@@ -194,10 +184,10 @@ int main(int arg, char **argv) {
          double count = 0, cr;
          const double small = 1E-6;
          // 四面体の形に関する条件
-         if (T.inradius > particle_spacing / 20                        /*内接円半径に関する条件*/
-             && T.circumradius < 2 * particle_spacing                  /*外接円半径に関する条件*/
-             && std::get<0>(object->isInside_MethodOctree(T.incenter)) /**/
-                                                                       //  && std::get<0>(object->isInside_MethodOctree(T.circumcenter)) /**/
+         if (T.inradius > particle_spacing / 20       /*内接円半径に関する条件*/
+             && T.circumradius < 2 * particle_spacing /*外接円半径に関する条件*/
+             && std::get<0>(object->isInside_MethodOctree(T.incenter))
+             //  && std::get<0>(object->isInside_MethodOctree(T.circumcenter)) /**/
              //  && tetra_buckets.none_of([&](const auto &t) { return IntersectQ(T, t->scaled(0.9999)); })
              && tetra_buckets.none_of(T.incenter, 3 * particle_spacing, [&](const auto &t) { return IntersectQ(T, t->scaled(1 - 1E-10)); })) {
             /* ----------------------------------------------- */
@@ -233,105 +223,42 @@ int main(int arg, char **argv) {
       return 1E+50;
    };
    // b% -------------------------------------------------------------------------- */
-   auto gen0 = [&](const auto &a, const auto &vec) {
-      double ACCUM = 1E+5;
-      int count = 0;
-      T_4P abcd = {nullptr, nullptr, nullptr, nullptr}, ABCD = {nullptr, nullptr, nullptr, nullptr};
-      for (auto it = vec.begin(); it != vec.end(); ++it)
-         for (auto jt = std::next(it, 1); jt != vec.end(); ++jt)
-            for (auto kt = std::next(jt, 1); kt != vec.end(); ++kt) {
-               abcd = {a, *it, *jt, *kt};
-               auto accum = criterion(abcd);
-               if (ACCUM >= accum) {
-                  ACCUM = accum;
-                  ABCD = abcd;
-                  count++;
-               }
-            }
-      if (count && DuplicateFreeQ(ABCD)) {
-         auto ret = genTetra(object, ABCD);
-         if (std::get<0>(ret)) {
-            tetra_buckets.add(std::get<1>(ret)->incenter, std::get<1>(ret));
-            return ret;
-         }
-      }
-      return std::tuple<bool, networkTetra *>{false, nullptr};
-   };
-   // b% -------------------------------------------------------------------------- */
-   auto gen1 = [&](const networkFace *f, const auto &candidates_points, const Tddd &n = {0., 0., 0.}) {
+   auto gen1 = [&](const networkFace *f,
+                   const auto &candidates_points,
+                   const Tddd &n = {0., 0., 0.} /*serach direction*/) {
       double SCORE = 1E+20;
       int count = 0;
       auto [a, b, c] = f->getPoints();
       T_4P abcd = {nullptr, nullptr, nullptr, nullptr}, ABCD = {nullptr, nullptr, nullptr, nullptr};
       Tddd f_center = Mean(ToX(f->getPoints()));
       auto normal = TriangleNormal(ToX(f->getPoints()));
+      auto condition = [&](const Tddd &X, const Tddd &search_direction) {
+         return Norm(search_direction) < 0.1 || Dot(X - f_center, search_direction) > 0;
+      };
+      auto update_score = [&](const T_4P &abcd) {
+         auto accum = criterion(abcd);
+         if (SCORE >= accum) {
+            SCORE = accum;
+            ABCD = abcd;
+            count++;
+         }
+      };
       if (f) {
          auto [t0, t1] = f->Tetras;
          if (t0 && !t1) {
-            auto normal_out = Projection(f_center - t0->center, normal);
-            for (const auto &d : candidates_points) {
-               /* dは追加候補 */
-               auto f_to_d = d->X - f_center;
-               bool good = Dot(normal_out, f_to_d) > 0;
-               /* ---------------------- */
-               if (Norm(n) > 0.1)
-                  if (!(Dot(f_to_d, n) > 0.))
-                     good = false;
-               /* ---------------------- */
-               if (good) {
-                  abcd = {a, b, c, d};
-                  auto accum = criterion(abcd);
-                  if (SCORE >= accum) {
-                     SCORE = accum;
-                     ABCD = abcd;
-                     count++;
-                  }
-               }
-            }
-         }
-         if (!t0 && t1) {
-            auto normal_out = Projection(f_center - t1->center, normal);
-            for (const auto &d : candidates_points) {
-               /* dは追加候補 */
-               auto f_to_d = d->X - f_center;
-               bool good = Dot(normal_out, f_to_d) > 0;
-               /* ---------------------- */
-               if (Norm(n) > 0.1)
-                  if (!(Dot(f_to_d, n) > 0.))
-                     good = false;
-               /* ---------------------- */
-               if (good) {
-                  abcd = {a, b, c, d};
-                  auto accum = criterion(abcd);
-                  if (SCORE >= accum) {
-                     SCORE = accum;
-                     ABCD = abcd;
-                     count++;
-                  }
-               }
-            }
-         }
-         if (!t0 && !t1) {
-            // auto normal_out = Projection(f_center - t1->center, normal);
-            for (const auto &d : candidates_points) {
-               /* dは追加候補 */
-               auto f_to_d = d->X - f_center;
-               bool good = true;  // Dot(normal_out, f_to_d) > 0;
-               /* ---------------------- */
-               if (Norm(n) > 0.1)
-                  if (!(Dot(f_to_d, n) > 0.))
-                     good = false;
-               /* ---------------------- */
-               if (good) {
-                  abcd = {a, b, c, d};
-                  auto accum = criterion(abcd);
-                  if (SCORE >= accum) {
-                     SCORE = accum;
-                     ABCD = abcd;
-                     count++;
-                  }
-               }
-            }
+            auto empty_direction = Projection(Normalize(f_center - t0->center), normal);
+            for (const auto &d : candidates_points)
+               if (condition(d->X, n) && condition(d->X, empty_direction))
+                  update_score({a, b, c, d});
+         } else if (!t0 && t1) {
+            auto empty_direction = Projection(Normalize(f_center - t1->center), normal);
+            for (const auto &d : candidates_points)
+               if (condition(d->X, n) && condition(d->X, empty_direction))
+                  update_score({a, b, c, d});
+         } else if (!t0 && !t1) {
+            for (const auto &d : candidates_points)
+               if (condition(d->X, n))
+                  update_score({a, b, c, d});
          }
       }
       if (count) {
@@ -343,26 +270,6 @@ int main(int arg, char **argv) {
       }
       return std::tuple<bool, networkTetra *>{false, nullptr};
    };
-   /* -------------------------------------------------------------------------- */
-   /*                                   始めの面の作成                             */
-   /* -------------------------------------------------------------------------- */
-   // Print("繋がった点は，四面体の候補である", Red);
-   // count = 0;
-   // for (const auto &a : object->getPoints()) {
-   //    auto vec = buckets.get(ToX(a), 1.5 * particle_spacing);
-   //    std::cout << count << ", vec = " << vec.size() << std::endl;
-   //    // auto vec = object->getPoints();
-   //    bool found = false;
-   //    count++;
-   //    gen0(a, vec);
-   //    if (count > 0)
-   //       break;
-   // }
-   // {
-   //    std::ofstream ofs("./output/first_face.vtp");
-   //    vtkPolygonWrite(ofs, object->getFaces());
-   //    ofs.close();
-   // }
    // b% -------------------------------------------------------------------------- */
    Print("形成された面の内，テトラを持たない面の法線方向において，最も近い点を候補とし，新たにテトラを作成できないか調べる");
    int i = 0;
@@ -370,23 +277,94 @@ int main(int arg, char **argv) {
    for (const auto &t : object->getTetras())
       tetras.emplace_back(t);
 
-   for (auto I = 0; I < 5000; I++) {
-      bool found = false;
-      int count = 0;
-      /* -------------------------------------------------------------------------- */
-      if (I == 0) {
-         for (const auto &f : initialFaces) {
-            auto [ismade, tet] = gen1(f,
-                                      buckets.getBucket(Mean(ToX(f->getPoints())), 1.5 * particle_spacing),
-                                      -f->normal);
-            if (ismade) {
-               tetras.emplace_back(tet);
-               std::cout << count << std::endl;
-               if (count++ > 10)
-                  break;
+   /*
+
+   外接球に他の点が入らないか確認しながら，面に対してある方向に徐々に点を移動させていく．
+   比較的綺麗な四面体を作れる範囲に，既存の点が存在しない場合，その点を新たに追加し，四面体を作成する．
+
+   */
+   std::vector<networkPoint *> points_inside;
+   for (auto k = 0; k < 10; k++) {
+      auto faces = object->getFaces();
+      for (const auto &f : faces) {
+
+         /*
+         四面体を生成できる条件
+
+         IntersectQ()がfalseである場合
+         -> 生成可能．
+
+         IntersectQ()がtrueである場合
+         -> 面が共通しており，接触している面の反対側に四面体が作られる場合は生成可能．
+
+
+
+         */
+
+         auto [t0, t1] = f->Tetras;
+         if (t0 && t1)
+            continue;
+
+         double mean_len = Mean(extLength(f->getLines()));  // 適当な長さ
+
+         auto get_points_inside = [&](const Tddd &X, const networkPoint *except_p = nullptr) {
+            points_inside.clear();
+            auto r = Circumradius(Append(ToX(f), X));
+            auto Xc = Circumcenter(Append(ToX(f), X));
+            buckets.apply(Xc, r, [&](const auto &p) {
+               if (Norm(p->X - Xc) < r * 0.999 && except_p != p)
+                  points_inside.emplace_back(p);
+            });
+         };
+
+         auto gen_point = [&](const Tddd &X) -> networkPoint * {
+            auto p = new networkPoint(object, X);
+            buckets.add(p->X, p);
+            return p;
+         };
+
+         auto gen_tetra = [&](const auto &p) {
+            auto [is_generated, t] = genTetra(object, Append(f->getPoints(), p));
+            if (is_generated)
+               tetra_buckets.add(t->incenter, t);
+         };
+
+         Tddd first_X = Circumcenter(ToX(f)) - mean_len * f->normal, empty_direction = {0., 0., 0.};
+
+         if (t0 && !t1) {
+            empty_direction = Projection(Normalize(f->center - t0->center), f->normal);
+            first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
+         } else if (!t0 && t1) {
+            empty_direction = Projection(Normalize(f->center - t1->center), f->normal);
+            first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
+         }
+
+         auto condition = [&](const Tddd &X) {
+            if (Norm(empty_direction) < 0.1)
+               return true;
+            Tddd n = f->normal;
+            if (Dot(empty_direction, f->normal) < 0.)
+               n *= -1;
+            return Dot(X - f->center, n) > 0;
+         };
+
+         if (points_inside.empty() && std::get<0>(object->isInside_MethodOctree(first_X))) {
+            auto p = gen_point(first_X);
+            gen_tetra(p);
+         } else {
+            auto tmp = points_inside;
+            for (const auto &p : tmp) {
+               get_points_inside(p->X, p);
+               if (condition(p->X))
+                  if (points_inside.empty() && !MemberQ(f->getPoints(), p)) {
+                     auto [isinside, _, __] = object->isInside_MethodOctree(Incenter(Append(ToX(f), p->X)));
+                     if (isinside)
+                        gen_tetra(p);
+                  }
             }
          }
-         {
+
+         if (count++ % 50 == 0) {
             std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
             std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
             vtkPolygonWrite(ofs, object->getTetras());
@@ -394,60 +372,45 @@ int main(int arg, char **argv) {
             i++;
          }
       }
-      count = 0;
-      /* -------------------------------------------------------------------------- */
-      std::vector<networkTetra *> tetras_;
-      for (const auto &f : object->getFaces()) {
-         {
+   };
+   if (false)
+      for (auto I = 0; I < 5000; I++) {
+         bool found = false;
+         int count = 0;
+         /* -------------------------------------------------------------------------- */
+         if (I == 0) {
+            for (const auto &f : initialFaces) {
+               auto [ismade, tet] = gen1(f, buckets.getBucket(Mean(ToX(f->getPoints())), 1.5 * particle_spacing), -f->normal);
+               if (ismade) {
+                  tetras.emplace_back(tet);
+                  std::cout << "add tetra " << count << ", object->getTetras().size() = " << object->getTetras().size() << std::endl;
+                  // if (count++ > 100)
+                  //    break;
+               }
+            }
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
+            vtkPolygonWrite(ofs, object->getTetras());
+            ofs.close();
+            i++;
+         }
+         count = 0;
+         /* -------------------------------------------------------------------------- */
+         for (const auto &f : object->getFaces()) {
             auto [ismade, tet] = gen1(f, buckets.getBucket(Mean(ToX(f->getPoints())), 2. * particle_spacing));
             if (ismade) {
                tetras.emplace_back(tet);
-               tetras_.emplace_back(tet);
                std::cout << "add tetra " << count << ", object->getTetras().size() = " << object->getTetras().size() << std::endl;
-               count++;
+               if (count++ > 100)
+                  break;
             }
-         };
-         if (count > 100)
-            break;
-      }
-
-      {
-         std::cout << Magenta << I << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
-         std::ofstream ofs(_HOME_DIR_ + "/output/tetras_" + std::to_string(I) + ".vtp");
-         vtkPolygonWrite(ofs, tetras_);
-         ofs.close();
-      }
-
-      {
+         }
          std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
          std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
          vtkPolygonWrite(ofs, object->getTetras());
          ofs.close();
          i++;
       }
-      /* -------------------------------------------------------------------------- */
-      // for (const auto &t : tetras) {
-      //    for_each(t->Faces, [&](const auto &f) {
-      //       // if (!found)
-      //       {
-      //          auto [ismade, tet] = gen1(f->getPoints(), buckets.get(Mean(ToX(f->getPoints())), 2 * particle_spacing));
-      //          if (ismade) {
-      //             tetras.emplace_back(tet);
-      //             found = true;
-      //          }
-      //       }
-      //    });
-      //    // if (found) break;
-      // }
-      // /* -------------------------------------------------------------------------- */
-      // {
-      //    std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
-      //    std::ofstream ofs("./output/tetras" + std::to_string(i) + ".vtp");
-      //    vtkPolygonWrite(ofs, object->getTetras());
-      //    ofs.close();
-      //    i++;
-      // }
-   }
 };
 // #elif defined(check_voronoi)
 // Timer timer;
