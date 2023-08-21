@@ -1559,7 +1559,8 @@ inline bool networkLine::canflip(const double min_inner_angle = M_PI / 180.) con
 };
 
 inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
-                                      const double min_inner_angle) {
+                                      const double min_inner_angle,
+                                      const int min_n) {
    try {
       //@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
       //@ フリップ前後の両方で不正な辺と判定された場合，
@@ -1567,19 +1568,18 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
       if (!canflip(min_inner_angle))
          return false;
       else if (this->isFlat(min_degree_to_flat /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
-         {
-            auto [p0, p1] = this->getPoints();
-            auto f0f1 = this->getFaces();
-            int s0 = p0->getLines().size();
-            int s1 = p1->getLines().size();
-            auto p2 = f0f1[0]->getPointOpposite(this);
-            auto p3 = f0f1[1]->getPointOpposite(this);
-            int s2 = p2->getLines().size();
-            int s3 = p3->getLines().size();
-            // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
-            //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
-            //       return false;  // 3以下はつくらない
-         }
+         auto [p0, p1] = this->getPoints();
+         auto f0f1_ = this->getFaces();
+         int s0 = p0->getLines().size();
+         int s1 = p1->getLines().size();
+         auto p2 = f0f1_[0]->getPointOpposite(this);
+         auto p3 = f0f1_[1]->getPointOpposite(this);
+         int s2 = p2->getLines().size();
+         int s3 = p3->getLines().size();
+         // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+         //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+         //       return false;  // 3以下はつくらない
+
          /* -------------------------------------------------------------------------- */
          // auto [p0, p2] = this->getPoints();
          auto f0f1 = this->getFaces();
@@ -1613,8 +1613,8 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
          // double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
          // double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
          // double c = 0.;
-         int s0 = f0pb->getLines().size();
-         int s1 = f0pf->getLines().size();
+         // int s0 = f0pb->getLines().size();
+         // int s1 = f0pf->getLines().size();
          // int s2 = f0po->getLines().size();
          // int s3 = f1po->getLines().size();
          // double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
@@ -1623,8 +1623,8 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
 
          int next_s0 = s0 - 1;
          int next_s1 = s1 - 1;
-         // int next_s2 = s2 + 1;
-         // int next_s3 = s3 + 1;
+         int next_s2 = s2 + 1;
+         int next_s3 = s3 + 1;
          /*
          @ <-------------(-c)------------ (c) --------------
          @ <---- flip -----|--- topology --|----- none -----
@@ -1636,7 +1636,11 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
          // 	return true;
          // }
          // else
-         if (min_init <= min_later && !(next_s0 <= 4 && next_s1 <= 4)) {
+         if (min_init <= min_later &&
+             (next_s0 >= min_n || p0->CORNER) &&
+             (next_s1 >= min_n || p1->CORNER) &&
+             (next_s2 >= min_n || p2->CORNER) &&
+             (next_s3 >= min_n || p3->CORNER)) {
             this->flip();
             return true;
          } else

@@ -199,7 +199,8 @@ class networkLine : public CoordinateBounds {
    bool flip();
    bool flipIfIllegal();
    bool flipIfBetter(const double min_degree_to_flat = M_PI / 180.,
-                     const double min_inner_angle = M_PI / 180.);
+                     const double min_inner_angle = M_PI / 180.,
+                     const int min_n = 5);
    bool flipIfTopologicalyBetter(const double min_degree_of_line = M_PI / 180.,
                                  const double min_degree_of_face = M_PI / 180,
                                  const int s_meanIN = 6);
@@ -3096,6 +3097,7 @@ std::tuple<bool, networkTetra *> genTetra(Network *const net,
    } else
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
 };
+
 std::tuple<bool, networkTetra *> genTetra(Network *const net, const T_4P &abcd) {
    auto [a, b, c, d] = abcd;
    return genTetra(net, a, b, c, d);
@@ -3196,6 +3198,7 @@ class Network : public CoordinateBounds {
       Print(this->getName() + "->octreeOfFaces->setNeighbors()");
       this->octreeOfFaces->setNeighbors();
    };
+
    void genOctreeOfPoints(const Tii &depthlimit, const int objnum) {
       Print("octreeOfPointsを生成");
       this->setGeometricProperties();
@@ -3463,15 +3466,14 @@ class Network : public CoordinateBounds {
    /*
    面は点と違って，複数のバケツ（セル）と接することがある．
     */
-   void makeBucketFaces(const double spacing) {
-
+   void makeBucketFaces(const double spacing = 1E+20) {
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       //
       double min;
       for (const auto &f : this->getFaces()) {
-         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 2.}) / 3.;
+         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 10.;
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
             this->BucketFaces.add(xyz, f);
       }
@@ -3513,6 +3515,31 @@ class Network : public CoordinateBounds {
       // this->BucketPoints.hashing_done = false;
       this->BucketParametricPoints.clear();
    };
+
+   //! セルに含まれるかどうかではなく，ポリゴンの内部にあるかどうかで判定するための関数
+
+   bool isInside_MethodBucket(const Tddd &X) const {
+      networkFace *closest_face = nullptr;
+      Tddd V_to_closest = {1E+20, 1E+20, 1E+20}, V = {0., 0., 0.};
+      double min_d = 1E+20, d;
+      this->BucketFaces.apply_to_the_nearest_bound(X, [&](const int i, const int j, const int k) {
+         if (closest_face == nullptr)
+            for (const auto &f : this->BucketFaces.buckets[i][j][k]) {
+               V = Nearest(X, f) - X;
+               d = Norm(V);
+               if (d < min_d) {
+                  min_d = d;
+                  closest_face = f;
+                  V_to_closest = V;
+               }
+            }
+      });
+      if (closest_face == nullptr)
+         return false;
+      else
+         return Dot(closest_face->normal, V_to_closest) >= 0.;
+   };
+
    // b$ ------------------------------------------------------ */
   public:
    T6d forced_velocity;
@@ -3845,6 +3872,7 @@ class Network : public CoordinateBounds {
    //
    //% ------------------------- obj ------------------------ */
    //% NetwrokObjは，Networkとしてコンストラクトするために，下のコンストラクタように修正した．*/
+   // \label{Network::constructor}
    Network(const std::string &filename = "no_name", const std::string &name_IN = "no_name")
        : CoordinateBounds(Tddd{{0., 0., 0.}}),
          name(name_IN),
@@ -3873,8 +3901,15 @@ class Network : public CoordinateBounds {
       if (filename.contains(".obj")) {
          std::vector<std::vector<std::string>> read_line;
          Load(filename, read_line, {"    ", "   ", "  ", " "});
-         LoadObj objLoader;
+         Load3DFile objLoader;
          objLoader.load(read_line);
+         this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
+         this->displayStates();
+      } else if (filename.contains(".off")) {
+         std::vector<std::vector<std::string>> read_line;
+         Load(filename, read_line, {"    ", "   ", "  ", " "});
+         Load3DFile objLoader;
+         objLoader.load_off(read_line);
          this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
          this->displayStates();
       } else

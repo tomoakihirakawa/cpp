@@ -173,7 +173,7 @@ N _5 &= 4t _0(1-t _0-t _1)
 
 与えられたデータ点を通る多項式を求める方法の一つにB-spline補間がある．
 
-[Bspline基底関数](../../include/basic.hpp#L893)を用いて，B-spline補間を行う．
+[Bspline基底関数](../../include/basic.hpp#L903)を用いて，B-spline補間を行う．
 
 ![](sample_bspline.png)
 

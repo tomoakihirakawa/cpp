@@ -456,7 +456,9 @@ struct Sphere {
 };  // namespace geometry
 
 /* ------------------------------------------------------ */
+
 // structをわざわざ作るのは，T3Tddではなく，coordinateboundsとして意味を具体的にした状態で持ち回りたいから．それだけ．
+
 struct CoordinateBounds {
    T3Tdd bounds;
    Tddd X;  // center
@@ -694,7 +696,6 @@ bool isInside(const Tddd &X, const T3Tdd &bounds) {
    CoordinateBounds b(bounds);
    return b.isInside(X);
 };
-//
 struct Sphere : public CoordinateBounds {
    Tddd center;
    double radius;
@@ -706,8 +707,16 @@ struct Sphere : public CoordinateBounds {
          radius(radiusIN){};
 };
 
+Sphere InSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+   return Sphere(Incenter(p0, p1, p2, p3), Inradius(p0, p1, p2, p3));
+};
+
+Sphere CircumSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+   return Sphere(Circumcenter(p0, p1, p2, p3), Circumradius(p0, p1, p2, p3));
+};
+
 struct Triangle : public CoordinateBounds {
-   T3Tddd verticies;
+   T3Tddd vertices;
    Tddd normal;
    Tddd angles;
    double area;
@@ -723,7 +732,7 @@ struct Triangle : public CoordinateBounds {
    //
    Triangle(const T3Tddd &XIN)
        : CoordinateBounds(XIN),
-         verticies(XIN),
+         vertices(XIN),
          normal(TriangleNormal(XIN)),
          area(TriangleArea(XIN)),
          angles(TriangleAngles(XIN)),
@@ -734,28 +743,28 @@ struct Triangle : public CoordinateBounds {
          inradius(Inradius(XIN)){};
    Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
        : CoordinateBounds(X0IN, X1IN, X2IN),
-         verticies({X0IN, X1IN, X2IN}),
-         normal(TriangleNormal(verticies)),
-         area(TriangleArea(verticies)),
-         angles(TriangleAngles(verticies)),
-         centroid(Centroid(verticies)),
-         circumcenter(Circumcenter(verticies)),
-         circumradius(Circumradius(verticies)),
-         incenter(Incenter(verticies)),
-         inradius(Inradius(verticies)){};
+         vertices({X0IN, X1IN, X2IN}),
+         normal(TriangleNormal(vertices)),
+         area(TriangleArea(vertices)),
+         angles(TriangleAngles(vertices)),
+         centroid(Centroid(vertices)),
+         circumcenter(Circumcenter(vertices)),
+         circumradius(Circumradius(vertices)),
+         incenter(Incenter(vertices)),
+         inradius(Inradius(vertices)){};
 
-   void setProperties(const T3Tddd &verticies_IN) {
-      this->verticies = verticies;
-      this->normal = TriangleNormal(verticies);
-      this->area = TriangleArea(verticies);
-      this->angles = TriangleAngles(verticies);
-      this->centroid = Centroid(verticies);
-      this->circumcenter = Circumcenter(verticies);
-      this->circumradius = Circumradius(verticies);
-      this->incenter = Incenter(verticies);
-      this->inradius = Inradius(verticies);
+   void setProperties(const T3Tddd &vertices_IN) {
+      this->vertices = vertices;
+      this->normal = TriangleNormal(vertices);
+      this->area = TriangleArea(vertices);
+      this->angles = TriangleAngles(vertices);
+      this->centroid = Centroid(vertices);
+      this->circumcenter = Circumcenter(vertices);
+      this->circumradius = Circumradius(vertices);
+      this->incenter = Incenter(vertices);
+      this->inradius = Inradius(vertices);
    };
-   operator T3Tddd() const { return this->verticies; };
+   operator T3Tddd() const { return this->vertices; };
 };
 
 /* -------------------------------------------------------------------------- */
@@ -769,7 +778,7 @@ struct Tetrahedron : public CoordinateBounds {
    //          0                 \/
    //
    //$ GEOMETRIC PROPERTIES
-   T4Tddd verticies;
+   T4Tddd vertices;
    double volume;
    Tddd centroid;
    //$ circumscribed sphere (circumsphere)
@@ -783,7 +792,7 @@ struct Tetrahedron : public CoordinateBounds {
    T4d solidangles;  // いつかチェック
    Tetrahedron(const T4Tddd &XIN)
        : CoordinateBounds(XIN),
-         verticies(XIN),
+         vertices(XIN),
          volume(TetrahedronVolume(XIN)),
          centroid(Centroid(XIN)),
          circumcenter(Circumcenter(XIN)),
@@ -794,10 +803,10 @@ struct Tetrahedron : public CoordinateBounds {
          solidangles(TetrahedronSolidAngle_UsingVectorAngle(XIN)){};
 
    Tetrahedron scaled(const auto &s = 0.9) {
-      return Tetrahedron({(std::get<0>(this->verticies) - centroid) * s + centroid,
-                          (std::get<1>(this->verticies) - centroid) * s + centroid,
-                          (std::get<2>(this->verticies) - centroid) * s + centroid,
-                          (std::get<3>(this->verticies) - centroid) * s + centroid});
+      return Tetrahedron({(std::get<0>(this->vertices) - centroid) * s + centroid,
+                          (std::get<1>(this->vertices) - centroid) * s + centroid,
+                          (std::get<2>(this->vertices) - centroid) * s + centroid,
+                          (std::get<3>(this->vertices) - centroid) * s + centroid});
    };
 
    // T4d SolidAngles(const T4Tddd &X) {
@@ -809,12 +818,12 @@ struct Tetrahedron : public CoordinateBounds {
    // };
 
    operator T6T2Tddd() const {
-      auto [p0, p1, p2, p3] = this->verticies;
+      auto [p0, p1, p2, p3] = this->vertices;
       return {{{p0, p1}, {p0, p2}, {p0, p3}, {p1, p2}, {p2, p3}, {p3, p1}}};
    };
 
    // operator T6Tddd() const {
-   //    auto [p0, p1, p2, p3] = this->verticies;
+   //    auto [p0, p1, p2, p3] = this->vertices;
    //    return {(p0 + p1) / 2.,
    //            (p0 + p2) / 2.,
    //            (p0 + p3) / 2.,
@@ -824,7 +833,7 @@ struct Tetrahedron : public CoordinateBounds {
    // };
 
    operator T4T3Tddd() const {
-      auto [p0, p1, p2, p3] = this->verticies;
+      auto [p0, p1, p2, p3] = this->vertices;
       return {{{p0, p1, p2},
                {p0, p1, p3},
                {p0, p2, p3},
@@ -1481,6 +1490,12 @@ bool IntersectQ(const Tddd &center, const double radius, const T6T2Tddd &ab) {
           IntersectQ(center, radius, std::get<4>(ab)) || IntersectQ(center, radius, std::get<5>(ab));
 };
 
+bool IntersectQ(const Sphere &sp, const T6T2Tddd &ab) {
+   return IntersectQ(sp.center, sp.radius, std::get<0>(ab)) || IntersectQ(sp.center, sp.radius, std::get<1>(ab)) ||
+          IntersectQ(sp.center, sp.radius, std::get<2>(ab)) || IntersectQ(sp.center, sp.radius, std::get<3>(ab)) ||
+          IntersectQ(sp.center, sp.radius, std::get<4>(ab)) || IntersectQ(sp.center, sp.radius, std::get<5>(ab));
+};
+
 bool IntersectQ(const Sphere &s, const T2Tddd &ab) { return IntersectQ(s.center, s.radius, ab); };
 bool IntersectQ(const T2Tddd &ab, const Sphere &sp) { return IntersectQ(sp, ab); };
 //! sphere - triangle
@@ -1582,6 +1597,11 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    // | a2, b2, c2, d2 | | t2 | = | z |
    // |  1,  1,  1,  1 | | t3 |   | 1 |
    //
+   //                    | a0, a1, a2,  1 |
+   // | t0, t1, t2, t3 | | b0, b1, b1,  1 |  = | x, y, y, z |
+   //                    | c0, c2, c2,  1 |
+   //                    | d0, d1, d2,  1 |
+   //
    // -> Dot({t0,t1,t2,t3}, {{a,1},{b,1},{c,1},{d,1}}) = {X,1}
    // {a,1} and {X,1} mean {a0, a1, a2, 1} and {x, y, z, 1}
    //
@@ -1615,6 +1635,9 @@ bool IntersectQ(const Tddd &center, const double r, const T4Tddd &abcd) {
    }
 }
 
+bool IntersectQ(const Sphere &sp, const Tetrahedron &t) { return IntersectQ(sp.center, sp.radius, t.vertices); }
+bool IntersectQ(const Tetrahedron &t, const Sphere &sp) { return IntersectQ(sp.center, sp.radius, t.vertices); }
+
 //! tetrahedron - line
 bool IntersectQ(const T4Tddd &abcd, const T2Tddd &AB) {
    auto [a, b, c, d] = abcd;
@@ -1629,7 +1652,7 @@ bool IntersectQ(const T4Tddd &abcd, const T2Tddd &AB) {
 
 bool IntersectQ(const Tetrahedron &Tet, const T2Tddd &AB) {
    if (IntersectQ(Tet.bounds, AB))
-      return IntersectQ(Tet.verticies, AB);
+      return IntersectQ(Tet.vertices, AB);
    else
       return false;
 };

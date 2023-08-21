@@ -878,11 +878,9 @@ struct BEM_BVP {
          return;
       }
 
-      auto tmp = ACCELS_init;
-      tmp[0] += 1E-10;
       int count = 0;
-      BroydenMethod BM(ACCELS_init, tmp);
-      for (auto j = 0; j < 20; ++j) {
+      BroydenMethod BM(ACCELS_init, ACCELS_init);
+      for (auto j = 0; j < 50; ++j) {
          insertAcceleration(rigidbodies, BM.X - BM.dX);
          auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
          std::cout << "func_ = " << func_ << std::endl;
@@ -892,7 +890,7 @@ struct BEM_BVP {
 
          double alpha = 1.;
          if (j < 1)
-            alpha = 1E-10;
+            alpha = 1E-5;
 
          BM.update(func, func_, alpha);
          insertAcceleration(rigidbodies, BM.X);
@@ -904,9 +902,7 @@ struct BEM_BVP {
          std::cout << Red << "BM.X = " << BM.X << colorOff << std::endl;
          std::cout << Red << "BM.dX = " << BM.dX << colorOff << std::endl;
 
-         if (Norm(func) < 1E-10)
-            break;
-         if (Norm(BM.dX) < 1E-13) {
+         if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10) {
             if (count++ > 4)
                break;
          } else
