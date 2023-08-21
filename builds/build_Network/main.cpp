@@ -1,9 +1,5 @@
-#include "InterpolationRBF.hpp"
 #include "Network.hpp"
 
-/* ------------------------------------------------------ */
-/*                         粒子化の例                       */
-/* ------------------------------------------------------ */
 int main() {
    auto net = new Network("../../obj/bunny.obj");
    mk_vtu("./vtu/obj.vtu", net->getFaces());

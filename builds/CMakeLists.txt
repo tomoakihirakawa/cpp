@@ -79,6 +79,12 @@ if("${ld_version}" MATCHES "GNU gold")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
 endif()
 
+# Use LLVM's lld linker
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+endif()
+
 # Set compiler launcher
 set(CMAKE_C_COMPILER_LAUNCHER ccache)
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
@@ -125,6 +131,17 @@ if(LAPACK_FOUND)
   target_link_libraries(${BASE_NAME} ${LAPACK_LIBRARIES})
 else()
   message(STATUS "${Red}LAPACK is not found!" "${ColourReset}")
+endif()
+
+# Find CGAL
+find_package(CGAL)
+
+if(CGAL_FOUND)
+  message(STATUS "${Green}CGAL found!" "${ColourReset}")
+  include_directories(${CGAL_INCLUDE_DIRS})
+  target_link_libraries(${BASE_NAME} CGAL::CGAL)
+else()
+  message(STATUS "${Red}CGAL is not found!" "${ColourReset}")
 endif()
 
 # Set include directories

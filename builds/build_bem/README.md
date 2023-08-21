@@ -66,13 +66,13 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L364)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L366)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L278)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L280)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L343](./BEM_calculateVelocities.hpp#L343)
+[./BEM_calculateVelocities.hpp#L345](./BEM_calculateVelocities.hpp#L345)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -127,7 +127,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L492](./BEM_calculateVelocities.hpp#L492)
+[./BEM_calculateVelocities.hpp#L494](./BEM_calculateVelocities.hpp#L494)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -144,7 +144,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L579](./BEM_calculateVelocities.hpp#L579)
+[./BEM_calculateVelocities.hpp#L581](./BEM_calculateVelocities.hpp#L581)
 
 
 ## ⛵️境界のタイプを決定する 

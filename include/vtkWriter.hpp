@@ -12,91 +12,73 @@ struct vtkPolygonWriter : XMLElement {
    その組み合わせをidとしている．インデックスは大抵は０．
    ポリゴンやラインを加える際は，このidの列をaddする．
    vtpでは座標ベクトルのインデックスを与えることで，ポリゴンを作るが，idが与えられれば，
-   id={インデックス，座標}なので，インデックスもわかるので，自動でインデックスを取得し出力してくれる．
-
+   VertexId={インデックス，座標}なので，インデックスもわかるので，自動でインデックスを取得し出力してくれる．
    具体的な使い方については，octreeを見てください．
    */
    /* ------------------------------------------------------ */
-   std::shared_ptr<XMLElement> PolyData;
-   std::shared_ptr<XMLElement> Piece;
-   std::shared_ptr<XMLElement> Points;
-   std::shared_ptr<XMLElement> PointData, CellData;
-   std::shared_ptr<XMLElement> Polys;
-   std::shared_ptr<XMLElement> Lines;
-   using id = std::tuple<T, int>;
-   std::unordered_map<id, std::tuple<int, Tddd>> verticies;
-   std::vector<std::vector<id>> connectivity_lines;
-   std::vector<std::array<id, 3>> connectivity3;
-   std::vector<std::array<id, 4>> connectivity4;
-   void clear() {
-      verticies.clear();
-   };
-   void add(const T &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); };
+   std::shared_ptr<XMLElement> PolyData, Piece, Points, PointData, CellData, Polys, Lines;
+   using VertexId = std::tuple<T, int>;
+   std::unordered_map<VertexId, std::tuple<int, Tddd>> vertices;
+   std::vector<std::vector<VertexId>> connectivity_lines;
+   std::vector<std::array<VertexId, 3>> connectivity3;
+   std::vector<std::array<VertexId, 4>> connectivity4;
+   void clear() { vertices.clear(); };
+   void add(const T &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); };
    void add(const T &v, const T &u) {
-      std::get<1>(this->verticies[{v, 0}]) = ToX(v);
-      std::get<1>(this->verticies[{u, 0}]) = ToX(u);
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
    };
    void add(const T &v, const T &u, const T &w) {
-      std::get<1>(this->verticies[{v, 0}]) = ToX(v);
-      std::get<1>(this->verticies[{u, 0}]) = ToX(u);
-      std::get<1>(this->verticies[{w, 0}]) = ToX(w);
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
+      std::get<1>(this->vertices[{w, 0}]) = ToX(w);
    };
    void add(const T &v, const T &u, const T &w, const T &x) {
-      std::get<1>(this->verticies[{v, 0}]) = ToX(v);
-      std::get<1>(this->verticies[{u, 0}]) = ToX(u);
-      std::get<1>(this->verticies[{w, 0}]) = ToX(w);
-      std::get<1>(this->verticies[{x, 0}]) = ToX(x);
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
+      std::get<1>(this->vertices[{w, 0}]) = ToX(w);
+      std::get<1>(this->vertices[{x, 0}]) = ToX(x);
    };
    void add(const std::vector<std::vector<T>> &verts) {
       for (const auto &V : verts)
-         std::ranges::for_each(V, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
+         for (const auto &v : V)
+            std::get<1>(this->vertices[{v, 0}]) = ToX(v);
    };
    template <std::size_t N>
    void add(const std::array<T, N> &verts) {
-      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
    };
 
    void add(const std::vector<T> &verts) {
-      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
    };
    void add(const std::unordered_set<T> &verts) {
-      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->verticies[{v, 0}]) = ToX(v); });
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
    };
    void addLine(const std::vector<T> &conns) {
-      std::vector<id> tmp(conns.size());
-      for (auto i = 0; i < conns.size(); ++i)
-         tmp[i] = {conns[i], 0};
+      std::vector<VertexId> tmp(conns.size());
+      for (auto i = 0; i < conns.size(); ++i) tmp[i] = {conns[i], 0};
       this->connectivity_lines.emplace_back(tmp);
    };
    void addLine(const T &p0, const T &p1) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}}); };
    void addLine(const T &p0, const T &p1, const T &p2) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}}); };
    void addLine(const T &p0, const T &p1, const T &p2, const T &p3) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}, {p3, 0}}); };
-   void addLine(const std::vector<std::vector<T>> &conns) {
-      this->addLine(conns);
-   };
+   void addLine(const std::vector<std::vector<T>> &conns) { this->addLine(conns); };
 
    template <std::size_t N>
    void addPolygon(const std::array<T, N> &conns) {
       static_assert(N == 3 || N == 4, "addPolygon supports only 3 or 4 element arrays");
-
       if constexpr (N == 3) {
-         this->connectivity3.push_back({{{std::get<0>(conns), 0},
-                                         {std::get<1>(conns), 0},
-                                         {std::get<2>(conns), 0}}});
+         this->connectivity3.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}}});
       } else if constexpr (N == 4) {
-         this->connectivity4.push_back({{{std::get<0>(conns), 0},
-                                         {std::get<1>(conns), 0},
-                                         {std::get<2>(conns), 0},
-                                         {std::get<3>(conns), 0}}});
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}, {std::get<3>(conns), 0}}});
       }
    }
 
    template <std::size_t N>
    void addPolygon(const std::vector<std::array<T, N>> &conns) {
       static_assert(N == 3 || N == 4, "addPolygon supports only 3 or 4 element arrays");
-
-      for (const auto &c : conns)
-         this->addPolygon(c);
+      for (const auto &c : conns) this->addPolygon(c);
    }
 
    vtkPolygonWriter()
@@ -120,7 +102,7 @@ struct vtkPolygonWriter : XMLElement {
          std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"NumberOfComponents", "3"}, {"format", "ascii"}}));
          DataArray->writer = [&](std::stringstream &ofs) {
             int i = 0;
-            for (auto &[_, INT_X] : this->verticies) {
+            for (auto &[_, INT_X] : this->vertices) {
                // 書き出すともに番号を保存
                std::get<0>(INT_X) = i++;
                std::ranges::for_each(std::get<1>(INT_X), [&](auto &x) { ofs << std::setprecision(7) << (float)x << " "; });
@@ -135,9 +117,9 @@ struct vtkPolygonWriter : XMLElement {
          std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "connectivity"}, {"format", "ascii"}}));
          DataArray->writer = [&](std::stringstream &ofs) {
             for (const auto &[ID0, ID1, ID2] : this->connectivity3)
-               ofs << std::get<0>(verticies[ID0]) << " " << std::get<0>(verticies[ID1]) << " " << std::get<0>(verticies[ID2]) << " ";
+               ofs << std::get<0>(vertices[ID0]) << " " << std::get<0>(vertices[ID1]) << " " << std::get<0>(vertices[ID2]) << " ";
             for (const auto &[ID0, ID1, ID2, ID3] : this->connectivity4)
-               ofs << std::get<0>(verticies[ID0]) << " " << std::get<0>(verticies[ID1]) << " " << std::get<0>(verticies[ID2]) << " " << std::get<0>(verticies[ID3]) << " ";
+               ofs << std::get<0>(vertices[ID0]) << " " << std::get<0>(vertices[ID1]) << " " << std::get<0>(vertices[ID2]) << " " << std::get<0>(vertices[ID3]) << " ";
          };
          this->Polys->add(DataArray);
       }
@@ -160,7 +142,7 @@ struct vtkPolygonWriter : XMLElement {
          DataArray->writer = [&](std::stringstream &ofs) {
             for (const auto &verts : this->connectivity_lines)
                for (const auto &ID : verts)
-                  ofs << std::get<0>(verticies[ID]) << " ";
+                  ofs << std::get<0>(vertices[ID]) << " ";
          };
          this->Lines->add(DataArray);
       }
@@ -190,7 +172,7 @@ struct vtkPolygonWriter : XMLElement {
       this->PointData->add(DataArray);
       DataArray->writer = [&](std::stringstream &ofs) {
          auto it = data.begin();
-         for (const auto &[ID, value] : this->verticies) {
+         for (const auto &[ID, value] : this->vertices) {
             it = data.find(std::get<0>(ID));
             if (it != data.end()) {
                std::ranges::for_each(it->second,
@@ -201,7 +183,7 @@ struct vtkPolygonWriter : XMLElement {
                                            ofs << std::setprecision(6) << "NaN ";
                                      });
             } else
-               ofs << "Nan Nan Nan ";
+               ofs << "NaN NaN NaN ";
          }
       };
    };
@@ -217,7 +199,7 @@ struct vtkPolygonWriter : XMLElement {
       this->PointData->add(DataArray);
       DataArray->writer = [&](std::stringstream &ofs) {
          auto it = data.begin();
-         for (const auto &[ID, value] : this->verticies) {
+         for (const auto &[ID, value] : this->vertices) {
             it = data.find(std::get<0>(ID));
             if (it != data.end()) {
                if (isFinite(it->second))
@@ -225,14 +207,17 @@ struct vtkPolygonWriter : XMLElement {
                else
                   ofs << std::setprecision(6) << "NaN ";
             } else
-               ofs << "Nan ";
+               ofs << "NaN ";
          }
       };
    };
+
+   /* ---------------------------------- write --------------------------------- */
+
    template <typename V>
    V &write(V &ofs) const {
       ofs << "<?xml version=\"1.0\"?>\n";
-      Piece->attributes["NumberOfPoints"] = std::to_string(this->verticies.size());
+      Piece->attributes["NumberOfPoints"] = std::to_string(this->vertices.size());
       Piece->attributes["NumberOfPolys"] = std::to_string(this->connectivity3.size() + this->connectivity4.size());
       Piece->attributes["NumberOfLines"] = std::to_string(this->connectivity_lines.size());
       if (this->elements.empty() && this->elements_shared.empty()) {
@@ -256,6 +241,10 @@ struct vtkPolygonWriter : XMLElement {
       return ofs;
    };
 };
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 /* ------------------------------------------------------ */
 /*                         T4Tddd                         */
 /* ------------------------------------------------------ */
@@ -422,6 +411,7 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *>
 };
 
 void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
+   // vtuがいいならそうなるように修正しなければならない．
    vtkPolygonWriter<networkPoint *> vtp;
    for (const auto &tet : uoTet)
       std::ranges::for_each(tet->Faces, [&](const auto &f) {
@@ -429,6 +419,13 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *
          vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
          vtp.addPolygon(abc);
       });
+   // for (const auto &tet : uoTet) {
+   //    vtp.add(std::get<0>(tet->Points),
+   //            std::get<1>(tet->Points),
+   //            std::get<2>(tet->Points),
+   //            std::get<3>(tet->Points));
+   //    vtp.addPolygon(tet->Points);
+   // };
    vtp.write(ofs);
 };
 

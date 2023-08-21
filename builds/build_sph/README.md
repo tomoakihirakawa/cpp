@@ -183,7 +183,7 @@ p _i^{n+1} = \frac{b + \sum _j A _{ij} p _j^{n}}{\sum _j A _{ij}}
 
 水面においては，流速の発散ゼロ$`\nabla^{n+1} {\bf u}^{n+1}=0`$と$`p^{n+1}=0`$が満たされる必要がある．
 水面外部には，粒子がないので，求めた水面圧力は，ゼロであっても，圧力勾配は誤差を含み，$`\nabla^{n+1} {\bf u}^{n+1}=0`$は満足されない．
-そこで，[水面の計算補助粒子](../../include/Network.hpp#L491)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
+そこで，[水面の計算補助粒子](../../include/Network.hpp#L492)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
 
 
 [./SPH2_FindPressure.hpp#L7](./SPH2_FindPressure.hpp#L7)
@@ -281,7 +281,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 **水面粒子**
 
 - [水面粒子の圧力をゼロにするかどうか](not found)
-- [補助粒子の設定はどうなっているか](../../include/Network.hpp#L491)
+- [補助粒子の設定はどうなっているか](../../include/Network.hpp#L492)
 
 **その他**
 

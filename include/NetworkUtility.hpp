@@ -497,9 +497,7 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
       int count = 0;
       for (const auto &l : water.getLines()) {
          auto [p0, p1] = l->getPoints();
-         if (!l->CORNER)
-         // if (!p0->CORNER && !p1->CORNER)
-         {
+         if (!l->CORNER) {
             if (force && (times == 0 || count < times)) {
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
@@ -514,11 +512,11 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
                }
             } else {
                if (l->Dirichlet) {
-                  isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D);
+                  isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D, 5);
                   if (isfound)
                      count++;
                } else {
-                  isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N);
+                  isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N, 5);
                   if (isfound)
                      count++;
                }

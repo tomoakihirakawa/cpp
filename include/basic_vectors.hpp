@@ -1006,6 +1006,21 @@ Tddd Mean(const std::vector<Tddd> &X) {
 
 double Mean(const std::vector<double> &X) { return Total(X) / X.size(); };
 
+template <typename... Args>
+std::array<double, 3> Mean(const Args &...args) {
+   std::array<double, 3> sum = {0, 0, 0};
+   const int count = sizeof...(args);
+   std::array<std::array<double, 3>, count> arrays = {args...};
+
+   for (const auto &arr : arrays) {
+      sum[0] += arr[0];
+      sum[1] += arr[1];
+      sum[2] += arr[2];
+   }
+
+   return {sum[0] / count, sum[1] / count, sum[2] / count};
+}
+
 // Tddd Mean(const std::unordered_set<Tddd> &X)
 // {
 // 	Tddd ret = {0., 0., 0.};

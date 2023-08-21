@@ -116,7 +116,7 @@ match SimulationCase:
 
         start = 0.
 
-        id = "_water300_new"
+        id = "_water300_new_new"
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -148,9 +148,8 @@ match SimulationCase:
         buoyancy = rho * g * d * A
         floatingbody["mass"] = m = rho * d * A
         m0 = 680*V  # original mass
-        print("m0 =", m0, ", m =", m0)
-        MOI0 = 14.*(0.01*0.01)  # original kg*m*m
-        MOI = m/m0*MOI0
+        MOI = 14.*(0.01*0.01)  # original kg*m*m
+        # MOI = m/m0*MOI0
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
         floatingbody["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]

@@ -84,6 +84,16 @@ struct BaseBuckets {
       auto [i_max, j_max, k_max] = indices(x + d);
       return {i_min, i_max, j_min, j_max, k_min, k_max};
    };
+
+   constexpr ST6 indices_ranges(const Tddd &x, const Tddd &dx_dy_dz) const {
+      auto [dx, dy, dz] = dx_dy_dz;
+      auto minmax_x = indices_ranges(x, dx);
+      auto minmax_y = indices_ranges(x, dy);
+      auto minmax_z = indices_ranges(x, dz);
+      return {std::get<0>(minmax_x), std::get<1>(minmax_x),
+              std::get<2>(minmax_y), std::get<3>(minmax_y),
+              std::get<4>(minmax_z), std::get<5>(minmax_z)};
+   };
    //@ ------------------------ インデックスがboundsに収まっているかどうか ------------------------ */
    bool isInside(const ST i, const ST j, const ST k) const { return (i >= 0 && j >= 0 && k >= 0 && i < this->xsize && j < this->ysize && k < this->zsize); };
    bool isInside(const ST3 &ijk) const { return isInside(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
@@ -269,6 +279,66 @@ struct BaseBuckets {
             for (k = k_min; k <= k_max; ++k)
                func(i, j, k);
    }
+
+   //! apply
+   void apply_to_the_nearest_bound(const Tddd &x, const std::function<void(const int, const int, const int)> &func) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+      auto [I, J, K] = indices(x);
+
+      int values[] = {I, J, K, this->xsize - I, this->ysize - J, this->zsize - K};
+      int smallest = *std::min_element(values, values + 6);
+      int smallestIndex = std::distance(values, std::find(values, values + 6, smallest));
+
+      int i, j, k;
+
+      if (smallestIndex == 0) {
+         for (i = I; i >= 0; --i)
+            func(i, J, K);
+      } else if (smallestIndex == 1) {
+         for (j = J; j >= 0; --j)
+            func(I, j, K);
+      } else if (smallestIndex == 2) {
+         for (k = K; k >= 0; --k)
+            func(I, J, k);
+      } else if (smallestIndex == 3) {
+         for (i = I; i < this->xsize; ++i)
+            func(i, J, K);
+      } else if (smallestIndex == 4) {
+         for (j = J; j < this->ysize; ++j)
+            func(I, j, K);
+      } else if (smallestIndex == 5) {
+         for (k = K; k < this->zsize; ++k)
+            func(I, J, k);
+      }
+   }
+
+   //! apply
+   void apply(const Tddd &x, const Tddd dx_dy_dz,
+              const std::function<void(const T &)> &func) const {
+      if (this->buckets.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D buckets is empty");
+
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, dx_dy_dz);
+
+      if (!this->vector_is_set) {
+         std::for_each(std::execution::unseq, this->buckets.cbegin() + i_min, this->buckets.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+            std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
+               std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
+                  for (const auto &p : Bijk) func(p);
+               });
+            });
+         });
+      } else {
+         std::for_each(std::execution::unseq, this->buckets_vector.cbegin() + i_min, this->buckets_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+            std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
+               std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
+                  for (const auto &p : Bijk) func(p);
+               });
+            });
+         });
+      }
+   };
 };
 
 template <typename T>

@@ -581,8 +581,9 @@ std::vector<T *> RandomSample(std::vector<T *> ret /*copy may change*/, const in
       return Take(ret, {0, n});
    }
 };
+
 #include "basic_vectors.hpp"
-//////////////////////////////////////////////////////////
+
 //==========================================================
 // struct Timer
 // {
@@ -777,6 +778,15 @@ template <typename T>
 std::vector<T> Append(std::vector<T> a, const T &b) {
    a.insert(a.end(), b);
    return a;
+};
+template <typename T, size_t N>
+std::array<T, N + 1> Append(std::array<T, N> a, const T &b) {
+   std::array<T, N + 1> ret;
+   size_t i = 0;
+   for (const auto &o : a)
+      ret[i++] = o;
+   ret[i] = b;
+   return ret;
 };
 //==========================================================
 std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int n,
@@ -2749,7 +2759,7 @@ std::vector<std::tuple<Tddd, Tdd>> particlize(const T3Tddd &X0X1X2, const double
 
 #include "lib_spatial_partitioning.hpp"
 
-struct LoadObj {
+struct Load3DFile {
    V_d eachMax;
    V_d eachMin;
 
@@ -2785,8 +2795,8 @@ struct LoadObj {
       return PointsToSurface(t0, t1, a);
    };
 
-   LoadObj() : eachMax(3, 0.), eachMin(3, 0.){};
-   LoadObj(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
+   Load3DFile() : eachMax(3, 0.), eachMin(3, 0.){};
+   Load3DFile(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
       std::vector<V_s> read_line;
       Load(filename, read_line, {"    ", "   ", "  ", " "});
       this->load(read_line);
@@ -2832,15 +2842,20 @@ struct LoadObj {
 
    // stringを変換しv, f_nに格納
    void load(VV_s &read_line) {
+      V_s v_t_vn;
       for (auto &line : read_line)
-         if (line[0] == "v") {
+         if (line[0].empty())
+            continue;
+         else if (line[0] == "#")
+            continue;
+         else if (line[0] == "v") {
             line.erase(line.begin());
             v.emplace_back(stod(line));
          } else if (line[0] == "f") {
             line.erase(line.begin());
             std::vector<int> f_v_tmp, f_t_tmp, f_vn_tmp;
             for (auto &l : line) {
-               V_s v_t_vn = StringSplit(l, {"/"});
+               v_t_vn = StringSplit(l, {"/"});
                if (v_t_vn.size() == 1)
                   f_v_tmp.emplace_back(stoi(v_t_vn[0]) - 1);
                else if (v_t_vn.size() == 2) {
@@ -2870,6 +2885,37 @@ struct LoadObj {
          tmp = {.9, .9, .9, 1.};
    };
 
+   void load_off(VV_s &read_line) {
+      bool isHeaderRead = false;
+      int v_size = 0, f_size = 0;
+      int v_count = 0, f_count = 0;
+      for (auto &line : read_line) {
+         if (line[0] == "#")
+            continue;
+         else if (!isHeaderRead) {
+            if (line[0] != "OFF") {
+               std::cerr << "Invalid OFF file header!" << std::endl;
+               return;
+            }
+            isHeaderRead = true;
+         } else if (v_count < v_size) {
+            v.emplace_back(stod(line));
+            v_count++;
+         } else if (f_count < f_size) {
+            int s = stoi(line[0]);
+            std::vector<int> f_v_tmp;
+            for (int i = 1; i <= s; ++i)
+               f_v_tmp.emplace_back(stoi(line[i]));
+            f_v.emplace_back(f_v_tmp);
+            f_count++;
+         } else if (v_count == 0 && f_count == 0) {  // Parsing sizes
+            v_size = stoi(line[0]);
+            f_size = stoi(line[1]);
+            // e_size is ignored as it's not needed
+         }
+      }
+   }
+
    void ConstructFromString(const std::string &strIN) {
       std::stringstream strm = std::stringstream(strIN);
       std::vector<V_s> read_line;
@@ -2890,33 +2936,6 @@ struct LoadObj {
       // }
    };
 
-   // std::string JSON(){
-   //   std::string vertices = "{\n\"vertices\": [\n";
-   //   for(auto i = 0; i<v.size(); i++){
-   //     for(auto j = 0; j<v[i].size(); j++)
-   //   	vertices += std::to_string(float(v[i][j])) + ", ";
-   //     if(i != v.size()-1)
-   // 	vertices += "\n";
-   //     if(i == v.size()-1)
-   //       vertices.pop_back();
-   //   }
-   //   vertices.pop_back();
-   //   vertices += "],\n";
-   //   std::string indices = "\"indices\": [\n";
-   //   for(auto i = 0; i<f_v.size(); i++){
-   //     for(auto j = 0; j<f_v[i].size(); j++)
-   //       indices += std::to_string(f_v[i][j]-1) + ", ";
-   //     if(i != f_v.size()-1)
-   //       indices += "\n";
-   //     if(i == f_v.size()-1)
-   //       indices.pop_back();
-   //   }
-   //   indices.pop_back();
-   //   indices += "]\n}";
-   //   return vertices + indices;
-   // };
-
-   ////////// 自動的に三角形にする
    // objindex をなおそう
    std::string JSON() {
       ///////////////// vertices
@@ -3020,7 +3039,7 @@ struct LoadObj {
    };
 };
 std::string obj2json(const std::string &filename) {
-   LoadObj loaded(filename);
+   Load3DFile loaded(filename);
    return loaded.JSON();
 };
 
