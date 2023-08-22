@@ -151,8 +151,8 @@ void setIsMultipleNode(const auto &p) {
    if (p->CORNER)
       p->isMultipleNode = true;
    else if (p->Neumann) {
-      auto n = p->getNormalNeumann_BEM();
-      p->isMultipleNode = std::ranges::any_of(p->getFacesNeumann(), [&n](const auto &f) { return !isFlat(n, f->normal, M_PI / 180. * 20); });
+      auto neumann_N = p->getNormalNeumann_BEM();
+      p->isMultipleNode = std::ranges::any_of(p->getFacesNeumann(), [&](const auto &f) { return !isFlat(neumann_N, f->normal, M_PI / 180. * 20); });
    } else
       p->isMultipleNode = false;
 };
@@ -198,9 +198,9 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
    }
 
    std::cout << "step3 線の境界条件を決定" << std::endl;
-#pragma omp parallel
+   // #pragma omp parallel
    for (const auto &l : water.getLines())
-#pragma omp single nowait
+   // #pragma omp single nowait
    {
       l->Neumann = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
       l->Dirichlet = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });

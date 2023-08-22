@@ -7,9 +7,6 @@
         - [🪸`PVDWriter`を使ったpvdファイルの作成方法](#🪸`PVDWriter`を使ったpvdファイルの作成方法)
     - [⛵️CGALを使って四面体を生成する](#⛵️CGALを使って四面体を生成する)
     - [⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵️四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-        - [🪸Advancing Front Algorithm](#🪸Advancing-Front-Algorithm)
-    - [⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵️四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-        - [🪸Advancing Front Algorithm](#🪸Advancing-Front-Algorithm)
 
 
 ---
@@ -45,7 +42,7 @@ $ ./load_3d_file
 ```
 
 
-[./expample0_load_3d_file.cpp#L4](./expample0_load_3d_file.cpp#L4)
+[./example0_load_3d_file.cpp#L4](./example0_load_3d_file.cpp#L4)
 
 
 ---
@@ -74,7 +71,7 @@ pvd.output();
 ![sample.gif](sample.gif)
 
 
-[./expample0_load_3d_file.cpp#L53](./expample0_load_3d_file.cpp#L53)
+[./example0_load_3d_file.cpp#L53](./example0_load_3d_file.cpp#L53)
 
 
 ---
@@ -85,7 +82,7 @@ $ brew install CGAL
 ```
 
 
-[./expample1_generate_tetra_using_CGAL.cpp#L2](./expample1_generate_tetra_using_CGAL.cpp#L2)
+[./example1_generate_tetra_using_CGAL.cpp#L2](./example1_generate_tetra_using_CGAL.cpp#L2)
 
 
 ## ⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization） 
@@ -98,26 +95,13 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 * naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
 * sweep algorithm
 
-### 🪸Advancing Front Algorithm
+
+[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
+四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
+このスリーバーをうまく削除することが重要となる．
 
 
-[./expample2_generate_tetra_constrained2.cpp#L2](./expample2_generate_tetra_constrained2.cpp#L2)
-
-
-## ⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization） 
-
-* PLC: piecewise linear complex
-* CDT: constrained Delaunay triangulation
-
-CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
-
-* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
-* sweep algorithm
-
-### 🪸Advancing Front Algorithm
-
-
-[./expample3_generate_tetra_constrained.cpp#L2](./expample3_generate_tetra_constrained.cpp#L2)
+[./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
 
 
 ---

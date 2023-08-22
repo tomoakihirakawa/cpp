@@ -1,5 +1,5 @@
 
-/*DOC_EXTRACT
+/*
 
 ## 四面体を生成（制約付き四面分割 constrained tetrahedralization）
 

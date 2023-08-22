@@ -1,0 +1,17 @@
+{
+    "name": "floatingbody",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 12.6,
+    "COM": [
+        2.15,
+        0.21,
+        0.4
+    ],
+    "MOI": [
+        0.14516,
+        0.2567,
+        0.0753109
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Ren2015/float50.obj"
+}
