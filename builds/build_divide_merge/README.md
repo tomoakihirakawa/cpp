@@ -1,34 +1,37 @@
 # Contents
 
-- [🐋メッシュの細分化](#🐋メッシュの細分化)
+- [🐋Fusion360を使って計算用objファイルを生成](#🐋Fusion360を使って計算用objファイルを生成)
+- [🐋計算用にメッシュの細分化](#🐋計算用にメッシュの細分化)
     - [⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）](#⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）)
     - [⛵️実行方法](#⛵️実行方法)
 
 
 ---
-# 🐋メッシュの細分化 
+# 🐋Fusion360を使って計算用objファイルを生成 
+
+<img src="sample_fusion360_step1.png" width="600px">
+
+<img src="sample_fusion360_step2.png" width="600px">
+
+<img src="sample_fusion360_step3.png" width="600px">
+
+<img src="sample_fusion360_step4.png" width="600px">
+
+# 🐋計算用にメッシュの細分化 
 
 ## ⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法） 
 
-古いファイルを削除する：
+1. `sh clean`で古いファイルを削除する．
+2. `cmake`を使って，`CMakeLists.txt`から`Makefile`を生成する．（リリースビルドタイプを指定し，ソースファイルを`remesh.cpp`に設定）
+3. `make`コマンドで，`Makefile`に基づいて実行ファイルをコンパイルする.
 
-```
-sh clean
-```
-
-`remesh.cpp`を`cmake`を使ってコンパイルするために，`Makefile`を作る：
-
-```
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
+```shell
+$ sh clean
+$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
+$ make
 ```
 
-`Makefile`を使ってコンパイルする：
-
-```
-make
-```
-
-`remesh`という実行ファイルができます．
+`remesh`という実行ファイルができる．
 
 ## ⛵️実行方法 
 
@@ -44,6 +47,8 @@ make
 
 
 ![./sample.gif](sample.gif)
+
+次は，入力ファイルを生成し，計算をする．
 
 
 [./remesh.cpp#L3](./remesh.cpp#L3)

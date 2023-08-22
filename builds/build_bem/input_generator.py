@@ -109,9 +109,70 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "Ren2015"
 
 match SimulationCase:
+    case "Ren2015":
+
+        start = 0.
+
+        id = ""
+
+        input_directory += SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/"+SimulationCase + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        water = {"name": "water", "type": "Fluid"}
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        z_surface = 0.4
+        T = 1.2
+        a = 0.05
+        h = 0.4
+
+        wavemaker = {"name": "wavemaker",
+                     "type": "SoftBody",
+                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+
+        floatingbody = {"name": "floatingbody",
+                        "type": "RigidBody",
+                        # "isFixed": True,
+                        # "output": "json"}
+                        "velocity": "floating"}
+
+        L = 0.3
+        W = 0.42
+        H = 0.2
+        A = L*W
+        V = A*H
+        d = H/2
+        # floatingbody["mass"] = m = rho * g * d * A
+        buoyancy = rho * g * d * A
+        floatingbody["mass"] = m = rho * d * A
+        MOI = 14.*(0.01*0.01)  # original kg*m*m
+        # MOI = m/m0*MOI0
+        z_surface = 0.4
+        z_floatinbody_bottom = z_surface - d
+        floatingbody["COM"] = [2+L/2., W/2, z_surface]
+        print("COM ", floatingbody["COM"])
+        floatingbody["MOI"] = [0.14516, 0.2567, 0.0753109]
+
+        objfolder = program_home + "/cpp/obj/Ren2015"
+        water["objfile"] = objfolder + "/water300.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+        tank["objfile"] = objfolder + "/tank50.obj"
+        floatingbody["objfile"] = objfolder+"/float50.obj"
+
+        inputfiles = [tank, wavemaker, water, floatingbody]
+
+        setting = {"max_dt": 0.02,
+                   "end_time_step": 10000,
+                   "end_time": 9,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
+
+        generate(inputfiles, setting)
     case "Hadzic2005":
 
         start = 0.
@@ -160,7 +221,7 @@ match SimulationCase:
         # floatingbody["translate"] = [0., 0., 0.]
 
         objfolder = program_home + "/cpp/obj/2023Tamatu"
-        water["objfile"] = objfolder + "/water300_mod2.obj"
+        water["objfile"] = objfolder + "/water300_mod3.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker50.obj"
         tank["objfile"] = objfolder + "/tank10.obj"
         floatingbody["objfile"] = objfolder+"/floatingbody50.obj"

@@ -609,18 +609,18 @@ struct BEM_BVP {
 
    /*DOC_EXTRACT BEM
 
-   ### $\phi_t$と$\phi_{nt}$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
+   ### $`\phi_t`$と$`\phi_{nt}`$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
 
-   $\phi_t$と$\phi_{nt}$に関するBIEを解くためには，ディリクレ境界には$\phi_t$を，ノイマン境界には$\phi_{nt}$を与える．
+   $`\phi_t`$と$`\phi_{nt}`$に関するBIEを解くためには，ディリクレ境界には$`\phi_t`$を，ノイマン境界には$`\phi_{nt}`$を与える．
 
-   #### ディリクレ節点の$`\phi_{nt}`$の与え方(水面：圧力が既知，$\phi$が既知)
+   #### ディリクレ節点の$`\phi_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)
 
    このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
    ただし，壁が完全に固定されている場合，$`\phi_{nt}`$は0とする．
 
    #### ディリクレ節点の$`\phi_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)
 
-   ディリクレ境界では$\phi_t$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi_t`$を求めることができる．
+   ディリクレ境界では$`\phi_t`$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi_t`$を求めることができる．
 
    #### ノイマン節点での$`\phi_{nt}`$の与え方
 
@@ -653,7 +653,7 @@ struct BEM_BVP {
    \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U}_{\rm c} + \boldsymbol \Omega_{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega}_{\rm c}\times{\bf n}
    ```
 
-   \ref{BEM:phint_Neumann}{`phin_Neuamnn`}で$\phi_{nt}$を計算する．これは\ref{BEM:setPhiPhin_t}{`setPhiPhin_t`}で使っている．
+   \ref{BEM:phint_Neumann}{`phin_Neuamnn`}で$`\phi_{nt}`$を計算する．これは\ref{BEM:setPhiPhin_t}{`setPhiPhin_t`}で使っている．
 
    $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi_{nt}`$を求め，
    次にBIEから$`\phi_t`$を求め，次に圧力$p$を求める．
@@ -672,7 +672,7 @@ struct BEM_BVP {
    \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} = \boldsymbol{T} _{\text {ext }}+\boldsymbol{T} _{\text {hydro }}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right)
    ```
 
-   これを満たすように，$\Phi_{nt}$を求める．これは次のように書き換えて，根探し問題として解く．
+   これを満たすように，$`\Phi_{nt}`$を求める．これは次のように書き換えて，根探し問題として解く．
    このプログラムでは，\ref{quasi_newton:broyden}{Broyden法}を使って，根探している．
 
    ```math
@@ -680,7 +680,7 @@ struct BEM_BVP {
    \boldsymbol{0} = \boldsymbol{I} \frac{d {\boldsymbol \Omega} _{\rm c}}{d t} - \boldsymbol{T} _{\text {ext }} - \boldsymbol{T} _{\text {hydro }}\left(\Phi_{nt}\left(\frac{d\boldsymbol U_{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t} \right)\right)
    ```
 
-   この式を，${\boldsymbol Q}\left(\dfrac{d {\boldsymbol U} _{\rm c}}{d t}, \dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)=(0,0,0,0,0,0)$
+   この式を，$`{\boldsymbol Q}\left(\dfrac{d {\boldsymbol U} _{\rm c}}{d t}, \dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)=(0,0,0,0,0,0)`$
    として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
    $`\phi_{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 

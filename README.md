@@ -54,7 +54,6 @@
     - [⛵️3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法](./builds/build_Network/README.md#⛵️3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法)
     - [⛵️CGALを使って四面体を生成する](./builds/build_Network/README.md#⛵️CGALを使って四面体を生成する)
     - [⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization）](./builds/build_Network/README.md#⛵️四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-    - [⛵️四面体を生成（制約付き四面分割 constrained tetrahedralization）](./builds/build_Network/README.md#⛵️四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 ## [build_pybind11](./builds/build_pybind11/README.md)
 
 - [Contents](./builds/build_pybind11/README.md#Contents)
@@ -63,7 +62,8 @@
 ## [build_divide_merge](./builds/build_divide_merge/README.md)
 
 - [Contents](./builds/build_divide_merge/README.md#Contents)
-- [🐋メッシュの細分化](./builds/build_divide_merge/README.md#🐋メッシュの細分化)
+- [🐋Fusion360を使って計算用objファイルを生成](./builds/build_divide_merge/README.md#🐋Fusion360を使って計算用objファイルを生成)
+- [🐋計算用にメッシュの細分化](./builds/build_divide_merge/README.md#🐋計算用にメッシュの細分化)
     - [⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）](./builds/build_divide_merge/README.md#⛵️実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）)
     - [⛵️実行方法](./builds/build_divide_merge/README.md#⛵️実行方法)
 ## [build_JSON](./builds/build_JSON/README.md)

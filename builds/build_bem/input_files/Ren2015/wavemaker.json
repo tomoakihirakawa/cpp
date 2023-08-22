@@ -1,0 +1,13 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        0.05,
+        1.2,
+        0.4,
+        0.4
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/Ren2015/wavemaker100.obj"
+}
