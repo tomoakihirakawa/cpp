@@ -266,7 +266,7 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT BOUNDARY_CONDITIONS
 
 ## `getContactFaces()`の利用
 
