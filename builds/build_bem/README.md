@@ -214,6 +214,20 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 
+## ⛵️`getContactFaces()`の利用 
+
+[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
+`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
+
+* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
+* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+
+これらは，`uNeumann()`や`accelNeumann()`で利用される．
+
+
+[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
+
+
 ---
 ## ⛵️境界値問題 
 
@@ -514,21 +528,6 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 
 [./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
-
-
----
-## ⛵️`getContactFaces()`の利用 
-
-[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
-`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
-
-* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
-* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
-
-これらは，`uNeumann()`や`accelNeumann()`で利用される．
-
-
-[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
 
 
 ---
