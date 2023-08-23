@@ -12,7 +12,7 @@ using V_Netp = std::vector<Network *>;
 using V_netFp = std::vector<networkFace *>;
 using VV_netFp = std::vector<V_netFp>;
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT WAVE_GENERATION
 
 ## 造波装置など
 
@@ -160,7 +160,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       auto v = A * w * sin(w * (t - start));
       return {0., v, 0., 0., 0., 0.};
    } else if (name == "flap") {
-      /*DOC_EXTRACT WAVE_MAKER
+      /*DOC_EXTRACT WAVE_GENERATION
 
       ### フラップ型造波装置
 
@@ -198,7 +198,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
    } else if (name == "piston") {
-      /*DOC_EXTRACT WAVE_MAKER
+      /*DOC_EXTRACT WAVE_GENERATION
 
       ### ピストン型造波装置
 
