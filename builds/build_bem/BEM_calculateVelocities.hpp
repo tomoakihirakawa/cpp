@@ -4,7 +4,7 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM_velocity
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM1_velocity
 
 ## 流速の計算方法
 
@@ -344,7 +344,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    return {0., 0., 0.};
 };
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM_velocity
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM2_velocity
 
 ### 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）
 

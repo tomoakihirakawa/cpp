@@ -493,7 +493,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM0
 
 ## 初期値問題
 

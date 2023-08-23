@@ -70,6 +70,7 @@
 [./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
 
 
+---
 ### 🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
 
 ディリクレ節点（水面）：
