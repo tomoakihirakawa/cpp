@@ -18,6 +18,8 @@
             - [ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
             - [ノイマン節点での$`\phi _{nt}`$の与え方](#ノイマン節点での$`\phi-_{nt}`$の与え方)
     - [⛵️造波装置など](#⛵️造波装置など)
+        - [🪸フラップ型造波装置](#🪸フラップ型造波装置)
+        - [🪸ピストン型造波装置](#🪸ピストン型造波装置)
     - [⛵️`getContactFaces()`の利用](#⛵️`getContactFaces()`の利用)
     - [⛵️初期値問題](#⛵️初期値問題)
         - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
@@ -399,7 +401,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L639)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L688)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -444,7 +446,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L611)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L660)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -458,7 +460,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L368)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L199)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L248)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L107)で利用され，$\phi _{n}$を計算する．
@@ -478,7 +480,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
 
-[./BEM_utilities.hpp#L219](./BEM_utilities.hpp#L219)
+[./BEM_utilities.hpp#L268](./BEM_utilities.hpp#L268)
 
 
 ## ⛵️その他 
@@ -489,7 +491,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L520](./BEM_utilities.hpp#L520)
+[./BEM_utilities.hpp#L569](./BEM_utilities.hpp#L569)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -521,7 +523,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L578](./BEM_utilities.hpp#L578)
+[./BEM_utilities.hpp#L627](./BEM_utilities.hpp#L627)
 
 
 ### 🪸計算の流れ 
@@ -580,7 +582,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L446](./BEM_utilities.hpp#L446)
+[./BEM_utilities.hpp#L495](./BEM_utilities.hpp#L495)
 
 
 ### 🪸浮体の重心位置・姿勢・速度の更新 
@@ -590,6 +592,42 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 
 [./main.cpp#L356](./main.cpp#L356)
+
+
+---
+### 🪸フラップ型造波装置 
+
+|   | name   |  description  |
+|:-:|:-------:|:-------------:|
+| 0 | `flap`|    name       |
+| 1 | `start` | start time    |
+| 2 | `A`     | wave amplitude|
+| 3 | `T`     | wave period   |
+| 4 | `h`     | water depth   |
+| 5 | `l`     | length from hinge to flap end |
+| 6 | `axis`  | x       |
+| 7 | `axis`  | y       |
+| 8 | `axis`  | z       |
+
+
+[./BEM_utilities.hpp#L163](./BEM_utilities.hpp#L163)
+
+
+### 🪸ピストン型造波装置 
+
+|   | name   |  description  |
+|:-:|:-------:|:-------------:|
+| 0 | `piston`|    name       |
+| 1 | `start` | start time    |
+| 2 | `A`     | wave amplitude|
+| 3 | `T`     | wave period   |
+| 4 | `h`     | water depth   |
+| 5 | `axis`  | x       |
+| 6 | `axis`  | y       |
+| 7 | `axis`  | z       |
+
+
+[./BEM_utilities.hpp#L201](./BEM_utilities.hpp#L201)
 
 
 ---

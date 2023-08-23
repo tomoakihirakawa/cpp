@@ -334,7 +334,7 @@ struct BEM_BVP {
                   std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
                }
             else
-               for (const auto &[t0, t1, ww] : __array_GW7xGW7__) {
+               for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
                   N012 = ModTriShape<3>(t0, t1);
                   tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
                   IGIGn = {tmp, tmp / (nr * nr)};

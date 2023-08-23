@@ -1,10 +1,10 @@
 {
-    "name": "floatingbody",
+    "name": "float",
     "type": "RigidBody",
     "velocity": "floating",
     "mass": 12.6,
     "COM": [
-        2.15,
+        2,
         0.21,
         0.4
     ],

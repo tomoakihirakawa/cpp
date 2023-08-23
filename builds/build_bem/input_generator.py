@@ -114,7 +114,7 @@ SimulationCase = "Ren2015"
 match SimulationCase:
     case "Ren2015":
 
-        start = 0.
+        start = 0.01
 
         id = ""
 
@@ -124,7 +124,9 @@ match SimulationCase:
         os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
-        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+        tank = {"name": "tank",
+                "type": "RigidBody",
+                "isFixed": True}
 
         z_surface = 0.4
         T = 1.2
@@ -132,10 +134,10 @@ match SimulationCase:
         h = 0.4
 
         wavemaker = {"name": "wavemaker",
-                     "type": "SoftBody",
-                     "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
+                     "type": "RigidBody",
+                     "velocity": ["piston", start, a, T, h, 1, 0, 0]}
 
-        floatingbody = {"name": "floatingbody",
+        floatingbody = {"name": "float",
                         "type": "RigidBody",
                         # "isFixed": True,
                         # "output": "json"}
@@ -154,19 +156,22 @@ match SimulationCase:
         # MOI = m/m0*MOI0
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
-        floatingbody["COM"] = [2+L/2., W/2, z_surface]
+        # floatingbody["COM"] = [2+L/2., W/2, z_surface]
+        floatingbody["COM"] = [2, W/2, z_surface]
         print("COM ", floatingbody["COM"])
-        floatingbody["MOI"] = [0.14516, 0.2567, 0.0753109]
+        # floatingbody["MOI"] = [0.14516, 0.2567, 0.0753109]
+        floatingbody["MOI"] = [10**10, 0.2567, 10**10]
 
         objfolder = program_home + "/cpp/obj/Ren2015"
-        water["objfile"] = objfolder + "/water300.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
-        tank["objfile"] = objfolder + "/tank50.obj"
+        # water["objfile"] = objfolder + "/water300.obj"
+        water["objfile"] = objfolder + "/water400mod.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
+        tank["objfile"] = objfolder + "/tank100.obj"
         floatingbody["objfile"] = objfolder+"/float50.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.005,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,
