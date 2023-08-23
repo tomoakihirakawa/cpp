@@ -4,7 +4,7 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT BOUNDARY_VALUE_PROBLEM
 
 ## 境界値問題
 
@@ -216,7 +216,7 @@ void setPhiPhin(Network &water) {
 // b@                                   BEM_BVP                                  */
 // b@ -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT BOUNDARY_VALUE_PROBLEM
 
 ### BIEの離散化
 
@@ -280,7 +280,7 @@ struct BEM_BVP {
       Timer timer;
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
       std::cout << Magenta << timer() << colorOff << std::endl;
-      /*DOC_EXTRACT BEM
+      /*DOC_EXTRACT BOUNDARY_VALUE_PROBLEM
 
       このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
       `IGIGn`は，ある節点$`i_\circ`$（係数行列の行インデックス）に対する
@@ -355,7 +355,7 @@ struct BEM_BVP {
             }
          }
          /* -------------------------------------------------------------------------- */
-         /*DOC_EXTRACT BEM
+         /*DOC_EXTRACT BOUNDARY_VALUE_PROBLEM
 
          ### リジッドモードテクニック
 
@@ -393,7 +393,7 @@ struct BEM_BVP {
             if (isNeumannID_BEM(j_col))
                igign = {-std::get<1>(igign), -std::get<0>(igign)};
 
-            /*DOC_EXTRACT BEM
+            /*DOC_EXTRACT BOUNDARY_VALUE_PROBLEM
 
             係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．
 
@@ -574,7 +574,7 @@ struct BEM_BVP {
    // b!                             solve phi_t and phi_n_t                            */
    // b! ------------------------------------------------------------------------------ */
 
-   /*DOC_EXTRACT BEM
+   /*DOC_EXTRACT FLOATING_BODY_SIMULATION
 
    ## 浮体動揺解析
 
@@ -607,7 +607,7 @@ struct BEM_BVP {
 
    */
 
-   /*DOC_EXTRACT BEM
+   /*DOC_EXTRACT FLOATING_BODY_SIMULATION
 
    ### $`\phi_t`$と$`\phi_{nt}`$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
 
@@ -688,7 +688,7 @@ struct BEM_BVP {
 
    */
 
-   /*DOC_EXTRACT BEM
+   /*DOC_EXTRACT FLOATING_BODY_SIMULATION
 
    ```math
    \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =

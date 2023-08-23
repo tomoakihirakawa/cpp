@@ -493,7 +493,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BEM_InitialValueProblem
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM
 
 ## 初期値問題
 
@@ -567,7 +567,7 @@ Tddd gradPhi(const networkPoint *const p) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT OTHERS
 
 ## その他
 
@@ -625,7 +625,7 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
    return ret;
 };
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT FLOATING_BODY_SIMULATION
 
 ### $`\phi_{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．
 

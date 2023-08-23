@@ -50,6 +50,34 @@
 [./BEM.hpp#L1](./BEM.hpp#L1)
 
 
+## ⛵️`getContactFaces()`の利用 
+
+[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
+`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
+
+* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
+* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+
+これらは，`uNeumann()`や`accelNeumann()`で利用される．
+
+
+[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
+
+
+### 🪸計算の流れ 
+
+1. 境界条件の設定
+2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+3. 三角形の線形補間を使って節点の流速を計算する
+4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
+6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+
+
+[./main.cpp#L316](./main.cpp#L316)
+
+
+---
 ## ⛵️流速の計算方法
 
 
@@ -77,6 +105,7 @@
 [./BEM_calculateVelocities.hpp#L347](./BEM_calculateVelocities.hpp#L347)
 
 
+---
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
 
 流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
@@ -149,6 +178,18 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [./BEM_calculateVelocities.hpp#L583](./BEM_calculateVelocities.hpp#L583)
 
 
+## ⛵️その他 
+
+### 🪸境界値問題の未知変数 
+
+`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
+
+
+[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
+
+
+---
 ## ⛵️境界のタイプを決定する 
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
@@ -187,6 +228,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 
+---
 ## ⛵️境界値問題 
 
 ### 🪸基礎方程式 
@@ -324,6 +366,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 [./BEM_solveBVP.hpp#L396](./BEM_solveBVP.hpp#L396)
 
 
+---
 ## ⛵️浮体動揺解析 
 
 浮体の重心の運動方程式：
@@ -455,31 +498,6 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 [./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
 
 
-## ⛵️`getContactFaces()`の利用 
-
-[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
-`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
-
-* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
-* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
-
-これらは，`uNeumann()`や`accelNeumann()`で利用される．
-
-
-[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
-
-
-## ⛵️その他 
-
-### 🪸境界値問題の未知変数 
-
-`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
-
-
-[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
-
-
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
 
 $`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
@@ -510,19 +528,6 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 
 [./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
-
-
-### 🪸計算の流れ 
-
-1. 境界条件の設定
-2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
-3. 三角形の線形補間を使って節点の流速を計算する
-4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
-5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
-
-
-[./main.cpp#L316](./main.cpp#L316)
 
 
 ---
@@ -569,15 +574,6 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 
 [./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
-
-
-### 🪸浮体の重心位置・姿勢・速度の更新 
-
-浮体の重心位置は，重心に関する運動方程式を解くことで求める．
-姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
-
-
-[./main.cpp#L356](./main.cpp#L356)
 
 
 ---
@@ -663,6 +659,16 @@ The script will generate input files in JSON format for the specified simulation
 
 
 [./input_generator.py#L58](./input_generator.py#L58)
+
+
+---
+### 🪸浮体の重心位置・姿勢・速度の更新 
+
+浮体の重心位置は，重心に関する運動方程式を解くことで求める．
+姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
+
+
+[./main.cpp#L356](./main.cpp#L356)
 
 
 ---

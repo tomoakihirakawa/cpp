@@ -4,7 +4,7 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM_velocity
 
 ## 流速の計算方法
 
@@ -344,7 +344,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    return {0., 0., 0.};
 };
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT INITIAL_VALUE_PROBLEM_velocity
 
 ### 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）
 
@@ -493,7 +493,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
    }
 }
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT OTHERS
 
 ### エネルギー保存則（計算精度のチェックに利用できる）
 
@@ -580,7 +580,7 @@ double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
    return (EK + EP) * _WATER_DENSITY_ / 2.;
 };
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT OTHERS
 
 ### 内部流速の計算方法（使わなくてもいい）
 
