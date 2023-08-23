@@ -68,13 +68,13 @@
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L366)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L368)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L280)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L282)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L345](./BEM_calculateVelocities.hpp#L345)
+[./BEM_calculateVelocities.hpp#L347](./BEM_calculateVelocities.hpp#L347)
 
 
 ### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
@@ -129,7 +129,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L494](./BEM_calculateVelocities.hpp#L494)
+[./BEM_calculateVelocities.hpp#L496](./BEM_calculateVelocities.hpp#L496)
 
 
 ### 🪸内部流速の計算方法（使わなくてもいい） 
@@ -146,7 +146,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L581](./BEM_calculateVelocities.hpp#L581)
+[./BEM_calculateVelocities.hpp#L583](./BEM_calculateVelocities.hpp#L583)
 
 
 ## ⛵️境界のタイプを決定する 
@@ -401,7 +401,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L688)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L689)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -446,27 +446,13 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L660)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L661)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
 [./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
-
-
-## ⛵️造波装置など 
-
-造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L368)
-
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L248)では，Hadzic et al. 2005の造波板の動きを模擬している．
-角速度の原点は，板の`COM`としている．
-
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L107)で利用され，$\phi _{n}$を計算する．
-
-
-[./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
 
 ## ⛵️`getContactFaces()`の利用 
@@ -480,7 +466,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
 
-[./BEM_utilities.hpp#L268](./BEM_utilities.hpp#L268)
+[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
 
 
 ## ⛵️その他 
@@ -491,7 +477,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L569](./BEM_utilities.hpp#L569)
+[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
 
 
 ### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -523,7 +509,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L627](./BEM_utilities.hpp#L627)
+[./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
 
 
 ### 🪸計算の流れ 
@@ -582,7 +568,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L495](./BEM_utilities.hpp#L495)
+[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
 
 
 ### 🪸浮体の重心位置・姿勢・速度の更新 
@@ -595,6 +581,20 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 
 ---
+## ⛵️造波装置など 
+
+造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
+[強制運動を課す](../../builds/build_bem/main.cpp#L368)
+
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L249)では，Hadzic et al. 2005の造波板の動きを模擬している．
+角速度の原点は，板の`COM`としている．
+
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L107)で利用され，$\phi _{n}$を計算する．
+
+
+[./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
+
+
 ### 🪸フラップ型造波装置 
 
 |   | name   |  description  |
