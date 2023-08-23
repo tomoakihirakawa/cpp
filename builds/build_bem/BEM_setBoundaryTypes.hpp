@@ -4,7 +4,7 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT BOUNDARY_CONDITIONs
+/*DOC_EXTRACT BOUNDARY_CONDITIONS
 
 ## 境界のタイプを決定する
 
