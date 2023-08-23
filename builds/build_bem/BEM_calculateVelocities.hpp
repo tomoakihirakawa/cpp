@@ -241,16 +241,18 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          auto &[np0x, np1x, np2x] = nP012;
          double a = magicalValue(p, f) + variance2(p, f);
 
-         if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-            a *= std::pow(1.1, 3);
-         } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->CORNER; })) {
-            a *= std::pow(1.1, 2);
+         // if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
+         //    a *= std::pow(1.5, 3);
+         // } else
+
+         if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->isMultipleNode; })) {
+            a *= std::pow(1.5, 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
-                          return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->CORNER; });
+                          return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->isMultipleNode; });
                        });
                     })) {
-            a *= 1.1;
+            a *= 1.5;
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;

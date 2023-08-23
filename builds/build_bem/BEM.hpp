@@ -267,6 +267,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
       uomap_P_Tddd P_gradPhi = p_tdd0;
       uomap_P_Tddd P_vecToSurface = p_tdd0;
       uomap_P_Tddd P_uNeumann = p_tdd0;
+      uomap_P_Tddd P_V2ContactFaces0 = p_tdd0, P_V2ContactFaces1 = p_tdd0, P_V2ContactFaces2 = p_tdd0, P_V2ContactFaces3 = p_tdd0, P_V2ContactFaces4 = p_tdd0, P_V2ContactFaces5 = p_tdd0;
 
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
@@ -295,6 +296,24 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
                //    std::cout << f->getNetwork()->velocity << std::endl;
                // }
                P_velocity_body[p] = f->getNetwork()->velocityRigidBody(p->X);
+            }
+
+            // push vectors to the Nearest P_V2ContactFaces
+            int i = 0;
+            for (const auto &f : p->getContactFaces()) {
+               if (i == 0)
+                  P_V2ContactFaces0[p] = Nearest(p->X, ToX(f)) - p->X;
+               if (i == 1)
+                  P_V2ContactFaces1[p] = Nearest(p->X, ToX(f)) - p->X;
+               if (i == 2)
+                  P_V2ContactFaces2[p] = Nearest(p->X, ToX(f)) - p->X;
+               if (i == 3)
+                  P_V2ContactFaces3[p] = Nearest(p->X, ToX(f)) - p->X;
+               if (i == 4)
+                  P_V2ContactFaces4[p] = Nearest(p->X, ToX(f)) - p->X;
+               if (i == 5)
+                  P_V2ContactFaces5[p] = Nearest(p->X, ToX(f)) - p->X;
+               i++;
             }
 
             P_accelNeumann[p] = accelNeumann(p);
@@ -342,7 +361,13 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
              {"φnt", P_phin_t},
              {"φnt hess", P_phin_t_from_Hessian},
              {"boundary condition", P_BC},
-             {"pressure", P_pressure}};
+             {"pressure", P_pressure},
+             {"P_V2ContactFaces0", P_V2ContactFaces0},
+             {"P_V2ContactFaces1", P_V2ContactFaces1},
+             {"P_V2ContactFaces2", P_V2ContactFaces2},
+             {"P_V2ContactFaces3", P_V2ContactFaces3},
+             {"P_V2ContactFaces4", P_V2ContactFaces4},
+             {"P_V2ContactFaces5", P_V2ContactFaces5}};
          return data;
       } catch (std::exception &e) {
          std::cerr << e.what() << colorOff << std::endl;
@@ -360,11 +385,13 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 
 double dt_CFL(const Network &water, double min_dt, const double c) {
    for (const auto &p : water.getPoints())
-      for (const auto &q : p->getNeighbors()) {
-         auto dt = c * Distance(p, q) / Norm(q->U_BEM);
-         if (min_dt > dt)
-            min_dt = dt;
-      }
+      for (const auto &P : p->getNeighbors())
+         for (const auto &q : P->getNeighbors())
+            if (p != q) {
+               auto dt = c * Distance(p, q) / Norm(p->U_BEM - q->U_BEM);
+               if (isFinite(dt) && min_dt > dt)
+                  min_dt = dt;
+            }
    return min_dt;
 };
 

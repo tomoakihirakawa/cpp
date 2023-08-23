@@ -160,6 +160,23 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       auto v = A * w * sin(w * (t - start));
       return {0., v, 0., 0., 0., 0.};
    } else if (name == "flap") {
+      /*DOC_EXTRACT WAVE_MAKER
+
+      ### フラップ型造波装置
+
+      |   | name   |  description  |
+      |:-:|:-------:|:-------------:|
+      | 0 | `flap`|    name       |
+      | 1 | `start` | start time    |
+      | 2 | `A`     | wave amplitude|
+      | 3 | `T`     | wave period   |
+      | 4 | `h`     | water depth   |
+      | 5 | `l`     | length from hinge to flap end |
+      | 6 | `axis`  | x       |
+      | 7 | `axis`  | y       |
+      | 8 | `axis`  | z       |
+
+      */
       // start,A, T, h, l
       // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
       double start = stod(strings[1] /*start*/);
@@ -178,6 +195,39 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
                                                       (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
          return {0., 0., 0., wx, wy, wz};
+      } else
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
+   } else if (name == "piston") {
+      /*DOC_EXTRACT WAVE_MAKER
+
+      ### ピストン型造波装置
+
+      |   | name   |  description  |
+      |:-:|:-------:|:-------------:|
+      | 0 | `piston`|    name       |
+      | 1 | `start` | start time    |
+      | 2 | `A`     | wave amplitude|
+      | 3 | `T`     | wave period   |
+      | 4 | `h`     | water depth   |
+      | 5 | `axis`  | x       |
+      | 6 | `axis`  | y       |
+      | 7 | `axis`  | z       |
+
+      */
+      double start = stod(strings[1] /*start*/);
+      if (strings.size() > 7) {
+         double A = std::abs(stod(strings[2] /*A*/));
+         double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
+         double h = std::abs(stod(strings[4] /*h*/));
+         DispersionRelation DS(w, h);
+         double k = std::abs(DS.k);
+         double F = 4. * std::pow(sinh(k * h), 2) / (4 * M_PI * h / DS.L + sinh(2. * k * h));
+         double H = 2. * A;
+         double S = H / F;
+         S *= w * sin(w * (t - start));
+         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", S = " << S << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+         Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};
+         return {S * axis[0], S * axis[1], S * axis[2], 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
    } else if (name.contains("sinusoidal") || name.contains("sin")) {
