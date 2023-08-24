@@ -1,34 +1,34 @@
 # Contents
 
-- [🐋補間](#🐋補間)
-    - [⛵️⛵️放射関数補間](#⛵️⛵️放射関数補間)
-        - [🪸🪸重み$`w _i`$の見積もり](#🪸🪸重み$`w-_i`$の見積もり)
-        - [🪸🪸放射基底関数$`\phi`$](#🪸🪸放射基底関数$`\phi`$)
-            - [多重二乗（multiquadric RBF）](#多重二乗（multiquadric-RBF）)
-            - [逆多重二乗（inverse multiquadric RBF）](#逆多重二乗（inverse-multiquadric-RBF）)
-            - [ガウシアン（Gaussian RBF）](#ガウシアン（Gaussian-RBF）)
-        - [🪸🪸補間関数の微分](#🪸🪸補間関数の微分)
-            - [多重二乗](#多重二乗)
-            - [逆多重二乗](#逆多重二乗)
-            - [ガウシアン](#ガウシアン)
-        - [🪸🪸最適なパラメタ$`{\varepsilon}`$](#🪸🪸最適なパラメタ$`{\varepsilon}`$)
-    - [⛵️三角形補間](#⛵️三角形補間)
-    - [⛵️⛵️範囲を修正した三角形形状関数](#⛵️⛵️範囲を修正した三角形形状関数)
-    - [⛵️B-spline補間](#⛵️B-spline補間)
-    - [⛵️ラグランジュ補間](#⛵️ラグランジュ補間)
+- [🐋 補間](#🐋-補間)
+    - [⛵ ⛵ 放射関数補間](#⛵-⛵-放射関数補間)
+        - [🪼 🪼 重み$`w _i`$の見積もり](#🪼-🪼-重み$`w-_i`$の見積もり)
+        - [🪼 🪼 放射基底関数$`\phi`$](#🪼-🪼-放射基底関数$`\phi`$)
+            - [🐚 🐚 多重二乗（multiquadric RBF）](#🐚-🐚-多重二乗（multiquadric-RBF）)
+            - [🐚 🐚 逆多重二乗（inverse multiquadric RBF）](#🐚-🐚-逆多重二乗（inverse-multiquadric-RBF）)
+            - [🐚 🐚 ガウシアン（Gaussian RBF）](#🐚-🐚-ガウシアン（Gaussian-RBF）)
+        - [🪼 🪼 補間関数の微分](#🪼-🪼-補間関数の微分)
+            - [🐚 🐚 多重二乗](#🐚-🐚-多重二乗)
+            - [🐚 🐚 逆多重二乗](#🐚-🐚-逆多重二乗)
+            - [🐚 🐚 ガウシアン](#🐚-🐚-ガウシアン)
+        - [🪼 🪼 最適なパラメタ$`{\varepsilon}`$](#🪼-🪼-最適なパラメタ$`{\varepsilon}`$)
+    - [⛵ 三角形補間](#⛵-三角形補間)
+    - [⛵ ⛵ 範囲を修正した三角形形状関数](#⛵-⛵-範囲を修正した三角形形状関数)
+    - [⛵ B-spline補間](#⛵-B-spline補間)
+    - [⛵ ラグランジュ補間](#⛵-ラグランジュ補間)
 
 
 ---
-# 🐋補間 
+# 🐋 補間 
 
-## ⛵️⛵️放射関数補間  
+## ⛵ ⛵ 放射関数補間  
 
 距離$`r=\left\| \mathbf{x}-{{\mathbf{a}} _{i}} \right\|`$を引数とする
 放射基底関数$`\phi(r _i)`$に重み$`w _i`$を掛け合わせて構築した
 補間関数$`f\left( \mathbf{x} \right)=\sum\limits _{i=0}^{N-1}{{{w} _{i}}\phi \left( \left\| \mathbf{x}-{{\mathbf{a}} _{i}} \right\| \right)}`$
 を放射関数補間という．
 
-### 🪸🪸重み$`w _i`$の見積もり  
+### 🪼 🪼 重み$`w _i`$の見積もり  
 
 重み$`w _i`$の決定には，サンプル点$`A=\left\{ {{\mathbf{a}} _{0}},{{\mathbf{a}} _{1}},...,{{\mathbf{a}} _{N-1}} \right\}`$
 における値$`Y=\left\{ {{y} _{0}},{{y} _{1}},...,{{y} _{N-1}} \right\}`$
@@ -50,23 +50,23 @@
 \end{matrix} \right)
 ```
 
-### 🪸🪸放射基底関数$`\phi`$  
+### 🪼 🪼 放射基底関数$`\phi`$  
 
-#### 多重二乗（multiquadric RBF）
+#### 🐚 🐚 多重二乗（multiquadric RBF）  
 
 放射基底関数として多重二乗（multiquadric），
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}}`$
 がよく使われる．
 
-#### 逆多重二乗（inverse multiquadric RBF）
+#### 🐚 🐚 逆多重二乗（inverse multiquadric RBF）  
 
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}}`$
 
-#### ガウシアン（Gaussian RBF）
+#### 🐚 🐚 ガウシアン（Gaussian RBF）  
 
 $`\phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}}`$
 
-### 🪸🪸補間関数の微分  
+### 🪼 🪼 補間関数の微分  
 
 放射関数補間の微分を少し変形すると，
 
@@ -89,7 +89,7 @@ $`\nabla f\left( \mathbf{x} \right)=\sum\limits _{i=0}^{N-1}{{{w} _{i}}\frac{\ma
 
 である．分母がゼロになる可能性があるが，放射基底関数の微分でキャンセルされる．
 
-#### 多重二乗
+#### 🐚 🐚 多重二乗  
 
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}},\frac{\partial \phi }{\partial r}\left( r \right)=\frac{\varepsilon^2 r}{\phi \left( r \right)}`$
 
@@ -97,7 +97,7 @@ $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}
 
 $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} _{i}}\frac{\mathbf{x}-{{\mathbf{a}} _{i}}}{\phi \left( {{r} _{i}} \right)}}`$
 
-#### 逆多重二乗
+#### 🐚 🐚 逆多重二乗  
 
 ```math
 \begin{align}
@@ -107,7 +107,7 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 \end{align}
 ```
 
-#### ガウシアン
+#### 🐚 🐚 ガウシアン  
 
 ```math
 \begin{align}
@@ -117,7 +117,7 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 \end{align}
 ```
 
-### 🪸🪸最適なパラメタ$`{\varepsilon}`$  
+### 🪼 🪼 最適なパラメタ$`{\varepsilon}`$  
 
 サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
 
@@ -127,9 +127,9 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 [./0README.cpp#L1](./0README.cpp#L1)
 
 
-## ⛵️三角形補間 
+## ⛵ 三角形補間 
 
-## ⛵️⛵️範囲を修正した三角形形状関数  
+## ⛵ ⛵ 範囲を修正した三角形形状関数  
 
 普通の三角形形状関数は，$`{\mathbf N}=(N _0,N _1,N _2) = (t _0,t _1,1-t _0-t _1)`$．
 これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X _0},{\mathbf X _1},{\mathbf X _2}\})`$は，$`t _0,t _1=[0,1]`$で平行四辺形を作る．
@@ -169,7 +169,7 @@ N _5 &= 4t _0(1-t _0-t _1)
 [./TriShape.cpp#L1](./TriShape.cpp#L1)
 
 
-## ⛵️B-spline補間 
+## ⛵ B-spline補間 
 
 与えられたデータ点を通る多項式を求める方法の一つにB-spline補間がある．
 
@@ -181,7 +181,7 @@ N _5 &= 4t _0(1-t _0-t _1)
 [./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
 
 
-## ⛵️ラグランジュ補間 
+## ⛵ ラグランジュ補間 
 
 与えられたデータ点を通る多項式を求める方法の一つにラグランジュ補間がある．
 

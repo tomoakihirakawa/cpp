@@ -4,12 +4,6 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM1_velocity
-
-## 流速の計算方法
-
-*/
-
 //$ -------------------------------------------------------------------------- */
 //$                         calculateVecToSurface                              */
 //$ -------------------------------------------------------------------------- */
@@ -256,8 +250,8 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          }
 
          auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
-         optimum_position += (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3. * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
-         optimum_position /= 2.;
+         // optimum_position += (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3. * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
+         // optimum_position /= 2.;
          // vector_to_optimum_X += a * (optimum_position - pX);
          vector_to_optimum_X += a * (optimum_position - pX);
          s += a;
@@ -344,7 +338,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    return {0., 0., 0.};
 };
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM2_velocity
+/*DOC_EXTRACT 0_3_1_INITIAL_VALUE_PROBLEM
 
 ### 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）
 
@@ -493,7 +487,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
    }
 }
 
-/*DOC_EXTRACT OTHERS
+/*DOC_EXTRACT 0_7_OTHERS
 
 ### エネルギー保存則（計算精度のチェックに利用できる）
 
@@ -580,7 +574,7 @@ double TotalEnergy(const std::unordered_set<networkFace *> &faces) {
    return (EK + EP) * _WATER_DENSITY_ / 2.;
 };
 
-/*DOC_EXTRACT OTHERS
+/*DOC_EXTRACT 0_7_OTHERS
 
 ### 内部流速の計算方法（使わなくてもいい）
 

@@ -55,7 +55,7 @@ def generate(inputfiles, setting):
           magenta, input_directory, coloroff)
 
 
-'''DOC_EXTRACT HOW_TO_MAKE_INPUT_FILES
+'''DOC_EXTRACT 1_0_HOW_TO_MAKE_INPUT_FILES
 
 # 入力ファイル生成 `input_generator.py`
 

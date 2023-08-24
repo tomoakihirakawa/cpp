@@ -1,4 +1,4 @@
-/*DOC_EXTRACT HOW_TO_RUN
+/*DOC_EXTRACT 2_0_HOW_TO_RUN
 
 # 実行方法
 
@@ -30,9 +30,13 @@ $ python3 input_generator.py
 $ ./main ./input_files/Hadzic2005
 ```
 
+*/
+
+/*DOC_EXTRACT 3_0_EXAMPLES
+
+# Examples
+
 **[See the Examples here!](EXAMPLES.md)**
-
-
 
 */
 
@@ -313,7 +317,10 @@ int main(int argc, char **argv) {
          // b@ ----------------------------------------------------- */
          int RK_step = 0;
          BEM_BVP BVP;
-         /*DOC_EXTRACT BEM
+
+         /*DOC_EXTRACT 0_1_BEM
+
+         ## 概要
 
          ### 計算の流れ
 
@@ -353,13 +360,12 @@ int main(int argc, char **argv) {
 
             // b$ --------------------------------------------------- */
 
-            /*DOC_EXTRACT BEM_InitialValueProblem
+            /*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
 
             ### 浮体の重心位置・姿勢・速度の更新
 
             浮体の重心位置は，重心に関する運動方程式を解くことで求める．
             姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
-
 
             */
 

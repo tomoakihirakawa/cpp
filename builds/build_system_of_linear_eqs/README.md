@@ -1,20 +1,20 @@
 # Contents
 
-- [🐋連立一次方程式の解法](#🐋連立一次方程式の解法)
-    - [⛵️⛵️Arnoldi過程](#⛵️⛵️Arnoldi過程)
-    - [⛵️⛵️一般化最小残差法/GMRES](#⛵️⛵️一般化最小残差法/GMRES)
-        - [🪸テスト](#🪸テスト)
-    - [⛵️LU分解(LAPACK)](#⛵️LU分解(LAPACK))
-    - [⛵️Compressed Sparse Row (CSR)](#⛵️Compressed-Sparse-Row-(CSR))
-    - [⛵️共役勾配法と勾配降下法](#⛵️共役勾配法と勾配降下法)
-        - [🪸共役勾配法（Conjugate Gradient, CG）](#🪸共役勾配法（Conjugate-Gradient,-CG）)
-        - [🪸勾配降下法 (Gradient Descent, GD)](#🪸勾配降下法-(Gradient-Descent,-GD))
+- [🐋 連立一次方程式の解法](#🐋-連立一次方程式の解法)
+    - [⛵ ⛵ Arnoldi過程](#⛵-⛵-Arnoldi過程)
+    - [⛵ ⛵ 一般化最小残差法/GMRES](#⛵-⛵-一般化最小残差法/GMRES)
+        - [🪼 テスト](#🪼-テスト)
+    - [⛵ LU分解(LAPACK)](#⛵-LU分解(LAPACK))
+    - [⛵ 共役勾配法と勾配降下法](#⛵-共役勾配法と勾配降下法)
+        - [🪼 共役勾配法（Conjugate Gradient, CG）](#🪼-共役勾配法（Conjugate-Gradient,-CG）)
+        - [🪼 勾配降下法 (Gradient Descent, GD)](#🪼-勾配降下法-(Gradient-Descent,-GD))
+    - [⛵ Compressed Sparse Row (CSR)](#⛵-Compressed-Sparse-Row-(CSR))
 
 
 ---
-# 🐋連立一次方程式の解法 
+# 🐋 連立一次方程式の解法 
 
-## ⛵️⛵️Arnoldi過程  
+## ⛵ ⛵ Arnoldi過程  
 
 1. 正規化した$`{\bf v} _1`$を与えておく．
 2. $`{\bf v} _2 = {\rm Normalize}(\,\,\,\quad\quad\quad\quad\quad A{\bf v} _1 - ((A{\bf v} _1) \cdot {\bf v} _1){\bf v} _1\,\,\qquad\qquad\qquad\qquad\qquad\qquad)`$を計算する．
@@ -56,7 +56,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 
 
-## ⛵️⛵️一般化最小残差法/GMRES  
+## ⛵ ⛵ 一般化最小残差法/GMRES  
 
 残差$`\|{\bf b} - A{\bf x}\|`$を最小とするような$`{\bf x}`$を求めたい．
 そのような$`{\bf x}`$を，クリロフ部分空間の正規直交基底を用いた，$`{\bf x} _n = V _n {\bf y} _n`$の形で近似し，追い求めていく．
@@ -104,7 +104,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
 * GMRESは一般的に共役勾配法よりも柔軟性があり，非対称行列に対しても使用できる．ただし，反復の回数が増えると計算コストが大きくなる可能性がある．
 
-### 🪸テスト 
+### 🪼 テスト 
 
 <details>
 <summary>HOW TO USE</summary>
@@ -117,7 +117,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 [./test0_GMRES.cpp#L1](./test0_GMRES.cpp#L1)
 
 
-## ⛵️LU分解(LAPACK) 
+## ⛵ LU分解(LAPACK) 
 
 * LU分解は直接的な方法で，あらゆる種類の行列（対称、非対称、正定値、非正定値）に適用できる．
 * この方法は反復的な方法よりも計算コストが高くなる可能性があるが，反復法とは異なり，収束性の問題がない．
@@ -132,14 +132,14 @@ EigenのGMRESを使った結果と比較．
 [./test1_EIGEN_GMRES.cpp#L6](./test1_EIGEN_GMRES.cpp#L6)
 
 
-## ⛵️共役勾配法と勾配降下法 
+## ⛵ 共役勾配法と勾配降下法 
 
-### 🪸共役勾配法（Conjugate Gradient, CG） 
+### 🪼 共役勾配法（Conjugate Gradient, CG） 
 
 * 共役勾配法は反復的な方法で，特に大規模で疎な（つまり，ほとんどの要素がゼロである）対称正定値行列の線形システムを解くのに適している．
 * この方法の利点は，一般的に反復回数が行列の次元に対して比較的少ないこと．しかし，非対称または非正定値の行列には適用できない．
 
-### 🪸勾配降下法 (Gradient Descent, GD) 
+### 🪼 勾配降下法 (Gradient Descent, GD) 
 
 * 勾配降下法は最も基本的な最適化アルゴリズムで，線形システムまたは一般的な最適化問題を解くことができる．
 * しかし，勾配降下法の収束速度は通常比較的遅く，特に凸でない問題に対しては局所最小値に陥る可能性がある．
@@ -149,7 +149,7 @@ EigenのGMRESを使った結果と比較．
 
 
 ---
-## ⛵️Compressed Sparse Row (CSR) 
+## ⛵ Compressed Sparse Row (CSR) 
 
 CSRは行列を表現する方法の一つである．
 このCSRクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．

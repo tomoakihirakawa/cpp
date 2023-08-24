@@ -1,17 +1,17 @@
 # Contents
 
-- [🐋ODEの初期値問題](#🐋ODEの初期値問題)
-    - [⛵️減衰調和振動子/Damped Harmonic Oscillatorの例](#⛵️減衰調和振動子/Damped-Harmonic-Oscillatorの例)
-        - [🪸後退オイラー](#🪸後退オイラー)
-        - [🪸🪸LeapFrog](#🪸🪸LeapFrog)
-        - [🪸🪸Runge-Kutta](#🪸🪸Runge-Kutta)
-    - [⛵️Runge-Kutta Integration of ODE](#⛵️Runge-Kutta-Integration-of-ODE)
+- [🐋 ODEの初期値問題](#🐋-ODEの初期値問題)
+    - [⛵ 減衰調和振動子/Damped Harmonic Oscillatorの例](#⛵-減衰調和振動子/Damped-Harmonic-Oscillatorの例)
+        - [🪼 後退オイラー](#🪼-後退オイラー)
+        - [🪼 🪼 LeapFrog](#🪼-🪼-LeapFrog)
+        - [🪼 🪼 Runge-Kutta](#🪼-🪼-Runge-Kutta)
+    - [⛵ Runge-Kutta Integration of ODE](#⛵-Runge-Kutta-Integration-of-ODE)
 
 
 ---
-# 🐋ODEの初期値問題 
+# 🐋 ODEの初期値問題 
 
-## ⛵️減衰調和振動子/Damped Harmonic Oscillatorの例 
+## ⛵ 減衰調和振動子/Damped Harmonic Oscillatorの例 
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
@@ -31,11 +31,11 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 |:---:|:---:|:---:|
 |$`N=25`$ evaluations|$`N=50`$ evaluations|the sum of differences|
 
-### 🪸後退オイラー 
+### 🪼 後退オイラー 
 
 後退オイラーの１回の計算で溜まる誤差は$`O(\Delta t^2)`$．次時刻における速度と加速度が正確に計算できなければ使えない．
 
-### 🪸🪸LeapFrog  
+### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
 時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L332)）．
@@ -46,7 +46,7 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 
 
 
-### 🪸🪸Runge-Kutta  
+### 🪼 🪼 Runge-Kutta  
 
 4次のルンゲクッタの１回の計算で溜まる誤差は$`O({\Delta t}^5)`$となる．
 しかし，加速度を4階も計算する必要がある．
@@ -74,7 +74,7 @@ x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 [./example_DampedHrmonicOscillator.cpp#L4](./example_DampedHrmonicOscillator.cpp#L4)
 
 
-## ⛵️Runge-Kutta Integration of ODE 
+## ⛵ Runge-Kutta Integration of ODE 
 
 ![](RK.png)
 
