@@ -233,7 +233,7 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
       for (const auto &f : p->getFaces()) {
          auto nP012 = RK_with_Ubuff(f->getPoints(p));
          auto &[np0x, np1x, np2x] = nP012;
-         double a = magicalValue(p, f) + variance2(p, f);
+         double a = magicalValue(p, f);  // + variance2(p, f);
 
          // if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
          //    a *= std::pow(1.5, 3);
