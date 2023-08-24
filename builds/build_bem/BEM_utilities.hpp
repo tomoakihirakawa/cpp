@@ -12,7 +12,7 @@ using V_Netp = std::vector<Network *>;
 using V_netFp = std::vector<networkFace *>;
 using VV_netFp = std::vector<V_netFp>;
 
-/*DOC_EXTRACT WAVE_GENERATION
+/*DOC_EXTRACT 0_5_WAVE_GENERATION
 
 ## 造波装置など
 
@@ -160,7 +160,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       auto v = A * w * sin(w * (t - start));
       return {0., v, 0., 0., 0., 0.};
    } else if (name == "flap") {
-      /*DOC_EXTRACT WAVE_GENERATION
+      /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
       ### フラップ型造波装置
 
@@ -198,7 +198,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
    } else if (name == "piston") {
-      /*DOC_EXTRACT WAVE_GENERATION
+      /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
       ### ピストン型造波装置
 
@@ -266,9 +266,9 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT BOUNDARY_CONDITIONS
+/*DOC_EXTRACT 0_1_BOUNDARY_CONDITIONS
 
-## `getContactFaces()`の利用
+### `getContactFaces()`の利用
 
 \ref{addContactFaces}{`networkPoint::addContactFaces()`}によって，接触面を`networkPoint::ContactFaces`に登録した．
 `getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
@@ -493,7 +493,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT INITIAL_VALUE_PROBLEM0
+/*DOC_EXTRACT 0_3_0_INITIAL_VALUE_PROBLEM
 
 ## 初期値問題
 
@@ -567,7 +567,7 @@ Tddd gradPhi(const networkPoint *const p) {
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT OTHERS
+/*DOC_EXTRACT 0_6_OTHERS
 
 ## その他
 
@@ -625,7 +625,7 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
    return ret;
 };
 
-/*DOC_EXTRACT FLOATING_BODY_SIMULATION
+/*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
 
 ### $`\phi_{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．
 

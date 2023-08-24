@@ -1,4 +1,22 @@
 ----------
+Execution time: Thu Aug 24 09:01:16 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
+Execution time: Thu Aug 24 08:57:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
 Execution time: Wed Aug 23 20:25:17 2023
 
 Machine Information:
@@ -367,6 +385,8 @@ Machine Information:
   Operating System: Darwin 22.5.0
 
 No arguments provided. Write input JSON file directory.
+----------
+----------
 ----------
 ----------
 ----------

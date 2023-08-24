@@ -6,22 +6,37 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Tuple, Iterator, Dict
 
+ColourReset = "\033[0m"
+ColourBold = "\033[1m"
+Red = "\033[31m"
+Green = "\033[32m"
+Yellow = "\033[33m"
+Blue = "\033[34m"
+Magenta = "\033[35m"
+
 # Regex patterns compiled at module level
 CPP_COMMENT_PATTERN = re.compile(r'/\*DOC_EXTRACT(.*?)\*/', re.DOTALL)
 PYTHON_COMMENT_PATTERN = re.compile(r"'''DOC_EXTRACT(.*?)'''", re.DOTALL)
 HEADER_PATTERN = re.compile(r'(#+\s.*?)\n', re.DOTALL)
 INSERT_PATTERN = re.compile(r'\\insert\{(.*?)\}')
 LABEL_PATTERN = re.compile(r'\\label\{(.*?)\}')
-MATH_EXPR_PATTERN = re.compile(r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)", re.DOTALL)
-INLINE_MATH_PATTERN = re.compile(r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)")
-MATH_STAR_PATTERN = re.compile(r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))")
+MATH_EXPR_PATTERN = re.compile(
+    r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)", re.DOTALL)
+INLINE_MATH_PATTERN = re.compile(
+    r"(?<!\$)(?<!\\)\$(?!\$)(?!`)(.*?)(?<!`)(?<!\\)\$(?!\$)")
+MATH_STAR_PATTERN = re.compile(
+    r"((?<=\$`)(.*?)(?=`\$))|((?<=\$\$)(.*?)(?=\$\$))")
 
 # Reduced multiple calls to `file.read()`
+
+
 def read_file_content(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
 # Inserted LABEL_PATTERN in search_labels()
+
+
 def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
     labels = {}
     for dirpath, _, filenames in os.walk(directory):
@@ -35,6 +50,7 @@ def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tupl
                     labels[label] = (file_path, start_line)
     return labels
 
+
 def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str:
     """
     Replaces \insert{keyword} in the content with its corresponding replacement if exists
@@ -42,7 +58,10 @@ def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str
     return INSERT_PATTERN.sub(lambda m: replacements.get(m.group(1), m.group()), content)
 
 
-def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
+keywords_order = {}
+
+
+def extract_markdown_comments(input_file: str, content=None) -> Tuple[Dict[str, List[str]], List[Tuple[str, int]]]:
     if content is None:
         with open(input_file, 'r') as file:
             content = file.read()
@@ -52,7 +71,8 @@ def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str
 
     # Initialize dictionary to store comments based on keywords
     keyword_comments = defaultdict(list)
-    headers_info = []
+    keyword_info = []
+    sec_L_order = []
 
     for match in markdown_comments:
         comment = match.group(1)
@@ -83,19 +103,22 @@ def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str
             )[0] if comment_lines and comment_lines[0].split() else 'DEFAULT'
             order = 9999
 
-        comment = '\n'.join(comment_lines)
+        # if keyword is found in keywords_order, then use the order in keywords_order
+        if keyword in keywords_order:
+            order = keywords_order[keyword]
 
+        keyword_info.append(keyword)
+
+        # print("comment_lines[0] = ", comment_lines[0], ", keyword = ", keyword, ", order = ", order)
+
+        comment = '\n'.join(comment_lines)
         comment = comment.replace(
             keyword, '', 1) if keyword != 'DEFAULT' else comment
-
         cleaned_comment = highlight_keywords(comment)
-
         cleaned_comment = re.sub(
             r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
-
         keyword_comments[(keyword, order)].append(
             cleaned_comment.strip() + '\n\n')
-
         keyword_comments[(keyword, order)].append(
             f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
 
@@ -105,16 +128,17 @@ def extract_markdown_comments(input_file: str, content = None) -> Tuple[Dict[str
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)
         for header in headers:
-            headers_info.append((header.strip(), start_line))
+            sec_L_order.append((header.strip(), start_line, order))
 
     # Sort and group comments based on keyword and order
     sorted_comments = sorted(keyword_comments.items(),
                              key=lambda x: (x[0][0], x[0][1]))
     sorted_comments_dict = {k: v for k, v in sorted_comments}
 
-    headers_info = sorted(headers_info, key=lambda x: x[1])
+    sec_L_order = sorted(sec_L_order, key=lambda x: x[1])
 
-    return sorted_comments_dict, headers_info
+    return sorted_comments_dict, sec_L_order, keyword_info
+
 
 def convert_math_underscore(text: str) -> str:
     math_expr_pattern = r"(\$\$.*?\$\$)|(\$.*?\$)|(`math\s.*?`)"
@@ -164,9 +188,10 @@ def highlight_keywords(text: str) -> str:
         # '###': (r'^###:?\s*', '###'),
         # '##': (r'^## :?\s*', '##'),
         # '#': (r'^# :?\s*', '#'),
-        '#': (r'^(#\s+)(.*)', r'\1🐋\2'),
-        '##': (r'^(##\s+)(.*)', r'\1⛵️\2'),
-        '###': (r'^(###\s+)(.*)', r'\1🪸\2'),
+        '#': (r'^(#\s+)(.*)', r'\1🐋 \2'),
+        '##': (r'^(##\s+)(.*)', r'\1⛵ \2'),
+        '###': (r'^(###\s+)(.*)', r'\1🪼 \2'),
+        '####': (r'^(####\s+)(.*)', r'\1🐚 \2'),
     }
 
     for keyword, (pattern, emoji) in keyword_patterns.items():
@@ -184,13 +209,13 @@ def highlight_keywords(text: str) -> str:
     return text
 
 
-def generate_contents_table(headers_info: List[Tuple[str, int]], numbered: bool = False) -> str:
+def generate_contents_table(sec_L_order: List[Tuple[str, int]], numbered: bool = False) -> str:
     contents_table = '# Contents\n\n'
     curr_section = 1
     curr_subsection = 0
     curr_subsubsection = 0
     prefix = ''
-    for header, line_num in headers_info:
+    for header, line_num, _ in sec_L_order:
         if header.startswith("# "):
             prefix = f"{curr_section}. " if numbered else "- "
             added = f"{prefix}[{header[2:]}](#{header[2:].replace(' ', '-')})\n"
@@ -237,7 +262,8 @@ def search_files(directory: str, extensions: Tuple[str, ...]) -> Iterator[str]:
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python extract_comments.py output_file search_directory [replacements_directory]")
+        print(
+            "Usage: python extract_comments.py output_file search_directory [replacements_directory]")
         sys.exit(1)
 
     output_file = sys.argv[1]
@@ -252,37 +278,63 @@ if __name__ == "__main__":
 
     all_extracted_comments = defaultdict(list)
     no_keyword_comments = []
-    all_headers_info = []
+    all_sec_L_order = []
 
     replacements = {}
+
+    # ---------------------------- make keywords_order --------------------------- #
+    sorted_keywords = []
+    for input_file in sorted(search_files(search_directory, file_extensions)):
+        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(
+            input_file)
+        # set keywords_order
+        sorted_keywords.extend(keyword_info)
+
+    # delete duplicates and sort sorted_keywords
+    sorted_keywords = sorted(list(set(sorted_keywords)))
+    # set keywords_order based on sorted_keywords
+    for i in range(len(sorted_keywords)):
+        keywords_order[sorted_keywords[i]] = i
+
+    # to check
+    for i in range(len(keywords_order)):
+        print(keywords_order[sorted_keywords[i]], sorted_keywords[i])
+    # ---------------------------------------------------------------------------- #
 
     # If a replacements directory is specified, extract the replacements
     if len(sys.argv) >= 4:
         replacements_dir = sys.argv[3]
         for input_file in sorted(search_files(replacements_dir, file_extensions)):
-            extracted_comments, _ = extract_markdown_comments(input_file)
+            extracted_comments, _, __ = extract_markdown_comments(input_file)
             for keyword, comments in extracted_comments.items():
-                replacements[keyword[0]] = ' '.join(comments) # Comment replacement should be the content
-
+                # Comment replacement should be the content
+                replacements[keyword[0]] = ' '.join(comments)
 
     for input_file in sorted(search_files(search_directory, file_extensions)):
         content = read_file_content(input_file)
         content = replace_insert_statements(content, replacements)
-        extracted_comments, headers_info = extract_markdown_comments(input_file, content)
-        
+        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(
+            input_file, content)
+
         if extracted_comments:
             for keyword, comments in extracted_comments.items():
                 if keyword == 'DEFAULT':
                     no_keyword_comments.extend(comments)
                 else:
                     all_extracted_comments[keyword].extend(comments)
-            all_headers_info.extend(headers_info)
 
-    contents_table = generate_contents_table(all_headers_info) + "\n---\n"
+            all_sec_L_order.extend(sec_L_order)
+
+    contents_table = generate_contents_table(sorted(
+        all_sec_L_order, key=lambda sec_line_order: sec_line_order[2])) + "\n---\n"
+
+    # Sorting the extracted comments by the order number
+    sorted_extracted_comments = sorted(all_extracted_comments.items(
+    ), key=lambda keyword_comments: keyword_comments[0][1])
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
-        for keyword, comments in all_extracted_comments.items():
+        for (keyword, order), comments in sorted_extracted_comments:
             md_file.write("\n".join(comments))
             md_file.write("\n---\n")  # Horizontal line after the entire group
         for comment in no_keyword_comments:

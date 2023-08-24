@@ -371,10 +371,10 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
       if (!f_dist_sort.empty()) {
          DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
          for (const auto &[F, D] : f_dist_sort) {
-            // if (std::none_of(this->ContactFaces.begin(),
-            //                  this->ContactFaces.end(),
-            //                  [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
-            this->ContactFaces.emplace(F);
+            if (std::none_of(this->ContactFaces.begin(),
+                             this->ContactFaces.end(),
+                             [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+               this->ContactFaces.emplace(F);
             if (this->ContactFaces.size() > 5)
                return;
          };

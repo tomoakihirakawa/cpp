@@ -1,43 +1,44 @@
 # Contents
 
-- [🐋BEM-MEL](#🐋BEM-MEL)
-    - [⛵️流速の計算方法](#⛵️流速の計算方法)
-        - [🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）](#🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）)
-        - [🪸エネルギー保存則（計算精度のチェックに利用できる）](#🪸エネルギー保存則（計算精度のチェックに利用できる）)
-        - [🪸内部流速の計算方法（使わなくてもいい）](#🪸内部流速の計算方法（使わなくてもいい）)
-    - [⛵️境界のタイプを決定する](#⛵️境界のタイプを決定する)
-        - [🪸多重節点](#🪸多重節点)
-    - [⛵️境界値問題](#⛵️境界値問題)
-        - [🪸基礎方程式](#🪸基礎方程式)
-        - [🪸境界積分方程式（BIE）](#🪸境界積分方程式（BIE）)
-        - [🪸BIEの離散化](#🪸BIEの離散化)
-        - [🪸リジッドモードテクニック](#🪸リジッドモードテクニック)
-    - [⛵️浮体動揺解析](#⛵️浮体動揺解析)
-        - [🪸$`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪸$`\phi-_t`$と$`\phi-_{nt}`$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
-            - [ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
-            - [ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
-            - [ノイマン節点での$`\phi _{nt}`$の与え方](#ノイマン節点での$`\phi-_{nt}`$の与え方)
-    - [⛵️造波装置など](#⛵️造波装置など)
-        - [🪸フラップ型造波装置](#🪸フラップ型造波装置)
-        - [🪸ピストン型造波装置](#🪸ピストン型造波装置)
-    - [⛵️`getContactFaces()`の利用](#⛵️`getContactFaces()`の利用)
-    - [⛵️初期値問題](#⛵️初期値問題)
-        - [🪸流速$`\frac{d\bf x}{dt}`$の計算](#🪸流速$`\frac{d\bf-x}{dt}`$の計算)
-        - [🪸$`\frac{d\phi}{dt}`$の計算](#🪸$`\frac{d\phi}{dt}`$の計算)
-    - [⛵️その他](#⛵️その他)
-        - [🪸境界値問題の未知変数](#🪸境界値問題の未知変数)
-        - [🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪸$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
-- [🐋入力ファイル生成 `input_generator.py`](#🐋入力ファイル生成-`input_generator.py`)
-    - [⛵️Usage](#⛵️Usage)
-    - [⛵️Customization](#⛵️Customization)
-    - [⛵️Output](#⛵️Output)
-- [🐋実行方法](#🐋実行方法)
-        - [🪸計算の流れ](#🪸計算の流れ)
-        - [🪸浮体の重心位置・姿勢・速度の更新](#🪸浮体の重心位置・姿勢・速度の更新)
+- [🐋 BEM-MEL](#🐋-BEM-MEL)
+    - [⛵ 概要](#⛵-概要)
+        - [🪼 計算の流れ](#🪼-計算の流れ)
+    - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
+        - [🪼 多重節点](#🪼-多重節点)
+        - [🪼 `getContactFaces()`の利用](#🪼-`getContactFaces()`の利用)
+    - [⛵ 境界値問題](#⛵-境界値問題)
+        - [🪼 基礎方程式](#🪼-基礎方程式)
+        - [🪼 境界積分方程式（BIE）](#🪼-境界積分方程式（BIE）)
+        - [🪼 BIEの離散化](#🪼-BIEの離散化)
+        - [🪼 リジッドモードテクニック](#🪼-リジッドモードテクニック)
+    - [⛵ 初期値問題](#⛵-初期値問題)
+        - [🪼 流速$`\frac{d\bf x}{dt}`$の計算](#🪼-流速$`\frac{d\bf-x}{dt}`$の計算)
+        - [🪼 $`\frac{d\phi}{dt}`$の計算](#🪼-$`\frac{d\phi}{dt}`$の計算)
+        - [🪼 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）](#🪼-修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）)
+    - [⛵ 浮体動揺解析](#⛵-浮体動揺解析)
+        - [🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪼-$`\phi-_t`$と$`\phi-_{nt}`$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
+            - [🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
+            - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
+            - [🐚 ノイマン節点での$`\phi _{nt}`$の与え方](#🐚-ノイマン節点での$`\phi-_{nt}`$の与え方)
+        - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
+        - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
+    - [⛵ 造波装置など](#⛵-造波装置など)
+        - [🪼 フラップ型造波装置](#🪼-フラップ型造波装置)
+        - [🪼 ピストン型造波装置](#🪼-ピストン型造波装置)
+    - [⛵ その他](#⛵-その他)
+        - [🪼 境界値問題の未知変数](#🪼-境界値問題の未知変数)
+        - [🪼 エネルギー保存則（計算精度のチェックに利用できる）](#🪼-エネルギー保存則（計算精度のチェックに利用できる）)
+        - [🪼 内部流速の計算方法（使わなくてもいい）](#🪼-内部流速の計算方法（使わなくてもいい）)
+- [🐋 入力ファイル生成 `input_generator.py`](#🐋-入力ファイル生成-`input_generator.py`)
+    - [⛵ Usage](#⛵-Usage)
+    - [⛵ Customization](#⛵-Customization)
+    - [⛵ Output](#⛵-Output)
+- [🐋 実行方法](#🐋-実行方法)
+- [🐋 Examples](#🐋-Examples)
 
 
 ---
-# 🐋BEM-MEL 
+# 🐋 BEM-MEL 
 
 | 項目 | 詳細|
 |---:|:---|
@@ -50,7 +51,10 @@
 [./BEM.hpp#L1](./BEM.hpp#L1)
 
 
-### 🪸計算の流れ 
+---
+## ⛵ 概要 
+
+### 🪼 計算の流れ 
 
 1. 境界条件の設定
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
@@ -60,124 +64,11 @@
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L316](./main.cpp#L316)
+[./main.cpp#L321](./main.cpp#L321)
 
 
 ---
-## ⛵️流速の計算方法
-
-
-[./BEM_calculateVelocities.hpp#L7](./BEM_calculateVelocities.hpp#L7)
-
-
----
-### 🪸修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
-
-ディリクレ節点（水面）：
-
-求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
-修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
-
-ノイマン節点：
-
-ノイマン節点も修正流速を加え時間発展させる．
-ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
-
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L368)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
-
-1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L282)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
-
-
-[./BEM_calculateVelocities.hpp#L347](./BEM_calculateVelocities.hpp#L347)
-
-
----
-### 🪸エネルギー保存則（計算精度のチェックに利用できる） 
-
-流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
-
-```math
-E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-```
-
-また，流体の位置エネルギーは，次のように表される．
-
-```math
-E _P = \frac{\rho}{2} \iint _\Gamma (0,0,g(z - z _0)^2) \cdot {\bf n} d\Gamma
-```
-
-<details>
-
----
-
-<summary>
-💡 なぜか？
-</summary>
-
-テンソルを使って考えてみると
-
-```math
-\begin{align*}
-\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x _i} \frac{\partial\phi}{\partial x _i} + \phi \frac{\partial^2\phi}{\partial x _i \partial x _i}\\
-&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
-&= \nabla \phi \cdot \nabla \phi
-\end{align*}
-```
-
-よって，
-
-```math
-\iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
-```
-
----
-
-```math
-E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
-= \rho g \iiint _\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z _0)^2) d\Omega
-= \rho g \iint _\Gamma \frac{1}{2} (0,0,(z - z _0)^2) \cdot {\bf n} d\Gamma
-= \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
-```
-
----
-
-</details>
-
-
-[./BEM_calculateVelocities.hpp#L496](./BEM_calculateVelocities.hpp#L496)
-
-
-### 🪸内部流速の計算方法（使わなくてもいい） 
-
-[Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
-流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
-
-```math
-u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
-```
-
-```math
-Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
-```
-
-
-[./BEM_calculateVelocities.hpp#L583](./BEM_calculateVelocities.hpp#L583)
-
-
-## ⛵️その他 
-
-### 🪸境界値問題の未知変数 
-
-`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
-
-
-[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
-
-
----
-## ⛵️境界のタイプを決定する 
+## ⛵ 境界のタイプを決定する 
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L171)，
@@ -203,7 +94,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 - Dirichlet点 : 隣接面全てがDirichlet面である点
 - CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
 
-### 🪸多重節点 
+### 🪼 多重節点 
 
 💡 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi _n`$を計算できるようにする
 
@@ -215,7 +106,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 [./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 
-## ⛵️`getContactFaces()`の利用 
+### 🪼 `getContactFaces()`の利用 
 
 [`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
 `getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
@@ -230,9 +121,9 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 
 
 ---
-## ⛵️境界値問題 
+## ⛵ 境界値問題 
 
-### 🪸基礎方程式 
+### 🪼 基礎方程式 
 
 ```math
 \begin{align}
@@ -250,7 +141,7 @@ $`\nabla=(\frac{\partial}{\partial x},\frac{\partial}{\partial y},\frac{\partial
 また，$`\phi _n`$は境界面上での外向き法線方向の流速を表し，
 境界面上の外向き単位法線ベクトル$`\bf n`$を使えば$`\phi _n ={\nabla\phi}\cdot {\bf n}`$で表される．
 
-### 🪸境界積分方程式（BIE） 
+### 🪼 境界積分方程式（BIE） 
 
 **グリーンの定理**
 
@@ -282,7 +173,7 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 [./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
 
 
-### 🪸BIEの離散化 
+### 🪼 BIEの離散化 
 
 BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
@@ -327,7 +218,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 [./BEM_solveBVP.hpp#L283](./BEM_solveBVP.hpp#L283)
 
 
-### 🪸リジッドモードテクニック 
+### 🪼 リジッドモードテクニック 
 
 全て$`\phi=1`$とすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，これを離散化すると，数値積分による評価が難しかった係数行列の対角成分がより精確に計算できる．
 これはリジッドモードテクニックと呼ばれている．
@@ -368,7 +259,75 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 
 
 ---
-## ⛵️浮体動揺解析 
+## ⛵ 初期値問題 
+
+節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
+言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
+ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
+
+ある時刻において，境界値問題が解けたら，$`\frac{d\bf x}{dt}`$と$`\frac{d\phi}{dt}`$はどのように計算できるだろうか．
+
+### 🪼 流速$`\frac{d\bf x}{dt}`$の計算 
+
+ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
+
+```math
+\nabla \phi _{\parallel} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
+```
+
+三角要素上の流速$`\nabla \phi`$は，次のように計算する．
+
+```math
+\nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
+```
+
+### 🪼 $`\frac{d\phi}{dt}`$の計算 
+
+ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
+
+```math
+\frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
+```
+
+<details>
+<summary>
+💡 オイラー的記述
+</summary>
+
+$`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$`\frac{d \phi}{d t}`$は，$`\frac{\partial \phi}{\partial t}`$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$`\phi=\phi(t,{\bf x}(t))`$と一時的に考えなおし，そして，時間微分する．そうすると$`\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi`$となる．
+
+</details>
+
+ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
+
+
+[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
+
+
+---
+### 🪼 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
+
+ディリクレ節点（水面）：
+
+求めた流速から，次の時刻の境界面$`\Omega(t+\Delta t)`$を見積もり，その面上で節点を移動させ歪さを解消する．
+修正ベクトルは，$`\Delta t`$で割り，求めた流速$`\nabla \phi`$に足し合わせて，節点を時間発展させる．
+
+ノイマン節点：
+
+ノイマン節点も修正流速を加え時間発展させる．
+ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
+
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L362)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+
+1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L222)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L276)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+
+
+[./BEM_calculateVelocities.hpp#L341](./BEM_calculateVelocities.hpp#L341)
+
+
+---
+## ⛵ 浮体動揺解析 
 
 浮体の重心の運動方程式：
 
@@ -401,20 +360,20 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 [./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
 
 
-### 🪸$`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
+### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
 $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリクレ境界には$`\phi _t`$を，ノイマン境界には$`\phi _{nt}`$を与える．
 
-#### ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)
+#### 🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知) 
 
 このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
 ただし，壁が完全に固定されている場合，$`\phi _{nt}`$は0とする．
 
-#### ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)
+#### 🐚 ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知) 
 
 ディリクレ境界では$`\phi _t`$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi _t`$を求めることができる．
 
-#### ノイマン節点での$`\phi _{nt}`$の与え方
+#### 🐚 ノイマン節点での$`\phi _{nt}`$の与え方 
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
 境界面上の点の位置ベクトルを$`\boldsymbol r`$とする．
@@ -499,7 +458,7 @@ $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られ�
 [./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
 
 
-### 🪸$`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
+### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
 
 $`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
 面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
@@ -531,57 +490,20 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 [./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
 
 
----
-## ⛵️初期値問題 
+### 🪼 浮体の重心位置・姿勢・速度の更新 
 
-節点の位置と速度ポテンシャル$`\phi`$に関する初期値問題を解いて行くことが，シミュレーションである．
-言い換えると，節点位置$`\frac{d\bf x}{dt}`$と速度ポテンシャル$`\frac{d\phi}{dt}`$を少しずつ$`\Delta t`$ずつ時間積分することが，シミュレーションである．
-ちなみに，$`\frac{d\bf x}{dt}`$や$`\frac{d\phi}{dt}`$を計算するには，境界値問題を解く必要がある．
-
-ある時刻において，境界値問題が解けたら，$`\frac{d\bf x}{dt}`$と$`\frac{d\phi}{dt}`$はどのように計算できるだろうか．
-
-### 🪸流速$`\frac{d\bf x}{dt}`$の計算 
-
-ある三角要素上の接線流速$`\nabla \phi _{\parallel}`$は，線形三角要素補間を使って次のように計算する．
-
-```math
-\nabla \phi _{\parallel} = \frac{\bf n}{2A} \times (({\bf x} _2 - {\bf x} _1) \phi _0 +({\bf x} _0 - {\bf x} _2) \phi _1 + ({\bf x} _1 - {\bf x} _0) \phi _2)
-```
-
-三角要素上の流速$`\nabla \phi`$は，次のように計算する．
-
-```math
-\nabla \phi = \frac{(\phi _n) _0+(\phi _n) _1+(\phi _n) _2}{3} {\bf n} + \nabla \phi _{\parallel}
-```
-
-### 🪸$`\frac{d\phi}{dt}`$の計算 
-
-ある流体粒子に乗ってみたときの，速度ポテンシャルの時間変化$`\frac{D \phi}{D t}`$は，次のように計算できる．
-
-```math
-\frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
-```
-
-<details>
-<summary>
-💡 オイラー的記述
-</summary>
-
-$`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立させ分けて考える方法を，オイラー的記述という．こう書くと，$`\frac{d \phi}{d t}`$は，$`\frac{\partial \phi}{\partial t}`$であり，これは，速度ポテンシャルの純粋な時間変化ではない．純粋な，ある流体粒子の速度ポテンシャルの時間変化を表すためには，位置が時間によって変わると考え，つまり$`\phi=\phi(t,{\bf x}(t))`$と一時的に考えなおし，そして，時間微分する．そうすると$`\frac{d\phi}{dt} = \frac{\partial \phi}{\partial t} + \frac{d\bf x}{dt}\cdot \nabla \phi`$となる．
-
-</details>
-
-ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
+浮体の重心位置は，重心に関する運動方程式を解くことで求める．
+姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
+[./main.cpp#L363](./main.cpp#L363)
 
 
 ---
-## ⛵️造波装置など 
+## ⛵ 造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L368)
+[強制運動を課す](../../builds/build_bem/main.cpp#L374)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L249)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -592,7 +514,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 [./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
 
-### 🪸フラップ型造波装置 
+### 🪼 フラップ型造波装置 
 
 |   | name   |  description  |
 |:-:|:-------:|:-------------:|
@@ -610,7 +532,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 [./BEM_utilities.hpp#L163](./BEM_utilities.hpp#L163)
 
 
-### 🪸ピストン型造波装置 
+### 🪼 ピストン型造波装置 
 
 |   | name   |  description  |
 |:-:|:-------:|:-------------:|
@@ -628,11 +550,96 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 
 ---
-# 🐋入力ファイル生成 `input_generator.py` 
+## ⛵ その他 
+
+### 🪼 境界値問題の未知変数 
+
+`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
+
+
+[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
+
+
+---
+### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
+
+流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
+
+```math
+E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+```
+
+また，流体の位置エネルギーは，次のように表される．
+
+```math
+E _P = \frac{\rho}{2} \iint _\Gamma (0,0,g(z - z _0)^2) \cdot {\bf n} d\Gamma
+```
+
+<details>
+
+---
+
+<summary>
+💡 なぜか？
+</summary>
+
+テンソルを使って考えてみると
+
+```math
+\begin{align*}
+\nabla \cdot (\phi\nabla\phi) &= \frac{\partial\phi}{\partial x _i} \frac{\partial\phi}{\partial x _i} + \phi \frac{\partial^2\phi}{\partial x _i \partial x _i}\\
+&= \nabla \phi \cdot \nabla \phi + \phi \nabla^2 \phi\\
+&= \nabla \phi \cdot \nabla \phi
+\end{align*}
+```
+
+よって，
+
+```math
+\iiint _\Omega \nabla\phi\cdot\nabla\phi d\Omega = \iiint _\Omega \nabla \cdot (\phi\nabla\phi) d\Omega = \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
+```
+
+---
+
+```math
+E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
+= \rho g \iiint _\Omega \frac{1}{2} \nabla \cdot (0,0,(z - z _0)^2) d\Omega
+= \rho g \iint _\Gamma \frac{1}{2} (0,0,(z - z _0)^2) \cdot {\bf n} d\Gamma
+= \frac{1}{2}\rho g \iint _\Gamma (z - z _0)^2 n _z d\Gamma
+```
+
+---
+
+</details>
+
+
+[./BEM_calculateVelocities.hpp#L490](./BEM_calculateVelocities.hpp#L490)
+
+
+### 🪼 内部流速の計算方法（使わなくてもいい） 
+
+[Fochesato2005](https://onlinelibrary.wiley.com/doi/10.1002/fld.838)にあるように，
+流体内部の流速$`\nabla \phi`$は，BIEを微分して求めることができる．
+
+```math
+u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\partial n} ({\bf x})Q({\bf x}, {\bf a}) - \phi({\bf x}) \frac{\partial Q}{\partial n} ({\bf x}, {\bf a}) d\Gamma
+```
+
+```math
+Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
+```
+
+
+[./BEM_calculateVelocities.hpp#L577](./BEM_calculateVelocities.hpp#L577)
+
+
+---
+# 🐋 入力ファイル生成 `input_generator.py` 
 
 This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
 
-## ⛵️Usage 
+## ⛵ Usage 
 
 1. Make sure the required dependencies are installed.
 2. Run the script using the following command:
@@ -643,7 +650,7 @@ python3 input_generator.py
 
 Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
 
-## ⛵️Customization 
+## ⛵ Customization 
 
 To customize the input file generation for a specific case, follow these steps:
 
@@ -654,7 +661,7 @@ To customize the input file generation for a specific case, follow these steps:
 
 After customizing the script, run it again to generate the input files for the new case.
 
-## ⛵️Output 
+## ⛵ Output 
 
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
@@ -663,17 +670,7 @@ The script will generate input files in JSON format for the specified simulation
 
 
 ---
-### 🪸浮体の重心位置・姿勢・速度の更新 
-
-浮体の重心位置は，重心に関する運動方程式を解くことで求める．
-姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
-
-
-[./main.cpp#L356](./main.cpp#L356)
-
-
----
-# 🐋実行方法 
+# 🐋 実行方法 
 
 ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
@@ -703,10 +700,17 @@ $ python3 input_generator.py
 $ ./main ./input_files/Hadzic2005
 ```
 
+
+[./main.cpp#L1](./main.cpp#L1)
+
+
+---
+# 🐋 Examples 
+
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L1](./main.cpp#L1)
+[./main.cpp#L35](./main.cpp#L35)
 
 
 ---

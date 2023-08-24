@@ -1,19 +1,19 @@
 # Contents
 
-- [🐋多重極展開(Multipole Expansion)](#🐋多重極展開(Multipole-Expansion))
-    - [⛵️Green関数の多重極展開](#⛵️Green関数の多重極展開)
-        - [🪸球面座標系への変換](#🪸球面座標系への変換)
-        - [🪸$`G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の精度)
-        - [🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪸$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
-    - [⛵️境界要素法への応用](#⛵️境界要素法への応用)
-        - [🪸境界積分方程式](#🪸境界積分方程式)
-        - [🪸空間分割](#🪸空間分割)
+- [🐋 多重極展開(Multipole Expansion)](#🐋-多重極展開(Multipole-Expansion))
+    - [⛵ Green関数の多重極展開](#⛵-Green関数の多重極展開)
+        - [🪼 球面座標系への変換](#🪼-球面座標系への変換)
+        - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
+        - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
+    - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
+        - [🪼 境界積分方程式](#🪼-境界積分方程式)
+        - [🪼 空間分割](#🪼-空間分割)
 
 
 ---
-# 🐋多重極展開(Multipole Expansion) 
+# 🐋 多重極展開(Multipole Expansion) 
 
-## ⛵️Green関数の多重極展開 
+## ⛵ Green関数の多重極展開 
 
 次のGreen関数を考える．
 
@@ -46,7 +46,7 @@ P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^
 [./test_multipole_expansion.cpp#L8](./test_multipole_expansion.cpp#L8)
 
 
-### 🪸球面座標系への変換 
+### 🪼 球面座標系への変換 
 
 $`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
 
@@ -67,7 +67,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 [./test_multipole_expansion.cpp#L49](./test_multipole_expansion.cpp#L49)
 
 
-### 🪸$`G _{\rm apx}`$の精度 
+### 🪼 $`G _{\rm apx}`$の精度 
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
@@ -86,7 +86,7 @@ $`a _{near},b _{near}`$は，より小さければ精度が良く，
 [./test_multipole_expansion.cpp#L86](./test_multipole_expansion.cpp#L86)
 
 
-### 🪸$`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度 
+### 🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度 
 
 $`\nabla G _{\rm apx}`$は，$`\nabla _{\rm \circ}=(\frac{\partial}{\partial r},\frac{\partial}{\partial a},\frac{\partial}{\partial b})`$とすると，
 
@@ -135,7 +135,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 [./test_multipole_expansion.cpp#L146](./test_multipole_expansion.cpp#L146)
 
 
-## ⛵️境界要素法への応用 
+## ⛵ 境界要素法への応用 
 
 境界要素法で最も計算時間を要するのは，連立１次方程式の**係数行列の作成**と**それを解く**ことである．
 
@@ -148,7 +148,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
 
-### 🪸境界積分方程式 
+### 🪼 境界積分方程式 
 
 ラプラス方程式とグリーンの定理を合わせて，境界積分方程式が得られる．
 これのグリーン関数$G$を多重極展開によって$`G _{\rm apx}`$で置き換えると，
@@ -178,7 +178,7 @@ $`{\bf Y}=\{\frac{1}{r _{far}^{-k+1}}Y(0,-k,a,b),\frac{1}{r _{far}^{-k+1+1}}Y(0,
 ただ，十分な精度でグリーン関数を近似するためには，
 $`\|{\bf x - \bf c}\|`$が$`\|{\bf a - \bf c}\|`$よりも十分に小さい必要がある．
 
-### 🪸空間分割 
+### 🪼 空間分割 
 
 $`\bf c`$を一つに固定するのではなく，空間を分割して，それぞれのセルの中心において$`{\bf c}`$を固定する．
 各セルのインデックスを$`\square i`$として，その中心座標を$`{\bf c} _{\square i}`$のように表す．
