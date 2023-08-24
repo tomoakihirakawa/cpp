@@ -557,12 +557,13 @@ Tddd gradPhi(const networkPoint *const p) {
 #if defined(use_angle_weigted_normal)
       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
 #elif defined(use_area_weigted_normal)
-      W.push_back(f->area * (f->Dirichlet ? 10 : 1.));
+      W.push_back(f->area * (f->Dirichlet ? 100 : 1.));
 #else
       W.push_back(f->Dirichlet ? 10 : 1.);
 #endif
    }
    return optimumVector(V, {0., 0., 0.}, W);
+   // return optimumVector(V, {0., 0., 0.});
 };
 
 /* -------------------------------------------------------------------------- */

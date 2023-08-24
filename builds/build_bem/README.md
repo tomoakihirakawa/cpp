@@ -1,7 +1,9 @@
 # Contents
 
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
-    - [⛵ 概要](#⛵-概要)
+    - [⛵ BEM-MELについて](#⛵-BEM-MELについて)
+        - [🪼 三角関数を使った古典的解析手法](#🪼-三角関数を使った古典的解析手法)
+    - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
         - [🪼 多重節点](#🪼-多重節点)
@@ -40,19 +42,37 @@
 ---
 # 🐋 BEM-MEL 
 
+## ⛵ BEM-MELについて 
+
+### 🪼 三角関数を使った古典的解析手法 
+
+水面がどのような微分方程式に従って運動するか調べると，
+非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
+
+立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
+三角関数の重ね合わせで求めようとすることは自然な発想であって，この解析方法はある程度の成功を収めてきた．
+この方法による線形理論はよく知られており水面波の基礎となっている．
+また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることも行われている．
+
+しかし，
+複雑な形状を境界に持つ場合や，波が激しい場合においては，
+この解析方法で課すことになる周期境界条件や，弱非線形性までしか考慮しないことが，
+果たして結果に悪影響を及ぼさないか疑問である．
+または，過渡的な現象，実際と同じように時間変化する結果を得たい場合には，この解析手法では難しい．
+
+
+[./main.cpp#L1](./main.cpp#L1)
+
+
+---
+## ⛵ 計算プログラムの概要 
+
 | 項目 | 詳細|
 |---:|:---|
 | 要素 | 線形三角要素 |
 | 時間発展方法 | 4次のルンゲクッタ |
 | 解析領域 | 時間領域 |
 | 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
-
-
-[./BEM.hpp#L1](./BEM.hpp#L1)
-
-
----
-## ⛵ 概要 
 
 ### 🪼 計算の流れ 
 
@@ -64,7 +84,7 @@
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L321](./main.cpp#L321)
+[./main.cpp#L299](./main.cpp#L299)
 
 
 ---
@@ -404,7 +424,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L689)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L690)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -449,7 +469,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L661)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L662)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -487,7 +507,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L628](./BEM_utilities.hpp#L628)
+[./BEM_utilities.hpp#L629](./BEM_utilities.hpp#L629)
 
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
@@ -496,14 +516,14 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L363](./main.cpp#L363)
+[./main.cpp#L351](./main.cpp#L351)
 
 
 ---
 ## ⛵ 造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L374)
+[強制運動を課す](../../builds/build_bem/main.cpp#L362)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L249)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -558,7 +578,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
+[./BEM_utilities.hpp#L571](./BEM_utilities.hpp#L571)
 
 
 ---
@@ -701,7 +721,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L1](./main.cpp#L1)
+[./main.cpp#L611](./main.cpp#L611)
 
 
 ---
@@ -710,7 +730,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L35](./main.cpp#L35)
+[./main.cpp#L645](./main.cpp#L645)
 
 
 ---

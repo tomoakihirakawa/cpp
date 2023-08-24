@@ -1,45 +1,28 @@
-/*DOC_EXTRACT 2_0_HOW_TO_RUN
+/*DOC_EXTRACT 0_0_BEM
 
-# 実行方法
+# BEM-MEL
 
-ファイルをダウンロードして，`build_bem`ディレクトリに移動．
+## BEM-MELについて
 
-```
-$ git clone https://github.com/tomoakihirakawa/cpp.git
-$ cd ./cpp/builds/build_bem
-```
+### 三角関数を使った古典的な解析手法
 
-`clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
-`cmake`で`Makefile`を生成して，`make`でコンパイルする．
+水面がどのような微分方程式に従って運動するか調べると，
+非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
 
-```
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-$ make
-```
+立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
+三角関数の重ね合わせで求めようとすることは自然な発想であって，この解析方法はある程度の成功を収めてきた．
+この方法による線形理論はよく知られており水面波の基礎となっている．
+また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることも行われている．
 
-次に，入力ファイルを生成．
+しかし，
+複雑な形状を境界に持つ場合や，波が激しい場合においては，
+この解析方法で課すことになる周期境界条件や，弱非線形性までしか考慮しないことが，
+果たして結果に悪影響を及ぼさないか疑問である．
+また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
 
-```
-$ python3 input_generator.py
-```
-
-例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
-
-```
-$ ./main ./input_files/Hadzic2005
-```
+###
 
 */
-
-/*DOC_EXTRACT 3_0_EXAMPLES
-
-# Examples
-
-**[See the Examples here!](EXAMPLES.md)**
-
-*/
-
 // #define _debugging_
 
 #define BEM
@@ -272,8 +255,12 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
          // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
-         flipIf(*water, {10 * rad, rad}, {10 * rad /*結構小さく*/, rad}, false);
-
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
+         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
@@ -315,12 +302,16 @@ int main(int argc, char **argv) {
                p->RK_X.initialize(dt, real_time, ToX(p), RK_order);
          }
          // b@ ----------------------------------------------------- */
-         int RK_step = 0;
-         BEM_BVP BVP;
-
          /*DOC_EXTRACT 0_1_BEM
 
-         ## 概要
+         ## 計算プログラムの概要
+
+         | 項目 | 詳細|
+         |---:|:---|
+         | 要素 | 線形三角要素 |
+         | 時間発展方法 | 4次のルンゲクッタ |
+         | 解析領域 | 時間領域 |
+         | 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
 
          ### 計算の流れ
 
@@ -332,6 +323,9 @@ int main(int argc, char **argv) {
          6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
          */
+
+         int RK_step = 0;
+         BEM_BVP BVP;
          do {
             auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
@@ -619,3 +613,45 @@ int main(int argc, char **argv) {
    };
    return 0;
 };
+
+/*DOC_EXTRACT 2_0_HOW_TO_RUN
+
+# 実行方法
+
+ファイルをダウンロードして，`build_bem`ディレクトリに移動．
+
+```
+$ git clone https://github.com/tomoakihirakawa/cpp.git
+$ cd ./cpp/builds/build_bem
+```
+
+`clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
+`cmake`で`Makefile`を生成して，`make`でコンパイルする．
+
+```
+$ sh clean
+$ cmake -DCMAKE_BUILD_TYPE=Release ../
+$ make
+```
+
+次に，入力ファイルを生成．
+
+```
+$ python3 input_generator.py
+```
+
+例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
+
+```
+$ ./main ./input_files/Hadzic2005
+```
+
+*/
+
+/*DOC_EXTRACT 3_0_EXAMPLES
+
+# Examples
+
+**[See the Examples here!](EXAMPLES.md)**
+
+*/
