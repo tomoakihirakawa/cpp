@@ -76,7 +76,8 @@
 
 - [Contents](./builds/build_bem/README.md#Contents)
 - [🐋 BEM-MEL](./builds/build_bem/README.md#🐋-BEM-MEL)
-    - [⛵ 概要](./builds/build_bem/README.md#⛵-概要)
+    - [⛵ BEM-MELについて](./builds/build_bem/README.md#⛵-BEM-MELについて)
+    - [⛵ 計算プログラムの概要](./builds/build_bem/README.md#⛵-計算プログラムの概要)
     - [⛵ 境界のタイプを決定する](./builds/build_bem/README.md#⛵-境界のタイプを決定する)
     - [⛵ 境界値問題](./builds/build_bem/README.md#⛵-境界値問題)
     - [⛵ 初期値問題](./builds/build_bem/README.md#⛵-初期値問題)
