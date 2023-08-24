@@ -2,7 +2,7 @@
 
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
     - [⛵ BEM-MELについて](#⛵-BEM-MELについて)
-        - [🪼 三角関数を使った古典的解析手法](#🪼-三角関数を使った古典的解析手法)
+        - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
@@ -44,7 +44,7 @@
 
 ## ⛵ BEM-MELについて 
 
-### 🪼 三角関数を使った古典的解析手法 
+### 🪼 三角関数を使った古典的な解析手法 
 
 水面がどのような微分方程式に従って運動するか調べると，
 非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
@@ -58,7 +58,11 @@
 複雑な形状を境界に持つ場合や，波が激しい場合においては，
 この解析方法で課すことになる周期境界条件や，弱非線形性までしか考慮しないことが，
 果たして結果に悪影響を及ぼさないか疑問である．
-または，過渡的な現象，実際と同じように時間変化する結果を得たい場合には，この解析手法では難しい．
+また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
+
+###
+
+🪼
 
 
 [./main.cpp#L1](./main.cpp#L1)
@@ -84,7 +88,7 @@
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L299](./main.cpp#L299)
+[./main.cpp#L305](./main.cpp#L305)
 
 
 ---
@@ -516,14 +520,14 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L351](./main.cpp#L351)
+[./main.cpp#L357](./main.cpp#L357)
 
 
 ---
 ## ⛵ 造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L362)
+[強制運動を課す](../../builds/build_bem/main.cpp#L368)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L249)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -664,8 +668,8 @@ This Python script generates input files for the BEM simulation code. It support
 1. Make sure the required dependencies are installed.
 2. Run the script using the following command:
 
-```
-python3 input_generator.py
+```shell
+$ python3 input_generator.py
 ```
 
 Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
@@ -694,7 +698,7 @@ The script will generate input files in JSON format for the specified simulation
 
 ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
-```
+```shell
 $ git clone https://github.com/tomoakihirakawa/cpp.git
 $ cd ./cpp/builds/build_bem
 ```
@@ -702,7 +706,7 @@ $ cd ./cpp/builds/build_bem
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
-```
+```shell
 $ sh clean
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 $ make
@@ -710,18 +714,18 @@ $ make
 
 次に，入力ファイルを生成．
 
-```
+```shell
 $ python3 input_generator.py
 ```
 
 例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
-```
+```sh
 $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L611](./main.cpp#L611)
+[./main.cpp#L617](./main.cpp#L617)
 
 
 ---
@@ -730,7 +734,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L645](./main.cpp#L645)
+[./main.cpp#L651](./main.cpp#L651)
 
 
 ---

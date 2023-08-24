@@ -201,9 +201,9 @@ class networkLine : public CoordinateBounds {
    bool flipIfBetter(const double min_degree_to_flat = M_PI / 180.,
                      const double min_inner_angle = M_PI / 180.,
                      const int min_n = 5);
-   bool flipIfTopologicalyBetter(const double min_degree_of_line = M_PI / 180.,
-                                 const double min_degree_of_face = M_PI / 180,
-                                 const int s_meanIN = 6);
+   bool flipIfTopologicallyBetter(const double min_degree_of_line = M_PI / 180.,
+                                  const double min_degree_of_face = M_PI / 180,
+                                  const int s_meanIN = 6);
    void divideIfIllegal();
    bool isFlat(const double) const;
    bool islegal() const;

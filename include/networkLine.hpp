@@ -1653,64 +1653,35 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
    };
 };
 
-inline bool networkLine::flipIfTopologicalyBetter(const double min_degree_of_line,
-                                                  const double min_degree_of_face,
-                                                  const int s_meanIN) {
-   //@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
-   //@ フリップ前後の両方で不正な辺と判定された場合，
-   //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
+inline bool networkLine::flipIfTopologicallyBetter(const double min_degree_of_line,
+                                                   const double min_degree_of_face,
+                                                   const int s_meanIN) {
    try {
-      if (!canflip(min_degree_of_face) /*flipした後の三角形の最小角度*/)
+      // Check if the flip is allowed based on the minimum angle of the triangle after flipping
+      if (!canflip(min_degree_of_face))
          return false;
-      //@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
-      //@ フリップ前後の両方で不正な辺と判定された場合，
-      //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
       if (this->isFlat(min_degree_of_line) && !isIntxn()) {
          auto [p0, p1] = this->getPoints();
          auto f0f1 = this->getFaces();
          int s0 = p0->getLines().size();
          int s1 = p1->getLines().size();
-         auto p2 = f0f1[0]->getPointOpposite(this);
-         auto p3 = f0f1[1]->getPointOpposite(this);
-         int s2 = p2->getLines().size();
-         int s3 = p3->getLines().size();
-         // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
-         //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
-         //       return false;  // 3以下はつくらない
-
-         double s_mean = s_meanIN;  //(s0 + s1 + s2 + s3) / 4.;
-         double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-         double v_next = std::pow(s0 - s_mean - 1, 2) + std::pow(s1 - s_mean - 1, 2) + std::pow(s2 - s_mean + 1, 2) + std::pow(s3 - s_mean + 1, 2);
-         // flipはflipが成功した場合trueを返す．convexでない場合flipされない場合がある
-
-         // if (p2->CORNER && !p3->CORNER)
-         // {
-         // 	if (s2 <= 5)
-         // 	{
-         // 		this->flip();
-         // 		return true;
-         // 	}
-         // }
-         // else if (!p2->CORNER && p3->CORNER)
-         // {
-         // 	if (s3 <= 5)
-         // 	{
-         // 		this->flip();
-         // 		return true;
-         // 	}
-         // }
-
-         if (v_init > v_next || (s2 <= 4 || s3 <= 4) || (s0 >= 8 || s1 >= 8)) {
+         int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
+         int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
+         double s_mean = s_meanIN;
+         double v_init = Norm(std::array<int, 4>{s0, s1, s2, s3} - s_mean);
+         double v_next = Norm(std::array<int, 4>{s0 - 1, s1 - 1, s2 + 1, s3 + 1} - s_mean);
+         if (v_init > v_next || s0 >= 8 || s1 >= 8 || s2 <= 4 || s3 <= 4) {
             this->flip();
             return true;
          } else
             return false;
-      } else
+      } else {
          return false;
+      }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
+   }
 };
 
 // inline bool networkLine::flipIfBetter()

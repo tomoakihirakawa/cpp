@@ -418,7 +418,8 @@ void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false
       double mean_length = Mean(extLength(water.getLines()));
       bool isfound = false, ismerged = false;
       int count = 0;
-      for (const auto &l : water.getLines()) {
+      auto V = ToVector(water.getLines());
+      for (const auto &l : RandomSample(V)) {
          auto [p0, p1] = l->getPoints();
          if (!l->CORNER)
          // if (!p0->CORNER && !p1->CORNER)
@@ -426,7 +427,7 @@ void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false
             if (force && (times == 0 || count < times)) {
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
-               isfound = l->flipIfTopologicalyBetter(limit_angle, M_PI / 180. * 10.);
+               isfound = l->flipIfTopologicallyBetter(limit_angle, M_PI / 180. * 10.);
                if (isfound)
                   count++;
             } else {
@@ -462,7 +463,7 @@ void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0)
          // if (!p0->CORNER && !p1->CORNER)
          {
             if (force && (times == 0 || count < times)) {
-               isfound = l->flipIfTopologicalyBetter(limit_angle, limit_inner_angle);
+               isfound = l->flipIfTopologicallyBetter(limit_angle, limit_inner_angle);
                if (isfound)
                   count++;
             } else {
@@ -478,7 +479,10 @@ void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
-void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0) {
+void flipIf(Network &water,
+            const Tdd &limit_Dirichlet,
+            const Tdd &limit_Neumann,
+            bool force = false, int times = 0) {
    try {
       /*
       * フリップによって表面の形状が大きく変わってしまうのはよくない．
@@ -495,30 +499,27 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
       double mean_length = Mean(extLength(water.getLines()));
       bool isfound = false, ismerged = false;
       int count = 0;
-      for (const auto &l : water.getLines()) {
+      auto V = ToVector(water.getLines());
+      for (const auto &l : RandomSample(V)) {
          auto [p0, p1] = l->getPoints();
          if (!l->CORNER) {
             if (force && (times == 0 || count < times)) {
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
                if (l->Dirichlet) {
-                  isfound = l->flipIfTopologicalyBetter(limit_angle_D, limit_inner_angle_D);
-                  if (isfound)
-                     count++;
+                  isfound = l->flipIfTopologicallyBetter(limit_angle_D, limit_inner_angle_D);
+                  if (isfound) count++;
                } else {
-                  isfound = l->flipIfTopologicalyBetter(limit_angle_N, limit_inner_angle_N);
-                  if (isfound)
-                     count++;
+                  isfound = l->flipIfTopologicallyBetter(limit_angle_N, limit_inner_angle_N);
+                  if (isfound) count++;
                }
             } else {
                if (l->Dirichlet) {
                   isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D, 5);
-                  if (isfound)
-                     count++;
+                  if (isfound) count++;
                } else {
                   isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N, 5);
-                  if (isfound)
-                     count++;
+                  if (isfound) count++;
                }
             }
          }
