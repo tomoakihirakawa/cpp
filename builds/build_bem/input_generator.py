@@ -165,13 +165,13 @@ match SimulationCase:
         objfolder = program_home + "/cpp/obj/Ren2015"
         # water["objfile"] = objfolder + "/water300.obj"
         water["objfile"] = objfolder + "/water400mod.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
         tank["objfile"] = objfolder + "/tank100.obj"
         floatingbody["objfile"] = objfolder+"/float50.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.005,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,

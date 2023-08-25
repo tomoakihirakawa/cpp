@@ -1,4 +1,270 @@
 ----------
+Execution time: Fri Aug 25 13:30:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: modify piston
+----------
+Execution time: Fri Aug 25 13:07:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: modify piston
+----------
+Execution time: Fri Aug 25 13:06:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 11:26:52 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 11:26:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 11:13:54 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
+Execution time: Fri Aug 25 10:46:13 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 10:44:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 10:41:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 10:18:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 10:14:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:59:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:50:35 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:43:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:41:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:30:27 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:19:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:16:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:15:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: flipIfTopologicallyBetter is modified
+----------
+Execution time: Fri Aug 25 09:10:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: calculateCurrentUpdateVelocities(*water, 20);
+----------
+Execution time: Fri Aug 25 08:55:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: calculateCurrentUpdateVelocities(*water, 50);
+----------
+Execution time: Fri Aug 25 08:52:48 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: calculateCurrentUpdateVelocities(*water, 20);
+----------
+Execution time: Fri Aug 25 08:39:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: calculateCurrentUpdateVelocities(*water, 20);
+----------
+Execution time: Thu Aug 24 20:28:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+  arg2: これでよくなれば，wavemakerのメッシュが細かすぎて正確に感知できなかったから失敗していたということになる
+----------
+Execution time: Thu Aug 24 20:27:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
+Execution time: Thu Aug 24 20:24:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
+Execution time: Thu Aug 24 19:57:09 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015
+----------
 Execution time: Thu Aug 24 16:55:11 2023
 
 Machine Information:
@@ -502,6 +768,33 @@ Machine Information:
   Operating System: Darwin 22.5.0
 
 No arguments provided. Write input JSON file directory.
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------
