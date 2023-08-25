@@ -1665,19 +1665,24 @@ inline bool networkLine::flipIfTopologicallyBetter(const double min_degree_of_li
          auto f0f1 = this->getFaces();
          int s0 = p0->getLines().size();
          int s1 = p1->getLines().size();
-         int s2 = f0f1[0]->getPointOpposite(this)->getLines().size();
-         int s3 = f0f1[1]->getPointOpposite(this)->getLines().size();
+         auto p2 = f0f1[0]->getPointOpposite(this);
+         auto p3 = f0f1[1]->getPointOpposite(this);
+         int s2 = p2->getLines().size();
+         int s3 = p3->getLines().size();
          double s_mean = s_meanIN;
          double v_init = Norm(std::array<int, 4>{s0, s1, s2, s3} - s_mean);
          double v_next = Norm(std::array<int, 4>{s0 - 1, s1 - 1, s2 + 1, s3 + 1} - s_mean);
+         // ただし，例えばs0が角であった場合，角が多くの線を持つことは問題ないため，考慮に入れない．つまり辺の数は変わっても変わらないものとして，v_nextを考える．
+         v_next = Norm(std::array<int, 4>{p0->CORNER || p0->isMultipleNode ? s0 : s0 - 1, p1->CORNER || p1->isMultipleNode ? s1 : s1 - 1,
+                                          p2->CORNER || p2->isMultipleNode ? s2 : s2 + 1, p3->CORNER || p3->isMultipleNode ? s3 : s3 + 1} -
+                       s_mean);
          if (v_init > v_next || s0 >= 8 || s1 >= 8 || s2 <= 4 || s3 <= 4) {
             this->flip();
             return true;
          } else
             return false;
-      } else {
+      } else
          return false;
-      }
    } catch (std::exception &e) {
       std::cerr << e.what() << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");

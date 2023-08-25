@@ -3,6 +3,7 @@
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
     - [⛵ BEM-MELについて](#⛵-BEM-MELについて)
         - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
+        - [🪼 BEM-MEL](#🪼-BEM-MEL)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
@@ -50,9 +51,9 @@
 非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
 
 立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
-三角関数の重ね合わせで求めようとすることは自然な発想であって，この解析方法はある程度の成功を収めてきた．
+三角関数の重ね合わせで求めようとすることは自然で賢い発想であり，この解析方法はある程度の成功を収めてきた．
 この方法による線形理論はよく知られており水面波の基礎となっている．
-また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることも行われている．
+また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることもこの解析手法の延長線上にあり，よく行われている．
 
 しかし，
 複雑な形状を境界に持つ場合や，波が激しい場合においては，
@@ -60,9 +61,13 @@
 果たして結果に悪影響を及ぼさないか疑問である．
 また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
 
-###
+### 🪼 BEM-MEL 
 
-🪼
+1970年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
+当時開発された正方格子上でのシミュレーション手法を使って，
+巻波砕破のシミュレーションを行おうと格子を細かくすると，
+直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
+[Longuet-Higgins, M. S. and Cokelet, E. D. (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)
 
 
 [./main.cpp#L1](./main.cpp#L1)
@@ -88,7 +93,7 @@
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L305](./main.cpp#L305)
+[./main.cpp#L312](./main.cpp#L312)
 
 
 ---
@@ -141,7 +146,7 @@
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
 
-[./BEM_utilities.hpp#L269](./BEM_utilities.hpp#L269)
+[./BEM_utilities.hpp#L281](./BEM_utilities.hpp#L281)
 
 
 ---
@@ -325,7 +330,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L496](./BEM_utilities.hpp#L496)
+[./BEM_utilities.hpp#L508](./BEM_utilities.hpp#L508)
 
 
 ---
@@ -341,13 +346,13 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L362)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L369)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L222)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L276)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L223)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L283)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L341](./BEM_calculateVelocities.hpp#L341)
+[./BEM_calculateVelocities.hpp#L348](./BEM_calculateVelocities.hpp#L348)
 
 
 ---
@@ -428,7 +433,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L690)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L702)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -473,7 +478,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L662)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L674)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -511,7 +516,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L629](./BEM_utilities.hpp#L629)
+[./BEM_utilities.hpp#L641](./BEM_utilities.hpp#L641)
 
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
@@ -520,16 +525,16 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L357](./main.cpp#L357)
+[./main.cpp#L364](./main.cpp#L364)
 
 
 ---
 ## ⛵ 造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L368)
+[強制運動を課す](../../builds/build_bem/main.cpp#L375)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L249)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L261)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L107)で利用され，$\phi _{n}$を計算する．
@@ -569,6 +574,16 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 | 6 | `axis`  | y       |
 | 7 | `axis`  | z       |
 
+ピストン型の造波特性関数：
+
+```math
+F(f,h) = \frac{H}{2e}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}
+```
+
+$`e`$は造波版の振幅である．例えば，振幅が1mの波を発生させたい場合，
+$`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{1}{F(f,h)}`$となり，
+これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
+
 
 [./BEM_utilities.hpp#L201](./BEM_utilities.hpp#L201)
 
@@ -582,7 +597,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L571](./BEM_utilities.hpp#L571)
+[./BEM_utilities.hpp#L583](./BEM_utilities.hpp#L583)
 
 
 ---
@@ -638,7 +653,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L490](./BEM_calculateVelocities.hpp#L490)
+[./BEM_calculateVelocities.hpp#L498](./BEM_calculateVelocities.hpp#L498)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -655,7 +670,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L577](./BEM_calculateVelocities.hpp#L577)
+[./BEM_calculateVelocities.hpp#L585](./BEM_calculateVelocities.hpp#L585)
 
 
 ---
@@ -720,12 +735,12 @@ $ python3 input_generator.py
 
 例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
-```sh
+```shell
 $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L617](./main.cpp#L617)
+[./main.cpp#L624](./main.cpp#L624)
 
 
 ---
@@ -734,7 +749,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L651](./main.cpp#L651)
+[./main.cpp#L658](./main.cpp#L658)
 
 
 ---

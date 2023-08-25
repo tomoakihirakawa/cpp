@@ -10,9 +10,9 @@
 非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
 
 立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
-三角関数の重ね合わせで求めようとすることは自然な発想であって，この解析方法はある程度の成功を収めてきた．
+三角関数の重ね合わせで求めようとすることは自然で賢い発想であり，この解析方法はある程度の成功を収めてきた．
 この方法による線形理論はよく知られており水面波の基礎となっている．
-また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることも行われている．
+また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることもこの解析手法の延長線上にあり，よく行われている．
 
 しかし，
 複雑な形状を境界に持つ場合や，波が激しい場合においては，
@@ -20,7 +20,14 @@
 果たして結果に悪影響を及ぼさないか疑問である．
 また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
 
-###
+### BEM-MEL
+
+1970年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
+当時開発された正方格子上でのシミュレーション手法を使って，
+巻波砕破のシミュレーションを行おうと格子を細かくすると，
+直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
+\cite{Longuet-Higgins1976}
+
 
 */
 // #define _debugging_
@@ -255,12 +262,12 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
          // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
+
+         // if (time_step % 5 == 0)
+         //    flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
+         // else
          flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
+
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
@@ -345,7 +352,7 @@ int main(int argc, char **argv) {
             // if (RK_step == 4)
             //    std::cout << Green << "do shift" << colorOff << " s\n";
             //
-            calculateCurrentUpdateVelocities(*water, 100);
+            calculateCurrentUpdateVelocities(*water, 50);
 
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 

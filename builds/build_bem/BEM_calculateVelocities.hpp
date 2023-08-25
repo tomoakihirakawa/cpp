@@ -168,12 +168,13 @@ Tddd factor(const networkPoint *p, const Tddd &ubuff, const double max_ratio = 0
 double magicalValue(const networkPoint *p, const networkFace *f) {
    auto [p0, p1, p2] = f->getPoints(p);
    auto nP012 = T3Tddd{RK_with_Ubuff(p0, p1, p2)};
-   auto tmp = std::log10(Circumradius(nP012) / Inradius(nP012));
-   double max = 10;
-   if (tmp > max)
-      return max;
-   else
-      return tmp;
+   // auto tmp = std::log10(Circumradius(nP012) / Inradius(nP012));
+   // double max = 10;
+   // if (tmp > max)
+   //    return max;
+   // else
+   //    return tmp;
+   return Circumradius(nP012) / Inradius(nP012);
 };
 
 double variance2(const networkPoint *p, const networkFace *f) {
@@ -229,17 +230,16 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    //       s += 1.;
    //    }
    // } else
+   auto max_a = 0;
    {
       for (const auto &f : p->getFaces()) {
          auto nP012 = RK_with_Ubuff(f->getPoints(p));
          auto &[np0x, np1x, np2x] = nP012;
          double a = magicalValue(p, f);  // + variance2(p, f);
 
-         // if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-         //    a *= std::pow(1.5, 3);
-         // } else
-
-         if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->isMultipleNode; })) {
+         if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
+            a *= std::pow(1.5, 3);
+         } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->isMultipleNode; })) {
             a *= std::pow(1.5, 2);
          } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
                        return std::ranges::any_of(p->getFaces(), [](const auto &F) {
@@ -255,15 +255,22 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
          // vector_to_optimum_X += a * (optimum_position - pX);
          vector_to_optimum_X += a * (optimum_position - pX);
          s += a;
+         if (max_a < a)
+            max_a = a;
       }
    }
 
-   if (p->CORNER)
-      for (const auto &l : p->getLinesCORNER()) {
-         auto mean_a = s / p->getFaces().size();
-         vector_to_optimum_X += mean_a * (RK_with_Ubuff((*l)(p)) - pX);
-         s += mean_a;
-      }
+   // if (p->CORNER)
+   {
+      if (p->isMultipleNode)
+         for (const auto &l : p->getLines()) {
+            auto q = (*l)(p);
+            if (q->isMultipleNode) {
+               vector_to_optimum_X += max_a * (RK_with_Ubuff(q) - pX);
+               s += max_a;
+            }
+         }
+   }
 
    vector_to_optimum_X /= s;
 
@@ -372,13 +379,14 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
       {
-         double scale = 0.05;
+         double a = 0.02;
+         double scale = 5. * a;
          if (p->isMultipleNode && !p->CORNER)
-            scale = 0.01;
+            scale = 5. * a;
          else if (p->Neumann)
-            scale = 0.01;
+            scale = 5. * a;
          else if (p->CORNER)
-            scale = 0.01;
+            scale = 5. * a;
 
          p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
       }

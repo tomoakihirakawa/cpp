@@ -213,6 +213,16 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       | 6 | `axis`  | y       |
       | 7 | `axis`  | z       |
 
+      ピストン型の造波特性関数：
+
+      ```math
+      F(f,h) = \frac{H}{2e}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}
+      ```
+
+      $`e`$は造波版の振幅である．例えば，振幅が1mの波を発生させたい場合，
+      $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{1}{F(f,h)}`$となり，
+      これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
+
       */
       double start = stod(strings[1] /*start*/);
       if (strings.size() > 7) {
@@ -221,13 +231,15 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          double h = std::abs(stod(strings[4] /*h*/));
          DispersionRelation DS(w, h);
          double k = std::abs(DS.k);
-         double F = 4. * std::pow(sinh(k * h), 2) / (4 * M_PI * h / DS.L + sinh(2. * k * h));
+         double kh2 = 2. * k * h;
+         double F = 4. * std::pow(sinh(k * h), 2) / (kh2 + sinh(kh2));  //= H/(2*e)
          double H = 2. * A;
-         double S = H / F;
-         S *= w * sin(w * (t - start));
-         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", S = " << S << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+         double e = H / F / 2.;
+         // wave maker movement is e * sin(w * t)
+         double dsdt = e * w * sin(w * (t - start));
+         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};
-         return {S * axis[0], S * axis[1], S * axis[2], 0., 0., 0.};
+         return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
    } else if (name.contains("sinusoidal") || name.contains("sin")) {

@@ -29,13 +29,95 @@ MATH_STAR_PATTERN = re.compile(
 
 # Reduced multiple calls to `file.read()`
 
+from pybtex.database.input import bibtex
+from pybtex.database import parse_file
+from pybtex.database import BibliographyDataError
+
+from pybtex.database import BibliographyData
+import glob
+
+# Initialize an empty bibliography data object
+bib_data = BibliographyData()
+
+import bibtexparser
+import glob
+
+if False:
+    bib_dir = '/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/'
+    for bib_file_path in glob.glob(bib_dir+'library.bib'):
+        with open(bib_file_path, 'r') as bib_file:
+            bib_database = bibtexparser.load(bib_file)
+
+        unique_entries = {}
+        for entry in bib_database.entries:
+            entry_id = entry['ID']
+            if entry_id not in unique_entries:
+                unique_entries[entry_id] = entry
+
+        new_bib_database = bibtexparser.bibdatabase.BibDatabase()
+        new_bib_database.entries = list(unique_entries.values())
+
+        with open('unique_references.bib', 'w') as new_bib_file:
+            bibtexparser.dump(new_bib_database, new_bib_file)
+
+# Loop through each file matching the pattern
+# for bib_file in glob.glob('/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_macbook_m2/paper-*.bib'):
+for bib_file in glob.glob('unique_references.bib'):
+    try:
+        # Parse the individual file
+        individual_bib_data = parse_file(bib_file)
+        # Merge the entries into the main bibliography data
+        for entry_id, entry in individual_bib_data.entries.items():
+            if entry_id not in bib_data.entries:
+                bib_data.add_entry(entry_id, entry)
+            # else:
+            #     print(f"Warning: Repeated entry with key {entry_id}. Ignored in file {bib_file}.")
+    except BibliographyDataError as e:
+        print(f"An error occurred while parsing the bibliography file {bib_file}: {e}")
+
+# Continue processing bib_data as before
+references = {}
+
+try:
+    for entry_id, entry in bib_data.entries.items():
+        # Check if the author field exists
+        if 'author' in entry.persons:
+            author = ' and '.join([str(p) for p in entry.persons['author']])
+        else:
+            author = 'Unknown Author'
+        
+        title = entry.fields.get('title')
+        year = entry.fields.get('year')
+        url = entry.fields.get('url')  # Assumes that the URL field is present
+        
+        # Creating the custom reference format
+        reference = f"{author} ({year})"
+        if url:
+            reference = f"[{reference}]({url})"
+        
+        if entry_id not in references:
+            references[entry_id] = reference
+        else:
+            print(f"Warning: Repeated entry with key {entry_id}. Ignored.")
+
+
+except BibliographyDataError as e:
+    print(f"An error occurred while parsing the bibliography file: {e}")
+
+
+def replace_citations(content: str, references: Dict[str, str]) -> str:
+    """
+    Replaces \cite{citetag} in the content with its corresponding reference if exists
+    """
+    CITATION_PATTERN = re.compile(r'\\cite\{(.*?)\}')
+    return CITATION_PATTERN.sub(lambda m: references.get(m.group(1), m.group()), content)
+
 
 def read_file_content(file_path):
     with open(file_path, 'r') as file:
         return file.read()
 
 # Inserted LABEL_PATTERN in search_labels()
-
 
 def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
     labels = {}
@@ -112,18 +194,15 @@ def extract_markdown_comments(input_file: str, content=None) -> Tuple[Dict[str, 
         # print("comment_lines[0] = ", comment_lines[0], ", keyword = ", keyword, ", order = ", order)
 
         comment = '\n'.join(comment_lines)
-        comment = comment.replace(
-            keyword, '', 1) if keyword != 'DEFAULT' else comment
+        comment = comment.replace(keyword, '', 1) if keyword != 'DEFAULT' else comment
         cleaned_comment = highlight_keywords(comment)
-        cleaned_comment = re.sub(
-            r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
-        keyword_comments[(keyword, order)].append(
-            cleaned_comment.strip() + '\n\n')
-        keyword_comments[(keyword, order)].append(
-            f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
+        keyword_comments[(keyword, order)].append(cleaned_comment.strip() + '\n\n')
+        keyword_comments[(keyword, order)].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
 
         # keyword_comments[(keyword, order)].append(
         #     f'<p  align="right"><a href="{input_file}#L{start_line}">{input_file}#L{start_line}</a></p>\n')
+
 
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)
@@ -206,6 +285,9 @@ def highlight_keywords(text: str) -> str:
     # text = re.sub(r'\\ref\{(.*?)\}\{(.*?)\}', replace_label, text)
     text = re.sub(r'\\ref\{(.*?)\}\{(.*?)\}', replace_label, text)
 
+    # Applying the replace_citations function
+    text = replace_citations(text, references)
+
     return text
 
 
@@ -285,8 +367,7 @@ if __name__ == "__main__":
     # ---------------------------- make keywords_order --------------------------- #
     sorted_keywords = []
     for input_file in sorted(search_files(search_directory, file_extensions)):
-        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(
-            input_file)
+        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(input_file)
         # set keywords_order
         sorted_keywords.extend(keyword_info)
 
@@ -325,12 +406,10 @@ if __name__ == "__main__":
 
             all_sec_L_order.extend(sec_L_order)
 
-    contents_table = generate_contents_table(sorted(
-        all_sec_L_order, key=lambda sec_line_order: sec_line_order[2])) + "\n---\n"
+    contents_table = generate_contents_table(sorted(all_sec_L_order, key=lambda sec_line_order: sec_line_order[2])) + "\n---\n"
 
     # Sorting the extracted comments by the order number
-    sorted_extracted_comments = sorted(all_extracted_comments.items(
-    ), key=lambda keyword_comments: keyword_comments[0][1])
+    sorted_extracted_comments = sorted(all_extracted_comments.items(), key=lambda keyword_comments: keyword_comments[0][1])
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
