@@ -1,3 +1,4 @@
+import copy
 import platform
 from math import pi
 import json
@@ -59,7 +60,7 @@ def generate(inputfiles, setting):
 
 # 入力ファイル生成 `input_generator.py`
 
-This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+This Python script generates input files for the BEM simulation codxxe. It supports various simulation cases and handles input file generation for each case.
 
 ## Usage
 
@@ -116,7 +117,13 @@ match SimulationCase:
 
         start = 0.01
 
-        id = ""
+        T = 1.2
+        a = 0.1
+        h = 0.4
+
+        # id0 = ""
+        id0 = "_multiple"
+        id = id0 + "a"+str(a).replace(".", "d") + "_T"+str(T).replace(".", "d")
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -129,19 +136,16 @@ match SimulationCase:
                 "isFixed": True}
 
         z_surface = 0.4
-        T = 1.2
-        a = 0.05
-        h = 0.4
 
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
                      "velocity": ["piston", start, a, T, h, 1, 0, 0]}
 
-        floatingbody = {"name": "float",
-                        "type": "RigidBody",
-                        # "isFixed": True,
-                        # "output": "json"}
-                        "velocity": "floating"}
+        float = {"name": "float",
+                 "type": "RigidBody",
+                 # "isFixed": True,
+                 # "output": "json"}
+                 "velocity": "floating"}
 
         L = 0.3
         W = 0.42
@@ -149,29 +153,80 @@ match SimulationCase:
         A = L*W
         V = A*H
         d = H/2
-        # floatingbody["mass"] = m = rho * g * d * A
+        # float["mass"] = m = rho * g * d * A
         buoyancy = rho * g * d * A
-        floatingbody["mass"] = m = rho * d * A
+        float["mass"] = m = rho * d * A
         MOI = 14.*(0.01*0.01)  # original kg*m*m
         # MOI = m/m0*MOI0
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
-        # floatingbody["COM"] = [2+L/2., W/2, z_surface]
-        floatingbody["COM"] = [2, W/2, z_surface]
-        print("COM ", floatingbody["COM"])
-        # floatingbody["MOI"] = [0.14516, 0.2567, 0.0753109]
-        floatingbody["MOI"] = [10**10, 0.2567, 10**10]
+        # float["COM"] = [2+L/2., W/2, z_surface]
+        float["COM"] = [4.3+L/2, W/2, z_surface]
+        print("COM ", float["COM"])
+        # float["MOI"] = [0.14516, 0.2567, 0.0753109]
+        float["MOI"] = [10**10, 0.2567, 10**10]
 
-        objfolder = program_home + "/cpp/obj/Ren2015"
-        # water["objfile"] = objfolder + "/water300.obj"
-        water["objfile"] = objfolder + "/water400mod.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
-        tank["objfile"] = objfolder + "/tank100.obj"
-        floatingbody["objfile"] = objfolder+"/float50.obj"
+        # if id contains "multiple":
+        if "multiple" in id:
+            objfolder = program_home + "/cpp/obj/Ren2015_multiple"
+            # water["objfile"] = objfolder + "/water300.obj"
+            water["objfile"] = objfolder + "/water400.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
+            tank["objfile"] = objfolder + "/tank100.obj"
+            float["objfile"] = objfolder+"/float50.obj"
+            inputfiles = [tank, wavemaker, water]
+            # float_a = float.copy()
+            float_a = copy.deepcopy(float)
+            float_a["name"] = "float_a"
+            float_a["objfile"] = objfolder+"/float_a50.obj"
+            float_a["COM"][0] = float["COM"][0]-1.*3.
 
-        inputfiles = [tank, wavemaker, water, floatingbody]
+            float_b = copy.deepcopy(float)
+            float_b["name"] = "float_b"
+            float_b["objfile"] = objfolder+"/float_b50.obj"
+            float_b["COM"][0] = float["COM"][0]-1.*2.
 
-        setting = {"max_dt": 0.01,
+            float_c = copy.deepcopy(float)
+            float_c["name"] = "float_c"
+            float_c["objfile"] = objfolder+"/float_c50.obj"
+            float_c["COM"][0] = float["COM"][0]-1.*1.
+
+            float_d = copy.deepcopy(float)
+            float_d["name"] = "float_d"
+            float_d["objfile"] = objfolder+"/float_d50.obj"
+            float_d["COM"][0] = float["COM"][0]
+
+            float_e = copy.deepcopy(float)
+            float_e["name"] = "float_e"
+            float_e["objfile"] = objfolder+"/float_e50.obj"
+            float_e["COM"][0] = float["COM"][0]+1.*1.
+
+            float_f = copy.deepcopy(float)
+            float_f["name"] = "float_f"
+            float_f["objfile"] = objfolder+"/float_f50.obj"
+            float_f["COM"][0] = float["COM"][0]+1.*2.
+
+            float_g = copy.deepcopy(float)
+            float_g["name"] = "float_g"
+            float_g["objfile"] = objfolder+"/float_g50.obj"
+            float_g["COM"][0] = float["COM"][0]+1.*3.
+
+            inputfiles.append(float_a)
+            inputfiles.append(float_b)
+            inputfiles.append(float_c)
+            inputfiles.append(float_d)
+            inputfiles.append(float_e)
+            inputfiles.append(float_f)
+            inputfiles.append(float_g)
+        else:
+            objfolder = program_home + "/cpp/obj/Ren2015"
+            water["objfile"] = objfolder + "/water400mod.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
+            tank["objfile"] = objfolder + "/tank100.obj"
+            float["objfile"] = objfolder+"/float50.obj"
+            inputfiles = [tank, wavemaker, water, float]
+
+        setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,

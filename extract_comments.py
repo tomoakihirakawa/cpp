@@ -78,11 +78,41 @@ for bib_file in glob.glob('unique_references.bib'):
 # Continue processing bib_data as before
 references = {}
 
+# Function to format author names
+# def format_authors(authors: str) -> str:
+#     # Splitting the authors by ' and '
+#     author_list = authors.split(' and ')
+    
+#     # Extracting the surname for each author
+#     surname_list = [author.split(',')[0].strip() for author in author_list]
+    
+#     if len(surname_list) == 1:
+#         return surname_list[0]
+#     elif len(surname_list) == 2:
+#         return f"{surname_list[0]} and {surname_list[1]}"
+#     else:
+#         return f"{surname_list[0]} et al."
+
+def format_authors(authors: List[str]) -> str:
+    surname_list = []
+    for author in authors:
+        parts = author.split(',')
+        surname = parts[0].strip()  # Assuming surname comes before the comma
+        surname_list.append(surname)
+
+    if len(surname_list) == 1:
+        return surname_list[0]
+    elif len(surname_list) == 2:
+        return f"{surname_list[0]} and {surname_list[1]}"
+    else:
+        return f"{surname_list[0]} et al."
+
 try:
     for entry_id, entry in bib_data.entries.items():
         # Check if the author field exists
         if 'author' in entry.persons:
-            author = ' and '.join([str(p) for p in entry.persons['author']])
+            authors_list = [str(p) for p in entry.persons['author']]
+            author = format_authors(authors_list)
         else:
             author = 'Unknown Author'
         
@@ -93,7 +123,7 @@ try:
         # Creating the custom reference format
         reference = f"{author} ({year})"
         if url:
-            reference = f"[{reference}]({url})"
+            reference = f"[{reference}]({url.split()[0]})"
         
         if entry_id not in references:
             references[entry_id] = reference

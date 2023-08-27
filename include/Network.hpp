@@ -3898,22 +3898,10 @@ class Network : public CoordinateBounds {
          octreeOfPoints(nullptr),
          surfaceNet(nullptr) {
       // load obj
-      if (filename.contains(".obj")) {
-         std::vector<std::vector<std::string>> read_line;
-         Load(filename, read_line, {"    ", "   ", "  ", " "});
-         Load3DFile objLoader;
-         objLoader.load(read_line);
-         this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
-         this->displayStates();
-      } else if (filename.contains(".off")) {
-         std::vector<std::vector<std::string>> read_line;
-         Load(filename, read_line, {"    ", "   ", "  ", " "});
-         Load3DFile objLoader;
-         objLoader.load_off(read_line);
-         this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
-         this->displayStates();
-      } else
-         this->name = filename;
+      std::cout << "load " << filename << std::endl;
+      Load3DFile objLoader(filename);
+      this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
+      this->displayStates();
    };
    //% ------------------------------------------------------ */
    const std::string &getName() const { return this->name; };

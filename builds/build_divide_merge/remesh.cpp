@@ -88,7 +88,7 @@ int main(int arg, char **argv) {
       for (auto i = 0; i < 5; i++) {
          AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
-            l->flipIfTopologicalyBetter(0.5 * M_PI / 180., 0.5 * M_PI / 180.);
+            l->flipIfTopologicallyBetter(0.5 * M_PI / 180., 0.5 * M_PI / 180.);
          AreaWeightedSmoothingPreserveShape(net.getPoints(), small);
          for (const auto &l : net.Lines)
             l->flipIfBetter(M_PI / 180.);

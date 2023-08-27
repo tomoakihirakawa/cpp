@@ -26,7 +26,51 @@
 当時開発された正方格子上でのシミュレーション手法を使って，
 巻波砕破のシミュレーションを行おうと格子を細かくすると，
 直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
-\cite{Longuet-Higgins1976}
+これに対して，
+\cite{Longuet-Higgins1976}は，境界線上だけに計算点を設け，
+その計算点の位置と速度ポテンシャルをラグランジュ的に時間発展させる方法を提案した．
+水面で$`\frac{D\phi}{Dt}`$が簡単に計算できること，
+流速(速度ポテンシャルの勾配)を計算するために，
+$`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
+法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
+
+<details>
+<summary>
+NOTE: メモリ容量の変化
+</summary>
+
+<img src="./REVIEW/computer_memory.png" width="50%" />
+
+現在，メモリ容量は，以前と比べて格段に大きくなり，メモリの節約を考える必要がなくなった．
+また，領域型の計算手法で作られる代数連立１次方程式の係数行列は，疎行列であることが多く，
+節点数は多けれども，疎行列なら反復解法を使って高速に解を求めることができる．
+一方で，境界型の計算手法は，密行列を作る必要があり，密行列の生成には計算がかかる．
+
+$`O(n_p^2)`$，$`O(n_d^3)`$
+仮に$`n_p=L^3`$，$`n_d=6L^2`$としよう
+$`O(L^6)`$，$`O(216 L^6)`$
+
+つまり，当初のBEM-MELの優位は，現在では他の手法にうばわれてしまっている．
+
+</details>
+
+#### BEM-MELの問題点
+
+BEM-MELの結果に数値的な不安定が生じることは，\cite{Longuet-Higgins1976}が既に紹介している．
+計算精度を悪化させる原因は様々なものが考えられる．
+例えば，係数行列を作成する際，つまり微分方程式を離散化する際に用いる，補間の精度や積分の精度．
+または，時間発展の際に用いる，時間積分の精度などである．
+
+補間と積分はセットで使うので，どちらが原因かを切り分けるのは難しい．
+積分精度だけを考えても，数値積分手法の改良や，解析的な改良などが考えられる．
+補間精度だけを考えても，補間手法の改良や，補間点の位置の調整などが考えられる．
+
+### BEM-MELの改良
+
+続く研究目的は，BEM-MELの改良に向けられた．
+
+### 浮体動揺解析
+
 
 
 */
@@ -132,11 +176,13 @@ int main(int argc, char **argv) {
       for (auto &[key, value] : settingJSON())
          std::cout << key << ": " << value << std::endl;
 
+      std::cout << "" << std::endl;
       // check optional setting
       if (settingJSON.find("WATER_DENSITY")) {
          _WATER_DENSITY_ = stod(settingJSON.at("WATER_DENSITY"))[0];
          std::cout << "WATER_DENSITY: " << _WATER_DENSITY_ << std::endl;
       }
+
       if (settingJSON.find("GRAVITY")) {
          _GRAVITY_ = stod(settingJSON.at("GRAVITY"))[0];
          _GRAVITY3_ = {0., 0., -_GRAVITY_};
@@ -172,6 +218,7 @@ int main(int argc, char **argv) {
       // Define containers and helper functions for network objects and output information
       std::map<Network *, outputInfo> NetOutputInfo;
       auto setup_network_output_info = [&NetOutputInfo](Network *net, const JSON &injson, const std::string &output_directory) {
+         std::cout << "setup_network_output_info" << std::endl;
          auto output_name = injson.at("name")[0];
          NetOutputInfo[net].pvd_file_name = output_name;
          NetOutputInfo[net].vtu_file_name = output_name + "_";
@@ -180,6 +227,7 @@ int main(int argc, char **argv) {
 
       std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
       auto initialize_network_objects = [&FluidObject, &RigidBodyObject, &SoftBodyObject](Network *net, const JSON &injson) {
+         std::cout << "initialize_network_objects" << std::endl;
          auto type = injson.at("type")[0];
          if (type == "RigidBody") {
             RigidBodyObject.emplace_back(net);
@@ -205,19 +253,19 @@ int main(int argc, char **argv) {
       };
 
       for (auto input_file_name : settingJSON["input_files"]) {
-         std::cout << input_directory + input_file_name << std::endl;
+         std::cout << "\n\n"
+                   << Green << input_directory + input_file_name << colorOff << std::endl;
          JSON injson(input_directory + input_file_name);
 
-         const std::vector<std::string> required_keys = {"name", "objfile", "type"};
-         for (const auto &key : required_keys)
-            if (!injson.find(key))
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " does not have " + key);
+         // check required keys
+         for (const auto &key : {"name", "objfile", "type"})
+            if (!injson.find(key)) throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " does not have " + key);
 
-         auto object_name = injson["name"][0];
-
+         // display contents of the JSON file
          for (auto &[key, value] : injson())
-            std::cout << key << ": " << value << std::endl;
+            std::cout << Green << key << colorOff << ": " << value << std::endl;
 
+         auto object_name = injson.at("name")[0];
          if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
             auto net = new Network(injson.at("objfile")[0], object_name);
             net->inputJSON = injson;
@@ -361,7 +409,7 @@ int main(int argc, char **argv) {
 
             // b$ --------------------------------------------------- */
 
-            /*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
+            /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
             ### 浮体の重心位置・姿勢・速度の更新
 

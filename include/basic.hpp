@@ -2799,7 +2799,12 @@ struct Load3DFile {
    Load3DFile(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
       std::vector<V_s> read_line;
       Load(filename, read_line, {"    ", "   ", "  ", " "});
-      this->load(read_line);
+      if (filename.contains(".obj"))
+         this->load(read_line);
+      else if (filename.contains(".off"))
+         this->load_off(read_line);
+      else
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The file format is not supported");
       generateComplex();
       calculateMaxMin();
    };
