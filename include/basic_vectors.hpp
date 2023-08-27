@@ -1825,8 +1825,7 @@ V_d diagonal_scaling_vector(VV_d mat) {
 /* ------------------------------------------------------ */
 template <typename T>
 bool Between(const T &x, const std::array<T, 2> &minmax) {
-   const auto &[min, max] = minmax;
-   return (min <= x && x <= max && isFinite(x));
+   return (std::get<0>(minmax) <= x && x <= std::get<1>(minmax) && isFinite(x));
 }
 
 /* -------------------------------------------------------------------------- */

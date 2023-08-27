@@ -68,46 +68,39 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 // #define linear_element
 // #define liear_and_quad_element
 std::unordered_map<std::tuple<netP *, netF *>, int> PBF_index;
-
 struct calculateFroudeKrylovForce {
    std::vector<networkFace *> actingFaces;
-   Tddd force, force_check, torque;
+   Tddd force, torque;
    double area;
    T6d acceleration;
    std::vector<std::tuple<Tddd, T3Tddd>> PressureVeticies;
 
    calculateFroudeKrylovForce(const std::unordered_set<networkFace *> faces /*waterfaces*/, const Network *PasObj)
-       : force({0., 0., 0.}),
-         torque({0., 0., 0.}),
-         area(0.),
-         PressureVeticies({}),
-         acceleration({0., 0., 0., 0., 0., 0.}) {
+       : force({0., 0., 0.}), torque({0., 0., 0.}), area(0.), PressureVeticies({}), acceleration({0., 0., 0., 0., 0., 0.}) {
       // PasObjと接したfaceの頂点にpressureが設定されている前提
       int count = 0;
+      // set PressureVeticies
       for (const auto &f : faces)
          if (f->Neumann) {
-            if (std::ranges::all_of(f->getPoints(),
-                                    [&](const auto &p) { return std::ranges::any_of(p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+            if (std::ranges::all_of(f->getPoints(), [&](const auto &p) { return std::ranges::any_of(p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
                this->PressureVeticies.push_back({{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
                count++;
             }
          }
+
+      // calculate area
       for (const auto &[P012, X012] : this->PressureVeticies) {
          auto intpX = interpolationTriangleLinear0101(X012);
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
             area += intpX.J(x0, x1) * w0w1;
       }
-      std::cout << "接触している面の数:" << count << std::endl;
-      std::cout << "表面積:" << area << std::endl;
+      std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
    };
 
+   // \label{BEM:surfaceIntegralOfTorque}
    Tddd getFroudeKrylovTorque(const Tddd &COM) {
-      /*
-      crossの引数の順番に注意
-      モーメントの計算が，N=rxP
-      */
       this->torque = {0., 0., 0.};
       for (const auto &[P012, X012] : this->PressureVeticies) {
          auto intpP = interpolationTriangleLinear0101(P012);
@@ -122,31 +115,16 @@ struct calculateFroudeKrylovForce {
    // \label{BEM:surfaceIntegralOfPressure}
    Tddd surfaceIntegralOfPressure() {
       this->force.fill(0.);
-      this->force_check.fill(0.);
       for (const auto &[P012, X012] : this->PressureVeticies) {
-         // auto intpP = interpolationTriangleLinear0101(P012);
-         // auto intpX = interpolationTriangleLinear0101(X012);
-         // auto n = TriangleNormal(X012);
-         // for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple) {
-         //    this->force += n * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
-         //    force_check += intpP(x0, x1) * intpX.cross(x0, x1) * w0w1;
-         // }
-         //
-         {
-            auto [p0, p1, p2] = P012;
-            auto [X0, X1, X2] = X012;
-            this->force += 1. / 6. * (p0 + p1 + p2) * Cross(X1 - X0, X2 - X0);
-         }
+         auto [p0, p1, p2] = P012;
+         auto [X0, X1, X2] = X012;
+         this->force += 1. / 6. * (p0 + p1 + p2) * Cross(X1 - X0, X2 - X0);
       }
-      force_check -= force;
       return this->force;
    };
 };
 
 void setPhiPhin(Network &water) {
-   /**
-   \phi on Dirichlet nodes have been updated by RK method. \phi_n on Neumann nodes are calculated in this function.
-   */
    /* -------------------------------------------------------------------------- */
    /*                         phinOnFace, phintOnFaceの設定                         */
    /* -------------------------------------------------------------------------- */
@@ -574,9 +552,15 @@ struct BEM_BVP {
    // b!                             solve phi_t and phi_n_t                            */
    // b! ------------------------------------------------------------------------------ */
 
-   /*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
+   /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
    ## 浮体動揺解析
+
+   BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
+   浮体に掛かる圧力の計算に必要な$`\phi_t`$が簡単には求まらないためである．
+   これに関しては，\cite{Wu2003}が参考になる．
+
+   ### 浮体の運動方程式
 
    浮体の重心の運動方程式：
 
@@ -590,12 +574,14 @@ struct BEM_BVP {
    浮体が流体から受ける力$`\boldsymbol{F}_{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
    また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-   ```math
-   \boldsymbol{F}_{\text {hydro }}=\int_{S} p\boldsymbol{n}  d S, \quad
-   p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
-   ```
+   \ref{BEM:surfaceIntegralOfPressure}{圧力積分}と
+   \ref{BEM:surfaceIntegralOfTorque}{トルクの積分}：
 
-   \ref{BEM:surfaceIntegralOfPressure}{ここで}積分している．
+   ```math
+   \boldsymbol{F}_{\text {hydro }}=\iint_{\Gamma_{\rm float}} p\boldsymbol{n}  d S, \quad
+   \boldsymbol{T}_{\text {hydro }}=\iint_{\Gamma_{\rm float}} ({\bf x}-{\bf x}_{\rm c})\times (p\boldsymbol{n})  d S, \quad
+   p= p({\bf x}) =-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+   ```
 
    $`\frac{\partial \phi}{\partial t}`$を$`\phi_t`$と書くことにする．この$`\phi_t`$は陽には求められない．
    そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi_t`$を求める．$`\phi`$と$`\phi_n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi_t`$と$`\phi_{nt}`$の間にも成り立つ：
@@ -607,7 +593,7 @@ struct BEM_BVP {
 
    */
 
-   /*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
+   /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
    ### $`\phi_t`$と$`\phi_{nt}`$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
 
@@ -635,7 +621,7 @@ struct BEM_BVP {
    物体上のある点ではこれが常に成り立つ．
 
    これを微分することで，$`\phi_{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U}_{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega}_{\rm c}}{dt}`$を使って表すことができる．
-   [Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
+   \cite{Wu1998}
 
    ```math
    \begin{aligned}
@@ -688,7 +674,7 @@ struct BEM_BVP {
 
    */
 
-   /*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
+   /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
    ```math
    \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
@@ -705,19 +691,80 @@ struct BEM_BVP {
 
    */
 
+   /*DOC_EXTRACT 0_4_1_FLOATING_BODY_SIMULATION
+
+   ### 補助関数を使った方法
+
+   浮体動揺解析で問題となったのは，圧力の計算に使う$`\phi_t\,{\rm on}\,🚢`$が簡単には求まらないことであったが，
+   $`\iint_{\Gamma_{🚢}} \phi_t{\bf n}dS`$と$`\iint_{\Gamma_{🚢}}\phi_{t}({\bf x}-{\bf x}_c)\times{\bf n}dS`$がわかればある場所の圧力はわからないが，
+   浮体にかかる力は計算できるのでそれでも問題ない．
+
+   体積積分がゼロとなるように，領域内でラプラス方程式を満たすような$`\varphi`$，
+   そして$`\Gamma _{🚢}`$上ではこちらが望む$`\varphi_n`$となり，また$`\Gamma \rm other`$上では$`\varphi=0`$となる
+   そんな$`\varphi`$がBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
+   （注意：境界上の全ての節点上で$`\varphi`$と$`\varphi_n`$が求まっている）
+
+   ```math
+   \begin{align*}
+   0 &= \iint _\Gamma {\left( {\varphi\nabla {\phi_t} ({\bf{x}}) - {\phi_t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
+   \rightarrow \iint _{\Gamma _{🚢}} {\phi_t} \varphi_n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi_{nt}} dS+\iint _{\Gamma \rm other} \varphi {\phi_{nt}} dS - \iint _{\Gamma \rm other} {\phi_t} \varphi_n dS\\
+   \rightarrow \iint _{\Gamma _{🚢}} {\phi_t} \varphi_n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi_{nt}} dS- \iint _{\Gamma \rm other} {\phi_t} \varphi_n dS
+   \end{align*}
+   ```
+
+   $`\varphi_n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+
+   ```math
+   \begin{align*}
+   \left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right]
+   &= \iint _{\Gamma _{🚢}} {\phi_t} \left[{\bf n},({\bf x}-{\bf x}_c)\times{\bf n}\right] dS
+   = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma \rm other} {\phi_t} {\boldsymbol \varphi_n} dS\\
+   {\boldsymbol \varphi}_n &= \left[{\bf n},({\bf x}-{\bf x}_c)\times{\bf n}\right]\quad\text{on}\quad\Gamma_{🚢}
+   \end{align*}
+   ```
+
+   NOTE：ただし，$`\Gamma_{\rm taget}`$上で$`\phi_{nt}`$が，$`\Gamma_{\rm other}`$上で$`\phi_{t}`$がわかっていなければならない．
+   また，もし，複数の浮体が存在する場合，$`\Gamma_{\rm other}`$には他の浮体🚤が存在し，$`\phi_t\,{\rm on}\,🚤`$は，
+   $`\phi_t\,{\rm on}\,🚢`$と同じように未知変数である．
+
+   \cite{Wu1996}
+   \cite{Kashiwagi2000}
+   \cite{Wu2003}
+
+   $`\phi`$の代わりに関数$`{\varphi_1}`$に対してBIEを考える．
+   $`{\varphi_1}`$は，$`\phi`$のように境界面内部でラプラス方程式を満たすとする．
+   また，対象となる浮体境界面では$`{\varphi_1}_n = n_1`$，その他の境界面では$`{\varphi_1} = 0`$とする．
+
+   ```math
+   \begin{align*}
+   \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 {\varphi_1}({\bf x}) - {\varphi_1}({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
+   & = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi_1} ({\bf{x}}) - {\varphi_1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
+   \rightarrow - c{\varphi_1}({\bf a})
+   & = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi_1} ({\bf{x}}) - {\varphi_1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+   \end{align*}
+   ```
+
+   $`n_1`$とは，$`{\bf n}=(n_1,n_2,n_3)`$の成分で，$`{\bf r}\times{\bf n}=(n_4,n_5,n_6)`$
+
+   もしこのような関数$`{\varphi_1}`$が求まれば，
+
+   ```math
+   \begin{align*}
+    - c{\phi_t}({\bf a}) = \iint _\Gamma {\left( {\varphi\nabla {\phi_t} ({\bf{x}}) - {\phi_t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}
+   \end{align*}
+   ```
+
+   */
+
    // \label{BEM:setPhiPhin_t}
    void setPhiPhin_t() const {
 #ifdef derivatives_debug
       std::cout << "φtとφntを一部計算👇" << std::endl;
 #endif
 
-#ifdef _OPENMP
-   #pragma omp parallel
-#endif
+#pragma omp parallel
       for (const auto &[PBF, i] : PBF_index)
-#ifdef _OPENMP
-   #pragma omp single nowait
-#endif
+#pragma omp single nowait
       {
          auto [p, F] = PBF;
          //!!ノイマンの場合はこれでDphiDtは計算できませんよ
@@ -778,6 +825,7 @@ struct BEM_BVP {
 
    /* -------------------------------------------------------------------------- */
    V_d Func(const auto &ACCELS_IN, const Network &water, const std::vector<Network *> &rigidbodies) {
+      TimeWatch watch;
       auto ACCELS = ACCELS_IN;
 
       // {
@@ -791,17 +839,21 @@ struct BEM_BVP {
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
+      std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       knowns.resize(PBF_index.size());
-      for (const auto &[PBF, i] : PBF_index) {
+#pragma omp parallel
+      for (const auto &[PBF, i] : PBF_index)
+#pragma omp single nowait
+      {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF))
             knowns[i] = p->phitOnFace.at(f);
-         if (isNeumannID_BEM(PBF))
+         else if (isNeumannID_BEM(PBF))
             knowns[i] = p->phintOnFace.at(f);
       }
 
-      std::cout << "加速度 --> phiphin_t" << std::endl;
+      std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
       ans.resize(knowns.size());
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
@@ -817,13 +869,13 @@ struct BEM_BVP {
 #elif defined(use_lapack)
       this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
-      std::cout << "solved" << std::endl;
-
+      std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
       storePhiPhin_t(water, ans);
+      std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
@@ -850,7 +902,6 @@ struct BEM_BVP {
             auto F_ext = _GRAVITY3_ * net->mass;
             auto F_hydro = tmp.surfaceIntegralOfPressure();
             auto F = F_hydro + F_ext;
-            std::cout << "force_check:" << tmp.force_check << std::endl;
             auto T_hydro = tmp.getFroudeKrylovTorque(net->COM);
             auto [a0, a1, a2] = F / net->mass;
             auto [a3, a4, a5] = T_hydro / Tddd{Ix, Iy, Iz};
@@ -861,6 +912,9 @@ struct BEM_BVP {
             // std::cout << Green << "inertia = " << net->getInertiaGC() << std::endl;
          } else
             i += 6;
+
+      std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+
       return ACCELS - ACCELS_IN;
    };
 
@@ -883,10 +937,8 @@ struct BEM_BVP {
       for (auto j = 0; j < 50; ++j) {
          insertAcceleration(rigidbodies, BM.X - BM.dX);
          auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
-         std::cout << "func_ = " << func_ << std::endl;
          insertAcceleration(rigidbodies, BM.X);
          auto func = Func(BM.X, water, rigidbodies);
-         std::cout << "func = " << func_ << std::endl;
 
          double alpha = 1.;
          if (j < 1)
@@ -895,12 +947,11 @@ struct BEM_BVP {
          BM.update(func, func_, alpha);
          insertAcceleration(rigidbodies, BM.X);
 
-         std::cout << "j = " << j << ", " << Red << ", Norm(func) : " << Norm(func) << colorOff << std::endl;
-         std::cout << " alpha = " << alpha << std::endl;
-         std::cout << Red << "func_ = " << func_ << colorOff << std::endl;
-         std::cout << Red << "func = " << func << colorOff << std::endl;
-         std::cout << Red << "BM.X = " << BM.X << colorOff << std::endl;
-         std::cout << Red << "BM.dX = " << BM.dX << colorOff << std::endl;
+         std::cout << "j = " << j << colorOff << std::endl;
+         std::cout << "alpha = " << alpha << std::endl;
+         std::cout << "Norm(func_) = " << Norm(func_) << std::endl;
+         std::cout << "Norm(func) = " << Norm(func) << std::endl;
+         std::cout << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorOff << std::endl;
 
          if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10) {
             if (count++ > 4)

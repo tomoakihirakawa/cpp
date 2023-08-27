@@ -638,7 +638,7 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
    return ret;
 };
 
-/*DOC_EXTRACT 0_4_FLOATING_BODY_SIMULATION
+/*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
 ### $`\phi_{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．
 
@@ -748,22 +748,25 @@ double phint_Neumann(networkFace *F) {
 double phint_Neumann(const networkPoint *const p) {
    double phint_acum = 0, W_acum = 0, w, phint;
    V_d Phin, W;
-   for (const auto &f : p->getFacesNeumann()) {
+   Phin.reserve(10);
+   W.reserve(10);
+   for (const auto &f : p->getFaces())
+      if (f->Neumann) {
 #if defined(use_angle_weigted_normal)
-      w = f->getAngle(p);
+         w = f->getAngle(p);
 #elif defined(use_area_weigted_normal)
-      w = f->area;
+         w = f->area;
 #else
-      w = 1.;
+         w = 1.;
 #endif
 
-      phint = phint_Neumann(f);
-      phint_acum += w * phint;
-      W_acum += w;
+         phint = phint_Neumann(f);
+         phint_acum += w * phint;
+         W_acum += w;
 
-      Phin.push_back(phint);
-      W.push_back(w);
-   }
+         Phin.emplace_back(phint);
+         W.emplace_back(w);
+      }
    // return phint_acum / W_acum;
    return optimumValue(Phin, 0., W);
 };

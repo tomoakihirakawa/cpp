@@ -2,7 +2,11 @@
     "max_dt": 0.2,
     "end_time_step": 1000,
     "end_time": 100,
+<<<<<<< Updated upstream
     "output_directory": "/Users/tomoaki/BEM/moon_pool_large_a0d8_T5d0_h80_modified_mesh",
+=======
+    "output_directory": "/Users/tomoaki/BEM/moon_pool_large_a0d8_T5d0_h80",
+>>>>>>> Stashed changes
     "input_files": [
         "tank.json",
         "wavemaker.json",

@@ -1298,10 +1298,9 @@ std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
    ( (a-b)*t + (b - X) ).(a-b) = 0
    t = (X-b).(a-b)/(a-b).(a-b)
    */
-   const auto [a, b] = ab;
-   const auto a_b = a - b;
-   const auto t = std::clamp(Dot(X - b, a_b) / Dot(a_b, a_b), 0.0, 1.0);
-   return {t, a * t + b * (1. - t)};
+   const auto a_b = std::get<0>(ab) - std::get<1>(ab);
+   const auto t = std::clamp(Dot(X - std::get<1>(ab), a_b) / Dot(a_b, a_b), 0.0, 1.0);
+   return {t, std::get<0>(ab) * t + std::get<1>(ab) * (1. - t)};
 };
 
 Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
@@ -1345,7 +1344,7 @@ Tddd DistanceToPlane(const Tddd &X, const T3Tddd &abc) {
 };
 Tddd Nearest(const Tddd &X, const T3Tddd &abc) {
    const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
-   const auto inside = Between(t0, {0, 1}) && Between(t1, {0, 1}) && Between(t0 + t1, {0, 1});
+   const auto inside = Between(t0, {0., 1.}) && Between(t1, {0., 1.}) && Between(t0 + t1, {0., 1.});
    const auto [a, b, c] = abc;
    const auto X0 = Nearest(X, T2Tddd{a, b});
    auto ret = (inside && (Norm(XOnPlane - X) < Norm(X0 - X))) ? XOnPlane : X0;
@@ -1361,7 +1360,7 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    double T0, T1;
    const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
    //! a*t0 + b*t1 + c*(1-t0-t1)
-   const auto inside = Between(t0, {0, 1}) && Between(t1, {0, 1}) && Between(t0 + t1, {0, 1});
+   const auto inside = Between(t0, {0., 1.}) && Between(t1, {0., 1.}) && Between(t0 + t1, {0., 1.});
    const auto [a, b, c] = abc;
    auto [u, X0] = Nearest_(X, T2Tddd{a, b});
    //! a*u + b*(1-u)

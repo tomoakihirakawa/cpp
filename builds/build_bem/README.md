@@ -4,6 +4,9 @@
     - [⛵ BEM-MELについて](#⛵-BEM-MELについて)
         - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
         - [🪼 BEM-MEL](#🪼-BEM-MEL)
+            - [🐚 BEM-MELの問題点](#🐚-BEM-MELの問題点)
+        - [🪼 BEM-MELの改良](#🪼-BEM-MELの改良)
+        - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
@@ -19,12 +22,14 @@
         - [🪼 $`\frac{d\phi}{dt}`$の計算](#🪼-$`\frac{d\phi}{dt}`$の計算)
         - [🪼 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）](#🪼-修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）)
     - [⛵ 浮体動揺解析](#⛵-浮体動揺解析)
+        - [🪼 浮体の運動方程式](#🪼-浮体の運動方程式)
         - [🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪼-$`\phi-_t`$と$`\phi-_{nt}`$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
             - [🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
             - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
             - [🐚 ノイマン節点での$`\phi _{nt}`$の与え方](#🐚-ノイマン節点での$`\phi-_{nt}`$の与え方)
         - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
         - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
+        - [🪼 補助関数を使った方法](#🪼-補助関数を使った方法)
     - [⛵ 造波装置など](#⛵-造波装置など)
         - [🪼 フラップ型造波装置](#🪼-フラップ型造波装置)
         - [🪼 ピストン型造波装置](#🪼-ピストン型造波装置)
@@ -67,7 +72,50 @@
 当時開発された正方格子上でのシミュレーション手法を使って，
 巻波砕破のシミュレーションを行おうと格子を細かくすると，
 直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
-[Longuet-Higgins, M. S. and Cokelet, E. D. (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)
+これに対して，
+[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)は，境界線上だけに計算点を設け，
+その計算点の位置と速度ポテンシャルをラグランジュ的に時間発展させる方法を提案した．
+水面で$`\frac{D\phi}{Dt}`$が簡単に計算できること，
+流速(速度ポテンシャルの勾配)を計算するために，
+$`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
+法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
+
+<details>
+<summary>
+💡 メモリ容量の変化
+</summary>
+
+<img src="./REVIEW/computer_memory.png" width="50%" />
+
+現在，メモリ容量は，以前と比べて格段に大きくなり，メモリの節約を考える必要がなくなった．
+また，領域型の計算手法で作られる代数連立１次方程式の係数行列は，疎行列であることが多く，
+節点数は多けれども，疎行列なら反復解法を使って高速に解を求めることができる．
+一方で，境界型の計算手法は，密行列を作る必要があり，密行列の生成には計算がかかる．
+
+$`O(n _p^2)`$，$`O(n _d^3)`$
+仮に$`n _p=L^3`$，$`n _d=6L^2`$としよう
+$`O(L^6)`$，$`O(216 L^6)`$
+
+つまり，当初のBEM-MELの優位は，現在では他の手法にうばわれてしまっている．
+
+</details>
+
+#### 🐚 BEM-MELの問題点 
+
+BEM-MELの結果に数値的な不安定が生じることは，[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)が既に紹介している．
+計算精度を悪化させる原因は様々なものが考えられる．
+例えば，係数行列を作成する際，つまり微分方程式を離散化する際に用いる，補間の精度や積分の精度．
+または，時間発展の際に用いる，時間積分の精度などである．
+
+補間と積分はセットで使うので，どちらが原因かを切り分けるのは難しい．
+積分精度だけを考えても，数値積分手法の改良や，解析的な改良などが考えられる．
+補間精度だけを考えても，補間手法の改良や，補間点の位置の調整などが考えられる．
+
+### 🪼 BEM-MELの改良 
+
+続く研究目的は，BEM-MELの改良に向けられた．
+
+### 🪼 浮体動揺解析
 
 
 [./main.cpp#L1](./main.cpp#L1)
@@ -93,7 +141,7 @@
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L312](./main.cpp#L312)
+[./main.cpp#L360](./main.cpp#L360)
 
 
 ---
@@ -223,7 +271,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 ```
 
 
-[./BEM_solveBVP.hpp#L219](./BEM_solveBVP.hpp#L219)
+[./BEM_solveBVP.hpp#L197](./BEM_solveBVP.hpp#L197)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -244,7 +292,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L283](./BEM_solveBVP.hpp#L283)
+[./BEM_solveBVP.hpp#L261](./BEM_solveBVP.hpp#L261)
 
 
 ### 🪼 リジッドモードテクニック 
@@ -254,7 +302,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L358](./BEM_solveBVP.hpp#L358)
+[./BEM_solveBVP.hpp#L336](./BEM_solveBVP.hpp#L336)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -284,7 +332,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L396](./BEM_solveBVP.hpp#L396)
+[./BEM_solveBVP.hpp#L374](./BEM_solveBVP.hpp#L374)
 
 
 ---
@@ -358,6 +406,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ---
 ## ⛵ 浮体動揺解析 
 
+BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
+浮体に掛かる圧力の計算に必要な$`\phi _t`$が簡単には求まらないためである．
+これに関しては，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)が参考になる．
+
+### 🪼 浮体の運動方程式 
+
 浮体の重心の運動方程式：
 
 ```math
@@ -370,12 +424,14 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-```math
-\boldsymbol{F} _{\text {hydro }}=\int _{S} p\boldsymbol{n}  d S, \quad
-p=-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
-```
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L115)と
+[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L102)：
 
-[ここで](../../builds/build_bem/BEM_solveBVP.hpp#L122)積分している．
+```math
+\boldsymbol{F} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} p\boldsymbol{n}  d S, \quad
+\boldsymbol{T} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} ({\bf x}-{\bf x} _{\rm c})\times (p\boldsymbol{n})  d S, \quad
+p= p({\bf x}) =-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+```
 
 $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．この$`\phi _t`$は陽には求められない．
 そこで，$`\phi`$と似た方法，BIEを使った方法で$`\phi _t`$を求める．$`\phi`$と$`\phi _n`$の間に成り立つ境界積分方程式と全く同じ式が，$`\phi _t`$と$`\phi _{nt}`$の間にも成り立つ：
@@ -386,7 +442,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 ```
 
 
-[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
+[./BEM_solveBVP.hpp#L555](./BEM_solveBVP.hpp#L555)
 
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
@@ -433,7 +489,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L702)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L708)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L702)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L759)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -464,10 +520,10 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L775)で与えている．
 
 
-[./BEM_solveBVP.hpp#L610](./BEM_solveBVP.hpp#L610)
+[./BEM_solveBVP.hpp#L596](./BEM_solveBVP.hpp#L596)
 
 
 ```math
@@ -484,7 +540,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L728)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
+[./BEM_solveBVP.hpp#L677](./BEM_solveBVP.hpp#L677)
 
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -525,14 +581,80 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L364](./main.cpp#L364)
+[./main.cpp#L412](./main.cpp#L412)
+
+
+---
+### 🪼 補助関数を使った方法 
+
+浮体動揺解析で問題となったのは，圧力の計算に使う$`\phi _t\,{\rm on}\,🚢`$が簡単には求まらないことであったが，
+$`\iint _{\Gamma _{🚢}} \phi _t{\bf n}dS`$と$`\iint _{\Gamma _{🚢}}\phi _{t}({\bf x}-{\bf x} _c)\times{\bf n}dS`$がわかればある場所の圧力はわからないが，
+浮体にかかる力は計算できるのでそれでも問題ない．
+
+体積積分がゼロとなるように，領域内でラプラス方程式を満たすような$`\varphi`$，
+そして$`\Gamma _{🚢}`$上ではこちらが望む$`\varphi _n`$となり，また$`\Gamma \rm other`$上では$`\varphi=0`$となる
+そんな$`\varphi`$がBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
+（注意：境界上の全ての節点上で$`\varphi`$と$`\varphi _n`$が求まっている）
+
+```math
+\begin{align*}
+0 &= \iint _\Gamma {\left( {\varphi\nabla {\phi _t} ({\bf{x}}) - {\phi _t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
+\rightarrow \iint _{\Gamma _{🚢}} {\phi _t} \varphi _n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi _{nt}} dS+\iint _{\Gamma \rm other} \varphi {\phi _{nt}} dS - \iint _{\Gamma \rm other} {\phi _t} \varphi _n dS\\
+\rightarrow \iint _{\Gamma _{🚢}} {\phi _t} \varphi _n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi _{nt}} dS- \iint _{\Gamma \rm other} {\phi _t} \varphi _n dS
+\end{align*}
+```
+
+$`\varphi _n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+
+```math
+\begin{align*}
+\left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right]
+&= \iint _{\Gamma _{🚢}} {\phi _t} \left[{\bf n},({\bf x}-{\bf x} _c)\times{\bf n}\right] dS
+= \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma \rm other} {\phi _t} {\boldsymbol \varphi _n} dS\\
+{\boldsymbol \varphi} _n &= \left[{\bf n},({\bf x}-{\bf x} _c)\times{\bf n}\right]\quad\text{on}\quad\Gamma _{🚢}
+\end{align*}
+```
+
+💡 ：ただし，$`\Gamma _{\rm taget}`$上で$`\phi _{nt}`$が，$`\Gamma _{\rm other}`$上で$`\phi _{t}`$がわかっていなければならない．
+また，もし，複数の浮体が存在する場合，$`\Gamma _{\rm other}`$には他の浮体🚤が存在し，$`\phi _t\,{\rm on}\,🚤`$は，
+$`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
+
+Wu and {Eatock Taylor} (1996)
+[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)
+[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)
+
+$`\phi`$の代わりに関数$`{\varphi _1}`$に対してBIEを考える．
+$`{\varphi _1}`$は，$`\phi`$のように境界面内部でラプラス方程式を満たすとする．
+また，対象となる浮体境界面では$`{\varphi _1} _n = n _1`$，その他の境界面では$`{\varphi _1} = 0`$とする．
+
+```math
+\begin{align*}
+\iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 {\varphi _1}({\bf x}) - {\varphi _1}({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
+& = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi _1} ({\bf{x}}) - {\varphi _1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
+\rightarrow - c{\varphi _1}({\bf a})
+& = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi _1} ({\bf{x}}) - {\varphi _1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\end{align*}
+```
+
+$`n _1`$とは，$`{\bf n}=(n _1,n _2,n _3)`$の成分で，$`{\bf r}\times{\bf n}=(n _4,n _5,n _6)`$
+
+もしこのような関数$`{\varphi _1}`$が求まれば，
+
+```math
+\begin{align*}
+- c{\phi _t}({\bf a}) = \iint _\Gamma {\left( {\varphi\nabla {\phi _t} ({\bf{x}}) - {\phi _t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}
+\end{align*}
+```
+
+
+[./BEM_solveBVP.hpp#L694](./BEM_solveBVP.hpp#L694)
 
 
 ---
 ## ⛵ 造波装置など 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L375)
+[強制運動を課す](../../builds/build_bem/main.cpp#L423)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L261)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -676,7 +798,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ---
 # 🐋 入力ファイル生成 `input_generator.py` 
 
-This Python script generates input files for the BEM simulation code. It supports various simulation cases and handles input file generation for each case.
+This Python script generates input files for the BEM simulation codxxe. It supports various simulation cases and handles input file generation for each case.
 
 ## ⛵ Usage 
 
@@ -705,7 +827,7 @@ After customizing the script, run it again to generate the input files for the n
 The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
 
 
-[./input_generator.py#L58](./input_generator.py#L58)
+[./input_generator.py#L59](./input_generator.py#L59)
 
 
 ---
@@ -740,7 +862,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L624](./main.cpp#L624)
+[./main.cpp#L672](./main.cpp#L672)
 
 
 ---
@@ -749,7 +871,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L658](./main.cpp#L658)
+[./main.cpp#L706](./main.cpp#L706)
 
 
 ---
