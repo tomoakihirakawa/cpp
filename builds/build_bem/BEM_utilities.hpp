@@ -280,63 +280,30 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 /*DOC_EXTRACT 0_1_BOUNDARY_CONDITIONS
 
-### `getContactFaces()`の利用
+### `getContactFaces()`や`getNearestContactFace()`の利用
 
-\ref{addContactFaces}{`networkPoint::addContactFaces()`}によって，接触面を`networkPoint::ContactFaces`に登録した．
-`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
-
-* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
-* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+\insert{networkPoint::addContactFaces()}
+\insert{networkPoint::getContactFaces()}
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
 */
 
-netFp NearestContactFace(const networkPoint *const p) { return std::get<1>(Nearest_(p->X, p->getContactFaces())); };
-
-netFp NearestContactFace(const networkPoint *const p, const networkFace *const f_normal) {
-   Tddd r = {1E+100, 1E+100, 1E+100}, X;
-   networkFace *ret = nullptr;
-   for (const auto &f_target : bfs(p->getContactFaces(), 2))
-      if (isInContact(p, f_normal, f_target)) {
-         X = Nearest(p->X, ToX(f_target));
-         if (Norm(r) >= Norm(X - p->X)) {
-            r = X - p->X;
-            ret = f_target;
-         }
-      }
-   return ret;
-};
-
 netFp NearestContactFace(const networkFace *const f_IN) {
    std::unordered_set<networkFace *> faces;
    // std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
    std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) {
-      auto f = NearestContactFace(q, f_IN);
+      auto f = q->getNearestContactFace(f_IN);
       if (f != nullptr)
          faces.emplace(f);
    });
    return std::get<1>(Nearest_(f_IN->center, faces));
 };
 
-std::tuple<netFp, Tddd> NearestContactFace_(const networkPoint *const p, const networkFace *const f_normal) {
-   Tddd r = {1E+100, 1E+100, 1E+100}, X;
-   networkFace *ret = nullptr;
-   for (const auto &f_target : bfs(p->getContactFaces(), 2))
-      if (isInContact(p, f_normal, f_target)) {
-         X = Nearest(p->X, ToX(f_target));
-         if (Norm(r) >= Norm(X - p->X)) {
-            r = X - p->X;
-            ret = f_target;
-         }
-      }
-   return {ret, r};
-};
-
 //$ --------------------------------------------------------------- */
 
 std::tuple<Tddd, double> uNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = NearestContactFace_(p, f_normal);
+   auto [f, vToContact] = p->getNearestContactFace_(f_normal);
    if (f) {
       double weight = w_Bspline5(Norm(vToContact), p->radius);
       if (f->getNetwork()->isRigidBody) {
@@ -354,7 +321,7 @@ std::tuple<Tddd, double> uNeumann_(const networkPoint *const p, const networkFac
 };
 
 std::tuple<Tddd, double> accelNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = NearestContactFace_(p, f_normal);
+   auto [f, vToContact] = p->getNearestContactFace_(f_normal);
    if (f) {
       double weight = w_Bspline5(Norm(vToContact), p->radius);
       if (f->getNetwork()->isRigidBody) {
@@ -713,6 +680,23 @@ double phint_Neumann(networkFace *F) {
    return ret;
 };
 
+double phint_Neumann(const networkPoint *const p, networkFace *F) {
+   auto f = p->getNearestContactFace(F);
+   if (f) {
+      Tddd Omega = (f->getNetwork())->velocityRotational();
+      auto grad_phi = gradPhi(F);
+      auto U_body = uNeumann(F);
+      auto dndt = Cross(Omega, F->normal);
+      auto ret = Dot(dndt, U_body - grad_phi);
+      ret += Dot(F->normal, accelNeumann(F));
+      auto basis = OrthogonalBasis(F->normal);
+      ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+      // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+      return ret;
+   } else
+      throw std::runtime_error("p is not in contact with F");
+};
+
 // double phint_Neumann(const networkPoint *const p) {
 //    double phint_acum = 0, W_acum = 0, w, phint;
 //    V_d Phin, W;
@@ -760,7 +744,7 @@ double phint_Neumann(const networkPoint *const p) {
          w = 1.;
 #endif
 
-         phint = phint_Neumann(f);
+         phint = phint_Neumann(p, f);  // 修正した．元々は，phint = phint_Neumann(f);だった．
          phint_acum += w * phint;
          W_acum += w;
 

@@ -275,7 +275,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 #pragma omp single nowait
          {
 
-            auto f = NearestContactFace(p);
+            auto f = std::get<0>(p->getNearestContactFace());
             if (f) {
                // {
                //    std::cout << Red << f->getNetwork()->getName() << std::endl;
