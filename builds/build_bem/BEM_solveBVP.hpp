@@ -738,32 +738,8 @@ struct BEM_BVP {
    \end{align*}
    ```
 
-   \cite{Wu1996}
-   \cite{Kashiwagi2000}
-   \cite{Wu2003}
-
-   $`\phi`$の代わりに関数$`{\varphi_1}`$に対してBIEを考える．
-   $`{\varphi_1}`$は，$`\phi`$のように境界面内部でラプラス方程式を満たすとする．
-   また，対象となる浮体境界面では$`{\varphi_1}_n = n_1`$，その他の境界面では$`{\varphi_1} = 0`$とする．
-
-   ```math
-   \begin{align*}
-   \iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 {\varphi_1}({\bf x}) - {\varphi_1}({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
-   & = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi_1} ({\bf{x}}) - {\varphi_1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
-   \rightarrow - c{\varphi_1}({\bf a})
-   & = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi_1} ({\bf{x}}) - {\varphi_1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-   \end{align*}
-   ```
-
-   $`n_1`$とは，$`{\bf n}=(n_1,n_2,n_3)`$の成分で，$`{\bf r}\times{\bf n}=(n_4,n_5,n_6)`$
-
-   もしこのような関数$`{\varphi_1}`$が求まれば，
-
-   ```math
-   \begin{align*}
-    - c{\phi_t}({\bf a}) = \iint _\Gamma {\left( {\varphi\nabla {\phi_t} ({\bf{x}}) - {\phi_t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}
-   \end{align*}
-   ```
+   この方法は，\cite{Wu1996}，\cite{Kashiwagi2000}，\cite{Wu2003}で使用されている．
+   この方法は，複数の浮体を考えていないが，\cite{Feng2017}はこれを基にして２浮体の場合でも動揺解析を行っている．
 
    */
 

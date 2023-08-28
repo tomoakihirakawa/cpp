@@ -501,7 +501,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L669)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L770)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L669)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L746)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -532,7 +532,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L782)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L758)で与えている．
 
 
 [./BEM_solveBVP.hpp#L596](./BEM_solveBVP.hpp#L596)
@@ -642,32 +642,8 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 \end{align*}
 ```
 
-Wu and {Eatock Taylor} (1996)
-[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)
-[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)
-
-$`\phi`$の代わりに関数$`{\varphi _1}`$に対してBIEを考える．
-$`{\varphi _1}`$は，$`\phi`$のように境界面内部でラプラス方程式を満たすとする．
-また，対象となる浮体境界面では$`{\varphi _1} _n = n _1`$，その他の境界面では$`{\varphi _1} = 0`$とする．
-
-```math
-\begin{align*}
-\iiint _\Omega \left(G({\bf x},{\bf a})\nabla^2 {\varphi _1}({\bf x}) - {\varphi _1}({\bf x})\nabla^2 G({\bf x},{\bf a})\right)dV
-& = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi _1} ({\bf{x}}) - {\varphi _1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
-\rightarrow - c{\varphi _1}({\bf a})
-& = \iint _\Gamma {\left( {G({\bf{x}},{\bf{a}})\nabla {\varphi _1} ({\bf{x}}) - {\varphi _1} ({\bf{x}})\nabla G({\bf{x}},{\bf{a}})} \right) \cdot {\bf{n}}({\bf{x}})dS}
-\end{align*}
-```
-
-$`n _1`$とは，$`{\bf n}=(n _1,n _2,n _3)`$の成分で，$`{\bf r}\times{\bf n}=(n _4,n _5,n _6)`$
-
-もしこのような関数$`{\varphi _1}`$が求まれば，
-
-```math
-\begin{align*}
-- c{\phi _t}({\bf a}) = \iint _\Gamma {\left( {\varphi\nabla {\phi _t} ({\bf{x}}) - {\phi _t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}
-\end{align*}
-```
+この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
+この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
 [./BEM_solveBVP.hpp#L694](./BEM_solveBVP.hpp#L694)
