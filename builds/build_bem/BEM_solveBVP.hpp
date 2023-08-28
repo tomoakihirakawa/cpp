@@ -96,7 +96,7 @@ struct calculateFroudeKrylovForce {
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
             area += intpX.J(x0, x1) * w0w1;
       }
-      std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
+      // std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
    };
 
    // \label{BEM:surfaceIntegralOfTorque}
@@ -126,7 +126,7 @@ struct calculateFroudeKrylovForce {
 
 void setPhiPhin(Network &water) {
    /* -------------------------------------------------------------------------- */
-   /*                         phinOnFace, phintOnFaceの設定                         */
+   /*                         phinOnFace, phintOnFaceの設定                       */
    /* -------------------------------------------------------------------------- */
    // b! 点
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
@@ -727,6 +727,17 @@ struct BEM_BVP {
    また，もし，複数の浮体が存在する場合，$`\Gamma_{\rm other}`$には他の浮体🚤が存在し，$`\phi_t\,{\rm on}\,🚤`$は，
    $`\phi_t\,{\rm on}\,🚢`$と同じように未知変数である．
 
+   ```math
+   \begin{align*}
+   \left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right] = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma _{🚤}} {\phi_t} {\boldsymbol \varphi_n} dS
+   - \iint _{\Gamma _{\rm other}} {\phi_t} {\boldsymbol \varphi_n} dS
+   \\
+   \left[\boldsymbol{F} _{\text {ext🚤}},\boldsymbol{T} _{\text {ext🚤}}\right]
+   = \iint _{\Gamma _{🚤}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma _{🚢}} {\phi_t} {\boldsymbol \varphi_n} dS
+   - \iint _{\Gamma _{\rm other}} {\phi_t} {\boldsymbol \varphi_n} dS
+   \end{align*}
+   ```
+
    \cite{Wu1996}
    \cite{Kashiwagi2000}
    \cite{Wu2003}
@@ -758,10 +769,6 @@ struct BEM_BVP {
 
    // \label{BEM:setPhiPhin_t}
    void setPhiPhin_t() const {
-#ifdef derivatives_debug
-      std::cout << "φtとφntを一部計算👇" << std::endl;
-#endif
-
 #pragma omp parallel
       for (const auto &[PBF, i] : PBF_index)
 #pragma omp single nowait
@@ -839,7 +846,7 @@ struct BEM_BVP {
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
-      std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       knowns.resize(PBF_index.size());
 #pragma omp parallel
@@ -853,7 +860,7 @@ struct BEM_BVP {
             knowns[i] = p->phintOnFace.at(f);
       }
 
-      std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
       ans.resize(knowns.size());
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
@@ -869,13 +876,13 @@ struct BEM_BVP {
 #elif defined(use_lapack)
       this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
-      std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
       storePhiPhin_t(water, ans);
-      std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
@@ -913,7 +920,7 @@ struct BEM_BVP {
          } else
             i += 6;
 
-      std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       return ACCELS - ACCELS_IN;
    };

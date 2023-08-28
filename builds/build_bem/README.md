@@ -11,7 +11,7 @@
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
         - [🪼 多重節点](#🪼-多重節点)
-        - [🪼 `getContactFaces()`の利用](#🪼-`getContactFaces()`の利用)
+        - [🪼 `getContactFaces()`や`getNearestContactFace()`の利用](#🪼-`getContactFaces()`や`getNearestContactFace()`の利用)
     - [⛵ 境界値問題](#⛵-境界値問題)
         - [🪼 基礎方程式](#🪼-基礎方程式)
         - [🪼 境界積分方程式（BIE）](#🪼-境界積分方程式（BIE）)
@@ -150,7 +150,7 @@ BEM-MELの結果に数値的な不安定が生じることは，[Longuet-Higgins
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L171)，
 [`networkPoint::isInContact`](../../include/networkPoint.hpp#L178)，
-[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L293)
+[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L292)
 を使って接触判定を行っている．
 
 [流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L185)の設置も重要．
@@ -183,13 +183,25 @@ BEM-MELの結果に数値的な不安定が生じることは，[Longuet-Higgins
 [./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 
-### 🪼 `getContactFaces()`の利用 
+### 🪼 `getContactFaces()`や`getNearestContactFace()`の利用 
 
-[`networkPoint::addContactFaces()`](../../include/networkPoint.hpp#L293)によって，接触面を`networkPoint::ContactFaces`に登録した．
-`getContactFaces()`は，単にこの`this->ContactFaces`を返す関数になっている．
+| `networkPointの`メンバー関数/変数      | 説明                                                                |
+|-------------------------|--------------------------------------------------------------------------------|
+| `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| `ContactFaces`          | 節点が接触した面が登録されている．   |
+| `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
+| `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
 
-* `NearestContactFace()`は，与えた点や面にとって，最も近い**接触面**を返すようにしている．**ただし，面を与えた場合，接触面はその面の頂点の接触面(bfsで広く探査している)から選ばれる．**
-* `NearestContactFace_()`は，**接触面**に加えて，接触位置までのベクトルを返す．
+[../../include/networkPoint.hpp#L345](../../include/networkPoint.hpp#L345)
+
+
+* `getContactFaces()`で`ContactFaces`呼び出せる．
+* `getNearestContactFace()`で`nearestContactFace`呼び出せる．
+* `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
+
+[../../include/Network.hpp#L859](../../include/Network.hpp#L859)
+
+
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
@@ -378,7 +390,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L508](./BEM_utilities.hpp#L508)
+[./BEM_utilities.hpp#L490](./BEM_utilities.hpp#L490)
 
 
 ---
@@ -489,7 +501,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L702)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L759)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L669)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L770)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -520,7 +532,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L775)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L782)で与えている．
 
 
 [./BEM_solveBVP.hpp#L596](./BEM_solveBVP.hpp#L596)
@@ -534,7 +546,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L775)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L674)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L641)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -572,7 +584,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L641](./BEM_utilities.hpp#L641)
+[./BEM_utilities.hpp#L623](./BEM_utilities.hpp#L623)
 
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
@@ -589,7 +601,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 
 浮体動揺解析で問題となったのは，圧力の計算に使う$`\phi _t\,{\rm on}\,🚢`$が簡単には求まらないことであったが，
 $`\iint _{\Gamma _{🚢}} \phi _t{\bf n}dS`$と$`\iint _{\Gamma _{🚢}}\phi _{t}({\bf x}-{\bf x} _c)\times{\bf n}dS`$がわかればある場所の圧力はわからないが，
-浮体にかかる力は計算できるのでそれでも問題ない．
+🚢にかかる力は計算できるのでそれでも問題ない．
 
 体積積分がゼロとなるように，領域内でラプラス方程式を満たすような$`\varphi`$，
 そして$`\Gamma _{🚢}`$上ではこちらが望む$`\varphi _n`$となり，また$`\Gamma \rm other`$上では$`\varphi=0`$となる
@@ -615,9 +627,20 @@ $`\varphi _n`$を適当に選べば，左辺は知りたかった積分となり
 \end{align*}
 ```
 
-💡 ：ただし，$`\Gamma _{\rm taget}`$上で$`\phi _{nt}`$が，$`\Gamma _{\rm other}`$上で$`\phi _{t}`$がわかっていなければならない．
+💡 ：ただし，$`\Gamma _{🚢}`$上で$`\phi _{nt}`$が，$`\Gamma _{\rm other}`$上で$`\phi _{t}`$がわかっていなければならない．
 また，もし，複数の浮体が存在する場合，$`\Gamma _{\rm other}`$には他の浮体🚤が存在し，$`\phi _t\,{\rm on}\,🚤`$は，
 $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
+
+```math
+\begin{align*}
+\left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right] = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma _{🚤}} {\phi _t} {\boldsymbol \varphi _n} dS
+- \iint _{\Gamma _{\rm other}} {\phi _t} {\boldsymbol \varphi _n} dS
+\\
+\left[\boldsymbol{F} _{\text {ext🚤}},\boldsymbol{T} _{\text {ext🚤}}\right]
+= \iint _{\Gamma _{🚤}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma _{🚢}} {\phi _t} {\boldsymbol \varphi _n} dS
+- \iint _{\Gamma _{\rm other}} {\phi _t} {\boldsymbol \varphi _n} dS
+\end{align*}
+```
 
 Wu and {Eatock Taylor} (1996)
 [Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)
@@ -719,7 +742,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{1}{F(f,h)}`$となり，
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L583](./BEM_utilities.hpp#L583)
+[./BEM_utilities.hpp#L565](./BEM_utilities.hpp#L565)
 
 
 ---

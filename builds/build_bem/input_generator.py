@@ -118,12 +118,13 @@ match SimulationCase:
         start = 0.01
 
         T = 1.2
-        a = 0.1
+        a = 0.06
         h = 0.4
 
         # id0 = ""
         id0 = "_multiple"
-        id = id0 + "a"+str(a).replace(".", "d") + "_T"+str(T).replace(".", "d")
+        id = id0 + "_a"+str(a).replace(".", "d")
+        id += "_T"+str(T).replace(".", "d")
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -169,55 +170,26 @@ match SimulationCase:
         # if id contains "multiple":
         if "multiple" in id:
             objfolder = program_home + "/cpp/obj/Ren2015_multiple"
-            # water["objfile"] = objfolder + "/water300.obj"
-            water["objfile"] = objfolder + "/water400.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
-            tank["objfile"] = objfolder + "/tank100.obj"
-            float["objfile"] = objfolder+"/float50.obj"
+
+            # Initialize the object files
+            water["objfile"] = f"{objfolder}/water400.obj"
+            wavemaker["objfile"] = f"{objfolder}/wavemaker30.obj"
+            tank["objfile"] = f"{objfolder}/tank100.obj"
+            float["objfile"] = f"{objfolder}/float50.obj"
+
             inputfiles = [tank, wavemaker, water]
-            # float_a = float.copy()
-            float_a = copy.deepcopy(float)
-            float_a["name"] = "float_a"
-            float_a["objfile"] = objfolder+"/float_a50.obj"
-            float_a["COM"][0] = float["COM"][0]-1.*3.
 
-            float_b = copy.deepcopy(float)
-            float_b["name"] = "float_b"
-            float_b["objfile"] = objfolder+"/float_b50.obj"
-            float_b["COM"][0] = float["COM"][0]-1.*2.
+            # Create float_a to float_g
+            float_names = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+            float_offsets = [-3, -2, -1, 0, 1, 2, 3]
 
-            float_c = copy.deepcopy(float)
-            float_c["name"] = "float_c"
-            float_c["objfile"] = objfolder+"/float_c50.obj"
-            float_c["COM"][0] = float["COM"][0]-1.*1.
+            for name, offset in zip(float_names, float_offsets):
+                new_float = copy.deepcopy(float)
+                new_float["name"] = f"float_{name}"
+                new_float["objfile"] = f"{objfolder}/float_{name}50.obj"
+                new_float["COM"][0] = float["COM"][0] + offset
 
-            float_d = copy.deepcopy(float)
-            float_d["name"] = "float_d"
-            float_d["objfile"] = objfolder+"/float_d50.obj"
-            float_d["COM"][0] = float["COM"][0]
-
-            float_e = copy.deepcopy(float)
-            float_e["name"] = "float_e"
-            float_e["objfile"] = objfolder+"/float_e50.obj"
-            float_e["COM"][0] = float["COM"][0]+1.*1.
-
-            float_f = copy.deepcopy(float)
-            float_f["name"] = "float_f"
-            float_f["objfile"] = objfolder+"/float_f50.obj"
-            float_f["COM"][0] = float["COM"][0]+1.*2.
-
-            float_g = copy.deepcopy(float)
-            float_g["name"] = "float_g"
-            float_g["objfile"] = objfolder+"/float_g50.obj"
-            float_g["COM"][0] = float["COM"][0]+1.*3.
-
-            inputfiles.append(float_a)
-            inputfiles.append(float_b)
-            inputfiles.append(float_c)
-            inputfiles.append(float_d)
-            inputfiles.append(float_e)
-            inputfiles.append(float_f)
-            inputfiles.append(float_g)
+                inputfiles.append(new_float)
         else:
             objfolder = program_home + "/cpp/obj/Ren2015"
             water["objfile"] = objfolder + "/water400mod.obj"

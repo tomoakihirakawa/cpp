@@ -843,8 +843,12 @@ class networkPoint : public CoordinateBounds, public CSR {
    //% ------------------------------------------------------ */
    //%                      接触の判別用　                      */
    //% ------------------------------------------------------ */
+
   private:
+   std::tuple<networkFace *, Tddd> nearestContactFace;
+   std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces;
    std::unordered_set<networkFace *> ContactFaces;
+
    std::unordered_set<networkPoint *> ContactPoints;
    std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
 
@@ -852,13 +856,34 @@ class networkPoint : public CoordinateBounds, public CSR {
    //% ------------------------------------------------------ */
    //%                          接触の判別                      */
    //% ------------------------------------------------------ */
+   /*DOC_EXTRACT networkPoint::getContactFaces()
+
+   * `getContactFaces()`で`ContactFaces`呼び出せる．
+   * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
+   * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
+
+   */
+
    const std::unordered_set<networkFace *> &getContactFaces() const { return this->ContactFaces; };
+   const std::tuple<networkFace *, Tddd> getNearestContactFace() const { return this->nearestContactFace; };
+   const std::tuple<networkFace *, Tddd> getNearestContactFace_(const networkFace *const f) const {
+      auto it = this->f_nearestContactFaces.find(const_cast<networkFace *>(f));
+      return (it != this->f_nearestContactFaces.end()) ? it->second : std::tuple<networkFace *, Tddd>{nullptr, {0., 0., 0.}};
+   };
+
+   networkFace *getNearestContactFace(const networkFace *const f) const { return std::get<0>(getNearestContactFace_(f)); };
+
+   void clearContactFaces() {
+      this->nearestContactFace = {nullptr, {0., 0., 0.}};
+      this->f_nearestContactFaces.clear();
+      this->ContactFaces.clear();
+   };
+
+   /* ----------------------------------------------------------- */
+
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesX() const;
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesXCloser() const;
-   //
-   void clearContactFaces() { this->ContactFaces.clear(); };
-   void addContactFaces(const Buckets<networkFace *> &B, bool);  // 自身と同じfaceを含まない
-   //
+   void addContactFaces(const Buckets<networkFace *> &B, bool);                                            // 自身と同じfaceを含まない
    void addContactPoints(const Buckets<networkPoint *> &B, const bool);                                    // 自身と同じnetのpointを含み得る
    void addContactPoints(const Buckets<networkPoint *> &B, const double radius, const bool);               // 自身と同じnetのpointを含み得る
    void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const double radius, const bool);  // 自身と同じnetのpointを含み得る

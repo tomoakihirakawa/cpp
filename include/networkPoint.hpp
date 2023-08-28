@@ -288,13 +288,9 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
 };
 
 /* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
 
 // \label{addContactFaces}
 inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
-   /*
-    b% この衝突面の追加方法は，境界要素法用のもので，格子の情報を使って点の法線方向を計算し衝突を判断している．
-   */
    Tddd x;
    if (this->Lines.empty()) {
 
@@ -346,7 +342,16 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
 
       /* ----------------------------- for mesh method ---------------------------- */
 
-      // this->ContactFaces = ToUnorderedSet(selectionOfFaces(this, B.getObjects_unorderedset(this->X, this->radius), 20, false));
+      /*DOC_EXTRACT networkPoint::addContactFaces()
+
+      | `networkPointの`メンバー関数/変数      | 説明                                                                |
+      |-------------------------|--------------------------------------------------------------------------------|
+      | `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+      | `ContactFaces`          | 節点が接触した面が登録されている．   |
+      | `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
+      | `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
+
+      */
 
       DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
       double dist;
@@ -356,7 +361,7 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
       faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
       std::vector<std::tuple<networkFace *, double>> f_dist_sort;
 
-      for (const auto &f : faces) {
+      for (const auto &f : faces)
          if (include_self_network || f->getNetwork() != this->getNetwork()) {
             if (isInContact(this, f)) {
                std::tuple<networkFace *, double> T = {f, Norm(this->X - Nearest(this->X, ToX(f)))};
@@ -366,20 +371,45 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
                f_dist_sort.insert(it, T);
             }
          }
-      }
 
       if (!f_dist_sort.empty()) {
          DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
          for (const auto &[F, D] : f_dist_sort) {
-            if (std::none_of(this->ContactFaces.begin(),
-                             this->ContactFaces.end(),
-                             [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+            if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
                this->ContactFaces.emplace(F);
             if (this->ContactFaces.size() > 5)
-               return;
+               break;
          };
       } else
          DebugPrint("faces is empty");
+
+      double distance = 1E+20, tmp;
+      Tddd X_near;
+      std::get<0>(this->nearestContactFace) = nullptr;
+      std::get<1>(this->nearestContactFace) = {1E+20, 1E+20, 1E+20};
+      for (const auto &f : this->getContactFaces())
+         if (distance > (tmp = Norm(this->X - (X_near = Nearest(this->X, f))))) {
+            distance = tmp;
+            std::get<1>(this->nearestContactFace) = X_near;
+            std::get<0>(this->nearestContactFace) = f;
+         }
+
+      auto NearestContactFace_of_f = [&](const networkFace *const f_normal) -> std::tuple<networkFace *, Tddd> {
+         Tddd r = {1E+100, 1E+100, 1E+100}, X;
+         networkFace *ret = nullptr;
+         for (const auto &f_target : bfs(this->getContactFaces(), 2))
+            if (isInContact(this, f_normal, f_target)) {
+               X = Nearest(this->X, ToX(f_target));
+               if (Norm(r) >= Norm(X - this->X)) {
+                  r = X - this->X;
+                  ret = f_target;
+               }
+            }
+         return {ret, r};
+      };
+
+      for (const auto &f : this->getFaces())
+         this->f_nearestContactFaces[f] = NearestContactFace_of_f(f);
    }
 };
 

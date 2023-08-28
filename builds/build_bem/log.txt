@@ -1,4 +1,112 @@
 ----------
+Execution time: Mon Aug 28 12:16:38 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Mon Aug 28 01:08:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Mon Aug 28 01:07:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Mon Aug 28 00:37:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 22:30:38 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 21:56:57 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 21:55:21 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 21:43:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 20:37:05 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 20:36:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 20:30:57 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
+Execution time: Sun Aug 27 20:07:55 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.5.0
+
+Command line arguments:
+  arg1: ./input_files/Ren2015_multiple_a0d06_T1d2
+----------
 Execution time: Sat Aug 26 18:17:36 2023
 
 Machine Information:
@@ -1056,6 +1164,18 @@ Machine Information:
   Operating System: Darwin 22.5.0
 
 No arguments provided. Write input JSON file directory.
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------
