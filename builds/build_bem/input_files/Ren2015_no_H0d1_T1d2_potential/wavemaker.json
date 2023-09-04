@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "linear_traveling_wave",
+        0.0,
+        0.05,
+        1.2,
+        0.4,
+        0.4
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Ren2015_no_float/wavemaker100.obj"
+}

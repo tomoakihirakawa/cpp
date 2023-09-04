@@ -162,31 +162,38 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
    return n / totlen;
 };
 
-/**
-### networkPoint::isInContact
+/*DOC_EXTRACT networkPoint::contact_angle
 
+| `networkPoint`のメンバー関数/変数      | 説明                                                                |
+|-------------------------|--------------------------------------------------------------------------------|
+| \ref{contact_angle}{`contact_angle`}         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
+| \ref{isFacing}{`isFacing()`}       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| \ref{isInContact}{`isInContact()`}         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| \ref{addContactFaces}{`addContactFaces()`}     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
 */
 
 // \label{contact_angle}
 const double contact_angle = 30. * M_PI / 180.;
 
-bool isCloseNormal(const Tddd &n1, const Tddd &n2) {
-   return isFlat(n1, -n2, contact_angle);  // || isFlat(n1, n2, contact_angle);
-};
+// \label{isFacing}
+bool isFacing(const Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
+bool isFacing(const Tddd &n2, const T3Tddd &n1) { return isFacing(n1, n2, contact_angle); };
+bool isFacing(const T3Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
+bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, contact_angle); };
 
 // \label{isInContact}
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
-   bool is_close_normal = isCloseNormal(p->getNormal_BEM(), TriangleNormal(f_target));
-   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isCloseNormal(F->normal, TriangleNormal(f_target)); });
+   bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
+   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
    return isinradius && (is_close_normal || any_close_normal);
 };
 
 bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
    bool isinradius = p->radius > Norm(pX - Nearest(pX, f_target));
-   bool is_close_normal = isCloseNormal(p->getNormal_BEM(), TriangleNormal(f_target));
-   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isCloseNormal(F->normal, TriangleNormal(f_target)); });
+   bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
+   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
    return isinradius && (is_close_normal || any_close_normal);
 };
 
@@ -194,14 +201,14 @@ bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/,
                  const T3Tddd &f_target,
                  const double &range) {
    // nとf_targetの法線が近いかどうかを判定する．次に，最も近い点がrange以内にあるかどうかを判定する．
-   if (!isCloseNormal(n, TriangleNormal(f_target)))
+   if (!isFacing(n, ToX(f_target)))
       return false;  // not close normal!
    if (!(range > Norm(X - Nearest(X, f_target))))
       return false;  // not in range!
    return true;
 };
 
-// is f contact with f ?
+// is p contact with f in f_normal direction ?
 bool isInContact(const networkPoint *p, const networkFace *f_normal, const networkFace *f_target) {
    return isInContact(p->X, f_normal->normal, ToX(f_target), p->radius);
 };
@@ -213,6 +220,130 @@ bool isInContact(const networkPoint *p, const networkFace *f_target) {
 
 bool isInContact(const networkPoint *p, const networkFace *f_normal, const std::unordered_set<networkFace *> &faces_target) {
    return std::ranges::any_of(faces_target, [&](const auto &f_target) { return isInContact(p, f_normal, f_target); });
+};
+
+// \label{addContactFaces}
+inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
+   Tddd x;
+   if (this->Lines.empty()) {
+
+      /* ------------------------------ for particle method ------------------------------ */
+
+      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
+      double dist;
+      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      std::unordered_set<networkFace *> faces;
+      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
+      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
+
+      auto isInContact = [&](const networkFace *f_target) {
+         auto [p0, p1, p2] = f_target->getPoints();
+         auto dist = Norm(this->X - Nearest(this->X, ToX(f_target)));
+         return dist < this->radius &&
+                std::ranges::any_of(f_target->getPoints(), [&](const auto &p) { return Dot(p->X - this->X, -f_target->normal); }) &&
+                normalDirDistanceFromTriangle(T3Tddd{p0->X, p1->X, p2->X}, this->X) < this->radius;
+      };
+
+      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
+
+      for (const auto &f : faces) {
+         if (f->getNetwork() != this->getNetwork()) {
+            if (isInContact(f)) {
+               auto dist = Norm(this->X - Nearest(this->X, ToX(f)));
+               std::tuple<networkFace *, double> T = {f, dist};
+               if (dist < this->radius) {
+                  auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
+                     return std::get<1>(a) < std::get<1>(b) - 1E-20;
+                  });
+                  f_dist_sort.insert(it, T);
+               }
+            }
+         }
+      }
+
+      if (!f_dist_sort.empty()) {
+         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
+         for (const auto &[F, D] : f_dist_sort) {
+            if (std::ranges::none_of(this->ContactFaces, [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+               this->ContactFaces.emplace(F);
+            if (this->ContactFaces.size() > 10)
+               return;
+         };
+      } else
+         DebugPrint("faces is empty");
+   } else {
+
+      /* ----------------------------- for mesh method ---------------------------- */
+
+      /*DOC_EXTRACT networkPoint::addContactFaces()
+
+      | `networkPoint`のメンバー関数/変数      | 説明                                                                |
+      |-------------------------|--------------------------------------------------------------------------------|
+      | `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+      | `ContactFaces`          | 節点が接触した面が登録されている．   |
+      | `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
+      | `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
+
+      */
+
+      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
+      double dist;
+      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
+      std::unordered_set<networkFace *> faces;
+      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
+      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
+      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
+
+      for (const auto &f : faces)
+         if (include_self_network || f->getNetwork() != this->getNetwork()) {
+            if (isInContact(this, f)) {
+               std::tuple<networkFace *, double> T = {f, Norm(this->X - Nearest(this->X, ToX(f)))};
+               auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
+                  return std::get<1>(a) < std::get<1>(b) - 1E-20;
+               });
+               f_dist_sort.insert(it, T);
+            }
+         }
+
+      if (!f_dist_sort.empty()) {
+         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
+         for (const auto &[F, D] : f_dist_sort) {
+            if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+               this->ContactFaces.emplace(F);
+            if (this->ContactFaces.size() > 5)
+               break;
+         };
+      } else
+         DebugPrint("faces is empty");
+
+      double distance = 1E+20, tmp;
+      Tddd X_near;
+      std::get<0>(this->nearestContactFace) = nullptr;
+      std::get<1>(this->nearestContactFace) = {1E+20, 1E+20, 1E+20};
+      for (const auto &f : this->getContactFaces())
+         if (distance > (tmp = Norm(this->X - (X_near = Nearest(this->X, f))))) {
+            distance = tmp;
+            std::get<1>(this->nearestContactFace) = X_near;
+            std::get<0>(this->nearestContactFace) = f;
+         }
+
+      auto NearestContactFace_of_f = [&](const networkFace *const f_normal) -> std::tuple<networkFace *, Tddd> {
+         Tddd r = {1E+100, 1E+100, 1E+100};
+         networkFace *ret = nullptr;
+         for (const auto &f_target : bfs(this->getContactFaces(), 2))
+            if (isInContact(this, f_normal, f_target)) {
+               X_near = Nearest(this->X, ToX(f_target));
+               if (Norm(r - this->X) >= Norm(X_near - this->X)) {
+                  r = X_near;
+                  ret = f_target;
+               }
+            }
+         return {ret, r};
+      };
+
+      for (const auto &f : this->getFaces())
+         this->f_nearestContactFaces[f] = NearestContactFace_of_f(f);
+   }
 };
 
 std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
@@ -285,132 +416,6 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
       };
    }
    return ret;
-};
-
-/* -------------------------------------------------------------------------- */
-
-// \label{addContactFaces}
-inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
-   Tddd x;
-   if (this->Lines.empty()) {
-
-      /* ------------------------------ for particle method ------------------------------ */
-
-      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
-      double dist;
-      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
-      std::unordered_set<networkFace *> faces;
-      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
-      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
-
-      auto isInContact = [&](const networkFace *f_target) {
-         auto [p0, p1, p2] = f_target->getPoints();
-         auto dist = Norm(this->X - Nearest(this->X, ToX(f_target)));
-         return dist < this->radius &&
-                std::ranges::any_of(f_target->getPoints(), [&](const auto &p) { return Dot(p->X - this->X, -f_target->normal); }) &&
-                normalDirDistanceFromTriangle(T3Tddd{p0->X, p1->X, p2->X}, this->X) < this->radius;
-      };
-
-      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
-
-      for (const auto &f : faces) {
-         if (f->getNetwork() != this->getNetwork()) {
-            if (isInContact(f)) {
-               auto dist = Norm(this->X - Nearest(this->X, ToX(f)));
-               std::tuple<networkFace *, double> T = {f, dist};
-               if (dist < this->radius) {
-                  auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
-                     return std::get<1>(a) < std::get<1>(b) - 1E-20;
-                  });
-                  f_dist_sort.insert(it, T);
-               }
-            }
-         }
-      }
-
-      if (!f_dist_sort.empty()) {
-         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
-         for (const auto &[F, D] : f_dist_sort) {
-            if (std::ranges::none_of(this->ContactFaces, [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
-               this->ContactFaces.emplace(F);
-            if (this->ContactFaces.size() > 10)
-               return;
-         };
-      } else
-         DebugPrint("faces is empty");
-   } else {
-
-      /* ----------------------------- for mesh method ---------------------------- */
-
-      /*DOC_EXTRACT networkPoint::addContactFaces()
-
-      | `networkPointの`メンバー関数/変数      | 説明                                                                |
-      |-------------------------|--------------------------------------------------------------------------------|
-      | `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
-      | `ContactFaces`          | 節点が接触した面が登録されている．   |
-      | `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
-      | `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-
-      */
-
-      DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
-      double dist;
-      // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
-      std::unordered_set<networkFace *> faces;
-      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
-      faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
-      std::vector<std::tuple<networkFace *, double>> f_dist_sort;
-
-      for (const auto &f : faces)
-         if (include_self_network || f->getNetwork() != this->getNetwork()) {
-            if (isInContact(this, f)) {
-               std::tuple<networkFace *, double> T = {f, Norm(this->X - Nearest(this->X, ToX(f)))};
-               auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
-                  return std::get<1>(a) < std::get<1>(b) - 1E-20;
-               });
-               f_dist_sort.insert(it, T);
-            }
-         }
-
-      if (!f_dist_sort.empty()) {
-         DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
-         for (const auto &[F, D] : f_dist_sort) {
-            if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
-               this->ContactFaces.emplace(F);
-            if (this->ContactFaces.size() > 5)
-               break;
-         };
-      } else
-         DebugPrint("faces is empty");
-
-      double distance = 1E+20, tmp;
-      Tddd X_near;
-      std::get<0>(this->nearestContactFace) = nullptr;
-      std::get<1>(this->nearestContactFace) = {1E+20, 1E+20, 1E+20};
-      for (const auto &f : this->getContactFaces())
-         if (distance > (tmp = Norm(this->X - (X_near = Nearest(this->X, f))))) {
-            distance = tmp;
-            std::get<1>(this->nearestContactFace) = X_near;
-            std::get<0>(this->nearestContactFace) = f;
-         }
-
-      auto NearestContactFace_of_f = [&](const networkFace *const f_normal) -> std::tuple<networkFace *, Tddd> {
-         Tddd r = {1E+100, 1E+100, 1E+100}, X;
-         networkFace *ret = nullptr;
-         for (const auto &f_target : bfs(this->getContactFaces(), 2))
-            if (isInContact(this, f_normal, f_target)) {
-               X = Nearest(this->X, ToX(f_target));
-               if (Norm(r) >= Norm(X - this->X)) {
-                  r = X - this->X;
-                  ret = f_target;
-               }
-            }
-         return {ret, r};
-      };
-
-      for (const auto &f : this->getFaces())
-         this->f_nearestContactFaces[f] = NearestContactFace_of_f(f);
-   }
 };
 
 /* -------------------------------------------------------------------------- */

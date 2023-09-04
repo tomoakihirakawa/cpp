@@ -38,7 +38,7 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 \end{bmatrix}
 ```
 
-[../../include/basic_vectors.hpp#L1310](../../include/basic_vectors.hpp#L1310)
+[../../include/basic_vectors.hpp#L1308](../../include/basic_vectors.hpp#L1308)
 
 
 

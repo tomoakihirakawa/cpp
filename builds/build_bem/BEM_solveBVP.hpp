@@ -181,12 +181,8 @@ void setPhiPhin(Network &water) {
    for (const auto &f : water.getFaces())
 #pragma omp single nowait
    {
-      if (f->Neumann) {
-         std::get<1>(f->phiphin) = Dot(uNeumann(f), f->normal);
-      } else {
-         auto [p0, p1, p2] = f->getPoints();
-         std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
-      }
+      auto [p0, p1, p2] = f->getPoints();
+      std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
    }
 };
 
@@ -754,44 +750,33 @@ struct BEM_BVP {
          if (isDirichletID_BEM(PBF))
             p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
          else if (isNeumannID_BEM(PBF)) {
-            for (auto &[f, phin_t] : p->phintOnFace)
-               phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
+            for (auto &[f, phin_t] : p->phintOnFace) {
+               // phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
+
+               phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(p, f) : phint_Neumann(p);  // \label{BEM:setphint}
+            }
          }
       }
    };
 
    /* ------------------------------------------------------ */
-   // this is a query function
-   bool calculatePhintQ(Network *net) const {
-      return true;
-      // if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating")
-      //    // if (net->inputJSON.find("RigidBody"))
-      //    return true;
-      // else
-      //    return false;
-   };
-
-   bool isFloatingBody(Network *net) const {
-      // return (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating");
-      return net->isFloatingBody;
-      // if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating")
-      //    // if (net->inputJSON.find("RigidBody"))
-      //    return true;
-      // else
-      //    return false;
-   };
 
    V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
       V_d ACCELS_init;
-      for (const auto &net : rigidbodies)
-         std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+      for (const auto &net : rigidbodies) {
+         if (net->interp_accel.size() > 3) {
+            std::cout << Red << "interp_accel" << colorOff << std::endl;
+            std::ranges::for_each(net->interp_accel(net->RK_Q.get_t()), [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+         } else
+            std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+      }
       return ACCELS_init;
    }
 
    void insertAcceleration(const std::vector<Network *> &rigidbodies, const V_d &BM_X) {
       int i = 0;
       for (const auto &net : rigidbodies) {
-         if (isFloatingBody(net)) {
+         if (net->isFloatingBody) {
             double start_time = 0;
             if (net->inputJSON.at("velocity").size() > 1)
                start_time = std::stod(net->inputJSON.at("velocity")[1]);
@@ -877,7 +862,7 @@ struct BEM_BVP {
       //* --------------------------------------------------- */
       int i = 0;
       for (const auto &net : rigidbodies)
-         if (isFloatingBody(net)) {
+         if (net->isFloatingBody) {
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
             auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
@@ -889,15 +874,12 @@ struct BEM_BVP {
             auto [a0, a1, a2] = F / net->mass;
             auto [a3, a4, a5] = T_hydro / Tddd{Ix, Iy, Iz};
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
-
             // write out details of the body
             // std::cout << Green << "mass = " << net->mass << std::endl;
             // std::cout << Green << "inertia = " << net->getInertiaGC() << std::endl;
          } else
             i += 6;
-
       // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
-
       return ACCELS - ACCELS_IN;
    };
 
@@ -916,31 +898,29 @@ struct BEM_BVP {
       }
 
       int count = 0;
+      double alpha = 1.;
+
       BroydenMethod BM(ACCELS_init, ACCELS_init);
+
+      insertAcceleration(rigidbodies, BM.X - BM.dX);
+      auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
+
       for (auto j = 0; j < 50; ++j) {
-         insertAcceleration(rigidbodies, BM.X - BM.dX);
-         auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
-         insertAcceleration(rigidbodies, BM.X);
+
          auto func = Func(BM.X, water, rigidbodies);
-
-         double alpha = 1.;
-         if (j < 1)
-            alpha = 1E-5;
-
          BM.update(func, func_, alpha);
+         func_ = func;
          insertAcceleration(rigidbodies, BM.X);
 
-         std::cout << "j = " << j << colorOff << std::endl;
-         std::cout << "alpha = " << alpha << std::endl;
-         std::cout << "Norm(func_) = " << Norm(func_) << std::endl;
-         std::cout << "Norm(func) = " << Norm(func) << std::endl;
-         std::cout << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorOff << std::endl;
+         std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorOff << std::endl;
 
          if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10) {
             if (count++ > 4)
                break;
          } else
             count = 0;
+         if (Norm(BM.dX) < 1E-13 && Norm(func) < 1E-13)
+            break;
       }
    };
 };

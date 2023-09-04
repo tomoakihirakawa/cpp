@@ -118,8 +118,23 @@ if(NOT DEFINED SOURCE_FILE)
 endif()
 
 # Create executable
+# message(STATUS "${Green}SOURCE_FILE is ${Magenta}" ${SOURCE_FILE} "${ColourReset}")
+# get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
+# add_executable(${BASE_NAME} ${SOURCE_FILE})
+
+# Set default output file name
+set(DEFAULT_OUTPUT_NAME "MyExecutable")
+
+# Allow the output file name to be passed as a command-line option
+if(DEFINED OUTPUT_NAME)
+  set(BASE_NAME ${OUTPUT_NAME})
+else()
+  get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE) # Extract filename without extension
+endif()
+
 message(STATUS "${Green}SOURCE_FILE is ${Magenta}" ${SOURCE_FILE} "${ColourReset}")
-get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
+message(STATUS "${Green}BASE_NAME is ${Magenta}" ${BASE_NAME} "${ColourReset}")
+
 add_executable(${BASE_NAME} ${SOURCE_FILE})
 
 # Find LAPACK

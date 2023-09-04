@@ -26,13 +26,40 @@
                 <source_extension>.hpp</source_extension>
             </source_extensions>
             <source_paths>
-                <source_path>BEM.hpp</source_path>
-                <source_path>main.cpp</source_path>
                 <source_path>BEM_calculateVelocities.hpp</source_path>
-                <source_path>BEM_setBoundaryConditions.hpp</source_path>
+                <source_path>BEM_setBoundaryTypes.hpp</source_path>
                 <source_path>BEM_solveBVP.hpp</source_path>
                 <source_path>BEM_utilities.hpp</source_path>
                 <source_path>BEM.hpp</source_path>
+                <source_path>main.cpp</source_path>
+                <source_path>../../include/basic_alias.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_array_operations.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_vector_operations.hpp</source_path>
+                <source_path>../../include/basic_constants.hpp</source_path>
+                <source_path>../../include/basic_exception.hpp</source_path>
+                <source_path>../../include/basic_geometry.hpp</source_path>
+                <source_path>../../include/basic_IO.hpp</source_path>
+                <source_path>../../include/basic_linear_systems.hpp</source_path>
+                <source_path>../../include/basic_mathematical_functions.hpp</source_path>
+                <source_path>../../include/basic_statistics.hpp</source_path>
+                <source_path>../../include/basic_vectors.hpp</source_path>
+                <source_path>../../include/basic.hpp</source_path>
+                <source_path>../../include/integrationOfODE.hpp</source_path>
+                <source_path>../../include/interpolations.hpp</source_path>
+                <source_path>../../include/lib_computationalGeometry.hpp</source_path>
+                <source_path>../../include/lib_measurement.hpp</source_path>
+                <source_path>../../include/lib_spatial_partitioning.hpp</source_path>
+                <source_path>../../include/my_vtk.hpp</source_path>
+                <source_path>../../include/Network.hpp</source_path>
+                <source_path>../../include/NetworkCommon.hpp</source_path>
+                <source_path>../../include/networkFace.hpp</source_path>
+                <source_path>../../include/networkLine.hpp</source_path>
+                <source_path>../../include/networkPoint.hpp</source_path>
+                <source_path>../../include/networkTetra.hpp</source_path>
+                <source_path>../../include/NetworkUtility.hpp</source_path>
+                <source_path>../../include/rootFinding.hpp</source_path>
+                <source_path>../../include/vtkWriter.hpp</source_path>
+                <source_path>../../include/XML.hpp</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

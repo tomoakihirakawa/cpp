@@ -56,6 +56,13 @@ def generate(inputfiles, setting):
           magenta, input_directory, coloroff)
 
 
+def genrate_in_out_directory(SimulationCase, id):
+    input_directory += SimulationCase + id
+    os.makedirs(input_directory, exist_ok=True)
+    output_directory = home + "/BEM/"+SimulationCase + id
+    os.makedirs(output_directory, exist_ok=True)
+
+
 '''DOC_EXTRACT 1_0_HOW_TO_MAKE_INPUT_FILES
 
 # 入力ファイル生成 `input_generator.py`
@@ -91,10 +98,12 @@ The script will generate input files in JSON format for the specified simulation
 
 home = expanduser("~")
 
-if platform.system() == "Linux":
-    program_home = home + "/code/"
-else:
-    program_home = home + "/Dropbox/code/"
+# if platform.system() == "Linux":
+current_directory = os.path.dirname(os.path.abspath(__file__))
+program_home = os.path.join(current_directory, '../../../../code')
+# program_home = home + "/code/"
+# else:
+#     program_home = home + "/Dropbox/code/"
 
 '''
 プログラムを回す際に面倒な事は，入力ファイルの設定．
@@ -110,21 +119,67 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Ren2015"
+SimulationCase = "testALE"
 
 match SimulationCase:
+    case "testALE":
+
+        objfolder = program_home + "/cpp/obj/testALE"
+
+        water = {"name": "water",
+                 "type": "Fluid",
+                 "objfile": objfolder + "/water_case4_500.obj"}
+
+        tank = {"name": "tank",
+                "type": "RigidBody",
+                "velocity": ["const", 0, 0.1, 0, 0, 0, 0, 0, 1],
+                "objfile": objfolder + "/tank400.obj"}
+
+        cylinder = {"name": "cylinder",
+                    "type": "RigidBody",
+                    "velocity": ["sin", 0, 0.2, 5, 0, 1, 0],
+                    "objfile": objfolder + "/cylinder400.obj"}
+
+        cuboid = {"name": "cuboid",
+                  "type": "RigidBody",
+                  "velocity": ["sin", 0, -0.2, 5, 0, 1, 0],
+                  "objfile": objfolder + "/cuboid400.obj"}
+
+        id = ""
+        input_directory += SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/"+SimulationCase + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        inputfiles = [water, tank, cylinder, cuboid]
+
+        setting = {"max_dt": 0.02,
+                   "end_time_step": 10000,
+                   "end_time": 9,
+                   "output_directory": output_directory,
+                   "input_files": [x["name"]+".json" for x in inputfiles]}
+
+        generate(inputfiles, setting)
+
     case "Ren2015":
 
-        start = 0.01
+        start = 0.
 
         T = 1.2
-        a = 0.06
+        H = 0.1
+        a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
         h = 0.4
 
-        # id0 = ""
-        id0 = "_multiple"
-        id = id0 + "_a"+str(a).replace(".", "d")
+        id0 = ""
+        # id0 = "_no"
+        # id0 = "_multiple"
+
+        # wavemaker_type = "piston"
+        wavemaker_type = "potential"
+
+        id = id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
+        id += "_"+wavemaker_type
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -138,9 +193,15 @@ match SimulationCase:
 
         z_surface = 0.4
 
-        wavemaker = {"name": "wavemaker",
-                     "type": "RigidBody",
-                     "velocity": ["piston", start, a, T, h, 1, 0, 0]}
+        if wavemaker_type == "piston":
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "velocity": ["piston", start, a, T, h, 1, 0, 0]}
+        else:
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
         float = {"name": "float",
                  "type": "RigidBody",
@@ -169,6 +230,7 @@ match SimulationCase:
 
         # if id contains "multiple":
         if "multiple" in id:
+            float["COM"] = [4.3+L/2, W/2, z_surface]
             objfolder = program_home + "/cpp/obj/Ren2015_multiple"
 
             # Initialize the object files
@@ -190,10 +252,17 @@ match SimulationCase:
                 new_float["COM"][0] = float["COM"][0] + offset
 
                 inputfiles.append(new_float)
+        elif "_no" in id:
+            objfolder = program_home + "/cpp/obj/Ren2015_no_float"
+            water["objfile"] = objfolder + "/water400.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+            tank["objfile"] = objfolder + "/tank100.obj"
+            inputfiles = [tank, wavemaker, water]
         else:
+            float["COM"] = [2., W/2, z_surface]
             objfolder = program_home + "/cpp/obj/Ren2015"
             water["objfile"] = objfolder + "/water400mod.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker30.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
             tank["objfile"] = objfolder + "/tank100.obj"
             float["objfile"] = objfolder+"/float50.obj"
             inputfiles = [tank, wavemaker, water, float]
@@ -209,7 +278,7 @@ match SimulationCase:
 
         start = 0.
 
-        id = "_water300_new_new"
+        id = ""
 
         input_directory += SimulationCase + id
         os.makedirs(input_directory, exist_ok=True)
@@ -401,7 +470,7 @@ match SimulationCase:
             id += "_T" + str(T).replace(".", "d")
             id += "_h" + str(h)
 
-            id += "_modified_mesh"
+            # id += "_modified_mesh"
 
             input_directory += SimulationCase + id
             os.makedirs(input_directory, exist_ok=True)
@@ -424,7 +493,7 @@ match SimulationCase:
             # 浮体の種類
             if pool_size == "large":
                 objfolder = program_home + "/cpp/obj/tsukada2022_large_pool"
-                water["objfile"] = objfolder + "/water300_modmod.obj"
+                water["objfile"] = objfolder + "/water1000mod.obj"
                 wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
                 tank["objfile"] = objfolder + "/tank10.obj"
                 floatingbody["objfile"] = objfolder+"/floating_body50.obj"
@@ -434,7 +503,7 @@ match SimulationCase:
                 floatingbody["radius_of_gyration"] = [20., 20., 20.]
             elif pool_size == "none" or pool_size == "no":
                 objfolder = program_home + "/cpp/obj/tsukada2022_no_pool"
-                water["objfile"] = objfolder + "/water_no_440_mod.obj"
+                water["objfile"] = objfolder + "/water960mod.obj"
                 wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
                 tank["objfile"] = objfolder + "/tank10.obj"
                 floatingbody["objfile"] = objfolder+"/floating_body_310.obj"

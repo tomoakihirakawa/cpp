@@ -1,79 +1,7 @@
 /*DOC_EXTRACT 0_0_BEM
-
-# BEM-MEL
-
-## BEM-MELについて
-
-### 三角関数を使った古典的な解析手法
-
-水面がどのような微分方程式に従って運動するか調べると，
-非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
-
-立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
-三角関数の重ね合わせで求めようとすることは自然で賢い発想であり，この解析方法はある程度の成功を収めてきた．
-この方法による線形理論はよく知られており水面波の基礎となっている．
-また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることもこの解析手法の延長線上にあり，よく行われている．
-
-しかし，
-複雑な形状を境界に持つ場合や，波が激しい場合においては，
-この解析方法で課すことになる周期境界条件や，弱非線形性までしか考慮しないことが，
-果たして結果に悪影響を及ぼさないか疑問である．
-また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
-
-### BEM-MEL
-
-1970年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
-当時開発された正方格子上でのシミュレーション手法を使って，
-巻波砕破のシミュレーションを行おうと格子を細かくすると，
-直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
-これに対して，
-\cite{Longuet-Higgins1976}は，境界線上だけに計算点を設け，
-その計算点の位置と速度ポテンシャルをラグランジュ的に時間発展させる方法を提案した．
-水面で$`\frac{D\phi}{Dt}`$が簡単に計算できること，
-流速(速度ポテンシャルの勾配)を計算するために，
-$`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
-法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
-
-<details>
-<summary>
-NOTE: メモリ容量の変化
-</summary>
-
-<img src="./REVIEW/computer_memory.png" width="50%" />
-
-現在，メモリ容量は，以前と比べて格段に大きくなり，メモリの節約を考える必要がなくなった．
-また，領域型の計算手法で作られる代数連立１次方程式の係数行列は，疎行列であることが多く，
-節点数は多けれども，疎行列なら反復解法を使って高速に解を求めることができる．
-一方で，境界型の計算手法は，密行列を作る必要があり，密行列の生成には計算がかかる．
-
-$`O(n_p^2)`$，$`O(n_d^3)`$
-仮に$`n_p=L^3`$，$`n_d=6L^2`$としよう
-$`O(L^6)`$，$`O(216 L^6)`$
-
-つまり，当初のBEM-MELの優位は，現在では他の手法にうばわれてしまっている．
-
-</details>
-
-#### BEM-MELの問題点
-
-BEM-MELの結果に数値的な不安定が生じることは，\cite{Longuet-Higgins1976}が既に紹介している．
-計算精度を悪化させる原因は様々なものが考えられる．
-例えば，係数行列を作成する際，つまり微分方程式を離散化する際に用いる，補間の精度や積分の精度．
-または，時間発展の際に用いる，時間積分の精度などである．
-
-補間と積分はセットで使うので，どちらが原因かを切り分けるのは難しい．
-積分精度だけを考えても，数値積分手法の改良や，解析的な改良などが考えられる．
-補間精度だけを考えても，補間手法の改良や，補間点の位置の調整などが考えられる．
-
-### BEM-MELの改良
-
-続く研究目的は，BEM-MELの改良に向けられた．
-
-### 浮体動揺解析
-
-
-
+\insert{REVIEW.md}
 */
+
 // #define _debugging_
 
 #define BEM
@@ -121,6 +49,9 @@ void logMachineInformation(std::ofstream &ofs) {
 int main(int argc, char **argv) {
 
    /* -------------------------------------------------------------------------- */
+   /*                           Set up logging to file                           */
+   /* -------------------------------------------------------------------------- */
+
    // Read the contents of the existing log file
    std::ifstream ifs("log.txt");
    std::string existingContent;
@@ -152,13 +83,13 @@ int main(int argc, char **argv) {
 
    // Write command line arguments to log file
    ofs << "Command line arguments:" << std::endl;
-   for (int i = 1; i < argc; ++i) {
+   for (int i = 1; i < argc; ++i)
       ofs << "  arg" << i << ": " << argv[i] << std::endl;
-   }
 
    // Write the existing log content back to the log file after the new log entry
    ofs << existingContent;
    ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
+
    /* -------------------------------------------------------------------------- */
 
    if (argc <= 1)
@@ -167,154 +98,139 @@ int main(int argc, char **argv) {
    std::string input_directory(argv[1]);  // input directory
    input_directory += "/";
    std::cout << input_directory << std::endl;
+
+   /* -------------------------------------------------------------------------- */
+   /*                           read setting.json                                */
+   /* -------------------------------------------------------------------------- */
+
+   // Read settings from a JSON file and store values
+   JSON settingJSON(input_directory + "/setting.json");
+   for (auto &[key, value] : settingJSON()) std::cout << key << ": " << value << std::endl;
+
+   // Check for the existence of required keys in the JSON file
+   if (!std::ranges::all_of(settingJSON.find({"end_time_step", "end_time", "output_directory", "max_dt", "input_files"}), [](auto v) { return v; }))
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "there is missing key in setting.json");
+
+   // Store values from the JSON file into variables
+   const std::string output_directory = settingJSON.at("output_directory")[0];
+   const double max_dt = stod(settingJSON.at("max_dt"))[0];
+   const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
+   const double end_time = stod(settingJSON.at("end_time"))[0];
+
+   std::cout << "" << std::endl;
+
+   if (settingJSON.find("WATER_DENSITY", [](auto STR_VEC) { _WATER_DENSITY_ = stod(STR_VEC[0]); }))
+      std::cout << "WATER_DENSITY: " << _WATER_DENSITY_ << std::endl;
+
+   if (settingJSON.find("GRAVITY", [](auto STR_VEC) { _GRAVITY_ = stod(STR_VEC[0]); }))
+      std::cout << "GRAVITY: " << _GRAVITY_ << std::endl;
+
+   // Set default values for optional keys and update if found in the JSON file
+   double stop_remesh_time = 1E+10;
+   double force_remesh_time = 0;
+   int grid_refinement = 0;
+
+   settingJSON.find("stop_remesh_time", [&](auto STR_VEC) { stop_remesh_time = stod(STR_VEC[0]); });
+   settingJSON.find("force_remesh_time", [&](auto STR_VEC) { force_remesh_time = stod(STR_VEC[0]); });
+   settingJSON.find("grid_refinement", [&](auto STR_VEC) { grid_refinement = stoi(STR_VEC[0]); });
+   /* -------------------------------------------------------------------------- */
+   /*                read JSON files, input_files in setting.json                */
+   /* -------------------------------------------------------------------------- */
+
+   // Define containers and helper functions for network objects and output information
+   std::map<Network *, outputInfo> NetOutputInfo;
+   auto setup_network_output_info = [&NetOutputInfo](Network *net, const JSON &injson, const std::string &output_directory) {
+      std::cout << "setup_network_output_info" << std::endl;
+      auto output_name = injson.at("name")[0];
+      NetOutputInfo[net].pvd_file_name = output_name;
+      NetOutputInfo[net].vtu_file_name = output_name + "_";
+      NetOutputInfo[net].PVD = new PVDWriter(output_directory + "/" + output_name + ".pvd");
+   };
+
+   std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
+   auto initialize_network_objects = [&FluidObject, &RigidBodyObject, &SoftBodyObject](Network *net, const JSON &injson) {
+      std::cout << "initialize_network_objects" << std::endl;
+      auto type = injson.at("type")[0];
+      if (type == "RigidBody") {
+         RigidBodyObject.emplace_back(net);
+         net->isRigidBody = true;
+         net->isSoftBody = false;
+      } else if (type == "SoftBody" || type == "FixedBody") {
+         SoftBodyObject.emplace_back(net);
+         net->isRigidBody = false;
+         net->isSoftBody = true;
+      } else if (type == "Fluid") {
+         FluidObject.emplace_back(net);
+         net->isRigidBody = net->isSoftBody = false;
+      }
+      net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
+      for (auto i = 0; i < 10; ++i)
+         AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
+
+      net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
+      net->isFloatingBody = net->isFloatingBody || (injson.find("acceleration") && injson.at("acceleration")[0] == "floating");
+
+      net->resetInitialX();
+      net->setGeometricProperties();
+   };
+
+   for (auto input_file_name : settingJSON["input_files"]) {
+      std::cout << Green << input_directory + input_file_name << colorOff << std::endl;
+      JSON injson(input_directory + input_file_name);
+
+      // check required keys
+      if (!std::ranges::all_of(injson.find({"name", "objfile", "type"}), [](auto v) { return v; }))
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " has missing key");
+
+      // display contents of the JSON file
+      for (auto &[key, value] : injson()) std::cout << Green << key << colorOff << ": " << value << std::endl;
+
+      auto object_name = injson.at("name")[0];
+      if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
+         auto net = new Network(injson.at("objfile")[0], object_name);
+         net->inputJSON = injson;
+         net->applyTransformations(injson);
+         setup_network_output_info(net, injson, output_directory);
+         initialize_network_objects(net, injson);
+         std::filesystem::copy_file(input_directory + input_file_name, output_directory + "/" + input_file_name, std::filesystem::copy_options::overwrite_existing);
+         mk_vtu(output_directory + "/" + object_name + "_init.vtu", {net->getFaces()});
+      } else {
+         Print("skipped");
+      }
+   }
+
+   /* ----------------- Create output directory and copy files ----------------- */
+
+   std::filesystem::create_directories(output_directory);
+   std::filesystem::copy_file(input_directory + "/setting.json", output_directory + "/setting.json", std::filesystem::copy_options::overwrite_existing);
+   std::filesystem::copy_file("./main.cpp", output_directory + "/main.cpp", std::filesystem::copy_options::overwrite_existing);
+   //
+   std::regex pattern("^BEM.*\\.hpp$");
+   for (auto &entry : std::filesystem::directory_iterator("."))
+      if (std::regex_match(entry.path().filename().string(), pattern))
+         std::filesystem::copy_file(entry.path(), output_directory / entry.path().filename(), std::filesystem::copy_options::overwrite_existing);
+
+   /* -------------------------------------------------------------------------- */
+
+   auto water = FluidObject[0];
+   PVDWriter cornerPointsPVD(output_directory + "/cornerPointsPVD.pvd");
+   PVDWriter cornerPVD(output_directory + "/corner.pvd");
+   Print("setting done");
+
+   /* -------------------------------------------------------------------------- */
    try {
-      /* -------------------------------------------------------------------------- */
-      /*                           read setting.json                                */
-      /* -------------------------------------------------------------------------- */
-      // Read settings from a JSON file and store values
-      JSON settingJSON(input_directory + "/setting.json");
-      for (auto &[key, value] : settingJSON())
-         std::cout << key << ": " << value << std::endl;
-
-      std::cout << "" << std::endl;
-      // check optional setting
-      if (settingJSON.find("WATER_DENSITY")) {
-         _WATER_DENSITY_ = stod(settingJSON.at("WATER_DENSITY"))[0];
-         std::cout << "WATER_DENSITY: " << _WATER_DENSITY_ << std::endl;
-      }
-
-      if (settingJSON.find("GRAVITY")) {
-         _GRAVITY_ = stod(settingJSON.at("GRAVITY"))[0];
-         _GRAVITY3_ = {0., 0., -_GRAVITY_};
-         std::cout << "GRAVITY: " << _GRAVITY_ << std::endl;
-      }
-
-      // Check for the existence of required keys in the JSON file
-      const std::vector<std::string> required_keys = {"end_time_step", "end_time", "output_directory", "max_dt", "input_files"};
-      for (const auto &key : required_keys)
-         if (!settingJSON.find(key))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "setting.json does not have " + key);
-
-      // Store values from the JSON file into variables
-      std::string output_directory = settingJSON.at("output_directory")[0];
-      double max_dt = stod(settingJSON.at("max_dt"))[0];
-      const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
-      const double end_time = stod(settingJSON.at("end_time"))[0];
-
-      // Set default values for optional keys and update if found in the JSON file
-      double stop_remesh_time = 1E+10;
-      double force_remesh_time = 0;
-      int grid_refinement = 0;
-      if (settingJSON.find("stop_remesh_time"))
-         stop_remesh_time = stod(settingJSON.at("stop_remesh_time")[0]);
-      if (settingJSON.find("force_remesh_time"))
-         force_remesh_time = stod(settingJSON.at("force_remesh_time")[0]);
-      if (settingJSON.find("grid_refinement"))
-         grid_refinement = stoi(settingJSON.at("grid_refinement")[0]);
-
-      /* -------------------------------------------------------------------------- */
-      /*                read JSON files, input_files in setting.json                */
-      /* -------------------------------------------------------------------------- */
-      // Define containers and helper functions for network objects and output information
-      std::map<Network *, outputInfo> NetOutputInfo;
-      auto setup_network_output_info = [&NetOutputInfo](Network *net, const JSON &injson, const std::string &output_directory) {
-         std::cout << "setup_network_output_info" << std::endl;
-         auto output_name = injson.at("name")[0];
-         NetOutputInfo[net].pvd_file_name = output_name;
-         NetOutputInfo[net].vtu_file_name = output_name + "_";
-         NetOutputInfo[net].PVD = new PVDWriter(output_directory + "/" + output_name + ".pvd");
-      };
-
-      std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
-      auto initialize_network_objects = [&FluidObject, &RigidBodyObject, &SoftBodyObject](Network *net, const JSON &injson) {
-         std::cout << "initialize_network_objects" << std::endl;
-         auto type = injson.at("type")[0];
-         if (type == "RigidBody") {
-            RigidBodyObject.emplace_back(net);
-            net->isRigidBody = true;
-            net->isSoftBody = false;
-         } else if (type == "SoftBody" || type == "FixedBody") {
-            SoftBodyObject.emplace_back(net);
-            net->isRigidBody = false;
-            net->isSoftBody = true;
-         } else if (type == "Fluid") {
-            FluidObject.emplace_back(net);
-            net->isRigidBody = net->isSoftBody = false;
-         }
-         net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
-         for (auto i = 0; i < 10; ++i)
-            AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
-
-         net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
-         net->isFloatingBody = net->isFloatingBody || (injson.find("acceleration") && injson.at("acceleration")[0] == "floating");
-
-         net->resetInitialX();
-         net->setGeometricProperties();
-      };
-
-      for (auto input_file_name : settingJSON["input_files"]) {
-         std::cout << "\n\n"
-                   << Green << input_directory + input_file_name << colorOff << std::endl;
-         JSON injson(input_directory + input_file_name);
-
-         // check required keys
-         for (const auto &key : {"name", "objfile", "type"})
-            if (!injson.find(key)) throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " does not have " + key);
-
-         // display contents of the JSON file
-         for (auto &[key, value] : injson())
-            std::cout << Green << key << colorOff << ": " << value << std::endl;
-
-         auto object_name = injson.at("name")[0];
-         if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
-            auto net = new Network(injson.at("objfile")[0], object_name);
-            net->inputJSON = injson;
-            net->applyTransformations(injson);
-            setup_network_output_info(net, injson, output_directory);
-            initialize_network_objects(net, injson);
-            std::filesystem::copy_file(input_directory + input_file_name, output_directory + "/" + input_file_name, std::filesystem::copy_options::overwrite_existing);
-            mk_vtu(output_directory + "/" + object_name + "_init.vtu", {net->getFaces()});
-         } else {
-            Print("skipped");
-         }
-      }
-
-      /* -------------------------------------------------------------------------- */
-
-      // Create output directory and copy files
-      std::filesystem::create_directories(output_directory);
-      std::filesystem::copy_file(input_directory + "/setting.json", output_directory + "/setting.json", std::filesystem::copy_options::overwrite_existing);
-      std::filesystem::copy_file("./main.cpp", output_directory + "/main.cpp", std::filesystem::copy_options::overwrite_existing);
-      //
-      std::regex pattern("^BEM.*\\.hpp$");
-      for (auto &entry : std::filesystem::directory_iterator("."))
-         if (std::regex_match(entry.path().filename().string(), pattern))
-            std::filesystem::copy_file(entry.path(), output_directory / entry.path().filename(), std::filesystem::copy_options::overwrite_existing);
-
-      /* -------------------------------------------------------------------------- */
-
-      auto water = FluidObject[0];
-      PVDWriter cornerPointsPVD(output_directory + "/cornerPointsPVD.pvd");
-      PVDWriter cornerPVD(output_directory + "/corner.pvd");
-      Print("setting done");
       //  b* ------------------------------------------------------ */
       //  b*                         メインループ                      */
       //  b* ------------------------------------------------------ */
       TimeWatch watch;
       for (time_step = 0; time_step < end_time_step; time_step++) {
-         if (end_time < real_time)
-            break;
+         if (end_time < real_time) break;
          show_info(*water);
          //! 体積を保存するようにリメッシュする必要があるだろう．
-         // auto radius = Mean(extLength(water->getLines()));
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
-         // flipIf(*water, {10 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
 
-         // if (time_step % 5 == 0)
-         //    flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, true);
-         // else
-         flipIf(*water, {5 * rad, rad}, {5 * rad /*結構小さく*/, rad}, false);
+         flipIf(*water, {10 * rad, rad}, {10 * rad, rad}, false);
 
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
@@ -350,6 +266,10 @@ int main(int argc, char **argv) {
             net->RK_COM.initialize(dt, real_time, net->COM, RK_order);
             net->RK_Q.initialize(dt, real_time, net->Q(), RK_order);
             net->RK_Velocity.initialize(dt, real_time, net->velocity, RK_order);
+            //
+            if (net->interp_accel.size() > 10)
+               net->interp_accel.pop();
+            net->interp_accel.push(real_time, net->acceleration);
          }
          for (const auto &net : SoftBodyObject) {
             // !いらないはずのもの
@@ -425,12 +345,16 @@ int main(int argc, char **argv) {
                if (net->inputJSON.find("velocity")) {
                   if (net->inputJSON.at("velocity")[0] != "fixed") {
                      std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
+                     auto COM_old = net->COM;
                      net->RK_COM.push(net->velocityTranslational());
                      net->COM = net->RK_COM.getX();
                      Quaternion q;
                      q = q.d_dt(net->velocityRotational());  // w->クォータニオン
                      net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
                      net->Q = net->RK_Q.getX();
+
+                     std::cout << "name = " << net->getName() << std::endl;
+                     std::cout << "net->COM - COM_old= " << net->COM - COM_old << std::endl;
                   }
                   //
                   // if (net->inputJSON.find("angle") && net->inputJSON.at("angle")[0] == "Hadzic2005") {
@@ -474,8 +398,8 @@ int main(int argc, char **argv) {
 
             // b$ --------------------------------------------------- */
 
+            //@ Φの時間発展，Φnの時間発展はない
             for (const auto &p : Points) {
-               //@ Φの時間発展，Φnの時間発展はない
                if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
                   p->RK_phi.push(p->DphiDt(p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
@@ -492,14 +416,13 @@ int main(int argc, char **argv) {
                   net->setGeometricProperties();
 
             std::ofstream ofs(output_directory + "/water" + std::to_string(RK_step) + ".obj");
-            creteOBJ(ofs, *water);
+            createOBJ(ofs, *water);
             ofs.close();
 
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
          } while (!((*Points.begin())->RK_X.finished));
 
          /* -------------------------------------------------------------------------- */
-
          for (const auto &net : SoftBodyObject)
             AreaWeightedSmoothingPreserveShape(net->getPoints(), 1);
 
@@ -530,7 +453,7 @@ int main(int argc, char **argv) {
          /* ------------------------------------------------------ */
 
          std::ofstream ofs(output_directory + "/water_current.obj");
-         creteOBJ(ofs, *water);
+         createOBJ(ofs, *water);
          ofs.close();
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
@@ -568,12 +491,10 @@ int main(int argc, char **argv) {
          // b#                            output Paraview files                           */
          // b# -------------------------------------------------------------------------- */
 
-         auto data = dataForOutput(*water, dt);
-
          // 流体
          for (const auto &net : FluidObject) {
             auto filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
-            mk_vtu(output_directory + "/" + filename, net->getFaces(), data);
+            mk_vtu(output_directory + "/" + filename, net->getFaces(), dataForOutput(net, dt));
             NetOutputInfo[net].PVD->push(filename, real_time);
             NetOutputInfo[net].PVD->output();
          }
@@ -583,8 +504,7 @@ int main(int argc, char **argv) {
             if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
                auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
                uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
-               uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure;
-
+               uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure, P_radius;
                //    for (const auto &p : water->getPoints()) {
                //       P_accel[p] = net->accelRigidBody(ToX(p));
                //       P_velocity[p] = net->velocityRigidBody(ToX(p));

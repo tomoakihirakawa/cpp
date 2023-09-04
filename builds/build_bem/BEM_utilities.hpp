@@ -34,24 +34,25 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
             double a = std::abs(stod(strings[2] /*a*/));
             double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
             double h = std::abs(stod(strings[4] /*h*/));
-            double z_surface = std::abs(stod(strings[5] /*z_surface*/));
-            auto [x, y, z] = p->X - Tddd{0., 0., z_surface};
             DispersionRelation DS(w, h);
             double k = std::abs(DS.k);
+            double z_surface = std::abs(stod(strings[5] /*z_surface*/));
+            // auto [x, y, z] = p->X - Tddd{0., 0., z_surface};
+            double z = std::get<2>(p->X) - z_surface;
+            double x = 0;
+            t += M_PI / 2. / w;
+            T6d ret = {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
+                           w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
+                       0., -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x), 0., 0., 0.};
+
             // std::cout << "a = " << a
             //           << ", {w,k} = {" << w << "," << k << "}"
             //           << ", h = " << h
             //           << ", z_surface = " << z_surface
-            //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-            // t += M_PI / 2. / w;
+            //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}"
+            //           << ", ret = " << ret << std::endl;
 
-            return {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
-                        w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
-                    0.,
-                    -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x),
-                    0.,
-                    0.,
-                    0.};
+            return ret;
          } else
             return {0., 0., 0., 0., 0., 0.};
       } else
@@ -66,11 +67,11 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
          auto [x, y, z] = p->X;
          DispersionRelation DS(w, h);
          double k = std::abs(DS.k);
-         std::cout << "a = " << a
-                   << ", {w,k} = {" << w << "," << k << "}"
-                   << ", h = " << h
-                   << ", z_surface = " << z_surface
-                   << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+         // std::cout << "a = " << a
+         //           << ", {w,k} = {" << w << "," << k << "}"
+         //           << ", h = " << h
+         //           << ", z_surface = " << z_surface
+         //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          return {a * w * cos(w * t - k * z),
                  0.,
                  0.,
@@ -220,7 +221,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       ```
 
       $`e`$は造波版の振幅である．例えば，振幅が1mの波を発生させたい場合，
-      $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{1}{F(f,h)}`$となり，
+      $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
       これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
 
       */
@@ -234,7 +235,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          double kh2 = 2. * k * h;
          double F = 4. * std::pow(sinh(k * h), 2) / (kh2 + sinh(kh2));  //= H/(2*e)
          double H = 2. * A;
-         double e = H / F / 2.;
+         double e = A / F;
          // wave maker movement is e * sin(w * t)
          double dsdt = e * w * sin(w * (t - start));
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
@@ -243,12 +244,14 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
    } else if (name.contains("sinusoidal") || name.contains("sin")) {
-      if (strings.size() == 4) {
+      if (strings.size() == 7) {
          double start = stod(strings[1] /*start*/);
          if (t >= start) {
-            double a = std::abs(stod(strings[2] /*a*/));
+            double a = stod(strings[2] /*a*/);
             double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-            return {a * w * cos(w * t), 0., 0., 0., 0., 0.};
+            Tddd axis = {stod(strings[4]), stod(strings[5]), stod(strings[6])};
+            double A = a * w * sin(w * (t - start));
+            return {A * axis[0], A * axis[1], A * axis[2], 0., 0., 0.};
          }
       } else {
          std::stringstream ss;
@@ -256,6 +259,13 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          for (const auto &s : strings)
             ss << i++ << ":" << s << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      }
+   } else if (name.contains("constant") || name.contains("const")) {
+      double start = stod(strings[1] /*start*/);
+      if (t >= start) {
+         double a = stod(strings[2] /*a*/);
+         T6d axis = {stod(strings[3]), stod(strings[4]), stod(strings[5]), stod(strings[6]), stod(strings[7]), stod(strings[8])};
+         return a * axis;
       }
    } else if (name.contains("Hadzic2005")) {
       // \label{BEM:Hadzic2005}
@@ -282,115 +292,81 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 ### `getContactFaces()`や`getNearestContactFace()`の利用
 
+#### `contact_angle`と`isInContact()`
+
+\insert{networkPoint::contact_angle}
+
+#### `addContactFaces()`
+
 \insert{networkPoint::addContactFaces()}
+
+#### 呼び出し方法
+
 \insert{networkPoint::getContactFaces()}
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
 
-*/
+### `uNeumann()`と`accelNeumann()`
 
-netFp NearestContactFace(const networkFace *const f_IN) {
-   std::unordered_set<networkFace *> faces;
-   // std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) { faces.insert(q->getContactFaces().begin(), q->getContactFaces().end()); });
-   std::ranges::for_each(f_IN->getPoints(), [&](const auto &q) {
-      auto f = q->getNearestContactFace(f_IN);
-      if (f != nullptr)
-         faces.emplace(f);
-   });
-   return std::get<1>(Nearest_(f_IN->center, faces));
-};
+接触している物体が，剛体でない場合，
+`velocity_of_Body`は，物体の節点（ `networkPoint` ）の速度（加速度）を元にして速度（加速度）を計算する．
+そのため，`networkPoint::velocity`や`networkPoint::accel`を設定しておく必要がある．
+
+`uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
+を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
+
+*/
 
 //$ --------------------------------------------------------------- */
 
-std::tuple<Tddd, double> uNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = p->getNearestContactFace_(f_normal);
-   if (f) {
-      double weight = w_Bspline5(Norm(vToContact), p->radius);
-      if (f->getNetwork()->isRigidBody) {
-         return {f->getNetwork()->velocityRigidBody(p->X), weight};
-      } else if (f->getNetwork()->isSoftBody) {
-         auto [p0, p1, p2] = f->getPoints();
-         auto v0 = p0->velocityTranslational();
-         auto v1 = p1->velocityTranslational();
-         auto v2 = p2->velocityTranslational();
-         auto [t0, t1, X] = Nearest_(p->X, ToX(f));
-         return {v0 * t0 + v1 * t1 + v2 * (1 - t0 - t1), weight};
-      }
-   }
-   return {{0., 0., 0.}, 0.};
+Tddd velocity_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_contact) {
+   if (contact_face_of_body->getNetwork()->isRigidBody)
+      return contact_face_of_body->getNetwork()->velocityRigidBody(X_contact);
+   else if (contact_face_of_body->getNetwork()->isSoftBody) {
+      //! do not forget to set velocity of networkPoint before calling this function
+      auto [p0, p1, p2] = contact_face_of_body->getPoints();
+      auto [t0, t1, X] = Nearest_(X_contact, ToX(contact_face_of_body));
+      return p0->velocityTranslational() * t0 + p1->velocityTranslational() * t1 + p2->velocityTranslational() * (1. - t0 - t1);
+   } else
+      return {0., 0., 0.};
 };
 
-std::tuple<Tddd, double> accelNeumann_(const networkPoint *const p, const networkFace *const f_normal) {
-   auto [f, vToContact] = p->getNearestContactFace_(f_normal);
-   if (f) {
-      double weight = w_Bspline5(Norm(vToContact), p->radius);
-      if (f->getNetwork()->isRigidBody) {
-         return {f->getNetwork()->accelRigidBody(p->X), weight};
-      } else if (f->getNetwork()->isSoftBody) {
-         auto [p0, p1, p2] = f->getPoints();
-         auto v0 = p0->accelTranslational();
-         auto v1 = p1->accelTranslational();
-         auto v2 = p2->accelTranslational();
-         auto [t0, t1, X] = Nearest_(p->X, ToX(f));
-         return {v0 * t0 + v1 * t1 + v2 * (1 - t0 - t1), weight};
-      }
-   }
-   return {{0., 0., 0.}, 0.};
+Tddd accel_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_contact) {
+   if (contact_face_of_body->getNetwork()->isRigidBody)
+      return contact_face_of_body->getNetwork()->accelRigidBody(X_contact);
+   else if (contact_face_of_body->getNetwork()->isSoftBody) {
+      //! do not forget to set velocity of networkPoint before calling this function
+      auto [p0, p1, p2] = contact_face_of_body->getPoints();
+      auto [t0, t1, X] = Nearest_(X_contact, ToX(contact_face_of_body));
+      return p0->accelTranslational() * t0 + p1->accelTranslational() * t1 + p2->accelTranslational() * (1. - t0 - t1);
+   } else
+      return {0., 0., 0.};
 };
 
-Tddd uNeumann(const networkPoint *const p, const networkFace *const f_normal) { return std::get<0>(uNeumann_(p, f_normal)); };
-
-Tddd accelNeumann(const networkPoint *const p, const networkFace *const f_normal) { return std::get<0>(accelNeumann_(p, f_normal)); };
-
-Tddd uNeumann(const networkPoint *const p) {
+Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
    std::vector<Tddd> V;
-   std::vector<double> W;
    const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFacesNeumann()) {
-      auto [v, w] = uNeumann_(p, f_normal);
-      if (w > 1E-20) {
-         V.emplace_back(v);
-         W.emplace_back(w);
-      }
+   for (const auto &[_, contact_face_of_body_X] : p->getNearestContactFaces()) {
+      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      if (contact_face_of_body) V.emplace_back(propertyFunc(contact_face_of_body, X));
    }
    if (!V.empty()) {
-      // auto ret = optimumVector(V, init, W);
       auto ret = optimumVector(V, init);
-      if (isFinite(ret))
-         return ret;
+      if (isFinite(ret)) return ret;
    }
    return init;
 };
 
-Tddd accelNeumann(const networkPoint *const p) {
-   std::vector<Tddd> V;
-   std::vector<double> W;
-   const Tddd init = {0., 0., 0.};
-   for (const auto &f_normal : p->getFacesNeumann()) {
-      auto [v, w] = accelNeumann_(p, f_normal);
-      if (w > 1E-20) {
-         V.emplace_back(v);
-         W.emplace_back(w);
-      }
-   }
-   if (!V.empty()) {
-      // auto ret = optimumVector(V, init, W);
-      auto ret = optimumVector(V, init);
-      if (isFinite(ret))
-         return ret;
-   }
-   return init;
+Tddd uNeumann(const networkPoint *const p) { return propertyNeumann(p, velocity_of_Body); };
+Tddd accelNeumann(const networkPoint *const p) { return propertyNeumann(p, accel_of_Body); };
+
+Tddd propertyNeumann(const networkPoint *const p, const networkFace *const adjacent_f, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
+   auto [contact_face_of_body, X_contact] = p->getNearestContactFace_(adjacent_f);
+   return contact_face_of_body ? propertyFunc(contact_face_of_body, X_contact) : Tddd{0., 0., 0.};
 };
 
-Tddd uNeumann(const networkFace *const f_normal) {
-   auto [p0, p1, p2] = f_normal->getPoints();
-   return (uNeumann(p0, f_normal) + uNeumann(p1, f_normal) + uNeumann(p2, f_normal)) / 3.;
-};
-
-Tddd accelNeumann(const networkFace *const f_normal) {
-   auto [p0, p1, p2] = f_normal->getPoints();
-   return (accelNeumann(p0, f_normal) + accelNeumann(p1, f_normal) + accelNeumann(p2, f_normal)) / 3.;
-};
+Tddd uNeumann(const networkPoint *const p, const networkFace *const adjacent_f) { return propertyNeumann(p, adjacent_f, velocity_of_Body); };
+Tddd accelNeumann(const networkPoint *const p, const networkFace *const adjacent_f) { return propertyNeumann(p, adjacent_f, accel_of_Body); };
 
 //$ --------------------------------------------------------------- */
 
@@ -571,7 +547,9 @@ bool isNeumannID_BEM(const auto p, const auto f) {
       return false;
 };
 
-bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) { return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) {
+   return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF));
+};
 
 bool isDirichletID_BEM(const auto p, const auto f) {
    if (p->Dirichlet || p->CORNER)
@@ -580,7 +558,9 @@ bool isDirichletID_BEM(const auto p, const auto f) {
       return false;
 };
 
-bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) { return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) {
+   return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF));
+};
 
 std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
    /**
@@ -667,28 +647,28 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
 };
 
 // \label{BEM:phint_Neumann}
-double phint_Neumann(networkFace *F) {
-   auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
-   auto grad_phi = gradPhi(F);
-   auto U_body = uNeumann(F);
-   auto dndt = Cross(Omega, F->normal);
-   auto ret = Dot(dndt, U_body - grad_phi);
-   ret += Dot(F->normal, accelNeumann(F));
-   auto basis = OrthogonalBasis(F->normal);
-   ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
-   // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
-   return ret;
-};
+// double phint_Neumann(networkFace *F) {
+//    auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
+//    auto grad_phi = gradPhi(F);
+//    auto U_body = uNeumann(F);
+//    auto dndt = Cross(Omega, F->normal);
+//    auto ret = Dot(dndt, U_body - grad_phi);
+//    ret += Dot(F->normal, accelNeumann(F));
+//    auto basis = OrthogonalBasis(F->normal);
+//    ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+//    // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+//    return ret;
+// };
 
 double phint_Neumann(const networkPoint *const p, networkFace *F) {
    auto f = p->getNearestContactFace(F);
    if (f) {
       Tddd Omega = (f->getNetwork())->velocityRotational();
       auto grad_phi = gradPhi(F);
-      auto U_body = uNeumann(F);
+      auto U_body = uNeumann(p, F);
       auto dndt = Cross(Omega, F->normal);
       auto ret = Dot(dndt, U_body - grad_phi);
-      ret += Dot(F->normal, accelNeumann(F));
+      ret += Dot(F->normal, accelNeumann(p, F));
       auto basis = OrthogonalBasis(F->normal);
       ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
       // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));

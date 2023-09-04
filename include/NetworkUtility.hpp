@@ -5,30 +5,33 @@
 
 /* -------------------------------------------------------------------------- */
 
-void creteOBJ(std::ofstream &ofs, Network &net) {
-   std::map<netPp, int> P_i;
+void writeVertices(std::ofstream &ofs, std::map<networkPoint *, int> &P_i, const auto &points) {
    int i = 0;
-   for (const auto &p : net.getPoints()) {
+   for (const auto &p : points) {
       P_i[p] = ++i;
       auto [X0, X1, X2] = ToX(p);
-      ofs << "v "
-          << X0 << " "
-          << X1 << " "
-          << X2 << std::endl;
+      ofs << "v " << X0 << " " << X1 << " " << X2 << std::endl;
    }
    ofs << std::endl;
+}
 
-   for (const auto &f : net.getFaces()) {
+void writeFaces(std::ofstream &ofs, const std::map<networkPoint *, int> &P_i, const auto &faces) {
+   for (const auto &f : faces) {
       auto [p0, p1, p2] = f->getPoints();
-      ofs << "f "
-          << P_i[p0] << " "
-          << P_i[p1] << " "
-          << P_i[p2] << std::endl;
+      ofs << "f " << P_i.at(p0) << " " << P_i.at(p1) << " " << P_i.at(p2) << std::endl;
    }
-};
-// //% ------------------------------------------------------ */
-// //%                         反射点の計算                     */
-// //% ------------------------------------------------------ */
+}
+
+void createOBJ(std::ofstream &ofs, Network &net) {
+   std::map<networkPoint *, int> pointIndices;
+   writeVertices(ofs, pointIndices, net.getPoints());
+   writeFaces(ofs, pointIndices, net.getFaces());
+}
+
+//% ------------------------------------------------------ */
+//%                         反射点の計算                     */
+//% ------------------------------------------------------ */
+
 bool isInConvexPolygon(const networkPoint *const p) {
    try {
       auto ps = p->getNeighborsSort();  // ソートできない場合エラーとなる
@@ -45,7 +48,7 @@ bool isInConvexPolygon(const networkPoint *const p) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
-///////////////////////////////////////////////////////////
+
 bool isStraight(const V_d &v0, const V_d &v1, const double angle = 1E-2 /*閾値*/) {
    //        ^
    //      v1|angle (positive)
@@ -56,204 +59,32 @@ bool isStraight(const V_d &v0, const V_d &v1, const double angle = 1E-2 /*閾値
       return true;
    return false;
 };
-///////////////////////////////////////////////////////////
-bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double angle = 1E-2 /*閾値*/) {
-   return (isStraight(ToVector(ToX(p0) - ToX(p1)),
-                      ToVector(ToX(p1) - ToX(p2))) < angle);
-};
-///////////////////////////////////////////////////////////
-bool isFlat(const netPp p, double minangle = M_PI / 180.) {
-   if (p->getLines().empty()) {
-      // mk_vtu("./vtu/p->getLines().empty().vtu", {{p}});
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
-   }
 
-   std::vector<Tddd> normals;
-   for (const auto &f : p->getFaces())
-      normals.emplace_back(f->normal);
-   // 面の法線方向が作る内角が全て1E-2より小さい場合，flat
-   for (auto i = 0; i < normals.size(); i++)
-      for (auto j = i + 1; j < normals.size(); j++)
-         if (Dot(normals[i], normals[j]) < cos(minangle))
-            return false;  // not flat
+bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double angle = 1E-2 /*閾値*/) {
+   return (isStraight(ToVector(ToX(p0) - ToX(p1)), ToVector(ToX(p1) - ToX(p2))) < angle);
+};
+
+bool isFlat(const netPp p, double minangle = M_PI / 180.) {
+   if (p->getLines().empty())
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
+   auto faces = ToVector(p->getFaces());
+   for (auto i = 0; i < faces.size(); i++)
+      for (auto j = i; j < faces.size(); j++)
+         if (!isFlat(ToX(faces[i]), ToX(faces[j]), minangle))
+            return false;
    return true;
 };
-///////////
+
 bool isFlat(const netLp line, double minangle = M_PI / 180.) {
    auto fs = line->getFaces();
    if (fs.size() != 2)
       return false;
-   else if (Dot(fs[0]->normal, fs[1]->normal) < cos(minangle))  // dotはflatなら大きくなる
-      return false;
    else
-      return true;
-};
-///////////////////////////////////////////////////////////
-Tddd AreaWeightedSmoothingVector(const netPp p) {
-   if (!isEdgePoint(p)) {
-      Tddd ret = {0., 0., 0.}, p_next = ToX(p), V = {0., 0, 0.};
-      T3Tddd t3tdd;
-      double Wtot, W;
-      // auto lines = p->getLines();
-      /* ------------------------------------------- */
-      // auto update = [&]() {
-      //    Wtot = 0.;
-      //    V = {0., 0., 0.};
-      //    for (const auto &f : p->getFaces()) {
-      //       auto [p0, p1, p2] = f->getPoints(p);
-      //       F = {p_next, ToX(p1), ToX(p2)};
-      //       W = TriangleArea(F);
-      //       Wtot += W;
-      //       V += W * (Mean(F) - p_next);
-      //    }
-      //    V /= Wtot;
-      //    p_next += V / 2.;  // このp_nextの位置で引っ張られるかチェック
-      // };
-      //
-      auto update = [&]() {
-         Wtot = 0.;
-         V = {0., 0., 0.};
-         for (const auto &f : p->getFaces()) {
-            auto [p0, p1, p2] = f->getPoints(p);
-            t3tdd = {p_next, ToX(p1), ToX(p2)};
-            // W = TriangleArea(t3tdd) * std::pow(std::log(CircumArea(t3tdd) / InArea(t3tdd)), 2);
-            auto inarea = InArea(t3tdd);
-            auto carea = CircumArea(t3tdd);
-            auto W = TriangleArea(t3tdd);
-            //     W *= std::log10(carea / inarea);
-            // if (!isFinite(carea) || std::log10(carea / inarea) >= 10.)
-            //    W = TriangleArea(t3tdd) * 10.;
-            //
-            // auto r_i = Inradius(t3tdd);
-            // auto r_c = Circumradius(t3tdd);
-            // auto a = std::log(r_c / r_i);
-            // if (!isFinite(a, 1000.))
-            //    a = 1000.;
-            // auto W = TriangleArea(t3tdd) * a;
-            // auto V = Incenter(t3tdd) - p_next;
-            // auto b = r_i / Norm(V);
-            // if (!Between(b, {0., 1.}))
-            //    b = 1.;
-            // V += (1. - b) * V * W;
-            //
-            // W = TriangleArea(t3tdd) * std::pow(TriangleArea(t3tdd) / InArea(t3tdd), 2);
-            Wtot += W;
-            // V += W * (Incenter(t3tdd) - p_next);
-            // V += W * (Incenter(t3tdd) - p_next) - Inradius(t3tdd) * Normalize((Incenter(t3tdd) - p_next));
-            // V += W * (Circumcenter(t3tdd) - p_next) / 3.;
-            V += W * (Centroid(t3tdd) - p_next);
-         }
-         V /= Wtot;
-         p_next += V / 4.;  // このp_nextの位置で引っ張られるかチェック
-      };
-      /* -------------------------------------------- */
-      for (auto k = 0; k < 10; ++k) {
-         update();
-         /* ------------------------------------------------------ */
-         // Wtot = 0.;
-         // V = {0., 0., 0.};
-         // for (const auto &l : lines)
-         // {
-         // 	auto fs = l->getFaces();
-         // 	if (fs.size() > 1)
-         // 	{
-         // 		W = 1 + Norm(Cross(fs[0]->normal, fs[1]->normal));
-         // 		Wtot += W;
-         // 		V += W * ((*l)(p)->getXtuple() - p_next);
-         // 	}
-         // }
-         // V /= Wtot;
-         // p_next += V / 4.; //このp_nextの位置で引っ張られるかチェック
-      }
-      return p_next - ToX(p);
-   } else
-      return {0., 0., 0.};
-};
-//! -------------------------------------------------------------------------- */
-
-double magicalValue_(const networkPoint *p, const networkFace *f) {
-   // auto [p0, p1, p2] = f->getPoints(p);
-   auto nP012 = ToX(f->getPoints(p));
-   auto tmp = std::log10(Circumradius(nP012) / Inradius(nP012));
-   double max = 10;
-   if (tmp > max)
-      return max;
-   else
-      return tmp;
+      return isFlat(ToX(fs[0]), ToX(fs[1]), minangle);
 };
 
-double variance2_(const networkPoint *p, const networkFace *f) {
-   auto [p0, p1, p2] = f->getPoints(p);
-   double m = 0, l0, l1, l2;
-   m += (l0 = Norm(ToX(p0) - ToX(p1)));
-   m += (l1 = Norm(ToX(p1) - ToX(p2)));
-   m += (l2 = Norm(ToX(p2) - ToX(p0)));
-   m /= 3.;
-   auto ret = std::pow(l0 - m, 2) + std::pow(l1 - m, 2) + std::pow(l2 - m, 2);
-   return 10 * ret / (m * m);
-};
+/* -------------------------------------------------------------------------- */
 
-Tddd vectorTangentialShift_(const networkPoint *p, const double scale = 1.) {
-   Tddd vectorToCenter = {0., 0., 0.};
-   double s = 0;
-   Tddd pX = p->X;
-   double min_distance = 1E+10;
-   if (p->CORNER) {
-      for (const auto &l : p->getLinesCORNER()) {
-         vectorToCenter += ((*l)(p))->X - pX;
-         s += 1.;
-      }
-      vectorToCenter /= s;
-      return scale * vectorToCenter;
-   } else {
-      for (const auto &f : p->getFaces()) {
-         auto nP012 = ToX(f->getPoints(p));
-         auto [np0x, np1x, np2x] = nP012;
-         auto mean = (Norm(np1x - np0x) + Norm(np2x - np1x) + Norm(np0x - np2x)) / 3.;
-         auto l12 = Norm(np2x - np1x);
-         double a = magicalValue_(p, f) + variance2_(p, f);
-         if (std::ranges::any_of(f->getLines(), [&](const auto &l) { return l->CORNER; }))
-            a *= 4;
-         else if (std::ranges::any_of(f->getPoints(), [&](const auto &p) { return p->CORNER; }))
-            a *= 3;
-         else if (std::ranges::any_of(f->getPoints(),
-                                      [&](const auto &p) { return std::ranges::any_of(p->getFaces(),
-                                                                                      [&](const auto &F) { return std::ranges::any_of(F->getLines(), [&](const auto &l) { return l->CORNER; }); }); }))
-            a *= 2;
-         auto n = Normalize(Chop(np0x - np1x, np2x - np1x));
-         auto X = Norm(np2x - np1x) * n * sin(M_PI / 3.) + (np2x + np1x) / 2.;
-         vectorToCenter += a * (X - np0x);  //[m]
-         s += a;
-      }
-      vectorToCenter /= s;
-      return scale * vectorToCenter;
-   }
-   return vectorToCenter;
-};
-
-/* ------------------------------------------------------ */
-// void LaplacianSmoothing(netPp p) {
-//    try {
-//       if (!isEdgePoint(p) && isInConvexPolygon(p)) { /*端の点はsmoothingしない*/
-//          auto ps = p->getNeighbors();
-//          if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
-//             p->setX(Mean(extractX(ps)));
-//       }
-//    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
-//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//    };
-// };
-// void LaplacianSmoothing(const V_netPp &ps) {
-//    try {
-//       for (const auto &p : ps)
-//          LaplacianSmoothing(p);
-//    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
-//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//    };
-// };
-///////////////////////////////////////////////////////////
 Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
    auto faces = ToVector(p->getFaces());
    std::vector<std::tuple<Tddd, Tddd>> normals;
@@ -262,137 +93,147 @@ Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
       for (auto j = i; j < faces.size(); j++)
          if (!isFlat(faces[i]->normal, faces[j]->normal, 1E-2 * M_PI / 180.))
             normals.push_back({faces[i]->normal, faces[j]->normal});
-   //
-   // std::vector<std::tuple<Tddd, Tddd>> normals;
-   // for (const auto &f : p->getFaces())
-   // 	for (const auto &F : p->getFaces())
-   // 		if (!isFlat(f->normal, F->normal, 1E-2 * M_PI / 180.))
-   // 			normals.push_back({f->normal, F->normal});
-   Tddd c;
-   for (const auto &[N0, N1] : normals) {
-      c = Normalize(Cross(N0, N1));
-      VECTOR = Dot(VECTOR, c) * c;
-   }
+   for (const auto &[N0, N1] : normals)
+      VECTOR = Projection(VECTOR, Cross(N0, N1));
    return VECTOR;
 };
-/* ------------------------------------------------------ */
-void AreaWeightedSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
-   /*
-   AreaWeightedSmoothingVectorの設定に伴って移動が変わる
-   */
-   try {
-      if (!isEdgePoint(p)) {
-         auto ps = p->getNeighbors();
-         bool isflat = true;
-         auto V = AreaWeightedSmoothingVector(p);
-         Tddd N, N0, N1;
-         bool allflat = true;
-         bool isfiniteangles, isfiniteareas, isfinitenormal;
-         auto faces = ToVector(p->getFaces());
-         for (size_t i = 0; i < faces.size(); i++) {
-            auto [p0, p1, p2] = faces[i]->getPoints(p);
-            auto triangle = T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)};
-            N0 = TriangleNormal(triangle);
-            for (size_t j = i; j < faces.size(); j++) {
-               auto [p0, p1, p2] = faces[j]->getPoints(p);
-               auto triangle = T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)};
-               N1 = TriangleNormal(triangle);
-               if (!isFlat(N0, N1, 1E-2 * M_PI / 180.)) {
-                  allflat = false;
-                  break;
-               }
-            }
-         }
-         // もし面が全てフラットなら調べる必要はない
-         for (auto kk = 0; kk < 5; ++kk) {
-            if (ps.size() > 2) {
-               V = exact_along_surface(p, V);
-               for (const auto &f : faces) {
-                  auto [p0, p1, p2] = f->getPoints(p);
-                  auto triangle = T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)};
-                  isfiniteangles = isFinite(TriangleAngles(triangle));
-                  isfiniteareas = isFinite(TriangleArea(triangle));
-                  N = TriangleNormal(triangle);
-                  isfinitenormal = isFinite(N);
-                  if (allflat) {
-                     // 全てフラットなので，反転しなければいい．
-                     if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, M_PI / 180.)) {
-                        isflat = false;
-                        break;
-                     }
-                  } else {
-                     if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, lim_rad)) {
-                        isflat = false;
-                        break;
-                     }
-                  }
-               }
-               if (isflat) {
-                  p->setX(ToX(p) + V);
-                  return;
-               }
-            }
-            V /= 20.;
-         }
+
+bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
+   auto faces = p->getFaces();
+   for (auto i = 0; i < faces.size(); i++)
+      for (auto j = i; j < faces.size(); j++)
+         if (!isFlat(faces[i]->normal, faces[j]->normal, lim_rad))
+            return false;
+   return true;
+};
+
+/* -------------------------------------------------------------------------- */
+
+Tddd DistorsionMeasureWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X;
+      double Wtot = 0, W;
+      for (const auto &f : p->getFaces()) {
+         auto t3tdd = ToX(f->getPoints(p));
+         auto [X0, X1, X2] = t3tdd;
+         // W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
+         W = std::log10(CircumradiusToInradius(t3tdd) - 1.);
+         X = Norm(X2 - X1) * sin(M_PI / 3.) * Normalize(Chop(X0 - X1, X2 - X1)) + (X2 + X1) / 2.;
+         V += W * X;
       }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
+      return V / Wtot - p->X;
+   } else
+      return {0., 0., 0.};
 };
-void AreaWeightedSmoothingPreserveShape(const V_netPp &ps /*copy*/, const double lim_rad = 1E-10) {
-   for (const auto &p : ps)
-      AreaWeightedSmoothingPreserveShape(p, lim_rad);
+
+Tddd AreaWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd X, V = {0., 0, 0.};
+      double Wtot = 0, W;
+      for (const auto &f : p->getFaces()) {
+         auto t3tdd = ToX(f->getPoints());
+         W = TriangleArea(t3tdd);
+         Wtot += W;
+         X = Centroid(t3tdd);
+         V += W * X;
+      }
+      return V / Wtot - p->X;
+   } else
+      return {0., 0., 0.};
 };
-void AreaWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps /*copy*/, const double lim_rad = 1E-10) {
-   for (const auto &p : ps)
-      AreaWeightedSmoothingPreserveShape(p, lim_rad);
+
+Tddd ArithmeticWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd X, V = {0., 0, 0.};
+      double Wtot = 0, W;
+      for (const auto &q : p->getNeighbors())
+         V += q->X;
+      return V / p->getNeighbors().size() - p->X;
+   } else
+      return {0., 0., 0.};
 };
-/* ------------------------------------------------------ */
-void LaplacianSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
+
+// Tddd ArithmeticWeightedSmoothingVector(const netPp p) {
+//    if (!isEdgePoint(p)) {
+//       Tddd X, V = {0., 0, 0.};
+//       double Wtot = 0, W;
+//       for (const auto &f : p->getFaces()) {
+//          auto t3tdd = ToX(f->getPoints());
+//          W = 1.;
+//          Wtot += W;
+//          // X = Incenter(t3tdd);
+//          X = Centroid(t3tdd);
+//          V += W * X;
+//       }
+//       return V / Wtot - p->X;
+//    } else
+//       return {0., 0., 0.};
+// };
+
+/*DOC_EXTRACT smoothing_vector
+
+### 格子の平滑化
+
+境界面を格子を綺麗な状態に整えるために，境界面の点を移動させる．
+移動方法は，様々考えられる．
+
+| 移動方法 | 説明 |
+|:-------|:---------|
+| Laplacian smoothing                     | 境界面の点をその点の近傍の点の重心に移動させる．          |
+| Area weighted smoothing                 | 隣接面の面積の重みを掛けて，面の中心に移動させる．        |
+| Distorsion measure weighted smoothing   | 隣接面の歪みに関する係数を重みとして掛けて，面の中心に移動させる．|
+
+共通点は，許されない移動を防止する移動前に，移動後の形状をチェックすることである．
+`canFlip`と同様，\ref{isValidTriangle}{`isValidTriangle`}を用いる．
+
+*/
+
+void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &SmoothingVector) {
    try {
       if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
          auto ps = p->getNeighbors();
-         bool isflat = true;
-         bool allflat = true;
-         Tddd N;
-         for (const auto &f : p->getFaces())
-            for (const auto &F : p->getFaces())
-               if (!isFlat(f->normal, F->normal, 1E-2 * M_PI / 180.)) {
-                  allflat = false;
-                  break;
-               }
+         // 無視できる角度
+         const double negligible_angle = 1E-2 * M_PI / 180.;
+         const bool negligibly_flat = isFlat(p, negligible_angle);
+         const double acceptable_change_angle = 1E-5 * M_PI / 180.;
+         //
+         Tddd X0, X1, X2;
+         T3Tddd vertices;
+         auto checkIfNextIsFlat = [&](const Tddd &V) {
+            for (const auto &f : p->getFaces()) {
+               auto [p0, p1, p2] = f->getPoints();
+               X0 = p0->X;
+               X1 = p1->X;
+               X2 = p2->X;
+               if (p0 == p) X0 += V;
+               if (p1 == p) X1 += V;
+               if (p2 == p) X2 += V;
+               vertices = {X0, X1, X2};
+               if (!isValidTriangle(vertices, M_PI / 180.))
+                  return false;
+               //
+               // 次の面が平面でない場合，次の面の法線方向に移動すると，面の法線方向が変わってしまう．
+               if (!isFlat(Cross(p1->X - p0->X, p2->X - p0->X), Cross(X1 - X0, X2 - X0), negligibly_flat ? negligible_angle : acceptable_change_angle))
+                  return false;
+               // if (!isFlat(Cross(p2->X - p1->X, p0->X - p1->X), Cross(X2 - X1, X0 - X1), acceptable_change_angle))
+               //    return false;
+               // if (!isFlat(Cross(p0->X - p2->X, p1->X - p2->X), Cross(X0 - X2, X1 - X2), acceptable_change_angle))
+               //    return false;
+            }
+            return true;
+         };
+
          if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
          {
-            Tddd V = Mean(extractXtuple(ps)) - ToX(p);
-            V = exact_along_surface(p, V);
-
-            for (const auto &f : p->getFaces()) {
-               auto [p0, p1, p2] = f->getPoints(p);
-               bool isfiniteangles = isFinite(TriangleAngles(T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)}));
-               bool isfiniteareas = isFinite(TriangleArea(T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)}));
-               bool isfinitenormal = isFinite(TriangleNormal(T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)}));
-               // if (!isfiniteangles || !isfiniteareas || !isfinitenormal)
-               // {
-               // 	isflat = false;
-               // 	break;
-               // }
-               N = TriangleNormal(T3Tddd{ToX(p0) + V, ToX(p1), ToX(p2)});
-               if (allflat) {
-                  // 全てフラットなので，反転しなければいい．
-                  if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, M_PI / 180.)) {
-                     isflat = false;
-                     break;
-                  }
-               } else {
-                  if (!isfiniteangles || !isfiniteareas || !isfinitenormal || !isFlat(N, f->normal, lim_rad)) {
-                     isflat = false;
-                     break;
-                  }
-               }
+            // Tddd V = exact_along_surface(p, Mean(extractXtuple(ps)) - ToX(p));
+            Tddd V = exact_along_surface(p, SmoothingVector(p));
+            for (auto i = 0; i < 10; ++i) {
+               if (checkIfNextIsFlat(V)) {
+                  p->setX(p->X + V);
+                  return;
+               } else
+                  V /= 2.;
             }
-            if (isflat)
-               p->setX(ToX(p) + V);
          }
       }
    } catch (std::exception &e) {
@@ -400,13 +241,36 @@ void LaplacianSmoothingPreserveShape(netPp p, const double lim_rad = 1E-10) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
-void LaplacianSmoothingPreserveShape(const V_netPp &ps /*copy*/, const double lim_rad = 1E-10) {
-   for (const auto &p : ps)
-      LaplacianSmoothingPreserveShape(p, lim_rad);
+
+/* ------------------------------------------------------ */
+
+void DistorsionMeasureWeightedSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
 };
-void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps /*copy*/, const double lim_rad = 1E-10) {
-   for (const auto &p : ps)
-      LaplacianSmoothingPreserveShape(p, lim_rad);
+void DistorsionMeasureWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
+};
+
+/* ------------------------------------------------------ */
+
+void AreaWeightedSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
+};
+void AreaWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
+};
+/* ------------------------------------------------------ */
+void LaplacianSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
+};
+void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
+   for (auto i = 0; i < times; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
 };
 /* ------------------------------------------------------ */
 
@@ -603,7 +467,9 @@ void LaplacianSmoothingIfOnStraightLine(V_netPp ps) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
-double Distance(const Tddd &A, const Tddd &B) { return Norm(A - B); };
+double Distance(const Tddd &A, const Tddd &B) {
+   return Norm(A - B);
+};
 
 double Distance(const Tddd &X, const networkPoint *const p) {
    return Norm(ToX(p) - X);
@@ -717,7 +583,7 @@ void Merge(const std::unordered_set<networkLine *> &uo_lines, const std::functio
    // }
 };
 
-void Divide(const std::unordered_set<networkLine *> &uo_lines, const std::function<bool(const networkLine *)> &func) {
+void Divide(std::unordered_set<networkLine *> uo_lines, const std::function<bool(const networkLine *)> &func) {
    for (const auto &l : uo_lines)
       if (func(l)) {
          l->divide();
@@ -1045,7 +911,9 @@ std::vector<Tddd> fullparticlize(networkFace const *f, const double dx) {
 
 // b% -------------- networkFaceを使ったparticlize ------------- */
 
-std::vector<std::tuple<Tddd, Tdd>> particlize(const networkFace *const f, const double dx) { return particlize(f->getXVertices(), dx); };
+std::vector<std::tuple<Tddd, Tdd>> particlize(const networkFace *const f, const double dx) {
+   return particlize(f->getXVertices(), dx);
+};
 std::vector<std::tuple<Tddd, Tdd>> particlize(const V_netFp &faces, const double dx) {
    std::vector<std::tuple<Tddd, Tdd>> ret, tmp;
    for (const auto &f : faces) {
