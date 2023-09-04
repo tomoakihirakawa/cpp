@@ -163,11 +163,35 @@ def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tupl
     return labels
 
 
+import os
+import re
+from typing import Dict
+
+INSERT_PATTERN = re.compile(r'\\insert\{(.*?)\}')
+
+def read_file_content(filename: str) -> str:
+    try:
+        with open(filename, 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        return f"<!-- File {filename} not found -->"
+
 def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str:
     """
-    Replaces \insert{keyword} in the content with its corresponding replacement if exists
+    Replaces \insert{keyword} in the content with its corresponding replacement if exists.
+    If the keyword is a filename, it replaces \insert{filename} with the contents of the file.
     """
-    return INSERT_PATTERN.sub(lambda m: replacements.get(m.group(1), m.group()), content)
+    def replace_function(m):
+        key = m.group(1)
+        
+        # Check if the key is a filename
+        if os.path.isfile(key):
+            return read_file_content(key)
+        
+        # Otherwise, treat it as a specified key
+        return replacements.get(key, f"<!-- Key {key} not found -->")
+        
+    return INSERT_PATTERN.sub(replace_function, content)
 
 
 keywords_order = {}

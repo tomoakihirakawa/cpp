@@ -166,8 +166,9 @@ struct InterpolationLagrange {
    std::vector<T> values;
    std::vector<double> denominotor;
 
-   InterpolationLagrange(const std::vector<double> abscissas)
-       : abscissas(abscissas){};
+   InterpolationLagrange(){};
+
+   InterpolationLagrange(const std::vector<double> abscissas) : abscissas(abscissas){};
 
    InterpolationLagrange(const std::vector<double> abscissas, const std::vector<T> values)
        : abscissas(abscissas), values(values) {
@@ -175,6 +176,23 @@ struct InterpolationLagrange {
          throw std::invalid_argument("Size of abscissas and values vectors must be the same");
       }
       this->set();
+   };
+
+   void pop() {
+      abscissas.erase(abscissas.begin());
+      values.erase(values.begin());
+      this->set();
+   };
+
+   void push(const double abscissa, const T value) {
+      abscissas.push_back(abscissa);
+      values.push_back(value);
+      this->set();
+   };
+
+   // size
+   int size() const {
+      return abscissas.size();
    };
 
    void set() {
@@ -186,7 +204,8 @@ struct InterpolationLagrange {
    };
 
    T operator()(const double x) {
-      T ret, N = 1;
+      T ret;
+      double N = 1;
       ret *= 0.;
       for (auto i = 0; i < abscissas.size(); ++i) {
          for (auto j = 0; j < abscissas.size(); ++j) {

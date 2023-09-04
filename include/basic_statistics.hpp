@@ -53,8 +53,6 @@ struct Histogram {
              |     |     |<-- intervals
    w = bin_width = (max - min)/s
 
-
-
    i-th bin contains values between the range [min+w*i, min+w*(i+1)]
    or
    bin[(int)((value-min)/w)]
@@ -82,11 +80,9 @@ struct Histogram {
       int n;
       for (const auto &d : this->data) {
          n = (int)((d - min_data) / this->bin_width);
-         if (n == bins.size())
-            n -= 1;
+         if (n == bins.size()) n -= 1;
          this->bins[n].emplace_back(d);
       }
-
       this->diff.resize(this->bins.size() - 1, 0);
       for (auto i = 0; i < this->bins.size() - 1; i++)
          this->diff[i] = this->bins[i + 1].size() - this->bins[i].size();

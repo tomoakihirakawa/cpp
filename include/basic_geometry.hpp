@@ -311,6 +311,10 @@ bool isInside(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
            !isInside({X1, Y1, Z1}, Xcenter, r));
 };
 /* -------------------------------------------------------------------------- */
+// triangle distorsion measure
+double CircumradiusToInradius(const T3Tddd &X012) { return Circumradius(X012) / Inradius(X012); };
+
+/* -------------------------------------------------------------------------- */
 /*
 M. Meyer, M. Desbrun, P. Schröder, and A. H. Barr, “Discrete
 Differential-Geometry Operators for Triangulated 2-Manifolds BT  - Visualization

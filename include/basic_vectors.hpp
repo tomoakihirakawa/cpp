@@ -1232,11 +1232,9 @@ double Norm3d(const V_d &vec) {
    return std::sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-T Abs(const V_d &vec) {
-   T tmp(0);
-   for (size_t i = 0; i < vec.size(); i++)
-      tmp += vec[i] * vec[i];
-   return sqrt(tmp);
+std::vector<T> Abs(std::vector<T> vec) {
+   for (auto &v : vec) v = std::abs(v);
+   return vec;
 };
 /* ------------------------------------------------------ */
 // template <typename T>
@@ -1530,7 +1528,15 @@ double Norm(const Quaternion &A) {
 };
 /* ------------------------------------------------------ */
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
-double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::acos(Dot(V1, V2) / (Norm(V1) * Norm(V2))); };
+double VectorAngle(const Tddd &a, const Tddd &b) {
+   // return std::acos(Dot(a, b) / (Norm(a) * Norm(b)));
+   // return std::atan2(Norm(Cross(a, b)), Dot(a, b));
+
+   double na = Norm(a);
+   double nb = Norm(b);
+   // if (Norm(nb * a + na * b) == 0.)
+   return 2. * std::atan2(Norm(nb * a - na * b), Norm(nb * a + na * b));
+};
 double VectorAngle(const Tddd &X1, const Tddd &X2, const Tddd &axis) {
    // r = RotationMatrix[VectorAngle[A, {1, 0, 0}] * If[Dot[cross, axis] >= 0, 1, -1], axis];
    return VectorAngle(X1, X2) * (Dot(Cross(X1, X2), axis) >= 0. ? 1. : -1.);
@@ -1720,10 +1726,22 @@ Tddd TetrahedronCircumCenter(const T4Tddd &abcd) {
 
 Tddd TriangleAngles(const T3Tddd &abc) {
    auto [a, b, c] = abc;
-   return {VectorAngle(b - a, c - a),
-           VectorAngle(c - b, a - b),
-           VectorAngle(a - c, b - c)};
-};
+   double A0 = VectorAngle(b - a, c - a);
+   double A1 = VectorAngle(c - b, a - b);
+   double A2 = VectorAngle(a - c, b - c);
+
+   // double sumOfAngles = A0 + A1 + A2;
+   // Ensure numerical stability
+   // const double epsilon = 1E-10;
+   // if (std::abs(sumOfAngles - M_PI) > epsilon) {
+   //    std::stringstream ss;
+   //    ss << "Sum of angles is not pi: " << A0 / M_PI << " " << A1 / M_PI << " " << A2 / M_PI << " " << sumOfAngles / M_PI << std::endl;
+   //    ss << "TriangleArea:" << TriangleArea(abc) << std::endl;
+   //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Sum of angles is not pi: " + ss.str());
+   // }
+
+   return {A0, A1, A2};
+}
 
 Tddd TriangleNormal(const Tddd &a, const Tddd &b, const Tddd &c) {
    return Normalize(Cross((b - a), (c - a)));
@@ -1733,9 +1751,56 @@ Tddd TriangleNormal(const T3Tddd &abc) {
    return Normalize(Cross((b - a), (c - a)));
 };
 
-bool isFlat(const Tddd &a, const Tddd &b, const double lim_rad) {
-   return Dot(Normalize(a), Normalize(b)) > cos(lim_rad);  // if this satisfied which means falt
+// \label{isValidTriangle}
+bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = 10. * M_PI / 180.) {
+   if (TriangleArea(tri) == 0.)
+      return false;
+   if (!isFinite(TriangleAngles(tri)))
+      return false;
+   if (std::ranges::any_of(TriangleAngles(tri), [&](const auto &a) { return a < accuracy_limit_angle; }))
+      return false;
+   return true;
 };
+
+bool isFlat(const Tddd &a, const Tddd &b, const double lim_rad) {
+   return Dot(a, b) > cos(lim_rad) * Norm(a) * Norm(b);
+};
+
+bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
+   auto [X0, X1, X2] = tri;
+   return isFlat(a, Cross(X1 - X0, X2 - X0), lim_rad);
+};
+
+bool isFlat(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFlat(a, tri, lim_rad); };
+
+bool isFlat(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
+   auto [X0, X1, X2] = tri0;
+   auto [A0, A1, A2] = tri1;
+   return isFlat(Cross(X1 - X0, X2 - X0), Cross(A1 - A0, A2 - A0), lim_rad);
+};
+
+bool isFlat_(const Tddd &a, const Tddd &b, const double lim_rad) { return isFlat(a, b, lim_rad); };
+
+/* -------------------------------------------------------------------------- */
+
+bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
+   return Dot(a, -b) > cos(lim_rad) * Norm(a) * Norm(b);
+};
+
+bool isFacing(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
+   auto [X0, X1, X2] = tri;
+   return isFacing(a, Cross(X1 - X0, X2 - X0), lim_rad);
+};
+
+bool isFacing(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFacing(a, tri, lim_rad); };
+
+bool isFacing(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
+   auto [X0, X1, X2] = tri0;
+   auto [A0, A1, A2] = tri1;
+   return isFacing(Cross(X1 - X0, X2 - X0), Cross(A1 - A0, A2 - A0), lim_rad);
+};
+
+/* -------------------------------------------------------------------------- */
 
 // // 多角形の頂点における隣り合う辺が作る面積を計算する．法線と逆の場合はマイナス．範囲は[pi,-pi]
 // V_d DirectedArea(const VV_d &abcd,

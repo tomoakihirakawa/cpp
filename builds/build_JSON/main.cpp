@@ -3,6 +3,14 @@
 #include <string>
 #include "basic.hpp"
 
+/*DOC_EXTRACT JSON
+
+# JSONクラス
+
+\insert{basic::JSON}
+
+*/
+
 int main() {
    // sample.jsonを文字として読み込み表示
    {
@@ -74,17 +82,10 @@ int main() {
 
    /* ------------------------------------------------------ */
 
-   {
-      // 内容表示方法
-      std::cout << "内容表示方法" << std::endl;
-      JSON json(std::ifstream("./sample.json"));
-      for (auto &[key, value] : json())
-         std::cout << key << ", " << value << std::endl;
-   }
-   {
-      std::cout << "内容表示方法" << std::endl;
-      JSON json(std::ifstream("../build_bem/input_files/Kramer2021_0d03/setting.json"));
-      for (auto &[key, value] : json())
-         std::cout << key << ", " << value << std::endl;
-   }
+   // 内容表示方法
+   std::cout << "内容表示方法" << std::endl;
+   JSON json(std::ifstream("./output.json"));
+   std::cout << ToString(json) << std::endl;
+   // for (auto &[key, value] : json())
+   //    std::cout << key << ", " << value << std::endl;
 }

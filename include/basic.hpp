@@ -2060,10 +2060,89 @@ std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str
 
 /* ------------------------------------------------------ */
 
+/*DOC_EXTRACT basic::JSON
+
+## C++でのJSON操作に関する実装と使用方法
+
+### 前提条件
+
+このドキュメントでは、`basic.hpp` と呼ばれる基本的なヘッダーファイルが含まれていると仮定します。また、サンプルのJSONデータが `./sample.json` に格納されていると仮定します。
+
+### JSONクラス
+
+この実装には、`JSON`という名前のC++クラスがあります。このクラスは、内部的に`std::map<std::string, std::vector<std::string>>`を持っており、JSONオブジェクトのデータを保存します。
+
+#### コンストラクタ
+
+このクラスにはいくつかのコンストラクタがあります:
+
+1. ファイル名を引数として取る
+   ```cpp
+   JSON json("./sample.json");
+   ```
+2. `std::ifstream` オブジェクトを引数として取る
+   ```cpp
+   JSON json(std::ifstream("./sample.json"));
+   ```
+
+#### 操作
+
+- キーを用いた値の取得
+   ```cpp
+   std::cout << json["translate"] << std::endl;
+   ```
+- キーを用いた値の設定
+   ```cpp
+   json["price"] = {"10."};
+   ```
+
+### 使用例
+
+以下は、このクラスの簡単な使用例です。
+
+```cpp
+{
+   std::cout << magenta << "1. ファイル名でJSONをコンストラクト" << colorOff << std::endl;
+   JSON json("./sample.json");
+   std::cout << json["translate"] << std::endl;
+}
+```
+
+```cpp
+{
+   std::cout << red << "2. ifstreamでJSONをコンストラクト" << colorOff << std::endl;
+   JSON json(std::ifstream("./sample.json"));
+   json["price"] = {"10."};
+}
+```
+
+### ファイル出力
+
+JSONオブジェクトをファイルに出力するには、`operator<<`を使用します。
+
+```cpp
+std::ofstream os("./output.json");
+os << json;
+os.close();
+```
+
+### その他の機能
+
+- `find` メソッドを使い、キーが存在するかどうかを調べることができます。
+- `contains` メソッドも同様の機能を提供します。
+
+### 注意点
+
+1. キーが存在しない場合は、例外がスローされます。
+2. 数値や真偽値は、`stod`や`stob`のような関数を使って変換する必要があります。
+
+このドキュメントはC++でのJSON操作の基本的な概要を簡単に説明したものです。実際の使用ケースや要件に応じて、コードは適宜調整してください。
+*/
+
 struct JSON {
    std::map<std::string, std::vector<std::string>> map_S_S;
-   std::vector<std::string> emp = {};
-   JSON(const std::string &str_IN) : map_S_S() {
+
+   explicit JSON(const std::string &str_IN) : map_S_S() {
       std::ifstream istrm(str_IN);
       if (!istrm.is_open())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not open " + str_IN);
@@ -2075,12 +2154,7 @@ struct JSON {
       istrm.close();
    };
 
-   JSON(){};
-   JSON &operator=(const JSON &other) {
-      this->map_S_S = other.map_S_S;
-      return *this;
-   };
-   JSON(const std::ifstream &istrm) : map_S_S() {
+   explicit JSON(const std::ifstream &istrm) : map_S_S() {
       if (!istrm.is_open())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not open");
       else {
@@ -2090,35 +2164,23 @@ struct JSON {
       }
    };
 
-   // 以下を有効にすると，stringからJSONへの変換が有効になるため，stringに対する演算子<<が曖昧になってしまう．
-   // JSON(const std::string &filename) : map_S_S() {
-   //    std::ifstream istrm(filename);
-   //    if (!istrm.is_open())
-   //       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not open");
-   //    else {
-   //       std::stringstream ss;
-   //       ss << istrm.rdbuf();
-   //       map_S_S = parseJSON(ss.str());
-   //    }
-   // };
+   JSON() = default;
 
-   std::map<std::string, std::vector<std::string>> operator()() const {
-      return this->map_S_S;
+   JSON &operator=(const JSON &other) {
+      this->map_S_S = other.map_S_S;
+      return *this;
    };
+
+   std::map<std::string, std::vector<std::string>> operator()() const { return this->map_S_S; };
 
    std::vector<std::string> &operator[](const std::string &key) /*変更を許す*/
    {
-      auto it = this->map_S_S.find(key);
-      if (it != this->map_S_S.end())
-         return it->second;
-      else
-         return emp;
-      // return this->map_S_S[key];
+      return this->map_S_S[key];
    };
 
    std::vector<std::string> at(const std::string &key) const /*変更を許さない*/
    {
-      if (!this->find(key)) {
+      if (!this->map_S_S.contains(key)) {
          std::stringstream ss;
          ss << key << " key not found" << std::endl;
          ss << "keys: ";
@@ -2129,56 +2191,32 @@ struct JSON {
          return this->map_S_S.at(key);
    };
 
+   bool find(const std::string &key, const std::function<void(const std::vector<std::string> &)> &func) {
+      auto it = this->map_S_S.find(key);
+      if (it != this->map_S_S.end()) {
+         func(it->second);
+         return true;
+      } else
+         return false;
+   }
+   std::vector<bool> find(const std::vector<std::string> &key) const {
+      std::vector<bool> ret(key.size());
+      for (auto i = 0; i < key.size(); i++)
+         ret[i] = this->find(key[i]);
+      return ret;
+   };
    bool find(const std::string &key) const { return this->map_S_S.contains(key); };
-   bool contains(const std::string &key) const { return this->map_S_S.contains(key); };
 
-   // std::vector<std::string> operator[](const std::string &key) const
-   // {
-   // 	if (this->map_S_S.find(key) != this->map_S_S.end())
-   // 		return this->map_S_S.at(key);
-   // 	else
-   // 		return {};
-   // };
+   bool contains(const std::string &key) const { return this->map_S_S.contains(key); };
 };
 
 /* ------------------------------------------------------ */
-
-// std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
-//    stream << "{\n";
-//    auto count = 0;
-//    for (const auto &[key, v] : json.map_S_S) {
-//       count++;
-//       if (v.size() == 1) {
-//          stream << "    "
-//                 << "\"" << key << "\":"
-//                 << " "
-//                 << "\"" << v[0] << "\"";
-//       } else {
-//          stream << "    "
-//                 << "\"" << key << "\":"
-//                 << " "
-//                 << "[";
-//          for (auto i = 0; i < v.size(); i++) {
-//             stream << "\"" << v[i] << "\"";
-//             if (i != v.size() - 1)
-//                stream << ",";
-//          }
-//          stream << "]";
-//       }
-//       if (json.map_S_S.size() != count)
-//          stream << ",\n";
-//       else
-//          stream << "\n";
-//    }
-//    stream << "}";
-//    return stream;
-// };
-
 std::string ToString(const JSON &json) {
+   auto map_S_S = json.map_S_S;
    std::stringstream stream;
    stream << "{\n";
    auto count = 0;
-   for (const auto &[key, v] : json.map_S_S) {
+   for (const auto &[key, v] : map_S_S) {
       count++;
       if (v.size() == 1) {
          stream << "    "
@@ -2197,75 +2235,59 @@ std::string ToString(const JSON &json) {
          }
          stream << "]";
       }
-      if (json.map_S_S.size() != count)
-         stream << ",\n";
-      else
-         stream << "\n";
+      if (map_S_S.size() != count)
+         stream << ",";
+      stream << "\n";
    }
    stream << "}";
    return stream.str();
 }
 
+std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
+   stream << ToString(json);
+   return stream;
+};
+
 /* ------------------------------------------------------ */
+
+using JsonValue = std::variant<double, int, std::string, T6d, Tddd>;
+using JsonVector = std::vector<JsonValue>;
+
 struct JSONoutput {
-   std::map<std::string, std::vector<T6d>> map_S_T6d;
-   std::map<std::string, std::vector<Tddd>> map_S_Tddd;
-   std::map<std::string, std::vector<double>> map_S_D;
-   std::map<std::string, std::vector<int>> map_S_I;
-   std::map<std::string, std::vector<std::string>> map_S_S;
-   JSONoutput(){};
+   std::map<std::string, JsonVector> map;
 
-   const double notfinite = 1E+30;
-   const Tddd notfinite_tddd = {notfinite, notfinite, notfinite};
-   const T6d notfinite_t6d = {notfinite, notfinite, notfinite, notfinite, notfinite, notfinite};
-
-   void push(const std::string &s, const T6d &d) {
-      map_S_T6d[s].emplace_back(isFinite(d) ? d : notfinite_t6d);
-   }
-
-   void push(const std::string &s, const Tddd &d) {
-      map_S_Tddd[s].emplace_back(isFinite(d) ? d : notfinite_tddd);
-   }
-
-   void push(const std::string &s, double d) {
-      map_S_D[s].emplace_back(isFinite(d) ? d : notfinite);
-   }
-
-   void push(const std::string &s, int I) {
-      map_S_I[s].emplace_back(I);
-   }
-
-   void push(const std::string &s, const std::string &S) {
-      map_S_S[s].emplace_back(S);
+   void push(const std::string &key, const JsonValue &value) {
+      map[key].emplace_back(value);
    }
 
    void output(std::ofstream &os) {
       os << "{\n";
-      for (const auto &[key, V] : map_S_T6d) {
-         os << "\"" << key << "\":[";
-         for (size_t j = 0; j < V.size(); ++j) {
-            auto [V0, V1, V2, V3, V4, V5] = V[j];
-            os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << ", " << V3 << ", " << V4 << ", " << V5 << "]" << (j != V.size() - 1 ? ",\n" : "],\n");
+      for (const auto &[key, values] : map) {
+         os << "    \"" << key << "\": [";
+         for (size_t i = 0; i < values.size(); ++i) {
+            std::visit([&os](auto &&arg) {
+               using T = std::decay_t<decltype(arg)>;
+               if constexpr (std::is_same_v<T, double> || std::is_same_v<T, int>) {
+                  os << arg;
+               } else if constexpr (std::is_same_v<T, std::string>) {
+                  os << "\"" << arg << "\"";
+               } else if constexpr (std::is_same_v<T, T6d> || std::is_same_v<T, Tddd>) {
+                  os << "[";
+                  for (size_t j = 0; j < arg.size(); ++j) {
+                     os << arg[j];
+                     if (j < arg.size() - 1) os << ", ";
+                  }
+                  os << "]";
+               }
+            },
+                       values[i]);
+
+            if (i < values.size() - 1) {
+               os << ", ";
+            }
          }
-      }
-      for (const auto &[key, V] : map_S_Tddd) {
-         os << "\"" << key << "\":[";
-         for (size_t j = 0; j < V.size(); ++j) {
-            auto [V0, V1, V2] = V[j];
-            os << "[" << std::setprecision(15) << V0 << ", " << V1 << ", " << V2 << "]" << (j != V.size() - 1 ? ",\n" : "],\n");
-         }
-      }
-      for (const auto &[key, V] : map_S_D) {
-         os << "\"" << key << "\":[";
-         for (size_t j = 0; j < V.size(); ++j)
-            os << std::setprecision(15) << V[j] << (j != V.size() - 1 ? "," : "]");
-         os << ((&key != &map_S_D.rbegin()->first) ? ",\n" : "\n");
-      }
-      for (const auto &[key, V] : map_S_I) {
-         os << "\"" << key << "\":[";
-         for (size_t j = 0; j < V.size(); ++j)
-            os << V[j] << (j != V.size() - 1 ? "," : "]");
-         os << ((&key != &map_S_I.rbegin()->first) ? ",\n" : "\n");
+         os << "]";
+         os << ((&key != &std::prev(map.end())->first) ? ",\n" : "\n");
       }
       os << "}\n";
    }

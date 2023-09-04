@@ -1,8 +1,8 @@
 {
-    "max_dt": 0.02,
-    "end_time_step": 1000,
-    "end_time": 25,
-    "output_directory": "/Users/tomoaki/BEM/Hadzic2005_",
+    "max_dt": 0.01,
+    "end_time_step": 10000,
+    "end_time": 9,
+    "output_directory": "/Users/tomoaki/BEM/Hadzic2005",
     "input_files": [
         "tank.json",
         "wavemaker.json",

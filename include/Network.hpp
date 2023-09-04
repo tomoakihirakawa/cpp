@@ -195,7 +195,7 @@ class networkLine : public CoordinateBounds {
    };
    //---------------------------------
    netPp divide(const Tddd &midX = {1E+80, 1E+80, 1E+80});
-   bool canflip(const double) const;
+   bool canFlip(const double) const;
    bool flip();
    bool flipIfIllegal();
    bool flipIfBetter(const double min_degree_to_flat = M_PI / 180.,
@@ -205,7 +205,7 @@ class networkLine : public CoordinateBounds {
                                   const double min_degree_of_face = M_PI / 180,
                                   const int s_meanIN = 6);
    void divideIfIllegal();
-   bool isFlat(const double) const;
+   bool isAdjacentFacesFlat(const double) const;
    bool islegal() const;
    bool isGoodForQuadInterp() const {
       if (this->CORNER)
@@ -215,7 +215,7 @@ class networkLine : public CoordinateBounds {
    bool isGoodForQuadInterp_Geo() const {
       // 線の中心位置を決めるために，線が２次補間で近似できるか，
       // 周辺の三角形の状況から判断する
-      if (this->Neumann && !this->isFlat(M_PI / 3.))
+      if (this->Neumann && !this->isAdjacentFacesFlat(M_PI / 3.))
          return false;
       if (this->CORNER)
          return false;
@@ -865,7 +865,9 @@ class networkPoint : public CoordinateBounds, public CSR {
    */
 
    const std::unordered_set<networkFace *> &getContactFaces() const { return this->ContactFaces; };
-   const std::tuple<networkFace *, Tddd> getNearestContactFace() const { return this->nearestContactFace; };
+   const std::tuple<networkFace *, Tddd> &getNearestContactFace() const { return this->nearestContactFace; };
+   const std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> &getNearestContactFaces() const { return this->f_nearestContactFaces; };
+
    const std::tuple<networkFace *, Tddd> getNearestContactFace_(const networkFace *const f) const {
       auto it = this->f_nearestContactFaces.find(const_cast<networkFace *>(f));
       return (it != this->f_nearestContactFaces.end()) ? it->second : std::tuple<networkFace *, Tddd>{nullptr, {0., 0., 0.}};
@@ -1834,11 +1836,8 @@ getPointsOnLines_detail*/
          // this->Points = this->getPointsFromLines();
          // T3Tddd p0p1p2_X = ToX(this->Points);
          // T3Tddd toX_this_points = ToX(this_points);
-         setBounds(toX_this_points);
-         setProperties(toX_this_points);
-         // this->area = TriangleArea(toX_this_points);
-         // this->normal = TriangleNormal(toX_this_points);
-         // this->angles = TriangleAngles(toX_this_points);
+         CoordinateBounds::setBounds(toX_this_points);
+         Triangle::setProperties(toX_this_points);
          if (!isFinite(toX_this_points) || !isFinite(this->area) || !isFinite(this->normal) || !isFinite(this->angles)) {
             std::cout << "this->area = " << this->area << std::endl;
             std::cout << "this->normal = " << this->normal << std::endl;
@@ -1854,7 +1853,9 @@ getPointsOnLines_detail*/
       };
    };
 
-   bool setGeometricProperties() { return setGeometricProperties(ToX(this->Points)); };
+   bool setGeometricProperties() {
+      return setGeometricProperties(ToX(this->Points));
+   };
 
    //------------------------
    void Delete();
@@ -3580,10 +3581,12 @@ class Network : public CoordinateBounds {
    T6d force;
    T6d velocity;  // = {velocity,angular velocity}
    T6d acceleration;
+   InterpolationLagrange<T6d> interp_accel;
    Tddd velocityTranslational() const { return {std::get<0>(velocity), std::get<1>(velocity), std::get<2>(velocity)}; };
    Tddd velocityRotational() const { return {std::get<3>(velocity), std::get<4>(velocity), std::get<5>(velocity)}; };
    Tddd accelTranslational() const { return {std::get<0>(acceleration), std::get<1>(acceleration), std::get<2>(acceleration)}; };
    Tddd accelRotational() const { return {std::get<3>(acceleration), std::get<4>(acceleration), std::get<5>(acceleration)}; };
+
    //! 固定された空間座標におけるベクトルであることを頭に入れておくこと．
    //! 回転，移動をする物体の座標系ではないので，固定座標にとって，回転前後でinertiaは書き換える必要がある．
    //! inertiaの慣性モーメントはそのまま固定座標における回転行列をかけて，更新すればいい

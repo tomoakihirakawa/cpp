@@ -226,14 +226,14 @@ void remesh(Network &water,
 /* -------------------------------------------------------------------------- */
 
 template <typename V>
-std::unordered_map<networkPoint *, V> init_map(const Network &network, const V &value) {
+std::unordered_map<networkPoint *, V> init_map(const Network *network, const V &value) {
    std::unordered_map<networkPoint *, V> m;
-   for (const auto &p : network.getPoints())
+   for (const auto p : network->getPoints())
       m[p] = value;
    return m;
 }
 
-VV_VarForOutput dataForOutput(const Network &water, const double dt) {
+VV_VarForOutput dataForOutput(const Network *water, const double dt) {
    try {
 
       const Tddd tdd0 = {1E+30, 1E+30, 1E+30};
@@ -271,7 +271,7 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 
       try {
 #pragma omp parallel
-         for (const auto &p : water.getPoints())
+         for (const auto &p : water->getPoints())
 #pragma omp single nowait
          {
 
@@ -287,19 +287,14 @@ VV_VarForOutput dataForOutput(const Network &water, const double dt) {
 
             // push vectors to the Nearest P_V2ContactFaces
             int i = 0;
-            for (const auto &f : p->getContactFaces()) {
-               if (i == 0)
-                  P_V2ContactFaces0[p] = Nearest(p->X, ToX(f)) - p->X;
-               if (i == 1)
-                  P_V2ContactFaces1[p] = Nearest(p->X, ToX(f)) - p->X;
-               if (i == 2)
-                  P_V2ContactFaces2[p] = Nearest(p->X, ToX(f)) - p->X;
-               if (i == 3)
-                  P_V2ContactFaces3[p] = Nearest(p->X, ToX(f)) - p->X;
-               if (i == 4)
-                  P_V2ContactFaces4[p] = Nearest(p->X, ToX(f)) - p->X;
-               if (i == 5)
-                  P_V2ContactFaces5[p] = Nearest(p->X, ToX(f)) - p->X;
+            for (const auto &[f, FX] : p->getNearestContactFaces()) {
+               auto [_, X] = FX;
+               if (i == 0) P_V2ContactFaces0[p] = X - p->X;
+               if (i == 1) P_V2ContactFaces1[p] = X - p->X;
+               if (i == 2) P_V2ContactFaces2[p] = X - p->X;
+               if (i == 3) P_V2ContactFaces3[p] = X - p->X;
+               if (i == 4) P_V2ContactFaces4[p] = X - p->X;
+               if (i == 5) P_V2ContactFaces5[p] = X - p->X;
                i++;
             }
 

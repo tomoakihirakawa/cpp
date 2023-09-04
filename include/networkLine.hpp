@@ -275,6 +275,10 @@ bool isLinkedDoubly(const netFp f, const netLp l) { return isLinkedDoubly(l, f);
 // #define debug_divide
 
 inline netPp networkLine::divide(const Tddd &midX) {
+
+   // divideによって境界面が大きく変わる可能性がある．
+   // もし境界面が変形すると困る場合は，注意する．
+
    // isConsistent(this);
    // 2面の場合も対応できるように，ポインター予め準備しておく
    netFp oldF = nullptr;
@@ -293,6 +297,8 @@ inline netPp networkLine::divide(const Tddd &midX) {
    V_netLp oldFLines1;
    netLp bL1 = nullptr, fL1 = nullptr;
 
+   std::unordered_set<networkFace *> related_faces;
+
    int c = 0;  // カラーバー
    try {
       if (this->Faces.size() == 1 || this->Faces.size() == 2) {
@@ -307,6 +313,15 @@ inline netPp networkLine::divide(const Tddd &midX) {
             oP = c;
             bP = a;
             newF = new networkFace(oldF);
+            for (auto &f : fP->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
+            for (auto &f : oP->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
+            for (auto &f : bP->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
          }
 
          if (this->Faces.size() == 2) {
@@ -325,6 +340,16 @@ inline netPp networkLine::divide(const Tddd &midX) {
             bP1 = a;
 
             newF1 = new networkFace(oldF1);
+
+            for (auto &f : fP1->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
+            for (auto &f : oP1->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
+            for (auto &f : bP1->getFaces())
+               if (f != nullptr)
+                  related_faces.emplace(f);
          }
          ///////////////////////////////////////////////////////
          // boundsSetter bSetter;
@@ -334,7 +359,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
          netLp newDivL, newMidL;
          try {
             // std::cout << ColorFunction(c++) << "|" << colorOff;
-            newP = new networkPoint(this->getNetwork() /*属性*/, isFinite(midX) ? midX : (fP->getXtuple() + bP->getXtuple()) / 2.);
+            newP = new networkPoint(this->getNetwork() /*属性*/, isFinite(midX) ? midX : 0.5 * (fP->X + bP->X));
             newDivL = new networkLine(this->getNetwork(), newP, fP);
 #ifdef debug_divide
             std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
@@ -695,7 +720,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
             // set(oP);
             // set(oP1);
             /* ---------------------------------------------------------- */
-            fP->getNetwork()->setGeometricProperties();
+            // fP->getNetwork()->setGeometricProperties();
+            for (auto &f : related_faces)
+               f->setGeometricProperties(ToX(f->setPoints()));
             /* ---------------------------------------------------------- */
          }
 #ifdef debug_divide
@@ -1508,66 +1535,190 @@ inline bool networkLine::flipIfIllegal() {
       return false;
 };
 
-inline bool networkLine::isFlat(const double minangle = M_PI / 180.) const {
+inline bool networkLine::isAdjacentFacesFlat(const double minangle = M_PI / 180.) const {
    auto fs = this->getFaces();
+   auto [p0, p1, p2] = fs[0]->getPoints();
+   auto [P0, P1, P2] = fs[1]->getPoints();
    if (fs.size() != 2)
       return false;
-   else if (Dot(fs[0]->normal, fs[1]->normal) > cos(minangle))
+   else if (isFlat(Cross(p1->X - p0->X, p2->X - p0->X), Cross(P1->X - P0->X, P2->X - P0->X), minangle))
       return true;
    else
       return false;
 };
 
-inline bool networkLine::canflip(const double min_inner_angle = M_PI / 180.) const {
+// Define actual types for T3Tddd, Tddd, and others if not defined
+
+// const double DEFAULT_MIN_INNER_ANGLE = M_PI / 180.0;
+
+// // Helper function to check if a triangle should flip based on angles
+// bool shouldFlipBasedOnAngle(const double min_angle, const double currentMin, const Tddd &angles) {
+//    double min_angle_calculated = Min(angles);
+//    return (min_angle_calculated > min_angle) || (min_angle_calculated > currentMin);
+// }
+
+// inline bool networkLine::canFlip(const double min_inner_angle = DEFAULT_MIN_INNER_ANGLE) const {
+//    try {
+//       // Fetch relevant points and faces
+//       auto faces = this->getFaces();
+//       auto [point_f0, point_f1, point_f2] = faces[0]->getPoints(this);
+//       auto [point_F0, point_F1, point_F2] = faces[1]->getPoints(this);
+
+//       // Compute new triangles if a flip happens
+//       auto nextTriangle0 = T3Tddd{point_f0->getXtuple(), point_F2->getXtuple(), point_f2->getXtuple()};
+//       auto nextTriangle1 = T3Tddd{point_F0->getXtuple(), point_f2->getXtuple(), point_F2->getXtuple()};
+
+//       if (TriangleArea(nextTriangle0) == 0.0 || TriangleArea(nextTriangle1) == 0.0)
+//          return false;
+
+//       // Compute angles and normals for new triangles
+//       Tddd angles0 = TriangleAngles(nextTriangle0);
+//       Tddd angles1 = TriangleAngles(nextTriangle1);
+//       auto normal0 = TriangleNormal(nextTriangle0);
+//       auto normal1 = TriangleNormal(nextTriangle1);
+
+//       // Condition checks
+//       bool isFiniteAngles = isFinite(angles0) && isFinite(angles1);
+//       bool isFiniteAreas = isFinite(TriangleArea(nextTriangle0)) && isFinite(TriangleArea(nextTriangle1));
+//       bool isFiniteNormals = isFinite(normal0) && isFinite(normal1);
+//       bool isNormalsPositive = (Dot(faces[0]->normal, normal0) >= 0.0 && Dot(faces[0]->normal, normal1) >= 0.0) &&
+//                                (Dot(faces[1]->normal, normal0) >= 0.0 && Dot(faces[1]->normal, normal1) >= 0.0);
+//       double currentMinimumAngle = Min(Tdd{Min(faces[0]->getAngles()), Min(faces[1]->getAngles())});
+
+//       return isFiniteAngles && isFiniteAreas && isFiniteNormals &&
+//              shouldFlipBasedOnAngle(min_inner_angle, currentMinimumAngle, angles0) &&
+//              shouldFlipBasedOnAngle(min_inner_angle, currentMinimumAngle, angles1) &&
+//              isNormalsPositive;
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << std::endl;  // Removed colorOff for clarity
+//       throw;                               // Re-throw the caught exception
+//    }
+// }
+
+/*DOC_EXTRACT flip
+
+### `flip`可能かどうかの判定
+
+`canFlip`でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
+
+* フリップ前後で，辺に隣接する面の面積の和が大きく変化する場合，フリップさせない
+* フリップ前後で，辺に隣接する面の法線ベクトルが大きく変換する場合，フリップさせない
+
+しかし，これの判定において必要となる計算：三角形の内角や法線方向，ベクトルの成す角度の計算は，精確に判定できない領域があるようだ．
+なので，その領域をおおよそ実験的に調べて，まずはその領域に入らせない条件を設ける（信頼できる三角形）．
+信頼できる三角形は，**三角形の内角が小さすぎる，または大きすぎる場合**であるようだ．
+信頼できる三角形の判定には，\ref{isValidTriangle}{`isValidTriangle`}を用いる．
+
+*/
+
+// check if a result face if good enough to use. this function is used in canFlip
+
+inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M_PI / 180.) const {
    try {
-      /*
-                 f2 *------* f1,F0
-                        |this/ |
-              F1,f0 *------* F2
-      */
-      /*
-      現在の最小角度よりも大きかったらtrue．
-      そうでなくとも，指定されたmin_inner_angleよりも角度が大きくなればそれでもtrueを返す
-      */
-      auto f0f1 = this->getFaces();
-      auto [f0, f1, f2] = f0f1[0]->getPoints(this);
-      auto [F0, F1, F2] = f0f1[1]->getPoints(this);
-      //
-      auto nextTrig0 = T3Tddd{f0->getXtuple(), F2->getXtuple(), f2->getXtuple()};
-      auto nextTrig1 = T3Tddd{F0->getXtuple(), f2->getXtuple(), F2->getXtuple()};
-      if (TriangleArea(nextTrig0) == static_cast<double>(0) || TriangleArea(nextTrig1) == static_cast<double>(0))
+      auto f_and_F = this->getFaces();
+      auto [f0, f1, f2] = f_and_F[0]->getPoints(this);
+      auto [F0, F1, F2] = f_and_F[1]->getPoints(this);
+      auto tri0_now = T3Tddd{f0->X, f1->X, f2->X};
+      auto tri1_now = T3Tddd{F0->X, F1->X, F2->X};
+
+      auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
+      auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
+
+      if (!isValidTriangle(tri0, 10. * M_PI / 180.))
          return false;
-      //
-      Tddd angles0 = TriangleAngles(nextTrig0);  // flip後の三角形
-      Tddd angles1 = TriangleAngles(nextTrig1);  // flip後の三角形
-      bool isfiniteangles = (isFinite(angles0) && isFinite(angles1));
-      bool isfiniteareas = (isFinite(TriangleArea(nextTrig0)) && isFinite(TriangleArea(nextTrig1)));
-      auto n0 = TriangleNormal(nextTrig0);
-      auto n1 = TriangleNormal(nextTrig1);
-      bool isfinitenormal = (isFinite(n0) && isFinite(n1));
-      bool isPositive = (Dot(f0f1[0]->normal, n0) >= 0. && Dot(f0f1[0]->normal, n1) >= 0.) && (Dot(f0f1[1]->normal, n0) >= 0. && Dot(f0f1[1]->normal, n1) >= 0.);
-      bool currentMin = Min(Tdd{Min(f0f1[0]->getAngles()), Min(f0f1[1]->getAngles())});
-      double min0 = Min(angles0);
-      double min1 = Min(angles1);
-      bool notTooSmall0 = (min0 > min_inner_angle) || (min0 > currentMin);
-      bool notTooSmall1 = (min1 > min_inner_angle) || (min1 > currentMin);
-      return (isfiniteangles && isfiniteareas && isfinitenormal && notTooSmall1 && notTooSmall0 && isPositive);
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      if (!isValidTriangle(tri1, 10. * M_PI / 180.))
+         return false;
+
+      //$ large difference of normal vector after and before flip
+      if (!isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after) ||
+          !isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) ||
+          !isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) ||
+          !isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after))
+         return false;
+
+      //$ area conservation
+      return TriangleArea(tri0) + TriangleArea(tri1) == TriangleArea(tri0_now) + TriangleArea(tri1_now);
+
+   } catch (const std::exception &e) {
+      std::cerr << e.what() << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
-};
+}
 
-inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
-                                      const double min_inner_angle,
+// inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 3 * M_PI / 180.) const {
+//    /*
+//               f2 *------* f1,F0
+//                  |this/ |
+//                  |  /   |
+//            F1,f0 *------* F2
+//    */
+//    try {
+//       auto f_and_F = this->getFaces();
+//       auto [f0, f1, f2] = f_and_F[0]->getPoints(this);
+//       auto [F0, F1, F2] = f_and_F[1]->getPoints(this);
+//       //
+//       auto tri0_now = T3Tddd{f0->X, f1->X, f2->X};
+//       auto tri1_now = T3Tddd{F0->X, F1->X, F2->X};
+//       //
+//       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
+//       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
+
+//       bool isfiniteareas = (isFinite(TriangleArea(tri0)) && isFinite(TriangleArea(tri1)));
+//       if (!isfiniteareas)
+//          return false;
+
+//       bool isfiniteareas_now = (isFinite(TriangleArea(tri0_now)) && isFinite(TriangleArea(tri1_now)));
+//       if (!isfiniteareas_now)
+//          return false;
+
+//       bool isfiniteangles = (isFinite(TriangleAngles(tri0)) && isFinite(TriangleAngles(tri1)));
+//       if (!isfiniteangles)
+//          return false;
+
+//       if (Min(TriangleAngles(tri0)) < M_PI / 180. || Min(TriangleAngles(tri1)) < M_PI / 180.)
+//          if (Min(TriangleAngles(tri0)) < Min(TriangleAngles(tri0_now)) || Min(TriangleAngles(tri1)) < Min(TriangleAngles(tri1_now)))
+//             return false;
+
+//       auto n0 = TriangleNormal(tri0), n1 = TriangleNormal(tri1);
+//       bool isfinitenormal = (isFinite(n0) && isFinite(n1));
+//       if (!isfinitenormal)
+//          return false;
+
+//       /* フリップ後の面の法線方向が，フリップ前の面の法線方向とacceptable_n_diff_before_afterよりも大きくは違わない確認する */
+
+//       //! この二つは欠かせないようだ
+//       bool isPositive = isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after) &&
+//                         isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) &&
+//                         isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) &&
+//                         isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after);
+//       if (!isPositive)
+//          return false;
+
+//       if (CircumradiusToInradius(tri0) > 1E+3 || CircumradiusToInradius(tri1) > 1E+3)
+//          return false;
+
+//       //! この二つは欠かせないようだ
+//       // double A_tot_now = TriangleArea(tri0_now) + TriangleArea(tri1_now);
+//       // double A_tot_next = TriangleArea(tri0) + TriangleArea(tri1);
+//       // return std::abs(A_tot_next - A_tot_now) < 1E-10 * A_tot_now;
+//       return TriangleArea(tri0) + TriangleArea(tri1) == TriangleArea(tri0_now) + TriangleArea(tri1_now);
+
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorOff << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
+
+inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
+                                      const double acceptable_n_diff_before_after,
                                       const int min_n) {
    try {
       //@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
       //@ フリップ前後の両方で不正な辺と判定された場合，
       //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
-      if (!canflip(min_inner_angle))
+      if (!canFlip(acceptable_n_diff_before_after))
          return false;
-      else if (this->isFlat(min_degree_to_flat /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
+      else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
          auto [p0, p1] = this->getPoints();
          auto f0f1_ = this->getFaces();
          int s0 = p0->getLines().size();
@@ -1653,14 +1804,14 @@ inline bool networkLine::flipIfBetter(const double min_degree_to_flat,
    };
 };
 
-inline bool networkLine::flipIfTopologicallyBetter(const double min_degree_of_line,
-                                                   const double min_degree_of_face,
+inline bool networkLine::flipIfTopologicallyBetter(const double n_diff_tagert_face,
+                                                   const double acceptable_n_diff_before_after,
                                                    const int s_meanIN) {
    try {
       // Check if the flip is allowed based on the minimum angle of the triangle after flipping
-      if (!canflip(min_degree_of_face))
+      if (!canFlip(acceptable_n_diff_before_after))
          return false;
-      if (this->isFlat(min_degree_of_line) && !isIntxn()) {
+      if (this->isAdjacentFacesFlat(n_diff_tagert_face) && !isIntxn()) {
          auto [p0, p1] = this->getPoints();
          auto f0f1 = this->getFaces();
          int s0 = p0->getLines().size();

@@ -1,0 +1,14 @@
+{
+    "name": "cylinder",
+    "type": "RigidBody",
+    "velocity": [
+        "sin",
+        0,
+        0.2,
+        5,
+        0,
+        1,
+        0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/testALE/cylinder400.obj"
+}
