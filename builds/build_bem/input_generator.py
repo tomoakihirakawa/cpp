@@ -137,12 +137,12 @@ match SimulationCase:
 
         cylinder = {"name": "cylinder",
                     "type": "RigidBody",
-                    "velocity": ["sin", 0, 0.2, 5, 0, 1, 0],
+                    "velocity": ["sin", 0, 0.1, 5, 0, 1, 0],
                     "objfile": objfolder + "/cylinder400.obj"}
 
         cuboid = {"name": "cuboid",
                   "type": "RigidBody",
-                  "velocity": ["sin", 0, -0.2, 5, 0, 1, 0],
+                  "velocity": ["sin", 0, -0.1, 5, 0, 1, 0],
                   "objfile": objfolder + "/cuboid400.obj"}
 
         id = ""

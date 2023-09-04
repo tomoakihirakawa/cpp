@@ -183,8 +183,8 @@ double variance2(const networkPoint *p, const networkFace *f) {
    return 10 * ret / (m * m);
 };
 
-// \label{BEM:vectorTangentialShift2}
-Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
+// \label{BEM:vectorTangentialShift}
+Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
    Tddd vector_to_optimum_X = {0., 0., 0.}, pX = RK_with_Ubuff(p);
    double s = 0;
    // if (p->CORNER) {
@@ -193,14 +193,16 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
    //       s += 1.;
    //    }
    // } else
+
+   // auto decrese = [&](const Tddd &V) { return Norm(condition_Ua(V, p)) - Norm(V); };
+
    auto max_a = 0;
    for (const auto &f : p->getFaces()) {
       auto nP012 = RK_with_Ubuff(f->getPoints(p));
       auto &[np0x, np1x, np2x] = nP012;
-      double a = std::log10(CircumradiusToInradius(nP012) - 0.5);
-
+      double a = std::log10(CircumradiusToInradius(nP012));
       if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-         a *= std::pow(1.5, 3);
+         a *= std::pow(2., 3);
       } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->isMultipleNode; })) {
          a *= std::pow(1.5, 2);
       } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
@@ -212,7 +214,7 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
       }
 
       auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
-      vector_to_optimum_X += a * (optimum_position - pX);
+      vector_to_optimum_X += a * condition_Ua(optimum_position - pX, p);
       s += a;
       if (max_a < a)
          max_a = a;
@@ -222,12 +224,13 @@ Tddd vectorTangentialShift2(const networkPoint *p, const double scale = 1.) {
       for (const auto &l : p->getLines()) {
          auto q = (*l)(p);
          if (q->isMultipleNode) {
-            vector_to_optimum_X += max_a * (RK_with_Ubuff(q) - pX);
+            vector_to_optimum_X += max_a * condition_Ua(RK_with_Ubuff(q) - pX, p);
             s += max_a;
          }
       }
    vector_to_optimum_X /= s;
-   return condition_Ua(scale * vector_to_optimum_X, p);
+   // return condition_Ua(scale * vector_to_optimum_X, p);
+   return scale * vector_to_optimum_X;
 };
 
 // \label{BEM:vectorToNextSurface}
@@ -310,7 +313,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 \ref{BEM:calculateVecToSurface}{`calculateVecToSurface`}で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，\ref{BEM:vectorTangentialShift2}{`vectorTangentialShift2`}で接線方向にシフトし，
+1. まず，\ref{BEM:vectorTangentialShift}{`vectorTangentialShift`}で接線方向にシフトし，
 2. \ref{BEM:vectorToNextSurface}{`vectorToNextSurface`}で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 */
@@ -337,7 +340,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          else if (p->CORNER)
             scale = 5. * a;
 
-         p->vecToSurface_BUFFER = vectorTangentialShift2(p, scale);
+         p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
       }
       for (const auto &p : net.getPoints()) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);

@@ -109,67 +109,6 @@ bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
 
 /* -------------------------------------------------------------------------- */
 
-Tddd DistorsionMeasureWeightedSmoothingVector(const netPp p) {
-   if (!isEdgePoint(p)) {
-      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X;
-      double Wtot = 0, W;
-      for (const auto &f : p->getFaces()) {
-         auto t3tdd = ToX(f->getPoints(p));
-         auto [X0, X1, X2] = t3tdd;
-         // W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
-         W = std::log10(CircumradiusToInradius(t3tdd) - 1.);
-         X = Norm(X2 - X1) * sin(M_PI / 3.) * Normalize(Chop(X0 - X1, X2 - X1)) + (X2 + X1) / 2.;
-         V += W * X;
-      }
-      return V / Wtot - p->X;
-   } else
-      return {0., 0., 0.};
-};
-
-Tddd AreaWeightedSmoothingVector(const netPp p) {
-   if (!isEdgePoint(p)) {
-      Tddd X, V = {0., 0, 0.};
-      double Wtot = 0, W;
-      for (const auto &f : p->getFaces()) {
-         auto t3tdd = ToX(f->getPoints());
-         W = TriangleArea(t3tdd);
-         Wtot += W;
-         X = Centroid(t3tdd);
-         V += W * X;
-      }
-      return V / Wtot - p->X;
-   } else
-      return {0., 0., 0.};
-};
-
-Tddd ArithmeticWeightedSmoothingVector(const netPp p) {
-   if (!isEdgePoint(p)) {
-      Tddd X, V = {0., 0, 0.};
-      double Wtot = 0, W;
-      for (const auto &q : p->getNeighbors())
-         V += q->X;
-      return V / p->getNeighbors().size() - p->X;
-   } else
-      return {0., 0., 0.};
-};
-
-// Tddd ArithmeticWeightedSmoothingVector(const netPp p) {
-//    if (!isEdgePoint(p)) {
-//       Tddd X, V = {0., 0, 0.};
-//       double Wtot = 0, W;
-//       for (const auto &f : p->getFaces()) {
-//          auto t3tdd = ToX(f->getPoints());
-//          W = 1.;
-//          Wtot += W;
-//          // X = Incenter(t3tdd);
-//          X = Centroid(t3tdd);
-//          V += W * X;
-//       }
-//       return V / Wtot - p->X;
-//    } else
-//       return {0., 0., 0.};
-// };
-
 /*DOC_EXTRACT smoothing_vector
 
 ### 格子の平滑化
@@ -244,119 +183,69 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
 
 /* ------------------------------------------------------ */
 
-void DistorsionMeasureWeightedSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
+Tddd DistorsionMeasureWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X;
+      T3Tddd t3tdd;
+      double Wtot = 0, W;
+      for (const auto &f : p->getFaces()) {
+         t3tdd = ToX(f->getPoints(p));
+         auto [X0, X1, X2] = t3tdd;
+         W = std::log10(CircumradiusToInradius(t3tdd) - 1.);
+         X = Norm(X2 - X1) * sin(M_PI / 3.) * Normalize(Chop(X0 - X1, X2 - X1)) + (X2 + X1) / 2.;
+         V += W * X;
+      }
+      return V / Wtot - p->X;
+   } else
+      return {0., 0., 0.};
+};
+
+void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
       for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
 };
-void DistorsionMeasureWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
-};
 
 /* ------------------------------------------------------ */
 
-void AreaWeightedSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
+Tddd AreaWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd X, V = {0., 0, 0.};
+      T3Tddd t3tdd;
+      double Wtot = 0, W;
+      for (const auto &f : p->getFaces()) {
+         t3tdd = ToX(f->getPoints());
+         Wtot += (W = TriangleArea(t3tdd));
+         V += W * (X = Centroid(t3tdd));
+      }
+      return V / Wtot - p->X;
+   } else
+      return {0., 0., 0.};
+};
+
+void AreaWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
       for (const auto &p : ps) SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
 };
-void AreaWeightedSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
-};
 /* ------------------------------------------------------ */
-void LaplacianSmoothingPreserveShape(const V_netPp &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
+Tddd ArithmeticWeightedSmoothingVector(const netPp p) {
+   if (!isEdgePoint(p)) {
+      Tddd V = {0., 0, 0.};
+      for (const auto &q : p->getNeighbors()) V += q->X;
+      return V / p->getNeighbors().size() - p->X;
+   } else
+      return {0., 0., 0.};
 };
-void LaplacianSmoothingPreserveShape(const std::unordered_set<networkPoint *> &ps, const int times = 1) {
+
+void LaplacianSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
       for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
 };
 /* ------------------------------------------------------ */
 
-void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0) {
+void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0) {
    try {
-      // 2022/04/13こっちにBEMのmainから持ってきた
-      std::cout << "flipIf" << std::endl;
-      water.setGeometricProperties();
-      double mean_length = Mean(extLength(water.getLines()));
-      bool isfound = false, ismerged = false;
-      int count = 0;
-      auto V = ToVector(water.getLines());
-      for (const auto &l : RandomSample(V)) {
-         auto [p0, p1] = l->getPoints();
-         if (!l->CORNER)
-         // if (!p0->CORNER && !p1->CORNER)
-         {
-            if (force && (times == 0 || count < times)) {
-               // p0とp1が角の場合，6という数にこだわる必要がない．
-               // つまり6がトポロジカルにベターではない．
-               isfound = l->flipIfTopologicallyBetter(limit_angle, M_PI / 180. * 10.);
-               if (isfound)
-                  count++;
-            } else {
-               isfound = l->flipIfBetter(limit_angle);
-            }
-         }
-      }
-      water.setGeometricProperties();
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
-void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0) {
-   try {
-      /*
-      * フリップによって表面の形状が大きく変わってしまうのはよくない．
-      * フリップによって三角形の内角がとても小さくなるのもよくない．
-      flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
-      * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
-      * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
-      */
-      auto [limit_angle, limit_inner_angle] = limit;
-      // 2022/04/13こっちにBEMのmainから持ってきた
-      std::cout << "flipIf" << std::endl;
-      water.setGeometricProperties();
-      double mean_length = Mean(extLength(water.getLines()));
-      bool isfound = false, ismerged = false;
-      int count = 0;
-      for (const auto &l : water.getLines()) {
-         auto [p0, p1] = l->getPoints();
-         if (!l->CORNER)
-         // if (!p0->CORNER && !p1->CORNER)
-         {
-            if (force && (times == 0 || count < times)) {
-               isfound = l->flipIfTopologicallyBetter(limit_angle, limit_inner_angle);
-               if (isfound)
-                  count++;
-            } else {
-               isfound = l->flipIfBetter(limit_angle, limit_inner_angle);
-               if (isfound)
-                  count++;
-            }
-         }
-      }
-      water.setGeometricProperties();
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
-void flipIf(Network &water,
-            const Tdd &limit_Dirichlet,
-            const Tdd &limit_Neumann,
-            bool force = false, int times = 0) {
-   try {
-      /*
-      * フリップによって表面の形状が大きく変わってしまうのはよくない．
-      * フリップによって三角形の内角がとても小さくなるのもよくない．
-      flipIfでは，このようなフリップをどこまで許容するかを与えることができる．
-      * limit_angle：フリップを許容する，辺に隣接する面の法線方向の内角
-      * limit_inner_angle：フリップを許容する，フリップによってできる三角形の最小内角の最小
-      */
-      auto [limit_angle_D, limit_inner_angle_D] = limit_Dirichlet;
-      auto [limit_angle_N, limit_inner_angle_N] = limit_Neumann;
+      auto [target_of_max_normal_diffD, acceptable_normal_change_by_flipD] = limit_Dirichlet;
+      auto [target_of_max_normal_diffN, acceptable_normal_change_by_flipN] = limit_Neumann;
       // 2022/04/13こっちにBEMのmainから持ってきた
       std::cout << "flipIf" << std::endl;
       water.setGeometricProperties();
@@ -371,18 +260,18 @@ void flipIf(Network &water,
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
                if (l->Dirichlet) {
-                  isfound = l->flipIfTopologicallyBetter(limit_angle_D, limit_inner_angle_D);
+                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfTopologicallyBetter(limit_angle_N, limit_inner_angle_N);
+                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN);
                   if (isfound) count++;
                }
             } else {
                if (l->Dirichlet) {
-                  isfound = l->flipIfBetter(limit_angle_D, limit_inner_angle_D, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(limit_angle_N, limit_inner_angle_N, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
                   if (isfound) count++;
                }
             }
@@ -395,6 +284,13 @@ void flipIf(Network &water,
    };
 };
 
+void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0) {
+   flipIf(water, limit, limit, force, times);
+};
+
+void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0) {
+   flipIf(water, limit_angle, force, times);
+};
 /* ------------------------------------------------------ */
 // void LaplacianSmoothingIfFlat(netPp p) {
 //    try {
