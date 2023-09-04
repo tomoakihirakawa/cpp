@@ -1752,7 +1752,7 @@ Tddd TriangleNormal(const T3Tddd &abc) {
 };
 
 // \label{isValidTriangle}
-bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = 10. * M_PI / 180.) {
+bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = 5. * M_PI / 180.) {
    if (TriangleArea(tri) == 0.)
       return false;
    if (!isFinite(TriangleAngles(tri)))

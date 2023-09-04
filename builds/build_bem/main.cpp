@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
-         flipIf(*water, {10 * rad, rad}, {10 * rad, rad}, false);
+         flipIf(*water, {10 * rad, 5 * rad}, {10 * rad, 5 * rad}, false);
 
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
