@@ -5,7 +5,7 @@
 #include <iostream>
 #include "basic_arithmetic_array_operations.hpp"
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT spherical_harmonics
 
 # 多重極展開(Multipole Expansion)
 
@@ -46,7 +46,7 @@ std::array<double, 3> gradG(const std::array<double, 3>& X_near, const std::arra
    return -(X_near - X_far) / std::pow(Norm(X_near - X_far), 3.);
 }
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT spherical_harmonics
 
 ### 球面座標系への変換
 
@@ -83,7 +83,7 @@ std::array<std::array<double, 3>, 3> gradSphericalCoordinates(const std::array<d
            std::array<double, 3>{-y / (R * R), x / (R * R), 0.}};
 };
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT spherical_harmonics
 
 ### $`G_{\rm apx}`$の精度
 
@@ -143,7 +143,7 @@ double Gapx(unsigned p,
    return accum.real();
 }
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT spherical_harmonics
 
 ### $`G_{\rm apx}`$の勾配$`\nabla G_{\rm apx}`$の精度
 
@@ -282,7 +282,7 @@ int main() {
    }
 }
 
-/*DOC_EXTRACT BEM
+/*DOC_EXTRACT spherical_harmonics
 
 ## 境界要素法への応用
 
