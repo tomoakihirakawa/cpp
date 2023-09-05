@@ -1599,20 +1599,23 @@ inline bool networkLine::isAdjacentFacesFlat(const double minangle = M_PI / 180.
 
 ### `flip`可能かどうかの判定
 
-`canFlip`でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
+\ref{canFlip}{`canFlip`}でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
 
 * フリップ前後で，辺に隣接する面の面積の和が大きく変化する場合，フリップさせない
 * フリップ前後で，辺に隣接する面の法線ベクトルが大きく変換する場合，フリップさせない
 
 しかし，これの判定において必要となる計算：三角形の内角や法線方向，ベクトルの成す角度の計算は，精確に判定できない領域があるようだ．
 なので，その領域をおおよそ実験的に調べて，まずはその領域に入らせない条件を設ける（信頼できる三角形）．
-信頼できる三角形は，**三角形の内角が小さすぎる，または大きすぎる場合**であるようだ．
+次のような三角形は信頼しない：
+
+* 三角形の内角が小さすぎる，または大きすぎる場合
+* 内角の和が$`\pi`$にならない場合
+
 信頼できる三角形の判定には，\ref{isValidTriangle}{`isValidTriangle`}を用いる．
 
 */
 
-// check if a result face if good enough to use. this function is used in canFlip
-
+// \label{canFlip}
 inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M_PI / 180.) const {
    try {
       auto f_and_F = this->getFaces();
@@ -1624,9 +1627,9 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
 
-      if (!isValidTriangle(tri0, 5. * M_PI / 180.))
+      if (!isValidTriangle(tri0, 5 * M_PI / 180.))
          return false;
-      if (!isValidTriangle(tri1, 5. * M_PI / 180.))
+      if (!isValidTriangle(tri1, 5 * M_PI / 180.))
          return false;
 
       //$ large difference of normal vector after and before flip
@@ -1644,70 +1647,6 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 }
-
-// inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 3 * M_PI / 180.) const {
-//    /*
-//               f2 *------* f1,F0
-//                  |this/ |
-//                  |  /   |
-//            F1,f0 *------* F2
-//    */
-//    try {
-//       auto f_and_F = this->getFaces();
-//       auto [f0, f1, f2] = f_and_F[0]->getPoints(this);
-//       auto [F0, F1, F2] = f_and_F[1]->getPoints(this);
-//       //
-//       auto tri0_now = T3Tddd{f0->X, f1->X, f2->X};
-//       auto tri1_now = T3Tddd{F0->X, F1->X, F2->X};
-//       //
-//       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
-//       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
-
-//       bool isfiniteareas = (isFinite(TriangleArea(tri0)) && isFinite(TriangleArea(tri1)));
-//       if (!isfiniteareas)
-//          return false;
-
-//       bool isfiniteareas_now = (isFinite(TriangleArea(tri0_now)) && isFinite(TriangleArea(tri1_now)));
-//       if (!isfiniteareas_now)
-//          return false;
-
-//       bool isfiniteangles = (isFinite(TriangleAngles(tri0)) && isFinite(TriangleAngles(tri1)));
-//       if (!isfiniteangles)
-//          return false;
-
-//       if (Min(TriangleAngles(tri0)) < M_PI / 180. || Min(TriangleAngles(tri1)) < M_PI / 180.)
-//          if (Min(TriangleAngles(tri0)) < Min(TriangleAngles(tri0_now)) || Min(TriangleAngles(tri1)) < Min(TriangleAngles(tri1_now)))
-//             return false;
-
-//       auto n0 = TriangleNormal(tri0), n1 = TriangleNormal(tri1);
-//       bool isfinitenormal = (isFinite(n0) && isFinite(n1));
-//       if (!isfinitenormal)
-//          return false;
-
-//       /* フリップ後の面の法線方向が，フリップ前の面の法線方向とacceptable_n_diff_before_afterよりも大きくは違わない確認する */
-
-//       //! この二つは欠かせないようだ
-//       bool isPositive = isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after) &&
-//                         isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) &&
-//                         isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) &&
-//                         isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after);
-//       if (!isPositive)
-//          return false;
-
-//       if (CircumradiusToInradius(tri0) > 1E+3 || CircumradiusToInradius(tri1) > 1E+3)
-//          return false;
-
-//       //! この二つは欠かせないようだ
-//       // double A_tot_now = TriangleArea(tri0_now) + TriangleArea(tri1_now);
-//       // double A_tot_next = TriangleArea(tri0) + TriangleArea(tri1);
-//       // return std::abs(A_tot_next - A_tot_now) < 1E-10 * A_tot_now;
-//       return TriangleArea(tri0) + TriangleArea(tri1) == TriangleArea(tri0_now) + TriangleArea(tri1_now);
-
-//    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
-//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//    };
-// };
 
 inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
                                       const double acceptable_n_diff_before_after,

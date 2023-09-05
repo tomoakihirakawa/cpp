@@ -495,7 +495,6 @@ std::vector<std::unordered_set<networkFace *>> BFSUO(const V_netFp &startObj, co
 };
 
 /* -------------------------------------------------------------------------- */
-
 std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &FACES, const short unsigned int s) {
    // if s=0 ->  do nothing
    std::unordered_set<networkFace *> tmp = FACES, ret = FACES;

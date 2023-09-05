@@ -1,5 +1,5 @@
 {
-    "max_dt": 0.02,
+    "max_dt": 0.01,
     "end_time_step": 10000,
     "end_time": 9,
     "output_directory": "/Users/tomoaki/BEM/testALE",

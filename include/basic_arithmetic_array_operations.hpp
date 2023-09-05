@@ -502,7 +502,6 @@ constexpr T Norm(const std::array<T, N>& arr) noexcept {
    return std::sqrt(std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); }));
 }
 
-//
 template <size_t N, typename T>
 constexpr std::array<T, N> Normalize(std::array<T, N> arr) noexcept {
    static_assert(N > 0, "Array must have at least one element.");

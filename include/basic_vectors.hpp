@@ -1752,18 +1752,20 @@ Tddd TriangleNormal(const T3Tddd &abc) {
 };
 
 // \label{isValidTriangle}
-bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = 5. * M_PI / 180.) {
+bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI / 180.) {
    if (TriangleArea(tri) == 0.)
       return false;
-   if (!isFinite(TriangleAngles(tri)))
+   auto angles = TriangleAngles(tri);
+   if (!isFinite(angles))
       return false;
-   if (std::ranges::any_of(TriangleAngles(tri), [&](const auto &a) { return a < accuracy_limit_angle; }))
+   if (std::ranges::any_of(angles, [&](const auto &a) { return (a < accuracy_limit_angle) || (M_PI - a < accuracy_limit_angle); }))
       return false;
-   return true;
+   return Total(angles) == M_PI;
 };
 
 bool isFlat(const Tddd &a, const Tddd &b, const double lim_rad) {
    return Dot(a, b) > cos(lim_rad) * Norm(a) * Norm(b);
+   // return Dot(a / Norm(a), b / Norm(b)) > cos(lim_rad);
 };
 
 bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
