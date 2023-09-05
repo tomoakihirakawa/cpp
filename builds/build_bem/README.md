@@ -177,8 +177,8 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L176)，
-[`networkPoint::isInContact`](../../include/networkPoint.hpp#L184)，
-[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L224)
+[`networkPoint::isInContact`](../../include/networkPoint.hpp#L185)，
+[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L225)
 を使って接触判定を行っている．
 
 [流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L175)の設置も重要．
@@ -218,9 +218,9 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
 | [`contact_angle`](../../include/networkPoint.hpp#L176)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
-| [`isCloseNormal()`](../../include/networkPoint.hpp#L179)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [`isInContact()`](../../include/networkPoint.hpp#L184)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isCloseNormal`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L224)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`isFacing()`](../../include/networkPoint.hpp#L179)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| [`isInContact()`](../../include/networkPoint.hpp#L185)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L225)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
 [../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
 
@@ -235,7 +235,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
 
-[../../include/networkPoint.hpp#L277](../../include/networkPoint.hpp#L277)
+[../../include/networkPoint.hpp#L278](../../include/networkPoint.hpp#L278)
 
 
 
@@ -461,13 +461,13 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L318)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L328)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift2`](../../builds/build_bem/BEM_calculateVelocities.hpp#L186)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L233)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L186)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L243)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L297](./BEM_calculateVelocities.hpp#L297)
+[./BEM_calculateVelocities.hpp#L307](./BEM_calculateVelocities.hpp#L307)
 
 
 ---
@@ -829,7 +829,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L447](./BEM_calculateVelocities.hpp#L447)
+[./BEM_calculateVelocities.hpp#L457](./BEM_calculateVelocities.hpp#L457)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -846,7 +846,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L534](./BEM_calculateVelocities.hpp#L534)
+[./BEM_calculateVelocities.hpp#L544](./BEM_calculateVelocities.hpp#L544)
 
 
 ---

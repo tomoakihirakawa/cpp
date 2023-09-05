@@ -128,7 +128,7 @@ match SimulationCase:
 
         water = {"name": "water",
                  "type": "Fluid",
-                 "objfile": objfolder + "/water_case4_500.obj"}
+                 "objfile": objfolder + "/water_case4_600.obj"}
 
         tank = {"name": "tank",
                 "type": "RigidBody",
@@ -153,7 +153,7 @@ match SimulationCase:
 
         inputfiles = [water, tank, cylinder, cuboid]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,

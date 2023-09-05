@@ -1,4 +1,148 @@
 ----------
+Execution time: Tue Sep  5 14:21:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 14:20:28 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:26:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:24:35 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:23:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:21:27 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:19:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:16:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:15:03 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Tue Sep  5 00:09:22 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 23:32:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 23:25:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 22:55:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 22:44:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 22:41:23 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
+Execution time: Mon Sep  4 19:40:30 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+
+Command line arguments:
+  arg1: ./input_files/testALE
+----------
 Execution time: Mon Sep  4 19:04:34 2023
 
 Machine Information:
@@ -2983,6 +3127,22 @@ Machine Information:
   Operating System: Darwin 22.5.0
 
 No arguments provided. Write input JSON file directory.
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------
