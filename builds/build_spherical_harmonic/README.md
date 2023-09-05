@@ -71,38 +71,6 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
-<table>
-<thead>
-<tr>
-<th></th>
-<th>**$`n=4`$**</th>
-<th>**$`n=5`$**</th>
-<th>**$`n=6`$**</th>
-<th>**$`n=7`$**</th>
-<th>**$`n=8`$**</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>**$`{\bf x} = (0,0,0),{\bf a} = (5,5,5)`$**</td>
-<td><img src="output_n4_A_5_5_5.png"></td>
-<td><img src="output_n5_A_5_5_5.png"></td>
-<td><img src="output_n6_A_5_5_5.png"></td>
-<td><img src="output_n7_A_5_5_5.png"></td>
-<td><img src="output_n8_A_5_5_5.png"></td>
-</tr>
-<tr>
-<td>**$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$**</td>
-<td><img src="output_n4_A_10_10_10.png"></td>
-<td><img src="output_n5_A_10_10_10.png"></td>
-<td><img src="output_n6_A_10_10_10.png"></td>
-<td><img src="output_n7_A_10_10_10.png"></td>
-<td><img src="output_n8_A_10_10_10.png"></td>
-</tr>
-</tbody>
-</table>
-
-
 | | **n=4** | **n=5** | **n=6** | **n=7** | **n=8** |
 |:----:|:---:|:---:|:---:|:---:|:---:|
 | **$`{\bf x} = (0,0,0),{\bf a} = (5,5,5)`$** | ![n4_A_5_5_5](output_n4_A_5_5_5.png) | ![n5_A_5_5_5](output_n5_A_5_5_5.png) | ![n6_A_5_5_5](output_n6_A_5_5_5.png) | ![n7_A_5_5_5](output_n7_A_5_5_5.png) | ![n8_A_5_5_5](output_n8_A_5_5_5.png) |
@@ -164,7 +132,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 | **$`{\bf x} = (0,0,0),{\bf a} = (10,10,10)`$** | ![n4_A_10_10_10](output_n4_A_10_10_10_grad.png) | ![n5_A_10_10_10](output_n5_A_10_10_10_grad.png) | ![n6_A_10_10_10](output_n6_A_10_10_10_grad.png) | ![n7_A_10_10_10](output_n7_A_10_10_10_grad.png) | ![n8_A_10_10_10](output_n8_A_10_10_10_grad.png) |
 
 
-[./test_multipole_expansion.cpp#L178](./test_multipole_expansion.cpp#L178)
+[./test_multipole_expansion.cpp#L146](./test_multipole_expansion.cpp#L146)
 
 
 ## ⛵ 境界要素法への応用 
@@ -230,7 +198,7 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 ```
 
 
-[./test_multipole_expansion.cpp#L317](./test_multipole_expansion.cpp#L317)
+[./test_multipole_expansion.cpp#L285](./test_multipole_expansion.cpp#L285)
 
 
 ---
