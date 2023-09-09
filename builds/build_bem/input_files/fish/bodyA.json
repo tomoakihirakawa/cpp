@@ -1,0 +1,22 @@
+{
+    "name": "bodyA",
+    "type": "RigidBody",
+    "COM": [
+        0.05,
+        0,
+        0
+    ],
+    "velocity": [
+        "sin",
+        0,
+        0.1,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/fish/bodyA50.obj"
+}

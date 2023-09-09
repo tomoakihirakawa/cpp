@@ -2,13 +2,15 @@
     "name": "cylinder",
     "type": "RigidBody",
     "velocity": [
-        "sin",
+        "const",
         0,
-        0.1,
-        5,
+        0.017453292519943295,
         0,
-        1,
-        0
+        0,
+        0,
+        0,
+        0,
+        1
     ],
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/testALE/cylinder400.obj"
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/testALE/cylinder100.obj"
 }

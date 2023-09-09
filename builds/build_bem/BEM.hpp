@@ -248,7 +248,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_Tddd P_accelNeumann = p_tdd0;
       uomap_P_Tddd P_phin_Dirichlet = p_tdd0;
       uomap_P_Tddd P_U_BEM = p_tdd0;
-      uomap_P_Tddd P_U_tangential_BEM = p_tdd0;
+      uomap_P_Tddd P_U_shift_BEM = p_tdd0;
       uomap_P_Tddd P_position = p_tdd0;
       uomap_P_Tddd P_normal_BEM = p_tdd0;
       uomap_P_Tddd P_gradPhi = p_tdd0;
@@ -301,6 +301,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_accelNeumann[p] = accelNeumann(p);
             P_uNeumann[p] = uNeumann(p);
             P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
+            P_U_shift_BEM[p] = p->vecToSurface;
             P_isMultipleNode[p] = p->isMultipleNode;
             P_phi[p] = std::get<0>(p->phiphin);
             P_phin[p] = std::get<1>(p->phiphin);
@@ -330,7 +331,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"uNeumann", P_uNeumann},
              {"isMultipleNode", P_isMultipleNode},
              {"U_BEM", P_U_BEM},
-             {"U_tangential_BEM", P_U_tangential_BEM},
+             {"U_shift_BEM", P_U_shift_BEM},
              {"ContactFaces", P_ContactFaces},
              {"faces Neuamnn", P_facesNeuamnn},
              {"grad_phi", P_gradPhi},

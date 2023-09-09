@@ -36,10 +36,6 @@ path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/testALE/'
 # ./remesh3 ${path}water.obj ${path} water_case3_ 1000 
 # ./remesh4 ${path}water.obj ${path} water_case4_ 1000 
 ./remesh5 ${path}water.obj ${path} water_case5_ 1000 
-
-# ./remesh2 ${path}water.obj ${path} water_case2_ 300
-# ./remesh3 ${path}water.obj ${path} water_case3_ 300
-# ./remesh4 ${path}water.obj ${path} water_case4_ 300
-# ./remesh1 ${path}cylinder.obj ${path} cylinder 400
-# ./remesh4 ${path}cuboid.obj ${path} cuboid 400
-# ./remesh ${path}tank.obj ${path} tank 500
+# ./remesh5 ${path}cylinder.obj ${path} cylinder 100 &
+# ./remesh5 ${path}cuboid.obj ${path} cuboid 100 &
+# ./remesh5 ${path}tank.obj ${path} tank 100

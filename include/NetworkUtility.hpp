@@ -128,11 +128,8 @@ bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
 共通点は，許されない移動を防止する移動前に，移動後の形状をチェックすることである．
 `canFlip`と同様，\ref{isValidTriangle}{`isValidTriangle`}を用いる．
 
-
 徐々に移動させる場合，誤差の蓄積，条件の変化を把握するのが難しい．
 大きな変化は防げても，小さな変化には対応できない場合が考えられる．
-
-
 
 */
 
@@ -143,18 +140,17 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
          // 無視できる角度
          const double negligible_angle = 1E-2 * M_PI / 180.;
          const bool negligibly_flat = isFlat(p, negligible_angle);
-         const bool at_least_positive = isFlat(p, M_PI / 3);
          const double acceptable_change_angle = 1E-5 * M_PI / 180.;
          const auto faces = ToVector(p->getFaces());
-
-         auto checkIfNextIsFlat = [&](Tddd &V) {
+         Tddd X0, X1, X2;
+         auto check_if_next_faces_valid = [&](Tddd &V) {
             for (const auto &f : faces) {
                auto [p0, p1, p2] = f->getPoints();
                if (p0 != p && p1 != p && p2 != p)
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p0 != p && p1 != p && p2 != p");
-               auto X0 = p0->X;
-               auto X1 = p1->X;
-               auto X2 = p2->X;
+               X0 = p0->X;
+               X1 = p1->X;
+               X2 = p2->X;
                if (p0 == p)
                   X0 += V;
                else if (p1 == p)
@@ -165,7 +161,6 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
                T3Tddd vertices = {X0, X1, X2};
                if (!isValidTriangle(vertices, 1E-2 * M_PI / 180.))
                   return false;
-
                if (!isFlat(Cross(p1->X - p0->X, p2->X - p0->X), Cross(X1 - X0, X2 - X0), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
                   return false;
                if (!isFlat(Cross(p2->X - p1->X, p0->X - p1->X), Cross(X2 - X1, X0 - X1), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
@@ -180,10 +175,9 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
 
          if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
          {
-            // Tddd V = exact_along_surface(p, Mean(extractXtuple(ps)) - ToX(p));
             Tddd V = exact_along_surface(p, SmoothingVector(p));
             for (auto i = 0; i < 10; ++i) {
-               if (checkIfNextIsFlat(V)) {
+               if (check_if_next_faces_valid(V)) {
                   p->setX(p->X + V);
                   return;
                } else
@@ -199,35 +193,76 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
 
 /* ------------------------------------------------------ */
 
-Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> func) {
+Tddd DistorsionMeasureWeightedSmoothingVector2(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
    if (!isEdgePoint(p)) {
-      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X;
+      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X, Xmid, vertical;
       T3Tddd t3tdd;
-      double Wtot = 0, W;
+      double Wtot = 0, W, height;
       for (const auto &f : p->getFaces()) {
          auto [p0, p1, p2] = f->getPoints(p);
-         auto [X0, X1, X2] = t3tdd = {func(p0), func(p1), func(p2)};
-         W = std::log10(CircumradiusToInradius(t3tdd));
+         auto [X0, X1, X2] = t3tdd = {position(p0), position(p1), position(p2)};
+         W = std::log2(CircumradiusToInradius(t3tdd) - 1.) + 1;
+         if (p0->CORNER)
+            W *= 2;
+         if (p1->CORNER)
+            W *= 2;
+         if (p2->CORNER)
+            W *= 2;
+         W *= W;
          Wtot += W;
-         X = Norm(X2 - X1) * sin(M_PI / 3.) * Normalize(Chop(X0 - X1, X2 - X1)) + (X2 + X1) / 2.;
+         Xmid = (X2 + X1) / 2.;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * sin(M_PI / 3.);
+         X = height * vertical + Xmid;
          V += W * X;
       }
-      return V / Wtot - func(p);
+      double Wtot_first = Wtot;
+      for (const auto &l : p->getLines())
+         if (l->CORNER) {
+            W = Wtot_first / 2.;
+            Wtot += W;
+            V += W * position((*l)(p));
+         }
+      return V / Wtot - position(p);
+   } else
+      return {0., 0., 0.};
+};
+
+Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
+   if (!isEdgePoint(p)) {
+      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X, Xmid, vertical;
+      T3Tddd t3tdd;
+      double Wtot = 0, W, height;
+      for (const auto &f : p->getFaces()) {
+         auto [p0, p1, p2] = f->getPoints(p);
+         auto [X0, X1, X2] = t3tdd = {position(p0), position(p1), position(p2)};
+         W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
+         Wtot += W;
+         Xmid = (X2 + X1) / 2.;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * sin(M_PI / 3.);
+         X = height * vertical + Xmid;
+         V += W * X;
+      }
+      return V / Wtot - position(p);
    } else
       return {0., 0., 0.};
 };
 
 Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p) {
    if (!isEdgePoint(p)) {
-      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X;
+      Tddd ret = {0., 0., 0.}, V = {0., 0, 0.}, X, Xmid, vertical;
       T3Tddd t3tdd;
-      double Wtot = 0, W;
+      double Wtot = 0, W, height;
       for (const auto &f : p->getFaces()) {
          t3tdd = ToX(f->getPoints(p));
          auto [X0, X1, X2] = t3tdd;
-         W = std::log10(CircumradiusToInradius(t3tdd));
+         W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
          Wtot += W;
-         X = Norm(X2 - X1) * sin(M_PI / 3.) * Normalize(Chop(X0 - X1, X2 - X1)) + (X2 + X1) / 2.;
+         Xmid = (X2 + X1) / 2.;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * sin(M_PI / 3.);
+         X = height * vertical + Xmid;
          V += W * X;
       }
       return V / Wtot - p->X;
@@ -237,23 +272,23 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p) {
 
 void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return DistorsionMeasureWeightedSmoothingVector(q); });
+      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.05 * DistorsionMeasureWeightedSmoothingVector(q); });
 };
 
 /* ------------------------------------------------------ */
 
-Tddd AreaWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> func) {
+Tddd AreaWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
    if (!isEdgePoint(p)) {
       Tddd X, V = {0., 0, 0.};
       T3Tddd t3tdd;
       double Wtot = 0, W;
       for (const auto &f : p->getFaces()) {
          auto [p0, p1, p2] = f->getPoints();
-         t3tdd = {func(p0), func(p1), func(p2)};
+         t3tdd = {position(p0), position(p1), position(p2)};
          Wtot += (W = TriangleArea(t3tdd));
          V += W * (X = Centroid(t3tdd));
       }
-      return V / Wtot - func(p);
+      return V / Wtot - position(p);
    } else
       return {0., 0., 0.};
 }
@@ -276,19 +311,19 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
 void AreaWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
       for (const auto &p : ps) {
-         SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return AreaWeightedSmoothingVector(q); });
+         SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.1 * AreaWeightedSmoothingVector(q); });
          // for (auto &q : Flatten(BFS(p, 2)))
          //    q->setX(q->X);
       };
 };
 /* ------------------------------------------------------ */
 
-Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> func) {
+Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
    if (!isEdgePoint(p)) {
       Tddd V = {0.0, 0.0, 0.0};
       for (const auto &q : p->getNeighbors())
-         V += func(q);
-      return V / static_cast<double>(p->getNeighbors().size()) - func(p);
+         V += position(q);
+      return V / static_cast<double>(p->getNeighbors().size()) - position(p);
    } else {
       return {0.0, 0.0, 0.0};
    }
@@ -305,8 +340,9 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p) {
 
 void LaplacianSmoothingPreserveShape(const auto &ps, const int times = 1) {
    for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return ArithmeticWeightedSmoothingVector(q); });
+      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.1 * ArithmeticWeightedSmoothingVector(q); });
 };
+
 /* ------------------------------------------------------ */
 
 void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0) {

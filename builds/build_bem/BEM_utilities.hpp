@@ -243,22 +243,48 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-   } else if (name.contains("sinusoidal") || name.contains("sin")) {
-      if (strings.size() == 7) {
-         double start = stod(strings[1] /*start*/);
-         if (t >= start) {
-            double a = stod(strings[2] /*a*/);
-            double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-            Tddd axis = {stod(strings[4]), stod(strings[5]), stod(strings[6])};
-            double A = a * w * sin(w * (t - start));
-            return {A * axis[0], A * axis[1], A * axis[2], 0., 0., 0.};
-         }
-      } else {
+   } else if (name.contains("sinusoidal") || name.contains("sin") || name.contains("cos")) {
+      /*DOC_EXTRACT 0_5_WAVE_GENERATION
+
+      ### 正弦・余弦（`sin` もしくは `cos`）の運動
+
+      |   | name        |  description  |
+      |:-:|:-----------:|:-------------:|
+      | 0 | `sin`/`cos` |    name       |
+      | 1 | `start`     | start time    |
+      | 2 | `a`         | amplitude     |
+      | 3 | `T`         | period        |
+      | 4 | `axis`      | x             |
+      | 5 | `axis`      | y             |
+      | 6 | `axis`      | z             |
+      | 7 | `axis`      | rotation in x axis  |
+      | 8 | `axis`      | rotation in y axis  |
+      | 9 | `axis`      | rotation in z axis  |
+
+      名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
+      名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
+
+      */
+      if (strings.size() != 7 &&
+          strings.size() != 10 &&
+          strings.size() != 13 /*with a center rotation*/) {
          std::stringstream ss;
-         int i = 0;
-         for (const auto &s : strings)
-            ss << i++ << ":" << s << std::endl;
+         for (size_t i = 0; i < strings.size(); ++i)
+            ss << i << ":" << strings[i] << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      }
+
+      double start = std::stod(strings[1]);
+      if (t < start)
+         return {0, 0, 0, 0, 0, 0};
+      else {
+         double a = std::stod(strings[2]);
+         double w = std::abs(2 * M_PI / std::stod(strings[3]));
+         double A = (name.contains("cos") ? a * w * sin(w * (t - start)) : a * w * cos(w * (t - start)));
+         T6d axis;
+         for (size_t i = 4; i < strings.size(); ++i)
+            axis[i - 4] = A * std::stod(strings[i]);
+         return axis;
       }
    } else if (name.contains("constant") || name.contains("const")) {
       double start = stod(strings[1] /*start*/);

@@ -174,7 +174,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 40. * M_PI / 180.;
+const double contact_angle = 35. * M_PI / 180.;
 
 // \label{isFacing}
 bool isFacing(const Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };

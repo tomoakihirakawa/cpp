@@ -37,10 +37,10 @@
 ## [build_root_finding](./builds/build_root_finding/README.md)
 
 - [Contents](./builds/build_root_finding/README.md#Contents)
-    - [⛵ 準ニュートン法](./builds/build_root_finding/README.md#⛵-準ニュートン法)
 - [🐋 ニュートン法](./builds/build_root_finding/README.md#🐋-ニュートン法)
     - [⛵ ニュートン法](./builds/build_root_finding/README.md#⛵-ニュートン法)
     - [⛵ ロボットの節をLighthillの曲線上に乗せる](./builds/build_root_finding/README.md#⛵-ロボットの節をLighthillの曲線上に乗せる)
+    - [⛵ 準ニュートン法](./builds/build_root_finding/README.md#⛵-準ニュートン法)
 ## [build_spherical_harmonic](./builds/build_spherical_harmonic/README.md)
 
 - [Contents](./builds/build_spherical_harmonic/README.md#Contents)

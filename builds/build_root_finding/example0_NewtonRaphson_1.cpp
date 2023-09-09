@@ -3,28 +3,28 @@
 
 auto w = std::setw(20);
 
-/*DOC_EXTRACT newton
+/*DOC_EXTRACT 0_1_1_quasiNewton
 
 ## ロボットの節をLighthillの曲線上に乗せる
 
 ### レビュー
 
-[REVIEW.md](./REVIEW.md)
+\insert{./REVIEW.md}
 
 ### Lighthillの式
 
 Lighthillの式：
 
-$$
+```math
 {\bf x}^{\rm LH}(x,t) = (x,y^{\rm LH}(x,t)),\quad
 y^{\rm LH}(x,t) = \left( \frac{c_1}{L} x + {c_2} \left(\frac{x}{L}\right)^2 \right) \sin \left( \frac{2 \pi}{L} x - \omega t \right)
-$$
+```
 
 ロボットの$i$番目の節の位置ベクトル：
 
-$$
+```math
 {\bf x}_{i}^{\rm rb} = {\bf x}_{i-1}^{\rm rb} + r \left( \cos \theta_i, \sin \theta_i \right)
-$$
+```
 
 ここで，変数の意味は以下の通り．
 
@@ -44,15 +44,16 @@ $$
 Lighthillの式にこの節を乗せるには，どのような目的関数$f$を用いればよいだろうか．
 最適化する節の一つ前の節の位置を${\bf a}=(a_x,a_y)$とすると，次の目的関数$f$が考えられる．
 
-$$
+```math
 f(\theta) = y^{\rm LH}(x,t) - a_y - r \sin \theta
-$$
+```
 
 ニュートン法には微分が必要．
 
-$$
+```math
 \frac{df}{d\theta} = -r \sin\theta\frac{d y^{\rm LH} }{dx}-r\cos\theta
-$$
+```
+
 
 ただ，$f$を目的関数とすると根への収束が良くなかったので，$f^2/2$を目的関数として計算する．目的関数の微分は，$f \frac{df}{d\theta}$としている．
 
@@ -67,7 +68,7 @@ NOTE: この目的関数$f$には，前の節の位置が含まれているが�
 愚直にニュートン法を適用すると，比較的振幅が大きい場合，正しい角度が得られない．
 例えば以下のケース．
 
-```
+```cpp
 double L = 0.71;
 double w = 2. * M_PI * 1.0;
 double k = 2. * M_PI * 2.0;
@@ -92,14 +93,14 @@ LighthillRobotのクラスは，\ref{newton:LighthillRobot}{ここ}で宣言し�
 
 話がNewton法から離れるが，ロボットのエネルギー効率について．この内容は後で移動しておく．
 
-ロボットの運動エネルギーは，$\frac{1}{2}m v^2$．
+ロボットの運動エネルギーは，$`\frac{1}{2}m v^2`$．
 ロボットの運動エネルギーがロボットの出力だけから得られるとすると，
 ロボットの出力は，このロボットの運動エネルギーの時間変化，$m v\frac{dv}{dt}$となる．
 供給電力$P$は，電流$I$と電圧$V$の積$P = I V$なので，ロボットのエネルギー効率は，
 
-$$
+```math
 \eta = \frac{m v a}{I V}
-$$
+```
 
 */
 

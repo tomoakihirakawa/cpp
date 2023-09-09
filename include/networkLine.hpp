@@ -1640,7 +1640,7 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
          return false;
 
       //$ area conservation
-      return TriangleArea(tri0) + TriangleArea(tri1) == TriangleArea(tri0_now) + TriangleArea(tri1_now);
+      return true;  // TriangleArea(tri0) + TriangleArea(tri1) == TriangleArea(tri0_now) + TriangleArea(tri1_now);
 
    } catch (const std::exception &e) {
       std::cerr << e.what() << std::endl;
