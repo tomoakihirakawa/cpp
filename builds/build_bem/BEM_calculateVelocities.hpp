@@ -125,120 +125,14 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
    return ret;
 };
 
-bool factor_angle(const networkPoint *p, const Tddd &ubuff) {
-   for (const auto &f : p->getFaces()) {
-      auto [p0, p1, p2] = f->getPoints(p);
-      if (0 > Dot(RK_with_Ubuff_Normal(f),
-                  TriangleNormal(T3Tddd{RK_with_Ubuff(p0, ubuff), RK_with_Ubuff(p1), RK_with_Ubuff(p2)})))
-         return false;
-      if (0 > Dot(RK_without_Ubuff_Normal(f),
-                  TriangleNormal(T3Tddd{RK_with_Ubuff(p0, ubuff), RK_with_Ubuff(p1), RK_with_Ubuff(p2)})))
-         return false;
-   }
-   return true;
-};
-
-double minNextLineLength(const networkPoint *p) {
-   double len = 1E+20;
-   for (const auto &l : p->getLines()) {
-      auto [p0, p1] = l->getPoints();
-      double norm = Norm(RK_with_Ubuff(p0) - RK_with_Ubuff(p1));
-      if (len > norm)
-         len = norm;
-   }
-   return len;
-};
-
-double meanNextLineLength(const networkPoint *p) {
-   double len = 0;
-   int count = 0;
-   for (const auto &l : p->getLines()) {
-      auto [p0, p1] = l->getPoints();
-      double norm = Norm(RK_with_Ubuff(p0) - RK_with_Ubuff(p1));
-      len += norm;
-      count++;
-   }
-   return len / count;
-};
-
-Tddd factor(const networkPoint *p, const Tddd &ubuff, const double max_ratio = 0.01) {
-   double adjustment = Norm(RK_with_Ubuff(p) - RK_with_Ubuff(p, ubuff));
-   double minLenNext = meanNextLineLength(p);
-   double ratio = adjustment / minLenNext;
-   auto tmp = (ratio < max_ratio) ? ubuff : max_ratio * ubuff / ratio;
-   if (factor_angle(p, tmp))
-      return tmp;
-   else
-      return {0, 0, 0};
-};
-
-double variance2(const networkPoint *p, const networkFace *f) {
-   auto [p0, p1, p2] = f->getPoints(p);
-   double m = 0, l0, l1, l2;
-   m += (l0 = Norm(RK_with_Ubuff(p0) - RK_with_Ubuff(p1)));
-   m += (l1 = Norm(RK_with_Ubuff(p1) - RK_with_Ubuff(p2)));
-   m += (l2 = Norm(RK_with_Ubuff(p2) - RK_with_Ubuff(p0)));
-   m /= 3.;
-   auto ret = std::pow(l0 - m, 2) + std::pow(l1 - m, 2) + std::pow(l2 - m, 2);
-   return 10 * ret / (m * m);
-};
-
 // \label{BEM:vectorTangentialShift}
-Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
-   // auto V = scale * ArithmeticWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-   auto V = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-   // auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+Tddd vectorTangentialShift(const networkPoint *p, double scale = 1.) {
+   Tddd V = {0., 0., 0.};
+   // V += scale * ArithmeticWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+   // V += scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+   V += scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
    return condition_Ua(V, p);
 };
-
-// Tddd vectorTangentialShift(const networkPoint *p, const double scale = 1.) {
-//    Tddd vector_to_optimum_X = {0., 0., 0.}, pX = RK_with_Ubuff(p);
-//    double s = 0;
-//    // if (p->CORNER) {
-//    //    for (const auto &l : p->getLinesCORNER()) {
-//    //       vector_to_optimum_X += RK_with_Ubuff((*l)(p)) - pX;
-//    //       s += 1.;
-//    //    }
-//    // } else
-
-//    // auto decrese = [&](const Tddd &V) { return Norm(condition_Ua(V, p)) - Norm(V); };
-
-//    auto max_a = 0;
-//    for (const auto &f : p->getFaces()) {
-//       auto nP012 = RK_with_Ubuff(f->getPoints(p));
-//       auto &[np0x, np1x, np2x] = nP012;
-//       double a = std::log10(CircumradiusToInradius(nP012));
-//       if (std::ranges::any_of(f->getLines(), [](const auto &l) { return l->CORNER; })) {
-//          a *= std::pow(2., 3);
-//       } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) { return p->isMultipleNode; })) {
-//          a *= std::pow(1.5, 2);
-//       } else if (std::ranges::any_of(f->getPoints(), [](const auto &p) {
-//                     return std::ranges::any_of(p->getFaces(), [](const auto &F) {
-//                        return std::ranges::any_of(F->getPoints(), [](const auto &q) { return q->isMultipleNode; });
-//                     });
-//                  })) {
-//          a *= 1.5;
-//       }
-
-//       auto optimum_position = Norm(np2x - np1x) * Normalize(Chop(np0x - np1x, np2x - np1x)) * sin(M_PI / 3.) + (np2x + np1x) / 2.;
-//       vector_to_optimum_X += a * condition_Ua(optimum_position - pX, p);
-//       s += a;
-//       if (max_a < a)
-//          max_a = a;
-//    }
-
-//    if (p->isMultipleNode)
-//       for (const auto &l : p->getLines()) {
-//          auto q = (*l)(p);
-//          if (q->isMultipleNode) {
-//             vector_to_optimum_X += max_a * condition_Ua(RK_with_Ubuff(q) - pX, p);
-//             s += max_a;
-//          }
-//       }
-//    vector_to_optimum_X /= s;
-//    // return condition_Ua(scale * vector_to_optimum_X, p);
-//    return scale * vector_to_optimum_X;
-// };
 
 // \label{BEM:vectorToNextSurface}
 Tddd vectorToNextSurface(const networkPoint *p) {
@@ -271,7 +165,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       }
 
       Tddd p_X_on_CORNER = pX + to_corner;
-      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
+      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 4));
       if (!next_Vrtx.empty()) {
          std::vector<networkFace *> pf_to_check;
          for (const auto &pf : p->getFacesNeumann()) {
@@ -332,7 +226,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       p->vecToSurface.fill(0.);
    }
 
-   auto addVectorTangentialShift = [&]() {
+   auto addVectorTangentialShift = [&](const int k = 0) {
    // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
 #pragma omp parallel
       for (const auto &p : net.getPoints())
@@ -341,13 +235,18 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          double a = 0.01;
          double scale = 10. * a;
          if (p->isMultipleNode && !p->CORNER)
-            scale = 5. * a;
+            scale = a;
          else if (p->Neumann)
-            scale = 5. * a;
-         else if (p->CORNER)
-            scale = 5. * a;
+            scale = a;
 
-         p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
+         if (k < 10) {
+            auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            p->vecToSurface_BUFFER = condition_Ua(V, p);
+         } else {
+            auto V = scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            p->vecToSurface_BUFFER = condition_Ua(V, p);
+         }
+         // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
       }
       for (const auto &p : net.getPoints()) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);
@@ -371,7 +270,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    for (auto kk = 0; kk < loop; ++kk) {
       if (do_shift)
          // for (auto i = 0; i < 10; ++i)
-         addVectorTangentialShift();  // repeating this may led surface detaching
+         addVectorTangentialShift(kk);  // repeating this may led surface detaching
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
@@ -383,44 +282,6 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
 // b! -------------------------------------------------------------------------- */
 // b!                               calculateVelocities                          */
 // b! -------------------------------------------------------------------------- */
-
-// Tddd gradPhi(const networkPoint *const p) {
-//    try {
-//       Tddd u, accum;
-//       double w = 0;
-//       accum.fill(0.);
-//       if (p->CORNER) {
-//          for (const auto &f : p->getFacesDirichlet()) {
-//             auto [p0, p1, p2] = f->getPoints(p);
-//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-//             u += f->normal * p->phinOnFace.at(nullptr);
-//             accum += f->area * u;
-//             w += f->area;
-//          }
-//       } else if (p->Dirichlet) {
-//          for (const auto &f : p->getFaces()) {
-//             auto [p0, p1, p2] = f->getPoints(p);
-//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-//             u += f->normal * p->phinOnFace.at(nullptr);
-//             accum += f->area * u;
-//             w += f->area;
-//          }
-//       } else {
-//          for (const auto &f : p->getFaces()) {
-//             auto [p0, p1, p2] = f->getPoints(p);
-//             u = gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
-//             u += f->normal * p->phinOnFace.at(p->phinOnFace.count(f) ? f : nullptr);
-//             accum += f->area * u;
-//             w += f->area;
-//          }
-//       }
-//       return accum / w;
-
-//    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
-//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//    };
-// };
 
 void calculateCurrentVelocities(const Network &net) {
 #pragma omp parallel

@@ -16,6 +16,10 @@ def generate(inputfiles, setting):
     magenta = '\033[95m'
     coloroff = '\033[0m'
 
+    # if input_files is not found in setting, then add it
+    if "input_files" not in setting:
+        setting["input_files"] = [x["name"]+".json" for x in inputfiles]
+
     # @ -------------------------------------------------------- #
     # @           その他，water.json,tank.json などを出力           #
     # @ -------------------------------------------------------- #
@@ -119,31 +123,79 @@ input_directory = "./input_files/"
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "testALE"
+SimulationCase = "fish"
 
 match SimulationCase:
+    case "fish":
+
+        start = 0.
+
+        id = ""
+
+        input_directory += SimulationCase + id
+        os.makedirs(input_directory, exist_ok=True)
+        output_directory = home + "/BEM/"+SimulationCase + id
+        os.makedirs(output_directory, exist_ok=True)
+
+        objfolder = program_home + "/cpp/obj/fish"
+        water = {"name": "water",
+                 "type": "Fluid",
+                 "objfile": objfolder + "/water100.obj"}
+
+        tank = {"name": "tank",
+                "type": "RigidBody", "isFixed": True,
+                "objfile": objfolder + "/tank50.obj"}
+
+        bodyA = {"name": "bodyA",
+                 "type": "RigidBody",
+                 "COM": [0.05, 0, 0],
+                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "objfile": objfolder + "/bodyA50.obj"}
+
+        bodyB = {"name": "bodyB",
+                 "type": "RigidBody",
+                 "COM": [0.05, 0, 0],
+                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "objfile": objfolder + "/bodyB50.obj"}
+
+        bodyC = {"name": "bodyC",
+                 "type": "RigidBody",
+                 "COM": [0.05, 0, 0],
+                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "objfile": objfolder + "/bodyC50.obj"}
+
+        inputfiles = [tank, water, bodyA, bodyB, bodyC]
+
+        setting = {"max_dt": 0.05,
+                   "end_time_step": 10000,
+                   "end_time": 9,
+                   "output_directory": output_directory}
+
+        generate(inputfiles, setting)
     case "testALE":
 
         objfolder = program_home + "/cpp/obj/testALE"
 
         water = {"name": "water",
                  "type": "Fluid",
-                 "objfile": objfolder + "/water_case4_600.obj"}
+                 "objfile": objfolder + "/water500mod.obj"}
 
         tank = {"name": "tank",
                 "type": "RigidBody",
-                "velocity": ["const", 0, 0.1, 0, 0, 0, 0, 0, 1],
-                "objfile": objfolder + "/tank400.obj"}
+                "velocity": ["const", 0, 0.0, 0, 0, 0, 0, 0, 1],
+                "objfile": objfolder + "/tank100.obj"}
 
         cylinder = {"name": "cylinder",
                     "type": "RigidBody",
-                    "velocity": ["sin", 0, 0.1, 5, 0, 1, 0],
-                    "objfile": objfolder + "/cylinder400.obj"}
+                    # "velocity": ["sin", 0, 0.05, 5, 0, 1, 0],
+                    "velocity": ["const", 0, pi/180., 0, 0, 0, 0, 0, 1],
+                    "objfile": objfolder + "/cylinder100.obj"}
 
         cuboid = {"name": "cuboid",
                   "type": "RigidBody",
-                  "velocity": ["sin", 0, -0.1, 5, 0, 1, 0],
-                  "objfile": objfolder + "/cuboid400.obj"}
+                  #   "velocity": ["sin", 0, -0.05, 5, 0, 1, 0],
+                  "velocity": ["const", 0, pi/180., 0, 0, 0, 0, 0, 1],
+                  "objfile": objfolder + "/cuboid100.obj"}
 
         id = ""
         input_directory += SimulationCase + id
@@ -153,14 +205,13 @@ match SimulationCase:
 
         inputfiles = [water, tank, cylinder, cuboid]
 
-        setting = {"max_dt": 0.01,
+        setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory,
                    "input_files": [x["name"]+".json" for x in inputfiles]}
 
         generate(inputfiles, setting)
-
     case "Ren2015":
 
         start = 0.

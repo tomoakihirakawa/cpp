@@ -1,10 +1,10 @@
-/*DOC_EXTRACT broyden
+/*DOC_EXTRACT 0_1_1_quasiNewton
 
 ## 準ニュートン法
 
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
 
-```
+```bash
 $ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_Broyden.cpp
 $ make
 $ ./example1_Broyden
