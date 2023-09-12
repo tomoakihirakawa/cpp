@@ -917,16 +917,14 @@ double Bspline(const double h, const V_d &q, const int i, const int K) {
 V_d Bspline(const V_d &h, const V_d &q, const int i, const int K) {
    // {B_0(x),B_1(x),B_2(x),B_3(x),.......}
    V_d ret(h.size());
-   for (auto k = 0; k < h.size(); k++)
-      ret[k] = Bspline(h[k], q, i, K);
+   for (auto k = 0; k < h.size(); k++) ret[k] = Bspline(h[k], q, i, K);
    return ret;
 };
 
 V_d Bspline(const double h, const V_d &q, const int K) {
    // {B_0(h),B_1(h),B_2(h),B_3(h),.......}
    V_d ret(q.size() - K);
-   for (auto i = 0; i < q.size() - K; i++)
-      ret[i] = Bspline(h, q, i, K);
+   for (auto i = 0; i < q.size() - K; i++) ret[i] = Bspline(h, q, i, K);
    return ret;
 };
 
@@ -935,8 +933,7 @@ VV_d Bspline(const V_d &H, const V_d &q, const int K) {
    //  {B_0(x1),B_1(x1),B_2(x1),B_3(x1),.......},
    //  {B_0(x2),B_1(x2),B_2(x2),B_3(x2),.......}}
    VV_d ret(H.size());
-   std::transform(H.begin(), H.end(), ret.begin(),
-                  [q, K](const auto h) { return Bspline(h, q, K); });
+   std::transform(H.begin(), H.end(), ret.begin(), [q, K](const auto h) { return Bspline(h, q, K); });
    return ret;
 };
 
@@ -960,8 +957,7 @@ double D_Bspline(const double h, const V_d &q, const int i, const int K, const i
 V_d D_Bspline(const double h, const V_d &q, const int K) {
    // {B_0(h),B_1(h),B_2(h),B_3(h),.......}
    V_d ret(q.size() - K);
-   for (auto i = 0; i < q.size() - K; i++)
-      ret[i] = D_Bspline(h, q, i, K);
+   for (auto i = 0; i < q.size() - K; i++) ret[i] = D_Bspline(h, q, i, K);
    return ret;
 };
 
@@ -2191,7 +2187,7 @@ struct JSON {
          return this->map_S_S.at(key);
    };
 
-   bool find(const std::string &key, const std::function<void(const std::vector<std::string> &)> &func) {
+   bool find(const std::string &key, const std::function<void(const std::vector<std::string> &)> &func) const {
       auto it = this->map_S_S.find(key);
       if (it != this->map_S_S.end()) {
          func(it->second);
@@ -2818,6 +2814,7 @@ struct Load3DFile {
    };
 
    Load3DFile() : eachMax(3, 0.), eachMin(3, 0.){};
+
    Load3DFile(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
       std::vector<V_s> read_line;
       Load(filename, read_line, {"    ", "   ", "  ", " "});

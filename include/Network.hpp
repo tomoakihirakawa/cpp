@@ -447,11 +447,11 @@ class networkPoint : public CoordinateBounds, public CSR {
    /* ------------------------------------------------------ */
    Tddd initialX;  // 必ず設定される
    //
-   T6d force;
-   T6d inertia;
-   T6d velocity;
-   T6d acceleration;
-   double mass;
+   T6d force = {0., 0., 0., 0., 0., 0.};
+   T6d inertia = {0., 0., 0., 0., 0., 0.};
+   T6d velocity = {0., 0., 0., 0., 0., 0.};
+   T6d acceleration = {0., 0., 0., 0., 0., 0.};
+   double mass = 0.;
    Tddd velocityTranslational() const { return {velocity[0], velocity[1], velocity[2]}; };
    Tddd velocityRotational() const { return {velocity[3], velocity[4], velocity[5]}; };
    Tddd accelTranslational() const { return {acceleration[0], acceleration[1], acceleration[2]}; };
@@ -465,9 +465,9 @@ class networkPoint : public CoordinateBounds, public CSR {
    double density, density_;
    double &rho = this->density;
    double &rho_ = this->density_;
-   double volume, volume_;
-   double radius;
-   double pressure;
+   double volume = 0., volume_ = 0.;
+   double radius = 0.;
+   double pressure = 0.;
    /* ------------------------------------------------------ */
    Tddd Fxyz() const { return {force[0], force[1], force[2]}; };
    Tddd Txyz() const { return {force[3], force[4], force[5]}; };
@@ -3568,19 +3568,20 @@ class Network : public CoordinateBounds {
 
    // b$ ------------------------------------------------------ */
   public:
-   T6d forced_velocity;
-   T6d forced_acceleration;
+   T6d forced_velocity = {0., 0., 0., 0., 0., 0.};
+   T6d forced_acceleration = {0., 0., 0., 0., 0., 0.};
 
   public:
    // @ ------------------------------------------------------ */
    // @                        剛体の力学に関する                 */
    // @ ------------------------------------------------------ */
+   InterpolationBspline<std::array<double, 6>> intpMotionRigidBody;
    //* ------------------------------------------------------ */
    //*                     運動を表す量                         */
    //* ------------------------------------------------------ */
-   T6d force;
-   T6d velocity;  // = {velocity,angular velocity}
-   T6d acceleration;
+   T6d force = {0., 0., 0., 0., 0., 0.};
+   T6d velocity = {0., 0., 0., 0., 0., 0.};  // = {velocity,angular velocity}
+   T6d acceleration = {0., 0., 0., 0., 0., 0.};
    InterpolationLagrange<T6d> interp_accel;
    Tddd velocityTranslational() const { return {std::get<0>(velocity), std::get<1>(velocity), std::get<2>(velocity)}; };
    Tddd velocityRotational() const { return {std::get<3>(velocity), std::get<4>(velocity), std::get<5>(velocity)}; };
@@ -3596,21 +3597,21 @@ class Network : public CoordinateBounds {
    //* ------------------------------------------------------ */
    //*                   位置や姿勢を表す量                      */
    //* ------------------------------------------------------ */
-   Tddd center_of_mass;    // 現在の座標を表す
-   Quaternion quaternion;  // 現在の姿勢を表す，初期のクォータニオンは固定で{1,0,0,0}
+   Tddd center_of_mass = {0., 0., 0.};  // 現在の座標を表す
+   Quaternion quaternion;               // 現在の姿勢を表す，初期のクォータニオンは固定で{1,0,0,0}
    Tddd &COM = this->center_of_mass;
    Quaternion &Q = this->quaternion;
    //* ------------------------------------------------------ */
    //*                   　　 不変の量                          */
    //* ------------------------------------------------------ */
-   Tddd initial_center_of_mass;  // 初期のの座標を表す
+   Tddd initial_center_of_mass = {0., 0., 0.};  // 初期のの座標を表す
    Tddd &ICOM = this->initial_center_of_mass;
-   double mass;
-   T6d inertia;
+   double mass = 1E+20;
+   T6d inertia = {1E+20, 1E+20, 1E+20, 1E+20, 1E+20, 1E+20};
    T6d &I = this->inertia;
    /* ------------------------------------------------------ */
-   double mass_tmp;
-   T6d inertia_tmp;
+   double mass_tmp = 1E+20;
+   T6d inertia_tmp = {1E+20, 1E+20, 1E+20, 1E+20, 1E+20, 1E+20};
    // make it very heavy to stop moving
    void makeImmovable() {
       this->mass_tmp = this->mass;
@@ -3624,7 +3625,7 @@ class Network : public CoordinateBounds {
       this->inertia = this->inertia_tmp;
    };
    /* ------------------------------------------------------ */
-   void RigidBodyMovePoints() {
+   void RigidBodyUpdatePoints() {
       // center_of_massとquaternionに従って計算
       // Tddd trans = this->center_of_mass - this->ICOM;
       // for (const auto &p : this->getPoints())
@@ -3811,7 +3812,7 @@ class Network : public CoordinateBounds {
 
   private:
    using V_netLp = std::vector<networkLine *>;
-   std::string name;
+   std::string name = "no_name";
    // 接続している点をLinesをとおして素早く参照できる
   protected:
    std::unordered_set<networkTetra *> Tetras;
@@ -3901,35 +3902,28 @@ class Network : public CoordinateBounds {
    //% ------------------------- obj ------------------------ */
    //% NetwrokObjは，Networkとしてコンストラクトするために，下のコンストラクタように修正した．*/
    // \label{Network::constructor}
-   Network(const std::string &filename = "no_name", const std::string &name_IN = "no_name")
+   Network(const std::string &filename = "file name is not given", const std::string &name_IN = "no_name")
        : CoordinateBounds(Tddd{{0., 0., 0.}}),
          name(name_IN),
-         force({0., 0., 0., 0., 0., 0.}),
-         inertia({0., 0., 0., 0., 0., 0.}),
-         forced_acceleration({0., 0., 0., 0., 0., 0.}),
-         forced_velocity({0., 0., 0., 0., 0., 0.}),
-         acceleration({0., 0., 0., 0., 0., 0.}),
-         velocity({0., 0., 0., 0., 0., 0.}),
-         mass(0.),
-         center_of_mass({0., 0., 0.}),
-         initial_center_of_mass({0., 0., 0.}),
          quaternion(Quaternion()),
          BucketFaces(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
          BucketPoints(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
          BucketParametricPoints(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
          IGNORE(false),
          grid_pull_depth(0),
-         //   grid_pull_factor({1., 0.}),
          velocity_name_start({"fixed", 0.}),
          inputJSON(),
          octreeOfFaces(nullptr),
          octreeOfPoints(nullptr),
          surfaceNet(nullptr) {
-      // load obj
-      std::cout << "load " << filename << std::endl;
-      Load3DFile objLoader(filename);
-      this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
-      this->displayStates();
+      if (filename.contains(".obj")) {
+         std::cout << "load " << filename << std::endl;
+         Load3DFile objLoader(filename);
+         this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
+         this->displayStates();
+      } else {
+         std::cout << filename << std::endl;
+      }
    };
    //% ------------------------------------------------------ */
    const std::string &getName() const { return this->name; };

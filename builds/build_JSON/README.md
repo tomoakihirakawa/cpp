@@ -91,7 +91,7 @@ os.close();
 
 このドキュメントはC++でのJSON操作の基本的な概要を簡単に説明したものです。実際の使用ケースや要件に応じて、コードは適宜調整してください。
 
-[../../include/basic.hpp#L2063](../../include/basic.hpp#L2063)
+[../../include/basic.hpp#L2059](../../include/basic.hpp#L2059)
 
 
 [./main.cpp#L6](./main.cpp#L6)

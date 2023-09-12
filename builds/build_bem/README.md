@@ -7,6 +7,7 @@
             - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
         - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
         - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
+    - [⛵ 入力ファイルの読み込み](#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
@@ -34,7 +35,7 @@
         - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
         - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
         - [🪼 補助関数を使った方法](#🪼-補助関数を使った方法)
-    - [⛵ 造波装置など](#⛵-造波装置など)
+    - [⛵ 陽に与えられる境界条件に対して（造波装置など）](#⛵-陽に与えられる境界条件に対して（造波装置など）)
         - [🪼 フラップ型造波装置](#🪼-フラップ型造波装置)
         - [🪼 ピストン型造波装置](#🪼-ピストン型造波装置)
         - [🪼 正弦・余弦（`sin` もしくは `cos`）の運動](#🪼-正弦・余弦（`sin`-もしくは-`cos`）の運動)
@@ -151,6 +152,16 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 
 ---
+## ⛵ 入力ファイルの読み込み 
+
+1. 境界条件の設定
+2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
+3. 三角形の線形補間を使って節点の流速を計算する
+
+
+[./main.cpp#L143](./main.cpp#L143)
+
+
 ## ⛵ 計算プログラムの概要 
 
 | 項目 | 詳細|
@@ -170,7 +181,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L372](./main.cpp#L372)
+[./main.cpp#L405](./main.cpp#L405)
 
 
 ---
@@ -182,7 +193,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L225)
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L175)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L180)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -649,7 +660,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L424](./main.cpp#L424)
+[./main.cpp#L457](./main.cpp#L457)
 
 
 ---
@@ -706,15 +717,15 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 
 
 ---
-## ⛵ 造波装置など 
+## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L343)
+[強制運動を課す](../../builds/build_bem/main.cpp#L376)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L111)で利用され，$\phi _{n}$を計算する．
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L116)で利用され，$\phi _{n}$を計算する．
 
 
 [./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
@@ -735,7 +746,7 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 | 8 | `axis`  | z       |
 
 
-[./BEM_utilities.hpp#L164](./BEM_utilities.hpp#L164)
+[./BEM_utilities.hpp#L160](./BEM_utilities.hpp#L160)
 
 
 ### 🪼 ピストン型造波装置 
@@ -762,7 +773,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
 
 
-[./BEM_utilities.hpp#L202](./BEM_utilities.hpp#L202)
+[./BEM_utilities.hpp#L198](./BEM_utilities.hpp#L198)
 
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
@@ -784,7 +795,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
 
-[./BEM_utilities.hpp#L247](./BEM_utilities.hpp#L247)
+[./BEM_utilities.hpp#L243](./BEM_utilities.hpp#L243)
 
 
 ---
@@ -939,7 +950,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L684](./main.cpp#L684)
+[./main.cpp#L718](./main.cpp#L718)
 
 
 ---
@@ -948,7 +959,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L718](./main.cpp#L718)
+[./main.cpp#L752](./main.cpp#L752)
 
 
 ---

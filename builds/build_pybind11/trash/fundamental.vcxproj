@@ -1,0 +1,332 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C77FC124-FE3C-3162-AA8F-CFD42009E87C}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>fundamental</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fundamental.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fundamental.cp39-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">fundamental.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">fundamental.cp39-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">fundamental.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">fundamental.cp39-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">fundamental.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">fundamental.cp39-win_amd64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.pyd</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) -Ofast -std=c++17 /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);CMAKE_INTDIR="Debug";fundamental_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;CMAKE_INTDIR=\"Debug\";fundamental_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\libs\python39.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>//mac/Dropbox/markdown/cpp/builds/build_pybind11/Debug/fundamental.lib</ImportLibrary>
+      <ProgramDataBaseFile>//mac/Dropbox/markdown/cpp/builds/build_pybind11/Debug/fundamental.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) -Ofast -std=c++17 /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);NDEBUG;CMAKE_INTDIR="Release";fundamental_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;NDEBUG;CMAKE_INTDIR=\"Release\";fundamental_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\libs\python39.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>//mac/Dropbox/markdown/cpp/builds/build_pybind11/Release/fundamental.lib</ImportLibrary>
+      <ProgramDataBaseFile>//mac/Dropbox/markdown/cpp/builds/build_pybind11/Release/fundamental.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) -Ofast -std=c++17 /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);NDEBUG;CMAKE_INTDIR="MinSizeRel";fundamental_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\";fundamental_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\libs\python39.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>//mac/Dropbox/markdown/cpp/builds/build_pybind11/MinSizeRel/fundamental.lib</ImportLibrary>
+      <ProgramDataBaseFile>//mac/Dropbox/markdown/cpp/builds/build_pybind11/MinSizeRel/fundamental.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) -Ofast -std=c++17 /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);NDEBUG;CMAKE_INTDIR="RelWithDebInfo";fundamental_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\";fundamental_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>\\mac\Dropbox\markdown\cpp\builds\build_pybind11\pybind11\include;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\libs\python39.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>//mac/Dropbox/markdown/cpp/builds/build_pybind11/RelWithDebInfo/fundamental.lib</ImportLibrary>
+      <ProgramDataBaseFile>//mac/Dropbox/markdown/cpp/builds/build_pybind11/RelWithDebInfo/fundamental.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\bin\cmake.exe -S//mac/Dropbox/markdown/cpp/builds/build_pybind11 -B//mac/Dropbox/markdown/cpp/builds/build_pybind11 --check-stamp-file //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeCXXCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeRCCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompilerABI.cpp;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCommonLanguageInclude.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCompilerIdDetection.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompileFeatures.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerABI.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerId.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeFindBinUtils.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeGenericSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeInitializeConfigs.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeLanguageInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseLibraryArchitecture.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystem.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInitialize.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCompilerCommon.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ROCMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CompilerId\VS-10.vcxproj.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Internal\FeatureTesting.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-Determine-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\bin\cmake.exe -S//mac/Dropbox/markdown/cpp/builds/build_pybind11 -B//mac/Dropbox/markdown/cpp/builds/build_pybind11 --check-stamp-file //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeCXXCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeRCCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompilerABI.cpp;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCommonLanguageInclude.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCompilerIdDetection.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompileFeatures.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerABI.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerId.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeFindBinUtils.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeGenericSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeInitializeConfigs.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeLanguageInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseLibraryArchitecture.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystem.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInitialize.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCompilerCommon.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ROCMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CompilerId\VS-10.vcxproj.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Internal\FeatureTesting.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-Determine-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\bin\cmake.exe -S//mac/Dropbox/markdown/cpp/builds/build_pybind11 -B//mac/Dropbox/markdown/cpp/builds/build_pybind11 --check-stamp-file //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeCXXCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeRCCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompilerABI.cpp;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCommonLanguageInclude.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCompilerIdDetection.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompileFeatures.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerABI.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerId.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeFindBinUtils.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeGenericSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeInitializeConfigs.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeLanguageInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseLibraryArchitecture.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystem.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInitialize.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCompilerCommon.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ROCMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CompilerId\VS-10.vcxproj.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Internal\FeatureTesting.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-Determine-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\bin\cmake.exe -S//mac/Dropbox/markdown/cpp/builds/build_pybind11 -B//mac/Dropbox/markdown/cpp/builds/build_pybind11 --check-stamp-file //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeCXXCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeRCCompiler.cmake;\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\3.21.1\CMakeSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXCompilerABI.cpp;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCXXInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCommonLanguageInclude.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeCompilerIdDetection.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompileFeatures.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerABI.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineCompilerId.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeDetermineSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeFindBinUtils.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeGenericSystem.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeInitializeConfigs.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeLanguageInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitIncludeInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseImplicitLinkInfo.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeParseLibraryArchitecture.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCCompiler.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeRCInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystem.cmake.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInformation.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeSystemSpecificInitialize.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCXXCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestCompilerCommon.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CMakeTestRCCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ADSP-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMCC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ARMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\AppleClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Borland-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Clang-DetermineCompilerInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Comeau-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Compaq-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Cray-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Embarcadero-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Fujitsu-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\FujitsuClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GHS-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\GNU-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\HP-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IAR-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IBMCPP-CXX-DetermineVersionInternal.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Intel-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\IntelLLVM-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\MSVC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVHPC-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\NVIDIA-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\OpenWatcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PGI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\PathScale-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\ROCMClang-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SCO-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\SunPro-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\TI-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\VisualAge-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\Watcom-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XL-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\XLClang-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Compiler\zOS-CXX-DetermineCompiler.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\CompilerId\VS-10.vcxproj.in;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Internal\FeatureTesting.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-Determine-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows-MSVC.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\Windows.cmake;C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\share\cmake-3.21\Modules\Platform\WindowsPaths.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">\\mac\Dropbox\markdown\cpp\builds\build_pybind11\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="\\mac\Dropbox\markdown\cpp\builds\build_pybind11\fundamental.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="\\mac\Dropbox\markdown\cpp\builds\build_pybind11\ZERO_CHECK.vcxproj">
+      <Project>{6BCE6F06-5FFC-324B-B870-71D056DADE2A}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

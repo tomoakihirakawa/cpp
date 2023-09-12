@@ -148,25 +148,37 @@ match SimulationCase:
 
         bodyA = {"name": "bodyA",
                  "type": "RigidBody",
-                 "COM": [0.05, 0, 0],
-                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "COM": [0., 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "bodyA.dat"],
                  "objfile": objfolder + "/bodyA50.obj"}
 
         bodyB = {"name": "bodyB",
                  "type": "RigidBody",
-                 "COM": [0.05, 0, 0],
-                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "COM": [0.35, 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "bodyB.dat"],
                  "objfile": objfolder + "/bodyB50.obj"}
 
         bodyC = {"name": "bodyC",
                  "type": "RigidBody",
-                 "COM": [0.05, 0, 0],
-                 "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "COM": [0.7, 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "bodyC.dat"],
                  "objfile": objfolder + "/bodyC50.obj"}
 
         inputfiles = [tank, water, bodyA, bodyB, bodyC]
 
-        setting = {"max_dt": 0.05,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9,
                    "output_directory": output_directory}

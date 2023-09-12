@@ -140,13 +140,13 @@ match SimulationCase:
 
         input_files = [wavetank, water,  sensor1, sensor2]
 
-        setting = {"RK_order": 2,  # \label{SPH:RK_order}
+        setting = {"RK_order": 1,  # \label{SPH:RK_order}
                    "max_dt": 0.0002,
                    "end_time_step": 100000,
                    "end_time": 4.,
                    "CSML": 2.7,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.0125,
+                   "particle_spacing": 0.015,
                    "input_files": [x["name"]+".json" for x in input_files]}
 
 # ---------------------------------------------------------------------------- #

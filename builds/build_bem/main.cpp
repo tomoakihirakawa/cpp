@@ -48,6 +48,16 @@ void logMachineInformation(std::ofstream &ofs) {
 
 int main(int argc, char **argv) {
 
+   /*DOC_EXTRACT 0_1_BEM
+
+   ## 入力ファイルの読み込み
+
+   1. 境界条件の設定
+   2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi_n`$を求める
+   3. 三角形の線形補間を使って節点の流速を計算する
+
+   */
+
    /* -------------------------------------------------------------------------- */
    /*                           Set up logging to file                           */
    /* -------------------------------------------------------------------------- */
@@ -168,6 +178,29 @@ int main(int argc, char **argv) {
          AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
 
       net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
+      // velocityにfileが指定されている場合は，そのファイルを読み込み，
+      // interpolationBsplineであるnet->intpMotionRigidBodyをsetする．
+      injson.find("velocity", [&](auto STR_VEC) {
+         if (STR_VEC[0].contains("file")) {
+            if (STR_VEC.size() == 1) throw std::runtime_error("Failed to open the input file.");
+            std::ifstream file(STR_VEC[1]);
+            if (!file.is_open()) throw std::runtime_error("Failed to open the input file.");
+            std::vector<double> T;
+            std::vector<std::array<double, 6>> XYZ_Angles;
+            std::string line;
+            double t, x, y, z, q0, q1, q2;
+            while (std::getline(file, line)) {
+               if (line[0] == '#') continue;
+               replace(line.begin(), line.end(), ',', ' ');
+               std::istringstream iss(line);
+               iss >> t >> x >> y >> z >> q0 >> q1 >> q2;
+               T.push_back(t);
+               XYZ_Angles.push_back({x, y, z, q0, q1, q2});
+            }
+            file.close();
+            net->intpMotionRigidBody.set(3, T, XYZ_Angles);
+         }
+      });
       net->isFloatingBody = net->isFloatingBody || (injson.find("acceleration") && injson.at("acceleration")[0] == "floating");
 
       net->resetInitialX();
@@ -355,6 +388,7 @@ int main(int argc, char **argv) {
 
                      std::cout << "name = " << net->getName() << std::endl;
                      std::cout << "net->COM - COM_old= " << net->COM - COM_old << std::endl;
+                     std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
                   }
                   //
                   // if (net->inputJSON.find("angle") && net->inputJSON.at("angle")[0] == "Hadzic2005") {
@@ -382,7 +416,7 @@ int main(int argc, char **argv) {
                   std::cout << net->getName() << "'s (RigidBodyObject) velocity is not updated" << std::endl;
                }
 
-               net->RigidBodyMovePoints();
+               net->RigidBodyUpdatePoints();
             }
 
             // b$ --------------------------------------------------- */

@@ -50,7 +50,7 @@ void setVectorToPolygon(const auto &water, const auto &RigidBodyObject, const do
 
          // erase elements in shared_lines and shared_points if the number is 1
          for (auto it = shared_lines.begin(); it != shared_lines.end();) {
-            if (it->first->isFlat(M_PI / 180))
+            if (it->first->isAdjacentFacesFlat(M_PI / 180))
                it = shared_lines.erase(it);
             else
                ++it;
@@ -418,7 +418,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       const auto radius = (p->radius_SPH / p->C_SML) * 2.;
 
       auto surface_condition0 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 4);
+         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 6);
       };
 
       p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0);
@@ -435,7 +435,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             p->isSurface = obj->BucketPoints.none_of(p->X, radius, surface_condition1);
          }
 
-      if (p->intp_density / _WATER_DENSITY_ < 0.4)
+      if (p->intp_density / _WATER_DENSITY_ < 0.9)
          p->isSurface = true;
    }
 

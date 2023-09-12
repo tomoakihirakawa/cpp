@@ -9,7 +9,9 @@
 #include "basic_arithmetic_array_operations.hpp"
 #include "interpolations.hpp"
 
-/*DOC_EXTRACT interpolation
+/*DOC_EXTRACT 0_1_0_interpolation
+
+# 補間
 
 ## ラグランジュ補間
 
