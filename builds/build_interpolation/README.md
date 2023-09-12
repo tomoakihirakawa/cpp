@@ -1,6 +1,10 @@
 # Contents
 
 - [🐋 補間](#🐋-補間)
+    - [⛵ ラグランジュ補間](#⛵-ラグランジュ補間)
+    - [⛵ B-spline補間](#⛵-B-spline補間)
+        - [🪼 実行方法](#🪼-実行方法)
+        - [🪼 コード](#🪼-コード)
     - [⛵ ⛵ 放射関数補間](#⛵-⛵-放射関数補間)
         - [🪼 🪼 重み$`w _i`$の見積もり](#🪼-🪼-重み$`w-_i`$の見積もり)
         - [🪼 🪼 放射基底関数$`\phi`$](#🪼-🪼-放射基底関数$`\phi`$)
@@ -14,12 +18,74 @@
         - [🪼 🪼 最適なパラメタ$`{\varepsilon}`$](#🪼-🪼-最適なパラメタ$`{\varepsilon}`$)
     - [⛵ 三角形補間](#⛵-三角形補間)
     - [⛵ ⛵ 範囲を修正した三角形形状関数](#⛵-⛵-範囲を修正した三角形形状関数)
-    - [⛵ B-spline補間](#⛵-B-spline補間)
-    - [⛵ ラグランジュ補間](#⛵-ラグランジュ補間)
 
 
 ---
 # 🐋 補間 
+
+## ⛵ ラグランジュ補間 
+
+与えられたデータ点を通る多項式を求める方法の一つにラグランジュ補間がある．
+
+```math
+f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i,j\neq k}^n{(x _i - x _j)}}y _i
+```
+
+微分は，
+
+```math
+f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
+```
+
+![](sample_lag.png)
+
+
+[./interpolation_Lagrange.cpp#L12](./interpolation_Lagrange.cpp#L12)
+
+
+---
+## ⛵ B-spline補間 
+
+与えられたデータ点を通る多項式を求める方法の一つにB-spline補間がある．
+
+### 🪼 実行方法 
+
+```sh
+$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=interpolation _Bspline.cpp
+$ make
+$ ./interpolation _Bspline
+$ gnuplot bspline_plot.gnu
+```
+
+### 🪼 コード 
+
+[Bspline基底関数](../../include/basic.hpp#L903)を用いて，B-spline補間を行う．
+
+`InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
+
+```cpp
+// example for 1D data
+std::vector<double> X;
+InterpolationBspline intpX(5, abscissas, X);
+```
+
+![sample_body_movement_bspline.png](sample_bspline.png)
+
+```cpp
+// example for 2D data
+std::vector<std::arrray<double,2>> XY;
+InterpolationBspline intpXY(5, abscissas, XY);
+```
+
+または，クラスを使いまわしたい場合，`set`メンバ関数を用いて，データをセットすることもできる．
+
+```cpp
+InterpolationBspline<std::array<double, 2>> intpXY;
+intpXY.set(5, abscissas, XY);
+```
+
+
+![sample_body_movement_bspline.png](sample_body_movement_bspline.png)
 
 ## ⛵ ⛵ 放射関数補間  
 
@@ -121,12 +187,13 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 
 サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
 
-[../../include/interpolations.hpp#L4](../../include/interpolations.hpp#L4)
+[../../include/interpolations.hpp#L228](../../include/interpolations.hpp#L228)
 
 
-[./0README.cpp#L1](./0README.cpp#L1)
+[./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
 
 
+---
 ## ⛵ 三角形補間 
 
 ## ⛵ ⛵ 範囲を修正した三角形形状関数  
@@ -167,38 +234,6 @@ N _5 &= 4t _0(1-t _0-t _1)
 
 
 [./TriShape.cpp#L1](./TriShape.cpp#L1)
-
-
-## ⛵ B-spline補間 
-
-与えられたデータ点を通る多項式を求める方法の一つにB-spline補間がある．
-
-[Bspline基底関数](../../include/basic.hpp#L903)を用いて，B-spline補間を行う．
-
-![](sample_bspline.png)
-
-
-[./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
-
-
-## ⛵ ラグランジュ補間 
-
-与えられたデータ点を通る多項式を求める方法の一つにラグランジュ補間がある．
-
-```math
-f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i,j\neq k}^n{(x _i - x _j)}}y _i
-```
-
-微分は，
-
-```math
-f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
-```
-
-![](sample_lag.png)
-
-
-[./interpolation_Lagrange.cpp#L12](./interpolation_Lagrange.cpp#L12)
 
 
 ---

@@ -9,140 +9,123 @@
 #include "basic_arithmetic_array_operations.hpp"
 #include "interpolations.hpp"
 
-/*DOC_EXTRACT interpolation
+/*DOC_EXTRACT 0_2_0_interpolation
 
 ## B-spline補間
 
 与えられたデータ点を通る多項式を求める方法の一つにB-spline補間がある．
 
+### 実行方法
+
+```sh
+$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=interpolation_Bspline.cpp
+$ make
+$ ./interpolation_Bspline
+$ gnuplot bspline_plot.gnu
+```
+
+### コード
+
 \ref{interpolation:Bspline}{Bspline基底関数}を用いて，B-spline補間を行う．
 
-![](sample_bspline.png)
+`InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
+
+```cpp
+// example for 1D data
+std::vector<double> X;
+InterpolationBspline intpX(5, abscissas, X);
+```
+
+![sample_body_movement_bspline.png](sample_bspline.png)
+
+```cpp
+// example for 2D data
+std::vector<std::arrray<double,2>> XY;
+InterpolationBspline intpXY(5, abscissas, XY);
+```
+
+または，クラスを使いまわしたい場合，`set`メンバ関数を用いて，データをセットすることもできる．
+
+```cpp
+InterpolationBspline<std::array<double, 2>> intpXY;
+intpXY.set(5, abscissas, XY);
+```
+
+
+![sample_body_movement_bspline.png](sample_body_movement_bspline.png)
+
+\insert{RBF}
 
 */
 
-const std::vector<Tdd> sample = {
-    {-0.2, 0.023474178403755985},
-    {-0.1, 0.023474178403755985},
-    {0, 0.023474178403755985},
-    {0.19200000000000006, 0.023474178403755985},
-    {0.2909090909090909, 0.023474178403755985},
-    {0.384, -0.023474178403755985},
-    {0.4712727272727274, -0.023474178403755985},
-    {0.5760000000000002, 0.07042253521126796},
-    {0.674909090909091, 0.16431924882629012},
-    {0.7679999999999999, 0.11737089201877993},
-    {0.861090909090909, -0.07042253521126796},
-    {0.930909090909091, -0.11737089201877993},
-    {1.024, 0.023474178403755985},
-    {1.1636363636363636, 0.352112676056338},
-    {1.2625454545454549, 0.16431924882629012},
-    {1.3556363636363638, -0.2112676056338021},
-    {1.4545454545454546, -0.25821596244131584},
-    {1.5650909090909093, 0.2112676056338021},
-    {1.6640000000000001, 0.4929577464788739},
-    {1.7687272727272725, 0.2112676056338021},
-    {1.8385454545454545, -0.25821596244131584},
-    {1.9374545454545453, -0.5399061032863859},
-    {2.0305454545454547, -0.07042253521126796},
-    {2.082909090909091, 0.39906103286385},
-    {2.1759999999999997, 0.8215962441314559},
-    {2.274909090909091, 0.44600938967136194},
-    {2.356363636363636, -0.44600938967136194},
-    {2.432, -0.9624413145539918},
-    {2.4727272727272727, -1.056338028169014},
-    {2.5658181818181816, -0.5399061032863859},
-    {2.6356363636363636, 0.30516431924882603},
-    {2.7112727272727275, 1.197183098591549},
-    {2.775272727272727, 1.338028169014085},
-    {2.8625454545454545, 0.633802816901408},
-    {2.9265454545454546, -0.352112676056338},
-    {2.9963636363636366, -1.2910798122065739},
-    {3.060363636363636, -1.666666666666666},
-    {3.159272727272727, -1.009389671361502},
-    {3.2290909090909086, 0.25821596244131406},
-    {3.298909090909091, 1.619718309859155},
-    {3.397818181818182, 2.464788732394366},
-    {3.4909090909090903, 1.5727699530516421},
-    {3.578181818181818, -0.25821596244131584},
-    {3.6363636363636367, -1.431924882629108},
-    {3.741090909090909, -2.370892018779342},
-    {3.8516363636363637, -1.244131455399062},
-    {3.9389090909090907, 0.633802816901408},
-    {4.002909090909091, 1.948356807511737},
-    {4.061090909090909, 2.793427230046949},
-    {4.142545454545454, 2.84037558685446},
-    {4.194909090909091, 2.183098591549295},
-    {4.2647272727272725, 0.727699530516432},
-    {4.340363636363636, -1.1502347417840362},
-    {4.4043636363636365, -2.652582159624412},
-    {4.491636363636363, -4.061032863849764},
-    {4.549818181818182, -4.2018779342723},
-    {4.637090909090909, -3.215962441314554},
-    {4.724363636363636, -1.056338028169014},
-    {4.8, 1.150234741784038},
-    {4.893090909090909, 3.356807511737089},
-    {5.015272727272727, 4.671361502347417},
-    {5.143272727272727, 3.826291079812206},
-    {5.224727272727272, 2.323943661971831},
-    {5.306181818181818, 0.39906103286385},
-    {5.41090909090909, -1.807511737089202},
-    {5.498181818181818, -3.122065727699532},
-    {5.602909090909091, -3.638497652582158},
-    {5.748363636363636, -2.699530516431926},
-    {5.876363636363637, -1.1971830985915481},
-    {6.010181818181818, 0.5399061032863859},
-    {6.120727272727272, 1.619718309859155},
-    {6.277818181818182, 2.27699530516432},
-    {6.429090909090909, 1.854460093896714},
-    {6.597818181818181, 0.8685446009389661},
-    {6.737454545454545, -0.023474178403755985},
-    {6.836363636363636, -0.5868544600938961},
-    {6.999272727272727, -0.9624413145539918},
-    {7.1738181818181825, -0.8215962441314559},
-    {7.325090909090909, -0.5399061032863859},
-    {7.546181818181818, -0.023474178403755985},
-    {7.761454545454544, 0.352112676056338},
-    {7.982545454545454, 0.44600938967136194},
-};
-
 int main() {
 
-   std::vector<double> abscissas, values;
-   const int N = 20;
-
-   for (auto &[t, v] : sample) {
-      abscissas.push_back(t);
-      values.push_back(v);
-   }
-
-   // InterpolationBspline<double> intB(abscissas, values);
-   //
-   InterpolationBspline intB(5, sample);
-
+   /* -------------------------------------------------------------------------- */
    {
-      auto filename = "bspline_sample_data.dat";
-      std::ofstream file(filename);
+
+      std::ifstream file("bspline_sample_data.dat");
       if (!file.is_open()) {
+         std::cerr << "Failed to open the input file." << std::endl;
+         return 0;
+      }
+
+      std::vector<double> abscissas, values;
+      std::string line;
+      double t, x;
+      while (std::getline(file, line)) {
+         if (line[0] == '#') continue;
+         std::istringstream iss(line);
+         iss >> t >> x;
+         abscissas.push_back(t);
+         values.push_back(x);
+      }
+      file.close();
+
+      InterpolationBspline intB(5, abscissas, values);
+
+      std::ofstream output("bspline_interpolated_data.dat");
+      if (!output.is_open()) {
          std::cerr << "Failed to open the output file." << std::endl;
          return 0;
       }
-      file << "# x y index" << std::endl;
-      for (auto i = 0; i < abscissas.size(); ++i)
-         file << abscissas[i] << " " << values[i] << " " << i << std::endl;
-   }
-
-   {
-      auto filename = "bspline_interpolated_data.dat";
-      std::ofstream file(filename);
-      if (!file.is_open()) {
-         std::cerr << "Failed to open the output file." << std::endl;
-         return 0;
+      output << "# x y z" << std::endl;
+      for (auto t : Subdivide<300>(0., 10.)) {
+         output << t << " " << intB(t) << " " << intB.D(t) << std::endl;
       }
-      file << "# x y z" << std::endl;
-      for (auto t : Subdivide<300>(0., 10.))
-         file << t << " " << intB(t) << " " << intB.D(t) << std::endl;
+      output.close();
    }
+   /* -------------------------------------------------------------------------- */
+   InterpolationBspline<std::array<double, 2>> intpXY;
 
+   for (const std::string& S : {"A", "B", "C"}) {
+      std::ifstream file("../build_pybind11/body" + S + ".dat");
+      if (!file.is_open()) throw std::runtime_error("Failed to open the input file.");
+
+      std::vector<double> abscissas;
+      std::vector<std::array<double, 2>> XY;
+      std::string line;
+      double t, x, y, z, angle;
+
+      while (std::getline(file, line)) {
+         if (line[0] == '#') continue;
+         replace(line.begin(), line.end(), ',', ' ');
+         std::istringstream iss(line);
+         iss >> t >> x >> y >> z >> angle;
+         abscissas.push_back(t);
+         XY.push_back({x, y});
+      }
+      file.close();
+
+      intpXY.set(5, abscissas, XY);
+
+      std::ofstream output("bspline_interpolated_body" + S + ".dat");
+      if (!output.is_open()) throw std::runtime_error("Failed to open the input file.");
+      output << "# t x y" << std::endl;
+      for (auto t : Subdivide<300>(0., 4.)) {
+         output << t << " " << intpXY(t)[0] << " " << intpXY(t)[1] << std::endl;
+      }
+      output.close();
+   }
+   /* -------------------------------------------------------------------------- */
    return 0;
 }

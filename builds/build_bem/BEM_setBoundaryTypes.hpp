@@ -66,9 +66,14 @@ void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK
          net->velocity = net->RK_Velocity.getX();
       } else {
          std::cout << "(RigidBodyObject) velocity is explicityly given as " << move_name_velocity << std::endl;
-         net->velocity = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time);
          double delta_t = 1E-5;
-         default_acceleration = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time + delta_t / 2.) - velocity(move_name_velocity, net->inputJSON["velocity"], RK_time - delta_t / 2.);
+         if (move_name_velocity == "file") {
+            net->velocity = net->intpMotionRigidBody.D(RK_time);
+            default_acceleration = net->intpMotionRigidBody(RK_time + delta_t / 2.) - net->intpMotionRigidBody(RK_time - delta_t / 2.);
+         } else {
+            net->velocity = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time);
+            default_acceleration = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time + delta_t / 2.) - velocity(move_name_velocity, net->inputJSON["velocity"], RK_time - delta_t / 2.);
+         }
          default_acceleration /= delta_t;
       }
    } else {

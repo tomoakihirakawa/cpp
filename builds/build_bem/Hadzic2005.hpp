@@ -25,7 +25,7 @@ struct Hadzic2005 {
       int i = find_index(t);
       // get 2N points before and after t
       // i-2, i-1, i, i+1, i+2
-      std::vector<std::array<double, 2>> sample;
+      std::vector<double> time, value;
       int shift = 0;
       int N = 20;
       if (i - N < 0)
@@ -34,10 +34,11 @@ struct Hadzic2005 {
          shift = i + N - Hadzic2005_time_angle.size() + 1;
 
       for (auto j = i - N - shift; j <= i + N - shift; ++j) {
-         sample.push_back(Hadzic2005_time_angle[j]);
+         time.push_back(Hadzic2005_time_angle[j][0]);
+         value.push_back(Hadzic2005_time_angle[j][1]);
          std::cout << Hadzic2005_time_angle[j][0] << ", " << Hadzic2005_time_angle[j][1] << std::endl;
       }
-      const auto intp = InterpolationBspline(3, sample);
+      const auto intp = InterpolationBspline(3, time, value);
       return -intp(t - start) / 180. * 2 * M_PI;
    };
 
@@ -45,7 +46,7 @@ struct Hadzic2005 {
       int i = find_index(t);
       // get 2N points before and after t
       // i-2, i-1, i, i+1, i+2
-      std::vector<std::array<double, 2>> sample;
+      std::vector<double> time, value;
       int shift = 0;
       int N = 20;
       if (i - N < 0)
@@ -54,10 +55,11 @@ struct Hadzic2005 {
          shift = i + N - Hadzic2005_time_angle.size() + 1;
 
       for (auto j = i - N - shift; j <= i + N - shift; ++j) {
-         sample.push_back(Hadzic2005_time_angle[j]);
+         time.push_back(Hadzic2005_time_angle[j][0]);
+         value.push_back(Hadzic2005_time_angle[j][1]);
          std::cout << Hadzic2005_time_angle[j][0] << ", " << Hadzic2005_time_angle[j][1] << std::endl;
       }
-      const auto intp = InterpolationBspline(3, sample);
+      const auto intp = InterpolationBspline(3, time, value);
 
       std::cout << "shift " << shift << std::endl;
       std::cout << "begin " << i - 2 - shift << std::endl;

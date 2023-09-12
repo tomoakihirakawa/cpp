@@ -1,114 +1,10 @@
 #ifndef interpolations_H
 #define interpolations_H
 
-/*DOC_EXTRACT RBF
-## 放射関数補間
-
-距離$`r=\left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\|`$を引数とする
-放射基底関数$`\phi(r_i)`$に重み$`w_i`$を掛け合わせて構築した
-補間関数$`f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\phi \left( \left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\| \right)}`$
-を放射関数補間という．
-
-### 重み$`w_i`$の見積もり
-
-重み$`w_i`$の決定には，サンプル点$`A=\left\{ {{\mathbf{a}}_{0}},{{\mathbf{a}}_{1}},...,{{\mathbf{a}}_{N-1}} \right\}`$
-における値$`Y=\left\{ {{y}_{0}},{{y}_{1}},...,{{y}_{N-1}} \right\}`$
-を使い，補間関数$`f`$も各サンプル点$A$において値$`Y`$となる方程式を$`w_i`$について解く：
-
-```math
-\left( \begin{matrix}
-   {{w}_{0}}  \\
-   \vdots   \\
-   {{w}_{N-1}}  \\
-\end{matrix} \right)={{\left( \begin{matrix}
-   \phi \left( \left\| {{\mathbf{a}}_{0}}-{{\mathbf{a}}_{0}} \right\| \right) & \cdots  & \phi \left( \left\| {{\mathbf{a}}_{0}}-{{\mathbf{a}}_{N-1}} \right\| \right)  \\
-   \vdots  & \ddots  & \vdots   \\
-   \phi \left( \left\| {{\mathbf{a}}_{N-1}}-{{\mathbf{a}}_{0}} \right\| \right) & \cdots  & \phi \left( \left\| {{\mathbf{a}}_{N-1}}-{{\mathbf{a}}_{N-1}} \right\| \right)  \\
-\end{matrix} \right)}^{-1}}\left( \begin{matrix}
-   {{y}_{0}}  \\
-   \vdots   \\
-   {{y}_{N-1}}  \\
-\end{matrix} \right)
-```
-
-### 放射基底関数$`\phi`$
-
-#### 多重二乗（multiquadric RBF）
-
-放射基底関数として多重二乗（multiquadric），
-$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}}`$
-がよく使われる．
-
-#### 逆多重二乗（inverse multiquadric RBF）
-
-$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}}`$
-
-#### ガウシアン（Gaussian RBF）
-
-$`\phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}}`$
-
-### 補間関数の微分
-
-放射関数補間の微分を少し変形すると，
-
-$`\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\nabla \phi \left( \left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\| \right)}=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\nabla {{r}_{i}}\frac{\partial \phi \left( {{r}_{i}} \right)}{\partial {{r}_{i}}}}`$
-
-さらに，計算すると，
-
-```math
-\begin{align}
-  & {{r}_{i}}=\left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\|={{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{1/2}} \\
- & \frac{\partial {{r}_{i}}}{\partial {{\mathbf{x}}_{k}}}=\frac{1}{2}{{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\left( \frac{\partial }{\partial {{\mathbf{x}}_{k}}}\sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right) \\
- & =\frac{1}{2}{{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\left( \sum\limits_{j=0}^{M=2}{2\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}\cdot {{\mathbf{e}}_{k}} \right) \\
- & ={{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\overbrace{\left( {{\mathbf{x}}_{k}}-{{\mathbf{a}}_{ik}} \right)}^{\text{scaler}}=\frac{\overbrace{\left( {{\mathbf{x}}_{k}}-{{\mathbf{a}}_{ik}} \right)}^{\text{scaler}}}{{{r}_{i}}}
-\end{align}
-```
-
-なので，$`\nabla {{r}_{i}}=\overbrace{\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right)}^{\text{vecotr}}/{{r}_{i}}`$であり，
-
-$`\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\frac{\mathbf{x}-{{\mathbf{a}}_{i}}}{{{r}_{i}}}\frac{\partial \phi \left( {{r}_{i}} \right)}{\partial {{r}_{i}}}}`$
-
-である．分母がゼロになる可能性があるが，放射基底関数の微分でキャンセルされる．
-
-#### 多重二乗
-
-$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}},\frac{\partial \phi }{\partial r}\left( r \right)=\frac{\varepsilon^2 r}{\phi \left( r \right)}`$
-
-なので，次のように分母を消すことができる．
-
-$`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits_{i=0}^{N-1}{{{w}_{i}}\frac{\mathbf{x}-{{\mathbf{a}}_{i}}}{\phi \left( {{r}_{i}} \right)}}`$
-
-#### 逆多重二乗
-
-```math
-\begin{align}
-  & \phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}} \\
- & \frac{\partial \phi }{\partial r}\left( r \right)=-{{\varepsilon }^{2}}r{{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-1}} \\
- & \nabla f=\sum\limits_{i=0}^{N-1}{-{{\varepsilon }^{2}}\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right){{\phi }^{2}}\left( r \right)} \\
-\end{align}
-```
-
-#### ガウシアン
-
-```math
-\begin{align}
-  & \phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}} \\
- & \frac{\partial \phi }{\partial r}\left( r \right)=-2{{\varepsilon }^{2}}r{{e}^{-{{\left( \varepsilon r \right)}^{2}}}} \\
- & \nabla f=\sum\limits_{i=0}^{N-1}{-2{{\varepsilon }^{2}}{{e}^{-{{\left( \varepsilon r \right)}^{2}}}}\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right)} \\
-\end{align}
-```
-
-### 最適なパラメタ$`{\varepsilon}`$
-
-サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
-
-*/
-
-/*RBF_interp_code*/
-
 #include <cmath>
 #include <functional>
 #include <numeric>  //transform_reduce
+#include <type_traits>
 #include <vector>
 #include "basic.hpp"
 #include "svd.hpp"
@@ -118,44 +14,99 @@ using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
 
-/* ------------------------------------------------------ */
+/* -------------------------------- B-spline -------------------------------- */
 
+template <typename T>
 struct InterpolationBspline {
+   bool is_set = false;
    int K;
-   std::vector<Tdd> sample;
-   std::array<V_d, 2> sampleT;
-   V_d a, q;
-   InterpolationBspline(const int K_IN, const std::vector<Tdd> &sample_IN)
-       : K(K_IN),
-         sample(sample_IN),
-         sampleT(Transpose(sample_IN)),
-         q(OpenUniformKnots(std::get<0>(sampleT), K)) {
-      VV_d A = Bspline(std::get<0>(sampleT), q, K);  // この点の上では，サンプル値と一致しなければならない．
+   V_d abscissas, sample, a, q;
+   InterpolationBspline() {}
+   InterpolationBspline(int K_IN, V_d abscissas, std::vector<T> sample) : K(K_IN), abscissas(abscissas) {}
+};
+
+template <>
+struct InterpolationBspline<double> {
+   bool is_set = false;
+   int K;
+   V_d abscissas, sample, a, q;
+
+   InterpolationBspline() {}
+
+   InterpolationBspline(int K_IN, V_d abscissas, V_d sample) : K(K_IN), abscissas(abscissas), sample(sample) {
+      initialize();
+   }
+
+   void set(int K_IN, V_d abscissas, V_d sample) {
+      this->K = K_IN;
+      this->abscissas = abscissas;
+      this->sample = sample;
+      initialize();
+   }
+
+  private:
+   void initialize() {
+      q = OpenUniformKnots(abscissas, K);
+      auto A = Bspline(abscissas, q, K);
       a.resize(A.size());
       ludcmp lu(A);
-      lu.solve(std::get<1>(sampleT), a);
-   };
-   //! ------------------------------------------------------ */
-   double operator()(const double x) const {
-      return Dot(Bspline(x, q, K), a /*{B0,B1,B2,B3,...}*/);
-   };
-   //! ------------------------------------------------------ */
-   V_d operator()(const V_d &X) const {
-      V_d ret(X.size());
-      for (auto i = 0; i < X.size(); ++i)
-         ret[i] = Dot(Bspline(X[i], q, K), a);
+      lu.solve(sample, a);
+      this->is_set = true;
+   }
+
+  public:
+   double operator()(const double x) const { return Dot(Bspline(x, q, K), a); }
+   double D(const double x) const { return Dot(D_Bspline(x, q, K), a); }
+};
+
+template <std::size_t N>
+struct InterpolationBspline<std::array<double, N>> {
+   bool is_set = false;
+   int K;
+   V_d abscissas;
+   std::vector<std::array<double, N>> sample;
+   std::array<V_d, N> sampleT, a;
+   V_d q;
+
+   InterpolationBspline() {}
+
+   InterpolationBspline(int K_IN, V_d abscissas, std::vector<std::array<double, N>> sample_IN)
+       : K(K_IN), abscissas(abscissas), sample(sample_IN), sampleT(Transpose(sample_IN)) {
+      initialize();
+   }
+
+   void set(int K_IN, V_d abscissas, std::vector<std::array<double, N>> sample_IN) {
+      this->K = K_IN;
+      this->abscissas = abscissas;
+      this->sample = sample_IN;
+      this->sampleT = Transpose(sample_IN);
+      initialize();
+   }
+
+  private:
+   void initialize() {
+      q = OpenUniformKnots(abscissas, K);
+      auto A = Bspline(abscissas, q, K);
+      ludcmp lu(A);
+      for (std::size_t i = 0; i < N; ++i) {
+         a[i].resize(A.size());
+         lu.solve(sampleT[i], a[i]);
+      }
+      this->is_set = true;
+   }
+
+  public:
+   std::array<double, N> operator()(const double x) const {
+      std::array<double, N> ret;
+      for (std::size_t i = 0; i < N; ++i) ret[i] = Dot(Bspline(x, q, K), a[i]);
       return ret;
-   };
-   //! ------------------------------------------------------ */
-   double D(const double x) const {
-      return Dot(D_Bspline(x, q, K), a /*{B0,B1,B2,B3,...}*/);
-   };
-   V_d D(const V_d &X) const {
-      V_d ret(X.size());
-      for (auto i = 0; i < X.size(); ++i)
-         ret[i] = Dot(D_Bspline(X[i], q, K), a);
+   }
+
+   std::array<double, N> D(const double x) const {
+      std::array<double, N> ret;
+      for (std::size_t i = 0; i < N; ++i) ret[i] = Dot(D_Bspline(x, q, K), a[i]);
       return ret;
-   };
+   }
 };
 
 /* ---------------------- ラグランジュ補間 ---------------------- */
@@ -273,6 +224,110 @@ struct InterpolationLagrange {
 //*          Radial Basis Function Interpolations          */
 //* ------------------------------------------------------ */
 //* ------------------------------------------------------ */
+
+/*DOC_EXTRACT RBF
+
+## 放射関数補間
+
+距離$`r=\left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\|`$を引数とする
+放射基底関数$`\phi(r_i)`$に重み$`w_i`$を掛け合わせて構築した
+補間関数$`f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\phi \left( \left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\| \right)}`$
+を放射関数補間という．
+
+### 重み$`w_i`$の見積もり
+
+重み$`w_i`$の決定には，サンプル点$`A=\left\{ {{\mathbf{a}}_{0}},{{\mathbf{a}}_{1}},...,{{\mathbf{a}}_{N-1}} \right\}`$
+における値$`Y=\left\{ {{y}_{0}},{{y}_{1}},...,{{y}_{N-1}} \right\}`$
+を使い，補間関数$`f`$も各サンプル点$A$において値$`Y`$となる方程式を$`w_i`$について解く：
+
+```math
+\left( \begin{matrix}
+   {{w}_{0}}  \\
+   \vdots   \\
+   {{w}_{N-1}}  \\
+\end{matrix} \right)={{\left( \begin{matrix}
+   \phi \left( \left\| {{\mathbf{a}}_{0}}-{{\mathbf{a}}_{0}} \right\| \right) & \cdots  & \phi \left( \left\| {{\mathbf{a}}_{0}}-{{\mathbf{a}}_{N-1}} \right\| \right)  \\
+   \vdots  & \ddots  & \vdots   \\
+   \phi \left( \left\| {{\mathbf{a}}_{N-1}}-{{\mathbf{a}}_{0}} \right\| \right) & \cdots  & \phi \left( \left\| {{\mathbf{a}}_{N-1}}-{{\mathbf{a}}_{N-1}} \right\| \right)  \\
+\end{matrix} \right)}^{-1}}\left( \begin{matrix}
+   {{y}_{0}}  \\
+   \vdots   \\
+   {{y}_{N-1}}  \\
+\end{matrix} \right)
+```
+
+### 放射基底関数$`\phi`$
+
+#### 多重二乗（multiquadric RBF）
+
+放射基底関数として多重二乗（multiquadric），
+$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}}`$
+がよく使われる．
+
+#### 逆多重二乗（inverse multiquadric RBF）
+
+$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}}`$
+
+#### ガウシアン（Gaussian RBF）
+
+$`\phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}}`$
+
+### 補間関数の微分
+
+放射関数補間の微分を少し変形すると，
+
+$`\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\nabla \phi \left( \left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\| \right)}=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\nabla {{r}_{i}}\frac{\partial \phi \left( {{r}_{i}} \right)}{\partial {{r}_{i}}}}`$
+
+さらに，計算すると，
+
+```math
+\begin{align}
+  & {{r}_{i}}=\left\| \mathbf{x}-{{\mathbf{a}}_{i}} \right\|={{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{1/2}} \\
+ & \frac{\partial {{r}_{i}}}{\partial {{\mathbf{x}}_{k}}}=\frac{1}{2}{{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\left( \frac{\partial }{\partial {{\mathbf{x}}_{k}}}\sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right) \\
+ & =\frac{1}{2}{{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\left( \sum\limits_{j=0}^{M=2}{2\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}\cdot {{\mathbf{e}}_{k}} \right) \\
+ & ={{\left( \sum\limits_{j=0}^{M=2}{{{\left( \mathbf{x}-{{\mathbf{a}}_{ij}} \right)}^{2}}} \right)}^{-\frac{1}{2}}}\overbrace{\left( {{\mathbf{x}}_{k}}-{{\mathbf{a}}_{ik}} \right)}^{\text{scaler}}=\frac{\overbrace{\left( {{\mathbf{x}}_{k}}-{{\mathbf{a}}_{ik}} \right)}^{\text{scaler}}}{{{r}_{i}}}
+\end{align}
+```
+
+なので，$`\nabla {{r}_{i}}=\overbrace{\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right)}^{\text{vecotr}}/{{r}_{i}}`$であり，
+
+$`\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\frac{\mathbf{x}-{{\mathbf{a}}_{i}}}{{{r}_{i}}}\frac{\partial \phi \left( {{r}_{i}} \right)}{\partial {{r}_{i}}}}`$
+
+である．分母がゼロになる可能性があるが，放射基底関数の微分でキャンセルされる．
+
+#### 多重二乗
+
+$`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}},\frac{\partial \phi }{\partial r}\left( r \right)=\frac{\varepsilon^2 r}{\phi \left( r \right)}`$
+
+なので，次のように分母を消すことができる．
+
+$`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits_{i=0}^{N-1}{{{w}_{i}}\frac{\mathbf{x}-{{\mathbf{a}}_{i}}}{\phi \left( {{r}_{i}} \right)}}`$
+
+#### 逆多重二乗
+
+```math
+\begin{align}
+  & \phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}} \\
+ & \frac{\partial \phi }{\partial r}\left( r \right)=-{{\varepsilon }^{2}}r{{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-1}} \\
+ & \nabla f=\sum\limits_{i=0}^{N-1}{-{{\varepsilon }^{2}}\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right){{\phi }^{2}}\left( r \right)} \\
+\end{align}
+```
+
+#### ガウシアン
+
+```math
+\begin{align}
+  & \phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}} \\
+ & \frac{\partial \phi }{\partial r}\left( r \right)=-2{{\varepsilon }^{2}}r{{e}^{-{{\left( \varepsilon r \right)}^{2}}}} \\
+ & \nabla f=\sum\limits_{i=0}^{N-1}{-2{{\varepsilon }^{2}}{{e}^{-{{\left( \varepsilon r \right)}^{2}}}}\left( \mathbf{x}-{{\mathbf{a}}_{i}} \right)} \\
+\end{align}
+```
+
+### 最適なパラメタ$`{\varepsilon}`$
+
+サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
+
+*/
 
 class InterpolationVectorRBF {
    // using V_d = std::vector<double>;

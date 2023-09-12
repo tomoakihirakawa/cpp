@@ -2,7 +2,11 @@
     "name": "floatingbody",
     "type": "RigidBody",
     "velocity": "floating",
+<<<<<<< Updated upstream
     "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/tsukada2022_large_pool/floating_body50.obj",
+=======
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_large_pool/floating_body50.obj",
+>>>>>>> Stashed changes
     "mass": 11460000.0,
     "COM": [
         200.0,

@@ -209,12 +209,14 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
    }
 };
 
-/*DOC_EXTRACT SPH
+/*DOC_EXTRACT 0_0_0_SPH
 
 # Smoothed Particle Hydrodynamics (SPH) ISPH EISPH
 
 ## 概要
+
 ### 前準備
+
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
@@ -315,7 +317,6 @@ void developByEISPH(Network *net,
          setFreeSurface(net, RigidBodyObject);
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
-
          // b! -------------------------------------------------------------------------- */
          double air_particle_spacing = particle_spacing / 2.;
          auto air = new Network("air");

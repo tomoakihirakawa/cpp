@@ -98,8 +98,8 @@ $`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.05;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -165,19 +165,19 @@ Tddd aux_position_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   return _WATER_DENSITY_;
+   // return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
-   //    if (p->isAuxiliary)
-   //       return rho_next(p->surfacePoint);
-   //    else if (p->getNetwork()->isRigidBody)
-   //       return _WATER_DENSITY_;
-   //    else {
-   // #if defined(USE_RungeKutta)
-   //    return p->RK_rho.getX(p->DrhoDt_SPH);
-   // #elif defined(USE_LeapFrog)
-   //    return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
-   // #endif
-   //    }
+   if (p->isAuxiliary)
+      return rho_next(p->surfacePoint);
+   else if (p->getNetwork()->isRigidBody)
+      return _WATER_DENSITY_;
+   else {
+#if defined(USE_RungeKutta)
+      return p->RK_rho.getX(p->DrhoDt_SPH);
+#elif defined(USE_LeapFrog)
+      return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
+#endif
+   }
 };
 
 // \label{SPH:volume_next}

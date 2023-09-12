@@ -14,7 +14,7 @@ using VV_netFp = std::vector<V_netFp>;
 
 /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
-## 造波装置など
+## 陽に与えられる境界条件に対して（造波装置など）
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 \ref{BEM:impose_velocity}{強制運動を課す}
@@ -72,12 +72,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
          //           << ", h = " << h
          //           << ", z_surface = " << z_surface
          //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         return {a * w * cos(w * t - k * z),
-                 0.,
-                 0.,
-                 0.,
-                 0.,
-                 0.};
+         return {a * w * cos(w * t - k * z), 0., 0., 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
    }
@@ -140,7 +135,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
           {0.65, 0.},
           {0.7, 0.}};
       double start = stod(strings[1] /*start*/);
-      const auto intp = InterpolationBspline(3, sample);
+      auto [time, value] = Transpose(sample);
+      const auto intp = InterpolationBspline(3, time, value);
       return {intp(t - start), 0., 0., 0., 0., 0.};
    } else if (name == "Chaplin2000") {
       double start = stod(strings[1] /*start*/);
@@ -293,6 +289,10 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          T6d axis = {stod(strings[3]), stod(strings[4]), stod(strings[5]), stod(strings[6]), stod(strings[7]), stod(strings[8])};
          return a * axis;
       }
+   } else if (name.contains("file")) {
+      double a = stod(strings[2] /*a*/);
+      T6d axis = {stod(strings[3]), stod(strings[4]), stod(strings[5]), stod(strings[6]), stod(strings[7]), stod(strings[8])};
+      return a * axis;
    } else if (name.contains("Hadzic2005")) {
       // \label{BEM:Hadzic2005}
       double start = stod(strings[1] /*start*/);

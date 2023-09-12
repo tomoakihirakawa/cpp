@@ -6,7 +6,7 @@
 
 /*DOC_EXTRACT SPH
 
-## (1) $`\nabla^2 {\bf u}_i`$の計算（`calcLaplacianU`）
+## $`\nabla^2 {\bf u}_i`$の計算（`calcLaplacianU`）
 
 CHECKED: \ref{SPH:lapU}{流速のラプラシアンの計算方法}: $`\nabla^2 {\bf u}_i=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}^2}`$
 
@@ -57,7 +57,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
       for (const auto &net : target_nets)
          net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
-            if (B->isCaptured) add(B);
+            if (B->isCaptured)
+               add(B);
          });
 
       A->inv_grad_corr_M = Inverse(A->grad_corr_M);
