@@ -9,7 +9,7 @@
         - [🪼 法線方向の計算](#🪼-法線方向の計算)
         - [🪼 水面の判定](#🪼-水面の判定)
     - [⛵ 水面補助粒子の作成](#⛵-水面補助粒子の作成)
-    - [⛵ (1) $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](#⛵-(1)-$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
+    - [⛵ $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](#⛵-$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
     - [⛵ ポアソン方程式$`\nabla^{n+1} \cdot \left(\frac{1}{\rho^n} \nabla^{n} p^{n+1}\right) = b`$](#⛵-ポアソン方程式$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho^n}-\nabla^{n}-p^{n+1}\right)-=-b`$)
         - [🪼 ポアソン方程式](#🪼-ポアソン方程式)
         - [🪼 右辺，$`b`$，`PoissonRHS`について](#🪼-右辺，$`b`$，`PoissonRHS`について)
@@ -33,7 +33,9 @@
 # 🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH 
 
 ## ⛵ 概要 
+
 ### 🪼 前準備 
+
 1. バケットの生成
 2. 流れの計算に関与する壁粒子を保存
 3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
@@ -54,6 +56,7 @@
 [./SPH.hpp#L212](./SPH.hpp#L212)
 
 
+---
 ## ⛵ 壁面粒子の流速と圧力 
 
 壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，**ここでは**壁面粒子の流速は常にゼロに設定することにする．
@@ -97,11 +100,11 @@
 [./SPH0_setWall_Freesurface.hpp#L442](./SPH0_setWall_Freesurface.hpp#L442)
 
 
-## ⛵ (1) $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
+## ⛵ $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
 
-✅ [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L150): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L151): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-✅ [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L149): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
+✅ [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L150): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
 
 
 [./SPH1_lap_div_U.hpp#L7](./SPH1_lap_div_U.hpp#L7)
@@ -145,7 +148,7 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪼 右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L211)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L212)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
 ✅ [発散の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L251): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
@@ -266,11 +269,11 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 - [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L254)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L127)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L221)
-- どのように[壁粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L222)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L252)を作るか
+- どのように[壁粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L223)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L253)を作るか
 
 **壁粒子**
 
-- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L210)
+- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L211)
 - [圧力の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L106)
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L366)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L182)/[視野角に流体粒子が含まない壁粒子は除外する](not found)

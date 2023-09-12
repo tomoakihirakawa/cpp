@@ -637,7 +637,7 @@ $ cd ./cpp/builds/build_bem
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
-```shell
+```sh
 $ sh clean
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 $ make
@@ -645,13 +645,13 @@ $ make
 
 次に，入力ファイルを生成．
 
-```shell
+```sh
 $ python3 input_generator.py
 ```
 
 例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
-```shell
+```sh
 $ ./main ./input_files/Hadzic2005
 ```
 

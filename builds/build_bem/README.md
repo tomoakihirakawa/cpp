@@ -79,7 +79,7 @@
 巻波砕破のシミュレーションを行おうと格子を細かくすると，
 直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
 これに対して，
-\cite{Longuet-Higgins1976}は，境界線上だけに計算点を設け，
+[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)は，境界線上だけに計算点を設け，
 その計算点の位置と速度ポテンシャルをラグランジュ的に時間発展させる方法を提案した．
 水面で$`\frac{D\phi}{Dt}`$が簡単に計算できること，
 流速(速度ポテンシャルの勾配)を計算するために，
@@ -108,7 +108,7 @@ $`O(L^6)`$，$`O(216 L^6)`$
 
 #### 🐚 BEM-MEL の問題点 
 
-BEM-MEL の結果に数値的な不安定が生じることは，\cite{Longuet-Higgins1976}が既に紹介している．
+BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)が既に紹介している．
 計算精度を悪化させる原因は様々なものが考えられる．
 例えば，係数行列を作成する際，つまり微分方程式を離散化する際に用いる，補間の精度や積分の精度．
 または，時間発展の際に用いる，時間積分の精度などである．
@@ -131,13 +131,13 @@ BEM-MEL の結果に数値的な不安定が生じることは，\cite{Longuet-H
 4. 速度（角速度）を積分し位置（姿勢）を更新する
 
 浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi _t`$が簡単には計算できない．
-これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては\cite{Ma2009}に詳しく書かれている)．
+これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)に詳しく書かれている)．
 
 
-\cite{Wu1996}や\cite{Kashiwagi2000}，\cite{Wu2003}の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
+Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
 BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
 これと運動方程式を連立することで，直接，加速度を求めることができる．
-\cite{Feng2017}は，この方法を発展させ２浮体の動揺解析を行っている．
+[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)は，この方法を発展させ２浮体の動揺解析を行っている．
 
 本当に，複数の浮体に適用しにくい方法なのか？
 
@@ -487,7 +487,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
 浮体に掛かる圧力の計算に必要な$`\phi _t`$が簡単には求まらないためである．
-これに関しては，\cite{Wu2003}が参考になる．
+これに関しては，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)が参考になる．
 
 ### 🪼 浮体の運動方程式 
 
@@ -550,7 +550,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 物体上のある点ではこれが常に成り立つ．
 
 これを微分することで，$`\phi _{nt}`$を$`\phi`$と加速度$`\frac{d{\boldsymbol U} _{\rm c}}{dt}`$と角加速度$`\frac{d{\boldsymbol \Omega} _{\rm c}}{dt}`$を使って表すことができる．
-\cite{Wu1998}
+[Wu (1998)](https://www.sciencedirect.com/science/article/pii/S088997469890158X)
 
 ```math
 \begin{aligned}
@@ -709,8 +709,8 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 \end{align*}
 ```
 
-この方法は，\cite{Wu1996}，\cite{Kashiwagi2000}，\cite{Wu2003}で使用されている．
-この方法は，複数の浮体を考えていないが，\cite{Feng2017}はこれを基にして２浮体の場合でも動揺解析を行っている．
+この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
+この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
 [./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
@@ -931,7 +931,7 @@ $ cd ./cpp/builds/build_bem
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
-```shell
+```sh
 $ sh clean
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 $ make
@@ -939,13 +939,13 @@ $ make
 
 次に，入力ファイルを生成．
 
-```shell
+```sh
 $ python3 input_generator.py
 ```
 
 例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
 
-```shell
+```sh
 $ ./main ./input_files/Hadzic2005
 ```
 
