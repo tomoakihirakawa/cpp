@@ -1,3 +1,10 @@
+from typing import Dict
+import bibtexparser
+import glob
+from pybtex.database import BibliographyData
+from pybtex.database import BibliographyDataError
+from pybtex.database import parse_file
+from pybtex.database.input import bibtex
 import markdown
 import os
 import re
@@ -29,20 +36,12 @@ MATH_STAR_PATTERN = re.compile(
 
 # Reduced multiple calls to `file.read()`
 
-from pybtex.database.input import bibtex
-from pybtex.database import parse_file
-from pybtex.database import BibliographyDataError
-
-from pybtex.database import BibliographyData
-import glob
 
 # Initialize an empty bibliography data object
 bib_data = BibliographyData()
 
-import bibtexparser
-import glob
 
-if False:
+if True:
     bib_dir = '/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/'
     for bib_file_path in glob.glob(bib_dir+'library.bib'):
         with open(bib_file_path, 'r') as bib_file:
@@ -62,6 +61,7 @@ if False:
 
 # Loop through each file matching the pattern
 # for bib_file in glob.glob('/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_macbook_m2/paper-*.bib'):
+# for bib_file in glob.glob('/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/library.bib'):
 for bib_file in glob.glob('unique_references.bib'):
     try:
         # Parse the individual file
@@ -73,7 +73,8 @@ for bib_file in glob.glob('unique_references.bib'):
             # else:
             #     print(f"Warning: Repeated entry with key {entry_id}. Ignored in file {bib_file}.")
     except BibliographyDataError as e:
-        print(f"An error occurred while parsing the bibliography file {bib_file}: {e}")
+        print(
+            f"An error occurred while parsing the bibliography file {bib_file}: {e}")
 
 # Continue processing bib_data as before
 references = {}
@@ -82,16 +83,17 @@ references = {}
 # def format_authors(authors: str) -> str:
 #     # Splitting the authors by ' and '
 #     author_list = authors.split(' and ')
-    
+
 #     # Extracting the surname for each author
 #     surname_list = [author.split(',')[0].strip() for author in author_list]
-    
+
 #     if len(surname_list) == 1:
 #         return surname_list[0]
 #     elif len(surname_list) == 2:
 #         return f"{surname_list[0]} and {surname_list[1]}"
 #     else:
 #         return f"{surname_list[0]} et al."
+
 
 def format_authors(authors: List[str]) -> str:
     surname_list = []
@@ -107,6 +109,7 @@ def format_authors(authors: List[str]) -> str:
     else:
         return f"{surname_list[0]} et al."
 
+
 try:
     for entry_id, entry in bib_data.entries.items():
         # Check if the author field exists
@@ -115,16 +118,16 @@ try:
             author = format_authors(authors_list)
         else:
             author = 'Unknown Author'
-        
+
         title = entry.fields.get('title')
         year = entry.fields.get('year')
         url = entry.fields.get('url')  # Assumes that the URL field is present
-        
+
         # Creating the custom reference format
         reference = f"{author} ({year})"
         if url:
             reference = f"[{reference}]({url.split()[0]})"
-        
+
         if entry_id not in references:
             references[entry_id] = reference
         else:
@@ -149,6 +152,7 @@ def read_file_content(file_path):
 
 # Inserted LABEL_PATTERN in search_labels()
 
+
 def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tuple[str, int]]:
     labels = {}
     for dirpath, _, filenames in os.walk(directory):
@@ -163,11 +167,8 @@ def search_labels(directory: str, extensions: Tuple[str, ...]) -> Dict[str, Tupl
     return labels
 
 
-import os
-import re
-from typing import Dict
-
 INSERT_PATTERN = re.compile(r'\\insert\{(.*?)\}')
+
 
 def read_file_content(filename: str) -> str:
     try:
@@ -176,6 +177,7 @@ def read_file_content(filename: str) -> str:
     except FileNotFoundError:
         return f"<!-- File {filename} not found -->"
 
+
 def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str:
     """
     Replaces \insert{keyword} in the content with its corresponding replacement if exists.
@@ -183,14 +185,14 @@ def replace_insert_statements(content: str, replacements: Dict[str, str]) -> str
     """
     def replace_function(m):
         key = m.group(1)
-        
+
         # Check if the key is a filename
         if os.path.isfile(key):
             return read_file_content(key)
-        
+
         # Otherwise, treat it as a specified key
         return replacements.get(key, f"<!-- Key {key} not found -->")
-        
+
     return INSERT_PATTERN.sub(replace_function, content)
 
 
@@ -248,15 +250,18 @@ def extract_markdown_comments(input_file: str, content=None) -> Tuple[Dict[str, 
         # print("comment_lines[0] = ", comment_lines[0], ", keyword = ", keyword, ", order = ", order)
 
         comment = '\n'.join(comment_lines)
-        comment = comment.replace(keyword, '', 1) if keyword != 'DEFAULT' else comment
+        comment = comment.replace(
+            keyword, '', 1) if keyword != 'DEFAULT' else comment
         cleaned_comment = highlight_keywords(comment)
-        cleaned_comment = re.sub(r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
-        keyword_comments[(keyword, order)].append(cleaned_comment.strip() + '\n\n')
-        keyword_comments[(keyword, order)].append(f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
+        cleaned_comment = re.sub(
+            r'!\[(.*?)\]\((.*?)\)', lambda m: f'![{m.group(1)}]({Path(input_file).parent / m.group(2)})', cleaned_comment)
+        keyword_comments[(keyword, order)].append(
+            cleaned_comment.strip() + '\n\n')
+        keyword_comments[(keyword, order)].append(
+            f'[{input_file}#L{start_line}]({input_file}#L{start_line})\n\n')
 
         # keyword_comments[(keyword, order)].append(
         #     f'<p  align="right"><a href="{input_file}#L{start_line}">{input_file}#L{start_line}</a></p>\n')
-
 
         # Extract header information for the contents table
         headers = re.findall(HEADER_PATTERN, cleaned_comment)
@@ -421,7 +426,8 @@ if __name__ == "__main__":
     # ---------------------------- make keywords_order --------------------------- #
     sorted_keywords = []
     for input_file in sorted(search_files(search_directory, file_extensions)):
-        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(input_file)
+        extracted_comments, sec_L_order, keyword_info = extract_markdown_comments(
+            input_file)
         # set keywords_order
         sorted_keywords.extend(keyword_info)
 
@@ -460,10 +466,12 @@ if __name__ == "__main__":
 
             all_sec_L_order.extend(sec_L_order)
 
-    contents_table = generate_contents_table(sorted(all_sec_L_order, key=lambda sec_line_order: sec_line_order[2])) + "\n---\n"
+    contents_table = generate_contents_table(sorted(
+        all_sec_L_order, key=lambda sec_line_order: sec_line_order[2])) + "\n---\n"
 
     # Sorting the extracted comments by the order number
-    sorted_extracted_comments = sorted(all_extracted_comments.items(), key=lambda keyword_comments: keyword_comments[0][1])
+    sorted_extracted_comments = sorted(all_extracted_comments.items(
+    ), key=lambda keyword_comments: keyword_comments[0][1])
 
     with open(output_file, 'w') as md_file:
         md_file.write(contents_table)
