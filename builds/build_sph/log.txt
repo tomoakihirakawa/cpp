@@ -1,0 +1,1094 @@
+----------
+Execution time: Fri Sep 15 18:21:11 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 18:01:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 18:00:43 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 17:59:33 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 17:52:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 17:38:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 16:57:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 16:42:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 16:21:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 16:17:44 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML2d5_RK1
+----------
+Execution time: Fri Sep 15 16:11:47 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 16:10:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 15:59:11 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 15:51:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 14:57:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 14:44:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 14:03:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 13:35:20 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 13:35:09 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 13:29:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d0125_CSML3d0_RK1
+----------
+Execution time: Fri Sep 15 13:20:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 13:11:11 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 13:09:09 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 13:00:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:58:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:49:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:36:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:25:33 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:25:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:23:17 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:19:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:16:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:15:14 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:11:38 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:09:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:03:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 12:02:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:58:33 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:53:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:52:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:46:07 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:44:59 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:43:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:15:02 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:14:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:09:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 11:05:56 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 10:58:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 10:41:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 09:57:36 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 09:57:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 09:53:00 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 09:10:17 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:41:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:38:27 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:34:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:31:44 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:30:05 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:28:00 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:24:59 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:22:55 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:20:34 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Fri Sep 15 00:12:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 23:57:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 23:41:14 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 23:40:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2/opt/homebrew/bin/python3
+  arg2: /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/input_generator.py
+----------
+Execution time: Thu Sep 14 23:39:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 23:38:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 23:28:24 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 23:28:16 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: /opt/homebrew/bin/python3
+  arg2: /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/input_generator.py
+----------
+Execution time: Thu Sep 14 22:57:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 19:45:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 19:39:13 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 16:35:17 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK2
+----------
+Execution time: Thu Sep 14 16:33:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 16:06:01 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 15:45:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 15:37:53 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 15:30:05 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 15:22:08 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 14:59:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 14:31:04 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 14:15:44 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 13:21:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 13:13:26 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 13:07:58 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 12:53:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 12:36:33 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 12:35:52 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 12:13:07 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+Execution time: Thu Sep 14 12:10:50 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Current Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kamra2019_square_PS0d015_CSML2d7_RK1
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------

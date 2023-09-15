@@ -117,6 +117,60 @@ double Det(const T3Tddd &M) {
           std::get<0>(std::get<1>(M)) * std::get<1>(std::get<0>(M)) * std::get<2>(std::get<2>(M)) +
           std::get<0>(std::get<0>(M)) * std::get<1>(std::get<1>(M)) * std::get<2>(std::get<2>(M));
 };
+
+double Det(const VV_d &M) {
+   int n = M.size();
+
+   // Base case for 2x2 matrix
+   if (n == 2) {
+      return M[0][0] * M[1][1] - M[1][0] * M[0][1];
+   }
+
+   double det = 0.0;
+   for (int col = 0; col < n; ++col) {
+      VV_d subMatrix(n - 1, std::vector<double>(n - 1));
+
+      // Construct subMatrix
+      for (int i = 1; i < n; ++i) {
+         for (int j = 0, colCount = 0; j < n; ++j) {
+            if (j != col) {
+               subMatrix[i - 1][colCount] = M[i][j];
+               ++colCount;
+            }
+         }
+      }
+
+      double sign = (col % 2 == 0) ? 1 : -1;
+      det += sign * M[0][col] * Det(subMatrix);
+   }
+
+   return det;
+}
+
+// 行列 m の主対角上の要素のarrayを返す
+
+template <std::size_t N_ROW, std::size_t N_COL, typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::array<T, N_ROW> Diagonal(const std::array<std::array<T, N_COL>, N_ROW> &A) {
+   std::array<T, std::min(N_ROW, N_COL)> ret;
+   for (std::size_t i = 0; i < std::min(N_ROW, N_COL); ++i) {
+      ret[i] = A[i][i];
+   }
+   return ret;
+}
+
+#include <algorithm>  // for std::transform
+
+template <typename T>
+std::vector<T> Diagonal(const std::vector<std::vector<T>> &A) {
+   std::vector<T> ret;
+   ret.reserve(A.size());  // Reserve space to avoid reallocations
+   std::transform(A.begin(), A.end(), std::back_inserter(ret),
+                  [i = 0](const std::vector<T> &row) mutable {
+                     return (i < row.size()) ? row[i++] : T{};  // Replace T{} with a suitable "error value" if needed
+                  });
+   return ret;
+}
+
 /* ------------------------------------------------------ */
 template <typename T>
 bool IntersectingQ(const std::vector<T> &A, const std::vector<T> &B) {
@@ -854,6 +908,10 @@ bool myIsfinite(const double v) {
       return true;
 };
 
+// bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
+//    return (v >= -eps && v <= eps && !std::isnan(v));
+// }
+
 bool isFinite(const double v, const double eps = 1E+20) {
    if (v < -eps || v > eps || v != v || std::isnan(v))
       return false;
@@ -861,52 +919,31 @@ bool isFinite(const double v, const double eps = 1E+20) {
       return true;
 };
 
-bool isFinite(const V_d &v_IN) {
-   for (const auto &v : v_IN)
-      if (!isFinite(v))
-         return false;
-   return true;
+// bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
+//    if (std::isnan(v)) {
+//       return false;
+//    }
+//    return (v >= -eps && v <= eps);
+// };
+
+bool isFinite(const V_d &v_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
-bool isFinite(const VV_d &vv_IN) {
-   for (const auto &v : vv_IN)
-      if (!isFinite(v))
-         return false;
-   return true;
+bool isFinite(const VV_d &vv_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(vv_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
-bool isFinite(const Tdd &v) {
-   if (isFinite(std::get<0>(v)) && isFinite(std::get<1>(v)))
-      return true;
-   else
-      return false;
-};
-bool isFinite(const T4d &v) {
-   if (isFinite(std::get<0>(v)) && isFinite(std::get<1>(v)) && isFinite(std::get<2>(v)) && isFinite(std::get<3>(v)))
-      return true;
-   else
-      return false;
-};
-bool isFinite(const Tddd &v, const double eps = 1E+20) {
-   if (isFinite(std::get<0>(v), eps) && isFinite(std::get<1>(v), eps) && isFinite(std::get<2>(v), eps))
-      return true;
-   else
-      return false;
-};
-bool isFinite(const T6d &v, const double eps = 1E+20) {
-   if (isFinite(std::get<0>(v), eps) && isFinite(std::get<1>(v), eps) && isFinite(std::get<2>(v), eps) && isFinite(std::get<3>(v), eps) && isFinite(std::get<4>(v), eps) && isFinite(std::get<5>(v), eps))
-      return true;
-   else
-      return false;
+template <std::size_t N>
+bool isFinite(const std::array<double, N> &v_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
-bool isFinite(const T3Tddd &V) {
-   auto [X, Y, Z] = V;
-   if (isFinite(X) && isFinite(Y) && isFinite(Z))
-      return true;
-   else
-      return false;
+template <std::size_t N, std::size_t M>
+bool isFinite(const std::array<std::array<double, M>, N> &v_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
+
 /* ------------------------------------------------------ */
 // template <typename T, std::size_t i>
 // typename std::enable_if<std::tuple_size<T>::value == i, double>::type

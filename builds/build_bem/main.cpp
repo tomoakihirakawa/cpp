@@ -7,7 +7,7 @@
 #define BEM
 #define use_lapack
 int time_step;
-double real_time = 0;
+double simulation_time = 0;
 
 #define simulation
 #include <sys/utsname.h>
@@ -27,26 +27,10 @@ double real_time = 0;
 #include "BEM.hpp"
 #include "svd.hpp"
 
-void logMachineInformation(std::ofstream &ofs) {
-   char hostname[256];
-   if (gethostname(hostname, sizeof(hostname)) != 0) {
-      ofs << "Failed to get hostname\n";
-      return;
-   }
-
-   struct utsname unameData;
-   if (uname(&unameData) != 0) {
-      ofs << "Failed to get system information\n";
-      return;
-   }
-
-   ofs << "Machine Information:" << std::endl;
-   ofs << "  Hostname: " << hostname << std::endl;
-   ofs << "  Operating System: " << unameData.sysname << " " << unameData.release << std::endl;
-   ofs << std::endl;  // Add a blank line for separation
-}
-
 int main(int argc, char **argv) {
+
+   std::clock_t cpu_clock_start = std::clock();
+   auto wall_clock_start = std::chrono::high_resolution_clock::now();
 
    /*DOC_EXTRACT 0_1_BEM
 
@@ -61,44 +45,8 @@ int main(int argc, char **argv) {
    /* -------------------------------------------------------------------------- */
    /*                           Set up logging to file                           */
    /* -------------------------------------------------------------------------- */
-
-   // Read the contents of the existing log file
-   std::ifstream ifs("log.txt");
-   std::string existingContent;
-   if (ifs.is_open()) {
-      existingContent.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
-   }
-
-   // Open log file in trunc mode to clear its contents
-   std::ofstream ofs("log.txt");
-   if (!ofs.is_open()) {
-      std::cerr << "Failed to open log file\n";
+   if (!initializeLogFile("log.txt", argc, argv))
       return 1;
-   }
-   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
-
-   // Get current time
-   auto now = std::chrono::system_clock::now();
-   std::time_t time = std::chrono::system_clock::to_time_t(now);
-   ofs << "Execution time: " << std::ctime(&time) << std::endl;
-
-   // Log machine information
-   logMachineInformation(ofs);
-
-   // Check command line arguments
-   if (argc <= 1) {
-      ofs << "No arguments provided. Write input JSON file directory.\n";
-      return 1;
-   }
-
-   // Write command line arguments to log file
-   ofs << "Command line arguments:" << std::endl;
-   for (int i = 1; i < argc; ++i)
-      ofs << "  arg" << i << ": " << argv[i] << std::endl;
-
-   // Write the existing log content back to the log file after the new log entry
-   ofs << existingContent;
-   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
 
    /* -------------------------------------------------------------------------- */
 
@@ -257,7 +205,7 @@ int main(int argc, char **argv) {
       //  b* ------------------------------------------------------ */
       TimeWatch watch;
       for (time_step = 0; time_step < end_time_step; time_step++) {
-         if (end_time < real_time) break;
+         if (end_time < simulation_time) break;
          show_info(*water);
          //! 体積を保存するようにリメッシュする必要があるだろう．
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
@@ -275,7 +223,7 @@ int main(int argc, char **argv) {
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);
-         Print("real time :" + Red + std::to_string(real_time) + colorOff);
+         Print("real time :" + Red + std::to_string(simulation_time) + colorOff);
          Print("---------------------------------------------------------------------------");
 
          double spacing = Mean(extLength(water->getLines())) * 3;
@@ -292,22 +240,22 @@ int main(int argc, char **argv) {
          // b@ ------------------------------------------------------ */
          int RK_order = 4;
          for (const auto &p : Points) {
-            p->RK_phi.initialize(dt, real_time, std::get<0>(p->phiphin), RK_order);
-            p->RK_X.initialize(dt, real_time, ToX(p), RK_order);
+            p->RK_phi.initialize(dt, simulation_time, std::get<0>(p->phiphin), RK_order);
+            p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
          }
          for (const auto &net : RigidBodyObject) {
-            net->RK_COM.initialize(dt, real_time, net->COM, RK_order);
-            net->RK_Q.initialize(dt, real_time, net->Q(), RK_order);
-            net->RK_Velocity.initialize(dt, real_time, net->velocity, RK_order);
+            net->RK_COM.initialize(dt, simulation_time, net->COM, RK_order);
+            net->RK_Q.initialize(dt, simulation_time, net->Q(), RK_order);
+            net->RK_Velocity.initialize(dt, simulation_time, net->velocity, RK_order);
             //
             if (net->interp_accel.size() > 10)
                net->interp_accel.pop();
-            net->interp_accel.push(real_time, net->acceleration);
+            net->interp_accel.push(simulation_time, net->acceleration);
          }
          for (const auto &net : SoftBodyObject) {
             // !いらないはずのもの
             for (const auto &p : net->getPoints())
-               p->RK_X.initialize(dt, real_time, ToX(p), RK_order);
+               p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
          }
          // b@ ----------------------------------------------------- */
          /*DOC_EXTRACT 0_1_BEM
@@ -336,7 +284,7 @@ int main(int argc, char **argv) {
          BEM_BVP BVP;
          do {
             auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
-            std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", real_time = " << real_time << std::endl;
+            std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", simulation_time = " << simulation_time << std::endl;
 
             setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
@@ -476,8 +424,8 @@ int main(int argc, char **argv) {
 
          /* ------------------------------------------------------ */
 
-         std::cout << Green << "real_timeを取得" << colorOff << std::endl;
-         real_time = (*Points.begin())->RK_X.gett();
+         std::cout << Green << "simulation_timeを取得" << colorOff << std::endl;
+         simulation_time = (*Points.begin())->RK_X.gett();
 
          for (const auto &p : Points) {
             p->U_BEM_last = p->U_BEM;
@@ -493,7 +441,16 @@ int main(int argc, char **argv) {
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
          std::cout << "output JSON files" << std::endl;
-         jsonout.push("time", real_time);
+         jsonout.push("simulation_time", simulation_time);
+         // Push CPU time
+         double cpu_time_in_seconds = static_cast<double>(std::clock() - cpu_clock_start) / CLOCKS_PER_SEC;
+         jsonout.push("cpu_time", cpu_time_in_seconds);
+
+         // Calculate and push wall-clock time
+         auto duration = std::chrono::high_resolution_clock::now() - wall_clock_start;
+         double wall_clock_time_in_seconds = std::chrono::duration<double>(duration).count();
+         jsonout.push("wall_clock_time", wall_clock_time_in_seconds);
+
          // water
          jsonout.push(water->getName() + "_volume", water->getVolume());
          jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
@@ -529,7 +486,7 @@ int main(int argc, char **argv) {
          for (const auto &net : FluidObject) {
             auto filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
             mk_vtu(output_directory + "/" + filename, net->getFaces(), dataForOutput(net, dt));
-            NetOutputInfo[net].PVD->push(filename, real_time);
+            NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
          }
 
@@ -574,7 +531,7 @@ int main(int argc, char **argv) {
             }
             auto filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
             mk_vtu(output_directory + "/" + filename, net->getFaces(), data);
-            NetOutputInfo[net].PVD->push(filename, real_time);
+            NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
          }
          // 流体
@@ -586,7 +543,7 @@ int main(int argc, char **argv) {
 
          //    auto filename = "cornerPoints" + std::to_string(time_step) + ".vtu";
          //    mk_vtu(output_directory + "/" + filename, points);
-         //    cornerPointsPVD.push(filename, real_time);
+         //    cornerPointsPVD.push(filename, simulation_time);
          //    cornerPointsPVD.output();
          // }
          // {
@@ -605,7 +562,7 @@ int main(int argc, char **argv) {
          //    }
          //    auto filename = "corner" + std::to_string(time_step) + ".vtu";
          //    mk_vtu(output_directory + "/" + filename, faces, data);
-         //    cornerPVD.push(filename, real_time);
+         //    cornerPVD.push(filename, simulation_time);
          //    cornerPVD.output();
          // }
          // b# -------------------------------------------------------------------------- */

@@ -1,7 +1,5 @@
 {
     "name": "water",
     "type": "Fluid",
-    "output_vtu_file_name": "water",
-    "output_pvd_file_name": "water",
-    "objfile": "/Users/tomoaki/Dropbox/code/cpp/obj/2022Arai/Kamra2019/water.obj"
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Kamra2019/water.obj"
 }

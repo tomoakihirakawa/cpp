@@ -524,7 +524,7 @@ struct BEM_BVP {
       gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/, use_gmres);
       ans = gm.x;
       std::cout << "gm.err = " << gm.err << ", isFinite(gm.err) = " << isFinite(gm.err) << std::endl;
-      if (real_time < 0.005 || !isFinite(gm.err < 1E-20)) {
+      if (simulation_time < 0.005 || !isFinite(gm.err < 1E-20)) {
          std::cout << "lapack lu decomposition" << std::endl;
          this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       }
@@ -780,7 +780,7 @@ struct BEM_BVP {
             double start_time = 0;
             if (net->inputJSON.at("velocity").size() > 1)
                start_time = std::stod(net->inputJSON.at("velocity")[1]);
-            if (real_time < start_time)
+            if (simulation_time < start_time)
                std::ranges::for_each(net->acceleration, [&](auto &a_w) { i++; });
             else
                std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });

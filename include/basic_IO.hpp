@@ -1,9 +1,11 @@
 #ifndef basic_IO_H
 #define basic_IO_H
 
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
@@ -277,37 +279,146 @@ void DebugPrint(Args... args) {
    std::cout << stream.str() << colorOff << std::endl;
 #endif
 }
-//
-template <typename T>
-void MatrixForm(const std::vector<std::vector<T>> &mat, const int n = 4, const int m = 7) {
+
+// template <typename T>
+// void MatrixForm(const std::vector<std::vector<T>> &mat, const int n = 4, const int m = 7) {
+//    std::stringstream ss;
+//    ss << std::setprecision(n) << Red << "{" << colorOff;
+//    for (auto it = mat.begin(); it != mat.end(); ++it) {
+//       ss << Green << (it == mat.begin() ? "{" : " {") << colorOff;
+//       for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt)
+//          ss << std::setw(m) << std::setfill(' ') << (*jt) << Green << "," << colorOff;
+//       ss << std::setw(m) << std::setfill(' ') << (*((*it).end() - 1)) << Green << "}" << colorOff;
+//       if (it != mat.end() - 1)
+//          ss << ",\n";
+//    }
+//    ss << Red << "}" << colorOff;
+//    std::cout << ss.str() << std::endl;
+// };
+
+#include <functional>
+
+template <typename T, typename Func>
+std::string MatrixForm(const std::vector<std::vector<T>> &mat,
+                       Func color,
+                       const int prec,
+                       const int width) {
+
+   auto COL = [](const auto &x, const auto &Red, const int w = 0) {
+      std::stringstream ss;
+      ss << Red << std::setw(w) << std::setfill(' ') << x << colorOff;
+      return ss.str();
+   };
+
    std::stringstream ss;
-   ss << std::setprecision(n) << Red << "{" << colorOff;
+   int i = 0;
+   ss << std::setprecision(prec) << COL("{", Magenta);
    for (auto it = mat.begin(); it != mat.end(); ++it) {
+      int j = 0;
       ss << Green << (it == mat.begin() ? "{" : " {") << colorOff;
-      for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt)
-         ss << std::setw(m) << std::setfill(' ') << (*jt) << Green << "," << colorOff;
-      ss << std::setw(m) << std::setfill(' ') << (*((*it).end() - 1)) << Green << "}" << colorOff;
-      if (it != mat.end() - 1)
+      for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt) {
+         if (color(i, j))
+            ss << COL(*jt, Red, width) << COL(",", Green);
+         else
+            ss << std::setw(width) << std::setfill(' ') << (*jt) << COL(",", Green);
+         j++;
+      }
+
+      if (color(i, j))
+         ss << COL((*((*it).end() - 1)), Red, width) << COL("}", Green);
+      else
+         ss << std::setw(width) << std::setfill(' ') << (*((*it).end() - 1)) << COL("}", Green);
+
+      if (it != mat.end() - 1) {
          ss << ",\n";
+         j++;
+      }
+      i++;
    }
-   ss << Red << "}" << colorOff;
-   std::cout << ss.str() << std::endl;
-};
+   ss << COL("}", Magenta);
+   return ss.str();
+}
+
+template <typename T>
+std::string MatrixForm(const std::vector<std::vector<T>> &mat,
+                       const int prec = 4,
+                       const int width = 7) {
+   return MatrixForm(
+       mat, [](const auto &i, const auto &j) { return false; },
+       prec, width);
+}
 
 template <typename T, typename U>
-void MatrixForm(const std::vector<std::vector<T>> &mat, const U &w) {
-   std::stringstream ss;
-   ss << Red << "{" << colorOff;
-   for (auto it = mat.begin(); it != mat.end(); ++it) {
-      ss << Green << "{" << colorOff;
-      for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt)
-         ss << w << (*jt) << Green << "," << colorOff;
-      ss << w << (*((*it).end() - 1)) << Green << "}" << colorOff;
-      if (it != mat.end() - 1)
-         ss << ",\n";
-   }
-   ss << Red << "}" << colorOff;
-   std::cout << ss.str() << std::endl;
+std::string MatrixForm(const std::vector<std::vector<T>> &mat, const U &w) {
+   return MatrixForm(
+       mat, [](const auto &i, const auto &j) { return false; }, 4, w);
 };
+
+/* -------------------------------------------------------------------------- */
+#include <sys/utsname.h>
+#include <unistd.h>
+
+void logMachineInformation(std::ofstream &ofs) {
+   char hostname[256];
+   if (gethostname(hostname, sizeof(hostname)) != 0) {
+      ofs << "Failed to get hostname\n";
+      return;
+   }
+
+   struct utsname unameData;
+   if (uname(&unameData) != 0) {
+      ofs << "Failed to get system information\n";
+      return;
+   }
+
+   ofs << "Machine Information:" << std::endl;
+   ofs << "  Hostname: " << hostname << std::endl;
+   ofs << "  Operating System: " << unameData.sysname << " " << unameData.release << std::endl;
+   ofs << "  Working Directory: " << std::filesystem::current_path() << std::endl;  // Added current directory
+   ofs << std::endl;
+}
+
+bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
+   std::vector<std::string> args(argv, argv + argc);
+   // Read existing content
+   std::ifstream ifs(logfilename);
+   std::string existingContent;
+   if (ifs.is_open()) {
+      existingContent.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+   }
+
+   // Clear and open log file
+   std::ofstream ofs(logfilename);
+   if (!ofs.is_open()) {
+      std::cerr << "Failed to open " << logfilename << std::endl;
+      return false;
+   }
+   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
+
+   // Log time of execution
+   auto now = std::chrono::system_clock::now();
+   std::time_t time = std::chrono::system_clock::to_time_t(now);
+   ofs << "Execution time: " << std::ctime(&time) << std::endl;
+
+   // Log machine info
+   logMachineInformation(ofs);
+
+   // Log command line arguments
+   if (args.empty()) {
+      ofs << "No arguments provided. Write input JSON file directory.\n";
+      return false;
+   }
+
+   ofs << "Command line arguments:" << std::endl;
+   for (size_t i = 0; i < args.size(); ++i) ofs << "  arg" << i << ": " << args[i] << std::endl;
+
+   // Add existing content back
+   ofs << existingContent;
+   ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
+
+   return true;
+}
+
+/* -------------------------------------------------------------------------- */
 
 #endif

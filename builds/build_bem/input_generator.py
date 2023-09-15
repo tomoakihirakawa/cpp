@@ -5,100 +5,12 @@ import json
 import math
 import os
 from os.path import expanduser
+# 
+import sys
+sys.path.append("..")
+from IOgenerator import generate_input_files
 
-
-def generate(inputfiles, setting):
-
-    white = '\033[90m'
-    red = '\033[91m'
-    blue = '\033[96m'
-    green = '\033[92m'
-    magenta = '\033[95m'
-    coloroff = '\033[0m'
-
-    # if input_files is not found in setting, then add it
-    if "input_files" not in setting:
-        setting["input_files"] = [x["name"]+".json" for x in inputfiles]
-
-    # @ -------------------------------------------------------- #
-    # @           その他，water.json,tank.json などを出力           #
-    # @ -------------------------------------------------------- #
-    for INPUTS in inputfiles:
-        print('------------------------------------')
-        for key, value in INPUTS.items():
-            if value == "floating":
-                print(f'{key: <{20}}', '\t', green, value, coloroff)
-            elif value == "RigidBody":
-                print(f'{key: <{20}}', '\t', red, value, coloroff)
-            elif value == "Fluid":
-                print(f'{key: <{20}}', '\t', blue, value, coloroff)
-            else:
-                print(f'{key: <{20}}', '\t', white, value, coloroff)
-
-            if key == "objfile":
-                if os.path.exists(value) == False:
-                    print(red, "! file does not exist", coloroff)
-                else:
-                    print(green, "file exists", coloroff)
-        print('------------------------------------')
-        f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
-        json.dump(INPUTS, f, ensure_ascii=True, indent=4)
-        f.close()
-
-    # @ -------------------------------------------------------- #
-    # @                  setting.json を出力                      #
-    # @ -------------------------------------------------------- #
-    print('------------------------------------')
-    for key, value in setting.items():
-        print(f'{key: <{20}}', '\t', green, value, coloroff)
-    print('------------------------------------')
-    f = open(input_directory+"/setting.json", 'w')
-    json.dump(setting, f, ensure_ascii=True, indent=4)
-    f.close()
-
-    print("The directory for input files :",
-          magenta, input_directory, coloroff)
-
-
-def genrate_in_out_directory(SimulationCase, id):
-    input_directory += SimulationCase + id
-    os.makedirs(input_directory, exist_ok=True)
-    output_directory = home + "/BEM/"+SimulationCase + id
-    os.makedirs(output_directory, exist_ok=True)
-
-
-'''DOC_EXTRACT 1_0_HOW_TO_MAKE_INPUT_FILES
-
-# 入力ファイル生成 `input_generator.py`
-
-This Python script generates input files for the BEM simulation codxxe. It supports various simulation cases and handles input file generation for each case.
-
-## Usage
-
-1. Make sure the required dependencies are installed.
-2. Run the script using the following command:
-
-```shell
-$ python3 input_generator.py
-```
-
-Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
-
-## Customization
-
-To customize the input file generation for a specific case, follow these steps:
-
-1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
-2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
-3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
-4. Update the `inputfiles` variable with the new input objects created for the custom case.
-
-After customizing the script, run it again to generate the input files for the new case.
-
-## Output
-
-The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
-'''
+input_directory = "./input_files/"
 
 home = expanduser("~")
 
@@ -109,33 +21,27 @@ program_home = os.path.join(current_directory, '../../../../code')
 # else:
 #     program_home = home + "/Dropbox/code/"
 
-'''
-プログラムを回す際に面倒な事は，入力ファイルの設定．
-入力ファイルの作り方をドキュメントで示されても，具体的な例がないとわかりにくい．
-例があっても，例と違う場合どうすればいいかなど，わからないことは多い．
-このように，入力ファイルを生成するプログラムを作っておけば，その面倒をだいぶ解消できる．
-'''
-
 rho = 1000.
 g = 9.81
 
-input_directory = "./input_files/"
 
+def IO_dir(id):
+    input_directory = "./input_files/" + id
+    os.makedirs(input_directory, exist_ok=True)
+    output_directory = home + "/BEM/" + id
+    os.makedirs(output_directory, exist_ok=True)
+    return input_directory, output_directory
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "fish"
+
+SimulationCase = "Ren2015"
 
 match SimulationCase:
     case "fish":
 
         start = 0.
 
-        id = ""
-
-        input_directory += SimulationCase + id
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + id
-        os.makedirs(output_directory, exist_ok=True)
+        id = SimulationCase
 
         objfolder = program_home + "/cpp/obj/fish"
         water = {"name": "water",
@@ -180,10 +86,9 @@ match SimulationCase:
 
         setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
-                   "end_time": 9,
-                   "output_directory": output_directory}
+                   "end_time": 9}
 
-        generate(inputfiles, setting)
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "testALE":
 
         objfolder = program_home + "/cpp/obj/testALE"
@@ -209,21 +114,15 @@ match SimulationCase:
                   "velocity": ["const", 0, pi/180., 0, 0, 0, 0, 0, 1],
                   "objfile": objfolder + "/cuboid100.obj"}
 
-        id = ""
-        input_directory += SimulationCase + id
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + id
-        os.makedirs(output_directory, exist_ok=True)
+        id = SimulationCase
 
         inputfiles = [water, tank, cylinder, cuboid]
 
         setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
-                   "end_time": 9,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 9}
 
-        generate(inputfiles, setting)
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "Ren2015":
 
         start = 0.
@@ -243,11 +142,6 @@ match SimulationCase:
         id = id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
         id += "_"+wavemaker_type
-
-        input_directory += SimulationCase + id
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + id
-        os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
         tank = {"name": "tank",
@@ -332,21 +226,12 @@ match SimulationCase:
 
         setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
-                   "end_time": 9,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 9}
 
-        generate(inputfiles, setting)
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "Hadzic2005":
 
         start = 0.
-
-        id = ""
-
-        input_directory += SimulationCase + id
-        os.makedirs(input_directory, exist_ok=True)
-        output_directory = home + "/BEM/"+SimulationCase + id
-        os.makedirs(output_directory, exist_ok=True)
 
         water = {"name": "water", "type": "Fluid"}
         tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
@@ -394,11 +279,10 @@ match SimulationCase:
 
         setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
-                   "end_time": 9,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 9}
 
-        generate(inputfiles, setting)
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "Kramer2021":
 
         start_t = max_dt = 0.02
@@ -448,10 +332,11 @@ match SimulationCase:
                    "max_dt": max_dt,
                    "end_time_step": 10000,
                    "end_time": 4,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "output_directory": output_directory}
 
-        generate(inputfiles, setting)
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+
     case "simple_barge":
 
         input_directory += SimulationCase
@@ -506,11 +391,10 @@ match SimulationCase:
 
         setting = {"max_dt": 0.25,
                    "end_time_step": 10000,
-                   "end_time": 10000,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 10000}
 
-        generate(inputfiles, setting)
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "moon_pool":
 
         for T in [5 + 0.5 * i for i in range(0, 11)]:
@@ -583,11 +467,11 @@ match SimulationCase:
 
             setting = {"max_dt": 0.2,
                        "end_time_step": 1000,
-                       "end_time": 100,
-                       "output_directory": output_directory,
-                       "input_files": [x["name"]+".json" for x in inputfiles]}
+                       "end_time": 100}
 
-            generate(inputfiles, setting)
+            id = SimulationCase
+            generate_input_files(inputfiles, setting, IO_dir, id)
+
     case "two_floatingbodies":
 
         start = 0.
@@ -651,9 +535,11 @@ match SimulationCase:
 
         setting = {"max_dt": 0.3,
                    "end_time_step": 12000,
-                   "end_time": 120,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 120}
+
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+        
     case "Gu2018Float1_offset_neg0d074":
 
         input_directory += SimulationCase
@@ -685,9 +571,10 @@ match SimulationCase:
 
         setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
-                   "end_time": 4,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 4}
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+
     case "Tonegawa":
 
         input_directory += SimulationCase
@@ -736,9 +623,10 @@ match SimulationCase:
 
         setting = {"max_dt": 0.2,
                    "end_time_step": 10000,
-                   "end_time": 10000,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 10000}
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+ 
     case "three_floatingbodies":
 
         start = 0.
@@ -802,9 +690,11 @@ match SimulationCase:
 
         setting = {"max_dt": 0.3,
                    "end_time_step": 12000,
-                   "end_time": 150,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 150}
+
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+        
     case "Retzler2000simple":
 
         input_directory += SimulationCase
@@ -833,9 +723,12 @@ match SimulationCase:
         inputfiles = [tank, wavemaker, water]
         setting = {"max_dt": 0.002,
                    "end_time_step": 1000,
-                   "end_time": 0.4,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 0.4}
+
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+
+
     case "Retzler2000":
 
         input_directory += SimulationCase
@@ -864,9 +757,10 @@ match SimulationCase:
         inputfiles = [tank, wavemaker, water]
         setting = {"max_dt": 0.002,
                    "end_time_step": 100,
-                   "end_time": 0.4,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 0.4}
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)
+        
     case "three_200":
 
         start = 0.
@@ -931,6 +825,7 @@ match SimulationCase:
 
         setting = {"max_dt": 0.5,
                    "end_time_step": 12000,
-                   "end_time": 120,
-                   "output_directory": output_directory,
-                   "input_files": [x["name"]+".json" for x in inputfiles]}
+                   "end_time": 120}
+        
+        id = SimulationCase
+        generate_input_files(inputfiles, setting, IO_dir, id)

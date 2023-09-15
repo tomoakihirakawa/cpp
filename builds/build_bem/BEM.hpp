@@ -401,6 +401,7 @@ void show_info(const Network &net) {
    std::cout << "Neumann : " << n << std::endl;
    std::cout << "Dirichlet : " << d << std::endl;
 };
+
 JSONoutput jsonout;
 
 // b! ------------------------------------------------------ */

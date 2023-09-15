@@ -43,6 +43,25 @@ std::vector<T> operator*(std::vector<T> v, const T din) {
       u *= din;
    return v;
 };
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::vector<T> &operator*=(std::vector<T> &v, const T &w) { return (v = v * w); };
+
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::vector<T> &operator*=(std::vector<T> &v, const std::vector<T> &w) {
+   for (auto i = 0; i < v.size(); ++i)
+      v[i] *= w[i];
+   return v;
+};
+
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<std::vector<T>> &operator*=(std::vector<std::vector<T>> &v, const std::vector<T> &w) {
+//    return (v = v * w);
+// };
+// template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// std::vector<std::vector<T>> &operator*=(std::vector<std::vector<T>> &v, const std::vector<std::vector<T>> &w) {
+//    return (v = v * w);
+// };
+
 //! matrix * scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator*(std::vector<std::vector<T>> v, const T din) {
@@ -87,10 +106,6 @@ std::vector<T> operator*(std::vector<T> v, const std::vector<T> &w) {
    std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const T a, const T b) { return a * b; });
    return v;
 };
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-std::vector<T> &operator*=(std::vector<T> &v, const T &w) { return (v = v * w); };
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-std::vector<T> &operator*=(std::vector<T> &v, const std::vector<T> &w) { return (v = v * w); };
 // //vector x matrix
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector<std::vector<T>> operator*(const std::vector<T>& v, std::vector<std::vector<T>> w){
@@ -102,14 +117,6 @@ std::vector<T> &operator*=(std::vector<T> &v, const std::vector<T> &w) { return 
 // std::vector< std::vector<T> > operator*(std::vector<std::vector<T>> w, const std::vector<T>& v){
 //   std::transform(w.begin(),w.end(),v.cbegin(),w.begin(),[](const T& a, const T& b){ return a*b; });
 //   return w;
-// };
-// template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-// std::vector<std::vector<T>>& operator*=(std::vector<std::vector<T>>& v, const std::vector<T>& w){
-//   return (v = v * w);
-// };
-// template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-// std::vector<std::vector<T>>& operator*=(std::vector<std::vector<T>>& v, const std::vector<std::vector<T>>& w){
-//   return (v = v * w);
 // };
 /////////////////////////////////////////////////
 //@vector / scaler

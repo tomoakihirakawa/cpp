@@ -206,14 +206,14 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                /* -------------------------------------------------------------------------- */
                const auto r_short = (q->radius_SPH / q->C_SML) * 2.;
                q->isNeumannSurface = net->BucketPoints.any_of(q->X, q->radius_SPH, [&](const auto &b) {
-                  return Distance(q, b) < r_short && q != b && (VectorAngle(q->interpolated_normal_SPH_original, b->X - q->X) < M_PI / 8);
+                  return Distance(q, b) < r_short && q != b && (VectorAngle(q->interpolated_normal_SPH_original, b->X - q->X) < M_PI / 7);
                });
 
                /* -------------------------------------------------------------------------- */
 
                // capture
                auto nearWallCondition = [&](const auto &Q) {
-                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 8);
+                  return Distance(q, Q) < captureRange && q != Q && (VectorAngle(q->interpolated_normal_SPH, Q->X - q->X) < M_PI / 7);
                };
                q->isCaptured = net->BucketPoints.any_of(q->X, captureRange, nearWallCondition);
             }
@@ -285,10 +285,12 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    for (const auto &[obj, poly] : RigidBodyObject)
       all_nets.push_back(obj);
 
+   auto netPoints = ToVector(net->getPoints());
+
    auto water = net;
 
 #pragma omp parallel
-   for (const auto &p : net->getPoints())
+   for (const auto &p : netPoints)
 #pragma omp single nowait
    {
       // 初期化
@@ -383,7 +385,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    }
 
 #pragma omp parallel
-   for (const auto &p : net->getPoints())
+   for (const auto &p : netPoints)
 #pragma omp single nowait
    {
       /*DOC_EXTRACT SPH
@@ -411,32 +413,32 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       else
          p->isNeumannSurface = false;
 
-      /* ------------------------ Surface condition ----------------------- */
+      /* -------------------------- Surface condition ---------------------------- */
 
-      p->isSurface = true;
+      // p->isSurface = true;
 
-      const auto radius = (p->radius_SPH / p->C_SML) * 2.;
+      // const auto radius = (p->radius_SPH / p->C_SML) * 2.;
 
-      auto surface_condition0 = [&](const auto &q) {
-         return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 6);
-      };
+      // auto surface_condition0 = [&](const auto &q) {
+      //    return Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, q->X - p->X) < M_PI / 6);
+      // };
 
-      p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0);
+      // p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0);
 
-      auto surface_condition1 = [&](const auto &q) {
-         // 0.8よりも小さいものは，条件を厳しくする
-         // 0.8よりも大きいものは，条件を緩める
-         return ((p->intp_density / _WATER_DENSITY_ < 0.8) && Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 3)) ||
-                ((p->intp_density / _WATER_DENSITY_ > 0.8) && Distance(p, q) < radius * 1.2 && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 2));
-      };
+      // auto surface_condition1 = [&](const auto &q) {
+      //    // 0.8よりも小さいものは，条件を厳しくする
+      //    // 0.8よりも大きいものは，条件を緩める
+      //    return ((p->intp_density / _WATER_DENSITY_ < 0.8) && Distance(p, q) < radius && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 3)) ||
+      //           ((p->intp_density / _WATER_DENSITY_ > 0.8) && Distance(p, q) < radius * 1.2 && p != q && (VectorAngle(p->interpolated_normal_SPH_original, -q->normal_SPH) < M_PI / 2));
+      // };
 
-      for (const auto &[obj, poly] : RigidBodyObject)
-         if (p->isSurface) {
-            p->isSurface = obj->BucketPoints.none_of(p->X, radius, surface_condition1);
-         }
+      // for (const auto &[obj, poly] : RigidBodyObject)
+      //    if (p->isSurface) {
+      //       p->isSurface = obj->BucketPoints.none_of(p->X, radius, surface_condition1);
+      //    }
 
-      if (p->intp_density / _WATER_DENSITY_ < 0.9)
-         p->isSurface = true;
+      // if (p->intp_density / _WATER_DENSITY_ < 0.89)
+      //    p->isSurface = true;
    }
 
    /*DOC_EXTRACT SPH
@@ -444,6 +446,107 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    ## 水面補助粒子の作成
 
    */
+
+   //! -------------------------------------------------------------------------- */
+#pragma omp parallel
+   for (const auto &A : netPoints)
+#pragma omp single nowait
+   {
+
+      A->grad_corr_M.fill({0., 0., 0.});
+      A->grad_corr_M_next.fill({0., 0., 0.});
+      A->grad_U.fill({0., 0., 0.});
+      A->Mat1.fill({0., 0., 0.});
+      A->Mat2.fill({0., 0., 0.});
+      A->Mat3.fill({0., 0., 0.});
+
+      Tddd Xij, nz_Xij;
+      auto add = [&](const auto &B) {
+         auto grad_w = grad_w_Bspline(A->X, B->X, A->radius_SPH);
+         A->grad_corr_M += B->volume * TensorProduct(B->X - A->X, grad_w);
+         A->grad_corr_M_next += V_next(B) * TensorProduct(X_next(B) - X_next(A), grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH));
+
+         const auto Uij = A->U_SPH - B->U_SPH;
+         A->grad_U += B->volume * TensorProduct(-Uij, grad_w);
+
+         Xij = A->X - B->X;
+         nz_Xij = Normalize(Xij);
+         A->Mat1 += B->volume * TensorProduct(Xij * nz_Xij * nz_Xij, grad_w);
+         A->Mat2 += B->volume * TensorProduct(nz_Xij * nz_Xij, grad_w);
+         A->Mat3 += B->volume * TensorProduct(Xij * Xij, grad_w);
+      };
+
+      for (const auto &net : all_nets)
+         net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+            if (B->isCaptured)
+               add(B);
+         });
+
+      A->Eigenvalues_of_M = {0., 0., 0.};
+      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+      //
+      A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+      //
+      {
+         auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-4, 300.);
+         A->Eigenvalues_of_M = lambdas;
+         A->Eigenvectors_of_M = vectors;
+      }
+      {
+         auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-4, 300.);
+         A->Eigenvalues_of_M1 = lambdas;
+         A->Eigenvectors_of_M1 = vectors;
+      }
+      //
+      A->var_Eigenvalues_of_M = 0;
+      for (const auto &v : A->Eigenvalues_of_M)
+         A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
+      for (const auto &v : A->Eigenvalues_of_M1)
+         A->var_Eigenvalues_of_M1 += std::pow(1. - std::abs(v), 2.);
+      //
+      A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
+      A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
+      //
+      A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
+      A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
+      //
+      A->isSurface = A->var_Eigenvalues_of_M > 0.125;
+      //
+      T3Tddd I;
+      IdentityMatrix(I);
+      A->Mat_B = Dot(-I, Inverse(A->Mat1 + Dot(Dot(A->Mat2, A->inv_grad_corr_M), A->Mat3)));
+
+      /* --------------------------------------------------------- */
+
+      {
+         auto add_to_map = [&](const auto &p, const auto &c) {
+            if (A->map_p_grad.find(p) == p->map_p_grad.end())
+               A->map_p_grad[p] = c;
+            else
+               A->map_p_grad[p] += c;
+         };
+
+         auto add = [&](const auto &B) {
+            auto c = B->volume * Dot(A->X - B->X, Dot(grad_w_Bspline(A->X, B->X, A->radius_SPH), A->inv_grad_corr_M));
+            add_to_map(B, -c);
+            add_to_map(A, c);
+            // 符号についての疑問が残る．逆になっているように思える．
+         };
+
+         A->map_p_grad.clear();
+         for (const auto &net : all_nets)
+            net->BucketPoints.apply(A->X, A->radius_SPH, [&](const auto &B) {
+               if (B->isCaptured) add(B);
+            });
+
+         // copy    std::unordered_map<networkPoint *, double> map_p_grad to  std::vector<std::tuple<networkPoint *, double>> vector_p_grad;
+         A->vector_p_grad.clear();
+         for (const auto &[p, v] : A->map_p_grad)
+            A->vector_p_grad.push_back(std::tuple<networkPoint *, double>{p, v});
+      }
+   }
+
+   //! -------------------------------------------------------------------------- */
 
 #if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
    DebugPrint("水面ネットワークの初期化", Green);

@@ -1,0 +1,21 @@
+{
+    "name": "bodyC",
+    "type": "RigidBody",
+    "COM": [
+        0.7,
+        0,
+        0.25
+    ],
+    "mass": 10000000000,
+    "MOI": [
+        10000000000,
+        10000000000,
+        10000000000
+    ],
+    "output": "json",
+    "velocity": [
+        "file",
+        "bodyC.dat"
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/fish/bodyC50.obj"
+}
