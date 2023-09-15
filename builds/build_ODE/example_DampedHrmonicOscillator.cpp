@@ -21,12 +21,16 @@ m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x &= 0\\
 $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 加速度の評価回数$`N`$を合わせて比較した例：
 
+| ![](figN25.png) | ![](figN50.png) |  ![](figError.png) |
+|:---:|:---:|:---:|
+|N=25 evaluations|N=50 evaluations|the sum of differences|
+
 <table>
   <thead>
     <tr>
-      <th>Header $`N=25`$ evaluations </th>
-      <th>Header $`N=50`$ evaluations </th>
-      <th>Header the sum of differences </th>
+      <th> N=25 evaluations </th>
+      <th> N=50 evaluations </th>
+      <th> the sum of differences </th>
     </tr>
   </thead>
   <tbody>
@@ -37,7 +41,6 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
     </tr>
   </tbody>
 </table>
-
 
 ### 後退オイラー
 
