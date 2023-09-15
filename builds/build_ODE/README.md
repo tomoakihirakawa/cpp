@@ -15,7 +15,7 @@
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
-[プログラム中で宣言](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L58)し，
+[プログラム中で宣言](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L61)し，
 
 ```math
 \begin{align*}
@@ -27,12 +27,16 @@ m \frac{d^2x}{dt^2} + b \frac{dx}{dt} + k x &= 0\\
 $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 加速度の評価回数$`N`$を合わせて比較した例：
 
+| ![](figN25.png) | ![](figN50.png) |  ![](figError.png) |
+|:---:|:---:|:---:|
+|N=25 evaluations|N=50 evaluations|the sum of differences|
+
 <table>
 <thead>
 <tr>
-<th>Header $`N=25`$ evaluations </th>
-<th>Header $`N=50`$ evaluations </th>
-<th>Header the sum of differences </th>
+<th> N=25 evaluations </th>
+<th> N=50 evaluations </th>
+<th> the sum of differences </th>
 </tr>
 </thead>
 <tbody>
@@ -43,7 +47,6 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 </tr>
 </tbody>
 </table>
-
 
 ### 🪼 後退オイラー 
 
