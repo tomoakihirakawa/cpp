@@ -46,7 +46,7 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3904)では，拡張子から，
+[Networkのコンストラクタ](../../include/Network.hpp#L3915)では，拡張子から，
 与えられたファイルが，
 
 * OFFファイル

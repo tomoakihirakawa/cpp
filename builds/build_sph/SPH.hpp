@@ -463,7 +463,10 @@ void developByEISPH(Network *net,
 
          //@ 圧力 p^n+1の計算
          DebugPrint("圧力 p^n+1の計算", Magenta);
+
+         // if (real_time < 0.0001)
          solvePoisson(net->getPoints(), wall_p);
+
          // set free surface pressure using EISPH way
          // setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
 
@@ -505,6 +508,27 @@ void developByEISPH(Network *net,
 void setDataOmitted(auto &vtp, const auto &Fluid) {
    std::unordered_map<networkPoint *, double> uo_double;
    std::unordered_map<networkPoint *, Tddd> uo_3d;
+   //
+
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M;
+   vtp.addPointData("Eigenvalues_of_M", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
+   vtp.addPointData("var_Eigenvalues_of_M", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
+   vtp.addPointData("min_Eigenvalues_of_M", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;
+   vtp.addPointData("Eigenvalues_of_M1", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M1;
+   vtp.addPointData("var_Eigenvalues_of_M1", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
+   vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
+   //
+
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
+   vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.16);
+   vtp.addPointData("isSurface_var_Eigenvalues_of_M1", uo_double);
    //
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->normal_SPH;
    vtp.addPointData("normal_SPH", uo_3d);

@@ -43,10 +43,6 @@
         - [🪼 境界値問題の未知変数](#🪼-境界値問題の未知変数)
         - [🪼 エネルギー保存則（計算精度のチェックに利用できる）](#🪼-エネルギー保存則（計算精度のチェックに利用できる）)
         - [🪼 内部流速の計算方法（使わなくてもいい）](#🪼-内部流速の計算方法（使わなくてもいい）)
-- [🐋 入力ファイル生成 `input_generator.py`](#🐋-入力ファイル生成-`input_generator.py`)
-    - [⛵ Usage](#⛵-Usage)
-    - [⛵ Customization](#⛵-Customization)
-    - [⛵ Output](#⛵-Output)
 - [🐋 実行方法](#🐋-実行方法)
 - [🐋 Examples](#🐋-Examples)
 
@@ -159,7 +155,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L143](./main.cpp#L143)
+[./main.cpp#L127](./main.cpp#L127)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -181,7 +177,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L405](./main.cpp#L405)
+[./main.cpp#L353](./main.cpp#L353)
 
 
 ---
@@ -257,7 +253,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
 
-[../../include/Network.hpp#L859](../../include/Network.hpp#L859)
+[../../include/Network.hpp#L870](../../include/Network.hpp#L870)
 
 
 
@@ -660,7 +656,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L457](./main.cpp#L457)
+[./main.cpp#L405](./main.cpp#L405)
 
 
 ---
@@ -720,7 +716,7 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L376)
+[強制運動を課す](../../builds/build_bem/main.cpp#L324)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -884,41 +880,6 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 
 
 ---
-# 🐋 入力ファイル生成 `input_generator.py` 
-
-This Python script generates input files for the BEM simulation codxxe. It supports various simulation cases and handles input file generation for each case.
-
-## ⛵ Usage 
-
-1. Make sure the required dependencies are installed.
-2. Run the script using the following command:
-
-```shell
-$ python3 input_generator.py
-```
-
-Upon running the script, it will generate input files in JSON format for the specified simulation case. The input files are saved in the `./input_files/` directory.
-
-## ⛵ Customization 
-
-To customize the input file generation for a specific case, follow these steps:
-
-1. Locate the `SimulationCase` variable in the script and set it to the desired case name, e.g., `"Kramer2021"`.
-2. Add a new `case` block in the `match SimulationCase:` section to handle the new simulation case.
-3. Define the required parameters for the simulation case within the new `case` block, following the examples provided in the script.
-4. Update the `inputfiles` variable with the new input objects created for the custom case.
-
-After customizing the script, run it again to generate the input files for the new case.
-
-## ⛵ Output 
-
-The script will generate input files in JSON format for the specified simulation case. The input files will be saved in the `./input_files/` directory. The generated input files can be used to run the BEM simulation.
-
-
-[./input_generator.py#L70](./input_generator.py#L70)
-
-
----
 # 🐋 実行方法 
 
 ファイルをダウンロードして，`build_bem`ディレクトリに移動．
@@ -950,7 +911,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L718](./main.cpp#L718)
+[./main.cpp#L675](./main.cpp#L675)
 
 
 ---
@@ -959,7 +920,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L752](./main.cpp#L752)
+[./main.cpp#L709](./main.cpp#L709)
 
 
 ---

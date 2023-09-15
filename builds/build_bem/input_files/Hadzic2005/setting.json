@@ -2,11 +2,11 @@
     "max_dt": 0.01,
     "end_time_step": 10000,
     "end_time": 9,
-    "output_directory": "/Users/tomoaki/BEM/Hadzic2005",
     "input_files": [
         "tank.json",
         "wavemaker.json",
         "water.json",
         "floatingbody.json"
-    ]
+    ],
+    "output_directory": "/Users/tomoaki/BEM/Hadzic2005"
 }

@@ -502,13 +502,14 @@ class networkPoint : public CoordinateBounds, public CSR {
    networkFace *mirroring_face;
    double d_empty_center;
    double pn_SPH;
-   bool pn_is_set;
-   bool isSurface;
-   bool isNeumannSurface;
-   bool isInsideOfBody;
-   bool isCaptured, isCaptured_, isFluid, isAir, isFirstWallLayer;
-   bool isAuxiliary;
-   bool isFreeFalling;
+   bool pn_is_set = false;
+   bool isSurface = false;
+   bool isNeumannSurface = false;
+   bool isInsideOfBody = false;
+   bool isCaptured = false, isCaptured_ = false;
+   bool isFluid = false, isAir = false, isFirstWallLayer = false;
+   bool isAuxiliary = false;
+   bool isFreeFalling = false;
    double radius_SPH;
    double C_SML;
    double number_density_SPH;
@@ -605,6 +606,16 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd b_vector;
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M;
+   std::array<double, 3> Eigenvalues_of_M = {0., 0., 0.};
+   std::array<double, 3> Eigenvalues_of_M1 = {0., 0., 0.};
+   //
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{{0., 0., 0.},{0., 0., 0.},{0., 0., 0.}}};
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M1 = {{{0., 0., 0.},{0., 0., 0.},{0., 0., 0.}}};
+   //
+   double var_Eigenvalues_of_M = 0.;
+   double min_Eigenvalues_of_M = 0.;
+   double var_Eigenvalues_of_M1 = 0.;
+   double min_Eigenvalues_of_M1 = 0.;
    std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
@@ -630,10 +641,10 @@ class networkPoint : public CoordinateBounds, public CSR {
    // Tddd reflect(const Tddd &v) const;
    /* ------------------------ 境界条件 ------------------------ */
   public:
-   bool isMultipleNode;
-   bool CORNER;
-   bool Dirichlet;
-   bool Neumann;
+   bool isMultipleNode = false;
+   bool CORNER = false;
+   bool Dirichlet = false;
+   bool Neumann = false;
 
    /* -------------------------------------------------------------------------- */
    // std::unordered_map<std::tuple<networkFace *, bool>, int> key2Index;

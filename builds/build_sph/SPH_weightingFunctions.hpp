@@ -112,12 +112,13 @@ void setPressureSPP(Network *net, const auto &RigidBodyObject) {
 
 void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wall_p,
                         const auto &RigidBodyObject,
-                        const bool set_surface = true) {
+                        const bool set_surface = false) {
    // b# ------------------------------------------------------ */
    // b#             流体粒子の法線方向の計算，水面の判定              */
    // b# ------------------------------------------------------ */
    // b#  A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
    DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
+
    #pragma omp parallel
    for (const auto &p : net->getPoints())
    #pragma omp single nowait
@@ -161,36 +162,36 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
          p->interpolated_normal_SPH_all = {0., 0., 1.};
       }
       /* ----------------------------------- 検索 ----------------------------------- */
-      if (set_surface) {
-         p->isSurface = true;
-         if (net->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
-                {
-                   if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-                      return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < M_PI / 4);
-                   } else
-                      return false;
-                }
-                return false;
-             }))
-            p->isSurface = false;
+      //    if (set_surface) {
+      //       p->isSurface = true;
+      //       if (net->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
+      //              {
+      //                 if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
+      //                    return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < M_PI / 4);
+      //                 } else
+      //                    return false;
+      //              }
+      //              return false;
+      //           }))
+      //          p->isSurface = false;
 
-         if (p->isSurface)
-            for (const auto &[obj, poly] : RigidBodyObject)
-               if (obj->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
-                      {
-                         if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-                            return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < M_PI / 180. * 60);
-                         } else
-                            return false;
-                      }
-                      return false;
-                   }))
-                  p->isSurface = false;
-   #ifdef surface_zero_pressure
-         if (p->isSurface)
-            p->p_SPH = 0;
-   #endif
-      }
+      //       if (p->isSurface)
+      //          for (const auto &[obj, poly] : RigidBodyObject)
+      //             if (obj->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
+      //                    {
+      //                       if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
+      //                          return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < M_PI / 180. * 60);
+      //                       } else
+      //                          return false;
+      //                    }
+      //                    return false;
+      //                 }))
+      //                p->isSurface = false;
+      // #ifdef surface_zero_pressure
+      //       if (p->isSurface)
+      //          p->p_SPH = 0;
+      // #endif
+      //    }
    }
 
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);

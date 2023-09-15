@@ -83,14 +83,21 @@ double Distance(const T3Tddd &X012, const Tddd &X) {
 /* -------------------------------------------------------------------------- */
 JSONoutput jsonout;
 
-int main(int arg, char **argv) {
-   if (arg <= 1)
+int main(int argc, char **argv) {
+   /* -------------------------------------------------------------------------- */
+   /*                           Set up logging to file                           */
+   /* -------------------------------------------------------------------------- */
+   if (!initializeLogFile("log.txt", argc, argv))
+      return 1;
+   /* -------------------------------------------------------------------------- */
+
+   if (argc <= 1)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "argv <= 1. write input json file directory!\\ex.\\$ ./main ./input");
    std::string input_directory{argv[1]};  // input directory
    input_directory += "/";
    //
    std::string id = "";
-   if (arg >= 3)
+   if (argc >= 3)
       id = argv[2];  // input directory
    // b! -------------------------------------------------------------------------- */
    std::cout << "input_directory : " << input_directory << std::endl;
@@ -290,7 +297,29 @@ int main(int arg, char **argv) {
    double real_time = 0.;
    // PVDWriter pvdWallSPH(output_directory + "Wall.pvd");q
    int time_step = 0, k = 0, i = 0, j = 0, l = 0;
+
+   auto active_RigidBodies = RigidBodies;
+   auto active_all_objects = all_objects;
+
+   auto pack_actives = [&](auto &ACTIVES, const auto &ALL) {
+      ACTIVES.clear();
+      for (const auto &PART_POLY_JSON : ALL) {
+         auto [particlesNet, poly, J] = PART_POLY_JSON;
+         if (J.find("inactivate")) {
+            if (J.at("inactivate").size() != 2) throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "inactivate size is not 2");
+            double start = stod(J.at("inactivate")[0]);
+            double end = stod(J.at("inactivate")[1]);
+            if (!Between(real_time, {start, end}))
+               ACTIVES.emplace_back(PART_POLY_JSON);
+         } else
+            ACTIVES.emplace_back(PART_POLY_JSON);
+      }
+   };
+
    for (auto time_step = 0; time_step < end_time_step; ++time_step) {
+
+      pack_actives(active_all_objects, all_objects);
+      pack_actives(active_RigidBodies, RigidBodies);
 
       _ALL_NET_.clear();
       for (const auto &[particlesNet, _, __] : all_objects)
@@ -299,20 +328,20 @@ int main(int arg, char **argv) {
       if (end_time < real_time)
          break;
 
-      // int N = 1000;
-      // if (time_step == N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_;
-      // } else if (time_step < N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_ * 10.;
-      // }
+      int N = 10000000;
+      if (time_step == N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_;
+      } else if (time_step < N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_ * 100.;
+      }
 
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
-                     RigidBodies,
+                     active_RigidBodies,
                      real_time,
                      CSML,
                      particle_spacing,

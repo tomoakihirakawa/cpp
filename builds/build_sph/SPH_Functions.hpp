@@ -195,7 +195,7 @@ double V_next(const auto &p) {
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   return p->X;
+   // return p->X;
    //    if (p->getNetwork()->isRigidBody)
    //       return p->X;
    //    else if (p->isAuxiliary)
@@ -203,7 +203,7 @@ std::array<double, 3> X_next(const auto &p) {
    //    else {
    // #if defined(USE_RungeKutta)
 
-   //       return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
+   return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
 
    //          // return p->RK_X.getX(p->U_SPH);
    // #elif defined(USE_LeapFrog)

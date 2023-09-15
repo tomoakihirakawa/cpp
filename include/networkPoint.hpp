@@ -1149,7 +1149,6 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    // std::cout << "done" << std::endl;
    /* ------------------------------------------------------ */
 #ifdef DEM
-   this->isAuxiliary = false;
    this->auxiliaryPoints.fill(nullptr);
    this->contactP = {};
    this->mass = 1.;
@@ -1171,16 +1170,10 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->mu_lap_rho_g_SPH = {0., 0., 0.};
    this->tmp_U_SPH = {0., 0., 0.};
    this->interpolated_normal_SPH = {0., 0., 0.};
-   this->pn_is_set = false;
    this->radius_SPH = 0.;
    this->pressure_SPH = 0.;
    this->pressure_SPH_ = 0.;
-   this->isSurface = false;
-   this->isCaptured = false;
 #endif
-
-   this->Dirichlet = false;
-   this->Neumann = false;
 };
 // 逆方向の立体角
 inline double networkPoint::getSolidAngle() const {

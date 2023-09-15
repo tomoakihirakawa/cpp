@@ -573,82 +573,178 @@ V_d back_substitution(const VV_d &mat, V_d b, const int mat_size) {
 /*                              QR decomposition                              */
 /* -------------------------------------------------------------------------- */
 
+// struct QR {
+//    VV_d Q, R, A;
+
+//    // Copy constructor
+//    QR(const QR &other)
+//        : Q(other.Q),
+//          R(other.R),
+//          A(other.A) {
+//       // No need to repeat computation; copy the computed Q, R, and A
+//    }
+
+//    ~QR() {
+//       std::cout << "QR destructor" << std::endl;
+//    };
+
+//    QR(const VV_d &AIN) : R(AIN), A(AIN), Q(AIN.size(), V_d(AIN.size(), 0.)) { Initialize(AIN, true); };
+
+//    void Initialize(const VV_d &AIN, const bool constractor = false) {
+//       if (!constractor) {
+//          A = R = AIN;
+//          Q.resize(AIN.size(), V_d(AIN.size(), 0.));
+//       }
+//       IdentityMatrix(Q);
+//       // MatrixForm(A, std::setw(10));
+//       int n = AIN.size();
+//       int m = AIN[0].size();
+//       double r, c, s, a, b;
+//       double Q0, Q1, R0, R1;  // Rのためのtmp
+//       double eps = 1e-12;
+//       for (auto j = 0; j < m; ++j) {
+//          // for (auto i = n - 2; i >= j; --i) {  // givensの位置
+//          for (auto i = j; i <= n - 2; ++i) {
+//             if (!Between(R[i + 1][j], {-eps, eps})) {  // givensの位置
+//                //! {i+1,j}がゼロとしたい成分
+
+//                a = R[i][j];
+//                b = R[i + 1][j];
+//                // s*a+c*b=0
+//                // -> s*a=-c*b
+//                // -> tan(theta)=-b/a
+//                // ----------------------------
+//                // r = atan(-b / a);
+//                // s = sin(r);  //! F_{i+k,i}
+//                // c = cos(r);  //! F_{i+k,i+k}
+//                // ----------------------------
+//                r = std::sqrt(a * a + b * b);
+//                s = -b / r;
+//                c = a / r;
+//                // ----------------------------
+//                // std::cout << "R{" << i << "," << j << "} = " << a << std::endl;
+//                // std::cout << "R{" << i + 1 << "," << j << "} = " << b << std::endl;
+//                if (s != s || c != c) {
+//                   s = 0.;
+//                   c = 1.;
+//                }
+
+//                // Dot(F,R)の省略版
+//                for (auto k = 0; k < m; ++k) {          // # column direction
+//                   R0 = c * R[i][k] - s * R[i + 1][k];  //$ row i
+//                   R1 = s * R[i][k] + c * R[i + 1][k];  //$ row i+k
+//                   R[i][k] = R0;
+//                   R[i + 1][k] = R1;
+//                };
+//                for (auto k = 0; k < n; ++k) {          // # column direction
+//                   Q0 = c * Q[i][k] - s * Q[i + 1][k];  //$ row i
+//                   Q1 = s * Q[i][k] + c * Q[i + 1][k];  //$ row i+k
+//                   Q[i][k] = Q0;
+//                   Q[i + 1][k] = Q1;
+//                };
+//                // Print("Q");
+//                // MatrixForm(Q, std::setw(10));
+//                // Print("R");
+//                // MatrixForm(R, std::setw(15));
+//             }
+//          }
+//       }
+//    };
+
+//    void IdentityMatrix(VV_d &mat) {
+//       size_t i = 0;
+//       for (auto &m : mat) {
+//          m.assign(m.size(), 0.0);
+//          m[i++] = 1.0;
+//       }
+//    }
+// };
+
+/* -------------------------------------------------------------------------- */
+
 struct QR {
-   VV_d Q, R, A;
+   VV_d Q, R, A, QT;
 
    // Copy constructor
-   QR(const QR &other)
-       : Q(other.Q),
-         R(other.R),
-         A(other.A) {
-      // No need to repeat computation; copy the computed Q, R, and A
-   }
-
-   ~QR() {
-      std::cout << "QR destructor" << std::endl;
-   };
-
+   // No need to repeat computation; copy the computed Q, R, and A
+   QR(const QR &other) : Q(other.Q), QT(other.QT), R(other.R), A(other.A) {}
+   //  std::cout << "QR destructor" << std::endl;
+   ~QR(){};
    QR(const VV_d &AIN) : R(AIN), A(AIN), Q(AIN.size(), V_d(AIN.size(), 0.)) { Initialize(AIN, true); };
 
    void Initialize(const VV_d &AIN, const bool constractor = false) {
+      int N_ROW = AIN.size();
+      int N_COL = AIN[0].size();
+      int nR = AIN.size();
+      int mR = AIN[0].size();
       if (!constractor) {
          A = R = AIN;
          Q.resize(AIN.size(), V_d(AIN.size(), 0.));
       }
       IdentityMatrix(Q);
-      // MatrixForm(A, std::setw(10));
-      int n = AIN.size();
-      int m = AIN[0].size();
+      QT = Q;
       double r, c, s, a, b;
       double Q0, Q1, R0, R1;  // Rのためのtmp
-      double eps = 1e-12;
-      for (auto j = 0; j < m; ++j) {
-         // for (auto i = n - 2; i >= j; --i) {  // givensの位置
-         for (auto i = j; i <= n - 2; ++i) {
-            if (!Between(R[i + 1][j], {-eps, eps})) {  // givensの位置
-               //! {i+1,j}がゼロとしたい成分
-
+      double eps = 1e-15;
+      int max = std::max(N_ROW, N_COL);
+      for (auto j = 0; j < max; ++j) {
+         for (auto i = nR - 2; i >= j; --i) {
+            // 下から
+            // if (!Between(R[i + 1][j], {-eps, eps}))
+            if (R[i + 1][j] != 0.) {  // givensの位置
                a = R[i][j];
-               b = R[i + 1][j];
-               // s*a+c*b=0
-               // -> s*a=-c*b
-               // -> tan(theta)=-b/a
-               // ----------------------------
-               // r = atan(-b / a);
-               // s = sin(r);  //! F_{i+k,i}
-               // c = cos(r);  //! F_{i+k,i+k}
-               // ----------------------------
+               b = R[i + 1][j];  //! {i+1,j}がゼロとしたい成分
                r = std::sqrt(a * a + b * b);
                s = -b / r;
                c = a / r;
-               // ----------------------------
-               // std::cout << "R{" << i << "," << j << "} = " << a << std::endl;
-               // std::cout << "R{" << i + 1 << "," << j << "} = " << b << std::endl;
                if (s != s || c != c) {
                   s = 0.;
                   c = 1.;
                }
 
-               // Dot(F,R)の省略版
-               for (auto k = 0; k < m; ++k) {          // # column direction
-                  R0 = c * R[i][k] - s * R[i + 1][k];  //$ row i
-                  R1 = s * R[i][k] + c * R[i + 1][k];  //$ row i+k
-                  R[i][k] = R0;
-                  R[i + 1][k] = R1;
+               //
+               // A = F_1^T F_2^T ... F_2 F_1 A = QR
+               // R = ... F_2 F_1 A
+               // Q = F_1^T F_2^T...
+               //
+               // Rの更新
+               for (auto col = 0; col < mR; ++col) {
+                  R0 = c * R[i][col] - s * R[i + 1][col];  //$ row i
+                  R1 = s * R[i][col] + c * R[i + 1][col];  //$ row i+k
+                  R[i][col] = R0;
+                  R[i + 1][col] = R1;
                };
-               for (auto k = 0; k < n; ++k) {          // # column direction
-                  Q0 = c * Q[i][k] - s * Q[i + 1][k];  //$ row i
-                  Q1 = s * Q[i][k] + c * Q[i + 1][k];  //$ row i+k
-                  Q[i][k] = Q0;
-                  Q[i + 1][k] = Q1;
+
+               for (auto col = 0; col < QT[i].size(); ++col) {
+                  Q0 = c * QT[i][col] - s * QT[i + 1][col];  //$ row i
+                  Q1 = s * QT[i][col] + c * QT[i + 1][col];  //$ row i+k
+                  QT[i][col] = Q0;
+                  QT[i + 1][col] = Q1;
                };
+
+               // Qの更新 * 左から書けるのでRとは逆順
+               for (auto row = 0; row < Q.size(); ++row) {  // # row direction
+                  Q0 = c * Q[row][i] - s * Q[row][i + 1];   //$ row i
+                  Q1 = s * Q[row][i] + c * Q[row][i + 1];   //$ row i+k
+                  Q[row][i] = Q0;
+                  Q[row][i + 1] = Q1;
+               };
+
+               // std::cout << "-----------------" << std::endl;
+               // std::cout << "i: " << i << ", j: " << j << std::endl;
+               // std::cout << "-----------------" << std::endl;
                // Print("Q");
-               // MatrixForm(Q, std::setw(10));
+               // std::cout << MatrixForm(Q, std::setw(10)) << std::endl;
+               // std::cout << "-----------------" << std::endl;
                // Print("R");
-               // MatrixForm(R, std::setw(15));
+               // std::cout << "{i+1,j} = " << i + 1 << "," << j << std::endl;
+               // auto func = [&](auto i_in, auto j_in) { return (i + 1 == i_in && j_in == j); };
+               // std::cout << MatrixForm(R, func, 5, 20) << std::endl;
             }
          }
+         // ここで，j列目の下半分はゼロになっているはず
       }
+      // ここで，Rは上三角行列になっているはず
    };
 
    void IdentityMatrix(VV_d &mat) {
@@ -1105,7 +1201,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
          return;
       //
       size_t i = 0;
-      for (const auto &q : qr.Q)
+      for (const auto &q : qr.QT)
          g[i++] = q[0] * this->beta;
 
       err = g.back();  // 予想される誤差
@@ -1128,7 +1224,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       this->g.resize(this->qr.Q.size());
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
-      for (size_t i = 0; const auto &q : qr.Q)
+      for (size_t i = 0; const auto &q : qr.QT)
          g[i++] = q[0] * this->beta;
 
       err = g.back();  // 予想される誤差
@@ -1150,7 +1246,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
          return;
       // std::cout << "g.size() = " << g.size() << std::endl;
       size_t i = 0;
-      for (const auto &q : this->qr.Q)
+      for (const auto &q : this->qr.QT)
          g[i++] = q[0] * this->beta;
       err = g.back();  // 予想される誤差
       g.pop_back();
@@ -1166,5 +1262,66 @@ struct gmres : public ArnoldiProcess<Matrix> {
       // std::cout << "done" << std::endl;
    };
 };
+
+/* -------------------------------------------------------------------------- */
+V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const int maxIter = 1000) {
+   VV_d Ak = A, I = A;
+   IdentityMatrix(I);
+   V_d eigenvalues;
+   for (int i = 0; i < maxIter; ++i) {
+      QR qr(Ak);
+      eigenvalues = Diagonal(Ak = Dot(qr.R, qr.Q));
+      if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
+         return eigenvalues;
+      }
+   }
+   return eigenvalues;
+}
+
+std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const int maxIter = 1000) {
+   VV_d Ak = A, I = A, Qk = A;
+   IdentityMatrix(Qk);
+   IdentityMatrix(I);
+   V_d eigenvalues;
+   for (int i = 0; i < maxIter; ++i) {
+      QR qr(Ak);
+      Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
+      eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
+      Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
+      if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
+         return {eigenvalues, Qk};
+      }
+   }
+   return {eigenvalues, Qk};  // Return both eigenvalues and eigenvectors
+}
+
+template <std::size_t N>
+std::array<double, N> Eigenvalues(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const int maxIter = 1000) {
+   std::array<double, N> eigenvalues;
+   int i = 0;
+   for (const auto &a : Eigenvalues(ToVector(A), tol, maxIter))
+      eigenvalues[i++] = a;
+   return eigenvalues;
+}
+
+template <std::size_t N>
+std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const int maxIter = 1000) {
+   auto [E, Qk] = Eigensystem(ToVector(A), tol, maxIter);
+   std::array<std::array<double, N>, N> Q;
+   std::array<double, N> eigenvalues;
+   int i = 0;
+   for (const auto &e : E)
+      eigenvalues[i++] = e;
+
+   i = 0;
+   int j = 0;
+   for (const auto &q : Qk) {
+      for (const auto &qj : q)
+         Q[i][j++] = qj;
+      i++;
+      j = 0;
+   }
+   return {eigenvalues, Q};
+}
 
 #endif
