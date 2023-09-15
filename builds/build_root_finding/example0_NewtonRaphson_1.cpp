@@ -59,7 +59,7 @@ f(\theta) = y^{\rm LH}(x,t) - a_y - r \sin \theta
 
 NOTE: この目的関数$f$には，前の節の位置が含まれているが，この目的関数を使って，先頭から順番に角度を決めていけば，各最適化において見積もる角度は常に１つだけとなる．
 
-| $n=5$ | $n=10$ | $n=50$ |
+| n=5 | n=10 | n=50 |
 |:---:|:---:|:---:|
 | ![sample5.gif](sample5.gif)  | ![sample10.gif](sample10.gif) | ![sample50.gif](sample50.gif) |
 
@@ -81,7 +81,7 @@ int steps = 20;
 そのような場合，\ref{LighthillRobot:scale}{ここ}のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 
-| `scale` | $n=5$ | $n=10$ | $n=50$ |
+| `scale` | n=5 | n=10 | n=50 |
 |:---:|:---:|:---:|:---:|
 | `scale=1.0` | ![sample_5_bad.gif](sample_5_bad.gif)  | ![sample_10_bad.gif](sample_10_bad.gif) | ![sample_50_bad.gif](sample_50_bad.gif) |
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif) | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
