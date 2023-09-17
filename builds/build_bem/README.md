@@ -96,7 +96,7 @@ Goupee et al. (2014)
 $`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
 法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
 
-<details style="background-color: rgba(144, 238, 144, 0.1);">
+<details style="background-color: rgba(144, 238, 144, 0.2);">
 <summary>
 💡 メモリ容量の変化
 </summary>
@@ -160,7 +160,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 流体-物体相互作用解析を行うには，２つの境界値問題を解く必要がある．
 現在の計算手法は，一つ目の境界値問題で得られた係数行列の逆行列を再利用することで，計算コストを抑えている．
 
-<details style="background-color: rgba(144, 238, 144, 0.1);">
+<details style="background-color: rgba(144, 238, 144, 0.2);">
 <summary>
 💡 逆行列を使う方法
 </summary>
@@ -485,7 +485,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 \frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
 ```
 
-<details style="background-color: rgba(144, 238, 144, 0.1);">
+<details style="background-color: rgba(144, 238, 144, 0.2);">
 <summary>
 💡 オイラー的記述
 </summary>
@@ -867,7 +867,7 @@ E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
 E _P = \frac{\rho}{2} \iint _\Gamma (0,0,g(z - z _0)^2) \cdot {\bf n} d\Gamma
 ```
 
-<details style="background-color: rgba(144, 238, 144, 0.1);">
+<details style="background-color: rgba(144, 238, 144, 0.2);">
 
 ---
 
