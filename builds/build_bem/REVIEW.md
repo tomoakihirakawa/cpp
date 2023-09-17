@@ -20,11 +20,14 @@
 
 ### BEM　周波数領域
 
-\cite{WAMIT6.2UserManual}
-周波数領域の解析は，境界値問題における離散化を
+BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．
+例えば，WAMIT
 
 \cite{Goupee2014a}
 \cite{Simos2018}で紹介されている
+
+高次の非線形性を考慮に入れることができないこと，
+
 
 ### BEM-MEL　時間領域
 
@@ -87,12 +90,46 @@ BEM-MEL の結果に数値的な不安定が生じることは，\cite{Longuet-H
 浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi_t`$が簡単には計算できない．
 これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては\cite{Ma2009}に詳しく書かれている)．
 
-
 \cite{Wu1996}や\cite{Kashiwagi2000}，\cite{Wu2003}の方法は，初めに$`\phi_t`$を計算し，次に圧力，力と計算して行くのではなく，
 BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
 これと運動方程式を連立することで，直接，加速度を求めることができる．
 \cite{Feng2017}は，この方法を発展させ２浮体の動揺解析を行っている．
 
 本当に，複数の浮体に適用しにくい方法なのか？
-###
 
+#### なぜ今BEM-MELを開発するのか
+
+高速多重極展開（FMM）を使った流体-物体相互作用解析は未だに達成されていないようで，
+流体-物体相互作用解析においてBEM-MELが限界まで研究開発されたかというと，そうではないようだ．
+
+##### なぜFMMを使った流体-物体相互作用解析が難しいのか？
+
+流体-物体相互作用解析を行うには，２つの境界値問題を解く必要がある．
+現在の計算手法は，一つ目の境界値問題で得られた係数行列の逆行列を再利用することで，計算コストを抑えている．
+
+<details>
+<summary>
+NOTE: 逆行列を使う方法
+</summary>
+
+* **補助関数を使う方法**
+
+補助関数（１浮体につき６つ増える）に関する境界値問題を解く必要がある（$`\phi`$-$`\phi_n`$に関するBIEの係数行列の行列を再利用することで高速化）．
+
+\cite{Feng2017}から，補助関数を使う方法も係数行列が共通であるため計算コストを抑えることができるということがわかる．
+言い換えれば，逆行列を使い回すことで，計算コストを抑えるということである．
+
+> To compute the auxiliary functions, extra boundary value problems (BVPs) have to be solved. As th auxiliary functions share the same coefficient matrix with the velocity potential when proper boundary conditions are imposed, they are solved simultaneously with the potential, and not much additional computational effort is needed for solving these extra BVPs for the auxiliary functions.
+
+しかし，FMMで利用されるGMRESのような反復解放を使うと，逆行列は求まらないし，計算が係数行列だけでなく右辺ベクトルにも依存するため，境界値問題をひとつひとつ個別に解く必要がある．
+
+* **補助関数を使わない方法**
+
+反復毎に境界値問題を解き$`\phi_t`$を計算する必要がある（$`\phi`$-$`\phi_n`$に関するBIEの係数行列の行列を再利用することで高速化）．
+
+補助関数を使わない，$`\phi_t`$を反復して計算し徐々に収束させる方法も，逆行列がなければ反復毎に係数行列を求める必要がある．
+
+</details>
+
+そのため，逆行列に依存しない高速化手法が必要である．
+その方法の指針として，境界値問題を一つにまとめることが考えられる．
