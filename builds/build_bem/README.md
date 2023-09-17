@@ -8,6 +8,7 @@
             - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
         - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
         - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
+            - [🐚 なぜ今BEM-MELを開発するのか](#🐚-なぜ今BEM-MELを開発するのか)
     - [⛵ 入力ファイルの読み込み](#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
@@ -31,7 +32,7 @@
         - [🪼 浮体の運動方程式](#🪼-浮体の運動方程式)
         - [🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪼-$`\phi-_t`$と$`\phi-_{nt}`$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
             - [🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
-            - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知))
+            - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知))
             - [🐚 ノイマン節点での$`\phi _{nt}`$の与え方](#🐚-ノイマン節点での$`\phi-_{nt}`$の与え方)
         - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
         - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
@@ -72,11 +73,14 @@
 
 ### 🪼 BEM　周波数領域 
 
-[{WAMIT Inc.} (2014)](https://www.wamit.com/manual.htm)
-周波数領域の解析は，境界値問題における離散化を
+BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．
+例えば，WAMIT
 
 Goupee et al. (2014)
 [Simos et al. (2018)](https://doi.org/10.1016/j.renene.2017.09.059)で紹介されている
+
+高次の非線形性を考慮に入れることができないこと，
+
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -139,17 +143,49 @@ BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgin
 浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi _t`$が簡単には計算できない．
 これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)に詳しく書かれている)．
 
-
 Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
 BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
 これと運動方程式を連立することで，直接，加速度を求めることができる．
 [Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)は，この方法を発展させ２浮体の動揺解析を行っている．
 
 本当に，複数の浮体に適用しにくい方法なのか？
-###
 
+#### 🐚 なぜ今BEM-MELを開発するのか 
 
-🪼
+高速多重極展開（FMM）を使った流体-物体相互作用解析は未だに達成されていないようで，
+流体-物体相互作用解析においてBEM-MELが限界まで研究開発されたかというと，そうではないようだ．
+
+##### なぜFMMを使った流体-物体相互作用解析が難しいのか？
+
+流体-物体相互作用解析を行うには，２つの境界値問題を解く必要がある．
+現在の計算手法は，一つ目の境界値問題で得られた係数行列の逆行列を再利用することで，計算コストを抑えている．
+
+<details>
+<summary>
+💡 逆行列を使う方法
+</summary>
+
+* **補助関数を使う方法**
+
+補助関数（１浮体につき６つ増える）に関する境界値問題を解く必要がある（$`\phi`$-$`\phi _n`$に関するBIEの係数行列の行列を再利用することで高速化）．
+
+[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)から，補助関数を使う方法も係数行列が共通であるため計算コストを抑えることができるということがわかる．
+言い換えれば，逆行列を使い回すことで，計算コストを抑えるということである．
+
+> To compute the auxiliary functions, extra boundary value problems (BVPs) have to be solved. As th auxiliary functions share the same coefficient matrix with the velocity potential when proper boundary conditions are imposed, they are solved simultaneously with the potential, and not much additional computational effort is needed for solving these extra BVPs for the auxiliary functions.
+
+しかし，FMMで利用されるGMRESのような反復解放を使うと，逆行列は求まらないし，計算が係数行列だけでなく右辺ベクトルにも依存するため，境界値問題をひとつひとつ個別に解く必要がある．
+
+* **補助関数を使わない方法**
+
+反復毎に境界値問題を解き$`\phi _t`$を計算する必要がある（$`\phi`$-$`\phi _n`$に関するBIEの係数行列の行列を再利用することで高速化）．
+
+補助関数を使わない，$`\phi _t`$を反復して計算し徐々に収束させる方法も，逆行列がなければ反復毎に係数行列を求める必要がある．
+
+</details>
+
+そのため，逆行列に依存しない高速化手法が必要である．
+その方法の指針として，境界値問題を一つにまとめることが考えられる．
 
 
 [./main.cpp#L1](./main.cpp#L1)
@@ -163,7 +199,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L133](./main.cpp#L133)
+[./main.cpp#L169](./main.cpp#L169)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -185,7 +221,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L306](./main.cpp#L306)
+[./main.cpp#L342](./main.cpp#L342)
 
 
 ---
@@ -495,6 +531,8 @@ BEM-MELで浮体動揺解析ができるようにするのは簡単ではない�
 
 ### 🪼 浮体の運動方程式 
 
+<img src="schematic_float.png" width="400px" />
+
 浮体の重心の運動方程式：
 
 ```math
@@ -537,7 +575,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
 ただし，壁が完全に固定されている場合，$`\phi _{nt}`$は0とする．
 
-#### 🐚 ディリクレ節点の$`\phi _{t}`$の与え方($\phi$を与える造波装置：圧力が未知，$\phi$が既知) 
+#### 🐚 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知) 
 
 ディリクレ境界では$`\phi _t`$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi _t`$を求めることができる．
 
@@ -572,7 +610,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L742)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L744)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -603,10 +641,10 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L756)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L758)で与えている．
 
 
-[./BEM_solveBVP.hpp#L592](./BEM_solveBVP.hpp#L592)
+[./BEM_solveBVP.hpp#L594](./BEM_solveBVP.hpp#L594)
 
 
 ```math
@@ -623,7 +661,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L756)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L673](./BEM_solveBVP.hpp#L673)
+[./BEM_solveBVP.hpp#L675](./BEM_solveBVP.hpp#L675)
 
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -664,7 +702,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L418](./main.cpp#L418)
+[./main.cpp#L454](./main.cpp#L454)
 
 
 ---
@@ -717,7 +755,7 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
-[./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
+[./BEM_solveBVP.hpp#L692](./BEM_solveBVP.hpp#L692)
 
 
 ---
@@ -924,7 +962,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L549](./main.cpp#L549)
+[./main.cpp#L585](./main.cpp#L585)
 
 
 ---
@@ -959,7 +997,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L692](./main.cpp#L692)
+[./main.cpp#L728](./main.cpp#L728)
 
 
 ---
@@ -968,7 +1006,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L726](./main.cpp#L726)
+[./main.cpp#L762](./main.cpp#L762)
 
 
 ---

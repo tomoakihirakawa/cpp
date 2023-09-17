@@ -169,7 +169,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       if (!next_Vrtx.empty()) {
          std::vector<networkFace *> pf_to_check;
          for (const auto &pf : p->getFacesNeumann()) {
-            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f->normal) < M_PI / 180.; }))
+            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return isFlat(pf->normal, f->normal, M_PI / 180.); }))
                pf_to_check.push_back(pf);
          }
 

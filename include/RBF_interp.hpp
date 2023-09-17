@@ -29,7 +29,7 @@ $\[\left( \begin{matrix}
    {{y}_{N-1}}  \\
 \end{matrix} \right)\]$
 
-#### 放射基底関数$\phi$
+#### 放射基底関数$`\phi`$
 
 ##### 多重二乗（multiquadric）
 
@@ -57,7 +57,7 @@ $\[\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\nabla \ph
 $\[\nabla f\left( \mathbf{x} \right)=\sum\limits_{i=0}^{N-1}{{{w}_{i}}\frac{\mathbf{x}-{{\mathbf{a}}_{i}}}{{{r}_{i}}}\frac{\partial \phi \left( {{r}_{i}} \right)}{\partial {{r}_{i}}}}\]$
 
 である．そのため，分母がゼロになる可能性がある．
-ただ，放射基底関数$\phi$が多重二乗 (Multiquadric)であれば，
+ただ，放射基底関数$`\phi`$が多重二乗 (Multiquadric)であれば，
 
 $\[\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}},\frac{\partial \phi }{\partial r}\left( r \right)=\frac{\varepsilon^2 r}{\phi \left( r \right)}\]$
 
