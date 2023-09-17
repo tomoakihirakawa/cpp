@@ -593,6 +593,7 @@ class networkPoint : public CoordinateBounds, public CSR {
    Tddd mu_lap_rho_g_SPH;
    Tddd interpolated_normal_SPH, interpolated_normal_SPH_original, interpolated_normal_SPH_original_modified, interpolated_normal_SPH_original_choped, interpolated_normal_SPH_original_next_choped;
    Tddd interpolated_normal_SPH_water, interpolated_normal_SPH_water_next;
+   Tddd intp_normal_Eigen;
    Tddd interpolated_normal_SPH_rigid, interpolated_normal_SPH_rigid_next;
    Tddd X_next;
    double volume_next, mass_next;
@@ -609,8 +610,16 @@ class networkPoint : public CoordinateBounds, public CSR {
    std::array<double, 3> Eigenvalues_of_M = {0., 0., 0.};
    std::array<double, 3> Eigenvalues_of_M1 = {0., 0., 0.};
    //
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{{0., 0., 0.},{0., 0., 0.},{0., 0., 0.}}};
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M1 = {{{0., 0., 0.},{0., 0., 0.},{0., 0., 0.}}};
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{ {0., 0., 0.},
+                                                               {0., 0., 0.},
+                                                               { 0.,
+                                                                 0.,
+                                                                 0. } }};
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M1 = {{ {0., 0., 0.},
+                                                                {0., 0., 0.},
+                                                                { 0.,
+                                                                  0.,
+                                                                  0. } }};
    //
    double var_Eigenvalues_of_M = 0.;
    double min_Eigenvalues_of_M = 0.;

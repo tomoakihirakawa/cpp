@@ -98,8 +98,8 @@ $`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.05;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -196,19 +196,19 @@ double V_next(const auto &p) {
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
    // return p->X;
-   //    if (p->getNetwork()->isRigidBody)
-   //       return p->X;
-   //    else if (p->isAuxiliary)
-   //       return X_next(p->surfacePoint);
-   //    else {
-   // #if defined(USE_RungeKutta)
+//    if (p->getNetwork()->isRigidBody)
+//       return p->X;
+//    else if (p->isAuxiliary)
+//       return X_next(p->surfacePoint);
+//    else {
+#if defined(USE_RungeKutta)
 
    return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
 
-   //          // return p->RK_X.getX(p->U_SPH);
-   // #elif defined(USE_LeapFrog)
-   //       return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
-   // #endif
+//          // return p->RK_X.getX(p->U_SPH);
+#elif defined(USE_LeapFrog)
+   return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
+#endif
    //    }
 };
 

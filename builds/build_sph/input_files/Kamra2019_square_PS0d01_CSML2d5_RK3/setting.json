@@ -1,12 +1,12 @@
 {
-    "RK_order": 1,
+    "RK_order": 3,
     "max_dt": 0.001,
     "end_time_step": 100000,
     "end_time": 4.0,
     "CSML": 2.5,
     "initial_surface_z_position": 0.2,
-    "particle_spacing": 0.0125,
-    "output_directory": "/Users/tomoaki/SPH/Kamra2019_square_PS0d0125_CSML2d5_RK1",
+    "particle_spacing": 0.01,
+    "output_directory": "/Users/tomoaki/SPH/Kamra2019_square_PS0d01_CSML2d5_RK3",
     "input_files": [
         "tank.json",
         "water.json",

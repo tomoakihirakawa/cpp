@@ -4,7 +4,7 @@
 
 ファイルをダウンロードして，`build_sph`ディレクトリに移動．
 
-```
+```sh
 $ git clone https://github.com/tomoakihirakawa/cpp.git
 $ cd ./cpp/builds/build_sph
 ```
@@ -12,7 +12,7 @@ $ cd ./cpp/builds/build_sph
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
-```
+```sh
 $ sh clean
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 $ make
@@ -20,14 +20,14 @@ $ make
 
 次に，入力ファイルを生成．
 
-```
+```sh
 $ python3 input_generator.py
 ```
 
 例えば，`./input_files/static_pressure_PS0d0125_CSML2d4_RK1`が生成される．
 入力ファイルを指定して実行．
 
-```
+```sh
 $ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
 ```
 
@@ -153,7 +153,6 @@ int main(int argc, char **argv) {
    //
    std::unordered_map<Network *, PVDWriter *> net2PVD;
    auto PVD_SPP = new PVDWriter(output_directory + "SPP.pvd");
-
    //
    for (const auto &file : settingJSON["input_files"]) {
       JSON J(std::ifstream(input_directory + file));
@@ -279,10 +278,11 @@ int main(int argc, char **argv) {
       vtp.write(ofs);
       ofs.close();
    }
+
    // b# -------------------------------------------------------------------------- */
    // b# -------------------------------------------------------------------------- */
    // b# -------------------------------------------------------------------------- */
-   //
+
    std::cout << "timer : " << timer() << ", networkPointの生成" << std::endl;
    for (const auto &[WaveTank, _, J] : all_objects) {
       std::cout << "WaveTank->getPoints().size()=" << WaveTank->getPoints().size() << std::endl;
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
       } else if (time_step < N) {
          for (const auto &[object, _, __] : all_objects)
             for (const auto &p : object->getPoints())
-               p->mu_SPH = _WATER_MU_10deg_ * 100.;
+               p->mu_SPH = _WATER_MU_10deg_ * 1000.;
       }
 
       // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
@@ -429,10 +429,13 @@ int main(int argc, char **argv) {
          // pvdWaveTankSPH.output();
          // pvdWallSPH.push("./WallSPH" + std::to_string(i) + ".vtp", real_time);
          // pvdWallSPH.output();
+
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
+
          // ポリゴンの節点上で圧力を計算する．
+
          //! -------------------------------------------------------------------------- */
          //!                                    プローブ                                  */
          //! -------------------------------------------------------------------------- */

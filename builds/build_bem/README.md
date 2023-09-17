@@ -3,7 +3,8 @@
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
     - [⛵ BEM-MEL について](#⛵-BEM-MEL-について)
         - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
-        - [🪼 BEM-MEL](#🪼-BEM-MEL)
+        - [🪼 BEM　周波数領域](#🪼-BEM　周波数領域)
+        - [🪼 BEM-MEL　時間領域](#🪼-BEM-MEL　時間領域)
             - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
         - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
         - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
@@ -68,7 +69,15 @@
 果たして結果に悪影響を及ぼさないか疑問である．
 また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
 
-### 🪼 BEM-MEL 
+### 🪼 BEM　周波数領域 
+
+\cite{WAMIT6.2UserManual}
+周波数領域の解析は，境界値問題における離散化を
+
+\cite{Goupee2014a}
+\cite{Simos2018}で紹介されている
+
+### 🪼 BEM-MEL　時間領域 
 
 1970 年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
 当時開発された正方格子上でのシミュレーション手法を使って，
@@ -136,8 +145,6 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 [Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)は，この方法を発展させ２浮体の動揺解析を行っている．
 
 本当に，複数の浮体に適用しにくい方法なのか？
-
-
 ###
 
 
@@ -155,7 +162,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L127](./main.cpp#L127)
+[./main.cpp#L133](./main.cpp#L133)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -177,7 +184,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L353](./main.cpp#L353)
+[./main.cpp#L359](./main.cpp#L359)
 
 
 ---
@@ -253,7 +260,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
 
-[../../include/Network.hpp#L870](../../include/Network.hpp#L870)
+[../../include/Network.hpp#L879](../../include/Network.hpp#L879)
 
 
 
@@ -656,7 +663,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L405](./main.cpp#L405)
+[./main.cpp#L411](./main.cpp#L411)
 
 
 ---
@@ -911,7 +918,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L675](./main.cpp#L675)
+[./main.cpp#L681](./main.cpp#L681)
 
 
 ---
@@ -920,7 +927,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L709](./main.cpp#L709)
+[./main.cpp#L715](./main.cpp#L715)
 
 
 ---

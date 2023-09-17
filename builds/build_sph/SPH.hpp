@@ -327,7 +327,7 @@ void developByEISPH(Network *net,
                air->BucketPoints.apply(p->X, p->radius_SPH, [&](const int i, const int j, const int k) {
                   auto n = p->interpolated_normal_SPH_original_choped;
                   if (Dot(air->BucketPoints.itox(i, j, k) - p->X, n) > 0. &&
-                      VectorAngle(air->BucketPoints.itox(i, j, k) - p->X, n) < M_PI / 180. * 60. &&
+                      isFlat(air->BucketPoints.itox(i, j, k) - p->X, n, M_PI / 180. * 60.) &&
                       Between(Distance(air->BucketPoints.itox(i, j, k), p->X), {(particle_spacing + air_particle_spacing) / 2., p->radius_SPH}))
                      air->BucketPoints.buckets_bool[i][j][k] = true;  // air
                });
@@ -509,7 +509,6 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    std::unordered_map<networkPoint *, double> uo_double;
    std::unordered_map<networkPoint *, Tddd> uo_3d;
    //
-
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M;
    vtp.addPointData("Eigenvalues_of_M", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
@@ -523,33 +522,28 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("var_Eigenvalues_of_M1", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
    vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
-   //
-
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
    vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.16);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.15);
    vtp.addPointData("isSurface_var_Eigenvalues_of_M1", uo_double);
    //
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->normal_SPH;
    vtp.addPointData("normal_SPH", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Normalize(p->intp_normal_Eigen);
+   vtp.addPointData("intp_normal_Eigen", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH;
    vtp.addPointData("interpolated_normal_SPH", uo_3d);
-   //
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original;
    vtp.addPointData("interpolated_normal_SPH_original", uo_3d);
-   //
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original_modified;
-   vtp.addPointData("interpolated_normal_SPH_original_modified", uo_3d);
-   //
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interpolated_normal_SPH_original_choped;
+   vtp.addPointData("interpolated_normal_SPH_original_choped", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
    vtp.addPointData("contains diagonal", uo_double);
    //
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->U_SPH;
    vtp.addPointData("U", uo_3d);
-   //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFluid;
    vtp.addPointData("isFluid", uo_double);
-   //
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFirstWallLayer;
    vtp.addPointData("isFirstWallLayer", uo_double);
    //

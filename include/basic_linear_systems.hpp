@@ -1321,6 +1321,13 @@ std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensyst
       i++;
       j = 0;
    }
+   // normalize vectors and modify eigenvalues
+   for (auto i = 0; i < N; ++i) {
+      double norm = Norm(Q[i]);
+      Q[i] /= norm;
+      eigenvalues[i] *= norm;
+   }
+
    return {eigenvalues, Q};
 }
 
