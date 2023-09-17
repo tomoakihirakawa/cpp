@@ -113,13 +113,16 @@ int main(int argc, char **argv) {
          RigidBodyObject.emplace_back(net);
          net->isRigidBody = true;
          net->isSoftBody = false;
+         net->isFluid = false;
       } else if (type == "SoftBody" || type == "FixedBody") {
          SoftBodyObject.emplace_back(net);
          net->isRigidBody = false;
          net->isSoftBody = true;
+         net->isFluid = false;
       } else if (type == "Fluid") {
          FluidObject.emplace_back(net);
          net->isRigidBody = net->isSoftBody = false;
+         net->isFluid = true;
       }
       net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
       for (auto i = 0; i < 10; ++i)
@@ -199,6 +202,31 @@ int main(int argc, char **argv) {
    Print("setting done");
 
    /* -------------------------------------------------------------------------- */
+   /* -------------------------------------------------------------------------- */
+   /* -------------------------------------------------------------------------- */
+
+   /*DOC_EXTRACT 0_1_BEM
+
+   ## 計算プログラムの概要
+
+   | 項目 | 詳細|
+   |---:|:---|
+   | 要素 | 線形三角要素 |
+   | 時間発展方法 | 4次のルンゲクッタ |
+   | 解析領域 | 時間領域 |
+   | 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
+
+   ### 計算の流れ
+
+   1. 境界条件の設定
+   2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi_n`$を求める
+   3. 三角形の線形補間を使って節点の流速を計算する
+   4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
+   5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi_t`$と$`\phi_{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
+   6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
+
+   */
+
    try {
       //  b* ------------------------------------------------------ */
       //  b*                         メインループ                      */
@@ -258,27 +286,6 @@ int main(int argc, char **argv) {
                p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
          }
          // b@ ----------------------------------------------------- */
-         /*DOC_EXTRACT 0_1_BEM
-
-         ## 計算プログラムの概要
-
-         | 項目 | 詳細|
-         |---:|:---|
-         | 要素 | 線形三角要素 |
-         | 時間発展方法 | 4次のルンゲクッタ |
-         | 解析領域 | 時間領域 |
-         | 境界条件 | 水面の境界条件は非線形であるが，非線形のまま解く |
-
-         ### 計算の流れ
-
-         1. 境界条件の設定
-         2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi_n`$を求める
-         3. 三角形の線形補間を使って節点の流速を計算する
-         4. 次時刻の$`\Omega(t+\Delta t)`$がわかるので，修正流速を計算する
-         5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi_t`$と$`\phi_{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
-         6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
-
-         */
 
          int RK_step = 0;
          BEM_BVP BVP;
@@ -440,6 +447,46 @@ int main(int argc, char **argv) {
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
+
+         /*DOC_EXTRACT 1_0_0_JSON_OUTPUT
+
+         ### JSONファイルの出力
+
+         JSONファイルには，計算結果を出力する．
+
+         流体の場合
+
+         | 項目 | 詳細|
+         |---:|:---|
+         | `simulation_time` | シミュレーション上の時間 |
+         | `cpu_time` | CPU時間(CPUがプログラムを実行していた時間の合計) |
+         | `wall_clock_time` | 実時間 |
+         | `***_volume` | 流体の体積 |
+         | `***_EK` | 流体の運動エネルギー |
+         | `***_EP` | 流体の位置エネルギー |
+         | `***_E` | 流体の全エネルギー |
+
+         剛体などで，浮体か`output`に`json`が指定されている場合
+
+         | 項目 | 詳細|
+         |---:|:---|
+         | `simulation_time` | シミュレーション上の時間 |
+         | `cpu_time` | CPU時間(CPUがプログラムを実行していた時間の合計) |
+         | `wall_clock_time` | 実時間 |
+         | `***_pitch` | 浮体のピッチ角 |
+         | `***_yaw` | 浮体のヨー角 |
+         | `***_roll` | 浮体のロール角 |
+         | `***_force` | 浮体に働く力 |
+         | `***_torque` | 浮体に働くトルク |
+         | `***_accel` | 浮体の加速度 |
+         | `***_velocity` | 浮体の速度 |
+         | `***_COM` | 浮体の重心位置 |
+         | `***_area` | 浮体の面積 |
+         | `***_EK` | 浮体の運動エネルギー |
+         | `***_EP` | 浮体の位置エネルギー |
+
+         */
+
          std::cout << "output JSON files" << std::endl;
          jsonout.push("simulation_time", simulation_time);
          // Push CPU time
@@ -534,43 +581,7 @@ int main(int argc, char **argv) {
             NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
          }
-         // 流体
-         // {
-         //    std::vector<Tddd> points;
-         //    for (const auto &p : water->getPoints())
-         //       if (p->CORNER)
-         //          points.emplace_back(ToX(p));
 
-         //    auto filename = "cornerPoints" + std::to_string(time_step) + ".vtu";
-         //    mk_vtu(output_directory + "/" + filename, points);
-         //    cornerPointsPVD.push(filename, simulation_time);
-         //    cornerPointsPVD.output();
-         // }
-         // {
-         //    std::unordered_set<networkFace *> faces;
-         //    for (const auto &f : water->getFaces()) {
-         //       // for (const auto p : f->getPoints())
-         //       // 	if (p->CORNER)
-         //       // 	{
-         //       // 		faces.emplace(f);
-         //       // 		break;
-         //       // 	}
-         //       for_each(f->getPoints(), [&](const auto &p) {
-         //          if (p->CORNER)
-         //             faces.emplace(f);
-         //       });
-         //    }
-         //    auto filename = "corner" + std::to_string(time_step) + ".vtu";
-         //    mk_vtu(output_directory + "/" + filename, faces, data);
-         //    cornerPVD.push(filename, simulation_time);
-         //    cornerPVD.output();
-         // }
-         // b# -------------------------------------------------------------------------- */
-         //
-         // mk_vtu(output_directory + "/" + obj.getName() + std::to_string(time_step) + ".vtu", obj.getFaces(), datacpg);
-         // mk_vtu(output_directory + "/" + name + std::to_string(time_step) + ".vtu", cpg.well_Faces, datacpg);
-         // cpg_pvd.push(name, name + std::to_string(time_step) + ".vtu", time_step * t_rep * dt);
-         // cpg_pvd.output_();
          // b* ------------------------------------------------------ */
       }
    } catch (std::exception &e) {
@@ -580,13 +591,13 @@ int main(int argc, char **argv) {
    return 0;
 };
 
-/*DOC_EXTRACT 2_0_HOW_TO_RUN
+/*DOC_EXTRACT 2_0_0_HOW_TO_RUN
 
 # 実行方法
 
 ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
-```shell
+```sh
 $ git clone https://github.com/tomoakihirakawa/cpp.git
 $ cd ./cpp/builds/build_bem
 ```

@@ -44,6 +44,7 @@
         - [🪼 境界値問題の未知変数](#🪼-境界値問題の未知変数)
         - [🪼 エネルギー保存則（計算精度のチェックに利用できる）](#🪼-エネルギー保存則（計算精度のチェックに利用できる）)
         - [🪼 内部流速の計算方法（使わなくてもいい）](#🪼-内部流速の計算方法（使わなくてもいい）)
+        - [🪼 JSONファイルの出力](#🪼-JSONファイルの出力)
 - [🐋 実行方法](#🐋-実行方法)
 - [🐋 Examples](#🐋-Examples)
 
@@ -71,11 +72,11 @@
 
 ### 🪼 BEM　周波数領域 
 
-\cite{WAMIT6.2UserManual}
+[{WAMIT Inc.} (2014)](https://www.wamit.com/manual.htm)
 周波数領域の解析は，境界値問題における離散化を
 
-\cite{Goupee2014a}
-\cite{Simos2018}で紹介されている
+Goupee et al. (2014)
+[Simos et al. (2018)](https://doi.org/10.1016/j.renene.2017.09.059)で紹介されている
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -184,7 +185,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L359](./main.cpp#L359)
+[./main.cpp#L306](./main.cpp#L306)
 
 
 ---
@@ -196,7 +197,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L225)
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L180)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L181)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -663,7 +664,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L411](./main.cpp#L411)
+[./main.cpp#L418](./main.cpp#L418)
 
 
 ---
@@ -723,7 +724,7 @@ $`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L324)
+[強制運動を課す](../../builds/build_bem/main.cpp#L331)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -887,11 +888,51 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 
 
 ---
+### 🪼 JSONファイルの出力 
+
+JSONファイルには，計算結果を出力する．
+
+流体の場合
+
+| 項目 | 詳細|
+|---:|:---|
+| `simulation_time` | シミュレーション上の時間 |
+| `cpu_time` | CPU時間(CPUがプログラムを実行していた時間の合計) |
+| `wall_clock_time` | 実時間 |
+| `***_volume` | 流体の体積 |
+| `***_EK` | 流体の運動エネルギー |
+| `***_EP` | 流体の位置エネルギー |
+| `***_E` | 流体の全エネルギー |
+
+剛体などで，浮体か`output`に`json`が指定されている場合
+
+| 項目 | 詳細|
+|---:|:---|
+| `simulation_time` | シミュレーション上の時間 |
+| `cpu_time` | CPU時間(CPUがプログラムを実行していた時間の合計) |
+| `wall_clock_time` | 実時間 |
+| `***_pitch` | 浮体のピッチ角 |
+| `***_yaw` | 浮体のヨー角 |
+| `***_roll` | 浮体のロール角 |
+| `***_force` | 浮体に働く力 |
+| `***_torque` | 浮体に働くトルク |
+| `***_accel` | 浮体の加速度 |
+| `***_velocity` | 浮体の速度 |
+| `***_COM` | 浮体の重心位置 |
+| `***_area` | 浮体の面積 |
+| `***_EK` | 浮体の運動エネルギー |
+| `***_EP` | 浮体の位置エネルギー |
+
+
+[./main.cpp#L549](./main.cpp#L549)
+
+
+---
 # 🐋 実行方法 
 
 ファイルをダウンロードして，`build_bem`ディレクトリに移動．
 
-```shell
+```sh
 $ git clone https://github.com/tomoakihirakawa/cpp.git
 $ cd ./cpp/builds/build_bem
 ```
@@ -918,7 +959,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L681](./main.cpp#L681)
+[./main.cpp#L692](./main.cpp#L692)
 
 
 ---
@@ -927,7 +968,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L715](./main.cpp#L715)
+[./main.cpp#L726](./main.cpp#L726)
 
 
 ---

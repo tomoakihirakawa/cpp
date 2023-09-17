@@ -56,6 +56,14 @@ blue = '\033[96m'
 green = '\033[92m'
 magenta = '\033[95m'
 coloroff = '\033[0m'
+#boldcases
+White = '\033[1;90m'
+Red = '\033[1;91m'
+Yellow = '\033[1;93m'
+Blue = '\033[1;96m'
+Green = '\033[1;92m'
+Magenta = '\033[1;95m'
+
 
 # output_directory and input_directory are automatically added to setting
 def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
@@ -72,6 +80,14 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
     # @           その他，water.json,tank.json などを出力           #
     # @ -------------------------------------------------------- #
 
+    def does_file_exist(key, filename):
+        if key == "objfile":
+            if os.path.exists(filename) == False:
+                return red+"❌ file does not exist"+coloroff
+            else:
+                return green+"✅ file exists"+coloroff
+        return ''
+
     for INPUTS in inputfiles:
         NAMEJSON = INPUTS["name"]+'.json'
         print(blue,'-'*(40-len(NAMEJSON)), NAMEJSON, coloroff)
@@ -85,13 +101,8 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
             elif value == "probe":
                 print(f'{key: <{20}}', '\t', yellow, value, coloroff)
             else:
-                print(f'{key: <{20}}', '\t', white, value, coloroff)
+                print(f'{key: <{20}}', '\t', white, value, coloroff, does_file_exist(key, value))
 
-            if key == "objfile":
-                if os.path.exists(value) == False:
-                    print(red, "❌ file does not exist", coloroff)
-                else:
-                    print(green, "✅ file exists", coloroff)
         f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
         json.dump(INPUTS, f, ensure_ascii=True, indent=4)
         f.close()
@@ -100,10 +111,10 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
     # @                  setting.json を出力                      #
     # @ -------------------------------------------------------- #    
 
-    print(blue,'-'*28,'setting.json', coloroff)
+    print(Blue,'-'*28,'setting.json', coloroff)
     for key, value in setting.items():
         print(f'{key: <{20}}', '\t', green, value, coloroff)
-    print(blue,'-'*40, coloroff)
+    print(Blue,'-'*40, coloroff)
     f = open(input_directory+"/setting.json", 'w')
     json.dump(setting, f, ensure_ascii=True, indent=4)
     f.close()
