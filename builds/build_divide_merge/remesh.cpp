@@ -6,13 +6,9 @@
 
 # Fusion360を使って計算用objファイルを生成
 
-<img src="sample_fusion360_step1.png" width="600px">
-
-<img src="sample_fusion360_step2.png" width="600px">
-
-<img src="sample_fusion360_step3.png" width="600px">
-
-<img src="sample_fusion360_step4.png" width="600px">
+| step1 | step2 | step3 | step4 |
+|:-----:|:-----:|:-----:|:-----:|
+|![./sample_fusion360_step1.png](./sample_fusion360_step1.png)|![./sample_fusion360_step2.png](./sample_fusion360_step2.png)|![./sample_fusion360_step3.png](./sample_fusion360_step3.png)|![./sample_fusion360_step4.png](./sample_fusion360_step4.png)|
 
 # 計算用にメッシュの細分化
 

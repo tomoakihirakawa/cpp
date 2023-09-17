@@ -49,14 +49,6 @@ from os.path import expanduser
 
 home = expanduser("~")
 
-# def generate_in_out_directory(id):
-#     input_directory = "./input_files/" + id
-#     os.makedirs(input_directory, exist_ok=True)
-#     output_directory = home + "/BEM/" + id
-#     os.makedirs(output_directory, exist_ok=True)
-#     return input_directory, output_directory
-
-
 white = '\033[90m'
 red = '\033[91m'
 yellow = '\033[93m'
@@ -79,8 +71,10 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
     # @ -------------------------------------------------------- #
     # @           その他，water.json,tank.json などを出力           #
     # @ -------------------------------------------------------- #
+
     for INPUTS in inputfiles:
-        print('------------------------------------')
+        NAMEJSON = INPUTS["name"]+'.json'
+        print(blue,'-'*(40-len(NAMEJSON)), NAMEJSON, coloroff)
         for key, value in INPUTS.items():
             if value == "floating":
                 print(f'{key: <{20}}', '\t', green, value, coloroff)
@@ -95,23 +89,22 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
 
             if key == "objfile":
                 if os.path.exists(value) == False:
-                    print(red, "! file does not exist", coloroff)
+                    print(red, "❌ file does not exist", coloroff)
                 else:
-                    print(green, "file exists", coloroff)
-        print('------------------------------------')
+                    print(green, "✅ file exists", coloroff)
         f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
         json.dump(INPUTS, f, ensure_ascii=True, indent=4)
         f.close()
 
     # @ -------------------------------------------------------- #
     # @                  setting.json を出力                      #
-    # @ -------------------------------------------------------- #
-    print('------------------------------------')
+    # @ -------------------------------------------------------- #    
+
+    print(blue,'-'*28,'setting.json', coloroff)
     for key, value in setting.items():
         print(f'{key: <{20}}', '\t', green, value, coloroff)
-    print('------------------------------------')
+    print(blue,'-'*40, coloroff)
     f = open(input_directory+"/setting.json", 'w')
     json.dump(setting, f, ensure_ascii=True, indent=4)
     f.close()
-
     print("The directory for input files :", magenta, input_directory, coloroff)

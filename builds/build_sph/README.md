@@ -78,7 +78,7 @@
 
 ### 🪼 法線方向の計算 
 
-✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L367): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
+✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L476): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 単位法線ベクトルは，`interpolated_normal_SPH`としている．
 
@@ -91,13 +91,13 @@
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./SPH0_setWall_Freesurface.hpp#L391](./SPH0_setWall_Freesurface.hpp#L391)
+[./SPH0_setWall_Freesurface.hpp#L500](./SPH0_setWall_Freesurface.hpp#L500)
 
 
 ## ⛵ 水面補助粒子の作成
 
 
-[./SPH0_setWall_Freesurface.hpp#L444](./SPH0_setWall_Freesurface.hpp#L444)
+[./SPH0_setWall_Freesurface.hpp#L545](./SPH0_setWall_Freesurface.hpp#L545)
 
 
 ## ⛵ $`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -278,7 +278,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L366)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L182)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
-- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L367)
+- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L476)
 - [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L271)
 
 **水面粒子**
@@ -303,7 +303,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 
 ファイルをダウンロードして，`build_sph`ディレクトリに移動．
 
-```
+```sh
 $ git clone https://github.com/tomoakihirakawa/cpp.git
 $ cd ./cpp/builds/build_sph
 ```
@@ -311,7 +311,7 @@ $ cd ./cpp/builds/build_sph
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
-```
+```sh
 $ sh clean
 $ cmake -DCMAKE_BUILD_TYPE=Release ../
 $ make
@@ -319,14 +319,14 @@ $ make
 
 次に，入力ファイルを生成．
 
-```
+```sh
 $ python3 input_generator.py
 ```
 
 例えば，`./input_files/static_pressure_PS0d0125_CSML2d4_RK1`が生成される．
 入力ファイルを指定して実行．
 
-```
+```sh
 $ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
 ```
 

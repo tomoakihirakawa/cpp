@@ -145,12 +145,12 @@ match SimulationCase:
         input_files = [wavetank, water, sensor1, sensor2]
 
         setting = {"RK_order": 1,  # \label{SPH:RK_order}
-                   "max_dt": 0.0001,
+                   "max_dt": 0.001,
                    "end_time_step": 100000,
                    "end_time": 4.,
-                   "CSML": 2.5,
+                   "CSML": 2.9,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.0125}
+                   "particle_spacing": 0.01}
 
         id = SimulationCase + id \
                             + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \

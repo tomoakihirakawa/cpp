@@ -11,7 +11,6 @@ sys.path.append("..")
 from IOgenerator import generate_input_files
 
 input_directory = "./input_files/"
-
 home = expanduser("~")
 
 # if platform.system() == "Linux":
@@ -19,11 +18,10 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 program_home = os.path.join(current_directory, '../../../../code')
 # program_home = home + "/code/"
 # else:
-#     program_home = home + "/Dropbox/code/"
+# program_home = home + "/Dropbox/code/"
 
 rho = 1000.
 g = 9.81
-
 
 def IO_dir(id):
     input_directory = "./input_files/" + id
@@ -31,8 +29,8 @@ def IO_dir(id):
     output_directory = home + "/BEM/" + id
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
-# ---------------------------------------------------------------------------- #
 
+# ---------------------------------------------------------------------------- #
 
 SimulationCase = "Ren2015"
 
@@ -336,7 +334,6 @@ match SimulationCase:
 
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
-
     case "simple_barge":
 
         input_directory += SimulationCase
@@ -471,7 +468,6 @@ match SimulationCase:
 
             id = SimulationCase
             generate_input_files(inputfiles, setting, IO_dir, id)
-
     case "two_floatingbodies":
 
         start = 0.
@@ -538,8 +534,7 @@ match SimulationCase:
                    "end_time": 120}
 
         id = SimulationCase
-        generate_input_files(inputfiles, setting, IO_dir, id)
-        
+        generate_input_files(inputfiles, setting, IO_dir, id) 
     case "Gu2018Float1_offset_neg0d074":
 
         input_directory += SimulationCase
@@ -574,7 +569,6 @@ match SimulationCase:
                    "end_time": 4}
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
-
     case "Tonegawa":
 
         input_directory += SimulationCase
@@ -626,7 +620,6 @@ match SimulationCase:
                    "end_time": 10000}
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
- 
     case "three_floatingbodies":
 
         start = 0.
@@ -693,8 +686,7 @@ match SimulationCase:
                    "end_time": 150}
 
         id = SimulationCase
-        generate_input_files(inputfiles, setting, IO_dir, id)
-        
+        generate_input_files(inputfiles, setting, IO_dir, id)      
     case "Retzler2000simple":
 
         input_directory += SimulationCase
@@ -727,8 +719,6 @@ match SimulationCase:
 
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
-
-
     case "Retzler2000":
 
         input_directory += SimulationCase
@@ -759,8 +749,7 @@ match SimulationCase:
                    "end_time_step": 100,
                    "end_time": 0.4}
         id = SimulationCase
-        generate_input_files(inputfiles, setting, IO_dir, id)
-        
+        generate_input_files(inputfiles, setting, IO_dir, id)  
     case "three_200":
 
         start = 0.
