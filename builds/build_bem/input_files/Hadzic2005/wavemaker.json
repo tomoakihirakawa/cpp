@@ -1,6 +1,7 @@
 {
     "name": "wavemaker",
     "type": "RigidBody",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/2023Tamatu/wavemaker50.obj",
     "velocity": [
         "Hadzic2005",
         0.0
@@ -13,6 +14,5 @@
         -3.9,
         -0.25,
         0
-    ],
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/2023Tamatu/wavemaker50.obj"
+    ]
 }
