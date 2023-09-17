@@ -331,7 +331,7 @@ E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
 E_P = \frac{\rho}{2} \iint_\Gamma (0,0,g(z - z_0)^2) \cdot {\bf n} d\Gamma
 ```
 
-<details>
+<details style="background-color: rgba(144, 238, 144, 0.1);">
 
 ---
 

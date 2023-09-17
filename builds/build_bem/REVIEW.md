@@ -43,7 +43,7 @@ BEMを使った周波数領域の解析は，海洋工学の分野で標準的�
 $`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
 法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
 
-<details>
+<details style="background-color: rgba(144, 238, 144, 0.1);">
 <summary>
 NOTE: メモリ容量の変化
 </summary>
@@ -107,7 +107,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 流体-物体相互作用解析を行うには，２つの境界値問題を解く必要がある．
 現在の計算手法は，一つ目の境界値問題で得られた係数行列の逆行列を再利用することで，計算コストを抑えている．
 
-<details>
+<details style="background-color: rgba(144, 238, 144, 0.1);">
 <summary>
 NOTE: 逆行列を使う方法
 </summary>

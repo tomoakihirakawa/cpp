@@ -506,7 +506,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 \frac{D \phi}{D t} = \frac{\partial \phi}{\partial t} + \nabla \phi \cdot \nabla \phi
 ```
 
-<details>
+<details style="background-color: rgba(144, 238, 144, 0.1);">
 <summary>
 NOTE: オイラー的記述
 </summary>
