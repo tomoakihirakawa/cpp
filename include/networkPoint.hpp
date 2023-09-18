@@ -280,9 +280,10 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
       | `networkPoint`のメンバー関数/変数      | 説明                                                                |
       |-------------------------|--------------------------------------------------------------------------------|
       | `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
-      | `ContactFaces`          | 節点が接触した面が登録されている．   |
-      | `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
-      | `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
+      | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
+      | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
+      | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
+
 
       */
 

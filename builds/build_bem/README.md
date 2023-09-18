@@ -81,6 +81,7 @@ Goupee et al. (2014)
 
 高次の非線形性を考慮に入れることができないこと，
 
+浮体動揺解析の基礎
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -199,7 +200,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L169](./main.cpp#L169)
+[./main.cpp#L170](./main.cpp#L170)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -221,7 +222,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L342](./main.cpp#L342)
+[./main.cpp#L343](./main.cpp#L343)
 
 
 ---
@@ -283,9 +284,9 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
 | `addContactFaces()`     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
-| `ContactFaces`          | 節点が接触した面が登録されている．   |
-| `nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
-| `f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
+| `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
+| `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
+| `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
 
 [../../include/networkPoint.hpp#L278](../../include/networkPoint.hpp#L278)
 
@@ -702,7 +703,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L454](./main.cpp#L454)
+[./main.cpp#L455](./main.cpp#L455)
 
 
 ---
@@ -905,7 +906,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L318](./BEM_calculateVelocities.hpp#L318)
+[./BEM_calculateVelocities.hpp#L323](./BEM_calculateVelocities.hpp#L323)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -922,7 +923,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L405](./BEM_calculateVelocities.hpp#L405)
+[./BEM_calculateVelocities.hpp#L410](./BEM_calculateVelocities.hpp#L410)
 
 
 ---
@@ -962,7 +963,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L585](./main.cpp#L585)
+[./main.cpp#L586](./main.cpp#L586)
 
 
 ---
@@ -997,7 +998,7 @@ $ ./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L728](./main.cpp#L728)
+[./main.cpp#L729](./main.cpp#L729)
 
 
 ---
@@ -1006,7 +1007,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L762](./main.cpp#L762)
+[./main.cpp#L763](./main.cpp#L763)
 
 
 ---

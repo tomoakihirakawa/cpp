@@ -22,7 +22,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "fish"
 
 match SimulationCase:
     case "fish":
@@ -47,7 +47,7 @@ match SimulationCase:
                  "MOI": [10**10, 10**10, 10**10],
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
-                 "velocity": ["file", "bodyA.dat"],
+                 "velocity": ["file", "./study_fish/bodyA.dat"],
                  "objfile": objfolder + "/bodyA50.obj"}
 
         bodyB = {"name": "bodyB",
@@ -57,7 +57,7 @@ match SimulationCase:
                  "MOI": [10**10, 10**10, 10**10],
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
-                 "velocity": ["file", "bodyB.dat"],
+                 "velocity": ["file", "./study_fish/bodyB.dat"],
                  "objfile": objfolder + "/bodyB50.obj"}
 
         bodyC = {"name": "bodyC",
@@ -67,7 +67,7 @@ match SimulationCase:
                  "MOI": [10**10, 10**10, 10**10],
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
-                 "velocity": ["file", "bodyC.dat"],
+                 "velocity": ["file", "./study_fish/bodyC.dat"],
                  "objfile": objfolder + "/bodyC50.obj"}
 
         inputfiles = [tank, water, bodyA, bodyB, bodyC]
@@ -252,7 +252,7 @@ match SimulationCase:
         float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["MOI"] = [MOI, MOI, MOI]
         inputfiles = [tank, wavemaker, water, float]
-        
+
         setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9}

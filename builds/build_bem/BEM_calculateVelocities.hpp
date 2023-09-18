@@ -232,7 +232,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       for (const auto &p : net.getPoints())
 #pragma omp single nowait
       {
-         double a = 0.01;
+         double a = 0.005;
          double scale = 10. * a;
          if (p->isMultipleNode && !p->CORNER)
             scale = a;
