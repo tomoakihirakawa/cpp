@@ -886,13 +886,13 @@ class networkPoint : public CoordinateBounds, public CSR {
 
    const std::unordered_set<networkFace *> &getContactFaces() const { return this->ContactFaces; };
    const std::tuple<networkFace *, Tddd> &getNearestContactFace() const { return this->nearestContactFace; };
+
    const std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> &getNearestContactFaces() const { return this->f_nearestContactFaces; };
 
    const std::tuple<networkFace *, Tddd> getNearestContactFace_(const networkFace *const f) const {
       auto it = this->f_nearestContactFaces.find(const_cast<networkFace *>(f));
       return (it != this->f_nearestContactFaces.end()) ? it->second : std::tuple<networkFace *, Tddd>{nullptr, {0., 0., 0.}};
    };
-
    networkFace *getNearestContactFace(const networkFace *const f) const { return std::get<0>(getNearestContactFace_(f)); };
 
    void clearContactFaces() {

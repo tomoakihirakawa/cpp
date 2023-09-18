@@ -15,7 +15,7 @@
     "output": "json",
     "velocity": [
         "file",
-        "bodyC.dat"
+        "./study_fish/bodyC.dat"
     ],
     "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/fish/bodyC50.obj"
 }

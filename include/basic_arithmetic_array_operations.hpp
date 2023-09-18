@@ -651,9 +651,9 @@ constexpr std::array<T, N> ModTriShape(const T& t0, const T& t1, const auto& p0p
    // b!　これは，線形補間であっても利用できる
    //
    static_assert(N == 3 || N == 6, "Unsupported shape function size. Only 3 or 6 are supported.");
-   auto t2 = 1 - t0 - t1;
-   auto t0m1 = t0 - 1;
-   auto t1m1 = t1 - 1;
+   const double t2 = 1. - t0 - t1;
+   const double t0m1 = t0 - 1.;
+   const double t1m1 = t1 - 1.;
    if constexpr (N == 3) {
       return {t0,
               -t1 * t0m1,
