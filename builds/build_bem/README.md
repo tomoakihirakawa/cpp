@@ -47,6 +47,9 @@
         - [🪼 内部流速の計算方法（使わなくてもいい）](#🪼-内部流速の計算方法（使わなくてもいい）)
         - [🪼 JSONファイルの出力](#🪼-JSONファイルの出力)
 - [🐋 実行方法](#🐋-実行方法)
+    - [⛵ ファイルのダウンロード](#⛵-ファイルのダウンロード)
+    - [⛵ 入力ファイルの生成．](#⛵-入力ファイルの生成．)
+    - [⛵ プログラムのコンパイルと実行](#⛵-プログラムのコンパイルと実行)
 - [🐋 Examples](#🐋-Examples)
 
 
@@ -74,14 +77,37 @@
 ### 🪼 BEM　周波数領域 
 
 BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．
-例えば，WAMIT
+例えば，WAMIT．
 
 Goupee et al. (2014)
 [Simos et al. (2018)](https://doi.org/10.1016/j.renene.2017.09.059)で紹介されている
 
-高次の非線形性を考慮に入れることができないこと，
+よく挙げられるBEM周波数領域の問題点
 
-浮体動揺解析の基礎
+<!-- makee table using html -->
+
+<table>
+<tr>
+<th>BEM周波数領域</th><th>BEM時間領域</th>
+</tr>
+<tr>
+<td>
+<ul>
+<li>境界条件が線形でない</li>
+<li>非線形性を考慮できない</li>
+<li>過渡的な現象を考慮できない</li>
+</ul>        
+</td>    
+<td>
+<ul>
+<li>境界条件が線形である</li>
+<li>非線形性を考慮できる</li>
+<li>過渡的な現象を考慮できる</li>
+</ul>
+<td>
+</td>
+</tr>
+</table>
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -136,7 +162,7 @@ BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgin
 
 浮体の動揺解析を行うためには，次のようなステップを踏む．
 
-1. 浮体に掛かる力（トルク）を計算し，
+1. 浮体に掛かる力とトルクを計算し，
 2. 力と重心に関する運動方程式（トルクと角運動量に関する運動方程式）から加速度（角加速度）を求め，
 3. 加速度（角加速度）を積分し速度（角速度）を更新し，
 4. 速度（角速度）を積分し位置（姿勢）を更新する
@@ -144,10 +170,10 @@ BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgin
 浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi _t`$が簡単には計算できない．
 これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)に詳しく書かれている)．
 
-Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
+Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
 BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
 これと運動方程式を連立することで，直接，加速度を求めることができる．
-[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)は，この方法を発展させ２浮体の動揺解析を行っている．
+[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)は，この方法を発展させ２浮体の動揺解析を行っている．
 
 本当に，複数の浮体に適用しにくい方法なのか？
 
@@ -170,7 +196,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 補助関数（１浮体につき６つ増える）に関する境界値問題を解く必要がある（$`\phi`$-$`\phi _n`$に関するBIEの係数行列の行列を再利用することで高速化）．
 
-[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)から，補助関数を使う方法も係数行列が共通であるため計算コストを抑えることができるということがわかる．
+[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)から，補助関数を使う方法も係数行列が共通であるため計算コストを抑えることができるということがわかる．
 言い換えれば，逆行列を使い回すことで，計算コストを抑えるということである．
 
 > To compute the auxiliary functions, extra boundary value problems (BVPs) have to be solved. As th auxiliary functions share the same coefficient matrix with the velocity potential when proper boundary conditions are imposed, they are solved simultaneously with the potential, and not much additional computational effort is needed for solving these extra BVPs for the auxiliary functions.
@@ -200,7 +226,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L170](./main.cpp#L170)
+[./main.cpp#L193](./main.cpp#L193)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -222,7 +248,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L343](./main.cpp#L343)
+[./main.cpp#L366](./main.cpp#L366)
 
 
 ---
@@ -528,7 +554,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
 浮体に掛かる圧力の計算に必要な$`\phi _t`$が簡単には求まらないためである．
-これに関しては，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)が参考になる．
+これに関しては，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)が参考になる．
 
 ### 🪼 浮体の運動方程式 
 
@@ -611,7 +637,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L744)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -642,7 +668,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L758)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L778)で与えている．
 
 
 [./BEM_solveBVP.hpp#L594](./BEM_solveBVP.hpp#L594)
@@ -703,7 +729,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L455](./main.cpp#L455)
+[./main.cpp#L478](./main.cpp#L478)
 
 
 ---
@@ -715,45 +741,65 @@ $`\iint _{\Gamma _{🚢}} \phi _t{\bf n}dS`$と$`\iint _{\Gamma _{🚢}}\phi _{t
 
 体積積分がゼロとなるように，領域内でラプラス方程式を満たすような$`\varphi`$，
 そして$`\Gamma _{🚢}`$上ではこちらが望む$`\varphi _n`$となり，また$`\Gamma \rm other`$上では$`\varphi=0`$となる
-そんな$`\varphi`$がBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
-（注意：境界上の全ての節点上で$`\varphi`$と$`\varphi _n`$が求まっている）
+そんな$`\varphi`$をBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
+（NOTE：境界上の全ての節点上で$`\varphi`$と$`\varphi _n`$が求まったとする）
 
 ```math
 \begin{align*}
 0 &= \iint _\Gamma {\left( {\varphi\nabla {\phi _t} ({\bf{x}}) - {\phi _t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
-\rightarrow \iint _{\Gamma _{🚢}} {\phi _t} \varphi _n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi _{nt}} dS+\iint _{\Gamma \rm other} \varphi {\phi _{nt}} dS - \iint _{\Gamma \rm other} {\phi _t} \varphi _n dS\\
-\rightarrow \iint _{\Gamma _{🚢}} {\phi _t} \varphi _n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi _{nt}} dS- \iint _{\Gamma \rm other} {\phi _t} \varphi _n dS
+\rightarrow 0 &= \iint _{\Gamma _{🚢}+\Gamma _{🌊}+\Gamma _{\rm wall}} \varphi {\phi _{nt}} dS - \iint _{\Gamma _{🚢}+\Gamma _{🌊}+\Gamma _{\rm wall}} {\phi _t} \varphi _n dS\\
+\rightarrow 0 &= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} \varphi {\phi _{nt}} dS - \iint _{\Gamma _{🚢}+\Gamma _{🌊}} {\phi _t} \varphi _n dS\\
+\rightarrow \iint _{\Gamma _{🚢}} {\phi _t} \varphi _n dS &= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} \varphi {\phi _{nt}} dS - \iint _{\Gamma _{🌊}} {\phi _t} \varphi _n dS\\
+\rightarrow \iint _{\Gamma _{🚢}} \phi _t
+\begin{bmatrix}
+\boldsymbol{n} \\
+(\boldsymbol{x} - \boldsymbol{x} _c) \times \boldsymbol{n}
+\end{bmatrix} dS
+&= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{1-6}} {\phi _{nt}} dS - \iint _{\Gamma _{🌊}} {\phi _t} {\boldsymbol{\varphi} _n} _{1-6} dS\\
 \end{align*}
 ```
 
-$`\varphi _n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+つまり，$`\varphi _n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+
+もし浮体がもう一つあると
 
 ```math
 \begin{align*}
-\left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right]
-&= \iint _{\Gamma _{🚢}} {\phi _t} \left[{\bf n},({\bf x}-{\bf x} _c)\times{\bf n}\right] dS
-= \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma \rm other} {\phi _t} {\boldsymbol \varphi _n} dS\\
-{\boldsymbol \varphi} _n &= \left[{\bf n},({\bf x}-{\bf x} _c)\times{\bf n}\right]\quad\text{on}\quad\Gamma _{🚢}
+\iint _{\Gamma _{🚢}} \phi _t
+\begin{bmatrix}
+\boldsymbol{n} \\
+(\boldsymbol{x} - \boldsymbol{x} _c) \times \boldsymbol{n}
+\end{bmatrix} dS
+& = \iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{1-6}} {\phi _{nt}} dS - \iint _{\Gamma _{🚤}+\Gamma _{🌊}} {\phi _t} {\boldsymbol{\varphi} _n} _{1-6} dS\\
+\rightarrow \iint _{\Gamma _{🚢}} \phi _t
+\begin{bmatrix}
+\boldsymbol{n} \\
+(\boldsymbol{x} - \boldsymbol{x} _c) \times \boldsymbol{n}
+\end{bmatrix} dS
+& = \iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{1-6}} {\phi _{nt}} dS - \iint _{\Gamma _{🌊}} {\phi _t} {\boldsymbol{\varphi} _n} _{1-6} dS
 \end{align*}
 ```
 
-💡 ：ただし，$`\Gamma _{🚢}`$上で$`\phi _{nt}`$が，$`\Gamma _{\rm other}`$上で$`\phi _{t}`$がわかっていなければならない．
-また，もし，複数の浮体が存在する場合，$`\Gamma _{\rm other}`$には他の浮体🚤が存在し，$`\phi _t\,{\rm on}\,🚤`$は，
-$`\phi _t\,{\rm on}\,🚢`$と同じように未知変数である．
+同じように
 
 ```math
 \begin{align*}
-\left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right] = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma _{🚤}} {\phi _t} {\boldsymbol \varphi _n} dS
-- \iint _{\Gamma _{\rm other}} {\phi _t} {\boldsymbol \varphi _n} dS
-\\
-\left[\boldsymbol{F} _{\text {ext🚤}},\boldsymbol{T} _{\text {ext🚤}}\right]
-= \iint _{\Gamma _{🚤}} {\boldsymbol \varphi} {\phi _{nt}} dS - \iint _{\Gamma _{🚢}} {\phi _t} {\boldsymbol \varphi _n} dS
-- \iint _{\Gamma _{\rm other}} {\phi _t} {\boldsymbol \varphi _n} dS
+\iint _{\Gamma _{🚤}} \phi _t
+\begin{bmatrix}
+\boldsymbol{n} \\
+(\boldsymbol{x} - \boldsymbol{x} _c) \times \boldsymbol{n}
+\end{bmatrix} dS
+& = \iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{7-12}} {\phi _{nt}} dS - \iint _{\Gamma _{🌊}} {\phi _t} {\boldsymbol{\varphi} _n} _{7-12} dS
 \end{align*}
 ```
 
-この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
-この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://ac.els-cdn.com/S0889974616300482/1-s2.0-S0889974616300482-main.pdf?_tid=ff2f4292-c10c-45ef-ae9c-aebf24fe9638&acdnat=1523932200_b87bd74285f782591543e0aa51f34061)はこれを基にして２浮体の場合でも動揺解析を行っている．
+$`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{1-6}} {\phi _{nt}} dS`$や
+$`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi} _{7-12}} {\phi _{nt}} dS`$
+は加速度行列とある既知変数から成る行列の積で表される．こうして，運動方程式の$`\boldsymbol{F} _{\text {hydro }}`$と$`\boldsymbol{T} _{\text {hydro }}`$を加速度によって表すことができ，
+運動方程式は加速度だけに関する連立方程式となる．
+
+この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)で使用されている．
+この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
 [./BEM_solveBVP.hpp#L692](./BEM_solveBVP.hpp#L692)
@@ -868,7 +914,7 @@ E _K =\frac{\rho}{2} \iint _\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
 E _P = \frac{\rho}{2} \iint _\Gamma (0,0,g(z - z _0)^2) \cdot {\bf n} d\Gamma
 ```
 
-<details style="background-color: rgba(144, 238, 144, 0.2);">
+<details>
 
 ---
 
@@ -906,7 +952,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L323](./BEM_calculateVelocities.hpp#L323)
+[./BEM_calculateVelocities.hpp#L319](./BEM_calculateVelocities.hpp#L319)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -923,7 +969,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L410](./BEM_calculateVelocities.hpp#L410)
+[./BEM_calculateVelocities.hpp#L406](./BEM_calculateVelocities.hpp#L406)
 
 
 ---
@@ -963,42 +1009,48 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L586](./main.cpp#L586)
+[./main.cpp#L609](./main.cpp#L609)
 
 
 ---
 # 🐋 実行方法 
 
-ファイルをダウンロードして，`build_bem`ディレクトリに移動．
+## ⛵ ファイルのダウンロード 
+
+上書きされるので注意．ダウンロードしたら，`build_bem`ディレクトリに移動．
 
 ```sh
-$ git clone https://github.com/tomoakihirakawa/cpp.git
-$ cd ./cpp/builds/build_bem
+git clone https://github.com/tomoakihirakawa/cpp.git
+cd ./cpp/builds/build_bem
 ```
+
+## ⛵ 入力ファイルの生成． 
+
+```sh
+python3 input_generator.py
+```
+
+例えば，`./input_files/Hadzic2005`が生成される．
+
+## ⛵ プログラムのコンパイルと実行 
 
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
+make
 ```
 
-次に，入力ファイルを生成．
+実行
 
 ```sh
-$ python3 input_generator.py
-```
-
-例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
-
-```sh
-$ ./main ./input_files/Hadzic2005
+./main ./input_files/Hadzic2005
 ```
 
 
-[./main.cpp#L729](./main.cpp#L729)
+[./main.cpp#L752](./main.cpp#L752)
 
 
 ---
@@ -1007,7 +1059,7 @@ $ ./main ./input_files/Hadzic2005
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L763](./main.cpp#L763)
+[./main.cpp#L792](./main.cpp#L792)
 
 
 ---

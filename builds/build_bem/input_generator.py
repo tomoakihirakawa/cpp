@@ -22,7 +22,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "fish"
+SimulationCase = "Ren2015"
 
 match SimulationCase:
     case "fish":
@@ -127,9 +127,9 @@ match SimulationCase:
         # wavemaker_type = "piston"
         wavemaker_type = "potential"
 
-        id = id0 + "_H"+str(H).replace(".", "d")
+        id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
-        id += "_"+wavemaker_type
+        id += "_" + wavemaker_type + "_2"
 
         water = {"name": "water", "type": "Fluid"}
         tank = {"name": "tank",
@@ -206,13 +206,13 @@ match SimulationCase:
         else:
             float["COM"] = [2., W/2, z_surface]
             objfolder = code_home_dir + "/cpp/obj/Ren2015"
-            water["objfile"] = objfolder + "/water400mod.obj"
+            water["objfile"] = objfolder + "/water400mod2.obj"
             wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
             tank["objfile"] = objfolder + "/tank100.obj"
             float["objfile"] = objfolder+"/float50.obj"
             inputfiles = [tank, wavemaker, water, float]
 
-        setting = {"max_dt": 0.02,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9}
 

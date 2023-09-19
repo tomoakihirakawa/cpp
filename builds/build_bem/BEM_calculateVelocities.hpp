@@ -169,7 +169,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       if (!next_Vrtx.empty()) {
          std::vector<networkFace *> pf_to_check;
          for (const auto &pf : p->getFacesNeumann()) {
-            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return isFlat(pf->normal, f->normal, M_PI / 180.); }))
+            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f->normal) < M_PI / 180.; }))
                pf_to_check.push_back(pf);
          }
 
@@ -221,7 +221,8 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 // \label{BEM:calculateVecToSurface}
 void calculateVecToSurface(const Network &net, const int loop, const bool do_shift = true) {
-   for (const auto &p : net.getPoints()) {
+   auto points = ToVector(net.getPoints());
+   for (const auto &p : points) {
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface.fill(0.);
    }
@@ -229,17 +230,17 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
    // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
 #pragma omp parallel
-      for (const auto &p : net.getPoints())
+      for (const auto &p : points)
 #pragma omp single nowait
       {
-         double a = 0.005;
+         double a = 0.015;
          double scale = 10. * a;
          if (p->isMultipleNode && !p->CORNER)
             scale = a;
          else if (p->Neumann)
             scale = a;
 
-         if (k < 10) {
+         if (k < 3) {
             auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          } else {
@@ -248,7 +249,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          }
          // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
       }
-      for (const auto &p : net.getPoints()) {
+      for (const auto &p : points) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);
          p->vecToSurface_BUFFER.fill(0.);
       }
@@ -256,11 +257,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
 
    auto addVectorToNextSurface = [&]() {
 #pragma omp parallel
-      for (const auto &p : net.getPoints())
+      for (const auto &p : points)
 #pragma omp single nowait
          p->vecToSurface_BUFFER = p->clungSurface = vectorToNextSurface(p);
 
-      for (const auto &p : net.getPoints()) {
+      for (const auto &p : points) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);
          p->vecToSurface_BUFFER.fill(0.);
       }
@@ -331,7 +332,7 @@ E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
 E_P = \frac{\rho}{2} \iint_\Gamma (0,0,g(z - z_0)^2) \cdot {\bf n} d\Gamma
 ```
 
-<details style="background-color: rgba(144, 238, 144, 0.2);">
+<details>
 
 ---
 

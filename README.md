@@ -92,6 +92,9 @@
     - [⛵ 陽に与えられる境界条件に対して（造波装置など）](./builds/build_bem/README.md#⛵-陽に与えられる境界条件に対して（造波装置など）)
     - [⛵ その他](./builds/build_bem/README.md#⛵-その他)
 - [🐋 実行方法](./builds/build_bem/README.md#🐋-実行方法)
+    - [⛵ ファイルのダウンロード](./builds/build_bem/README.md#⛵-ファイルのダウンロード)
+    - [⛵ 入力ファイルの生成．](./builds/build_bem/README.md#⛵-入力ファイルの生成．)
+    - [⛵ プログラムのコンパイルと実行](./builds/build_bem/README.md#⛵-プログラムのコンパイルと実行)
 - [🐋 Examples](./builds/build_bem/README.md#🐋-Examples)
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 

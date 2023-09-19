@@ -40,41 +40,45 @@ MATH_STAR_PATTERN = re.compile(
 # Initialize an empty bibliography data object
 bib_data = BibliographyData()
 
+import bibtexparser
+import glob
+from pybtex.database import BibliographyData, BibliographyDataError, parse_file
 
-if True:
-    bib_dir = '/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/'
-    for bib_file_path in glob.glob(bib_dir+'library.bib'):
+# Initialize an empty bibliography data object
+bib_data = BibliographyData()
+
+bib_dir = '/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/'
+input_file_pattern = bib_dir + 'library.bib'
+output_file_path = bib_dir + 'unique_references.bib'
+
+def remove_duplicates_and_write(input_files, output_file):
+    unique_entries = {}
+
+    for bib_file_path in input_files:
         with open(bib_file_path, 'r') as bib_file:
             bib_database = bibtexparser.load(bib_file)
+        
+        # Use dictionary comprehension for faster iteration
+        unique_entries.update({entry['ID']: entry for entry in bib_database.entries if entry['ID'] not in unique_entries})
+    
+    new_bib_database = bibtexparser.bibdatabase.BibDatabase()
+    new_bib_database.entries = list(unique_entries.values())
 
-        unique_entries = {}
-        for entry in bib_database.entries:
-            entry_id = entry['ID']
-            if entry_id not in unique_entries:
-                unique_entries[entry_id] = entry
+    with open(output_file, 'w') as new_bib_file:
+        bibtexparser.dump(new_bib_database, new_bib_file)
 
-        new_bib_database = bibtexparser.bibdatabase.BibDatabase()
-        new_bib_database.entries = list(unique_entries.values())
+# Main execution
+if False:
+    remove_duplicates_and_write(glob.glob(input_file_pattern), output_file_path)
 
-        with open('unique_references.bib', 'w') as new_bib_file:
-            bibtexparser.dump(new_bib_database, new_bib_file)
-
-# Loop through each file matching the pattern
-# for bib_file in glob.glob('/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_macbook_m2/paper-*.bib'):
-# for bib_file in glob.glob('/Users/tomoaki/Library/CloudStorage/Dropbox/references/bib_mac_studio/library.bib'):
-for bib_file in glob.glob('unique_references.bib'):
+for bib_file in glob.glob(output_file_path):
     try:
-        # Parse the individual file
         individual_bib_data = parse_file(bib_file)
-        # Merge the entries into the main bibliography data
         for entry_id, entry in individual_bib_data.entries.items():
             if entry_id not in bib_data.entries:
                 bib_data.add_entry(entry_id, entry)
-            # else:
-            #     print(f"Warning: Repeated entry with key {entry_id}. Ignored in file {bib_file}.")
     except BibliographyDataError as e:
-        print(
-            f"An error occurred while parsing the bibliography file {bib_file}: {e}")
+        print(f"An error occurred while parsing the bibliography file {bib_file}: {e}")
 
 # Continue processing bib_data as before
 references = {}
