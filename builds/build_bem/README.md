@@ -4,6 +4,7 @@
     - [⛵ BEM-MEL について](#⛵-BEM-MEL-について)
         - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
         - [🪼 BEM　周波数領域](#🪼-BEM　周波数領域)
+            - [🐚 BEM周波数領域の問題点](#🐚-BEM周波数領域の問題点)
         - [🪼 BEM-MEL　時間領域](#🪼-BEM-MEL　時間領域)
             - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
         - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
@@ -76,38 +77,37 @@
 
 ### 🪼 BEM　周波数領域 
 
-BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．
-例えば，WAMIT．
+BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．例えば，WAMITが有名．
 
-Goupee et al. (2014)
-[Simos et al. (2018)](https://doi.org/10.1016/j.renene.2017.09.059)で紹介されている
+周波数領域解析は以下のような流れである（[Kashiwagi et al. (2005)](https://linkinghub.elsevier.com/retrieve/pii/S0029801804002252)，[柏木 (2004)](https://www.jstage.jst.go.jp/article/technom/880/0/880_KJ00001033371/_article/-char/ja/)を参考）
 
-よく挙げられるBEM周波数領域の問題点
+速度ポテンシャルは
 
-<!-- makee table using html -->
+* 入射波ポテンシャル$`\phi _0`$
+* 浮体による波の散乱ポテンシャル$`\phi _7`$
+* 浮体動揺に放射ポテンシャル($`\phi _1,..\phi _6`$)．（浮体動揺の振幅が含まれており，運動方程式の解として後で求める）
 
-<table>
-<tr>
-<th>BEM周波数領域</th><th>BEM時間領域</th>
-</tr>
-<tr>
-<td>
-<ul>
-<li>境界条件が線形でない</li>
-<li>非線形性を考慮できない</li>
-<li>過渡的な現象を考慮できない</li>
-</ul>        
-</td>    
-<td>
-<ul>
-<li>境界条件が線形である</li>
-<li>非線形性を考慮できる</li>
-<li>過渡的な現象を考慮できる</li>
-</ul>
-<td>
-</td>
-</tr>
-</table>
+の和として表す（成分を分解）．境界積分方程式を解き，速度ポテンシャルを求める．
+次に浮体にかかる流体力を計算する（圧力の面積分）．結果として，
+
+$`\phi _0,\phi _7`$を含んだ力が得られる．これを波浪強制力とよぶ．
+$`\phi _0+\phi _7`$をDiffractionポテンシャルと呼ぶこともあり，
+これに関する境界値問題をDiffraction問題という（浮体の形状には関係するが浮体動揺に関係ない境界値問題でもある）
+
+また，$`\phi _1,\phi _6`$を含んだ力が得られる．
+浮体加速度に比例する付加質量，浮体速度に比例する減衰力係数として整理できる．
+これらに関する境界値問題をRadiation問題という（浮体動揺に関係する境界値問題でもある）
+
+#### 🐚 BEM周波数領域の問題点 
+
+[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)も指摘するように，
+以上のBEM周波数領域解析は，線型理論であるため波が激しい場合の精度には疑問が残る．
+
+例えば，
+初めのポテンシャルの表現において，
+Radiationポテンシャルは浮体動揺から切り離されている．
+実際は，速度ポテンシャル自体が浮体動揺に応じて変化し，
+さらにポテンシャルから計算される力自体も浮体姿勢に応じて変化する．
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -226,7 +226,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L193](./main.cpp#L193)
+[./main.cpp#L192](./main.cpp#L192)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -248,7 +248,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L366](./main.cpp#L366)
+[./main.cpp#L365](./main.cpp#L365)
 
 
 ---
@@ -340,7 +340,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
 
-[./BEM_utilities.hpp#L317](./BEM_utilities.hpp#L317)
+[./BEM_utilities.hpp#L318](./BEM_utilities.hpp#L318)
 
 
 ---
@@ -524,7 +524,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L501](./BEM_utilities.hpp#L501)
+[./BEM_utilities.hpp#L502](./BEM_utilities.hpp#L502)
 
 
 ---
@@ -637,7 +637,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L676)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -682,7 +682,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L778)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L647)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L648)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -720,7 +720,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L638](./BEM_utilities.hpp#L638)
+[./BEM_utilities.hpp#L639](./BEM_utilities.hpp#L639)
 
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
@@ -729,7 +729,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L478](./main.cpp#L478)
+[./main.cpp#L477](./main.cpp#L477)
 
 
 ---
@@ -811,7 +811,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L331)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L298)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L116)で利用され，$\phi _{n}$を計算する．
@@ -835,7 +835,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 | 8 | `axis`  | z       |
 
 
-[./BEM_utilities.hpp#L160](./BEM_utilities.hpp#L160)
+[./BEM_utilities.hpp#L161](./BEM_utilities.hpp#L161)
 
 
 ### 🪼 ピストン型造波装置 
@@ -862,7 +862,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
 
 
-[./BEM_utilities.hpp#L198](./BEM_utilities.hpp#L198)
+[./BEM_utilities.hpp#L199](./BEM_utilities.hpp#L199)
 
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
@@ -884,7 +884,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
 
-[./BEM_utilities.hpp#L243](./BEM_utilities.hpp#L243)
+[./BEM_utilities.hpp#L244](./BEM_utilities.hpp#L244)
 
 
 ---
@@ -896,7 +896,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L576](./BEM_utilities.hpp#L576)
+[./BEM_utilities.hpp#L577](./BEM_utilities.hpp#L577)
 
 
 ---
@@ -1009,7 +1009,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L609](./main.cpp#L609)
+[./main.cpp#L608](./main.cpp#L608)
 
 
 ---
@@ -1050,7 +1050,7 @@ make
 ```
 
 
-[./main.cpp#L752](./main.cpp#L752)
+[./main.cpp#L751](./main.cpp#L751)
 
 
 ---
@@ -1059,7 +1059,7 @@ make
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L792](./main.cpp#L792)
+[./main.cpp#L791](./main.cpp#L791)
 
 
 ---

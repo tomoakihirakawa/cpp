@@ -180,7 +180,7 @@ match SimulationCase:
 
             # Initialize the object files
             water["objfile"] = f"{objfolder}/water400.obj"
-            wavemaker["objfile"] = f"{objfolder}/wavemaker30.obj"
+            wavemaker["objfile"] = f"{objfolder}/wavemaker200.obj"
             tank["objfile"] = f"{objfolder}/tank100.obj"
             float["objfile"] = f"{objfolder}/float50.obj"
 
@@ -200,19 +200,19 @@ match SimulationCase:
         elif "_no" in id:
             objfolder = code_home_dir + "/cpp/obj/Ren2015_no_float"
             water["objfile"] = objfolder + "/water400.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
             tank["objfile"] = objfolder + "/tank100.obj"
             inputfiles = [tank, wavemaker, water]
         else:
             float["COM"] = [2., W/2, z_surface]
             objfolder = code_home_dir + "/cpp/obj/Ren2015"
-            water["objfile"] = objfolder + "/water400mod2.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker100.obj"
+            water["objfile"] = objfolder + "/water400meshlab.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
             tank["objfile"] = objfolder + "/tank100.obj"
             float["objfile"] = objfolder+"/float50.obj"
             inputfiles = [tank, wavemaker, water, float]
 
-        setting = {"max_dt": 0.01,
+        setting = {"max_dt": 0.005,
                    "end_time_step": 10000,
                    "end_time": 9}
 
