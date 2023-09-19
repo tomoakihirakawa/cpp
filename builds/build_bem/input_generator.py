@@ -22,7 +22,11 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
+<<<<<<< Updated upstream
 SimulationCase = "Ren2015"
+=======
+SimulationCase = "fish"
+>>>>>>> Stashed changes
 
 match SimulationCase:
     case "fish":

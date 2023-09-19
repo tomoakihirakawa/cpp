@@ -1,4 +1,5 @@
 ----------
+<<<<<<< Updated upstream
 Execution time: Tue Sep 19 19:22:28 2023
 
 Machine Information:
@@ -187,6 +188,8 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Ren2015_H0d1_T1d2_potential
 ----------
+=======
+>>>>>>> Stashed changes
 Execution time: Mon Sep 18 08:21:05 2023
 
 Machine Information:
@@ -4622,6 +4625,7 @@ No arguments provided. Write input JSON file directory.
 ----------
 ----------
 ----------
+<<<<<<< Updated upstream
 ----------
 ----------
 ----------
@@ -4639,3 +4643,5 @@ No arguments provided. Write input JSON file directory.
 ----------
 ----------
 ----------
+=======
+>>>>>>> Stashed changes

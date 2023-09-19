@@ -233,7 +233,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       for (const auto &p : points)
 #pragma omp single nowait
       {
+<<<<<<< Updated upstream
          double a = 0.015;
+=======
+         double a = 0.005;
+>>>>>>> Stashed changes
          double scale = 10. * a;
          if (p->isMultipleNode && !p->CORNER)
             scale = a;

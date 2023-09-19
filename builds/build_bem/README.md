@@ -83,6 +83,7 @@ BEMを使った周波数領域の解析は，海洋工学の分野で標準的�
 
 速度ポテンシャルは
 
+<<<<<<< Updated upstream
 * 入射波ポテンシャル$`\phi _0`$
 * 浮体による波の散乱ポテンシャル$`\phi _7`$
 * 浮体動揺に放射ポテンシャル($`\phi _1,..\phi _6`$)．（浮体動揺の振幅が含まれており，運動方程式の解として後で求める）
@@ -112,6 +113,9 @@ $`\phi _0+\phi _7`$をDiffractionポテンシャルと呼ぶこともあり，
 Radiationポテンシャルは浮体動揺から切り離されている．
 実際は，速度ポテンシャル自体が浮体動揺に応じて変化し，
 さらにポテンシャルから計算される力自体も浮体姿勢に応じて変化する．
+=======
+浮体動揺解析の基礎
+>>>>>>> Stashed changes
 
 ### 🪼 BEM-MEL　時間領域 
 
@@ -230,7 +234,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 3. 三角形の線形補間を使って節点の流速を計算する
 
 
-[./main.cpp#L196](./main.cpp#L196)
+[./main.cpp#L200](./main.cpp#L200)
 
 
 ## ⛵ 計算プログラムの概要 
@@ -252,7 +256,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
 
-[./main.cpp#L369](./main.cpp#L369)
+[./main.cpp#L373](./main.cpp#L373)
 
 
 ---
@@ -733,7 +737,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L481](./main.cpp#L481)
+[./main.cpp#L485](./main.cpp#L485)
 
 
 ---
@@ -956,7 +960,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L319](./BEM_calculateVelocities.hpp#L319)
+[./BEM_calculateVelocities.hpp#L323](./BEM_calculateVelocities.hpp#L323)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -973,7 +977,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L406](./BEM_calculateVelocities.hpp#L406)
+[./BEM_calculateVelocities.hpp#L410](./BEM_calculateVelocities.hpp#L410)
 
 
 ---
@@ -1013,7 +1017,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L612](./main.cpp#L612)
+[./main.cpp#L616](./main.cpp#L616)
 
 
 ---
@@ -1054,7 +1058,7 @@ make
 ```
 
 
-[./main.cpp#L755](./main.cpp#L755)
+[./main.cpp#L759](./main.cpp#L759)
 
 
 ---
@@ -1063,7 +1067,7 @@ make
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L795](./main.cpp#L795)
+[./main.cpp#L799](./main.cpp#L799)
 
 
 ---
