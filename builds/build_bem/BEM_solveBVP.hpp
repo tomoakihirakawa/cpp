@@ -699,42 +699,62 @@ struct BEM_BVP {
 
    体積積分がゼロとなるように，領域内でラプラス方程式を満たすような$`\varphi`$，
    そして$`\Gamma _{🚢}`$上ではこちらが望む$`\varphi_n`$となり，また$`\Gamma \rm other`$上では$`\varphi=0`$となる
-   そんな$`\varphi`$がBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
-   （注意：境界上の全ての節点上で$`\varphi`$と$`\varphi_n`$が求まっている）
+   そんな$`\varphi`$をBIEを使って計算する．この$`\varphi`$を使うと次の式が成り立つ．
+   （NOTE：境界上の全ての節点上で$`\varphi`$と$`\varphi_n`$が求まったとする）
 
    ```math
    \begin{align*}
    0 &= \iint _\Gamma {\left( {\varphi\nabla {\phi_t} ({\bf{x}}) - {\phi_t} ({\bf{x}})\nabla \varphi} \right) \cdot {\bf{n}}({\bf{x}})dS}\\
-   \rightarrow \iint _{\Gamma _{🚢}} {\phi_t} \varphi_n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi_{nt}} dS+\iint _{\Gamma \rm other} \varphi {\phi_{nt}} dS - \iint _{\Gamma \rm other} {\phi_t} \varphi_n dS\\
-   \rightarrow \iint _{\Gamma _{🚢}} {\phi_t} \varphi_n dS &= \iint _{\Gamma _{🚢}} \varphi {\phi_{nt}} dS- \iint _{\Gamma \rm other} {\phi_t} \varphi_n dS
+   \rightarrow 0 &= \iint _{\Gamma _{🚢}+\Gamma _{🌊}+\Gamma _{\rm wall}} \varphi {\phi_{nt}} dS - \iint _{\Gamma _{🚢}+\Gamma _{🌊}+\Gamma _{\rm wall}} {\phi_t} \varphi_n dS\\
+   \rightarrow 0 &= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} \varphi {\phi_{nt}} dS - \iint _{\Gamma _{🚢}+\Gamma _{🌊}} {\phi_t} \varphi_n dS\\
+   \rightarrow \iint _{\Gamma _{🚢}} {\phi_t} \varphi_n dS &= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} \varphi {\phi_{nt}} dS - \iint _{\Gamma _{🌊}} {\phi_t} \varphi_n dS\\
+   \rightarrow \iint_{\Gamma_{🚢}} \phi_t
+   \begin{bmatrix}
+   \boldsymbol{n} \\
+   (\boldsymbol{x} - \boldsymbol{x}_c) \times \boldsymbol{n}
+   \end{bmatrix} dS
+   &= \iint _{\Gamma _{🚢}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{1-6}} {\phi_{nt}} dS - \iint _{\Gamma _{🌊}} {\phi_t} {\boldsymbol{\varphi}_n}_{1-6} dS\\
    \end{align*}
    ```
 
-   $`\varphi_n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+   つまり，$`\varphi_n`$を適当に選べば，左辺は知りたかった積分となり，右辺の積分で計算できることになる．
+
+   もし浮体がもう一つあると
 
    ```math
    \begin{align*}
-   \left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right]
-   &= \iint _{\Gamma _{🚢}} {\phi_t} \left[{\bf n},({\bf x}-{\bf x}_c)\times{\bf n}\right] dS
-   = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma \rm other} {\phi_t} {\boldsymbol \varphi_n} dS\\
-   {\boldsymbol \varphi}_n &= \left[{\bf n},({\bf x}-{\bf x}_c)\times{\bf n}\right]\quad\text{on}\quad\Gamma_{🚢}
+   \iint_{\Gamma_{🚢}} \phi_t
+   \begin{bmatrix}
+   \boldsymbol{n} \\
+   (\boldsymbol{x} - \boldsymbol{x}_c) \times \boldsymbol{n}
+   \end{bmatrix} dS
+   & = \iint _{\Gamma _{🚢}+\Gamma_{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{1-6}} {\phi_{nt}} dS - \iint _{\Gamma_{🚤}+\Gamma _{🌊}} {\phi_t} {\boldsymbol{\varphi}_n}_{1-6} dS\\
+   \rightarrow \iint_{\Gamma_{🚢}} \phi_t
+   \begin{bmatrix}
+   \boldsymbol{n} \\
+   (\boldsymbol{x} - \boldsymbol{x}_c) \times \boldsymbol{n}
+   \end{bmatrix} dS
+   & = \iint _{\Gamma _{🚢}+\Gamma_{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{1-6}} {\phi_{nt}} dS - \iint _{\Gamma _{🌊}} {\phi_t} {\boldsymbol{\varphi}_n}_{1-6} dS
    \end{align*}
    ```
 
-   NOTE：ただし，$`\Gamma_{🚢}`$上で$`\phi_{nt}`$が，$`\Gamma_{\rm other}`$上で$`\phi_{t}`$がわかっていなければならない．
-   また，もし，複数の浮体が存在する場合，$`\Gamma_{\rm other}`$には他の浮体🚤が存在し，$`\phi_t\,{\rm on}\,🚤`$は，
-   $`\phi_t\,{\rm on}\,🚢`$と同じように未知変数である．
+   同じように
 
    ```math
    \begin{align*}
-   \left[\boldsymbol{F} _{\text {ext🚢}},\boldsymbol{T} _{\text {ext🚢}}\right] = \iint _{\Gamma _{🚢}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma _{🚤}} {\phi_t} {\boldsymbol \varphi_n} dS
-   - \iint _{\Gamma _{\rm other}} {\phi_t} {\boldsymbol \varphi_n} dS
-   \\
-   \left[\boldsymbol{F} _{\text {ext🚤}},\boldsymbol{T} _{\text {ext🚤}}\right]
-   = \iint _{\Gamma _{🚤}} {\boldsymbol \varphi} {\phi_{nt}} dS - \iint _{\Gamma _{🚢}} {\phi_t} {\boldsymbol \varphi_n} dS
-   - \iint _{\Gamma _{\rm other}} {\phi_t} {\boldsymbol \varphi_n} dS
+   \iint_{\Gamma_{🚤}} \phi_t
+   \begin{bmatrix}
+   \boldsymbol{n} \\
+   (\boldsymbol{x} - \boldsymbol{x}_c) \times \boldsymbol{n}
+   \end{bmatrix} dS
+   & = \iint _{\Gamma _{🚢}+\Gamma_{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{7-12}} {\phi_{nt}} dS - \iint _{\Gamma _{🌊}} {\phi_t} {\boldsymbol{\varphi}_n}_{7-12} dS
    \end{align*}
    ```
+
+   $`\iint _{\Gamma _{🚢}+\Gamma_{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{1-6}} {\phi_{nt}} dS`$や
+   $`\iint _{\Gamma _{🚢}+\Gamma_{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi}_{7-12}} {\phi_{nt}} dS`$
+   は加速度行列とある既知変数から成る行列の積で表される．こうして，運動方程式の$`\boldsymbol{F}_{\text {hydro }}`$と$`\boldsymbol{T}_{\text {hydro }}`$を加速度によって表すことができ，
+   運動方程式は加速度だけに関する連立方程式となる．
 
    この方法は，\cite{Wu1996}，\cite{Kashiwagi2000}，\cite{Wu2003}で使用されている．
    この方法は，複数の浮体を考えていないが，\cite{Feng2017}はこれを基にして２浮体の場合でも動揺解析を行っている．

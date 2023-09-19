@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
 
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, .5);
+         double dt = dt_CFL(*water, max_dt, .1);
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);
@@ -595,32 +595,38 @@ int main(int argc, char **argv) {
 
 # 実行方法
 
-ファイルをダウンロードして，`build_bem`ディレクトリに移動．
+## ファイルのダウンロード
+
+上書きされるので注意．ダウンロードしたら，`build_bem`ディレクトリに移動．
 
 ```sh
-$ git clone https://github.com/tomoakihirakawa/cpp.git
-$ cd ./cpp/builds/build_bem
+git clone https://github.com/tomoakihirakawa/cpp.git
+cd ./cpp/builds/build_bem
 ```
+
+## 入力ファイルの生成．
+
+```sh
+python3 input_generator.py
+```
+
+例えば，`./input_files/Hadzic2005`が生成される．
+
+## プログラムのコンパイルと実行
 
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
+make
 ```
 
-次に，入力ファイルを生成．
+実行
 
 ```sh
-$ python3 input_generator.py
-```
-
-例えば，`./input_files/Hadzic2005`が生成される．入力ファイルを指定して実行．
-
-```sh
-$ ./main ./input_files/Hadzic2005
+./main ./input_files/Hadzic2005
 ```
 
 */
