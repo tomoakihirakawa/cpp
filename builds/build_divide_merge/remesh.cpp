@@ -127,13 +127,13 @@ int main(int arg, char **argv) {
          for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
          LaplacianSmoothingPreserveShape(net.getPoints(), 3);
 #elif remesh_type == 5
-         AreaWeightedSmoothingPreserveShape(net.getPoints(), 2);
+         LaplacianSmoothingPreserveShape(net.getPoints(), 2);
          if (count < 50) {
             for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
-            AreaWeightedSmoothingPreserveShape(net.getPoints(), 2);
+            LaplacianSmoothingPreserveShape(net.getPoints(), 2);
          } else if (count % 3 == 0) {
             for (const auto &l : net.Lines) l->flipIfTopologicallyBetter(M_PI / 180., M_PI / 180.);
-            AreaWeightedSmoothingPreserveShape(net.getPoints(), 2);
+            LaplacianSmoothingPreserveShape(net.getPoints(), 2);
             for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
             DistorsionMeasureWeightedSmoothingPreserveShape(net.getPoints(), 1);
          } else {

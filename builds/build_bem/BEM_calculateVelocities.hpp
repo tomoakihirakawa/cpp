@@ -227,17 +227,17 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       p->vecToSurface.fill(0.);
    }
 
+   double aIN = 0.025, a;
+
    auto addVectorTangentialShift = [&](const int k = 0) {
-   // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
+      // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
+      // gradually approching to given a
+      a = aIN * ((k + 1) / (double)(loop));
+      if (a < 0.0001) a = 0.0001;
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
       {
-<<<<<<< Updated upstream
-         double a = 0.015;
-=======
-         double a = 0.005;
->>>>>>> Stashed changes
          double scale = 10. * a;
          if (p->isMultipleNode && !p->CORNER)
             scale = a;
@@ -276,7 +276,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       if (do_shift)
          // for (auto i = 0; i < 10; ++i)
          addVectorTangentialShift(kk);  // repeating this may led surface detaching
-      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
+      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]"
+                << " a = " << a << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
    }

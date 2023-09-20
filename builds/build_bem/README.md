@@ -3,9 +3,9 @@
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
     - [⛵ BEM-MEL について](#⛵-BEM-MEL-について)
         - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
-        - [🪼 BEM　周波数領域](#🪼-BEM　周波数領域)
+        - [🪼 周波数領域のBEM解析](#🪼-周波数領域のBEM解析)
             - [🐚 BEM周波数領域の問題点](#🐚-BEM周波数領域の問題点)
-        - [🪼 BEM-MEL　時間領域](#🪼-BEM-MEL　時間領域)
+        - [🪼 時間領域のBEM解析（ほとんどの場合BEM-MEL）](#🪼-時間領域のBEM解析（ほとんどの場合BEM-MEL）)
             - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
         - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
         - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
@@ -75,7 +75,7 @@
 果たして結果に悪影響を及ぼさないか疑問である．
 また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
 
-### 🪼 BEM　周波数領域 
+### 🪼 周波数領域のBEM解析 
 
 BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．例えば，WAMITが有名．
 
@@ -113,7 +113,7 @@ Radiationポテンシャルは浮体動揺から切り離されている．
 実際は，速度ポテンシャル自体が浮体動揺に応じて変化し，
 さらにポテンシャルから計算される力自体も浮体姿勢に応じて変化する．
 
-### 🪼 BEM-MEL　時間領域 
+### 🪼 時間領域のBEM解析（ほとんどの場合BEM-MEL） 
 
 1970 年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
 当時開発された正方格子上でのシミュレーション手法を使って，
@@ -956,7 +956,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L323](./BEM_calculateVelocities.hpp#L323)
+[./BEM_calculateVelocities.hpp#L324](./BEM_calculateVelocities.hpp#L324)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -973,7 +973,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L410](./BEM_calculateVelocities.hpp#L410)
+[./BEM_calculateVelocities.hpp#L411](./BEM_calculateVelocities.hpp#L411)
 
 
 ---
@@ -1055,6 +1055,23 @@ make
 
 
 [./main.cpp#L755](./main.cpp#L755)
+
+
+---
+<img src="schematic_Hadzic2005.png" width="400px" />
+
+This case is for the validation of the floating body motion analysis using the BEM solver.
+The floating body is a rectangular box with the dimension of 10 cm x 5 cm x 29 cm.
+
+The density of the floating body is 0.68x1000 kg/m^3.
+The mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
+The moment of inertia of the floating body is 14 kg cm^2.
+
+The density of the water is 1000 kg/m^3.
+The gravity is 9.81 m/s^2.
+
+
+[./input_generator.py#L221](./input_generator.py#L221)
 
 
 ---

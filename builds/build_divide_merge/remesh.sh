@@ -30,12 +30,18 @@
 # ./remesh ${path}water.obj ${path} water 1000
 # ---------------------------------------------------------------------------- #
 # MEMO: cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp -DOUTPUT_NAME=remesh1
-path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/testALE/'
+# path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/testALE/'
 # ./remesh1 ${path}water.obj ${path} water_case1_ 1000 
 # ./remesh2 ${path}water.obj ${path} water_case2_ 1000 
 # ./remesh3 ${path}water.obj ${path} water_case3_ 1000 
 # ./remesh4 ${path}water.obj ${path} water_case4_ 1000 
-./remesh5 ${path}water.obj ${path} water_case5_ 1000 
+# ./remesh5 ${path}water.obj ${path} water_case5_ 1000 
 # ./remesh5 ${path}cylinder.obj ${path} cylinder 100 &
 # ./remesh5 ${path}cuboid.obj ${path} cuboid 100 &
 # ./remesh5 ${path}tank.obj ${path} tank 100
+# ---------------------------------------------------------------------------- #
+path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005/'
+./remesh ${path}water.obj ${path} water 1000 
+# ./remesh ${path}wavemaker.obj ${path} wavemaker 500 
+# ./remesh ${path}tank.obj ${path} tank 100 
+./remesh ${path}float.obj ${path} float 100 

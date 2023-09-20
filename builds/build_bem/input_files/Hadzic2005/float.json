@@ -1,18 +1,18 @@
 {
     "name": "float",
     "type": "RigidBody",
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/2023Tamatu/floatingbody50.obj",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Hadzic2005/float100.obj",
     "output": "json",
     "velocity": "floating",
-    "mass": 0.8699999999999999,
+    "mass": 0.986,
     "COM": [
-        -1.8900000000000001,
-        0.0,
-        0.395
+        2.11,
+        0.145,
+        0.391
     ],
     "MOI": [
+        14000000.0,
         0.0014,
-        0.0014,
-        0.0014
+        14000000.0
     ]
 }
