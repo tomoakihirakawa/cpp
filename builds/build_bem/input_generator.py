@@ -1,3 +1,10 @@
+'''DOC_EXTRACT 2_0_0_input_generator
+
+# Input Generator
+
+This file is used to generate the input files for the BEM-MEL.
+
+'''
 import copy, platform, json, math, os, sys
 from math import pi
 from os.path import expanduser
@@ -218,19 +225,12 @@ match SimulationCase:
 
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Hadzic2005":
-        '''DOC_EXTRACT 2_0_0_validation_Hadzic2005
-
+        '''DOC_EXTRACT 2_1_0_validation_Hadzic2005        
+        This case is for the validation of the floating body motion analysis using the BEM-MEL.    
         <img src="schematic_Hadzic2005.png" width="400px" />
-
-        This case is for the validation of the floating body motion analysis using the BEM solver.
-        The floating body is a rectangular box with the dimension of 10 cm x 5 cm x 29 cm.
-        
-        The density of the floating body is 0.68x1000 kg/m^3.
-        The mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
+        The floating body is a rectangular box with the dimension of L10 cm x H5 cm x W29 cm.        
+        The density of the floating body is 0.68x1000 kg/m^3, therefore the mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
         The moment of inertia of the floating body is 14 kg cm^2.
-
-        The density of the water is 1000 kg/m^3.
-        The gravity is 9.81 m/s^2.
         '''
 
         objfolder = code_home_dir + "/cpp/obj/Hadzic2005"
@@ -250,7 +250,7 @@ match SimulationCase:
                      "COM": [0., 0., 0.]}
         float = {"name": "float",
                  "type": "RigidBody",
-                 "objfile": objfolder+"/float100.obj",
+                 "objfile": objfolder+"/float10.obj",
                  "output": "json",
                  "velocity": "floating"}
         
@@ -277,7 +277,18 @@ match SimulationCase:
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Kramer2021":
+        '''DOC_EXTRACT 2_1_1_validation_Kramer2021
+        
+        This case is for the validation of the floating body motion analysis using the BEM-MEL.
 
+        <img src="schematic_Kramer2021.png" width="400px" />
+
+        The floating body is a sphere with the diameter of 0.3 m.
+        The mass of the floating body is 7.056 kg.
+        The moment of inertia of the floating body is set to be almost infinite to ignore the effect of the rotation.
+
+        The sphere is dropped from the height of 0.03 m above the water surface.
+        '''
         start_t = max_dt = 0.02
         D = 300/1000
         H0 = D*0.1
