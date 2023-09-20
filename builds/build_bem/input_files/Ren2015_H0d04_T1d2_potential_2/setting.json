@@ -1,8 +1,8 @@
 {
-    "max_dt": 0.05,
+    "max_dt": 0.005,
     "end_time_step": 10000,
     "end_time": 9,
-    "output_directory": "/Users/tomoaki/BEM/Hadzic2005",
+    "output_directory": "/Users/tomoaki/BEM/Ren2015_H0d04_T1d2_potential_2",
     "input_files": [
         "tank.json",
         "wavemaker.json",

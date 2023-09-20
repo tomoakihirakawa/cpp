@@ -22,11 +22,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-<<<<<<< Updated upstream
-SimulationCase = "Ren2015"
-=======
-SimulationCase = "fish"
->>>>>>> Stashed changes
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
     case "fish":
@@ -120,7 +116,7 @@ match SimulationCase:
         start = 0.
 
         T = 1.2
-        H = 0.1
+        H = 0.04
         a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
         h = 0.4
 
@@ -222,11 +218,25 @@ match SimulationCase:
 
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Hadzic2005":
+        '''DOC_EXTRACT 2_0_0_validation_Hadzic2005
 
-        objfolder = code_home_dir + "/cpp/obj/2023Tamatu"
+        <img src="schematic_Hadzic2005.png" width="400px" />
+
+        This case is for the validation of the floating body motion analysis using the BEM solver.
+        The floating body is a rectangular box with the dimension of 10 cm x 5 cm x 29 cm.
+        
+        The density of the floating body is 0.68x1000 kg/m^3.
+        The mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
+        The moment of inertia of the floating body is 14 kg cm^2.
+
+        The density of the water is 1000 kg/m^3.
+        The gravity is 9.81 m/s^2.
+        '''
+
+        objfolder = code_home_dir + "/cpp/obj/Hadzic2005"
         water = {"name": "water", 
                  "type": "Fluid",
-                 "objfile": objfolder + "/water300_mod3.obj"}
+                 "objfile": objfolder + "/water1000meshlab.obj"}
         tank = {"name": "tank", 
                 "type": "RigidBody", 
                 "isFixed": True,
@@ -234,13 +244,13 @@ match SimulationCase:
         start_time = 0.
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
-                     "objfile": objfolder + "/wavemaker50.obj",
+                     "objfile": objfolder + "/wavemaker100.obj",
                      "velocity": ["Hadzic2005", start_time],
                      "acceleration": ["Hadzic2005", start_time],
-                     "COM": [-3.9, -0.25, 0]}
+                     "COM": [0., 0., 0.]}
         float = {"name": "float",
                  "type": "RigidBody",
-                 "objfile": objfolder+"/floatingbody50.obj",
+                 "objfile": objfolder+"/float100.obj",
                  "output": "json",
                  "velocity": "floating"}
         
@@ -248,16 +258,19 @@ match SimulationCase:
         W = 0.29
         H = 0.05
         A = L*W
-        d = 0.03
-        float["mass"] = m = rho * d * A
+        # d = 0.03 #喫水深さ draft depth (draught)
+        float["mass"] = m = 0.68*rho*0.05*0.1*0.29
+        d = m / (rho * A)
+        print("d", d)
         MOI = 14.*(0.01*0.01)  # original kg*m*m
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
-        float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
-        float["MOI"] = [MOI, MOI, MOI]
+        # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
+        float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
+        float["MOI"] = [10**10*MOI, MOI, 10**10*MOI]
         inputfiles = [tank, wavemaker, water, float]
 
-        setting = {"max_dt": 0.01,
+        setting = {"max_dt": 0.05,
                    "end_time_step": 10000,
                    "end_time": 9}
 

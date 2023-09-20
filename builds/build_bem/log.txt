@@ -1,4 +1,158 @@
 ----------
+Execution time: Wed Sep 20 14:49:41 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 12:25:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 12:25:35 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 12:00:44 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 11:53:12 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 11:22:00 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 11:15:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 09:40:32 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:39:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:37:24 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:36:48 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:36:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:34:08 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
+Execution time: Wed Sep 20 09:22:57 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
 <<<<<<< Updated upstream
 Execution time: Tue Sep 19 19:22:28 2023
 
@@ -4645,3 +4799,17 @@ No arguments provided. Write input JSON file directory.
 ----------
 =======
 >>>>>>> Stashed changes
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
