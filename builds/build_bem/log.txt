@@ -1,4 +1,26 @@
 ----------
+Execution time: Wed Sep 20 14:53:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
+Execution time: Wed Sep 20 14:53:33 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
 Execution time: Wed Sep 20 14:49:41 2023
 
 Machine Information:
@@ -4799,6 +4821,8 @@ No arguments provided. Write input JSON file directory.
 ----------
 =======
 >>>>>>> Stashed changes
+----------
+----------
 ----------
 ----------
 ----------

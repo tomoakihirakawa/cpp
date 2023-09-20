@@ -1,7 +1,7 @@
 {
     "name": "float",
     "type": "RigidBody",
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Hadzic2005/float100.obj",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Hadzic2005/float10.obj",
     "output": "json",
     "velocity": "floating",
     "mass": 0.986,

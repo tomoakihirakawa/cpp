@@ -95,6 +95,7 @@
     - [⛵ ファイルのダウンロード](./builds/build_bem/README.md#⛵-ファイルのダウンロード)
     - [⛵ 入力ファイルの生成．](./builds/build_bem/README.md#⛵-入力ファイルの生成．)
     - [⛵ プログラムのコンパイルと実行](./builds/build_bem/README.md#⛵-プログラムのコンパイルと実行)
+- [🐋 Input Generator](./builds/build_bem/README.md#🐋-Input-Generator)
 - [🐋 Examples](./builds/build_bem/README.md#🐋-Examples)
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 
