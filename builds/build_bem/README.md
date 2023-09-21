@@ -1075,7 +1075,7 @@ The density of the floating body is 0.68x1000 kg/m^3, therefore the mass of the 
 The moment of inertia of the floating body is 14 kg cm^2.
 
 
-[./input_generator.py#L228](./input_generator.py#L228)
+[./input_generator.py#L230](./input_generator.py#L230)
 
 
 ---
@@ -1090,7 +1090,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 The sphere is dropped from the height of 0.03 m above the water surface.
 
 
-[./input_generator.py#L280](./input_generator.py#L280)
+[./input_generator.py#L290](./input_generator.py#L290)
 
 
 ---

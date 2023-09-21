@@ -40,8 +40,18 @@
 # ./remesh5 ${path}cuboid.obj ${path} cuboid 100 &
 # ./remesh5 ${path}tank.obj ${path} tank 100
 # ---------------------------------------------------------------------------- #
-path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005/'
-./remesh ${path}water.obj ${path} water 1000 
+# path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005/'
+# ./remesh ${path}water.obj ${path} water 1000 
 # ./remesh ${path}wavemaker.obj ${path} wavemaker 500 
 # ./remesh ${path}tank.obj ${path} tank 100 
-./remesh ${path}float.obj ${path} float 100 
+# ./remesh ${path}float.obj ${path} float 100 
+# ---------------------------------------------------------------------------- #
+path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005_24floats/'
+# from 1 to 24. from float1 to float24
+for i in {1..24}
+do
+    ./remesh ${path}float${i}.obj ${path} float${i}"_" 10
+done
+./remesh ${path}water.obj ${path} water 1000
+./remesh ${path}wavemaker.obj ${path} wavemaker 500 
+./remesh ${path}tank.obj ${path} tank 100

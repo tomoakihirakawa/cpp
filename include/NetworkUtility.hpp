@@ -270,9 +270,14 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p) {
       return {0., 0., 0.};
 };
 
-void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.05 * DistorsionMeasureWeightedSmoothingVector(q); });
+void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+   // gradually approching to given a
+   const double aIN = 0.05;
+   for (auto i = 0; i < iteration; ++i) {
+      double a = aIN * ((i + 1) / (double)(iteration));
+      for (const auto &p : ps)
+         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * DistorsionMeasureWeightedSmoothingVector(q); });
+   }
 };
 
 /* ------------------------------------------------------ */
@@ -308,13 +313,13 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
       return {0., 0., 0.};
 };
 
-void AreaWeightedSmoothingPreserveShape(const auto &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) {
-         SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.1 * AreaWeightedSmoothingVector(q); });
-         // for (auto &q : Flatten(BFS(p, 2)))
-         //    q->setX(q->X);
-      };
+void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+   const double aIN = 0.1;
+   for (auto i = 0; i < iteration; ++i) {
+      double a = aIN * ((i + 1) / (double)(iteration));
+      for (const auto &p : ps)
+         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * AreaWeightedSmoothingVector(q); });
+   }
 };
 /* ------------------------------------------------------ */
 
@@ -338,14 +343,18 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p) {
       return {0., 0., 0.};
 };
 
-void LaplacianSmoothingPreserveShape(const auto &ps, const int times = 1) {
-   for (auto i = 0; i < times; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, [](const networkPoint *q) -> Tddd { return 0.1 * ArithmeticWeightedSmoothingVector(q); });
+void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+   const double aIN = 0.1;
+   for (auto i = 0; i < iteration; ++i) {
+      double a = aIN * ((i + 1) / (double)(iteration));
+      for (const auto &p : ps)
+         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * ArithmeticWeightedSmoothingVector(q); });
+   }
 };
 
 /* ------------------------------------------------------ */
 
-void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int times = 0) {
+void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int iteration = 0) {
    try {
       auto [target_of_max_normal_diffD, acceptable_normal_change_by_flipD] = limit_Dirichlet;
       auto [target_of_max_normal_diffN, acceptable_normal_change_by_flipN] = limit_Neumann;
@@ -359,7 +368,7 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
       for (const auto &l : RandomSample(V)) {
          auto [p0, p1] = l->getPoints();
          if (!l->CORNER) {
-            if (force && (times == 0 || count < times)) {
+            if (force && (iteration == 0 || count < iteration)) {
                // p0とp1が角の場合，6という数にこだわる必要がない．
                // つまり6がトポロジカルにベターではない．
                if (l->Dirichlet) {
@@ -387,12 +396,12 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
    };
 };
 
-void flipIf(Network &water, const Tdd &limit, bool force = false, int times = 0) {
-   flipIf(water, limit, limit, force, times);
+void flipIf(Network &water, const Tdd &limit, bool force = false, int iteration = 0) {
+   flipIf(water, limit, limit, force, iteration);
 };
 
-void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int times = 0) {
-   flipIf(water, limit_angle, force, times);
+void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false, int iteration = 0) {
+   flipIf(water, limit_angle, force, iteration);
 };
 /* ------------------------------------------------------ */
 // void LaplacianSmoothingIfFlat(netPp p) {

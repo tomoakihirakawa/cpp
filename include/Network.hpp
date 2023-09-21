@@ -3647,15 +3647,23 @@ class Network : public CoordinateBounds {
    /* ------------------------------------------------------ */
    void RigidBodyUpdatePoints() {
       // center_of_massとquaternionに従って計算
-      // Tddd trans = this->center_of_mass - this->ICOM;
-      // for (const auto &p : this->getPoints())
-      // 	p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) - (p->initialX - this->ICOM) + trans + p->initialX);
-      // this->setGeometricProperties();
-      //
-      // 上と同じ
+      Tddd trans = this->center_of_mass - this->ICOM;
       for (const auto &p : this->getPoints())
-         p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) + this->COM);
+         p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) - (p->initialX - this->ICOM) + trans + p->initialX);
       this->setGeometricProperties();
+      //
+      // Tddd translation = this->COM - this->ICOM;
+      // for (const auto &p : this->getPoints()) {
+      //    auto initial_relative_vector = p->initialX - this->ICOM;
+      //    auto rotated_relative_vector = this->quaternion.Rv(initial_relative_vector);
+      //    auto rotation = rotated_relative_vector - initial_relative_vector;
+      //    p->setXSingle(rotation + translation + p->initialX);
+      // }
+      // this->setGeometricProperties();
+      // 上と同じ
+      // for (const auto &p : this->getPoints())
+      //    p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) + this->COM);
+      // this->setGeometricProperties();
    };
    /* ------------------------------------------------------ */
    T6d getInertiaGC()  // Global coordinate
@@ -3667,6 +3675,7 @@ class Network : public CoordinateBounds {
       return {mx, my, mz, Ix, Iy, Iz};
    };
    T6d getInertiaBC() { return this->inertia; };  // Body coordinate
+   Tddd getMass3D() { return {std::get<0>(this->inertia), std::get<1>(this->inertia), std::get<2>(this->inertia)}; };
    /* ------------------------------------------------------ */
    Tddd velocityRigidBody(const Tddd &X) const { return velocityTranslational() + Cross(velocityRotational(), X - this->COM); };
    Tddd accelRigidBody(const Tddd &X) const { return accelTranslational() + Cross(accelRotational(), X - this->COM); };
@@ -4084,9 +4093,16 @@ class Network : public CoordinateBounds {
          for (auto &p : this->getPoints())
             p->radius = stod(json.at("radius"))[0];
 
-      if (json.find("mass"))
-         std::get<2>(this->inertia) = std::get<1>(this->inertia) = std::get<0>(this->inertia) = this->mass = stod(json.at("mass"))[0];
-
+      if (json.find("mass")) {
+         if (json.at("mass").size() == 1) {
+            std::get<2>(this->inertia) = std::get<1>(this->inertia) = std::get<0>(this->inertia) = this->mass = stod(json.at("mass"))[0];
+         }
+         if (json.at("mass").size() == 3) {
+            std::get<0>(this->inertia) = stod(json.at("mass"))[0];
+            std::get<1>(this->inertia) = stod(json.at("mass"))[1];
+            std::get<2>(this->inertia) = stod(json.at("mass"))[2];
+         }
+      }
       if (json.find("MOI")) {
          std::get<3>(this->inertia) = stod(json.at("MOI"))[0];
          std::get<4>(this->inertia) = stod(json.at("MOI"))[1];
