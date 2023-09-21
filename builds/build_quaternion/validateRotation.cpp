@@ -2,13 +2,15 @@
 #include "basic.hpp"
 #include "vtkWriter.hpp"
 
-/*DOC_EXTRACT quaternion
+/*DOC_EXTRACT 0_0_0_quaternion
 
- # クォータニオンによる回転と平行移動
+# クォータニオンを使った物体の３次元回転
+
+## クォータニオンを使ったシンプルな回転
 
 クォータニオンは，3D回転を効率的に計算するために便利な表現．
 
-\insert{struct_Quaternion}
+\insert{0_0_0_Quaternion}
 
  * 以下のコードは、3Dオブジェクトの回転と平行移動を実行します．
  * translate関数：ネットワークの全点を指定した量だけ平行移動します．
@@ -45,7 +47,8 @@ int main() {
       translate(net, -mean);
       net->resetInitialX();
       int l = 0;
-      for (const auto& center : std::vector<Tddd>{{0, 0, 0}, {0.1, 0., 0.}})
+      for (const auto& center : std::vector<Tddd>{{0, 0, 0}, {0.1, 0., 0.}}) {
+         // 各軸に対して回転させる
          for (const auto& axis : std::vector<Tddd>{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}) {
             for (auto i = 0; i < 50; ++i) {
                auto Q = Quaternion(axis, 2 * M_PI / 50. * i);
@@ -60,6 +63,7 @@ int main() {
                vtp.write(ofs);
             }
          }
+      }
    }
 
    if (true) {

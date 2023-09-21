@@ -77,7 +77,11 @@
 ## [build_quaternion](./builds/build_quaternion/README.md)
 
 - [Contents](./builds/build_quaternion/README.md#Contents)
-- [🐋 クォータニオンによる回転と平行移動](./builds/build_quaternion/README.md#🐋-クォータニオンによる回転と平行移動)
+- [🐋 クォータニオンを使った物体の３次元回転](./builds/build_quaternion/README.md#🐋-クォータニオンを使った物体の３次元回転)
+    - [⛵ クォータニオンを使ったシンプルな回転](./builds/build_quaternion/README.md#⛵-クォータニオンを使ったシンプルな回転)
+    - [⛵ クォータニオンの時間微分，角速度](./builds/build_quaternion/README.md#⛵-クォータニオンの時間微分，角速度)
+    - [⛵ ⛵ クォータニオンの微分](./builds/build_quaternion/README.md#⛵-⛵-クォータニオンの微分)
+    - [⛵ ⛵ 角加速度からクォータニオンの微分を計算](./builds/build_quaternion/README.md#⛵-⛵-角加速度からクォータニオンの微分を計算)
 ## [build_bem](./builds/build_bem/README.md)
 
 - [Contents](./builds/build_bem/README.md#Contents)

@@ -888,12 +888,12 @@ struct BEM_BVP {
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
             auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
-            auto [mx, my, mz, Ix, Iy, Iz] = net->getInertiaGC();
-            auto F_ext = _GRAVITY3_ * net->mass;
+            auto [_, __, ___, Ix, Iy, Iz] = net->getInertiaGC();
+            auto F_ext = _GRAVITY3_ * net->getMass3D();
             auto F_hydro = tmp.surfaceIntegralOfPressure();
             auto F = F_hydro + F_ext;
             auto T_hydro = tmp.getFroudeKrylovTorque(net->COM);
-            auto [a0, a1, a2] = F / net->mass;
+            auto [a0, a1, a2] = F / net->getMass3D();
             auto [a3, a4, a5] = T_hydro / Tddd{Ix, Iy, Iz};
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
             // write out details of the body

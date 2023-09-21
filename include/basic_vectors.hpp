@@ -1342,7 +1342,7 @@ std::vector<T> Abs(std::vector<T> vec) {
 // }
 /* ------------------------------------------------------ */
 // 2021/06/14
-/*DOC_EXTRACT struct_Quaternion
+/*DOC_EXTRACT 0_0_0_Quaternion
 
 ある回転軸$v$に対して，角度$\theta$だけ回転するクォータニオン$q$は以下のように表される．
 
@@ -1394,6 +1394,7 @@ struct Quaternion {
                                 d(std::get<3>(qIN)),
                                 v({std::get<1>(qIN), std::get<2>(qIN), std::get<3>(qIN)}),
                                 q(qIN){};
+
    Quaternion(const Tddd &axis, const double angle) : v(Normalize(axis) * sin(angle / 2.)),
                                                       a(cos(angle / 2.)),
                                                       b(std::get<0>(v)),
@@ -1402,6 +1403,16 @@ struct Quaternion {
                                                       q({a, b, c, d}){
                                                           // 空間回転　q = cos(theta/2) + n*sin(theta/2)
                                                       };
+
+   /* -------------------------------------------------------------------------- */
+   void normalize() {
+      this->q = Normalize(this->q);
+      this->a = std::get<0>(this->q);
+      this->b = std::get<1>(this->q);
+      this->c = std::get<2>(this->q);
+      this->d = std::get<3>(this->q);
+      this->v = {b, c, d};
+   };
    /* ------------------------------------------------------ */
    T3Tddd Rv() const {
       //%固定した座標系(global座標)における．位置ベクトルの回転をするために使う．
@@ -1483,9 +1494,9 @@ struct Quaternion {
               {w2, w1, -w0, 0}}
 
       inverse[W] = {{0, w0, w1, w2},
-                              {-w0, 0, -w2, w1},
-                              {-w1, w2, 0, -w0},
-                              {-w2, -w1, w0,0}}/(w0^2 + w1^2 + w2^2)
+                    {-w0, 0, -w2, w1},
+                    {-w1, w2, 0, -w0},
+                    {-w2, -w1, w0,0}}/(w0^2 + w1^2 + w2^2)
                               = -W/(w0^2 + w1^2 + w2^2)
       */
 
@@ -1523,6 +1534,77 @@ Quaternion operator*(const Quaternion &A, const Quaternion &B) {
                          a1 * c2 - b1 * d2 + c1 * a2 + d1 * b2,
                          a1 * d2 + b1 * c2 - c1 * b2 + d1 * a2});
 };
+
+// 角速度からクォータニオンの微分を計算
+/*DOC_EXTRACT 0_1_0_Quaternion
+
+## クォータニオンの微分
+
+クォータニオンは姿勢を表し，クォータニオンをかけることで姿勢を変化させることができる．
+
+上のoperator*に定義されるように
+クォータニオン同士の積$`{\boldsymbol q}_1 * {\boldsymbol q}_2`$は次のように計算される．
+
+```math
+\begin{aligned}
+{\boldsymbol q}_1 * {\boldsymbol q}_2 =
+\begin{bmatrix}
+a1 * a2 + -b1 * b2 + -c1 * c2 + -d1 * d2\\
+a1 * b2 + b1 * a2 + c1 * d2 - d1 * c2\\
+a1 * c2 - b1 * d2 + c1 * a2 + d1 * b2\\
+a1 * d2 + b1 * c2 - c1 * b2 + d1 * a2
+\end{bmatrix}
+\end{aligned}
+```
+
+## 角加速度からクォータニオンの微分を計算
+
+初期値問題を解くための数値計算は，$`x_{\text next} = x + \frac{dx}{dt} dt`$
+という形に対して考えられているため，これに合わせるために，クォータニオンの微分を考える必要がある．
+
+次の計算の$`\lim_{dt \to 0}`$を取ると，角加速度からクォータニオンの微分を計算できる．
+
+```cpp
+auto nextQ = Quaternion({1., 0., 0.}, w[0] * dt) * Quaternion({0., 1., 0.}, w[1] * dt) * Quaternion({0., 0., 1.}, w[2] * dt);
+return ((nextQ * q)() - q()) / dt;
+```
+
+結果として以下が得られる．
+
+```math
+\begin{aligned}
+\begin{bmatrix}
+q0\\
+q1\\
+q2\\
+q3
+\end{bmatrix}
+=
+\begin{bmatrix}
+-q1 * w0 - q2 * w1 - q3 * w2\\
+q0 * w0 + q3 * w1 - q2 * w2\\
+-q3 * w0 + q0 * w1 + q1 * w2\\
+q2 * w0 - q1 * w1 + q0 * w2
+\end{bmatrix}
+\end{aligned}
+```
+
+これを使えば，$`q_{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
+
+*/
+Quaternion AngularVelocityToQuaternion(const Tddd &w /*angular velocity*/) {
+   return Quaternion({1., 0., 0.}, w[0]) * Quaternion({0., 1., 0.}, w[1]) * Quaternion({0., 0., 1.}, w[2]);
+};
+
+T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/, const Quaternion &q) {
+   auto [q0, q1, q2, q3] = q();
+   auto [w0, w1, w2] = w;
+   return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
+           0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
+           0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
+           0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
+};
+
 Quaternion &operator*=(Quaternion &A, const Quaternion &B) {
    return A = (A * B);  // ok
 };

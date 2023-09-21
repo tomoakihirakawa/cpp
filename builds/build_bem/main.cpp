@@ -518,7 +518,7 @@ int main(int argc, char **argv) {
                jsonout.push(net->getName() + "_COM", net->COM);
                jsonout.push(net->getName() + "_area", tmp.area);
                jsonout.push(net->getName() + "_EK", Dot(net->velocity, net->velocity) * net->mass / 2.);
-               jsonout.push(net->getName() + "_EP", net->mass * _GRAVITY_ * (net->COM[2] - net->ICOM[2]));
+               jsonout.push(net->getName() + "_EP", net->getMass3D() * _GRAVITY3_ * (net->COM[2] - net->ICOM[2]));
             }
          }
          std::ofstream os(output_directory + "/result.json");

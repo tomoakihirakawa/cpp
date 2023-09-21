@@ -29,7 +29,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "Ren2015"
 
 match SimulationCase:
     case "fish":
@@ -187,7 +187,7 @@ match SimulationCase:
 
             # Initialize the object files
             water["objfile"] = f"{objfolder}/water400.obj"
-            wavemaker["objfile"] = f"{objfolder}/wavemaker200.obj"
+            wavemaker["objfile"] = f"{objfolder}/wavemaker100.obj"
             tank["objfile"] = f"{objfolder}/tank100.obj"
             float["objfile"] = f"{objfolder}/float50.obj"
 
@@ -213,7 +213,8 @@ match SimulationCase:
         else:
             float["COM"] = [2., W/2, z_surface]
             objfolder = code_home_dir + "/cpp/obj/Ren2015"
-            water["objfile"] = objfolder + "/water400meshlab.obj"
+            # water["objfile"] = objfolder + "/water400meshlab.obj"
+            water["objfile"] = objfolder + "/water400mod.obj"
             wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
             tank["objfile"] = objfolder + "/tank100.obj"
             float["objfile"] = objfolder+"/float50.obj"
@@ -225,6 +226,7 @@ match SimulationCase:
 
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Hadzic2005":
+        
         '''DOC_EXTRACT 2_1_0_validation_Hadzic2005        
         This case is for the validation of the floating body motion analysis using the BEM-MEL.    
         <img src="schematic_Hadzic2005.png" width="400px" />
@@ -233,10 +235,13 @@ match SimulationCase:
         The moment of inertia of the floating body is 14 kg cm^2.
         '''
 
-        objfolder = code_home_dir + "/cpp/obj/Hadzic2005"
+        multiple_case = True
+
+        objfolder = code_home_dir + "/cpp/obj/Hadzic2005_24floats" if multiple_case else "/cpp/obj/Hadzic2005"
+
         water = {"name": "water", 
                  "type": "Fluid",
-                 "objfile": objfolder + "/water1000meshlab.obj"}
+                 "objfile": objfolder + "/water1000meshlab.obj" if multiple_case else "/water1000meshlab2.obj"}
         tank = {"name": "tank", 
                 "type": "RigidBody", 
                 "isFixed": True,
@@ -248,6 +253,7 @@ match SimulationCase:
                      "velocity": ["Hadzic2005", start_time],
                      "acceleration": ["Hadzic2005", start_time],
                      "COM": [0., 0., 0.]}
+
         float = {"name": "float",
                  "type": "RigidBody",
                  "objfile": objfolder+"/float10.obj",
@@ -274,7 +280,11 @@ match SimulationCase:
                    "end_time_step": 10000,
                    "end_time": 9}
 
-        id = SimulationCase
+        if multiple_case:
+            id = SimulationCase + "_multiple"
+        else:
+            id = SimulationCase
+
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Kramer2021":
         '''DOC_EXTRACT 2_1_1_validation_Kramer2021
