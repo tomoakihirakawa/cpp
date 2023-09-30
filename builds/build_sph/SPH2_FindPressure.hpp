@@ -6,7 +6,7 @@
 
 /*DOC_EXTRACT 0_2_1_SPH
 
-## ポアソン方程式 $`\nabla^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right) = b`$
+## ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right)=b`$
 
 ### ポアソン方程式
 
