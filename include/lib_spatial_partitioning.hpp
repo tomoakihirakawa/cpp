@@ -111,11 +111,21 @@ struct BaseBuckets {
    // unordered_setをvectorにコピー
    void setVector() {
       this->buckets_vector.clear();
-      this->buckets_vector.resize(this->xsize, std::vector</*y*/ std::vector</*z*/ std::vector<T>>>(this->ysize, std::vector</*z*/ std::vector<T>>(this->zsize, std::vector<T>{})));
-      for (ST i = 0; i < this->xsize; ++i)
-         for (ST j = 0; j < this->ysize; ++j)
-            for (ST k = 0; k < this->zsize; ++k)
-               this->buckets_vector[i][j][k].assign(this->buckets[i][j][k].begin(), this->buckets[i][j][k].end());
+      this->buckets_vector.resize(this->xsize, std::vector<std::vector<std::vector<T>>>(this->ysize, std::vector<std::vector<T>>(this->zsize)));
+
+      // Iterate through the 3D array and populate the 3D vector
+      ST i, j, k;
+      for (i = 0; i < this->xsize; ++i) {
+         for (j = 0; j < this->ysize; ++j) {
+            for (k = 0; k < this->zsize; ++k) {
+               auto &bucket = this->buckets[i][j][k];
+               auto &target_vector = this->buckets_vector[i][j][k];
+               target_vector.reserve(bucket.size());
+               target_vector.assign(bucket.begin(), bucket.end());
+            }
+         }
+      }
+
       this->vector_is_set = true;
    };
    //@ -------------------------------------------------------------------------- */

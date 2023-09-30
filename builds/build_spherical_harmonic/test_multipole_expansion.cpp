@@ -22,7 +22,7 @@ G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
 近似を$`G_{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
 
 ```math
-G_{\rm apx}(n, {\bf x},{\bf a},{\bf c}) \approx \sum_{k=0}^n \sum_{m=-k}^k \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})={\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+G_{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum_{k=0}^n \sum_{m=-k}^k \left( \frac{r_{near}}{r_{far}} \right)^k \frac{1}{r_{far}} Y(k, -m, a_{near}, b_{near}) Y(k, m, a_{far}, b_{far})={\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 ```
 
 ここで，$`(r_{near},a_{near},b_{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
@@ -83,25 +83,6 @@ std::array<std::array<double, 3>, 3> gradSphericalCoordinates(const std::array<d
            std::array<double, 3>{-y / (R * R), x / (R * R), 0.}};
 };
 
-/*DOC_EXTRACT spherical_harmonics
-
-### $`G_{\rm apx}`$の精度
-
-$`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
-
-|      | **n=4** | **n=5** | **n=6** | **n=7** | **n=8** |
-|:----:|:---:|:---:|:---:|:---:|:---:|
-| **x = (0,0,0), a = (5,5,5)**    | ![n4_A_5_5_5](./output_n4_A_5_5_5.png)       | ![n5_A_5_5_5](./output_n5_A_5_5_5.png)        | ![n6_A_5_5_5](./output_n6_A_5_5_5.png)        | ![n7_A_5_5_5](./output_n7_A_5_5_5.png)       | ![n8_A_5_5_5](./output_n8_A_5_5_5.png)       |
-| **x = (0,0,0), a = (10,10,10)** | ![n4_A_10_10_10](./output_n4_A_10_10_10.png) | ![n5_A_10_10_10](./output_n5_A_10_10_10.png)  | ![n6_A_10_10_10](./output_n6_A_10_10_10.png)  | ![n7_A_10_10_10](./output_n7_A_10_10_10.png) | ![n8_A_10_10_10](./output_n8_A_10_10_10.png) |
-
-この結果からわかるように，Green関数の実際の値は，$`{\bf c}`$によって変わらないが，$`G_{\rm apx}`$の値は$`{\bf c}`$によって変化し，
-$`{\bf c}`$が$`{\bf x}`$に近いところでは，$`G_{\rm apx}`$の値は$`G`$の値に近づく．
-
-$`a_{near},b_{near}`$は，より小さければ精度が良く，
-また，$`a_{far},b_{far}`$は，より大きければ精度が良くなる．
-
-*/
-
 // Compute the factorial of a_near given number
 constexpr int factorial(const int n) {
    if (n < 0)
@@ -144,6 +125,21 @@ double Gapx(unsigned p,
 }
 
 /*DOC_EXTRACT spherical_harmonics
+
+### $`G_{\rm apx}`$の精度
+
+$`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
+
+|      | **n=4** | **n=5** | **n=6** | **n=7** | **n=8** |
+|:----:|:---:|:---:|:---:|:---:|:---:|
+| **x = (0,0,0), a = (5,5,5)**    | ![n4_A_5_5_5](./output_n4_A_5_5_5.png)       | ![n5_A_5_5_5](./output_n5_A_5_5_5.png)        | ![n6_A_5_5_5](./output_n6_A_5_5_5.png)        | ![n7_A_5_5_5](./output_n7_A_5_5_5.png)       | ![n8_A_5_5_5](./output_n8_A_5_5_5.png)       |
+| **x = (0,0,0), a = (10,10,10)** | ![n4_A_10_10_10](./output_n4_A_10_10_10.png) | ![n5_A_10_10_10](./output_n5_A_10_10_10.png)  | ![n6_A_10_10_10](./output_n6_A_10_10_10.png)  | ![n7_A_10_10_10](./output_n7_A_10_10_10.png) | ![n8_A_10_10_10](./output_n8_A_10_10_10.png) |
+
+この結果からわかるように，Green関数の実際の値は，$`{\bf c}`$によって変わらないが，$`G_{\rm apx}`$の値は$`{\bf c}`$によって変化し，
+$`{\bf c}`$が$`{\bf x}`$に近いところでは，$`G_{\rm apx}`$の値は$`G`$の値に近づく．
+
+$`a_{near},b_{near}`$は，より小さければ精度が良く，
+また，$`a_{far},b_{far}`$は，より大きければ精度が良くなる．
 
 ### $`G_{\rm apx}`$の勾配$`\nabla G_{\rm apx}`$の精度
 

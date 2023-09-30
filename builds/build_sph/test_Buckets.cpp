@@ -1,6 +1,7 @@
-/*DOC_EXTRACT space_partitioning
 
-## Bucketを用いた粒子探索のテスト
+/*DOC_EXTRACT 3_0_0_space_partitioning
+
+# Bucketを用いた粒子探索のテスト
 
 Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が必要となる．
 このコードでは，Bucketを用いた粒子探索のテストを行う．

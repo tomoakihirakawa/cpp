@@ -1,34 +1,35 @@
-/*DOC_EXTRACT SPH
+/*DOC_EXTRACT 1_0_0_SPH
 
 # 実行方法
 
 ファイルをダウンロードして，`build_sph`ディレクトリに移動．
+⚠️上書きされるので注意．
 
 ```sh
-$ git clone https://github.com/tomoakihirakawa/cpp.git
-$ cd ./cpp/builds/build_sph
+git clone https://github.com/tomoakihirakawa/cpp.git
+cd ./cpp/builds/build_sph
 ```
 
 `clean`でCMake関連のファイルを削除して（ゴミがあるかもしれないので），
 `cmake`で`Makefile`を生成して，`make`でコンパイルする．
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
+make
 ```
 
 次に，入力ファイルを生成．
 
 ```sh
-$ python3 input_generator.py
+python3 input_generator.py
 ```
 
 例えば，`./input_files/static_pressure_PS0d0125_CSML2d4_RK1`が生成される．
 入力ファイルを指定して実行．
 
 ```sh
-$ ./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
+./main ./input_files/static_pressure_PS0d0125_CSML2d4_RK1
 ```
 
 */
@@ -76,17 +77,17 @@ double Distance(const T3Tddd &X012, const Tddd &X) {
    auto itx = IntersectionSphereTriangle(X, 1E+20, X012);
    return Norm(itx.X - X);
 };
+
 /* -------------------------------------------------------------------------- */
-/**
- * ./main bunny.obj 7 1 3
- */
-/* -------------------------------------------------------------------------- */
+
 JSONoutput jsonout;
 
 int main(int argc, char **argv) {
    /* -------------------------------------------------------------------------- */
    /*                           Set up logging to file                           */
    /* -------------------------------------------------------------------------- */
+   if (!initializeLogFile("log_" + getUserName() + ".txt", argc, argv))
+      return 1;
    if (!initializeLogFile("log.txt", argc, argv))
       return 1;
    /* -------------------------------------------------------------------------- */
@@ -97,8 +98,8 @@ int main(int argc, char **argv) {
    input_directory += "/";
    //
    std::string id = "";
-   if (argc >= 3)
-      id = argv[2];  // input directory
+   // if (argc >= 3)
+   //    id = argv[2];  // input directory
    // b! -------------------------------------------------------------------------- */
    std::cout << "input_directory : " << input_directory << std::endl;
    std::string input_main_file = "setting.json";
@@ -140,11 +141,11 @@ int main(int argc, char **argv) {
       }
    }
    // b! -------------------------------------------------------------------------- */
-   Timer timer;
+   TimeWatch watch;
+
    int minDepth = 1, maxDepth = 5;
    std::cout << "minDepth = " << minDepth << std::endl;
    std::cout << "maxDepth = " << maxDepth << std::endl;
-   std::cout << "timer : " << timer() << std::endl;
    /* ------------------------------------------------------------------------ */
    std::vector<std::tuple<Network *, Network *, JSON>> all_objects;
    std::vector<std::tuple<Network *, Network *, JSON>> RigidBodies;
@@ -233,7 +234,6 @@ int main(int argc, char **argv) {
                   p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   p->isFluid = object->isFluid;
-                  p->isAir = false;
                   p->isNeumannSurface = false;
                   break;
                }
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
       particlesNet->makeBucketPoints(particle_spacing);
       poly->makeBucketFaces(particle_spacing);
       //
-      std::cout << "timer : " << timer() << std::endl;
+      std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
       if (particlesNet->isRigidBody)
          for (const auto &p : particlesNet->getPoints()) {
@@ -282,19 +282,17 @@ int main(int argc, char **argv) {
    // b# -------------------------------------------------------------------------- */
    // b# -------------------------------------------------------------------------- */
    // b# -------------------------------------------------------------------------- */
-
-   std::cout << "timer : " << timer() << ", networkPointの生成" << std::endl;
    for (const auto &[WaveTank, _, J] : all_objects) {
       std::cout << "WaveTank->getPoints().size()=" << WaveTank->getPoints().size() << std::endl;
       {
          auto ofs = std::ofstream(output_directory + J.at("name")[0] + ".vtp");
-         vtkPolygonWrite(ofs, ToX(WaveTank->getPoints()));
+         vtkPolygonWrite(ofs, ToX(WaveTank->getFaces()));
          ofs.close();
       }
       WaveTank->setGeometricProperties();
    }
    /* -------------------------------------------------------------------------- */
-   double real_time = 0.;
+   double simulation_time = 0.;
    // PVDWriter pvdWallSPH(output_directory + "Wall.pvd");q
    int time_step = 0, k = 0, i = 0, j = 0, l = 0;
 
@@ -305,12 +303,23 @@ int main(int argc, char **argv) {
       ACTIVES.clear();
       for (const auto &PART_POLY_JSON : ALL) {
          auto [particlesNet, poly, J] = PART_POLY_JSON;
-         if (J.find("inactivate")) {
-            if (J.at("inactivate").size() != 2) throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "inactivate size is not 2");
-            double start = stod(J.at("inactivate")[0]);
-            double end = stod(J.at("inactivate")[1]);
-            if (!Between(real_time, {start, end}))
-               ACTIVES.emplace_back(PART_POLY_JSON);
+         if (J.find("inactivate") || J.find("inactive")) {
+            if (J.find("inactivate")) {
+               if (J.at("inactivate").size() != 2)
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "inactivate size is not 2");
+               double start = stod(J.at("inactivate")[0]);
+               double end = stod(J.at("inactivate")[1]);
+               if (!Between(simulation_time, {start, end}))
+                  ACTIVES.emplace_back(PART_POLY_JSON);
+            }
+            if (J.find("inactive")) {
+               if (J.find("inactive") && J.at("inactive").size() != 2)
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "inactive size is not 2");
+               double start = stod(J.at("inactive")[0]);
+               double end = stod(J.at("inactive")[1]);
+               if (!Between(simulation_time, {start, end}))
+                  ACTIVES.emplace_back(PART_POLY_JSON);
+            }
          } else
             ACTIVES.emplace_back(PART_POLY_JSON);
       }
@@ -325,38 +334,43 @@ int main(int argc, char **argv) {
       for (const auto &[particlesNet, _, __] : all_objects)
          _ALL_NET_.emplace(particlesNet);
 
-      if (end_time < real_time)
+      if (end_time < simulation_time)
          break;
 
-      int N = 10000000;
-      if (time_step == N) {
-         for (const auto &[object, _, __] : all_objects)
-            for (const auto &p : object->getPoints())
-               p->mu_SPH = _WATER_MU_10deg_;
-      } else if (time_step < N) {
-         for (const auto &[object, _, __] : all_objects)
-            for (const auto &p : object->getPoints())
-               p->mu_SPH = _WATER_MU_10deg_ * 1000.;
-      }
+      // int N = 10000000;
+      // if (time_step == N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_;
+      // } else if (time_step < N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_ * 10.;
+      // }
 
-      // developByEISPH(Fluid, RigidBodies, real_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
+      // developByEISPH(Fluid, RigidBodies, simulation_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
                      active_RigidBodies,
-                     real_time,
+                     simulation_time,
                      CSML,
                      particle_spacing,
                      time_step < 10 ? max_dt / 100 : max_dt,
                      RK_order);
 
-      std::cout << "real_time = " << real_time << std::endl;
+      std::cout << "simulation_time = " << simulation_time << std::endl;
 
       // freeze particle a while
       for (const auto &p : Fluid->getPoints()) {
-         p->vec_time_SPH.emplace_back(real_time);
+         p->vec_time_SPH.emplace_back(simulation_time);
          p->vec_U_SPH.emplace_back(p->U_SPH);
       }
 
-      // 出力
+      /*DOC_EXTRACT 0_3_0_SPH
+
+      ## 出力
+
+      */
+
       if (time_step % 5 == 0) {
          auto Output = [&](Network *Fluid, const std::string &name, const int i) {
             if (Fluid != nullptr) {
@@ -369,20 +383,20 @@ int main(int argc, char **argv) {
 
                if (net2PVD.find(Fluid) != net2PVD.end()) {
                   auto pvd = net2PVD[Fluid];
-                  pvd->push("./" + name + std::to_string(i) + ".vtp", real_time);
+                  pvd->push("./" + name + std::to_string(i) + ".vtp", simulation_time);
                   pvd->output();
                } else {
                   if (net2PVD.find(nullptr) == net2PVD.end())
                      net2PVD.insert({nullptr, new PVDWriter(output_directory + "other.pvd")});
 
-                  net2PVD[nullptr]->push("./" + name + std::to_string(i) + ".vtp", real_time);
+                  net2PVD[nullptr]->push("./" + name + std::to_string(i) + ".vtp", simulation_time);
                   net2PVD[nullptr]->output();
                }
             }
          };
 
          Output(Fluid, "FluidSPH", i);
-         Output(Fluid->surfaceNet, "surdaceNet", i);
+         Output(Fluid->surfaceNet, "surfaceNet", i);
 
          i++;
 
@@ -391,9 +405,10 @@ int main(int argc, char **argv) {
          if (time_step % 5 == 0) {
             vtkPolygonWriter<networkPoint *> vtp;
             for (const auto &p : WaveTank->getPoints())
-               if (p->isCaptured) {
-                  if ((count++) % 500 == 0)
-                     a_wall_p.emplace_back(p);
+               if (p->isCaptured)
+               // if (p->isChecked)
+               {
+                  a_wall_p.emplace_back(p);
                   vtp.add(p);
                }
             setDataOmitted(vtp, WaveTank);
@@ -401,10 +416,12 @@ int main(int argc, char **argv) {
             vtp.write(ofs);
             ofs.close();
             //
-            net2PVD[WaveTank]->push("./WaveTankSPH" + std::to_string(j) + ".vtp", real_time);
+            net2PVD[WaveTank]->push("./WaveTankSPH" + std::to_string(j) + ".vtp", simulation_time);
             net2PVD[WaveTank]->output();
             j++;
          }
+
+         /* -------------------------------------------------------------------------- */
 
          count = 0;
          for (const auto &p : a_wall_p) {
@@ -417,7 +434,7 @@ int main(int argc, char **argv) {
                });
             }
             setDataOmitted(vtp, WaveTank);
-            setData(vtp, Fluid, X);
+            setDataOmitted(vtp, Fluid);
             std::ofstream ofs(output_directory + "referenced_points_by_a_wall_p_" + std::to_string(count++) + "_" + std::to_string(i) + ".vtp");
             vtp.write(ofs);
             ofs.close();
@@ -425,9 +442,9 @@ int main(int argc, char **argv) {
          }
 
          //
-         // pvdWaveTankSPH.push("./WaveTankSPH" + std::to_string(i) + ".vtp", real_time);
+         // pvdWaveTankSPH.push("./WaveTankSPH" + std::to_string(i) + ".vtp", simulation_time);
          // pvdWaveTankSPH.output();
-         // pvdWallSPH.push("./WallSPH" + std::to_string(i) + ".vtp", real_time);
+         // pvdWallSPH.push("./WallSPH" + std::to_string(i) + ".vtp", simulation_time);
          // pvdWallSPH.output();
 
          // b# -------------------------------------------------------------------------- */
@@ -440,7 +457,7 @@ int main(int argc, char **argv) {
          //!                                    プローブ                                  */
          //! -------------------------------------------------------------------------- */
          Print("プローブ出力");
-         jsonout.push("time", real_time);
+         jsonout.push("time", simulation_time);
          for (const auto &[probe, J] : probes) {
             vtkPolygonWriter<networkPoint *> vtp;
             for (const auto &p : probe->getPoints())
@@ -485,7 +502,7 @@ int main(int argc, char **argv) {
             vtp.write(ofs);
             ofs.close();
             //
-            net2PVD[probe]->push(name, real_time);
+            net2PVD[probe]->push(name, simulation_time);
             net2PVD[probe]->output();
             // b# -------------------------------------------------------------------------- */
             // b#                              output JSON files                             */
@@ -502,6 +519,13 @@ int main(int argc, char **argv) {
          //* -------------------------------------------------------------------------- */
          //*                                   オブジェクト                               */
          //* -------------------------------------------------------------------------- */
+
+         /*DOC_EXTRACT 0_3_0_SPH
+
+         ## 出力（ポリゴン）
+
+         */
+
          Print("オブジェクト出力");
          for (const auto &[_, poly, J] : all_objects) {
             vtkPolygonWriter<networkPoint *> vtp;
@@ -538,7 +562,7 @@ int main(int argc, char **argv) {
             vtp.write(ofs);
             ofs.close();
             //
-            net2PVD[poly]->push(name, real_time);
+            net2PVD[poly]->push(name, simulation_time);
             net2PVD[poly]->output();
          }
          /* -------------------------------------------------------------------------- */

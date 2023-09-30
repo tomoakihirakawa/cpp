@@ -175,7 +175,7 @@ BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgin
 浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi _t`$が簡単には計算できない．
 これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)に詳しく書かれている)．
 
-Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
+Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
 BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
 これと運動方程式を連立することで，直接，加速度を求めることができる．
 [Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)は，この方法を発展させ２浮体の動揺解析を行っている．
@@ -329,7 +329,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
 
-[../../include/Network.hpp#L879](../../include/Network.hpp#L879)
+[../../include/Network.hpp#L880](../../include/Network.hpp#L880)
 
 
 
@@ -545,13 +545,13 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L222)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L223)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L128)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L137)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L129)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L138)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 
-[./BEM_calculateVelocities.hpp#L201](./BEM_calculateVelocities.hpp#L201)
+[./BEM_calculateVelocities.hpp#L202](./BEM_calculateVelocities.hpp#L202)
 
 
 ---
@@ -559,7 +559,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
 浮体に掛かる圧力の計算に必要な$`\phi _t`$が簡単には求まらないためである．
-これに関しては，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)が参考になる．
+これに関しては，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)が参考になる．
 
 ### 🪼 浮体の運動方程式 
 
@@ -803,7 +803,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 は加速度行列とある既知変数から成る行列の積で表される．こうして，運動方程式の$`\boldsymbol{F} _{\text {hydro }}`$と$`\boldsymbol{T} _{\text {hydro }}`$を加速度によって表すことができ，
 運動方程式は加速度だけに関する連立方程式となる．
 
-この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](https://www.sciencedirect.com/science/article/pii/S0029801802000379)で使用されている．
+この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
@@ -957,7 +957,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L324](./BEM_calculateVelocities.hpp#L324)
+[./BEM_calculateVelocities.hpp#L325](./BEM_calculateVelocities.hpp#L325)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -974,7 +974,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L411](./BEM_calculateVelocities.hpp#L411)
+[./BEM_calculateVelocities.hpp#L412](./BEM_calculateVelocities.hpp#L412)
 
 
 ---
@@ -1014,7 +1014,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L612](./main.cpp#L612)
+[./main.cpp#L613](./main.cpp#L613)
 
 
 ---
@@ -1055,7 +1055,7 @@ make
 ```
 
 
-[./main.cpp#L755](./main.cpp#L755)
+[./main.cpp#L756](./main.cpp#L756)
 
 
 ---
@@ -1099,7 +1099,7 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L795](./main.cpp#L795)
+[./main.cpp#L796](./main.cpp#L796)
 
 
 ---

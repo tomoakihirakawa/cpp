@@ -8,7 +8,7 @@
 // b%           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
 // b% ------------------------------------------------------ */
 
-/*DOC_EXTRACT SPH
+/*DOC_EXTRACT 0_2_5_SPH
 
 ## 圧力勾配$`\nabla p^{n+1}`$の計算
 
@@ -29,9 +29,12 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       A->gradP_SPH.fill(0.);
       // A->grad_corr_M.fill({0., 0., 0.});
       auto add_gradP_SPH_Where = [&](const auto &B, const Tddd &X) {
-         // if (A->isSurface || (!A->isSurface && !B->isAir)) {
+         // if (A->isSurface || (!A->isSurface )) {
 
          // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+
+         A->gradP_SPH += B->mass / A->rho * (B->p_SPH + A->p_SPH) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+
          // A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
 
          // if (A->isSurface || A->isNeumannSurface)
@@ -45,25 +48,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          // else
 
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
-         A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
 
          //
          // }
          // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
-#if defined(USE_MIRROR_PARTICLE)
-         // 綺麗に配列させ設置した壁粒子の圧力を，内部の流体粒子の圧力から決める際に，理想的な値を設定することが困難と思われる．
-         for (const auto &v : B->vector_to_polygon) {
-            auto X = B->X + 2. * v;
-            auto Bp = B->p_SPH;
-            auto dP = Dot(2. * v, B->rho * B->DUDt_SPH);  // 係数がマイナス　-Aij
-            // Bp += dP;
-            // A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->radius_SPH));
-            // A->gradP_SPH += A->rho * B->mass * (Bp / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
-            // A->gradP_SPH += (Bp - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
-
-            A->gradP_SPH += (Bp - A->p_SPH) * B->volume * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP2}
-         }
-#endif
 
          // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * Dot(grad_w_Bspline(A->X, X, A->radius_SPH), A->inv_grad_corr_M);  //\label{SPH:gradP1}
 
@@ -87,9 +75,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //\label{SPH:gradP3}は，Aij = 4*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.457
       };
 
-      auto add_gradP_SPH = [&](const auto &B) {
-         return add_gradP_SPH_Where(B, B->X);
-      };
+      auto add_gradP_SPH = [&](const auto &B) { return add_gradP_SPH_Where(B, B->X); };
 
       networkPoint *closest_surface_point = nullptr;
       double min_distance = 1e10, distance;
@@ -111,16 +97,6 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
                      min_distance = distance;
                      closest_surface_point = B;
                   }
-
-#if defined(USE_ONE_AUXP)
-                  if ((distance = Distance(A->X, X_next(B))) < min_distance) {
-                     min_distance = distance;
-                     closest_surface_point = B;
-                  }
-#elif defined(USE_ALL_AUXP)
-               for (const auto &AUX : B->auxiliaryPoints) 
-               if (AUX != nullptr) add_gradP_SPH(AUX);
-#endif
                }
             }
          });
@@ -142,7 +118,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
       // A->inv_grad_corr_M = Inverse(A->grad_corr_M);
 
-      /*DOC_EXTRACT SPH
+      /*DOC_EXTRACT 0_2_5_SPH
 
       $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
       が計算できた．
@@ -156,7 +132,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 
       // if (A->isNeumannSurface)
-      //    A->DUDt_SPH = Chop(A->DUDt_SPH, A->interpolated_normal_SPH_water);
+      //    A->DUDt_SPH = Chop(A->DUDt_SPH, A->interp_normal_water);
 
       if (!isFinite(A->DUDt_SPH))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");

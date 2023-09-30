@@ -26,7 +26,7 @@ def IO_dir(id):
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
 
-SimulationCase = "Kamra2019"
+SimulationCase = "Lobovsky2013"
 id = ""
 match SimulationCase:
     case "static_pressure":
@@ -63,18 +63,24 @@ match SimulationCase:
 
         generate_input_files(input_files, setting,IO_dir, id)
 
-    case "Lobovsky2014":
+    case "Lobovsky2013":
 
-        objfolder = program_home + "/cpp/obj/2022Arai/Lobovsky2014"
+        objfolder = program_home + "/cpp/obj/Lobovsky2013/original"
 
+        H = 0.3
+        
         water = {"name": "water",
                  "type": "Fluid",
-                 "objfile": objfolder + "/water.obj"}
+                 "objfile": objfolder + "/water"+"H"+str(H).replace(".", "d")+".obj"}
+
+        gate = {"name": "gate",
+                "type": "RigidBody",
+                "inactivate" : [0.001, 1000.],
+                "objfile": objfolder + "/gate.obj"}
 
         wavetank = {"name": "wavetank",
                     "type": "RigidBody",
-                    # "ignore": wavetank_ignore,
-                    "objfile": objfolder + "/tank5.obj"}
+                    "objfile": objfolder + "/tank.obj"}
 
         sensor1 = {"name": "sensor1",
                    "type": "probe",
@@ -96,16 +102,15 @@ match SimulationCase:
                    "type": "probe",
                    "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
 
-        input_files = [wavetank, water,
-                       sensor1, sensor2, sensor2L, sensor3, sensor4]
+        input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
         setting = {"RK_order": 1,
-                   "max_dt": 0.0005,
+                   "max_dt": 0.001,
                    "end_time_step": 20000,
                    "end_time": 1,
-                   "CSML": 3.05,
+                   "CSML": 2.7,
                    "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.015}
+                   "particle_spacing": 0.0225}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                             + "_CSML" + str(setting["CSML"]).replace(".", "d")\
@@ -150,7 +155,7 @@ match SimulationCase:
                    "end_time": 4.,
                    "CSML": 2.9,
                    "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.01}
+                   "particle_spacing": 0.015}
 
         id = SimulationCase + id \
                             + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \

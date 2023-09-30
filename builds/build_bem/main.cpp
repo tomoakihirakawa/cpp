@@ -336,9 +336,10 @@ int main(int argc, char **argv) {
                      auto COM_old = net->COM;
                      net->RK_COM.push(net->velocityTranslational());
                      net->COM = net->RK_COM.getX();
-                     Quaternion q;
-                     q = q.d_dt(net->velocityRotational());  // w->クォータニオン
-                     net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
+                     // Quaternion q;
+                     // q = q.d_dt(net->velocityRotational());  // w->クォータニオン
+                     // net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
+                     net->RK_Q.push(AngularVelocityTodQdt(net->velocityRotational(), net->Q));
                      net->Q = net->RK_Q.getX();
 
                      std::cout << "name = " << net->getName() << std::endl;

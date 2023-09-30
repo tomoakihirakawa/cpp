@@ -123,7 +123,7 @@ match SimulationCase:
         start = 0.
 
         T = 1.2
-        H = 0.04
+        H = 0.1
         a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
         h = 0.4
 

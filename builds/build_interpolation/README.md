@@ -187,7 +187,7 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 
 サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
 
-[../../include/interpolations.hpp#L228](../../include/interpolations.hpp#L228)
+[../../include/interpolations.hpp#L232](../../include/interpolations.hpp#L232)
 
 
 [./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
