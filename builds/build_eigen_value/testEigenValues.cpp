@@ -1,18 +1,36 @@
-#include "basic_IO.hpp"
-#include "basic_linear_systems.hpp"
-//
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include "basic_IO.hpp"
+#include "basic_linear_systems.hpp"
 
 typedef std::vector<double> V_d;
 typedef std::vector<std::vector<double>> VV_d;
+
+/*DOC_EXTRACT eigen_value
+
+# 固有値問題
+
+## 固有値の計算
+
+行列$`A`$をQR分解$`A=QR`$し，
+$`A_k = Q_k^{-1} A Q_k`$の計算を繰り返すことで，
+$`A_k`$の対角成分が$`A`$の固有値に収束することを確認する．
+
+わかりやすいように$`\cdot`$で行列の積を表す．
+
+```math
+Q_2^{-1} \cdot (Q_1^{-1} \cdot (Q_0^{-1} \cdot (A = Q_0R_0) \cdot Q_0=Q_1R_1) \cdot Q_1=Q_2 \cdot R_2) \cdot R_2
+```
+
+*/
 
 int main() {
    VV_d A = {{6., 5., 0.},
              {5., 1., 4.},
              {0., 4., 3.}};
+
    V_d eigenvalues = {9.84316, 4.02176, -3.86492};
 
    VV_d Ak = A;

@@ -87,7 +87,7 @@ networkPoint *getClosest(const Tddd X, const double range, const auto &target_ne
    return P;
 };
 
-/*DOC_EXTRACT SPH
+/*DOC_EXTRACT 0_1_0_SPH
 
 ### CFL条件の設定
 
@@ -98,8 +98,8 @@ $`\max({\bf u}) \Delta t \leq c_{v} h \cap \max({\bf a}) \Delta t^2 \leq c_{a} h
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.05;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -113,7 +113,7 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             // if (dt > max_dt_vel && isFinite(max_dt_vel))
             //    dt = max_dt_vel;
             // 絶対速度
-            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+            // max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
             if (dt > max_dt_vel && isFinite(max_dt_vel))
                dt = max_dt_vel;
             /* ------------------------------------------------ */
@@ -123,7 +123,7 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             // if (dt > max_dt_acc && isFinite(max_dt_acc))
             //    dt = max_dt_acc;
             // 絶対速度
-            max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
+            // max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
             if (dt > max_dt_acc && isFinite(max_dt_acc))
                dt = max_dt_acc;
          }
@@ -147,7 +147,7 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 
 Tddd aux_position(const networkPoint *p, const double &c) {
    // auto c = p->radius_SPH / p->C_SML;
-   return p->X + c * Normalize(p->interpolated_normal_SPH);
+   return p->X + c * Normalize(p->interp_normal);
    // return p->X - (p->COM_SPH - p->X);
 };
 
@@ -155,61 +155,47 @@ Tddd aux_position_next(const networkPoint *p) {
    auto q = p->surfacePoint;
    auto c = q->radius_SPH / q->C_SML;
 #if defined(USE_RungeKutta)
-   return q->RK_X.getX(q->U_SPH) + c * Normalize(q->interpolated_normal_SPH_next);
+   return q->RK_X.getX(q->U_SPH) + c * Normalize(q->interp_normal_next);
 #elif defined(USE_LeapFrog)
-   return q->LPFG_X.get_x(q->U_SPH) + c * Normalize(q->interpolated_normal_SPH_next);
+   return q->LPFG_X.get_x(q->U_SPH) + c * Normalize(q->interp_normal_next);
 #endif
 };
 
 /* -------------------------------------------------------------------------- */
-
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   // return _WATER_DENSITY_;
+   return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
-   if (p->isAuxiliary)
-      return rho_next(p->surfacePoint);
-   else if (p->getNetwork()->isRigidBody)
-      return _WATER_DENSITY_;
-   else {
-#if defined(USE_RungeKutta)
-      return p->RK_rho.getX(p->DrhoDt_SPH);
-#elif defined(USE_LeapFrog)
-      return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
-#endif
-   }
+   //    if (p->isAuxiliary)
+   //       return rho_next(p->surfacePoint);
+   //    else if (p->getNetwork()->isRigidBody)
+   //       return _WATER_DENSITY_;
+   //    else {
+   // #if defined(USE_RungeKutta)
+   // return p->RK_rho.getX(p->DrhoDt_SPH);
+   //@ これを使った方が安定するようだ
+   // #elif defined(USE_LeapFrog)
+   //       return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
+   // #endif
+   //    }
 };
 
 // \label{SPH:volume_next}
-double V_next(const auto &p) {
-   // if (p->isAir)
-   //    return p->volume;
-   // else if (p->isAuxiliary)
-   //    return p->volume_next;
-   // else
-   if (p->isAuxiliary)
-      return V_next(p->surfacePoint);
-   else
-      return p->mass / rho_next(p);
-};
+double V_next(const auto &p) { return p->mass / rho_next(p); };
 
 // \label{SPH:position_next}
 std::array<double, 3> X_next(const auto &p) {
-   // return p->X;
-//    if (p->getNetwork()->isRigidBody)
-//       return p->X;
-//    else if (p->isAuxiliary)
-//       return X_next(p->surfacePoint);
-//    else {
+   if (p->getNetwork()->isRigidBody)
+      return p->X;
+   else {
 #if defined(USE_RungeKutta)
-
-   return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
-
-//          // return p->RK_X.getX(p->U_SPH);
+      // return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
+      return p->RK_X.getX(p->U_SPH);
+         // return p->RK_X.getX(p->U_SPH);
 #elif defined(USE_LeapFrog)
-   return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
+      return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
 #endif
-   //    }
+   }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -224,18 +210,67 @@ std::array<double, 3> X_next(const auto &p) {
 //@ -------------------------------------------------------- */
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
+void set_nearest_wall_p_next(networkPoint *p, auto &RigidBodyObject) {
+   double nearest_dist = 1E+20, d;
+   networkPoint *P = nullptr;
+   std::array<double, 3> p_to_q;
+   for (const auto &[obj, _] : RigidBodyObject) {
+      obj->BucketPoints.apply(X_next(p), p->radius_SPH, [&](const auto &q) {
+         p_to_q = q->X - X_next(p);
+         d = Norm(p_to_q);
+         if (nearest_dist > d) {
+            nearest_dist = d;
+            P = q;
+         }
+      });
+   }
+   p->nearest_wall_p_next = P;
+};
+
+void set_nearest_wall_p_next(auto &points, auto &RigidBodyObject) {
+#pragma omp parallel
+   for (const auto &p : points)
+#pragma omp single nowait
+      set_nearest_wall_p_next(p, RigidBodyObject);
+};
+
+void set_nearest_wall_p(networkPoint *p, auto &RigidBodyObject) {
+   double nearest_dist = 1E+20, d;
+   networkPoint *P = nullptr;
+   std::array<double, 3> p_to_q;
+   for (const auto &[obj, _] : RigidBodyObject) {
+      obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+         p_to_q = q->X - p->X;
+         d = Norm(p_to_q);
+         if (nearest_dist > d) {
+            nearest_dist = d;
+            P = q;
+         }
+      });
+   }
+   p->nearest_wall_p = P;
+};
+
+void set_nearest_wall_p(auto &points, auto &RigidBodyObject) {
+#pragma omp parallel
+   for (const auto &p : points)
+#pragma omp single nowait
+      set_nearest_wall_p(p, RigidBodyObject);
+};
+
 #define REFLECTION
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const auto &RigidBodyObject,
                      const double &particle_spacing,
                      const double dt) {
+
    DebugPrint("粒子の時間発展", Green);
+
 #pragma omp parallel
    for (const auto &p : points)
 #pragma omp single nowait
    {
-      // テスト
       auto U = p->U_SPH;
       auto X_last = p->X;
 #if defined(USE_RungeKutta)
@@ -267,18 +302,15 @@ void updateParticles(const auto &points,
 #endif
 
 #if defined(REFLECTION)
-      int count = 0;
-      //\label{SPH:reflection}
-      // const double reflection_factor = .5;
-      const double reflection_factor = 1.;
-      const double asobi = 0.01;
+
       auto closest = [&]() {
          double distance = 1E+20;
          networkPoint *P = nullptr;
          for (const auto &[obj, _] : RigidBodyObject) {
             obj->BucketPoints.apply(X_next(p), p->radius_SPH, [&](const auto &q) {
-               auto tmp = Distance(X_next(p), q);
-               if (distance > tmp && Dot(p->U_SPH, q->interpolated_normal_SPH) < 0) {
+               auto p_to_q = q->X - X_next(p);
+               auto tmp = Norm(p_to_q);
+               if (distance > tmp) {
                   distance = tmp;
                   P = q;
                }
@@ -287,22 +319,30 @@ void updateParticles(const auto &points,
          return P;
       };
 
+      int count = 0;
+      //\label{SPH:reflection}
+      const double reflection_factor = .1;
+      // const double reflection_factor = 1.;
+      const double c = 0.;
+
       bool isReflected = true;
       p->DUDt_modify_SPH.fill(0.);
-      while (isReflected && count++ < 1) {
+      while (isReflected && count++ < 2) {
          isReflected = false;
          auto closest_p = closest();
          if (closest_p != nullptr) {
             // for (const auto &[obj, _] : RigidBodyObject)
             //    obj->BucketPoints.apply(X_next(p), p->radius_SPH, [&](const auto &Pwall) {
-            auto dist = Distance(X_next(closest_p), X_next(p));
-            if (dist < (1 - asobi) * particle_spacing) {
-               auto alpha = (particle_spacing - dist) / particle_spacing;
-               auto n = closest_p->interpolated_normal_SPH;
+            // auto dist = Distance(X_next(closest_p), X_next(p));
+            auto d_ps = particle_spacing;
+            auto d0 = (1 - c) * particle_spacing;
+            auto n = Normalize(closest_p->interp_normal_original);
+            auto v_f2w = X_next(closest_p) - X_next(p);
+            auto n_d_f2w = Norm(Projection(v_f2w, n));
+            if (Norm(v_f2w) < d0) {
+               auto ratio = (d0 - n_d_f2w) / d0;
                if (Dot(p->U_SPH, n) < 0) {
-                  auto tmp = -alpha * (1. + reflection_factor) * Projection(p->U_SPH, n) / dt;
-                  // auto tmp = -reflection_factor * Projection(p->U_SPH, n) / dt;
-                  //
+                  auto tmp = Norm(d_ps - n_d_f2w) * n / dt;
                   p->DUDt_modify_SPH += tmp;
                   p->DUDt_SPH += tmp;
                      // p->DUDt_SPH -= Projection(tmp, p->DUDt_SPH);
@@ -356,9 +396,12 @@ void updateParticles(const auto &points,
          // A->setDensity(A->LPFG_rho.get_x());
 #endif
    }
+
+   set_nearest_wall_p_next(points, RigidBodyObject);
+   set_nearest_wall_p(points, RigidBodyObject);
 }
 
-/*DOC_EXTRACT SPH
+/*DOC_EXTRACT 0_3_0_SPH
 
 ## 注意点
 
@@ -378,7 +421,7 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
    - \ref{SPH:whereToMakeTheEquation}{どの位置において方程式を立てるか}
 - \ref{SPH:capture_condition_1st}{流体として扱う壁粒子を設定するかどうか}/\ref{SPH:capture_condition_2nd}{視野角に流体粒子が含まない壁粒子は除外する}
 - \ref{SPH:map_fluid_pressure_to_wall}{壁粒子の圧力をどのように壁面にマッピングするか}
-- \ref{SPH:interpolated_normal_SPH}{壁粒子の法線方向ベクトルの計算方法}
+- \ref{SPH:interp_normal}{壁粒子の法線方向ベクトルの計算方法}
 - \ref{SPH:reflection}{反射の計算方法}
 
 **水面粒子**

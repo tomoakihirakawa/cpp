@@ -123,19 +123,19 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    for (const auto &p : net->getPoints())
    #pragma omp single nowait
    {
-      // p->interpolated_normal_SPH, q->X - p->Xの方向が完全に一致した際に失敗する
-      /* ---------------------- p->interpolated_normal_SPHの計算 --------------------- */
+      // p->interp_normal, q->X - p->Xの方向が完全に一致した際に失敗する
+      /* ---------------------- p->interp_normalの計算 --------------------- */
       p->COM_SPH.fill(0.);
-      p->interpolated_normal_SPH_original.fill(0.);
-      p->interpolated_normal_SPH_original_all.fill(0.);
+      p->interp_normal_original.fill(0.);
+      p->interp_normal_original_all.fill(0.);
       double total_vol = 0, w;
       net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
          w = q->volume * w_Bspline(Norm(p->X - q->X), p->radius_SPH);
          p->COM_SPH += (q->X - p->X) * w;
          total_vol += w;
          if (Between(Distance(p, q), {1E-10, p->radius_SPH})) {
-            p->interpolated_normal_SPH_original -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
-            p->interpolated_normal_SPH_original_all -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            p->interp_normal_original -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            p->interp_normal_original_all -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
          }
       });
       std::vector<Tddd> wall_tangent;
@@ -146,20 +146,20 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
             total_vol += w;
             if (Distance(p, q) < p->radius_SPH / p->C_SML * 1.1)
                wall_tangent.emplace_back(q->normal_SPH);
-            p->interpolated_normal_SPH_original -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
-            p->interpolated_normal_SPH_original_all -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            p->interp_normal_original -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
+            p->interp_normal_original_all -= q->volume * grad_w_Bspline(p->X, q->X, p->radius_SPH);
          });
 
       p->COM_SPH /= total_vol;
-      p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);
-      p->interpolated_normal_SPH_all = Normalize(p->interpolated_normal_SPH_original_all);
+      p->interp_normal = Normalize(p->interp_normal_original);
+      p->interp_normal_all = Normalize(p->interp_normal_original_all);
       // for (const auto &wall_v : wall_tangent) {
-      //    p->interpolated_normal_SPH = Normalize(Chop(p->interpolated_normal_SPH, wall_v));
-      //    p->interpolated_normal_SPH_all = Normalize(Chop(p->interpolated_normal_SPH_all, wall_v));
+      //    p->interp_normal = Normalize(Chop(p->interp_normal, wall_v));
+      //    p->interp_normal_all = Normalize(Chop(p->interp_normal_all, wall_v));
       // }
-      if (!isFinite(p->interpolated_normal_SPH)) {
-         p->interpolated_normal_SPH = {0., 0., 1.};
-         p->interpolated_normal_SPH_all = {0., 0., 1.};
+      if (!isFinite(p->interp_normal)) {
+         p->interp_normal = {0., 0., 1.};
+         p->interp_normal_all = {0., 0., 1.};
       }
       /* ----------------------------------- 検索 ----------------------------------- */
       //    if (set_surface) {
@@ -167,7 +167,7 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
       //       if (net->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
       //              {
       //                 if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-      //                    return p != q && (VectorAngle(p->interpolated_normal_SPH_all, q->X - p->X) < M_PI / 4);
+      //                    return p != q && (VectorAngle(p->interp_normal_all, q->X - p->X) < M_PI / 4);
       //                 } else
       //                    return false;
       //              }
@@ -180,7 +180,7 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
       //             if (obj->BucketPoints.any_of(p->X, (p->radius_SPH / p->C_SML) * 3., [&](const auto &q) {
       //                    {
       //                       if (Distance(p, q) < (p->radius_SPH / p->C_SML) * 3.) {
-      //                          return p != q && (VectorAngle(p->interpolated_normal_SPH_all, -q->normal_SPH) < M_PI / 180. * 60);
+      //                          return p != q && (VectorAngle(p->interp_normal_all, -q->normal_SPH) < M_PI / 180. * 60);
       //                       } else
       //                          return false;
       //                    }
@@ -197,20 +197,20 @@ void setNormal_Surface_(auto &net, const std::unordered_set<networkPoint *> &wal
    DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints())
-         p->interpolated_normal_SPH_original = {0, 0, 0};
+         p->interp_normal_original = {0, 0, 0};
    #pragma omp parallel
    for (const auto &p : wall_p) {
    #pragma omp single nowait
       {
-         p->interpolated_normal_SPH_original = {0., 0., 0.};
+         p->interp_normal_original = {0., 0., 0.};
          for (const auto &[obj, poly] : RigidBodyObject)
             obj->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
                if (Between(Distance(p, q), {1E-8, p->radius_SPH}))
-                  p->interpolated_normal_SPH_original -= grad_w_Bspline(p->X, q->X, p->radius_SPH);
+                  p->interp_normal_original -= grad_w_Bspline(p->X, q->X, p->radius_SPH);
             });
-         p->interpolated_normal_SPH = Normalize(p->interpolated_normal_SPH_original);
-         if (!isFinite(p->interpolated_normal_SPH))
-            p->interpolated_normal_SPH = {0., 0., 1.};
+         p->interp_normal = Normalize(p->interp_normal_original);
+         if (!isFinite(p->interp_normal))
+            p->interp_normal = {0., 0., 1.};
       }
    }
 };
@@ -560,7 +560,7 @@ std::unordered_set<networkPoint *> wall_p;
 
 void developByEISPH(Network *net,
                     const auto &RigidBodyObjectIN,
-                    double &real_time,
+                    double &simulation_time,
                     const double C_SML,
                     const double particle_spacing,
                     const double max_dt,
@@ -688,9 +688,9 @@ void developByEISPH(Network *net,
       // b# -------------------------------------------------------------------------- */
       // b# ----------------------- ルンゲクッタの準備 ------------------- */
       for (const auto &p : net->getPoints()) {
-         p->RK_U.initialize(dt, real_time, p->U_SPH, RK_order);
-         p->RK_X.initialize(dt, real_time, p->X, RK_order);
-         p->RK_P.initialize(dt, real_time, p->p_SPH, RK_order);
+         p->RK_U.initialize(dt, simulation_time, p->U_SPH, RK_order);
+         p->RK_X.initialize(dt, simulation_time, p->X, RK_order);
+         p->RK_P.initialize(dt, simulation_time, p->p_SPH, RK_order);
       }
       // b# ======================================================= */
       // b#                  ルンゲクッタを使った時間積分                */
@@ -909,7 +909,7 @@ void developByEISPH(Network *net,
    #endif
          }
          DebugPrint(Green, "Elapsed time: ", Red, watch(), "s ", Magenta, "粒子の時間発展");
-         real_time = (*net->getPoints().begin())->RK_X.gett();
+         simulation_time = (*net->getPoints().begin())->RK_X.gett();
       } while (!((*net->getPoints().begin())->RK_X.finished));
 
       Print(Yellow, "Elapsed time: ", Red, watch(), "s １タイムステップ終了");
@@ -928,16 +928,16 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints())
       normal_SPH[p] = p->normal_SPH;
    vtp.addPointData("normal_SPH", normal_SPH);
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH;
+   std::unordered_map<networkPoint *, Tddd> interp_normal;
    for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH[p] = p->interpolated_normal_SPH;
-   vtp.addPointData("interpolated_normal_SPH", interpolated_normal_SPH);
+      interp_normal[p] = p->interp_normal;
+   vtp.addPointData("interp_normal", interp_normal);
    //
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH_original;
-   interpolated_normal_SPH_original.reserve(Fluid->getPoints().size());
+   std::unordered_map<networkPoint *, Tddd> interp_normal_original;
+   interp_normal_original.reserve(Fluid->getPoints().size());
    for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH_original[p] = p->interpolated_normal_SPH_original;
-   vtp.addPointData("interpolated_normal_SPH_original", interpolated_normal_SPH_original);
+      interp_normal_original[p] = p->interp_normal_original;
+   vtp.addPointData("interp_normal_original", interp_normal_original);
    //
    std::unordered_map<networkPoint *, Tddd> U;
    for (const auto &p : Fluid->getPoints())
@@ -1027,17 +1027,17 @@ void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}
    //    contactpoints[p] = (double)p->getContactPoints().size();
    // vtp.addPointData("contact points", contactpoints);
    // //
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH;
-   interpolated_normal_SPH.reserve(Fluid->getPoints().size());
+   std::unordered_map<networkPoint *, Tddd> interp_normal;
+   interp_normal.reserve(Fluid->getPoints().size());
    for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH[p] = p->interpolated_normal_SPH;
-   vtp.addPointData("interpolated_normal_SPH", interpolated_normal_SPH);
+      interp_normal[p] = p->interp_normal;
+   vtp.addPointData("interp_normal", interp_normal);
    //
-   std::unordered_map<networkPoint *, Tddd> interpolated_normal_SPH_original;
-   interpolated_normal_SPH_original.reserve(Fluid->getPoints().size());
+   std::unordered_map<networkPoint *, Tddd> interp_normal_original;
+   interp_normal_original.reserve(Fluid->getPoints().size());
    for (const auto &p : Fluid->getPoints())
-      interpolated_normal_SPH_original[p] = p->interpolated_normal_SPH_original;
-   vtp.addPointData("interpolated_normal_SPH_original", interpolated_normal_SPH_original);
+      interp_normal_original[p] = p->interp_normal_original;
+   vtp.addPointData("interp_normal_original", interp_normal_original);
    // //
    std::unordered_map<networkPoint *, Tddd> position;
    position.reserve(Fluid->getPoints().size());

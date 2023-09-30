@@ -1,4 +1,27 @@
 ----------
+Execution time: Thu Sep 21 14:02:48 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d1_T1d2_potential_2
+----------
+Execution time: Thu Sep 21 14:02:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d1/opt/homebrew/bin/python3
+  arg2: /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/input_generator.py_T1d2_potential_2
+----------
 Execution time: Thu Sep 21 08:57:36 2023
 
 Machine Information:
@@ -5043,6 +5066,8 @@ No arguments provided. Write input JSON file directory.
 ----------
 =======
 >>>>>>> Stashed changes
+----------
+----------
 ----------
 ----------
 ----------

@@ -507,10 +507,13 @@ class networkPoint : public CoordinateBounds, public CSR {
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
    bool isCaptured = false, isCaptured_ = false;
-   bool isFluid = false, isAir = false, isFirstWallLayer = false;
+   bool isChecked = false;
+   bool isFluid = false, isFirstWallLayer = false;
    bool isAuxiliary = false;
    bool isFreeFalling = false;
    double radius_SPH;
+   networkPoint *nearest_wall_p_next = nullptr;
+   networkPoint *nearest_wall_p = nullptr;
    double C_SML;
    double number_density_SPH;
    double density_interpolated_SPH;
@@ -591,16 +594,16 @@ class networkPoint : public CoordinateBounds, public CSR {
    double tmp_density;
    Tddd pre_U_SPH;
    Tddd mu_lap_rho_g_SPH;
-   Tddd interpolated_normal_SPH, interpolated_normal_SPH_original, interpolated_normal_SPH_original_modified, interpolated_normal_SPH_original_choped, interpolated_normal_SPH_original_next_choped;
-   Tddd interpolated_normal_SPH_water, interpolated_normal_SPH_water_next;
+   Tddd interp_normal, interp_normal_original, interp_normal_original_modified, interp_normal_original_choped, interp_normal_original_next_choped;
+   Tddd interp_normal_water, interp_normal_water_next;
    Tddd intp_normal_Eigen;
-   Tddd interpolated_normal_SPH_rigid, interpolated_normal_SPH_rigid_next;
+   Tddd interp_normal_rigid, interp_normal_rigid_next;
    Tddd X_next;
    double volume_next, mass_next;
    Tddd COM_SPH;
    double intp_density, intp_density_next, ddr_intp_density;
    double totalMass_SPH;
-   Tddd interpolated_normal_SPH_next, interpolated_normal_SPH_original_next;
+   Tddd interp_normal_next, interp_normal_original_next;
    std::vector<Tddd> vector_to_polygon;
    std::vector<Tddd> vector_to_polygon_next;
    Tddd cg_neighboring_particles_SPH;
@@ -3525,6 +3528,7 @@ class Network : public CoordinateBounds {
       }
 
       this->BucketFaces.setVector();
+      std::cout << this->getName() << ", BucketFaces.setVector() done" << std::endl;
    };
 
    void makeBucketPoints(const double spacing) {
@@ -3537,13 +3541,9 @@ class Network : public CoordinateBounds {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
       else
          std::cout << this->getName() << ", all points are added" << std::endl;
-
       this->BucketPoints.setVector();
-      // this->BucketPoints.hashing();
-      // std::cout << this->getName() << ", hashing is done" << std::endl;
-      // this->BucketPoints.shrink_to_fit();
-      // std::cout << this->getName() << ", shrink_to_fit" << std::endl;
-      // #pragma acc enter data copyin(this->BucketPoints)
+
+      std::cout << this->getName() << ", BucketPoints.setVector() done" << std::endl;
    };
    void makeBucketParametricPoints(const double spacing) {
       // this->BucketPoints.hashing_done = false;

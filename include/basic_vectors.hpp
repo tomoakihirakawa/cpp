@@ -1481,29 +1481,38 @@ struct Quaternion {
       return Quaternion(T4d{a, -b, -c, -d});
    };
 
-   Quaternion approxNextQuaternion(const Tddd &w, const double dt) const {
-      return Quaternion(this->q + this->d_dt(w * dt)());
-   };
+   // Quaternion approxNextQuaternion(const Tddd &w, const double dt) const {
+   //    return Quaternion(this->q + this->d_dt(w * dt)());
+   // };
 
-   Quaternion d_dt(const Tddd &w /*angular velocity*/) const {
-      // 回転変化率w=dtheta/dtは，クォータニオン変化はQ.d_dt(w)と同じである．
-      /*
-      W = {{0, -w0, -w1, -w2},
-              {w0, 0, w2, -w1},
-              {w1, -w2, 0, w0},
-              {w2, w1, -w0, 0}}
+   // Quaternion d_dt(const Tddd &w /*angular velocity*/) const {
+   //    // 回転変化率w=dtheta/dtは，クォータニオン変化はQ.d_dt(w)と同じである．
+   //    /*
+   //    W = {{0, -w0, -w1, -w2},
+   //            {w0, 0, w2, -w1},
+   //            {w1, -w2, 0, w0},
+   //            {w2, w1, -w0, 0}}
 
-      inverse[W] = {{0, w0, w1, w2},
-                    {-w0, 0, -w2, w1},
-                    {-w1, w2, 0, -w0},
-                    {-w2, -w1, w0,0}}/(w0^2 + w1^2 + w2^2)
-                              = -W/(w0^2 + w1^2 + w2^2)
-      */
+   //    inverse[W] = {{0, w0, w1, w2},
+   //                  {-w0, 0, -w2, w1},
+   //                  {-w1, w2, 0, -w0},
+   //                  {-w2, -w1, w0,0}}/(w0^2 + w1^2 + w2^2)
+   //                            = -W/(w0^2 + w1^2 + w2^2)
+   //    */
 
-      return Quaternion((-this->b * std::get<0>(w) - this->c * std::get<1>(w) - this->d * std::get<2>(w)) * 0.5, /*{0,-w0,-w1,-w2}.{a,b,c,d}/2*/
-                        (this->a * std::get<0>(w) - this->d * std::get<1>(w) + this->c * std::get<2>(w)) * 0.5,  /*{w0,0,w2,-w1}.{a,b,c,d}/2*/
-                        (this->d * std::get<0>(w) + this->a * std::get<1>(w) - this->b * std::get<2>(w)) * 0.5,  /*{w1,-w2,0,w0}.{a,b,c,d}/2*/
-                        (-this->c * std::get<0>(w) + this->b * std::get<1>(w) + this->a * std::get<2>(w)) * 0.5 /*{w2,w1,-w0,0}.{a,b,c,d}/2*/);
+   //    return Quaternion((-this->b * std::get<0>(w) - this->c * std::get<1>(w) - this->d * std::get<2>(w)) * 0.5, /*{0,-w0,-w1,-w2}.{a,b,c,d}/2*/
+   //                      (this->a * std::get<0>(w) - this->d * std::get<1>(w) + this->c * std::get<2>(w)) * 0.5,  /*{w0,0,w2,-w1}.{a,b,c,d}/2*/
+   //                      (this->d * std::get<0>(w) + this->a * std::get<1>(w) - this->b * std::get<2>(w)) * 0.5,  /*{w1,-w2,0,w0}.{a,b,c,d}/2*/
+   //                      (-this->c * std::get<0>(w) + this->b * std::get<1>(w) + this->a * std::get<2>(w)) * 0.5 /*{w2,w1,-w0,0}.{a,b,c,d}/2*/);
+   // };
+
+   T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/) {
+      auto [q0, q1, q2, q3] = this->q;
+      auto [w0, w1, w2] = w;
+      return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
+              0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
+              0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
+              0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
    };
 
    void set(const T4d &qIN) {

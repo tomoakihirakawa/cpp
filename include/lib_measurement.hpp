@@ -19,7 +19,9 @@ struct Timer {
               (std::chrono::duration<double>(this->lasttime - this->start)).count()};
    };
 };
+
 /* ------------------------------------------------------ */
+
 struct TimeWatch {
    // std::chrono::time_point<std::chrono::high_resolution_clock> start;
    std::chrono::time_point<std::chrono::system_clock> start;

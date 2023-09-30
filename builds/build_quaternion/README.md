@@ -121,7 +121,7 @@ q2 * w0 - q1 * w1 + q0 * w2
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
 
-[../../include/basic_vectors.hpp#L1539](../../include/basic_vectors.hpp#L1539)
+[../../include/basic_vectors.hpp#L1548](../../include/basic_vectors.hpp#L1548)
 
 
 

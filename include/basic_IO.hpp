@@ -410,7 +410,7 @@ bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
    }
 
    ofs << "Command line arguments:" << std::endl;
-   for (size_t i = 0; i < args.size(); ++i) ofs << "  arg" << i << ": " << args[i] << std::endl;
+   for (size_t i = 0; i < args.size() || i < 5; ++i) ofs << "  arg" << i << ": " << args[i] << std::endl;
 
    // Add existing content back
    ofs << existingContent;
@@ -419,6 +419,31 @@ bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
    return true;
 }
 
+std::string getUserName() {
+   const char *username_cstr = std::getenv("USER");
+   if (username_cstr == nullptr) {
+      username_cstr = std::getenv("USERNAME");
+   }
+
+   std::string username;
+   if (username_cstr != nullptr) {
+      username = std::string(username_cstr);
+   } else {
+      throw std::runtime_error("Failed to get username");
+   }
+
+   return username;
+}
+
+std::string getMachineName() {
+   char hostname[1024];
+   hostname[1023] = '\0';
+   if (gethostname(hostname, 1023) == -1) {
+      throw std::runtime_error("Failed to get machine name");
+   }
+
+   return std::string(hostname);
+}
 /* -------------------------------------------------------------------------- */
 
 #endif

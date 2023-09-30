@@ -71,7 +71,7 @@ double laplacian_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
 
 //! --------------------------------- ５次スプライン -------------------------------- */
 // \label{SPH:w_Bspline5}
-/*DOC_EXTRACT SPH:kernelFunctions
+/*DOC_EXTRACT 2_0_0_kernelFunctions
 
 ## 5次スプライン関数
 
@@ -172,7 +172,7 @@ double Dot_grad_w_Bspline5_Dot_Modified(const Tddd &xi, const Tddd &xj, const do
 //! --------------------------------- 3次スプライン -------------------------------- */
 
 // \label{SPH:w_Bspline3}
-/*DOC_EXTRACT SPH:kernelFunctions
+/*DOC_EXTRACT 2_0_0_kernelFunctions
 
 ## 3次スプライン関数
 

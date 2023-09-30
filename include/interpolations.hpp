@@ -57,6 +57,10 @@ struct InterpolationBspline<double> {
   public:
    double operator()(const double x) const { return Dot(Bspline(x, q, K), a); }
    double D(const double x) const { return Dot(D_Bspline(x, q, K), a); }
+
+   std::vector<double> DN(const double x) {
+      return D_Bspline(x, q, K);
+   };
 };
 
 template <std::size_t N>

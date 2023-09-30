@@ -106,10 +106,11 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
          ret[i] = ToX(f);
       else if (net->isRigidBody) {
          // 現在のv^nを使って問題ない．加速度はいらない．
-         Quaternion q;
-         q = q.d_dt(net->velocityRotational());
+         // Quaternion q;
+         // q = q.d_dt(net->velocityRotational());
          auto COM = net->RK_COM.getX(net->velocityTranslational());
-         Quaternion Q(net->RK_Q.getX(q()));
+         auto w = net->velocityRotational();
+         Quaternion Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(w)));
          auto X0 = Q.Rv(p0->initialX - net->ICOM) + COM;
          auto X1 = Q.Rv(p1->initialX - net->ICOM) + COM;
          auto X2 = Q.Rv(p2->initialX - net->ICOM) + COM;
