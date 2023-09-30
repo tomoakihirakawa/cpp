@@ -24,7 +24,7 @@
     - [⛵ 壁面粒子の流速の決定](./builds/build_sph/README.md#⛵-壁面粒子の流速の決定)
     - [⛵ 流体の法線方向の計算と水面の判定](./builds/build_sph/README.md#⛵-流体の法線方向の計算と水面の判定)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
-    - [⛵ ポアソン方程式 $`\nabla^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right) = b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-^{n+1}-\right)-=-b`$)
+    - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right)=b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-^{n+1}-\right)=b`$)
     - [⛵ ポアソン方程式の解法](./builds/build_sph/README.md#⛵-ポアソン方程式の解法)
     - [⛵ 圧力勾配$`\nabla p^{n+1}`$の計算](./builds/build_sph/README.md#⛵-圧力勾配$`\nabla-p^{n+1}`$の計算)
     - [⛵ 注意点](./builds/build_sph/README.md#⛵-注意点)
