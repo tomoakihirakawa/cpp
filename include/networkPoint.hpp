@@ -1168,6 +1168,7 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
    this->div_U = 0;
    this->gradP_SPH = {0., 0., 0.};
    this->U_SPH = {0., 0., 0.};
+   // this->U_approx_SPH = {0., 0., 0.};
    this->mu_lap_rho_g_SPH = {0., 0., 0.};
    this->tmp_U_SPH = {0., 0., 0.};
    this->interp_normal = {0., 0., 0.};

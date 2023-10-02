@@ -49,7 +49,7 @@ struct InterpolationBspline<double> {
       q = OpenUniformKnots(abscissas, K);
       auto A = Bspline(abscissas, q, K);
       a.resize(A.size());
-      ludcmp lu(A);
+      lapack_lu lu(A);
       lu.solve(sample, a);
       this->is_set = true;
    }
@@ -89,10 +89,12 @@ struct InterpolationBspline<std::array<double, N>> {
 
   private:
    void initialize() {
+      // std::cout << "InterpolationBspline::initialize()" << std::endl;
       q = OpenUniformKnots(abscissas, K);
       auto A = Bspline(abscissas, q, K);
-      ludcmp lu(A);
-      for (std::size_t i = 0; i < N; ++i) {
+      lapack_lu lu(A);
+      // std::cout << "InterpolationBspline::lapack_lu" << stdå::endl;
+      for (size_t i = 0; i < sampleT.size(); ++i) {
          a[i].resize(A.size());
          lu.solve(sampleT[i], a[i]);
       }
@@ -119,7 +121,7 @@ template <typename T>
 struct InterpolationLagrange {
    std::vector<double> abscissas;
    std::vector<T> values;
-   std::vector<double> denominotor;
+   std::vector<double> denominator;
 
    InterpolationLagrange(){};
 
@@ -151,11 +153,11 @@ struct InterpolationLagrange {
    };
 
    void set() {
-      denominotor.resize(abscissas.size(), 1.);
+      denominator.resize(abscissas.size(), 1.);
       for (auto i = 0; i < abscissas.size(); ++i)
          for (auto j = 0; j < abscissas.size(); ++j)
             if (i != j)
-               denominotor[i] *= (abscissas[i] - abscissas[j]);
+               denominator[i] *= (abscissas[i] - abscissas[j]);
    };
 
    T operator()(const double x) {
@@ -171,6 +173,10 @@ struct InterpolationLagrange {
          N = 1;
       }
       return ret;
+   };
+
+   T integrate(const double x_beg, const double x_end){
+
    };
 
    T D(const double x) {
@@ -192,8 +198,8 @@ struct InterpolationLagrange {
       return ret;
    }
 
-   std::vector<T> N(const double x) {
-      std::vector<T> ret(abscissas.size(), 1.);
+   std::vector<double> N(const double x) {
+      std::vector<double> ret(abscissas.size(), 1.);
       for (auto i = 0; i < abscissas.size(); ++i) {
          for (auto j = 0; j < abscissas.size(); ++j)
             if (i != j)
@@ -203,8 +209,8 @@ struct InterpolationLagrange {
       return ret;
    };
 
-   std::vector<T> DN(const double x) {
-      std::vector<T> ret(abscissas.size(), 0.);
+   std::vector<double> DN(const double x) {
+      std::vector<double> ret(abscissas.size(), 0.);
       for (auto i = 0; i < abscissas.size(); ++i) {
          for (auto j = 0; j < abscissas.size(); ++j) {
             if (i != j) {
@@ -540,8 +546,8 @@ class InterpolationVectorRBF {
       try {
          VV_d ret(0);
          this->F = normM(P);
-         ludcmp lu(normM(P) /*未知変数ベクトル側の係数行列*/);
-         this->invF = lu.Inverse();
+         lapack_lu lu(normM(P) /*未知変数ベクトル側の係数行列*/);
+         this->invF = lu.inverse();
          V_d w(P.size());
          for (const auto &vOFx : Transpose(V_vOFx) /*各成分*/) {
             /**
@@ -589,8 +595,8 @@ class InterpolationVectorRBF {
                f[s + j] = Dot(n, this->grad_phi(a, P_for_Derivative[j]));
          }
          //
-         ludcmp lu(this->F /*未知変数ベクトル側の係数行列*/);
-         this->invF = lu.Inverse();
+         lapack_lu lu(this->F /*未知変数ベクトル側の係数行列*/);
+         this->invF = lu.inverse();
          V_d w(P.size() + P_for_Derivative.size());
          for (const auto &vOFx : Transpose(Join(V_vOFx, V_derivative_OFx)) /*各成分*/) {
             /**
@@ -753,7 +759,7 @@ struct InterpolationRBF {
                      [](const auto &kernelX) { return ToVector(kernelX); });
       this->F = M;
       this->w = RES;
-      ludcmp lu(M);
+      lapack_lu lu(M);
       lu.solve(RES, this->w);
    };
    //
@@ -840,7 +846,7 @@ struct InterpolationRBF {
       //!
       this->F = M;
       this->w.resize(A.size() + A2.size(), 0.);
-      ludcmp lu(M);
+      lapack_lu lu(M);
       // SVD lu(M);
       lu.solve(vOFx, this->w);
 
@@ -1049,7 +1055,7 @@ struct InterpolationRBF {
 
    V_d weight(const VV_d &A, const V_d &vOFx) const {
       V_d w(A.size());
-      ludcmp lu(normM(A));
+      lapack_lu lu(normM(A));
       lu.solve(vOFx, w);
       return w;
    };
@@ -1087,7 +1093,7 @@ struct InterpolationRBF {
                f[s + j] = Dot(n, this->grad_phi(a, P_for_Derivative[j]));
          }
          //
-         ludcmp lu(F /*未知変数ベクトル側の係数行列*/);
+         lapack_lu lu(F /*未知変数ベクトル側の係数行列*/);
          V_d w(s + k);
          lu.solve(Join(V_vOFx, V_derivative_OFx), w);
          return w;
@@ -1138,7 +1144,7 @@ struct InterpolationRBF {
 // 			M[i] = row;
 // 		}
 // 		// Aは各関数の位置で，phi(.,A[i])，gradphi(.,A[i])とかになる
-// 		ludcmp lu(M);
+// 		lapack_lu lu(M);
 // 		V_d w(kernel_X_s_w.size());
 // 		lu.solve(b, w);
 // 		for (auto i = 0; i < kernel_X_s_w.size(); ++i)
@@ -1238,7 +1244,7 @@ struct InterpolationRBF_<Tdd, Tddd> : public InterpolationRBF_Common<Tdd, Tddd> 
    };
    //! ------------------------------------------------------ */
    void calculate_weight() {
-      ludcmp lu(this->M);
+      lapack_lu lu(this->M);
       V_d w(kernel_X_s_w.size());
       V_d b_(kernel_X_s_w.size());
       //! wは，各kernel_X_s_wの最後に保存している
@@ -1298,7 +1304,7 @@ struct InterpolationRBF_<Tdd, Tddd> : public InterpolationRBF_Common<Tdd, Tddd> 
 template <>
 struct InterpolationRBF_<Tddd, double> : public InterpolationRBF_Common<Tddd, double> {
    InterpolationRBF_(const std::vector<std::tuple<Tddd, double>> &kernel_X_s_IN, const std::vector<std::tuple<Tddd, double>> &EQs_IN) : InterpolationRBF_Common<Tddd, double>(kernel_X_s_IN, EQs_IN) {
-      ludcmp lu(this->M);
+      lapack_lu lu(this->M);
       V_d w(kernel_X_s_w.size());
       V_d b_(kernel_X_s_w.size());
       lu.solve(b, w);
