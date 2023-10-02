@@ -350,7 +350,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L265)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L494)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L323)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L368)
 
 **水面粒子**
 
@@ -359,7 +359,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L375)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L420)
 - [圧力の安定化をするかどうか](not found)
 - [ルンゲクッタの段数](../../builds/build_sph/from os.py#L145)
 
@@ -367,7 +367,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./SPH_Functions.hpp#L404](./SPH_Functions.hpp#L404)
+[./SPH_Functions.hpp#L452](./SPH_Functions.hpp#L452)
 
 
 ## ⛵ 出力

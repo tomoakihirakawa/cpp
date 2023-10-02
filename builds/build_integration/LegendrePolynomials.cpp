@@ -1,8 +1,8 @@
 #include <cmath>
 #include <iostream>
 
-// #define polynomial
-#define interpolation
+#define polynomial
+// #define interpolation
 
 #if defined(polynomial)
 int main() {
@@ -16,17 +16,25 @@ int main() {
       std::cout << std::endl;
    }
 
-   /*
-   1. $ make;./LegendrePolynomials > LegendrePolynomials.dat
-   2. $ gnuplot
-   3. type:
+   /*DOC_EXTRACT 0_1_0_integration_LegendrePolynomials
+
+   ## ルジャンドル多項式，ルジャンドル補間，ガウス・ルジャンドル積分
+
+   INPROGRESS: このファイルは，ルジャンドル多項式，ルジャンドル補間，ガウス・ルジャンドル積分を扱う．
+
+   ```sh
+   sh clean
+   cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=LegendrePolynomials.cpp
+   make
+   ./LegendrePolynomials > LegendrePolynomials.dat
+   ```
+
+   ```sh
+   gnuplot
    file = 'LegendrePolynomials.dat'
-   plot file using 1:2 title 'order 0', \
-        file using 1:3 title 'order 1', \
-        file using 1:4 title 'order 2', \
-        file using 1:5 title 'order 3', \
-        file using 1:6 title 'order 4', \
-        file using 1:7 title 'order 5'
+   plot for [i=2:7] file using 1:i title sprintf('order %d', i-2)
+   ```
+
     */
    return 0;
 };
