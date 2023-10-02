@@ -164,7 +164,7 @@ Tddd aux_position_next(const networkPoint *p) {
 /* -------------------------------------------------------------------------- */
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   return _WATER_DENSITY_;
+   // return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -172,7 +172,7 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
-   // return p->RK_rho.getX(p->DrhoDt_SPH);
+   return p->RK_rho.getX(p->DrhoDt_SPH);
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
    //       return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
@@ -190,7 +190,21 @@ std::array<double, 3> X_next(const auto &p) {
    else {
 #if defined(USE_RungeKutta)
       // return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
-      return p->RK_X.getX(p->U_SPH);
+      //
+      Tddd U;
+      // if (p->interp_U_Bspline != nullptr) {
+      //    U = (*p->interp_U_Bspline)(p->RK_X.getNextTime());
+      // } else
+      // if (p->interp_U_lag != nullptr) {
+      //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
+      // } else
+      U = p->U_SPH;
+
+      // if (p->interp_U_lag != nullptr) {
+      //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
+      // } else
+      //    U = p->U_SPH;
+      return p->RK_X.getX(U);
          // return p->RK_X.getX(p->U_SPH);
 #elif defined(USE_LeapFrog)
       return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
@@ -207,6 +221,37 @@ std::array<double, 3> X_next(const auto &p) {
 //
 #include "SPH3_grad_p.hpp"
 //
+
+void set_interp_U(networkPoint *A) {
+   int N = 6;
+   if (A->vec_U_SPH.size() > N + 4 && A->vec_time_SPH.size() > N + 4) {
+      // std::cout << "set_interp_U" << std::endl;
+      // std::cout << "A->vec_U_SPH = " << A->vec_U_SPH << std::endl;
+      // std::cout << "A->vec_time_SPH = " << A->vec_time_SPH << std::endl;
+#if defined(USE_RungeKutta)
+      double current_time = A->RK_X.get_t();
+#elif defined(USE_LeapFrog)
+      double current_time = A->LPFG_X.get_t();
+#endif
+      std::vector<double> times(N);
+      std::vector<std::array<double, 3>> U(N);
+      for (int i = 0; i < N; i++) {
+         times[i] = *(A->vec_time_SPH.rbegin() + i);
+         U[i] = *(A->vec_U_SPH.rbegin() + i);
+      }
+
+      if (A->interp_U_lag != nullptr)
+         delete A->interp_U_lag;
+      A->interp_U_lag = new InterpolationLagrange<std::array<double, 3>>(times, U);
+      // std::cout << "A->interp_U_lag has been set" << std::endl;
+
+      if (A->interp_U_Bspline != nullptr)
+         delete A->interp_U_Bspline;
+      A->interp_U_Bspline = new InterpolationBspline(3, times, U);
+      // std::cout << "A->interp_U_Bspline has been set" << std::endl;
+   }
+};
+
 //@ -------------------------------------------------------- */
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
@@ -377,12 +422,13 @@ void updateParticles(const auto &points,
 #if defined(USE_RungeKutta)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-                                      // if (A->RK_rho.finished)
-                                      //    A->setDensity(_WATER_DENSITY_);
-                                      // else
-                                      // A->setDensity(A->RK_rho.get_x());
-                                      // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
-                                      // A->setDensity(A->RK_rho.get_x());
+
+      // if (A->RK_rho.finished)
+      //    A->setDensity(_WATER_DENSITY_);
+      // else
+      // A->setDensity(A->RK_rho.get_x());
+      // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
+      // A->setDensity(A->RK_rho.get_x());
       A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
@@ -395,6 +441,8 @@ void updateParticles(const auto &points,
          // else
          // A->setDensity(A->LPFG_rho.get_x());
 #endif
+
+      set_interp_U(A);
    }
 
    set_nearest_wall_p_next(points, RigidBodyObject);

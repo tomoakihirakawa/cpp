@@ -26,17 +26,30 @@
 //    return stream;
 // };
 
-// template <size_t N, typename T>
-// std::ostream &operator<<(std::ostream &stream, const std::array<T, N> &V) {
-//    stream << "{";
-//    bool first = true;
-//    for_each(V, [&](const auto &v) {
-//       stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
-//       first = false;
-//    });
-//    stream << "}";
-//    return stream;
-// }
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::array<T, N> &V) {
+   stream << "{";
+   bool first = true;
+   std::ranges::for_each(V, [&](const auto &v) {
+      stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+      first = false;
+   });
+   stream << "}";
+   return stream;
+}
+
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::vector<std::array<T, N>> &V) {
+   stream << "{";
+   bool first = true;
+   std::ranges::for_each(V, [&](const auto &v) {
+      stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+      first = false;
+   });
+
+   stream << "}";
+   return stream;
+}
 
 template <typename... T>
 std::ostream &operator<<(std::ostream &stream, const std::tuple<T...> &V) {

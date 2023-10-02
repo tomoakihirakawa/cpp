@@ -588,6 +588,8 @@ class networkPoint : public CoordinateBounds, public CSR {
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_;
+   InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
+   InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
    std::vector<double> vec_time_SPH;
    std::vector<Tddd> vec_U_SPH;
    Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X, pre_X;

@@ -260,6 +260,36 @@ struct lapack_lu {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       };
    };
+
+   std::vector<std::vector<double>> inverse() {
+      // Check if the matrix is square
+      if (dim * dim != a.size())
+         throw std::runtime_error("The matrix must be square to compute its inverse.");
+
+      // Create an identity matrix
+      std::vector<double> id_mat(dim * dim, 0);
+      for (int i = 0; i < dim; ++i)
+         id_mat[i * dim + i] = 1;
+
+      // Use dgetrs_ to find each column of the inverse
+      dgetrs_("T", &dim, &dim, a.data(), &LDA, ipiv.data(), id_mat.data(), &LDB, &info);
+
+      // Check for errors
+      if (info) {
+         std::stringstream ss;
+         ss << "Error in dgetrs_ with info = " << info;
+         throw std::runtime_error(ss.str());
+      }
+
+      // Convert the flat array back to a 2D array
+      std::vector<std::vector<double>> inv_mat(dim, std::vector<double>(dim));
+      for (int i = 0; i < dim; ++i) {
+         for (int j = 0; j < dim; ++j) {
+            inv_mat[i][j] = id_mat[j * dim + i];
+         }
+      }
+      return inv_mat;
+   }
 };
 
 #include <algorithm>
