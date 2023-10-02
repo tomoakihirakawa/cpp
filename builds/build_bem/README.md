@@ -329,7 +329,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
 
-[../../include/Network.hpp#L882](../../include/Network.hpp#L882)
+[../../include/Network.hpp#L884](../../include/Network.hpp#L884)
 
 
 

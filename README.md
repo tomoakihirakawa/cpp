@@ -54,6 +54,12 @@
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](./builds/build_Network/README.md#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 - [🐋 `Network`](./builds/build_Network/README.md#🐋-`Network`)
     - [⛵ 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法](./builds/build_Network/README.md#⛵-3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法)
+## [build_integration](./builds/build_integration/README.md)
+
+- [Contents](./builds/build_integration/README.md#Contents)
+- [🐋 数値積分](./builds/build_integration/README.md#🐋-数値積分)
+    - [⛵ 台形則](./builds/build_integration/README.md#⛵-台形則)
+    - [⛵ ルジャンドル多項式，ルジャンドル補間，ガウス・ルジャンドル積分](./builds/build_integration/README.md#⛵-ルジャンドル多項式，ルジャンドル補間，ガウス・ルジャンドル積分)
 ## [build_pybind11](./builds/build_pybind11/README.md)
 
 - [Contents](./builds/build_pybind11/README.md#Contents)
