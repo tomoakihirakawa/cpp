@@ -736,7 +736,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L483](./main.cpp#L483)
+[./main.cpp#L484](./main.cpp#L484)
 
 
 ---
@@ -818,7 +818,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L333)
+[強制運動を課す](../../builds/build_bem/main.cpp#L334)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -1018,7 +1018,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L615](./main.cpp#L615)
+[./main.cpp#L616](./main.cpp#L616)
 
 
 ---
@@ -1059,7 +1059,7 @@ make
 ```
 
 
-[./main.cpp#L758](./main.cpp#L758)
+[./main.cpp#L759](./main.cpp#L759)
 
 
 ---
@@ -1126,7 +1126,7 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L798](./main.cpp#L798)
+[./main.cpp#L799](./main.cpp#L799)
 
 
 ---

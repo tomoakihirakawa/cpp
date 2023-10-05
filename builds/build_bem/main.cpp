@@ -241,7 +241,8 @@ int main(int argc, char **argv) {
 
          flipIf(*water,
                 {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
-                {5 * rad, 5 * rad}, false);
+                {5 * rad, 5 * rad},
+                false);
 
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */

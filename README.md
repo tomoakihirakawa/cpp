@@ -93,6 +93,7 @@
 - [Contents](./builds/build_eigen_value/README.md#Contents)
 - [🐋 固有値問題](./builds/build_eigen_value/README.md#🐋-固有値問題)
     - [⛵ 固有値の計算](./builds/build_eigen_value/README.md#⛵-固有値の計算)
+    - [⛵ ⛵ QR分解](./builds/build_eigen_value/README.md#⛵-⛵-QR分解)
 ## [build_bem](./builds/build_bem/README.md)
 
 - [Contents](./builds/build_bem/README.md#Contents)

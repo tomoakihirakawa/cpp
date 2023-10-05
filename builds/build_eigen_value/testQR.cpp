@@ -8,6 +8,12 @@
 typedef std::vector<double> V_d;
 typedef std::vector<std::vector<double>> VV_d;
 
+/*DOC_EXTRACT 0_1_eigen_value
+
+\insert{QR_decomposition}
+
+*/
+
 // compare with testQR.nb
 
 int main() {

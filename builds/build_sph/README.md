@@ -359,7 +359,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L422)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L423)
 - [圧力の安定化をするかどうか](not found)
 - [ルンゲクッタの段数](../../builds/build_sph/from os.py#L145)
 
@@ -367,7 +367,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./SPH_Functions.hpp#L454](./SPH_Functions.hpp#L454)
+[./SPH_Functions.hpp#L455](./SPH_Functions.hpp#L455)
 
 
 ## ⛵ 出力
