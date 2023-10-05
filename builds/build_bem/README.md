@@ -393,6 +393,8 @@ $`\phi`$がラプラス方程式$`\nabla^2\phi=0`$を満たし，$`G=1/\|{\bf x}
 $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすることで，グリーンの定理の体積積分が消え，BIEの左辺のように，
 原点での立体角$`\alpha\left( {\bf{a}} \right)`$とポテンシャル$`\phi( {\bf{a}})`$の積だけが残る．
 
+<img src="schematic_BIE.png" width="400px">
+
 この式は，流体内部では，$`\alpha ({\bf{a}})`$は$`1`$とできる．
 この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
 $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
@@ -422,7 +424,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 ```
 
 
-[./BEM_solveBVP.hpp#L193](./BEM_solveBVP.hpp#L193)
+[./BEM_solveBVP.hpp#L195](./BEM_solveBVP.hpp#L195)
 
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
@@ -443,7 +445,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
 
-[./BEM_solveBVP.hpp#L257](./BEM_solveBVP.hpp#L257)
+[./BEM_solveBVP.hpp#L259](./BEM_solveBVP.hpp#L259)
 
 
 ### 🪼 リジッドモードテクニック 
@@ -453,7 +455,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
 
-[./BEM_solveBVP.hpp#L332](./BEM_solveBVP.hpp#L332)
+[./BEM_solveBVP.hpp#L334](./BEM_solveBVP.hpp#L334)
 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
@@ -483,7 +485,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 ```
 
 
-[./BEM_solveBVP.hpp#L370](./BEM_solveBVP.hpp#L370)
+[./BEM_solveBVP.hpp#L372](./BEM_solveBVP.hpp#L372)
 
 
 ---
@@ -577,8 +579,8 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L115)と
-[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L102)：
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L117)と
+[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L104)：
 
 ```math
 \boldsymbol{F} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} p\boldsymbol{n}  d S, \quad
@@ -595,7 +597,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 ```
 
 
-[./BEM_solveBVP.hpp#L551](./BEM_solveBVP.hpp#L551)
+[./BEM_solveBVP.hpp#L553](./BEM_solveBVP.hpp#L553)
 
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
@@ -642,7 +644,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L766)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -673,10 +675,10 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L778)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L780)で与えている．
 
 
-[./BEM_solveBVP.hpp#L594](./BEM_solveBVP.hpp#L594)
+[./BEM_solveBVP.hpp#L596](./BEM_solveBVP.hpp#L596)
 
 
 ```math
@@ -693,7 +695,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L778)で与
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
 
-[./BEM_solveBVP.hpp#L675](./BEM_solveBVP.hpp#L675)
+[./BEM_solveBVP.hpp#L677](./BEM_solveBVP.hpp#L677)
 
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
@@ -734,7 +736,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
 
-[./main.cpp#L481](./main.cpp#L481)
+[./main.cpp#L483](./main.cpp#L483)
 
 
 ---
@@ -807,7 +809,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
 
-[./BEM_solveBVP.hpp#L692](./BEM_solveBVP.hpp#L692)
+[./BEM_solveBVP.hpp#L694](./BEM_solveBVP.hpp#L694)
 
 
 ---
@@ -816,7 +818,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L331)
+[強制運動を課す](../../builds/build_bem/main.cpp#L333)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -1016,7 +1018,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EP` | 浮体の位置エネルギー |
 
 
-[./main.cpp#L613](./main.cpp#L613)
+[./main.cpp#L615](./main.cpp#L615)
 
 
 ---
@@ -1057,7 +1059,7 @@ make
 ```
 
 
-[./main.cpp#L756](./main.cpp#L756)
+[./main.cpp#L758](./main.cpp#L758)
 
 
 ---
@@ -1124,7 +1126,7 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 **[See the Examples here!](EXAMPLES.md)**
 
 
-[./main.cpp#L796](./main.cpp#L796)
+[./main.cpp#L798](./main.cpp#L798)
 
 
 ---
