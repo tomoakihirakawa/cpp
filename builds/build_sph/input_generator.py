@@ -130,7 +130,7 @@ match SimulationCase:
 
         wall = {"name": "wall",
                 "type": "RigidBody",
-                "inactivate" : [0.01, 1000.],
+                "inactivate" : [0.0001, 1000.],
                 "objfile": objfolder + "/wall.obj"}
 
         wavetank = {"name": "tank",
