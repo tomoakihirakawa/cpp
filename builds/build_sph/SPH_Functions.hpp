@@ -108,20 +108,20 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             auto distance = Distance(p, q);
             /* ------------------------------------------------ */
             // 相対速度
-            double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
-            // double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
-            // if (dt > max_dt_vel && isFinite(max_dt_vel))
-            //    dt = max_dt_vel;
+            // double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
+            double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
             // 絶対速度
             // max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
             if (dt > max_dt_vel && isFinite(max_dt_vel))
                dt = max_dt_vel;
             /* ------------------------------------------------ */
             // 相対速度
-            double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
-            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
-            // if (dt > max_dt_acc && isFinite(max_dt_acc))
-            //    dt = max_dt_acc;
+            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
+            double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
+            if (dt > max_dt_acc && isFinite(max_dt_acc))
+               dt = max_dt_acc;
             // 絶対速度
             // max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
             if (dt > max_dt_acc && isFinite(max_dt_acc))
@@ -191,20 +191,20 @@ std::array<double, 3> X_next(const auto &p) {
 #if defined(USE_RungeKutta)
       // return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
       //
-      Tddd U;
+      // Tddd U;
       // if (p->interp_U_Bspline != nullptr) {
       //    U = (*p->interp_U_Bspline)(p->RK_X.getNextTime());
       // } else
       // if (p->interp_U_lag != nullptr) {
       //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
       // } else
-      U = p->U_SPH;
+      // U = p->U_SPH;
 
       // if (p->interp_U_lag != nullptr) {
       //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
       // } else
       //    U = p->U_SPH;
-      return p->RK_X.getX(U);
+      return p->RK_X.getX(p->U_SPH);
          // return p->RK_X.getX(p->U_SPH);
 #elif defined(USE_LeapFrog)
       return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
@@ -320,17 +320,18 @@ void updateParticles(const auto &points,
       auto X_last = p->X;
 #if defined(USE_RungeKutta)
       auto X_next = [&](const auto &p) {
-         if (p->RK_X.steps == 1)
-            return p->RK_X.getX();
-         else
-            return p->RK_X.getX(p->U_SPH);
+         // if (p->RK_X.steps == 1)
+         //    return p->RK_X.getX();
+         // else
+         return p->RK_X.getX(p->U_SPH);
       };
-      if (p->RK_X.steps == 1) {
-         p->RK_U.push(p->DUDt_SPH);  // 速度
-         p->U_SPH = p->RK_U.getX();
-         p->RK_X.push(p->U_SPH);  // 位置
-         p->setXSingle(p->tmp_X = p->RK_X.getX());
-      } else {
+      // if (p->RK_X.steps == 1) {
+      //    p->RK_U.push(p->DUDt_SPH);  // 速度
+      //    p->U_SPH = p->RK_U.getX();
+      //    p->RK_X.push(p->U_SPH);  // 位置
+      //    p->setXSingle(p->tmp_X = p->RK_X.getX());
+      // } else
+      {
          p->RK_X.push(p->U_SPH);  // 位置
          p->setXSingle(p->tmp_X = p->RK_X.getX());
          p->RK_U.push(p->DUDt_SPH);  // 速度
@@ -393,11 +394,12 @@ void updateParticles(const auto &points,
                      // p->DUDt_SPH -= Projection(tmp, p->DUDt_SPH);
    #if defined(USE_RungeKutta)
                   p->RK_U.repush(p->DUDt_SPH);  // 速度
-                  if (p->RK_X.steps == 1) {
-                     p->U_SPH = p->RK_U.getX();
-                     p->RK_X.repush(p->U_SPH);  // 位置
-                     p->setXSingle(p->tmp_X = p->RK_X.getX());
-                  } else {
+                  // if (p->RK_X.steps == 1) {
+                  //    p->U_SPH = p->RK_U.getX();
+                  //    p->RK_X.repush(p->U_SPH);  // 位置
+                  //    p->setXSingle(p->tmp_X = p->RK_X.getX());
+                  // } else
+                  {
                      p->RK_U.repush(p->DUDt_SPH);  // 速度
                      p->U_SPH = p->RK_U.getX();
                   }
