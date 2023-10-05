@@ -76,7 +76,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->tmp_X = A->X;
          A->DrhoDt_SPH = 0;
          A->b_vector.fill(0.);
-         if (A->isNeumannSurface) {
+         // if (A->isNeumannSurface)
+         {
             A->DrhoDt_SPH = -A->rho * A->div_U;
             A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
          }

@@ -1,10 +1,14 @@
 #! /bin/bash
 
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
+make
+
 # ./remesh ~/Dropbox/code/cpp/obj/Ren2015/wavemaker.obj ~/Dropbox/code/cpp/obj/Ren2015 wavemaker 100
 # ./remesh ~/Dropbox/code/cpp/obj/Ren2015/float.obj ~/Dropbox/code/cpp/obj/Ren2015 float 100
 # ./remesh ~/Dropbox/code/cpp/obj/Ren2015/water.obj ~/Dropbox/code/cpp/obj/Ren2015 water 400
 # ./remesh ~/Dropbox/code/cpp/obj/Ren2015/water.obj ~/Dropbox/code/cpp/obj/Ren2015 water 100
-# ./remesh ~/Dropbox/code/cpp/obj/Ren2015/tank.obj ~/Dropbox/code/cpp/obj/Ren2015 tank 100
+./remesh ~/Dropbox/code/cpp/obj/Ren2015/tank.obj ~/Dropbox/code/cpp/obj/Ren2015 tank 100
 
 # define string variable
 
@@ -46,12 +50,12 @@
 # ./remesh ${path}tank.obj ${path} tank 100 
 # ./remesh ${path}float.obj ${path} float 100 
 # ---------------------------------------------------------------------------- #
-path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005_24floats/'
-# from 1 to 24. from float1 to float24
-for i in {1..24}
-do
-    ./remesh ${path}float${i}.obj ${path} float${i}"_" 10
-done
-./remesh ${path}water.obj ${path} water 1000
-./remesh ${path}wavemaker.obj ${path} wavemaker 500 
-./remesh ${path}tank.obj ${path} tank 100
+# path='/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Hadzic2005_24floats/'
+# # from 1 to 24. from float1 to float24
+# for i in {1..24}
+# do
+#     ./remesh ${path}float${i}.obj ${path} float${i}"_" 10
+# done
+# ./remesh ${path}water.obj ${path} water 1000
+# ./remesh ${path}wavemaker.obj ${path} wavemaker 500 
+# ./remesh ${path}tank.obj ${path} tank 100

@@ -228,22 +228,24 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       p->vecToSurface.fill(0.);
    }
 
-   double aIN = 0.025, a;
+   double aIN = 0.05, a;
 
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      a = aIN * ((k + 1) / (double)(loop));
-      if (a < 0.0001) a = 0.0001;
+      double scale = aIN * ((k + 1) / (double)(loop));
+      if (scale < 0.0001) scale = 0.0001;
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
       {
-         double scale = 10. * a;
-         if (p->isMultipleNode && !p->CORNER)
-            scale = a;
-         else if (p->Neumann)
-            scale = a;
+         // double scale;
+         // if (p->isMultipleNode && !p->CORNER)
+         //    scale = a;
+         // else if (p->Neumann)
+         //    scale = a;
+         // else
+         // scale = a;
 
          if (k < 3) {
             auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });

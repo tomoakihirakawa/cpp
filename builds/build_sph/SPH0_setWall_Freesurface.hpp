@@ -294,20 +294,26 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                auto R = captureRange;
                q->isCaptured = net->BucketPoints.any_of(q->X, R,
                                                         [&](const auto &Q) {
-                                                           return Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 8);
+                                                           bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 6);
+                                                           bool veryClose = Distance(q, Q) < 1.25 * particle_spacing && q != Q;
+                                                           return canSeeNear || veryClose;
                                                         });
                /* -------------------------------------------------------------------------- */
                if (q->isCaptured) {
                   R = particle_spacing * 1.8;
                   q->isFirstWallLayer = net->BucketPoints.any_of(q->X, R,
                                                                  [&](const auto &Q) {
-                                                                    return Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 6);
+                                                                    bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 6);
+                                                                    bool veryClose = Distance(q, Q) < 1.25 * particle_spacing && q != Q;
+                                                                    return canSeeNear || veryClose;
                                                                  });
                   /* -------------------------------------------------------------------------- */
                   R = particle_spacing * 1.75;
                   q->isNeumannSurface = net->BucketPoints.any_of(q->X, R,
                                                                  [&](const auto &Q) {
-                                                                    return Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
+                                                                    bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
+                                                                    bool veryClose = Distance(q, Q) < 1.25 * particle_spacing && q != Q;
+                                                                    return canSeeNear || veryClose;
                                                                  });
                }
                /* -------------------------------------------------------------------------- */

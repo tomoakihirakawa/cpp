@@ -136,7 +136,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 |`isCaptured` | 計算で用いるかどうか |
 
 
-[./SPH0_setWall_Freesurface.hpp#L320](./SPH0_setWall_Freesurface.hpp#L320)
+[./SPH0_setWall_Freesurface.hpp#L326](./SPH0_setWall_Freesurface.hpp#L326)
 
 
 ---
@@ -158,17 +158,17 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 ## ⛵ 流体の法線方向の計算と水面の判定
 
 
-[./SPH0_setWall_Freesurface.hpp#L375](./SPH0_setWall_Freesurface.hpp#L375)
+[./SPH0_setWall_Freesurface.hpp#L381](./SPH0_setWall_Freesurface.hpp#L381)
 
 
 ### 🪼 流体の法線方向の計算 
 
-✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L494): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
+✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L500): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 単位法線ベクトルは，`interp_normal`としている．
 
 
-[./SPH0_setWall_Freesurface.hpp#L406](./SPH0_setWall_Freesurface.hpp#L406)
+[./SPH0_setWall_Freesurface.hpp#L412](./SPH0_setWall_Freesurface.hpp#L412)
 
 
 ### 🪼 水面の判定 
@@ -176,7 +176,7 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 `surface_condition0,1`の両方を満たす場合，水面とする．
 
 
-[./SPH0_setWall_Freesurface.hpp#L515](./SPH0_setWall_Freesurface.hpp#L515)
+[./SPH0_setWall_Freesurface.hpp#L521](./SPH0_setWall_Freesurface.hpp#L521)
 
 
 ---
@@ -337,10 +337,10 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **NEW**
 
-- [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L357)
+- [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L363)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L127)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L198)
-- どのように[壁粒子のb](not found)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L91)を作るか
+- どのように[壁粒子のb](not found)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L92)を作るか
 
 **壁粒子**
 
@@ -349,8 +349,8 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L278)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L265)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
-- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L494)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L368)
+- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L500)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L369)
 
 **水面粒子**
 
@@ -359,7 +359,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L420)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L422)
 - [圧力の安定化をするかどうか](not found)
 - [ルンゲクッタの段数](../../builds/build_sph/from os.py#L145)
 
@@ -367,7 +367,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 
-[./SPH_Functions.hpp#L452](./SPH_Functions.hpp#L452)
+[./SPH_Functions.hpp#L454](./SPH_Functions.hpp#L454)
 
 
 ## ⛵ 出力

@@ -1627,7 +1627,7 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
 
-      if (!isValidTriangle(tri0, 5 * M_PI / 180.))
+      if (!isValidTriangle(tri0, 5222 * M_PI / 180.))
          return false;
       if (!isValidTriangle(tri1, 5 * M_PI / 180.))
          return false;

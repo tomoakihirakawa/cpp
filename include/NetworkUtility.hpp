@@ -274,7 +274,7 @@ void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int i
    // gradually approching to given a
    const double aIN = 0.05;
    for (auto i = 0; i < iteration; ++i) {
-      double a = aIN * ((i + 1) / (double)(iteration));
+      const double a = aIN * ((i + 1.) / (double)(iteration));
       for (const auto &p : ps)
          SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * DistorsionMeasureWeightedSmoothingVector(q); });
    }
@@ -316,7 +316,7 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
 void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
    const double aIN = 0.1;
    for (auto i = 0; i < iteration; ++i) {
-      double a = aIN * ((i + 1) / (double)(iteration));
+      double a = aIN * ((i + 1.) / (double)(iteration));
       for (const auto &p : ps)
          SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * AreaWeightedSmoothingVector(q); });
    }
@@ -346,7 +346,7 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p) {
 void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
    const double aIN = 0.1;
    for (auto i = 0; i < iteration; ++i) {
-      double a = aIN * ((i + 1) / (double)(iteration));
+      double a = aIN * ((i + 1.) / (double)(iteration));
       for (const auto &p : ps)
          SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * ArithmeticWeightedSmoothingVector(q); });
    }
@@ -380,10 +380,11 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
                }
             } else {
                if (l->Dirichlet) {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
+                  //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 3);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 3);
                   if (isfound) count++;
                }
             }

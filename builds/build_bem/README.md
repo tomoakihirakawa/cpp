@@ -345,7 +345,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
 
-[./BEM_utilities.hpp#L318](./BEM_utilities.hpp#L318)
+[./BEM_utilities.hpp#L317](./BEM_utilities.hpp#L317)
 
 
 ---
@@ -529,7 +529,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
 
-[./BEM_utilities.hpp#L502](./BEM_utilities.hpp#L502)
+[./BEM_utilities.hpp#L501](./BEM_utilities.hpp#L501)
 
 
 ---
@@ -642,7 +642,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L676)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L764)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -687,7 +687,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L778)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L648)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L647)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -725,7 +725,7 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
 
-[./BEM_utilities.hpp#L639](./BEM_utilities.hpp#L639)
+[./BEM_utilities.hpp#L638](./BEM_utilities.hpp#L638)
 
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
@@ -813,10 +813,12 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
 
+造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
+
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L331)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L298)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L116)で利用され，$\phi _{n}$を計算する．
@@ -840,7 +842,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 | 8 | `axis`  | z       |
 
 
-[./BEM_utilities.hpp#L161](./BEM_utilities.hpp#L161)
+[./BEM_utilities.hpp#L158](./BEM_utilities.hpp#L158)
 
 
 ### 🪼 ピストン型造波装置 
@@ -859,15 +861,15 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 ピストン型の造波特性関数：
 
 ```math
-F(f,h) = \frac{H}{2e}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}
+F(f,h) = \frac{H}{S}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}=\frac{2 (\cosh(2kh) - 1)}{2kh+\sinh(2kh)}
 ```
 
-$`e`$は造波版の振幅である．例えば，振幅が1mの波を発生させたい場合，
-$`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
-これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
+$`S`$は造波版のストロークで振幅の２倍である．例えば，振幅が$`A=1`$mの波を発生させたい場合，
+$`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
+これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see [Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1))
 
 
-[./BEM_utilities.hpp#L199](./BEM_utilities.hpp#L199)
+[./BEM_utilities.hpp#L195](./BEM_utilities.hpp#L195)
 
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
@@ -889,7 +891,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
 
-[./BEM_utilities.hpp#L244](./BEM_utilities.hpp#L244)
+[./BEM_utilities.hpp#L243](./BEM_utilities.hpp#L243)
 
 
 ---
@@ -901,7 +903,7 @@ $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
 
-[./BEM_utilities.hpp#L577](./BEM_utilities.hpp#L577)
+[./BEM_utilities.hpp#L576](./BEM_utilities.hpp#L576)
 
 
 ---
@@ -957,7 +959,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 </details>
 
 
-[./BEM_calculateVelocities.hpp#L325](./BEM_calculateVelocities.hpp#L325)
+[./BEM_calculateVelocities.hpp#L327](./BEM_calculateVelocities.hpp#L327)
 
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
@@ -974,7 +976,7 @@ Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial 
 ```
 
 
-[./BEM_calculateVelocities.hpp#L412](./BEM_calculateVelocities.hpp#L412)
+[./BEM_calculateVelocities.hpp#L414](./BEM_calculateVelocities.hpp#L414)
 
 
 ---
@@ -1068,14 +1070,37 @@ This file is used to generate the input files for the BEM-MEL.
 
 
 ---
-This case is for the validation of the floating body motion analysis using the BEM-MEL.    
-<img src="schematic_Hadzic2005.png" width="400px" />
+<img src="schematic_Hadzic2005.png" width="400px"/>
+
+This case based on [Had{\v{z}}i{\'{c}} et al. (2005)](https://linkinghub.elsevier.com/retrieve/pii/S0307904X05000417) is for the validation of the floating body motion analysis using the BEM-MEL.        
 The floating body is a rectangular box with the dimension of L10 cm x H5 cm x W29 cm.        
 The density of the floating body is 0.68x1000 kg/m^3, therefore the mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
 The moment of inertia of the floating body is 14 kg cm^2.
 
+[CAD data](https://a360.co/46CisV7)
 
-[./input_generator.py#L230](./input_generator.py#L230)
+[spheric Test 12](https://www.spheric-sph.org/tests/test-12)
+
+[Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
+
+
+[./input_generator.py#L244](./input_generator.py#L244)
+
+
+---
+<img src="schematic_Ren2015.png" width="400px" />
+
+This case based on [Ren et al. (2015)](https://linkinghub.elsevier.com/retrieve/pii/S0141118714001175) is for the validation of the floating body motion analysis using the BEM-MEL.
+The floating body is a rectangular box with the dimension of $`(l _x,l _y,l _z)=(0.3,0.42,0.2) {\rm m}`$ 
+The density of the floating body is $`0.5\times1000 {\rm kg/m^3}`$.
+The moment of inertia of the floating body is $`(I _{xx},I _{yy},I _{zz}) = (\frac{m}{12}(l _y^2+l _z^2),\frac{m}{12}(l _x^2+l _z^2),\frac{m}{12}(l _x^2+l _y^2))`$.
+
+You can find numerical results compared with this case from Cheng and Lin (2018) and \cite{Bihs2017}.
+
+[Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
+
+
+[./input_generator.py#L123](./input_generator.py#L123)
 
 
 ---
@@ -1090,7 +1115,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 The sphere is dropped from the height of 0.03 m above the water surface.
 
 
-[./input_generator.py#L290](./input_generator.py#L290)
+[./input_generator.py#L318](./input_generator.py#L318)
 
 
 ---

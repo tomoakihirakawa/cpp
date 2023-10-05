@@ -16,6 +16,8 @@ using VV_netFp = std::vector<V_netFp>;
 
 ## 陽に与えられる境界条件に対して（造波装置など）
 
+造波理論については，\cite{Dean1991}のp.170に書いてある．
+
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 \ref{BEM:impose_velocity}{強制運動を課す}
 
@@ -23,7 +25,6 @@ using VV_netFp = std::vector<V_netFp>;
 角速度の原点は，板の`COM`としている．
 
 \ref{BEM:setNeumannVelocity}{`setNeumannVelocity`}で利用され，$\phi_{n}$を計算する．
-
 */
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
@@ -41,18 +42,14 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
             double z = std::get<2>(p->X) - z_surface;
             double x = 0;
             //
-            t -= M_PI / 2. / w;
+            t -= M_PI / w / 2.;
             T6d ret = {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
                            w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
-                       0., -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x), 0., 0., 0.};
-
-            // std::cout << "a = " << a
-            //           << ", {w,k} = {" << w << "," << k << "}"
-            //           << ", h = " << h
-            //           << ", z_surface = " << z_surface
-            //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}"
-            //           << ", ret = " << ret << std::endl;
-
+                       0.,
+                       -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x),
+                       0.,
+                       0.,
+                       0.};
             return ret;
          } else
             return {0., 0., 0., 0., 0., 0.};
@@ -80,7 +77,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
    return {0., 0., 0., 0., 0., 0.};
 };
 
-T6d velocity(const std::string &name, const std::vector<std::string> strings, const double t) {
+T6d velocity(const std::string &name, const std::vector<std::string> strings, double t) {
    auto g = _GRAVITY_;
    if (name == "Goring1979") {
       double h = 0.25;
@@ -187,8 +184,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          DispersionRelation DS(w, h);
          k = std::abs(DS.k);
          double d = (l >= 0 ? d : -l);
-         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h
-                   << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          Tddd axis = {stod(strings[6]), stod(strings[7]), stod(strings[8])};
          auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
                                                       (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
@@ -214,12 +210,12 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
       ピストン型の造波特性関数：
 
       ```math
-      F(f,h) = \frac{H}{2e}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}
+      F(f,h) = \frac{H}{S}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}=\frac{2 (\cosh(2kh) - 1)}{2kh+\sinh(2kh)}
       ```
 
-      $`e`$は造波版の振幅である．例えば，振幅が1mの波を発生させたい場合，
-      $`e = \frac{H}{2F}= \frac{2A}{2F} = \frac{A}{F(f,h)}`$となり，
-      これを造波板の変位：$`s(t) = e \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = e w \sin(wt)`$に与えればよい．
+      $`S`$は造波版のストロークで振幅の２倍である．例えば，振幅が$`A=1`$mの波を発生させたい場合，
+      $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
+      これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see \cite{Dean1991})
 
       */
       double start = stod(strings[1] /*start*/);
@@ -229,12 +225,15 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, co
          double h = std::abs(stod(strings[4] /*h*/));
          DispersionRelation DS(w, h);
          double k = std::abs(DS.k);
+         //
          double kh2 = 2. * k * h;
-         double F = 4. * std::pow(sinh(k * h), 2) / (kh2 + sinh(kh2));  //= H/(2*e)
+         double F = 2. * (cosh(kh2) - 1.) / (kh2 + sinh(kh2));  //= H/(2*e)
          double H = 2. * A;
-         double e = A / F;
+         double S = H / F;
          // wave maker movement is e * sin(w * t)
-         double dsdt = e * w * sin(w * (t - start));
+
+         t -= M_PI / w;
+         double dsdt = S / 2. * w * cos(w * (t - start));
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};
          return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};

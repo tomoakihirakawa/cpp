@@ -29,7 +29,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Ren2015"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
     case "fish":
@@ -120,10 +120,25 @@ match SimulationCase:
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Ren2015":
 
+        '''DOC_EXTRACT 2_1_0_validation_Ren2015
+        
+        <img src="schematic_Ren2015.png" width="400px" />
+
+        This case based on \cite{Ren2015} is for the validation of the floating body motion analysis using the BEM-MEL.
+        The floating body is a rectangular box with the dimension of $`(l_x,l_y,l_z)=(0.3,0.42,0.2) {\rm m}`$ 
+        The density of the floating body is $`0.5\times1000 {\rm kg/m^3}`$.
+        The moment of inertia of the floating body is $`(I_{xx},I_{yy},I_{zz}) = (\frac{m}{12}(l_y^2+l_z^2),\frac{m}{12}(l_x^2+l_z^2),\frac{m}{12}(l_x^2+l_y^2))`$.
+
+        You can find numerical results compared with this case from \cite{Cheng2018} and \cite{Bihs2017}.
+
+        [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
+
+        '''
+
         start = 0.
 
         T = 1.2
-        H = 0.1
+        H = 0.04
         a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
         h = 0.4
 
@@ -131,8 +146,8 @@ match SimulationCase:
         # id0 = "_no"
         # id0 = "_multiple"
 
-        # wavemaker_type = "piston"
-        wavemaker_type = "potential"
+        wavemaker_type = "piston"
+        # wavemaker_type = "potential"
 
         id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
@@ -161,24 +176,23 @@ match SimulationCase:
                  # "output": "json"}
                  "velocity": "floating"}
 
-        L = 0.3
-        W = 0.42
+        L = 0.3        
         H = 0.2
-        A = L*W
-        V = A*H
-        d = H/2
-        # float["mass"] = m = rho * g * d * A
-        buoyancy = rho * g * d * A
-        float["mass"] = m = rho * d * A
-        MOI = 14.*(0.01*0.01)  # original kg*m*m
-        # MOI = m/m0*MOI0
+        d = 0.1        
+        # 500*L*W*H (浮体全質量) = 1000*L*W*d (排除される水の質量)       
+        # d = H/2 = 0.1
+        W = 0.42
+        float["mass"] = m = 500*L*H*W
+        Ixx = 1./12.*m*(W*W+H*H)
+        Iyy = 1./12.*m*(L*L+H*H)
+        Izz = 1./12.*m*(L*L+W*W)
+        MOI = [Ixx, Iyy, Izz]
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
         # float["COM"] = [2+L/2., W/2, z_surface]
-        float["COM"] = [4.3+L/2, W/2, z_surface]
-        print("COM ", float["COM"])
-        # float["MOI"] = [0.14516, 0.2567, 0.0753109]
-        float["MOI"] = [10**10, 0.2567, 10**10]
+        float["COM"] = [4.6+L/2, W/2, z_surface]
+        print("COM ", float["COM"], " mass ", float["COM"], " W ", W)
+        float["MOI"] = [Ixx, Iyy, Izz]
 
         # if id contains "multiple":
         if "multiple" in id:
@@ -188,7 +202,7 @@ match SimulationCase:
             # Initialize the object files
             water["objfile"] = f"{objfolder}/water400.obj"
             wavemaker["objfile"] = f"{objfolder}/wavemaker100.obj"
-            tank["objfile"] = f"{objfolder}/tank100.obj"
+            tank["objfile"] = f"{objfolder}/tank50.obj"
             float["objfile"] = f"{objfolder}/float50.obj"
 
             inputfiles = [tank, wavemaker, water]
@@ -208,40 +222,49 @@ match SimulationCase:
             objfolder = code_home_dir + "/cpp/obj/Ren2015_no_float"
             water["objfile"] = objfolder + "/water400.obj"
             wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
-            tank["objfile"] = objfolder + "/tank100.obj"
+            tank["objfile"] = objfolder + "/tank50.obj"
             inputfiles = [tank, wavemaker, water]
         else:
-            float["COM"] = [2., W/2, z_surface]
+            float["COM"] = [4.6, W/2, z_surface]
             objfolder = code_home_dir + "/cpp/obj/Ren2015"
             # water["objfile"] = objfolder + "/water400meshlab.obj"
             water["objfile"] = objfolder + "/water400mod.obj"
             wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
-            tank["objfile"] = objfolder + "/tank100.obj"
+            tank["objfile"] = objfolder + "/tank10.obj"
             float["objfile"] = objfolder+"/float50.obj"
             inputfiles = [tank, wavemaker, water, float]
 
-        setting = {"max_dt": 0.005,
+        setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
                    "end_time": 9}
 
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Hadzic2005":
         
-        '''DOC_EXTRACT 2_1_0_validation_Hadzic2005        
-        This case is for the validation of the floating body motion analysis using the BEM-MEL.    
-        <img src="schematic_Hadzic2005.png" width="400px" />
+        '''DOC_EXTRACT 2_1_0_validation_Hadzic2005                
+        
+        <img src="schematic_Hadzic2005.png" width="400px"/>
+
+        This case based on \cite{Hadzic2005} is for the validation of the floating body motion analysis using the BEM-MEL.        
         The floating body is a rectangular box with the dimension of L10 cm x H5 cm x W29 cm.        
         The density of the floating body is 0.68x1000 kg/m^3, therefore the mass of the floating body is 0.68x0.05x0.1x0.29x1000 kg.
         The moment of inertia of the floating body is 14 kg cm^2.
+        
+        [CAD data](https://a360.co/46CisV7)
+
+        [spheric Test 12](https://www.spheric-sph.org/tests/test-12)
+
+        [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
+
         '''
 
-        multiple_case = True
+        multiple_case = False
 
-        objfolder = code_home_dir + "/cpp/obj/Hadzic2005_24floats" if multiple_case else "/cpp/obj/Hadzic2005"
+        objfolder = code_home_dir + "/cpp/obj/Hadzic2005_24floats" if multiple_case else code_home_dir + "/cpp/obj/Hadzic2005"
 
         water = {"name": "water", 
                  "type": "Fluid",
-                 "objfile": objfolder + "/water1000meshlab.obj" if multiple_case else "/water1000meshlab2.obj"}
+                 "objfile": objfolder + "/water1000meshlab.obj" if multiple_case else objfolder + "/water1000meshlab2.obj"}
         tank = {"name": "tank", 
                 "type": "RigidBody", 
                 "isFixed": True,
@@ -265,15 +288,19 @@ match SimulationCase:
         H = 0.05
         A = L*W
         # d = 0.03 #喫水深さ draft depth (draught)
-        float["mass"] = m = 0.68*rho*0.05*0.1*0.29
+        density = 680
+        float["mass"] = m = density*0.05*0.1*0.29
         d = m / (rho * A)
         print("d", d)
-        MOI = 14.*(0.01*0.01)  # original kg*m*m
+        # MOI = 14.*(0.01*0.01)  # original kg*m*m
+        Ixx = 1./12.*m*(W*W+H*H)
+        Iyy = 1./12.*m*(L*L+H*H)
+        Izz = 1./12.*m*(L*L+W*W)
         z_surface = 0.4
         z_floatinbody_bottom = z_surface - d
         # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
-        float["MOI"] = [10**10*MOI, MOI, 10**10*MOI]
+        float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
         inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.05,
@@ -287,6 +314,7 @@ match SimulationCase:
 
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "Kramer2021":
+
         '''DOC_EXTRACT 2_1_1_validation_Kramer2021
         
         This case is for the validation of the floating body motion analysis using the BEM-MEL.

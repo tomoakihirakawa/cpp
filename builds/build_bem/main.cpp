@@ -239,7 +239,9 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
-         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+         flipIf(*water,
+                {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
+                {5 * rad, 5 * rad}, false);
 
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
@@ -308,7 +310,7 @@ int main(int argc, char **argv) {
             // if (RK_step == 4)
             //    std::cout << Green << "do shift" << colorOff << " s\n";
             //
-            calculateCurrentUpdateVelocities(*water, 50);
+            calculateCurrentUpdateVelocities(*water, 20);
 
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
