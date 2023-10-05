@@ -105,10 +105,10 @@ match SimulationCase:
         input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
         setting = {"RK_order": 1,
-                   "max_dt": 0.0005,
+                   "max_dt": 0.00025,
                    "end_time_step": 20000,
                    "end_time": 1,
-                   "CSML": 2.7,
+                   "CSML": 2.4,
                    "initial_surface_z_position": 0.6,
                    "particle_spacing": 0.0125}
 
@@ -150,10 +150,10 @@ match SimulationCase:
         input_files = [wavetank, water, sensor1, sensor2]
 
         setting = {"RK_order": 1,  # \label{SPH:RK_order}
-                   "max_dt": 0.001,
+                   "max_dt": 0.0005,
                    "end_time_step": 100000,
                    "end_time": 4.,
-                   "CSML": 2.9,
+                   "CSML": 2.4,
                    "initial_surface_z_position": 0.2,
                    "particle_spacing": 0.015}
 

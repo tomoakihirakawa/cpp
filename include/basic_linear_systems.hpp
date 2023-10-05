@@ -603,94 +603,51 @@ V_d back_substitution(const VV_d &mat, V_d b, const int mat_size) {
 /*                              QR decomposition                              */
 /* -------------------------------------------------------------------------- */
 
-// struct QR {
-//    VV_d Q, R, A;
+/*DOC_EXTRACT QR_decomposition
 
-//    // Copy constructor
-//    QR(const QR &other)
-//        : Q(other.Q),
-//          R(other.R),
-//          A(other.A) {
-//       // No need to repeat computation; copy the computed Q, R, and A
-//    }
+## QR分解
 
-//    ~QR() {
-//       std::cout << "QR destructor" << std::endl;
-//    };
+QR分解は，行列を直交行列と上三角行列の積に分解することである．
+このQR分解では，ギブンズ回転を用いてQR分解を行っている．
 
-//    QR(const VV_d &AIN) : R(AIN), A(AIN), Q(AIN.size(), V_d(AIN.size(), 0.)) { Initialize(AIN, true); };
+$`I = F_1^{-1} F_1`$となるような$`F_1`$があるとする．これを使えば，
 
-//    void Initialize(const VV_d &AIN, const bool constractor = false) {
-//       if (!constractor) {
-//          A = R = AIN;
-//          Q.resize(AIN.size(), V_d(AIN.size(), 0.));
-//       }
-//       IdentityMatrix(Q);
-//       // MatrixForm(A, std::setw(10));
-//       int n = AIN.size();
-//       int m = AIN[0].size();
-//       double r, c, s, a, b;
-//       double Q0, Q1, R0, R1;  // Rのためのtmp
-//       double eps = 1e-12;
-//       for (auto j = 0; j < m; ++j) {
-//          // for (auto i = n - 2; i >= j; --i) {  // givensの位置
-//          for (auto i = j; i <= n - 2; ++i) {
-//             if (!Between(R[i + 1][j], {-eps, eps})) {  // givensの位置
-//                //! {i+1,j}がゼロとしたい成分
+```math
+\begin{align*}
+A&=IA\\
+&=F_1^{-1} F_1 A \quad {\text{where}}\quad I = F_1^{-1} F_1
+\end{align*}
+```
 
-//                a = R[i][j];
-//                b = R[i + 1][j];
-//                // s*a+c*b=0
-//                // -> s*a=-c*b
-//                // -> tan(theta)=-b/a
-//                // ----------------------------
-//                // r = atan(-b / a);
-//                // s = sin(r);  //! F_{i+k,i}
-//                // c = cos(r);  //! F_{i+k,i+k}
-//                // ----------------------------
-//                r = std::sqrt(a * a + b * b);
-//                s = -b / r;
-//                c = a / r;
-//                // ----------------------------
-//                // std::cout << "R{" << i << "," << j << "} = " << a << std::endl;
-//                // std::cout << "R{" << i + 1 << "," << j << "} = " << b << std::endl;
-//                if (s != s || c != c) {
-//                   s = 0.;
-//                   c = 1.;
-//                }
+となる．これを繰り返した結果
+$`A = F_1^{-1} F_2^{-1} ...F_n^{-1} F_n ... F_2 F_1 A`$の内，
+$`R = F_n ... F_2 F_1 A`$が上三角行列となってくれれば，これはQR分解である．
+$`Q`$は$`Q = F_1^{-1} F_2^{-1} ...F_n^{-1}`$．
 
-//                // Dot(F,R)の省略版
-//                for (auto k = 0; k < m; ++k) {          // # column direction
-//                   R0 = c * R[i][k] - s * R[i + 1][k];  //$ row i
-//                   R1 = s * R[i][k] + c * R[i + 1][k];  //$ row i+k
-//                   R[i][k] = R0;
-//                   R[i + 1][k] = R1;
-//                };
-//                for (auto k = 0; k < n; ++k) {          // # column direction
-//                   Q0 = c * Q[i][k] - s * Q[i + 1][k];  //$ row i
-//                   Q1 = s * Q[i][k] + c * Q[i + 1][k];  //$ row i+k
-//                   Q[i][k] = Q0;
-//                   Q[i + 1][k] = Q1;
-//                };
-//                // Print("Q");
-//                // MatrixForm(Q, std::setw(10));
-//                // Print("R");
-//                // MatrixForm(R, std::setw(15));
-//             }
-//          }
-//       }
-//    };
+### ギブンズ回転
 
-//    void IdentityMatrix(VV_d &mat) {
-//       size_t i = 0;
-//       for (auto &m : mat) {
-//          m.assign(m.size(), 0.0);
-//          m[i++] = 1.0;
-//       }
-//    }
-// };
+そんな都合がいい$`F_1`$はどうやって作るのか？
 
-/* -------------------------------------------------------------------------- */
+少なくとも
+$`F_1 = \begin{pmatrix} \cos\theta & \sin\theta \\ -\sin\theta & \cos\theta \end{pmatrix}`$と決めると，$`F_1`$は直交行列となり，
+
+```math
+\begin{align*}
+F_1^{-1} &= F_1^{T}\\
+\rightarrow I&=F_1^{T} F_1=F_1^{-1} F_1
+\end{align*}
+```
+
+あとは，$`R = F_n ... F_2 F_1 A`$が上三角行列となってくれるような，$`\cos\theta`$と$`\sin\theta`$を決めればよい．
+
+そうするには，$`F_1 A`$を計算する際に，左下の成分をゼロにするように$`\theta`$を決めればよい．
+次に，$`F_2`$を決める際に，$`F_2 F_1 A`$の左下の一つ上の成分をゼロにするように$`\theta`$を決めればよい．
+
+というふうに繰り返す．
+
+後で具体的にどのような値をかけているかここに示しておく．
+
+*/
 
 struct QR {
    VV_d Q, R, A, QT;

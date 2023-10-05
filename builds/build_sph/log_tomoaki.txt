@@ -1,5 +1,5 @@
 ----------
-Execution time: Thu Oct  5 15:22:36 2023
+Execution time: Thu Oct  5 18:39:55 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -8,5 +8,5 @@ Machine Information:
 
 Command line arguments:
   arg0: ./main
-  arg1: ./input_files/Lobovsky2013_PS0d0125_CSML2d7_RK1
+  arg1: ./input_files/Lobovsky2013_PS0d0125_CSML2d4_RK1
   arg2: 

@@ -8,7 +8,7 @@
 typedef std::vector<double> V_d;
 typedef std::vector<std::vector<double>> VV_d;
 
-/*DOC_EXTRACT eigen_value
+/*DOC_EXTRACT 0_0_eigen_value
 
 # 固有値問題
 

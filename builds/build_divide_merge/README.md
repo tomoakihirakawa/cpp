@@ -22,7 +22,7 @@
 
 ### 🪼 🪼 `flip`可能かどうかの判定  
 
-[`canFlip`](../../include/networkLine.hpp#L1618)でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
+[`canFlip`](../../include/networkLine.hpp#L1611)でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
 
 * フリップ前後で，辺に隣接する面の面積の和が大きく変化する場合，フリップさせない
 * フリップ前後で，辺に隣接する面の法線ベクトルが大きく変換する場合，フリップさせない
@@ -36,7 +36,7 @@
 
 信頼できる三角形の判定には，[`isValidTriangle`](../../include/basic_vectors.hpp#L1882)を用いる．
 
-[../../include/networkLine.hpp#L1598](../../include/networkLine.hpp#L1598)
+[../../include/networkLine.hpp#L1591](../../include/networkLine.hpp#L1591)
 
 
 

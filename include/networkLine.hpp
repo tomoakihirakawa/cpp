@@ -1509,17 +1509,10 @@ inline bool networkLine::islegal() const {
       auto fs = this->getFaces();
       if (fs.size() < 2)
          return true;
-
       auto [Ap0, Ap1, Ap2] = ToX(fs[0]->getPoints(this));
       auto [Bp0, Bp1, Bp2] = ToX(fs[1]->getPoints(this));
-      // double sumangleA = M_PI - std::abs(MyVectorAngle(Aps[2] - Aps[1], Aps[0] - Aps[2]));
-      // double sumangleB = M_PI - std::abs(MyVectorAngle(Bps[2] - Bps[1], Bps[0] - Bps[2]));
-
-      double sumangle = std::abs(MyVectorAngle(Ap1 - Ap2, Ap0 - Ap2));
-      sumangle += std::abs(MyVectorAngle(Bp1 - Bp2, Bp0 - Bp2));
-      if (sumangle > 2. * M_PI || 0. > sumangle)
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      else if (M_PI /*180.0.....1 若干大きい場合はOKとする*/ > sumangle)
+      double sumangle = std::abs(VectorAngle(Bp1 - Bp2, Bp0 - Bp2)) + std::abs(VectorAngle(Ap1 - Ap2, Ap0 - Ap2));
+      if (M_PI /*180.0.....1 若干大きい場合はOKとする*/ > sumangle)
          return true /*正*/;
       else
          return false /*不正*/;
@@ -1657,7 +1650,8 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
       //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
       if (!canFlip(acceptable_n_diff_before_after))
          return false;
-      else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
+      // else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
+      else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal()) {
          auto [p0, p1] = this->getPoints();
          auto f0f1_ = this->getFaces();
          int s0 = p0->getLines().size();
@@ -1680,20 +1674,14 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
          // double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
          // double diff = (diffAnext - diffAinit) / (f0f1[0]->getArea() + f0f1[1]->getArea());
          /*
-                 f0po *------* f0pf,f1pb
-                           |   /  |
-         f0pb,f1pf *------* f1po
+         //     f0po *------* f0pf,f1pb
+         //          |   /  |
+         //f0pb,f1pf *------* f1po
          */
 
-         double min_init = Min(TriangleAngles(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}));
-         auto tmp_angle = Min(TriangleAngles(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
-         if (min_init > tmp_angle)
-            min_init = tmp_angle;
+         double min_init = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f0pf->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f1pf->X, f1po->X})));
+         double min_later = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f1po->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f0po->X, f1po->X})));
 
-         double min_later = Min(TriangleAngles(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}));
-         tmp_angle = Min(TriangleAngles(T3Tddd{f1pb->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
-         if (min_later > tmp_angle)
-            min_later = tmp_angle;
          //
          // int s0 = f0pb->getLines().size();
          // int s1 = f0pf->getLines().size();
@@ -1726,11 +1714,13 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
          // 	return true;
          // }
          // else
-         if (min_init <= min_later &&
-             (next_s0 >= min_n || p0->CORNER) &&
-             (next_s1 >= min_n || p1->CORNER) &&
-             (next_s2 >= min_n || p2->CORNER) &&
-             (next_s3 >= min_n || p3->CORNER)) {
+         if (min_init <= min_later
+             // &&
+             //     (next_s0 >= min_n || p0->CORNER) &&
+             //     (next_s1 >= min_n || p1->CORNER) &&
+             //     (next_s2 >= min_n || p2->CORNER) &&
+             //     (next_s3 >= min_n || p3->CORNER)
+         ) {
             this->flip();
             return true;
          } else

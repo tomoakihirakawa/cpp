@@ -354,7 +354,11 @@ void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
 
 /* ------------------------------------------------------ */
 
-void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann, bool force = false, int iteration = 0) {
+void flipIf(Network &water,
+            const Tdd &limit_Dirichlet,
+            const Tdd &limit_Neumann,
+            bool force = false,
+            int iteration = 0) {
    try {
       auto [target_of_max_normal_diffD, acceptable_normal_change_by_flipD] = limit_Dirichlet;
       auto [target_of_max_normal_diffN, acceptable_normal_change_by_flipN] = limit_Neumann;
@@ -364,30 +368,31 @@ void flipIf(Network &water, const Tdd &limit_Dirichlet, const Tdd &limit_Neumann
       double mean_length = Mean(extLength(water.getLines()));
       bool isfound = false, ismerged = false;
       int count = 0;
-      auto V = ToVector(water.getLines());
-      for (const auto &l : RandomSample(V)) {
+      // auto V = ToVector(water.getLines());
+      for (const auto &l : water.getLines()) {
          auto [p0, p1] = l->getPoints();
          if (!l->CORNER) {
-            if (force && (iteration == 0 || count < iteration)) {
-               // p0とp1が角の場合，6という数にこだわる必要がない．
-               // つまり6がトポロジカルにベターではない．
-               if (l->Dirichlet) {
-                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD);
-                  if (isfound) count++;
-               } else {
-                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN);
-                  if (isfound) count++;
-               }
+            // if (force && (iteration == 0 || count < iteration)) {
+            //    // p0とp1が角の場合，6という数にこだわる必要がない．
+            //    // つまり6がトポロジカルにベターではない．
+            //    if (l->Dirichlet) {
+            //       isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD);
+            //       if (isfound) count++;
+            //    } else {
+            //       isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN);
+            //       if (isfound) count++;
+            //    }
+            // } else
+            // {
+            if (l->Dirichlet) {
+               //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
+               isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 3);
+               if (isfound) count++;
             } else {
-               if (l->Dirichlet) {
-                  //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 3);
-                  if (isfound) count++;
-               } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 3);
-                  if (isfound) count++;
-               }
+               isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 3);
+               if (isfound) count++;
             }
+            // }
          }
       }
       water.setGeometricProperties();
