@@ -182,9 +182,9 @@ $`\max({\bf u}) \Delta t \leq c _{v} h \cap \max({\bf a}) \Delta t^2 \leq c _{a}
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
 
-<img src="icons/SELECTED.png" alt="SELECTED" style="width: 1em;"> [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L44): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [流速のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L44): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-<img src="icons/SELECTED.png" alt="SELECTED" style="width: 1em;"> [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L40): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
+✅ [流速の発散の計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L40): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
 
 
 [./SPH1_lap_div_U.hpp#L7](./SPH1_lap_div_U.hpp#L7)

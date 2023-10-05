@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
                      simulation_time,
                      CSML,
                      particle_spacing,
-                     time_step < 10 ? max_dt / 100 : max_dt,
+                     time_step < 50 ? max_dt / 100 : max_dt,
                      RK_order);
 
       std::cout << "simulation_time = " << simulation_time << std::endl;
