@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 ODEの初期値問題](#🐋-ODEの初期値問題)
     - [⛵ 減衰調和振動子/Damped Harmonic Oscillatorの例](#⛵-減衰調和振動子/Damped-Harmonic-Oscillatorの例)
         - [🪼 後退オイラー](#🪼-後退オイラー)
@@ -41,9 +40,7 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L332)）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
 [LeapFrogのクラス](../../include/integrationOfODE.hpp#L332)
-
 [../../include/integrationOfODE.hpp#L322](../../include/integrationOfODE.hpp#L322)
-
 
 
 ### 🪼 🪼 Runge-Kutta  
@@ -67,19 +64,14 @@ x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 ```
 
 [RungeKuttaのクラス](../../include/integrationOfODE.hpp#L37)
-
 [../../include/integrationOfODE.hpp#L11](../../include/integrationOfODE.hpp#L11)
 
-
 [./example_DampedHrmonicOscillator.cpp#L4](./example_DampedHrmonicOscillator.cpp#L4)
-
 
 ## ⛵ Runge-Kutta Integration of ODE 
 
 ![](RK.png)
 
-
 [./example_RungeKutta.cpp#L1](./example_RungeKutta.cpp#L1)
-
 
 ---

@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 ニュートン法](#🐋-ニュートン法)
     - [⛵ ニュートン法](#⛵-ニュートン法)
     - [⛵ ロボットの節をLighthillの曲線上に乗せる](#⛵-ロボットの節をLighthillの曲線上に乗せる)
@@ -29,9 +28,7 @@ $ make
 $ ./example0_NewtonRaphson_0
 ```
 
-
 [./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
-
 
 ---
 ## ⛵ ロボットの節をLighthillの曲線上に乗せる 
@@ -159,9 +156,7 @@ LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L214)で�
 \eta = \frac{m v a}{I V}
 ```
 
-
 [./example0_NewtonRaphson_1.cpp#L6](./example0_NewtonRaphson_1.cpp#L6)
-
 
 ## ⛵ 準ニュートン法 
 
@@ -180,8 +175,6 @@ Newton法では，勾配ベクトルとヘッセ行列を使ったが，Broyden�
 
 勾配ベクトルがゼロになる点を探すのではなく，目的関数ベクトルがゼロになる点を探すこともできるだろう．
 
-
 [./example1_Broyden.cpp#L1](./example1_Broyden.cpp#L1)
-
 
 ---
