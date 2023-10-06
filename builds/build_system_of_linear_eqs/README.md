@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 連立一次方程式の解法](#🐋-連立一次方程式の解法)
     - [⛵ ⛵ Arnoldi過程](#⛵-⛵-Arnoldi過程)
     - [⛵ ⛵ 一般化最小残差法/GMRES](#⛵-⛵-一般化最小残差法/GMRES)
@@ -51,9 +50,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 ```
 
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
-
 [../../include/basic_linear_systems.hpp#L975](../../include/basic_linear_systems.hpp#L975)
-
 
 
 ## ⛵ ⛵ 一般化最小残差法/GMRES  
@@ -96,9 +93,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
-
 [../../include/basic_linear_systems.hpp#L1117](../../include/basic_linear_systems.hpp#L1117)
-
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
@@ -113,24 +108,18 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 </details>
 
-
 [./test0_GMRES.cpp#L1](./test0_GMRES.cpp#L1)
-
 
 ## ⛵ LU分解(LAPACK) 
 
 * LU分解は直接的な方法で，あらゆる種類の行列（対称、非対称、正定値、非正定値）に適用できる．
 * この方法は反復的な方法よりも計算コストが高くなる可能性があるが，反復法とは異なり，収束性の問題がない．
 
-
 [./test0_LAPACK.cpp#L1](./test0_LAPACK.cpp#L1)
-
 
 EigenのGMRESを使った結果と比較．
 
-
 [./test1_EIGEN_GMRES.cpp#L6](./test1_EIGEN_GMRES.cpp#L6)
-
 
 ## ⛵ 共役勾配法と勾配降下法 
 
@@ -144,9 +133,7 @@ EigenのGMRESを使った結果と比較．
 * 勾配降下法は最も基本的な最適化アルゴリズムで，線形システムまたは一般的な最適化問題を解くことができる．
 * しかし，勾配降下法の収束速度は通常比較的遅く，特に凸でない問題に対しては局所最小値に陥る可能性がある．
 
-
 [./test3_GradientMethod.cpp#L1](./test3_GradientMethod.cpp#L1)
-
 
 ---
 ## ⛵ Compressed Sparse Row (CSR) 
@@ -159,8 +146,6 @@ CSRクラス自身が，行列の行番号を保存しており，keyであるCS
 [ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L1105)は特に計算コストが高い．
 [CSRのDot積を並列化](../../include/basic_linear_systems.hpp#L887)すれば，かなり高速化できる．
 
-
 [./test2_CSR.cpp#L1](./test2_CSR.cpp#L1)
-
 
 ---

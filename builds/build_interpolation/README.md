@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 補間](#🐋-補間)
     - [⛵ ラグランジュ補間](#⛵-ラグランジュ補間)
     - [⛵ B-spline補間](#⛵-B-spline補間)
@@ -39,9 +38,7 @@ f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\p
 
 ![](sample_lag.png)
 
-
 [./interpolation_Lagrange.cpp#L12](./interpolation_Lagrange.cpp#L12)
-
 
 ---
 ## ⛵ B-spline補間 
@@ -186,12 +183,9 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 ### 🪼 🪼 最適なパラメタ$`{\varepsilon}`$  
 
 サンプル点の平均的な間隔を${s}$とした場合，$`{\varepsilon = 1/s}`$とパラメタをとるとよい．
-
 [../../include/interpolations.hpp#L238](../../include/interpolations.hpp#L238)
 
-
 [./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
-
 
 ---
 ## ⛵ 三角形補間 
@@ -225,15 +219,11 @@ N _4 &= 4t _1(1-t _0-t _1) \\
 N _5 &= 4t _0(1-t _0-t _1)
 \end{align}
 ```
-
 [../../include/basic_arithmetic_array_operations.hpp#L614](../../include/basic_arithmetic_array_operations.hpp#L614)
-
 
 
 ![](sample_tri.png)
 
-
 [./TriShape.cpp#L1](./TriShape.cpp#L1)
-
 
 ---

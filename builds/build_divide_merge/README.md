@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 Fusion360を使って計算用objファイルを生成](#🐋-Fusion360を使って計算用objファイルを生成)
 - [🐋 計算用にメッシュの細分化](#🐋-計算用にメッシュの細分化)
     - [⛵ メッシュの細分化の方法](#⛵-メッシュの細分化の方法)
@@ -35,9 +34,7 @@
 * 内角の和が$`\pi`$にならない場合
 
 信頼できる三角形の判定には，[`isValidTriangle`](../../include/basic_vectors.hpp#L1882)を用いる．
-
 [../../include/networkLine.hpp#L1591](../../include/networkLine.hpp#L1591)
-
 
 
 ### 🪼 🪼 格子の平滑化  
@@ -56,9 +53,7 @@
 
 徐々に移動させる場合，誤差の蓄積，条件の変化を把握するのが難しい．
 大きな変化は防げても，小さな変化には対応できない場合が考えられる．
-
 [../../include/NetworkUtility.hpp#L115](../../include/NetworkUtility.hpp#L115)
-
 
 
 ## ⛵ 実行ファイルの作成方法（`remesh.cpp`のコンパイル方法） 
@@ -92,8 +87,6 @@ $ make
 
 次は，入力ファイルを生成し，計算をする．
 
-
 [./remesh.cpp#L5](./remesh.cpp#L5)
-
 
 ---

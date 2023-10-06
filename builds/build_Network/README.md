@@ -1,5 +1,4 @@
 # Contents
-
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 - [🐋 `Network`](#🐋-`Network`)
@@ -16,9 +15,7 @@
 $ brew install CGAL
 ```
 
-
 [./example1_generate_tetra_using_CGAL.cpp#L2](./example1_generate_tetra_using_CGAL.cpp#L2)
-
 
 ## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
 
@@ -35,9 +32,7 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
 このスリーバーをうまく削除することが重要となる．
 
-
 [./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
-
 
 ---
 # 🐋 `Network` 
@@ -71,9 +66,7 @@ $ make
 $ ./load_3d_file
 ```
 
-
 [./example0_load_3d_file.cpp#L4](./example0_load_3d_file.cpp#L4)
-
 
 ---
 ### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
@@ -100,8 +93,6 @@ pvd.output();
 
 ![sample.gif](sample.gif)
 
-
 [./example0_load_3d_file.cpp#L53](./example0_load_3d_file.cpp#L53)
-
 
 ---

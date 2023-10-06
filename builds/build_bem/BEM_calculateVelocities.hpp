@@ -228,11 +228,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       p->vecToSurface.fill(0.);
    }
 
-   double aIN = 0.05, a;
-
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
+      double aIN = 0.25, a;
+      //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
       if (scale < 0.0001) scale = 0.0001;
 #pragma omp parallel

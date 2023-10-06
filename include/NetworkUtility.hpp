@@ -202,13 +202,13 @@ Tddd DistorsionMeasureWeightedSmoothingVector2(const networkPoint *p, std::funct
          auto [p0, p1, p2] = f->getPoints(p);
          auto [X0, X1, X2] = t3tdd = {position(p0), position(p1), position(p2)};
          W = std::log2(CircumradiusToInradius(t3tdd) - 1.) + 1;
-         if (p0->CORNER)
-            W *= 1.5;
-         if (p1->CORNER)
-            W *= 1.5;
-         if (p2->CORNER)
-            W *= 1.5;
-         W *= W;
+         // if (p0->CORNER)
+         //    W *= 1.1;
+         // if (p1->CORNER)
+         //    W *= 1.1;
+         // if (p2->CORNER)
+         //    W *= 1.1;
+         // W *= W;
          Wtot += W;
          Xmid = (X2 + X1) / 2.;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));

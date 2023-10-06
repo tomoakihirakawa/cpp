@@ -272,10 +272,13 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-               ## 計算に利用する壁面粒子だけを抽出
+               ## 壁面粒子の抽出と値の計算
+
+               ### `interp_normal_original`の計算
 
                流体粒子と同じ影響半径を使ってしまうと，流体粒子が参照できる範囲ギリギリにある壁粒子の法線方向の値が不正確になる．
                そのため，流体粒子の影響半径よりも広い半径を使って，`q->interp_normal_original`の法線方向を計算することが，重要である．
+               少し大きい半径を`captureRange`としている．
 
                */
 
@@ -285,12 +288,22 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                                              q->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(q->X, Q->X, captureRange);
                                           });
                const auto N = q->interp_normal_original;
+               q->interp_normal = Normalize(q->interp_normal_original);
+               if (!isFinite(q->interp_normal))
+                  q->interp_normal = {0., 0., 1.};
 
-               /* -------------------------------------------------------------------------- */
+               /*DOC_EXTRACT 0_1_0_set_normal_of_wall
+
+               ### `isCaptured`の決定
+
+               法線方向`interp_normal_original`を使って，流体粒子に近くかつ向かい合う方向にある壁粒子を抽出する．
+               計算に使用する壁粒子を決定し，使用する場合`isCaptured`を`true`にする．
+
+               */
                q->isCaptured = false;
                q->isFirstWallLayer = false;
                q->isNeumannSurface = false;
-               /* -------------------------------------------------------------------------- */
+
                auto R = captureRange;
                q->isCaptured = net->BucketPoints.any_of(q->X, R,
                                                         [&](const auto &Q) {
@@ -317,28 +330,16 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                                                                  });
                }
                /* -------------------------------------------------------------------------- */
-               q->interp_normal = Normalize(q->interp_normal_original);
-               if (!isFinite(q->interp_normal))
-                  q->interp_normal = {0., 0., 1.};
-
-               /* -------------------------------------------------------------------------- */
 
                /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-               ## 壁面粒子の流速の決定
+               ### `isCaptured`が`true`の壁面粒子の流速の計算
 
-               壁粒子の流速を流体粒子の流速に応じて変化させるとプログラムが煩雑になるので，
-               **ここでは**壁面粒子の流速は常にゼロに設定することにする．
-               壁粒子の圧力は，水が圧縮しないように各ステップ毎に計算し直す必要がある．
+               次のようにして，鏡写しのように流速を計算する．
 
-               **フリースリップ条件の設定**
-
-               \ref{SPH:freeslip}{フリースリップ条件の設定}
-
-               | boolian変数 | 意味 |
-               |:---:|:---:|
-               |`isSurface` | 水面かどうか |
-               |`isCaptured` | 計算で用いるかどうか |
+               ```cpp
+               q->U_SPH = Reflect(q->U_SPH, q->normal_SPH)
+               ```
 
                */
 
@@ -368,6 +369,15 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
    };
 
    // DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
+
+   /*DOC_EXTRACT 0_1_0_set_normal_of_wall
+
+   ### `setCorrectionMatrix`で壁粒子の演算修正用行列を計算
+
+   `setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
+
+   */
+
    wall_p.clear();
    for (const auto &[obj, poly] : RigidBodyObject)
       for (const auto &p : obj->getPoints()) {

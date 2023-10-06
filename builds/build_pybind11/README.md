@@ -1,5 +1,4 @@
 # Contents
-
 - [🐋 pybind11の使い方](#🐋-pybind11の使い方)
     - [⛵ pybind11の書き方](#⛵-pybind11の書き方)
     - [⛵ pybind11で共有ライブラリを作成](#⛵-pybind11で共有ライブラリを作成)
@@ -35,9 +34,7 @@ py::class_<LighthillRobot>(m, "LighthillRobot")
 }
 ```
 
-
 [./LighthillRobot.cpp#L36](./LighthillRobot.cpp#L36)
-
 
 ---
 ## ⛵ pybind11で共有ライブラリを作成 
@@ -62,9 +59,7 @@ $ cmake -DCMAKE _BUILD _TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=Ligh
 $ make
 ```
 
-
 [./LighthillRobot.cpp#L1](./LighthillRobot.cpp#L1)
-
 
 ---
 ## ⛵ python内で共有ライブラリを使う 
@@ -78,9 +73,7 @@ cppと同じように[`robot`オブジェクトを作成](../../builds/build_pyb
 |:---:|:---:|
 | <img src="sample_aquarium.gif"  width="80%" height="80%"> | ![sample.gif](sample.gif) |
 
-
 [./runLightHillRobot.py#L2](./runLightHillRobot.py#L2)
-
 
 ### 🪼 datファイルの作成 
 
@@ -98,9 +91,7 @@ $`t, x, y, z, \theta _x, \theta _y, \theta _z`$の順に並んでいる．
 0.05, 0.6666665982273601, -0.0001239762852648563, 0., 0., 0., 1.3879082155409919e-05
 ```
 
-
 [./runLightHillRobot.py#L89](./runLightHillRobot.py#L89)
-
 
 ### 🪼 datファイルを読み込んでグラフを表示する 
 
@@ -108,8 +99,6 @@ $`t, x, y, z, \theta _x, \theta _y, \theta _z`$の順に並んでいる．
 
 <img src="sample.png"  width="50%" height="50%">
 
-
 [./runLightHillRobot.py#L146](./runLightHillRobot.py#L146)
-
 
 ---
