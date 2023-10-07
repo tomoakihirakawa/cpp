@@ -9,10 +9,12 @@
 ## 境界のタイプを決定する
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
-   \ref{contact_angle}{`networkPoint::contact_angle`}，
-   \ref{isInContact}{`networkPoint::isInContact`}，
-   \ref{addContactFaces}{`networkPoint::addContactFaces`}
-   を使って接触判定を行っている．
+
+   * \ref{contact_angle}{`networkPoint::contact_angle`}
+   * \ref{isInContact}{`networkPoint::isInContact`}
+   * \ref{addContactFaces}{`networkPoint::addContactFaces`}
+
+を使って接触判定を行っている．
 
  \ref{BEM:detection_range}{流体が構造物との接触を感知する半径}の設置も重要．
 

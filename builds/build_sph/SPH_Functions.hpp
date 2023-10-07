@@ -99,8 +99,8 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.05;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {

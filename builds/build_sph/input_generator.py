@@ -108,7 +108,7 @@ match SimulationCase:
                    "max_dt": 0.00025,
                    "end_time_step": 20000,
                    "end_time": 1,
-                   "CSML": 2.4,
+                   "CSML": 3.,
                    "initial_surface_z_position": 0.6,
                    "particle_spacing": 0.0125}
 

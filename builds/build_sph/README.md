@@ -8,15 +8,17 @@
             - [🐚 Navier-Stokes方程式を解く前の準備](#🐚-Navier-Stokes方程式を解く前の準備)
             - [🐚 Navier-Stokes方程式を解く](#🐚-Navier-Stokes方程式を解く)
         - [🪼 CFL条件の設定](#🪼-CFL条件の設定)
-    - [⛵ 壁面粒子の抽出と値の計算](#⛵-壁面粒子の抽出と値の計算)
-        - [🪼 `interp_normal_original`の計算](#🪼-`interp_normal_original`の計算)
-        - [🪼 `isCaptured`の決定](#🪼-`isCaptured`の決定)
-        - [🪼 `isCaptured`が`true`の壁面粒子の流速の計算](#🪼-`isCaptured`が`true`の壁面粒子の流速の計算)
-        - [🪼 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算](#🪼-`setCorrectionMatrix`で壁粒子の演算修正用行列を計算)
-        - [🪼 勾配演算子の修正をする行列の計算](#🪼-勾配演算子の修正をする行列の計算)
-    - [⛵ 流体の法線方向の計算と水面の判定](#⛵-流体の法線方向の計算と水面の判定)
-        - [🪼 流体の法線方向の計算](#🪼-流体の法線方向の計算)
-        - [🪼 水面の判定](#🪼-水面の判定)
+    - [⛵ N.S.方程式を解く前の準備](#⛵-N.S.方程式を解く前の準備)
+        - [🪼 壁面粒子の抽出と値の計算](#🪼-壁面粒子の抽出と値の計算)
+            - [🐚 `interp_normal_original`の計算](#🐚-`interp_normal_original`の計算)
+            - [🐚 `isCaptured`の決定](#🐚-`isCaptured`の決定)
+            - [🐚 `isCaptured`が`true`の壁面粒子の流速の計算](#🐚-`isCaptured`が`true`の壁面粒子の流速の計算)
+            - [🐚 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算](#🐚-`setCorrectionMatrix`で壁粒子の演算修正用行列を計算)
+        - [🪼 `setCorrectionMatrix`について](#🪼-`setCorrectionMatrix`について)
+        - [🪼 流体の法線方向の計算と水面の判定](#🪼-流体の法線方向の計算と水面の判定)
+            - [🐚 `setCorrectionMatrix`で流体粒子の演算修正用行列を計算](#🐚-`setCorrectionMatrix`で流体粒子の演算修正用行列を計算)
+            - [🐚 流体の法線方向の計算](#🐚-流体の法線方向の計算)
+            - [🐚 水面の判定](#🐚-水面の判定)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
     - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right)=b`$](#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-^{n+1}-\right)=b`$)
         - [🪼 ポアソン方程式](#🪼-ポアソン方程式)
@@ -110,24 +112,31 @@ $`c _v=0.1,c _a=0.1`$としている．
 [./SPH_Functions.hpp#L90](./SPH_Functions.hpp#L90)
 
 ---
-## ⛵ 壁面粒子の抽出と値の計算 
+## ⛵ N.S.方程式を解く前の準備
 
-### 🪼 `interp_normal_original`の計算 
+[./SPH0_setWall_Freesurface.hpp#L7](./SPH0_setWall_Freesurface.hpp#L7)
+
+---
+### 🪼 壁面粒子の抽出と値の計算
+
+[./SPH0_setWall_Freesurface.hpp#L240](./SPH0_setWall_Freesurface.hpp#L240)
+
+#### 🐚 `interp_normal_original`の計算 
 
 流体粒子と同じ影響半径を使ってしまうと，流体粒子が参照できる範囲ギリギリにある壁粒子の法線方向の値が不正確になる．
 そのため，流体粒子の影響半径よりも広い半径を使って，`q->interp_normal_original`の法線方向を計算することが，重要である．
 少し大きい半径を`captureRange`としている．
 
-[./SPH0_setWall_Freesurface.hpp#L273](./SPH0_setWall_Freesurface.hpp#L273)
+[./SPH0_setWall_Freesurface.hpp#L285](./SPH0_setWall_Freesurface.hpp#L285)
 
-### 🪼 `isCaptured`の決定 
+#### 🐚 `isCaptured`の決定 
 
 法線方向`interp_normal_original`を使って，流体粒子に近くかつ向かい合う方向にある壁粒子を抽出する．
 計算に使用する壁粒子を決定し，使用する場合`isCaptured`を`true`にする．
 
-[./SPH0_setWall_Freesurface.hpp#L295](./SPH0_setWall_Freesurface.hpp#L295)
+[./SPH0_setWall_Freesurface.hpp#L305](./SPH0_setWall_Freesurface.hpp#L305)
 
-### 🪼 `isCaptured`が`true`の壁面粒子の流速の計算 
+#### 🐚 `isCaptured`が`true`の壁面粒子の流速の計算 
 
 次のようにして，鏡写しのように流速を計算する．
 
@@ -135,16 +144,16 @@ $`c _v=0.1,c _a=0.1`$としている．
 q->U_SPH = Reflect(q->U_SPH, q->normal_SPH)
 ```
 
-[./SPH0_setWall_Freesurface.hpp#L334](./SPH0_setWall_Freesurface.hpp#L334)
+[./SPH0_setWall_Freesurface.hpp#L344](./SPH0_setWall_Freesurface.hpp#L344)
 
-### 🪼 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算 
+#### 🐚 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算 
 
 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
 
-[./SPH0_setWall_Freesurface.hpp#L373](./SPH0_setWall_Freesurface.hpp#L373)
+[./SPH0_setWall_Freesurface.hpp#L383](./SPH0_setWall_Freesurface.hpp#L383)
 
 ---
-### 🪼 勾配演算子の修正をする行列の計算 
+### 🪼 `setCorrectionMatrix`について 
 
 [Morikawa et al. (2023)](https://doi.org/10.1016/j.jcpx.2023.100125)で紹介されていた，Randles and Libersky (1996)の勾配演算の精度を改善する行列を計算する．
 `grad_corr_M`としている．
@@ -155,25 +164,33 @@ q->U_SPH = Reflect(q->U_SPH, q->normal_SPH)
 \end{align}
 ```
 
-[./SPH0_setWall_Freesurface.hpp#L11](./SPH0_setWall_Freesurface.hpp#L11)
+⚠️ `isCaptured`を先に計算しておく必要がある．`isCaptured`が`false`の場合は，`grad_corr_M`は単位行列になる．
 
-## ⛵ 流体の法線方向の計算と水面の判定
+[./SPH0_setWall_Freesurface.hpp#L17](./SPH0_setWall_Freesurface.hpp#L17)
 
-[./SPH0_setWall_Freesurface.hpp#L391](./SPH0_setWall_Freesurface.hpp#L391)
+### 🪼 流体の法線方向の計算と水面の判定
 
-### 🪼 流体の法線方向の計算 
+[./SPH0_setWall_Freesurface.hpp#L401](./SPH0_setWall_Freesurface.hpp#L401)
 
-✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L510): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
+#### 🐚 `setCorrectionMatrix`で流体粒子の演算修正用行列を計算 
+
+`setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
+
+[./SPH0_setWall_Freesurface.hpp#L427](./SPH0_setWall_Freesurface.hpp#L427)
+
+#### 🐚 流体の法線方向の計算 
+
+✅ [単位法線ベクトル](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L527): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 単位法線ベクトルは，`interp_normal`としている．
 
-[./SPH0_setWall_Freesurface.hpp#L422](./SPH0_setWall_Freesurface.hpp#L422)
+[./SPH0_setWall_Freesurface.hpp#L439](./SPH0_setWall_Freesurface.hpp#L439)
 
-### 🪼 水面の判定 
+#### 🐚 水面の判定 
 
-`surface_condition0,1`の両方を満たす場合，水面とする．
+水面の判定条件は，少し複雑である．
 
-[./SPH0_setWall_Freesurface.hpp#L531](./SPH0_setWall_Freesurface.hpp#L531)
+[./SPH0_setWall_Freesurface.hpp#L548](./SPH0_setWall_Freesurface.hpp#L548)
 
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -292,7 +309,7 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 ---
 ## ⛵ ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph/SPH2_FindPressure.hpp#L502)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_bem/BEM_solveBVP.hpp#L885)を使う．
 
 [./SPH2_FindPressure.hpp#L405](./SPH2_FindPressure.hpp#L405)
 
@@ -319,7 +336,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **NEW**
 
-- [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L364)
+- [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L374)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L127)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L198)
 - どのように[壁粒子のb](not found)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L92)を作るか
@@ -329,9 +346,9 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L68)
 - [圧力の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L106)
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L278)
-- [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L265)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
+- [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L277)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
-- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L510)
+- [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L527)
 - [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L370)
 
 **水面粒子**
@@ -417,7 +434,13 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 <!-- Key SPH:kernelFunctions not found -->
 
-プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L174)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
+プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L213)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
+
+```sh
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_KernelFunctions.cpp
+make
+./test_KernelFunctions
+```
 
 * 関数の形状を確認．
 * 体積積分が1になるかどうかを確認．

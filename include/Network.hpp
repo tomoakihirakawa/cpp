@@ -331,7 +331,7 @@ networkPoint_detail*/
 /*   --@--   */
 /*    / \    */
 #include "integrationOfODE.hpp"
-class networkPoint : public CoordinateBounds, public CSR {
+class networkPoint : public CoordinateBounds, public CRS {
   protected:
    bool status;
 
@@ -3646,7 +3646,9 @@ class Network : public CoordinateBounds {
       this->mass = this->mass_tmp;
       this->inertia = this->inertia_tmp;
    };
+
    /* ------------------------------------------------------ */
+
    void RigidBodyUpdatePoints() {
       // center_of_massとquaternionに従って計算
       Tddd trans = this->center_of_mass - this->ICOM;

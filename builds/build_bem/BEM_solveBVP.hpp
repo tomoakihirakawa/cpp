@@ -63,7 +63,7 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-// #define use_gmres 50
+// #define use_gmres 100
 #define use_lapack
 
 // #define quad_element
@@ -219,8 +219,8 @@ $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内
 struct BEM_BVP {
    const bool Neumann = false;
    const bool Dirichlet = true;
+   lapack_lu *lu = nullptr;
 #if defined(use_lapack)
-   lapack_lu *lu;
 #else
    ludcmp_parallel *lu;
 #endif
@@ -237,7 +237,7 @@ struct BEM_BVP {
    VV_d mat_ukn, mat_kn;
    V_d knowns;
    std::vector<std::vector<std::array<double, 2>>> IGIGn;
-   BEM_BVP() : lu(nullptr){};
+   BEM_BVP(){};
    ~BEM_BVP() {
       if (this->lu) delete this->lu;
    };
@@ -510,7 +510,7 @@ struct BEM_BVP {
 
       TimeWatch watch;
 
-      ans.resize(knowns.size());
+      ans.resize(knowns.size(), 0.);
 
       if (this->lu)
          delete this->lu;
@@ -518,17 +518,31 @@ struct BEM_BVP {
       this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
       std::cout << "The conjugate gradient is used" << std::endl;
       GradientMethod gd1(mat_ukn);
-      ans = gd1.solve(Dot(mat_kn, knowns), {}, 1E-1);
+      ans = gd1.solve(ParallelDot(mat_kn, knowns), {}, 1E-1);
       GradientMethod gd2(mat_ukn);
-      ans = gd2.solveCG(Dot(mat_kn, knowns), ans);
+      ans = gd2.solveCG(ParallelDot(mat_kn, knowns), ans);
 #elif defined(use_gmres)
-      std::cout << "gmres for ans" << std::endl;
-      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/, use_gmres);
-      ans = gm.x;
-      std::cout << "gm.err = " << gm.err << ", isFinite(gm.err) = " << isFinite(gm.err) << std::endl;
-      if (simulation_time < 0.005 || !isFinite(gm.err < 1E-20)) {
-         std::cout << "lapack lu decomposition" << std::endl;
-         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      std::cout << "use gmres for BIE" << std::endl;
+      auto b = ParallelDot(mat_kn, knowns);
+      gmres gm(mat_ukn, b, ans, use_gmres);
+      std::cout << Red << "gmres error = " << gm.err << colorOff << std::endl;
+      if (!isFinite(gm.err, 1E+5) || !isFinite(gm.x, 1E+5)) {
+         std::cout << Red << "gmres failed" << std::endl;
+         std::cout << Red << "lapack lu decomposition" << std::endl;
+         this->lu = new lapack_lu(mat_ukn, b, ans);
+      } else if (simulation_time < 0.001) {
+         std::cout << Red << "new lapack lu decomposition" << std::endl;
+         this->lu = new lapack_lu(mat_ukn, b, ans);
+      } else {
+         ans = gm.x;
+         for (auto i = 1; i < 5; i++) {
+            if (gm.err < 1E-8)
+               break;
+            gm.Restart(mat_ukn, b, ans, use_gmres);  //\label{SPH:gmres}
+            ans = gm.x;
+            std::cout << "       gm.err : " << gm.err << std::endl;
+            std::cout << " actual error : " << Norm(b - ParallelDot(mat_ukn, ans)) << std::endl;
+         }
       }
          // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
          // std::cout << err << std::endl;
@@ -849,14 +863,30 @@ struct BEM_BVP {
       ans.resize(knowns.size());
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
-      ans = gd.solve(Dot(mat_kn, knowns));
+      ans = gd.solve(ParallelDot(mat_kn, knowns));
 #elif defined(use_gmres)
-      std::cout << "gmres for phiphin_t" << std::endl;
-      gmres gm(mat_ukn /*未知の行列係数（左辺）*/, Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/, use_gmres);
-      ans = gm.x;
-      if (!isFinite(gm.err)) {
-         std::cout << "gm.err = " << gm.err << std::endl;
-         this->lu->solve(Dot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      std::cout << "use gmres for phiphin_t" << std::endl;
+      auto b = ParallelDot(mat_kn, knowns);
+      gmres gm(mat_ukn, b, ans, use_gmres);
+      std::cout << Red << "gmres for phiphin_t. error = " << gm.err << colorOff << std::endl;
+      if (!isFinite(gm.err) || !isFinite(gm.x)) {
+         std::cout << Red << "gmres for phiphin_t failed" << std::endl;
+         if (this->lu) {
+            this->lu->solve(b, ans);
+         } else {
+            std::cout << Green << "new lapack_lu" << colorOff << std::endl;
+            this->lu = new lapack_lu(mat_ukn, b, ans);
+         }
+      } else {
+         ans = gm.x;
+         for (auto i = 1; i < 5; i++) {
+            if (gm.err < 1E-8)
+               break;
+            gm.Restart(mat_ukn, b, ans, use_gmres);  //\label{SPH:gmres}
+            ans = gm.x;
+            std::cout << "       gm.err : " << gm.err << std::endl;
+            std::cout << " actual error : " << Norm(b - ParallelDot(mat_ukn, ans)) << std::endl;
+         }
       }
 #elif defined(use_lapack)
       this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);

@@ -68,26 +68,27 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
    考え方：修正流速は，次の時刻における修正量なので，
    chopする法線方向なども次の時刻における法線方向でないといけない：RK_with_Ubuff_Normal
    */
-   if (p->Dirichlet) {
-      return Chop(VECTOR, RK_without_Ubuff_Normal(p));
-   } else {
-      if (p->CORNER) {
-         for (const auto &f : p->getFacesNeumann())
-            VECTOR = Projection(VECTOR, Cross(getNextNormalDirichlet_BEM(p), RK_without_Ubuff_Normal(f)));
-      }
-      // for (const auto &f : p->getFacesNeumann()) {
-      //    VECTOR = Chop(VECTOR, RK_without_Ubuff_Normal(f));
-      //    // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
-      // }
-      for (const auto &[_, FX] : p->getNearestContactFaces()) {
-         auto [F, X] = FX;
-         if (F)
-            VECTOR = Chop(VECTOR, F->normal);
-         // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
-      }
 
-      return VECTOR;
+   // if (p->Dirichlet) {
+   //    return Chop(VECTOR, RK_without_Ubuff_Normal(p));
+   // } else {
+   if (p->CORNER) {
+      for (const auto &f : p->getFacesNeumann())
+         VECTOR = Projection(VECTOR, Cross(getNextNormalDirichlet_BEM(p), RK_without_Ubuff_Normal(f)));
    }
+   // for (const auto &f : p->getFacesNeumann()) {
+   //    VECTOR = Chop(VECTOR, RK_without_Ubuff_Normal(f));
+   //    // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
+   // }
+   for (const auto &[_, FX] : p->getNearestContactFaces()) {
+      auto [F, X] = FX;
+      if (F)
+         VECTOR = Chop(VECTOR, F->normal);
+      // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
+   }
+
+   return VECTOR;
+   // }
 };
 
 void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p) {
@@ -108,13 +109,17 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
          // 現在のv^nを使って問題ない．加速度はいらない．
          // Quaternion q;
          // q = q.d_dt(net->velocityRotational());
-         auto COM = net->RK_COM.getX(net->velocityTranslational());
-         auto w = net->velocityRotational();
-         Quaternion Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(w)));
-         auto X0 = Q.Rv(p0->initialX - net->ICOM) + COM;
-         auto X1 = Q.Rv(p1->initialX - net->ICOM) + COM;
-         auto X2 = Q.Rv(p2->initialX - net->ICOM) + COM;
-         ret[i] = {X0, X1, X2};
+         Quaternion next_Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(net->velocityRotational())));
+         auto next_COM = net->RK_COM.getX(net->velocityTranslational());
+
+         auto X_next = [&](const auto &p) {
+            Tddd trans = next_COM - net->ICOM;
+            Tddd r = p->initialX - net->ICOM;
+            Tddd rotation = next_Q.Rv(r) - r;
+            return rotation + trans + p->initialX;
+         };
+
+         ret[i] = {X_next(p0), X_next(p1), X_next(p2)};
       } else if (net->isSoftBody) {
          auto X0 = p0->RK_X.getX(p0->velocityTranslational());
          auto X1 = p1->RK_X.getX(p1->velocityTranslational());
@@ -231,7 +236,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.25, a;
+      double aIN = 0.1, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
       if (scale < 0.0001) scale = 0.0001;
@@ -247,11 +252,12 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          // else
          // scale = a;
 
-         if (k < 3) {
-            auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            p->vecToSurface_BUFFER = condition_Ua(V, p);
-         } else {
-            auto V = scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         // if (k < 3) {
+         //    auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         //    p->vecToSurface_BUFFER = condition_Ua(V, p);
+         // } else
+         {
+            auto V = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }
          // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
@@ -279,8 +285,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
       if (do_shift)
          // for (auto i = 0; i < 10; ++i)
          addVectorTangentialShift(kk);  // repeating this may led surface detaching
-      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]"
-                << " a = " << a << std::endl;
+      std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
    }

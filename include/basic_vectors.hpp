@@ -912,11 +912,15 @@ bool myIsfinite(const double v) {
 //    return (v >= -eps && v <= eps && !std::isnan(v));
 // }
 
+// bool isFinite(const double v, const double eps = 1E+20) {
+//    if (v < -eps || v > eps || v != v || !std::isfinite(v) || std::isnan(v))
+//       return false;
+//    else
+//       return true;
+// };
+
 bool isFinite(const double v, const double eps = 1E+20) {
-   if (v < -eps || v > eps || v != v || std::isnan(v))
-      return false;
-   else
-      return true;
+   return !(v < -eps || v > eps || std::isnan(v));
 };
 
 // bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
