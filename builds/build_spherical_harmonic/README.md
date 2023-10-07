@@ -1,7 +1,8 @@
 # Contents
-- [🐋 多重極展開(Multipole Expansion)](#🐋-多重極展開(Multipole-Expansion))
-    - [⛵ Green関数の多重極展開](#⛵-Green関数の多重極展開)
-        - [🪼 球面座標系への変換](#🪼-球面座標系への変換)
+- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
+    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
+        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
+    - [⛵ 精度の確認](#⛵-精度の確認)
         - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
         - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
@@ -10,9 +11,9 @@
 
 
 ---
-# 🐋 多重極展開(Multipole Expansion) 
+# 🐋 🐋 多重極展開  
 
-## ⛵ Green関数の多重極展開 
+## ⛵ ⛵ Green関数の多重極展開  
 
 次のGreen関数を考える．
 
@@ -41,9 +42,7 @@ $`P _k^m(x)`$はルジャンドル陪関数：
 P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
 ```
 
-[./test_multipole_expansion.cpp#L8](./test_multipole_expansion.cpp#L8)
-
-### 🪼 球面座標系への変換 
+### 🪼 🪼 球面座標系への変換  
 
 $`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
 
@@ -59,8 +58,10 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
+[../../include/lib_multipole_expansion.hpp#L17](../../include/lib_multipole_expansion.hpp#L17)
 
-[./test_multipole_expansion.cpp#L49](./test_multipole_expansion.cpp#L49)
+
+## ⛵ 精度の確認 
 
 ### 🪼 $`G _{\rm apx}`$の精度 
 
@@ -122,7 +123,7 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 | **x = (0,0,0), a = (5,5,5)** | ![n4_A_5_5_5](output_n4_A_5_5_5_grad.png) | ![n5_A_5_5_5](output_n5_A_5_5_5_grad.png) | ![n6_A_5_5_5](output_n6_A_5_5_5_grad.png) | ![n7_A_5_5_5](output_n7_A_5_5_5_grad.png) | ![n8_A_5_5_5](output_n8_A_5_5_5_grad.png) |
 | **x = (0,0,0), a = (10,10,10)** | ![n4_A_10_10_10](output_n4_A_10_10_10_grad.png) | ![n5_A_10_10_10](output_n5_A_10_10_10_grad.png) | ![n6_A_10_10_10](output_n6_A_10_10_10_grad.png) | ![n7_A_10_10_10](output_n7_A_10_10_10_grad.png) | ![n8_A_10_10_10](output_n8_A_10_10_10_grad.png) |
 
-[./test_multipole_expansion.cpp#L127](./test_multipole_expansion.cpp#L127)
+[./test_multipole_expansion.cpp#L4](./test_multipole_expansion.cpp#L4)
 
 ## ⛵ 境界要素法への応用 
 
@@ -186,6 +187,6 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 \end{align*}
 ```
 
-[./test_multipole_expansion.cpp#L281](./test_multipole_expansion.cpp#L281)
+[./test_multipole_expansion.cpp#L155](./test_multipole_expansion.cpp#L155)
 
 ---

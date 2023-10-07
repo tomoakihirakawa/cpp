@@ -264,12 +264,15 @@ match SimulationCase:
 
         water = {"name": "water", 
                  "type": "Fluid",
-                 "objfile": objfolder + "/water1000meshlab.obj" if multiple_case else objfolder + "/water1000meshlab2.obj"}
+                 "objfile": objfolder + "/water1000meshlab.obj" if multiple_case else objfolder + "/water1000meshlab3.obj"}
+        
         tank = {"name": "tank", 
                 "type": "RigidBody", 
                 "isFixed": True,
                 "objfile": objfolder + "/tank10.obj"}
+        
         start_time = 0.
+
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
                      "objfile": objfolder + "/wavemaker100.obj",
@@ -281,7 +284,8 @@ match SimulationCase:
                  "type": "RigidBody",
                  "objfile": objfolder+"/float10.obj",
                  "output": "json",
-                 "velocity": "floating"}
+                 "velocity": "floating"
+                 }
         
         L = 0.1
         W = 0.29

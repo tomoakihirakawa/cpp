@@ -73,7 +73,7 @@ coords = np.random.choice(n * n, size=N, replace=False)
 coords = np.unravel_index(coords, shape)
 values = np.random.normal(size=N)
 A_sparse = scipy.sparse.coo_matrix((values, coords), shape=shape)
-A_sparse = A_sparse.tocsr()
+A_sparse = A_sparse.toCRS()
 A_sparse += scipy.sparse.eye(n)
 A_dense = A_sparse.toarray()
 

@@ -244,13 +244,19 @@ int main(int argc, char **argv) {
                 {5 * rad, 5 * rad},
                 false);
 
+         if (time_step == 0)
+            flipIf(*water,
+                   {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
+                   {5 * rad, 5 * rad},
+                   true);
+
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
 
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, .15);
+         double dt = dt_CFL(*water, max_dt, .2);
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);
@@ -339,12 +345,8 @@ int main(int argc, char **argv) {
                      auto COM_old = net->COM;
                      net->RK_COM.push(net->velocityTranslational());
                      net->COM = net->RK_COM.getX();
-                     // Quaternion q;
-                     // q = q.d_dt(net->velocityRotational());  // w->クォータニオン
-                     // net->RK_Q.push(q());                    // クォータニオン->T4dとしてプッシュ
                      net->RK_Q.push(AngularVelocityTodQdt(net->velocityRotational(), net->Q));
                      net->Q = net->RK_Q.getX();
-
                      std::cout << "name = " << net->getName() << std::endl;
                      std::cout << "net->COM - COM_old= " << net->COM - COM_old << std::endl;
                      std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;

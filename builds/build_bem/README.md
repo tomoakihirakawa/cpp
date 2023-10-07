@@ -253,12 +253,14 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 ## ⛵ 境界のタイプを決定する 
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
-[`networkPoint::contact_angle`](../../include/networkPoint.hpp#L176)，
-[`networkPoint::isInContact`](../../include/networkPoint.hpp#L185)，
-[`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L225)
+
+* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L176)
+* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L192)
+* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L232)
+
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L181)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L183)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -294,8 +296,8 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 |-------------------------|--------------------------------------------------------------------------------|
 | [`contact_angle`](../../include/networkPoint.hpp#L176)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
 | [`isFacing()`](../../include/networkPoint.hpp#L179)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [`isInContact()`](../../include/networkPoint.hpp#L185)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L225)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`isInContact()`](../../include/networkPoint.hpp#L192)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L232)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 [../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
 
 
@@ -307,7 +309,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L278](../../include/networkPoint.hpp#L278)
+[../../include/networkPoint.hpp#L285](../../include/networkPoint.hpp#L285)
 
 
 #### 🐚 呼び出し方法 
@@ -518,12 +520,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L223)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L129)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L138)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L134)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L143)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-[./BEM_calculateVelocities.hpp#L202](./BEM_calculateVelocities.hpp#L202)
+[./BEM_calculateVelocities.hpp#L207](./BEM_calculateVelocities.hpp#L207)
 
 ---
 ## ⛵ 浮体動揺解析 
@@ -565,7 +567,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L553](./BEM_solveBVP.hpp#L553)
+[./BEM_solveBVP.hpp#L567](./BEM_solveBVP.hpp#L567)
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
@@ -611,7 +613,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L766)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L780)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -642,9 +644,9 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L780)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L794)で与えている．
 
-[./BEM_solveBVP.hpp#L596](./BEM_solveBVP.hpp#L596)
+[./BEM_solveBVP.hpp#L610](./BEM_solveBVP.hpp#L610)
 
 ```math
 \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
@@ -659,7 +661,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L780)で与
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
-[./BEM_solveBVP.hpp#L677](./BEM_solveBVP.hpp#L677)
+[./BEM_solveBVP.hpp#L691](./BEM_solveBVP.hpp#L691)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
 
@@ -696,7 +698,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L484](./main.cpp#L484)
+[./main.cpp#L490](./main.cpp#L490)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -767,7 +769,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L694](./BEM_solveBVP.hpp#L694)
+[./BEM_solveBVP.hpp#L708](./BEM_solveBVP.hpp#L708)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -775,12 +777,12 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L334)
+[強制運動を課す](../../builds/build_bem/main.cpp#L340)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L116)で利用され，$\phi _{n}$を計算する．
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L118)で利用され，$\phi _{n}$を計算する．
 
 [./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
@@ -907,7 +909,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L327](./BEM_calculateVelocities.hpp#L327)
+[./BEM_calculateVelocities.hpp#L332](./BEM_calculateVelocities.hpp#L332)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -922,7 +924,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L414](./BEM_calculateVelocities.hpp#L414)
+[./BEM_calculateVelocities.hpp#L419](./BEM_calculateVelocities.hpp#L419)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -960,7 +962,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L616](./main.cpp#L616)
+[./main.cpp#L618](./main.cpp#L618)
 
 ---
 # 🐋 実行方法 
@@ -999,7 +1001,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L759](./main.cpp#L759)
+[./main.cpp#L761](./main.cpp#L761)
 
 ---
 # 🐋 Input Generator 
@@ -1049,13 +1051,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L318](./input_generator.py#L318)
+[./input_generator.py#L322](./input_generator.py#L322)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L799](./main.cpp#L799)
+[./main.cpp#L801](./main.cpp#L801)
 
 ---

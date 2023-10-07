@@ -450,12 +450,12 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    /* -------------------------------------------------------------------------- */
 
    for (auto i = 0; const auto &p : points)
-      p->setIndexCSR(i++);
+      p->setIndexCRS(i++);
 
    V_d b(points.size()), x0(points.size(), 0);
 
    for (const auto &p : points) {
-      int index = p->getIndexCSR();
+      int index = p->getIndexCRS();
       if (!isFinite(p->PoissonRHS))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->PoissonRHS is not a finite");
       if (!isFinite(p->p_SPH))
@@ -473,23 +473,23 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
          if (std::abs(v) > max)
             max = std::abs(v);
       // normalize
-      b[p->getIndexCSR()] /= max;
+      b[p->getIndexCRS()] /= max;
       for (auto &[_, v] : p->column_value)
          v /= max;
 
-      p->setVectorCSR();
+      p->setVectorCRS();
    }
 
 #if defined(USE_GMRES)
 
-   int size = 50;
+   int size = 100;
    {
       gmres gm(points, b, x0, size);  //\label{SPH:gmres}
       std::cout << " gm.err : " << gm.err << std::endl;
       if (isFinite(gm.err))
          x0 = gm.x;
       else
-         size = 100;
+         size = 150;
    }
 
    //
@@ -497,45 +497,46 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    x0 = gm.x;
    double error;
    for (auto i = 1; i < 3; i++) {
-      if (gm.err < 1E-5)
-         break;
+      if (gm.err < 1E-5) break;
       gm.Restart(points, b, x0, size);  //\label{SPH:gmres}
       x0 = gm.x;
       std::cout << "       gm.err : " << (error = gm.err) << std::endl;
       std::cout << " actual error : " << Norm(b - Dot(points, x0)) << std::endl;
    }
+   std::cout << "       gm.err : " << (error = gm.err) << std::endl;
+   std::cout << " actual error : " << Norm(b - Dot(points, x0)) << std::endl;
 
    for (const auto &p : points)
-      p->p_SPH = gm.x[p->getIndexCSR()];
+      p->p_SPH = gm.x[p->getIndexCRS()];
 
 #elif defined(USE_LAPACK)
    VV_d A(b.size(), V_d(b.size(), 0.));
    for (const auto &p : points) {
-      auto i = p->getIndexCSR();
+      auto i = p->getIndexCRS();
       if (p->column_value.empty())
          throw std::runtime_error("empty column_value");
       for (const auto &[q, v] : p->column_value) {
-         auto j = q->getIndexCSR();
+         auto j = q->getIndexCRS();
          A[i][j] = v;
       }
    }
    lapack_lu lu(A);
    lu.solve(b, x0);
    for (const auto &p : points)
-      p->p_SPH = x0[p->getIndexCSR()];
+      p->p_SPH = x0[p->getIndexCRS()];
 #elif defined(USE_LAPACK_SVD)
    VV_d A(b.size(), V_d(b.size(), 0.));
    for (const auto &p : points) {
-      auto i = p->getIndexCSR();
+      auto i = p->getIndexCRS();
       for (const auto &[q, v] : p->column_value) {
-         auto j = q->getIndexCSR();
+         auto j = q->getIndexCRS();
          A[i][j] = v;
       }
    }
    lapack_svd svd(A);
    svd.solve(b, x0);
    for (const auto &p : points)
-      p->p_SPH = x0[p->getIndexCSR()];
+      p->p_SPH = x0[p->getIndexCRS()];
 #endif
 
    if (!isFinite(error))

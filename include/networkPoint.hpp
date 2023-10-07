@@ -174,7 +174,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 35. * M_PI / 180.;
+const double contact_angle = 30. * M_PI / 180.;
 
 // \label{isFacing}
 bool isFacing(const Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
@@ -182,19 +182,26 @@ bool isFacing(const Tddd &n2, const T3Tddd &n1) { return isFacing(n1, n2, contac
 bool isFacing(const T3Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
 bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, contact_angle); };
 
+double detection_range(const networkPoint *p) {
+   double mean_d = 0;
+   int count = 0;
+   std::ranges::for_each(p->getNeighbors(), [&](const auto &q) { mean_d += Norm(p->X - q->X); count++; });
+   return mean_d / count / 5;
+};
+
 // \label{isInContact}
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
-   bool isinradius = p->radius > Norm(p->X - Nearest(p->X, f_target));
+   bool is_in_range = detection_range(p) > Norm(p->X - Nearest(p->X, f_target));
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
    bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
-   return isinradius && (is_close_normal || any_close_normal);
+   return is_in_range && (is_close_normal || any_close_normal);
 };
 
 bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
-   bool isinradius = p->radius > Norm(pX - Nearest(pX, f_target));
+   bool is_in_range = detection_range(p) > Norm(pX - Nearest(pX, f_target));
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
    bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
-   return isinradius && (is_close_normal || any_close_normal);
+   return is_in_range && (is_close_normal || any_close_normal);
 };
 
 bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/,

@@ -4,13 +4,19 @@
 #include "Network.hpp"
 #include "minMaxOfFunctions.hpp"
 
+/*DOC_EXTRACT 0_1_0_preparation_wall_and_freesurface
+
+## N.S.方程式を解く前の準備
+
+*/
+
 /* -------------------------------------------------------------------------- */
 
 void setCorrectionMatrix(networkPoint *A, const std::vector<Network *> &all_nets) {
 
    /*DOC_EXTRACT 0_1_1_set_free_surface
 
-   ### 勾配演算子の修正をする行列の計算
+   ### `setCorrectionMatrix`について
 
    \cite{Morikawa2023}で紹介されていた，\cite{Randles1996}の勾配演算の精度を改善する行列を計算する．
    `grad_corr_M`としている．
@@ -20,6 +26,8 @@ void setCorrectionMatrix(networkPoint *A, const std::vector<Network *> &all_nets
    {\bf M} = \left(\sum_j V_j ({\bf x}_j-{\bf x}_i) \otimes \nabla W_{ij}\right)^{-1}
    \end{align}
    ```
+
+   WARNING: `isCaptured`を先に計算しておく必要がある．`isCaptured`が`false`の場合は，`grad_corr_M`は単位行列になる．
 
    */
 
@@ -229,6 +237,10 @@ void setVectorToPolygon(const auto &water, const auto &RigidBodyObject, const do
 
 //! -------------------------------------------------------------------------- */
 
+/*DOC_EXTRACT 0_1_0_set_normal_of_wall
+### 壁面粒子の抽出と値の計算
+*/
+
 void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_spacing, auto &wall_p) {
 
    // 初期化
@@ -272,9 +284,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-               ## 壁面粒子の抽出と値の計算
-
-               ### `interp_normal_original`の計算
+               #### `interp_normal_original`の計算
 
                流体粒子と同じ影響半径を使ってしまうと，流体粒子が参照できる範囲ギリギリにある壁粒子の法線方向の値が不正確になる．
                そのため，流体粒子の影響半径よりも広い半径を使って，`q->interp_normal_original`の法線方向を計算することが，重要である．
@@ -294,7 +304,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-               ### `isCaptured`の決定
+               #### `isCaptured`の決定
 
                法線方向`interp_normal_original`を使って，流体粒子に近くかつ向かい合う方向にある壁粒子を抽出する．
                計算に使用する壁粒子を決定し，使用する場合`isCaptured`を`true`にする．
@@ -333,7 +343,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-               ### `isCaptured`が`true`の壁面粒子の流速の計算
+               #### `isCaptured`が`true`の壁面粒子の流速の計算
 
                次のようにして，鏡写しのように流速を計算する．
 
@@ -372,7 +382,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
    /*DOC_EXTRACT 0_1_0_set_normal_of_wall
 
-   ### `setCorrectionMatrix`で壁粒子の演算修正用行列を計算
+   #### `setCorrectionMatrix`で壁粒子の演算修正用行列を計算
 
    `setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
 
@@ -390,7 +400,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
 /*DOC_EXTRACT 0_1_1_set_free_surface
 
-## 流体の法線方向の計算と水面の判定
+### 流体の法線方向の計算と水面の判定
 
 */
 
@@ -414,6 +424,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
       if (A->isCaptured) {
 
          /* -------------------------------------------------------------------------- */
+         /*DOC_EXTRACT 0_1_1_set_free_surface
+
+         #### `setCorrectionMatrix`で流体粒子の演算修正用行列を計算
+
+         `setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
+
+         */
 
          setCorrectionMatrix(A, all_nets);
 
@@ -421,7 +438,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
          /*DOC_EXTRACT 0_1_1_set_free_surface
 
-         ### 流体の法線方向の計算
+         #### 流体の法線方向の計算
 
          CHECKED \ref{SPH:interp_normal}{単位法線ベクトル}: $`{\bf n}_i = {\rm Normalize}\left(-\sum_j {\frac{m_j}{\rho_j} \nabla W_{ij} }\right)`$
 
@@ -530,9 +547,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
          /*DOC_EXTRACT 0_1_1_set_free_surface
 
-         ### 水面の判定
+         #### 水面の判定
 
-         `surface_condition0,1`の両方を満たす場合，水面とする．
+         水面の判定条件は，少し複雑である．
 
          */
 
