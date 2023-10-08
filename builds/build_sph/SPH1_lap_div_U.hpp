@@ -74,12 +74,13 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->DUDt_SPH.fill(0.);
          A->tmp_U_SPH.fill(0.);
          A->tmp_X = A->X;
+         A->DrhoDt_SPH = 0;
          A->b_vector.fill(0.);
          // if (A->isNeumannSurface)
-         // {
-         //    A->DrhoDt_SPH = -A->rho * A->div_U;
-         //    A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
-         // }
+         {
+            A->DrhoDt_SPH = -A->rho * A->div_U;
+            A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
+         }
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;
          double nu = A->mu_SPH / A->rho;
@@ -120,7 +121,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          //             A->b_vector = -(D[1] * U1 + D[2] * U2) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
          //          }
       }
-      A->DrhoDt_SPH = 0;
    }
 };
 
