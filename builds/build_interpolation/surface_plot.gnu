@@ -1,4 +1,4 @@
-# surface_plot_interactive.gnu
+# $ gnuplot surface_plot.gnu
 
 set title "Triangular Surface Plot" font ",15"
 set xlabel "x"

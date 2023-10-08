@@ -196,7 +196,7 @@ void setPhiPhin(Network &water) {
 
 ### BIEの離散化
 
-BIEを線形三角要素とGauss-Legendre積分で離散化すると，
+BIEをGauss-Legendre積分で離散化すると，
 
 ```math
 \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=
@@ -208,28 +208,50 @@ BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 ここで，$`\phi_{k_\vartriangle,j}`$における$`k_\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
 $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w_0,w_1`$はGauss-Legendre積分の重み，$`\alpha_{i_\circ}`$は原点$`i_\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi_n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x}_{i_\circ}`$は原点の空間座標である．
 
+#### 線形三角要素
+
 形状関数$`{\pmb N}_j({\pmb \xi}),{\pmb \xi}=(\xi_0,\xi_1)`$は，$`\xi_0,\xi_1`$が$`0`$から$`1`$動くことで，範囲で三角要素全体を動くように定義している．
 
 ```math
 {\pmb N}({\pmb \xi}) = (N_0({\pmb \xi}),N_1({\pmb \xi}),N_2({\pmb \xi})) = (\xi_0, - \xi_1 (\xi_0 - 1), (\xi_0-1)(\xi_1-1))
 ```
 
----
+####  線形三角要素の外積の計算
 
-- $`\phi`$の係数行列を$`\mathbf{M}`$
-- $`\phi_n`$の係数行列を$`\mathbf{N}`$
-- $`\mathbf{\Phi}`$を$`\phi`$のベクトル
-- $`\mathbf{\Phi_n}`$を$`\phi_n`$のベクトル
-
-として，次のような連立一次方程式を得る．
-
-```math
-\mathbf{N} \mathbf{\Phi_n} = \mathbf{M} \mathbf{\Phi}
+```
+shape[t0_, t1_] := With[{t2 = 1 - t0 - t1, t0m1 = t0 - 1, t1m1 = t1 - 1}, {t0, -t1*t0m1, t0m1*t1m1}];
+D0shape[t0_, t1_] = (D[shape[T0, t1], T0] /. T0 -> t0);
+D1shape[t0_, t1_] = (D[shape[t0, T1], T1] /. T1 -> t1);
+{a, b, c} = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}}
+FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1], {a, b, c}]]]
+FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1], {a, b, c}]]/Cross[b - a, c - a]]
 ```
 
-$`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求めるわけだが，
-未知変数が$`\phi`$か$`\phi_n`$かは，境界条件によって決まるので，
-境界条件に応じて，$`{\bf A},{\bf b}`$を間違えずに作成する必要がある．
+上の結果は，$1-\xi_0$となる．つまり，線形補間の場合，外積は次のように，節点位置を使ってシンプルに計算できる．
+
+```math
+\frac{\partial {\bf{x}}}{\partial {\xi_0}} \times \frac{\partial {\bf{x}}}{\partial {\xi_1}} = (1-\xi_0) ((p_1-p_0)\times(p_2-p_0))
+```
+
+これを使えば，BIEは次のように簡単になる．
+
+```math
+\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}
+\sum\limits_{{\xi_1},{w_1}}
+{\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
+(1-\xi_0)
+} \right)} }=
+```
+```math
+\alpha_{i_\circ}(\phi)_{i_\circ}
+-\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}
+\sum\limits_{{\xi_1},{w_1}}
+\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}
+(1-\xi_0)
+}\right)}
+```
+
+$`{2{\bf n}_{k_\vartriangle}} = ((p_1-p_0)\times(p_2-p_0))`$
 
 */
 
@@ -274,6 +296,29 @@ struct BEM_BVP {
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
       std::cout << Magenta << timer() << colorOff << std::endl;
       /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+      #### 係数行列の作成
+
+      実際のプログラムでは，$`{\bf A}{\bf x}={\bf b}`$の形で整理することが多い．
+      上のようにBIEは離散化されるが，
+      この式を見ても，係数行列$`\bf A`$とベクトル$`\bf b`$を具体的にどのように作成するかわかりにくいかもしれない．
+
+      - $`\phi`$の係数行列を$`\mathbf{M}`$
+      - $`\phi_n`$の係数行列を$`\mathbf{N}`$
+      - $`\mathbf{\Phi}`$を$`\phi`$のベクトル
+      - $`\mathbf{\Phi_n}`$を$`\phi_n`$のベクトル
+
+      として，次のような連立一次方程式を得る．
+
+      ```math
+      \mathbf{N} \mathbf{\Phi_n} = \mathbf{M} \mathbf{\Phi}
+      ```
+
+      $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求めるわけだが，
+      未知変数が$`\phi`$か$`\phi_n`$かは，境界条件によって決まるので，
+      境界条件に応じて，$`{\bf A},{\bf b}`$を間違えずに作成する必要がある．
+
+      ここでは，$`A`$を`IGIGn`，$`b`$を`knowns`としている．
 
       このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
       `IGIGn`は，ある節点$`i_\circ`$（係数行列の行インデックス）に対する
@@ -337,7 +382,7 @@ struct BEM_BVP {
             }
             /* -------------------------------------------------------------------------- */
             cross = Cross(p0->X - p2->X, p1->X - p2->X);
-            c = {Norm(cross), Dot(origin->X - p0->X, cross)};
+            c = {Norm(cross), origin == p0 ? 0. : Dot(origin->X - p0->X, cross)};
             for (auto &[_, __, igign] : ret)
                igign *= c;
 

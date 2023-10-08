@@ -514,12 +514,24 @@ constexpr std::array<T, N> Normalize(std::array<T, N> arr) noexcept {
 template <size_t M = 0, size_t N, typename T>
 constexpr T RootMeanSquare(const std::array<T, N>& arr) noexcept { return std::sqrt(Dot(arr, arr) / N); }
 
+// template <typename T>
+// constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
+//    return {{std::fma(-std::get<2>(A), std::get<1>(B), std::get<1>(A) * std::get<2>(B)),
+//             std::fma(-std::get<0>(A), std::get<2>(B), std::get<2>(A) * std::get<0>(B)),
+//             std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
+// }
+
+#include <array>
+#include <type_traits>
+
 template <typename T>
-constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
+inline constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
+   static_assert(std::is_arithmetic_v<T>, "Arithmetic type required.");
    return {{std::fma(-std::get<2>(A), std::get<1>(B), std::get<1>(A) * std::get<2>(B)),
             std::fma(-std::get<0>(A), std::get<2>(B), std::get<2>(A) * std::get<0>(B)),
             std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
 }
+
 /* -------------------------------------------------------------------------- */
 
 template <std::size_t N>
