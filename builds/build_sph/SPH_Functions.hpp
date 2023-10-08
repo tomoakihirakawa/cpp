@@ -432,8 +432,8 @@ void updateParticles(const auto &points,
       // else
       // A->setDensity(A->RK_rho.get_x());
       // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
-      // A->setDensity(A->RK_rho.get_x());
-      A->setDensity(_WATER_DENSITY_);
+      A->setDensity(A->RK_rho.get_x());
+         // A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);

@@ -257,7 +257,10 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          //    p->vecToSurface_BUFFER = condition_Ua(V, p);
          // } else
          {
-            auto V = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            double a = 0.9;
+            auto V = (1. - a) * V0 + a * V1;
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }
          // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
@@ -315,7 +318,6 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
       p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
-
       if (!isFinite(p->U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
          std::cout << "p->X = " << p->X << std::endl;
          std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
@@ -324,7 +326,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
          std::cout << "p->Neumann = " << p->Neumann << std::endl;
          std::cout << "p->CORNER = " << p->CORNER << std::endl;
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       }
    }
 }

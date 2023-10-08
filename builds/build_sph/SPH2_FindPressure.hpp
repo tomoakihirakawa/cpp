@@ -489,7 +489,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
       if (isFinite(gm.err))
          x0 = gm.x;
       else
-         size = 150;
+         size = 200;
    }
 
    //

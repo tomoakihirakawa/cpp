@@ -26,8 +26,8 @@
 #include "basic_mathematical_functions.hpp"
 #include "minMaxOfFunctions.hpp"
 
-#define USE_RANDOM_MATRIX
-// #define USE_PREDEFINED_MATRIX
+// #define USE_RANDOM_MATRIX
+#define USE_PREDEFINED_MATRIX
 
 int main() {
 
@@ -64,15 +64,16 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   int n_max = 80;
+   int n_max = 20;
    int n_begin = 1;
    auto x0_for_iterate = x0;
    gmres gm_ful(A, b, x0, n_max);
    gmres gm_iterate(A, b, x0_for_iterate, n_begin);
    for (auto restart = 0; restart < 1; ++restart) {
       gm_iterate.Restart(A, b, x0_for_iterate, n_begin);
-      for (auto i = n_begin + 1; i <= n_max; i++) {
+      for (auto i = n_begin; i <= n_max; i++) {
          gm_iterate.Iterate(A);
+         std::cout << "gm_iterate.V.size() :" << gm_iterate.V.size() << std::endl;
          std::cout << "time:" << timer() << std::endl;
          std::cout << "       Restart : " << restart << std::endl;
          std::cout << "             i : " << i << std::endl;

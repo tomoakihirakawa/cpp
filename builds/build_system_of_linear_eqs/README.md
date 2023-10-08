@@ -1,4 +1,15 @@
 # Contents
+- [🐋 🐋 圧縮行格納法 (Compressed Row Storage, CRS)](#🐋-🐋-圧縮行格納法-(Compressed-Row-Storage,-CRS))
+    - [⛵ ⛵ 実装方法](#⛵-⛵-実装方法)
+    - [⛵ ⛵ CRS構造体の仕様](#⛵-⛵-CRS構造体の仕様)
+        - [🪼 🪼 概要](#🪼-🪼-概要)
+        - [🪼 🪼 メンバ変数](#🪼-🪼-メンバ変数)
+        - [🪼 🪼 メンバ関数](#🪼-🪼-メンバ関数)
+        - [🪼 CRSの使用例](#🪼-CRSの使用例)
+            - [🐚 CRSは，ある行ベクトルを格納するクラスと考える](#🐚-CRSは，ある行ベクトルを格納するクラスと考える)
+            - [🐚 `setIndexCRS`](#🐚-`setIndexCRS`)
+            - [🐚 値を格納：`set`と`increment`](#🐚-値を格納：`set`と`increment`)
+            - [🐚 `selfDot`](#🐚-`selfDot`)
 - [🐋 連立一次方程式の解法](#🐋-連立一次方程式の解法)
     - [⛵ ⛵ Arnoldi過程](#⛵-⛵-Arnoldi過程)
     - [⛵ ⛵ 一般化最小残差法/GMRES](#⛵-⛵-一般化最小残差法/GMRES)
@@ -7,15 +18,133 @@
     - [⛵ 共役勾配法と勾配降下法](#⛵-共役勾配法と勾配降下法)
         - [🪼 共役勾配法（Conjugate Gradient, CG）](#🪼-共役勾配法（Conjugate-Gradient,-CG）)
         - [🪼 勾配降下法 (Gradient Descent, GD)](#🪼-勾配降下法-(Gradient-Descent,-GD))
-    - [⛵ ⛵ Compresed Row Storage (CRS)](#⛵-⛵-Compresed-Row-Storage-(CRS))
-- [🐋 🐋 CRS構造体のドキュメント](#🐋-🐋-CRS構造体のドキュメント)
-    - [⛵ ⛵ 概要](#⛵-⛵-概要)
-    - [⛵ ⛵ メンバ変数](#⛵-⛵-メンバ変数)
-    - [⛵ ⛵ メンバ関数](#⛵-⛵-メンバ関数)
-    - [⛵ ⛵ テンプレート関数](#⛵-⛵-テンプレート関数)
-    - [⛵ ⛵ 使用例](#⛵-⛵-使用例)
-    - [⛵ ⛵ 注意](#⛵-⛵-注意)
 
+
+---
+# 🐋 🐋 圧縮行格納法 (Compressed Row Storage, CRS)  
+
+CRSは疎行列を表現する一つの手法．
+このクラスでは，行列-ベクトル積の高速化と，その行列とベクトルの管理とそれらへのアクセスの容易さを目的とし，
+次のような考えで，CRSを実装している．
+
+## ⛵ ⛵ 実装方法  
+
+多くの数値計算で最も高速化したいのは，行列-ベクトル積である．
+整数のインデックスを使って，行列-ベクトル積を計算すると，インデックスの管理が大変になる．
+例えば，インデックスが消えたり増えたりする場合が大変だ（例えば，要素の節点番号や，粒子法の粒子番号）．
+
+そこで，ポインタをキーとした連装配列として，行列-ベクトル積を計算することが一つの解決策である．
+行ベクトルの成分がどの節点や粒子に対応しているかを，ポインタで管理するものである．
+
+また，CRSクラスに，できるだけ`Dot(A,V)`で利用する情報を保存しておくことで，管理とアクセスの容易さを向上させたい．
+
+多くの場合，行ベクトルはある節点や粒子に対して成り立つ方程式を表しているので，
+行のインデックスは，その節点や粒子のインデックスと一致する．
+強く関連するので，この行ベクトル自体を，それが成り立つ節点や粒子クラスに保存しておくのは，自然なことである．
+
+さらに，そのCRSには方程式`A[i]`だけでなく，節点上または粒子上の`V[i]`も保存しておくことも，自然なことである．
+
+つまり，`Dot(A,V)`の計算を考えて，
+CRSには次のような情報を保存しておくことにする．
+
+- 方程式：`A[i]`は，`CRS->column_value`に保存されている．`column_value`は，`std::unordered_map<CRS *, double>`
+- 値：`V[i]`は，`CRS->value`に保存されている
+- 当然CRSとしてのポインタ
+- 行番号(`i`)
+
+特に、Arnoldiプロセスにおける行列-ベクトル積の計算は計算コストが高いです（参照: ArnoldiProcessの行列-ベクトル積）。CRSのDot積を並列化することで、大幅な高速化が可能です（参照: CRSのDot積を並列化）。
+
+## ⛵ ⛵ CRS構造体の仕様  
+
+### 🪼 🪼 概要  
+
+CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に格納するためのデータ構造であり、高速な線形代数の計算を実現します。
+
+### 🪼 🪼 メンバ変数  
+
+| 変数名 | 型 | 説明 |
+|:------:|:--:|:----:|
+| `column_value` | `std::unordered_map<CRS *, double>` | 行の非ゼロ要素を格納する連想配列 |
+| `value` | `double` | 一般的な値を格納 |
+| `diagonal_value` | `double` | 対角要素の値 |
+| `tmp_value` | `double` | 一時的な値の格納用 |
+| `canUseVector` | `bool` | ベクタが使用可能かのフラグ |
+| `value3d` | `std::array<double, 3>` | 3次元空間の値 |
+| `__index__` | `size_t` | インデックス |
+
+### 🪼 🪼 メンバ関数  
+
+| 関数名 | 引数 | 戻り値 | 説明 |
+|:------:|:----:|:------:|:----:|
+| `clearColumnValue` | なし | `void` | `column_value`をクリアし、`canUseVector`を`false`に設定する |
+| `setIndexCRS` | `size_t i` | `void` | インデックス`__index__`を設定する |
+| `getIndexCRS` | なし | `size_t` | インデックス`__index__`を取得する |
+| `at` | `CRS *const p` | `double` | 指定された`p`に対応する`column_value`の値を取得する |
+| `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
+| `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
+| `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
+[../../include/basic_linear_systems.hpp#L748](../../include/basic_linear_systems.hpp#L748)
+
+
+### 🪼 CRSの使用例 
+
+ここには，`A`かける`V`をCRSを使って高速に計算する例を示している．
+
+[./test3_CRS.cpp#L1](./test3_CRS.cpp#L1)
+
+---
+#### 🐚 CRSは，ある行ベクトルを格納するクラスと考える 
+
+私のプログラムでは，Row-major orderで行列を格納しており，次のように行列を定義している．
+
+```cpp
+std::vector<std::vector<double>> Mat; // <- std::vector<ROW VECTOR> Mat;
+```
+
+```math
+\begin{pmatrix}
+\{a _{11} & a _{12} & a _{13} & \cdots & a _{1n}\}&\leftarrow {\text{a ROW VECTOR}} \\
+\{a _{21} & a _{22} & a _{23} & \cdots & a _{2n}\}&\\
+\{a _{31} & a _{32} & a _{33} & \cdots & a _{3n}\}&\\
+\{\vdots & \vdots & \vdots & \ddots & \vdots \}&\\
+\{a _{m1} & a _{m2} & a _{m3} & \cdots & a _{mn}\}&
+\end{pmatrix}
+```
+
+CRSは，このROW VECTORを格納するクラスであり，CRSのベクトルが行列となる．
+
+```cpp
+std::vector<CRS*> Mat_CRS(A.size());
+```
+
+[./test3_CRS.cpp#L100](./test3_CRS.cpp#L100)
+
+---
+#### 🐚 `setIndexCRS` 
+
+CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持しておく．
+このインデックスは，`std::vector<VRS*>`と掛け算をする相手である`V`の行番号に対等させておく必要がある．
+
+**掛け算`Dot(A,V)`において，CRS（これは行ベクトルと考える）は，自分に保存されている{row index,value}のセットを元に，`V[row index]*value`のようにして足し合わせていく．**
+
+[./test3_CRS.cpp#L129](./test3_CRS.cpp#L129)
+
+---
+#### 🐚 値を格納：`set`と`increment` 
+
+値を格納するには，２つの方法があり，`set`と`increment`がある．
+このように，インデックスと値を指定するようにしているのは，
+値がゼロの場合は，何もせず，インデックスも保存しないようにしているためである．
+
+値を設定する，`set`と`increment`の第一引数は，CRSのポインタである．
+
+[./test3_CRS.cpp#L146](./test3_CRS.cpp#L146)
+
+#### 🐚 `selfDot` 
+
+`selfDot`は，CRSに保存した`A`と`V`を掛け合わせる関数である．
+
+[./test3_CRS.cpp#L177](./test3_CRS.cpp#L177)
 
 ---
 # 🐋 連立一次方程式の解法 
@@ -57,7 +186,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 ```
 
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
-[../../include/basic_linear_systems.hpp#L1058](../../include/basic_linear_systems.hpp#L1058)
+[../../include/basic_linear_systems.hpp#L981](../../include/basic_linear_systems.hpp#L981)
 
 
 ## ⛵ ⛵ 一般化最小残差法/GMRES  
@@ -100,7 +229,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
-[../../include/basic_linear_systems.hpp#L1200](../../include/basic_linear_systems.hpp#L1200)
+[../../include/basic_linear_systems.hpp#L1123](../../include/basic_linear_systems.hpp#L1123)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
@@ -141,88 +270,5 @@ EigenのGMRESを使った結果と比較．
 * しかし，勾配降下法の収束速度は通常比較的遅く，特に凸でない問題に対しては局所最小値に陥る可能性がある．
 
 [./test3_GradientMethod.cpp#L1](./test3_GradientMethod.cpp#L1)
-
----
-## ⛵ ⛵ Compresed Row Storage (CRS)  
-
-CRSは行列を表現する方法の一つである．
-このCRSクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．
-std::unordered_mapのkeyはポインタであり，valueはdoubleである．
-CRSクラス自身が，行列の行番号を保存しており，keyであるCRSクラスは行列の列番号を保存している．
-
-[ArnoldiProcessの行列-ベクトル積](../../include/basic_linear_systems.hpp#L1188)は特に計算コストが高い．
-[CRSのDot積を並列化](../../include/basic_linear_systems.hpp#L970)すれば，かなり高速化できる．
-
-# 🐋 🐋 CRS構造体のドキュメント  
-
-## ⛵ ⛵ 概要  
-
-CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に格納するためのデータ構造です。この構造体は疎行列を処理する際に特に有用で、高速な線形代数の計算を可能にします。
-
-## ⛵ ⛵ メンバ変数  
-
-| 変数名 | 型 | 説明 |
-|:------:|:--:|:----:|
-| `column_value` | `std::unordered_map<CRS *, double>` | 行要素を格納するための連想配列 |
-| `value` | `double` | 値を格納する変数 |
-| `diagonal_value` | `double` | 対角要素の値 |
-| `tmp_value` | `double` | 一時的な値を格納 |
-| `canUseVector` | `bool` | ベクタが使用可能かどうか |
-| `value3d` | `std::array<double, 3>` | 3次元空間での値 |
-| `__index__` | `size_t` | インデックス値 |
-
-## ⛵ ⛵ メンバ関数  
-
-| 関数名 | 引数 | 戻り値 | 説明 |
-|:------:|:----:|:------:|:----:|
-| `clearColumnValue` | なし | `void` | `column_value`をクリアし、`canUseVector`を`false`に設定 |
-| `setIndexCRS` | `size_t i` | `void` | `__index__`を設定 |
-| `getIndexCRS` | なし | `size_t` | `__index__`を取得 |
-| `at` | `CRS *const p` | `double` | 指定した`p`に対応する`column_value`を取得 |
-| `contains` | `CRS *const p` | `bool` | 指定した`p`が`column_value`に含まれているか確認 |
-| `increment` | `CRS *const p, const double v` | `void` | `column_value`に値`v`を加算、または新規挿入 |
-| `setVectorCRS` | なし | `void` | `column_value`を`std::vector`に変換し、`canUseVector`を`true`に設定 |
-
-## ⛵ ⛵ テンプレート関数  
-
-- 以下のテンプレート関数はDot積を計算します。CRS構造体から派生した型に対して使用できます。
-
-```cpp
-double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V);
-double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs);
-V_d Dot(const std::unordered_set<T *> &V_crs);
-V_d Dot(const std::unordered_set<T *> &A, const V_d &V);
-V_d Dot(const std::vector<T *> &A, const V_d &V);
-void DotOutput(const std::unordered_set<T *> &A, const V_d &V, V_d &w);
-void DotOutput(const std::vector<T *> &A, const V_d &V, V_d &w);
-```
-
-## ⛵ ⛵ 使用例  
-
-```cpp
-// CRSオブジェクトの初期化
-CRS crs;
-
-// インデックスの設定
-crs.setIndexCRS(1);
-
-// 値の追加
-crs.increment(other_crs, 5.0);
-
-// ベクタ形式への変換
-crs.setVectorCRS();
-
-// Dot積の計算
-double result = Dot(crs_map, some_vector);
-```
-
-## ⛵ ⛵ 注意  
-
-- `#pragma omp parallel`と`#pragma omp single nowait`はOpenMPを使用して並列処理を行っています。適切なスレッド数を設定して使用してください。
-
-このドキュメントはCRS構造体の詳細と使用方法について説明しています。適切に使用することで、高速な線形代数の計算が可能です。
-[../../include/basic_linear_systems.hpp#L748](../../include/basic_linear_systems.hpp#L748)
-
-[./test2_CRS.cpp#L1](./test2_CRS.cpp#L1)
 
 ---

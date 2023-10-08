@@ -747,84 +747,69 @@ struct QR {
 
 /*DOC_EXTRACT compressed_row_storage
 
-## Compresed Row Storage (CRS)
+# 圧縮行格納法 (Compressed Row Storage, CRS)
 
-CRSは行列を表現する方法の一つである．
-このCRSクラスは，std::unordered_mapを用いて，行列の非ゼロ要素を表現する．
-std::unordered_mapのkeyはポインタであり，valueはdoubleである．
-CRSクラス自身が，行列の行番号を保存しており，keyであるCRSクラスは行列の列番号を保存している．
+CRSは疎行列を表現する一つの手法．
+このクラスでは，行列-ベクトル積の高速化と，その行列とベクトルの管理とそれらへのアクセスの容易さを目的とし，
+次のような考えで，CRSを実装している．
 
-\ref{ArnoldiProcess:matrix-vector}{ArnoldiProcessの行列-ベクトル積}は特に計算コストが高い．
-\ref{CRS:parrallel}{CRSのDot積を並列化}すれば，かなり高速化できる．
+## 実装方法
 
-# CRS構造体のドキュメント
+多くの数値計算で最も高速化したいのは，行列-ベクトル積である．
+整数のインデックスを使って，行列-ベクトル積を計算すると，インデックスの管理が大変になる．
+例えば，インデックスが消えたり増えたりする場合が大変だ（例えば，要素の節点番号や，粒子法の粒子番号）．
 
-## 概要
+そこで，ポインタをキーとした連装配列として，行列-ベクトル積を計算することが一つの解決策である．
+行ベクトルの成分がどの節点や粒子に対応しているかを，ポインタで管理するものである．
 
-CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に格納するためのデータ構造です。この構造体は疎行列を処理する際に特に有用で、高速な線形代数の計算を可能にします。
+また，CRSクラスに，できるだけ`Dot(A,V)`で利用する情報を保存しておくことで，管理とアクセスの容易さを向上させたい．
 
-## メンバ変数
+多くの場合，行ベクトルはある節点や粒子に対して成り立つ方程式を表しているので，
+行のインデックスは，その節点や粒子のインデックスと一致する．
+強く関連するので，この行ベクトル自体を，それが成り立つ節点や粒子クラスに保存しておくのは，自然なことである．
+
+さらに，そのCRSには方程式`A[i]`だけでなく，節点上または粒子上の`V[i]`も保存しておくことも，自然なことである．
+
+つまり，`Dot(A,V)`の計算を考えて，
+CRSには次のような情報を保存しておくことにする．
+
+- 方程式：`A[i]`は，`CRS->column_value`に保存されている．`column_value`は，`std::unordered_map<CRS *, double>`
+- 値：`V[i]`は，`CRS->value`に保存されている
+- 当然CRSとしてのポインタ
+- 行番号(`i`)
+
+特に、Arnoldiプロセスにおける行列-ベクトル積の計算は計算コストが高いです（参照: ArnoldiProcessの行列-ベクトル積）。CRSのDot積を並列化することで、大幅な高速化が可能です（参照: CRSのDot積を並列化）。
+
+## CRS構造体の仕様
+
+### 概要
+
+CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に格納するためのデータ構造であり、高速な線形代数の計算を実現します。
+
+### メンバ変数
 
 | 変数名 | 型 | 説明 |
 |:------:|:--:|:----:|
-| `column_value` | `std::unordered_map<CRS *, double>` | 行要素を格納するための連想配列 |
-| `value` | `double` | 値を格納する変数 |
+| `column_value` | `std::unordered_map<CRS *, double>` | 行の非ゼロ要素を格納する連想配列 |
+| `value` | `double` | 一般的な値を格納 |
 | `diagonal_value` | `double` | 対角要素の値 |
-| `tmp_value` | `double` | 一時的な値を格納 |
-| `canUseVector` | `bool` | ベクタが使用可能かどうか |
-| `value3d` | `std::array<double, 3>` | 3次元空間での値 |
-| `__index__` | `size_t` | インデックス値 |
+| `tmp_value` | `double` | 一時的な値の格納用 |
+| `canUseVector` | `bool` | ベクタが使用可能かのフラグ |
+| `value3d` | `std::array<double, 3>` | 3次元空間の値 |
+| `__index__` | `size_t` | インデックス |
 
-## メンバ関数
+### メンバ関数
 
 | 関数名 | 引数 | 戻り値 | 説明 |
 |:------:|:----:|:------:|:----:|
-| `clearColumnValue` | なし | `void` | `column_value`をクリアし、`canUseVector`を`false`に設定 |
-| `setIndexCRS` | `size_t i` | `void` | `__index__`を設定 |
-| `getIndexCRS` | なし | `size_t` | `__index__`を取得 |
-| `at` | `CRS *const p` | `double` | 指定した`p`に対応する`column_value`を取得 |
-| `contains` | `CRS *const p` | `bool` | 指定した`p`が`column_value`に含まれているか確認 |
-| `increment` | `CRS *const p, const double v` | `void` | `column_value`に値`v`を加算、または新規挿入 |
-| `setVectorCRS` | なし | `void` | `column_value`を`std::vector`に変換し、`canUseVector`を`true`に設定 |
+| `clearColumnValue` | なし | `void` | `column_value`をクリアし、`canUseVector`を`false`に設定する |
+| `setIndexCRS` | `size_t i` | `void` | インデックス`__index__`を設定する |
+| `getIndexCRS` | なし | `size_t` | インデックス`__index__`を取得する |
+| `at` | `CRS *const p` | `double` | 指定された`p`に対応する`column_value`の値を取得する |
+| `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
+| `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
+| `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
 
-## テンプレート関数
-
-- 以下のテンプレート関数はDot積を計算します。CRS構造体から派生した型に対して使用できます。
-
-```cpp
-double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V);
-double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs);
-V_d Dot(const std::unordered_set<T *> &V_crs);
-V_d Dot(const std::unordered_set<T *> &A, const V_d &V);
-V_d Dot(const std::vector<T *> &A, const V_d &V);
-void DotOutput(const std::unordered_set<T *> &A, const V_d &V, V_d &w);
-void DotOutput(const std::vector<T *> &A, const V_d &V, V_d &w);
-```
-
-## 使用例
-
-```cpp
-// CRSオブジェクトの初期化
-CRS crs;
-
-// インデックスの設定
-crs.setIndexCRS(1);
-
-// 値の追加
-crs.increment(other_crs, 5.0);
-
-// ベクタ形式への変換
-crs.setVectorCRS();
-
-// Dot積の計算
-double result = Dot(crs_map, some_vector);
-```
-
-## 注意
-
-- `#pragma omp parallel`と`#pragma omp single nowait`はOpenMPを使用して並列処理を行っています。適切なスレッド数を設定して使用してください。
-
-このドキュメントはCRS構造体の詳細と使用方法について説明しています。適切に使用することで、高速な線形代数の計算が可能です。
 */
 
 struct CRS {
@@ -845,7 +830,19 @@ struct CRS {
    void clear() { this->column_value.clear(); }
    double at(CRS *const p) const { return column_value.at(p); };
    bool contains(CRS *const p) const { return column_value.contains(p); };
+
+   void set(CRS *const p, const double v) {
+      if (v == 0.)
+         return;
+      auto [it, inserted] = this->column_value.insert({p, v});
+      if (!inserted)
+         it->second = v;
+      this->canUseVector = false;
+   };
+
    void increment(CRS *const p, const double v) {
+      if (v == 0.)
+         return;
       auto [it, inserted] = this->column_value.insert({p, v});
       if (!inserted)
          it->second += v;
@@ -861,92 +858,17 @@ struct CRS {
          column_value_vector.push_back({crs->__index__, value});
       this->canUseVector = true;
    };
+
+   double selfDot() const {
+      double ret = 0.;
+      std::for_each(std::execution::unseq, this->column_value.cbegin(), this->column_value.cend(), [&](const auto &c_v) { ret += std::get<1>(c_v) * std::get<0>(c_v)->value; });
+      return ret;
+   };
 };
 
-template <typename T>
+template <template <typename, typename...> class Container, typename T>
    requires std::derived_from<T, CRS>
-double Dot(const std::unordered_map<T *, double> &column_value, const V_d &V) {
-   double ret = 0.;
-   for (const auto &[crs, value] : column_value)
-      ret += value * V[crs->__index__];
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CRS>
-double Dot(const std::unordered_map<T *, double> &column_value, const std::unordered_set<T *> &V_crs) {
-   double ret = 0.;
-
-   for (const auto &[crs, value] : column_value)
-      if (V_crs.contains(crs))
-         ret += crs->value * value;
-
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CRS>
-V_d Dot(const std::unordered_set<T *> &V_crs) {
-   V_d ret(V_crs.size(), 0.);
-#pragma omp parallel
-   for (const auto &crs0 : V_crs)
-#pragma omp single nowait
-   {
-      double tmp = 0.;
-      for (const auto &[crs1, value] : crs0->column_value)
-         tmp += crs1->value * value;
-      ret[crs0->__index__] = tmp;
-   }
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CRS>
-V_d Dot(const std::unordered_set<T *> &A, const V_d &V) {
-   V_d ret = V;
-   // \label{CRS:parrallel}
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-   {
-      double tmp = 0.;
-      if (crs->canUseVector) {
-         for (const auto &[i, value] : crs->column_value_vector)
-            tmp += value * V[i];
-      } else {
-         for (const auto &[crs_local, value] : crs->column_value)
-            tmp += value * V[crs_local->__index__];
-      }
-      ret[crs->__index__] = tmp;
-   }
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CRS>
-V_d Dot(const std::vector<T *> &A, const V_d &V) {
-   V_d ret = V;
-   // \label{CRS:parrallel}
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-   {
-      double tmp = 0.;
-      if (crs->canUseVector) {
-         for (const auto &[i, value] : crs->column_value_vector)
-            tmp += value * V[i];
-      } else {
-         for (const auto &[crs_local, value] : crs->column_value)
-            tmp += value * V[crs_local->__index__];
-      }
-      ret[crs->__index__] = tmp;
-   }
-   return ret;
-};
-
-template <typename T>
-   requires std::derived_from<T, CRS>
-void DotOutput(const std::unordered_set<T *> &A, const V_d &V, V_d &w) {
+void DotOutput(const Container<T *> &A, const V_d &V, V_d &w) {
    // \label{CRS:parrallel}
 #pragma omp parallel
    for (const auto &crs : A)
@@ -962,26 +884,27 @@ void DotOutput(const std::unordered_set<T *> &A, const V_d &V, V_d &w) {
       }
       w[crs->__index__] = tmp;
    }
+}
+
+template <template <typename, typename...> class Container, typename T>
+   requires std::derived_from<T, CRS>
+V_d Dot(const Container<T *> &A, const V_d &V) {
+   V_d ret(V.size(), 0.);
+   DotOutput(A, V, ret);
+   return ret;
 };
 
 template <typename T>
    requires std::derived_from<T, CRS>
-void DotOutput(const std::vector<T *> &A, const V_d &V, V_d &w) {
-   // \label{CRS:parrallel}
+V_d selfDot(const std::vector<T *> &A) {
+   V_d ret(A.size(), 0.);
 #pragma omp parallel
    for (const auto &crs : A)
 #pragma omp single nowait
    {
-      double tmp = 0.;
-      if (crs->canUseVector) {
-         for (const auto &[i, value] : crs->column_value_vector)
-            tmp += value * V[i];
-      } else {
-         for (const auto &[crs_local, value] : crs->column_value)
-            tmp += value * V[crs_local->__index__];
-      }
-      w[crs->__index__] = tmp;
+      ret[crs->__index__] = crs->selfDot();
    }
+   return ret;
 };
 
 /* -------------------------------------------------------------------------- */

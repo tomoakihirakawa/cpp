@@ -1,6 +1,7 @@
 #ifndef basic_IO_H
 #define basic_IO_H
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
