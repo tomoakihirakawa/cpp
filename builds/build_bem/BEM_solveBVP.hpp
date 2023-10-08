@@ -199,10 +199,10 @@ void setPhiPhin(Network &water) {
 BIEを線形三角要素とGauss-Legendre積分で離散化すると，
 
 ```math
-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=
-```
-```math
+\begin{align*}
+\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=\\
 \alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
+\end{align*}
 ```
 
 ここで，$`\phi_{k_\vartriangle,j}`$における$`k_\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
@@ -300,24 +300,24 @@ struct BEM_BVP {
          for (const auto &integ_f : water.getFacesVector()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
-            if ((Norm(integ_f->center - origin->X) > 20 * r))
-               for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
-                  IGIGn = {tmp, tmp / (nr * nr)};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
-            else
-               for (const auto &[t0, t1, ww] : __array_GW9xGW9__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
-                  IGIGn = {tmp, tmp / (nr * nr)};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
+            // if ((Norm(integ_f->center - origin->X) > 20 * r))
+            //    for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+            //       N012 = ModTriShape<3>(t0, t1);
+            //       tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
+            //       IGIGn = {tmp, tmp / (nr * nr)};
+            //       std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+            //       std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+            //       std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+            //    }
+            // else
+            for (const auto &[t0, t1, ww] : __array_GW6xGW6__) {
+               N012 = ModTriShape<3>(t0, t1);
+               tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
+               IGIGn = {tmp, tmp / (nr * nr)};
+               std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+               std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+               std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+            }
             /* -------------------------------------------------------------------------- */
             cross = Cross(p0->X - p2->X, p1->X - p2->X);
             c = {Norm(cross), Dot(origin->X - p0->X, cross)};
@@ -802,11 +802,11 @@ struct BEM_BVP {
    V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
       V_d ACCELS_init;
       for (const auto &net : rigidbodies) {
-         if (net->interp_accel.size() > 3) {
-            std::cout << Red << "interp_accel" << colorOff << std::endl;
-            std::ranges::for_each(net->interp_accel(net->RK_Q.get_t()), [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
-         } else
-            std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+         // if (net->interp_accel.size() > 3) {
+         //    std::cout << Red << "interp_accel" << colorOff << std::endl;
+         //    std::ranges::for_each(net->interp_accel(net->RK_Q.get_t()), [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
+         // } else
+         std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
       }
       return ACCELS_init;
    }
@@ -959,10 +959,10 @@ struct BEM_BVP {
       insertAcceleration(rigidbodies, BM.X - BM.dX);
       auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
 
-      for (auto j = 0; j < 50; ++j) {
+      for (auto j = 0; j < 100; ++j) {
 
          auto func = Func(BM.X, water, rigidbodies);
-         BM.update(func, func_, alpha);
+         BM.update(func, func_, j == 0 ? 0.1 : alpha);
          func_ = func;
          insertAcceleration(rigidbodies, BM.X);
 

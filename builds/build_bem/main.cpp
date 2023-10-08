@@ -239,16 +239,13 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
-         flipIf(*water,
-                {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
-                {5 * rad, 5 * rad},
-                false);
-
-         if (time_step == 0)
+         if (time_step < 10 && time_step % 3 == 0)
+            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+         else
             flipIf(*water,
                    {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
                    {5 * rad, 5 * rad},
-                   true);
+                   false);
 
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */

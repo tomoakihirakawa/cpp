@@ -359,15 +359,15 @@ double Dot_grad_w_Bspline3_Dot_Modified(const Tddd &xi, const Tddd &xj, const do
       return Dot(Xij / (r * r), Dot(M, grad_w_Bspline3(xi, xj, h)));
 };
 
-auto &w_Bspline = w_Bspline5;
-auto &grad_w_Bspline = grad_w_Bspline5;
-auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
-auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline5_Dot_Modified;
+// const auto &w_Bspline = w_Bspline5;
+// const auto &grad_w_Bspline = grad_w_Bspline5;
+// const auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline5_Dot;
+// const auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline5_Dot_Modified;
 
-// auto &w_Bspline = w_Bspline3;
-// auto &grad_w_Bspline = grad_w_Bspline3;
-// auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
-// auto &ddr_w_Bspline = ddr_w_Bspline3;
-// auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline3_Dot_Modified;
+const auto &w_Bspline = w_Bspline3;
+const auto &grad_w_Bspline = grad_w_Bspline3;
+const auto &Dot_grad_w_Bspline_Dot = Dot_grad_w_Bspline3_Dot;
+const auto &ddr_w_Bspline = ddr_w_Bspline3;
+const auto &Dot_grad_w_Bspline_Dot_Modified = Dot_grad_w_Bspline3_Dot_Modified;
 
 #endif
