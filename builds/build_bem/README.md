@@ -413,7 +413,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 
 ####  🐚 線形三角要素の外積の計算 
 
-```
+```Mathematica
 shape[t0_, t1_] := With[{t2 = 1 - t0 - t1, t0m1 = t0 - 1, t1m1 = t1 - 1}, {t0, -t1*t0m1, t0m1*t1m1}];
 D0shape[t0_, t1_] = (D[shape[T0, t1], T0] /. T0 -> t0);
 D1shape[t0_, t1_] = (D[shape[t0, T1], T1] /. T1 -> t1);
@@ -422,7 +422,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1], {a, b, c}]]/Cross[b - a, c - a]]
 ```
 
-上の結果は，$1-\xi _0$となる．つまり，線形補間の場合，外積は次のように，節点位置を使ってシンプルに計算できる．
+上の結果は，$`1-\xi _0`$となる．つまり，線形補間の場合，外積は次のように，節点位置を使ってシンプルに計算できる．
 
 ```math
 \frac{\partial {\bf{x}}}{\partial {\xi _0}} \times \frac{\partial {\bf{x}}}{\partial {\xi _1}} = (1-\xi _0) ((p _1-p _0)\times(p _2-p _0))
