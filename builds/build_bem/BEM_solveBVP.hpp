@@ -214,6 +214,23 @@ $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内
 {\pmb N}({\pmb \xi}) = (N_0({\pmb \xi}),N_1({\pmb \xi}),N_2({\pmb \xi})) = (\xi_0, - \xi_1 (\xi_0 - 1), (\xi_0-1)(\xi_1-1))
 ```
 
+---
+
+- $`\phi`$の係数行列を$`\mathbf{M}`$
+- $`\phi_n`$の係数行列を$`\mathbf{N}`$
+- $`\mathbf{\Phi}`$を$`\phi`$のベクトル
+- $`\mathbf{\Phi_n}`$を$`\phi_n`$のベクトル
+
+として，次のような連立一次方程式を得る．
+
+```math
+\mathbf{N} \mathbf{\Phi_n} = \mathbf{M} \mathbf{\Phi}
+```
+
+$`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求めるわけだが，
+未知変数が$`\phi`$か$`\phi_n`$かは，境界条件によって決まるので，
+境界条件に応じて，$`{\bf A},{\bf b}`$を間違えずに作成する必要がある．
+
 */
 
 struct BEM_BVP {

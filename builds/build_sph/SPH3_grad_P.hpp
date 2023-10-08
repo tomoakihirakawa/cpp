@@ -101,13 +101,6 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             }
          });
       }
-#if defined(USE_ONE_AUXP)
-      // if (A->isSurface)
-      if (closest_surface_point != nullptr)
-         for (const auto &AUX : closest_surface_point->auxiliaryPoints)
-            if (AUX != nullptr)
-               add_gradP_SPH(AUX);
-#endif
 
       // if (closest_surface_point != nullptr) {
       //    auto B = closest_surface_point;
@@ -128,7 +121,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       // if (A->isSurface)
       //    A->gradP_SPH = (A->gradP_SPH + Dot(A->gradP_SPH, A->inv_grad_corr_M)) / 2.;
       // else
-      A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+
+      // A->gradP_SPH = Dot(A->gradP_SPH, A->inv_grad_corr_M);
+
       A->DUDt_SPH -= A->gradP_SPH / A->rho;
 
       // if (A->isNeumannSurface)

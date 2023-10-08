@@ -165,7 +165,7 @@ Tddd aux_position_next(const networkPoint *p) {
 /* -------------------------------------------------------------------------- */
 // \label{SPH:rho_next}
 double rho_next(auto p) {
-   // return _WATER_DENSITY_;
+   return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -173,7 +173,7 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
-   return p->RK_rho.getX(p->DrhoDt_SPH);
+   // return p->RK_rho.getX(p->DrhoDt_SPH);
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
    //       return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
@@ -432,8 +432,8 @@ void updateParticles(const auto &points,
       // else
       // A->setDensity(A->RK_rho.get_x());
       // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
-      A->setDensity(A->RK_rho.get_x());
-         // A->setDensity(_WATER_DENSITY_);
+      // A->setDensity(A->RK_rho.get_x());
+      A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
       A->DrhoDt_SPH = -A->rho * A->div_U;
       A->LPFG_rho.push(A->DrhoDt_SPH);
