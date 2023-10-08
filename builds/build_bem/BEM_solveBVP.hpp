@@ -218,7 +218,7 @@ $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内
 
 ####  線形三角要素の外積の計算
 
-```
+```Mathematica
 shape[t0_, t1_] := With[{t2 = 1 - t0 - t1, t0m1 = t0 - 1, t1m1 = t1 - 1}, {t0, -t1*t0m1, t0m1*t1m1}];
 D0shape[t0_, t1_] = (D[shape[T0, t1], T0] /. T0 -> t0);
 D1shape[t0_, t1_] = (D[shape[t0, T1], T1] /. T1 -> t1);
