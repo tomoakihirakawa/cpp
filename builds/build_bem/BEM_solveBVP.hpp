@@ -227,7 +227,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1], {a, b, c}]]/Cross[b - a, c - a]]
 ```
 
-上の結果は，$1-\xi_0$となる．つまり，線形補間の場合，外積は次のように，節点位置を使ってシンプルに計算できる．
+上の結果は，$`1-\xi_0`$となる．つまり，線形補間の場合，外積は次のように，節点位置を使ってシンプルに計算できる．
 
 ```math
 \frac{\partial {\bf{x}}}{\partial {\xi_0}} \times \frac{\partial {\bf{x}}}{\partial {\xi_1}} = (1-\xi_0) ((p_1-p_0)\times(p_2-p_0))
