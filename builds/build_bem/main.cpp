@@ -254,6 +254,8 @@ int main(int argc, char **argv) {
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
          double dt = dt_CFL(*water, max_dt, .2);
+         if (time_step <= 10)
+            dt = 0.000001;
          Print("===========================================================================");
          Print("       dt :" + Red + std::to_string(dt) + colorOff);
          Print("time_step :" + Red + std::to_string(time_step) + colorOff);

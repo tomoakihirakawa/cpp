@@ -40,6 +40,35 @@ int main() {
                 << " = {" << std::setprecision(15) << gwgw << "};" << std::endl;  // set precsion 15
    }
 
+   // ModTriShape<3>(t0, t1)
+   for (auto i = 5; i < 10; i++) {
+      VV_d gw = GaussianQuadratureWeights(i, 0., 1.);
+      VV_d gwgw;
+      for (const auto &tw0 : gw) {
+         double xi = tw0[0];
+         double w_xi = tw0[1];
+         for (const auto &tw1 : gw) {
+            double h = tw1[0];
+            double w_h = tw1[1];
+
+            auto [N0, N1, N2] = ModTriShape<3>(xi, h);
+            gwgw.push_back(
+                {xi,
+                 h,
+                 w_xi * w_h /*weight*/,
+                 N0,
+                 N1,
+                 N2});
+         }
+      }
+      std::cout << Green << "const static std::array<std::array<double, 6>, "
+                << std::to_string(gwgw.size())
+                << "> __array_GW"
+                << std::to_string(i) << "xGW"
+                << std::to_string(i) << "__ModTriShape_1_t0"
+                << " = {" << std::setprecision(15) << gwgw << "};" << std::endl;  // set precsion 15
+   }
+
    //    for (auto i = 0; i < 15; i++) {
    //       VV_d gw = GaussianQuadratureWeights(i, 0., 1.);
    //       VV_d gwgw;
