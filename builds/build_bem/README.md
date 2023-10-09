@@ -1394,7 +1394,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L334](./BEM_calculateVelocities.hpp#L334)
+[./BEM_calculateVelocities.hpp#L335](./BEM_calculateVelocities.hpp#L335)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1409,7 +1409,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L421](./BEM_calculateVelocities.hpp#L421)
+[./BEM_calculateVelocities.hpp#L422](./BEM_calculateVelocities.hpp#L422)
 
 ---
 ### 🪼 JSONファイルの出力 

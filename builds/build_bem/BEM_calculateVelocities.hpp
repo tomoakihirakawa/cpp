@@ -236,7 +236,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.1, a;
+      double aIN = 0.05, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
       if (scale < 0.0001) scale = 0.0001;
@@ -259,7 +259,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          {
             auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
             auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            double a = 0.9;
+            double a = 0.8;
             auto V = (1. - a) * V0 + a * V1;
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }
@@ -317,17 +317,18 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
-      p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
-      if (!isFinite(p->U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
+      auto U_update_BEM = p->U_update_BEM + p->vecToSurface / p->RK_X.getdt();
+      if (!isFinite(U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
          std::cout << "p->X = " << p->X << std::endl;
          std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
-         std::cout << "p->U_update_BEM = " << p->U_update_BEM << std::endl;
+         std::cout << "p->U_update_BEM = " << U_update_BEM << std::endl;
          std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
          std::cout << "p->Neumann = " << p->Neumann << std::endl;
          std::cout << "p->CORNER = " << p->CORNER << std::endl;
          // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      }
+      } else
+         p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
    }
 }
 

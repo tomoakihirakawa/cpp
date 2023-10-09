@@ -63,6 +63,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             if (B->isCaptured) add(B);
          });
 
+      A->lap_U = Dot(A->lap_U, A->inv_grad_corr_M);
+
       // A->lap_U = Dot(A->Mat_B, A->lap_U);
       //$ ------------------------------------------ */
       // \label{SPH:lapU_for_wall}
@@ -80,7 +82,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          {
             A->DrhoDt_SPH = -A->rho * A->div_U;
             // A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
-            // A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
+            A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
          }
       } else {
          A->DUDt_SPH_ = A->DUDt_SPH;

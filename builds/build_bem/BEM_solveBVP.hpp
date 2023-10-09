@@ -1030,7 +1030,7 @@ struct BEM_BVP {
       insertAcceleration(rigidbodies, BM.X - BM.dX);
       auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
 
-      for (auto j = 0; j < 100; ++j) {
+      for (auto j = 0; j < 1000; ++j) {
 
          auto func = Func(BM.X, water, rigidbodies);
          BM.update(func, func_, j == 0 ? 0.1 : alpha);

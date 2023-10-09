@@ -240,7 +240,7 @@ $`\nabla^{n+1}`$を上の式に作用させると，
 ### 🪼 右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L69)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph/SPH1_lap_div_U.hpp#L71)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
 ✅ [発散の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L199): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
@@ -339,11 +339,11 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [壁粒子の速度の決定方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L374)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L127)
 - [Poissonにおいてどのようにbベクトルを使うか](../../builds/build_sph/SPH2_FindPressure.hpp#L198)
-- どのように[壁粒子のb](not found)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L93)を作るか
+- どのように[壁粒子のb](not found)/[流体粒子のb](../../builds/build_sph/SPH1_lap_div_U.hpp#L95)を作るか
 
 **壁粒子**
 
-- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L68)
+- [壁粒子のラプラシアンの計算方法](../../builds/build_sph/SPH1_lap_div_U.hpp#L70)
 - [圧力の計算方法](../../builds/build_sph/SPH2_FindPressure.hpp#L106)
 - [どの位置において方程式を立てるか](../../builds/build_sph/SPH2_FindPressure.hpp#L278)
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L277)/[視野角に流体粒子が含まない壁粒子は除外する](not found)

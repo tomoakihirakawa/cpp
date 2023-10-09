@@ -8,6 +8,7 @@
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
         - [🪼 境界積分方程式](#🪼-境界積分方程式)
         - [🪼 空間分割](#🪼-空間分割)
+        - [🪼 離散化](#🪼-離散化)
 
 
 ---
@@ -186,6 +187,10 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 & + \sum _{\square i}\{{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}{({{{\bf Y}^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})})dS}\}
 \end{align*}
 ```
+
+### 🪼 離散化 
+
+この計算手順は，離散化を明確にして初めて理解でき，その有用性がわかる．
 
 [./test_multipole_expansion.cpp#L155](./test_multipole_expansion.cpp#L155)
 
