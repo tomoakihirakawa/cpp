@@ -31,7 +31,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       auto add_gradP_SPH_Where = [&](const auto &B, const Tddd &X) {
          // if (A->isSurface || (!A->isSurface )) {
 
-         // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
+         A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
 
          // A->gradP_SPH += B->mass / A->rho * (B->p_SPH + A->p_SPH) * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP1}
 
@@ -62,7 +62,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //\label{SPH:gradP2}は，Aij = 2*..を使うと，0.21198
 
          // A->gradP_SPH += (B->p_SPH - A->p_SPH) * V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->radius_SPH);  //\label{SPH:gradP2}
-         A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP3}0.34
+         // A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(A->X, X, A->radius_SPH);  //\label{SPH:gradP3}0.34
          //\label{SPH:gradP3}は，Aij = 2*..を使うと，0.34
          //\label{SPH:gradP3}は，Aij = 2*..を使うと，Lagrangeを使うと，0.46
          //\label{SPH:gradP3}は，Aij = 3*..を使うと，0.49

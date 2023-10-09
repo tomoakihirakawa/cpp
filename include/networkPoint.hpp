@@ -174,7 +174,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 30. * M_PI / 180.;
+const double contact_angle = 20. * M_PI / 180.;
 
 // \label{isFacing}
 bool isFacing(const Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
@@ -186,7 +186,7 @@ double detection_range(const networkPoint *p) {
    double mean_d = 0;
    int count = 0;
    std::ranges::for_each(p->getNeighbors(), [&](const auto &q) { mean_d += Norm(p->X - q->X); count++; });
-   return mean_d / count / 5;
+   return mean_d / count / 4;
 };
 
 // \label{isInContact}

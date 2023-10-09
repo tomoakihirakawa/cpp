@@ -246,7 +246,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 ```
 ```math
 \alpha_{i_\circ}(\phi)_{i_\circ}
--\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}\cdot
+-\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}
 \sum\limits_{{\xi_1},{w_1}}
 \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}
 (1-\xi_0)
@@ -255,9 +255,6 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 
 $`(1-\xi_0)`$は，必ず正の値をとるので，絶対値を取る必要はない．
 $`{2{\bf n}_{k_\vartriangle}} = ((p_1-p_0)\times(p_2-p_0))`$
-
-NOTE: ちなみに，$`\frac{1-\xi_0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}`$の分子に$`1-\xi_0`$があることで，
-関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この二つをまとめて計算する．
 
 */
 
@@ -355,7 +352,7 @@ struct BEM_BVP {
          auto &IGIGn_Row = IGIGn[index];
          double nr, tmp;
          std::array<double, 2> IGIGn, c;
-         std::array<double, 3> A, cross, N012, R;
+         std::array<double, 3> A, cross, N012;
          //
          double sum_area = 0;
          int n = 0;
@@ -368,30 +365,36 @@ struct BEM_BVP {
          for (const auto &integ_f : water.getFacesVector()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
             ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
-            cross = Cross(p0->X - p2->X, p1->X - p2->X);
+            // if ((Norm(integ_f->center - origin->X) > 20 * r))
+            //    for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+            //       N012 = ModTriShape<3>(t0, t1);
+            //       tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * X2 - origin->X));
+            //       IGIGn = {tmp, tmp / (nr * nr)};
+            //       std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+            //       std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+            //       std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+            //    }
+            // else
 
-            if ((Norm(integ_f->center - origin->X) > 10 * r))
-               for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
-                  tmp *= ww;
-                  IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
-            else
-               for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
-                  tmp *= ww;
-                  IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
+            // for (const auto &[t0, t1, ww] : __array_GW6xGW6__) {
+            //    N012 = ModTriShape<3>(t0, t1);
+            //    tmp = ww * (1. - t0) / (nr = Norm(std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X));
+            //    IGIGn = {tmp, tmp / (nr * nr)};
+            //    std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+            //    std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+            //    std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+            // }
+
+            for (const auto &[N0, N1, N2, ww] : __array_GW5xGW5__ModTriShape_1_t0) {
+               tmp = ww / (nr = Norm(N0 * p0->X + N1 * p1->X + N2 * p2->X - origin->X));
+               IGIGn = {tmp, tmp / (nr * nr)};
+               std::get<2>(std::get<0>(ret)) += IGIGn * N0;  // 補間添字0
+               std::get<2>(std::get<1>(ret)) += IGIGn * N1;  // 補間添字1
+               std::get<2>(std::get<2>(ret)) += IGIGn * N2;  // 補間添字2
+            }
             /* -------------------------------------------------------------------------- */
-            c = {Norm(cross), origin == p0 ? 0. : 1.};
+            cross = Cross(p0->X - p2->X, p1->X - p2->X);
+            c = {Norm(cross), Dot(origin->X - p0->X, cross)};
             for (auto &[_, __, igign] : ret)
                igign *= c;
 
