@@ -1410,17 +1410,23 @@ struct Quaternion {
 
    /* -------------------------------------------------------------------------- */
    void normalize() {
-      this->q = Normalize(this->q);
-      this->a = std::get<0>(this->q);
-      this->b = std::get<1>(this->q);
-      this->c = std::get<2>(this->q);
-      this->d = std::get<3>(this->q);
-      this->v = {b, c, d};
+      double norm = std::sqrt(this->a * this->a + this->b * this->b + this->c * this->c + this->d * this->d);
+      this->a /= norm;
+      this->b /= norm;
+      this->c /= norm;
+      this->d /= norm;
+      this->q = {this->a, this->b, this->c, this->d};
+      this->v = {this->b, this->c, this->d};
    };
    /* ------------------------------------------------------ */
    T3Tddd Rv() const {
       //%固定した座標系(global座標)における．位置ベクトルの回転をするために使う．
       // ノーマライズされていなくていい
+      double norm = std::sqrt(this->a * this->a + this->b * this->b + this->c * this->c + this->d * this->d);
+      double a = this->a / norm;
+      double b = this->b / norm;
+      double c = this->c / norm;
+      double d = this->d / norm;
       double a2 = a * a, b2 = b * b, c2 = c * c, d2 = d * d;
       return {{{a2 + b2 - c2 - d2, 2. * b * c - 2. * a * d, 2. * a * c + 2. * b * d},
                {2. * b * c + 2. * a * d, a2 - b2 + c2 - d2, -2. * a * b + 2. * c * d},
@@ -1430,6 +1436,11 @@ struct Quaternion {
    T3Tddd Rs() const {
       //%物体座標系を回転することで，global座標が物体座標にとってどのように移動するかを計算するために使う．
       // ノーマライズされていなくていい
+      double norm = std::sqrt(this->a * this->a + this->b * this->b + this->c * this->c + this->d * this->d);
+      double a = this->a / norm;
+      double b = this->b / norm;
+      double c = this->c / norm;
+      double d = this->d / norm;
       double a2 = a * a, b2 = b * b, c2 = c * c, d2 = d * d;
       return {{{a2 + b2 - c2 - d2, 2. * b * c + 2. * a * d, -2. * a * c + 2. * b * d},
                {2. * b * c - 2. * a * d, a2 - b2 + c2 - d2, 2. * a * b + 2. * c * d},
@@ -1659,6 +1670,31 @@ double Norm(const Quaternion &A) {
    return Norm(A.q);
 };
 /* ------------------------------------------------------ */
+
+/*DOC_EXTRACT rigidTransformation
+
+剛体上の点$`X`$の位置を剛体とともに移動させるとき，
+剛体の重心に関する回転と平行移動を使って，次のように計算できる．
+
+```math
+\begin{aligned}
+R_{\rm new}\cdot (X-X_{\rm initial COM}) + X_{\rm new COM}
+\end{aligned}
+```
+
+ここの回転行列$`R_{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
+初期姿勢に対する更新された姿勢を表すクォータニオン$`Q_{\rm new}`$から計算する．
+
+*/
+
+std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_old,
+                                          const std::array<double, 3> &COM_new,
+                                          const std::array<std::array<double, 3>, 3> &M_rotation,
+                                          const std::array<double, 3> &X_old) {
+   return Dot(M_rotation, X_old - COM_old) + COM_new;
+};
+
+/* -------------------------------------------------------------------------- */
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
 double VectorAngle(const Tddd &a, const Tddd &b) {
    // return std::acos(Dot(a, b) / (Norm(a) * Norm(b)));

@@ -87,6 +87,7 @@
     - [⛵ クォータニオンの時間微分，角速度](./builds/build_quaternion/README.md#⛵-クォータニオンの時間微分，角速度)
     - [⛵ ⛵ クォータニオンの微分](./builds/build_quaternion/README.md#⛵-⛵-クォータニオンの微分)
     - [⛵ ⛵ 角加速度からクォータニオンの微分を計算](./builds/build_quaternion/README.md#⛵-⛵-角加速度からクォータニオンの微分を計算)
+    - [⛵ 剛体の回転と平行移動](./builds/build_quaternion/README.md#⛵-剛体の回転と平行移動)
 ## [build_eigen_value](./builds/build_eigen_value/README.md)
 
 - [Contents](./builds/build_eigen_value/README.md#Contents)
@@ -102,9 +103,7 @@
     - [⛵ 計算プログラムの概要](./builds/build_bem/README.md#⛵-計算プログラムの概要)
     - [⛵ 境界のタイプを決定する](./builds/build_bem/README.md#⛵-境界のタイプを決定する)
     - [⛵ 境界値問題](./builds/build_bem/README.md#⛵-境界値問題)
-    - [⛵ 境界値問題](./builds/build_bem/README.md#⛵-境界値問題)
     - [⛵ 初期値問題](./builds/build_bem/README.md#⛵-初期値問題)
-    - [⛵ 浮体動揺解析](./builds/build_bem/README.md#⛵-浮体動揺解析)
     - [⛵ 浮体動揺解析](./builds/build_bem/README.md#⛵-浮体動揺解析)
     - [⛵ 陽に与えられる境界条件に対して（造波装置など）](./builds/build_bem/README.md#⛵-陽に与えられる境界条件に対して（造波装置など）)
     - [⛵ その他](./builds/build_bem/README.md#⛵-その他)

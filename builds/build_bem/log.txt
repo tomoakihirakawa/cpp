@@ -1,12 +1,12 @@
 ----------
-Execution time: Tue Oct 10 07:19:38 2023
+Execution time: Wed Oct 11 12:52:02 2023
 
 Machine Information:
-  Hostname: hirakawatomoakinoMacBook-Pro.local
-  Operating System: Darwin 23.0.0
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 22.6.0
   Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
 
 Command line arguments:
   arg0: ./main
-  arg1: ./input_files/Hadzic2005
+  arg1: ./input_files/Ren2015_H0d04_T1d2_piston_2
   arg2: 

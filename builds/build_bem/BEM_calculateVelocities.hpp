@@ -109,14 +109,14 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
          // 現在のv^nを使って問題ない．加速度はいらない．
          // Quaternion q;
          // q = q.d_dt(net->velocityRotational());
-         Quaternion next_Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(net->velocityRotational())));
+         // Quaternion next_Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(net->velocityRotational())));
+         // auto next_COM = net->RK_COM.getX(net->velocityTranslational());
+
          auto next_COM = net->RK_COM.getX(net->velocityTranslational());
+         auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(net->velocityRotational(), net->Q)));
 
          auto X_next = [&](const auto &p) {
-            Tddd trans = next_COM - net->ICOM;
-            Tddd r = p->initialX - net->ICOM;
-            Tddd rotation = next_Q.Rv(r) - r;
-            return rotation + trans + p->initialX;
+            return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX);
          };
 
          ret[i] = {X_next(p0), X_next(p1), X_next(p2)};

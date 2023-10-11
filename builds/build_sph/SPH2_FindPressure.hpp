@@ -190,13 +190,15 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
       auto PoissonEquationWithX = [&](const auto &B /*column id*/, const Tddd &X, const bool isMirror = false) {
          if (Distance(pO_x, X) < pO->radius_SPH) {
-            Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X, pO->radius_SPH);  //\label{SPH:lapP1}
+            // Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot(pO_x, X, pO->radius_SPH);  //\label{SPH:lapP1}
+            Aij = 2. * V_next(B) * Dot_grad_w_Bspline_Dot_Modified(pO_x, X, pO->radius_SPH, pO->inv_grad_corr_M_next);  //\label{SPH:lapP1}
             Aij /= pO->rho;
             ROW->increment(pO, Aij);
             ROW->increment(B, -Aij);
             for (const auto &[p, v] : pO->vector_p_grad) ROW->increment(p, -Aij * v);
             // \label{SPH:how_to_use_b_vector_in_Poisson1}
-            ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X, pO->radius_SPH));  // \label{SPH:div_b_vector}
+            // ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, grad_w_Bspline(pO_x, X, pO->radius_SPH));  // \label{SPH:div_b_vector}
+            ROW->PoissonRHS += V_next(B) * Dot(b_vector(B) - pO_b, Dot(grad_w_Bspline(pO_x, X, pO->radius_SPH), pO->inv_grad_corr_M_next));  // \label{SPH:div_b_vector}
             sum_Aij_Pj += Aij * B->p_SPH;
             sum_Aij += Aij;
          }
