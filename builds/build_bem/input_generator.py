@@ -29,7 +29,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "Ren2015"
 
 match SimulationCase:
     case "fish":
@@ -170,18 +170,20 @@ match SimulationCase:
                          "isFixed": True,
                          "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
-        float = {"name": "float",
-                 "type": "RigidBody",
-                 # "isFixed": True,
-                 # "output": "json"}
-                 "velocity": "floating"}
-
         L = 0.3        
         H = 0.2
         d = 0.1        
         # 500*L*W*H (浮体全質量) = 1000*L*W*d (排除される水の質量)       
         # d = H/2 = 0.1
         W = 0.42
+
+        float = {"name": "float",
+                 "type": "RigidBody",
+                 # "isFixed": True,
+                 # "output": "json"}
+                 "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 100.],
+                 "velocity": "floating"}
+
         float["mass"] = m = 500*L*H*W
         Ixx = 1./12.*m*(W*W+H*H)
         Iyy = 1./12.*m*(L*L+H*H)

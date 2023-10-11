@@ -110,7 +110,7 @@ match SimulationCase:
                    "end_time": 1,
                    "CSML": 2.7,
                    "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.0125}
+                   "particle_spacing": 0.015}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                             + "_CSML" + str(setting["CSML"]).replace(".", "d")\

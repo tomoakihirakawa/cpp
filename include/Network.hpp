@@ -3653,7 +3653,8 @@ class Network : public CoordinateBounds {
       // center_of_massとquaternionに従って計算
       Tddd trans = this->center_of_mass - this->ICOM;
       for (const auto &p : this->getPoints())
-         p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) - (p->initialX - this->ICOM) + trans + p->initialX);
+         p->setXSingle(rigidTransformation(this->ICOM, this->center_of_mass, this->quaternion.Rv(), p->initialX));
+      // p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) - (p->initialX - this->ICOM) + trans + p->initialX);
       this->setGeometricProperties();
       //
       // Tddd translation = this->COM - this->ICOM;

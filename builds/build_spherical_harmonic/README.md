@@ -192,6 +192,8 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 
 この計算手順は，離散化を明確にして初めて理解でき，その有用性がわかる．
 
+2
+
 [./test_multipole_expansion.cpp#L155](./test_multipole_expansion.cpp#L155)
 
 ---

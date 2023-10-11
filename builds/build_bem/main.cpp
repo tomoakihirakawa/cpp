@@ -422,6 +422,7 @@ int main(int argc, char **argv) {
 
          /* ------------------------------------------------------ */
 
+         //! 速度ポテンシャルの平均を0にする
          {
             double mean_phi = 0.;
             for (const auto &p : water->getPoints())
@@ -433,6 +434,10 @@ int main(int argc, char **argv) {
                std::get<0>(p->phiphin) -= mean_phi;
             }
          }
+
+         //! クォータニオンの正規化
+         for (const auto &net : RigidBodyObject)
+            net->Q.normalize();
 
          /* ------------------------------------------------------ */
 

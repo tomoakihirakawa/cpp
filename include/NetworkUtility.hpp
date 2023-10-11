@@ -383,10 +383,10 @@ void flipIf(Network &water,
             } else {
                if (l->Dirichlet) {
                   //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 3);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 4);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 3);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
                   if (isfound) count++;
                }
             }

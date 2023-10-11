@@ -356,7 +356,7 @@ double Dot_grad_w_Bspline3_Dot_Modified(const Tddd &xi, const Tddd &xj, const do
    if (q > 1. || r < 1E-13)
       return 0.;
    else
-      return Dot(Xij / (r * r), Dot(M, grad_w_Bspline3(xi, xj, h)));
+      return Dot(Xij / (r * r), Dot(grad_w_Bspline3(xi, xj, h), M));
 };
 
 // const auto &w_Bspline = w_Bspline5;

@@ -1,6 +1,16 @@
 {
     "name": "float",
     "type": "RigidBody",
+    "mooring": [
+        "simple_mooring",
+        4.6,
+        0.21,
+        0.0,
+        4.6,
+        0.21,
+        0.3,
+        100.0
+    ],
     "velocity": "floating",
     "mass": 12.6,
     "COM": [
