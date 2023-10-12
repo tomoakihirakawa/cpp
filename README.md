@@ -49,13 +49,13 @@
 ## [build_Network](./builds/build_Network/README.md)
 
 - [Contents](./builds/build_Network/README.md#Contents)
-    - [⛵ CGALを使って四面体を生成する](./builds/build_Network/README.md#⛵-CGALを使って四面体を生成する)
-    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](./builds/build_Network/README.md#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-- [🐋 空間分割（space_partitioning）](./builds/build_Network/README.md#🐋-空間分割（space_partitioning）)
-    - [⛵ ⛵ Bucket クラスの説明](./builds/build_Network/README.md#⛵-⛵-Bucket-クラスの説明)
-- [🐋 木構造による空間分割](./builds/build_Network/README.md#🐋-木構造による空間分割)
 - [🐋 `Network`](./builds/build_Network/README.md#🐋-`Network`)
     - [⛵ 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法](./builds/build_Network/README.md#⛵-3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法)
+- [🐋 空間分割（space_partitioning）](./builds/build_Network/README.md#🐋-空間分割（space_partitioning）)
+- [🐋 木構造による空間分割](./builds/build_Network/README.md#🐋-木構造による空間分割)
+- [🐋 CGALを使って四面体を生成する](./builds/build_Network/README.md#🐋-CGALを使って四面体を生成する)
+    - [⛵ CGALを使って四面体を生成する](./builds/build_Network/README.md#⛵-CGALを使って四面体を生成する)
+    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](./builds/build_Network/README.md#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 ## [build_integration](./builds/build_integration/README.md)
 
 - [Contents](./builds/build_integration/README.md#Contents)

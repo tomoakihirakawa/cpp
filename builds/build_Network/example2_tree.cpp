@@ -1,5 +1,5 @@
 
-/*DOC_EXTRACT Network_space_partitioning
+/*DOC_EXTRACT 0_2_Network_space_partitioning
 
 # 木構造による空間分割
 

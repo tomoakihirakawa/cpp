@@ -461,7 +461,7 @@ struct Sphere {
 
 /* ------------------------------------------------------ */
 
-/*DOC_EXTRACT coordinatebounds
+/*DOC_EXTRACT 0_1_coordinatebounds
 
 ### CoordinateBounds クラスについて
 
