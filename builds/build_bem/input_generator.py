@@ -29,7 +29,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Ren2015"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
     case "fish":
@@ -181,7 +181,7 @@ match SimulationCase:
                  "type": "RigidBody",
                  # "isFixed": True,
                  # "output": "json"}
-                 "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 100.],
+                #  "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 1.],
                  "velocity": "floating"}
 
         float["mass"] = m = 500*L*H*W
@@ -194,7 +194,7 @@ match SimulationCase:
         # float["COM"] = [2+L/2., W/2, z_surface]
         float["COM"] = [4.6+L/2, W/2, z_surface]
         print("COM ", float["COM"], " mass ", float["COM"], " W ", W)
-        float["MOI"] = [Ixx, Iyy, Izz]
+        float["MOI"] = [10**10*Ixx, Iyy, 10**10*Izz]
 
         # if id contains "multiple":
         if "multiple" in id:

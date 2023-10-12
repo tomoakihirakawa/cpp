@@ -232,7 +232,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          double S = H / F;
          // wave maker movement is e * sin(w * t)
 
-         t -= M_PI / w;
+         t -= 1.5 * M_PI / w;
          double dsdt = S / 2. * w * cos(w * (t - start));
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};

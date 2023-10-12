@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
 
          const auto Points = water->getPoints();
          const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, .1);
+         double dt = dt_CFL(*water, max_dt, .25);
          if (time_step <= 10)
             dt = 0.000001;
          Print("===========================================================================");

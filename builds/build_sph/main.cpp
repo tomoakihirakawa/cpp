@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
          net2PVD[polyNet] = new PVDWriter(output_directory + J["name"][0] + "_polygon.pvd");
       }
    }
-   //
+
    double particle_spacing = stod(settingJSON["particle_spacing"])[0];
    double &ps = particle_spacing;
    double volume = std::pow(particle_spacing, 3);
@@ -249,6 +249,7 @@ int main(int argc, char **argv) {
       p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
       p->setX(p->X);
    }
+   この設定を修正する必要がある
    // b# -------------------------------------------------------------------------- */
    // b#                             外向きベクトルの設定                               */
    // b# -------------------------------------------------------------------------- */
@@ -337,16 +338,16 @@ int main(int argc, char **argv) {
       if (end_time < simulation_time)
          break;
 
-      // int N = 10000000;
-      // if (time_step == N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_;
-      // } else if (time_step < N) {
-      //    for (const auto &[object, _, __] : all_objects)
-      //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_ * 10.;
-      // }
+      int N = 10000000;
+      if (time_step == N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_;
+      } else if (time_step < N) {
+         for (const auto &[object, _, __] : all_objects)
+            for (const auto &p : object->getPoints())
+               p->mu_SPH = _WATER_MU_10deg_ * 10.;
+      }
 
       // developByEISPH(Fluid, RigidBodies, simulation_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
       developByEISPH(Fluid,
