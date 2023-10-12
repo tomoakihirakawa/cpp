@@ -26,7 +26,7 @@ int main() {
    面と交わるバケットに確実に麺を保存するスマートな方法は，現在のところ思いつかない．
    今の所は，面を細かい点群に分けて，各点群を含むバケットに面を保存することで対応している．
 
-   ![anim.gif](anim.gif)
+   ![example1_space_partitioning.gif](example1_space_partitioning.gif)
 
    */
 
