@@ -9,7 +9,17 @@
 `buckets[i][j][k]`には，上のレベルの`data[i][j][k]`のデータが引き継がれている．
 つまり，`buckets[i][j][k]`は，`data[i][j][k]`のデータをさらに分割したものである．
 デフォルトでは，`buckets[i][j][k]`は内部に８つの`data`を持つ:
+
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
+
+
+\ref{buckets_generateTree}{このツリー生成方法}は，
+バウンディングボックスを範囲と，それを分割する幅を指定する．
+分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
+
+```cpp
+buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
+```
 
 ![example2_tree_faster.gif](example2_tree_faster.gif)
 
