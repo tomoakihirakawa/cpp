@@ -85,10 +85,40 @@ my_buckets.erase(obj1);
 
 */
 
-// BaseBuckets is derived from CoordinateBounds
+// Buckets is derived from CoordinateBounds
 
 template <typename T>
-struct BaseBuckets : public CoordinateBounds {
+struct Buckets : public CoordinateBounds {
+   /* -------------------------------------------------------------------------- */
+   std::vector<std::vector<std::vector<std::shared_ptr<Buckets<T>>>>> buckets;
+
+   int level = 0;
+   int max_level = 2;
+   bool has_tree = false;
+
+   void generateTree(const std::function<bool(const std::unordered_set<T> &)> &condition = [](const std::unordered_set<T> &) { return true; }) {
+      if (this->level >= this->max_level)
+         return;
+
+      buckets.resize(this->xsize, std::vector<std::vector<std::shared_ptr<Buckets<T>>>>(this->ysize, std::vector<std::shared_ptr<Buckets<T>>>(this->zsize, nullptr)));
+
+      for (auto i = 0; i < this->data.size(); ++i)
+         for (auto j = 0; j < this->data[i].size(); ++j)
+            for (auto k = 0; k < this->data[i][j].size(); ++k) {
+               auto bounds = getBounds({i, j, k});
+               buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
+               buckets[i][j][k]->level = this->level + 1;
+               for (const auto &p : this->data[i][j][k]) {
+                  // if (condition(p))
+                  {
+                     buckets[i][j][k]->add(ToX(p), p);
+                  }
+               }
+            }
+
+      this->has_tree = true;
+   }
+   /* -------------------------------------------------------------------------- */
    using sizeType = int;
    using ST = sizeType;
    using ST2 = std::array<sizeType, 2>;
@@ -109,8 +139,8 @@ struct BaseBuckets : public CoordinateBounds {
    double dL;
    double bucketVolume() const { return std::pow(this->dL, 3.); };
    //
-   BaseBuckets(const CoordinateBounds &c_bounds, const double dL_IN) : CoordinateBounds(c_bounds) { initialize(this->bounds, dL_IN); };
-   BaseBuckets(const T3Tdd &boundingboxIN, const double dL_IN) : CoordinateBounds(boundingboxIN) { initialize(this->bounds, dL_IN); };
+   Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : CoordinateBounds(c_bounds) { initialize(this->bounds, dL_IN); };
+   Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : CoordinateBounds(boundingboxIN) { initialize(this->bounds, dL_IN); };
 
    void initialize(const auto &boundingboxIN, const double dL_IN) {
       // Clear existing data
@@ -446,10 +476,10 @@ struct BaseBuckets : public CoordinateBounds {
    };
 };
 
-template <typename T>
-struct Buckets : public BaseBuckets<T> {
-   Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<T>(c_bounds, dL_IN){};
-   Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<T>(boundingboxIN, dL_IN){};
-};
+// template <typename T>
+// struct Buckets : public BaseBuckets<T> {
+//    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<T>(c_bounds, dL_IN){};
+//    Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<T>(boundingboxIN, dL_IN){};
+// };
 
 #endif
