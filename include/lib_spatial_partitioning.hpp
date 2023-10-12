@@ -106,6 +106,7 @@ struct Buckets : public CoordinateBounds {
          for (auto j = 0; j < this->data[i].size(); ++j)
             for (auto k = 0; k < this->data[i][j].size(); ++k) {
                auto bounds = getBounds({i, j, k});
+               //! この方法で，`data[i][j][k]`を８分割しバケツを作成する．\label{buckets_generateTree}
                buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
                buckets[i][j][k]->level = this->level + 1;
                for (const auto &p : this->data[i][j][k]) {
