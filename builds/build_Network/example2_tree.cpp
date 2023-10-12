@@ -1,5 +1,5 @@
 
-/*DOC_EXTRACT 0_2_Network_space_partitioning
+/*DOC_EXTRACT 0_2_space_partitioning
 
 ## 階層のある空間分割（木構造）
 
