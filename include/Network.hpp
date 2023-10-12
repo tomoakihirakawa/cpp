@@ -312,17 +312,17 @@ using V_netLp = std::vector<networkLine *>;
 using VV_netLp = std::vector<std::vector<networkLine *>>;
 /* ------------------------------------------------------ */
 // networkPoint限定のもの
-template <>
-struct Buckets<networkPoint *> : public BaseBuckets<networkPoint *> {
-   Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<networkPoint *>(c_bounds, dL_IN){};
-   Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<networkPoint *>(boundingboxIN, dL_IN){};
-};
+// template <>
+// struct Buckets<networkPoint *> : public BaseBuckets<networkPoint *> {
+//    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<networkPoint *>(c_bounds, dL_IN){};
+//    Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<networkPoint *>(boundingboxIN, dL_IN){};
+// };
 /* ------------------------------------------------------ */
-template <>
-struct Buckets<networkFace *> : BaseBuckets<networkFace *> {
-   Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<networkFace *>(c_bounds, dL_IN){};
-   Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<networkFace *>(boundingboxIN, dL_IN){};
-};
+// template <>
+// struct Buckets<networkFace *> : BaseBuckets<networkFace *> {
+//    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<networkFace *>(c_bounds, dL_IN){};
+//    Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<networkFace *>(boundingboxIN, dL_IN){};
+// };
 /* ------------------------------------------------------ */
 /*networkPoint_detail
 networkPoint_detail*/
