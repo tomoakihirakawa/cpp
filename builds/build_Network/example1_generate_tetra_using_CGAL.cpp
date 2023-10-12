@@ -1,10 +1,11 @@
+/*DOC_EXTRACT 9_9_CGAL
 
-/*DOC_EXTRACT
+# CGALを使って四面体を生成する
 
 ## CGALを使って四面体を生成する
 
-```
-$ brew install CGAL
+```shell
+brew install CGAL
 ```
 
 */

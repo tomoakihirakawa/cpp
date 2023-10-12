@@ -1,7 +1,7 @@
 #ifndef lib_spatial_partitioning_H
 #define lib_spatial_partitioning_H
 
-/*DOC_EXTRACT space_partitioning
+/*DOC_EXTRACT 0_3_space_partitioning
 
 ## Bucket クラスの説明
 
