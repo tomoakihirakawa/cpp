@@ -1,11 +1,11 @@
 #include "Network.hpp"
 #include "vtkWriter.hpp"
 
-/*DOC_EXTRACT 0_0_load_3d_file
+/*DOC_EXTRACT 0_0_load_output_3d_model
 
 # `Network`
 
-## 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法
+## 3Dファイルの読み込みと出力
 
 ### 読み込み `Network`
 
@@ -29,9 +29,9 @@ vtkPolygonWrite(ofs, obj->getFaces());
 ![sample.png](sample.png)
 
 ```shell
-$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=load_3d_file.cpp
-$ make
-$ ./load_3d_file
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
+make
+./example0_load_3d_file
 ```
 
 */
@@ -50,7 +50,7 @@ int main() {
       vtkPolygonWrite(ofs, obj->getFaces());
    }
 
-   /*DOC_EXTRACT pvd
+   /*DOC_EXTRACT 0_1_load_output_3d_model
 
    ### `PVDWriter`を使ったpvdファイルの作成方法
 
