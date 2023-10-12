@@ -50,7 +50,7 @@
 
 - [Contents](./builds/build_Network/README.md#Contents)
 - [🐋 `Network`](./builds/build_Network/README.md#🐋-`Network`)
-    - [⛵ 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法](./builds/build_Network/README.md#⛵-3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法)
+    - [⛵ 3Dファイルの読み込みと出力](./builds/build_Network/README.md#⛵-3Dファイルの読み込みと出力)
 - [🐋 空間分割（space_partitioning）](./builds/build_Network/README.md#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](./builds/build_Network/README.md#⛵-等間隔のシンプルな空間分割)
     - [⛵ 階層のある空間分割（木構造）](./builds/build_Network/README.md#⛵-階層のある空間分割（木構造）)

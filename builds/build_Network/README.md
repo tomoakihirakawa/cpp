@@ -1,8 +1,9 @@
 # Contents
 - [🐋 `Network`](#🐋-`Network`)
-    - [⛵ 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法](#⛵-3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法)
+    - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
         - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
+        - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
@@ -10,13 +11,12 @@
 - [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-        - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
 
 
 ---
 # 🐋 `Network` 
 
-## ⛵ 3Dファイルを読み込み，`vtkPolygonWrite`を使った出力方法 
+## ⛵ 3Dファイルの読み込みと出力 
 
 ### 🪼 読み込み `Network` 
 
@@ -40,12 +40,39 @@ vtkPolygonWrite(ofs, obj->getFaces());
 ![sample.png](sample.png)
 
 ```shell
-$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=load _3d _file.cpp
-$ make
-$ ./load_3d_file
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
+make
+./example0_load_3d_file
 ```
 
 [./example0_load_3d_file.cpp#L4](./example0_load_3d_file.cpp#L4)
+
+---
+### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
+
+pvdファイルは，ファイルと時間をセットにしてまとめ，paraview上で，3Dファイルのアニメーションを再生するためのファイルである．
+
+次のようにして，出力するpvdファイル名を指定しクラスを作成する．
+
+```cpp
+PVDWriter pvd("./bunny_obj.pvd");
+```
+
+`filename`には，`vtp`ファイルなどの3Dファイル名を，`time`には，そのファイルの時間を指定する：
+
+```cpp
+pvd.push(filename, time);
+```
+
+最後にpvdファイルを出力する．
+
+```cpp
+pvd.output();
+```
+
+![sample.gif](sample.gif)
+
+[./example0_load_3d_file.cpp#L53](./example0_load_3d_file.cpp#L53)
 
 ---
 # 🐋 空間分割（space_partitioning） 
@@ -97,6 +124,9 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 
 ![example2_tree_faster.gif](example2_tree_faster.gif)
 
+レベル０が生成したレベル１のバケットに保存された点を示しており，
+白い線は，１階層上のレベル０のバケットの境界を示している．
+
 [./example2_tree.cpp#L2](./example2_tree.cpp#L2)
 
 ---
@@ -127,32 +157,5 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 このスリーバーをうまく削除することが重要となる．
 
 [./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
-
----
-### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
-
-pvdファイルは，ファイルと時間をセットにしてまとめ，paraview上で，3Dファイルのアニメーションを再生するためのファイルである．
-
-次のようにして，出力するpvdファイル名を指定しクラスを作成する．
-
-```cpp
-PVDWriter pvd("./bunny_obj.pvd");
-```
-
-`filename`には，`vtp`ファイルなどの3Dファイル名を，`time`には，そのファイルの時間を指定する：
-
-```cpp
-pvd.push(filename, time);
-```
-
-最後にpvdファイルを出力する．
-
-```cpp
-pvd.output();
-```
-
-![sample.gif](sample.gif)
-
-[./example0_load_3d_file.cpp#L53](./example0_load_3d_file.cpp#L53)
 
 ---
