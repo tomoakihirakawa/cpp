@@ -461,12 +461,58 @@ struct Sphere {
 
 /* ------------------------------------------------------ */
 
+/*DOC_EXTRACT coordinatebounds
+
+### CoordinateBounds クラスについて
+
+#### 概要
+`CoordinateBounds`クラスは，
+3次元の座標領域（バウンディングボックス）を管理するためのクラスである．
+
+#### メンバ変数
+
+| 変数名 | 型 | 説明 |
+|--------|----|------|
+| bounds | std::array<std::array<double,2>,3> | x, y, zそれぞれの範囲を保持する |
+| X      | std::array<double,3>  | 中心座標を保持する |
+
+#### メンバ関数
+
+| メソッド名     | 戻り値型 | 説明 |
+|--------------|----------|------|
+| scaledBounds  | std::array<std::array<double,2>,3>    | 指定されたスケールでバウンディングボックスを拡大・縮小する |
+| setBounds     | void     | バウンディングボックスを設定する（オーバーロードあり） |
+| getXtuple     | const std::array<double,3> & | 中心座標を返す |
+| getBounds     | const std::array<std::array<double,2>,3> & | バウンディングボックスの範囲を返す |
+| Distance      | Tdd       | 指定座標との最小・最大距離を計算する |
+| getVolume     | double    | バウンディングボックスの体積を計算する |
+| getScale      | double    | バウンディングボックスのスケールを計算する |
+| getCenter     | std::array<double,3>      | バウンディングボックスの中心座標を計算する |
+| getVertices   | std::array<std::array<double,3>,8>    | バウンディングボックスの8つの頂点を計算する |
+
+#### オペレーター
+
+| オペレーター名 | 戻り値型 | 説明 |
+|--------------|----------|------|
+| ()            | const std::array<std::array<double,2>,3> & | バウンディングボックスの範囲を返す（関数呼び出しオペレータ） |
+
+---
+
+#### 有用性
+CoordinateBounds クラスは、3次元空間での領域制限やクエリ処理、衝突判定などに使用できる。簡易的な操作で座標の範囲や距離、体積などを計算できるため、効率的な空間分割やデータ処理が可能である。
+
+*/
+
 // structをわざわざ作るのは，T3Tddではなく，coordinateboundsとして意味を具体的にした状態で持ち回りたいから．それだけ．
 
 struct CoordinateBounds {
    T3Tdd bounds;
-   Tddd X;  // center
-   Tddd &center = this->X;
+   // X is center
+   Tddd X;
+   /* -------------------------------------------------------- */
+   Tdd xbounds() const { return std::get<0>(bounds); };
+   Tdd ybounds() const { return std::get<1>(bounds); };
+   Tdd zbounds() const { return std::get<2>(bounds); };
    /* ------------------------------------------------------ */
    T3Tdd scaledBounds(const double scale) const {
       auto [xrange, yrange, zrange] = this->bounds;
@@ -560,38 +606,17 @@ struct CoordinateBounds {
       auto [Z0, Z1] = std::get<2>(this->bounds);
       // connectivity:  {{x4, x6, x7, x5}, {x0, x2, x6, x4}, {x2, x3, x7, x6}, {x3, x1, x5, x7}, {x0, x4, x5, x1}, {x0, x1, x3, x2}}
       return T8Tddd{{{X0, Y0, Z0},    // 000, 0
-                     {X0, Y0, Z1},    // 001, 1
-                     {X0, Y1, Z0},    // 010, 2
-                     {X0, Y1, Z1},    // 011, 3
-                     {X1, Y0, Z0},    // 100, 4
-                     {X1, Y0, Z1},    // 101, 5
-                     {X1, Y1, Z0},    // 110, 6
-                     {X1, Y1, Z1}}};  // 111, 7
+                     {X0, Y1, Z0},    // 010, 1
+                     {X1, Y1, Z0},    // 110, 2
+                     {X1, Y0, Z0},    // 100, 3
+                     {X0, Y0, Z1},    // 001, 4
+                     {X0, Y1, Z1},    // 011, 5
+                     {X1, Y1, Z1},    // 111, 6
+                     {X1, Y0, Z1}}};  // 101, 7
    };
    //% ---------------- キャスト定義 -------------- */
    //% 型が明示され，関数よりもわかりやすい．
-   operator T8Tddd() const {
-      auto [X0, X1] = std::get<0>(this->bounds);
-      auto [Y0, Y1] = std::get<1>(this->bounds);
-      auto [Z0, Z1] = std::get<2>(this->bounds);
-      // connectivity:  {{x4, x6, x7, x5}, {x0, x2, x6, x4}, {x2, x3, x7, x6}, {x3, x1, x5, x7}, {x0, x4, x5, x1}, {x0, x1, x3, x2}}
-      // return T8Tddd{{X0, Y0, Z0},   // 000, 0
-      //               {X0, Y1, Z0},   // 010, 1 -> 2
-      //               {X0, Y0, Z1},   // 001, 2 -> 1
-      //               {X0, Y1, Z1},   // 011, 3
-      //               {X1, Y0, Z0},   // 100, 4
-      //               {X1, Y1, Z0},   // 110, 5 -> 6
-      //               {X1, Y0, Z1},   // 101, 6 -> 5
-      //               {X1, Y1, Z1}};  // 111, 7
-      return T8Tddd{{{X0, Y0, Z0},    // 000, 0
-                     {X0, Y0, Z1},    // 001, 1
-                     {X0, Y1, Z0},    // 010, 2
-                     {X0, Y1, Z1},    // 011, 3
-                     {X1, Y0, Z0},    // 100, 4
-                     {X1, Y0, Z1},    // 101, 5
-                     {X1, Y1, Z0},    // 110, 6
-                     {X1, Y1, Z1}}};  // 111, 7
-   };
+   operator T8Tddd() const { return this->getVertices(); };
 
    operator T6T4Tddd() const {
       auto [X0, X1] = std::get<0>(this->bounds);

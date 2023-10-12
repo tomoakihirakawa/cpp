@@ -174,7 +174,7 @@ inline Tddd networkPoint::normalContanctSurface(const double pw0 = 1., const dou
 */
 
 // \label{contact_angle}
-const double contact_angle = 20. * M_PI / 180.;
+const double contact_angle = 25. * M_PI / 180.;
 
 // \label{isFacing}
 bool isFacing(const Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
@@ -298,25 +298,27 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
       double dist;
       // std::unordered_set<networkFace *> faces = B.getObjects_unorderedset(this->X, this->radius);
       std::unordered_set<networkFace *> faces;
-      B.apply(this->X, this->radius, [&faces](const auto &p) { faces.emplace(p); });
+      B.apply(this->X, 2 * this->radius /*広め*/, [&faces](const auto &p) { faces.emplace(p); });
       faces.insert(this->ContactFaces.begin(), this->ContactFaces.end());
       std::vector<std::tuple<networkFace *, double>> f_dist_sort;
 
       for (const auto &f : faces)
          if (include_self_network || f->getNetwork() != this->getNetwork()) {
             if (isInContact(this, f)) {
-               std::tuple<networkFace *, double> T = {f, Norm(this->X - Nearest(this->X, ToX(f)))};
-               auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) {
-                  return std::get<1>(a) < std::get<1>(b) - 1E-20;
-               });
-               f_dist_sort.insert(it, T);
+               auto d = Norm(this->X - Nearest(this->X, ToX(f)));
+               if (this->radius >= d /*決まった通り*/) {
+                  std::tuple<networkFace *, double> T = {f, d};
+                  auto it = std::lower_bound(f_dist_sort.begin(), f_dist_sort.end(), T, [](const auto &a, const auto &b) { return std::get<1>(a) < std::get<1>(b) - 1E-20; });
+                  f_dist_sort.insert(it, T);
+               }
             }
          }
 
       if (!f_dist_sort.empty()) {
          DebugPrint("! 異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
          for (const auto &[F, D] : f_dist_sort) {
-            if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
+            if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(),
+                             [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
                this->ContactFaces.emplace(F);
             if (this->ContactFaces.size() > 5)
                break;

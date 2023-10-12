@@ -993,27 +993,18 @@ struct BEM_BVP {
             auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
             auto [_, __, ___, Ix, Iy, Iz] = net->getInertiaGC();
             /* ------------------------------- 係留策 2023/10/11 ------------------------------- */
-            //$ 浮体の重心を基準にして，係留点を移動させる．
-            auto moved_point = [&](const Tddd &X_init) {
-               Tddd trans = net->COM - net->ICOM;
-               Tddd rotation = net->Q.Rv(X_init - net->ICOM);
-               return X_init + trans + rotation;
-            };
-            //
-            std::array<double, 3> F_mooring = {0., 0., 0.};
+            std::array<double, 3> F_mooring = {0., 0., 0.}, T_mooring = {0., 0., 0.};
             net->inputJSON.find("mooring", [&](const auto &values) {
                if (values[0] == "simple_mooring") {
                   std::cout << Yellow << "simple_moorings" << colorOff << std::endl;
                   std::array<double, 3> X_anchor = {stod(values[1]), stod(values[2]), stod(values[3])};            //$ アンカー
                   std::array<double, 3> X_fairlead_initial = {stod(values[4]), stod(values[5]), stod(values[6])};  //$ フェアリード
                   double natural_length = Norm(X_anchor - X_fairlead_initial);
-                  std::array<double, 3> X_fairlead = rigidTransformation(net->ICOM,
-                                                                         net->COM,
-                                                                         net->Q.R(),
-                                                                         X_fairlead_initial);
+                  std::array<double, 3> X_fairlead = rigidTransformation(net->ICOM, net->COM, net->Q.R(), X_fairlead_initial);
                   double current_length = Norm(X_anchor - X_fairlead);
                   F_mooring = stod(values[7]) * (current_length - natural_length) * Normalize(X_anchor - X_fairlead);
-                  std::cout << Yellow << "F_mooring = " << F_mooring << colorOff << std::endl;
+                  T_mooring = Cross(X_fairlead - net->COM, F_mooring);
+                  std::cout << Yellow << "F_mooring = " << F_mooring << ", T_mooring = " << T_mooring << colorOff << std::endl;
                }
             });
             /* -------------------------------------------------------------------------- */
@@ -1021,8 +1012,9 @@ struct BEM_BVP {
             auto F_hydro = tmp.surfaceIntegralOfPressure();
             auto F = F_hydro + F_ext + F_mooring;
             auto T_hydro = tmp.getFroudeKrylovTorque(net->COM);
+            auto T = T_hydro + T_mooring;
             auto [a0, a1, a2] = F / net->getMass3D();
-            auto [a3, a4, a5] = T_hydro / Tddd{Ix, Iy, Iz};
+            auto [a3, a4, a5] = T / Tddd{Ix, Iy, Iz};
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
             // write out details of the body
             // std::cout << Green << "mass = " << net->mass << std::endl;

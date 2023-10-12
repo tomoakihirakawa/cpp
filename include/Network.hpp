@@ -3520,6 +3520,7 @@ class Network : public CoordinateBounds {
    void makeBucketFaces(const double spacing = 1E+20) {
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
+      std::cout << this->getName() << "this->scaledBounds(expand_bounds) = " << this->scaledBounds(expand_bounds) << std::endl;
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       //
       double min;
@@ -3527,6 +3528,9 @@ class Network : public CoordinateBounds {
          min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 10.;
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
             this->BucketFaces.add(xyz, f);
+         for (const auto X : f->getXVertices())
+            this->BucketFaces.add(X, f);
+         this->BucketFaces.add(Mean(f->getXVertices()), f);
       }
 
       this->BucketFaces.setVector();
@@ -3541,12 +3545,14 @@ class Network : public CoordinateBounds {
       std::cout << this->getName() << ", resize done" << std::endl;
       if (!this->BucketPoints.add(this->getPoints()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
-      else
+      else {
          std::cout << this->getName() << ", all points are added" << std::endl;
+         std::cout << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << std::endl;
+      }
       this->BucketPoints.setVector();
-
       std::cout << this->getName() << ", BucketPoints.setVector() done" << std::endl;
    };
+
    void makeBucketParametricPoints(const double spacing) {
       // this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
@@ -3572,7 +3578,7 @@ class Network : public CoordinateBounds {
       double min_d = 1E+20, d;
       this->BucketFaces.apply_to_the_nearest_bound(X, [&](const int i, const int j, const int k) {
          if (closest_face == nullptr)
-            for (const auto &f : this->BucketFaces.buckets[i][j][k]) {
+            for (const auto &f : this->BucketFaces.data[i][j][k]) {
                V = Nearest(X, f) - X;
                d = Norm(V);
                if (d < min_d) {
@@ -4373,7 +4379,7 @@ class Network : public CoordinateBounds {
       for (const auto &[x, n] : map_Tddd_Int) {
          auto [i, j, k] = bucket.indices(*x);
          overlap_index = 0;
-         for (const auto &tdd : bucket.buckets[i][j][k])
+         for (const auto &tdd : bucket.data[i][j][k])
             if (Norm(*tdd - *x) < 1E-10) {
                overlap_index = map_Tddd_Int[tdd];
                break;

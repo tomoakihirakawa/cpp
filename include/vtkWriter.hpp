@@ -67,17 +67,37 @@ struct vtkPolygonWriter : XMLElement {
 
    template <std::size_t N>
    void addPolygon(const std::array<T, N> &conns) {
-      static_assert(N == 3 || N == 4, "addPolygon supports only 3 or 4 element arrays");
+      static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
       if constexpr (N == 3) {
          this->connectivity3.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}}});
       } else if constexpr (N == 4) {
          this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}, {std::get<3>(conns), 0}}});
+      } else if constexpr (N == 8) {
+         /*
+         cube case
+         0----------1
+         |\         |\
+         | \        | \
+         |  \       |  \
+         |   4------|---5
+         |   |      |   |
+         3---|------2   |
+          \  |       \  |
+           \ |        \ |
+            7----------6
+         */
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}, {std::get<3>(conns), 0}}});  // 0-1-2-3
+         this->connectivity4.push_back({{{std::get<4>(conns), 0}, {std::get<7>(conns), 0}, {std::get<6>(conns), 0}, {std::get<5>(conns), 0}}});  // 4-7-6-5
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<3>(conns), 0}, {std::get<7>(conns), 0}, {std::get<4>(conns), 0}}});  // 0-3-7-4
+         this->connectivity4.push_back({{{std::get<1>(conns), 0}, {std::get<5>(conns), 0}, {std::get<6>(conns), 0}, {std::get<2>(conns), 0}}});  // 1-5-6-2
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<4>(conns), 0}, {std::get<5>(conns), 0}, {std::get<1>(conns), 0}}});  // 0-4-5-1
+         this->connectivity4.push_back({{{std::get<3>(conns), 0}, {std::get<2>(conns), 0}, {std::get<6>(conns), 0}, {std::get<7>(conns), 0}}});  // 3-2-6-7
       }
    }
 
    template <std::size_t N>
    void addPolygon(const std::vector<std::array<T, N>> &conns) {
-      static_assert(N == 3 || N == 4, "addPolygon supports only 3 or 4 element arrays");
+      static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
       for (const auto &c : conns) this->addPolygon(c);
    }
 
@@ -243,55 +263,90 @@ struct vtkPolygonWriter : XMLElement {
 };
 
 /* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
 
 /* ------------------------------------------------------ */
-/*                         T4Tddd                         */
+/*                         T8Tddd                         */
 /* ------------------------------------------------------ */
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T4Tddd> &V) {
+
+/*
+cube case
+0----------1
+|\         |\
+| \        | \
+|  \       |  \
+|   4------|---5
+|   |      |   |
+3---|------2   |
+ \  |       \  |
+  \ |        \ |
+   7----------6
+*/
+
+template <size_t N>
+void vtkPolygonWrite(std::ofstream &ofs, const std::vector<std::array<Tddd, N>> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
-   for (const auto &[X0, X1, X2, X3] : V) {
-      std::shared_ptr<Tddd> x0(new Tddd(X0));
-      vtp.add(x0);
-      std::shared_ptr<Tddd> x1(new Tddd(X1));
-      vtp.add(x1);
-      std::shared_ptr<Tddd> x2(new Tddd(X2));
-      vtp.add(x2);
-      std::shared_ptr<Tddd> x3(new Tddd(X3));
-      vtp.add(x3);
-      vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 4>{x0, x1, x2, x3});
+   for (const auto &X : V) {
+      std::array<std::shared_ptr<Tddd>, N> sharedPtrArray;
+      for (size_t i = 0; i < N; ++i) {
+         sharedPtrArray[i] = std::make_shared<Tddd>(X[i]);
+         vtp.add(sharedPtrArray[i]);
+      }
+      vtp.addPolygon(sharedPtrArray);
    }
    vtp.write(ofs);
-};
-// void vtkPolygonWrite(const std::string &name, const std::vector<T4Tddd> &V) {
-//    std::ofstream ofs(name);
-//    vtkPolygonWrite(ofs, V);
-//    ofs.close();
-// };
-/* ------------------------------------------------------ */
-/*                         T3Tddd                         */
-/* ------------------------------------------------------ */
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T3Tddd> &V) {
+}
+
+template <size_t N>
+void vtkPolygonWrite(std::ofstream &ofs, const std::array<Tddd, N> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
-   for (const auto &[X0, X1, X2] : V) {
-      std::shared_ptr<Tddd> x0(new Tddd(X0));
-      vtp.add(x0);
-      std::shared_ptr<Tddd> x1(new Tddd(X1));
-      vtp.add(x1);
-      std::shared_ptr<Tddd> x2(new Tddd(X2));
-      vtp.add(x2);
-      vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 3>{x0, x1, x2});
+   std::array<std::shared_ptr<Tddd>, N> sharedPtrArray;
+   for (size_t i = 0; i < N; ++i) {
+      sharedPtrArray[i] = std::make_shared<Tddd>(V[i]);
+      vtp.add(sharedPtrArray[i]);
    }
+   vtp.addPolygon(sharedPtrArray);
    vtp.write(ofs);
-};
-// void vtkPolygonWrite(const std::string &name, const std::vector<T3Tddd> &V) {
-//    std::ofstream ofs(name);
-//    vtkPolygonWrite(ofs, V);
-//    ofs.close();
+}
+
+// /* ------------------------------------------------------ */
+// /*                         T4Tddd                         */
+// /* ------------------------------------------------------ */
+// void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T4Tddd> &V) {
+//    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+//    for (const auto &[X0, X1, X2, X3] : V) {
+//       std::shared_ptr<Tddd> x0(new Tddd(X0));
+//       vtp.add(x0);
+//       std::shared_ptr<Tddd> x1(new Tddd(X1));
+//       vtp.add(x1);
+//       std::shared_ptr<Tddd> x2(new Tddd(X2));
+//       vtp.add(x2);
+//       std::shared_ptr<Tddd> x3(new Tddd(X3));
+//       vtp.add(x3);
+//       vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 4>{x0, x1, x2, x3});
+//    }
+//    vtp.write(ofs);
 // };
-/* ------------------------------------------------------ */
-/*                          Tddd                          */
-/* ------------------------------------------------------ */
+
+// /* ------------------------------------------------------ */
+// /*                         T3Tddd                         */
+// /* ------------------------------------------------------ */
+// void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T3Tddd> &V) {
+//    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+//    for (const auto &[X0, X1, X2] : V) {
+//       std::shared_ptr<Tddd> x0(new Tddd(X0));
+//       vtp.add(x0);
+//       std::shared_ptr<Tddd> x1(new Tddd(X1));
+//       vtp.add(x1);
+//       std::shared_ptr<Tddd> x2(new Tddd(X2));
+//       vtp.add(x2);
+//       vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 3>{x0, x1, x2});
+//    }
+//    vtp.write(ofs);
+// };
+
+// /* ------------------------------------------------------ */
+// /*                          Tddd                          */
+// /* ------------------------------------------------------ */
 void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    for (const auto &X : V) {

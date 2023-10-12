@@ -108,9 +108,9 @@ match SimulationCase:
                    "max_dt": 0.00025,
                    "end_time_step": 20000,
                    "end_time": 1,
-                   "CSML": 2.7,
+                   "CSML": 2.5,
                    "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.015}
+                   "particle_spacing": 0.02}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                             + "_CSML" + str(setting["CSML"]).replace(".", "d")\

@@ -163,7 +163,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    water.setGeometricProperties();
 
-   auto radius = Mean(extLength(water.getLines()));
+   auto radius = 5 * Mean(extLength(water.getLines()));
    Print("makeBucketFaces", Green);
    for (const auto &net : objects) {
       radius = Mean(extLength(net->getLines()));
