@@ -3,7 +3,7 @@
 
 int main() {
 
-   /*DOC_EXTRACT 0_1_Network_space_partitioning
+   /*DOC_EXTRACT 0_1_space_partitioning
 
    # 空間分割（space_partitioning）
 
