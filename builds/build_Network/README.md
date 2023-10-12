@@ -4,8 +4,9 @@
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
         - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
+    - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
-- [🐋 木構造による空間分割](#🐋-木構造による空間分割)
+    - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
 - [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
@@ -49,6 +50,8 @@ $ ./load_3d_file
 ---
 # 🐋 空間分割（space_partitioning） 
 
+## ⛵ 等間隔のシンプルな空間分割 
+
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_space_partitioning.cpp
 make
@@ -59,21 +62,21 @@ make
 
 <!-- Key space_partitioning not found -->
 
----
-
 ### 🪼 例 
 
-この例では，バニーのモデルを空間分割し，各バケットに含まれる点群と面を出力している．
-面は広がりがあるので，複数のバケットに含まれることがある．
-面と交わるバケットに確実に麺を保存するスマートな方法は，現在のところ思いつかない．
-今の所は，面を細かい点群に分けて，各点群を含むバケットに面を保存することで対応している．
+この例では，うさぎの３Dモデルを空間分割する．
+配列させたバケット内に，うさぎの点または面が含まれるかを判定し，バケットに保存する．
+
+ただ，面は広がりがあるので，複数のバケットに含まれることがある．
+面と交わる全バケットを簡単に確実に見つける方法は，現在のところ思いつかない．
+なので，今の所は，面を無数の点に分けて，各点を含むバケットに面を保存することで対応している．
 
 ![example1_space_partitioning.gif](example1_space_partitioning.gif)
 
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
 ---
-# 🐋 木構造による空間分割 
+## ⛵ 階層のある空間分割（木構造） 
 
 シンプルな空間分割クラスを拡張し，木構造による空間分割を試みる．
 

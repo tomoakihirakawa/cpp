@@ -7,6 +7,8 @@ int main() {
 
    # 空間分割（space_partitioning）
 
+   ## 等間隔のシンプルな空間分割
+
    ```shell
    cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_space_partitioning.cpp
    make
@@ -16,8 +18,6 @@ int main() {
    \insert{coordinatebounds}
 
    \insert{space_partitioning}
-
-   ---
 
    ### 例
 
