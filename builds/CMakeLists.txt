@@ -64,6 +64,7 @@ set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
 set(CMAKE_CXX_FLAGS_DEBUG "-Og")
 set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
 
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
@@ -147,6 +148,11 @@ if(LAPACK_FOUND)
 else()
   message(STATUS "${Red}LAPACK is not found!" "${ColourReset}")
 endif()
+
+# Locate Eigen
+find_package(Eigen3 REQUIRED NO_MODULE)
+target_link_libraries(${BASE_NAME} Eigen3::Eigen)
+
 
 # Find CGAL
 find_package(CGAL)

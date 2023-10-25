@@ -89,7 +89,7 @@ struct RungeKuttaCommon {
 
    double getTime() const { return this->t_init + this->dt; };
    double getNextTime() const { return this->t_init + this->getdt(); };
-   double get_dt() { return this->getdt(); };
+   double get_dt() const { return this->getdt(); };
    double getdt() const {
       // 次の計算は，t+dtを狙って計算することになる．
       // ここでのdtを返す
@@ -128,8 +128,12 @@ struct RungeKuttaCommon {
             default:
                return dt_fixed;
          }
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+      } else {
+         std::stringstream ss;
+         // show current step and steps
+         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
+      }
    };
 
    bool repush(const T &dXdt_IN) {
@@ -388,8 +392,8 @@ class LeapFrog {
       }
    }
 
-   const double get_dt() const { return dt; }
-   const double get_t() const { return t; }
+   double get_dt() const { return dt; }
+   double get_t() const { return t; }
    const T &get_x() const { return x; }
    const T &get_v() const { return v; }
 
@@ -435,7 +439,7 @@ class VelocityVerlet {
       a = new_a;
    }
 
-   const double get_t() const { return t; }
+   double get_t() const { return t; }
    const T &get_x() const { return x; }
    const T &get_v() const { return v; }
    const T &get_a() const { return a; }

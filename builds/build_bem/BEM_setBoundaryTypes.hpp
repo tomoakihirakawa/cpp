@@ -163,11 +163,10 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    water.setGeometricProperties();
 
-   auto radius = 5 * Mean(extLength(water.getLines()));
    Print("makeBucketFaces", Green);
    for (const auto &net : objects) {
-      radius = Mean(extLength(net->getLines()));
-      net->makeBucketFaces(radius);
+      auto spacing = 5 * Mean(extLength(net->getLines()));
+      net->makeBucketFaces(spacing);
    }
 
    std::cout << "step1 点の衝突の判定" << std::endl;
@@ -181,7 +180,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
          // \label{BEM:detection_range}
-         p->radius = (Mean(extLength(p->getLines())) + radius) / 3.;
+         p->detection_range = Mean(extLength(p->getLines())) / 4.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }

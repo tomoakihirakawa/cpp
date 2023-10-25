@@ -86,9 +86,9 @@ int main(int argc, char **argv) {
    /* -------------------------------------------------------------------------- */
    /*                           Set up logging to file                           */
    /* -------------------------------------------------------------------------- */
-   if (!initializeLogFile("log_" + getUserName() + ".txt", argc, argv))
+   if (!initializeLogFile("./log_" + getUserName() + ".txt", argc, argv))
       return 1;
-   if (!initializeLogFile("log.txt", argc, argv))
+   if (!initializeLogFile("./log.txt", argc, argv))
       return 1;
    /* -------------------------------------------------------------------------- */
 
@@ -160,9 +160,7 @@ int main(int argc, char **argv) {
       if (J["type"][0] == "probe") {
          auto tmp = new Network();
          tmp->setName(J["name"][0]);
-         new networkPoint(tmp, {stod(J["location"][0]),
-                                stod(J["location"][1]),
-                                stod(J["location"][2])});
+         new networkPoint(tmp, {stod(J["location"][0]), stod(J["location"][1]), stod(J["location"][2])});
          probes.push_back({tmp, J});
          net2PVD[tmp] = new PVDWriter(output_directory + J["name"][0] + ".pvd");
       } else {
@@ -215,13 +213,14 @@ int main(int argc, char **argv) {
                min = Norm(Tddd{x, y, z});
                closest = {x, y, z};
             }
+
    // double rand = RandomReal({1E-10, 1E-10});
    for (const auto &x : vecX)
       for (const auto &y : vecY)
          for (const auto &z : vecZ) {
             Tddd xyz = {x, y, z};
             xyz -= closest;
-            xyz += particle_spacing / 2.;
+            xyz += particle_spacing;
             // xyz += 1E-4;  // std::numbers::pi / 1000.;
             for (const auto &[object, polygon, _] : all_objects) {
                // 優先順位で粒子を配置
@@ -229,8 +228,8 @@ int main(int argc, char **argv) {
                if (isInside) {
                   auto p = new networkPoint(object, xyz);
                   p->setDensityVolume(_WATER_DENSITY_, volume);  // 質量(mass)は関数内部で自動で決められる
-                  p->radius_SPH = CSML * ps;
-                  p->C_SML = CSML;
+                  p->particle_spacing = particle_spacing;
+                  p->C_SML_next = p->C_SML = 3.5;  // CSML;
                   p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   p->isFluid = object->isFluid;
@@ -249,35 +248,45 @@ int main(int argc, char **argv) {
       p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
       p->setX(p->X);
    }
-   この設定を修正する必要がある
+
+   /*DOC_EXTRACT 0_1_0_preparation_wall_and_freesurface
+
+   ## N.S.方程式を解く前の準備
+
+   壁粒子の法線ベクトル`p->v_to_surface_SPH`を計算する．
+
+   */
+
    // b# -------------------------------------------------------------------------- */
    // b#                             外向きベクトルの設定                               */
    // b# -------------------------------------------------------------------------- */
    for (const auto &[particlesNet, poly, J] : all_objects) {
-      particlesNet->makeBucketPoints(particle_spacing);
-      poly->makeBucketFaces(particle_spacing);
+      particlesNet->makeBucketPoints(2 * particle_spacing);
+      poly->makeBucketFaces(2 * particle_spacing);
       //
       std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
 
+      double ps = particle_spacing;
+
       if (particlesNet->isRigidBody)
          for (const auto &p : particlesNet->getPoints()) {
-            // p->normal_SPH = poly->interpolateVector(p->X);
+            // p->v_to_surface_SPH = poly->interpolateVector(p->X);
             auto [X, f] = Nearest_(p->X, poly->getFaces());
-            // p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 2.) * particle_spacing * Normalize(X - p->X);
-            p->vector_to_wall_SPH = p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1E-20) * particle_spacing * Normalize(X - p->X);
-            // p->normal_SPH = ((int)(Distance(X, p) / particle_spacing) + 1 / 4.) * particle_spacing * Normalize(X - p->X);
-            // p->normal_SPH = X - p->X;
+            // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
+            // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
+            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+            // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + 1E-12) * ps * Normalize(X - p->X);
             p->mirroring_face = f;
          }
-      vtkPolygonWriter<networkPoint *> vtp;
-      vtp.add(particlesNet->getPoints());
-      std::unordered_map<networkPoint *, Tddd> normal_SPH;
-      for (const auto &p : particlesNet->getPoints())
-         normal_SPH[p] = p->normal_SPH;
-      vtp.addPointData("normal_SPH", normal_SPH);
-      std::ofstream ofs(output_directory + J.at("name")[0] + "_check_normal.vtp");
-      vtp.write(ofs);
-      ofs.close();
+      // vtkPolygonWriter<networkPoint *> vtp;
+      // vtp.add(particlesNet->getPoints());
+      // std::unordered_map<networkPoint *, Tddd> normal_SPH;
+      // for (const auto &p : particlesNet->getPoints())
+      //    v_to_surface_SPH[p] = p->v_to_surface_SPH;
+      // vtp.addPointData("v_to_surface_SPH", normal_SPH);
+      // std::ofstream ofs(output_directory + J.at("name")[0] + "_check_normal.vtp");
+      // vtp.write(ofs);
+      // ofs.close();
    }
 
    // b# -------------------------------------------------------------------------- */
@@ -328,6 +337,22 @@ int main(int argc, char **argv) {
 
    for (auto time_step = 0; time_step < end_time_step; ++time_step) {
 
+      {
+         auto points = Fluid->getPoints();
+         for (auto p : points)
+            if (p->isAuxiliary) {
+               p->surfacePoint->auxPoint = nullptr;
+               delete p;
+            }
+      }
+
+      {
+         auto points = Fluid->getPoints();
+         for (auto p : points) {
+            p->isAuxiliary = false;
+         }
+      }
+
       pack_actives(active_all_objects, all_objects);
       pack_actives(active_RigidBodies, RigidBodies);
 
@@ -338,24 +363,26 @@ int main(int argc, char **argv) {
       if (end_time < simulation_time)
          break;
 
-      int N = 10000000;
-      if (time_step == N) {
-         for (const auto &[object, _, __] : all_objects)
-            for (const auto &p : object->getPoints())
-               p->mu_SPH = _WATER_MU_10deg_;
-      } else if (time_step < N) {
-         for (const auto &[object, _, __] : all_objects)
-            for (const auto &p : object->getPoints())
-               p->mu_SPH = _WATER_MU_10deg_ * 10.;
-      }
+      // int N = 10000000;
+      // if (time_step == N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_;
+      // } else if (time_step < N) {
+      //    for (const auto &[object, _, __] : all_objects)
+      //       for (const auto &p : object->getPoints())
+      //          p->mu_SPH = _WATER_MU_10deg_ * 1000.;
+      // }
 
       // developByEISPH(Fluid, RigidBodies, simulation_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
+
       developByEISPH(Fluid,
                      active_RigidBodies,
                      simulation_time,
                      CSML,
                      particle_spacing,
-                     time_step < 50 ? max_dt / 100 : max_dt,
+                     time_step < 50 ? max_dt / 1000 : max_dt,
+                     // max_dt,
                      RK_order);
 
       std::cout << "simulation_time = " << simulation_time << std::endl;
@@ -373,10 +400,33 @@ int main(int argc, char **argv) {
       */
 
       if (time_step % 5 == 0) {
+
+         int num_aux = 0, num_fluid = 0, num_neuman_surface = 0, num_surface = 0;
+         for (const auto &p : Fluid->getPoints()) {
+            if (p->isAuxiliary)
+               num_aux++;
+            else if (p->isFluid)
+               num_fluid++;
+            else if (p->isNeumannSurface)
+               num_neuman_surface++;
+            else if (p->isSurface)
+               num_surface++;
+         }
+
+         std::cout << std::setw(10) << "auxiliary : " << num_aux << std::endl;
+         std::cout << std::setw(10) << "fluid : " << num_fluid << std::endl;
+         std::cout << std::setw(10) << "wall : " << num_neuman_surface << std::endl;
+         std::cout << std::setw(10) << "surface : " << num_surface << std::endl;
+
          auto Output = [&](Network *Fluid, const std::string &name, const int i) {
             if (Fluid != nullptr) {
+               std::vector<networkPoint *> points;
+               for (const auto &p : Fluid->getPoints())
+                  if (!p->isAuxiliary)
+                     points.emplace_back(p);
+
                vtkPolygonWriter<networkPoint *> vtp;
-               vtp.add(ToVector(Fluid->getPoints()));
+               vtp.add(points);
                setDataOmitted(vtp, Fluid);
                std::ofstream ofs(output_directory + name + std::to_string(i) + ".vtp");
                vtp.write(ofs);
@@ -427,10 +477,10 @@ int main(int argc, char **argv) {
          count = 0;
          for (const auto &p : a_wall_p) {
             vtkPolygonWriter<networkPoint *> vtp;
-            auto X = p->X + 2 * p->normal_SPH;
+            auto X = p->X + 2 * p->v_to_surface_SPH;
             for (const auto &[particlesNet, _, __] : all_objects) {
-               particlesNet->BucketPoints.apply(X, p->radius_SPH, [&](const auto &q) {
-                  if (Distance(q, X) < p->radius_SPH)
+               particlesNet->BucketPoints.apply(X, p->SML(), [&](const auto &q) {
+                  if (Distance(q, X) < p->SML())
                      vtp.add(q);
                });
             }

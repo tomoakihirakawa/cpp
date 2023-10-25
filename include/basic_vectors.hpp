@@ -541,10 +541,16 @@ VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
 
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
+   // T ret = 0;
+   // for (size_t i = 0; const auto &v1 : vec1) {
+   //    ret = std::fma(v1, vec2[i++], ret);
+   // }
+   // return ret;
+
    T ret = 0;
-   for (size_t i = 0; const auto &v1 : vec1) {
-      ret = std::fma(v1, vec2[i++], ret);
-   }
+   const size_t n = vec1.size();
+   for (size_t i = 0; i < n; ++i)
+      ret = std::fma(vec1[i], vec2[i], ret);
    return ret;
 }
 
@@ -1244,7 +1250,7 @@ T Norm(const std::vector<T> &vec) {
    // return std::sqrt(std::inner_product(vec.cbegin(), vec.cend(), vec.cbegin(), 0.));
    T ret = 0;
    for (const auto &v : vec)
-      ret += v * v;
+      ret = std::fma(v, v, ret);
    return std::sqrt(ret);
 };
 double Norm(const std::vector<Tddd> &vec) {
@@ -2021,6 +2027,12 @@ T3Tddd RotationMatrix(const double theta, const Tddd &V) {
 /* -------------------------------------------------------------------------- */
 /*                        vector modification operators                       */
 /* -------------------------------------------------------------------------- */
+std::vector<double> Projection(const std::vector<double> &v, std::vector<double> n, double &w) {
+   /* the component in n direction of v will be returned */
+   n = Normalize(n);
+   return (w = Dot(v, n)) * n;
+};
+
 Tddd Projection(const Tddd &v, Tddd n) {
    /* the component in n direction of v will be returned */
    n = Normalize(n);

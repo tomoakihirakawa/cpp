@@ -259,11 +259,11 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 * [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L176)
 * [`networkPoint::isInContact`](../../include/networkPoint.hpp#L192)
-* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L232)
+* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L230)
 
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L183)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L182)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -300,7 +300,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | [`contact_angle`](../../include/networkPoint.hpp#L176)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
 | [`isFacing()`](../../include/networkPoint.hpp#L179)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
 | [`isInContact()`](../../include/networkPoint.hpp#L192)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L232)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L230)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 [../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
 
 
@@ -312,7 +312,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L285](../../include/networkPoint.hpp#L285)
+[../../include/networkPoint.hpp#L234](../../include/networkPoint.hpp#L234)
 
 
 #### 🐚 呼び出し方法 
@@ -320,7 +320,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L884](../../include/Network.hpp#L884)
+[../../include/Network.hpp#L886](../../include/Network.hpp#L886)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．

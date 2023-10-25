@@ -1119,6 +1119,49 @@ struct IntersectionTriangles {
       }
    };
 };
+/* -------------------------------------------------------------------------- */
+struct IntersectionLineTriangle {
+   Tddd v1, v2, v3;    // vertices of the triangle
+   Tddd p0, p1;        // endpoints of the line segment
+   Tddd intersection;  // intersection point
+   bool isIntersecting;
+
+   IntersectionLineTriangle(const Tddd &v1, const Tddd &v2, const Tddd &v3, const Tddd &p0, const Tddd &p1)
+       : v1(v1), v2(v2), v3(v3), p0(p0), p1(p1), isIntersecting(false) {
+      // Implement Möller–Trumbore intersection algorithm here
+      Tddd h, s, q;
+      double a, f, u, v;
+      Tddd edge1 = v2 - v1;
+      Tddd edge2 = v3 - v1;
+      h = Cross(p1 - p0, p0 - p1);
+      a = Dot(edge1, h);
+
+      if (a > -1e-5 && a < 1e-5)
+         return;  // The line is parallel to the triangle.
+
+      f = 1.0 / a;
+      s = p0 - v1;
+      u = f * Dot(s, h);
+
+      if (u < 0.0 || u > 1.0)
+         return;
+
+      q = Cross(s, edge1);
+      v = f * Dot(p1 - p0, q);
+
+      if (v < 0.0 || u + v > 1.0)
+         return;
+
+      // At this stage we can compute the intersection point
+      double t = f * Dot(edge2, q);
+
+      if (t > 1e-5) {  // Ray intersection
+         intersection = p0 + (p1 - p0) * t;
+         isIntersecting = true;
+      }
+   }
+};
+
 /* ------------------------------------------------------ */
 struct IntersectionSphereTriangle {
    double eps = 1E-8;
@@ -1394,7 +1437,7 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    auto [u, X0] = Nearest_(X, T2Tddd{a, b});
    //! a*u + b*(1-u)
    Tddd ret;
-   if (inside && (Norm(XOnPlane - X) < Norm(X0 - X))) {
+   if (inside && (NormSquared(XOnPlane - X) < NormSquared(X0 - X))) {
       ret = XOnPlane;
       T0 = t0;
       T1 = t1;
@@ -1406,14 +1449,14 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    }
    auto [v, X1] = Nearest_(X, T2Tddd{b, c});
    //! b*v + c*(1-v)
-   if (Norm(ret - X) > Norm(X1 - X)) {
+   if (NormSquared(ret - X) > NormSquared(X1 - X)) {
       ret = X1;
       T0 = 0;
       T1 = v;  //! a*0 + b*v + c * (1-v)
    }
    auto [w, X2] = Nearest_(X, T2Tddd{c, a});
    //! c*w + a*(1-w)
-   if (Norm(ret - X) > Norm(X2 - X)) {
+   if (NormSquared(ret - X) > NormSquared(X2 - X)) {
       ret = X2;
       T0 = 1 - w;
       T1 = 0;  //! a*(1-w) + b*0 + c * w

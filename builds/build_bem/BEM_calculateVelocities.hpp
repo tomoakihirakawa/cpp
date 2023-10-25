@@ -175,7 +175,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       if (!next_Vrtx.empty()) {
          std::vector<networkFace *> pf_to_check;
          for (const auto &pf : p->getFacesNeumann()) {
-            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f->normal) < M_PI / 180.; }))
+            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f-> normal) < M_PI / 180.; }))
                pf_to_check.push_back(pf);
          }
 
@@ -185,7 +185,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
             Tddd vec_to_closest_struct_face = {1E+20, 1E+20, 1E+20};
             bool found = false;
             for (const auto &struct_vertex : next_Vrtx) {
-               if (isInContact(p_X_on_CORNER, pf->normal, struct_vertex, p->radius)) {
+               if (isInContact(p_X_on_CORNER, pf->normal, struct_vertex, p)) {
                   X = Nearest(p_X_on_CORNER, struct_vertex);
                   if (Norm(vec_to_closest_struct_face) >= Norm(X - p_X_on_CORNER)) {
                      vec_to_closest_struct_face = X - p_X_on_CORNER;

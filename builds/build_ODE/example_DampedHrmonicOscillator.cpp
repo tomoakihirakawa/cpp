@@ -1,9 +1,15 @@
 #include "GNUPLOT.hpp"
 #include "integrationOfODE.hpp"
-
+#include "interpolations.hpp"
 /*DOC_EXTRACT ODE
 
 # ODEの初期値問題
+
+```cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_DampedHrmonicOscillator.cpp
+make
+./example_DampedHrmonicOscillator
+```
 
 ## 減衰調和振動子/Damped Harmonic Oscillatorの例
 
@@ -82,7 +88,7 @@ int main() {
             //  double v_next_appx = v + dt * acceleration(t + dt, x_next_appx);
             double v_next_appx = solution_v(t + dt);
             x += dt * v_next_appx;
-            v += dt * acceleration(t + dt, x);
+            v += dt * acceleration(t + dt, v);
             t += dt;
             BKE_t_x.push_back({t, x});
             BKE_t_v.push_back({t, v});
@@ -136,6 +142,34 @@ int main() {
       return RK_t_x;
    };
    /* -------------------------------------------------------------------------- */
+   // Adams-Bashforth
+   auto result_AdamsBashforth = [&](auto N_IN) {
+      auto N = (int)(N_IN / 2);
+      double dt = 1. / N;
+      double v = v0, x = x0, t = t0;
+      t = t0 + dt / 10.;
+      v = solution_v(t);
+      x = solution_x(t);
+      std::vector<std::vector<double>> AB_t_x({{t0, x0}, {t, x}}), AB_t_v({{t0, v0}, {t, v}});
+      t += dt;
+      for (auto j = 0; j < N; j++) {
+         std::vector<double> abscissas = {(*(AB_t_x.rbegin() + 1))[0], (*(AB_t_x.rbegin()))[0]};
+         std::vector<double> X_values = {(*(AB_t_x.rbegin() + 1))[1], (*(AB_t_x.rbegin()))[1]};
+         std::vector<double> V_values = {(*(AB_t_v.rbegin() + 1))[1], (*(AB_t_v.rbegin()))[1]};
+         InterpolationLagrange<double> interp_X(abscissas, X_values);
+         InterpolationLagrange<double> interp_V(abscissas, V_values);
+
+         double accel_appx = acceleration(interp_X(t), interp_V(t));
+         v += dt * accel_appx;
+         x += dt * v;
+         t += dt;
+
+         AB_t_x.push_back({t, x});
+         AB_t_v.push_back({t, v});
+      }
+      return AB_t_x;
+   };
+   /* -------------------------------------------------------------------------- */
    // Exact solution
    std::vector<std::vector<double>> exact_x, exact_v;
    for (auto j = 0; j < 10 * N; j++) {
@@ -153,6 +187,7 @@ int main() {
       plot.SaveData(result_BKE(N), {{"lc", plot.rgb({100, 0, 255})}, {"w", "lp"}, {"lw", ".5"}, {"title", "Backward Euler"}});
       plot.SaveData(result_LPFG(N), {{"lc", plot.rgb({0, 100, 255})}, {"w", "lp"}, {"lw", ".5"}, {"title", "LeapFrog"}});
       plot.SaveData(result_RK(N), {{"lc", plot.rgb({255, 100, 0})}, {"w", "lp"}, {"lw", ".5"}, {"title", "Runge-Kutta" + std::to_string(order)}});
+      plot.SaveData(result_AdamsBashforth(N), {{"lc", plot.rgb({0, 255, 100})}, {"w", "lp"}, {"lw", ".5"}, {"title", "Adams-Bashforth"}});
       plot.Plot2D();
       std::cin.ignore();
    }

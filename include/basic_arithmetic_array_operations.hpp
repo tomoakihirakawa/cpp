@@ -498,6 +498,11 @@ constexpr std::array<T, N> ToArray(const std::array<T, N>& arr) noexcept { retur
 //
 
 template <size_t N, typename T>
+constexpr T NormSquared(const std::array<T, N>& arr) noexcept {
+   return std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); });
+}
+
+template <size_t N, typename T>
 constexpr T Norm(const std::array<T, N>& arr) noexcept {
    return std::sqrt(std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); }));
 }
