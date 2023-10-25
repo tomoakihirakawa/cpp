@@ -1,0 +1,241 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      9660,        233]
+NotebookOptionsPosition[      9229,        217]
+NotebookOutlinePosition[      9576,        232]
+CellTagsIndexPosition[      9533,        229]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", "check", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], ";"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"Manipulate", "[", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"Module", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "n", ",", "span", ",", "data", ",", "fft", ",", "Fs", ",", "freq"}], 
+        "}"}], ",", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Func", "[", "t_", "]"}], ":=", 
+         RowBox[{
+          RowBox[{"Sin", "[", 
+           RowBox[{"t", "*", "2", " ", 
+            RowBox[{"\[Pi]", "/", "T"}]}], "]"}], "+", 
+          RowBox[{"Cos", "[", 
+           RowBox[{"t", "*", "2", " ", 
+            RowBox[{"\[Pi]", "/", "T"}]}], "]"}]}]}], ";", 
+        "\[IndentingNewLine]", "\[IndentingNewLine]", 
+        RowBox[{"n", "=", "200"}], ";", "\[IndentingNewLine]", 
+        RowBox[{"span", "=", 
+         RowBox[{"5", "*", "T"}]}], ";", "\[IndentingNewLine]", 
+        "\[IndentingNewLine]", 
+        RowBox[{"data", "=", 
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{"t", ",", 
+             RowBox[{"Func", "[", "t", "]"}]}], "}"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"t", ",", 
+             RowBox[{"Subdivide", "[", 
+              RowBox[{"0", ",", "span", ",", 
+               RowBox[{"n", "-", "1"}]}], "]"}]}], "}"}]}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"c", "=", 
+         RowBox[{"2", "/", 
+          RowBox[{"Sqrt", "[", "n", "]"}]}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"fft", "=", 
+         RowBox[{"c", "*", 
+          RowBox[{"Abs", "[", 
+           RowBox[{"Fourier", "[", 
+            RowBox[{"data", "[", 
+             RowBox[{"[", 
+              RowBox[{
+               RowBox[{";;", 
+                RowBox[{"-", "1"}]}], ",", "2"}], "]"}], "]"}], "]"}], 
+           "]"}]}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"Fs", "=", 
+         RowBox[{"n", "/", "span"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"freq", "=", 
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{"i", "*", 
+            RowBox[{"Fs", "/", "n"}]}], ",", 
+           RowBox[{"{", 
+            RowBox[{"i", ",", "0", ",", 
+             RowBox[{
+              RowBox[{"n", "/", "2"}], "-", "1"}]}], "}"}]}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"Show", "[", "\[IndentingNewLine]", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"ListPlot", "[", 
+            RowBox[{"data", ",", "\[IndentingNewLine]", 
+             RowBox[{"ImageSize", "->", "Medium"}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"PlotRange", "->", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"{", 
+                 RowBox[{"0", ",", "5"}], "}"}], ",", "All"}], "}"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"PlotLabel", "->", "\"\<Time Domain Signal\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"PlotTheme", "\[Rule]", "\"\<Scientific\>\""}]}], "]"}], 
+           ",", "\[IndentingNewLine]", 
+           RowBox[{"ListPlot", "[", 
+            RowBox[{
+             RowBox[{"Transpose", "[", 
+              RowBox[{"{", 
+               RowBox[{"freq", ",", 
+                RowBox[{"fft", "[", 
+                 RowBox[{"[", 
+                  RowBox[{";;", 
+                   RowBox[{"n", "/", "2"}]}], "]"}], "]"}]}], "}"}], "]"}], 
+             ",", "\[IndentingNewLine]", 
+             RowBox[{"Joined", "->", "True"}], ",", "\[IndentingNewLine]", 
+             RowBox[{"PlotRange", "->", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"{", 
+                 RowBox[{"0", ",", "5"}], "}"}], ",", "All"}], "}"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"ImageSize", "->", "Medium"}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"PlotLabel", "->", "\"\<Frequency vs Signal\>\""}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"PlotTheme", "\[Rule]", "\"\<Scientific\>\""}]}], 
+            "]"}]}], "}"}], "]"}]}]}], "\[IndentingNewLine]", "]"}], 
+     "\[IndentingNewLine]", ",", 
+     RowBox[{"{", 
+      RowBox[{"T", ",", "1.", ",", "3.", ",", "0.1"}], "}"}]}], 
+    "]"}]}]}]], "Input",
+ CellChangeTimes->{{3.90065177942478*^9, 3.9006518579966497`*^9}, {
+  3.900652581630142*^9, 3.900652620770019*^9}, {3.9055946818447247`*^9, 
+  3.905594756330308*^9}, {3.9055948369666357`*^9, 3.9055949938876343`*^9}, {
+  3.905595093342681*^9, 3.905595108880889*^9}, {3.905595184236698*^9, 
+  3.905595295179285*^9}, {3.905595647244141*^9, 3.90559565257733*^9}, {
+  3.905595712458741*^9, 3.905595736220417*^9}, {3.905595805965128*^9, 
+  3.9055958061875887`*^9}, {3.906759689554895*^9, 3.906759700743525*^9}, {
+  3.906759797152461*^9, 3.906759932663458*^9}, {3.90675997423974*^9, 
+  3.9067600112965403`*^9}, {3.90676004723722*^9, 3.9067603039652*^9}, {
+  3.906761690211656*^9, 
+  3.906761703691473*^9}},ExpressionUUID->"a1667975-be1a-46d1-8004-\
+498524d36aa2"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`T$$ = 1., Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"\:540d\:79f0\:672a\:5b9a\:7fa9\"", Typeset`specs$$ = {{
+      Hold[$CellContext`T$$], 1., 3., 0.1}}, Typeset`size$$ = {
+    360., {114., 119.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True, $CellContext`T$2196448$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, "Variables" :> {$CellContext`T$$ = 1.}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`T$$, $CellContext`T$2196448$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> 
+      Module[{$CellContext`n$, $CellContext`span$, $CellContext`data$, \
+$CellContext`fft$, $CellContext`Fs$, $CellContext`freq$}, $CellContext`Func[
+           Pattern[$CellContext`t$, 
+            Blank[]]] := 
+         Sin[$CellContext`t$ 2 (Pi/$CellContext`T$$)] + 
+          Cos[$CellContext`t$ 2 (Pi/$CellContext`T$$)]; $CellContext`n$ = 
+         200; $CellContext`span$ = 5 $CellContext`T$$; $CellContext`data$ = 
+         Table[{$CellContext`t, 
+            $CellContext`Func[$CellContext`t]}, {$CellContext`t, 
+            Subdivide[
+            0, $CellContext`span$, $CellContext`n$ - 
+             1]}]; $CellContext`fft$ = (2/Sqrt[$CellContext`n$]) Abs[
+            Fourier[
+             Part[$CellContext`data$, 
+              Span[1, -1], 
+              2]]]; $CellContext`Fs$ = $CellContext`n$/$CellContext`span$; \
+$CellContext`freq$ = 
+         Table[$CellContext`i ($CellContext`Fs$/$CellContext`n$), \
+{$CellContext`i, 0, $CellContext`n$/2 - 1}]; Show[{
+           
+           ListPlot[$CellContext`data$, ImageSize -> Medium, 
+            PlotRange -> {{0, 5}, All}, PlotLabel -> "Time Domain Signal", 
+            PlotTheme -> "Scientific"], 
+           ListPlot[
+            Transpose[{$CellContext`freq$, 
+              Part[$CellContext`fft$, 
+               Span[1, $CellContext`n$/2]]}], Joined -> True, 
+            PlotRange -> {{0, 5}, All}, ImageSize -> Medium, PlotLabel -> 
+            "Frequency vs Signal", PlotTheme -> "Scientific"]}]], 
+      "Specifications" :> {{$CellContext`T$$, 1., 3., 0.1}}, "Options" :> {}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{405., {159., 165.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{
+  3.9067593422560387`*^9, {3.906759690466261*^9, 3.90675970169781*^9}, {
+   3.906759825346445*^9, 3.906759837194016*^9}, {3.906759871370495*^9, 
+   3.906759898978528*^9}, 3.906759933447114*^9, {3.906759976097052*^9, 
+   3.906760005949506*^9}, {3.906760206372126*^9, 3.906760304573782*^9}, 
+   3.906761694269212*^9},
+ CellLabel->
+  "Out[284]=",ExpressionUUID->"541e82b5-e006-4d01-885a-2e9eba9aba82"]
+}, Open  ]]
+},
+WindowSize->{991, 1337},
+WindowMargins->{{Automatic, 0}, {Automatic, 0}},
+FrontEndVersion->"12.0 for Mac OS X x86 (64-bit) (2019\:5e745\:67083\:65e5)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 5211, 122, 640, "Input",ExpressionUUID->"a1667975-be1a-46d1-8004-498524d36aa2"],
+Cell[5794, 146, 3419, 68, 343, "Output",ExpressionUUID->"541e82b5-e006-4d01-885a-2e9eba9aba82"]
+}, Open  ]]
+}
+]
+*)
+

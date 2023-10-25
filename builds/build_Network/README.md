@@ -20,7 +20,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3944)では，拡張子から，
+[Networkのコンストラクタ](../../include/Network.hpp#L3946)では，拡張子から，
 与えられたファイルが，
 
 * OFFファイル

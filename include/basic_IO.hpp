@@ -313,7 +313,7 @@ void DebugPrint(Args... args) {
 #include <functional>
 
 template <typename T, typename Func>
-std::string MatrixForm(const std::vector<std::vector<T>> &mat,
+std::string MatrixForm(const T &mat,
                        Func color,
                        const int prec,
                        const int width) {
@@ -354,7 +354,7 @@ std::string MatrixForm(const std::vector<std::vector<T>> &mat,
 }
 
 template <typename T>
-std::string MatrixForm(const std::vector<std::vector<T>> &mat,
+std::string MatrixForm(const T &mat,
                        const int prec = 4,
                        const int width = 7) {
    return MatrixForm(
@@ -363,7 +363,7 @@ std::string MatrixForm(const std::vector<std::vector<T>> &mat,
 }
 
 template <typename T, typename U>
-std::string MatrixForm(const std::vector<std::vector<T>> &mat, const U &w) {
+std::string MatrixForm(const T &mat, const U &w) {
    return MatrixForm(
        mat, [](const auto &i, const auto &j) { return false; }, 4, w);
 };
@@ -400,6 +400,7 @@ bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
    if (ifs.is_open()) {
       existingContent.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
    }
+   ifs.close();
 
    // Clear and open log file
    std::ofstream ofs(logfilename);
@@ -413,23 +414,17 @@ bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
    auto now = std::chrono::system_clock::now();
    std::time_t time = std::chrono::system_clock::to_time_t(now);
    ofs << "Execution time: " << std::ctime(&time) << std::endl;
-
    // Log machine info
    logMachineInformation(ofs);
 
-   // Log command line arguments
-   if (args.empty()) {
-      ofs << "No arguments provided. Write input JSON file directory.\n";
-      return false;
-   }
-
    ofs << "Command line arguments:" << std::endl;
-   for (size_t i = 0; i < args.size() || i < 5; ++i) ofs << "  arg" << i << ": " << args[i] << std::endl;
-
+   for (size_t i = 0; i < args.size() && i < 5; ++i) {  // Changed '||' to '&&' here
+      ofs << "  arg" << i << ": " << args[i] << std::endl;
+   }
    // Add existing content back
    ofs << existingContent;
    ofs << std::setw(10) << std::setfill('-') << "" << std::endl;
-
+   ofs.close();
    return true;
 }
 

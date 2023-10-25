@@ -11,6 +11,12 @@
 
 ### テスト
 
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test0_GMRES.cpp
+make
+./test0_GMRES
+```
+
 <details>
 <summary>HOW TO USE</summary>
 
@@ -64,7 +70,7 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   int n_max = 20;
+   int n_max = 10;
    int n_begin = 1;
    auto x0_for_iterate = x0;
    gmres gm_ful(A, b, x0, n_max);

@@ -467,6 +467,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double &rho_ = this->density_;
    double volume = 0., volume_ = 0.;
    double radius = 0.;
+   double detection_range = 0.;
    double pressure = 0.;
    /* ------------------------------------------------------ */
    Tddd Fxyz() const { return {force[0], force[1], force[2]}; };
@@ -491,33 +492,45 @@ class networkPoint : public CoordinateBounds, public CRS {
    // 2023/05/16
    //\label{SPH:auxiliaryPoints}
    std::array<networkPoint *, 0> auxiliaryPoints;
-   networkPoint *surfacePoint;
+   networkPoint *surfacePoint = nullptr;
+   networkPoint *auxPoint = nullptr;
    double W;
    /////////////////////////
    // 物性
    double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
    //
    double total_weight, total_weight_, total_weight__, total_N;
-   Tddd normal_SPH, vector_to_wall_SPH;
+   Tddd normal_SPH, v_to_surface_SPH;
    networkFace *mirroring_face;
    double d_empty_center;
    double pn_SPH;
    bool pn_is_set = false;
-   bool isSurface = false;
+   bool isSurface = false, isSurface_next = false, isNotSurfaceButNearSurface = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
    bool isCaptured = false, isCaptured_ = false;
    bool isChecked = false;
    bool isFluid = false, isFirstWallLayer = false;
    bool isAuxiliary = false;
+   bool hasAuxiliary() { return this->isFluid && this->isCaptured && this->isSurface; };
    bool isFreeFalling = false;
-   double radius_SPH;
+   // double radius_SPH;
+   double particle_spacing;
+
+   double SML() const {
+      return C_SML * particle_spacing;
+   };
+   double SML_next() const {
+      return C_SML_next * particle_spacing;
+   };
+
    networkPoint *nearest_wall_p_next = nullptr;
    networkPoint *nearest_wall_p = nullptr;
-   double C_SML;
+   double C_SML, C_SML_next;
    double number_density_SPH;
    double density_interpolated_SPH;
    double pressure_SPH, pressure_SPH_, pressure_SPH__;
+   int pressure_equation_index = 99;
    double &p_SPH = this->pressure_SPH;
    double &p_SPH_ = this->pressure_SPH_;
    double &p_SPH__ = this->pressure_SPH__;
@@ -544,7 +557,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U, lap_U_;
+   Tddd lap_U, lap_U_, convection_term;
    T3Tddd grad_U;
    T3Tddd Mat1, Mat2, Mat3, Mat_B;
    std::unordered_map<networkPoint *, double> map_p_grad;
@@ -612,11 +625,28 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd b_vector;
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M;
+   std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
+   Tddd grad_Min_gradM;
+   //
+   std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
+   std::array<Tddd, 3> grad_corr_M_next_mirror, inv_grad_corr_M_next_mirror;
+   //
+   std::array<Tddd, 3> grad_corr_M_rigid, inv_grad_corr_M_rigid;
+   std::array<Tddd, 3> grad_corr_M_next_rigid, inv_grad_corr_M_next_rigid;
+   std::array<double, 3> Eigenvalues_of_M_rigid = {0., 0., 0.};
+   std::array<double, 3> Eigenvalues_of_M_next_rigid = {0., 0., 0.};
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid = {{ {0., 0., 0.},
+                                                                     {0., 0., 0.},
+                                                                     { 0.,
+                                                                       0.,
+                                                                       0. } }};
+   //
    std::array<double, 3> Eigenvalues_of_M = {0., 0., 0.};
    std::array<double, 3> Eigenvalues_of_M1 = {0., 0., 0.};
+
    //
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{ {0., 0., 0.},
-                                                               {0., 0., 0.},
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{ {0, 0, 0},
+                                                               {0, 0, 0},
                                                                { 0.,
                                                                  0.,
                                                                  0. } }};
@@ -630,7 +660,6 @@ class networkPoint : public CoordinateBounds, public CRS {
    double min_Eigenvalues_of_M = 0.;
    double var_Eigenvalues_of_M1 = 0.;
    double min_Eigenvalues_of_M1 = 0.;
-   std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
    // ダミー粒子としての情報
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;
@@ -777,9 +806,9 @@ class networkPoint : public CoordinateBounds, public CRS {
    double kappa_BEM;
    // double DphiDt;
    //
-   Tddd normalDirichletFace() const;
-   Tddd normalNeumannFace() const;
-   Tddd normalContanctSurface(const double pw0, const double pw1) const;
+   // Tddd normalDirichletFace() const;
+   // Tddd normalNeumannFace() const;
+   // Tddd normalContanctSurface(const double pw0, const double pw1) const;
 
    double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const {
       // 重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
@@ -910,10 +939,10 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesX() const;
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesXCloser() const;
-   void addContactFaces(const Buckets<networkFace *> &B, bool);                                            // 自身と同じfaceを含まない
-   void addContactPoints(const Buckets<networkPoint *> &B, const bool);                                    // 自身と同じnetのpointを含み得る
-   void addContactPoints(const Buckets<networkPoint *> &B, const double radius, const bool);               // 自身と同じnetのpointを含み得る
-   void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const double radius, const bool);  // 自身と同じnetのpointを含み得る
+   void addContactFaces(const Buckets<networkFace *> &B, bool);  // 自身と同じfaceを含まない
+   // void addContactPoints(const Buckets<networkPoint *> &B, const bool);                                    // 自身と同じnetのpointを含み得る
+   // void addContactPoints(const Buckets<networkPoint *> &B, const double radius, const bool);               // 自身と同じnetのpointを含み得る
+   // void addContactPoints(const std::vector<Buckets<networkPoint *>> &B, const double radius, const bool);  // 自身と同じnetのpointを含み得る
    // Tddd X_little_inside() const;
    //
    const std::unordered_set<networkPoint *> &getContactPoints() const { return this->ContactPoints; };
@@ -937,24 +966,24 @@ class networkPoint : public CoordinateBounds, public CRS {
       this->map_Net_ContactPoints.clear();
       this->map_Net_ContactPoints[nullptr] = {};
    };
-   void addContactPoints(networkPoint *const p) {
-      this->ContactPoints.emplace(p);
-      this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
-   };
-   void addContactPoints(const std::vector<networkPoint *> &P) {
-      for (const auto &p : P)
-         this->addContactPoints(p);
-   };
-   void addContactPoints(const std::vector<std::vector<networkPoint *>> &VVP) {
-      for (const auto &VP : VVP)
-         this->addContactPoints(VP);
-   };
-   void addContactPoints(const std::unordered_set<networkPoint *> &P) {
-      for (const auto &p : P) {
-         this->ContactPoints.emplace(p);
-         this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
-      }
-   };
+   // void addContactPoints(networkPoint *const p) {
+   //    this->ContactPoints.emplace(p);
+   //    this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
+   // };
+   // void addContactPoints(const std::vector<networkPoint *> &P) {
+   //    for (const auto &p : P)
+   //       this->addContactPoints(p);
+   // };
+   // void addContactPoints(const std::vector<std::vector<networkPoint *>> &VVP) {
+   //    for (const auto &VP : VVP)
+   //       this->addContactPoints(VP);
+   // };
+   // void addContactPoints(const std::unordered_set<networkPoint *> &P) {
+   //    for (const auto &p : P) {
+   //       this->ContactPoints.emplace(p);
+   //       this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
+   //    }
+   // };
    // インライン化する．
    // コンタクトポイントをpointとface上で作成，完成させる．
    // 次にRBFを使った力の計算をその点を使って行えるようにする．
@@ -1606,23 +1635,23 @@ class networkFace : public Triangle {
       this->map_Net_ContactPoints.clear();
       this->map_Net_ContactPoints[nullptr] = {};
    };
-   void addContactPoints(networkPoint *const p) {
-      this->ContactPoints.emplace(p);
-      this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
-   };
-   void addContactPoints(const std::vector<networkPoint *> &P) {
-      for (const auto &p : P) {
-         this->ContactPoints.emplace(p);
-         this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
-      }
-   };
-   void addContactPoints(const std::vector<std::vector<networkPoint *>> &VVP) {
-      for (const auto &VP : VVP)
-         for (const auto &p : VP) {
-            this->ContactPoints.emplace(p);
-            this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
-         }
-   };
+   // void addContactPoints(networkPoint *const p) {
+   //    this->ContactPoints.emplace(p);
+   //    this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
+   // };
+   // void addContactPoints(const std::vector<networkPoint *> &P) {
+   //    for (const auto &p : P) {
+   //       this->ContactPoints.emplace(p);
+   //       this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
+   //    }
+   // };
+   // void addContactPoints(const std::vector<std::vector<networkPoint *>> &VVP) {
+   //    for (const auto &VP : VVP)
+   //       for (const auto &p : VP) {
+   //          this->ContactPoints.emplace(p);
+   //          this->map_Net_ContactPoints[p->getNetwork()].emplace(p);
+   //       }
+   // };
    //! ------------------------------------------------------ */
    void reverseNormal() {
       // std::reverse(this->Lines.begin(), this->Lines.end());
@@ -3177,19 +3206,18 @@ Tddd Nearest(const Tddd &X, const networkFace *f) {
 double Distance(const Tddd &X, const networkFace *f) { return Norm(Nearest(X, ToX(f)) - X); };
 // Tddd Nearest(const networkPoint *p, const networkFace *f) { return Nearest(ToX(p), ToX(f)); };
 std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const std::unordered_set<networkFace *> &faces) {
-   double distance = 1E+20, tmp;
-   Tddd ret, near;
-   networkFace *F = nullptr;
-   for (const auto &f : faces) {
-      near = Nearest(X, f);
-      tmp = Norm(X - near);
-      if (distance >= tmp) {
-         distance = tmp;
-         ret = near;
-         F = f;
+   double nearest_d = 1E+20, d;
+   Tddd nearest_x, x;
+   networkFace *nearest_f = nullptr;
+   std::ranges::for_each(faces, [&](const auto &f) {
+      x = Nearest(X, f);
+      if (nearest_d >= (d = Norm(X - x))) {
+         nearest_d = d;
+         nearest_x = x;
+         nearest_f = f;
       }
-   }
-   return {ret, F};
+   });
+   return {nearest_x, nearest_f};
 };
 std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const std::vector<networkFace *> &faces) {
    double distance = 1E+20, tmp;
@@ -3523,11 +3551,12 @@ class Network : public CoordinateBounds {
       std::cout << this->getName() << "this->scaledBounds(expand_bounds) = " << this->scaledBounds(expand_bounds) << std::endl;
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       //
-      double min;
+      double particlize_spacing;
       for (const auto &f : this->getFaces()) {
-         min = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 10.;
-         for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), min))
+         particlize_spacing = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 20.;
+         for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
             this->BucketFaces.add(xyz, f);
+         // add extra points to make sure that the face is included in the bucket
          for (const auto X : f->getXVertices())
             this->BucketFaces.add(X, f);
          this->BucketFaces.add(Mean(f->getXVertices()), f);
@@ -3537,7 +3566,9 @@ class Network : public CoordinateBounds {
       std::cout << this->getName() << ", BucketFaces.setVector() done" << std::endl;
    };
 
+   double last_makeBucketPoints_spacing = 0.;
    void makeBucketPoints(const double spacing) {
+      this->last_makeBucketPoints_spacing = spacing;
       // this->BucketPoints.hashing_done = false;
       this->setGeometricProperties();
       this->BucketPoints.clear();
@@ -3546,11 +3577,15 @@ class Network : public CoordinateBounds {
       if (!this->BucketPoints.add(this->getPoints()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
       else {
-         std::cout << this->getName() << ", all points are added" << std::endl;
-         std::cout << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << std::endl;
+         std::cout << green << this->getName() << ", all points are added" << colorOff << std::endl;
+         std::cout << green << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << colorOff << std::endl;
       }
       this->BucketPoints.setVector();
       std::cout << this->getName() << ", BucketPoints.setVector() done" << std::endl;
+   };
+
+   void remakeBucketPoints() {
+      this->makeBucketPoints(this->last_makeBucketPoints_spacing);
    };
 
    void makeBucketParametricPoints(const double spacing) {

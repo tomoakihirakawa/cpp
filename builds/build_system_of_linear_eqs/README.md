@@ -12,6 +12,7 @@
             - [🐚 `selfDot`](#🐚-`selfDot`)
 - [🐋 連立一次方程式の解法](#🐋-連立一次方程式の解法)
     - [⛵ ⛵ Arnoldi過程](#⛵-⛵-Arnoldi過程)
+        - [🪼 🪼 基底ベクトルの追加](#🪼-🪼-基底ベクトルの追加)
     - [⛵ ⛵ 一般化最小残差法/GMRES](#⛵-⛵-一般化最小残差法/GMRES)
         - [🪼 テスト](#🪼-テスト)
     - [⛵ LU分解(LAPACK)](#⛵-LU分解(LAPACK))
@@ -83,10 +84,16 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 | `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
 | `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
 | `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
-[../../include/basic_linear_systems.hpp#L748](../../include/basic_linear_systems.hpp#L748)
+[../../include/basic_linear_systems.hpp#L846](../../include/basic_linear_systems.hpp#L846)
 
 
 ### 🪼 CRSの使用例 
+
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test3_CRS.cpp
+make
+./test3_CRS
+```
 
 ここには，`A`かける`V`をCRSを使って高速に計算する例を示している．
 
@@ -117,7 +124,7 @@ CRSは，このROW VECTORを格納するクラスであり，CRSのベクトル�
 std::vector<CRS*> Mat_CRS(A.size());
 ```
 
-[./test3_CRS.cpp#L100](./test3_CRS.cpp#L100)
+[./test3_CRS.cpp#L135](./test3_CRS.cpp#L135)
 
 ---
 #### 🐚 `setIndexCRS` 
@@ -127,7 +134,7 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 
 **掛け算`Dot(A,V)`において，CRS（これは行ベクトルと考える）は，自分に保存されている{row index,value}のセットを元に，`V[row index]*value`のようにして足し合わせていく．**
 
-[./test3_CRS.cpp#L129](./test3_CRS.cpp#L129)
+[./test3_CRS.cpp#L162](./test3_CRS.cpp#L162)
 
 ---
 #### 🐚 値を格納：`set`と`increment` 
@@ -138,13 +145,13 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 
 値を設定する，`set`と`increment`の第一引数は，CRSのポインタである．
 
-[./test3_CRS.cpp#L146](./test3_CRS.cpp#L146)
+[./test3_CRS.cpp#L175](./test3_CRS.cpp#L175)
 
 #### 🐚 `selfDot` 
 
 `selfDot`は，CRSに保存した`A`と`V`を掛け合わせる関数である．
 
-[./test3_CRS.cpp#L177](./test3_CRS.cpp#L177)
+[./test3_CRS.cpp#L197](./test3_CRS.cpp#L197)
 
 ---
 # 🐋 連立一次方程式の解法 
@@ -163,11 +170,13 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 3. $`{\bf w}=A{\bf v} _2, {\bf v} _3 = {\rm Normalize}({\rm Chop}({\rm Chop}({\bf w}, {\bf v} _1), {\bf v} _2))`$を計算する．
 4. $`{\bf w}=A{\bf v} _3, {\bf v} _4 = {\rm Normalize}({\rm Chop}({\rm Chop}({\rm Chop}({\bf w}, {\bf v} _1), {\bf v} _2), {\bf v} _3))`$を計算する．
 
+これは，既存のベクトルの成分を削り落として，新しいベクトルを作っているに過ぎない．
+
 💡 ここで最も計算コストがかかるのは，$`{\bf w}=A{\bf v} _i`$の行列-ベクトル積である．
 
 $`A{\bf v} _i`$の直交化の際に，
 それに含まれる各基底$`{\bf v} _0,{\bf v} _1,...,{\bf v} _i`$の成分を計算している．
-この成分からなる行列が，Hessenberg行列$`H`$である．
+この成分からなる行列が，Hessenberg行列$`H`$である（ほとんど上三角行列のことを指す）．
 
 ```math
 \begin{align*}
@@ -178,6 +187,8 @@ A{\bf v} _{n} & = h _{1,n} {\bf v} _1 + h _{2,n} {\bf v} _2 + \cdots + h _{n,n+1
 \end{align*}
 ```
 
+💡 ここで，行数よりも項数が1多いことに注目しよう．
+
 行列を使ってまとめると，
 
 ```math
@@ -185,8 +196,15 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 \quad \tilde H _n = \begin{bmatrix} h _{1,1} & h _{1,2} & \cdots & h _{1,n} & h _{1,n+1} \\ h _{2,1} & h _{2,2} & \cdots & h _{2,n} & h _{2,n+1} \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & \cdots & h _{n,n} & h _{n,n+1} \\ 0 & 0 & \cdots & 0 & h _{n+1,n+1} \end{bmatrix}
 ```
 
+💡 $`\tilde H _n`$は，Hessenberg行列が１行長くなった行列になっている．これは，前の式において，行数よりも項数が1多いことによる．
+
 これをArnoldi分解という．ここで，$`[v _1|v _2|...|v _n]`$の$`|`$は列ベクトルを連結して行列を形成することを示している．
-[../../include/basic_linear_systems.hpp#L981](../../include/basic_linear_systems.hpp#L981)
+
+### 🪼 🪼 基底ベクトルの追加  
+
+基底ベクトルを追加したい場合にどのような操作が必要となるか整理しておこう．
+これは，GMRES法の繰り返し計算の中で必要となる．
+[../../include/basic_linear_systems.hpp#L1119](../../include/basic_linear_systems.hpp#L1119)
 
 
 ## ⛵ ⛵ 一般化最小残差法/GMRES  
@@ -229,13 +247,19 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
-[../../include/basic_linear_systems.hpp#L1123](../../include/basic_linear_systems.hpp#L1123)
+[../../include/basic_linear_systems.hpp#L1272](../../include/basic_linear_systems.hpp#L1272)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
 * GMRESは一般的に共役勾配法よりも柔軟性があり，非対称行列に対しても使用できる．ただし，反復の回数が増えると計算コストが大きくなる可能性がある．
 
 ### 🪼 テスト 
+
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test0_GMRES.cpp
+make
+./test0_GMRES
+```
 
 <details>
 <summary>HOW TO USE</summary>
@@ -253,9 +277,15 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 
 [./test0_LAPACK.cpp#L1](./test0_LAPACK.cpp#L1)
 
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test1_EIGEN_GMRES.cpp
+make
+./test1_EIGEN_GMRES
+```
+
 EigenのGMRESを使った結果と比較．
 
-[./test1_EIGEN_GMRES.cpp#L6](./test1_EIGEN_GMRES.cpp#L6)
+[./test1_EIGEN_GMRES.cpp#L2](./test1_EIGEN_GMRES.cpp#L2)
 
 ## ⛵ 共役勾配法と勾配降下法 
 

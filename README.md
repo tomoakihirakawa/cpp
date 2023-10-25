@@ -9,6 +9,9 @@
     - [⛵ ⛵ 放射関数補間](./builds/build_interpolation/README.md#⛵-⛵-放射関数補間)
     - [⛵ 三角形補間](./builds/build_interpolation/README.md#⛵-三角形補間)
     - [⛵ ⛵ 範囲を修正した三角形形状関数](./builds/build_interpolation/README.md#⛵-⛵-範囲を修正した三角形形状関数)
+## [build_cable](./builds/build_cable/README.md)
+
+- [ケーブルについて](./builds/build_cable/README.md#ケーブルについて)
 ## [build_ODE](./builds/build_ODE/README.md)
 
 - [Contents](./builds/build_ODE/README.md#Contents)
@@ -21,8 +24,9 @@
 - [🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](./builds/build_sph/README.md#🐋-Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
     - [⛵ 概要](./builds/build_sph/README.md#⛵-概要)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
+    - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
-    - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p ^{n+1} \right)=b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-^{n+1}-\right)=b`$)
+    - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p \right)=b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-\right)=b`$)
     - [⛵ ポアソン方程式の解法](./builds/build_sph/README.md#⛵-ポアソン方程式の解法)
     - [⛵ 圧力勾配$`\nabla p^{n+1}`$の計算](./builds/build_sph/README.md#⛵-圧力勾配$`\nabla-p^{n+1}`$の計算)
     - [⛵ 注意点](./builds/build_sph/README.md#⛵-注意点)

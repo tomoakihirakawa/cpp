@@ -1,5 +1,5 @@
-#ifndef SPH_weightingFunctions_H
-#define SPH_weightingFunctions_H
+#ifndef SPH_H
+#define SPH_H
 
 #define USE_RungeKutta
 // #define USE_LeapFrog
@@ -46,10 +46,10 @@ void setPressureForInitialGuess(Network *net) {
       p->p_SPH_ = p->total_weight = 0;
       double w = 0, own_w = 0;
       auto func = [&](const auto &q) {
-         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->radius_SPH), POWER));
+         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->SML()), POWER));
          p->p_SPH_ += q->p_SPH * w;
       };
-      net->BucketPoints.apply(p->X, p->radius_SPH, func);
+      net->BucketPoints.apply(p->X, p->SML(), func);
    }
 #pragma omp parallel
    for (const auto &p : net->getPoints())
@@ -71,16 +71,16 @@ void setPressureSPP(Network *net, const auto &RigidBodyObject) {
       p->p_SPH_SPP = p->total_weight = 0;
       double w = 0, own_w = 0;
       auto func = [&](const auto &q) {
-         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->radius_SPH), POWER));
+         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->SML()), POWER));
 
          if (q == p)
             own_w = w;
          else
             p->p_SPH_SPP += q->p_SPH * w;
       };
-      net->BucketPoints.apply(p->X, p->radius_SPH, func);
+      net->BucketPoints.apply(p->X, p->SML(), func);
       for (const auto &[obj, poly] : RigidBodyObject)
-         obj->BucketPoints.apply(p->X, p->radius_SPH, func);
+         obj->BucketPoints.apply(p->X, p->SML(), func);
       p->p_SPH_SPP /= (1 - own_w);
       // p->p_SPH_SPP /= (p->total_weight - own_w);
       // /* -------------------------------------------------------------------------- */
@@ -89,23 +89,23 @@ void setPressureSPP(Network *net, const auto &RigidBodyObject) {
       // p->p_SPH_SPP = p->total_weight = 0;
       // double w = 0, own_w = 0;
       // auto func = [&](const auto &p_fluid) {
-      //    p->total_weight += (w = p_fluid->volume * std::pow(w_Bspline(Norm(p->X - p_fluid->X), p->radius_SPH), POWER));
+      //    p->total_weight += (w = p_fluid->volume * std::pow(w_Bspline(Norm(p->X - p_fluid->X), p->SML()), POWER));
       //    p->p_SPH_SPP += p_fluid->p_SPH * w;
       // };
-      // net->BucketPoints.apply(p->X, p->radius_SPH, func);
+      // net->BucketPoints.apply(p->X, p->SML(), func);
       // for (const auto &[obj, poly] : RigidBodyObject)
-      //    obj->BucketPoints.apply(p->X, p->radius_SPH, func);
+      //    obj->BucketPoints.apply(p->X, p->SML(), func);
       /* -------------------------------------------------------------------------- */
       // p->p_SPH_SPP = p->total_weight = 0;
       // double w = 0;
-      // net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &p_fluid) {
-      //    w = p_fluid->volume * w_Bspline(Norm(p->X - p_fluid->X), p->radius_SPH * p->C_SML);
+      // net->BucketPoints.apply(p->X, p->SML(), [&](const auto &p_fluid) {
+      //    w = p_fluid->volume * w_Bspline(Norm(p->X - p_fluid->X), p->SML() * p->C_SML);
       //    p->p_SPH_SPP += coef * p->p_SPH * w;
       //    if (p_fluid->isSurface) {
       //       p->p_SPH_SPP += coef * p->p_SPH * w;
       //    }
       // });
-      // p->p_SPH_SPP /= (w_Bspline(0, p->radius_SPH * p->C_SML) + w_Bspline(q->radius_SPH / q->C_SML, p->radius_SPH * p->C_SML));
+      // p->p_SPH_SPP /= (w_Bspline(0, p->SML() * p->C_SML) + w_Bspline(q->SML() / q->C_SML, p->SML() * p->C_SML));
    }
 };
 
@@ -138,10 +138,10 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
          vtkPolygonWriter<networkPoint *> vtp;
          int j = 0;
          for (const auto &net : nets)
-            net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
+            net->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
                vtp.add(q);
-               sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->radius_SPH) * p->volume;
-               sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+               sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->SML()) * p->volume;
+               sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->SML()) * p->volume;
                j++;
             });
          vtp.addPointData("w_Bspline3", Bspline3);
@@ -159,11 +159,11 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
          vtkPolygonWriter<networkPoint *> vtp;
          int j = 0;
          for (const auto &net : nets)
-            net->BucketPoints.apply(p->X, p->radius_SPH, [&](const auto &q) {
-               if (Distance(p->X, q->X) < p->radius_SPH) {
+            net->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
+               if (Distance(p->X, q->X) < p->SML()) {
                   vtp.add(q);
-                  sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->radius_SPH) * p->volume;
-                  sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->radius_SPH) * p->volume;
+                  sum3 += Bspline3[q] = w_Bspline3(Norm(q->X - p->X), p->SML()) * p->volume;
+                  sum5 += Bspline5[q] = w_Bspline5(Norm(q->X - p->X), p->SML()) * p->volume;
                   j++;
                }
             });
@@ -295,9 +295,9 @@ void developByEISPH(Network *net,
          net_RigidBody.emplace(a);
          all_net.push_back(a);
       }
-      // b# -------------- バケットの生成, p->radius_SPHの範囲だけ点を取得 --------------- */
+      // b# -------------- バケットの生成, p->SML()の範囲だけ点を取得 --------------- */
       DebugPrint("バケットの生成", Green);
-      const auto bucket_spacing = particle_spacing * 0.9;
+      const auto bucket_spacing = particle_spacing * 2.;
 #pragma omp parallel
       for (const auto &obj : all_net)
 #pragma omp single nowait
@@ -340,15 +340,126 @@ void developByEISPH(Network *net,
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
       bool finished = false;
       do {
+         setSML(Append(net_RigidBody, net));
+         // {
+         //    auto points = net->getPoints();
+         //    for (auto p : points)
+         //       if (p->isAuxiliary)
+         //          delete p;
 
+         //    {
+         //       auto points = net->getPoints();
+         //       for (auto p : points) {
+         //          p->isAuxiliary = false;
+         //       }
+         //    }
+         // }
+         /* -------------------------------------------------------------------------- */
          // 流れの計算に関与する壁粒子を保存
-         setVectorToPolygon(net, RigidBodyObject, C_SML * particle_spacing);
+         // setVectorToPolygon(net, RigidBodyObject, C_SML * particle_spacing);
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
          std::cout << Green << "setWall" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
          setFreeSurface(net, RigidBodyObject);
          std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+         /* -------------------------------------------------------------------------- */
+         if (false) {
+            auto points = net->getPoints();
+            for (const auto &p : points) {
+               if (p->hasAuxiliary()) {
+                  auto q = new networkPoint(net, p->X);
+                  q->surfacePoint = p;
+                  p->auxPoint = q;
+                  //
+                  q->grad_corr_M = p->grad_corr_M;
+                  q->grad_corr_M_next = p->grad_corr_M_next;
+                  q->inv_grad_corr_M = p->inv_grad_corr_M_next;
+                  q->inv_grad_corr_M_next = p->inv_grad_corr_M_next;
+                  //
+                  q->grad_corr_M_rigid = p->grad_corr_M_next_rigid;
+                  q->grad_corr_M_next_rigid = p->grad_corr_M_next_rigid;
+                  q->inv_grad_corr_M_rigid = p->inv_grad_corr_M_next_rigid;
+                  q->inv_grad_corr_M_next_rigid = p->inv_grad_corr_M_next_rigid;
+                  //
+                  q->isSurface = false;
+                  q->isSurface_next = false;
+                  q->isAuxiliary = true;
+                  //
+                  q->b_vector = p->b_vector;
+                  q->U_SPH = p->U_SPH;
+                  //
+                  q->intp_density = p->intp_density;
+                  q->intp_density_next = p->intp_density_next;
+                  //
+                  // q->U_SPH.fill(0.);
+                  q->v_to_surface_SPH = p->v_to_surface_SPH;
+                  q->interp_normal = p->interp_normal;
+                  q->interp_normal_next = p->interp_normal_next;
+                  q->intp_normal_Eigen = p->intp_normal_Eigen;
+                  q->interp_normal_original = p->interp_normal_original;
+                  q->interp_normal_original_next = p->interp_normal_original_next;
+                  q->intp_density = p->intp_density;
+                  //
+                  q->div_U = p->div_U;
+                  q->DUDt_SPH = p->DUDt_SPH;
+                  q->lap_U = p->lap_U;
+                  q->p_SPH = p->p_SPH;
+                  q->rho = p->rho;
+                  q->setDensityVolume(_WATER_DENSITY_, p->volume);
+                  q->particle_spacing = p->particle_spacing;
+                  q->C_SML_next = p->C_SML_next;
+                  q->C_SML = p->C_SML;
+                  q->isFluid = true;
+                  q->isFirstWallLayer = false;
+                  q->isCaptured = true;
+                  //
+                  auto dt = p->RK_X.getdt();
+                  // q->RK_U.initialize(dt, simulation_time, q->U_SPH, 1);
+                  // q->RK_X.initialize(dt, simulation_time, q->X, 1);
+                  // q->RK_P.initialize(dt, simulation_time, q->p_SPH, 1);
+                  // q->RK_rho.initialize(dt, simulation_time, q->rho, 1);
+                  q->RK_U = p->RK_U;
+                  q->RK_U.Xinit = p->RK_U.Xinit;
+                  q->RK_U.t_init = p->RK_U.t_init;
+                  q->RK_U.dt_fixed = p->RK_U.dt_fixed;
+                  q->RK_U.dt = p->RK_U.dt;
+                  q->RK_U.steps = p->RK_U.steps;
+                  q->RK_U.current_step = p->RK_U.current_step;
+                  q->RK_U._dX = p->RK_U._dX;
+                  q->RK_U.dX = p->RK_U.dX;
+                  //
+                  q->RK_X = p->RK_X;
+                  q->RK_X.Xinit = p->RK_X.Xinit;
+                  q->RK_X.t_init = p->RK_X.t_init;
+                  q->RK_X.dt_fixed = p->RK_X.dt_fixed;
+                  q->RK_X.dt = p->RK_X.dt;
+                  q->RK_X.steps = p->RK_X.steps;
+                  q->RK_X.current_step = p->RK_X.current_step;
+                  q->RK_X._dX = p->RK_X._dX;
+                  q->RK_X.dX = p->RK_X.dX;
+                  //
+                  q->RK_rho = p->RK_rho;
+                  q->RK_rho.Xinit = p->RK_rho.Xinit;
+                  q->RK_rho.t_init = p->RK_rho.t_init;
+                  q->RK_rho.dt_fixed = p->RK_rho.dt_fixed;
+                  q->RK_rho.dt = p->RK_rho.dt;
+                  q->RK_rho.steps = p->RK_rho.steps;
+                  q->RK_rho.current_step = p->RK_rho.current_step;
+                  q->RK_rho._dX = p->RK_rho._dX;
+                  q->RK_rho.dX = p->RK_rho.dX;
+               }
+            }
+            net->remakeBucketPoints();
+            // #pragma omp parallel
+            //             for (const auto &A : net->getPoints())
+            // #pragma omp single nowait
+            //                if (A->isCaptured) {
+            //                   setCorrectionMatrix(A, all_net);
+            //                }
+         }
+         /* -------------------------------------------------------------------------- */
+
 #if defined(USE_RungeKutta)
          dt = (*net->getPoints().begin())->RK_X.getdt();
          const auto DT = dt;
@@ -405,8 +516,7 @@ void developByEISPH(Network *net,
 
       std::cout << Green << "１タイムステップ終了" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in developByEISPH");
    };
 };
 
@@ -419,6 +529,12 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    std::unordered_map<networkPoint *, Tddd> uo_3d;
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M;
    vtp.addPointData("Eigenvalues_of_M", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M_rigid;
+   vtp.addPointData("Eigenvalues_of_M_rigid", uo_3d);
+
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->C_SML;
+   vtp.addPointData("C_SML", uo_double);
+
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
@@ -435,16 +551,16 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("isSurface_var_Eigenvalues_of_M1", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->b_vector;
    vtp.addPointData("b_vector", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->normal_SPH;
-   vtp.addPointData("normal_SPH", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->v_to_surface_SPH;
+   vtp.addPointData("v_to_surface_SPH", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = Normalize(p->intp_normal_Eigen);
    vtp.addPointData("intp_normal_Eigen", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal;
    vtp.addPointData("interp_normal", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal_original;
    vtp.addPointData("interp_normal_original", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal_original_choped;
-   vtp.addPointData("interp_normal_original_choped", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_Min_gradM;
+   vtp.addPointData("grad_Min_gradM", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
    vtp.addPointData("contains diagonal", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->DrhoDt_SPH;
@@ -457,6 +573,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("isCaptured", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFirstWallLayer;
    vtp.addPointData("isFirstWallLayer", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isAuxiliary;
+   vtp.addPointData("isAuxiliary", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
    vtp.addPointData("isSurface", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNeumannSurface;
@@ -478,13 +596,17 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("vector_to_polygon size", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->getContactFaces().size();
    vtp.addPointData("ContactFaces size", uo_double);
+
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->pressure_equation_index;
+   vtp.addPointData("pressure_equation_index", uo_double);
+
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->intp_density;
    vtp.addPointData("intp_density", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->volume;
    vtp.addPointData("volume", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->tmp_ViscousAndGravityForce, p->normal_SPH);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->tmp_ViscousAndGravityForce, p->v_to_surface_SPH);
    vtp.addPointData("Projectioned　tmp_ViscousAndGravityForce", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->normal_SPH);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->v_to_surface_SPH);
    vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
    vtp.addPointData("DUDt_modify_SPH", uo_3d);
@@ -521,7 +643,7 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
 //    if (isFinite(X)) {
 //       std::unordered_map<networkPoint *, double> W;
 //       for (const auto &p : Fluid->getPoints())
-//          W[p] = w_Bspline(Norm(X - p->X), p->radius_SPH);
+//          W[p] = w_Bspline(Norm(X - p->X), p->SML());
 //       vtp.addPointData("W", W);
 //    }
 
@@ -632,7 +754,7 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
 //    // //
 //    // std::unordered_map<networkPoint *, Tddd> whereToReference;
 //    // for (const auto &p : Fluid->getPoints())
-//    //    whereToReference[p] = ToX(p) + 2 * p->normal_SPH - ToX(p);
+//    //    whereToReference[p] = ToX(p) + 2 * p->v_to_surface_SPH - ToX(p);
 //    // vtp.addPointData("where to reference", whereToReference);
 //    // //
 //    std::unordered_map<networkPoint *, double> isSurface;
@@ -663,13 +785,13 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
 //    //
 //    std::unordered_map<networkPoint *, double> radius;
 //    for (const auto &p : Fluid->getPoints())
-//       radius[p] = p->radius_SPH;
+//       radius[p] = p->SML();
 //    vtp.addPointData("radius", radius);
 //    //
-//    std::unordered_map<networkPoint *, double> checked_points_in_radius_SPH;
+//    std::unordered_map<networkPoint *, double> checked_points_in_SML();
 //    for (const auto &p : Fluid->getPoints())
-//       checked_points_in_radius_SPH[p] = p->checked_points_in_radius_SPH;
-//    vtp.addPointData("checked_points_in_radius_SPH", checked_points_in_radius_SPH);
+//       checked_points_in_SML()[p] = p->checked_points_in_SML();
+//    vtp.addPointData("checked_points_in_SML()", checked_points_in_SML());
 //    //
 //    std::unordered_map<networkPoint *, double> checked_points_SPH;
 //    for (const auto &p : Fluid->getPoints())
