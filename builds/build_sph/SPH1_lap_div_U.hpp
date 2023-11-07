@@ -48,7 +48,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             }
          };
 
-         const double c_xsph = 0.001;
+         const double c_xsph = 0.05;
          double total_w = 0;
          auto add = [&](const auto &B) {
             Uij = A->U_SPH - B->U_SPH;
@@ -68,8 +68,13 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             const auto DelX = (A->X - B->X);
             applyOverPoints([&](const auto &Q) {
                //
-               for (int i = 0; i < 3; i++)
-                  A->lap_U[i] -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH[i] - A->U_SPH[i]);
+               if (!canInteract(A, Q))
+                  return;
+               if (A == Q)
+                  return;
+               A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH - A->U_SPH);
+               // for (int i = 0; i < 3; i++)
+               //    A->lap_U[i] -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH[i] - A->U_SPH[i]);
                //
                // A->lap_U -= Aij * Q->volume * DelX * grad_w_Bspline(A, Q) * (Q->U_SPH - A->U_SPH);
                // A->lap_U_next -= Aij * V_next(Q) * (Q->U_SPH - A->U_SPH) * Dot(DelX, grad_w_Bspline(A, Q));
@@ -109,40 +114,19 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          //$ ------------------------------------------ */
          // \label{SPH:lapU_for_wall}
          // \label{SPH:Poisson_b_vector}
+         // \label{SPH:how_to_set_fluid_b_vector}
          if (A->getNetwork()->isRigidBody) {
-            // A->DUDt_SPH_.fill(0.);
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  // 後で修正されるDUDt
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  //! 後で修正されるDUDt
             A->DUDt_SPH += A->U_XSPH / dt;
-            A->rho = _WATER_DENSITY_;
-            double nu = A->mu_SPH / A->rho;
-            // A->DUDt_SPH.fill(0.);
-            // A->tmp_U_SPH.fill(0.);
-            A->tmp_X = A->X;
-            A->DrhoDt_SPH = 0;
-            A->b_vector.fill(0.);
-            // if (A->isNeumannSurface)
-
+            //
             A->DrhoDt_SPH = -A->rho * A->div_U;
-
-            auto rho = A->rho + A->DrhoDt_SPH * dt;
-
-            // A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);                            // 最も自然な結果を返す
-            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U + A->rho * _GRAVITY3_;  // 最も自然な結果を返す
-            A->b_vector += A->rho * A->U_XSPH / dt;
-
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
          } else {
-            A->DUDt_SPH_ = A->DUDt_SPH;
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  // 後で修正されるDUDt
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  //! 後で修正されるDUDt
             A->DUDt_SPH += A->U_XSPH / dt;
 
-            A->tmp_U_SPH = A->U_SPH + A->DUDt_SPH * dt;
-            A->tmp_X = A->X + A->tmp_U_SPH * dt;
             A->DrhoDt_SPH = -A->rho * A->div_U;
-
-            // \label{SPH:how_to_set_fluid_b_vector}
-            // A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
-            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U_next + A->rho * _GRAVITY3_;
-            A->b_vector += A->rho * A->U_XSPH / dt;
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
          }
       }
 

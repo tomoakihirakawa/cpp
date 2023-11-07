@@ -1,4 +1,191 @@
 ----------
+Execution time: Tue Nov  7 22:41:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 22:36:37 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 22:35:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 22:29:40 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 20:29:49 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 20:20:16 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 18:54:25 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 18:53:45 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 18:53:18 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 18:34:03 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 10:13:46 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 10:08:50 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 10:03:27 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 09:54:06 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 09:47:16 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 09:45:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
+Execution time: Tue Nov  7 09:38:51 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
+----------
 Execution time: Tue Nov  7 09:29:07 2023
 
 Machine Information:
@@ -18001,6 +18188,23 @@ Machine Information:
 Command line arguments:
   arg0: ./main
   arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

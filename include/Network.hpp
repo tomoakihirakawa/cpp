@@ -512,7 +512,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    bool isChecked = false;
    bool isFluid = false, isFirstWallLayer = false;
    bool isAuxiliary = false;
-   bool hasAuxiliary() { return this->isFluid && this->isCaptured && this->isSurface; };
+   bool hasAuxiliary() { return this->isFluid && this->isCaptured && (this->isSurface || this->isSurface_next); };
    bool isFreeFalling = false;
    // double radius_SPH;
    double particle_spacing;
@@ -606,7 +606,6 @@ class networkPoint : public CoordinateBounds, public CRS {
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
    std::vector<double> vec_time_SPH;
    std::vector<Tddd> vec_U_SPH;
-   Tddd tmp_U_SPH, tmp_U_SPH_, tmp_X, pre_X;
    double tmp_density;
    Tddd pre_U_SPH;
    Tddd mu_lap_rho_g_SPH;
@@ -652,7 +651,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    std::array<std::array<std::array<double, 3>, 3>, 3> v_rrDW, v_rrDW_next;
 
    /* ------------------- 多段の時間発展スキームのため ------------------- */
-   Tddd DUDt_SPH, DUDt_SPH_;
+   Tddd DUDt_SPH;
    Tddd DUDt_modify_SPH;
    Tddd ViscousAndGravityForce_, tmp_ViscousAndGravityForce_;
    Tddd ViscousAndGravityForce, tmp_ViscousAndGravityForce;

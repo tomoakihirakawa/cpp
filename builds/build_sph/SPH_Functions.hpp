@@ -229,89 +229,6 @@ void setSML(const auto &target_nets) {
       }
 };
 
-networkPoint *getClosestExcludeRigidBodyInlcudeFirstLayer(networkPoint *p, auto &target_nets) {
-   double distance = 1E+20;
-   networkPoint *P = nullptr;
-   for (const auto &obj : target_nets) {
-      obj->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
-         if (q->isFluid || q->isFirstWallLayer) {
-            auto tmp = Distance(p, q);
-            if (distance > tmp) {
-               distance = tmp;
-               P = q;
-            }
-         }
-      });
-   }
-   return P;
-};
-
-networkPoint *getClosestParticle(networkPoint *p, const Network *obj) {
-   double distance = 1E+20;
-   networkPoint *P = nullptr;
-   obj->BucketPoints.apply(p->X, p->SML() * 1.5, [&](const auto &q) {
-      auto tmp = Distance(p, q);
-      if (distance > tmp) {
-         distance = tmp;
-         P = q;
-      }
-   });
-   return P;
-};
-
-networkPoint *getClosestParticle(networkPoint *p, const std::vector<Network *> objs) {
-   double distance = 1E+20;
-   networkPoint *P = nullptr;
-   for (const auto &obj : objs) {
-      auto q = getClosestParticle(p, obj);
-      if (q != nullptr) {
-         auto tmp = Distance(p, q);
-         if (distance > tmp) {
-            distance = tmp;
-            P = q;
-         }
-      }
-   }
-   return P;
-};
-
-networkPoint *getClosestFluid(networkPoint *p, const auto &target_nets) {
-   // std::cout << p << " getClosestFluid" << std::endl;
-   double distance = 1E+20;
-   networkPoint *P = nullptr;
-   for (const auto &obj : target_nets) {
-      if (obj->isFluid)
-         obj->BucketPoints.apply(p->X, p->SML() * 1.5, [&](const auto &q) {
-            if (q->isFluid) {
-               auto tmp = Distance(p, q);
-               if (distance > tmp) {
-                  distance = tmp;
-                  P = q;
-               }
-            }
-         });
-   }
-   return P;
-};
-
-networkPoint *getClosest(const Tddd X, const double range, const auto &target_nets, const auto &condition) {
-   double distance = 1E+20;
-   networkPoint *P = nullptr;
-   for (const auto &obj : target_nets) {
-      if (obj->isFluid)
-         obj->BucketPoints.apply(X, range, [&](const auto &q) {
-            if (condition(q)) {
-               auto tmp = Distance(X, q);
-               if (distance > tmp) {
-                  distance = tmp;
-                  P = q;
-               }
-            }
-         });
-   }
-   return P;
-};
-
 /*DOC_EXTRACT 0_1_0_SPH
 
 ### CFL条件の設定
@@ -387,14 +304,14 @@ Tddd aux_position_next(const networkPoint *p) {
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
-   return p->RK_U.getX(p->DUDt_SPH);
+   if (!p->isFluid)
+      return p->U_SPH;
+   else
+      return p->RK_U.getX(p->DUDt_SPH);
    // return p->RK_U.getX();
 }
 Tddd X_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return p->X;
-   else
-      return p->RK_X.getX(U_next(p));
+   return p->RK_X.getX(U_next(p));
 }
 
 // \label{SPH:rho_next}
@@ -620,7 +537,7 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
    return {closest_q, closest_p_to_q};
 };
 
-// #define REFLECTION
+#define REFLECTION
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
@@ -639,7 +556,7 @@ void updateParticles(const auto &points,
          p->RK_U.push(p->DUDt_SPH);  // 速度
          p->U_SPH = p->RK_U.getX();
          p->RK_X.push(p->U_SPH);  // 位置
-         p->setXSingle(p->tmp_X = p->RK_X.getX());
+         p->setXSingle(p->RK_X.getX());
 #elif defined(USE_LeapFrog)
          auto X_next = [&](const auto &p) { return p->X; };
          p->DUDt_modify_SPH.fill(0.);
@@ -710,7 +627,7 @@ void updateParticles(const auto &points,
                         p->RK_U.repush(p->DUDt_SPH);  // 速度
                         p->U_SPH = p->RK_U.getX();
                         p->RK_X.repush(p->U_SPH);  // 位置
-                        p->setXSingle(p->tmp_X = p->RK_X.getX());
+                        p->setXSingle(p->RK_X.getX());
                         isReflected = true;
    #elif defined(USE_LeapFrog)
                         p->LPFG_X.repush(p->DUDt_SPH);  // 速度
