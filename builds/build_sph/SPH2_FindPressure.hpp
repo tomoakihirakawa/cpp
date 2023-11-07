@@ -221,8 +221,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          //% ------------------ 流体粒子の圧力の方程式 ------------------ */
          // \label{SPH:PoissonEquation}
          auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &applyOverPoints_At, &target_nets](const auto &B /*column id*/) {
-            if (pO == B)
-               return;
+            if (pO == B) return;
             const auto BX = X_next(B);
             const auto r = pO->SML_next();
             if (Distance(pO_center, BX) < r) {
@@ -232,7 +231,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                //! 修正
                const auto DelX = (pO_center - BX);
                applyOverPoints([&](const auto &Q) {
-                  if (pO == Q) return;
+                  if (!canInteract(pO, Q))
+                     return;
+                  if (pO == Q)
+                     return;
                   auto c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline_next(pO, Q));
                   ROW->increment(pO, c);
                   ROW->increment(Q, -c);
@@ -257,7 +259,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // b$ -------------------------------------------------------------------------- */
 
          // \label{SPH:whereToMakeTheEquation}
-         if (ROW->isSurface_next && !ROW->isAuxiliary) {
+         if ((ROW->isSurface_next || ROW->isSurface) && !ROW->isAuxiliary) {
             ROW->pressure_equation_index = 0;
             // b% EISPH
             ROW->p_SPH = ROW->p_EISPH = 0;
@@ -265,7 +267,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             ROW->clearColumnValue();
             ROW->CRS::set(ROW, 1.);
             ROW->PoissonRHS = 0;
-         } else if (ROW->getNetwork()->isRigidBody && !ROW->isFirstWallLayer) {
+         } else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
+            //! 壁面の圧力はPoissonを解かない方が計算が安定するようだ
             // } else if (false) {
             /*DOC_EXTRACT 0_2_2_set_pressure_eq
 

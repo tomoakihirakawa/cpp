@@ -264,7 +264,6 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             p->isSurface = false;
             p->p_SPH = 0;
             p->U_SPH = p->DUDt_SPH = p->lap_U = {0, 0, 0};
-            p->tmp_X = p->X;
             p->isFirstWallLayer = false;
             p->isChecked = false;
             p->intp_density = 0.;
@@ -412,7 +411,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                      } else {
                         q->U_SPH /= total_w;
                         // q->b_vector = b_vector / total_w;
-                        // q->DUDt_SPH /= total_w;
+                        q->DUDt_SPH /= total_w;
                         q->marker_U = q->U_SPH;  //! そのままの値
                         // q->intp_density /= total_w;
                      }

@@ -317,7 +317,6 @@ void developByEISPH(Network *net,
          p->p_SPH_SPP = 0;
          p->DUDt_SPH = p->lap_U = {0, 0, 0};
          p->isCaptured = true;
-         p->tmp_X = p->X;
       }
 
       // CFL条件を満たすようにタイムステップ間隔dtを設定
@@ -359,13 +358,14 @@ void developByEISPH(Network *net,
          calcLaplacianU(net->getPoints(), Append(net_RigidBody, net));
          calcLaplacianU(wall_p, Append(net_RigidBody, net));
          /* ------------------------------- 次時刻の計算が可能に ------------------------------- */
-         setWall(net, RigidBodyObject, particle_spacing, wall_p);
-         setFreeSurface(net, RigidBodyObject);
-         std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         // setWall(net, RigidBodyObject, particle_spacing, wall_p);
+         // setFreeSurface(net, RigidBodyObject);
+         // std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
          /* -------------------------------------------------------------------------- */
          setSML(Append(net_RigidBody, net));
          setCorrectionMatrix(Append(net_RigidBody, net));
-         // setAuxiliaryPoints(net);
+         setAuxiliaryPoints(net);
+         // 粒子が接近しすぎると精度に問題が生じる．圧力決めうちの方が安定する．
          //
          std::cout << Green << "∇.∇UとU*を計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
          setPoissonEquation(wall_p, Append(net_RigidBody, net), particle_spacing);
