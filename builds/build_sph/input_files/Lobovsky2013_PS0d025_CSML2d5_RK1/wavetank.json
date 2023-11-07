@@ -1,0 +1,5 @@
+{
+    "name": "wavetank",
+    "type": "RigidBody",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/tank.obj"
+}

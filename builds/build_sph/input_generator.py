@@ -50,7 +50,7 @@ match SimulationCase:
 
         particle_spacing = 0.2/10
 
-        setting = {"RK_order": 2,
+        setting = {"RK_order": 1,
                    "max_dt": particle_spacing/10,
                    "CSML": 2.8,
                    "end_time_step": 1000000,
@@ -111,7 +111,7 @@ match SimulationCase:
                    "end_time": 1,
                    "CSML": 2.5,
                    "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.0175}
+                   "particle_spacing": 0.02}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                             + "_CSML" + str(setting["CSML"]).replace(".", "d")\

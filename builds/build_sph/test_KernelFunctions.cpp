@@ -41,7 +41,8 @@ int main() {
          double bspline4_value = w_Bspline4(std::abs(x), r);
          double bspline5_value = w_Bspline5(std::abs(x), r);
          double wendland_value = w_Wendland(std::abs(x), r);
-         output << x << " " << bspline3_value << " " << bspline5_value << " " << bspline4_value << " " << wendland_value << std::endl;
+         double spike_value = w_Spiky(std::abs(x), r);
+         output << x << " " << bspline3_value << " " << bspline5_value << " " << bspline4_value << " " << wendland_value << " " << spike_value << std::endl;
       }
       output.close();
    }
@@ -84,7 +85,7 @@ int main() {
       const double total_volume = std::pow(2 * radius, 3);
       const double each_volume = std::pow(2 * radius / N, 3);
 
-      std::array<double, 3> X, sum_grad_3, sum_grad_5, sum_grad_4, sum_grad_W;
+      std::array<double, 3> X, sum_grad_3, sum_grad_5, sum_grad_4, sum_grad_W, sum_grad_spike;
       // Iterate through x, y, z in the subdivided space
       for (const auto &x : Subdivide({-radius, radius}, N))
          for (const auto &y : Subdivide({-radius, radius}, N))
@@ -100,6 +101,7 @@ int main() {
                sum_grad_4 += grad_w_Bspline4(A, X, radius) * each_volume;
                sum_grad_5 += grad_w_Bspline5(A, X, radius) * each_volume;
                sum_grad_W += grad_w_Wendland(A, X, radius) * each_volume;
+               sum_grad_spike += grad_w_Spiky(A, X, radius) * each_volume;
             }
 
       Print("Output the sums for each N value");
@@ -108,10 +110,12 @@ int main() {
                 << Blue << " sum5 = " << w << p << sum5
                 << Yellow << " sum4 = " << w << p << sum4
                 << Green << " sumW = " << w << p << sumW
+                << Magenta << " sum_spike = " << w << p << sumW
                 << Red << " sum_grad_3 = " << w << p << sum_grad_3
                 << Blue << " sum_grad_5 = " << w << p << sum_grad_5
                 << Yellow << " sum_grad_4 = " << w << p << sum_grad_4
                 << Green << " sum_grad_W = " << w << p << sum_grad_W
+                << Magenta << " sum_grad_spike = " << w << p << sum_grad_spike
                 << colorOff << std::endl;
    }
    return 0;

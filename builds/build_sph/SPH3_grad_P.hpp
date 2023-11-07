@@ -31,55 +31,39 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #pragma omp single nowait
       {
          A->gradP_SPH.fill(0.);
-         const auto AX = USE_NEXT_POSITION ? X_next(A) : A->X;
-         const double r = USE_NEXT_POSITION ? A->SML_next() : A->SML();
          // A->grad_corr_M.fill({0., 0., 0.});
-         auto add_gradP_SPH_Where = [&](const auto &B) {
-            const auto BX = USE_NEXT_POSITION ? X_next(B) : B->X;
-
-            // if (A->isSurface || (!A->isSurface )) {
+         auto add_gradP_SPH = [&](const auto &B) {
             //\label{SPH:gradP1}
 
-            auto c = A->rho * B->mass;
+            auto c = rho_next(B) * B->mass;
 
-            if (A->isAuxiliary && B->isSurface)
-               return;  // c=0
-            else if (A->isSurface && B->isAuxiliary)
-               return;  // c=0
-            else if (A->isAuxiliary)
-               c *= 1;
-            else if (A->isSurface)
-               c *= 1;
-            else if (!A->isSurface) {
-               const double a = 0.1;
-               if (B->isSurface)
-                  c *= (1 - a);
-               else if (B->isAuxiliary)
-                  c *= a;
-            }
+            // const double a = 0.5;
+            // if (A->isSurface) {
+            //    if (B->isAuxiliary) {
+            //       c *= a;
+            //    }
+            // } else if (!A->isSurface) {
+            //    if (B->isSurface && !B->isAuxiliary) {
+            //       c *= (1 - a);
+            //    } else if (B->isSurface && B->isAuxiliary) {
+            //       c *= a;
+            //    }
+            // }
 
-            auto grad = USE_NEXT_POSITION ? grad_w_Bspline_next(A, B) : grad_w_Bspline(A, B);
-            A->gradP_SPH += B->p_SPH * (c / std::pow(B->rho, 2)) * grad;
-            A->gradP_SPH += A->p_SPH * (c / std::pow(A->rho, 2)) * grad;
+            // if ((A->isAuxiliary && B->isSurface) || (A->isSurface && B->isAuxiliary))
+            //    return;  // c=0
+
+            // if (B->isSurface) {
+            //    c *= 0.5;
+            // } else if (B->isSurface) {
+            //    c *= 0.5;
+            // }
+
+            auto grad = grad_w_Bspline_next(A, B);
+            A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
+            A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
             //
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad;  //\label{SPH:gradP2}
-
-            //%鏡写しにした分
-            if (A->isNotSurfaceButNearSurface && B->isSurface) {
-               auto X = Mirror(AX, BX, BX - AX);
-               auto c = A->rho * A->mass;
-               auto grad = USE_NEXT_POSITION ? grad_w_Bspline_next(A, X) : grad_w_Bspline(A, X);
-               A->gradP_SPH += A->p_SPH * (c / std::pow(A->rho, 2)) * grad;
-               A->gradP_SPH += A->p_SPH * (c / std::pow(A->rho, 2)) * grad;
-               // auto X = Mirror(pO_x, BX, pO_x - BX);
-               // auto Aij = 2. * B->volume * Dot_grad_w_Bspline_Dot(pO_x, BX, r, USE_NEXT_POSITION ? pO->inv_grad_corr_M_next : pO->inv_grad_corr_M);
-               // ROW->increment(pO, Aij);
-               // ROW->increment(B, -Aij);
-               // ROW->PoissonRHS += B->volume * Dot(B->b_vector - pO->b_vector, grad_w_Bspline(pO_x, X, r, USE_NEXT_POSITION ? pO->inv_grad_corr_M_next : pO->inv_grad_corr_M));
-               // sum_Aij_Pj += Aij * B->p_SPH;
-               // sum_Aij += Aij;
-            }
-            //%
 
             // A->gradP_SPH += B->mass / A->rho * (B->p_SPH + A->p_SPH) * grad_w_Bspline(A->X, X, A->SML());  //\label{SPH:gradP1}
             // A->grad_corr_M += B->volume * TensorProduct(X - A->X, grad_w_Bspline(A->X, X, A->SML()));
@@ -122,9 +106,9 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             //\label{SPH:gradP3}は，Aij = 4*.. さらに，X_next以外の_nextを使う．しかし，実際は密度は一定とすると，0.457
          };
 
-         auto add_gradP_SPH = [&](const auto &B) {
-            return add_gradP_SPH_Where(B);
-         };
+         // auto add_gradP_SPH = [&](const auto &B) {
+         //    return add_gradP_SPH_Where(B);
+         // };
 
          // networkPoint *closest_surface_point = nullptr;
          // double min_distance = 1e10, distance;
@@ -135,9 +119,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //    A->gradP_SPH += A->rho * A->mass * (A->p_SPH / (A->rho * A->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(A->X, X, A->SML());  //\label{SPH:gradP1}
          // }
 
+         const double r = A->SML_next();
          for (const auto &net : target_nets) {
-            net->BucketPoints.apply(A->X, 1.2 * r, [&](const auto &B) {
-               if (B->isCaptured) {
+            net->BucketPoints.apply(A->X, 1.1 * r, [&](const auto &B) {
+               if (canInteract(A, B) && A != B) {
                   add_gradP_SPH(B);
                   // if (B->isSurface) {
                   //    if ((distance = Distance(A->X, X_next(B))) < min_distance) {
@@ -177,8 +162,15 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       }
 
       for (const auto &A : points) {
-         // if (!A->isSurface && !A->isAuxiliary)
-         A->DUDt_SPH -= A->gradP_SPH / A->rho;
+         if (A->isAuxiliary)
+            A->surfacePoint->gradP_SPH = A->gradP_SPH;
+      }
+
+      for (const auto &A : points) {
+         A->DUDt_SPH -= A->gradP_SPH / rho_next(A);
+
+         // else
+         //    A->DUDt_SPH.fill(0.);
          // else if (A->isAuxiliary) {
          //    {
          //       //
@@ -195,6 +187,12 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          //    }
          // }
       }
+
+      // for (const auto &A : points)
+      //    if (A->isAuxiliary) {
+      //       A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
+      //    }
+
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in gradP");
    };

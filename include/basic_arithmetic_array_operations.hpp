@@ -132,23 +132,52 @@ constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator-
    return arr;
 }
 // value - 1d array
-template <size_t N, typename T, typename TT>
-constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>> operator-(const TT& d, std::array<T, N> arr /*copy*/) noexcept {
-   for (auto& a : arr) a = d - a;
+template <size_t N, typename T>
+constexpr std::enable_if_t<!is_std_array<T>::value, std::array<T, N>> operator-(const T& d, std::array<T, N> arr /*copy*/) noexcept {
+   for (auto& a : arr)
+      a = d - a;
    return arr;
 }
 // 1d array - 1d array
 template <size_t N, typename T, typename TT>
 constexpr std::array<T, N> operator-(std::array<T, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept { return arr -= ARR; }
+
 // 2d array - 1d array
 template <size_t N, size_t M, typename T, typename TT>
 constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<std::array<T, M>, N>> operator-(std::array<std::array<T, M>, N> arr /*copy*/, const std::array<TT, N>& ARR) noexcept { return arr -= ARR; }
+
 // 1d array - 2d array
 template <size_t N, size_t M, typename T, typename TT>
-constexpr std::array<std::array<T, M>, N> operator-(const std::array<TT, N>& ARR, std::array<std::array<T, M>, N> arr /*copy*/) noexcept {
-   for (auto i = 0; auto& a : arr) a = ARR[i++] - a;
+constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<std::array<T, M>, N>> operator-(const std::array<TT, N>& ARR, std::array<std::array<T, M>, N> arr /*copy*/) noexcept {
+   for (auto i = 0; auto& a : arr)
+      a = ARR[i++] - a;
    return arr;
 }
+
+template <size_t N, size_t M, typename T, typename TT>
+constexpr std::enable_if_t<!is_std_array<T>::value && !is_std_array<TT>::value, std::array<std::array<TT, M>, N>> operator-(const std::array<std::array<TT, M>, N>& ARR, const std::array<std::array<T, M>, N>& arr) noexcept {
+   std::array<std::array<TT, M>, N> result{};
+   for (size_t i = 0; i < N; ++i) {
+      for (size_t j = 0; j < M; ++j) {
+         result[i][j] = ARR[i][j] - arr[i][j];
+      }
+   }
+   return result;
+}
+
+template <size_t N0, size_t N1, size_t N2, typename T, typename TT>
+constexpr std::enable_if_t<!is_std_array<T>::value && !is_std_array<TT>::value, std::array<std::array<std::array<TT, N2>, N1>, N0>> operator-(const std::array<std::array<std::array<TT, N2>, N1>, N0>& ARR, const std::array<std::array<std::array<T, N2>, N1>, N0>& arr) noexcept {
+   std::array<std::array<std::array<TT, N2>, N1>, N0> result{};
+   for (size_t i = 0; i < N0; ++i) {
+      for (size_t j = 0; j < N1; ++j) {
+         for (size_t k = 0; k < N2; ++k) {
+            result[i][j][k] = ARR[i][j][k] - arr[i][j][k];
+         }
+      }
+   }
+   return result;
+}
+
 /* ----------------------------- multiplication ----------------------------- */
 // 1d array *= value
 template <size_t N, typename T, typename TT>
@@ -389,17 +418,39 @@ constexpr auto MinMaxColumns(const std::vector<std::array<T, N>>& vec_arr) noexc
 }
 
 template <size_t N, typename T>
-constexpr T Total(const std::array<T, N>& arr) noexcept {
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+Total(const std::array<T, N>& arr) noexcept {
    T ret = 0;
-   std::ranges::for_each(arr, [&ret](const auto& a) { ret += a; });
+   for (const auto& a : arr) ret += a;
+   return ret;
+}
+
+template <size_t N0, size_t N1, typename T>
+constexpr std::array<T, N1> Total(const std::array<std::array<T, N1>, N0>& arr) noexcept {
+   std::array<T, N1> ret{};
+   for (size_t i = 0; i < N0; ++i) {
+      for (size_t j = 0; j < N1; ++j) {
+         ret[j] += arr[i][j];
+      }
+   }
    return ret;
 }
 
 /* -------------------------------------------------------------------------- */
 
 template <typename T, size_t N1, size_t N2>
-constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1>& vec1,
-                                                          const std::array<T, N2>& vec2) noexcept {
+constexpr std::array<std::array<T, N2>, N1> TensorProduct(T scalar, const std::array<std::array<T, N2>, N1>& matrix) noexcept {
+   std::array<std::array<T, N2>, N1> result;
+   for (size_t i = 0; i < N1; ++i) {
+      for (size_t j = 0; j < N2; ++j) {
+         result[i][j] = scalar * matrix[i][j];
+      }
+   }
+   return result;
+}
+
+template <typename T, size_t N1, size_t N2>
+constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1>& vec1, const std::array<T, N2>& vec2) noexcept {
    std::array<std::array<T, N2>, N1> ret{};
    for (size_t m = 0; m < N1; ++m) {
       for (size_t j = 0; j < N2; ++j) {
@@ -408,6 +459,27 @@ constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1
    }
    return ret;
 }
+
+// Base case for scalar and vector
+template <typename T, std::size_t N>
+constexpr auto TensorProduct(const T scalar, const std::array<T, N>& vec) noexcept {
+   std::array<T, N> result;
+   for (std::size_t i = 0; i < N; ++i) {
+      result[i] = scalar * vec[i];
+   }
+   return result;
+}
+
+// Recursive case for tensors
+template <typename T, std::size_t N, typename... Arrays>
+constexpr auto TensorProduct(const std::array<T, N>& tensor1, const Arrays&... tensors) noexcept {
+   std::array<decltype(TensorProduct(tensor1[0], tensors...)), N> result;
+   for (std::size_t i = 0; i < N; ++i) {
+      result[i] = TensorProduct(tensor1[i], tensors...);
+   }
+   return result;
+}
+
 /* -------------------------------------------------------------------------- */
 
 template <typename T, size_t N>
@@ -420,7 +492,8 @@ Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
 }
 
 template <typename T, size_t N0, size_t N1, size_t N2>
-constexpr std::array<std::array<T, N2>, N1> Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<std::array<T, N2>, N0>& ARR) noexcept {
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<T, N2>, N1>>::type
+Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<std::array<T, N2>, N0>& ARR) noexcept {
    std::array<std::array<T, N2>, N1> ret{};
    for (size_t i = 0; i < N1; ++i) {
       for (size_t j = 0; j < N2; ++j) {
@@ -434,6 +507,34 @@ constexpr std::array<std::array<T, N2>, N1> Dot(const std::array<std::array<T, N
    return ret;
 }
 
+template <size_t N, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, void>::type
+Fill(std::array<T, N>& arr, const T d) noexcept {
+   for (auto& a : arr)
+      a = d;
+}
+
+template <size_t N0, size_t N1, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, void>::type
+Fill(std::array<std::array<T, N1>, N0>& arr, const T d) noexcept {
+   for (auto& a : arr)
+      Fill(a, d);
+}
+
+template <size_t N0, size_t N1, size_t N2, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, void>::type
+Fill(std::array<std::array<std::array<T, N2>, N1>, N0>& arr, const T d) noexcept {
+   for (auto& a : arr)
+      Fill(a, d);
+}
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, void>::type
+Fill(std::array<std::array<std::array<std::array<T, N3>, N2>, N1>, N0>& arr, const T d) noexcept {
+   for (auto& a : arr)
+      Fill(a, d);
+}
+/* -------------------------------------------------------------------------- */
 template <size_t N0, size_t N1, typename T>
 constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<T, N1>, N0>& ARRARR) noexcept {
    /*
@@ -455,15 +556,119 @@ constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<s
    return ret;
 }
 
-template <size_t N0, size_t N1, typename T>
-constexpr std::array<T, N1> Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<T, N0>& ARR) noexcept {
-   /*
-   {{A0,A1,A2},{B0,B1,B2},{C0,C1,C2},{D0,D1,D2}}.{a,b,c}={a*A0+b*A1+c*A2,a*B0+b*B1+c*B2,a*C0+b*C1+c*C2,a*D0+b*D1+c*D2}
-   */
-   std::array<T, N1> ret;
-   for_each(ret, arr, [&](auto& r, auto& ar) { r = Dot(ar, ARR); });
+template <size_t N0, size_t N1, size_t N2, typename T>
+constexpr std::array<std::array<T, N2>, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<std::array<T, N2>, N1>, N0>& ARRARR) noexcept {
+   std::array<std::array<T, N2>, N1> ret = {};
+   for (int i = 0; const auto& ARR : ARRARR) {
+      for (size_t j = 0; j < N1; ++j)
+         ret[j] += arr[i] * ARR[j];
+      i++;
+   }
    return ret;
 }
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, typename T>
+constexpr std::array<std::array<std::array<T, N3>, N2>, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<std::array<std::array<T, N3>, N2>, N1>, N0>& ARRARR) noexcept {
+   std::array<std::array<std::array<T, N3>, N2>, N1> ret = {};
+   for (int i = 0; const auto& ARR : ARRARR) {
+      for (size_t j = 0; j < N1; ++j)
+         ret[j] += arr[i] * ARR[j];
+      i++;
+   }
+   return ret;
+}
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, size_t N4, typename T>
+constexpr std::array<std::array<std::array<std::array<T, N4>, N3>, N2>, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<std::array<std::array<std::array<T, N4>, N3>, N2>, N1>, N0>& ARRARR) noexcept {
+   std::array<std::array<std::array<std::array<T, N4>, N3>, N2>, N1> ret = {};
+   for (int i = 0; const auto& ARR : ARRARR) {
+      for (size_t j = 0; j < N1; ++j)
+         ret[j] += arr[i] * ARR[j];
+      i++;
+   }
+   return ret;
+}
+
+/* -------------------------------------------------------------------------- */
+
+template <size_t N0, size_t N1, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<T, N0>>::type
+Dot(const std::array<std::array<T, N1>, N0>& AA, const std::array<T, N1>& arr) noexcept {
+   std::array<T, N0> ret = {};
+   for (int i = 0; const auto& A : AA) {
+      ret[i] = Dot(A, arr);
+      i++;
+   }
+   return ret;
+}
+
+template <size_t N0, size_t N1, size_t N2, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<T, N1>, N0>>::type
+Dot(const std::array<std::array<std::array<T, N2>, N1>, N0>& AAA, const std::array<T, N2>& arr) noexcept {
+   std::array<std::array<T, N1>, N0> ret = {};
+   for (int i = 0; const auto& AA : AAA) {
+      for (int j = 0; const auto& A : AA) {
+         ret[i][j] = Dot(A, arr);
+         j++;
+      }
+      i++;
+   }
+   return ret;
+}
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<std::array<T, N3>, N1>, N0>>::type
+Dot(const std::array<std::array<std::array<T, N2>, N1>, N0>& AAA, const std::array<std::array<T, N3>, N2>& arr) noexcept {
+   std::array<std::array<std::array<T, N3>, N1>, N0> ret = {};
+   for (int i = 0; const auto& AA : AAA) {
+      for (int j = 0; const auto& A : AA) {
+         ret[i][j++] = Dot(A, arr);
+      }
+      i++;
+   }
+   return ret;
+}
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, size_t N4, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<std::array<std::array<T, N4>, N3>, N1>, N0>>::type
+Dot(const std::array<std::array<std::array<T, N2>, N1>, N0>& AAA, const std::array<std::array<std::array<T, N4>, N3>, N2>& arr) noexcept {
+   std::array<std::array<std::array<std::array<T, N4>, N3>, N1>, N0> ret = {};
+   for (int i = 0; const auto& AA : AAA) {
+      for (int j = 0; const auto& A : AA) {
+         ret[i][j++] = Dot(A, arr);
+      }
+      i++;
+   }
+   return ret;
+}
+
+template <size_t N0, size_t N1, size_t N2, size_t N3, typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<std::array<T, N2>, N1>, N0>>::type
+Dot(const std::array<std::array<std::array<std::array<T, N3>, N2>, N1>, N0>& AAAA, const std::array<T, N3>& arr) noexcept {
+   std::array<std::array<std::array<T, N2>, N1>, N0> ret = {};
+   for (int i = 0; const auto& AAA : AAAA) {
+      for (int j = 0; const auto& AA : AAA) {
+         for (int k = 0; const auto& A : AA) {
+            ret[i][j][k] = Dot(A, arr);
+            k++;
+         }
+         j++;
+      }
+      i++;
+   }
+   return ret;
+}
+
+/* -------------------------------------------------------------------------- */
+// template <size_t N0, size_t N1, typename T>
+// constexpr std::array<T, N1> Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<T, N0>& ARR) noexcept {
+//    /*
+//    {{A0,A1,A2},{B0,B1,B2},{C0,C1,C2},{D0,D1,D2}}.{a,b,c}={a*A0+b*A1+c*A2,a*B0+b*B1+c*B2,a*C0+b*C1+c*C2,a*D0+b*D1+c*D2}
+//    */
+//    std::array<T, N1> ret;
+//    for_each(ret, arr, [&](auto& r, auto& ar) { r = Dot(ar, ARR); });
+//    return ret;
+// }
 
 template <typename... Ts, typename... Is, size_t... Indices>
 constexpr void ToArrayImpl(const std::tuple<Ts...>& tup, std::array<std::common_type_t<Ts...>, sizeof...(Ts)>& arr, std::index_sequence<Indices...>) noexcept {
@@ -499,12 +704,25 @@ constexpr std::array<T, N> ToArray(const std::array<T, N>& arr) noexcept { retur
 
 template <size_t N, typename T>
 constexpr T NormSquared(const std::array<T, N>& arr) noexcept {
-   return std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); });
+   T sum = {};
+   for (const auto& a : arr)
+      sum += a * a;
+   return sum;
 }
 
 template <size_t N, typename T>
 constexpr T Norm(const std::array<T, N>& arr) noexcept {
-   return std::sqrt(std::reduce(arr.begin(), arr.end(), static_cast<T>(0), [](T sum, const auto& a) { return std::fma(a, a, sum); }));
+   return std::sqrt(Dot(arr, arr));
+}
+
+template <size_t N, size_t M, typename T>
+constexpr auto Norm(const std::array<std::array<T, M>, N>& mat) noexcept {
+   //$ Mathematica implementation returns the maximum of the singular values of the matrix, which is not the same as the Frobenius norm implemented here.
+   static_assert(!std::is_array_v<T>, "Norm is not defined for arrays deeper than 2 dimensions.");
+   T sum = {};
+   for (const auto& row : mat)
+      sum += NormSquared(row);
+   return std::sqrt(sum);
 }
 
 template <size_t N, typename T>
@@ -514,6 +732,10 @@ constexpr std::array<T, N> Normalize(std::array<T, N> arr) noexcept {
    auto c = (norm == static_cast<T>(0)) ? static_cast<T>(1) : static_cast<T>(1) / norm;
    std::ranges::transform(arr, arr.begin(), [&c](T a) { return a * c; });
    return arr;
+}
+
+constexpr double Norm(const double value) noexcept {
+   return std::abs(value);
 }
 
 template <size_t M = 0, size_t N, typename T>

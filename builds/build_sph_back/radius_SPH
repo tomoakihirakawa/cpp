@@ -1,0 +1,409 @@
+input_directory : ./input_files/Lobovsky2013_PS0d015_CSML2d7_RK1/
+[1;31m                          CSML : {2.7}[0m
+[1;31m                      RK_order : {1}[0m
+[1;31m                      end_time : {1}[0m
+[1;31m                 end_time_step : {20000}[0m
+[1;31m    initial_surface_z_position : {0.6}[0m
+[1;31m                   input_files : {wavetank.json,water.json,gate.json,sensor1.json,sensor2.json,sensor2L.json,sensor3.json,sensor4.json}[0m
+[1;31m                        max_dt : {0.0005}[0m
+[1;31m              output_directory : {/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1}[0m
+[1;31m              particle_spacing : {0.015}[0m
+copy input directory and files
+minDepth = 1
+maxDepth = 5
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+load /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/tank.obj
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/tank.obj is opened[0m
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/tank.obj is closed[0m
+１バケット幅 = 0.0218016
+バウンド = {{-0.15,1.76},{-0.15,0.3},{-0.15,0.8}}
+サイズ = {88,21,44}
+/* -------------------------------------------------------------------------- */[0m
+[1;35m        this->getName(): wavetank, 0x15000a000
+[1;35m           Lines.size(): 42
+[1;35m          Points.size(): 16
+[1;35m           Faces.size(): 28
+[1;35m           this->bounds: {{-0.15,1.76},{-0.15,0.3},{-0.15,0.8}}
+[1;32m                              0     1     2     3     4     5     6     7     8     9    10    11    12    13    14
+[1;35m       Lines of points :      0     0     0     0     4     6     4     2     0     0     0     0     0     0     0
+[1;35m   Connection of faces :      0     0    42[1;34m 全ての線が2つの面と接続しているため，格子は閉じた面を形成している[0m[0m
+/* -------------------------------------------------------------------------- */[0m
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+wavetankgenOctreeOfFaces({1,5}, 1)wavetank->octreeOfFaces->deleteOuside()
+wavetank->octreeOfFaces->setNeighbors()
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+load /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/waterH0d3.obj
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/waterH0d3.obj is opened[0m
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/waterH0d3.obj is closed[0m
+１バケット幅 = 0.00687386
+バウンド = {{0,0.6},{0,0.15},{0,0.3}}
+サイズ = {88,22,44}
+/* -------------------------------------------------------------------------- */[0m
+[1;35m        this->getName(): water, 0x147837c00
+[1;35m           Lines.size(): 18
+[1;35m          Points.size(): 8
+[1;35m           Faces.size(): 12
+[1;35m           this->bounds: {{0,0.6},{0,0.15},{0,0.3}}
+[1;32m                              0     1     2     3     4     5     6     7     8     9    10    11    12    13    14
+[1;35m       Lines of points :      0     0     0     0     4     4     0     0     0     0     0     0     0     0     0
+[1;35m   Connection of faces :      0     0    18[1;34m 全ての線が2つの面と接続しているため，格子は閉じた面を形成している[0m[0m
+/* -------------------------------------------------------------------------- */[0m
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+watergenOctreeOfFaces({1,5}, 1)water->octreeOfFaces->deleteOuside()
+water->octreeOfFaces->setNeighbors()
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+load /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/gate.obj
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/gate.obj is opened[0m
+[1;34m/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Lobovsky2013/original/gate.obj is closed[0m
+１バケット幅 = 0.00820061
+バウンド = {{0.6,0.7},{0,0.15},{0,0.8}}
+サイズ = {13,19,98}
+/* -------------------------------------------------------------------------- */[0m
+[1;35m        this->getName(): gate, 0x137808600
+[1;35m           Lines.size(): 18
+[1;35m          Points.size(): 8
+[1;35m           Faces.size(): 12
+[1;35m           this->bounds: {{0.6,0.7},{0,0.15},{0,0.8}}
+[1;32m                              0     1     2     3     4     5     6     7     8     9    10    11    12    13    14
+[1;35m       Lines of points :      0     0     0     0     4     4     0     0     0     0     0     0     0     0     0
+[1;35m   Connection of faces :      0     0    18[1;34m 全ての線が2つの面と接続しているため，格子は閉じた面を形成している[0m[0m
+/* -------------------------------------------------------------------------- */[0m
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+gategenOctreeOfFaces({1,5}, 1)gate->octreeOfFaces->deleteOuside()
+gate->octreeOfFaces->setNeighbors()
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+１バケット幅 = 1
+バウンド = {{0,0},{0,0},{0,0}}
+サイズ = {0,0,0}
+file name is not given
+１バケット幅 = 0.015
+バウンド = {{-0.615,2.22},{-0.25125,0.40125},{-0.375,1.02}}
+サイズ = {189,44,94}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.6275,2.2375},{-0.2625,0.4125},{-0.3875,1.0375}}
+サイズ = {191,45,96}
+wavetank, BucketFaces.setVector() done
+[1;33mwavetank makeBucketFaces[1;34m
+Elapsed time: [1;31m{4.0381,4.0381}[0m s
+１バケット幅 = 0.015
+バウンド = {{-0.13875,0.73875},{-0.02625,0.17625},{-0.06375,0.36375}}
+サイズ = {59,14,29}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.15,0.75},{-0.0375,0.1875},{-0.075,0.375}}
+サイズ = {60,15,30}
+water, BucketFaces.setVector() done
+[1;33mwater makeBucketFaces[1;34m
+Elapsed time: [1;31m{0.892372,4.93048}[0m s
+１バケット幅 = 0.015
+バウンド = {{0.585,0.72},{-0.02625,0.17625},{-0.1875,0.9825}}
+サイズ = {10,14,78}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{0.575,0.725},{-0.0375,0.1875},{-0.2,1}}
+サイズ = {11,15,81}
+gate, BucketFaces.setVector() done
+[1;33mgate makeBucketFaces[1;34m
+Elapsed time: [1;31m{0.156018,5.08649}[0m s
+WaveTank->getPoints().size()=183320
+WaveTank->getPoints().size()=8000
+WaveTank->getPoints().size()=3710
+１バケット幅 = 0.015
+バウンド = {{-0.13875,0.73875},{-0.02625,0.17625},{-0.06375,0.36375}}
+サイズ = {59,14,29}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.615,2.22},{-0.25125,0.40125},{-0.375,1.02}}
+サイズ = {189,44,94}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{0.585,0.72},{-0.02625,0.17625},{-0.1875,0.9825}}
+サイズ = {10,14,78}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+[1;32mバケットの生成[1;34m
+Elapsed time: [1;31m{0.129525,0.129525}[0m s
+dt = 5e-06
+[1;32msetWall[1;34m
+Elapsed time: [1;31m{0.37683,0.506355}[0m s
+[1;32msetFreeSurface[1;34m
+Elapsed time: [1;31m{0.276332,0.782687}[0m s
+DT = 5e-06
+[1;32m∇.∇UとU*を計算[1;34m
+Elapsed time: [1;31m{0.043905,0.826592}[0m s
+[1;32mポアソン方程式を立てる[1;34m
+Elapsed time: [1;31m{0.216896,1.04349}[0m s
+ gm.err : 0.456666
+actual error : 0.456666
+done
+ gm.err : 0.0013614
+actual error : 0.0013614
+done
+ gm.err : 7.2008e-06
+actual error : 0.0013614
+destucting gmres
+destucting ArnoldiProcess
+[1;32m圧力 p^n+1の計算[1;34m
+Elapsed time: [1;31m{0.80024,1.84373}[0m s
+[1;32m圧力勾配∇Pを計算 & DU/Dtの計算[1;34m
+Elapsed time: [1;31m{0.003452,1.84718}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{3e-06,1.84718}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{0.004039,1.85122}[0m s
+[1;32m１タイムステップ終了[1;34m
+Elapsed time: [1;31m{4e-06,1.85123}[0m s
+simulation_time = 5e-06
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/water_particle.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/water_particle.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/wavetank_particle.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/wavetank_particle.pvd ...[0m
+プローブ出力
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor1.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor1.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor2.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor2.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor2L.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor2L.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor3.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor3.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor4.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/sensor4.pvd ...[0m
+オブジェクト出力
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/wavetank_polygon.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/wavetank_polygon.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/water_polygon.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/water_polygon.pvd ...[0m
+[1;35m/Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/gate_polygon.pvd
+Creating /Users/tomoaki/SPH/Lobovsky2013_PS0d015_CSML2d7_RK1const/gate_polygon.pvd ...[0m
+１バケット幅 = 0.015
+バウンド = {{-0.13875,0.73875},{-0.02625,0.17625},{-0.06375,0.36375}}
+サイズ = {59,14,29}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.615,2.22},{-0.25125,0.40125},{-0.375,1.02}}
+サイズ = {189,44,94}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{0.585,0.72},{-0.02625,0.17625},{-0.1875,0.9825}}
+サイズ = {10,14,78}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+[1;32mバケットの生成[1;34m
+Elapsed time: [1;31m{0.135912,0.135912}[0m s
+dt = 5e-06
+[1;32msetWall[1;34m
+Elapsed time: [1;31m{0.377931,0.513843}[0m s
+[1;32msetFreeSurface[1;34m
+Elapsed time: [1;31m{0.416501,0.930344}[0m s
+DT = 5e-06
+[1;32m∇.∇UとU*を計算[1;34m
+Elapsed time: [1;31m{0.043373,0.973717}[0m s
+[1;32mポアソン方程式を立てる[1;34m
+Elapsed time: [1;31m{0.282138,1.25586}[0m s
+ gm.err : 0.0132085
+actual error : 0.0132085
+done
+ gm.err : 2.95637e-05
+actual error : 2.95637e-05
+done
+ gm.err : 3.17249e-08
+actual error : 2.95637e-05
+destucting gmres
+destucting ArnoldiProcess
+[1;32m圧力 p^n+1の計算[1;34m
+Elapsed time: [1;31m{0.793578,2.04943}[0m s
+[1;32m圧力勾配∇Pを計算 & DU/Dtの計算[1;34m
+Elapsed time: [1;31m{0.003316,2.05275}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{2e-06,2.05275}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{0.00327,2.05602}[0m s
+[1;32m１タイムステップ終了[1;34m
+Elapsed time: [1;31m{3e-06,2.05602}[0m s
+simulation_time = 1e-05
+１バケット幅 = 0.015
+バウンド = {{-0.13875,0.73875},{-0.02625,0.17625},{-0.06375,0.36375}}
+サイズ = {59,14,29}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.615,2.22},{-0.25125,0.40125},{-0.375,1.02}}
+サイズ = {189,44,94}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{0.585,0.72},{-0.02625,0.17625},{-0.1875,0.9825}}
+サイズ = {10,14,78}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+[1;32mバケットの生成[1;34m
+Elapsed time: [1;31m{0.138035,0.138035}[0m s
+dt = 5e-06
+[1;32msetWall[1;34m
+Elapsed time: [1;31m{0.379648,0.517683}[0m s
+[1;32msetFreeSurface[1;34m
+Elapsed time: [1;31m{0.465322,0.983005}[0m s
+DT = 5e-06
+[1;32m∇.∇UとU*を計算[1;34m
+Elapsed time: [1;31m{0.043163,1.02617}[0m s
+[1;32mポアソン方程式を立てる[1;34m
+Elapsed time: [1;31m{0.279253,1.30542}[0m s
+ gm.err : 0.0141676
+actual error : 0.0141676
+done
+ gm.err : 3.44153e-05
+actual error : 3.44153e-05
+done
+ gm.err : 1.44181e-07
+actual error : 3.44153e-05
+destucting gmres
+destucting ArnoldiProcess
+[1;32m圧力 p^n+1の計算[1;34m
+Elapsed time: [1;31m{0.810056,2.11548}[0m s
+[1;32m圧力勾配∇Pを計算 & DU/Dtの計算[1;34m
+Elapsed time: [1;31m{0.003357,2.11883}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{2e-06,2.11884}[0m s
+[1;32m粒子の時間発展[1;34m
+Elapsed time: [1;31m{0.003249,2.12209}[0m s
+[1;32m１タイムステップ終了[1;34m
+Elapsed time: [1;31m{4e-06,2.12209}[0m s
+simulation_time = 1.5e-05
+１バケット幅 = 0.015
+バウンド = {{-0.13875,0.73875},{-0.02625,0.17625},{-0.06375,0.36375}}
+サイズ = {59,14,29}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{-0.615,2.22},{-0.25125,0.40125},{-0.375,1.02}}
+サイズ = {189,44,94}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+１バケット幅 = 0.015
+バウンド = {{0.585,0.72},{-0.02625,0.17625},{-0.1875,0.9825}}
+サイズ = {10,14,78}
+no_name, resize done
+no_name, all points are added
+no_name, BucketPoints.setVector() done
+[1;32mバケットの生成[1;34m
+Elapsed time: [1;31m{0.125145,0.125145}[0m s
+dt = 5e-06

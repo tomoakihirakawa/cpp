@@ -171,6 +171,17 @@ std::vector<T> Diagonal(const std::vector<std::vector<T>> &A) {
    return ret;
 }
 
+// Tr = trace(M) = M_ii
+
+template <std::size_t N_ROW, std::size_t N_COL, typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+T Tr(const std::array<std::array<T, N_COL>, N_ROW> &A) {
+   T ret = 0;
+   for (std::size_t i = 0; i < std::min(N_ROW, N_COL); ++i) {
+      ret += A[i][i];
+   }
+   return ret;
+}
+
 /* ------------------------------------------------------ */
 template <typename T>
 bool IntersectingQ(const std::vector<T> &A, const std::vector<T> &B) {
@@ -525,8 +536,8 @@ VVV_d Transpose(const std::vector<VV_d> &mat) {
 
 VV_d TensorProduct(const V_d &vec1, const V_d &vec2) {
    VV_d ret(vec1.size(), V_d(vec2.size()));
-   for (auto m = 0; m < vec1.size(); m++)
-      for (auto j = 0; j < vec2.size(); j++)
+   for (auto m = 0; m < vec1.size(); ++m)
+      for (auto j = 0; j < vec2.size(); ++j)
          ret[m][j] = vec1[m] * vec2[j];
    return ret;
 };
@@ -955,73 +966,6 @@ bool isFinite(const std::array<std::array<double, M>, N> &v_IN, const double eps
 };
 
 /* ------------------------------------------------------ */
-// template <typename T, std::size_t i>
-// typename std::enable_if<std::tuple_size<T>::value == i, double>::type
-// Total(const T &t) {
-//    return 0.0;
-// }
-
-// template <typename T, std::size_t i>
-// typename std::enable_if<std::is_same<typename std::tuple_element<i, T>::type, double>::value, double>::type
-// Total(const T &t) {
-//    return std::get<i>(t) + Total<T, i + 1>(t);
-// }
-
-// template <typename T, std::size_t i>
-// typename std::enable_if<std::is_same<typename std::tuple_element<i, T>::type, int>::value, int>::type
-// Total(const T &t) {
-//    return std::get<i>(t) + Total<T, i + 1>(t);
-// }
-
-double Total(const T4d &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v) + std::get<3>(v); };
-double Total(const Tddd &v) { return std::get<0>(v) + std::get<1>(v) + std::get<2>(v); };
-double Total(const Tdd &v) { return std::get<0>(v) + std::get<1>(v); };
-
-Tdd Total(const T3Tdd &v) {
-   return {std::get<0>(std::get<0>(v)) + std::get<0>(std::get<1>(v)) + std::get<0>(std::get<2>(v)),
-           std::get<1>(std::get<0>(v)) + std::get<1>(std::get<1>(v)) + std::get<1>(std::get<2>(v))};
-};
-Tddd Total(const T2Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X))),
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X))),
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)))};
-};
-Tddd Total(const T3Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X))),
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X))),
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)))};
-};
-Tddd Total(const T4Tddd &X) {
-   return {(std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X))),
-           (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X))),
-           (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X)))};
-};
-
-Tddd Total(const T8Tddd &X) {
-   return {
-       (std::get<0>(std::get<0>(X)) + std::get<0>(std::get<1>(X)) + std::get<0>(std::get<2>(X)) + std::get<0>(std::get<3>(X)) + std::get<0>(std::get<4>(X)) + std::get<0>(std::get<5>(X)) + std::get<0>(std::get<6>(X)) + std::get<0>(std::get<7>(X))),
-       (std::get<1>(std::get<0>(X)) + std::get<1>(std::get<1>(X)) + std::get<1>(std::get<2>(X)) + std::get<1>(std::get<3>(X)) + std::get<1>(std::get<4>(X)) + std::get<1>(std::get<5>(X)) + std::get<1>(std::get<6>(X)) + std::get<1>(std::get<7>(X))),
-       (std::get<2>(std::get<0>(X)) + std::get<2>(std::get<1>(X)) + std::get<2>(std::get<2>(X)) + std::get<2>(std::get<3>(X)) + std::get<2>(std::get<4>(X)) + std::get<2>(std::get<5>(X)) + std::get<2>(std::get<6>(X)) + std::get<2>(std::get<7>(X)))};
-};
-
-Tddd Total(const std::vector<Tddd> &V) {
-   Tddd ret = {0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
-T4d Total(const std::vector<T4d> &V) {
-   T4d ret = {0, 0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
-T6d Total(const std::vector<T6d> &V) {
-   T6d ret = {0, 0, 0, 0, 0, 0};
-   for (const auto &v : V)
-      ret += v;
-   return ret;
-};
 double Total(const std::vector<double> &V) {
    double ret = 0;
    for (const auto &v : V)

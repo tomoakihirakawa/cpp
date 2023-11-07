@@ -220,8 +220,8 @@ int main(int argc, char **argv) {
          for (const auto &z : vecZ) {
             Tddd xyz = {x, y, z};
             xyz -= closest;
-            xyz += particle_spacing;
-            // xyz += 1E-4;  // std::numbers::pi / 1000.;
+            xyz += particle_spacing / 2.;
+            xyz += particle_spacing * 1E-12;  // std::numbers::pi / 1000.;
             for (const auto &[object, polygon, _] : all_objects) {
                // 優先順位で粒子を配置
                auto [isInside, cell, f] = polygon->isInside_MethodOctree(xyz, particle_spacing * 1E-10);
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
    for (const auto &p : Fluid->getPoints()) {
       // auto rand = RandomRealTddd(-particle_spacing * 1E-14, particle_spacing * 1E-14);
       // p->setX(p->X + rand);
-      p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+      p->setDensityVolume(_WATER_DENSITY_, volume);
       p->setX(p->X);
    }
 
@@ -274,7 +274,11 @@ int main(int argc, char **argv) {
             auto [X, f] = Nearest_(p->X, poly->getFaces());
             // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
             // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
-            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+
+            // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+
+            p->v_to_surface_SPH = p->normal_SPH = X - p->X;
+
             // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + 1E-12) * ps * Normalize(X - p->X);
             p->mirroring_face = f;
          }
@@ -363,7 +367,7 @@ int main(int argc, char **argv) {
       if (end_time < simulation_time)
          break;
 
-      // int N = 10000000;
+      // int N = 100000;
       // if (time_step == N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
@@ -371,7 +375,7 @@ int main(int argc, char **argv) {
       // } else if (time_step < N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_ * 1000.;
+      //          p->mu_SPH = _WATER_MU_10deg_ * 10.;
       // }
 
       // developByEISPH(Fluid, RigidBodies, simulation_time, CSML, particle_spacing, time_step < 50 ? 1E-12 : max_dt);
@@ -381,7 +385,7 @@ int main(int argc, char **argv) {
                      simulation_time,
                      CSML,
                      particle_spacing,
-                     time_step < 50 ? max_dt / 1000 : max_dt,
+                     time_step < 50 ? max_dt / 100 : max_dt,
                      // max_dt,
                      RK_order);
 

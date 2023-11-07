@@ -505,7 +505,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double d_empty_center;
    double pn_SPH;
    bool pn_is_set = false;
-   bool isSurface = false, isSurface_next = false, isNotSurfaceButNearSurface = false;
+   bool isSurface = false, isSurface_next = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
    bool isCaptured = false, isCaptured_ = false;
@@ -534,7 +534,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double &p_SPH = this->pressure_SPH;
    double &p_SPH_ = this->pressure_SPH_;
    double &p_SPH__ = this->pressure_SPH__;
-   double p_EISPH;
+   double p_EISPH = 0, p_SPH_last = 0;
    double dp_SPH, dp_SPH_;
    double p_SPH_SPP;
    double DPDt_SPH;
@@ -557,7 +557,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U, lap_U_, convection_term;
+   Tddd lap_U, lap_U_next, convection_term;
    T3Tddd grad_U;
    T3Tddd Mat1, Mat2, Mat3, Mat_B;
    std::unordered_map<networkPoint *, double> map_p_grad;
@@ -591,7 +591,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
-   double div_U, div_U_, div_tmpU, div_tmpU_, PoissonRHS;
+   double div_U, div_U_next, div_tmpU, div_tmpU_, PoissonRHS;
    Tddd grad_div_U, grad_div_U_;
    Tddd gradP_SPH, gradP_SPH_;
    std::unordered_map<networkPoint *, Tddd> grad_coeff;
@@ -600,7 +600,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    netFp face_org;
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
-   Tddd U_SPH, U_SPH_;
+   Tddd U_SPH, U_SPH_next, U_SPH_, marker_X, marker_U;
+   Tddd U_XSPH, U_XSPH_next;
    InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
    std::vector<double> vec_time_SPH;
@@ -624,7 +625,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
    //
-   std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M;
+   std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M, laplacian_corr_M, laplacian_corr_M_next;
    std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
    Tddd grad_Min_gradM;
    //
@@ -635,32 +636,21 @@ class networkPoint : public CoordinateBounds, public CRS {
    std::array<Tddd, 3> grad_corr_M_next_rigid, inv_grad_corr_M_next_rigid;
    std::array<double, 3> Eigenvalues_of_M_rigid = {0., 0., 0.};
    std::array<double, 3> Eigenvalues_of_M_next_rigid = {0., 0., 0.};
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid = {{ {0., 0., 0.},
-                                                                     {0., 0., 0.},
-                                                                     { 0.,
-                                                                       0.,
-                                                                       0. } }};
-   //
-   std::array<double, 3> Eigenvalues_of_M = {0., 0., 0.};
-   std::array<double, 3> Eigenvalues_of_M1 = {0., 0., 0.};
-
-   //
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = {{ {0, 0, 0},
-                                                               {0, 0, 0},
-                                                               { 0.,
-                                                                 0.,
-                                                                 0. } }};
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M1 = {{ {0., 0., 0.},
-                                                                {0., 0., 0.},
-                                                                { 0.,
-                                                                  0.,
-                                                                  0. } }};
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid;
+   std::array<double, 3> Eigenvalues_of_M, Eigenvalues_of_M1, Eigenvalues_of_M1_next;
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M, Eigenvectors_of_M1, Eigenvectors_of_M_next, Eigenvectors_of_M1_next;
    //
    double var_Eigenvalues_of_M = 0.;
    double min_Eigenvalues_of_M = 0.;
    double var_Eigenvalues_of_M1 = 0.;
    double min_Eigenvalues_of_M1 = 0.;
+   double var_Eigenvalues_of_M1_next = 0.;
    // ダミー粒子としての情報
+
+   std::array<std::array<std::array<std::array<double, 3>, 3>, 3>, 3> v_reeDW, v_reeDW_next;
+   std::array<std::array<std::array<double, 3>, 3>, 3> v_eeDW, v_eeDW_next;
+   std::array<std::array<std::array<double, 3>, 3>, 3> v_rrDW, v_rrDW_next;
+
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH, DUDt_SPH_;
    Tddd DUDt_modify_SPH;
