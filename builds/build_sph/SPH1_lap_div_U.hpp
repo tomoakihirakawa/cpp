@@ -28,130 +28,121 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
          A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = A->checked_points_SPH = 0;
          A->div_U = 0.;
+         A->div_U_next = 0.;
          A->lap_U.fill(0.);
+         A->lap_U_next.fill(0.);
          A->convection_term.fill(0.);
          A->b_vector.fill(0.);
-
+         A->U_XSPH.fill(0.);
          // A->grad_U.fill({0., 0., 0.});
-         double Aij;
+         double Aij, Aij_next;
+         Tddd Uij;
          //
-         auto applyOverPoints = [&](const auto &equation, const auto &pO_x, const std::unordered_set<Network *> NETS) {
+         auto applyOverPoints = [&](const auto &equation) {
             const auto r = A->SML();
-            for (const auto &net : NETS) {
-               net->BucketPoints.apply(pO_x, 1.2 * r, [&](const auto &B) {
-                  if (B->isCaptured)
+            for (const auto &net : target_nets) {
+               net->BucketPoints.apply(A->X, 1.1 * r, [&](const auto &B) {
+                  if (canInteract(A, B))
                      equation(B);
                });
             }
          };
 
+         const double c_xsph = 0.001;
+         double total_w = 0;
          auto add = [&](const auto &B) {
-            const auto Uij = A->U_SPH - B->U_SPH;
-            const auto rij = (A->X - B->X);
-            // A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A->X, B->X, A->SML()));  //\label{SPH:divU}
+            Uij = A->U_SPH - B->U_SPH;
+            auto w = B->volume * w_Bspline(Norm(A->X - B->X), A->SML());
+
+            //
+            if (A->isFluid && B->isFluid) {
+               A->U_XSPH += c_xsph * (-Uij) * w;  //\label{SPH:U_XSPH}
+               total_w += w;
+            }
+            //
             A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));  //\label{SPH:divU}
-            // A->grad_U += B->volume * TensorProduct(-Uij, Dot(grad_w_Bspline(A->X, B->X, A->SML()), A->inv_grad_corr_M));  //\label{SPH:gradU}
-            // Aij = 2. * B->volume * Dot_grad_w_Bspline_Dot(A->X, B->X, A->SML());  //\label{SPH:lapP1}
-            Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);  //\label{SPH:lapP1}
+            Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);          //\label{SPH:lapP1}
 
-            auto UUi = TensorProduct(A->U_SPH, A->U_SPH);
-            auto UUj = TensorProduct(B->U_SPH, B->U_SPH);
-            A->convection_term += -B->volume * Dot(UUi - UUj, grad_w_Bspline(A, B));
-
+            // #if defined(USE_Laplacian_correction)
             //! 修正
-            // applyOverPoints([&](const auto &Q) {
-            //    A->lap_U -= -Uij * Aij * Q->volume * Dot(rij, grad_w_Bspline(A, Q));
-            // },
-            //                 A->X, target_nets);
+            const auto DelX = (A->X - B->X);
+            applyOverPoints([&](const auto &Q) {
+               //
+               for (int i = 0; i < 3; i++)
+                  A->lap_U[i] -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH[i] - A->U_SPH[i]);
+               //
+               // A->lap_U -= Aij * Q->volume * DelX * grad_w_Bspline(A, Q) * (Q->U_SPH - A->U_SPH);
+               // A->lap_U_next -= Aij * V_next(Q) * (Q->U_SPH - A->U_SPH) * Dot(DelX, grad_w_Bspline(A, Q));
+            });
+
+            // const auto DelX = (A->X - B->X);
+            // auto c = Dot(DelX, B->volume * grad_w_Bspline(A, B));
+            // Aij *= (1. + c);
+
             //!
-            // Aij = 2. * B->volume * Dot_grad_w_Bspline_Dot_Modified(A->X, B->X, A->SML(), A->inv_grad_corr_M);  //\label{SPH:lapP1}
+            // #endif
             A->lap_U += Aij * Uij;  //\label{SPH:lapU}
-            // A->lap_U -= Dot(A->X - B->X, A->grad_U);
-            // for (const auto &[p, v] : A->vector_p_grad)
-            //    A->lap_U -= Aij * v * p->U_SPH;
-            // A->lap_U += -8. * B->mass / (A->rho + B->rho) * Dot(Uij, A->X - B->X) / Dot(A->X - B->X, A->X - B->X) * grad_w_Bspline(A->X, B->X, A->SML());  //\label{SPH:lapP2}
+            // A->lap_U_next += Aij_next * Uij;  // Uij_nextはわからないので，Uijで代用
             // just counting
             if (Between(Distance(A, B), {1E-13, A->SML()})) {
                A->checked_points_in_radius_SPH++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH++;
-               // A->gradP_SPH += A->rho * B->mass * (B->p_SPH / (B->rho * B->rho) + A->p_SPH / (A->rho * A->rho)) * grad_w_Bspline(X_next(A), X_next(B), A->SML());  //\label{SPH:gradP1}
-               // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->mass / A->rho * grad_w_Bspline(X_next(A), X_next(B), A->SML());  //\label{SPH:gradP2}
-               // A->gradP_SPH += B->p_SPH * B->mass / B->rho * grad_w_Bspline(X_next(A), X_next(B), A->SML());  //\label{SPH:gradP3}
             }
             A->checked_points_SPH++;
          };
 
-         for (const auto &net : target_nets)
-            net->BucketPoints.apply(A->X, A->SML(), [&](const auto &B) {
-               if (B->isCaptured) add(B);
-            });
+         applyOverPoints(add);
+         // if (total_w > 1E-10)
+         //    A->U_XSPH /= total_w;
+
+         auto add_next = [&](const auto &B) {
+            Uij = U_next(A) - U_next(B);
+            A->div_U_next += V_next(B) * Dot(-Uij, grad_w_Bspline_next(A, B));  //\label{SPH:divU}
+            Aij = 2. * B->volume * Dot_grad_w_Bspline_next(A, B);               //\label{SPH:lapP1}
+            A->lap_U_next += Aij * Uij;                                         //\label{SPH:lapU}
+         };
+
+         applyOverPoints(add_next);
 
          // A->lap_U = Dot(A->Mat_B, A->lap_U);
          //$ ------------------------------------------ */
          // \label{SPH:lapU_for_wall}
          // \label{SPH:Poisson_b_vector}
          if (A->getNetwork()->isRigidBody) {
-            A->DUDt_SPH_.fill(0.);
+            // A->DUDt_SPH_.fill(0.);
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  // 後で修正されるDUDt
+            A->DUDt_SPH += A->U_XSPH / dt;
             A->rho = _WATER_DENSITY_;
             double nu = A->mu_SPH / A->rho;
-            A->DUDt_SPH.fill(0.);
-            A->tmp_U_SPH.fill(0.);
+            // A->DUDt_SPH.fill(0.);
+            // A->tmp_U_SPH.fill(0.);
             A->tmp_X = A->X;
             A->DrhoDt_SPH = 0;
             A->b_vector.fill(0.);
             // if (A->isNeumannSurface)
 
             A->DrhoDt_SPH = -A->rho * A->div_U;
-            // // A->b_vector = A->U_SPH / dt + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;最も自然な結果を返す
-            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U /* + A->rho * _GRAVITY3_*/;  // 最も自然な結果を返す
 
-            // auto rho = A->intp_density;
-            // auto rho = A->rho;
-            // A->b_vector = rho * A->U_SPH / dt + A->mu_SPH * A->lap_U + rho * _GRAVITY3_;  // 最も自然な結果を返す
+            auto rho = A->rho + A->DrhoDt_SPH * dt;
+
+            // A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);                            // 最も自然な結果を返す
+            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U + A->rho * _GRAVITY3_;  // 最も自然な結果を返す
+            A->b_vector += A->rho * A->U_XSPH / dt;
 
          } else {
             A->DUDt_SPH_ = A->DUDt_SPH;
             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + _GRAVITY3_;  // 後で修正されるDUDt
+            A->DUDt_SPH += A->U_XSPH / dt;
 
             A->tmp_U_SPH = A->U_SPH + A->DUDt_SPH * dt;
             A->tmp_X = A->X + A->tmp_U_SPH * dt;
             A->DrhoDt_SPH = -A->rho * A->div_U;
+
             // \label{SPH:how_to_set_fluid_b_vector}
-
-            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U /* + A->rho * _GRAVITY3_*/;
-            // auto rho = A->intp_density;
-            // auto rho = A->rho;
-            // A->b_vector = rho * A->U_SPH / dt + A->mu_SPH * A->lap_U + rho * _GRAVITY3_;
-
-            //          if (A->vec_time_SPH.size() > 10) {
-            // #if defined(USE_RungeKutta)
-            //             double current_time = A->RK_X.get_t();
-            //             double next_time = current_time + A->RK_X.get_dt();
-            // #elif defined(USE_LeapFrog)
-            //             double current_time = A->LPFG_X.get_t();
-            //             double next_time = current_time + dt;
-            // #endif
-
-            //             std::vector<double> times = {next_time, current_time};
-            //             std::array<double, 3> U1, U2, U3;
-            //             U1 = A->U_SPH;
-            //             if (*(A->vec_time_SPH.rbegin()) == current_time) {
-            //                times.push_back(*(A->vec_time_SPH.rbegin() + 1));
-            //                U2 = *(A->vec_U_SPH.rbegin() + 1);
-            //                // times.push_back(*(A->vec_time_SPH.rbegin() + 2));
-            //                // U3 = *(A->vec_U_SPH.rbegin() + 2);
-            //             } else {
-            //                times.push_back(*(A->vec_time_SPH.rbegin() + 0));
-            //                U2 = *(A->vec_U_SPH.rbegin() + 0);
-            //                // times.push_back(*(A->vec_time_SPH.rbegin() + 1));
-            //                // U3 = *(A->vec_U_SPH.rbegin() + 1);
-            //             }
-            //             // size of times is 4
-            //             InterpolationLagrange<double> lag(times);
-            //             auto D = lag.DN(current_time);
-            //             A->b_vector = -(D[1] * U1 + D[2] * U2) + A->mu_SPH / A->rho * A->lap_U;  // + _GRAVITY3_;
-            //          }
+            // A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+            A->b_vector = A->rho * A->U_SPH / dt + A->mu_SPH * A->lap_U_next + A->rho * _GRAVITY3_;
+            A->b_vector += A->rho * A->U_XSPH / dt;
          }
       }
 

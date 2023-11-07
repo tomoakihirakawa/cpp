@@ -148,13 +148,34 @@ W_{5}(q,h) = \frac{2187}{40\pi h^3}
 //    else
 //       return -grad_q * h * (5. * std::pow(1 - q, 4)) * c;
 // };
+/* -------------------------------------------------------------------------- */
+
+double w_Spiky(const double &r, const double &h) {
+   if (0.0 <= r && r < h) {
+      double q = h - r;
+      return 15. / (M_PI * std::pow(h, 6)) * std::pow(q, 3);
+   } else {
+      return 0.0;
+   }
+}
+
+Tddd grad_w_Spiky(const Tddd &xi, const Tddd &xj, const double &h) {
+   Tddd rij = xi - xj;
+   double r = Norm(rij);
+   if (1E-13 <= r && r < h) {
+      double q = h - r;
+      return (45.0 / (M_PI * std::pow(h, 6)) * std::pow(q, 2)) * (-rij / r);
+   } else {
+      return {0., 0., 0.};
+   }
+}
 
 /* -------------------------------------------------------------------------- */
 
 double w_Bspline4_(double r, const double h) {
    const double a = 1. / (20. * M_PI * h * h * h);
    const double q = r / h;
-   if (q > 2.5 || r < 1E-13)
+   if (q > 2.5)
       return 0.;
    else if (q < 0.5)
       return a * (std::pow(2.5 - q, 4) - 5. * std::pow(1.5 - q, 4) + 10. * std::pow(0.5 - q, 4));
@@ -439,7 +460,7 @@ std::array<double, 3> grad_w_Wendland_(const std::array<double, 3> &xi, const st
    const double alpha = 21.0 / (16.0 * M_PI * std::pow(h, 3));
    double w = 0.0;
    const double r = Norm(xi - xj);
-   if (r <= h && r > 1E-12) {
+   if (r <= h && r > 1E-13) {
       double q = r / h;
       const auto dqdx = (xi - xj) / (r * h);
       return 8 * alpha * 4 * std::pow(1.0 - q, 3) * (-dqdx) * (4.0 * q + 1.0) + 8 * alpha * std::pow(1.0 - q, 4) * (4.0 * dqdx);
@@ -478,7 +499,7 @@ Tddd grad_w_Wendland(const Tddd &xi, const Tddd &xj, const double h) {
 // h < 2.6 -> w_Bspline3
 // h >2.6 -> w_Bsplin5
 
-const double between_3or5 = 10.;
+const double between_3or5 = 2.5;
 
 // #define USE_WENDLAND_KERNEL
 
@@ -486,10 +507,11 @@ double w_Bspline(const double &r, const double &h) {
 #ifdef USE_WENDLAND_KERNEL
    return w_Wendland(r, h);
 #else
-   // if (h < between_3or5)
-   //    return w_Bspline3(r, h);
-   // else
-   return w_Bspline4(r, h);
+   if (h < between_3or5)
+      return w_Bspline3(r, h);
+   else
+      return w_Bspline5(r, h);
+         // return w_Wendland(r, h);
 
 #endif
 };
@@ -498,11 +520,13 @@ std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std:
 #ifdef USE_WENDLAND_KERNEL
    return grad_w_Wendland(xi, xj, h);
 #else
-   // if (h < between_3or5)
-   //    return grad_w_Bspline3(xi, xj, h);
-   // else
-   //    return grad_w_Bspline5(xi, xj, h);
-   return grad_w_Bspline4(xi, xj, h);
+   if (h < between_3or5)
+      return grad_w_Bspline3(xi, xj, h);
+   else
+      // return (grad_w_Bspline3(xi, xj, h) + grad_w_Bspline4(xi, xj, h) + grad_w_Bspline5(xi, xj, h)) / 3.;
+      // return grad_w_Spiky(xi, xj, h);
+      return grad_w_Bspline5(xi, xj, h);
+         // return grad_w_Wendland(xi, xj, h);
 #endif
 };
 
@@ -516,22 +540,39 @@ std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std:
    // else
    //    return Dot(grad_w_Bspline5(xi, xj, h), M);
 
-   return Dot(M, grad_w_Bspline4(xi, xj, h));
+   // return Dot(M, grad_w_Bspline5(xi, xj, h));
+   return Dot(M, grad_w_Bspline(xi, xj, h));
+      // return Dot(M, grad_w_Wendland(xi, xj, h));
 #endif
 };
 
-double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h, const std::array<Tddd, 3> &M) {
+double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
    const std::array<double, 3> Xij = xi - xj;
    const double r = Norm(Xij);
    const double q = r / h;
    if (q > 1. || r < 1E-13)
       return 0.;
    else {
-#ifdef USE_WENDLAND_KERNEL
-      return Total(Dot(Xij / (r * r) * grad_w_Wendland(xi, xj, h), M));
-#else
-      return Total(Dot(M, Xij / (r * r) * grad_w_Bspline(xi, xj, h)));
-#endif
+      // return Dot(Xij / (r * r), grad_w_Wendland(xi, xj, h));
+      return Dot(Xij / (r * r), grad_w_Bspline(xi, xj, h));
+   }
+};
+
+double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, double h, const std::array<Tddd, 3> &M) {
+   const std::array<double, 3> Xij = xi - xj;
+   const double r = Norm(Xij);
+   const double q = r / h;
+   if (q > 1. || r < 1E-13)
+      return 0.;
+   else {
+      // #ifdef USE_WENDLAND_KERNEL
+      // return Total(Dot(M, Xij / (r * r) * grad_w_Wendland(xi, xj, h)));
+      return Total(Total(M * TensorProduct(Xij / (r * r), grad_w_Bspline(xi, xj, h))));
+      // auto I = M;
+      // IdentityMatrix(I);
+      // return Total(Total(I * TensorProduct(Xij / (r * r), grad_w_Bspline(xi, xj, h))));
+      // return Dot(Xij / (r * r), grad_w_Bspline(xi, xj, h, M));
+      // #endif
       // if (h < between_3or5)
       //    // return Total(Dot(Xij / (r * r) * grad_w_Bspline3(xi, xj, h), M));
       //    return ;

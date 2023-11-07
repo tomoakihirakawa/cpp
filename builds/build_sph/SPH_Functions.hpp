@@ -1,14 +1,154 @@
 #ifndef SPH_Functions_H
 #define SPH_Functions_H
-
+// old
 #include "Network.hpp"
 #include "minMaxOfFunctions.hpp"
 
+/* -------------------------------------------------------------------------- */
+
+bool canInteract(const networkPoint *A, const networkPoint *B) {
+   if (!B->isCaptured)
+      return false;
+
+   if (B->isAuxiliary)
+      return false;
+   if (A->isAuxiliary && A->surfacePoint == B)
+      return false;
+   if (A->auxPoint != nullptr && A->auxPoint == B)
+      return false;
+
+   // const double c = .3;
+   // if (B->isAuxiliary) {
+   //    if (Distance(A, B) < c * A->SML())
+   //       return true;
+   //    else
+   //       return false;
+   // }
+   // if (B->auxPoint != nullptr) {
+   //    if (B->auxPoint == A)
+   //       return false;
+   //    if (Distance(A, B) > c * A->SML())
+   //       return true;
+   //    else
+   //       return false;
+   // }
+
+   return true;
+};
+
+/* -------------------------------------------------------------------------- */
+void deleteAuxiliaryPoints(const auto net) {
+   // delete auxiliary points
+   auto points = net->getPoints();
+   for (auto p : points) {
+      p->auxPoint = nullptr;
+      if (p->isAuxiliary)
+         delete p;
+   }
+
+   for (auto p : net->getPoints())
+      p->isAuxiliary = false;
+}
+void setAuxiliaryPoints(const auto net) {
+   auto points = net->getPoints();
+   for (const auto &p : points) {
+      if (p->hasAuxiliary()) {
+         auto q = new networkPoint(net, p->X);
+         q->surfacePoint = p;
+         p->auxPoint = q;
+         //
+         q->grad_corr_M = p->grad_corr_M;
+         q->grad_corr_M_next = p->grad_corr_M_next;
+         q->inv_grad_corr_M = p->inv_grad_corr_M_next;
+         q->inv_grad_corr_M_next = p->inv_grad_corr_M_next;
+         //
+         q->grad_corr_M_rigid = p->grad_corr_M_next_rigid;
+         q->grad_corr_M_next_rigid = p->grad_corr_M_next_rigid;
+         q->inv_grad_corr_M_rigid = p->inv_grad_corr_M_next_rigid;
+         q->inv_grad_corr_M_next_rigid = p->inv_grad_corr_M_next_rigid;
+         q->laplacian_corr_M = p->laplacian_corr_M;
+         q->laplacian_corr_M_next = p->laplacian_corr_M_next;
+         //
+         q->isSurface = p->isSurface;
+         q->isSurface_next = p->isSurface_next;
+         q->isNeumannSurface = p->isNeumannSurface;
+         q->isAuxiliary = true;
+         //
+         q->b_vector = p->b_vector;
+         q->U_SPH = p->U_SPH;
+         //
+         q->intp_density = p->intp_density;
+         q->intp_density_next = p->intp_density_next;
+         //
+         // q->U_SPH.fill(0.);
+         q->v_to_surface_SPH = p->v_to_surface_SPH;
+         q->interp_normal = p->interp_normal;
+         q->interp_normal_next = p->interp_normal_next;
+         q->intp_normal_Eigen = p->intp_normal_Eigen;
+         q->interp_normal_original = p->interp_normal_original;
+         q->interp_normal_original_next = p->interp_normal_original_next;
+         q->intp_density = p->intp_density;
+         //
+         q->div_U = p->div_U;
+         q->DUDt_SPH = p->DUDt_SPH;
+         q->lap_U = p->lap_U;
+         q->p_SPH = p->p_SPH;
+         q->rho = p->rho;
+         q->setDensityVolume(_WATER_DENSITY_, p->volume);
+         q->particle_spacing = p->particle_spacing;
+         q->C_SML_next = p->C_SML_next;
+         q->C_SML = p->C_SML;
+         q->isFluid = p->isFluid;
+         q->isFirstWallLayer = false;
+         q->isCaptured = true;
+         //
+         auto dt = p->RK_X.getdt();
+         // q->RK_U.initialize(dt, simulation_time, q->U_SPH, 1);
+         // q->RK_X.initialize(dt, simulation_time, q->X, 1);
+         // q->RK_P.initialize(dt, simulation_time, q->p_SPH, 1);
+         // q->RK_rho.initialize(dt, simulation_time, q->rho, 1);
+         q->RK_U = p->RK_U;
+         q->RK_U.Xinit = p->RK_U.Xinit;
+         q->RK_U.t_init = p->RK_U.t_init;
+         q->RK_U.dt_fixed = p->RK_U.dt_fixed;
+         q->RK_U.dt = p->RK_U.dt;
+         q->RK_U.steps = p->RK_U.steps;
+         q->RK_U.current_step = p->RK_U.current_step;
+         q->RK_U._dX = p->RK_U._dX;
+         q->RK_U.dX = p->RK_U.dX;
+         //
+         q->RK_X = p->RK_X;
+         q->RK_X.Xinit = p->RK_X.Xinit;
+         q->RK_X.t_init = p->RK_X.t_init;
+         q->RK_X.dt_fixed = p->RK_X.dt_fixed;
+         q->RK_X.dt = p->RK_X.dt;
+         q->RK_X.steps = p->RK_X.steps;
+         q->RK_X.current_step = p->RK_X.current_step;
+         q->RK_X._dX = p->RK_X._dX;
+         q->RK_X.dX = p->RK_X.dX;
+         //
+         q->RK_rho = p->RK_rho;
+         q->RK_rho.Xinit = p->RK_rho.Xinit;
+         q->RK_rho.t_init = p->RK_rho.t_init;
+         q->RK_rho.dt_fixed = p->RK_rho.dt_fixed;
+         q->RK_rho.dt = p->RK_rho.dt;
+         q->RK_rho.steps = p->RK_rho.steps;
+         q->RK_rho.current_step = p->RK_rho.current_step;
+         q->RK_rho._dX = p->RK_rho._dX;
+         q->RK_rho.dX = p->RK_rho.dX;
+      }
+   }
+   net->remakeBucketPoints();
+}
+
+/* -------------------------------------------------------------------------- */
+
 void setSML(const auto &target_nets) {
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   double C_SML_max = 2.6;
+   const double C_SML_max = 2.7;
    // double C_SML_min = 1.866;
-   double C_SML_min = 2.2;
+   const double C_SML_min = 2.3;
+   const double C_SML_min_rigid = 2.3;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -73,16 +213,16 @@ void setSML(const auto &target_nets) {
                }
                if (closest_q != nullptr) {
                   if (closest_q->isSurface)
-                     p->C_SML = std::clamp(p->C_SML, C_SML_min, C_SML_max);
+                     p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                   else if (closest_q->isNeumannSurface)
-                     p->C_SML = std::clamp(p->C_SML, C_SML_min, C_SML_max);
+                     p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                } else
-                  p->C_SML = std::clamp(p->C_SML, C_SML_max, C_SML_max);
+                  p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                if (closest_q_next != nullptr) {
                   if (closest_q_next->isSurface)
-                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min, C_SML_max);
+                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
                   else if (closest_q_next->isNeumannSurface)
-                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min, C_SML_max);
+                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
                } else
                   p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
             }
@@ -184,8 +324,8 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.02;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.02;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -246,6 +386,17 @@ Tddd aux_position_next(const networkPoint *p) {
 };
 
 /* -------------------------------------------------------------------------- */
+Tddd U_next(const networkPoint *p) {
+   return p->RK_U.getX(p->DUDt_SPH);
+   // return p->RK_U.getX();
+}
+Tddd X_next(const networkPoint *p) {
+   if (!p->isFluid)
+      return p->X;
+   else
+      return p->RK_X.getX(U_next(p));
+}
+
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
@@ -257,10 +408,11 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
-   // return p->RK_rho.getX(p->DrhoDt_SPH);
+   // return p->RK_rho.getX(-p->rho * p->div_U);
+   // return p->RK_rho.getX(-p->rho * p->div_U_next);
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
-   //       return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
+   // return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
    // #endif
    //    }
 };
@@ -269,95 +421,79 @@ double rho_next(auto p) {
 double V_next(const auto &p) { return p->mass / rho_next(p); };
 
 // \label{SPH:position_next}
-std::array<double, 3> X_next(const auto &p) {
-   if (p->getNetwork()->isRigidBody)
-      return p->X;
-   else {
-#if defined(USE_RungeKutta)
-      // return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
-      //
-      // Tddd U;
-      // if (p->interp_U_Bspline != nullptr) {
-      //    U = (*p->interp_U_Bspline)(p->RK_X.getNextTime());
-      // } else
-      // if (p->interp_U_lag != nullptr) {
-      //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
-      // } else
-      // U = p->U_SPH;
 
-      // if (p->interp_U_lag != nullptr) {
-      //    U = (*p->interp_U_lag)(p->RK_X.getNextTime());
-      // } else
-      //    U = p->U_SPH;
-      // return p->RK_X.getX(p->U_SPH);
-
-      // auto du = (p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_) * p->RK_X.get_dt();
-      // return p->RK_X.getX(p->U_SPH + du);
-      return p->RK_X.getX(p->RK_U.getX(p->DUDt_SPH));
-#elif defined(USE_LeapFrog)
-      return p->X + p->U_SPH * p->LPFG_X.get_dt() / 2.;
-#endif
-   }
-};
-
-/* -------------------------------------------------------------------------- */
+// # -------------------------------------------------------------------------- */
+std::array<double, 3> grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
+   return grad_w_Bspline(pX, qX, p->SML(), p->inv_grad_corr_M);
+}
 
 std::array<double, 3> grad_w_Bspline(const networkPoint *p, const networkPoint *q) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return grad_w_Bspline(p->X, q->X, p->SML(), p->inv_grad_corr_M_mirror);
-   else
-      return grad_w_Bspline(p->X, q->X, p->SML(), p->inv_grad_corr_M);
-};
+   return grad_w_Bspline_helper(p, p->X, q->X);
+}
 
-std::array<double, 3> grad_w_Bspline(const networkPoint *p, const networkPoint *q, const double r) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return grad_w_Bspline(p->X, q->X, r);
-   else
-      return grad_w_Bspline(p->X, q->X, r);
-};
+std::array<double, 3> grad_w_Bspline(const networkPoint *p, const Tddd &qX) {
+   return grad_w_Bspline_helper(p, p->X, qX);
+}
 
-std::array<double, 3> grad_w_Bspline(const networkPoint *p, const Tddd &X) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return grad_w_Bspline(p->X, X, p->SML(), p->inv_grad_corr_M_mirror);
-   else
-      return grad_w_Bspline(p->X, X, p->SML(), p->inv_grad_corr_M);
-};
+std::array<double, 3> grad_w_Bspline(const networkPoint *p, Tddd &pX, const networkPoint *q) {
+   return grad_w_Bspline_helper(p, pX, q->X);
+}
+
+// # -------------------------------------------------------------------------- */
+
+double Dot_grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
+   return Dot_grad_w_Bspline(pX, qX, p->SML(), p->laplacian_corr_M);
+   // return Dot_grad_w_Bspline(pX, qX, p->SML());
+}
 
 double Dot_grad_w_Bspline(const networkPoint *p, const networkPoint *q) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return Dot_grad_w_Bspline(p->X, q->X, p->SML(), p->inv_grad_corr_M_mirror);
-   else
-      return Dot_grad_w_Bspline(p->X, q->X, p->SML(), p->inv_grad_corr_M);
-   // return Dot_grad_w_Bspline_Dot(p->X, q->X, p->SML());
-};
+   return Dot_grad_w_Bspline_helper(p, p->X, q->X);
+}
 
-/* -------------------------------------------------------------------------- */
+double Dot_grad_w_Bspline(const networkPoint *p, Tddd &X, const networkPoint *q) {
+   return Dot_grad_w_Bspline_helper(p, X, q->X);
+}
+
+double Dot_grad_w_Bspline(const networkPoint *p, Tddd &X, const Tddd &qX) {
+   return Dot_grad_w_Bspline_helper(p, X, qX);
+}
+
+//! -------------------------------------------------------------------------- */
+
+std::array<double, 3> grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
+   return grad_w_Bspline(pX, qX, p->SML_next(), p->inv_grad_corr_M_next);
+}
 
 std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const networkPoint *q) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return grad_w_Bspline(X_next(p), X_next(q), p->SML_next(), p->inv_grad_corr_M_next_mirror);
-   else
-      return grad_w_Bspline(X_next(p), X_next(q), p->SML_next(), p->inv_grad_corr_M_next);
-};
+   return grad_w_Bspline_next_helper(p, X_next(p), X_next(q));
+}
+
+std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X, const networkPoint *q) {
+   return grad_w_Bspline_next_helper(p, X, X_next(q));
+}
 
 std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return grad_w_Bspline(X_next(p), X, p->SML_next(), p->inv_grad_corr_M_next_mirror);
-   else
-      return grad_w_Bspline(X_next(p), X, p->SML_next(), p->inv_grad_corr_M_next);
-};
+   return grad_w_Bspline_next_helper(p, X_next(p), X);
+}
 
-std::array<double, 3> grad_w_Bspline_next_mirror(const networkPoint *p, const Tddd &X) {
-   return grad_w_Bspline(X_next(p), X, p->SML_next(), p->inv_grad_corr_M_next_mirror);
-};
+//! -------------------------------------------------------------------------- */
+
+double Dot_grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
+   return Dot_grad_w_Bspline(pX, qX, p->SML_next(), p->laplacian_corr_M_next);
+   // return Dot_grad_w_Bspline(pX, qX, p->SML_next());
+}
 
 double Dot_grad_w_Bspline_next(const networkPoint *p, const networkPoint *q) {
-   if (p->isFluid && p->isNotSurfaceButNearSurface)
-      return Dot_grad_w_Bspline(X_next(p), X_next(q), p->SML_next(), p->inv_grad_corr_M_next_mirror);
-   else
-      return Dot_grad_w_Bspline(X_next(p), X_next(q), p->SML_next(), p->inv_grad_corr_M_next);
-   // return Dot_grad_w_Bspline_Dot(X_next(p), X_next(q), p->SML_next());
-};
+   return Dot_grad_w_Bspline_next_helper(p, X_next(p), X_next(q));
+}
+
+double Dot_grad_w_Bspline_next(const networkPoint *p, Tddd &X, const networkPoint *q) {
+   return Dot_grad_w_Bspline_next_helper(p, X, X_next(q));
+}
+
+double Dot_grad_w_Bspline_next(const networkPoint *p, Tddd &X, const Tddd &qX) {
+   return Dot_grad_w_Bspline_next_helper(p, X, qX);
+}
 
 /* -------------------------------------------------------------------------- */
 #include "SPH0_setWall_Freesurface.hpp"
@@ -484,12 +620,11 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
    return {closest_q, closest_p_to_q};
 };
 
-#define REFLECTION
+// #define REFLECTION
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
-                     const double &particle_spacing,
-                     const double dt) {
+                     const double &particle_spacing) {
    try {
       DebugPrint("粒子の時間発展", Green);
 
@@ -501,10 +636,10 @@ void updateParticles(const auto &points,
          auto X_last = p->X;
 #if defined(USE_RungeKutta)
          // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-         p->RK_X.push(p->U_SPH);  // 位置
-         p->setXSingle(p->tmp_X = p->RK_X.getX());
          p->RK_U.push(p->DUDt_SPH);  // 速度
          p->U_SPH = p->RK_U.getX();
+         p->RK_X.push(p->U_SPH);  // 位置
+         p->setXSingle(p->tmp_X = p->RK_X.getX());
 #elif defined(USE_LeapFrog)
          auto X_next = [&](const auto &p) { return p->X; };
          p->DUDt_modify_SPH.fill(0.);
@@ -561,15 +696,21 @@ void updateParticles(const auto &points,
                   auto n = Normalize(closest_p->interp_normal_original);
                   auto n_d_f2w = Norm(Projection(v_f2w, n));
                   auto ratio = (d0 - n_d_f2w) / d0;
-                  if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1.4 * d0) {
+                  if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.5 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        // auto tmp = -0.1 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
                         p->DUDt_SPH += tmp;
    #if defined(USE_RungeKutta)
+                        // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                        // p->U_SPH = p->RK_U.getX();
                         p->RK_U.repush(p->DUDt_SPH);  // 速度
                         p->U_SPH = p->RK_U.getX();
+                        p->RK_X.repush(p->U_SPH);  // 位置
+                        p->setXSingle(p->tmp_X = p->RK_X.getX());
                         isReflected = true;
    #elif defined(USE_LeapFrog)
                         p->LPFG_X.repush(p->DUDt_SPH);  // 速度
@@ -593,12 +734,12 @@ void updateParticles(const auto &points,
          A->RK_rho.push(A->DrhoDt_SPH);  // 密度
 
          // if (A->RK_rho.finished)
-         //    A->setDensity(_WATER_DENSITY_);
-         // else
-         // A->setDensity(A->RK_rho.get_x());
-         // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
-         // A->setDensity(A->RK_rho.get_x());
          A->setDensity(_WATER_DENSITY_);
+            // else
+            // A->setDensity(A->RK_rho.get_x());
+            // A->setDensity((A->RK_rho.get_x() + _WATER_DENSITY_) / 2.);
+            // A->setDensity(A->RK_rho.get_x());
+            // A->setDensity(_WATER_DENSITY_);
 #elif defined(USE_LeapFrog)
          A->DrhoDt_SPH = -A->rho * A->div_U;
          A->LPFG_rho.push(A->DrhoDt_SPH);

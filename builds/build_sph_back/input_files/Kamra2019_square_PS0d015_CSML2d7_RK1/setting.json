@@ -1,0 +1,17 @@
+{
+    "RK_order": 1,
+    "max_dt": 0.001,
+    "end_time_step": 100000,
+    "end_time": 4.0,
+    "CSML": 2.7,
+    "initial_surface_z_position": 0.2,
+    "particle_spacing": 0.015,
+    "output_directory": "/Users/tomoaki/SPH/Kamra2019_square_PS0d015_CSML2d7_RK1",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "wall.json",
+        "sensor1.json",
+        "sensor2.json"
+    ]
+}
