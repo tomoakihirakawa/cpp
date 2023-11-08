@@ -37,7 +37,7 @@ inline networkFace::networkFace(Network *network_IN, const T_LLL &Lines_IN, T_3P
       this->normal = TriangleNormal(p0p1p2_X);
       this->angles = TriangleAngles(p0p1p2_X);
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };

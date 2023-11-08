@@ -45,13 +45,22 @@ struct NewtonRaphson<double> : public NewtonRaphson_Common<double> {
 template <>
 struct NewtonRaphson<Tdd> : public NewtonRaphson_Common<Tdd> {
    NewtonRaphson(const Tdd &Xinit) : NewtonRaphson_Common<Tdd>(Xinit){};
-   void update(const Tdd &F, const T2Tdd &dFdx) { X += (dX = -Dot(Inverse(dFdx), F)); };
-   void update(const Tdd &F, const T2Tdd &dFdx, const double a) { X += a * (dX = -Dot(Inverse(dFdx), F)); };
+   void update(const Tdd &F, const T2Tdd &dFdx) {
+      lapack_lu(dX, dFdx, -F);
+      X += dX;
+   };
+   void update(const Tdd &F, const T2Tdd &dFdx, const double a) {
+      lapack_lu(dX, dFdx, -F);
+      X += a * dX;
+   };
 };
 template <>
 struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd> {
    NewtonRaphson(const Tddd &Xinit) : NewtonRaphson_Common<Tddd>(Xinit){};
-   void update(const Tddd &F, const T3Tddd &dFdx) { X += (dX = -Dot(Inverse(dFdx), F)); };
+   void update(const Tddd &F, const T3Tddd &dFdx) {
+      lapack_lu(dX, dFdx, -F);
+      X += dX;
+   };
 };
 template <>
 struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
@@ -60,12 +69,14 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
    };
    V_d ans;
    void update(const T4d &F, const T4T4d &dFdx) {
-      ludcmp lu(ToVector(dFdx));
-      lu.solve(ToVector(-F), ans);
-      std::get<0>(X) += (std::get<0>(dX) = ans[0]);
-      std::get<1>(X) += (std::get<1>(dX) = ans[1]);
-      std::get<2>(X) += (std::get<2>(dX) = ans[2]);
-      std::get<3>(X) += (std::get<3>(dX) = ans[3]);
+      lapack_lu(dX, dFdx, -F);
+      X += dX;
+      // ludcmp lu(ToVector(dFdx));
+      // lu.solve(ToVector(-F), ans);
+      // std::get<0>(X) += (std::get<0>(dX) = ans[0]);
+      // std::get<1>(X) += (std::get<1>(dX) = ans[1]);
+      // std::get<2>(X) += (std::get<2>(dX) = ans[2]);
+      // std::get<3>(X) += (std::get<3>(dX) = ans[3]);
    };
 };
 

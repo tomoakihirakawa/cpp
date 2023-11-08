@@ -1216,7 +1216,7 @@ struct InterpolationRBF_Common {
             M[i] = row;
          }
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };

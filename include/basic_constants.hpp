@@ -1,6 +1,15 @@
 #ifndef basic_constants_H
 #define basic_constants_H
 #include "basic_alias.hpp"
+/* ------------------------------------------------------- */
+
+// #define DEBUGGING
+#ifdef DEBUGGING
+   #define DEBUGGING_LEVEL 1
+#else
+   #define DEBUGGING_LEVEL 0
+#endif
+
 /* ----------------- physical properties ---------------- */
 
 double _WATER_DENSITY_ = 1000.;            // 998.21;
@@ -70,9 +79,9 @@ const std::string _Blue("\033[4;1;34m");
 const std::string _Magenta("\033[4;1;35m");
 const std::string _Cyan("\033[4;1;36m");
 const std::string _White("\033[4;1;37m");
-const std::string colorOff("\033[0m");
+const std::string colorReset("\033[0m");
 
-const static std::vector<std::string> ColorsVector = {colorOff, Red, Magenta, Blue, Cyan, Green, Yellow};
+const static std::vector<std::string> ColorsVector = {colorReset, Red, Magenta, Blue, Cyan, Green, Yellow};
 const std::string ColorFunction(const int i) {
    int s = ColorsVector.size();
    return ColorsVector[(i + 100 * s) % s];

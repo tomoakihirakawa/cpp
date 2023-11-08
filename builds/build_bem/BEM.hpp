@@ -320,7 +320,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_solidAngle[p] = p->getSolidAngle();
          }
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       try {
@@ -353,13 +353,13 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"P_V2ContactFaces5", P_V2ContactFaces5}};
          return data;
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       std::cout << __PRETTY_FUNCTION__ << " done" << std::endl;
       return {};
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };

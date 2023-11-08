@@ -305,7 +305,7 @@ void developByEISPH(Network *net,
       for (const auto &obj : all_net)
 #pragma omp single nowait
          obj->makeBucketPoints(bucket_spacing);
-      std::cout << Green << "バケットの生成" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      std::cout << Green << "バケットの生成" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
 
       // 初期化
@@ -324,6 +324,7 @@ void developByEISPH(Network *net,
       double dt = dt_CFL(max_dt, net, RigidBodyObject);
       std::cout << "dt = " << dt << std::endl;
 
+      deleteAuxiliaryPoints(net);
       // ルンゲクッタの準備
       for (auto &N : Append(net_RigidBody, net))
          for (const auto &p : N->getPoints()) {
@@ -348,9 +349,9 @@ void developByEISPH(Network *net,
          // 流れの計算に関与する壁粒子を保存
          // setVectorToPolygon(net, RigidBodyObject, C_SML * particle_spacing);
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
-         std::cout << Green << "setWall" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "setWall" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          setFreeSurface(net, RigidBodyObject);
-         std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          // for (const auto &p : net->getPoints())
          //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
          /* -------------------------------------------------------------------------- */
@@ -360,14 +361,14 @@ void developByEISPH(Network *net,
          /* ------------------------------- 次時刻の計算が可能に ------------------------------- */
          // setWall(net, RigidBodyObject, particle_spacing, wall_p);
          // setFreeSurface(net, RigidBodyObject);
-         // std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         // std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          /* -------------------------------------------------------------------------- */
-         setSML(Append(net_RigidBody, net));
-         setCorrectionMatrix(Append(net_RigidBody, net));
-         setAuxiliaryPoints(net);
+         // setSML(Append(net_RigidBody, net));
+         // setCorrectionMatrix(Append(net_RigidBody, net));
+         // setAuxiliaryPoints(net);
          // 粒子が接近しすぎると精度に問題が生じる．圧力決めうちの方が安定する．
          //
-         std::cout << Green << "∇.∇UとU*を計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "∇.∇UとU*を計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          setPoissonEquation(wall_p, Append(net_RigidBody, net), particle_spacing);
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), particle_spacing);
          // debug of surfaceNet
@@ -375,12 +376,12 @@ void developByEISPH(Network *net,
          // setPoissonEquation(wall_p, Append(net_RigidBody, net), DT);
          // setPressure(net->getPoints());
          // setPressure(wall_p);
-         std::cout << Green << "ポアソン方程式を立てる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "ポアソン方程式を立てる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
          //@ 圧力 p^n+1の計算
          // if (simulation_time < 0.01)
          solvePoisson(net->getPoints(), wall_p);
-         std::cout << Green << "圧力 p^n+1の計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "圧力 p^n+1の計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
          // set free surface pressure using EISPH way
          // setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
@@ -388,14 +389,14 @@ void developByEISPH(Network *net,
 
          //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          gradP(net->getPoints(), Append(net_RigidBody, net));
-         std::cout << Green << "圧力勾配∇Pを計算 & DU/Dtの計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "圧力勾配∇Pを計算 & DU/Dtの計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
          //@ 粒子の時間発展
-         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          updateParticles(net->getPoints(), Append(net_RigidBody, net), RigidBodyObject, particle_spacing);
          net->setGeometricProperties();
 
-         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
 #if defined(USE_RungeKutta)
          simulation_time = (*net->getPoints().begin())->RK_X.get_t();
@@ -407,7 +408,7 @@ void developByEISPH(Network *net,
 
       } while (!finished);
 
-      std::cout << Green << "１タイムステップ終了" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      std::cout << Green << "１タイムステップ終了" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in developByEISPH");
    };

@@ -673,7 +673,7 @@ V_d DSg(const V_d &h, const double h_sig, const double beta) {
 //==========================================================
 double linspace(const V_d &v, int size, int i) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    return v[0] + (v[1] - v[0]) * i / (double)(size - 1.);
 };
@@ -683,14 +683,14 @@ double linspace(const V_d &v, int size, int i) {
 /* }; */
 double linspace(const V_d &v, int size, int i, double c, double beta) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    V_d w{InvSg(v[0], c, beta), InvSg(v[1], c, beta)};
    return Sg(w[0] + (w[1] - w[0]) * i / (double)(size - 1.), c, beta);
 };
 void linspace(const V_d &v, int size, V_d &O_X) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    O_X.resize(size);
    for (int i = 0; i < size; i++)
@@ -698,7 +698,7 @@ void linspace(const V_d &v, int size, V_d &O_X) {
 };
 void linspace(const V_d &v, int size, V_d &O_X, double c, double beta) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    V_d w{InvSg(v[0], c, beta), InvSg(v[1], c, beta)};
    O_X.resize(size);
@@ -707,7 +707,7 @@ void linspace(const V_d &v, int size, V_d &O_X, double c, double beta) {
 };
 V_d linspace(const V_d &v, int size) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    V_d O_X(size);
    for (int i = 0; i < size; i++)
@@ -716,7 +716,7 @@ V_d linspace(const V_d &v, int size) {
 };
 V_d linspace(const V_d &v, int size, double c, double beta) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    V_d w{InvSg(v[0], c, beta), InvSg(v[1], c, beta)};
    V_d O_X(size);
@@ -726,7 +726,7 @@ V_d linspace(const V_d &v, int size, double c, double beta) {
 };
 void linspace(const std::vector<V_d> &mat, const V_i size, V_d &O_X) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    V_d v;
    for (size_t n = 0; n < mat.size(); n++) {
@@ -869,7 +869,7 @@ void gauleg(const double x1, const double x2,
             V_d &x,
             V_d &w) {
 #if defined FULL_DEBUG
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
    const double EPS = 1.0e-14;
    double z1, z, xm, xl, pp, p3, p2, p1;
@@ -2098,7 +2098,7 @@ std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str
 
 ```cpp
 {
-   std::cout << magenta << "1. ファイル名でJSONをコンストラクト" << colorOff << std::endl;
+   std::cout << magenta << "1. ファイル名でJSONをコンストラクト" << colorReset << std::endl;
    JSON json("./sample.json");
    std::cout << json["translate"] << std::endl;
 }
@@ -2106,7 +2106,7 @@ std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str
 
 ```cpp
 {
-   std::cout << red << "2. ifstreamでJSONをコンストラクト" << colorOff << std::endl;
+   std::cout << red << "2. ifstreamでJSONをコンストラクト" << colorReset << std::endl;
    JSON json(std::ifstream("./sample.json"));
    json["price"] = {"10."};
 }
@@ -2475,7 +2475,7 @@ void Load(const std::string &filename, std::vector<V_s> &ret_mat, const V_s &SEP
       ss << "The file can not be opened: " << filename;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
    } else
-      std::cout << Blue << filename << " is opened" << colorOff << std::endl;
+      std::cout << Blue << filename << " is opened" << colorReset << std::endl;
 
    std::string read;
    // int row_counter(0);
@@ -2488,7 +2488,7 @@ void Load(const std::string &filename, std::vector<V_s> &ret_mat, const V_s &SEP
       }
    }
    strm.close();
-   std::cout << Blue << filename << " is closed" << colorOff << std::endl;
+   std::cout << Blue << filename << " is closed" << colorReset << std::endl;
 };
 
 std::vector<V_s> Load(const std::string &filename, const V_s &SEP) {
@@ -2659,7 +2659,7 @@ std::vector<T> Drop(std::vector<T> ret /*copy*/, std::vector<int> vec_n) {  // 2
 int Position(std::vector<int> vecIN, const int n) {  // 2020/03/22
    std::vector<int>::iterator it = std::find(vecIN.begin(), vecIN.end(), n);
    if (it == vecIN.end())
-      std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+      std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 
    return std::distance(vecIN.begin(), it);
 };

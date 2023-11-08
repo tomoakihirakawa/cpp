@@ -1462,7 +1462,7 @@ netL *link(netP *const p0, netP *const p1, Network *const net) {
          return new networkLine(net, p0, p1);
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -1488,13 +1488,13 @@ class pathInfo {
             const double incidentAngle_IN,
             const double r_IN) : face(face_IN), xyz(xyz_IN), incidentAngle(incidentAngle_IN), r(r_IN){};
    ~pathInfo() {
-      //    std::cout << Red << "destructed" << colorOff << std::endl;
+      //    std::cout << Red << "destructed" << colorReset << std::endl;
    }
    void info() {
       std::cout << Blue << "         face :" << face << std::endl;
       std::cout << Blue << "          xyz :" << xyz << std::endl;
       std::cout << Blue << "incidentAngle :" << incidentAngle << std::endl;
-      std::cout << Blue << "            r :" << r << colorOff << std::endl;
+      std::cout << Blue << "            r :" << r << colorReset << std::endl;
    };
 };
 /* ------------------------------------------------------ */
@@ -1891,7 +1891,7 @@ getPointsOnLines_detail*/
          } else
             return true;
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -1962,7 +1962,7 @@ getPointsOnLines_detail*/
 
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "このlineを基準としてインデックスをつくれない：この線はこの面のいっぺんではない" << std::endl;
          ss << "setBoundsを忘れていませんか？ 面の線を変更した際などは，setBoundsを忘れないように" << std::endl;
@@ -1988,7 +1988,7 @@ getPointsOnLines_detail*/
          // 		return {i, (i + 1) % 3, (i + 2) % 3};
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "このpointを基準としてインデックスをつくれない：この線はこの面のいっぺんではない" << std::endl;
          ss << "setBoundsを忘れていませんか？ 面の線を変更した際などは，setBoundsを忘れないように" << std::endl;
@@ -2010,7 +2010,7 @@ getPointsOnLines_detail*/
          else
             return RotateLeft(this->angles, 2);
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -2026,7 +2026,7 @@ getPointsOnLines_detail*/
             return {a2, a0, a1};
          // return {this->angles[i], /*ここにこの線lが位置する*/ this->angles[j], this->angles[k]};
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -2222,7 +2222,7 @@ getPointsOnLines_detail*/
    //  	}
    //  	catch (std::exception &e)
    //  	{
-   //  		std::cerr << e.what() << colorOff << std::endl;
+   //  		std::cerr << e.what() << colorReset << std::endl;
    //  		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    //  	};
    //  };
@@ -2237,7 +2237,7 @@ getPointsOnLines_detail*/
          else
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -2410,7 +2410,7 @@ getPointsOnLines_detail*/
                  p0_f1,
                  p0_f2};
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -2430,7 +2430,7 @@ getPointsOnLines_detail*/
           */
          return (*l1)(this)->get6PointsTuple(l1);
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -2830,7 +2830,7 @@ netL *unlink(netP *obj, netP *obj_) {
       obj_->Erase(line);
       return line;
    } else {
-      std::cout << Red << obj << " and " << obj_ << " are not linked" << colorOff << std::endl;
+      std::cout << Red << obj << " and " << obj_ << " are not linked" << colorReset << std::endl;
       return nullptr;
    }
 };
@@ -3103,7 +3103,7 @@ netF *genFace(Network *const net,
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -3566,8 +3566,8 @@ class Network : public CoordinateBounds {
       if (!this->BucketPoints.add(this->getPoints()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
       else {
-         std::cout << green << this->getName() << ", all points are added" << colorOff << std::endl;
-         std::cout << green << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << colorOff << std::endl;
+         std::cout << green << this->getName() << ", all points are added" << colorReset << std::endl;
+         std::cout << green << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << colorReset << std::endl;
       }
       this->BucketPoints.setVector();
       std::cout << this->getName() << ", BucketPoints.setVector() done" << std::endl;
@@ -3995,7 +3995,7 @@ class Network : public CoordinateBounds {
    V_netPp linkXPoints(Network &water, Network &obj);
    /* ------------------------------------------------------ */
    void displayStates() {
-      std::cout << "/* -------------------------------------------------------------------------- */" << colorOff << std::endl;
+      std::cout << "/* -------------------------------------------------------------------------- */" << colorReset << std::endl;
       const int size = 15;
       V_i num(size, 0), pointsLines(size, 0);
       // 点の持つ線の数をカウント
@@ -4021,9 +4021,9 @@ class Network : public CoordinateBounds {
       std::cout << Magenta << std::setw(25) << "Lines of points : " << GridVector(pointsLines, 6) << std::endl;
       std::cout << Magenta << std::setw(25) << " Connection of faces : " << GridVector(connection, 6);
       if (connection[0] == 0 && connection[1] == 0 && connection[2] != 0)
-         std::cout << Blue << " 全ての線が2つの面と接続しているため，格子は閉じた面を形成している" << colorOff;
-      std::cout << colorOff << std::endl;
-      std::cout << "/* -------------------------------------------------------------------------- */" << colorOff << std::endl;
+         std::cout << Blue << " 全ての線が2つの面と接続しているため，格子は閉じた面を形成している" << colorReset;
+      std::cout << colorReset << std::endl;
+      std::cout << "/* -------------------------------------------------------------------------- */" << colorReset << std::endl;
    };
    double rotation_offset;
    V_d translation_offset;
@@ -4053,7 +4053,7 @@ class Network : public CoordinateBounds {
             p->setX(center + (p->X - center) * ratio);
          this->setGeometricProperties();
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -4063,7 +4063,7 @@ class Network : public CoordinateBounds {
             p->setX(center + (p->X - center) * ratio);
          this->setGeometricProperties();
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -4073,7 +4073,7 @@ class Network : public CoordinateBounds {
             p->X += direction;
          setGeometricProperties();
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -4083,7 +4083,7 @@ class Network : public CoordinateBounds {
             p->X = p->initialX + translation;
          setGeometricProperties();
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -4288,7 +4288,7 @@ class Network : public CoordinateBounds {
 #endif
          // ret.assign(tmp.begin(), tmp.end());
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       return ret;
@@ -4345,7 +4345,7 @@ class Network : public CoordinateBounds {
          }
       } catch (std::exception &e) {
          std::cerr << "error at " << this->getName() << std::endl;
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
@@ -4436,7 +4436,7 @@ class Network : public CoordinateBounds {
             }
          }
       } catch (std::exception &e) {
-         std::cerr << e.what() << colorOff << std::endl;
+         std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
       this->setGeometricProperties();
@@ -4623,7 +4623,7 @@ inline void networkFace::Delete() {
       else
          std::ranges::for_each(this->Lines, [&](const auto &l) { l->Erase(this); });
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -4680,7 +4680,7 @@ inline void networkPoint::Delete() {
          // this->resetXinfo();
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -4727,7 +4727,7 @@ inline void networkLine::Delete() {
 //          network::erase(this->XPoints, p);
 //       }
 //    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
+//       std::cerr << e.what() << colorReset << std::endl;
 //       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //    };
 // };
@@ -4745,19 +4745,19 @@ inline Network::~Network() {
       std::cout << this->getName() << "->Points.size() = " << this->Points.size() << std::endl;
       std::cout << this->getName() << "->Faces.size() = " << this->Faces.size() << std::endl;
       std::cout << this->getName() << "->Lines.size() = " << this->Lines.size() << std::endl;
-      std::cout << "destroying Points in " << Red << this->getName() << colorOff << std::endl;
+      std::cout << "destroying Points in " << Red << this->getName() << colorReset << std::endl;
       {
          auto tmp = this->Points;
          for (const auto &p : tmp)
             delete p;
       }
-      std::cout << "destroying Faces in " << Red << this->getName() << colorOff << std::endl;
+      std::cout << "destroying Faces in " << Red << this->getName() << colorReset << std::endl;
       {
          auto tmp = this->Faces;
          for (const auto &f : tmp)
             delete f;
       }
-      std::cout << "destroying Lines in " << Red << this->getName() << colorOff << std::endl;
+      std::cout << "destroying Lines in " << Red << this->getName() << colorReset << std::endl;
       {
          auto tmp = this->Lines;
          for (const auto &l : tmp)
@@ -4777,7 +4777,7 @@ inline Network::~Network() {
       //       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       //    }
       // } catch (std::exception &e) {
-      //    std::cerr << e.what() << colorOff << std::endl;
+      //    std::cerr << e.what() << colorReset << std::endl;
       //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       // };
 
@@ -4810,7 +4810,7 @@ inline Network::~Network() {
       // std::cout << "|        |" << this->Points.size() << std::endl;
       // std::cout << "|________|" << std::endl;
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
    };
 };
 
@@ -4866,7 +4866,7 @@ inline Network::~Network() {
 //       Print("Intersection Network has been generated", Magenta);
 //    }
 //    displayStates();
-//    std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+//    std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
 // };
 ////////////////////////////////////////////////////////////////////////
 inline V_netPp Network::linkXPoints(Network &water, Network &obj) {

@@ -255,60 +255,72 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<std::vector<dou
 
 /* ------------------------------------------------------ */
 
-// template <typename T>
-// void Print(const T *const v_IN) { std::cout << v_IN << std::endl; };
 template <typename T>
 void Print(const T &v_IN) {
    std::cout << v_IN << std::endl;
 };
+
 template <typename T, typename U>
 void Print(const T &v_IN, const U &color) {
-   std::cout << color << v_IN << colorOff << std::endl;
+   std::cout << color << v_IN << colorReset << std::endl;
 };
+
 template <typename... Args>
 void Print(Args... args) {
    std::stringstream stream;
    (stream << ... << args);
-   std::cout << stream.str() << colorOff << std::endl;
+   std::cout << stream.str() << colorReset << std::endl;
 }
-//
+
+/* ------------------------------------------------------ */
+
 template <typename T>
 void DebugPrint(const T &v_IN) {
-#if defined(_debugging_)
+#if defined(DEBUGGING)
    std::cout << v_IN << std::endl;
 #endif
 };
+
 template <typename T, typename U>
 void DebugPrint(const T &v_IN, const U &color) {
-#if defined(_debugging_)
-   std::cout << color << v_IN << colorOff << std::endl;
+#if defined(DEBUGGING)
+   std::cout << color << v_IN << colorReset << std::endl;
 #endif
 };
-//
+
 template <typename... Args>
 void DebugPrint(Args... args) {
-#if defined(_debugging_)
+#if defined(DEBUGGING)
    std::stringstream stream;
    (stream << ... << args);
-   std::cout << stream.str() << colorOff << std::endl;
+   std::cout << stream.str() << colorReset << std::endl;
 #endif
 }
 
-// template <typename T>
-// void MatrixForm(const std::vector<std::vector<T>> &mat, const int n = 4, const int m = 7) {
-//    std::stringstream ss;
-//    ss << std::setprecision(n) << Red << "{" << colorOff;
-//    for (auto it = mat.begin(); it != mat.end(); ++it) {
-//       ss << Green << (it == mat.begin() ? "{" : " {") << colorOff;
-//       for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt)
-//          ss << std::setw(m) << std::setfill(' ') << (*jt) << Green << "," << colorOff;
-//       ss << std::setw(m) << std::setfill(' ') << (*((*it).end() - 1)) << Green << "}" << colorOff;
-//       if (it != mat.end() - 1)
-//          ss << ",\n";
-//    }
-//    ss << Red << "}" << colorOff;
-//    std::cout << ss.str() << std::endl;
-// };
+template <typename T>
+void DebugPrintLevel(int level, const T &value) {
+   if (level <= DEBUGGING_LEVEL) {
+      std::cout << value << std::endl;
+   }
+}
+
+template <typename T, typename U>
+void DebugPrintLevel(int level, const T &value, const U &color) {
+   if (level <= DEBUGGING_LEVEL) {
+      std::cout << color << value << colorReset << std::endl;
+   }
+}
+
+template <typename... Args>
+void DebugPrintLevel(int level, const std::string &color, Args... args) {
+   if (level <= DEBUGGING_LEVEL) {
+      std::stringstream stream;
+      (stream << ... << args);
+      std::cout << color << stream.str() << colorReset << std::endl;
+   }
+}
+
+/* ------------------------------------------------------- */
 
 #include <functional>
 
@@ -320,7 +332,7 @@ std::string MatrixForm(const T &mat,
 
    auto COL = [](const auto &x, const auto &Red, const int w = 0) {
       std::stringstream ss;
-      ss << Red << std::setw(w) << std::setfill(' ') << x << colorOff;
+      ss << Red << std::setw(w) << std::setfill(' ') << x << colorReset;
       return ss.str();
    };
 
@@ -329,7 +341,7 @@ std::string MatrixForm(const T &mat,
    ss << std::setprecision(prec) << COL("{", Magenta);
    for (auto it = mat.begin(); it != mat.end(); ++it) {
       int j = 0;
-      ss << Green << (it == mat.begin() ? "{" : " {") << colorOff;
+      ss << Green << (it == mat.begin() ? "{" : " {") << colorReset;
       for (auto jt = (*it).begin(); jt != ((*it).end() - 1); ++jt) {
          if (color(i, j))
             ss << COL(*jt, Red, width) << COL(",", Green);

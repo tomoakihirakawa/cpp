@@ -3,7 +3,7 @@ import sys
 red = '\033[91m'
 green = '\033[92m'
 magenta = '\033[95m'
-coloroff = '\033[0m'
+colorReset = '\033[0m'
 
 
 input_directory = str(sys.argv[1])
@@ -18,7 +18,7 @@ def readJson(setting, color=red):
     data = json.load(f)
     print('------------------------------------')
     for key, value in data.items():
-        print(f'{key: <{20}}', '\t', color, value, coloroff)
+        print(f'{key: <{20}}', '\t', color, value, colorReset)
         if "input_files" == key:
             input_files = value
     print('------------------------------------')
@@ -33,4 +33,4 @@ readJson(input_directory + '/setting.json')
 for INPUTS in input_files:
     readJson(input_directory + "/" + INPUTS, green)
 
-# print("The directory for input files :", magenta, input_directory, coloroff)
+# print("The directory for input files :", magenta, input_directory, colorReset)

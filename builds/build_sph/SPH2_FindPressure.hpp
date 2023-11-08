@@ -225,8 +225,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             const auto BX = X_next(B);
             const auto r = pO->SML_next();
             if (Distance(pO_center, BX) < r) {
-               auto grad = grad_w_Bspline_next(pO, B);
-               double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, B);  //\label{SPH:lapP1}
+               auto grad = grad_w_Bspline_next(pO, pO_center, B);
+               double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
 
                //! 修正
                const auto DelX = (pO_center - BX);
@@ -235,7 +235,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                      return;
                   if (pO == Q)
                      return;
-                  auto c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline_next(pO, Q));
+                  auto c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline_next(pO, pO_center, Q));
                   ROW->increment(pO, c);
                   ROW->increment(Q, -c);
                },
@@ -260,13 +260,23 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          // \label{SPH:whereToMakeTheEquation}
          if ((ROW->isSurface_next || ROW->isSurface) && !ROW->isAuxiliary) {
+            // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
+            // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
+            // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             ROW->pressure_equation_index = 0;
             // b% EISPH
             ROW->p_SPH = ROW->p_EISPH = 0;
             // b@ ISPH
             ROW->clearColumnValue();
             ROW->CRS::set(ROW, 1.);
+
+            // if (ROW->isSurface && !ROW->isAuxiliary)
+            //    ROW->CRS::set(ROW->auxPoint, 1.);
+            // else
+            //    ROW->CRS::set(ROW->surfacePoint, 1.);
+
             ROW->PoissonRHS = 0;
+
          } else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
             //! 壁面の圧力はPoissonを解かない方が計算が安定するようだ
             // } else if (false) {
@@ -307,6 +317,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // b@ ISPH
             ROW->pressure_equation_index = 3;
             pO = ROW;
+            if (ROW->isAuxiliary)
+               pO = ROW->surfacePoint;
+
             pO_center = X_next(pO);
             applyOverPoints(PoissonEquation, target_nets);
             //! 安定化
@@ -346,6 +359,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // }
             // b% EISPH
             ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+            if (ROW->isAuxiliary)
+               ROW->p_SPH = 0;
          }
 
          /* -------------------------------------------------------------------------- */

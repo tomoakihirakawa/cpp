@@ -36,7 +36,13 @@ python3 input_generator.py
 
 double delta_t;
 
-// #define _debugging_
+#define DEBUGGING
+#ifdef DEBUGGING
+   #define DEBUGGING_LEVEL 1
+#else
+   #define DEBUGGING_LEVEL 0
+#endif
+
 #include <filesystem>
 #include <utility>
 #define DEM
@@ -105,7 +111,7 @@ int main(int argc, char **argv) {
    std::string input_main_file = "setting.json";
    JSON settingJSON(std::ifstream(input_directory + input_main_file));
    for (const auto &line : settingJSON())
-      std::cout << Red << std::setw(30) << line.first << " : " << line.second << colorOff << std::endl;
+      std::cout << Red << std::setw(30) << line.first << " : " << line.second << colorReset << std::endl;
 
    // Check for the existence of required keys in the JSON file
    const std::vector<std::string> required_keys = {"output_directory", "CSML", "end_time", "end_time_step", "max_dt", "RK_order", "initial_surface_z_position"};
@@ -264,7 +270,7 @@ int main(int argc, char **argv) {
       particlesNet->makeBucketPoints(2 * particle_spacing);
       poly->makeBucketFaces(2 * particle_spacing);
       //
-      std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       double ps = particle_spacing;
 
@@ -426,8 +432,8 @@ int main(int argc, char **argv) {
             if (Fluid != nullptr) {
                std::vector<networkPoint *> points;
                for (const auto &p : Fluid->getPoints())
-                  if (!p->isAuxiliary)
-                     points.emplace_back(p);
+                  // if (!p->isAuxiliary)
+                  points.emplace_back(p);
 
                vtkPolygonWriter<networkPoint *> vtp;
                vtp.add(points);

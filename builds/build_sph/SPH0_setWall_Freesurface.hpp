@@ -14,6 +14,11 @@
 
 void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
+   // if (A->isAuxiliary)
+   //    return;
+
+   DebugPrintLevel(2, "setCorrectionMatrix start", Blue);
+
    /*DOC_EXTRACT 0_1_1_set_free_surface
 
    ### `setCorrectionMatrix`について
@@ -78,6 +83,9 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    // A->Mat_B.fill({0., 0., 0.});
 
    Tddd Xij, Uij;
+
+   DebugPrintLevel(2, "setCorrectionMatrix: initiation done. start add", Blue);
+
    auto add = [&](const auto &B) {
       auto grad_w = grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
       if (B->isCaptured) {
@@ -128,6 +136,8 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
             add(B);
       });
    });
+
+   DebugPrintLevel(2, "setCorrectionMatrix: add done", Blue);
 
    A->Eigenvalues_of_M = {0., 0., 0.};
    A->inv_grad_corr_M = Inverse(A->grad_corr_M);
@@ -181,6 +191,8 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
 
    /* -------------------------------------------------------------------------- */
+   DebugPrintLevel(2, "setCorrectionMatrix: Eigenvalues done. start calc laplacian_corr_M", Blue);
+
    // Convert B into a 9x9 matrix
    /*
    B:T=-I
@@ -195,36 +207,21 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
                   M[i * 3 + k][j * 3 + l] = B[i][j][k][l];
       return M;
    };
-   {
-      auto M = toMatrix(A->v_reeDW + Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
-      std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
-      // auto b = Dot(Inverse(M), I);
-      auto b = Dot(I, Inverse(M));
+   const std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
+   std::vector<double> x(9), x_next(9);
+   auto M = toMatrix(A->v_reeDW + Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
+   lapack_lu(M, x, I);
+   //
+   auto M_next = toMatrix(A->v_reeDW_next + Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
+   lapack_lu(M_next, x_next, I);
 
-      for (auto i = 0; i < 3; ++i)
-         for (auto j = 0; j < 3; ++j)
-            A->laplacian_corr_M[i][j] = b[i * 3 + j];
+   for (auto i = 0; i < 3; ++i)
+      for (auto j = 0; j < 3; ++j) {
+         A->laplacian_corr_M[i][j] = x[i * 3 + j];
+         A->laplacian_corr_M_next[i][j] = x_next[i * 3 + j];
+      }
 
-      // A->laplacian_corr_M = A->inv_grad_corr_M;
-      // IdentityMatrix(A->laplacian_corr_M);
-   }
-   {
-      auto M = toMatrix(A->v_reeDW_next + Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
-      std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
-      // auto b = Dot(Inverse(M), I);
-      auto b = Dot(I, Inverse(M));
-
-      for (auto i = 0; i < 3; ++i)
-         for (auto j = 0; j < 3; ++j)
-            A->laplacian_corr_M_next[i][j] = b[i * 3 + j];
-
-      // std::cout << "A->grad_corr_M_next = " << A->grad_corr_M_next << std::endl;
-      // std::cout << "A->laplacian_corr_M_next = " << A->laplacian_corr_M_next << std::endl;
-      // std::cin.ignore();
-
-      // A->laplacian_corr_M_next = A->inv_grad_corr_M_next;
-      // IdentityMatrix(A->laplacian_corr_M_next);
-   }
+   DebugPrintLevel(2, "setCorrectionMatrix done", Blue);
 };
 
 void setCorrectionMatrix(const auto &all_nets) {
@@ -242,6 +239,7 @@ void setCorrectionMatrix(const auto &all_nets) {
 */
 
 void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_spacing, auto &wall_p) {
+   DebugPrint("setWall", Cyan);
    try {
       // 初期化
       std::vector<Network *> all_nets = {net};
@@ -269,7 +267,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             p->intp_density = 0.;
          }
 
-      DebugPrint("isFirstWallLayerを決める", Green);
+      DebugPrint("isCapturedなどを計算", Cyan);
 
 #pragma omp parallel
       for (const auto &p : net->getPoints())
@@ -431,7 +429,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          p->grad_Min_gradM = -Normalize(p->grad_Min_gradM);
       };
 
-      // DebugPrint("壁粒子のオブジェクト外向き法線方向を計算", Green);
+      DebugPrint("setCorrectionMatrix", Cyan);
 
       /*DOC_EXTRACT 0_1_2_setWall
 
@@ -448,14 +446,16 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                wall_p.emplace(p);
 
       for (const auto &[obj, poly] : RigidBodyObject)
-#pragma omp parallel
+         // #pragma omp parallel
          for (const auto &p : obj->getPoints())
-#pragma omp single nowait
+            // #pragma omp single nowait
             setCorrectionMatrix(p, all_nets);
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in setWall");
    };
+
+   DebugPrint("setWall done", Cyan);
 };
 
 /*DOC_EXTRACT 0_1_3_set_free_surface

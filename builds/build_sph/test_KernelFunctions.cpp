@@ -116,7 +116,7 @@ int main() {
                 << Yellow << " sum_grad_4 = " << w << p << sum_grad_4
                 << Green << " sum_grad_W = " << w << p << sum_grad_W
                 << Magenta << " sum_grad_spike = " << w << p << sum_grad_spike
-                << colorOff << std::endl;
+                << colorReset << std::endl;
    }
    return 0;
 }
