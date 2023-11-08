@@ -26,10 +26,10 @@ bool canInteract(const networkPoint *A, const networkPoint *B) {
    /* ----------------------------------- */
    if (B->isAuxiliary)
       return false;
-   // if (A->isAuxiliary && A->surfacePoint == B)
-   //    return false;
-   // if (A->auxPoint != nullptr && A->auxPoint == B)
-   //    return false;
+   if (A->isAuxiliary && A->surfacePoint == B)
+      return false;
+   if (A->auxPoint != nullptr && A->auxPoint == B)
+      return false;
    /* ----------------------------------- */
    // const double c = .3;
    // if (B->isAuxiliary) {
@@ -166,8 +166,8 @@ void setSML(const auto &target_nets) {
    /* -------------------------------- C_SMLの調整 -------------------------------- */
    const double C_SML_max = 2.7;
    // double C_SML_min = 1.866;
-   const double C_SML_min = 2.3;
-   const double C_SML_min_rigid = 2.3;
+   const double C_SML_min = 2.4;
+   const double C_SML_min_rigid = 2.4;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -306,10 +306,10 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return p->U_SPH;
-   else
-      return p->RK_U.getX(p->DUDt_SPH);
+   // if (!p->isFluid)
+   //    return p->U_SPH;
+   // else
+   return p->RK_U.getX(p->DUDt_SPH);
    // return p->RK_U.getX();
 }
 Tddd X_next(const networkPoint *p) {

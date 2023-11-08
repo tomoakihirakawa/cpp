@@ -363,8 +363,8 @@ void developByEISPH(Network *net,
          // setFreeSurface(net, RigidBodyObject);
          // std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
          /* -------------------------------------------------------------------------- */
-         // setSML(Append(net_RigidBody, net));
-         // setCorrectionMatrix(Append(net_RigidBody, net));
+         setSML(Append(net_RigidBody, net));
+         setCorrectionMatrix(Append(net_RigidBody, net));
          // setAuxiliaryPoints(net);
          // 粒子が接近しすぎると精度に問題が生じる．圧力決めうちの方が安定する．
          //
