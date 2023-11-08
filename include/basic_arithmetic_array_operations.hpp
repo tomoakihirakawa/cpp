@@ -955,30 +955,30 @@ struct hash<std::array<T, N>> {
 }  // namespace std
 /* -------------------------------------------------------------------------- */
 
-T2Tdd Inverse(const T2Tdd& M) {
-   const auto [x00, x01] = std::get<0>(M);
-   const auto [x10, x11] = std::get<1>(M);
-   const double det = std::fma(-x01, x10, x00 * x11);
-   return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
-};
+// T2Tdd Inverse(const T2Tdd& M) {
+//    const auto [x00, x01] = std::get<0>(M);
+//    const auto [x10, x11] = std::get<1>(M);
+//    const double det = std::fma(-x01, x10, x00 * x11);
+//    return {{{x11 / det, -x01 / det}, {-x10 / det, x00 / det}}};
+// };
 
-T3Tddd Inverse(const T3Tddd& mat) {
-   const auto [x00, x01, x02] = std::get<0>(mat);
-   const auto [x10, x11, x12] = std::get<1>(mat);
-   const auto [x20, x21, x22] = std::get<2>(mat);
-   const double inv_det = 1. / (std::fma(std::fma(-x02, x11, x01 * x12), x20, std::fma(std::fma(x02, x10, -x00 * x12), x21, std::fma(std::fma(-x01, x10, x00 * x11), x22, 0))));
-   return {Tddd{inv_det * std::fma(-x12, x21, x11 * x22),
-                inv_det * std::fma(x02, x21, -x01 * x22),
-                inv_det * std::fma(-x02, x11, x01 * x12)},
-           Tddd{inv_det * std::fma(x12, x20, -x10 * x22),
-                inv_det * std::fma(-x02, x20, x00 * x22),
-                inv_det * std::fma(x02, x10, -x00 * x12)},
-           Tddd{inv_det * std::fma(-x11, x20, x10 * x21),
-                inv_det * std::fma(x01, x20, -x00 * x21),
-                inv_det * std::fma(-x01, x10, x00 * x11)}};
-   // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
-   // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
-};
+// T3Tddd Inverse(const T3Tddd& mat) {
+//    const auto [x00, x01, x02] = std::get<0>(mat);
+//    const auto [x10, x11, x12] = std::get<1>(mat);
+//    const auto [x20, x21, x22] = std::get<2>(mat);
+//    const double inv_det = 1. / (std::fma(std::fma(-x02, x11, x01 * x12), x20, std::fma(std::fma(x02, x10, -x00 * x12), x21, std::fma(std::fma(-x01, x10, x00 * x11), x22, 0))));
+//    return {Tddd{inv_det * std::fma(-x12, x21, x11 * x22),
+//                 inv_det * std::fma(x02, x21, -x01 * x22),
+//                 inv_det * std::fma(-x02, x11, x01 * x12)},
+//            Tddd{inv_det * std::fma(x12, x20, -x10 * x22),
+//                 inv_det * std::fma(-x02, x20, x00 * x22),
+//                 inv_det * std::fma(x02, x10, -x00 * x12)},
+//            Tddd{inv_det * std::fma(-x11, x20, x10 * x21),
+//                 inv_det * std::fma(x01, x20, -x00 * x21),
+//                 inv_det * std::fma(-x01, x10, x00 * x11)}};
+//    // auto bc = Cross(std::get<1>(mat), std::get<2>(mat));
+//    // return T3Tddd{bc, Cross(std::get<2>(mat), std::get<0>(mat)), Cross(std::get<0>(mat), std::get<1>(mat))} / (Dot(std::get<0>(mat), bc));
+// };
 
 template <typename T>
 void IdentityMatrix(T& M) {

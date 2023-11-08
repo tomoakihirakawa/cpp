@@ -118,7 +118,7 @@ void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK
 //\label{BEM:setNeumannVelocity}
 void setNeumannVelocity(const std::vector<Network *> &objects) {
    for (auto net : objects) {
-      std::cout << Green << "setNeumannVelocity: " << colorOff << net->getName() << std::endl;
+      std::cout << Green << "setNeumannVelocity: " << colorReset << net->getName() << std::endl;
       //! 壁面の動きは，マイステップ更新することにした．この結果はphin()で参照される
       net->velocity.fill(0.);
       // net->acceleration.fill(0.);

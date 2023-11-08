@@ -470,7 +470,7 @@ inline V_netFp networkPoint::getFacesSort(networkLine *const line) const {
 
       return ret;
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -544,7 +544,7 @@ inline void networkPoint::setX(const Tddd &xyz_IN) {
          f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -995,7 +995,7 @@ inline V_netPp networkPoint::getNeighborsSort() const {
       }
       return ret;
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -1022,7 +1022,7 @@ inline V_netPp networkPoint::getNeighborsSort(bool TorF) {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not chain !");
       return ret;
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };

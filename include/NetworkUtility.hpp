@@ -44,7 +44,7 @@ bool isInConvexPolygon(const networkPoint *const p) {
 
       return isConvexPolygon(extX(ps), p->getNormalTuple());
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -186,7 +186,7 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
          }
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -394,7 +394,7 @@ void flipIf(Network &water,
       }
       water.setGeometricProperties();
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -415,7 +415,7 @@ void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false
 //             p->setX(Mean(extractX(ps)));
 //       }
 //    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
+//       std::cerr << e.what() << colorReset << std::endl;
 //       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //    };
 // };
@@ -440,7 +440,7 @@ void flipIf(Network &water, double limit_angle = M_PI / 180., bool force = false
 //             }
 //          }
 //    } catch (std::exception &e) {
-//       std::cerr << e.what() << colorOff << std::endl;
+//       std::cerr << e.what() << colorReset << std::endl;
 //       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //    };
 // };
@@ -474,7 +474,7 @@ void LaplacianSmoothingIfOnStraightLine(V_netPp ps) {
                p->setX(ToVector(ToX(p0) + ToX(p1)) / 2.);
          }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -607,7 +607,7 @@ void Divide(const std::unordered_set<networkLine *> &uo_lines, const double lim_
          std::cout << Green << "|";
          l->divide();
       }
-   std::cout << Blue << "|" << colorOff;
+   std::cout << Blue << "|" << colorReset;
 };
 
 //////////////////////////////////////////////////////////////
@@ -704,7 +704,7 @@ void displayNames(const std::vector<T *> &ps) {
    for (auto [n, i] : storages)
       std::cout << std::setw(8) << n->getName() << "  " << std::setw(8) << i << std::endl;
    if (storages.empty())
-      std::cout << Red << "not stored !?" << colorOff << std::endl;
+      std::cout << Red << "not stored !?" << colorReset << std::endl;
 };
 
 template <typename T>
@@ -719,7 +719,7 @@ void displayStorages(const std::vector<T *> &ps) {
    for (auto [n, i] : storages)
       std::cout << std::setw(8) << n->getName() << "  " << std::setw(8) << i << std::endl;
    if (storages.empty())
-      std::cout << Red << "not stored !?" << colorOff << std::endl;
+      std::cout << Red << "not stored !?" << colorReset << std::endl;
 };
 
 void display(const std::unordered_set<networkLine *> &ls) {
@@ -768,14 +768,14 @@ void display(Network *net) {
    }
    std::cout << "Network name : " << net->getName() << std::endl;
    std::cout << "--------------------Names---------------------------" << std::endl;
-   std::cout << Blue << "Points : " << colorOff;
+   std::cout << Blue << "Points : " << colorReset;
    // displayNames(net->getPoints());
-   std::cout << Magenta << " Faces : " << colorOff;
+   std::cout << Magenta << " Faces : " << colorReset;
    // displayNames(net->getFaces());
    std::cout << "------------------Storages--------------------------" << std::endl;
-   std::cout << Blue << "Points : " << colorOff;
+   std::cout << Blue << "Points : " << colorReset;
    // displayStorages(net->getPoints());
-   std::cout << Magenta << " Faces : " << colorOff;
+   std::cout << Magenta << " Faces : " << colorReset;
    // displayStorages(net->getFaces());
    std::cout << "--------------------Lines--------------------------" << std::endl;
    display(net->getLines());
@@ -791,33 +791,33 @@ void display(Network *net) {
    for (const auto &n : num) {
       std::cout << std::setw(6) << n;
    };
-   std::cout << colorOff << std::endl;
+   std::cout << colorReset << std::endl;
 
    std::cout << magenta << "Lines of points : ";
    for (const auto &n : pointsLines) {
       std::cout << (n == 0 ? magenta : Magenta) << std::setw(6) << n;
    }
-   std::cout << colorOff << std::endl;
+   std::cout << colorReset << std::endl;
 
    // std::cout << magenta << "Points of faces : ";
    // for (const auto &n : facesPoints)
    // {
    // 	std::cout << (n == 0 ? magenta : Magenta) << std::setw(6) << n;
    // };
-   // std::cout << colorOff << std::endl;
+   // std::cout << colorReset << std::endl;
 
    // std::cout << magenta << " Lines of faces : ";
    // for (const auto &n : facesLines)
    // {
    // 	std::cout << (n == 0 ? magenta : Magenta) << std::setw(6) << n;
    // };
-   std::cout << colorOff << std::endl;
+   std::cout << colorReset << std::endl;
 
    std::cout << magenta << " Faces of Lines : ";
    for (const auto &n : linesFaces) {
       std::cout << (n == 0 ? magenta : Magenta) << std::setw(6) << n;
    };
-   std::cout << colorOff << std::endl;
+   std::cout << colorReset << std::endl;
 
    V_i connection(3);
    net->setLinesStatus(true);
@@ -833,7 +833,7 @@ void display(Network *net) {
    std::cout << magenta << " Connection of faces : " << connection;
    if (connection[0] == 0 && connection[1] == 0 && connection[2] != 0)
       std::cout << Blue << " <- Network is a closed surface";
-   std::cout << colorOff << std::endl;
+   std::cout << colorReset << std::endl;
    std::cout << "-----------------------------------------------" << std::endl;
 };
 

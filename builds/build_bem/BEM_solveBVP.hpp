@@ -131,7 +131,7 @@ void setPhiPhin(Network &water) {
    /*                         phinOnFace, phintOnFaceの設定                       */
    /* -------------------------------------------------------------------------- */
    // b! 点
-   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorOff << std::endl;
+   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorReset << std::endl;
 
 #pragma omp parallel
    for (const auto &p : water.getPoints())
@@ -178,7 +178,7 @@ void setPhiPhin(Network &water) {
    }
 
    // b! 面
-   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorOff << std::endl;
+   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorReset << std::endl;
 #pragma omp parallel
    for (const auto &f : water.getFaces())
 #pragma omp single nowait
@@ -300,7 +300,7 @@ struct BEM_BVP {
 #define use_rigid_mode
       Timer timer;
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
-      std::cout << Magenta << timer() << colorOff << std::endl;
+      std::cout << Magenta << timer() << colorReset << std::endl;
       /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
       #### 係数行列の作成
@@ -418,7 +418,7 @@ struct BEM_BVP {
          std::get<1>(IGIGn_Row[index]) += origin->getSolidAngle();
 #endif
       }
-      std::cout << Green << "離散化にかかった時間" << timer() << colorOff << std::endl;
+      std::cout << Green << "離散化にかかった時間" << timer() << colorReset << std::endl;
    };
 
    void makeMatrix() {
@@ -557,8 +557,8 @@ struct BEM_BVP {
             if (PBF_index.find(id) == PBF_index.end())
                PBF_index[id] = i++;
 
-      std::cout << Red << "   unknown size : " << PBF_index.size() << colorOff << std::endl;
-      std::cout << Red << "water node size : " << water.getPoints().size() << colorOff << std::endl;
+      std::cout << Red << "   unknown size : " << PBF_index.size() << colorReset << std::endl;
+      std::cout << Red << "water node size : " << water.getPoints().size() << colorReset << std::endl;
 
       setIGIGn(water);
 
@@ -596,7 +596,7 @@ struct BEM_BVP {
       std::cout << "use gmres for BIE" << std::endl;
       auto b = ParallelDot(mat_kn, knowns);
       gmres gm(mat_ukn, b, ans, use_gmres);
-      std::cout << Red << "gmres error = " << gm.err << colorOff << std::endl;
+      std::cout << Red << "gmres error = " << gm.err << colorReset << std::endl;
       if (!isFinite(gm.err, 1E+5) || !isFinite(gm.x, 1E+5)) {
          std::cout << Red << "gmres failed" << std::endl;
          std::cout << Red << "lapack lu decomposition" << std::endl;
@@ -619,14 +619,15 @@ struct BEM_BVP {
          // std::cout << err << std::endl;
 #elif defined(use_lapack)
       std::cout << "lapack lu decomposition" << std::endl;
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      //! A.x = b
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/);
 #endif
 
-      std::cout << colorOff << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorOff << std::endl;
+      std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
 
       storePhiPhin(water, ans);
 
-      std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorOff << " s\n";
+      std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorReset << " s\n";
 
       isSolutionFinite(water);
    };
@@ -874,7 +875,7 @@ struct BEM_BVP {
       V_d ACCELS_init;
       for (const auto &net : rigidbodies) {
          // if (net->interp_accel.size() > 3) {
-         //    std::cout << Red << "interp_accel" << colorOff << std::endl;
+         //    std::cout << Red << "interp_accel" << colorReset << std::endl;
          //    std::ranges::for_each(net->interp_accel(net->RK_Q.get_t()), [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
          // } else
          std::ranges::for_each(net->acceleration, [&](const auto &a_w) { ACCELS_init.emplace_back(a_w); });
@@ -916,7 +917,7 @@ struct BEM_BVP {
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
-      // std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       knowns.resize(PBF_index.size());
 #pragma omp parallel
@@ -930,7 +931,7 @@ struct BEM_BVP {
             knowns[i] = p->phintOnFace.at(f);
       }
 
-      // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       ans.resize(knowns.size());
 #if defined(use_CG)
       GradientMethod gd(mat_ukn);
@@ -939,13 +940,13 @@ struct BEM_BVP {
       std::cout << "use gmres for phiphin_t" << std::endl;
       auto b = ParallelDot(mat_kn, knowns);
       gmres gm(mat_ukn, b, ans, use_gmres);
-      std::cout << Red << "gmres for phiphin_t. error = " << gm.err << colorOff << std::endl;
+      std::cout << Red << "gmres for phiphin_t. error = " << gm.err << colorReset << std::endl;
       if (!isFinite(gm.err) || !isFinite(gm.x)) {
          std::cout << Red << "gmres for phiphin_t failed" << std::endl;
          if (this->lu) {
             this->lu->solve(b, ans);
          } else {
-            std::cout << Green << "new lapack_lu" << colorOff << std::endl;
+            std::cout << Green << "new lapack_lu" << colorReset << std::endl;
             this->lu = new lapack_lu(mat_ukn, b, ans);
          }
       } else {
@@ -962,13 +963,13 @@ struct BEM_BVP {
 #elif defined(use_lapack)
       this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
 #endif
-      // std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
       storePhiPhin_t(water, ans);
-      // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
@@ -996,7 +997,7 @@ struct BEM_BVP {
             std::array<double, 3> F_mooring = {0., 0., 0.}, T_mooring = {0., 0., 0.};
             net->inputJSON.find("mooring", [&](const auto &values) {
                if (values[0] == "simple_mooring") {
-                  std::cout << Yellow << "simple_moorings" << colorOff << std::endl;
+                  std::cout << Yellow << "simple_moorings" << colorReset << std::endl;
                   std::array<double, 3> X_anchor = {stod(values[1]), stod(values[2]), stod(values[3])};            //$ アンカー
                   std::array<double, 3> X_fairlead_initial = {stod(values[4]), stod(values[5]), stod(values[6])};  //$ フェアリード
                   double natural_length = Norm(X_anchor - X_fairlead_initial);
@@ -1004,7 +1005,7 @@ struct BEM_BVP {
                   double current_length = Norm(X_anchor - X_fairlead);
                   F_mooring = stod(values[7]) * (current_length - natural_length) * Normalize(X_anchor - X_fairlead);
                   T_mooring = Cross(X_fairlead - net->COM, F_mooring);
-                  std::cout << Yellow << "F_mooring = " << F_mooring << ", T_mooring = " << T_mooring << colorOff << std::endl;
+                  std::cout << Yellow << "F_mooring = " << F_mooring << ", T_mooring = " << T_mooring << colorReset << std::endl;
                }
             });
             /* -------------------------------------------------------------------------- */
@@ -1021,7 +1022,7 @@ struct BEM_BVP {
             // std::cout << Green << "inertia = " << net->getInertiaGC() << std::endl;
          } else
             i += 6;
-      // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+      // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       return ACCELS - ACCELS_IN;
    };
 
@@ -1054,7 +1055,7 @@ struct BEM_BVP {
          func_ = func;
          insertAcceleration(rigidbodies, BM.X);
 
-         std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorOff << std::endl;
+         std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorReset << std::endl;
 
          if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10) {
             if (count++ > 4)

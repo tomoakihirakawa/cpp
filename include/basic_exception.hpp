@@ -24,11 +24,11 @@ class error_message : public std::exception {
 
    std::string nani() const {
       std::ostringstream ss;
-      ss << colorOff << "----------------------------------------------------\n"
-         << colorOff << "    FILE: " << red << filename << ":" << Green << line << "\n"
-         << colorOff << "FUNCTION: " << Magenta << name << "\n"
-         << colorOff << " message: " << Red << message << colorOff << "\n"
-         << colorOff << "----------------------------------------------------\n";
+      ss << colorReset << "----------------------------------------------------\n"
+         << colorReset << "    FILE: " << red << filename << ":" << Green << line << "\n"
+         << colorReset << "FUNCTION: " << Magenta << name << "\n"
+         << colorReset << " message: " << Red << message << colorReset << "\n"
+         << colorReset << "----------------------------------------------------\n";
       return ss.str();
    };
 
@@ -42,7 +42,7 @@ std::string message(const std::string &filename_,
                     const int line_,
                     const std::string &message_) {
    std::ostringstream ss;
-   ss << colorOff << Green << " LINE: " << line_ << colorOff << Magenta << " FUNCTION: " << name_ << colorOff << blue << " FILE: " << filename_ << colorOff << red << " : " << message_ << colorOff;
+   ss << colorReset << Green << " LINE: " << line_ << colorReset << Magenta << " FUNCTION: " << name_ << colorReset << blue << " FILE: " << filename_ << colorReset << red << " : " << message_ << colorReset;
    return ss.str();
 };
 

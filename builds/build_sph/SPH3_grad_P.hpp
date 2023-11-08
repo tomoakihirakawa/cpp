@@ -62,7 +62,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             auto grad = grad_w_Bspline_next(A, B);
             A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
             A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
-            //
+
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad;  //\label{SPH:gradP2}
 
             // A->gradP_SPH += B->mass / A->rho * (B->p_SPH + A->p_SPH) * grad_w_Bspline(A->X, X, A->SML());  //\label{SPH:gradP1}
@@ -161,10 +161,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
       }
 
-      for (const auto &A : points) {
-         if (A->isAuxiliary)
-            A->surfacePoint->gradP_SPH = A->gradP_SPH;
-      }
+      // for (const auto &A : points) {
+      //    if (A->isAuxiliary)
+      //       A->surfacePoint->gradP_SPH = A->gradP_SPH;
+      // }
 
       for (const auto &A : points) {
          A->DUDt_SPH -= A->gradP_SPH / rho_next(A);
@@ -188,10 +188,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          // }
       }
 
-      for (const auto &A : points)
-         if (A->isAuxiliary) {
-            A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
-         }
+      // for (const auto &A : points)
+      //    if (A->isAuxiliary) {
+      //       A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
+      //    }
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in gradP");

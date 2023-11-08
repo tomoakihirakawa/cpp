@@ -95,19 +95,19 @@ void Swap(std::array<T, 2> &ab) {
 // };
 
 /* -------------------------------------------------------------------------- */
-T4T4d Inverse(const T4T4d &mat) {
-   auto [x00, x01, x02, x03] = std::get<0>(mat);
-   auto [x10, x11, x12, x13] = std::get<1>(mat);
-   auto [x20, x21, x22, x23] = std::get<2>(mat);
-   auto [x30, x31, x32, x33] = std::get<3>(mat);
-   double det = (x01 * x13 * x22 * x30 - x01 * x12 * x23 * x30 - x00 * x13 * x22 * x31 + x00 * x12 * x23 * x31 - x01 * x13 * x20 * x32 + x00 * x13 * x21 * x32 + x01 * x10 * x23 * x32 - x00 * x11 * x23 * x32 + x03 * (x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32) + (x01 * x12 * x20 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22) * x33 + x02 * (-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33));
-   //
-   T4T4d inv = {{{-(x13 * x22 * x31) + x12 * x23 * x31 + x13 * x21 * x32 - x11 * x23 * x32 - x12 * x21 * x33 + x11 * x22 * x33, x03 * x22 * x31 - x02 * x23 * x31 - x03 * x21 * x32 + x01 * x23 * x32 + x02 * x21 * x33 - x01 * x22 * x33, -(x03 * x12 * x31) + x02 * x13 * x31 + x03 * x11 * x32 - x01 * x13 * x32 - x02 * x11 * x33 + x01 * x12 * x33, x03 * x12 * x21 - x02 * x13 * x21 - x03 * x11 * x22 + x01 * x13 * x22 + x02 * x11 * x23 - x01 * x12 * x23},
-                 {x13 * x22 * x30 - x12 * x23 * x30 - x13 * x20 * x32 + x10 * x23 * x32 + x12 * x20 * x33 - x10 * x22 * x33, -(x03 * x22 * x30) + x02 * x23 * x30 + x03 * x20 * x32 - x00 * x23 * x32 - x02 * x20 * x33 + x00 * x22 * x33, x03 * x12 * x30 - x02 * x13 * x30 - x03 * x10 * x32 + x00 * x13 * x32 + x02 * x10 * x33 - x00 * x12 * x33, -(x03 * x12 * x20) + x02 * x13 * x20 + x03 * x10 * x22 - x00 * x13 * x22 - x02 * x10 * x23 + x00 * x12 * x23},
-                 {-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33, x03 * x21 * x30 - x01 * x23 * x30 - x03 * x20 * x31 + x00 * x23 * x31 + x01 * x20 * x33 - x00 * x21 * x33, -(x03 * x11 * x30) + x01 * x13 * x30 + x03 * x10 * x31 - x00 * x13 * x31 - x01 * x10 * x33 + x00 * x11 * x33, x03 * x11 * x20 - x01 * x13 * x20 - x03 * x10 * x21 + x00 * x13 * x21 + x01 * x10 * x23 - x00 * x11 * x23},
-                 {x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32, -(x02 * x21 * x30) + x01 * x22 * x30 + x02 * x20 * x31 - x00 * x22 * x31 - x01 * x20 * x32 + x00 * x21 * x32, x02 * x11 * x30 - x01 * x12 * x30 - x02 * x10 * x31 + x00 * x12 * x31 + x01 * x10 * x32 - x00 * x11 * x32, -(x02 * x11 * x20) + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22}}};
-   return inv / det;
-};
+// T4T4d Inverse(const T4T4d &mat) {
+//    auto [x00, x01, x02, x03] = std::get<0>(mat);
+//    auto [x10, x11, x12, x13] = std::get<1>(mat);
+//    auto [x20, x21, x22, x23] = std::get<2>(mat);
+//    auto [x30, x31, x32, x33] = std::get<3>(mat);
+//    double det = (x01 * x13 * x22 * x30 - x01 * x12 * x23 * x30 - x00 * x13 * x22 * x31 + x00 * x12 * x23 * x31 - x01 * x13 * x20 * x32 + x00 * x13 * x21 * x32 + x01 * x10 * x23 * x32 - x00 * x11 * x23 * x32 + x03 * (x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32) + (x01 * x12 * x20 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22) * x33 + x02 * (-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33));
+//    //
+//    T4T4d inv = {{{-(x13 * x22 * x31) + x12 * x23 * x31 + x13 * x21 * x32 - x11 * x23 * x32 - x12 * x21 * x33 + x11 * x22 * x33, x03 * x22 * x31 - x02 * x23 * x31 - x03 * x21 * x32 + x01 * x23 * x32 + x02 * x21 * x33 - x01 * x22 * x33, -(x03 * x12 * x31) + x02 * x13 * x31 + x03 * x11 * x32 - x01 * x13 * x32 - x02 * x11 * x33 + x01 * x12 * x33, x03 * x12 * x21 - x02 * x13 * x21 - x03 * x11 * x22 + x01 * x13 * x22 + x02 * x11 * x23 - x01 * x12 * x23},
+//                  {x13 * x22 * x30 - x12 * x23 * x30 - x13 * x20 * x32 + x10 * x23 * x32 + x12 * x20 * x33 - x10 * x22 * x33, -(x03 * x22 * x30) + x02 * x23 * x30 + x03 * x20 * x32 - x00 * x23 * x32 - x02 * x20 * x33 + x00 * x22 * x33, x03 * x12 * x30 - x02 * x13 * x30 - x03 * x10 * x32 + x00 * x13 * x32 + x02 * x10 * x33 - x00 * x12 * x33, -(x03 * x12 * x20) + x02 * x13 * x20 + x03 * x10 * x22 - x00 * x13 * x22 - x02 * x10 * x23 + x00 * x12 * x23},
+//                  {-(x13 * x21 * x30) + x11 * x23 * x30 + x13 * x20 * x31 - x10 * x23 * x31 - x11 * x20 * x33 + x10 * x21 * x33, x03 * x21 * x30 - x01 * x23 * x30 - x03 * x20 * x31 + x00 * x23 * x31 + x01 * x20 * x33 - x00 * x21 * x33, -(x03 * x11 * x30) + x01 * x13 * x30 + x03 * x10 * x31 - x00 * x13 * x31 - x01 * x10 * x33 + x00 * x11 * x33, x03 * x11 * x20 - x01 * x13 * x20 - x03 * x10 * x21 + x00 * x13 * x21 + x01 * x10 * x23 - x00 * x11 * x23},
+//                  {x12 * x21 * x30 - x11 * x22 * x30 - x12 * x20 * x31 + x10 * x22 * x31 + x11 * x20 * x32 - x10 * x21 * x32, -(x02 * x21 * x30) + x01 * x22 * x30 + x02 * x20 * x31 - x00 * x22 * x31 - x01 * x20 * x32 + x00 * x21 * x32, x02 * x11 * x30 - x01 * x12 * x30 - x02 * x10 * x31 + x00 * x12 * x31 + x01 * x10 * x32 - x00 * x11 * x32, -(x02 * x11 * x20) + x01 * x12 * x20 + x02 * x10 * x21 - x00 * x12 * x21 - x01 * x10 * x22 + x00 * x11 * x22}}};
+//    return inv / det;
+// };
 
 double Det(const T3Tddd &M) {
    return -(std::get<0>(std::get<2>(M)) * std::get<1>(std::get<1>(M)) * std::get<2>(std::get<0>(M))) +
@@ -1832,10 +1832,11 @@ double TetrahedronVolume(const T4Tddd &X) {
                                                        std::get<3>(X) - std::get<0>(X)}));
 };
 
+#include "basic_linear_systems.hpp"
+
 Tddd TetrahedronCircumCenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    double a2 = Dot(a, a);
-   return Dot(Inverse(T3Tddd{b - a, c - a, d - a}),
-              0.5 * Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
+   return Dot(Inverse(T3Tddd{b - a, c - a, d - a}), 0.5 * Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
 };
 
 Tddd TetrahedronCircumCenter(const T4Tddd &abcd) {
@@ -2087,7 +2088,7 @@ std::vector<std::vector<T>> SubdivideByStepExclude(const std::vector<std::vector
    for (size_t i = 0; i < x.size() - 1; i++) {
       if (x.size() == 1) {
          std::cout << "invalid length" << std::endl;
-         std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
+         std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
          return x;
       } else if (x.size() == 2) {
          return SubdivideByStep(x[i], x[i + 1], di);
@@ -2125,8 +2126,8 @@ std::vector<std::vector<T>> Subdivide(const std::vector<std::vector<T>> &x, cons
       };
       counter++;
    }
-   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorOff << std::endl;
-   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorOff << std::endl;
+   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
+   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorReset << std::endl;
    abort();
    return SubdivideByStep(x, di);
 };
@@ -2148,8 +2149,8 @@ std::vector<std::vector<T>> SubdivideExclude(const std::vector<std::vector<T>> &
       };
       counter++;
    }
-   std::cout << Red << __func__ << ":" << colorOff << std::endl;
-   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorOff << std::endl;
+   std::cout << Red << __func__ << ":" << colorReset << std::endl;
+   std::cout << Red << "can not subdivide by " << n << " counter = " << counter << colorReset << std::endl;
    abort();
    return SubdivideByStepExclude(x, di);
 };

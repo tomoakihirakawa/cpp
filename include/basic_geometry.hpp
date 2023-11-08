@@ -3,9 +3,9 @@
 #pragma once
 
 #include <execution>
+#include "basic_linear_systems.hpp"
 #include "basic_statistics.hpp"
 #include "basic_vectors.hpp"
-
 // 面と面の干渉？？？
 // 球と面の干渉チェックか．
 // そのために，
@@ -1380,10 +1380,15 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    const auto [A, B] = AB;
    const auto a_b = a - b;
    const auto A_B = A - B;
-   const auto [t, tau] = Dot(Inverse(T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)},
-                                            {Dot(a_b, A_B), -Dot(A_B, A_B)}}}),
-                             Tdd{-Dot(b, a_b) + Dot(B, a_b),
-                                 -Dot(b, A_B) + Dot(B, A_B)});
+   // const auto [t, tau] = Dot(Inverse(T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)},
+   //                                          {Dot(a_b, A_B), -Dot(A_B, A_B)}}}),
+   //                           Tdd{-Dot(b, a_b) + Dot(B, a_b),
+   //                               -Dot(b, A_B) + Dot(B, A_B)});
+   // use lapack_lu
+   std::array<double, 2> ans;
+   lapack_lu(ans, T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}}, Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   const auto [t, tau] = ans;
+
    if (Between(t, {0., 1.}) && Between(tau, {0., 1.}))
       return {t, tau};
    auto [t0, X0] = Nearest_(a, {A, B});
@@ -1407,7 +1412,13 @@ Tddd Nearest(const Tddd &X, const T2Tddd &ab) { return std::get<1>(Nearest_(X, a
 std::tuple<double, double, Tddd> DistanceToPlane_(const Tddd &X, const T3Tddd &abc) {
    // アンダースコアがついているものはパラメタも返す
    const auto [a, b, c] = abc;
-   const auto [t0, t1, alpah] = Dot(X - c, Inverse(T3Tddd{a - c, b - c, Cross(a - c, b - c)}));
+   // const auto [t0, t1, alpah] = Dot(X - c, Inverse(T3Tddd{a - c, b - c, Cross(a - c, b - c)}));
+
+   // use SolveLinearSystem
+   std::array<double, 3> ans;
+   lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   const auto [t0, t1, alpah] = ans;
+
    return {t0, t1, a * t0 + b * t1 + c * (1 - t0 - t1)};
 };
 Tddd DistanceToPlane(const Tddd &X, const T3Tddd &abc) {
@@ -1577,7 +1588,11 @@ bool IntersectQ(const Sphere &sp, const T3Tddd &abc) { return sp.radius > Norm(N
 bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    const auto [a, b, c] = abc;
    const auto [A, B] = AB;
-   const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+   // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+   std::array<double, 3> ans;
+   lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   const auto [t0, t1, T] = ans;
+   //
    const Tdd range = {0., 1.};
    return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
 };
@@ -1655,7 +1670,11 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
    auto [a, b, c] = abc;
    auto [A, B] = AB;
    // auto [t0, t1, T] = Dot(Inverse(Transpose(T3Tddd{a - c, b - c, A - B})), A - c);
-   auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+   // auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+   std::array<double, 3> ans;
+   lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   const auto [t0, t1, T] = ans;
+   //
    return A + (B - A) * T;
 };
 
@@ -1677,11 +1696,17 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    // {a,1} and {X,1} mean {a0, a1, a2, 1} and {x, y, z, 1}
    //
    const auto [a, b, c, d] = abcd;
-   const auto [t0, t1, t2, t3] = Dot(T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.},
-                                     Inverse(T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
-                                                    {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
-                                                    {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
-                                                    {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}));
+   // const auto [t0, t1, t2, t3] = Dot(T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.},
+   //                                   Inverse(T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
+   //                                                  {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
+   //                                                  {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
+   //                                                  {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}));
+
+   // use SolveLinearSystem
+   std::array<double, 4> ans;
+   lapack_lu(ans, T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.}, {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.}, {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.}, {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}, T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
+   const auto [t0, t1, t2, t3] = ans;
+
    //
    //
    // auto mean = Mean(abcd);

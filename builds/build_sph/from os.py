@@ -169,14 +169,14 @@ setting["output_directory"] = output_directory
 red = '\033[91m'
 green = '\033[92m'
 magenta = '\033[95m'
-coloroff = '\033[0m'
+colorReset = '\033[0m'
 # @ -------------------------------------------------------- #
 # @           その他，water.json,tank.json などを出力           #
 # @ -------------------------------------------------------- #
 for INPUTS in input_files:
     print('------------------------------------')
     for key, value in INPUTS.items():
-        print(f'{key: <{20}}', '\t', green, value, coloroff)
+        print(f'{key: <{20}}', '\t', green, value, colorReset)
     print('------------------------------------')
     f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
     json.dump(INPUTS, f, ensure_ascii=True, indent=4)
@@ -187,10 +187,10 @@ for INPUTS in input_files:
 # @ -------------------------------------------------------- #
 print('------------------------------------')
 for key, value in setting.items():
-    print(f'{key: <{20}}', '\t', red, value, coloroff)
+    print(f'{key: <{20}}', '\t', red, value, colorReset)
 print('------------------------------------')
 f = open(input_directory+"/setting.json", 'w')
 json.dump(setting, f, ensure_ascii=True, indent=4)
 f.close()
 
-print("The directory for input files :", magenta, input_directory, coloroff)
+print("The directory for input files :", magenta, input_directory, colorReset)

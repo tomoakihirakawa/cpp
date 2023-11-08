@@ -49,9 +49,9 @@ struct RungeKuttaCommon {
    bool finished;  // 全てそろって積分が評価できるようになったらtrue
                    // 最終結果はdXに代入される;
    void displayStatus() {
-      std::cout << "dt : " << red << this->dt << colorOff << std::endl;
-      // std::cout << "_dX : " << red << this->_dX << colorOff << std::endl;
-      std::cout << "dX : " << red << this->dX << colorOff << std::endl;
+      std::cout << "dt : " << red << this->dt << colorReset << std::endl;
+      // std::cout << "_dX : " << red << this->_dX << colorReset << std::endl;
+      std::cout << "dX : " << red << this->dX << colorReset << std::endl;
    };
    int steps;
    int current_step;

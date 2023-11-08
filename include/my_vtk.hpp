@@ -14,7 +14,7 @@ DataArray_detail */
 using V_str = std::vector<std::string>;
 
 void mk_pvd(const std::string &filename, const std::map<std::string, double> &map_s_d) {
-   Print("Creating " + filename + " ..." + colorOff);
+   Print("Creating " + filename + " ..." + colorReset);
    FILE *fp;
    fp = fopen(filename.c_str(), "wb");
    fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -74,7 +74,7 @@ class pvd {
       else
          throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "file name is not given"));
 
-      Print("Creating " + filename + " ..." + colorOff);
+      Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -98,7 +98,7 @@ class pvd {
       else
          throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "file name is not given"));
 
-      Print("Creating " + filename + " ..." + colorOff);
+      Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -143,7 +143,7 @@ struct PVDWriter {
 #if defined(debug_PVDWriter)
       std::cout << Magenta << filename << std::endl;
 #endif
-      Print("Creating " + filename + " ..." + colorOff);
+      Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
@@ -209,7 +209,7 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
       }
       fprintf(fp, "\n</DataArray>\n");
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -234,7 +234,7 @@ void writeDataArray(FILE *fp, const std::vector<T> &Points, const std::string &N
       }
       fprintf(fp, "\n</DataArray>\n");
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -273,8 +273,8 @@ void DataArray(FILE *fp, const std::vector<T> &Points, const VV_VarForOutput &VV
 #define debug_mk_vtu
 void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
 #if defined(debug_mk_vtu)
-   std::cout << Magenta << filename << colorOff;
-   std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorOff << " ";
+   std::cout << Magenta << filename << colorReset;
+   std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorReset << " ";
 #endif
    auto Points = Flatten(VV_points);
    V_i PointsSize;
@@ -365,7 +365,7 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
       }
       fprintf(fp, "</VTKFile>\n");
 #if defined(debug_mk_vtu)
-      std::cout << Red << "|" << colorOff << std::endl;
+      std::cout << Red << "|" << colorReset << std::endl;
 #endif
    }
    fclose(fp);
@@ -375,8 +375,8 @@ void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
    const int N = 4;
    try {
 #if defined(debug_mk_vtu)
-      std::cout << Magenta << filename << colorOff;
-      std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorOff << " ";
+      std::cout << Magenta << filename << colorReset;
+      std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorReset << " ";
 #endif
       V_netPp Points;
 #if defined(debug_mk_vtu)
@@ -447,12 +447,12 @@ void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
          }
          fprintf(fp, "</VTKFile>\n");
 #if defined(debug_mk_vtu)
-         std::cout << Red << "|" << colorOff << std::endl;
+         std::cout << Red << "|" << colorReset << std::endl;
 #endif
       }
       fclose(fp);
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -462,8 +462,8 @@ void mk_vtu(const std::string &filename,
             const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
    try {
 #if defined(debug_mk_vtu)
-      std::cout << Magenta << filename << colorOff;
-      std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorOff << " ";
+      std::cout << Magenta << filename << colorReset;
+      std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorReset << " ";
 #endif
       V_netPp Points;
       V_i PointsSize;
@@ -560,12 +560,12 @@ void mk_vtu(const std::string &filename,
          }
          fprintf(fp, "</VTKFile>\n");
 #if defined(debug_mk_vtu)
-         std::cout << Red << "|" << colorOff << std::endl;
+         std::cout << Red << "|" << colorReset << std::endl;
 #endif
       }
       fclose(fp);
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 }

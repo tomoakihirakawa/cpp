@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
    };
 
    for (auto input_file_name : settingJSON["input_files"]) {
-      std::cout << Green << input_directory + input_file_name << colorOff << std::endl;
+      std::cout << Green << input_directory + input_file_name << colorReset << std::endl;
       JSON injson(input_directory + input_file_name);
 
       // check required keys
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, input_directory + input_file_name + " has missing key");
 
       // display contents of the JSON file
-      for (auto &[key, value] : injson()) std::cout << Green << key << colorOff << ": " << value << std::endl;
+      for (auto &[key, value] : injson()) std::cout << Green << key << colorReset << ": " << value << std::endl;
 
       auto object_name = injson.at("name")[0];
       if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
@@ -257,9 +257,9 @@ int main(int argc, char **argv) {
          if (time_step <= 10)
             dt = 0.000001;
          Print("===========================================================================");
-         Print("       dt :" + Red + std::to_string(dt) + colorOff);
-         Print("time_step :" + Red + std::to_string(time_step) + colorOff);
-         Print("real time :" + Red + std::to_string(simulation_time) + colorOff);
+         Print("       dt :" + Red + std::to_string(dt) + colorReset);
+         Print("time_step :" + Red + std::to_string(time_step) + colorReset);
+         Print("real time :" + Red + std::to_string(simulation_time) + colorReset);
          Print("---------------------------------------------------------------------------");
 
          double spacing = Mean(extLength(water->getLines())) * 3;
@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", simulation_time = " << simulation_time << std::endl;
 
             setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
-            std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
 
@@ -310,18 +310,18 @@ int main(int argc, char **argv) {
             std::cout << Green << "BVP.solve -> {Φ,Φn}が決まる" << Blue << "\nElapsed time: " << Red << watch() << " s\n";
 
             calculateCurrentVelocities(*water);
-            std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // calculateCurrentUpdateVelocities(*water, 100, (RK_step == 4));
             // if (RK_step == 4)
-            //    std::cout << Green << "do shift" << colorOff << " s\n";
+            //    std::cout << Green << "do shift" << colorReset << " s\n";
             //
             calculateCurrentUpdateVelocities(*water, 20);
 
-            std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             BVP.solveForPhiPhin_t(*water, RigidBodyObject);
-            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // b$ --------------------------------------------------- */
 
@@ -403,7 +403,7 @@ int main(int argc, char **argv) {
                p->setXSingle(p->RK_X.getX());
             }
             // b$ --------------------------------------------------- */
-            std::cout << Green << "name:" << water->getName() << ": setBounds" << colorOff << std::endl;
+            std::cout << Green << "name:" << water->getName() << ": setBounds" << colorReset << std::endl;
 
             for (auto &nets : {FluidObject, RigidBodyObject, SoftBodyObject})
                for (auto &net : nets)
@@ -413,7 +413,7 @@ int main(int argc, char **argv) {
             createOBJ(ofs, *water);
             ofs.close();
 
-            std::cout << Blue << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Blue << "Elapsed time: " << Red << watch() << colorReset << " s\n";
          } while (!((*Points.begin())->RK_X.finished));
 
          /* -------------------------------------------------------------------------- */
@@ -441,7 +441,7 @@ int main(int argc, char **argv) {
 
          /* ------------------------------------------------------ */
 
-         std::cout << Green << "simulation_timeを取得" << colorOff << std::endl;
+         std::cout << Green << "simulation_timeを取得" << colorReset << std::endl;
          simulation_time = (*Points.begin())->RK_X.gett();
 
          for (const auto &p : Points) {
@@ -595,7 +595,7 @@ int main(int argc, char **argv) {
          // b* ------------------------------------------------------ */
       }
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
    return 0;

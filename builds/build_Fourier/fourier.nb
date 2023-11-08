@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      9466,        234]
-NotebookOptionsPosition[      8937,        217]
-NotebookOutlinePosition[      9291,        232]
-CellTagsIndexPosition[      9248,        229]
+NotebookDataLength[      9504,        235]
+NotebookOptionsPosition[      8975,        218]
+NotebookOutlinePosition[      9329,        233]
+CellTagsIndexPosition[      9286,        230]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -24,7 +24,7 @@ Cell[BoxData[
    RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], ";"}], 
   "\[IndentingNewLine]"}]], "Input",
  CellLabel->
-  "In[256]:=",ExpressionUUID->"b8cd1d52-6ef9-42c0-b07d-09795e45c027"],
+  "In[12617]:=",ExpressionUUID->"b8cd1d52-6ef9-42c0-b07d-09795e45c027"],
 
 Cell[CellGroupData[{
 
@@ -148,22 +148,22 @@ Cell[BoxData[{
   3.907271032773368*^9}, {3.9072711735407047`*^9, 3.907271216345093*^9}, {
   3.907271249293667*^9, 3.907271251977713*^9}},
  CellLabel->
-  "In[257]:=",ExpressionUUID->"a1667975-be1a-46d1-8004-498524d36aa2"],
+  "In[12618]:=",ExpressionUUID->"a1667975-be1a-46d1-8004-498524d36aa2"],
 
 Cell[BoxData[
  TagBox[
   StyleBox[
-   DynamicModuleBox[{$CellContext`T$$ = 1., Typeset`show$$ = True, 
+   DynamicModuleBox[{$CellContext`T$$ = 3., Typeset`show$$ = True, 
     Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
     Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
     "\"\:540d\:79f0\:672a\:5b9a\:7fa9\"", Typeset`specs$$ = {{
       Hold[$CellContext`T$$], 1., 3., 0.1}}, Typeset`size$$ = {
     360., {114., 119.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
-    Typeset`skipInitDone$$ = True, $CellContext`T$232542$$ = 0}, 
+    Typeset`skipInitDone$$ = True, $CellContext`T$249229$$ = 0}, 
     DynamicBox[Manipulate`ManipulateBoxes[
      1, StandardForm, "Variables" :> {$CellContext`T$$ = 1.}, 
       "ControllerVariables" :> {
-        Hold[$CellContext`T$$, $CellContext`T$232542$$, 0]}, 
+        Hold[$CellContext`T$$, $CellContext`T$249229$$, 0]}, 
       "OtherVariables" :> {
        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
@@ -173,8 +173,8 @@ Cell[BoxData[
 $CellContext`Fs$, $CellContext`freq$}, $CellContext`Func[
            Pattern[$CellContext`t$, 
             Blank[]]] := 
-         Sin[$CellContext`t$ 2 (Pi/$CellContext`T$$)] + 
-          Cos[$CellContext`t$ 2 (Pi/$CellContext`T$$)]; $CellContext`span$ = 
+         Sin[($CellContext`t$ 2) (Pi/$CellContext`T$$)] + 
+          Cos[($CellContext`t$ 2) (Pi/$CellContext`T$$)]; $CellContext`span$ = 
          5 $CellContext`T$$; $CellContext`data$ = Table[{$CellContext`t, 
             $CellContext`Func[$CellContext`t]}, {$CellContext`t, 
             Subdivide[
@@ -210,9 +210,10 @@ $CellContext`freq$ =
    Deployed->True,
    StripOnInput->False],
   Manipulate`InterpretManipulate[1]]], "Output",
- CellChangeTimes->{{3.907271252466324*^9, 3.907271258016055*^9}},
+ CellChangeTimes->{{3.907271252466324*^9, 3.907271258016055*^9}, 
+   3.9084080762222567`*^9},
  CellLabel->
-  "Out[259]=",ExpressionUUID->"ca56807a-fcf7-4bef-8120-4c74cf095e54"]
+  "Out[12620]=",ExpressionUUID->"71cc22da-d44f-4829-a0c2-4e31e8d28c06"]
 }, Open  ]]
 },
 WindowSize->{1015, 1012},
@@ -231,10 +232,10 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 217, 6, 52, "Input",ExpressionUUID->"b8cd1d52-6ef9-42c0-b07d-09795e45c027"],
+Cell[558, 20, 219, 6, 52, "Input",ExpressionUUID->"b8cd1d52-6ef9-42c0-b07d-09795e45c027"],
 Cell[CellGroupData[{
-Cell[800, 30, 5018, 120, 577, "Input",ExpressionUUID->"a1667975-be1a-46d1-8004-498524d36aa2"],
-Cell[5821, 152, 3100, 62, 343, "Output",ExpressionUUID->"ca56807a-fcf7-4bef-8120-4c74cf095e54"]
+Cell[802, 30, 5020, 120, 577, "Input",ExpressionUUID->"a1667975-be1a-46d1-8004-498524d36aa2"],
+Cell[5825, 152, 3134, 63, 343, "Output",ExpressionUUID->"71cc22da-d44f-4829-a0c2-4e31e8d28c06"]
 }, Open  ]]
 }
 ]

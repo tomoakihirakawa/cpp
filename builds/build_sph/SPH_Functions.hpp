@@ -9,14 +9,28 @@
 bool canInteract(const networkPoint *A, const networkPoint *B) {
    if (!B->isCaptured)
       return false;
+   /* ----------------------------------- */
+   // if (A->isAuxiliary && B->isAuxiliary)
+   //    return false;
+   // else if (A->isAuxiliary && !B->isAuxiliary)
+   //    return true;
+   // else if (!A->isAuxiliary && B->isAuxiliary) {
+   //    if (B->surfacePoint == A)
+   //       return true;
+   //    else
+   //       return false;
+   // } else if (!A->isAuxiliary && !B->isAuxiliary)
+   //    return true;
 
+   // return false;
+   /* ----------------------------------- */
    if (B->isAuxiliary)
       return false;
-   if (A->isAuxiliary && A->surfacePoint == B)
-      return false;
-   if (A->auxPoint != nullptr && A->auxPoint == B)
-      return false;
-
+   // if (A->isAuxiliary && A->surfacePoint == B)
+   //    return false;
+   // if (A->auxPoint != nullptr && A->auxPoint == B)
+   //    return false;
+   /* ----------------------------------- */
    // const double c = .3;
    // if (B->isAuxiliary) {
    //    if (Distance(A, B) < c * A->SML())
@@ -38,7 +52,7 @@ bool canInteract(const networkPoint *A, const networkPoint *B) {
 
 /* -------------------------------------------------------------------------- */
 void deleteAuxiliaryPoints(const auto net) {
-   // delete auxiliary points
+   std::cout << "delete auxiliary points" << std::endl;
    auto points = net->getPoints();
    for (auto p : points) {
       p->auxPoint = nullptr;
@@ -48,11 +62,14 @@ void deleteAuxiliaryPoints(const auto net) {
 
    for (auto p : net->getPoints())
       p->isAuxiliary = false;
+
+   std::cout << "delete auxiliary points done" << std::endl;
 }
 void setAuxiliaryPoints(const auto net) {
    auto points = net->getPoints();
    for (const auto &p : points) {
       if (p->hasAuxiliary()) {
+         // Tddd X = aux_position(p);
          auto q = new networkPoint(net, p->X);
          q->surfacePoint = p;
          p->auxPoint = q;
@@ -119,6 +136,7 @@ void setAuxiliaryPoints(const auto net) {
          //
          q->RK_X = p->RK_X;
          q->RK_X.Xinit = p->RK_X.Xinit;
+         // q->RK_X.Xinit = q->X;
          q->RK_X.t_init = p->RK_X.t_init;
          q->RK_X.dt_fixed = p->RK_X.dt_fixed;
          q->RK_X.dt = p->RK_X.dt;
@@ -144,6 +162,7 @@ void setAuxiliaryPoints(const auto net) {
 /* -------------------------------------------------------------------------- */
 
 void setSML(const auto &target_nets) {
+   DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
    const double C_SML_max = 2.7;
    // double C_SML_min = 1.866;
@@ -227,6 +246,7 @@ void setSML(const auto &target_nets) {
                   p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
             }
       }
+   std::cout << "setSML done" << std::endl;
 };
 
 /*DOC_EXTRACT 0_1_0_SPH
@@ -285,24 +305,6 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 }
 
 /* -------------------------------------------------------------------------- */
-
-Tddd aux_position(const networkPoint *p, const double &c) {
-   // auto c = p->particle_spaincing;
-   return p->X + c * Normalize(p->interp_normal);
-   // return p->X - (p->COM_SPH - p->X);
-};
-
-Tddd aux_position_next(const networkPoint *p) {
-   auto q = p->surfacePoint;
-   auto c = q->SML() / q->C_SML;
-#if defined(USE_RungeKutta)
-   return q->RK_X.getX(q->U_SPH) + c * Normalize(q->interp_normal_next);
-#elif defined(USE_LeapFrog)
-   return q->LPFG_X.get_x(q->U_SPH) + c * Normalize(q->interp_normal_next);
-#endif
-};
-
-/* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
    if (!p->isFluid)
       return p->U_SPH;
@@ -338,6 +340,24 @@ double rho_next(auto p) {
 double V_next(const auto &p) { return p->mass / rho_next(p); };
 
 // \label{SPH:position_next}
+/* -------------------------------------------------------------------------- */
+
+Tddd aux_position(const networkPoint *p) {
+   auto c = p->particle_spacing;
+   c *= _WATER_DENSITY_ / p->intp_density;
+   return p->X + c * Normalize(p->interp_normal_original);
+   // return p->X - (p->COM_SPH - p->X);
+};
+
+Tddd aux_position_next(const networkPoint *p) {
+   auto q = p->surfacePoint;
+   auto c = q->SML() / q->C_SML;
+#if defined(USE_RungeKutta)
+   return q->RK_X.getX(q->U_SPH) + c * Normalize(q->interp_normal_next);
+#elif defined(USE_LeapFrog)
+   return q->LPFG_X.get_x(q->U_SPH) + c * Normalize(q->interp_normal_next);
+#endif
+};
 
 // # -------------------------------------------------------------------------- */
 std::array<double, 3> grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
