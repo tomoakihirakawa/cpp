@@ -269,14 +269,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // b@ ISPH
             ROW->clearColumnValue();
             ROW->CRS::set(ROW, 1.);
-
-            // if (ROW->isSurface && !ROW->isAuxiliary)
-            //    ROW->CRS::set(ROW->auxPoint, 1.);
-            // else
-            //    ROW->CRS::set(ROW->surfacePoint, 1.);
-
             ROW->PoissonRHS = 0;
-
          } else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
             //! 壁面の圧力はPoissonを解かない方が計算が安定するようだ
             // } else if (false) {
@@ -317,8 +310,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // b@ ISPH
             ROW->pressure_equation_index = 3;
             pO = ROW;
-            if (ROW->isAuxiliary)
-               pO = ROW->surfacePoint;
+            // if (ROW->isAuxiliary)
+            //    pO = ROW->surfacePoint;
 
             pO_center = X_next(pO);
             applyOverPoints(PoissonEquation, target_nets);
@@ -359,8 +352,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // }
             // b% EISPH
             ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
-            if (ROW->isAuxiliary)
-               ROW->p_SPH = 0;
          }
 
          /* -------------------------------------------------------------------------- */

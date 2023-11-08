@@ -161,10 +161,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
       }
 
-      // for (const auto &A : points) {
-      //    if (A->isAuxiliary)
-      //       A->surfacePoint->gradP_SPH = A->gradP_SPH;
-      // }
+      for (const auto &A : points) {
+         if (A->isAuxiliary)
+            A->surfacePoint->gradP_SPH = A->gradP_SPH;
+      }
 
       for (const auto &A : points) {
          A->DUDt_SPH -= A->gradP_SPH / rho_next(A);

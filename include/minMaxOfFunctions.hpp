@@ -249,7 +249,11 @@ struct BroydenMethod<T> {
       auto dot = Dot(dX, dX);
       if (dot != static_cast<double>(0.))
          J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
-      X += (dX = -alpha * Dot(Inverse(J), F));  // inverseが計算できるかは未検証
+
+      // use lapack_lu
+      lapack_lu(J, dX, -alpha * F);
+      X += dX;
+      // X += (dX = -alpha * Dot(Inverse(J), F));  // inverseが計算できるかは未検証
    }
 };
 

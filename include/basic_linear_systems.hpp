@@ -187,24 +187,32 @@ extern "C" void dgetrs_(const char *TRANS,
                         int *INFO);
 
 struct lapack_lu {
-   std::vector<double> a;
    const int dim;
+   std::vector<double> a;
    const int nrhs = 1, LDB, LDA;
    int info;
    std::vector<int> ipiv;
    ~lapack_lu(){};
 
-   lapack_lu(const std::vector<std::vector<double>> &aIN) : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+   lapack_lu(const std::vector<std::vector<double>> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      for (int i = 0, k = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j, ++k)
+            a[k] = aIN[i][j];
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
    template <size_t N>
-   lapack_lu(const std::array<std::array<double, N>, N> &aIN) : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+   lapack_lu(const std::array<std::array<double, N>, N> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      for (int i = 0, k = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j, ++k)
+            a[k] = aIN[i][j];
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
-   lapack_lu(const std::vector<std::vector<double>> &aIN, std::vector<double> &x, const std::vector<double> &rhd)
-       : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+   lapack_lu(const std::vector<std::vector<double>> &aIN, std::vector<double> &x, const std::vector<double> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      for (int i = 0, k = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j, ++k)
+            a[k] = aIN[i][j];
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
       dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
@@ -221,8 +229,11 @@ struct lapack_lu {
    };
 
    template <size_t N>
-   lapack_lu(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &x, const std::array<double, N> &rhd)
-       : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+   lapack_lu(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &x, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      for (int i = 0, k = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j, ++k)
+            a[k] = aIN[i][j];
+
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
       dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
@@ -239,8 +250,10 @@ struct lapack_lu {
    };
 
    template <size_t N>
-   lapack_lu(std::array<double, N> &x, const std::array<std::array<double, N>, N> &aIN, const std::array<double, N> &rhd)
-       : a(this->flatten(aIN)), dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim) {
+   lapack_lu(std::array<double, N> &x, const std::array<std::array<double, N>, N> &aIN, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      for (int i = 0, k = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j, ++k)
+            a[k] = aIN[i][j];
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
       dgetrs_("N", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
@@ -255,16 +268,6 @@ struct lapack_lu {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       };
    };
-
-   template <typename Container>
-   std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
-      using ValueType = typename Container::value_type::value_type;
-      std::vector<ValueType> flattened;
-      flattened.reserve(mat.size() * mat.size());
-      for (const auto &part : mat)
-         flattened.insert(flattened.end(), part.begin(), part.end());
-      return flattened;
-   }
 
    void solve(const std::vector<double> &rhd, std::vector<double> &x) {
       if ((dim != rhd.size()) || (dim != x.size()) || (rhd.size() != x.size()))
@@ -341,6 +344,11 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
 
    return aa_inv;
 }
+
+VV_d Inverse(const VV_d &mat) {
+   lapack_lu lu(mat);
+   return lu.inverse();
+};
 
 // Solve Ax = b using lapack
 // vector case
@@ -579,13 +587,6 @@ struct ludcmp {
    // 	for (i = 0; i < n; i++)
    // 		x[i] -= r[i];
    // };
-};
-
-VV_d Inverse(const VV_d &mat) {
-   ludcmp LU(mat);
-   VV_d ret;
-   LU.inverse(ret);
-   return ret;
 };
 
 // LAPACKにもQRがあるが．
