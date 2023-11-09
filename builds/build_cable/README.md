@@ -4,7 +4,7 @@
 ---
 オイラー法でケーブルの動きをシミュレーションする．
 
-![anim.gif](anim.gif)
+![sample.gif](sample.gif)
 
 [./main.cpp#L9](./main.cpp#L9)
 
