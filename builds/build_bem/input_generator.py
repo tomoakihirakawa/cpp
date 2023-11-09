@@ -284,7 +284,7 @@ match SimulationCase:
 
         float = {"name": "float",
                  "type": "RigidBody",
-                 "objfile": objfolder+"/float10.obj",
+                 "objfile": objfolder+"/float20.obj",
                  "output": "json",
                  "velocity": "floating"
                  }

@@ -79,10 +79,10 @@ void setAuxiliaryPoints(const auto net) {
          q->inv_grad_corr_M = p->inv_grad_corr_M_next;
          q->inv_grad_corr_M_next = p->inv_grad_corr_M_next;
          //
-         q->grad_corr_M_rigid = p->grad_corr_M_next_rigid;
-         q->grad_corr_M_next_rigid = p->grad_corr_M_next_rigid;
-         q->inv_grad_corr_M_rigid = p->inv_grad_corr_M_next_rigid;
-         q->inv_grad_corr_M_next_rigid = p->inv_grad_corr_M_next_rigid;
+         // q->grad_corr_M_rigid = p->grad_corr_M_next_rigid;
+         // q->grad_corr_M_next_rigid = p->grad_corr_M_next_rigid;
+         // q->inv_grad_corr_M_rigid = p->inv_grad_corr_M_next_rigid;
+         // q->inv_grad_corr_M_next_rigid = p->inv_grad_corr_M_next_rigid;
          q->laplacian_corr_M = p->laplacian_corr_M;
          q->laplacian_corr_M_next = p->laplacian_corr_M_next;
          //
@@ -328,7 +328,7 @@ double rho_next(auto p) {
    //    else {
    // #if defined(USE_RungeKutta)
    // return p->RK_rho.getX(-p->rho * p->div_U);
-   // return p->RK_rho.getX(-p->rho * p->div_U_next);
+
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
    // return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
@@ -637,7 +637,7 @@ void updateParticles(const auto &points,
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
                         // auto tmp = -0.1 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
                         p->DUDt_SPH += tmp;

@@ -36,82 +36,6 @@
 
 /* -------------------------------------------------------------------------- */
 
-// b# -------------------------------------------------------------------------- */
-// b# -------------------------------------------------------------------------- */
-// b# -------------------------------------------------------------------------- */
-
-void setPressureForInitialGuess(Network *net) {
-
-#pragma omp parallel
-   for (const auto &p : net->getPoints())
-#pragma omp single nowait
-   {
-      p->p_SPH_ = p->total_weight = 0;
-      double w = 0, own_w = 0;
-      auto func = [&](const auto &q) {
-         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->SML()), POWER));
-         p->p_SPH_ += q->p_SPH * w;
-      };
-      net->BucketPoints.apply(p->X, p->SML(), func);
-   }
-#pragma omp parallel
-   for (const auto &p : net->getPoints())
-#pragma omp single nowait
-   {
-      p->p_SPH = p->p_SPH_ / p->total_weight;
-   }
-};
-
-void setPressureSPP(Network *net, const auto &RigidBodyObject) {
-
-#pragma omp parallel
-   for (const auto &p : net->getPoints())
-#pragma omp single nowait
-   {
-      // if (p->isSurface && surface_zero_pressure)
-      //    p->p_SPH = 0;
-      // /* -------------------------------------------------------------------------- */
-      p->p_SPH_SPP = p->total_weight = 0;
-      double w = 0, own_w = 0;
-      auto func = [&](const auto &q) {
-         p->total_weight += (w = q->volume * std::pow(w_Bspline(Norm(p->X - q->X), p->SML()), POWER));
-
-         if (q == p)
-            own_w = w;
-         else
-            p->p_SPH_SPP += q->p_SPH * w;
-      };
-      net->BucketPoints.apply(p->X, p->SML(), func);
-      for (const auto &[obj, poly] : RigidBodyObject)
-         obj->BucketPoints.apply(p->X, p->SML(), func);
-      p->p_SPH_SPP /= (1 - own_w);
-      // p->p_SPH_SPP /= (p->total_weight - own_w);
-      // /* -------------------------------------------------------------------------- */
-      // p->p_SPH_SPP = p->p_SPH;
-      /* -------------------------------------------------------------------------- */
-      // p->p_SPH_SPP = p->total_weight = 0;
-      // double w = 0, own_w = 0;
-      // auto func = [&](const auto &p_fluid) {
-      //    p->total_weight += (w = p_fluid->volume * std::pow(w_Bspline(Norm(p->X - p_fluid->X), p->SML()), POWER));
-      //    p->p_SPH_SPP += p_fluid->p_SPH * w;
-      // };
-      // net->BucketPoints.apply(p->X, p->SML(), func);
-      // for (const auto &[obj, poly] : RigidBodyObject)
-      //    obj->BucketPoints.apply(p->X, p->SML(), func);
-      /* -------------------------------------------------------------------------- */
-      // p->p_SPH_SPP = p->total_weight = 0;
-      // double w = 0;
-      // net->BucketPoints.apply(p->X, p->SML(), [&](const auto &p_fluid) {
-      //    w = p_fluid->volume * w_Bspline(Norm(p->X - p_fluid->X), p->SML() * p->C_SML);
-      //    p->p_SPH_SPP += coef * p->p_SPH * w;
-      //    if (p_fluid->isSurface) {
-      //       p->p_SPH_SPP += coef * p->p_SPH * w;
-      //    }
-      // });
-      // p->p_SPH_SPP /= (w_Bspline(0, p->SML() * p->C_SML) + w_Bspline(q->SML() / q->C_SML, p->SML() * p->C_SML));
-   }
-};
-
 void test_Bucket(const auto &water, const auto &nets, const std::string &output_directory, const auto &r) {
    std::filesystem::create_directory(output_directory);
 
@@ -210,6 +134,8 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
    }
 };
 
+/* -------------------------------------------------------------------------- */
+
 /*DOC_EXTRACT 0_0_0_SPH
 
 # Smoothed Particle Hydrodynamics (SPH) ISPH EISPH
@@ -277,6 +203,8 @@ ISPHとISPHを簡単化したEISPHを実装したものである．
 
 */
 
+/* -------------------------------------------------------------------------- */
+
 std::unordered_set<networkPoint *> wall_p;
 
 void developByEISPH(Network *net,
@@ -287,28 +215,29 @@ void developByEISPH(Network *net,
                     const double max_dt,
                     const int RK_order) {
    try {
-      TimeWatch watch;
       std::vector<std::tuple<Network *, Network *>> RigidBodyObject;
       std::unordered_set<Network *> net_RigidBody;
       std::vector<Network *> all_net;
       all_net.push_back(net);
+
       // b# -------------------------------------------------------------------------- */
+
       for (const auto &[a, b, _] : RigidBodyObjectIN) {
          RigidBodyObject.push_back({a, b});
          net_RigidBody.emplace(a);
          all_net.push_back(a);
       }
+
       // b# -------------- バケットの生成, p->SML()の範囲だけ点を取得 --------------- */
-      DebugPrint("バケットの生成", Green);
+      TimeWatch watch;
+
       const auto bucket_spacing = particle_spacing * 2.;
 #pragma omp parallel
       for (const auto &obj : all_net)
 #pragma omp single nowait
          obj->makeBucketPoints(bucket_spacing);
-      std::cout << Green << "バケットの生成" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-      DebugPrint(Green, "固定の平滑化距離の計算: C_SML * particle_spacing = ", C_SML, " * ", particle_spacing, " = ", C_SML * particle_spacing);
+      Print(Green, "バケットの生成", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 
-      // 初期化
       for (const auto &p : net->getPoints()) {
          // p->C_SML = C_SML * std::pow(_WATER_DENSITY_ / p->rho, 3);  // C_SMLを密度の応じて変えてみる．
          // p->setDensity(_WATER_DENSITY_);
@@ -341,63 +270,47 @@ void developByEISPH(Network *net,
 
       // ルンゲクッタを使った時間積分
       /*フラクショナルステップ法を使って時間積分する（Cummins1999）．*/
+
       bool finished = false;
+
       do {
+         //% 壁粒子と水面粒子の設定
          deleteAuxiliaryPoints(net);
          setSML(Append(net_RigidBody, net));
-         /* -------------------------------------------------------------------------- */
-         // 流れの計算に関与する壁粒子を保存
-         // setVectorToPolygon(net, RigidBodyObject, C_SML * particle_spacing);
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
-         std::cout << Green << "setWall" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+         Print(Green, "setWall", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setFreeSurface(net, RigidBodyObject);
-         std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-         // for (const auto &p : net->getPoints())
-         //    p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3));
+         Print(Green, "setFreeSurface", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
-         //@ ∇.∇UとU*を計算
+         //% 粘性項の計算
          calcLaplacianU(net->getPoints(), Append(net_RigidBody, net));
          calcLaplacianU(wall_p, Append(net_RigidBody, net));
+         Print(Green, "calcLaplacianU", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* ------------------------------- 次時刻の計算が可能に ------------------------------- */
-         // setWall(net, RigidBodyObject, particle_spacing, wall_p);
-         // setFreeSurface(net, RigidBodyObject);
-         // std::cout << Green << "setFreeSurface" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-         /* -------------------------------------------------------------------------- */
          setSML(Append(net_RigidBody, net));
+         setWall(net, RigidBodyObject, particle_spacing, wall_p);
+         setFreeSurface(net, RigidBodyObject);
          setCorrectionMatrix(Append(net_RigidBody, net));
          // setAuxiliaryPoints(net);
-         // 粒子が接近しすぎると精度に問題が生じる．圧力決めうちの方が安定する．
-         //
-         std::cout << Green << "∇.∇UとU*を計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+         Print(Green, "recalculation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         /* -------------------------------------------------------------------------- */
+         //% Poisson方程式の離散化
          setPoissonEquation(wall_p, Append(net_RigidBody, net), particle_spacing);
          setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), particle_spacing);
-         // debug of surfaceNet
-         // std::cout << "net->surfaceNet->getPoints().size() = " << net->surfaceNet->getPoints().size() << std::endl;
-         // setPoissonEquation(wall_p, Append(net_RigidBody, net), DT);
-         // setPressure(net->getPoints());
-         // setPressure(wall_p);
-         std::cout << Green << "ポアソン方程式を立てる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
-         //@ 圧力 p^n+1の計算
-         // if (simulation_time < 0.01)
+         Print(Green, "setPoissonEquation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         /* -------------------------------------------------------------------------- */
+         //% 圧力 p^n+1の計算
          solvePoisson(net->getPoints(), wall_p);
-         std::cout << Green << "圧力 p^n+1の計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
-         // set free surface pressure using EISPH way
-         // setPoissonEquation(net->surfaceNet->getPoints(), Append(net_RigidBody, net), DT, particle_spacing);
-         // checkIfPoissonEqIsSatisfied(net, Append(net_RigidBody, net));
-
-         //@ 圧力勾配 grad(P)の計算 -> DU/Dtの計算
+         Print(Green, "solvePoisson", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         /* -------------------------------------------------------------------------- */
+         //% 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          gradP(net->getPoints(), Append(net_RigidBody, net));
-         std::cout << Green << "圧力勾配∇Pを計算 & DU/Dtの計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
-         //@ 粒子の時間発展
-         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+         Print(Green, "calculate grad(P) and increment DU/Dt", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         /* -------------------------------------------------------------------------- */
+         //% 粒子の時間発展
          updateParticles(net->getPoints(), Append(net_RigidBody, net), RigidBodyObject, particle_spacing);
+         Print(Green, "updateParticles", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          net->setGeometricProperties();
-
-         std::cout << Green << "粒子の時間発展" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
 #if defined(USE_RungeKutta)
          simulation_time = (*net->getPoints().begin())->RK_X.get_t();
          finished = (*net->getPoints().begin())->RK_X.finished;
@@ -408,14 +321,13 @@ void developByEISPH(Network *net,
 
       } while (!finished);
 
-      std::cout << Green << "１タイムステップ終了" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+      Print(Green, "1タイムステップ終了", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in developByEISPH");
    };
 };
 
-/* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
 void setDataOmitted(auto &vtp, const auto &Fluid) {
@@ -423,8 +335,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    std::unordered_map<networkPoint *, Tddd> uo_3d;
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M;
    vtp.addPointData("Eigenvalues_of_M", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M_rigid;
-   vtp.addPointData("Eigenvalues_of_M_rigid", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M_rigid;
+   // vtp.addPointData("Eigenvalues_of_M_rigid", uo_3d);
 
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->C_SML;
    vtp.addPointData("C_SML", uo_double);
@@ -453,8 +365,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("interp_normal", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal_original;
    vtp.addPointData("interp_normal_original", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_Min_gradM;
-   vtp.addPointData("grad_Min_gradM", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_Min_gradM;
+   // vtp.addPointData("grad_Min_gradM", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
    vtp.addPointData("contains diagonal", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->DrhoDt_SPH;
@@ -521,176 +433,5 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = -p->gradP_SPH / p->rho;
    vtp.addPointData("NS: - gradP/rho", uo_3d);
 };
-
-// void setData(auto &vtp, const auto &Fluid, const Tddd &X = {1E+50, 1E+50, 1E+50}) {
-
-//    std::unordered_map<networkPoint *, Tddd> ViscousAndGravityForce;
-//    for (const auto &p : Fluid->getPoints())
-//       ViscousAndGravityForce[p] = p->ViscousAndGravityForce;
-//    vtp.addPointData("ViscousAndGravityForce", ViscousAndGravityForce);
-
-//    std::unordered_map<networkPoint *, Tddd> tmp_ViscousAndGravityForce;
-//    for (const auto &p : Fluid->getPoints())
-//       tmp_ViscousAndGravityForce[p] = p->tmp_ViscousAndGravityForce;
-//    vtp.addPointData("tmp_ViscousAndGravityForce", tmp_ViscousAndGravityForce);
-
-//    if (isFinite(X)) {
-//       std::unordered_map<networkPoint *, double> W;
-//       for (const auto &p : Fluid->getPoints())
-//          W[p] = w_Bspline(Norm(X - p->X), p->SML());
-//       vtp.addPointData("W", W);
-//    }
-
-//    std::unordered_map<networkPoint *, Tddd> U;
-//    for (const auto &p : Fluid->getPoints())
-//       U[p] = p->U_SPH;
-//    vtp.addPointData("U", U);
-
-//    std::unordered_map<networkPoint *, double> len_column_value;
-//    for (const auto &p : Fluid->getPoints())
-//       len_column_value[p] = p->column_value.size();
-//    vtp.addPointData("len_column_value", len_column_value);
-
-//    std::unordered_map<networkPoint *, double> C_SML;
-//    for (const auto &p : Fluid->getPoints())
-//       C_SML[p] = p->C_SML;
-//    vtp.addPointData("C_SML", C_SML);
-
-//    std::unordered_map<networkPoint *, double> div_U_error;
-//    div_U_error.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       div_U_error[p] = p->div_U_error;
-//    vtp.addPointData("div U error", div_U_error);
-//    //
-//    std::unordered_map<networkPoint *, double> rho;
-//    rho.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       rho[p] = p->rho;
-//    vtp.addPointData("rho", rho);
-//    //
-//    std::unordered_map<networkPoint *, double> volume;
-//    volume.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       volume[p] = p->volume;
-//    vtp.addPointData("volume", volume);
-//    //
-//    std::unordered_map<networkPoint *, double> pressure;
-//    pressure.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       pressure[p] = p->p_SPH;
-//    vtp.addPointData("pressure", pressure);
-//    //
-//    // std::unordered_map<networkPoint *, double> contactpoints;
-//    // for (const auto &p : Fluid->getPoints())
-//    //    contactpoints[p] = (double)p->getContactPoints().size();
-//    // vtp.addPointData("contact points", contactpoints);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> interp_normal;
-//    interp_normal.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       interp_normal[p] = p->interp_normal;
-//    vtp.addPointData("interp_normal", interp_normal);
-//    //
-//    std::unordered_map<networkPoint *, Tddd> interp_normal_original;
-//    interp_normal_original.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       interp_normal_original[p] = p->interp_normal_original;
-//    vtp.addPointData("interp_normal_original", interp_normal_original);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> position;
-//    position.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       position[p] = p->X;
-//    vtp.addPointData("position", position);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> tmp_U_SPH;
-//    for (const auto &p : Fluid->getPoints())
-//       tmp_U_SPH[p] = p->tmp_U_SPH;
-//    vtp.addPointData("tmp_U_SPH", tmp_U_SPH);
-//    // //
-//    std::unordered_map<networkPoint *, double> div_U;
-//    for (const auto &p : Fluid->getPoints())
-//       div_U[p] = p->div_U;
-//    vtp.addPointData("div_U", div_U);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> gradP_SPH;
-//    for (const auto &p : Fluid->getPoints())
-//       gradP_SPH[p] = p->gradP_SPH / p->rho;
-//    vtp.addPointData("gradP_SPH / rho", gradP_SPH);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> lap_U;
-//    for (const auto &p : Fluid->getPoints())
-//       lap_U[p] = p->mu_SPH / p->rho * p->lap_U;
-//    vtp.addPointData("nu*lapU", lap_U);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> lap_U__GRAVITY3_;
-//    for (const auto &p : Fluid->getPoints())
-//       lap_U__GRAVITY3_[p] = p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-//    vtp.addPointData("nu*lapU + g", lap_U__GRAVITY3_);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> dudt;
-//    for (const auto &p : Fluid->getPoints())
-//       dudt[p] = -p->gradP_SPH / p->rho + p->mu_SPH / p->rho * p->lap_U + _GRAVITY3_;
-//    vtp.addPointData("- grad(U)/rho + nu*lapU + g", dudt);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> DUDt;
-//    for (const auto &p : Fluid->getPoints())
-//       DUDt[p] = p->DUDt_SPH;
-//    vtp.addPointData("DUDt", DUDt);
-//    // //
-//    std::unordered_map<networkPoint *, Tddd> bucket_index;
-//    for (const auto &p : Fluid->getPoints()) {
-//       std::array<int, 3> ijk_int = p->getNetwork()->BucketPoints.map_to_ijk.at(p);
-//       std::array<double, 3> ijk_double = {static_cast<double>(ijk_int[0]), static_cast<double>(ijk_int[1]), static_cast<double>(ijk_int[2])};
-//       bucket_index[p] = ijk_double;
-//    }
-//    vtp.addPointData("bucket_index", bucket_index);
-//    // //
-//    // std::unordered_map<networkPoint *, Tddd> whereToReference;
-//    // for (const auto &p : Fluid->getPoints())
-//    //    whereToReference[p] = ToX(p) + 2 * p->v_to_surface_SPH - ToX(p);
-//    // vtp.addPointData("where to reference", whereToReference);
-//    // //
-//    std::unordered_map<networkPoint *, double> isSurface;
-//    isSurface.reserve(Fluid->getPoints().size());
-//    for (const auto &p : Fluid->getPoints())
-//       isSurface[p] = p->isSurface;
-//    vtp.addPointData("isSurface", isSurface);
-//    // //
-//    // std::unordered_map<networkPoint *, double> isInsideOfBody;
-//    // for (const auto &p : Fluid->getPoints())
-//    //    isInsideOfBody[p] = p->isInsideOfBody;
-//    // vtp.addPointData("isInsideOfBody", isInsideOfBody);
-//    // //
-//    std::unordered_map<networkPoint *, double> isCaptured;
-//    for (const auto &p : Fluid->getPoints())
-//       isCaptured[p] = p->isCaptured ? 1. : -1E+50;
-//    vtp.addPointData("isCaptured", isCaptured);
-//    // //
-//    // std::unordered_map<networkPoint *, Tddd> repulsive_force_SPH;
-//    // for (const auto &p : Fluid->getPoints())
-//    //    repulsive_force_SPH[p] = p->repulsive_force_SPH;
-//    // vtp.addPointData("repulsive_force_SPH", repulsive_force_SPH);
-//    // //
-//    std::unordered_map<networkPoint *, double> checked_points_in_radius_of_fluid_SPH;
-//    for (const auto &p : Fluid->getPoints())
-//       checked_points_in_radius_of_fluid_SPH[p] = p->checked_points_in_radius_of_fluid_SPH;
-//    vtp.addPointData("checked_points_in_radius_of_fluid_SPH", checked_points_in_radius_of_fluid_SPH);
-//    //
-//    std::unordered_map<networkPoint *, double> radius;
-//    for (const auto &p : Fluid->getPoints())
-//       radius[p] = p->SML();
-//    vtp.addPointData("radius", radius);
-//    //
-//    std::unordered_map<networkPoint *, double> checked_points_in_SML();
-//    for (const auto &p : Fluid->getPoints())
-//       checked_points_in_SML()[p] = p->checked_points_in_SML();
-//    vtp.addPointData("checked_points_in_SML()", checked_points_in_SML());
-//    //
-//    std::unordered_map<networkPoint *, double> checked_points_SPH;
-//    for (const auto &p : Fluid->getPoints())
-//       checked_points_SPH[p] = p->checked_points_SPH;
-//    vtp.addPointData("checked_points_SPH", checked_points_SPH);
-// };
 
 #endif

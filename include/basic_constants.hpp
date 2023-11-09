@@ -3,9 +3,9 @@
 #include "basic_alias.hpp"
 /* ------------------------------------------------------- */
 
-// #define DEBUGGING
+#define DEBUGGING
 #ifdef DEBUGGING
-   #define DEBUGGING_LEVEL 1
+   #define DEBUGGING_LEVEL 0
 #else
    #define DEBUGGING_LEVEL 0
 #endif

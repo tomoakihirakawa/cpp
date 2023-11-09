@@ -1057,12 +1057,12 @@ struct BEM_BVP {
 
          std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorReset << std::endl;
 
-         if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10) {
+         if (Norm(BM.dX) < 1E-9 && Norm(func) < 1E-9) {
             if (count++ > 4)
                break;
          } else
             count = 0;
-         if (Norm(BM.dX) < 1E-13 && Norm(func) < 1E-13)
+         if (Norm(BM.dX) < 1E-12 && Norm(func) < 1E-12)
             break;
       }
    };

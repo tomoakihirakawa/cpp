@@ -21,26 +21,10 @@ if(NOT WIN32)
   set(BoldWhite "${Esc}[1;37m")
 endif()
 
-# message("This is normal")
-# message("${Red}This is Red${ColourReset}")
-# message("${Green}This is Green${ColourReset}")
-# message("${Yellow}This is Yellow${ColourReset}")
-# message("${Blue}This is Blue${ColourReset}")
-# message("${Magenta}This is Magenta${ColourReset}")
-# message("${Cyan}This is Cyan${ColourReset}")
-# message("${White}This is White${ColourReset}")
-# message("${BoldRed}This is BoldRed${ColourReset}")
-# message("${BoldGreen}This is BoldGreen${ColourReset}")
-# message("${BoldYellow}This is BoldYellow${ColourReset}")
-# message("${BoldBlue}This is BoldBlue${ColourReset}")
-# message("${BoldMagenta}This is BoldMagenta${ColourReset}")
-# message("${BoldCyan}This is BoldCyan${ColourReset}")
-# message("${BoldWhite}This is BoldWhite\n\n${ColourReset}")
-
 # Set project name
 project(ProjectName)
 
-set(CXX_VERSIONS 15 14 13 12 11 10 9 8 7)
+set(CXX_VERSIONS 15 14 13 12)
 
 # Find C++ compiler
 foreach(ver IN LISTS CXX_VERSIONS)
@@ -62,7 +46,7 @@ endif()
 # Set common compiler flags
 set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
 set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-pthread -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
 
 
 # Set C++ standard
@@ -123,8 +107,8 @@ endif()
 # get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
 # add_executable(${BASE_NAME} ${SOURCE_FILE})
 
-# Set default output file name
-set(DEFAULT_OUTPUT_NAME "MyExecutable")
+# # Set default output file name
+# set(DEFAULT_OUTPUT_NAME "MyExecutable")
 
 # Allow the output file name to be passed as a command-line option
 if(DEFINED OUTPUT_NAME)
@@ -138,37 +122,24 @@ message(STATUS "${Green}BASE_NAME is ${Magenta}" ${BASE_NAME} "${ColourReset}")
 
 add_executable(${BASE_NAME} ${SOURCE_FILE})
 
-# Find LAPACK
-find_package(LAPACK)
+# Find and link LAPACK
+find_package(LAPACK REQUIRED)
+target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
 
-if(LAPACK_FOUND)
-  message(STATUS "${Green}LAPACK found!" "${ColourReset}")
-  include_directories(${LAPACK_INCLUDE_DIRS})
-  target_link_libraries(${BASE_NAME} ${LAPACK_LIBRARIES})
-else()
-  message(STATUS "${Red}LAPACK is not found!" "${ColourReset}")
-endif()
-
-# Locate Eigen
+# Locate and link Eigen3
 find_package(Eigen3 REQUIRED NO_MODULE)
-target_link_libraries(${BASE_NAME} Eigen3::Eigen)
+target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
 
+# Find and link CGAL
+find_package(CGAL REQUIRED)
+target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
 
-# Find CGAL
-find_package(CGAL)
+# Include directories
+target_include_directories(${BASE_NAME} PUBLIC
+  ${PROJECT_SOURCE_DIR}/../include
+  ${PROJECT_SOURCE_DIR}/../../include
+)
 
-if(CGAL_FOUND)
-  message(STATUS "${Green}CGAL found!" "${ColourReset}")
-  include_directories(${CGAL_INCLUDE_DIRS})
-  target_link_libraries(${BASE_NAME} CGAL::CGAL)
-else()
-  message(STATUS "${Red}CGAL is not found!" "${ColourReset}")
-endif()
-
-# Set include directories
-target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../include)
-target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../../include)
-
-message(${PROJECT_SOURCE_DIR})
-
+# Enable verbose makefile and export compile commands for use with various tools
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

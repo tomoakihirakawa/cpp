@@ -8,6 +8,8 @@
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
     - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
+- [🐋 線と三角形の干渉判定](#🐋-線と三角形の干渉判定)
+    - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
 - [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
@@ -20,7 +22,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3946)では，拡張子から，
+[Networkのコンストラクタ](../../include/Network.hpp#L3968)では，拡張子から，
 与えられたファイルが，
 
 * OFFファイル
@@ -128,6 +130,19 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 白い線は，１階層上のレベル０のバケットの境界を示している．
 
 [./example2_tree.cpp#L2](./example2_tree.cpp#L2)
+
+---
+# 🐋 線と三角形の干渉判定 
+
+## ⛵ 等間隔のシンプルな空間分割 
+
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example3_line_face_interaction.cpp
+make
+./example3_line_face_interaction
+```
+
+[./example3_line_face_interaction.cpp#L6](./example3_line_face_interaction.cpp#L6)
 
 ---
 # 🐋 CGALを使って四面体を生成する 

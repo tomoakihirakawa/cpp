@@ -557,7 +557,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
-   Tddd lap_U, lap_U_next, convection_term;
+   Tddd lap_U;
    T3Tddd grad_U;
    T3Tddd Mat1, Mat2, Mat3, Mat_B;
    std::unordered_map<networkPoint *, double> map_p_grad;
@@ -591,7 +591,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
-   double div_U, div_U_next, div_tmpU, div_tmpU_, PoissonRHS;
+   double div_U, div_tmpU, div_tmpU_, PoissonRHS;
    Tddd grad_div_U, grad_div_U_;
    Tddd gradP_SPH, gradP_SPH_;
    std::unordered_map<networkPoint *, Tddd> grad_coeff;
@@ -600,7 +600,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    netFp face_org;
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
-   Tddd U_SPH, U_SPH_next, U_SPH_, marker_X, marker_U;
+   Tddd U_SPH, U_SPH_, marker_X, marker_U;
    Tddd U_XSPH, U_XSPH_next;
    InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
@@ -626,16 +626,16 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M, laplacian_corr_M, laplacian_corr_M_next;
    std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
-   Tddd grad_Min_gradM;
+   // Tddd grad_Min_gradM;
    //
-   std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
-   std::array<Tddd, 3> grad_corr_M_next_mirror, inv_grad_corr_M_next_mirror;
+   // std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
+   // std::array<Tddd, 3> grad_corr_M_next_mirror, inv_grad_corr_M_next_mirror;
    //
-   std::array<Tddd, 3> grad_corr_M_rigid, inv_grad_corr_M_rigid;
-   std::array<Tddd, 3> grad_corr_M_next_rigid, inv_grad_corr_M_next_rigid;
-   std::array<double, 3> Eigenvalues_of_M_rigid = {0., 0., 0.};
-   std::array<double, 3> Eigenvalues_of_M_next_rigid = {0., 0., 0.};
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid;
+   // std::array<Tddd, 3> grad_corr_M_rigid, inv_grad_corr_M_rigid;
+   // std::array<Tddd, 3> grad_corr_M_next_rigid, inv_grad_corr_M_next_rigid;
+   // std::array<double, 3> Eigenvalues_of_M_rigid = {0., 0., 0.};
+   // std::array<double, 3> Eigenvalues_of_M_next_rigid = {0., 0., 0.};
+   // std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid;
    std::array<double, 3> Eigenvalues_of_M, Eigenvalues_of_M1, Eigenvalues_of_M1_next;
    std::array<std::array<double, 3>, 3> Eigenvectors_of_M, Eigenvectors_of_M1, Eigenvectors_of_M_next, Eigenvectors_of_M1_next;
    //

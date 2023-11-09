@@ -10,11 +10,17 @@
 ---
 # 🐋 ODEの初期値問題 
 
+```cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_DampedHrmonicOscillator.cpp
+make
+./example_DampedHrmonicOscillator
+```
+
 ## ⛵ 減衰調和振動子/Damped Harmonic Oscillatorの例 
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
-[プログラム中で宣言](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L44)し，
+[プログラム中で宣言](../../builds/build_ODE/example_DampedHrmonicOscillator.cpp#L50)し，
 
 ```math
 \begin{align*}
@@ -37,10 +43,10 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L332)）．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L336)）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](../../include/integrationOfODE.hpp#L332)
-[../../include/integrationOfODE.hpp#L322](../../include/integrationOfODE.hpp#L322)
+[LeapFrogのクラス](../../include/integrationOfODE.hpp#L336)
+[../../include/integrationOfODE.hpp#L326](../../include/integrationOfODE.hpp#L326)
 
 
 ### 🪼 🪼 Runge-Kutta  
@@ -51,7 +57,7 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
-[4次のRunge-Kutta](../../include/integrationOfODE.hpp#L181)の場合，次のようになる．
+[4次のRunge-Kutta](../../include/integrationOfODE.hpp#L185)の場合，次のようになる．
 
 ```math
 \begin{align*}

@@ -55,7 +55,7 @@ json["price"] = {"10."};
 
 ```cpp
 {
-std::cout << magenta << "1. ファイル名でJSONをコンストラクト" << colorOff << std::endl;
+std::cout << magenta << "1. ファイル名でJSONをコンストラクト" << colorReset << std::endl;
 JSON json("./sample.json");
 std::cout << json["translate"] << std::endl;
 }
@@ -63,7 +63,7 @@ std::cout << json["translate"] << std::endl;
 
 ```cpp
 {
-std::cout << red << "2. ifstreamでJSONをコンストラクト" << colorOff << std::endl;
+std::cout << red << "2. ifstreamでJSONをコンストラクト" << colorReset << std::endl;
 JSON json(std::ifstream("./sample.json"));
 json["price"] = {"10."};
 }
