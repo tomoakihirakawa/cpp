@@ -10,7 +10,7 @@
 
 オイラー法でケーブルの動きをシミュレーションする．
 
-![anim.gif](./anim.gif)
+![sample.gif](./sample.gif)
 
 */
 
