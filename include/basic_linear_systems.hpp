@@ -170,54 +170,46 @@ struct ludcmp_parallel {
 /*                                   LAPACK                                   */
 /* -------------------------------------------------------------------------- */
 
-extern "C" void dgetrf_(const int *dim1,
-                        const int *dim2,
-                        double *a,
-                        const int *lda,
-                        int *ipiv,
-                        int *info);
-extern "C" void dgetrs_(const char *TRANS,
-                        const int *N,
-                        const int *NRHS,
-                        const double *A,
-                        const int *LDA,
-                        const int *IPIV,
-                        double *B,
-                        const int *LDB,
-                        int *INFO);
+extern "C" void dgetrf_(const int *dim1, const int *dim2, double *a, const int *lda, int *ipiv, int *info);
+extern "C" void dgetrs_(const char *TRANS, const int *N, const int *NRHS, const double *A, const int *LDA, const int *IPIV, double *B, const int *LDB, int *INFO);
+extern "C" void dgetri_(const int *n, double *a, const int *lda, const int *ipiv, double *work, int *lwork, int *info);
 
 struct lapack_lu {
-   const int dim;
-   std::vector<double> a;
-   const int nrhs = 1, LDB, LDA;
+   const int dim, nrhs = 1, LDB, LDA;
    int info;
    std::vector<int> ipiv;
+   std::vector<double> a;
+   char TRANS = 'T';
    ~lapack_lu(){};
 
    lapack_lu(const std::vector<std::vector<double>> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      for (int i = 0, k = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j, ++k)
-            a[k] = aIN[i][j];
+      int i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
    template <size_t N>
    lapack_lu(const std::array<std::array<double, N>, N> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      for (int i = 0, k = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j, ++k)
-            a[k] = aIN[i][j];
+      int i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
+   //!  solve at initialization
+   //! solve A.x = b
    lapack_lu(const std::vector<std::vector<double>> &aIN, std::vector<double> &x, const std::vector<double> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      for (int i = 0, k = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j, ++k)
-            a[k] = aIN[i][j];
+      int i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
-      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
-         // std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "LDB:" << LDB;
          ss << "\nLDA:" << LDA;
@@ -228,17 +220,17 @@ struct lapack_lu {
       };
    };
 
+   //! solve A.x = b
    template <size_t N>
    lapack_lu(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &x, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      for (int i = 0, k = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j, ++k)
-            a[k] = aIN[i][j];
-
+      int i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
-      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
-         // std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "LDB:" << LDB;
          ss << "\nLDA:" << LDA;
@@ -249,16 +241,17 @@ struct lapack_lu {
       };
    };
 
+   //! solve x.A = b
    template <size_t N>
-   lapack_lu(std::array<double, N> &x, const std::array<std::array<double, N>, N> &aIN, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      for (int i = 0, k = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j, ++k)
-            a[k] = aIN[i][j];
+   lapack_lu(std::array<double, N> &x, const std::array<std::array<double, N>, N> &aIN, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim), TRANS('N') {
+      int i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
       x = rhd;
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
-      dgetrs_("N", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
-         // std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "LDB:" << LDB;
          ss << "\nLDA:" << LDA;
@@ -269,13 +262,13 @@ struct lapack_lu {
       };
    };
 
+   //! solve A.x = b or x.A = b depending on the TRANS = 'T' or 'N'
    void solve(const std::vector<double> &rhd, std::vector<double> &x) {
       if ((dim != rhd.size()) || (dim != x.size()) || (rhd.size() != x.size()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "dim != rhd.size() || dim != x.size() || rhd.size() != x.size() ");
       x = rhd;
-      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
-         // std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "LDB:" << LDB;
          ss << "\nLDA:" << LDA;
@@ -289,9 +282,8 @@ struct lapack_lu {
    template <size_t N>
    void solve(const std::array<double, N> &rhd, std::array<double, N> &x) {
       x = rhd;
-      dgetrs_("T", &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
-         // std::cerr << e.what() << colorReset << std::endl;
          std::stringstream ss;
          ss << "LDB:" << LDB;
          ss << "\nLDA:" << LDA;
@@ -302,47 +294,82 @@ struct lapack_lu {
       };
    };
 
-   std::vector<std::vector<double>> inverse() {
-      // Check if the matrix is square
+   /* --------------------------------------------- */
+
+   template <typename ARRAY>
+   void inverse_helper(ARRAY &ret) {
       if (dim * dim != a.size())
-         throw std::runtime_error("The matrix must be square to compute its inverse.");
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "dim * dim != a.size()");
 
-      // Create an identity matrix
-      std::vector<double> id_mat(dim * dim, 0);
-      for (int i = 0; i < dim; ++i)
-         id_mat[i * dim + i] = 1;
+      //* Query and allocate the optimal workspace
+      int lwork = -1;
+      double wkopt = 0.0;
+      auto a_copy = a;
+      dgetri_(&dim, a_copy.data(), &LDA, ipiv.data(), &wkopt, &lwork, &info);
+      lwork = static_cast<int>(wkopt);
+      std::vector<double> work(lwork);
+      //* Compute the inverse
 
-      // Use dgetrs_ to find each column of the inverse
-      dgetrs_("T", &dim, &dim, a.data(), &LDA, ipiv.data(), id_mat.data(), &LDB, &info);
-
-      // Check for errors
-      if (info) {
+      dgetri_(&dim, a_copy.data(), &LDA, ipiv.data(), work.data(), &lwork, &info);
+      if (info != 0) {
          std::stringstream ss;
-         ss << "Error in dgetrs_ with info = " << info;
-         throw std::runtime_error(ss.str());
+         ss << "Error in dgetri_ with info = " << info;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       }
 
-      // Convert the flat array back to a 2D array
-      std::vector<std::vector<double>> inv_mat(dim, std::vector<double>(dim));
-      for (int i = 0; i < dim; ++i) {
-         for (int j = 0; j < dim; ++j) {
-            inv_mat[i][j] = id_mat[j * dim + i];
-         }
-      }
-      return inv_mat;
+      for (int i = 0; i < dim; ++i)
+         for (int j = 0; j < dim; ++j)
+            ret[i][j] = a_copy[i * dim + j];  //! do not Transpose back because LAPACK uses column-major order
+                                              //! because this comput A^-1
    }
+
+   std::vector<std::vector<double>> inverse() {
+      std::vector<std::vector<double>> ret(dim, std::vector<double>(dim));
+      inverse_helper(ret);
+      return ret;
+   }
+
+   // std::vector<std::vector<double>> inverse() {
+   //    //! Check if the matrix is square
+   //    if (dim * dim != a.size())
+   //       throw std::runtime_error("The matrix must be square to compute its inverse.");
+   //    //! Create an identity matrix
+   //    std::vector<double> id_mat(dim * dim, 0.);
+   //    for (int i = 0; i < dim; ++i)
+   //       id_mat[i * dim + i] = 1;
+   //    // Use dgetrs_ to find each column of the inverse
+   //    dgetrs_(&TRANS, &dim, &dim, a.data(), &LDA, ipiv.data(), id_mat.data(), &LDB, &info);
+   //    // Check for errors
+   //    if (info) {
+   //       std::stringstream ss;
+   //       ss << "Error in dgetrs_ with info = " << info;
+   //       throw std::runtime_error(ss.str());
+   //    }
+
+   //    // Convert the flat array back to a 2D array
+   //    std::vector<std::vector<double>> inv_mat(dim, std::vector<double>(dim));
+   //    for (int i = 0; i < dim; ++i) {
+   //       for (int j = 0; j < dim; ++j) {
+   //          inv_mat[i][j] = id_mat[j * dim + i];
+   //       }
+   //    }
+   //    return inv_mat;
+   // }
 };
 
 template <size_t N>
 std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double, N>, N> &A) {
    lapack_lu lu(A);
-   auto vv_inv = lu.inverse();
-   std::array<std::array<double, N>, N> aa_inv;
-   for (auto i = 0; i < N; ++i)
-      for (auto j = 0; j < N; ++j)
-         aa_inv[i][j] = vv_inv[i][j];
+   std::array<std::array<double, N>, N> inv_array;
 
-   return aa_inv;
+   lu.inverse_helper(inv_array);
+   return inv_array;
+
+   // auto inv = lu.inverse();
+   // for (int i = 0; i < N; ++i)
+   //    for (int j = 0; j < N; ++j)
+   //       inv_array[i][j] = inv[i][j];
+   // return inv_array;
 }
 
 VV_d Inverse(const VV_d &mat) {

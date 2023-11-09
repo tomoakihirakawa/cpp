@@ -84,7 +84,7 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 | `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
 | `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
 | `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
-[../../include/basic_linear_systems.hpp#L846](../../include/basic_linear_systems.hpp#L846)
+[../../include/basic_linear_systems.hpp#L958](../../include/basic_linear_systems.hpp#L958)
 
 
 ### 🪼 CRSの使用例 
@@ -204,7 +204,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 基底ベクトルを追加したい場合にどのような操作が必要となるか整理しておこう．
 これは，GMRES法の繰り返し計算の中で必要となる．
-[../../include/basic_linear_systems.hpp#L1119](../../include/basic_linear_systems.hpp#L1119)
+[../../include/basic_linear_systems.hpp#L1231](../../include/basic_linear_systems.hpp#L1231)
 
 
 ## ⛵ ⛵ 一般化最小残差法/GMRES  
@@ -247,7 +247,7 @@ $`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が
 </details>
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
-[../../include/basic_linear_systems.hpp#L1272](../../include/basic_linear_systems.hpp#L1272)
+[../../include/basic_linear_systems.hpp#L1385](../../include/basic_linear_systems.hpp#L1385)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．

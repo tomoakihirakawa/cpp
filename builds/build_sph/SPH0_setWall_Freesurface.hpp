@@ -43,13 +43,13 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    IdentityMatrix(A->inv_grad_corr_M);
    IdentityMatrix(A->inv_grad_corr_M_next);
    //
-   IdentityMatrix(A->inv_grad_corr_M);
-   IdentityMatrix(A->inv_grad_corr_M_next);
+   // IdentityMatrix(A->inv_grad_corr_M);
+   // IdentityMatrix(A->inv_grad_corr_M_next);
    //
-   IdentityMatrix(A->grad_corr_M_rigid);
-   IdentityMatrix(A->grad_corr_M_next_rigid);
-   IdentityMatrix(A->inv_grad_corr_M_rigid);
-   IdentityMatrix(A->inv_grad_corr_M_next_rigid);
+   // IdentityMatrix(A->grad_corr_M_rigid);
+   // IdentityMatrix(A->grad_corr_M_next_rigid);
+   // IdentityMatrix(A->inv_grad_corr_M_rigid);
+   // IdentityMatrix(A->inv_grad_corr_M_next_rigid);
    //
    // IdentityMatrix(A->Mat1);
    // IdentityMatrix(A->Mat2);
@@ -70,12 +70,12 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    Fill(A->grad_U, 0.);
    Fill(A->grad_corr_M, 0.);
    Fill(A->grad_corr_M_next, 0.);
-   Fill(A->grad_corr_M_mirror, 0.);
-   Fill(A->grad_corr_M_next_mirror, 0.);
+   // Fill(A->grad_corr_M_mirror, 0.);
+   // Fill(A->grad_corr_M_next_mirror, 0.);
 
    //@ 流体内部の位置における剛体の演算修正用行列として使おう
-   Fill(A->grad_corr_M_rigid, 0.);
-   Fill(A->grad_corr_M_next_rigid, 0.);
+   // Fill(A->grad_corr_M_rigid, 0.);
+   // Fill(A->grad_corr_M_next_rigid, 0.);
 
    // A->Mat1.fill({0., 0., 0.});
    // A->Mat2.fill({0., 0., 0.});
@@ -92,16 +92,16 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
          A->grad_corr_M += B->volume * TensorProduct(grad_w, B->X - A->X);
          A->grad_corr_M_next += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
          //! mirrror
-         A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, B->X - A->X);
-         A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-         if (A->isFluid && !A->isSurface && B->isSurface) {
-            auto BX = Mirror(A->X, B->X, B->X - A->X);
-            auto grad_w = grad_w_Bspline(A->X, BX, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, BX - A->X);
-            auto BX_next = Mirror(X_next(A), X_next(B), X_next(B) - X_next(A));
-            auto grad_w_next = grad_w_Bspline(X_next(A), BX_next, A->SML_next());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_next, BX_next - X_next(A));
-         }
+         // A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, B->X - A->X);
+         // A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
+         // if (A->isFluid && !A->isSurface && B->isSurface) {
+         //    auto BX = Mirror(A->X, B->X, B->X - A->X);
+         //    auto grad_w = grad_w_Bspline(A->X, BX, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
+         //    A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, BX - A->X);
+         //    auto BX_next = Mirror(X_next(A), X_next(B), X_next(B) - X_next(A));
+         //    auto grad_w_next = grad_w_Bspline(X_next(A), BX_next, A->SML_next());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
+         //    A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_next, BX_next - X_next(A));
+         // }
          Uij = A->U_SPH - B->U_SPH;
          A->grad_U += B->volume * TensorProduct(-Uij, grad_w);
          //! ラプラシアンの修正
@@ -122,12 +122,12 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
             A->v_rrDW_next += B->volume * TensorProduct(TensorProduct(r, r), DW);
          }
       }
-      if (A->getNetwork()->isRigidBody) {
-         //@ 流体内部の位置における剛体の演算修正用行列として使おう
-         auto n = A->v_to_surface_SPH;
-         A->grad_corr_M_rigid += B->volume * TensorProduct(grad_w_Bspline(A->X + 2. * n, B->X, A->SML()), B->X - (A->X + 2. * n));
-         A->grad_corr_M_next_rigid += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A) + 2. * n, X_next(B), A->SML_next()), X_next(B) - (X_next(A) + 2. * n));
-      }
+      // if (A->getNetwork()->isRigidBody) {
+      //    //@ 流体内部の位置における剛体の演算修正用行列として使おう
+      //    auto n = A->v_to_surface_SPH;
+      //    A->grad_corr_M_rigid += B->volume * TensorProduct(grad_w_Bspline(A->X + 2. * n, B->X, A->SML()), B->X - (A->X + 2. * n));
+      //    A->grad_corr_M_next_rigid += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A) + 2. * n, X_next(B), A->SML_next()), X_next(B) - (X_next(A) + 2. * n));
+      // }
    };
 
    std::ranges::for_each(all_nets, [&](const auto &NET) {
@@ -140,14 +140,19 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    DebugPrintLevel(2, "setCorrectionMatrix: add done", Blue);
 
    A->Eigenvalues_of_M = {0., 0., 0.};
-   A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-   A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+
+   const double small = 1E-10;
+   if (Norm(A->grad_corr_M[0]) > small && Norm(A->grad_corr_M[1]) > small && Norm(A->grad_corr_M[2]) > small)
+      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+
+   if (Norm(A->grad_corr_M_next[0]) > small && Norm(A->grad_corr_M_next[1]) > small && Norm(A->grad_corr_M_next[2]) > small)
+      A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
    // mirror
-   A->inv_grad_corr_M_mirror = Inverse(A->grad_corr_M_mirror);
-   A->inv_grad_corr_M_next_mirror = Inverse(A->grad_corr_M_next_mirror);
+   // A->inv_grad_corr_M_mirror = Inverse(A->grad_corr_M_mirror);
+   // A->inv_grad_corr_M_next_mirror = Inverse(A->grad_corr_M_next_mirror);
    //
-   A->inv_grad_corr_M_rigid = Inverse(A->grad_corr_M_rigid);
-   A->inv_grad_corr_M_next_rigid = Inverse(A->grad_corr_M_next_rigid);
+   // A->inv_grad_corr_M_rigid = Inverse(A->grad_corr_M_rigid);
+   // A->inv_grad_corr_M_next_rigid = Inverse(A->grad_corr_M_next_rigid);
 
    {
       auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-10, 100.);
@@ -155,11 +160,11 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
       A->Eigenvectors_of_M = vectors;
    }
 
-   {
-      auto [lambdas, vectors] = Eigensystem(A->grad_corr_M_rigid, 1E-10, 100.);
-      A->Eigenvalues_of_M_rigid = lambdas;
-      A->Eigenvectors_of_M_rigid = vectors;
-   }
+   // {
+   //    auto [lambdas, vectors] = Eigensystem(A->grad_corr_M_rigid, 1E-10, 100.);
+   //    A->Eigenvalues_of_M_rigid = lambdas;
+   //    A->Eigenvectors_of_M_rigid = vectors;
+   // }
 
    {
       auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-10, 100.);
@@ -255,7 +260,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          for (const auto &p : obj->getPoints()) {
             p->setDensityVolume(_WATER_DENSITY_, std::pow(particle_spacing, 3.));
             p->interp_normal_original.fill(0.);
-            p->grad_Min_gradM.fill(0.);
+            // p->grad_Min_gradM.fill(0.);
             p->isFluid = false;
             p->isFreeFalling = false;
             p->isCaptured = p->isCaptured_ = false;
@@ -277,7 +282,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
          // const double captureRange_wall_as_fluid = p->SML();
          for (const auto &[obj, poly] : RigidBodyObject) {
             obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
-               p->grad_Min_gradM -= p->volume * (Min(p->Eigenvalues_of_M_rigid) - Min(q->Eigenvalues_of_M_rigid)) * grad_w_Bspline(p->X, q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
+               // p->grad_Min_gradM -= p->volume * (Min(p->Eigenvalues_of_M_rigid) - Min(q->Eigenvalues_of_M_rigid)) * grad_w_Bspline(p->X, q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
 
                if (Distance(p, q) < captureRange && !q->isChecked) {
 
@@ -294,16 +299,15 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                   */
 
                   for (const auto &[obj, poly] : RigidBodyObject)
-                     obj->BucketPoints.apply(q->X, captureRange,
-                                             [&](const auto &Q) {
-                                                q->interp_normal_original -= Q->rho * Q->volume * grad_w_Bspline(q->X, Q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
-                                             });
+                     obj->BucketPoints.apply(q->X, captureRange, [&](const auto &Q) {
+                        q->interp_normal_original -= Q->rho * Q->volume * grad_w_Bspline(q->X, Q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
+                     });
                   const auto N = q->interp_normal_original;
                   q->interp_normal = Normalize(q->interp_normal_original);
                   if (!isFinite(q->interp_normal))
                      q->interp_normal = {0., 0., 1.};
 
-                  /*DOC_EXTRACT 0_1_2_setWall
+                  /*DOC_EXTRACT 0_1_2_setWallb
 
                   #### `isCaptured`の決定
 
@@ -318,22 +322,14 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                   auto R = captureRange;
                   q->isCaptured = net->BucketPoints.any_of(q->X, R,
                                                            [&](const auto &Q) {
-                                                              bool canSeeNear = Distance(q, Q) < 1.1 * Q->SML() && q != Q && isFlat(N, Q->X - q->X, M_PI / 8);
+                                                              bool canSeeNear = Distance(q, Q) < 1.1 * Q->SML() && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
                                                               bool veryClose = Distance(q, Q) < std::sqrt(1.5) * particle_spacing && q != Q;
 
-                                                              bool canSeeNear_next = Distance(X_next(q), X_next(Q)) < 1.1 * Q->SML() && q != Q && isFlat(N, X_next(Q) - X_next(q), M_PI / 8);
+                                                              bool canSeeNear_next = Distance(X_next(q), X_next(Q)) < 1.1 * Q->SML() && q != Q && isFlat(N, X_next(Q) - X_next(q), M_PI / 5);
                                                               bool veryClose_next = Distance(X_next(q), X_next(Q)) < std::sqrt(1.5) * particle_spacing && q != Q;
 
                                                               return canSeeNear || veryClose || canSeeNear_next || veryClose_next;
                                                            });
-
-                  // ここを修正した
-                  // if (q->isCaptured) {
-                  //    auto X = q->X + 2 * q->normal_SPH;
-                  //    q->isCaptured = net->BucketPoints.any_of(X, particle_spacing * 1.25, [&](const auto &Q) {
-                  //       return Distance(Q, X) < particle_spacing * 1.25 && q != Q;
-                  //    });
-                  // }
 
                   /* -------------------------------------------------------------------------- */
                   if (q->isCaptured) {
@@ -353,25 +349,14 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                                                                        return canSeeNear || veryClose;
                                                                     });
                   }
-                  // if (q->isFirstWallLayer) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
-                  // } else if (q->isCaptured) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
-                  // }
-                  // 変更した
-                  // if (Norm(q->interp_normal_original) > 7500) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
-                  // } else if (Norm(q->interp_normal_original) > 900) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
-                  // } else {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 2.5 * Normalize(q->interp_normal_original);
-                  // }
 
-                  // if (q->isFirstWallLayer) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
-                  // } else if (q->isCaptured) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
-                  // }
+                  if (Norm(q->interp_normal_original) > 7500) {
+                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
+                  } else if (Norm(q->interp_normal_original) > 900) {
+                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
+                  } else {
+                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 2.5 * Normalize(q->interp_normal_original);
+                  }
 
                   /* -------------------------------------------------------------------------- */
 
@@ -389,7 +374,6 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                   if (q->isCaptured) {
                      q->U_SPH.fill(0.);
-                     q->U_SPH_next.fill(0.);
                      Tddd b_vector, DUDt_SPH;
                      q->intp_density = 0.;
                      q->marker_X = q->X + 2 * q->v_to_surface_SPH;
@@ -399,11 +383,10 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                         q->U_SPH += Q->U_SPH * (w = Q->volume * w_Bspline(Norm(q->marker_X - Q->X), r));
                         b_vector += Q->b_vector * w;
                         DUDt_SPH += Q->DUDt_SPH * w;
-                        q->U_SPH_next += U_next(Q) * (w = V_next(Q) * w_Bspline(Norm(marker_X_next - X_next(Q)), r));
                         q->intp_density += Q->rho * Q->volume * w_Bspline(Norm(q->marker_X - Q->X), r);
                         total_w += w;
                      });
-                     if (total_w == 0.) {
+                     if (total_w < 1E-5) {
                         q->U_SPH.fill(0.);
                         // q->intp_density = _WATER_DENSITY_;
                      } else {
@@ -415,9 +398,8 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                      }
                      // q->U_SPH = -q->U_SPH;
                      // q->U_SPH.fill(0.);
-
-                     q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);            //\label{SPH:wall_particle_velocity}
-                     q->U_SPH_next = Reflect(q->U_SPH_next, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
+                     q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
+                     // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                      q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
                      // if (q->isFirstWallLayer)
                      //    q->U_SPH = Chop(q->U_SPH, q->v_to_surface_SPH);
@@ -426,7 +408,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                }
             });
          }
-         p->grad_Min_gradM = -Normalize(p->grad_Min_gradM);
+         // p->grad_Min_gradM = -Normalize(p->grad_Min_gradM);
       };
 
       DebugPrint("setCorrectionMatrix", Cyan);

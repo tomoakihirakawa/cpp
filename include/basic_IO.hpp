@@ -52,17 +52,82 @@ STREAM &operator<<(STREAM &stream, const std::vector<std::array<T, N>> &V) {
    return stream;
 }
 
-template <typename... T>
-std::ostream &operator<<(std::ostream &stream, const std::tuple<T...> &V) {
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::array<T, N>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<double>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << v;
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<std::array<T, N>>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << std::tuple<std::array<T, N>, std::array<std::string, 2>>{v, std::get<1>(V_bracket)};
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<std::vector<std::array<T, N>>>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << std::tuple<std::vector<std::array<T, N>>, std::array<std::string, 2>>{v, std::get<1>(V_bracket)};
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <size_t N, typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::vector<std::vector<std::array<T, N>>> &V) {
    stream << "{";
-   std::apply([&stream](const auto &...v) {
-      bool first = true;
-      ((stream << (first ? "" : ",") << v, first = false), ...);  // fold expressionを使えば，別にタプルの長さをチェック必要はない
-   },
-              V);
+   bool first = true;
+   std::ranges::for_each(V, [&](const auto &v) {
+      stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+      first = false;
+   });
+
    stream << "}";
    return stream;
 }
+
+// template <typename... T>
+// std::ostream &operator<<(std::ostream &stream, const std::tuple<T...> &V) {
+//    stream << "{";
+//    std::apply([&stream](const auto &...v) {
+//       bool first = true;
+//       ((stream << (first ? "" : ",") << v, first = false), ...);  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+//    },
+//               V);
+//    stream << "}";
+//    return stream;
+// }
 
 std::ostream &operator<<(std::ostream &stream, const std::vector<std::string> &v) {
    stream << "{";
@@ -260,8 +325,8 @@ void Print(const T &v_IN) {
    std::cout << v_IN << std::endl;
 };
 
-template <typename T, typename U>
-void Print(const T &v_IN, const U &color) {
+template <typename T>
+void Print(const T &v_IN, const std::string &color) {
    std::cout << color << v_IN << colorReset << std::endl;
 };
 

@@ -30,6 +30,10 @@ int main() {
                    {0., -1, 4, -1},
                    {-1., 0, -1, 4}};
    const V_d b = {15., 10., 10, 15};
+   const VV_d inverse = {{0.2916666667, 0.08333333333, 0.04166666667, 0.08333333333},
+                         {0.08333333333, 0.2916666667, 0.08333333333, 0.04166666667},
+                         {0.04166666667, 0.08333333333, 0.2916666667, 0.08333333333},
+                         {0.08333333333, 0.04166666667, 0.08333333333, 0.2916666667}};
    V_d x0(b.size(), 0. /*initial value*/);
    V_d ans = {6.875, 5.625, 5.625, 6.875};
    /* -------------------------------------------------------------------------- */
@@ -40,14 +44,15 @@ int main() {
    //    }
 
    Timer timer;
-   std::cout << "time:" << timer() << std::endl;
+   Print("LAPACK LU time:", timer());
    lapack_lu lu(A);
    lu.solve(b, x0);
-   std::cout << "error " << Norm(Dot(A, x0) - b) << std::endl;
-   std::cout << "time:" << timer() << std::endl;
+   Print("LAPACK LU error : ", Norm(Dot(A, x0) - b));
+   Print("LAPACK LU time : ", timer());
+   Print("LAPACK LU inverse : ", lu.inverse() - inverse);
 
    lapack_svd svd(A);
    svd.solve(b, x0);
-   std::cout << "error " << Norm(Dot(A, x0) - b) << std::endl;
-   std::cout << "time:" << timer() << std::endl;
+   Print("LAPACK SVD error:", Norm(Dot(A, x0) - b));
+   Print("LAPACK SVD time:", timer());
 };

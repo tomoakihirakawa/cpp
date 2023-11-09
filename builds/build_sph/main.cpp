@@ -36,13 +36,6 @@ python3 input_generator.py
 
 double delta_t;
 
-#define DEBUGGING
-#ifdef DEBUGGING
-   #define DEBUGGING_LEVEL 1
-#else
-   #define DEBUGGING_LEVEL 0
-#endif
-
 #include <filesystem>
 #include <utility>
 #define DEM
@@ -281,9 +274,9 @@ int main(int argc, char **argv) {
             // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
             // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
 
-            // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
 
-            p->v_to_surface_SPH = p->normal_SPH = X - p->X;
+            // p->v_to_surface_SPH = p->normal_SPH = X - p->X;
 
             // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + 1E-12) * ps * Normalize(X - p->X);
             p->mirroring_face = f;
@@ -347,6 +340,8 @@ int main(int argc, char **argv) {
 
    for (auto time_step = 0; time_step < end_time_step; ++time_step) {
 
+      Print(Magenta, "time_step = ", time_step, ", simulation_time = ", simulation_time, ", end_time = ", end_time, ", max_dt = ", max_dt, ", RK_order = ", RK_order);
+
       {
          auto points = Fluid->getPoints();
          for (auto p : points)
@@ -394,8 +389,6 @@ int main(int argc, char **argv) {
                      time_step < 50 ? max_dt / 100 : max_dt,
                      // max_dt,
                      RK_order);
-
-      std::cout << "simulation_time = " << simulation_time << std::endl;
 
       // freeze particle a while
       for (const auto &p : Fluid->getPoints()) {
