@@ -637,7 +637,7 @@ void updateParticles(const auto &points,
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
                         // auto tmp = -0.1 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.5 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
                         p->DUDt_SPH += tmp;

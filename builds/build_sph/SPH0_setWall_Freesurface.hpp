@@ -86,9 +86,11 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
    DebugPrintLevel(2, "setCorrectionMatrix: initiation done. start add", Blue);
 
+   double total_w = 0;
    auto add = [&](const auto &B) {
       auto grad_w = grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
       if (B->isCaptured) {
+         total_w += w_Bspline(Norm(A->X - B->X), A->SML());
          A->grad_corr_M += B->volume * TensorProduct(grad_w, B->X - A->X);
          A->grad_corr_M_next += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
          //! mirrror
@@ -141,12 +143,10 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
    A->Eigenvalues_of_M = {0., 0., 0.};
 
-   const double small = 1E-10;
-   if (Norm(A->grad_corr_M[0]) > small && Norm(A->grad_corr_M[1]) > small && Norm(A->grad_corr_M[2]) > small)
+   if (total_w > 1E-5) {
       A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-
-   if (Norm(A->grad_corr_M_next[0]) > small && Norm(A->grad_corr_M_next[1]) > small && Norm(A->grad_corr_M_next[2]) > small)
       A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+   }
    // mirror
    // A->inv_grad_corr_M_mirror = Inverse(A->grad_corr_M_mirror);
    // A->inv_grad_corr_M_next_mirror = Inverse(A->grad_corr_M_next_mirror);
@@ -378,21 +378,21 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                      q->intp_density = 0.;
                      q->marker_X = q->X + 2 * q->v_to_surface_SPH;
                      Tddd marker_X_next = X_next(q) + 2 * q->v_to_surface_SPH;
-                     double total_w = 0, r = q->SML(), w;
+                     double total_mass_w = 0, total_w = 0, r = q->SML(), w;
                      net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
-                        q->U_SPH += Q->U_SPH * (w = Q->volume * w_Bspline(Norm(q->marker_X - Q->X), r));
-                        b_vector += Q->b_vector * w;
-                        DUDt_SPH += Q->DUDt_SPH * w;
-                        q->intp_density += Q->rho * Q->volume * w_Bspline(Norm(q->marker_X - Q->X), r);
+                        w = w_Bspline(Norm(q->marker_X - Q->X), r);
+                        q->U_SPH += Q->U_SPH * Q->volume * w;
+                        b_vector += Q->b_vector * Q->volume * w;
+                        DUDt_SPH += Q->DUDt_SPH * Q->volume * w;
+                        q->intp_density += Q->rho * Q->volume * w;
+                        total_mass_w += w;
                         total_w += w;
                      });
-                     if (total_w < 1E-5) {
-                        q->U_SPH.fill(0.);
-                        // q->intp_density = _WATER_DENSITY_;
-                     } else {
-                        q->U_SPH /= total_w;
+
+                     if (total_w > 1E-5) {
+                        q->U_SPH /= total_mass_w;
                         // q->b_vector = b_vector / total_w;
-                        q->DUDt_SPH /= total_w;
+                        q->DUDt_SPH /= total_mass_w;
                         q->marker_U = q->U_SPH;  //! そのままの値
                         // q->intp_density /= total_w;
                      }
@@ -504,7 +504,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             p->interp_normal_rigid_next.fill(0.);
             //
             // p->interpolated_skewness.fill(0.);
-            double w, total_weight = 0, total_weight_next = 0;
+            double w, total_volume_w = 0, total_volume_w_next = 0;
             // std::vector<networkPoint *> samples;
 
             net->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
@@ -516,10 +516,10 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                   p->totalMass_SPH += q->mass;
                }
                w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
-               total_weight += w;
+               total_volume_w += w;
                p->intp_density += q->rho * w;
                w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML_next());
-               total_weight_next += w;
+               total_volume_w_next += w;
                p->intp_density_next += rho_next(q) * w;
 
                p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p, q);                 // #OK to use grad_w_Bspline(p, q) because p is surface particle
@@ -545,10 +545,10 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                      // w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
                      if (Distance(p, q) < p->SML() || Distance(X_next(p), X_next(q)) < p->SML()) {
                         w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
-                        total_weight += w;
+                        total_volume_w += w;
                         p->intp_density += q->rho * w;
                         w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML());
-                        total_weight_next += w;
+                        total_volume_w_next += w;
                         p->intp_density_next += rho_next(q) * w;
                         p->COM_SPH += q->mass * q->X;
                         p->totalMass_SPH += q->mass;

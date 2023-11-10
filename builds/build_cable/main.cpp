@@ -24,6 +24,10 @@ make
 
 */
 
+#define USE_EULER
+// #define USE_LEAP_FROG
+// #define USE_RK4
+
 struct Node {
    std::array<double, 3> X;
    std::array<double, 3> velocity;
@@ -34,13 +38,13 @@ struct Node {
 
    double t;
    LeapFrog<decltype(X)> LPFG;
+
+   RungeKutta<decltype(X)> RK_x;
+   RungeKutta<decltype(X)> RK_v;
 };
 
-const double stiffness = 10000;
-const double damp = 1.;
 const double dt = 0.01;  // Time step
-const int max_step = 5000;
-const double natural_length = 1.;
+const int max_step = 6000;
 const std::array<double, 3> gravity = {0, 0, -9.81};
 
 // nodes 20
@@ -71,10 +75,10 @@ std::vector<Node> nodes = {
 
 void simulateCableDynamics(double t, double dt) {
 
-   double T = 3;
-   double w = 2 * M_PI / T;
-
-   auto tension = [&](const int i) {
+   auto tension = [&dt](const int i) {
+      const double stiffness = 1000;
+      const double damp = .5;
+      const double natural_length = 1.;
       std::array<double, 3> acceleration;
       if (i - 1 >= 0) {
          auto v = nodes[i - 1].X - nodes[i].X;
@@ -95,7 +99,15 @@ void simulateCableDynamics(double t, double dt) {
       return acceleration;
    };
 
-   for (size_t step = 0; step < 2; ++step) {
+   double T = 3;
+   double w = 2 * M_PI / T;
+
+#ifdef USE_LEAP_FROG
+   for (size_t step = 0; step < 2; ++step)
+#elif defined USE_RK4
+   for (size_t step = 0; step < 4; ++step)
+#endif
+   {
       for (size_t i = 1; i < nodes.size(); ++i) {
 
          nodes[i].acceleration = tension(i) + gravity;
@@ -110,35 +122,30 @@ void simulateCableDynamics(double t, double dt) {
                   nodes[i].acceleration = -nodes[i].velocity / dt;
             }
       }
+
+#ifdef USE_EULER
+      //! オイラー法
+      for (size_t i = 1; i < nodes.size(); ++i) {
+         nodes[i].velocity += nodes[i].acceleration * dt;
+         nodes[i].X += nodes[i].velocity * dt;
+      }
+#elif defined USE_LEAP_FROG
       for (size_t i = 1; i < nodes.size(); ++i) {
          nodes[i].LPFG.push(nodes[i].acceleration);
          nodes[i].t = nodes[i].LPFG.get_t();
          nodes[i].X = nodes[i].LPFG.get_x();
          nodes[i].velocity = nodes[i].LPFG.get_v();
       }
+#elif defined USE_RK4
+      for (size_t i = 1; i < nodes.size(); ++i) {
+         nodes[i].RK_x.push(nodes[i].velocity);
+         nodes[i].RK_v.push(nodes[i].acceleration);
+         nodes[i].t = nodes[i].RK_x.get_t();
+         nodes[i].X = nodes[i].RK_x.get_x();
+         nodes[i].velocity = nodes[i].RK_v.get_x();
+      }
+#endif
    }
-   //
-   // {
-   //    for (size_t i = 1; i < nodes.size(); ++i) {
-   //       nodes[i].acceleration = tension(i) + gravity;
-   //       nodes[i].acceleration -= damp * nodes[i].velocity;
-
-   //       if (t < 30)
-   //          if (i == nodes.size() - 1) {
-   //             //! 最後の節点は，10まで最後の接点をぐるぐる回す
-   //             // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
-   //             if (Between(t, {T, 2 * T}) || Between(t, {3 * T, 4 * T}))
-   //                nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
-   //             else
-   //                nodes[i].acceleration = -nodes[i].velocity / dt;
-   //          }
-   //    }
-   //    //! オイラー法
-   //    for (size_t i = 1; i < nodes.size(); ++i) {
-   //       nodes[i].velocity += nodes[i].acceleration * dt;
-   //       nodes[i].X += nodes[i].velocity * dt;
-   //    }
-   // }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -149,21 +156,39 @@ int main() {
    double t = 0;
    std::vector<std::vector<std::array<double, 3>>> positions;
 
+#ifdef USE_LEAP_FROG
    for (size_t i = 1; i < nodes.size(); ++i)
       nodes[i].LPFG.initialize(dt, t, nodes[i].X, nodes[i].velocity);
+#endif
 
    for (int i = 0; i < max_step; ++i) {
-      t += dt;
+#ifdef USE_RK4
+      for (size_t i = 1; i < nodes.size(); ++i) {
+         nodes[i].RK_x.initialize(dt, t, nodes[i].X, 4);
+         nodes[i].RK_v.initialize(dt, t, nodes[i].velocity, 4);
+      }
+#endif
       std::cout << "t = " << t << std::endl;
       simulateCableDynamics(t, dt);
       times.push_back(t);
       positions.push_back({});
-      for (const Node& node : nodes)
+
+      for (const Node& node : nodes) {
+         if (!isFinite(node.X))
+            break;
          positions.back().push_back(node.X);
+      }
+      t += dt;
    }
 
    // Output to JSON file
-   std::ofstream myfile("cable.json");
+#ifdef USE_EULER
+   std::ofstream myfile("cable_euler.json");
+#elif defined USE_LEAP_FROG
+   std::ofstream myfile("cable_leapfrog.json");
+#elif defined USE_RK4
+   std::ofstream myfile("cable_rk4.json");
+#endif
    myfile << "{";
    std::array<std::string, 2> bracket = {"[", "]"};
    myfile << "\"time\" : " << std::make_tuple(times, bracket) << ", ";

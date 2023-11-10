@@ -168,7 +168,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          auto pO = ROW;
          Tddd pO_center = X_next(pO);
          Tddd pO_center_mirror = pO_center;
-         double total_weight = 0;
+         double total_volume_w = 0, total_w = 0;
          T3Tddd M;  // correection matrix
 
          /* -------------------------------------------------------------------------- */
@@ -185,23 +185,25 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          //% ------------------- 壁粒子の圧力の方程式 ------------------- */
 
-         auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_weight](const auto &B /*column id*/) {
+         auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
             const auto r = pO->SML_next();
             const auto BX = X_next(B);
             if (Distance(pO_center, BX) < r) {
                auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
-               total_weight += w;
+               total_volume_w += w;
+               total_w += w_Bspline(Norm(BX - pO_center), r);
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
                ROW->p_EISPH += (B->p_SPH_last + dP) * w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
             }
          };
 
-         auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_weight](const auto &B /*column id*/) {
+         auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
             const auto r = pO->SML_next();
             const auto BX = X_next(B);
             if (Distance(pO_center, BX) < r) {
                auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
-               total_weight += w;
+               total_volume_w += w;
+               total_w += w_Bspline(Norm(BX - pO_center), r);
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
                ROW->increment(B, w);
                ROW->PoissonRHS -= dP * w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
@@ -278,21 +280,19 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             pO_center_mirror = X_next(pO);
             pO_center = pO_center_mirror + 2. * pO->v_to_surface_SPH;
             //  b% EISPH (initial guess) EISPHは方程式を立てる必要がなく，直接圧力を計算する
-            total_weight = 0;
+            total_volume_w = 0;
             applyOverPoints(EISPH_wall_pressure, fluid_nets);
-            if (total_weight == 0.)
-               ROW->p_SPH = ROW->p_EISPH = 0;
-            else
-               ROW->p_SPH = ROW->p_EISPH / total_weight;
+            if (total_w > 1E-5)
+               ROW->p_SPH = ROW->p_EISPH / total_volume_w;
 
             // b@ ISPH like EISPH．　ISPHは方程式を立てる必要がある
-            total_weight = 0;
+            total_volume_w = 0;
             applyOverPoints(ISPH_wall_pressure, fluid_nets);
 
-            if (total_weight != 0.) {
+            if (total_w > 1E-5) {
                for (auto &[_, v] : ROW->column_value)
-                  v /= total_weight;
-               ROW->PoissonRHS /= total_weight;
+                  v /= total_volume_w;
+               ROW->PoissonRHS /= total_volume_w;
             }
 
             ROW->increment(ROW, -1.);
@@ -370,7 +370,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // show detail of this particle
             std::cout << "sum_Aij_Pj : " << sum_Aij_Pj << std::endl;
             std::cout << "sum_Aij : " << sum_Aij << std::endl;
-            std::cout << "total_weight : " << total_weight << std::endl;
+            std::cout << "total_volume_w : " << total_volume_w << std::endl;
             std::cout << "ROW->PoissonRHS : " << ROW->PoissonRHS << std::endl;
             std::cout << "ROW->p_SPH_ : " << ROW->p_SPH_ << std::endl;
             std::cout << "ROW->isFluid : " << ROW->isFluid << std::endl;
