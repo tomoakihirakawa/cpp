@@ -175,7 +175,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       if (!next_Vrtx.empty()) {
          std::vector<networkFace *> pf_to_check;
          for (const auto &pf : p->getFacesNeumann()) {
-            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return VectorAngle(pf->normal, f->normal) < M_PI / 180.; }))
+            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return isFlat(pf->normal, f->normal, M_PI / 180.); }))
                pf_to_check.push_back(pf);
          }
 
@@ -259,7 +259,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          {
             auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
             auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            double a = 0.8;
+            double a = 0.5;
             auto V = (1. - a) * V0 + a * V1;
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }

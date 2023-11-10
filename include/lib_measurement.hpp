@@ -11,7 +11,7 @@ struct Timer {
    std::chrono::time_point<std::chrono::system_clock> start;
    std::chrono::time_point<std::chrono::system_clock> lasttime;
    Timer() : start(std::chrono::system_clock::now()), lasttime(start){};
-   std::tuple<double, double> operator()() {
+   std::array<double, 2> operator()() {
       auto tmp = this->lasttime;
       this->lasttime = std::chrono::system_clock::now();
       // return {this->lasttime - tmp, this->lasttime - this->start};

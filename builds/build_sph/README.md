@@ -340,7 +340,7 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 壁の法線方向にある流体の圧力を，壁粒子の圧力とした場合（若干の修正をするが）：あまり力を受けない．
 
-[./SPH2_FindPressure.hpp#L266](./SPH2_FindPressure.hpp#L266)
+[./SPH2_FindPressure.hpp#L268](./SPH2_FindPressure.hpp#L268)
 
 ---
 ### 🪼 圧力の安定化 
