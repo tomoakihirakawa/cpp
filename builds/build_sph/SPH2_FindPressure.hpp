@@ -282,14 +282,14 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             //  b% EISPH (initial guess) EISPHは方程式を立てる必要がなく，直接圧力を計算する
             total_volume_w = 0;
             applyOverPoints(EISPH_wall_pressure, fluid_nets);
-            if (total_w > 1E-5)
+            if (total_w > too_small_total_w)
                ROW->p_SPH = ROW->p_EISPH / total_volume_w;
 
             // b@ ISPH like EISPH．　ISPHは方程式を立てる必要がある
             total_volume_w = 0;
             applyOverPoints(ISPH_wall_pressure, fluid_nets);
 
-            if (total_w > 1E-5) {
+            if (total_w > too_small_total_w) {
                for (auto &[_, v] : ROW->column_value)
                   v /= total_volume_w;
                ROW->PoissonRHS /= total_volume_w;

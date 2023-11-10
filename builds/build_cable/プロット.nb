@@ -3,10 +3,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[         0,          0]
-NotebookDataLength[     15754,        363]
-NotebookOptionsPosition[     14967,        338]
-NotebookOutlinePosition[     15320,        353]
-CellTagsIndexPosition[     15277,        350]
+NotebookDataLength[     11936,        304]
+NotebookOptionsPosition[     11346,        281]
+NotebookOutlinePosition[     11693,        296]
+CellTagsIndexPosition[     11650,        293]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -24,7 +24,7 @@ Cell[BoxData[{
      RowBox[{"{", 
       RowBox[{
        RowBox[{"NotebookDirectory", "[", "]"}], ",", 
-       "\"\<cable_euler_2.json\>\""}], "}"}], "]"}], "]"}]}], 
+       "\"\<cable_euler.json\>\""}], "}"}], "]"}], "]"}]}], 
   ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"dataL", "=", 
@@ -33,7 +33,7 @@ Cell[BoxData[{
      RowBox[{"{", 
       RowBox[{
        RowBox[{"NotebookDirectory", "[", "]"}], ",", 
-       "\"\<cable_leapfrog_2.json\>\""}], "}"}], "]"}], "]"}]}], 
+       "\"\<cable_leapfrog.json\>\""}], "}"}], "]"}], "]"}]}], 
   ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"dataRK4", "=", 
@@ -42,7 +42,7 @@ Cell[BoxData[{
      RowBox[{"{", 
       RowBox[{
        RowBox[{"NotebookDirectory", "[", "]"}], ",", 
-       "\"\<cable_rk4_2.json\>\""}], "}"}], "]"}], "]"}]}], 
+       "\"\<cable_rk4.json\>\""}], "}"}], "]"}], "]"}]}], 
   ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"timeE", "=", 
@@ -179,13 +179,44 @@ Cell[BoxData[{
         RowBox[{"timeE", "[", 
          RowBox[{"[", "n", "]"}], "]"}]}]}], "]"}]}], "]"}]}], 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
- RowBox[{"Manipulate", "[", "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Manipulate", "[", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"frame", "[", "n", "]"}], "\[IndentingNewLine]", ",", 
+    RowBox[{"{", 
+     RowBox[{"n", ",", "1", ",", 
+      RowBox[{"Length", "[", "positionL", "]"}], ",", "1"}], "}"}]}], "]"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
   RowBox[{
-   RowBox[{"frame", "[", "n", "]"}], "\[IndentingNewLine]", ",", 
-   RowBox[{"{", 
-    RowBox[{"n", ",", "1", ",", 
-     RowBox[{"Length", "[", "positionL", "]"}], ",", "1"}], "}"}]}], 
-  "]"}]}], "Input",
+   RowBox[{"frames", "=", 
+    RowBox[{"ParallelTable", "[", 
+     RowBox[{
+      RowBox[{"frame", "[", "n", "]"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"n", ",", "1", ",", 
+        RowBox[{"Length", "[", "positionE", "]"}], ",", "5"}], "}"}]}], 
+     "]"}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"Export", " ", "as", " ", "a", " ", "high"}], "-", 
+    RowBox[{"quality", " ", "GIF"}]}], "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Export", "[", 
+   RowBox[{
+    RowBox[{"FileNameJoin", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"\<sample.gif\>\""}], 
+      "}"}], "]"}], ",", "frames", ",", "\[IndentingNewLine]", 
+    RowBox[{"\"\<DisplayDurations\>\"", "\[Rule]", "0.025"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{"\"\<TransparentColor\>\"", "\[Rule]", "None"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{"\"\<AnimationRepetitions\>\"", "\[Rule]", "10"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{"\"\<CompressionLevel\>\"", "\[Rule]", ".1"}]}], "]"}], 
+  ";"}]}], "Input",
  CellChangeTimes->{{3.908524724124214*^9, 3.908524774524315*^9}, {
    3.908526815056507*^9, 3.908526857033564*^9}, {3.908526962994296*^9, 
    3.9085269631801863`*^9}, {3.9085270603640623`*^9, 3.908527063542007*^9}, {
@@ -205,24 +236,26 @@ Cell[BoxData[{
    3.908590267701129*^9, 3.908590336930249*^9}, {3.908590427433935*^9, 
    3.9085904281666317`*^9}, {3.9085910565455437`*^9, 
    3.9085910612276373`*^9}, {3.908591364441762*^9, 3.908591404776425*^9}, {
-   3.9085926286486673`*^9, 
-   3.908592632004566*^9}},ExpressionUUID->"f181c5ef-81bb-4eed-ab78-\
+   3.9085926286486673`*^9, 3.908592632004566*^9}, {3.90861696496772*^9, 
+   3.908616967780909*^9}, {3.90861707432904*^9, 3.908617078455288*^9}, {
+   3.9086172537814617`*^9, 
+   3.908617264575066*^9}},ExpressionUUID->"f181c5ef-81bb-4eed-ab78-\
 f0cb91b58c0e"],
 
 Cell[BoxData[
  TagBox[
   StyleBox[
-   DynamicModuleBox[{$CellContext`n$$ = 4717, Typeset`show$$ = True, 
+   DynamicModuleBox[{$CellContext`n$$ = 4292, Typeset`show$$ = True, 
     Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
     Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
     "\"\:540d\:79f0\:672a\:5b9a\:7fa9\"", Typeset`specs$$ = {{
       Hold[$CellContext`n$$], 1, 6000, 1}}, Typeset`size$$ = {
     720., {200., 188.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
-    Typeset`skipInitDone$$ = True, $CellContext`n$416622$$ = 0}, 
+    Typeset`skipInitDone$$ = True, $CellContext`n$122672$$ = 0}, 
     DynamicBox[Manipulate`ManipulateBoxes[
      1, StandardForm, "Variables" :> {$CellContext`n$$ = 1}, 
       "ControllerVariables" :> {
-        Hold[$CellContext`n$$, $CellContext`n$416622$$, 0]}, 
+        Hold[$CellContext`n$$, $CellContext`n$122672$$, 0]}, 
       "OtherVariables" :> {
        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
@@ -242,102 +275,12 @@ Cell[BoxData[
    Deployed->True,
    StripOnInput->False],
   Manipulate`InterpretManipulate[1]]], "Output",
- CellChangeTimes->{{3.9085372068693733`*^9, 3.90853722196515*^9}, {
-   3.908537320372714*^9, 3.9085373293770123`*^9}, {3.9085373791711807`*^9, 
-   3.908537389296094*^9}, 3.9085374930299892`*^9, 3.908537540623562*^9, 
-   3.90853757209973*^9, {3.9085376283622227`*^9, 3.9085376440633593`*^9}, 
-   3.908537683836068*^9, {3.908537727465267*^9, 3.908537755505348*^9}, 
-   3.908537868809124*^9, {3.908538333833404*^9, 3.908538343872518*^9}, 
-   3.908538575747176*^9, 3.9085642292376966`*^9, {3.9085642652396708`*^9, 
-   3.908564333820732*^9}, 3.908564609941742*^9, {3.908569147619033*^9, 
-   3.908569168123212*^9}, {3.9085694894100924`*^9, 3.9085695190095778`*^9}, 
-   3.9085695951556997`*^9, 3.9085708089899197`*^9, 3.908571565962482*^9, 
-   3.908571616473411*^9, 3.908571747330134*^9, 3.908571905919837*^9, 
-   3.908572488986031*^9, 3.9085725310735807`*^9, 3.9085726272829733`*^9, 
-   3.9085726725584373`*^9, 3.9085727935648403`*^9, 3.908572895455937*^9, 
-   3.908572940874427*^9, {3.908572977245721*^9, 3.9085730020415154`*^9}, 
-   3.9085732943554087`*^9, 3.908573670979281*^9, 3.908573824500156*^9, {
-   3.908573856830464*^9, 3.9085738654676437`*^9}, {3.908573917328733*^9, 
-   3.9085739897107277`*^9}, 3.908574092689143*^9, 3.9085741317643414`*^9, {
-   3.9085742273279037`*^9, 3.908574299517262*^9}, {3.908574337480028*^9, 
-   3.908574549118423*^9}, {3.908574580086153*^9, 3.90857472211751*^9}, {
-   3.908574762549438*^9, 3.908574766278801*^9}, {3.90857486267647*^9, 
-   3.908574868417104*^9}, {3.90857490567066*^9, 3.9085749493576603`*^9}, {
-   3.908574992267706*^9, 3.908575014344634*^9}, {3.908575057109906*^9, 
-   3.908575069925729*^9}, 3.908575952638981*^9, 3.908576189894475*^9, 
-   3.908576273896305*^9, 3.908576314074759*^9, {3.908576370307369*^9, 
-   3.908576386147511*^9}, 3.908576448014612*^9, 3.908576501584433*^9, {
-   3.908576535218895*^9, 3.908576540287607*^9}, 3.9085766213486357`*^9, {
-   3.9085766554185658`*^9, 3.908576701527318*^9}, {3.908576747926641*^9, 
-   3.9085767772528973`*^9}, 3.908576839382547*^9, 3.908576955279697*^9, 
-   3.908577070293391*^9, {3.908577106203204*^9, 3.9085771775647697`*^9}, {
-   3.9085772175907507`*^9, 3.908577230488455*^9}, {3.908577301336553*^9, 
-   3.908577321014715*^9}, 3.908577369063862*^9, 3.9085774826517887`*^9, {
-   3.90857752506028*^9, 3.908577550038145*^9}, {3.908577631177227*^9, 
-   3.9085776336682053`*^9}, 3.908577927912476*^9, 3.908578120031671*^9, {
-   3.9085895393187857`*^9, 3.908589552402523*^9}, {3.908589692517248*^9, 
-   3.9085897251067133`*^9}, 3.9085897965446453`*^9, 3.90858985069519*^9, {
-   3.90858992000211*^9, 3.908589976583062*^9}, 3.908590016672865*^9, 
-   3.908590093106945*^9, 3.908590136277369*^9, 3.90859019537394*^9, {
-   3.9085902703086367`*^9, 3.908590292293956*^9}, {3.9085903385570908`*^9, 
-   3.9085903534906073`*^9}, 3.908590398118573*^9, 3.9085904331346903`*^9, {
-   3.908590477041375*^9, 3.9085905867070932`*^9}, 3.908591062022162*^9, {
-   3.908591324396819*^9, 3.9085913435018682`*^9}, 3.9085914064108353`*^9, 
-   3.908591451972601*^9, {3.908591485751796*^9, 3.908591492320819*^9}},
- CellLabel->
-  "Out[1287]=",ExpressionUUID->"6b87785d-0708-43f8-915b-f610a5948caf"]
-}, Open  ]],
-
-Cell[BoxData[
- RowBox[{
-  RowBox[{"frames", "=", 
-   RowBox[{"ParallelTable", "[", 
-    RowBox[{
-     RowBox[{"frame", "[", "n", "]"}], ",", 
-     RowBox[{"{", 
-      RowBox[{"n", ",", "1", ",", 
-       RowBox[{"Length", "[", "positionE", "]"}], ",", "10"}], "}"}]}], 
-    "]"}]}], ";"}]], "Input",
- CellChangeTimes->{{3.90853753883211*^9, 3.90853756977318*^9}, {
-   3.908537627279757*^9, 3.9085376430525913`*^9}, {3.9085383291073847`*^9, 
-   3.908538329229269*^9}, 3.908573956434597*^9, {3.908575062430925*^9, 
-   3.9085750643431473`*^9}, 3.908590396526863*^9},
- CellLabel->
-  "In[1288]:=",ExpressionUUID->"2880a4e6-5bf7-436d-8827-b17759ad6808"],
-
-Cell[BoxData[
- RowBox[{
-  RowBox[{"(*", 
-   RowBox[{
-    RowBox[{"Export", " ", "as", " ", "a", " ", "high"}], "-", 
-    RowBox[{"quality", " ", "GIF"}]}], "*)"}], "\[IndentingNewLine]", 
-  RowBox[{
-   RowBox[{"Export", "[", 
-    RowBox[{
-     RowBox[{"FileNameJoin", "[", 
-      RowBox[{"{", 
-       RowBox[{
-        RowBox[{"NotebookDirectory", "[", "]"}], ",", 
-        "\"\<sample_2.gif\>\""}], "}"}], "]"}], ",", "frames", ",", 
-     RowBox[{"\"\<DisplayDurations\>\"", "\[Rule]", "0.025"}], ",", 
-     "\[IndentingNewLine]", 
-     RowBox[{"\"\<TransparentColor\>\"", "\[Rule]", "None"}], ",", 
-     "\[IndentingNewLine]", 
-     RowBox[{"\"\<AnimationRepetitions\>\"", "\[Rule]", "10"}], ",", 
-     "\[IndentingNewLine]", 
-     RowBox[{"\"\<CompressionLevel\>\"", "\[Rule]", ".1"}]}], "]"}], 
-   ";"}]}]], "Input",
- CellChangeTimes->{{3.9085372046874437`*^9, 3.908537220764621*^9}, {
-  3.908537375272744*^9, 3.908537388177053*^9}, {3.90853749202262*^9, 
-  3.908537539721747*^9}, {3.908537681548723*^9, 3.908537682522449*^9}, {
-  3.908537719537567*^9, 3.9085377526305637`*^9}, {3.908538309949744*^9, 
-  3.908538342833893*^9}, {3.9085385698879833`*^9, 3.90853857119314*^9}, {
-  3.908592638431281*^9, 
-  3.908592638615815*^9}},ExpressionUUID->"d432dc16-56ac-4cc8-8493-\
-5d5fd652902c"]
+ CellChangeTimes->{3.9086169388679543`*^9, 3.908617080814714*^9},
+ CellLabel->"Out[67]=",ExpressionUUID->"8628cbfe-5cb5-4f68-879e-5d3fa6a48a98"]
+}, Open  ]]
 },
 WindowSize->{1225, 911},
-WindowMargins->{{Automatic, -1353}, {237, Automatic}},
+WindowMargins->{{Automatic, 0}, {Automatic, 0}},
 FrontEndVersion->"12.0 for Mac OS X x86 (64-bit) (2019\:5e745\:67083\:65e5)",
 StyleDefinitions->"Default.nb"
 ]
@@ -353,11 +296,9 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[CellGroupData[{
-Cell[422, 15, 7858, 194, 871, "Input",ExpressionUUID->"f181c5ef-81bb-4eed-ab78-f0cb91b58c0e"],
-Cell[8283, 211, 4730, 76, 499, "Output",ExpressionUUID->"6b87785d-0708-43f8-915b-f610a5948caf"]
-}, Open  ]],
-Cell[13028, 290, 646, 15, 30, "Input",ExpressionUUID->"2880a4e6-5bf7-436d-8827-b17759ad6808"],
-Cell[13677, 307, 1286, 29, 115, "Input",ExpressionUUID->"d432dc16-56ac-4cc8-8493-5d5fd652902c"]
+Cell[422, 15, 9193, 227, 1060, "Input",ExpressionUUID->"f181c5ef-81bb-4eed-ab78-f0cb91b58c0e"],
+Cell[9618, 244, 1712, 34, 499, "Output",ExpressionUUID->"8628cbfe-5cb5-4f68-879e-5d3fa6a48a98"]
+}, Open  ]]
 }
 ]
 *)

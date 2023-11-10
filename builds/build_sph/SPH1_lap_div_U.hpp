@@ -45,7 +45,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             }
          };
 
-         const double c_xsph = 0.05;
+         const double c_xsph = 0.01;
          double total_w = 0, w;
          auto add = [&](const auto &B) {
             Uij = A->U_SPH - B->U_SPH;
@@ -78,7 +78,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
          applyOverPoints(add);
 
-         if (total_w > 1E-10)
+         if (total_w > too_small_total_w)
             A->U_XSPH /= total_w;
 
          /* ----------------------- calculate DUDt and b_vector ---------------------- */
