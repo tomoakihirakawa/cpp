@@ -5,18 +5,12 @@
 #include <vector>
 #include "basic_IO.hpp"
 #include "basic_arithmetic_array_operations.hpp"
-#include "basic_vectors.hpp"
+
 /*DOC_EXTRACT
 
-実行方法：
-
-```sh
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../
-make
-```
-
 オイラー法でケーブルの動きをシミュレーションする．
+
+
 
 ![sample.gif](./sample.gif)
 
@@ -28,10 +22,10 @@ struct Node {
    std::array<double, 3> acceleration;
 };
 
-const double stiffness = 5000;
-const double damp = 0.5;
+const double stiffness = 1000;
+const double dump = 0.5;
 const double dt = 0.01;  // Time step
-const int max_step = 5000;
+const int max_step = 2000;
 const double natural_length = 1.;
 const std::array<double, 3> gravity = {0, 0, -9.81};
 
@@ -78,7 +72,7 @@ void simulateCableDynamics(double t, double dt) {
             nodes[i].acceleration += stiffness * disp * Normalize(v);
       }
       // Damping
-      nodes[i].acceleration -= damp * nodes[i].velocity;
+      nodes[i].acceleration -= dump * nodes[i].velocity;
    }
 
    double T = 3;
@@ -89,9 +83,9 @@ void simulateCableDynamics(double t, double dt) {
 
       //! 最後の節点は，10まで最後の接点をぐるぐる回す
       if (i == nodes.size() - 1) {
-         if (Between(t, {0., 10.}) || Between(t, {20., 30.})) {
+         if (t < 10) {
             // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
-            nodes[i].velocity = {0., exp(-t / 10.) * 50 * cos(w * t), exp(-t / 10.) * 50 * cos(w * t)};
+            nodes[i].velocity = {0., 0., 10 * cos(w * t)};
          } else
             nodes[i].velocity.fill(0.);
       }
