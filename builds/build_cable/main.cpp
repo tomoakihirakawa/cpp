@@ -18,9 +18,14 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
-オイラー法でケーブルの動きをシミュレーションする．
+オイラー法，Leap-Frog法，Runge-Kutta法
+を用いて，弾性体の動きをシミュレーション．
 
+`const double stiffness = 1000;`の場合
 ![sample.gif](./sample.gif)
+
+`const double stiffness = 10000;`の場合
+![sample_2.gif](./sample_2.gif)
 
 */
 
@@ -76,7 +81,7 @@ std::vector<Node> nodes = {
 void simulateCableDynamics(double t, double dt) {
 
    auto tension = [&dt](const int i) {
-      const double stiffness = 1000;
+      const double stiffness = 10000;
       const double damp = .5;
       const double natural_length = 1.;
       std::array<double, 3> acceleration;
@@ -183,11 +188,11 @@ int main() {
 
    // Output to JSON file
 #ifdef USE_EULER
-   std::ofstream myfile("cable_euler.json");
+   std::ofstream myfile("cable_euler_2.json");
 #elif defined USE_LEAP_FROG
-   std::ofstream myfile("cable_leapfrog.json");
+   std::ofstream myfile("cable_leapfrog_2.json");
 #elif defined USE_RK4
-   std::ofstream myfile("cable_rk4.json");
+   std::ofstream myfile("cable_rk4_2.json");
 #endif
    myfile << "{";
    std::array<std::string, 2> bracket = {"[", "]"};
