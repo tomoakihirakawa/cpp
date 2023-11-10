@@ -6,6 +6,8 @@
 #include "basic_IO.hpp"
 #include "basic_arithmetic_array_operations.hpp"
 #include "basic_vectors.hpp"
+#include "integrationOfODE.hpp"
+
 /*DOC_EXTRACT
 
 実行方法：
@@ -26,9 +28,15 @@ struct Node {
    std::array<double, 3> X;
    std::array<double, 3> velocity;
    std::array<double, 3> acceleration;
+   //
+   Node(std::array<double, 3> X, std::array<double, 3> velocity, std::array<double, 3> acceleration)
+       : X(X), velocity(velocity), acceleration(acceleration) {}
+
+   double t;
+   LeapFrog<decltype(X)> LPFG;
 };
 
-const double stiffness = 5000;
+const double stiffness = 10000;
 const double damp = 0.5;
 const double dt = 0.01;  // Time step
 const int max_step = 5000;
@@ -63,39 +71,60 @@ std::vector<Node> nodes = {
 
 void simulateCableDynamics(double t, double dt) {
 
-   for (size_t i = 1; i < nodes.size(); ++i) {
-      nodes[i].acceleration = gravity;
+   double T = 3;
+   double w = 2 * M_PI / T;
+
+   auto tension = [&](const int i) {
+      std::array<double, 3> acceleration;
+      acceleration.fill(0.);
       if (i - 1 >= 0) {
          auto v = nodes[i - 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
          if (disp > 0.)
-            nodes[i].acceleration += stiffness * disp * Normalize(v);
+            acceleration += stiffness * disp * Normalize(v);
       }
       if (i + 1 < nodes.size()) {
          auto v = nodes[i + 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
          if (disp > 0.)
-            nodes[i].acceleration += stiffness * disp * Normalize(v);
+            acceleration += stiffness * disp * Normalize(v);
       }
-      // Damping
-      nodes[i].acceleration -= damp * nodes[i].velocity;
-   }
+      return acceleration;
+   };
 
-   double T = 3;
-   double w = 2 * M_PI / T;
-
-   for (auto i = 0; i < nodes.size(); ++i) {
-      nodes[i].velocity += nodes[i].acceleration * dt;
-
+   auto accel = [&](const auto& velocity) {
       //! 最後の節点は，10まで最後の接点をぐるぐる回す
-      if (i == nodes.size() - 1) {
-         if (Between(t, {0., 10.}) || Between(t, {20., 30.})) {
-            // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
-            nodes[i].velocity = {0., exp(-t / 10.) * 50 * cos(w * t), exp(-t / 10.) * 50 * cos(w * t)};
-         } else
-            nodes[i].velocity.fill(0.);
+      // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
+      if (Between(t, {T, 2 * T}) || Between(t, {3 * T, 4 * T}))
+         return std::array<double, 3>{0., 50 * cos(w * t), 50 * cos(w * t)};
+      else
+         return -velocity / dt;
+   };
+
+   for (size_t step = 0; step < 2; ++step) {
+
+      for (size_t i = 1; i < nodes.size(); ++i) {
+
+         nodes[i].acceleration = tension(i) + gravity;
+         nodes[i].acceleration -= damp * nodes[i].velocity;
+
+         if (t < 30)
+            if (i == nodes.size() - 1)
+               nodes[i].acceleration = accel(nodes[i].velocity);
       }
-      nodes[i].X += nodes[i].velocity * dt;
+
+      //! オイラー法
+      // for (size_t i = 1; i < nodes.size(); ++i) {
+      //    nodes[i].velocity += nodes[i].acceleration * dt;
+      //    nodes[i].X += nodes[i].velocity * dt;
+      // }
+      for (size_t i = 1; i < nodes.size(); ++i) {
+         nodes[i].LPFG.push(nodes[i].acceleration);
+         //
+         nodes[i].t = nodes[i].LPFG.get_t();
+         nodes[i].X = nodes[i].LPFG.get_x();
+         nodes[i].velocity = nodes[i].LPFG.get_v();
+      }
    }
 }
 
@@ -106,6 +135,10 @@ int main() {
    std::vector<double> times;
    double t = 0;
    std::vector<std::vector<std::array<double, 3>>> positions;
+
+   for (size_t i = 1; i < nodes.size(); ++i)
+      nodes[i].LPFG.initialize(dt, t, nodes[i].X, nodes[i].velocity);
+
    for (int i = 0; i < max_step; ++i) {
       t += dt;
       std::cout << "t = " << t << std::endl;
