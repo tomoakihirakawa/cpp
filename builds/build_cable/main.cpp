@@ -37,7 +37,7 @@ struct Node {
 };
 
 const double stiffness = 10000;
-const double damp = 0.5;
+const double damp = 1.;
 const double dt = 0.01;  // Time step
 const int max_step = 5000;
 const double natural_length = 1.;
@@ -76,56 +76,69 @@ void simulateCableDynamics(double t, double dt) {
 
    auto tension = [&](const int i) {
       std::array<double, 3> acceleration;
-      acceleration.fill(0.);
       if (i - 1 >= 0) {
          auto v = nodes[i - 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
          if (disp > 0.)
             acceleration += stiffness * disp * Normalize(v);
+         auto relative_velocity = nodes[i - 1].velocity - nodes[i].velocity;
+         acceleration -= damp * Projection(-relative_velocity, v) / dt;
       }
       if (i + 1 < nodes.size()) {
          auto v = nodes[i + 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
          if (disp > 0.)
             acceleration += stiffness * disp * Normalize(v);
+         auto relative_velocity = nodes[i + 1].velocity - nodes[i].velocity;
+         acceleration -= damp * Projection(-relative_velocity, v) / dt;
       }
       return acceleration;
    };
 
-   auto accel = [&](const auto& velocity) {
-      //! 最後の節点は，10まで最後の接点をぐるぐる回す
-      // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
-      if (Between(t, {T, 2 * T}) || Between(t, {3 * T, 4 * T}))
-         return std::array<double, 3>{0., 50 * cos(w * t), 50 * cos(w * t)};
-      else
-         return -velocity / dt;
-   };
-
    for (size_t step = 0; step < 2; ++step) {
-
       for (size_t i = 1; i < nodes.size(); ++i) {
 
          nodes[i].acceleration = tension(i) + gravity;
-         nodes[i].acceleration -= damp * nodes[i].velocity;
 
          if (t < 30)
-            if (i == nodes.size() - 1)
-               nodes[i].acceleration = accel(nodes[i].velocity);
+            if (i == nodes.size() - 1) {
+               //! 最後の節点は，10まで最後の接点をぐるぐる回す
+               // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
+               if (Between(t, {2 * T, 3 * T}) || Between(t, {4 * T, 5 * T}))
+                  nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
+               else
+                  nodes[i].acceleration = -nodes[i].velocity / dt;
+            }
       }
-
-      //! オイラー法
-      // for (size_t i = 1; i < nodes.size(); ++i) {
-      //    nodes[i].velocity += nodes[i].acceleration * dt;
-      //    nodes[i].X += nodes[i].velocity * dt;
-      // }
       for (size_t i = 1; i < nodes.size(); ++i) {
          nodes[i].LPFG.push(nodes[i].acceleration);
-         //
          nodes[i].t = nodes[i].LPFG.get_t();
          nodes[i].X = nodes[i].LPFG.get_x();
          nodes[i].velocity = nodes[i].LPFG.get_v();
       }
    }
+   //
+   // {
+   //    for (size_t i = 1; i < nodes.size(); ++i) {
+   //       nodes[i].acceleration = tension(i) + gravity;
+   //       nodes[i].acceleration -= damp * nodes[i].velocity;
+
+   //       if (t < 30)
+   //          if (i == nodes.size() - 1) {
+   //             //! 最後の節点は，10まで最後の接点をぐるぐる回す
+   //             // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
+   //             if (Between(t, {T, 2 * T}) || Between(t, {3 * T, 4 * T}))
+   //                nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
+   //             else
+   //                nodes[i].acceleration = -nodes[i].velocity / dt;
+   //          }
+   //    }
+   //    //! オイラー法
+   //    for (size_t i = 1; i < nodes.size(); ++i) {
+   //       nodes[i].velocity += nodes[i].acceleration * dt;
+   //       nodes[i].X += nodes[i].velocity * dt;
+   //    }
+   // }
 }
 
 /* -------------------------------------------------------------------------- */
