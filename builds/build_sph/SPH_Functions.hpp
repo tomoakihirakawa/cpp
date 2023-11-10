@@ -306,14 +306,17 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
-   // if (!p->isFluid)
-   //    return p->U_SPH;
-   // else
-   return p->RK_U.getX(p->DUDt_SPH);
+   if (!p->isFluid)
+      return p->U_SPH;
+   else
+      return p->RK_U.getX(p->DUDt_SPH);
    // return p->RK_U.getX();
 }
 Tddd X_next(const networkPoint *p) {
-   return p->RK_X.getX(U_next(p));
+   if (!p->isFluid)
+      return p->X;
+   else
+      return p->RK_X.getX(U_next(p));
 }
 
 // \label{SPH:rho_next}
@@ -637,7 +640,7 @@ void updateParticles(const auto &points,
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
                         // auto tmp = -0.1 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        auto tmp = -Projection(p->U_SPH, n) / p->RK_X.get_dt() / p->RK_X.get_dt();
+                        auto tmp = -2 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
                         p->DUDt_SPH += tmp;

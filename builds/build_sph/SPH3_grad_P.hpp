@@ -188,10 +188,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          // }
       }
 
-      // for (const auto &A : points)
-      //    if (A->isAuxiliary) {
-      //       A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
-      //    }
+      for (const auto &A : points)
+         if (A->isAuxiliary) {
+            A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
+         }
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in gradP");

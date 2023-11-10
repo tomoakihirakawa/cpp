@@ -42,20 +42,6 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    IdentityMatrix(A->grad_corr_M_next);
    IdentityMatrix(A->inv_grad_corr_M);
    IdentityMatrix(A->inv_grad_corr_M_next);
-   //
-   // IdentityMatrix(A->inv_grad_corr_M);
-   // IdentityMatrix(A->inv_grad_corr_M_next);
-   //
-   // IdentityMatrix(A->grad_corr_M_rigid);
-   // IdentityMatrix(A->grad_corr_M_next_rigid);
-   // IdentityMatrix(A->inv_grad_corr_M_rigid);
-   // IdentityMatrix(A->inv_grad_corr_M_next_rigid);
-   //
-   // IdentityMatrix(A->Mat1);
-   // IdentityMatrix(A->Mat2);
-   // IdentityMatrix(A->Mat3);
-   // IdentityMatrix(A->Mat_B);
-
    // キャプチャーされた粒子のみを対象にする．
    if (!A->isCaptured)
       return;
@@ -70,17 +56,10 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
    Fill(A->grad_U, 0.);
    Fill(A->grad_corr_M, 0.);
    Fill(A->grad_corr_M_next, 0.);
-   // Fill(A->grad_corr_M_mirror, 0.);
-   // Fill(A->grad_corr_M_next_mirror, 0.);
+   Fill(A->laplacian_corr_M, 0.);
+   Fill(A->laplacian_corr_M_next, 0.);
 
    //@ 流体内部の位置における剛体の演算修正用行列として使おう
-   // Fill(A->grad_corr_M_rigid, 0.);
-   // Fill(A->grad_corr_M_next_rigid, 0.);
-
-   // A->Mat1.fill({0., 0., 0.});
-   // A->Mat2.fill({0., 0., 0.});
-   // A->Mat3.fill({0., 0., 0.});
-   // A->Mat_B.fill({0., 0., 0.});
 
    Tddd Xij, Uij;
 
@@ -94,16 +73,6 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
          A->grad_corr_M += B->volume * TensorProduct(grad_w, B->X - A->X);
          A->grad_corr_M_next += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
          //! mirrror
-         // A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, B->X - A->X);
-         // A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-         // if (A->isFluid && !A->isSurface && B->isSurface) {
-         //    auto BX = Mirror(A->X, B->X, B->X - A->X);
-         //    auto grad_w = grad_w_Bspline(A->X, BX, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-         //    A->grad_corr_M_mirror += B->volume * TensorProduct(grad_w, BX - A->X);
-         //    auto BX_next = Mirror(X_next(A), X_next(B), X_next(B) - X_next(A));
-         //    auto grad_w_next = grad_w_Bspline(X_next(A), BX_next, A->SML_next());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-         //    A->grad_corr_M_next_mirror += V_next(B) * TensorProduct(grad_w_next, BX_next - X_next(A));
-         // }
          Uij = A->U_SPH - B->U_SPH;
          A->grad_U += B->volume * TensorProduct(-Uij, grad_w);
          //! ラプラシアンの修正
@@ -124,12 +93,6 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
             A->v_rrDW_next += B->volume * TensorProduct(TensorProduct(r, r), DW);
          }
       }
-      // if (A->getNetwork()->isRigidBody) {
-      //    //@ 流体内部の位置における剛体の演算修正用行列として使おう
-      //    auto n = A->v_to_surface_SPH;
-      //    A->grad_corr_M_rigid += B->volume * TensorProduct(grad_w_Bspline(A->X + 2. * n, B->X, A->SML()), B->X - (A->X + 2. * n));
-      //    A->grad_corr_M_next_rigid += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A) + 2. * n, X_next(B), A->SML_next()), X_next(B) - (X_next(A) + 2. * n));
-      // }
    };
 
    std::ranges::for_each(all_nets, [&](const auto &NET) {
@@ -143,88 +106,77 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
    A->Eigenvalues_of_M = {0., 0., 0.};
 
-   if (total_w > 1E-5) {
+   if (total_w > too_small_total_w) {
+
       A->inv_grad_corr_M = Inverse(A->grad_corr_M);
       A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
-   }
-   // mirror
-   // A->inv_grad_corr_M_mirror = Inverse(A->grad_corr_M_mirror);
-   // A->inv_grad_corr_M_next_mirror = Inverse(A->grad_corr_M_next_mirror);
-   //
-   // A->inv_grad_corr_M_rigid = Inverse(A->grad_corr_M_rigid);
-   // A->inv_grad_corr_M_next_rigid = Inverse(A->grad_corr_M_next_rigid);
 
-   {
-      auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-10, 100.);
-      A->Eigenvalues_of_M = lambdas;
-      A->Eigenvectors_of_M = vectors;
-   }
-
-   // {
-   //    auto [lambdas, vectors] = Eigensystem(A->grad_corr_M_rigid, 1E-10, 100.);
-   //    A->Eigenvalues_of_M_rigid = lambdas;
-   //    A->Eigenvectors_of_M_rigid = vectors;
-   // }
-
-   {
-      auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-10, 100.);
-      A->Eigenvalues_of_M1 = lambdas;
-      A->Eigenvectors_of_M1 = vectors;
-   }
-
-   {
-      auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M_next, 1E-10, 100.);
-      A->Eigenvalues_of_M1_next = lambdas;
-      A->Eigenvectors_of_M1_next = vectors;
-   }
-   //
-   A->var_Eigenvalues_of_M = 0;
-   for (const auto &v : A->Eigenvalues_of_M)
-      A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
-   for (const auto &v : A->Eigenvalues_of_M1)
-      A->var_Eigenvalues_of_M1 += std::pow(1. - std::abs(v), 2.);
-   //
-   A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
-   A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
-   //
-   A->var_Eigenvalues_of_M1_next = 0.;
-   for (const auto &v : A->Eigenvalues_of_M1_next)
-      A->var_Eigenvalues_of_M1_next += std::pow(1. - std::abs(v), 2.);
-   A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
-   //
-   A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
-   A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
-
-   /* -------------------------------------------------------------------------- */
-   DebugPrintLevel(2, "setCorrectionMatrix: Eigenvalues done. start calc laplacian_corr_M", Blue);
-
-   // Convert B into a 9x9 matrix
-   /*
-   B:T=-I
-   3x3 : 3x3x3x3
-   */
-   auto toMatrix = [](const std::array<std::array<std::array<std::array<double, 3>, 3>, 3>, 3> &B) {
-      std::vector<std::vector<double>> M(9, std::vector<double>(9));
-      for (int i = 0; i < 3; ++i)
-         for (int j = 0; j < 3; ++j)
-            for (int k = 0; k < 3; ++k)
-               for (int l = 0; l < 3; ++l)
-                  M[i * 3 + k][j * 3 + l] = B[i][j][k][l];
-      return M;
-   };
-   const std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
-   std::vector<double> x(9), x_next(9);
-   auto M = toMatrix(A->v_reeDW + Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
-   lapack_lu(M, x, I);
-   //
-   auto M_next = toMatrix(A->v_reeDW_next + Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
-   lapack_lu(M_next, x_next, I);
-
-   for (auto i = 0; i < 3; ++i)
-      for (auto j = 0; j < 3; ++j) {
-         A->laplacian_corr_M[i][j] = x[i * 3 + j];
-         A->laplacian_corr_M_next[i][j] = x_next[i * 3 + j];
+      {
+         auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-10, 100.);
+         A->Eigenvalues_of_M = lambdas;
+         A->Eigenvectors_of_M = vectors;
       }
+
+      {
+         auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-10, 100.);
+         A->Eigenvalues_of_M1 = lambdas;
+         A->Eigenvectors_of_M1 = vectors;
+      }
+
+      {
+         auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M_next, 1E-10, 100.);
+         A->Eigenvalues_of_M1_next = lambdas;
+         A->Eigenvectors_of_M1_next = vectors;
+      }
+      //
+      A->var_Eigenvalues_of_M = 0;
+      for (const auto &v : A->Eigenvalues_of_M)
+         A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
+      for (const auto &v : A->Eigenvalues_of_M1)
+         A->var_Eigenvalues_of_M1 += std::pow(1. - std::abs(v), 2.);
+      //
+      A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
+      A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
+      //
+      A->var_Eigenvalues_of_M1_next = 0.;
+      for (const auto &v : A->Eigenvalues_of_M1_next)
+         A->var_Eigenvalues_of_M1_next += std::pow(1. - std::abs(v), 2.);
+      A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
+      //
+      A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
+      A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
+
+      /* -------------------------------------------------------------------------- */
+      DebugPrintLevel(2, "setCorrectionMatrix: Eigenvalues done. start calc laplacian_corr_M", Blue);
+
+      // Convert B into a 9x9 matrix
+      /*
+      B:T=-I
+      3x3 : 3x3x3x3
+      */
+      auto toMatrix = [](const std::array<std::array<std::array<std::array<double, 3>, 3>, 3>, 3> &B) {
+         std::vector<std::vector<double>> M(9, std::vector<double>(9));
+         for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j)
+               for (int k = 0; k < 3; ++k)
+                  for (int l = 0; l < 3; ++l)
+                     M[i * 3 + k][j * 3 + l] = B[i][j][k][l];
+         return M;
+      };
+      const std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
+      std::vector<double> x(9), x_next(9);
+      auto M = toMatrix(A->v_reeDW + Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
+      lapack_lu(M, x, I);
+      //
+      auto M_next = toMatrix(A->v_reeDW_next + Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
+      lapack_lu(M_next, x_next, I);
+
+      for (auto i = 0; i < 3; ++i)
+         for (auto j = 0; j < 3; ++j) {
+            A->laplacian_corr_M[i][j] = x[i * 3 + j];
+            A->laplacian_corr_M_next[i][j] = x_next[i * 3 + j];
+         }
+   }
 
    DebugPrintLevel(2, "setCorrectionMatrix done", Blue);
 };
@@ -389,7 +341,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                         total_w += w;
                      });
 
-                     if (total_w > 1E-5) {
+                     if (total_w > too_small_total_w) {
                         q->U_SPH /= total_mass_w;
                         // q->b_vector = b_vector / total_w;
                         q->DUDt_SPH /= total_mass_w;

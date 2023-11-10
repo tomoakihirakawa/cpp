@@ -35,6 +35,7 @@ python3 input_generator.py
 */
 
 double delta_t;
+const double too_small_total_w = 1E-3;
 
 #include <filesystem>
 #include <utility>
