@@ -339,7 +339,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                      double total_mass_w = 0, total_w = 0, r = q->SML(), w;
                      net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
                         // w = w_Bspline(Norm(q->marker_X - Q->X), r);
-                        w = w_Bspline(Norm(q->marker_X - Q->X), 1.5 * q->particle_spacing);
+                        w = w_Bspline(Norm(q->marker_X - Q->X), 2. * q->particle_spacing);
                         q->U_SPH += Q->U_SPH * Q->volume * w;
                         b_vector += Q->b_vector * Q->volume * w;
                         DUDt_SPH += Q->DUDt_SPH * Q->volume * w;
@@ -577,7 +577,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                [&](const auto &q) {
                                                                   return q->isCaptured &&
                                                                          Distance(A, q) < r && A != q &&
-                                                                         isFlat(A->interp_normal_original, q->X - A->X, M_PI / 4);
+                                                                         isFlat(A->interp_normal_original, q->X - A->X, M_PI / 7);
                                                                });
                             }));
 
@@ -588,7 +588,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                     [&](const auto &q) {
                                                                        return q->isCaptured &&
                                                                               Distance(X_next(A), X_next(q)) < r && A != q &&
-                                                                              isFlat(A->interp_normal_original, X_next(q) - X_next(A), M_PI / 4);
+                                                                              isFlat(A->interp_normal_original, X_next(q) - X_next(A), M_PI / 7);
                                                                     });
                                  }));
 
