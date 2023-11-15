@@ -1,12 +1,16 @@
 /*DOC_EXTRACT FourierTransform
 
-## 離散フーリエ変換
+# フーリエ変換
 
-複素フーリエ級数展開は
+## 複素フーリエ級数展開
 
 ```math
 f(t) = \sum_{n=-\infty}^{\infty} c_n \exp(i n \omega^\ast t), \quad c_n = \frac{1}{T^\ast} \int_{-\frac{T^\ast}{2}}^{\frac{T^\ast}{2}} f(t) \exp(-i n \omega^\ast t) \, dt, \quad \omega^\ast = \frac{2\pi}{T^\ast}
 ```
+
+省略
+
+## 離散フーリエ変換
 
 サンプル数が$`N+1`$，$`(k=0,1,...N+1)`$のとき，台形則を使った関数$`g(t)`$の数値積分は，
 
@@ -14,7 +18,9 @@ f(t) = \sum_{n=-\infty}^{\infty} c_n \exp(i n \omega^\ast t), \quad c_n = \frac{
 \int_0^{T^\ast} g(t) dt = \left[\frac{g(0) + g(N \delta t)}{2} + \sum_{k=1}^{N-1} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N+1}
 ```
 
-ここではサンプル数が$`N`$，$`(k=0,1,...N-1)`$だとして，$`g(t) = f(t) \exp(-i n \omega^\ast t)`$として，$`c_n`$を台形則を使って計算する．
+この台形則を使って，
+サンプル数が$`N`$，$`(k=0,1,...N-1)`$，$`g(t) = f(t) \exp(-i n \omega^\ast t)`$として．
+複素フーリエ係数$`c_n`$を数値積分で計算すると，
 
 ```math
 \begin{align}
@@ -25,7 +31,7 @@ c_n &= \frac{1}{T^\ast} \left[ \frac{g(0) + g((N-1)\delta t)}{2} + \sum_{k=1}^{N
 \end{align}
 ```
 
-ここで$`\delta t`$は区間$`T^\ast`$を$`N`$等分したときの各小区間の長さを表す．
+となる．ここで$`\delta t`$は区間$`T^\ast`$を$`N`$等分したときの各小区間の長さを表す．
 そして$`g(0) = g((N-1)\delta t)`$は，関数$`g(t)`$が周期$`T^\ast`$であることを意味する．
 この式は，離散フーリエ変換（DFT）における$`c_n`$の近似計算に相当する．
 

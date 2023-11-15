@@ -66,6 +66,9 @@
 ## [build_Fourier](./builds/build_Fourier/README.md)
 
 - [Contents](./builds/build_Fourier/README.md#Contents)
+- [🐋 フーリエ変換](./builds/build_Fourier/README.md#🐋-フーリエ変換)
+    - [⛵ 複素フーリエ級数展開](./builds/build_Fourier/README.md#⛵-複素フーリエ級数展開)
+    - [⛵ 離散フーリエ変換](./builds/build_Fourier/README.md#⛵-離散フーリエ変換)
 ## [build_integration](./builds/build_integration/README.md)
 
 - [Contents](./builds/build_integration/README.md#Contents)
