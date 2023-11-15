@@ -48,7 +48,7 @@ match SimulationCase:
 
         input_files = [wavetank, water]
 
-        particle_spacing = 0.2/10
+        particle_spacing = 0.25/10
 
         setting = {"RK_order": 1,
                    "max_dt": particle_spacing/10,

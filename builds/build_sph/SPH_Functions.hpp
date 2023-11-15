@@ -166,8 +166,8 @@ void setSML(const auto &target_nets) {
    /* -------------------------------- C_SMLの調整 -------------------------------- */
    const double C_SML_max = 2.7;
    // double C_SML_min = 1.866;
-   const double C_SML_min = 2.4;
-   const double C_SML_min_rigid = 2.4;
+   const double C_SML_min = 2.3;
+   const double C_SML_min_rigid = 2.3;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -306,23 +306,24 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return p->U_SPH;
-   else
-      return p->RK_U.getX(p->DUDt_SPH);
+   // if (!p->isFluid)
+   //    return p->U_SPH;
+   // else
+   return p->RK_U.getX(p->DUDt_SPH);
    // return p->RK_U.getX();
 }
 Tddd X_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return p->X;
-   else
-      return p->RK_X.getX(U_next(p));
+   // if (!p->isFluid)
+   //    return p->X;
+   // else
+   return p->RK_X.getX(U_next(p));
 }
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
-   return _WATER_DENSITY_;
+   // if (p->getNetwork()->isRigidBody && !p->isFirstWallLayer)
+   //    return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -330,7 +331,7 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
-   // return p->RK_rho.getX(-p->rho * p->div_U);
+   return p->RK_rho.getX(-p->rho * p->div_U);
 
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
@@ -561,6 +562,7 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
 };
 
 #define REFLECTION
+
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
@@ -631,7 +633,7 @@ void updateParticles(const auto &points,
             isReflected = false;
             auto d_ps = particle_spacing;
             auto d0 = (1 - c) * particle_spacing;
-            for (const auto &[closest_p, v_f2w] : {closest(p, RigidBodyObject) /*, closest_next(p, RigidBodyObject)*/}) {
+            for (const auto &[closest_p, v_f2w] : {closest(p, RigidBodyObject), closest_next(p, RigidBodyObject)}) {
                if (closest_p != nullptr) {
                   auto n = Normalize(closest_p->interp_normal_original);
                   auto n_d_f2w = Norm(Projection(v_f2w, n));
@@ -639,8 +641,8 @@ void updateParticles(const auto &points,
                   if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        // auto tmp = -0.1 * ratio * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        auto tmp = -2 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
                         p->DUDt_SPH += tmp;

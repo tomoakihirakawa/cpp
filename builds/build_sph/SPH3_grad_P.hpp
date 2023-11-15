@@ -167,7 +167,10 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
       // }
 
       for (const auto &A : points) {
-         A->DUDt_SPH -= A->gradP_SPH / rho_next(A);
+         if (A->isAuxiliary)
+            A->DUDt_SPH -= Chop(A->gradP_SPH / A->rho, A->surfacePoint->interp_normal_original_next);
+         else
+            A->DUDt_SPH -= A->gradP_SPH / A->rho;
 
          // else
          //    A->DUDt_SPH.fill(0.);

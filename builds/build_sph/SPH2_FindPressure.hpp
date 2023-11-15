@@ -186,7 +186,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          //% ------------------- 壁粒子の圧力の方程式 ------------------- */
 
          auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
-            const auto r = pO->SML_next();
+            // const auto r = pO->SML_next();
+            const auto r = 1.5 * pO->particle_spacing;
             const auto BX = X_next(B);
             if (Distance(pO_center, BX) < r) {
                auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
@@ -198,7 +199,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          };
 
          auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
-            const auto r = pO->SML_next();
+            // const auto r = pO->SML_next();
+            const auto r = 1.5 * pO->particle_spacing;
             const auto BX = X_next(B);
             if (Distance(pO_center, BX) < r) {
                auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
@@ -251,7 +253,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // b$ -------------------------------------------------------------------------- */
 
          // \label{SPH:whereToMakeTheEquation}
-         if (ROW->isSurface && !ROW->isAuxiliary) {
+         if ((ROW->isSurface || ROW->isSurface_next) && !ROW->isAuxiliary) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {

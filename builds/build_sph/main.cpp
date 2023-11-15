@@ -275,9 +275,9 @@ int main(int argc, char **argv) {
             // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
             // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
 
-            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+            // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
 
-            // p->v_to_surface_SPH = p->normal_SPH = X - p->X;
+            p->v_to_surface_SPH = p->normal_SPH = X - p->X;
 
             // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + 1E-12) * ps * Normalize(X - p->X);
             p->mirroring_face = f;
