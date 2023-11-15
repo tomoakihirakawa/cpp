@@ -128,8 +128,9 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
          A->Eigenvalues_of_M1_next = lambdas;
          A->Eigenvectors_of_M1_next = vectors;
       }
-      //
+      /* -------------------------------------------------------------------------- */
       A->var_Eigenvalues_of_M = 0;
+      A->var_Eigenvalues_of_M1 = 0;
       for (const auto &v : A->Eigenvalues_of_M)
          A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
       for (const auto &v : A->Eigenvalues_of_M1)
@@ -137,12 +138,17 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
       //
       A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
       A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
-      //
-      A->var_Eigenvalues_of_M1_next = 0.;
-      for (const auto &v : A->Eigenvalues_of_M1_next)
+      /* -------------------------------------------------------------------------- */
+      A->var_Eigenvalues_of_M_next = 0;
+      A->var_Eigenvalues_of_M1_next = 0;
+      for (const auto &v : A->Eigenvalues_of_M)
+         A->var_Eigenvalues_of_M_next += std::pow(1. - std::abs(v), 2.);
+      for (const auto &v : A->Eigenvalues_of_M1)
          A->var_Eigenvalues_of_M1_next += std::pow(1. - std::abs(v), 2.);
-      A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
       //
+      A->var_Eigenvalues_of_M_next = std::sqrt(A->var_Eigenvalues_of_M_next) / 3.;
+      A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
+      /* -------------------------------------------------------------------------- */
       A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
       A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
 
@@ -302,13 +308,13 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                                                                     });
                   }
 
-                  if (Norm(q->interp_normal_original) > 7500) {
-                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
-                  } else if (Norm(q->interp_normal_original) > 900) {
-                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
-                  } else {
-                     q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 2.5 * Normalize(q->interp_normal_original);
-                  }
+                  // if (Norm(q->interp_normal_original) > 7500) {
+                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
+                  // } else if (Norm(q->interp_normal_original) > 900) {
+                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
+                  // } else {
+                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 2.5 * Normalize(q->interp_normal_original);
+                  // }
 
                   /* -------------------------------------------------------------------------- */
 
@@ -332,7 +338,8 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                      Tddd marker_X_next = X_next(q) + 2 * q->v_to_surface_SPH;
                      double total_mass_w = 0, total_w = 0, r = q->SML(), w;
                      net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
-                        w = w_Bspline(Norm(q->marker_X - Q->X), r);
+                        // w = w_Bspline(Norm(q->marker_X - Q->X), r);
+                        w = w_Bspline(Norm(q->marker_X - Q->X), 1.5 * q->particle_spacing);
                         q->U_SPH += Q->U_SPH * Q->volume * w;
                         b_vector += Q->b_vector * Q->volume * w;
                         DUDt_SPH += Q->DUDt_SPH * Q->volume * w;
@@ -348,9 +355,9 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                         q->marker_U = q->U_SPH;  //! そのままの値
                         // q->intp_density /= total_w;
                      }
-                     // q->U_SPH = -q->U_SPH;
+                     q->U_SPH = -q->U_SPH;
                      // q->U_SPH.fill(0.);
-                     q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
+                     // q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                      // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                      q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
                      // if (q->isFirstWallLayer)
@@ -379,11 +386,10 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             if (p->isCaptured)
                wall_p.emplace(p);
 
-      for (const auto &[obj, poly] : RigidBodyObject)
-         // #pragma omp parallel
-         for (const auto &p : obj->getPoints())
-            // #pragma omp single nowait
-            setCorrectionMatrix(p, all_nets);
+#pragma omp parallel
+      for (const auto &p : wall_p)
+#pragma omp single nowait
+         setCorrectionMatrix(p, all_nets);
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in setWall");
@@ -529,6 +535,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             p->COM_SPH /= p->totalMass_SPH;
 
             // \label{SPH:interp_normal}
+            p->interp_normal_original = Dot(p->inv_grad_corr_M, p->interp_normal_original);
+            p->interp_normal_original_next = Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next);
             p->interp_normal = Normalize(p->interp_normal_original);  //\label{SPH:interp_normal}
             p->interp_normal_original_choped = p->interp_normal_original;
             p->interp_normal_original_next_choped = p->interp_normal_original_next;
@@ -561,24 +569,46 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             //           p != q &&
             //           isFlat(p->interp_normal_original, q->X - p->X, M_PI / 5);
             // }
-            A->isSurface = (A->var_Eigenvalues_of_M1 > 0.2) &&
-                           std::ranges::none_of(all_nets,
-                                                [&](const auto &net) {
-                                                   return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,
-                                                                                   [&](const auto &q) {
-                                                                                      return q->isCaptured &&
-                                                                                             Distance(A, q) < r && A != q &&
-                                                                                             isFlat(A->interp_normal_original, q->X - A->X, M_PI / 6);
-                                                                                   });
-                                                });
 
-            A->isSurface_next = (A->var_Eigenvalues_of_M1_next > 0.2) &&
-                                std::ranges::none_of(all_nets, [&](const auto &net) {
-                                   return net->BucketPoints.any_of(X_next(A), A->particle_spacing * 2.,
-                                                                   [&](const auto &q) { return q->isCaptured && Distance(X_next(A), X_next(q)) < r &&
-                                                                                               A != q &&
-                                                                                               isFlat(A->interp_normal_original_next, q->X - A->X, M_PI / 6); });
-                                });
+            A->isSurface = ((A->var_Eigenvalues_of_M1 > 0.5) && (A->var_Eigenvalues_of_M > 0.15)) ||
+                           (((A->var_Eigenvalues_of_M1 > 0.2) && (A->var_Eigenvalues_of_M > 0.1)) &&
+                            std::ranges::none_of(all_nets, [&](const auto &net) {
+                               return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,
+                                                               [&](const auto &q) {
+                                                                  return q->isCaptured &&
+                                                                         Distance(A, q) < r && A != q &&
+                                                                         isFlat(A->interp_normal_original, q->X - A->X, M_PI / 4);
+                                                               });
+                            }));
+
+            A->isSurface_next = ((A->var_Eigenvalues_of_M1_next > 0.5) && (A->var_Eigenvalues_of_M_next > 0.15)) ||
+                                (((A->var_Eigenvalues_of_M1_next > 0.2) && (A->var_Eigenvalues_of_M_next > 0.1)) &&
+                                 std::ranges::none_of(all_nets, [&](const auto &net) {
+                                    return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,
+                                                                    [&](const auto &q) {
+                                                                       return q->isCaptured &&
+                                                                              Distance(X_next(A), X_next(q)) < r && A != q &&
+                                                                              isFlat(A->interp_normal_original, X_next(q) - X_next(A), M_PI / 4);
+                                                                    });
+                                 }));
+
+            // A->isSurface = std::ranges::none_of(all_nets, [&](const auto &net) {
+            //    return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,
+            //                                    [&](const auto &q) {
+            //                                       return q->isCaptured &&
+            //                                              Distance(A, q) < r && A != q &&
+            //                                              isFlat(A->interp_normal_original, q->X - A->X, M_PI / 6);
+            //                                    });
+            // });
+
+            // A->isSurface_next = std::ranges::none_of(all_nets, [&](const auto &net) {
+            //    return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,
+            //                                    [&](const auto &q) {
+            //                                       return q->isCaptured &&
+            //                                              Distance(X_next(A), X_next(q)) < r && A != q &&
+            //                                              isFlat(A->interp_normal_original, X_next(q) - X_next(A), M_PI / 6);
+            //                                    });
+            // });
 
             // p->isSurface = net->BucketPoints.none_of(p->X, radius, surface_condition0) &&
             //                std::ranges::none_of(RigidBodyObject, [&](const auto &net) {

@@ -291,7 +291,7 @@ void developByEISPH(Network *net,
          setWall(net, RigidBodyObject, particle_spacing, wall_p);
          setFreeSurface(net, RigidBodyObject);
          setCorrectionMatrix(Append(net_RigidBody, net));
-         // setAuxiliaryPoints(net);
+         // setAuxiliaryPoints(net);j
          Print(Green, "recalculation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
          //% Poisson方程式の離散化

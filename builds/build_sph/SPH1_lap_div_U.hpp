@@ -46,6 +46,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          };
 
          const double c_xsph = 0.01;
+
          double total_w = 0, w;
          auto add = [&](const auto &B) {
             Uij = A->U_SPH - B->U_SPH;
@@ -56,15 +57,29 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                total_w += w;
             }
 
+            if (A->isFluid && B->isFluid) {
+               if (A->isSurface || B->isSurface) {
+                  // A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X);
+                  A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
+                  // auto X_online = A->X + A->particle_spacing * Normalize(B->X - A->X);
+                  // auto pro_Uij = Projection(Uij, A->X - X_online);
+                  // A->lap_U += 0.1 * (-pro_Uij) * w_Bspline(Norm(B->X - X_online), A->particle_spacing);
+                  // A->U_XSPH += c_xsph * (-Uij) * w;  //\label{SPH:U_XSPH}
+                  // total_w += w;
+               }
+            }
+            if ((A->isFluid && !B->isFluid) || (!A->isFluid && B->isFluid)) {
+               A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
+            }
+
             A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));  //\label{SPH:divU}
             Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);          //\label{SPH:lapP1}
 
             //! 修正
-            const auto DelX = (A->X - B->X);
-            applyOverPoints([&](const auto &Q) {
-               if (A == Q) return;
-               A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH - A->U_SPH);
-            });
+            // const auto DelX = (A->X - B->X);
+            // applyOverPoints([&](const auto &Q) {
+            //    A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH - A->U_SPH);
+            // });
 
             A->lap_U += Aij * Uij;  //\label{SPH:lapU}
 

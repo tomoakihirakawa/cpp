@@ -643,6 +643,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double min_Eigenvalues_of_M = 0.;
    double var_Eigenvalues_of_M1 = 0.;
    double min_Eigenvalues_of_M1 = 0.;
+   double var_Eigenvalues_of_M_next = 0.;
    double var_Eigenvalues_of_M1_next = 0.;
    // ダミー粒子としての情報
 

@@ -320,7 +320,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L902](../../include/Network.hpp#L902)
+[../../include/Network.hpp#L903](../../include/Network.hpp#L903)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
