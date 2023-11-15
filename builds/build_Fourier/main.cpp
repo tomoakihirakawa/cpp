@@ -6,14 +6,14 @@
 f(t) = \sum_{n=-\infty}^{\infty} c_n \exp(i n \omega_0 t), \quad c_n = \frac{1}{T} \int_{-\frac{T}{2}}^{\frac{T}{2}} f(t) \exp(-i n \omega_0 t) \, dt, \quad \omega_0 = \frac{2\pi}{T}
 ```
 
-サンプル数が$N+1$，$(k=0,1,...N+1)$のとき，台形則を使った関数$g(t)$の数値積分は，
+サンプル数が$`N+1`$，$`(k=0,1,...N+1)`$のとき，台形則を使った関数$`g(t)`$の数値積分は，
 
 ```math
 \int_0^T g(t) dt = \left[\frac{g(0) + g(N \delta t)}{2} + \sum_{k=1}^{N-1} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T}{N+1}
 ```
 
-ここではサンプル数が$N$，$(k=0,1,...N-1)$のとき，
-$g(t) = f(t) \exp(-i n \omega_0 t)$として，$c_n$を台形則を使って計算する．
+ここではサンプル数が$`N`$，$`(k=0,1,...N-1)`$のとき，
+$`g(t) = f(t) \exp(-i n \omega_0 t)`$として，$`c_n`$を台形則を使って計算する．
 
 ```math
 \begin{align}
@@ -24,9 +24,9 @@ c_n &= \frac{1}{T} \left[ \frac{g(0) + g((N-1)\delta t)}{2} + \sum_{k=1}^{N-2} g
 \end{align}
 ```
 
-ここで$\delta t$は区間$T$を$N$等分したときの各小区間の長さを表す．
-そして$g(0) = g((N-1)\delta t)$は，関数$g(t)$が周期$T$であることを意味する．
-この式は，離散フーリエ変換（DFT）における$c_n$の近似計算に相当する．
+ここで$`\delta t`$は区間$`T`$を$`N`$等分したときの各小区間の長さを表す．
+そして$`g(0) = g((N-1)\delta t)`$は，関数$`g(t)`$が周期$`T`$であることを意味する．
+この式は，離散フーリエ変換（DFT）における$`c_n`$の近似計算に相当する．
 
 ---
 
@@ -65,8 +65,8 @@ std::complex<double> coeff(int n) {
 std::vector<std::complex<double>> DFT(const std::vector<double>& list) {
    int N = list.size();
    std::vector<std::complex<double>> result(N);
-   for (int n = 0; n < N; ++n) 
-      result[n] = coeff(n);   
+   for (int n = 0; n < N; ++n)
+      result[n] = coeff(n);
    return result;
 }
 
