@@ -164,10 +164,10 @@ void setAuxiliaryPoints(const auto net) {
 void setSML(const auto &target_nets) {
    DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   const double C_SML_max = 2.7;
+   const double C_SML_max = 2.4;
    // double C_SML_min = 1.866;
-   const double C_SML_min = 2.3;
-   const double C_SML_min_rigid = 2.3;
+   const double C_SML_min = 2.;
+   const double C_SML_min_rigid = 2.;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -641,7 +641,7 @@ void updateParticles(const auto &points,
                   if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;

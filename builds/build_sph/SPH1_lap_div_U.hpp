@@ -45,7 +45,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             }
          };
 
-         const double c_xsph = 0.01;
+         const double c_xsph = 0.001;
 
          double total_w = 0, w;
          auto add = [&](const auto &B) {
@@ -60,7 +60,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             if (A->isFluid && B->isFluid) {
                if (A->isSurface || B->isSurface) {
                   // A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X);
-                  A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
+                  A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), (1 - 1E-10) * A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
                   // auto X_online = A->X + A->particle_spacing * Normalize(B->X - A->X);
                   // auto pro_Uij = Projection(Uij, A->X - X_online);
                   // A->lap_U += 0.1 * (-pro_Uij) * w_Bspline(Norm(B->X - X_online), A->particle_spacing);
@@ -69,7 +69,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             }
             if ((A->isFluid && !B->isFluid) || (!A->isFluid && B->isFluid)) {
-               A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
+               A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), (1 - 1E-10) * A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
             }
 
             A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));  //\label{SPH:divU}

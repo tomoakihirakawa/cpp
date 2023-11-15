@@ -1,5 +1,5 @@
 ----------
-Execution time: Wed Nov 15 16:22:36 2023
+Execution time: Wed Nov 15 15:49:04 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMacBook-Pro.local
@@ -9,17 +9,6 @@ Machine Information:
 Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d025_CSML2d8_RK1
-----------
-Execution time: Wed Nov 15 15:49:01 2023
-
-Machine Information:
-  Hostname: hirakawatomoakinoMac-Studio.local
-  Operating System: Darwin 23.0.0
-  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
-
-Command line arguments:
-  arg0: ./main
-  arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
 ----------
 Execution time: Wed Nov 15 15:46:36 2023
 
@@ -1076,7 +1065,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
 ----------
-Execution time: Sun Nov 12 16:48:49 2023
+Execution time: Sun Nov 12 16:48:48 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMacBook-Pro.local
@@ -2494,7 +2483,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
 ----------
-Execution time: Wed Nov  8 13:29:07 2023
+Execution time: Wed Nov  8 13:29:06 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -2791,7 +2780,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
 ----------
-Execution time: Wed Nov  8 01:49:34 2023
+Execution time: Wed Nov  8 01:49:33 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -8346,7 +8335,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
 ----------
-Execution time: Wed Nov  1 10:56:49 2023
+Execution time: Wed Nov  1 10:56:48 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -10920,7 +10909,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
 ----------
-Execution time: Thu Oct 26 12:40:21 2023
+Execution time: Thu Oct 26 12:40:20 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -11613,7 +11602,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/static_pressure_PS0d02_CSML2d8_RK1
 ----------
-Execution time: Wed Oct 25 23:43:21 2023
+Execution time: Wed Oct 25 23:43:20 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMacBook-Pro.local
@@ -21619,7 +21608,7 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
 ----------
-Execution time: Sun Oct 15 11:03:21 2023
+Execution time: Sun Oct 15 11:05:04 2023
 
 Machine Information:
   Hostname: hirakawatomoakinoMac-Studio.local
@@ -21629,7 +21618,6 @@ Machine Information:
 Command line arguments:
   arg0: ./main
   arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
-----------
 ----------
 ----------
 ----------

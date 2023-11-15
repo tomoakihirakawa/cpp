@@ -5,30 +5,34 @@
 複素フーリエ級数展開は
 
 ```math
-f(t) = \sum _{n=-\infty}^{\infty} c _n \exp(i n \omega _0 t), \quad c _n = \frac{1}{T} \int _{-\frac{T}{2}}^{\frac{T}{2}} f(t) \exp(-i n \omega _0 t) \, dt, \quad \omega _0 = \frac{2\pi}{T}
+f(t) = \sum _{n=-\infty}^{\infty} c _n \exp(i n \omega^\ast t), \quad c _n = \frac{1}{T^\ast} \int _{-\frac{T^\ast}{2}}^{\frac{T^\ast}{2}} f(t) \exp(-i n \omega^\ast t) \, dt, \quad \omega^\ast = \frac{2\pi}{T^\ast}
 ```
 
 サンプル数が$`N+1`$，$`(k=0,1,...N+1)`$のとき，台形則を使った関数$`g(t)`$の数値積分は，
 
 ```math
-\int _0^T g(t) dt = \left[\frac{g(0) + g(N \delta t)}{2} + \sum _{k=1}^{N-1} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T}{N+1}
+\int _0^{T^\ast} g(t) dt = \left[\frac{g(0) + g(N \delta t)}{2} + \sum _{k=1}^{N-1} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N+1}
 ```
 
-ここではサンプル数が$`N`$，$`(k=0,1,...N-1)`$のとき，
-$`g(t) = f(t) \exp(-i n \omega _0 t)`$として，$`c _n`$を台形則を使って計算する．
+ここではサンプル数が$`N`$，$`(k=0,1,...N-1)`$だとして，$`g(t) = f(t) \exp(-i n \omega^\ast t)`$として，$`c _n`$を台形則を使って計算する．
 
 ```math
 \begin{align}
-c _n &= \frac{1}{T} \left[ \frac{g(0) + g((N-1)\delta t)}{2} + \sum _{k=1}^{N-2} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T}{N}, \quad g(0) = g((N-1)\delta t)\\
+c _n &= \frac{1}{T^\ast} \left[ \frac{g(0) + g((N-1)\delta t)}{2} + \sum _{k=1}^{N-2} g(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N}, \quad g(0) = g((N-1)\delta t)\\
 &= \frac{1}{N} \sum _{k=0}^{N-2} g(k \delta t)\\
-&= \frac{1}{N} \sum _{k=0}^{N-2} \left[ f(k \delta t) \exp\left( -i n \frac{2 \pi}{T} k \frac{T}{N} \right) \right]\\
-&= \frac{1}{N} \sum _{k=0}^{N-2} \left[ f _k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+&= \frac{1}{N} \sum _{k=0}^{N-2} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{T^\ast} k \frac{T^\ast}{N} \right) \right]\\
+&= \frac{1}{N} \sum _{k=0}^{N-2} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
 \end{align}
 ```
 
-ここで$`\delta t`$は区間$`T`$を$`N`$等分したときの各小区間の長さを表す．
-そして$`g(0) = g((N-1)\delta t)`$は，関数$`g(t)`$が周期$`T`$であることを意味する．
+ここで$`\delta t`$は区間$`T^\ast`$を$`N`$等分したときの各小区間の長さを表す．
+そして$`g(0) = g((N-1)\delta t)`$は，関数$`g(t)`$が周期$`T^\ast`$であることを意味する．
 この式は，離散フーリエ変換（DFT）における$`c _n`$の近似計算に相当する．
+
+$`c _n`$は，$`\omega _n = \frac{2 \pi n}{T^\ast}`$の角周波数成分を表す．つまり，$`f _n = \frac{n}{T^\ast}`$の周波数成分を表し．$`T _n = \frac{T^\ast}{n}`$の周期成分を表す．
+このことから，周波数分解能は$`\Delta f = \frac{1}{T^\ast}`$，周期分解能は$`\Delta T = T^\ast`$とわかる．
+また，基本周期$`T^\ast`$と同じ周期でサンプリングしていては，$`T^\ast`$の周期成分は分解できない．
+少なくとも，$`T^\ast`$の周期成分を分解するには，$`T^\ast`$の半分の周期でサンプリングする必要がある．
 
 ---
 
