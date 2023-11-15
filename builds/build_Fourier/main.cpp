@@ -1,5 +1,7 @@
 /*DOC_EXTRACT FourierTransform
 
+## 離散フーリエ変換
+
 複素フーリエ級数展開は
 
 ```math
@@ -83,6 +85,7 @@ int main() {
    //       std::cout << c << std::endl;
 
    // check DFT of sin cos wave and output
+
    std::vector<double> list2(1000);
    auto f = [](double t) {
       double T = 15.;
