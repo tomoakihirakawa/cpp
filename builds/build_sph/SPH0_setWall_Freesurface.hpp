@@ -65,11 +65,12 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
    DebugPrintLevel(2, "setCorrectionMatrix: initiation done. start add", Blue);
 
-   double total_w = 0;
+   double total_w = 0, total_w_next = 0;
    auto add = [&](const auto &B) {
       auto grad_w = grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
       if (B->isCaptured) {
          total_w += w_Bspline(Norm(A->X - B->X), A->SML());
+         total_w_next += w_Bspline(Norm(A->X - B->X), A->SML());
          A->grad_corr_M += B->volume * TensorProduct(grad_w, B->X - A->X);
          A->grad_corr_M_next += V_next(B) * TensorProduct(grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
          //! mirrror
@@ -108,8 +109,11 @@ void setCorrectionMatrix(networkPoint *A, const auto &all_nets) {
 
    if (total_w > too_small_total_w) {
 
-      A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-      A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+      if (total_w > too_small_total_w)
+         A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+
+      if (total_w_next > too_small_total_w)
+         A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
 
       {
          auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-10, 100.);
@@ -355,9 +359,9 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                         q->marker_U = q->U_SPH;  //! そのままの値
                         // q->intp_density /= total_w;
                      }
-                     q->U_SPH = -q->U_SPH;
+                     // q->U_SPH = -q->U_SPH;
                      // q->U_SPH.fill(0.);
-                     // q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
+                     q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                      // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                      q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
                      // if (q->isFirstWallLayer)
@@ -591,6 +595,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                               isFlat(A->interp_normal_original, X_next(q) - X_next(A), M_PI / 7);
                                                                     });
                                  }));
+
+            A->isSurface = A->isSurface && A->isSurface_next;
+            A->isSurface_next = A->isSurface;
 
             // A->isSurface = std::ranges::none_of(all_nets, [&](const auto &net) {
             //    return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,

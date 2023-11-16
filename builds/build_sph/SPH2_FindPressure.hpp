@@ -173,8 +173,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          /* -------------------------------------------------------------------------- */
 
-         auto applyOverPoints = [&pO, &pO_center](const auto &equation, const std::unordered_set<Network *> NETS) {
-            const double r = pO->SML_next();
+         const double r = pO->SML_next();
+         auto applyOverPoints = [&r, &pO, &pO_center](const auto &equation, const std::unordered_set<Network *> NETS) {
             for (const auto &net : NETS) {
                net->BucketPoints.apply(pO_center, 1.2 * r, [&](const auto &B) {
                   if (canInteract(pO, B))
@@ -219,7 +219,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                const auto BX = X_next(B);
                const auto r = pO->SML_next();
                if (Distance(pO_center, BX) < r) {
-                  auto grad = grad_w_Bspline_next(pO, pO_center, B);
                   double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
 
                   //! 修正
@@ -237,7 +236,18 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   ROW->increment(pO, Aij);
                   ROW->increment(B, -Aij);
 
+                  const auto grad = grad_w_Bspline_next(pO, pO_center, B);
                   ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad);
+                  if (!isFinite(grad)) {
+                     std::cout << "grad : " << grad << std::endl;
+                     std::cout << "B->b_vector : " << B->b_vector << std::endl;
+                     std::cout << "pO->b_vector : " << pO->b_vector << std::endl;
+                     std::cout << "V_next(B) : " << V_next(B) << std::endl;
+                     std::cout << "Dot(B->b_vector - pO->b_vector, grad) : " << Dot(B->b_vector - pO->b_vector, grad) << std::endl;
+                     std::cout << "pO :" << pO << std::endl;
+                     std::cout << "B :" << B << std::endl;
+                     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "grad is not a finite");
+                  }
                   // ROW->PoissonRHS += V_next(B) * Dot(rho_next(B) * U_next(B) / B->RK_U.get_dt() - rho_next(pO) * U_next(pO) / pO->RK_U.get_dt(), grad);
 
                   //% for EISPH
@@ -359,6 +369,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             std::cout << "pO->p_SPH : " << pO->p_SPH << std::endl;
             std::cout << "pO->X : " << pO->X << std::endl;
             std::cout << "X_next(pO) :" << X_next(pO) << std::endl;
+            std::cout << "total_w : " << total_w << std::endl;
+            std::cout << "pO->b_vector : " << pO->b_vector << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "pO->PoissonRHS is not a finite");
          }
 

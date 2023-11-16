@@ -166,8 +166,8 @@ void setSML(const auto &target_nets) {
    /* -------------------------------- C_SMLの調整 -------------------------------- */
    const double C_SML_max = 2.4;
    // double C_SML_min = 1.866;
-   const double C_SML_min = 2.;
-   const double C_SML_min_rigid = 2.;
+   const double C_SML_min = 1.9;
+   const double C_SML_min_rigid = 1.9;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -313,10 +313,10 @@ Tddd U_next(const networkPoint *p) {
    // return p->RK_U.getX();
 }
 Tddd X_next(const networkPoint *p) {
-   // if (!p->isFluid)
-   //    return p->X;
-   // else
-   return p->RK_X.getX(U_next(p));
+   if (!p->isFluid)
+      return p->X;
+   else
+      return p->RK_X.getX(U_next(p));
 }
 
 // \label{SPH:rho_next}
@@ -641,7 +641,7 @@ void updateParticles(const auto &points,
                   if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.5 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
