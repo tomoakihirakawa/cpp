@@ -32,54 +32,36 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          A->b_vector.fill(0.);
          A->U_XSPH.fill(0.);
          // A->grad_U.fill({0., 0., 0.});
-         double Aij;
-         Tddd Uij;
-         //
+         const auto r = A->SML();
+         const auto center = A->X;
          auto applyOverPoints = [&](const auto &equation) {
-            const auto r = A->SML();
             for (const auto &net : target_nets) {
-               net->BucketPoints.apply(A->X, 1.1 * r, [&](const auto &B) {
+               net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
                   if (canInteract(A, B))
                      equation(B);
                });
             }
          };
 
-         const double c_xsph = 0.001;
-
-         double total_w = 0, w;
+         const double c_xsph = 0.03;
+         double total_w = 0;
          auto add = [&](const auto &B) {
-            Uij = A->U_SPH - B->U_SPH;
-            w = B->volume * w_Bspline(Norm(A->X - B->X), A->SML());
+            const auto Uij = A->U_SPH - B->U_SPH;
+            const double w = B->volume * w_Bspline(Norm(A->X - B->X), A->SML());
 
             if (A->isFluid && B->isFluid) {
                A->U_XSPH += c_xsph * (-Uij) * w;  //\label{SPH:U_XSPH}
                total_w += w;
             }
 
-            if (A->isFluid && B->isFluid) {
-               if (A->isSurface || B->isSurface) {
-                  // A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing) * Normalize(A->X - B->X);
-                  A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), (1 - 1E-10) * A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
-                  // auto X_online = A->X + A->particle_spacing * Normalize(B->X - A->X);
-                  // auto pro_Uij = Projection(Uij, A->X - X_online);
-                  // A->lap_U += 0.1 * (-pro_Uij) * w_Bspline(Norm(B->X - X_online), A->particle_spacing);
-                  // A->U_XSPH += c_xsph * (-Uij) * w;  //\label{SPH:U_XSPH}
-                  // total_w += w;
-               }
-            }
-            if ((A->isFluid && !B->isFluid) || (!A->isFluid && B->isFluid)) {
-               A->lap_U += _GRAVITY_ * B->volume * w_Bspline(Norm(A->X - B->X), (1 - 1E-10) * A->particle_spacing) * Normalize(A->X - B->X) / (A->mu_SPH / A->rho);
-            }
-
-            A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));  //\label{SPH:divU}
-            Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);          //\label{SPH:lapP1}
+            A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));       //\label{SPH:divU}
+            const double Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);  //\label{SPH:lapP1}
 
             //! 修正
-            // const auto DelX = (A->X - B->X);
-            // applyOverPoints([&](const auto &Q) {
-            //    A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH - A->U_SPH);
-            // });
+            const auto DelX = (A->X - B->X);
+            applyOverPoints([&](const auto &Q) {
+               A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A, Q)) * (Q->U_SPH - A->U_SPH);
+            });
 
             A->lap_U += Aij * Uij;  //\label{SPH:lapU}
 
@@ -93,8 +75,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
          applyOverPoints(add);
 
-         if (total_w > too_small_total_w)
-            A->U_XSPH /= total_w;
+         // if (total_w > too_small_total_w)
+         //    A->U_XSPH /= total_w;
 
          /* ----------------------- calculate DUDt and b_vector ---------------------- */
 
@@ -112,6 +94,64 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             A->DUDt_SPH += A->U_XSPH / dt;
             //
             A->DrhoDt_SPH = -A->rho * A->div_U;
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+         }
+      }
+
+      /* -------------------------------------------------------------------------- */
+
+#pragma omp parallel
+      for (const auto &A : points)
+#pragma omp single nowait
+      {
+#if defined(USE_RungeKutta)
+         const double dt = A->RK_X.get_dt();
+#elif defined(USE_LeapFrog)
+         const double dt = A->LPFG_X.get_dt();
+#endif
+
+         const auto r = A->SML();
+         const auto center = A->X;
+         auto applyOverPoints = [&](const auto &equation) {
+            for (const auto &net : target_nets) {
+               net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
+                  if (canInteract(A, B))
+                     equation(B);
+               });
+            }
+         };
+
+         A->DUDt_modify_SPH.fill(0.);
+
+         auto add = [&](const auto &B) {
+            if (A->isFluid && B->isFluid) {
+               if (A->isSurface || B->isSurface) {
+                  A->DUDt_modify_SPH += B->volume * w_Bspline(Norm(X_next(A) - X_next(B)), A->particle_spacing) * Normalize(X_next(A) - X_next(B));
+               }
+            }
+            if ((A->isFluid && !B->isFluid) || (!A->isFluid && B->isFluid)) {
+               A->DUDt_modify_SPH += B->volume * w_Bspline(Norm(X_next(A) - X_next(B)), A->particle_spacing) * Normalize(X_next(A) - X_next(B));
+            }
+         };
+         applyOverPoints(add);
+      }
+
+      /* -------------------------------------------------------------------------- */
+
+#pragma omp parallel
+      for (const auto &A : points)
+#pragma omp single nowait
+      {
+#if defined(USE_RungeKutta)
+         const double dt = A->RK_X.get_dt();
+#elif defined(USE_LeapFrog)
+         const double dt = A->LPFG_X.get_dt();
+#endif
+         if (A->getNetwork()->isRigidBody) {
+            A->DUDt_SPH += A->DUDt_modify_SPH;
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+         } else {
+            A->DUDt_SPH += A->DUDt_modify_SPH;
             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
          }
       }

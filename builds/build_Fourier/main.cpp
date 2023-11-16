@@ -84,14 +84,12 @@ std::vector<std::complex<double>> DFT(const std::vector<double>& sample) {
 }
 
 int main() {
-   //    const std::vector<double> list = {1, 1, 2, 2, 1, 1, 0, 0};
-   //    for (int n = 0; n < list.size(); ++n)
-   //       std::cout << coeff(list, n) << std::endl;
+   const std::vector<double> list = {1, 1, 2, 2, 1, 1, 0, 0};
+   for (int n = 0; n < list.size(); ++n)
+      std::cout << coeff(list, n) << std::endl;
 
-   //    for (auto&& c : DFT(list))
-   //       std::cout << c << std::endl;
-
-   // check DFT of sin cos wave and output
+   for (auto&& c : DFT(list))
+      std::cout << c << std::endl;
 
    std::vector<double> list2(1000);
    auto f = [](double t) {
@@ -99,7 +97,7 @@ int main() {
       return std::sin(2 * M_PI / T * t);
    };
 
-   double T0 = 15.;
+   double T0 = 150.;
    double N = list2.size();
    {
       std::ofstream ofs("original.dat");
@@ -111,10 +109,11 @@ int main() {
    }
 
    {
-      std::ofstream("dft.dat");
       std::ofstream ofs("dft.dat");
+      int n = 0;
       for (auto&& c : DFT(list2)) {
-         ofs << c.real() << " " << c.imag() << std::endl;
+         ofs << (double)(n / T0) << " " << c.real() << " " << c.imag() << std::endl;
+         n++;
          // the index of c is n = 0, 1, ..., N-1
          // c[n] shows the component of frequency n * 2 * pi / T0
       }
