@@ -8,35 +8,67 @@
 #include "basic_vectors.hpp"
 #include "integrationOfODE.hpp"
 
+// (cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)
+// echo '(cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)'
+
 /*DOC_EXTRACT
 
-実行方法：
+# ケーブルの動的解析
 
-```sh
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../
-make
-```
+## 直線要素を用いたシミュレーション
 
-オイラー法，Leap-Frog法，Runge-Kutta法
-を用いて，弾性体の動きをシミュレーション．
+NOTE: 弦の振動を支配する方程式として，波動方程式$`\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}`$よく紹介される．
+この方程式は，ある固定した点$`x`$における弦の変位$`u`$の加速度が，弦の曲げ剛性$`c^2`$かける曲率に比例することを表している．
 
-`const double stiffness = 1000;`の場合
+直線で結ばれた節点上にケーブルの自重を集中させ，その節点に働く張力や重力から，節点の運動を追っていく．
+
+剛性は，ヤング率$`E`$と断面積$`A`$から$`EA`$．
+張力$`T`$は，$`T = EA \frac{\Delta L}{L}`$となる．
+
+オイラー法，Leap-Frog法，Runge-Kutta法を用いて，弾性体の動きをシミュレーション．
+
+|   |   |
+|---|---|
+| 剛性$`[N/m]`$ | $`1400 \times 10^6`$ |
+| 減衰$`[N/(m/s^2)]`$ | $`0.9`$ |
+| 自然長$`[m]`$ | $`1`$ |
+
 ![sample.gif](./sample.gif)
 
 `const double stiffness = 10000;`の場合
 ![sample_2.gif](./sample_2.gif)
 
+チェーン
+
+## 実行方法
+
+```sh
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
+make
+
 */
 
-#define USE_EULER
-// #define USE_LEAP_FROG
+// #define USE_EULER
+#define USE_LEAP_FROG
 // #define USE_RK4
+const std::string filename = "cable_leapfrog_K14E8_NL01d0.json";
+
+const double natural_length = 1.0;              //! [m]
+const double stiffness = 14 * std::pow(10, 8);  //! [N/m]
+const double damp = .9;                         //! [N/(m/s^2)]
+const double w = 348.5;                         //! [kg/m]
+const double dt = 0.0001;                       //! [s]
+const int max_step = 1000000;
+const std::array<double, 3> gravity = {0, 0, -9.81};
 
 struct Node {
+
+   const double mass = natural_length * w;
    std::array<double, 3> X;
    std::array<double, 3> velocity;
    std::array<double, 3> acceleration;
+   std::array<double, 3> tension;
    //
    Node(std::array<double, 3> X, std::array<double, 3> velocity, std::array<double, 3> acceleration)
        : X(X), velocity(velocity), acceleration(acceleration) {}
@@ -47,85 +79,66 @@ struct Node {
    RungeKutta<decltype(X)> RK_x;
    RungeKutta<decltype(X)> RK_v;
 };
-
-const double dt = 0.01;  // Time step
-const int max_step = 6000;
-const std::array<double, 3> gravity = {0, 0, -9.81};
-
-// nodes 20
-std::vector<Node> nodes = {
-    {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{1, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{2, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{3, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{4, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{5, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{6, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{7, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{8, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{9, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{10, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{11, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{12, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{13, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{14, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{15, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{16, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{17, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{18, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{19, 0, 0}, {0, 0, 0}, {0, 0, 0}},
-    {{20, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
-
+// nodes 30
+std::vector<Node> nodes;
 /* -------------------------------------------------------------------------- */
 
 void simulateCableDynamics(double t, double dt) {
 
-   auto tension = [&dt](const int i) {
-      const double stiffness = 10000;
-      const double damp = .5;
-      const double natural_length = 1.;
-      std::array<double, 3> acceleration;
+   auto tension = [&](const int i) {
+      std::array<double, 3> force;
+
       if (i - 1 >= 0) {
          auto v = nodes[i - 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
-         if (disp > 0.)
-            acceleration += stiffness * disp * Normalize(v);
+         double strain = disp / natural_length;
+         if (disp > 0.) force += stiffness * strain * Normalize(v);
          auto relative_velocity = nodes[i - 1].velocity - nodes[i].velocity;
-         acceleration -= damp * Projection(-relative_velocity, v) / dt;
+         // force -= damp * Projection(-relative_velocity, v) / dt;
+         force += damp * relative_velocity / dt;
       }
       if (i + 1 < nodes.size()) {
          auto v = nodes[i + 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
-         if (disp > 0.)
-            acceleration += stiffness * disp * Normalize(v);
+         double strain = disp / natural_length;
+         if (disp > 0.) force += stiffness * strain * Normalize(v);
          auto relative_velocity = nodes[i + 1].velocity - nodes[i].velocity;
-         acceleration -= damp * Projection(-relative_velocity, v) / dt;
+         // force -= damp * Projection(-relative_velocity, v) / dt;
+         force += damp * relative_velocity / dt;
       }
-      return acceleration;
+
+      return force;
    };
 
-   double T = 3;
-   double w = 2 * M_PI / T;
-
 #ifdef USE_LEAP_FROG
-   for (size_t step = 0; step < 2; ++step)
+   const int total_steps = 2;
 #elif defined USE_RK4
-   for (size_t step = 0; step < 4; ++step)
+   const int total_steps = 4;
+#else
+   const int total_steps = 1;
 #endif
-   {
-      for (size_t i = 1; i < nodes.size(); ++i) {
 
-         nodes[i].acceleration = tension(i) + gravity;
+   for (size_t step = 0; step < total_steps; ++step) {
+      for (size_t i = 0; i < nodes.size(); ++i) {
 
-         if (t < 30)
-            if (i == nodes.size() - 1) {
-               //! 最後の節点は，10まで最後の接点をぐるぐる回す
-               // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
-               if (Between(t, {2 * T, 3 * T}) || Between(t, {4 * T, 5 * T}))
-                  nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
-               else
-                  nodes[i].acceleration = -nodes[i].velocity / dt;
-            }
+         nodes[i].tension = tension(i);
+         nodes[i].acceleration = nodes[i].tension / nodes[i].mass + gravity;
+
+         //! 端点が静止状態の場合
+         if (i == 0 || i == nodes.size() - 1)
+            nodes[i].acceleration = {0., 0., 0.};
+
+         // if (t < 30)
+         //    if (i == nodes.size() - 1) {
+         //       const double T = 3;
+         //       const double w = 2 * M_PI / T;
+         //       //! 最後の節点は，10まで最後の接点をぐるぐる回す
+         //       // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
+         //       if (Between(t, {2 * T, 3 * T}) || Between(t, {4 * T, 5 * T}))
+         //          nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
+         //       else
+         //          nodes[i].acceleration = -nodes[i].velocity / dt;
+         //    }
       }
 
 #ifdef USE_EULER
@@ -156,48 +169,63 @@ void simulateCableDynamics(double t, double dt) {
 /* -------------------------------------------------------------------------- */
 
 int main() {
+   const double L = 30;                     //! 全長 [m]
+   int n = std::round(L / natural_length);  //! 節点数
+
+   for (int i = 0; i < n + 1; ++i)
+      nodes.push_back(Node({i * natural_length, 0, 0}, {0., 0., 0.}, {0., 0., 0.}));
    // Example setup
    std::vector<double> times;
-   double t = 0;
    std::vector<std::vector<std::array<double, 3>>> positions;
+   std::vector<std::vector<std::array<double, 3>>> tensions;
 
+   double t = 0;
 #ifdef USE_LEAP_FROG
-   for (size_t i = 1; i < nodes.size(); ++i)
-      nodes[i].LPFG.initialize(dt, t, nodes[i].X, nodes[i].velocity);
+   for (auto& node : nodes)
+      node.LPFG.initialize(dt, t, node.X, node.velocity);
 #endif
+
+   /* --------------------------------------------- */
 
    for (int i = 0; i < max_step; ++i) {
 #ifdef USE_RK4
-      for (size_t i = 1; i < nodes.size(); ++i) {
-         nodes[i].RK_x.initialize(dt, t, nodes[i].X, 4);
-         nodes[i].RK_v.initialize(dt, t, nodes[i].velocity, 4);
+      for (auto& node : nodes) {
+         node.RK_x.initialize(dt, t, node.X, 4);
+         node.RK_v.initialize(dt, t, node.velocity, 4);
       }
 #endif
       std::cout << "t = " << t << std::endl;
       simulateCableDynamics(t, dt);
-      times.push_back(t);
-      positions.push_back({});
 
-      for (const Node& node : nodes) {
-         if (!isFinite(node.X))
-            break;
-         positions.back().push_back(node.X);
+      if (i % 1000 == 0) {
+         times.push_back(t);
+         positions.push_back({});
+         tensions.push_back({});
+         for (const Node& node : nodes) {
+            if (!isFinite(node.X))
+               break;
+            positions.back().push_back(node.X);
+            tensions.back().push_back(node.tension);
+         }
       }
       t += dt;
    }
 
+   /* --------------------------------------------- */
+
    // Output to JSON file
 #ifdef USE_EULER
-   std::ofstream myfile("cable_euler_2.json");
+   std::ofstream myfile("cable_euler.json");
 #elif defined USE_LEAP_FROG
-   std::ofstream myfile("cable_leapfrog_2.json");
+   std::ofstream myfile(filename);
 #elif defined USE_RK4
-   std::ofstream myfile("cable_rk4_2.json");
+   std::ofstream myfile("cable_rk4.json");
 #endif
    myfile << "{";
    std::array<std::string, 2> bracket = {"[", "]"};
    myfile << "\"time\" : " << std::make_tuple(times, bracket) << ", ";
-   myfile << "\"position\" : " << std::make_tuple(positions, bracket);
+   myfile << "\"position\" : " << std::make_tuple(positions, bracket) << ", ";
+   myfile << "\"tension\" : " << std::make_tuple(tensions, bracket);
    myfile << "}";
    myfile.close();
    return 0;

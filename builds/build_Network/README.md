@@ -3,7 +3,12 @@
     - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
         - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
+            - [🐚 面の出力](#🐚-面の出力)
+            - [🐚 線の出力](#🐚-線の出力)
+            - [🐚 実行方法](#🐚-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
+            - [🐚 面のアニメーション](#🐚-面のアニメーション)
+            - [🐚 線のアニメーション](#🐚-線のアニメーション)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
@@ -22,24 +27,39 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3969)では，拡張子から，
-与えられたファイルが，
+[Networkのコンストラクタ](../../include/Network.hpp#L3967)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+`Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
-* OFFファイル
-* OBJファイル
-
-かチェクして，`Load3DFile`クラスを使ってデータを読み込み`Network`クラスとして読み込む．
+```cpp
+auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェクトを作成
+```
 
 ### 🪼 出力 `vtkPolygonWrite` 
 
-`vtkPolygonWrite`には，`ofstream`と，`std::vector<networkFace*>`や`std::vector<networkTetra*>`などを渡し，出力できる．
+`Network`クラスは，`getFaces`メンバ関数を使って簡単に面の情報を取得できる．
+
+`vtkPolygonWrite`を使うと，`Network`クラスの面の情報を，`vtp`ファイルとして出力できる．
+`vtkPolygonWrite`には，`ofstream`と，`std::vector<networkFace*>`や`std::vector<networkLine*>`などを渡し，出力できる．
+
+#### 🐚 面の出力 
 
 ```cpp
+auto obj = new Network("./bunny.obj");
 std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getFaces());
 ```
 
 ![sample.png](sample.png)
+
+#### 🐚 線の出力 
+
+```cpp
+auto obj = new Network("./bunny.obj");
+std::ofstream ofs("./bunny_obj.vtp");
+vtkPolygonWrite(ofs, obj->getEdges());
+```
+
+#### 🐚 実行方法 
 
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
@@ -47,7 +67,7 @@ make
 ./example0_load_3d_file
 ```
 
-[./example0_load_3d_file.cpp#L4](./example0_load_3d_file.cpp#L4)
+[./example0_load_3d_file.cpp#L1](./example0_load_3d_file.cpp#L1)
 
 ---
 ### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
@@ -72,9 +92,21 @@ pvd.push(filename, time);
 pvd.output();
 ```
 
+#### 🐚 面のアニメーション 
+
 ![sample.gif](sample.gif)
 
-[./example0_load_3d_file.cpp#L53](./example0_load_3d_file.cpp#L53)
+#### 🐚 線のアニメーション 
+
+![sample_line.gif](sample_line.gif)
+
+💡 QuickTimeで作成したmovファイルをgifに変換するには，次のようにする．
+
+```sh
+ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map "[v]" sample_line.gif
+```
+
+[./example0_load_3d_file.cpp#L74](./example0_load_3d_file.cpp#L74)
 
 ---
 # 🐋 空間分割（space_partitioning） 

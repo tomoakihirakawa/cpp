@@ -183,72 +183,121 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             }
          };
 
+         //! -------------------------------------------------------------------------- */
+
+         auto average_surrounding_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
+            const auto r = pO->SML();
+            // const auto r = 2. * pO->particle_spacing;
+            const auto BX = X_next(B);
+            if (Distance(pO_center, BX) < r)
+               // if (B->isFluid && pO->surfacePoint != B) {
+               if (!B->isSurface && !B->isAuxiliary) {
+                  auto w = w_Bspline(Norm(BX - pO_center), r);
+                  auto vol_w = V_next(B) * w;
+                  total_volume_w += vol_w;
+                  total_w += w;
+                  ROW->increment(B, vol_w);
+                  ROW->PoissonRHS = 0.;
+               }
+         };
+
          //% ------------------- 壁粒子の圧力の方程式 ------------------- */
 
          auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
-            // const auto r = pO->SML_next();
-            const auto r = 2. * pO->particle_spacing;
+            const auto r = pO->SML_next();
+            // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
             if (Distance(pO_center, BX) < r) {
-               auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
-               total_volume_w += w;
-               total_w += w_Bspline(Norm(BX - pO_center), r);
+               auto w = w_Bspline(Norm(BX - pO_center), r);
+               auto vol_w = V_next(B) * w;
+               total_volume_w += vol_w;
+               total_w += w;
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
-               ROW->p_EISPH += (B->p_SPH_last + dP) * w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               ROW->p_EISPH += (B->p_SPH_last + dP) * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
             }
          };
 
          auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
-            // const auto r = pO->SML_next();
-            const auto r = 2. * pO->particle_spacing;
+            const auto r = pO->SML_next();
+            // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
-            if (Distance(pO_center, BX) < r) {
-               auto w = V_next(B) * w_Bspline(Norm(BX - pO_center), r);
-               total_volume_w += w;
-               total_w += w_Bspline(Norm(BX - pO_center), r);
+            if (Distance(pO_center, BX) < r && !B->isAuxiliary) {
+               auto w = w_Bspline(Norm(BX - pO_center), r);
+               auto vol_w = V_next(B) * w;
+               total_volume_w += vol_w;
+               total_w += w;
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
-               ROW->increment(B, w);
-               ROW->PoissonRHS -= dP * w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               ROW->increment(B, vol_w);
+               ROW->PoissonRHS -= dP * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
             }
          };
 
          //% ------------------ 流体粒子の圧力の方程式 ------------------ */
          // \label{SPH:PoissonEquation}
-         auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets](const auto &B /*column id*/) {
+
+         std::vector<std::tuple<networkPoint *, std::array<double, 3>>> near_particles_and_V_GradW;
+
+         auto make_near_particles_and_V_GradW = [&pO, &pO_center, &near_particles_and_V_GradW](const auto &Q) {
+            if (Distance(pO_center, X_next(Q)) < pO->SML_next())
+               near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
+         };
+
+         auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto &B /*column id*/) {
             if (pO != B) {
                const auto BX = X_next(B);
                const auto r = pO->SML_next();
                if (Distance(pO_center, BX) < r) {
-                  double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
+                  const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
 
+                  /* -------------------------------------------------------------------------- */
                   //! 修正
                   const auto DelX = (pO_center - BX);
-                  double c;
-                  applyOverPoints([&](const auto &Q) {
-                     if (pO != Q) {
-                        c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline_next(pO, pO_center, Q));
-                        ROW->increment(pO, c);
-                        ROW->increment(Q, -c);
-                     }
-                  },
-                                  target_nets);
-
-                  ROW->increment(pO, Aij);
-                  ROW->increment(B, -Aij);
-
-                  const auto grad = grad_w_Bspline_next(pO, pO_center, B);
-                  ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad);
-                  if (!isFinite(grad)) {
-                     std::cout << "grad : " << grad << std::endl;
-                     std::cout << "B->b_vector : " << B->b_vector << std::endl;
-                     std::cout << "pO->b_vector : " << pO->b_vector << std::endl;
-                     std::cout << "V_next(B) : " << V_next(B) << std::endl;
-                     std::cout << "Dot(B->b_vector - pO->b_vector, grad) : " << Dot(B->b_vector - pO->b_vector, grad) << std::endl;
-                     std::cout << "pO :" << pO << std::endl;
-                     std::cout << "B :" << B << std::endl;
-                     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "grad is not a finite");
+                  double c, total_c = 0;  //! 毎回すると遅いので
+                  for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
+                     c = Aij * Dot(DelX, vol_grad);
+                     total_c += c;
+                     ROW->increment(Q, -c);
                   }
-                  // ROW->PoissonRHS += V_next(B) * Dot(rho_next(B) * U_next(B) / B->RK_U.get_dt() - rho_next(pO) * U_next(pO) / pO->RK_U.get_dt(), grad);
+
+                  ROW->increment(pO, Aij + total_c);
+                  ROW->increment(B, -Aij);
+                  /* -------------------------------------------------------------------------- */
+
+                  // /* -------------------------------------------------------------------------- */
+                  // //! 修正
+                  // const auto DelX = (pO_center - BX);
+                  // double c, total_c = 0;  //! 毎回すると遅いので
+                  // applyOverPoints([&](const auto &Q) {
+                  //    c = Aij * Dot(DelX, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
+                  //    // c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline(pO_center, X_next(Q), pO->SML_next()));
+                  //    total_c += c;
+                  //    // ROW->increment(pO, c);
+                  //    ROW->increment(Q, -c);
+                  // },
+                  //                 target_nets);
+                  // ROW->increment(pO, Aij + total_c);
+                  // // ROW->increment(pO, Aij);
+                  // ROW->increment(B, -Aij);
+                  // /* -------------------------------------------------------------------------- */
+
+                  /* -------------------------------------------------------------------------- */
+                  //        //! 修正
+                  // const auto DelX = (pO_center - BX);
+                  // double c;
+                  // applyOverPoints([&](const auto &Q) {
+                  //    c = Aij * Dot(DelX, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
+                  //    // c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline(pO_center, X_next(Q), pO->SML_next()));
+                  //    ROW->increment(pO, c);
+                  //    ROW->increment(Q, -c);
+                  // },
+                  //                 target_nets);
+
+                  // ROW->increment(pO, Aij);
+                  // ROW->increment(B, -Aij);
+                  /* -------------------------------------------------------------------------- */
+
+                  ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B));
+                  // ROW->PoissonRHS += V_next(B) * Dot(rho_next(B) * U_next(B) / B->RK_U.get_dt() - rho_next(pO) * U_next(pO) / pO->RK_U.get_dt(),  grad_w_Bspline_next(pO, pO_center, B));
 
                   //% for EISPH
                   sum_Aij_Pj += Aij * B->p_SPH_last;
@@ -263,7 +312,28 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          // b$ -------------------------------------------------------------------------- */
 
          // \label{SPH:whereToMakeTheEquation}
-         if ((ROW->isSurface || ROW->isSurface_next) && !ROW->isAuxiliary) {
+         // if (ROW->isSurface || ROW->isAuxiliary) {
+         if (ROW->isAuxiliary) {
+            // if auxiliary just average value of surrounding fluid particles
+            // ROW->pressure_equation_index = 1;
+            /* -------------------------------------------------------------------------- */
+            pO = ROW->surfacePoint;
+            pO_center = X_next(ROW->surfacePoint);  // X_next(pO);
+            applyOverPoints(average_surrounding_pressure, target_nets);
+            if (total_w > too_small_total_w)
+               for (auto &[_, v] : ROW->column_value)
+                  v /= total_volume_w;
+            ROW->increment(ROW, -1.);
+            /* -------------------------------------------------------------------------- */
+            // pO = ROW->surfacePoint;
+            // pO_center = X_next(pO);
+            // ROW->pressure_equation_index = 3;
+            // applyOverPoints(PoissonEquation, target_nets);
+            // ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
+            /* -------------------------------------------------------------------------- */
+            // ROW->CRS::set(ROW, 1.);
+            // ROW->PoissonRHS = 0;
+         } else if (ROW->isSurface_next) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
@@ -300,13 +370,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // b@ ISPH like EISPH．　ISPHは方程式を立てる必要がある
             total_volume_w = 0;
             applyOverPoints(ISPH_wall_pressure, fluid_nets);
-
             if (total_w > too_small_total_w) {
                for (auto &[_, v] : ROW->column_value)
                   v /= total_volume_w;
                ROW->PoissonRHS /= total_volume_w;
             }
-
             ROW->increment(ROW, -1.);
          } else {
             // b@ ISPH
@@ -316,6 +384,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             //    pO = ROW->surfacePoint;
 
             pO_center = X_next(pO);
+            applyOverPoints(make_near_particles_and_V_GradW, target_nets);
             applyOverPoints(PoissonEquation, target_nets);
             //! 安定化
             /*DOC_EXTRACT 0_2_3_set_pressure_eq
@@ -355,10 +424,18 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             ROW->p_SPH = ROW->p_EISPH = (ROW->PoissonRHS + sum_Aij_Pj) / sum_Aij;
          }
 
+         if (!isFinite(pO->PoissonRHS) || ROW->column_value.empty()) {
+            ROW->clearColumnValue();
+            ROW->CRS::set(ROW, 1.);
+            ROW->PoissonRHS = 0;
+         }
+
          /* -------------------------------------------------------------------------- */
 
          if (!isFinite(pO->PoissonRHS)) {
             // check type of particle
+            std::cout << "pO->pressure_equation_index : " << ROW->pressure_equation_index << std::endl;
+            std::cout << "pO->column_value.size() : " << pO->column_value.size() << std::endl;
             std::cout << "pO->vector_to_polygon_next.size() : " << pO->vector_to_polygon_next.size() << std::endl;
             std::cout << "pO->isFluid : " << pO->isFluid << std::endl;
             std::cout << "pO->isAuxiliary : " << pO->isAuxiliary << std::endl;
@@ -371,6 +448,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             std::cout << "X_next(pO) :" << X_next(pO) << std::endl;
             std::cout << "total_w : " << total_w << std::endl;
             std::cout << "pO->b_vector : " << pO->b_vector << std::endl;
+            std::cout << "pO->lap_U : " << pO->lap_U << std::endl;
+            std::cout << "pO->DUDt_SPH : " << pO->DUDt_SPH << std::endl;
+            std::cout << "pO->U_SPH : " << pO->U_SPH << std::endl;
+            std::cout << "pO->U_XSPH : " << pO->U_XSPH << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "pO->PoissonRHS is not a finite");
          }
 
@@ -382,6 +463,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          if (ROW->column_value.empty()) {
             // show detail of this particle
+            std::cout << "ROW->pressure_equation_index : " << ROW->pressure_equation_index << std::endl;
             std::cout << "sum_Aij_Pj : " << sum_Aij_Pj << std::endl;
             std::cout << "sum_Aij : " << sum_Aij << std::endl;
             std::cout << "total_volume_w : " << total_volume_w << std::endl;
@@ -421,41 +503,13 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 gmres<std::vector<networkPoint *>> *GMRES = nullptr;
 #endif
 
-#if defined(USE_MIRROR_PARTICLE)
-void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle)
-#else
-void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
-                  const std::unordered_set<networkPoint *> &wall_as_fluid)
-
-#endif
-{
+void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
+   DebugPrint(Blue, "solvePoisson", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    std::vector<networkPoint *> points;
+   points.reserve(all_particle.size());
 
-#if defined(USE_MIRROR_PARTICLE)
-   points.reserve(fluid_particle.size() + 1000);
-#else
-   points.reserve(fluid_particle.size() + wall_as_fluid.size() + 1000);
-#endif
-   // 解く粒子の集合を保存
-
-   for (const auto &p : fluid_particle)
+   for (const auto &p : all_particle)
       points.emplace_back(p);
-
-#ifndef USE_MIRROR_PARTICLE
-   for (const auto &p : wall_as_fluid)
-      // if (p->isFirstWallLayer)
-      points.emplace_back(p);
-#endif
-
-#if defined(USE_ONE_AUXP) || defined(USE_ALL_AUXP)
-   for (const auto &p : fluid_particle)
-      if (p->isSurface)
-         for (const auto &AUX : p->auxiliaryPoints)
-            if (AUX != nullptr)
-               points.emplace_back(AUX);
-#endif
-
-   /* -------------------------------------------------------------------------- */
 
    for (auto i = 0; const auto &p : points)
       p->setIndexCRS(i++);
@@ -464,15 +518,35 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 
    for (const auto &p : points) {
       int index = p->getIndexCRS();
+      if (p->column_value.empty())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "empty column_value");
       if (!isFinite(p->PoissonRHS))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->PoissonRHS is not a finite");
-      if (!isFinite(p->p_SPH))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->p_SPH is not a finite");
+      if (!isFinite(p->p_SPH)) {
+         // print out information of p
+         std::cout << "p->column_value.size() : " << p->column_value.size() << std::endl;
+         std::cout << "p->vector_to_polygon_next.size() : " << p->vector_to_polygon_next.size() << std::endl;
+         std::cout << "p->isFluid : " << p->isFluid << std::endl;
+         std::cout << "p->isAuxiliary : " << p->isAuxiliary << std::endl;
+         std::cout << "p->isSurface : " << p->isSurface << std::endl;
+         std::cout << "p->getNetwork()->isRigidBody : " << p->getNetwork()->isRigidBody << std::endl;
+         std::cout << "p->isFirstWallLayer : " << p->isFirstWallLayer << std::endl;
+         std::cout << "p->PoissonRHS : " << p->PoissonRHS << std::endl;
+         std::cout << "p->p_SPH : " << p->p_SPH << std::endl;
+         std::cout << "p->X : " << p->X << std::endl;
+         std::cout << "X_next(p) :" << X_next(p) << std::endl;
+         std::cout << "p->b_vector : " << p->b_vector << std::endl;
+         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->p_SPH is not a finite");
+         p->p_SPH = 0.;
+      }
       b[index] = p->PoissonRHS;
       x0[index] = p->p_SPH;
    }
 
+   DebugPrint(Blue, "preconditioning using diagonal value", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+
    /* ------------------ preconditioning using diagonal value ------------------ */
+
 #pragma omp parallel
    for (const auto &p : points)
 #pragma omp single nowait
@@ -495,14 +569,16 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
    /* -------------------------------------------------------------------------- */
 
 #if defined(USE_GMRES)
-
-   int size = 100;
-   if (GMRES == nullptr)
+   DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+   int size = 70;
+   if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
-   else
+   } else {
       GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
+   }
    // gmres gm(points, b, x0, size);  //\label{SPH:gmres}
 
+   DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    x0 = GMRES->x;
    double torr = 1E-13;
    double error = GMRES->err;
@@ -518,6 +594,8 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
          if (GMRES->err < torr)
             break;
       }
+
+   DebugPrint(Blue, "set pressure", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 
    for (const auto &p : points)
       p->p_SPH = p->p_SPH_last = GMRES->x[p->getIndexCRS()];
@@ -554,6 +632,8 @@ void solvePoisson(const std::unordered_set<networkPoint *> &fluid_particle,
 
    if (!isFinite(error))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error is not a finite");
+
+   DebugPrint(Blue, "solvePoisson end", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 };
 
 #endif

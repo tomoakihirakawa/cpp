@@ -129,8 +129,8 @@ struct RungeKuttaCommon {
                return dt_fixed;
          }
       } else {
-         std::stringstream ss;
          // show current step and steps
+         std::stringstream ss;
          ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
       }
@@ -152,7 +152,9 @@ struct RungeKuttaCommon {
                dX = dXdt_IN * (dt = dt_fixed);
                return this->finished = true;
             default:
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+               std::stringstream ss;
+               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
          }
       } else if (this->steps == 2) {
          switch (current_step++) {
@@ -164,7 +166,9 @@ struct RungeKuttaCommon {
                dt = dt_fixed;
                return this->finished = true;
             default:
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+               std::stringstream ss;
+               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
          }
       } else if (this->steps == 3) {
          switch (current_step++) {
@@ -179,7 +183,9 @@ struct RungeKuttaCommon {
                dt = dt_fixed;
                return finished = true;
             default:
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+               std::stringstream ss;
+               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
          }
       } else if (this->steps == 4) {
          // \label{ODE:RungeKutta4}
@@ -198,10 +204,14 @@ struct RungeKuttaCommon {
                dt = dt_fixed;
                return finished = true;
             default:
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+               std::stringstream ss;
+               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
          }
       } else {
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．");
+         std::stringstream ss;
+         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
       }
    };
 
@@ -253,8 +263,8 @@ struct RungeKuttaCommon {
          }
       } else {
          std::stringstream ss;
-         ss << std::to_string(this->steps);
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．steps=" + ss.str());
+         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
       }
    };
 
@@ -290,8 +300,8 @@ struct RungeKuttaCommon {
          }
       } else {
          std::stringstream ss;
-         ss << std::to_string(this->steps);
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．steps=" + ss.str());
+         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
       }
    };
 };

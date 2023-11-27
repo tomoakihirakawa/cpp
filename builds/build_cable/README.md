@@ -1,24 +1,44 @@
 # Contents
+- [🐋 ケーブルの動的解析](#🐋-ケーブルの動的解析)
+    - [⛵ 直線要素を用いたシミュレーション](#⛵-直線要素を用いたシミュレーション)
+    - [⛵ 実行方法](#⛵-実行方法)
 
 
 ---
-実行方法：
+# 🐋 ケーブルの動的解析 
 
-```sh
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../
-make
-```
+## ⛵ 直線要素を用いたシミュレーション 
 
-オイラー法，Leap-Frog法，Runge-Kutta法
-を用いて，弾性体の動きをシミュレーション．
+💡 弦の振動を支配する方程式として，波動方程式$`\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}`$よく紹介される．
+この方程式は，ある固定した点$`x`$における弦の変位$`u`$の加速度が，弦の曲げ剛性$`c^2`$かける曲率に比例することを表している．
 
-`const double stiffness = 1000;`の場合
+直線で結ばれた節点上にケーブルの自重を集中させ，その節点に働く張力や重力から，節点の運動を追っていく．
+
+剛性は，ヤング率$`E`$と断面積$`A`$から$`EA`$．
+張力$`T`$は，$`T = EA \frac{\Delta L}{L}`$となる．
+
+オイラー法，Leap-Frog法，Runge-Kutta法を用いて，弾性体の動きをシミュレーション．
+
+|   |   |
+|---|---|
+| 剛性$`[N/m]`$ | $`1400 \times 10^6`$ |
+| 減衰$`[N/(m/s^2)]`$ | $`0.9`$ |
+| 自然長$`[m]`$ | $`1`$ |
+
 ![sample.gif](sample.gif)
 
 `const double stiffness = 10000;`の場合
 ![sample_2.gif](sample_2.gif)
 
-[./main.cpp#L11](./main.cpp#L11)
+チェーン
+
+## ⛵ 実行方法 
+
+```sh
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../
+make
+
+[./main.cpp#L14](./main.cpp#L14)
 
 ---

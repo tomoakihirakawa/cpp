@@ -1,0 +1,9 @@
+{
+    "name": "gate",
+    "type": "RigidBody",
+    "inactivate": [
+        0.001,
+        1000.0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph_/../../../../code/cpp/obj/Lobovsky2013/original/gate.obj"
+}

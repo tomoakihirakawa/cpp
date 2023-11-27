@@ -2808,6 +2808,9 @@ struct Load3DFile {
    VV_i f_t;
    VV_i f_vn;
 
+   VV_i l_v;
+   VV_i l_v_complex;  // これのstd::vector<int>が１線分 -> 2頂点を指定
+
    void calculateMaxMin() {
       eachMax.resize(3);
       eachMin.resize(3);
@@ -2833,14 +2836,20 @@ struct Load3DFile {
    Load3DFile(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
       std::vector<V_s> read_line;
       Load(filename, read_line, {"    ", "   ", "  ", " "});
+      std::cout << "Load3DFile : lines of file are splited" << std::endl;
       if (filename.contains(".obj"))
          this->load(read_line);
       else if (filename.contains(".off"))
          this->load_off(read_line);
       else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The file format is not supported");
+      std::cout << "Load3DFile : file is loaded" << std::endl;
+      // std::cout << Red << f_v << colorReset << std::endl;
+      // std::cout << Magenta << v << colorReset << std::endl;
       generateComplex();
+      std::cout << "Load3DFile : complex is generated" << std::endl;
       calculateMaxMin();
+      std::cout << "Load3DFile : max and min are calculated" << std::endl;
    };
 
    void generateComplex() {
@@ -2869,7 +2878,7 @@ struct Load3DFile {
             std::vector<float> tmp = {.4, .4, .4, 1.};
             for (const auto &i : Ind) {
                v_complex.emplace_back(v[i]);
-               v_complex_tuple.emplace_back(Tddd{v[i][0], v[i][0], v[i][0]});
+               v_complex_tuple.emplace_back(Tddd{v[i][0], v[i][1], v[i][2]});
                s_complex.emplace_back(tmp);
             }
             tri_int = {j, j + 1, j + 2};
@@ -2877,15 +2886,25 @@ struct Load3DFile {
             j = j + 3;
          }
       }
+
+      // Handling line vertices
+      for (const auto &line : l_v) {
+         for (const auto &i : line) {
+            v_complex.emplace_back(v[i]);
+            v_complex_tuple.emplace_back(Tddd{v[i][0], v[i][1], v[i][2]});
+            // You may also want to handle 's_complex' for lines, if necessary
+         }
+         // Assuming lines are defined by pairs of vertices
+         l_v_complex.push_back({j, j + 1});
+         j += 2;
+      }
    };
 
    // stringを変換しv, f_nに格納
    void load(VV_s &read_line) {
       V_s v_t_vn;
-      for (auto &line : read_line)
-         if (line[0].empty())
-            continue;
-         else if (line[0] == "#")
+      for (auto &line : read_line) {
+         if (line[0].empty() || line[0] == "#")
             continue;
          else if (line[0] == "v") {
             line.erase(line.begin());
@@ -2894,7 +2913,7 @@ struct Load3DFile {
             line.erase(line.begin());
             std::vector<int> f_v_tmp, f_t_tmp, f_vn_tmp;
             for (auto &l : line) {
-               v_t_vn = StringSplit(l, {"/"});
+               v_t_vn = StringSplit(l, {"/"});  //! format may be v, v/t, v//vn, v/t/vn
                if (v_t_vn.size() == 1)
                   f_v_tmp.emplace_back(stoi(v_t_vn[0]) - 1);
                else if (v_t_vn.size() == 2) {
@@ -2909,19 +2928,27 @@ struct Load3DFile {
                      f_vn_tmp.emplace_back(stoi(v_t_vn[2]) - 1);
                }
             }
+            //! f_v_tmp.size() == 3 means triangle, 2 means line, 4 means quad
             if (f_v_tmp.size() > 0)
                f_v.emplace_back(f_v_tmp);
             if (f_t_tmp.size() > 0)
                f_t.emplace_back(f_t_tmp);
             if (f_vn_tmp.size() > 0)
                f_vn.emplace_back(f_vn_tmp);
+         } else if (line[0] == "l") {
+            line.erase(line.begin());
+            std::vector<int> l_v_tmp;
+            for (auto &l : line)
+               l_v_tmp.emplace_back(stoi(l) - 1);
+            l_v.emplace_back(l_v_tmp);
          } else if (line[0] == "vn") {
             line.erase(line.begin());
             vn.emplace_back(stod(line));
          }
-      s.resize(v.size(), std::vector<float>(4, 0));  // RGBS
-      for (auto &tmp : s)
-         tmp = {.9, .9, .9, 1.};
+         s.resize(v.size(), std::vector<float>(4, 0));  // RGBS
+         for (auto &tmp : s)
+            tmp = {.9, .9, .9, 1.};
+      }
    };
 
    void load_off(VV_s &read_line) {

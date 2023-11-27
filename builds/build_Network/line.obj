@@ -1,0 +1,8 @@
+# OBJ file format with simple line (curve)
+
+v 0.0 0.0 0.0
+v 1.0 0.0 0.0
+v 1.0 1.0 0.0
+v 0.0 1.0 0.0
+
+l 1 2 3 4 1

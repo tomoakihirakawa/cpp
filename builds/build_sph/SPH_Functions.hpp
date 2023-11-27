@@ -24,12 +24,14 @@ bool canInteract(const networkPoint *A, const networkPoint *B) {
 
    // return false;
    /* ----------------------------------- */
-   if (B->isAuxiliary)
-      return false;
-   if (A->isAuxiliary && A->surfacePoint == B)
-      return false;
-   if (A->auxPoint != nullptr && A->auxPoint == B)
-      return false;
+   // if (A->isAuxiliary && B->isAuxiliary)
+   //    return false;
+   // else if (A->isAuxiliary || B->isAuxiliary) {
+   //    if (A->isAuxiliary && A->surfacePoint == B)
+   //       return true;
+   //    if (B->isAuxiliary && B->surfacePoint == A)
+   //       return true;
+   // }
    /* ----------------------------------- */
    // const double c = .3;
    // if (B->isAuxiliary) {
@@ -56,23 +58,40 @@ void deleteAuxiliaryPoints(const auto net) {
    auto points = net->getPoints();
    for (auto p : points) {
       p->auxPoint = nullptr;
-      if (p->isAuxiliary)
+      if (p->isAuxiliary) {
+         p->surfacePoint->auxPoint = nullptr;
          delete p;
+      }
    }
 
    for (auto p : net->getPoints())
       p->isAuxiliary = false;
 
+   net->remakeBucketPoints();
    std::cout << "delete auxiliary points done" << std::endl;
 }
-void setAuxiliaryPoints(const auto net) {
+
+Tddd aux_position(const networkPoint *p) {
+   auto sp = p->surfacePoint;
+#ifdef SET_AUX_AT_PARTICLE_SPACING
+   return sp->X + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
+#elif defined(SET_AUX_AT_MASS_CENTER)
+   return sp->X - sp->vec2COM;
+#else
+   return sp->X + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
+#endif
+};
+
+void setAuxiliaryPoints(const auto net, const std::function<Tddd(networkPoint *)> &position = aux_position) {
+   Print("setAuxiliaryPoints");
    auto points = net->getPoints();
    for (const auto &p : points) {
       if (p->hasAuxiliary()) {
-         // Tddd X = aux_position(p);
+
          auto q = new networkPoint(net, p->X);
          q->surfacePoint = p;
          p->auxPoint = q;
+         q->setX(position(q));
          //
          q->grad_corr_M = p->grad_corr_M;
          q->grad_corr_M_next = p->grad_corr_M_next;
@@ -92,7 +111,7 @@ void setAuxiliaryPoints(const auto net) {
          q->isAuxiliary = true;
          //
          q->b_vector = p->b_vector;
-         q->U_SPH = p->U_SPH;
+         q->U_SPH = p->U_SPH;  // - 2 * Chop(p->U_SPH, p->interp_normal);
          //
          q->intp_density = p->intp_density;
          q->intp_density_next = p->intp_density_next;
@@ -135,8 +154,8 @@ void setAuxiliaryPoints(const auto net) {
          q->RK_U.dX = p->RK_U.dX;
          //
          q->RK_X = p->RK_X;
-         q->RK_X.Xinit = p->RK_X.Xinit;
-         // q->RK_X.Xinit = q->X;
+         // q->RK_X.Xinit = p->RK_X.Xinit;
+         q->RK_X.Xinit = q->X;
          q->RK_X.t_init = p->RK_X.t_init;
          q->RK_X.dt_fixed = p->RK_X.dt_fixed;
          q->RK_X.dt = p->RK_X.dt;
@@ -156,7 +175,10 @@ void setAuxiliaryPoints(const auto net) {
          q->RK_rho.dX = p->RK_rho.dX;
       }
    }
+   Print("setAuxiliaryPoints done");
+   Print("remakeBucketPoints");
    net->remakeBucketPoints();
+   Print("remakeBucketPoints done");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -164,16 +186,17 @@ void setAuxiliaryPoints(const auto net) {
 void setSML(const auto &target_nets) {
    DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   const double C_SML_max = 2.4;
-   // double C_SML_min = 1.866;
-   const double C_SML_min = 1.9;
-   const double C_SML_min_rigid = 1.9;
+   const double C_SML_max = 3.;
+   const double C_SML_min = 2.;
+   const double C_SML_min_rigid = 2.;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
 #pragma omp parallel
             for (const auto &p : NET->getPoints())
 #pragma omp single nowait
+            {
+               p->isNearSurface = false;
                if (p->isCaptured) {
                   double closest_d = 1E+20, closest_d_next = 1E+20, d;
                   networkPoint *closest_q = nullptr, *closest_q_next = nullptr;
@@ -182,13 +205,15 @@ void setSML(const auto &target_nets) {
                         if ((q->isSurface || q->isNeumannSurface) && (d = Norm(q->X - p->X)) < closest_d) {
                            closest_d = d;
                            closest_q = q;
-                           p->C_SML = closest_d / p->particle_spacing;
+                           p->C_SML = closest_d / p->particle_spacing + 0.5;
                         }
                         if ((q->isSurface || q->isNeumannSurface) && (d = Norm(X_next(q) - X_next(p))) < closest_d_next) {
                            closest_d_next = d;
                            closest_q_next = q;
-                           p->C_SML_next = closest_d_next / p->particle_spacing;
+                           p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
                         }
+                        if (q->isSurface && Distance(p, q) < 2. * p->particle_spacing)
+                           p->isNearSurface = true;
                      });
                   }
                   if (closest_q != nullptr) {
@@ -207,6 +232,7 @@ void setSML(const auto &target_nets) {
                   } else
                      p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
                }
+            }
          }
       } else {
 #pragma omp parallel
@@ -221,12 +247,12 @@ void setSML(const auto &target_nets) {
                      if ((q->isSurface || q->isNeumannSurface) && (d = Norm(q->X - markerX)) < closest_d) {
                         closest_d = d;
                         closest_q = q;
-                        p->C_SML = closest_d / p->particle_spacing;
+                        p->C_SML = closest_d / p->particle_spacing + 0.5;
                      }
                      if ((q->isSurface || q->isNeumannSurface) && (d = Norm(X_next(q) - markerX_next)) < closest_d_next) {
                         closest_d_next = d;
                         closest_q_next = q;
-                        p->C_SML_next = closest_d_next / p->particle_spacing;
+                        p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
                      }
                   });
                }
@@ -246,7 +272,7 @@ void setSML(const auto &target_nets) {
                   p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
             }
       }
-   std::cout << "setSML done" << std::endl;
+   DebugPrint("setSML done", Yellow);
 };
 
 /*DOC_EXTRACT 0_1_0_SPH
@@ -306,24 +332,44 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
-   // if (!p->isFluid)
-   //    return p->U_SPH;
-   // else
-   return p->RK_U.getX(p->DUDt_SPH);
-   // return p->RK_U.getX();
+   try {
+      if (p->isAuxiliary) {
+         //! aux pointの動きはsurface pointに合わせる
+         return p->surfacePoint->RK_U.getX(p->surfacePoint->DUDt_SPH);
+      } else
+         return p->RK_U.getX(p->DUDt_SPH);
+      // return p->RK_U.getX();
+   } catch (...) {
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "U_next");
+   }
 }
+
 Tddd X_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return p->X;
-   else
-      return p->RK_X.getX(U_next(p));
+   try {
+      //! aux pointの位置は，忘れずに正しくRK_Xにセットすること
+      if (p->isAuxiliary) {
+         auto sp = p->surfacePoint;
+#ifdef SET_AUX_AT_PARTICLE_SPACING
+         return X_next(sp) + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
+#elif defined(SET_AUX_AT_MASS_CENTER)
+         return X_next(sp) - sp->vec2COM_next;
+#else
+         return p->RK_X.getX(U_next(p));
+#endif
+      } else if (!p->isFluid)
+         return MOVE_WALL_PARTICLE ? p->RK_X.getX(U_next(p)) : p->X;
+      else
+         return p->RK_X.getX(U_next(p));
+   } catch (...) {
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "X_next");
+   }
 }
 
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
    // if (p->getNetwork()->isRigidBody && !p->isFirstWallLayer)
-   //    return _WATER_DENSITY_;
+   return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -331,7 +377,7 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
-   return p->RK_rho.getX(-p->rho * p->div_U);
+   // return p->RK_rho.getX(-p->rho * p->div_U);
 
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
@@ -346,192 +392,12 @@ double V_next(const auto &p) { return p->mass / rho_next(p); };
 // \label{SPH:position_next}
 /* -------------------------------------------------------------------------- */
 
-Tddd aux_position(const networkPoint *p) {
-   auto c = p->particle_spacing;
-   c *= _WATER_DENSITY_ / p->intp_density;
-   return p->X + c * Normalize(p->interp_normal_original);
-   // return p->X - (p->COM_SPH - p->X);
-};
-
-Tddd aux_position_next(const networkPoint *p) {
-   auto q = p->surfacePoint;
-   auto c = q->SML() / q->C_SML;
-#if defined(USE_RungeKutta)
-   return q->RK_X.getX(q->U_SPH) + c * Normalize(q->interp_normal_next);
-#elif defined(USE_LeapFrog)
-   return q->LPFG_X.get_x(q->U_SPH) + c * Normalize(q->interp_normal_next);
-#endif
-};
-
-// # -------------------------------------------------------------------------- */
-std::array<double, 3> grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-   return grad_w_Bspline(pX, qX, p->SML(), p->inv_grad_corr_M);
-}
-
-std::array<double, 3> grad_w_Bspline(const networkPoint *p, const networkPoint *q) {
-   return grad_w_Bspline_helper(p, p->X, q->X);
-}
-
-std::array<double, 3> grad_w_Bspline(const networkPoint *p, const Tddd &qX) {
-   return grad_w_Bspline_helper(p, p->X, qX);
-}
-
-std::array<double, 3> grad_w_Bspline(const networkPoint *p, Tddd &pX, const networkPoint *q) {
-   return grad_w_Bspline_helper(p, pX, q->X);
-}
-
-// # -------------------------------------------------------------------------- */
-
-double Dot_grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-   return Dot_grad_w_Bspline(pX, qX, p->SML(), p->laplacian_corr_M);
-   // return Dot_grad_w_Bspline(pX, qX, p->SML());
-}
-
-double Dot_grad_w_Bspline(const networkPoint *p, const networkPoint *q) {
-   return Dot_grad_w_Bspline_helper(p, p->X, q->X);
-}
-
-double Dot_grad_w_Bspline(const networkPoint *p, Tddd &X, const networkPoint *q) {
-   return Dot_grad_w_Bspline_helper(p, X, q->X);
-}
-
-double Dot_grad_w_Bspline(const networkPoint *p, Tddd &X, const Tddd &qX) {
-   return Dot_grad_w_Bspline_helper(p, X, qX);
-}
-
-//! -------------------------------------------------------------------------- */
-
-std::array<double, 3> grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-   return grad_w_Bspline(pX, qX, p->SML_next(), p->inv_grad_corr_M_next);
-}
-
-std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const networkPoint *q) {
-   return grad_w_Bspline_next_helper(p, X_next(p), X_next(q));
-}
-
-std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X, const networkPoint *q) {
-   return grad_w_Bspline_next_helper(p, X, X_next(q));
-}
-
-std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X) {
-   return grad_w_Bspline_next_helper(p, X_next(p), X);
-}
-
-//! -------------------------------------------------------------------------- */
-
-double Dot_grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-   return Dot_grad_w_Bspline(pX, qX, p->SML_next(), p->laplacian_corr_M_next);
-   // return Dot_grad_w_Bspline(pX, qX, p->SML_next());
-}
-
-double Dot_grad_w_Bspline_next(const networkPoint *p, const networkPoint *q) {
-   return Dot_grad_w_Bspline_next_helper(p, X_next(p), X_next(q));
-}
-
-double Dot_grad_w_Bspline_next(const networkPoint *p, Tddd &X, const networkPoint *q) {
-   return Dot_grad_w_Bspline_next_helper(p, X, X_next(q));
-}
-
-double Dot_grad_w_Bspline_next(const networkPoint *p, Tddd &X, const Tddd &qX) {
-   return Dot_grad_w_Bspline_next_helper(p, X, qX);
-}
-
-/* -------------------------------------------------------------------------- */
-#include "SPH0_setWall_Freesurface.hpp"
-//
-#include "SPH1_lap_div_U.hpp"
-//
-#include "SPH2_FindPressure.hpp"
-//
-#include "SPH3_grad_p.hpp"
-//
-
-void set_interp_U(networkPoint *A) {
-   int N = 6;
-   if (A->vec_U_SPH.size() > N + 4 && A->vec_time_SPH.size() > N + 4) {
-      // std::cout << "set_interp_U" << std::endl;
-      // std::cout << "A->vec_U_SPH = " << A->vec_U_SPH << std::endl;
-      // std::cout << "A->vec_time_SPH = " << A->vec_time_SPH << std::endl;
-#if defined(USE_RungeKutta)
-      double current_time = A->RK_X.get_t();
-#elif defined(USE_LeapFrog)
-      double current_time = A->LPFG_X.get_t();
-#endif
-      std::vector<double> times(N);
-      std::vector<std::array<double, 3>> U(N);
-      for (int i = 0; i < N; i++) {
-         times[i] = *(A->vec_time_SPH.rbegin() + i);
-         U[i] = *(A->vec_U_SPH.rbegin() + i);
-      }
-
-      if (A->interp_U_lag != nullptr)
-         delete A->interp_U_lag;
-      A->interp_U_lag = new InterpolationLagrange<std::array<double, 3>>(times, U);
-      // std::cout << "A->interp_U_lag has been set" << std::endl;
-
-      if (A->interp_U_Bspline != nullptr)
-         delete A->interp_U_Bspline;
-      A->interp_U_Bspline = new InterpolationBspline(3, times, U);
-      // std::cout << "A->interp_U_Bspline has been set" << std::endl;
-   }
-};
-
-//@ -------------------------------------------------------- */
-//@                        粒子の時間発展                      */
-//@ -------------------------------------------------------- */
-void set_nearest_wall_p_next(networkPoint *p, auto &RigidBodyObject) {
-   double nearest_dist = 1E+20, d;
-   networkPoint *P = nullptr;
-   std::array<double, 3> p_to_q;
-   for (const auto &[obj, _] : RigidBodyObject) {
-      obj->BucketPoints.apply(X_next(p), p->SML(), [&](const auto &q) {
-         p_to_q = q->X - X_next(p);
-         d = Norm(p_to_q);
-         if (nearest_dist > d) {
-            nearest_dist = d;
-            P = q;
-         }
-      });
-   }
-   p->nearest_wall_p_next = P;
-};
-
-void set_nearest_wall_p_next(auto &points, auto &RigidBodyObject) {
-#pragma omp parallel
-   for (const auto &p : points)
-#pragma omp single nowait
-      set_nearest_wall_p_next(p, RigidBodyObject);
-};
-
-void set_nearest_wall_p(networkPoint *p, auto &RigidBodyObject) {
-   double nearest_dist = 1E+20, d;
-   networkPoint *P = nullptr;
-   std::array<double, 3> p_to_q;
-   for (const auto &[obj, _] : RigidBodyObject) {
-      obj->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
-         p_to_q = q->X - p->X;
-         d = Norm(p_to_q);
-         if (nearest_dist > d) {
-            nearest_dist = d;
-            P = q;
-         }
-      });
-   }
-   p->nearest_wall_p = P;
-};
-
-void set_nearest_wall_p(auto &points, auto &RigidBodyObject) {
-#pragma omp parallel
-   for (const auto &p : points)
-#pragma omp single nowait
-      set_nearest_wall_p(p, RigidBodyObject);
-};
-
 std::tuple<networkPoint *, Tddd> closest(const networkPoint *p, const auto &RigidBodyObject) {
    double closest_d = 1E+20, d;
    Tddd p_to_q, closest_p_to_q;
    networkPoint *closest_q = nullptr;
-   for (const auto &[obj, _] : RigidBodyObject) {
+   // for (const auto &[obj, _] : RigidBodyObject) {
+   for (const auto &obj : RigidBodyObject) {
       obj->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
          p_to_q = q->X - p->X;
          if (closest_d > (d = Norm(p_to_q))) {
@@ -548,7 +414,8 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
    double closest_d = 1E+20, d;
    Tddd p_to_q, closest_p_to_q;
    networkPoint *closest_q = nullptr;
-   for (const auto &[obj, _] : RigidBodyObject) {
+   // for (const auto &[obj, _] : RigidBodyObject) {
+   for (const auto &obj : RigidBodyObject) {
       obj->BucketPoints.apply(X_next(p), 1.1 * p->SML(), [&](const auto &q) {
          p_to_q = X_next(q) - X_next(p);
          if (closest_d > (d = Norm(p_to_q))) {
@@ -561,11 +428,25 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
    return {closest_q, closest_p_to_q};
 };
 
+/* -------------------------------------------------------------------------- */
+#include "SPH0_setWall_Freesurface.hpp"
+//
+#include "SPH1_lap_div_U.hpp"
+//
+#include "SPH2_FindPressure.hpp"
+//
+#include "SPH3_grad_p.hpp"
+//
+//@ -------------------------------------------------------- */
+//@                        粒子の時間発展                      */
+//@ -------------------------------------------------------- */
+
 #define REFLECTION
 
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
-                     const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
+                     // const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
+                     const auto &RigidBodyObject,
                      const double &particle_spacing) {
    try {
       DebugPrint("粒子の時間発展", Green);
@@ -633,7 +514,7 @@ void updateParticles(const auto &points,
             isReflected = false;
             auto d_ps = particle_spacing;
             auto d0 = (1 - c) * particle_spacing;
-            for (const auto &[closest_p, v_f2w] : {closest(p, RigidBodyObject), closest_next(p, RigidBodyObject)}) {
+            for (const auto &[closest_p, v_f2w] : {/*closest(p, RigidBodyObject), */ closest_next(p, RigidBodyObject)}) {
                if (closest_p != nullptr) {
                   auto n = Normalize(closest_p->interp_normal_original);
                   auto n_d_f2w = Norm(Projection(v_f2w, n));
@@ -641,7 +522,8 @@ void updateParticles(const auto &points,
                   if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.5 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        tmp += 0.5 * _GRAVITY_ * n;
                         // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         p->DUDt_modify_SPH += tmp;
@@ -693,12 +575,7 @@ void updateParticles(const auto &points,
             // else
             // A->setDensity(A->LPFG_rho.get_x());
 #endif
-         set_interp_U(A);
       }
-
-      set_nearest_wall_p_next(points, RigidBodyObject);
-      set_nearest_wall_p(points, RigidBodyObject);
-
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in updateParticles");
    };

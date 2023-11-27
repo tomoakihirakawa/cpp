@@ -151,10 +151,51 @@ struct Buckets : public CoordinateBounds {
       CoordinateBounds::setBounds(boundingboxIN);
       this->dL = dL_IN;
 
-      // Calculate size based on bounds and resolution
-      this->xsize = std::ceil((std::get<1>(this->xbounds()) - std::get<0>(this->xbounds())) / this->dL);
-      this->ysize = std::ceil((std::get<1>(this->ybounds()) - std::get<0>(this->ybounds())) / this->dL);
-      this->zsize = std::ceil((std::get<1>(this->zbounds()) - std::get<0>(this->zbounds())) / this->dL);
+      // check if the size is valid (lesss than 100000)
+      {
+         auto s = std::ceil((std::get<1>(this->xbounds()) - std::get<0>(this->xbounds())) / this->dL);
+         if (s == 0)
+            s = 1;
+         if (s > 100000) {
+            std::cout << "xsize : " << s << std::endl;
+            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
+            std::cout << "The size of the bucket is " << s << std::endl;
+            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The program will be terminated." << std::endl;
+            exit(1);
+         } else
+            this->xsize = s;
+      }
+
+      {
+         auto s = std::ceil((std::get<1>(this->ybounds()) - std::get<0>(this->ybounds())) / this->dL);
+         if (s == 0)
+            s = 1;
+         if (s > 100000) {
+            std::cout << "ysize : " << s << std::endl;
+            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
+            std::cout << "The size of the bucket is " << s << std::endl;
+            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The program will be terminated." << std::endl;
+            exit(1);
+         } else
+            this->ysize = s;
+      }
+      {
+         auto s = std::ceil((std::get<1>(this->zbounds()) - std::get<0>(this->zbounds())) / this->dL);
+         if (s == 0)
+            s = 1;  // 以前，0になったためエラーになった．
+         if (s > 100000) {
+            std::cout << "zsize : " << s << std::endl;
+            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
+            std::cout << "The size of the bucket is " << s << std::endl;
+            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The program will be terminated." << std::endl;
+            exit(1);
+         } else
+            this->zsize = s;
+      }
+
       this->dn = {xsize, ysize, zsize};
 
       // Clear and resize data

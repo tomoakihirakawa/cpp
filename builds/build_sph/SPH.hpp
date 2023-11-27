@@ -1,6 +1,12 @@
 #ifndef SPH_H
 #define SPH_H
 
+#define MOVE_WALL_PARTICLE false
+
+#define SET_AUX_AT_PARTICLE_SPACING
+// #define SET_AUX_AT_MASS_CENTER
+// #define USE_AUX_PREESURE
+
 #define USE_RungeKutta
 // #define USE_LeapFrog
 
@@ -277,38 +283,48 @@ void developByEISPH(Network *net,
          //% 壁粒子と水面粒子の設定
          deleteAuxiliaryPoints(net);
          setSML(Append(net_RigidBody, net));
-         setWall(net, RigidBodyObject, particle_spacing, wall_p);
+         captureWallParticle(net, RigidBodyObject, particle_spacing, wall_p);
+         Print(Green, "captureWallParticle", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         setWall(net, RigidBodyObject, particle_spacing);
          Print(Green, "setWall", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         setFreeSurface(net, RigidBodyObject);
+         setCorrectionMatrix(Append(net_RigidBody, net));
+         Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         setFreeSurface(net, net_RigidBody);
          Print(Green, "setFreeSurface", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         // setAuxiliaryPoints(net);
+         // Print(Green, "setAuxiliaryPoints", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         // setCorrectionMatrix(Append(net_RigidBody, net));
+         // Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
          //% 粘性項の計算
-         calcLaplacianU(net->getPoints(), Append(net_RigidBody, net));
-         calcLaplacianU(wall_p, Append(net_RigidBody, net));
+         calcLaplacianU(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
          Print(Green, "calcLaplacianU", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         /* ------------------------------- 次時刻の計算が可能に ------------------------------- */
-         setSML(Append(net_RigidBody, net));
-         setWall(net, RigidBodyObject, particle_spacing, wall_p);
-         setFreeSurface(net, RigidBodyObject);
+         /* ------------------------------- 次時刻の計算が可能に ------------------------ */
+         Print(green, "recalculation", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         setWall(net, RigidBodyObject, particle_spacing);
+         Print(green, "setWall", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setCorrectionMatrix(Append(net_RigidBody, net));
-         // setAuxiliaryPoints(net);j
-         Print(Green, "recalculation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         Print(green, "setCorrectionMatrix", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         setFreeSurface(net, net_RigidBody);
+         Print(green, "setFreeSurface", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
          //% Poisson方程式の離散化
-         setPoissonEquation(wall_p, Append(net_RigidBody, net), particle_spacing);
-         setPoissonEquation(net->getPoints(), Append(net_RigidBody, net), particle_spacing);
+         setPoissonEquation(Join(net->getPoints(), wall_p), Append(net_RigidBody, net), particle_spacing);
          Print(Green, "setPoissonEquation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 圧力 p^n+1の計算
-         solvePoisson(net->getPoints(), wall_p);
+         solvePoisson(Join(net->getPoints(), wall_p));
          Print(Green, "solvePoisson", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          gradP(net->getPoints(), Append(net_RigidBody, net));
          Print(Green, "calculate grad(P) and increment DU/Dt", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 粒子の時間発展
-         updateParticles(net->getPoints(), Append(net_RigidBody, net), RigidBodyObject, particle_spacing);
+         updateParticles(net->getPoints(), Append(net_RigidBody, net), net_RigidBody, particle_spacing);
          Print(Green, "updateParticles", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          net->setGeometricProperties();
 #if defined(USE_RungeKutta)
@@ -340,9 +356,15 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
 
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->C_SML;
    vtp.addPointData("C_SML", uo_double);
-
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
+
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->success_inv_grad_corr_M;
+   vtp.addPointData("success_inv_grad_corr_M", uo_3d);
+
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->success_inv_grad_corr_M_next;
+   vtp.addPointData("success_inv_grad_corr_M_next", uo_3d);
+
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
    vtp.addPointData("min_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;
@@ -365,6 +387,11 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("interp_normal", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal_original;
    vtp.addPointData("interp_normal_original", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM;
+   vtp.addPointData("vec2COM", uo_3d);
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM_next;
+   vtp.addPointData("vec2COM_next", uo_3d);
+
    // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_Min_gradM;
    // vtp.addPointData("grad_Min_gradM", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
@@ -383,6 +410,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("isAuxiliary", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
    vtp.addPointData("isSurface", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNearSurface;
+   vtp.addPointData("isNearSurface", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNeumannSurface;
    vtp.addPointData("isNeumannSurface", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->p_SPH;
