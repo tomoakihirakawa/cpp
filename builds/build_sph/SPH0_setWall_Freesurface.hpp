@@ -667,11 +667,11 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             //       p->interp_normal = {0., 0., 1.};
             // }
 
-            for (const auto &n : near_wall_particle_next) {
-               p->interp_normal_next = Normalize(Chop(p->interp_normal_next, n));
-               if (!isFinite(p->interp_normal_next))
-                  p->interp_normal_next = {0., 0., 1.};
-            }
+            // for (const auto &n : near_wall_particle_next) {
+            //    p->interp_normal_next = Normalize(Chop(p->interp_normal_next, n));
+            //    if (!isFinite(p->interp_normal_next))
+            //       p->interp_normal_next = {0., 0., 1.};
+            // }
             /* -------------------------- Surface condition ---------------------------- */
             // if (A->isFluid)
             //    A->isSurface = A->var_Eigenvalues_of_M1 > 0.3;
@@ -694,7 +694,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                [&](const auto &q) {
                                                                   return q->isCaptured &&
                                                                          Distance(A, q) < r && A != q &&
-                                                                         isFlat(A->interp_normal_original, q->X - A->X, M_PI / 5);
+                                                                         isFlat(Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original)), q->X - A->X, M_PI / 5);
                                                                });
                             }));
 
@@ -705,7 +705,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                     [&](const auto &q) {
                                                                        return q->isCaptured &&
                                                                               Distance(X_next(A), X_next(q)) < r && A != q &&
-                                                                              isFlat(A->interp_normal_original_next, X_next(q) - X_next(A), M_PI / 5);
+                                                                              isFlat(Normalize(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next)), X_next(q) - X_next(A), M_PI / 5);
                                                                     });
                                  }));
 

@@ -75,24 +75,12 @@ int main() {
 
    ### `PVDWriter`を使ったpvdファイルの作成方法
 
-   pvdファイルは，ファイルと時間をセットにしてまとめ，paraview上で，3Dファイルのアニメーションを再生するためのファイルである．
-
-   次のようにして，出力するpvdファイル名を指定しクラスを作成する．
+   pvdファイルは，ファイルと時間をセットにしてまとめ，paraview上で，3Dファイルのアニメーションを再生するためのファイル．
 
    ```cpp
-   PVDWriter pvd("./bunny_obj.pvd");
-   ```
-
-   `filename`には，`vtp`ファイルなどの3Dファイル名を，`time`には，そのファイルの時間を指定する：
-
-   ```cpp
-   pvd.push(filename, time);
-   ```
-
-   最後にpvdファイルを出力する．
-
-   ```cpp
-   pvd.output();
+   PVDWriter pvd("./bunny_obj.pvd");//出力するpvdファイル名を指定しクラスを作成
+   pvd.push(filename, time);//`filename`には，`vtp`ファイルなどの3Dファイル名を，`time`には，そのファイルの時間を指定
+   pvd.output();//最後にpvdファイルを出力
    ```
 
    #### 面のアニメーション
