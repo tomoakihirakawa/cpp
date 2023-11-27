@@ -506,6 +506,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double pn_SPH;
    bool pn_is_set = false;
    bool isSurface = false, isSurface_next = false;
+   bool isNearSurface = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
    bool isCaptured = false, isCaptured_ = false;
@@ -557,6 +558,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       return -rho_w * g * std::get<2>(getXtuple());
    };
    /////////////////////////
+   T3Tddd tensorproduct_grad_Uij, tensorproduct_grad_Uij_next;
    Tddd lap_U;
    T3Tddd grad_U;
    T3Tddd Mat1, Mat2, Mat3, Mat_B;
@@ -601,7 +603,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_, marker_X, marker_U;
-   Tddd U_XSPH, U_XSPH_next;
+   Tddd U_XSPH, U_XSPH_next, U_next;
    InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
    std::vector<double> vec_time_SPH;
@@ -615,7 +617,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd interp_normal_rigid, interp_normal_rigid_next;
    Tddd X_next;
    double volume_next, mass_next;
-   Tddd COM_SPH;
+   Tddd COM_SPH, vec2COM, vec2COM_next;
    double intp_density, intp_density_next, ddr_intp_density;
    double totalMass_SPH;
    Tddd interp_normal_next, interp_normal_original_next;
@@ -626,6 +628,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M, laplacian_corr_M, laplacian_corr_M_next;
    std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
+   Tddd success_inv_grad_corr_M;
+   Tddd success_inv_grad_corr_M_next;
    // Tddd grad_Min_gradM;
    //
    // std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
@@ -3916,9 +3920,6 @@ class Network : public CoordinateBounds {
          return true;
       } else
          return false;
-      // auto s = this->Faces.size();
-      // this->Faces.erase(f);
-      // return s != this->Faces.size();
    };
    void Erase(const V_netFp &fs) {
       for (auto &f : fs)
@@ -3931,9 +3932,6 @@ class Network : public CoordinateBounds {
          return true;
       } else
          return false;
-      // auto s = this->Points.size();
-      // this->Points.erase(p);
-      // return s != this->Points.size();
    };
 
    // //% Networkコンストラクタ1
@@ -3982,9 +3980,11 @@ class Network : public CoordinateBounds {
          octreeOfPoints(nullptr),
          surfaceNet(nullptr) {
       if (filename.contains(".obj")) {
-         std::cout << "load " << filename << std::endl;
          Load3DFile objLoader(filename);
-         this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
+         if (!objLoader.f_v.empty())
+            this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
+         if (!objLoader.l_v.empty())
+            this->setLines(objLoader.l_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
          this->displayStates();
       } else {
          std::cout << filename << std::endl;
@@ -4393,6 +4393,7 @@ class Network : public CoordinateBounds {
       map_Tddd_Int.reserve(v_IN.size());
       int n = 0;
       for (const auto &v : v_IN) {
+         if (v.size() != 3) throw std::runtime_error("v.size() != 3");
          std::shared_ptr<Tddd> x(new Tddd({v[0], v[1], v[2]}));
          vecTddd[n] = *x;
          map_Tddd_Int[x] = n++;
@@ -4410,7 +4411,6 @@ class Network : public CoordinateBounds {
                break;
             }
          if (!overlap_index) {
-            //
             bucket.add(*x, x);
             ret[n] = new networkPoint(this, *x);
          } else {
@@ -4434,6 +4434,44 @@ class Network : public CoordinateBounds {
                std::stringstream ss;
                ss << "index = " << index << std::endl;
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+            }
+         }
+
+         // for (const auto &index : f_v) {
+         //          if (index.size() == 3) {
+         //             std::cout << "generate face " << count++ << " / " << f_v.size() << "\r" << std::flush;
+         //             if (points[index[0]] && points[index[1]] && points[index[2]])
+         //                new networkFace(this, {link(points[index[0]], points[index[1]], this), link(points[index[1]], points[index[2]], this), link(points[index[2]], points[index[0]], this)}, {points[index[0]], points[index[1]], points[index[2]]});
+         //          } else if (index.size() == 2) {
+         //             std::cout << "generate line " << count++ << " / " << f_v.size() << "\r" << std::flush;
+         //             if (points[index[0]] && points[index[1]])
+         //                new networkLine(this, points[index[0]], points[index[1]]);
+         //          } else {
+         //             std::stringstream ss;
+         //             ss << "index = " << index << std::endl;
+         //             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+         //          }
+         //       }
+
+      } catch (std::exception &e) {
+         std::cerr << e.what() << colorReset << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+      };
+      this->setGeometricProperties();
+   };
+
+   void setLines(const VV_i &l_v, const V_netPp &points) {
+      std::cout << "l_v " << l_v << std::endl;
+      try {
+         for (const auto &index : l_v) {
+            for (auto i = 0; i < index.size() - 1; i++) {
+               if (points[index[i]] && points[index[i + 1]])
+                  new networkLine(this, points[index[i]], points[index[i + 1]]);
+               else {
+                  std::stringstream ss;
+                  ss << "index = " << index << std::endl;
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+               }
             }
          }
       } catch (std::exception &e) {

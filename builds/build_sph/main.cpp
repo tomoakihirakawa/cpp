@@ -261,8 +261,8 @@ int main(int argc, char **argv) {
    // b#                             外向きベクトルの設定                               */
    // b# -------------------------------------------------------------------------- */
    for (const auto &[particlesNet, poly, J] : all_objects) {
-      particlesNet->makeBucketPoints(2 * particle_spacing);
-      poly->makeBucketFaces(2 * particle_spacing);
+      particlesNet->makeBucketPoints(1.5 * particle_spacing);
+      poly->makeBucketFaces(1.5 * particle_spacing);
       //
       std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
@@ -275,9 +275,9 @@ int main(int argc, char **argv) {
             // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
             // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
 
-            // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
 
-            p->v_to_surface_SPH = p->normal_SPH = X - p->X;
+            // p->v_to_surface_SPH = p->normal_SPH = X - p->X;
 
             // p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + 1E-12) * ps * Normalize(X - p->X);
             p->mirroring_face = f;
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
       if (end_time < simulation_time)
          break;
 
-      // int N = 100000;
+      // int N = 100;
       // if (time_step == N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())

@@ -117,6 +117,49 @@ STREAM &operator<<(STREAM &stream, const std::vector<std::vector<std::array<T, N
    return stream;
 }
 
+/* ------------------------------- for vector ------------------------------- */
+
+template <typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<T>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << v;  // fold expressionを使えば，別にタプルの長さをチェック必要はない
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<std::vector<T>>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << std::tuple<std::vector<T>, std::array<std::string, 2>>{v, std::get<1>(V_bracket)};
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+template <typename T, typename STREAM>
+STREAM &operator<<(STREAM &stream, const std::tuple<std::vector<std::vector<std::vector<T>>>, std::array<std::string, 2>> &V_bracket) {
+   stream << std::get<1>(V_bracket)[0];
+   bool first = true;
+   std::ranges::for_each(std::get<0>(V_bracket), [&](const auto &v) {
+      stream << (first ? "" : ",") << std::tuple<std::vector<std::vector<T>>, std::array<std::string, 2>>{v, std::get<1>(V_bracket)};
+      first = false;
+   });
+
+   stream << std::get<1>(V_bracket)[1];
+   return stream;
+}
+
+/* -------------------------------------------------------------------------- */
+
 // template <typename... T>
 // std::ostream &operator<<(std::ostream &stream, const std::tuple<T...> &V) {
 //    stream << "{";

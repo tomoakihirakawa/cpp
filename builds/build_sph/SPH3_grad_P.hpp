@@ -25,6 +25,7 @@ NOTE:圧力の方程式を立てる際に，左辺の密度として，流速の
 */
 
 void gradP(const std::unordered_set<networkPoint *> &points, const std::unordered_set<Network *> &target_nets) {
+   DebugPrint("setWall", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__, " ", Cyan);
    try {
 #pragma omp parallel
       for (const auto &A : points)
@@ -191,14 +192,15 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          // }
       }
 
-      for (const auto &A : points)
-         if (A->isAuxiliary) {
-            A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
-         }
+      // for (const auto &A : points)
+      //    if (A->isAuxiliary) {
+      //       A->surfacePoint->DUDt_SPH = A->DUDt_SPH;
+      //    }
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in gradP");
    };
+   DebugPrint("setWall done", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__, " ", Cyan);
 }
 
 #endif

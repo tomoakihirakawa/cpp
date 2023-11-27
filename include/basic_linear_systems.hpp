@@ -10,6 +10,7 @@
 #include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 #include "basic_exception.hpp"
+#include "lib_measurement.hpp"
 
 struct ludcmp_parallel {
    int n;
@@ -769,12 +770,18 @@ struct QR {
 
    // Copy constructor
    // No need to repeat computation; copy the computed Q, R, and A
-   QR(const QR &other) : Q(other.Q), QT(other.QT), R(other.R), A(other.A) {}
+   QR(const QR &other) : Q(other.Q), QT(other.QT), R(other.R), A(other.A) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+   }
    //  std::cout << "QR destructor" << std::endl;
    ~QR(){};
-   QR(const T &AIN) : R(AIN), A(AIN), Q(AIN.size(), typename T::value_type(AIN.size(), 0.)) { Initialize(AIN, true); };
+   QR(const T &AIN) : R(AIN), A(AIN), Q(AIN.size(), typename T::value_type(AIN.size(), 0.)) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      Initialize(AIN, true);
+   };
 
    void Initialize(const T &AIN, const bool constractor = false) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       int N_ROW = AIN.size();
       int N_COL = AIN[0].size();
       int nR = AIN.size();
@@ -865,12 +872,18 @@ struct QR<std::array<std::array<double, N>, M>> {
 
    // Copy constructor
    // No need to repeat computation; copy the computed Q, R, and A
-   QR(const QR &other) : Q(other.Q), QT(other.QT), R(other.R), A(other.A) {}
+   QR(const QR &other) : Q(other.Q), QT(other.QT), R(other.R), A(other.A) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+   }
    //  std::cout << "QR destructor" << std::endl;
    ~QR(){};
-   QR(const std::array<std::array<double, N>, M> &AIN) : R(AIN), A(AIN) { Initialize(AIN, true); };
+   QR(const std::array<std::array<double, N>, M> &AIN) : R(AIN), A(AIN) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      Initialize(AIN, true);
+   };
 
    void Initialize(const std::array<std::array<double, N>, M> &AIN, const bool constractor = false) {
+      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       int N_ROW = AIN.size();
       int N_COL = AIN[0].size();
       int nR = AIN.size();
@@ -1300,10 +1313,12 @@ struct ArnoldiProcess {
          H(nIN + 1, V_d(nIN, 0.)),
          V(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/),
          w(A.size()) {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       Initialize(A, v0IN, nIN, false);
    };
 
    void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN, const bool do_constract = true) {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       if (do_constract) {
          n = nIN;
          beta = Norm(v0IN);
@@ -1313,10 +1328,10 @@ struct ArnoldiProcess {
          V.assign(n + 1, v0);
          w.resize(A.size());
       }
-#if defined(DEBUG_GMRES)
-      TimeWatch watch;
-      std::cout << "ArnoldiProcess::Initialize" << std::endl;
-#endif
+// #if defined(DEBUG_GMRES)
+//       TimeWatch watch;
+//       std::cout << "ArnoldiProcess::Initialize" << std::endl;
+// #endif
 #if defined(DEBUG_GMRES)
       TimeWatch watch;
       std::array<double, 2> tmp;
@@ -1440,7 +1455,9 @@ struct gmres : public ArnoldiProcess<Matrix> {
    QR<VV_d> qr;
    V_d g;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
-   gmres(){};
+   gmres() {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+   };
    gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN)
        : ArnoldiProcess<Matrix>(A, b_minus_A_dot_V(b, A, x0) /*b - Dot(A, x0) 行列-ベクトル積*/, nIN),
          x(x0),
@@ -1448,6 +1465,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
          qr(ArnoldiProcess<Matrix>::H),
          g(qr.Q.size()),
          err(0.) {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 #if defined(DEBUG_GMRES)
       TimeWatch watch;
       std::cout << "gmres" << std::endl;
@@ -1471,7 +1489,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
    };
 
    void Restart(const Matrix &A, const V_d &b, const V_d &x0, const int nIN) {
-      std::cout << "Restart" << std::endl;
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       // this->Initialize(A, b - Dot(A, x0), nIN);
       this->Initialize(A, b_minus_A_dot_V(b, A, x0), nIN);
       this->x = x0;

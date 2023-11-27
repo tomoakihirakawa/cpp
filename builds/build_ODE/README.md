@@ -43,10 +43,10 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L336)）．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L346)）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](../../include/integrationOfODE.hpp#L336)
-[../../include/integrationOfODE.hpp#L326](../../include/integrationOfODE.hpp#L326)
+[LeapFrogのクラス](../../include/integrationOfODE.hpp#L346)
+[../../include/integrationOfODE.hpp#L336](../../include/integrationOfODE.hpp#L336)
 
 
 ### 🪼 🪼 Runge-Kutta  
@@ -57,7 +57,7 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
-[4次のRunge-Kutta](../../include/integrationOfODE.hpp#L185)の場合，次のようになる．
+[4次のRunge-Kutta](../../include/integrationOfODE.hpp#L191)の場合，次のようになる．
 
 ```math
 \begin{align*}

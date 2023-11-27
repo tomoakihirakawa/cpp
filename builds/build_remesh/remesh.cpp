@@ -81,6 +81,14 @@ int main(int arg, char **argv) {
       return {{"isFlat", P_isFlat}};
    };
 
+   V_d hist_bin_width;
+   V_d hist_where_divide;
+   std::vector<V_i> hist_count;  // 角瓶の中にあるデータの数
+   std::vector<V_d> hist_cumulative;
+   std::vector<V_i> hist_diff;
+   std::vector<V_d> hist_interval;
+   std::vector<V_d> hist_mid_interval;
+
    for (auto count = 0; count <= remesh; ++count) {
 
       std::cout << "\r" << icons[(count + 1) % icons.size()] << " time:" << time() << std::flush;
@@ -93,6 +101,29 @@ int main(int arg, char **argv) {
       auto it = std::ranges::find_if(Histo.cumulative, [](double value) { return value >= 0.8; });
       if (it != Histo.cumulative.end()) num = std::distance(Histo.cumulative.begin(), it);
 
+      /* -------------------------------------------------- */
+      // Output to JSON file
+      hist_where_divide.push_back(Histo.interval[num]);
+      hist_bin_width.push_back(Histo.bin_width);
+      hist_count.push_back(Histo.count);
+      hist_cumulative.push_back(Histo.cumulative);
+      hist_diff.push_back(Histo.diff);
+      hist_interval.push_back(Histo.interval);
+      hist_mid_interval.push_back(Histo.mid_interval);
+      std::ofstream file("histogram.json");
+      file << "{";
+      std::array<std::string, 2> bracket = {"[", "]"};
+      file << "\"where_divide\" : " << std::make_tuple(hist_where_divide, bracket) << ", ";
+      file << "\"bin_width\" : " << std::make_tuple(hist_bin_width, bracket) << ", ";
+      file << "\"count\" : " << std::make_tuple(hist_count, bracket) << ", ";
+      file << "\"cumulative\" : " << std::make_tuple(hist_cumulative, bracket) << ", ";
+      file << "\"diff\" : " << std::make_tuple(hist_diff, bracket) << ", ";
+      file << "\"interval\" : " << std::make_tuple(hist_interval, bracket) << ", ";
+      file << "\"mid_interval\" : " << std::make_tuple(hist_mid_interval, bracket);
+      file << "}";
+      file.close();
+      /* -------------------------------------------------- */
+
       // find bin that has max bin size, i greater than num
       // for (auto i = num; i < Histo.bins.size(); ++i)
       //    if (Histo.bins[num].size() < Histo.bins[i].size())
@@ -100,6 +131,7 @@ int main(int arg, char **argv) {
 
       auto tmp = net.Lines;
       Divide(tmp, [&](auto l) { return l->length() > Histo.interval[num]; });
+      
 
       for (auto i = 0; i < 3; ++i) {
 #if remesh_type == 1

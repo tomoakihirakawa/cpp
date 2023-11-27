@@ -1984,6 +1984,11 @@ Tddd Projection(const Tddd &v, Tddd n) {
    return Dot(v, n) * n;
 };
 
+std::array<Tddd, 2> DecomposeVector(const Tddd &v, const Tddd &n) {
+   auto vn = Projection(v, n);
+   return {vn, v - vn};
+};
+
 Tddd Chop(const Tddd &v, const Tddd &n) {
    /* the component in n direction of v will be chopped */
    return v - Projection(v, n);
