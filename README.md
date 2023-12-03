@@ -71,8 +71,9 @@
 - [Contents](./builds/build_Fourier/README.md#Contents)
 - [🐋 フーリエ変換](./builds/build_Fourier/README.md#🐋-フーリエ変換)
     - [⛵ 複素フーリエ級数展開](./builds/build_Fourier/README.md#⛵-複素フーリエ級数展開)
-    - [⛵ 離散フーリエ変換](./builds/build_Fourier/README.md#⛵-離散フーリエ変換)
+    - [⛵ 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）](./builds/build_Fourier/README.md#⛵-離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）)
     - [⛵ 逆離散フーリエ変換](./builds/build_Fourier/README.md#⛵-逆離散フーリエ変換)
+    - [⛵ 離散フーリエ変換によるデータの補間](./builds/build_Fourier/README.md#⛵-離散フーリエ変換によるデータの補間)
 ## [build_integration](./builds/build_integration/README.md)
 
 - [Contents](./builds/build_integration/README.md#Contents)

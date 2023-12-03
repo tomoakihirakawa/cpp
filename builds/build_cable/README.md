@@ -19,11 +19,9 @@
 
 オイラー法，Leap-Frog法，Runge-Kutta法を用いて，弾性体の動きをシミュレーション．
 
-|   |   |
-|---|---|
-| 剛性$`[N/m]`$ | $`1400 \times 10^6`$ |
-| 減衰$`[N/(m/s^2)]`$ | $`0.9`$ |
-| 自然長$`[m]`$ | $`1`$ |
+* 剛性$`[N/m]`$:$`1400 \times 10^6`$
+* 減衰$`[N/(m/s^2)]`$:$`0.9`$
+* 自然長$`[m]`$:$`1`$
 
 ![sample.gif](sample.gif)
 
@@ -38,7 +36,8 @@
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
+```
 
-[./main.cpp#L14](./main.cpp#L14)
+[./main.cpp#L16](./main.cpp#L16)
 
 ---
