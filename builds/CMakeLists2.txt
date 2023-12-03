@@ -1,101 +1,137 @@
+# Set minimum CMake version
+# CMakeList2.tx
 cmake_minimum_required(VERSION 3.11)
 
-project(ProjectName LANGUAGES CXX)
-
-# Define ANSI color codes if we're not on Windows
 if(NOT WIN32)
   string(ASCII 27 Esc)
-  set(ColorReset "${Esc}[m")
-  set(ColorBold  "${Esc}[1m")
-  set(Red        "${Esc}[31m")
-  set(Green      "${Esc}[32m")
-  set(Yellow     "${Esc}[33m")
-  set(Blue       "${Esc}[34m")
-  set(Magenta    "${Esc}[35m")
-  set(Cyan       "${Esc}[36m")
-  set(White      "${Esc}[37m")
-  set(BoldRed    "${Esc}[1;31m")
-  set(BoldGreen  "${Esc}[1;32m")
+  set(ColourReset "${Esc}[m")
+  set(ColourBold "${Esc}[1m")
+  set(Red "${Esc}[31m")
+  set(Green "${Esc}[32m")
+  set(Yellow "${Esc}[33m")
+  set(Blue "${Esc}[34m")
+  set(Magenta "${Esc}[35m")
+  set(Cyan "${Esc}[36m")
+  set(White "${Esc}[37m")
+  set(BoldRed "${Esc}[1;31m")
+  set(BoldGreen "${Esc}[1;32m")
   set(BoldYellow "${Esc}[1;33m")
-  set(BoldBlue   "${Esc}[1;34m")
+  set(BoldBlue "${Esc}[1;34m")
   set(BoldMagenta "${Esc}[1;35m")
-  set(BoldCyan   "${Esc}[1;36m")
-  set(BoldWhite  "${Esc}[1;37m")
+  set(BoldCyan "${Esc}[1;36m")
+  set(BoldWhite "${Esc}[1;37m")
 endif()
 
-# Set up the compiler to use ccache if available
-find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-  message(STATUS "${Green}ccache is enabled${ColorReset}")
+# message("This is normal")
+# message("${Red}This is Red${ColourReset}")
+# message("${Green}This is Green${ColourReset}")
+# message("${Yellow}This is Yellow${ColourReset}")
+# message("${Blue}This is Blue${ColourReset}")
+# message("${Magenta}This is Magenta${ColourReset}")
+# message("${Cyan}This is Cyan${ColourReset}")
+# message("${White}This is White${ColourReset}")
+# message("${BoldRed}This is BoldRed${ColourReset}")
+# message("${BoldGreen}This is BoldGreen${ColourReset}")
+# message("${BoldYellow}This is BoldYellow${ColourReset}")
+# message("${BoldBlue}This is BoldBlue${ColourReset}")
+# message("${BoldMagenta}This is BoldMagenta${ColourReset}")
+# message("${BoldCyan}This is BoldCyan${ColourReset}")
+# message("${BoldWhite}This is BoldWhite\n\n${ColourReset}")
+
+# Set project name
+project(ProjectName)
+
+set(CXX_VERSIONS 15 14 13 12 11 10 9 8 7)
+
+# Find C++ compiler
+foreach(ver IN LISTS CXX_VERSIONS)
+  unset(CXX_COMPILER CACHE)
+  string(CONCAT CXX "g++-" ${ver})
+  find_program(CXX_COMPILER ${CXX})
+
+  if(CXX_COMPILER)
+    message(STATUS "${Green}Found ${CXX}: ${Magenta}${CXX_COMPILER}${ColourReset}")
+    set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
+    break()
+  endif()
+endforeach()
+
+if(NOT CXX_COMPILER)
+  message(FATAL_ERROR "No suitable g++ version found!")
 endif()
 
-# Set default source file and output name
+# Set common compiler flags
+set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og")
+set(CMAKE_CXX_FLAGS_RELEASE "-pthread -ffast-math -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+
+# Check for GNU gold linker
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version
+  ERROR_QUIET
+  OUTPUT_VARIABLE ld_version)
+
+if("${ld_version}" MATCHES "GNU gold")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
+endif()
+
+# Set compiler launcher
+set(CMAKE_C_COMPILER_LAUNCHER ccache)
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+
+# Enable ccache
+option(CCACHE_ENABLE "If the command ccache is available, use it for compile." ON)
+find_program(CCACHE_EXE ccache)
+
+if(CCACHE_EXE AND CCACHE_ENABLE)
+  message(STATUS "${Green}ccache is enabled${ColourReset}")
+  set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_C_COMPILER_LAUNCHER}" "${CCACHE_EXE}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_CXX_COMPILER_LAUNCHER}" "${CCACHE_EXE}")
+endif()
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+# Set default source file
 set(DEFAULT_SOURCE_FILE "main.cpp")
-set(DEFAULT_OUTPUT_NAME "main")
 
-# Allow the source file and output name to be configurable through the command line
-set(SOURCE_FILE ${DEFAULT_SOURCE_FILE} CACHE FILEPATH "Set the source file")
-set(BASE_NAME ${DEFAULT_OUTPUT_NAME} CACHE STRING "Set the output file name")
+if(CMAKE_ARGS)
+  list(FIND CMAKE_ARGS "-DSOURCE_FILE" SOURCE_FILE_IDX)
 
-message(STATUS "${Green}SOURCE_FILE is ${Magenta}${SOURCE_FILE}${ColorReset}")
-message(STATUS "${Green}BASE_NAME is ${Magenta}${BASE_NAME}${ColorReset}")
+  if(NOT SOURCE_FILE_IDX EQUAL -1)
+    list(GET CMAKE_ARGS ${SOURCE_FILE_IDX} SOURCE_FILE_ARG)
+    string(REPLACE "-DSOURCE_FILE=" "" SOURCE_FILE ${SOURCE_FILE_ARG})
+  endif()
+endif()
 
-# Create the executable target
+if(NOT DEFINED SOURCE_FILE)
+  set(SOURCE_FILE ${DEFAULT_SOURCE_FILE})
+endif()
+
+# Create executable
+message(STATUS "${Green}SOURCE_FILE is ${Magenta}" ${SOURCE_FILE} "${ColourReset}")
+get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
 add_executable(${BASE_NAME} ${SOURCE_FILE})
 
-# Find and link LAPACK
-find_package(LAPACK REQUIRED)
-target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
+# Find LAPACK
+find_package(LAPACK)
 
-# Locate and link Eigen3
-find_package(Eigen3 REQUIRED NO_MODULE)
-target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
-
-# Find and link CGAL
-find_package(CGAL REQUIRED)
-target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
-
-# Include directories
-target_include_directories(${BASE_NAME} PUBLIC
-  ${PROJECT_SOURCE_DIR}/../include
-  ${PROJECT_SOURCE_DIR}/../../include
-)
-
-# Set C++ standard for the target
-target_compile_features(${BASE_NAME} PRIVATE cxx_std_23)
-
-# Compiler options
-target_compile_options(${BASE_NAME} PRIVATE
-  $<$<CONFIG:Debug>:-Og>
-  $<$<CONFIG:Release>:
-    -pthread
-    -Ofast
-    -march=native
-    -flto
-    -fopenmp
-    -fconcepts
-    -funroll-loops
-    -Wunused-label
-    -Wunused-value
-    -fno-math-errno
-    -funsafe-math-optimizations
-    -fno-signed-zeros
-    -fno-trapping-math>
-)
-
-# Check for linker capabilities, use gold or lld if available
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-fuse-ld=gold" COMPILER_SUPPORTS_GOLD_LINKER)
-if(COMPILER_SUPPORTS_GOLD_LINKER)
-  target_link_options(${BASE_NAME} PRIVATE -fuse-ld=gold)
+if(LAPACK_FOUND)
+  message(STATUS "${Green}LAPACK found!" "${ColourReset}")
+  include_directories(${LAPACK_INCLUDE_DIRS})
+  target_link_libraries(${BASE_NAME} ${LAPACK_LIBRARIES})
+else()
+  message(STATUS "${Red}LAPACK is not found!" "${ColourReset}")
 endif()
 
-check_cxx_compiler_flag("-fuse-ld=lld" COMPILER_SUPPORTS_LLD_LINKER)
-if(COMPILER_SUPPORTS_LLD_LINKER)
-  target_link_options(${BASE_NAME} PRIVATE -fuse-ld=lld)
-endif()
+# Set include directories
+target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../include)
+target_include_directories(${BASE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/../../include)
 
-# Enable verbose makefile and export compile commands for use with various tools
-set(CMAKE_VERBOSE_MAKEFILE ON)
+message(${PROJECT_SOURCE_DIR})
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

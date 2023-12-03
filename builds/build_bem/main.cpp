@@ -21,7 +21,7 @@ double simulation_time = 0;
 #include "kernelFunctions.hpp"
 #include "minMaxOfFunctions.hpp"
 #include "rootFinding.hpp"
-
+#include "vtkWriter.hpp"
 // pvd cpg_pvd("./vtu/bem.pvd");
 
 #include "BEM.hpp"
@@ -97,9 +97,8 @@ int main(int argc, char **argv) {
 
    // Define containers and helper functions for network objects and output information
    std::map<Network *, outputInfo> NetOutputInfo;
-   auto setup_network_output_info = [&NetOutputInfo](Network *net, const JSON &injson, const std::string &output_directory) {
+   auto setup_network_output_info = [&NetOutputInfo](Network *net, auto output_name, const std::string &output_directory) {
       std::cout << "setup_network_output_info" << std::endl;
-      auto output_name = injson.at("name")[0];
       NetOutputInfo[net].pvd_file_name = output_name;
       NetOutputInfo[net].vtu_file_name = output_name + "_";
       NetOutputInfo[net].PVD = new PVDWriter(output_directory + "/" + output_name + ".pvd");
@@ -108,6 +107,7 @@ int main(int argc, char **argv) {
    std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject;
    auto initialize_network_objects = [&FluidObject, &RigidBodyObject, &SoftBodyObject](Network *net, const JSON &injson) {
       std::cout << "initialize_network_objects" << std::endl;
+      //$ set type
       auto type = injson.at("type")[0];
       if (type == "RigidBody") {
          RigidBodyObject.emplace_back(net);
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
       net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
       for (auto i = 0; i < 10; ++i)
          AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
-
+      //$ set velocity
       net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
       // velocityにfileが指定されている場合は，そのファイルを読み込み，
       // interpolationBsplineであるnet->intpMotionRigidBodyをsetする．
@@ -174,13 +174,60 @@ int main(int argc, char **argv) {
          auto net = new Network(injson.at("objfile")[0], object_name);
          net->inputJSON = injson;
          net->applyTransformations(injson);
-         setup_network_output_info(net, injson, output_directory);
+         setup_network_output_info(net, injson.at("name")[0], output_directory);
          initialize_network_objects(net, injson);
          std::filesystem::copy_file(input_directory + input_file_name, output_directory + "/" + input_file_name, std::filesystem::copy_options::overwrite_existing);
          mk_vtu(output_directory + "/" + object_name + "_init.vtu", {net->getFaces()});
-      } else {
+         //$ ------------------------ MOORING ---------------------- */
+         //$ extract key the contains "mooring" as key name. extract them as vector
+         for (auto &[key, value] : injson()) {
+            if (key.contains("mooring")) {
+               std::cout << "mooring" << std::endl;
+               //! check if the value contains 12 elements
+               if (value.size() != 12) {
+                  //! show contents of the value nicely
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mooring line must have 12 elements");
+               }
+               const auto name = value[0], type = value[1];
+               std::cout << "name = " << name << std::endl;
+               std::array<double, 3> X0 = {std::stod(value[2]), std::stod(value[3]), std::stod(value[4])};
+               std::array<double, 3> X1 = {std::stod(value[5]), std::stod(value[6]), std::stod(value[7])};
+               std::cout << "X0 = " << X0 << std::endl;
+               std::cout << "X1 = " << X1 << std::endl;
+               const int div = std::stoi(value[8]);  //$ 分割数
+               std::cout << "div = " << div << std::endl;
+               // const double natural_length = stod(value[8]);  //! [m]
+               const double stiffness = std::stod(value[9]);  //! [N/m]
+               const double damp = std::stod(value[10]);      //! [N/(m/s^2)]
+               const double w = std::stod(value[11]);         //! [kg/m]
+               std::cout << "stiffness = " << stiffness << std::endl;
+               std::cout << "damp = " << damp << std::endl;
+               std::cout << "w = " << w << std::endl;
+               auto mooring_net = new Network;
+               mooring_net->setName(name);
+               Print("make networkPoint which are the mooring line nodes");
+               std::vector<networkPoint *> mooring_points;
+               for (int i = 0; i <= div; ++i) {
+                  auto p = new networkPoint(mooring_net, X0 + (X1 - X0) * i / div);
+                  p->force.fill(0.);
+                  mooring_points.emplace_back(p);
+               }
+               Print("generate netwrokLine connecting the points");
+               for (auto i = 0; i < mooring_points.size() - 1; ++i) {
+                  auto l = new networkLine(mooring_net, mooring_points[i], mooring_points[i + 1]);
+                  l->natural_length = l->length();
+                  l->stiffness = stiffness;
+                  l->damping = damp;
+                  l->weight_per_unit_length = w;
+               }
+               net->mooringLines.emplace_back(mooring_net);
+               Print("setup_network_output_info");
+               setup_network_output_info(mooring_net, name, output_directory);
+            }
+         }
+         //$ ------------------------------------------------------- */
+      } else
          Print("skipped");
-      }
    }
 
    /* ----------------- Create output directory and copy files ----------------- */
@@ -578,8 +625,8 @@ int main(int argc, char **argv) {
                    {"pitch", P_Pitch},
                    {"yaw", P_Yaw},
                    {"roll", P_Roll},
-                   {"velocity", P_accel},
-                   {"acceleration", P_velocity},
+                   {"velocity", P_velocity},
+                   {"acceleration", P_accel},
                    {"rotational valocity", P_rotational_velocity},
                    {"rotational acceleration", P_rotational_accel},
                    {"pressure", P_pressure},
@@ -590,6 +637,25 @@ int main(int argc, char **argv) {
             mk_vtu(output_directory + "/" + filename, net->getFaces(), data);
             NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
+
+            //$ --------------------------------------------------- */
+            //$                  MOORING LINE                       */
+            //$ --------------------------------------------------- */
+            //! rigid body includes mooring lines output them
+            for (const auto &mooring_net : net->mooringLines) {
+               VV_VarForOutput data;
+               uomap_P_Tddd P_accel, P_velocity;
+               for (const auto &p : mooring_net->getPoints()) {
+                  P_accel[p] = net->accelRigidBody(ToX(p));
+                  P_velocity[p] = net->velocityRigidBody(ToX(p));
+               }
+               data = {{"velocity", P_velocity}, {"acceleration", P_accel}};
+               auto filename = NetOutputInfo[mooring_net].vtu_file_name + std::to_string(time_step) + ".vtp";
+               std::ofstream ofs(output_directory + "/" + filename);
+               vtkPolygonWrite(ofs, mooring_net->getLines());
+               NetOutputInfo[mooring_net].PVD->push(filename, simulation_time);
+               NetOutputInfo[mooring_net].PVD->output();
+            }
          }
 
          // b* ------------------------------------------------------ */

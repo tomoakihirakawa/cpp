@@ -25,16 +25,12 @@
 3. `make`コマンドで，`Makefile`に基づいて実行ファイルをコンパイルする.
 
 ```shell
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
+make
 ```
 
-`remesh`という実行ファイルができる．
-
-## 実行方法
-
-`n`回の細分化を行う．
+`remesh`という実行ファイルができる．`n`回の細分化を行う場合は，以下のように実行する．
 
 ```
 ./remesh input_file output_dir output_name n
@@ -86,9 +82,11 @@ int main(int arg, char **argv) {
    std::vector<V_i> hist_count;  // 角瓶の中にあるデータの数
    std::vector<V_d> hist_cumulative;
    std::vector<V_i> hist_diff;
+   std::vector<V_i> hist_diffdiff;
    std::vector<V_d> hist_interval;
    std::vector<V_d> hist_mid_interval;
 
+   int output_count = 0;
    for (auto count = 0; count <= remesh; ++count) {
 
       std::cout << "\r" << icons[(count + 1) % icons.size()] << " time:" << time() << std::flush;
@@ -98,7 +96,7 @@ int main(int arg, char **argv) {
       //!   0   1   2  [3]  4   5   interval, cumulative_count
       /* ------------------------*/
       Histo.set(extLength(net.getLines()));
-      auto it = std::ranges::find_if(Histo.cumulative, [](double value) { return value >= 0.8; });
+      auto it = std::ranges::find_if(Histo.cumulative, [](double value) { return value >= 0.95; });
       if (it != Histo.cumulative.end()) num = std::distance(Histo.cumulative.begin(), it);
 
       /* -------------------------------------------------- */
@@ -108,6 +106,7 @@ int main(int arg, char **argv) {
       hist_count.push_back(Histo.count);
       hist_cumulative.push_back(Histo.cumulative);
       hist_diff.push_back(Histo.diff);
+      hist_diffdiff.push_back(Histo.diffdiff);
       hist_interval.push_back(Histo.interval);
       hist_mid_interval.push_back(Histo.mid_interval);
       std::ofstream file("histogram.json");
@@ -118,6 +117,7 @@ int main(int arg, char **argv) {
       file << "\"count\" : " << std::make_tuple(hist_count, bracket) << ", ";
       file << "\"cumulative\" : " << std::make_tuple(hist_cumulative, bracket) << ", ";
       file << "\"diff\" : " << std::make_tuple(hist_diff, bracket) << ", ";
+      file << "\"diffdiff\" : " << std::make_tuple(hist_diffdiff, bracket) << ", ";
       file << "\"interval\" : " << std::make_tuple(hist_interval, bracket) << ", ";
       file << "\"mid_interval\" : " << std::make_tuple(hist_mid_interval, bracket);
       file << "}";
@@ -131,7 +131,6 @@ int main(int arg, char **argv) {
 
       auto tmp = net.Lines;
       Divide(tmp, [&](auto l) { return l->length() > Histo.interval[num]; });
-      
 
       for (auto i = 0; i < 3; ++i) {
 #if remesh_type == 1
@@ -159,58 +158,32 @@ int main(int arg, char **argv) {
          for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
          LaplacianSmoothingPreserveShape(net.getPoints(), 3);
 #elif remesh_type == 5
-         LaplacianSmoothingPreserveShape(net.getPoints(), 5);
-         if (count < 50) {
-            for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
-            LaplacianSmoothingPreserveShape(net.getPoints(), 5);
-         } else if (count % 3 == 0) {
-            for (const auto &l : net.Lines) l->flipIfTopologicallyBetter(M_PI / 180., M_PI / 180.);
-            AreaWeightedSmoothingPreserveShape(net.getPoints(), 5);
-            for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
-            DistorsionMeasureWeightedSmoothingPreserveShape(net.getPoints(), 5);
-         } else {
-            for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
-            DistorsionMeasureWeightedSmoothingPreserveShape(net.getPoints(), 5);
-         }
+         LaplacianSmoothingPreserveShape(net.getPoints(), 10);
+         AreaWeightedSmoothingPreserveShape(net.getPoints(), 10);
+         for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
+         LaplacianSmoothingPreserveShape(net.getPoints(), 10);
+         AreaWeightedSmoothingPreserveShape(net.getPoints(), 10);
+         for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
+         LaplacianSmoothingPreserveShape(net.getPoints(), 10);
+         AreaWeightedSmoothingPreserveShape(net.getPoints(), 10);
+         for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
+         LaplacianSmoothingPreserveShape(net.getPoints(), 10);
+         // if (count > 10) {
+         //    for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
+         //    DistorsionMeasureWeightedSmoothingPreserveShape(net.getPoints(), 10);
+         // }
 #endif
       }
-      if (count % 10 == 0) {
-         std::string step = std::to_string(count);
-         std::string filename = output_directory + "/" + output_name + step + ".vtu";
+      if (count % 1 == 0) {
+         std::string filename = output_directory + "/" + output_name + std::to_string(output_count) + ".vtu";
          mk_vtu(filename, net.getFaces(), getData());
-         std::ofstream ofs(output_directory + "/" + output_name + step + ".obj");
+         std::ofstream ofs(output_directory + "/" + output_name + std::to_string(output_count) + ".obj");
          createOBJ(ofs, net);
          ofs.close();
          //! PVD
          PVD.push(filename, count);
          PVD.output();
-         //
-         //! insert histogram data into json
-         {
-            Histogram Histo;
-            Histo.set(extLength(net.getLines()));
-            for (const auto v : Histo.bins)
-               output_json.push("size" + step, (int)v.size());
-            for (const auto v : Histo.mid_interval)
-               output_json.push("mid_interval" + step, v);
-            std::ofstream os("output_line" + std::to_string(remesh_type) + ".json");
-            output_json.output(os);
-            os.close();
-         }
-         {
-            Histogram Histo;
-            std::vector<double> tmp;
-            for (const auto &f : net.getFaces())
-               tmp.push_back(CircumradiusToInradius(ToX(f)));
-            Histo.set(tmp);
-            for (const auto v : Histo.bins)
-               output_json.push("size" + step, (int)v.size());
-            for (const auto v : Histo.mid_interval)
-               output_json.push("mid_interval" + step, v);
-            std::ofstream os("output_face" + std::to_string(remesh_type) + ".json");
-            output_json.output(os);
-            os.close();
-         }
+         output_count++;
       }
 
       std::cout << "\r \r" << std::flush;

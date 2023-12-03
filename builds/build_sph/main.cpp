@@ -136,10 +136,28 @@ int main(int argc, char **argv) {
       for (const auto &file : Append(settingJSON["input_files"], input_main_file)) {
          std::filesystem::path source(input_directory + file);
          auto new_path = output_directory_path / std::filesystem::relative(source, ".");
-         std::filesystem::create_directories(new_path.parent_path());
-         std::filesystem::copy(source, new_path, std::filesystem::copy_options::overwrite_existing);
+         if (source != new_path) {
+            std::filesystem::create_directories(new_path.parent_path());
+            if (!std::filesystem::exists(new_path) || std::filesystem::is_regular_file(new_path)) {
+               std::cout << Green << "Copying from " << source << Magenta << " to " << new_path << colorReset << std::endl;
+               std::filesystem::copy(source, new_path, std::filesystem::copy_options::overwrite_existing);
+            }
+         }
+      }
+      //
+      std::filesystem::path source_directory = std::filesystem::current_path();
+      for (const auto &entry : std::filesystem::directory_iterator(source_directory)) {
+         auto filename = entry.path().filename().string();
+         auto new_path = output_directory_path / filename;
+         if (entry.path() != new_path && (entry.path().extension() == ".hpp" || filename == "main.cpp")) {
+            if (!std::filesystem::exists(new_path) || std::filesystem::is_regular_file(new_path)) {
+               std::cout << Blue << "Copying from " << entry.path() << Magenta << " to " << new_path << colorReset << std::endl;
+               std::filesystem::copy(entry.path(), new_path, std::filesystem::copy_options::overwrite_existing);
+            }
+         }
       }
    }
+
    // b! -------------------------------------------------------------------------- */
    TimeWatch watch;
 
@@ -261,8 +279,8 @@ int main(int argc, char **argv) {
    // b#                             外向きベクトルの設定                               */
    // b# -------------------------------------------------------------------------- */
    for (const auto &[particlesNet, poly, J] : all_objects) {
-      particlesNet->makeBucketPoints(1.5 * particle_spacing);
-      poly->makeBucketFaces(1.5 * particle_spacing);
+      particlesNet->makeBucketPoints(3. * particle_spacing);
+      poly->makeBucketFaces(3. * particle_spacing);
       //
       std::cout << Yellow << poly->getName() << " makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 

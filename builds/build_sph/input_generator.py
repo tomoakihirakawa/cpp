@@ -21,7 +21,8 @@ g = 9.81
 def IO_dir(id):
     home = expanduser("~")
     input_directory = "./input_files/" + id
-    os.makedirs(input_directory, exist_ok=True)
+    # home = "/Volumes/home"
+    os.makedirs(input_directory, exist_ok=True)    
     output_directory = home + "/SPH/" + id
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
@@ -48,7 +49,7 @@ match SimulationCase:
 
         input_files = [wavetank, water]
 
-        particle_spacing = 0.015
+        particle_spacing = 0.02
 
         setting = {"RK_order": 1,
                    "max_dt": particle_spacing/10,
@@ -59,8 +60,7 @@ match SimulationCase:
                    "particle_spacing": particle_spacing}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
-                            + "_CSML" + str(setting["CSML"]).replace(".", "d")\
-                            + "_RK" + str(setting["RK_order"])
+                            + "_WITHOUT_CORRECTION"
 
         generate_input_files(input_files, setting,IO_dir, id)
 
@@ -105,8 +105,8 @@ match SimulationCase:
 
         input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
-        setting = {"RK_order": 1,
-                   "max_dt": 0.0005,
+        setting = {"RK_order": 2,
+                   "max_dt": 0.0001,
                    "end_time_step": 20000,
                    "end_time": 1,
                    "CSML": 2.5,

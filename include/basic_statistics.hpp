@@ -36,6 +36,7 @@ struct Histogram {
    V_i cumulative_count;  // 角瓶の中にあるデータの数を初めから累積してった結果
    V_d cumulative;
    V_i diff;
+   V_i diffdiff;
    V_d interval;
    V_d mid_interval;
 
@@ -87,6 +88,10 @@ struct Histogram {
       for (auto i = 0; i < this->bins.size() - 1; i++)
          this->diff[i] = this->bins[i + 1].size() - this->bins[i].size();
       //
+      this->diffdiff.resize(this->diff.size() - 1, 0);
+      for (auto i = 0; i < this->diff.size() - 1; i++)
+         this->diffdiff[i] = this->diff[i + 1] - this->diff[i];
+      //
       this->interval.resize(this->bins.size() + 1, 0);
       for (auto i = 0; i < this->interval.size(); i++)
          this->interval[i] = i * bin_width + min_data;
@@ -101,10 +106,10 @@ struct Histogram {
       this->cumulative.resize(this->bins.size());
       this->cumulative_count.resize(this->bins.size());
       this->cumulative_count[0] = this->count[0];
-      this->cumulative[0] = this->cumulative_count[0] / this->size;
+      this->cumulative[0] = (double)this->cumulative_count[0] / (double)this->size;
       for (auto i = 1; i < this->cumulative_count.size(); i++) {
          this->cumulative_count[i] = this->cumulative_count[i - 1] + this->count[i];
-         this->cumulative[i] = this->cumulative_count[i] / this->size;
+         this->cumulative[i] = (double)this->cumulative_count[i] / (double)this->size;
       }
    };
 
@@ -136,6 +141,10 @@ struct Histogram {
       for (auto i = 0; i < this->bins.size() - 1; i++)
          this->diff[i] = this->bins[i + 1].size() - this->bins[i].size();
       //
+      this->diffdiff.resize(this->diff.size() - 1, 0);
+      for (auto i = 0; i < this->diff.size() - 1; i++)
+         this->diffdiff[i] = this->diff[i + 1] - this->diff[i];
+      //
       this->interval.resize(this->bins.size() + 1, 0);
       for (auto i = 0; i < this->interval.size(); i++)
          this->interval[i] = i * bin_width + min_data;
@@ -150,10 +159,10 @@ struct Histogram {
       this->cumulative.resize(this->bins.size());
       this->cumulative_count.resize(this->bins.size());
       this->cumulative_count[0] = this->count[0];
-      this->cumulative[0] = this->cumulative_count[0] / this->size;
+      this->cumulative[0] = (double)this->cumulative_count[0] / (double)this->size;
       for (auto i = 1; i < this->cumulative_count.size(); i++) {
          this->cumulative_count[i] = this->cumulative_count[i - 1] + this->count[i];
-         this->cumulative[i] = this->cumulative_count[i] / this->size;
+         this->cumulative[i] = (double)this->cumulative_count[i] / (double)this->size;
       }
    };
 };

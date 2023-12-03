@@ -185,7 +185,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          //! -------------------------------------------------------------------------- */
 
-         auto average_surrounding_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
+         auto average_surrounding_pressure = [&ROW, &pO, &pO_center, &total_volume_w, &total_w](const auto &B /*column id*/) {
             const auto r = pO->SML();
             // const auto r = 2. * pO->particle_spacing;
             const auto BX = X_next(B);
@@ -207,7 +207,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             const auto r = pO->SML_next();
             // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
-            if (Distance(pO_center, BX) < r) {
+            if (Distance(pO_center, BX) <= r) {
                auto w = w_Bspline(Norm(BX - pO_center), r);
                auto vol_w = V_next(B) * w;
                total_volume_w += vol_w;
@@ -221,7 +221,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             const auto r = pO->SML_next();
             // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
-            if (Distance(pO_center, BX) < r && !B->isAuxiliary) {
+            if (Distance(pO_center, BX) <= r && !B->isAuxiliary) {
                auto w = w_Bspline(Norm(BX - pO_center), r);
                auto vol_w = V_next(B) * w;
                total_volume_w += vol_w;
@@ -246,7 +246,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             if (pO != B) {
                const auto BX = X_next(B);
                const auto r = pO->SML_next();
-               if (Distance(pO_center, BX) < r) {
+               if (Distance(pO_center, BX) <= r) {
                   const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
 
                   /* -------------------------------------------------------------------------- */
@@ -317,8 +317,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // if auxiliary just average value of surrounding fluid particles
             // ROW->pressure_equation_index = 1;
             /* -------------------------------------------------------------------------- */
-            pO = ROW->surfacePoint;
-            pO_center = X_next(ROW->surfacePoint);  // X_next(pO);
+            // pO = ROW->surfacePoint;
+            // pO_center = X_next(ROW->surfacePoint);
+            /* -------------------------------------------------------------------------- */
             applyOverPoints(average_surrounding_pressure, target_nets);
             if (total_w > too_small_total_w)
                for (auto &[_, v] : ROW->column_value)
@@ -360,7 +361,14 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             ROW->p_SPH = ROW->p_EISPH = 0;
             pO = ROW;
             pO_center_mirror = X_next(pO);
+            //! pO_center_mirror: これは壁粒子自身の壁内の位置座標
+            //! pO_center : よくマーカーと言われる流体内の位置座標
+            //! ちょっとした修正11/28
+            // if (ROW->isFirstWallLayer)
+            //    pO_center = pO_center_mirror + pO->v_to_surface_SPH;
+            // else
             pO_center = pO_center_mirror + 2. * pO->v_to_surface_SPH;
+
             //  b% EISPH (initial guess) EISPHは方程式を立てる必要がなく，直接圧力を計算する
             total_volume_w = 0;
             applyOverPoints(EISPH_wall_pressure, fluid_nets);
@@ -570,7 +578,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 70;
+   int size = 100;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {
@@ -580,12 +588,12 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    x0 = GMRES->x;
-   double torr = 1E-13;
+   double torr = 5E-14;
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
    if (error > torr)
-      for (auto i = 1; i < 5; i++) {
+      for (auto i = 1; i < 10; i++) {
          std::cout << "Restart : " << i << std::endl;
          GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
          x0 = GMRES->x;

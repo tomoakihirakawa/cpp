@@ -224,125 +224,28 @@ V_i QuotientMod(const int a, const int b) {
    return {(int)a / b, a % b};
 };
 //==========================================================
+
 template <class T>
-std::vector<T> Take(std::vector<T> &vec, const V_i &beg_end_skip) {
+std::vector<T> Take(const std::vector<T> &vec, const std::array<int, 3> &range = {0, -1, 1}) {
+   const int start = range[0];
+   int end = (range[1] < 0) ? vec.size() + range[1] : range[1];
+   const int skip = range[2];
+
+   if (start < 0 || start >= vec.size())
+      throw std::out_of_range("Start index out of range");
+   if (end > vec.size() || end <= start)
+      throw std::out_of_range("End index out of range or not logical");
+   if (skip <= 0)
+      throw std::invalid_argument("Skip value must be positive");
+
    std::vector<T> ret;
-   switch (beg_end_skip.size()) {
-      case 2:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < vec.size() + beg_end_skip[1]; i++)
-               ret.emplace_back(vec[i]);
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++)
-               ret.emplace_back(vec[i]);
-            return ret;
-         }
-      case 3:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < vec.size() + beg_end_skip[1]; i++)
-               if (i % beg_end_skip[2] == 0)
-                  ret.emplace_back(vec[i]);
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++)
-               if (i % beg_end_skip[2] == 0)
-                  ret.emplace_back(vec[i]);
-            return ret;
-         }
-      default:
-         abort();
-         return vec;
-   };
-};
-template <class T>
-std::vector<std::vector<T>> Take(std::vector<std::vector<T>> &mat, const V_i &beg_end_skip) {
-   std::vector<std::vector<T>> ret;
-   switch (beg_end_skip.size()) {
-      case 2:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < mat.size() + beg_end_skip[1]; i++) {
-               std::vector<T> vec;
-               for (size_t j = 0; j < mat[i].size(); j++)
-                  vec.emplace_back(mat[i][j]);
-               ret.emplace_back(vec);
-            };
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++) {
-               std::vector<T> vec;
-               for (size_t j = 0; j < mat[i].size(); j++)
-                  vec.emplace_back(mat[i][j]);
-               ret.emplace_back(vec);
-            };
-            return ret;
-         }
-      case 3:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < mat.size().beg_end_skip[1]; i++) {
-               if (i % beg_end_skip[2] == 0) {
-                  std::vector<T> vec;
-                  for (size_t j = 0; j < mat[i].size(); j++)
-                     vec.emplace_back(mat[i][j]);
-                  ret.emplace_back(vec);
-               }
-            };
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++) {
-               if (i % beg_end_skip[2] == 0) {
-                  std::vector<T> vec;
-                  for (size_t j = 0; j < mat[i].size(); j++)
-                     vec.emplace_back(mat[i][j]);
-                  ret.emplace_back(vec);
-               }
-            };
-            return ret;
-         }
-      default:
-         abort();
-         return mat;
-   };
-};
-template <class T>
-std::vector<std::vector<T>> Take(std::vector<std::vector<T>> &mat, const V_i &beg_end_skip, const V_i &beg_end_skip2) {
-   std::vector<std::vector<T>> ret;
-   switch (beg_end_skip.size()) {
-      case 2:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < mat.size() + beg_end_skip[1]; i++) {
-               std::vector<T> vec;
-               for (auto j = beg_end_skip[0]; j < beg_end_skip2[1]; j++)
-                  vec.emplace_back(mat[i][j]);
-               ret.emplace_back(vec);
-            };
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++) {
-               std::vector<T> vec;
-               for (auto j = beg_end_skip[0]; j < beg_end_skip2[1]; j++)
-                  vec.emplace_back(mat[i][j]);
-               ret.emplace_back(vec);
-            };
-            return ret;
-         }
-      case 3:
-         if (beg_end_skip[1] < 0) {
-            for (auto i = beg_end_skip[0]; i < mat.size() + beg_end_skip[1]; i++)
-               if (i % beg_end_skip[2] == 0)
-                  ret.emplace_back(Take(mat[i], beg_end_skip2));
-            return ret;
-         } else {
-            for (auto i = beg_end_skip[0]; i < beg_end_skip[1]; i++)
-               if (i % beg_end_skip[2] == 0)
-                  ret.emplace_back(Take(mat[i], beg_end_skip2));
-            return ret;
-         }
-      default:
-         abort();
-         return mat;
-   };
-};
+   ret.reserve(vec.size());  // Optional optimization
+   for (int i = start; i < end; i += skip) {
+      ret.emplace_back(vec[i]);
+   }
+   return ret;
+}
+
 //==========================================================
 VV_d Import(const std::string &fname) {
    std::ifstream fin(fname);

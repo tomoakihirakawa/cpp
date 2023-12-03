@@ -110,6 +110,18 @@ V_netLp extractLines(const std::vector<T *> &points) {
 /*    \ /    */
 /*     *     */
 class networkLine : public CoordinateBounds {
+   /* ----------------------------------------------- */
+   /*                 MOORING LINE                    */
+   /* ----------------------------------------------- */
+  public:
+   double diameter = 0.;                //! [m]
+   double natural_length = 0.;          //! [m]
+   double stiffness = 0.;               //! [N/m]
+   double damping = 0.;                 //! [N/(m/s^2)]
+   double weight_per_unit_length = 0.;  //! [kg/m]
+
+  public:
+   bool public_status = false;
 #ifdef DEM
   public:
    double tension;
@@ -381,6 +393,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    // 今のところSoft bodyのためのもの
    RungeKutta<Tddd> RK_velocity;
+   RungeKutta<Tddd> RK_force;
    //
    // 今のところSPHのためのもの
    RungeKutta<Tddd> RK_U;
@@ -452,6 +465,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    T6d velocity = {0., 0., 0., 0., 0., 0.};
    T6d acceleration = {0., 0., 0., 0., 0., 0.};
    double mass = 0.;
+   Tddd forceTranslational() const { return {force[0], force[1], force[2]}; };
+   Tddd forceRotational() const { return {force[3], force[4], force[5]}; };
    Tddd velocityTranslational() const { return {velocity[0], velocity[1], velocity[2]}; };
    Tddd velocityRotational() const { return {velocity[3], velocity[4], velocity[5]}; };
    Tddd accelTranslational() const { return {acceleration[0], acceleration[1], acceleration[2]}; };
@@ -603,6 +618,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
    Tddd U_SPH, U_SPH_, marker_X, marker_U;
+   T3Tddd nabla_otimes_U;
    Tddd U_XSPH, U_XSPH_next, U_next;
    InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
@@ -628,8 +644,6 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M, laplacian_corr_M, laplacian_corr_M_next;
    std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
-   Tddd success_inv_grad_corr_M;
-   Tddd success_inv_grad_corr_M_next;
    // Tddd grad_Min_gradM;
    //
    // std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
@@ -645,8 +659,10 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    double var_Eigenvalues_of_M = 0.;
    double min_Eigenvalues_of_M = 0.;
+   double max_Eigenvalues_of_M = 0.;
    double var_Eigenvalues_of_M1 = 0.;
    double min_Eigenvalues_of_M1 = 0.;
+   double max_Eigenvalues_of_M1 = 0.;
    double var_Eigenvalues_of_M_next = 0.;
    double var_Eigenvalues_of_M1_next = 0.;
    // ダミー粒子としての情報
@@ -1507,6 +1523,8 @@ class pathInfo {
 /*    / \    */
 /*   @-->@   */
 class networkFace : public Triangle {
+  public:
+   bool public_status;
 
   protected:
    bool status;
@@ -3543,8 +3561,7 @@ class Network : public CoordinateBounds {
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
       std::cout << this->getName() << "this->scaledBounds(expand_bounds) = " << this->scaledBounds(expand_bounds) << std::endl;
-      this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
-      //
+      this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);      
       double particlize_spacing;
       for (const auto &f : this->getFaces()) {
          particlize_spacing = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 20.;
@@ -3681,6 +3698,10 @@ class Network : public CoordinateBounds {
       this->mass = this->mass_tmp;
       this->inertia = this->inertia_tmp;
    };
+
+   /* ------------------------------------------------------ */
+
+   std::vector<Network *> mooringLines;
 
    /* ------------------------------------------------------ */
 
