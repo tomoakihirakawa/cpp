@@ -1,7 +1,7 @@
 #ifndef SPH_H
 #define SPH_H
 
-#define MOVE_WALL_PARTICLE false
+#define USE_GRAD_LAPLACIAN_CORRECTION
 
 #define SET_AUX_AT_PARTICLE_SPACING
 // #define SET_AUX_AT_MASS_CENTER
@@ -291,8 +291,11 @@ void developByEISPH(Network *net,
          Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setFreeSurface(net, net_RigidBody);
          Print(Green, "setFreeSurface", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         //
          // setAuxiliaryPoints(net);
          // Print(Green, "setAuxiliaryPoints", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         // modify_interp_normal_original(net, net_RigidBody);
+         // Print(Green, "modify_interp_normal_original", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          // setCorrectionMatrix(Append(net_RigidBody, net));
          // Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
@@ -300,6 +303,7 @@ void developByEISPH(Network *net,
          calcLaplacianU(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
          Print(Green, "calcLaplacianU", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* ------------------------------- 次時刻の計算が可能に ------------------------ */
+         // deleteAuxiliaryPoints(net);
          Print(green, "recalculation", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setWall(net, RigidBodyObject, particle_spacing);
          Print(green, "setWall", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
@@ -322,6 +326,8 @@ void developByEISPH(Network *net,
          gradP(net->getPoints(), Append(net_RigidBody, net));
          Print(Green, "calculate grad(P) and increment DU/Dt", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+         //! NEW -------------------------------------------------------------------------- */
+         calculate_nabla_otimes_U_next(Join(net->getPoints(), wall_p), net_RigidBody);
          /* -------------------------------------------------------------------------- */
          //% 粒子の時間発展
          updateParticles(net->getPoints(), Append(net_RigidBody, net), net_RigidBody, particle_spacing);
@@ -358,13 +364,6 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("C_SML", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
-
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->success_inv_grad_corr_M;
-   vtp.addPointData("success_inv_grad_corr_M", uo_3d);
-
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->success_inv_grad_corr_M_next;
-   vtp.addPointData("success_inv_grad_corr_M_next", uo_3d);
-
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
    vtp.addPointData("min_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;

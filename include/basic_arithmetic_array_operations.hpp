@@ -439,8 +439,8 @@ constexpr std::array<T, N1> Total(const std::array<std::array<T, N1>, N0>& arr) 
 /* -------------------------------------------------------------------------- */
 
 template <typename T, size_t N1, size_t N2>
-constexpr std::array<std::array<T, N2>, N1> TensorProduct(T scalar, const std::array<std::array<T, N2>, N1>& matrix) noexcept {
-   std::array<std::array<T, N2>, N1> result;
+constexpr std::array<std::array<T, N2>, N1> TensorProduct(const T scalar, const std::array<std::array<T, N2>, N1>& matrix) noexcept {
+   std::array<std::array<T, N2>, N1> result{};
    for (size_t i = 0; i < N1; ++i) {
       for (size_t j = 0; j < N2; ++j) {
          result[i][j] = scalar * matrix[i][j];
@@ -463,8 +463,8 @@ constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1
 // Base case for scalar and vector
 template <typename T, std::size_t N>
 constexpr auto TensorProduct(const T scalar, const std::array<T, N>& vec) noexcept {
-   std::array<T, N> result;
-   for (std::size_t i = 0; i < N; ++i) {
+   std::array<T, N> result{};
+   for (size_t i = 0; i < N; ++i) {
       result[i] = scalar * vec[i];
    }
    return result;
@@ -473,10 +473,9 @@ constexpr auto TensorProduct(const T scalar, const std::array<T, N>& vec) noexce
 // Recursive case for tensors
 template <typename T, std::size_t N, typename... Arrays>
 constexpr auto TensorProduct(const std::array<T, N>& tensor1, const Arrays&... tensors) noexcept {
-   std::array<decltype(TensorProduct(tensor1[0], tensors...)), N> result;
-   for (std::size_t i = 0; i < N; ++i) {
+   std::array<decltype(TensorProduct(tensor1[0], tensors...)), N> result{};
+   for (size_t i = 0; i < N; ++i)
       result[i] = TensorProduct(tensor1[i], tensors...);
-   }
    return result;
 }
 
@@ -486,8 +485,11 @@ template <typename T, size_t N>
 constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
 Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
    T ret = 0;
-   int i = 0;
-   std::ranges::for_each(arr, [&](const auto& a) { ret = std::fma(a, ARR[i++], ret); });
+   // int i = 0;
+   // std::ranges::for_each(arr, [&](const auto& a) { ret = std::fma(a, ARR[i++], ret); });
+   // rewrite this using for
+   for (size_t i = 0; i < N; ++i)
+      ret += arr[i] * ARR[i];
    return ret;
 }
 
@@ -495,9 +497,10 @@ template <typename T, size_t N0, size_t N1, size_t N2>
 constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<T, N2>, N1>>::type
 Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<std::array<T, N2>, N0>& ARR) noexcept {
    std::array<std::array<T, N2>, N1> ret{};
+   T sum = 0;
    for (size_t i = 0; i < N1; ++i) {
       for (size_t j = 0; j < N2; ++j) {
-         T sum = 0;
+         sum = 0;
          for (size_t k = 0; k < N0; ++k) {
             sum += arr[i][k] * ARR[k][j];
          }
@@ -540,14 +543,14 @@ constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<s
    /*
    {a,b,c}.{{A0,A1,A2,A3},{B0,B1,B2,B3},{C0,C1,C2,C3}}
    */
-   std::array<T, N1> ret = {};
+   std::array<T, N1> ret{};
    // for_each(ARRARR, arr, [&](auto &ARR, auto &a) {
    //    for (size_t j = 0; j < N1; ++j) {
    //       ret[j] += a * ARR[j];
    //    }
    // });
    //
-   for (int i = 0; const auto& ARR : ARRARR) {
+   for (size_t i = 0; const auto& ARR : ARRARR) {
       for (size_t j = 0; j < N1; ++j)
          ret[j] += arr[i] * ARR[j];
       i++;
@@ -559,7 +562,7 @@ constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<s
 template <size_t N0, size_t N1, size_t N2, typename T>
 constexpr std::array<std::array<T, N2>, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<std::array<T, N2>, N1>, N0>& ARRARR) noexcept {
    std::array<std::array<T, N2>, N1> ret = {};
-   for (int i = 0; const auto& ARR : ARRARR) {
+   for (size_t i = 0; const auto& ARR : ARRARR) {
       for (size_t j = 0; j < N1; ++j)
          ret[j] += arr[i] * ARR[j];
       i++;
@@ -748,15 +751,45 @@ constexpr T RootMeanSquare(const std::array<T, N>& arr) noexcept { return std::s
 //             std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
 // }
 
-#include <array>
 #include <type_traits>
+
+// template <typename T>
+// inline constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
+//    static_assert(std::is_arithmetic_v<T>, "Arithmetic type required.");
+//    return {{std::fma(-std::get<2>(A), std::get<1>(B), std::get<1>(A) * std::get<2>(B)),
+//             std::fma(-std::get<0>(A), std::get<2>(B), std::get<2>(A) * std::get<0>(B)),
+//             std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
+// }
 
 template <typename T>
 inline constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::array<T, 3>& B) noexcept {
    static_assert(std::is_arithmetic_v<T>, "Arithmetic type required.");
-   return {{std::fma(-std::get<2>(A), std::get<1>(B), std::get<1>(A) * std::get<2>(B)),
-            std::fma(-std::get<0>(A), std::get<2>(B), std::get<2>(A) * std::get<0>(B)),
-            std::fma(-std::get<1>(A), std::get<0>(B), std::get<0>(A) * std::get<1>(B))}};
+   return {{std::fma(std::get<1>(A), std::get<2>(B), -std::get<2>(A) * std::get<1>(B)),
+            std::fma(std::get<2>(A), std::get<0>(B), -std::get<0>(A) * std::get<2>(B)),
+            std::fma(std::get<0>(A), std::get<1>(B), -std::get<1>(A) * std::get<0>(B))}};
+}
+
+/* -------------------------------------------------------------------------- */
+
+// double Det(const T3Tddd& M) {
+//    return -(std::get<0>(std::get<2>(M)) * std::get<1>(std::get<1>(M)) * std::get<2>(std::get<0>(M))) +
+//           std::get<0>(std::get<1>(M)) * std::get<1>(std::get<2>(M)) * std::get<2>(std::get<0>(M)) +
+//           std::get<0>(std::get<2>(M)) * std::get<1>(std::get<0>(M)) * std::get<2>(std::get<1>(M)) -
+//           std::get<0>(std::get<0>(M)) * std::get<1>(std::get<2>(M)) * std::get<2>(std::get<1>(M)) -
+//           std::get<0>(std::get<1>(M)) * std::get<1>(std::get<0>(M)) * std::get<2>(std::get<2>(M)) +
+//           std::get<0>(std::get<0>(M)) * std::get<1>(std::get<1>(M)) * std::get<2>(std::get<2>(M));
+// };
+
+double Det(const T3Tddd& M) {
+   // Unpacking each row of the matrix
+   auto [a, b, c] = std::get<0>(M);  // First row
+   auto [d, e, f] = std::get<1>(M);  // Second row
+   auto [g, h, i] = std::get<2>(M);  // Third row
+
+   // Calculating the determinant using std::fma
+   return std::fma(a, std::fma(e, i, -f * h),
+                   std::fma(b, std::fma(f, g, -d * i),
+                            std::fma(c, std::fma(d, h, -e * g), 0)));
 }
 
 /* -------------------------------------------------------------------------- */

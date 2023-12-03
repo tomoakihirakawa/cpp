@@ -138,7 +138,7 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
       if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
          auto ps = p->getNeighbors();
          // 無視できる角度
-         const double negligible_angle = 1E-2 * M_PI / 180.;
+         const double negligible_angle = 1E-1 * M_PI / 180.;
          const bool negligibly_flat = isFlat(p, negligible_angle);
          const double acceptable_change_angle = 1E-5 * M_PI / 180.;
          const auto faces = ToVector(p->getFaces());
@@ -158,16 +158,11 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
                else if (p2 == p)
                   X2 += V;
 
-               T3Tddd vertices = {X0, X1, X2};
-               if (!isValidTriangle(vertices, 1E-2 * M_PI / 180.))
+               if (!isValidTriangle(T3Tddd{X0, X1, X2}, 1E-2 * M_PI / 180.))
                   return false;
                if (!isFlat(Cross(p1->X - p0->X, p2->X - p0->X), Cross(X1 - X0, X2 - X0), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
                   return false;
                if (!isFlat(Cross(p2->X - p1->X, p0->X - p1->X), Cross(X2 - X1, X0 - X1), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
-                  return false;
-               if (!isFlat(Cross(Normalize(p1->X - p0->X), Normalize(p2->X - p0->X)), Cross(Normalize(X1 - X0), Normalize(X2 - X0)), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
-                  return false;
-               if (!isFlat(Cross(Normalize(p2->X - p1->X), Normalize(p0->X - p1->X)), Cross(Normalize(X2 - X1), Normalize(X0 - X1)), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
                   return false;
             }
             return true;
@@ -277,7 +272,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p) {
 
 void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
    // gradually approching to given a
-   const double aIN = 0.01;
+   const double aIN = 0.05;
    for (auto i = 0; i < iteration; ++i) {
       const double a = aIN * ((i + 1.) / (double)(iteration));
       for (const auto &p : ps)
@@ -313,7 +308,7 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
       for (const auto &f : p->getFaces()) {
          t3tdd = ToX(f->getPoints());
          Wtot += (W = TriangleArea(t3tdd));
-         V += W * (X = Centroid(t3tdd));
+         V += W * (X = Incenter(t3tdd));
       }
       return V / Wtot - p->X;
    } else
@@ -321,7 +316,7 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
 };
 
 void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   const double aIN = 0.1;
+   const double aIN = 0.5;
    for (auto i = 0; i < iteration; ++i) {
       double a = aIN * ((i + 1.) / (double)(iteration));
       for (const auto &p : ps)
@@ -601,7 +596,7 @@ void Merge(const std::unordered_set<networkLine *> &uo_lines, const std::functio
    // }
 };
 
-void Divide(std::unordered_set<networkLine *> uo_lines, const std::function<bool(const networkLine *)> &func) {
+void Divide(std::unordered_set<networkLine *> uo_lines, const std::function<bool(networkLine *)> &func) {
    for (const auto &l : uo_lines)
       if (func(l))
          l->divide();

@@ -60,9 +60,16 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             //    c *= 0.5;
             // }
 
+            // auto grad = grad_w_Bspline_next(A, B);
             auto grad = grad_w_Bspline_next(A, B);
-            A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
-            A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
+            //! これまでの方法
+            // A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
+            // A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
+
+            //!
+            A->gradP_SPH += V_next(B) * (B->p_SPH - A->p_SPH) * grad;
+
+            // A->gradP_SPH += V_next(B) * B->p_SPH * grad_w_Bspline_next(A, B);
 
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad;  //\label{SPH:gradP2}
 
@@ -122,7 +129,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
          const double r = A->SML_next();
          for (const auto &net : target_nets) {
-            net->BucketPoints.apply(A->X, 1.1 * r, [&](const auto &B) {
+            net->BucketPoints.apply(A->X, 1.2 * r, [&](const auto &B) {
                if (canInteract(A, B) && A != B) {
                   add_gradP_SPH(B);
                   // if (B->isSurface) {

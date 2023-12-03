@@ -186,9 +186,9 @@ void setAuxiliaryPoints(const auto net, const std::function<Tddd(networkPoint *)
 void setSML(const auto &target_nets) {
    DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   const double C_SML_max = 3.;
-   const double C_SML_min = 2.;
-   const double C_SML_min_rigid = 2.;
+   const double C_SML_max = 2.4;
+   const double C_SML_min = 2.4;
+   const double C_SML_min_rigid = 2.4;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -347,17 +347,18 @@ Tddd U_next(const networkPoint *p) {
 Tddd X_next(const networkPoint *p) {
    try {
       //! aux pointの位置は，忘れずに正しくRK_Xにセットすること
-      if (p->isAuxiliary) {
-         auto sp = p->surfacePoint;
-#ifdef SET_AUX_AT_PARTICLE_SPACING
-         return X_next(sp) + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
-#elif defined(SET_AUX_AT_MASS_CENTER)
-         return X_next(sp) - sp->vec2COM_next;
-#else
-         return p->RK_X.getX(U_next(p));
-#endif
-      } else if (!p->isFluid)
-         return MOVE_WALL_PARTICLE ? p->RK_X.getX(U_next(p)) : p->X;
+      //       if (p->isAuxiliary) {
+      //          auto sp = p->surfacePoint;
+      // #ifdef SET_AUX_AT_PARTICLE_SPACING
+      //          return X_next(sp) + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
+      // #elif defined(SET_AUX_AT_MASS_CENTER)
+      //          return X_next(sp) - sp->vec2COM_next;
+      // #else
+      //          return p->RK_X.getX(U_next(p));
+      // #endif
+      //       } else
+      if (!p->isFluid)
+         return p->X;
       else
          return p->RK_X.getX(U_next(p));
    } catch (...) {
@@ -377,8 +378,8 @@ double rho_next(auto p) {
    //       return _WATER_DENSITY_;
    //    else {
    // #if defined(USE_RungeKutta)
+   // return (p->RK_rho.getX(-p->rho * p->div_U) + _WATER_DENSITY_) / 2.;
    // return p->RK_rho.getX(-p->rho * p->div_U);
-
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
    // return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
@@ -435,11 +436,44 @@ std::tuple<networkPoint *, Tddd> closest_next(const networkPoint *p, const auto 
 //
 #include "SPH2_FindPressure.hpp"
 //
-#include "SPH3_grad_p.hpp"
+#include "SPH3_grad_P.hpp"
 //
 //@ -------------------------------------------------------- */
 //@                        粒子の時間発展                      */
 //@ -------------------------------------------------------- */
+
+//! calculate p->nabla_otimes_U using the velocity at next time step
+//! nabla_otimes_U is TensorProduct of velocity gradient
+void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) {
+   try {
+      DebugPrint("calculate_nabla_otimes_U_next", Green);
+#pragma omp parallel
+      for (const auto &p : points)
+#pragma omp single nowait
+      {
+         T3Tddd nabla_otimes_U;
+         p->U_XSPH = U_next(p);
+         Fill(nabla_otimes_U, 0.);
+         const double c_xsph = 0.01;
+
+         auto add = [&](const auto &q) {
+            auto grad = grad_w_Bspline(p, q);
+            auto pU = p->RK_U.getX(p->DUDt_SPH);
+            auto qU = q->RK_U.getX(q->DUDt_SPH);
+            if (p->isFluid && q->isFluid && !q->isAuxiliary && q != p)
+               p->U_XSPH -= c_xsph * (U_next(p) - U_next(q)) * V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML_next());  //\label{SPH:U_XSPH}
+            nabla_otimes_U += q->volume * TensorProduct(grad, qU - pU);
+         };
+
+         for (const auto &net : target_nets)
+            net->BucketPoints.apply(p->X, 1.2 * p->SML(), add);
+
+         p->nabla_otimes_U = nabla_otimes_U;
+      }
+   } catch (...) {
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in calculate_nabla_otimes_U_next");
+   }
+}
 
 #define REFLECTION
 
@@ -459,9 +493,12 @@ void updateParticles(const auto &points,
          auto X_last = p->X;
 #if defined(USE_RungeKutta)
          // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-         p->RK_U.push(p->DUDt_SPH);  // 速度
-         p->U_SPH = p->RK_U.getX();
-         p->RK_X.push(p->U_SPH);  // 位置
+         auto Uoriginal = p->RK_U.getX(p->DUDt_SPH);
+         auto Umod = p->U_XSPH;
+         p->RK_U.push(p->DUDt_SPH + Dot(p->nabla_otimes_U, Umod - Uoriginal));  // 速度
+         p->U_SPH = p->RK_U.getX();                                             // 速度の更新は修正を考慮して行う
+         // p->RK_X.push(p->U_SPH);  // 位置
+         p->RK_X.push(Umod);  // 位置の更新はU_XSPHを使う
          p->setXSingle(p->RK_X.getX());
 #elif defined(USE_LeapFrog)
          auto X_next = [&](const auto &p) { return p->X; };
@@ -514,26 +551,36 @@ void updateParticles(const auto &points,
             isReflected = false;
             auto d_ps = particle_spacing;
             auto d0 = (1 - c) * particle_spacing;
-            for (const auto &[closest_p, v_f2w] : {/*closest(p, RigidBodyObject), */ closest_next(p, RigidBodyObject)}) {
+            for (const auto &[closest_p, f2w] : {/*closest(p, RigidBodyObject) ,*/ closest_next(p, RigidBodyObject)}) {
+               //! X^n+1 = U^n+1*dt + X^n は壁面内部にある
+               //! U_mod = Chop(U^n+1,n)
+               //! U_mod - U^n+1 = Chop(U^n+1,n) - U^n+1
                if (closest_p != nullptr) {
-                  auto n = Normalize(closest_p->interp_normal_original);
-                  auto n_d_f2w = Norm(Projection(v_f2w, n));
-                  auto ratio = (d0 - n_d_f2w) / d0;
-                  if (Norm(v_f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
+                  auto dist_f2w = Norm(f2w);
+                  auto n = closest_p->interp_normal;
+                  auto normal_dist_f2w = Norm(Projection(f2w, n));  //! nomal distance from the fluid particle to the wall particle
+                  auto ratio = (d0 - normal_dist_f2w) / d0;
+                  // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
+                  if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        tmp += 0.5 * _GRAVITY_ * n;
+                        // auto tmp = -Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        // tmp += _GRAVITY_ * n;
                         // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                         // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        p->DUDt_modify_SPH += tmp;
-                        p->DUDt_SPH += tmp;
+
+                        p->DUDt_modify_SPH = Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal);
+                           // p->DUDt_SPH = p->DUDt_SPH + Dot(p->nabla_otimes_U, p->U_XSPH - p->RK_U.getX()) + p->DUDt_modify_SPH;
    #if defined(USE_RungeKutta)
                         // p->RK_U.repush(p->DUDt_SPH);  // 速度
                         // p->U_SPH = p->RK_U.getX();
-                        p->RK_U.repush(p->DUDt_SPH);  // 速度
+                        // p->RK_U.repush(p->DUDt_SPH);  // 速度
+                        // p->U_SPH = Chop(p->RK_U.getX(), n);
+
+                        p->RK_U.repush(p->DUDt_SPH + Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal));  // 速度
                         p->U_SPH = p->RK_U.getX();
-                        p->RK_X.repush(p->U_SPH);  // 位置
+                        // p->RK_X.repush(p->U_SPH);  // 位置
+                        p->RK_X.repush(Chop(Umod, n));  // 位置
                         p->setXSingle(p->RK_X.getX());
                         isReflected = true;
    #elif defined(USE_LeapFrog)
@@ -619,5 +666,4 @@ WARNING: 計算がうまく行く設定を知るために，次の箇所をチ�
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
 */
-
 #endif

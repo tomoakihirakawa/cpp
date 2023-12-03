@@ -3,7 +3,7 @@
 #include "basic_alias.hpp"
 /* ------------------------------------------------------- */
 
-#define DEBUGGING
+// #define DEBUGGING
 #ifdef DEBUGGING
    #define DEBUGGING_LEVEL 1
 #else

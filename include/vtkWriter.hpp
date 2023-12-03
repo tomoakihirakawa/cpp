@@ -421,6 +421,18 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<T> &V, const s
    vtp.write(ofs);
 };
 
+template <typename T, typename U>
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<T> &V,
+                     const std::vector<std::tuple<std::string, std::unordered_map<T, U>>> &name_uo_data = {}) {
+   vtkPolygonWriter<T> vtp;
+   for (const auto &X : V)
+      vtp.add(X);
+
+   for (const auto &[name, data] : name_uo_data)
+      vtp.addPointData(name, data);
+   vtp.write(ofs);
+};
+
 #if defined(Network_H)
 template <typename U>
 void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uo_f, const std::unordered_map<networkPoint *, U> &data_double = {}) {

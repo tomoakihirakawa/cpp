@@ -29,7 +29,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "Ren2015"
 
 match SimulationCase:
     case "fish":
@@ -181,7 +181,16 @@ match SimulationCase:
                  "type": "RigidBody",
                  # "isFixed": True,
                  # "output": "json"}
-                #  "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 1.],
+                 # "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 1.],
+                #  "mooring": ["mooring1", # 1
+                #              "simple_mooring", # 2
+                #              4.6, W/2, 0.,   # x,y,z body side
+                #              4.6, W/2., 0.3, # x,y,z
+                #              10,     #div 9
+                #              10**7., # stiffness 10
+                #              0.9,    # damping 11
+                #              348.5   # weight 12
+                #              ],
                  "velocity": "floating"}
 
         float["mass"] = m = 500*L*H*W

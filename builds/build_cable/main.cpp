@@ -3,15 +3,17 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "Network.hpp"
 #include "basic_IO.hpp"
 #include "basic_arithmetic_array_operations.hpp"
 #include "basic_vectors.hpp"
 #include "integrationOfODE.hpp"
+#include "vtkWriter.hpp"
 
 // (cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)
 // echo '(cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)'
 
-/*DOC_EXTRACT
+/*DOC_EXTRACT 0_cable_dynamics
 
 # ケーブルの動的解析
 
@@ -27,11 +29,9 @@ NOTE: 弦の振動を支配する方程式として，波動方程式$`\frac{\pa
 
 オイラー法，Leap-Frog法，Runge-Kutta法を用いて，弾性体の動きをシミュレーション．
 
-|   |   |
-|---|---|
-| 剛性$`[N/m]`$ | $`1400 \times 10^6`$ |
-| 減衰$`[N/(m/s^2)]`$ | $`0.9`$ |
-| 自然長$`[m]`$ | $`1`$ |
+* 剛性$`[N/m]`$:$`1400 \times 10^6`$
+* 減衰$`[N/(m/s^2)]`$:$`0.9`$
+* 自然長$`[m]`$:$`1`$
 
 ![sample.gif](./sample.gif)
 
@@ -46,6 +46,7 @@ NOTE: 弦の振動を支配する方程式として，波動方程式$`\frac{\pa
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
+```
 
 */
 
@@ -87,7 +88,7 @@ void simulateCableDynamics(double t, double dt) {
 
    auto tension = [&](const int i) {
       std::array<double, 3> force;
-
+      force.fill(0.);
       if (i - 1 >= 0) {
          auto v = nodes[i - 1].X - nodes[i].X;
          double disp = Norm(v) - natural_length;
@@ -211,9 +212,7 @@ int main() {
       t += dt;
    }
 
-   /* --------------------------------------------- */
-
-   // Output to JSON file
+   /* ----------------------------- OUTPUT AS JSON ----------------------------- */
 #ifdef USE_EULER
    std::ofstream myfile("cable_euler.json");
 #elif defined USE_LEAP_FROG
@@ -228,5 +227,31 @@ int main() {
    myfile << "\"tension\" : " << std::make_tuple(tensions, bracket);
    myfile << "}";
    myfile.close();
+
+   /* ----------------------------- OUTPUT AS VTK ----------------------------- */
+   PVDWriter pvd("/Users/tomoaki/Cable/line.pvd");
+   auto net = new Network;
+   std::vector<networkPoint*> points;
+   int i = 0;
+   for (auto k = 0; k < positions.size(); ++k)
+      if (k % 10 == 0) {
+         auto t = times[i];
+         if (i == 0) {
+            for (const auto& X : positions[i])
+               points.push_back(new networkPoint(net, X));
+            for (auto j = 0; j < points.size() - 1; ++j)
+               new networkLine(net, points[j], points[j + 1]);
+         } else {
+            for (auto j = 0; j < points.size(); ++j)
+               points[j]->setXSingle(positions[i][j]);
+         }
+         auto filename = "/Users/tomoaki/Cable/line" + std::to_string(i) + ".vtp";
+         std::ofstream ofs(filename);
+         vtkPolygonWrite(ofs, net->getLines());
+         pvd.push(filename, t);
+         ++i;
+      }
+   pvd.output();
+   /* -------------------------------------------------------------------------- */
    return 0;
 }

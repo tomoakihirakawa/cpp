@@ -33,7 +33,7 @@ inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFace
    if (!c_faces_sorted.empty())
       std::sort(c_faces_sorted.begin(), c_faces_sorted.end(),
                 [&](auto a, auto b) { return isFinite(Norm(std::get<1>(a) - this->X)) && isFinite(Norm(std::get<1>(b) - this->X)) &&
-                                             (Norm(std::get<1>(a) - this->X) - Norm(std::get<1>(b) - this->X)) < 1E-20; });
+                                       (Norm(std::get<1>(a) - this->X) - Norm(std::get<1>(b) - this->X)) < 1E-20; });
    return c_faces_sorted;
 };
 
@@ -371,7 +371,7 @@ std::vector<networkFace *> selectionOfFaces(const networkPoint *const p,
          if (!delete_same_direction)
             ret.emplace_back(F);
          else if (std::none_of(ret.begin(), ret.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) ||
-                                                                                   isFlat(F->normal, f->normal, M_PI / 180); }))
+                                                                          isFlat(F->normal, f->normal, M_PI / 180); }))
             ret.emplace_back(F);
          if (ret.size() >= num)
             return ret;

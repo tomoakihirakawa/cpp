@@ -64,11 +64,11 @@ if("${ld_version}" MATCHES "GNU gold")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
 endif()
 
-# Use LLVM's lld linker
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
-endif()
+# # Use LLVM's lld linker
+# if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+#   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+# endif()
 
 # Set compiler launcher
 set(CMAKE_C_COMPILER_LAUNCHER ccache)
@@ -126,13 +126,13 @@ add_executable(${BASE_NAME} ${SOURCE_FILE})
 find_package(LAPACK REQUIRED)
 target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
 
-# Locate and link Eigen3
-find_package(Eigen3 REQUIRED NO_MODULE)
-target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
+# # Locate and link Eigen3 if find inlcudes and libraries only if found
+# find_package(Eigen3 REQUIRED NO_MODULE)
+# target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
 
-# Find and link CGAL
-find_package(CGAL REQUIRED)
-target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
+# # Find and link CGAL
+# find_package(CGAL REQUIRED)
+# target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
 
 # Include directories
 target_include_directories(${BASE_NAME} PUBLIC

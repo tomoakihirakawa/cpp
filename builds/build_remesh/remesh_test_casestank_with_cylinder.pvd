@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder0.vtu" group="" part="0" timestep="0.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder1.vtu" group="" part="0" timestep="1.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder2.vtu" group="" part="0" timestep="2.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder3.vtu" group="" part="0" timestep="3.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder4.vtu" group="" part="0" timestep="4.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder5.vtu" group="" part="0" timestep="5.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder6.vtu" group="" part="0" timestep="6.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder7.vtu" group="" part="0" timestep="7.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder8.vtu" group="" part="0" timestep="8.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder9.vtu" group="" part="0" timestep="9.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder10.vtu" group="" part="0" timestep="10.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder11.vtu" group="" part="0" timestep="11.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder12.vtu" group="" part="0" timestep="12.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder13.vtu" group="" part="0" timestep="13.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder14.vtu" group="" part="0" timestep="14.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder15.vtu" group="" part="0" timestep="15.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder16.vtu" group="" part="0" timestep="16.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder17.vtu" group="" part="0" timestep="17.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder18.vtu" group="" part="0" timestep="18.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder19.vtu" group="" part="0" timestep="19.000000"/>
+    <DataSet file="./remesh_test_cases/tank_with_cylinder20.vtu" group="" part="0" timestep="20.000000"/>
+  </Collection>
+</VTKFile>
