@@ -250,7 +250,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L369](./main.cpp#L369)
+[./main.cpp#L416](./main.cpp#L416)
 
 ---
 ## ⛵ 境界のタイプを決定する 
@@ -320,7 +320,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L909](../../include/Network.hpp#L909)
+[../../include/Network.hpp#L923](../../include/Network.hpp#L923)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -769,7 +769,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L489](./main.cpp#L489)
+[./main.cpp#L536](./main.cpp#L536)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -848,7 +848,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L339)
+[強制運動を課す](../../builds/build_bem/main.cpp#L386)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -1033,7 +1033,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L622](./main.cpp#L622)
+[./main.cpp#L669](./main.cpp#L669)
 
 ---
 # 🐋 実行方法 
@@ -1072,7 +1072,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L765](./main.cpp#L765)
+[./main.cpp#L831](./main.cpp#L831)
 
 ---
 # 🐋 Input Generator 
@@ -1095,7 +1095,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L246](./input_generator.py#L246)
+[./input_generator.py#L255](./input_generator.py#L255)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1122,13 +1122,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L324](./input_generator.py#L324)
+[./input_generator.py#L333](./input_generator.py#L333)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L805](./main.cpp#L805)
+[./main.cpp#L871](./main.cpp#L871)
 
 ---

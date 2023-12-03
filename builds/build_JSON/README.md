@@ -104,7 +104,7 @@ os.close();
 ```
 "name": { "asda": 1 }
 ```
-[../../include/basic.hpp#L2059](../../include/basic.hpp#L2059)
+[../../include/basic.hpp#L1962](../../include/basic.hpp#L1962)
 
 [./main.cpp#L6](./main.cpp#L6)
 
