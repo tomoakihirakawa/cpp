@@ -18,7 +18,8 @@ double _GRAVITY_ = 9.81;
 
 #include <array>
 #include <tuple>
-Tddd _GRAVITY3_ = {0., 0., -_GRAVITY_};
+const std::array<double, 3> _GRAVITY3_ = {0., 0., -_GRAVITY_};
+const std::array<double, 3> _ZEROS3_ = {0., 0., 0.};
 /* --------------- files system -------------- */
 
 #include <string>

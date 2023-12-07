@@ -61,14 +61,18 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
             // }
 
             // auto grad = grad_w_Bspline_next(A, B);
+
             auto grad = grad_w_Bspline_next(A, B);
+
+#ifdef USE_SYMMETRIC_FORM_FOR_PRESSURE
             //! これまでの方法
             // A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
             // A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
-
-            //!
-            A->gradP_SPH += V_next(B) * (B->p_SPH - A->p_SPH) * grad;
-
+            FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)), grad, A->gradP_SPH);
+            FusedMultiplyIncrement(A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
+#elif defined(USE_RANDLES_LIBERSKY_FORM_FOR_PRESSURE)
+            FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
+#endif
             // A->gradP_SPH += V_next(B) * B->p_SPH * grad_w_Bspline_next(A, B);
 
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad;  //\label{SPH:gradP2}

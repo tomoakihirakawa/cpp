@@ -219,7 +219,7 @@ N _4 &= 4t _1(1-t _0-t _1) \\
 N _5 &= 4t _0(1-t _0-t _1)
 \end{align}
 ```
-[../../include/basic_arithmetic_array_operations.hpp#L886](../../include/basic_arithmetic_array_operations.hpp#L886)
+[../../include/basic_arithmetic_array_operations.hpp#L926](../../include/basic_arithmetic_array_operations.hpp#L926)
 
 
 ![](sample_tri.png)

@@ -24,15 +24,16 @@ PVDWriter pvd_points2(basePath + "points2.pvd");
 int main() {
 
    const double stiffness = 14 * std::pow(10, 8);  //! [N/m]
-   const double damp = .95;                        //! [N/(m/s^2)]
+   const double damp = .5;                         //! [N/(m/s^2)]
    const double density = 348.5;                   //! [kg/m]
-   const double dt = 0.00003;                      //! [s]
+   const double dt = 0.01;                         //! [s]
    const double total_length = 522.;               //! [m]
    const int n_points = 100;
    const double diam = 0.1;
 
    const double h = -58;
    const double r = 500.;
+
    auto mooring0 = new MooringLine({r * cos(0.), r * sin(0.), h}, {0., 0., 0.}, total_length, n_points);
    auto mooring1 = new MooringLine({r * cos(120 * M_PI / 180), r * sin(120 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
    auto mooring2 = new MooringLine({r * cos(240 * M_PI / 180), r * sin(240 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
@@ -40,9 +41,9 @@ int main() {
    std::map<MooringLine*, PVDWriter> pvd_line = {{mooring0, pvd_line0}, {mooring1, pvd_line1}, {mooring2, pvd_line2}};
    std::map<MooringLine*, PVDWriter> pvd_points = {{mooring0, pvd_points0}, {mooring1, pvd_points1}, {mooring2, pvd_points2}};
 
-   mooring0->setDensityDiameterDampingStiffness(density, diam, damp, stiffness);
-   mooring1->setDensityDiameterDampingStiffness(density, diam, damp, stiffness);
-   mooring2->setDensityDiameterDampingStiffness(density, diam, damp, stiffness);
+   mooring0->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
+   mooring1->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
+   mooring2->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
 
    double t = 0;
    int output_index = 0;
@@ -54,16 +55,29 @@ int main() {
       }
 
    auto boundary_condition = [&](networkPoint* p) {
-      for (auto mooring : {mooring0, mooring1, mooring2})
-         if (p == mooring->firstPoint || p == mooring->lastPoint) {
+      for (auto mooring : {mooring0, mooring1, mooring2}) {
+         if (p == mooring->firstPoint) {
             p->acceleration.fill(0);
             p->velocity.fill(0);
          }
+         if (p == mooring->lastPoint) {
+            if (t < 4) {
+               p->acceleration.fill(0);
+               p->velocity.fill(0);
+            } else {
+               std::array<double, 3> additional_force = {0, -9.8 * p->mass * sin(2 * M_PI / 3 * t), 0.};
+               auto > force = p->getForce() + p->mass * additional_force;
+               p->acceleration[0] = force[0] / p->mass;
+               p->acceleration[1] = force[1] / p->mass;
+               p->acceleration[2] = force[2] / p->mass;
+            }
+         }
+      }
    };
    /* -------------------------------------------------------------------------- */
    /*                         SIMULATION AND OUTPUT                              */
    /* -------------------------------------------------------------------------- */
-   const int max_iteration = 1000000;
+   const int max_iteration = 10000;
    for (int interation = 0; interation < max_iteration; ++interation) {
 
       /* ---------------------------------------------- */
@@ -78,7 +92,7 @@ int main() {
             point_tension.reserve(mooring->getPoints().size());
             for (auto p : mooring->getPoints()) {
                point_force[p] = p->forceTranslational();
-               point_tension[p] = mooring->getTension(p);
+               point_tension[p] = p->getTension();
             }
             //! line
             {
@@ -99,23 +113,18 @@ int main() {
             no++;
          }
          output_index++;
+         for (auto& [mooring, pvd_line] : pvd_line) pvd_line.output();
+         for (auto& [mooring, pvd_points] : pvd_points) pvd_points.output();
       }
 
       /* ---------------------------------------------- */
       /*                 SIMULATION                     */
       /* ---------------------------------------------- */
       mooring0->simulate(t, dt, boundary_condition);
-      mooring0->update();
       mooring1->simulate(t, dt, boundary_condition);
-      mooring1->update();
       mooring2->simulate(t, dt, boundary_condition);
-      mooring2->update();
-
       t += dt;
    }
-
-   for (auto& [mooring, pvd_line] : pvd_line) pvd_line.output();
-   for (auto& [mooring, pvd_points] : pvd_points) pvd_points.output();
    /* -------------------------------------------------------------------------- */
 
    return 0;

@@ -213,7 +213,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                total_volume_w += vol_w;
                total_w += w;
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
-               ROW->p_EISPH += (B->p_SPH_last + dP) * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               // ROW->p_EISPH += (B->p_SPH_last + dP) * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               FusedMultiplyIncrement(vol_w, B->p_SPH_last + dP, ROW->p_EISPH);
             }
          };
 
@@ -228,7 +229,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                total_w += w;
                auto dP = Dot(pO_center_mirror - BX, B->mu_SPH * B->lap_U + rho_next(B) * _GRAVITY3_);
                ROW->increment(B, vol_w);
-               ROW->PoissonRHS -= dP * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               // ROW->PoissonRHS -= dP * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
+               FusedMultiplyIncrement(vol_w, -dP, ROW->PoissonRHS);
             }
          };
 
@@ -238,9 +240,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          std::vector<std::tuple<networkPoint *, std::array<double, 3>>> near_particles_and_V_GradW;
 
          auto make_near_particles_and_V_GradW = [&pO, &pO_center, &near_particles_and_V_GradW](const auto &Q) {
-            if (Distance(pO_center, X_next(Q)) < pO->SML_next())
+            if (Distance(pO_center, X_next(Q)) <= pO->SML_next() && pO != Q)
                near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
          };
+
+#define USE_SYMMETRIC_FORM_FOR_PRESSURE
 
          auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto &B /*column id*/) {
             if (pO != B) {
@@ -248,20 +252,20 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                const auto r = pO->SML_next();
                if (Distance(pO_center, BX) <= r) {
                   const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
-
+                  // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());
+                  // var_Eifen_が大きすぎる内部の点は，計算がこんなんだろうから，EISPHの近似で計算する
                   /* -------------------------------------------------------------------------- */
                   //! 修正
                   const auto DelX = (pO_center - BX);
                   double c, total_c = 0;  //! 毎回すると遅いので
                   for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
-                     c = Aij * Dot(DelX, vol_grad);
+                     c = Dot(Aij * DelX, vol_grad);
                      total_c += c;
                      ROW->increment(Q, -c);
                   }
-
                   ROW->increment(pO, Aij + total_c);
                   ROW->increment(B, -Aij);
-                  /* -------------------------------------------------------------------------- */
+                  /* --------------------------------------------------------------------------- */
 
                   // /* -------------------------------------------------------------------------- */
                   // //! 修正
@@ -296,11 +300,13 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   // ROW->increment(B, -Aij);
                   /* -------------------------------------------------------------------------- */
 
-                  ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B));
+                  // ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B));
+                  FusedMultiplyIncrement(V_next(B), Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B)), ROW->PoissonRHS);
                   // ROW->PoissonRHS += V_next(B) * Dot(rho_next(B) * U_next(B) / B->RK_U.get_dt() - rho_next(pO) * U_next(pO) / pO->RK_U.get_dt(),  grad_w_Bspline_next(pO, pO_center, B));
 
                   //% for EISPH
-                  sum_Aij_Pj += Aij * B->p_SPH_last;
+                  // sum_Aij_Pj += Aij * B->p_SPH_last;
+                  FusedMultiplyIncrement(Aij, B->p_SPH_last, sum_Aij_Pj);
                   sum_Aij += Aij;
                }
                // PoissonEquationWithX(B, B->X);
@@ -334,7 +340,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             /* -------------------------------------------------------------------------- */
             // ROW->CRS::set(ROW, 1.);
             // ROW->PoissonRHS = 0;
-         } else if (ROW->isSurface_next) {
+         } else if (ROW->isSurface_next || ROW->isSurface) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
@@ -423,8 +429,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // if (!ROW->isSurface) {
             const auto dt = pO->RK_X.get_dt();
             // const double alpha = ROW->SML() > 2.0 ? dt : 0.;
-            const double alpha = 0.05;
-            // ROW->PoissonRHS += alpha * (ROW->intp_density - ROW->intp_density_next) / std::pow(dt, 2);
+            // const double gamma = 1E-7;
+            // ROW->PoissonRHS = (1. - gamma) * ROW->PoissonRHS + gamma * (_WATER_DENSITY_ - ROW->intp_density) / std::pow(dt, 2);
             // auto DrhoDt = (ROW->intp_density_next - ROW->intp_density) / dt;
             // auto DrhoDt = /;
             // }
@@ -578,7 +584,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 100;
+   int size = 125;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {

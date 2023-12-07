@@ -133,51 +133,91 @@ bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
 
 */
 
-void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &SmoothingVector) {
+void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp, const std::array<double, 3> &)> &SmoothingVector) {
    try {
       if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
          auto ps = p->getNeighbors();
          // 無視できる角度
          const double negligible_angle = 1E-1 * M_PI / 180.;
          const bool negligibly_flat = isFlat(p, negligible_angle);
-         const double acceptable_change_angle = 1E-5 * M_PI / 180.;
+         const double acceptable_change_angle = 1E-6 * M_PI / 180.;
          const auto faces = ToVector(p->getFaces());
-         Tddd X0, X1, X2;
-         auto check_if_next_faces_valid = [&](Tddd &V) {
+         double Atot = 0.;
+         for (const auto &f : faces)
+            Atot += f->area;
+         const double length_scale = std::sqrt(Atot / faces.size());
+         Tddd X0, X1, X2, cross_before, cross_after, result_V;
+
+         double min_angle_before = 1E+10;
+         double min_angle_after = 1E+10;
+         auto check_if_next_faces_valid = [&](const Tddd &replace_X) {
             for (const auto &f : faces) {
                auto [p0, p1, p2] = f->getPoints();
                if (p0 != p && p1 != p && p2 != p)
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p0 != p && p1 != p && p2 != p");
+
                X0 = p0->X;
                X1 = p1->X;
                X2 = p2->X;
-               if (p0 == p)
-                  X0 += V;
-               else if (p1 == p)
-                  X1 += V;
-               else if (p2 == p)
-                  X2 += V;
 
-               if (!isValidTriangle(T3Tddd{X0, X1, X2}, 1E-2 * M_PI / 180.))
+               auto a = Min(TriangleAngles(X0, X1, X2));
+               if (min_angle_before < a)
+                  min_angle_before = a;
+
+               cross_before = Cross(X1 - X0, X2 - X0);
+
+               if (p0 == p)
+                  X0 = replace_X;
+               else if (p1 == p)
+                  X1 = replace_X;
+               else if (p2 == p)
+                  X2 = replace_X;
+
+               cross_after = Cross(X1 - X0, X2 - X0);
+
+               a = Min(TriangleAngles(X0, X1, X2));
+               if (min_angle_after < a)
+                  min_angle_after = a;
+
+               //! どうやらisValidTriangleはいらないようだ．
+               // if (!isValidTriangle(T3Tddd{X0, X1, X2}, 1E-2 * M_PI / 180.))
+               //    return false;
+               if (Dot(cross_before, cross_after) <= 0.)
                   return false;
-               if (!isFlat(Cross(p1->X - p0->X, p2->X - p0->X), Cross(X1 - X0, X2 - X0), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
-                  return false;
-               if (!isFlat(Cross(p2->X - p1->X, p0->X - p1->X), Cross(X2 - X1, X0 - X1), negligibly_flat ? negligible_angle / 2. : acceptable_change_angle))
+
+               // if (!isFlat(cross_before, cross_after, acceptable_change_angle))
+               //    return false;
+               if (!isFlat(p0->X, p1->X, p2->X, X0, X1, X2, acceptable_change_angle))
                   return false;
             }
+
+            if (min_angle_before > min_angle_after)
+               return false;
+
             return true;
          };
 
-         if (ps.size() > 2)  // 2点の場合は2点の中点に動いてしまうので，実行しない
-         {
-            Tddd V = exact_along_surface(p, SmoothingVector(p));
-            for (auto i = 0; i < 10; ++i) {
-               if (check_if_next_faces_valid(V)) {
-                  p->setX(p->X + V);
-                  return;
-               } else
-                  V /= 2.;
-            }
+         if (ps.size() > 2) {  // 2点の場合は2点の中点に動いてしまうので，実行しない
+            Tddd X_next = p->X, V_try, X_try;
+            // result_V.fill(0.);
+            //! ここで収束させる必要はない．節点全体で緩やかにこれを繰り返せばいい．
+            // for (auto iter = 0; iter < 10; ++iter) {
+            //    V_try = exact_along_surface(p, SmoothingVector(p, X_next));
+            //    V_try = 0.01 * length_scale * Normalize(V_try);
+            //    for (auto i = 0; i < 10; ++i) {
+            //       X_try = X_next + V_try;
+            //       if (check_if_next_faces_valid(X_try)) {
+            //          X_next = X_try;
+            //          break;
+            //       } else
+            //          V_try *= 0.5;
+            //    }
+            // }
+            //
+            //
+            X_try = X_next + 0.05 * exact_along_surface(p, SmoothingVector(p, X_next));
+            if (check_if_next_faces_valid(X_try))
+               p->setX(X_try);
          }
       }
    } catch (std::exception &e) {
@@ -188,170 +228,167 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp)> &Smo
 
 /* ------------------------------------------------------ */
 
-Tddd DistorsionMeasureWeightedSmoothingVector2(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
+Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
    Tddd V = {0., 0., 0.};
    if (!isEdgePoint(p)) {
       Tddd X = {0., 0., 0.}, Xmid, vertical;
-      T3Tddd t3tdd;
       double Wtot = 0, W, height;
       for (const auto &f : p->getFaces()) {
-         auto [p0, p1, p2] = f->getPoints(p);
-         auto [X0, X1, X2] = t3tdd = {position(p0), position(p1), position(p2)};
-         W = std::log10(CircumradiusToInradius(t3tdd) - 1.) + 1;
-         // if (p0->CORNER)
-         //    W *= 1.1;
-         // if (p1->CORNER)
-         //    W *= 1.1;
-         // if (p2->CORNER)
-         //    W *= 1.1;
-         // W *= W;
-         Wtot += W;
-         Xmid = (X2 + X1) / 2.;
-         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sin(M_PI / 3.);
-         X = height * vertical + Xmid;
-         V += W * X;
-      }
-      double Wtot_first = Wtot;
-      for (const auto &l : p->getLines())
-         if (l->CORNER) {
-            W = Wtot_first / 2.;
-            Wtot += W;
-            V += W * position((*l)(p));
-         }
-      return V / Wtot - position(p);
-   } else
-      return {0., 0., 0.};
-};
-
-Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
-   Tddd V = {0., 0., 0.};
-   if (!isEdgePoint(p)) {
-      Tddd X = {0., 0., 0.}, Xmid, vertical;
-      T3Tddd t3tdd;
-      double Wtot = 0, W, height;
-      for (const auto &f : p->getFaces()) {
-         auto [p0, p1, p2] = f->getPoints(p);
-         auto [X0, X1, X2] = t3tdd = {position(p0), position(p1), position(p2)};
-         // W = std::log10(CircumradiusToInradius(t3tdd) - 1.);
-         W = std::log2(CircumradiusToInradius(t3tdd));
-         Wtot += W;
-         Xmid = (X2 + X1) / 2.;
-         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sin(M_PI / 3.);
-         X = height * vertical + Xmid;
-         V += W * X;
-      }
-      return V / Wtot - position(p);
-   } else
-      return V;
-};
-
-Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p) {
-   Tddd V = {0., 0., 0.};
-   if (!isEdgePoint(p)) {
-      Tddd X = {0., 0., 0.}, Xmid, vertical;
-      T3Tddd t3tdd;
-      double Wtot = 0, W, height;
-      for (const auto &f : p->getFaces()) {
-         t3tdd = ToX(f->getPoints(p));
-         auto [X0, X1, X2] = t3tdd;
+         auto [X0, X1, X2] = ToX(f->getPoints(p));
+         X0 = current_pX;
          // W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
-         W = std::log2(CircumradiusToInradius(t3tdd));
+         W = std::log2(CircumradiusToInradius(X0, X1, X2));
          Wtot += W;
-         Xmid = (X2 + X1) / 2.;
+         Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sin(M_PI / 3.);
-         X = height * vertical + Xmid;
-         V += W * X;
+         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         FusedMultiplyIncrement(W, height * vertical + Xmid, V);
+         // X = height * vertical + Xmid;
+         // V += W * X;
       }
-      return V / Wtot - p->X;
+      return V / Wtot - current_pX;
    } else
       return V;
 };
 
 void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   // gradually approching to given a
-   const double aIN = 0.05;
-   for (auto i = 0; i < iteration; ++i) {
-      const double a = aIN * ((i + 1.) / (double)(iteration));
-      for (const auto &p : ps)
-         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * DistorsionMeasureWeightedSmoothingVector(q); });
-   }
+   for (auto i = 0; i < iteration; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
 };
 
 /* ------------------------------------------------------ */
 
-Tddd AreaWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
+Tddd AreaWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
    Tddd V = {0., 0., 0.};
    if (!isEdgePoint(p)) {
-      Tddd X = {0., 0., 0.};
-      T3Tddd t3tdd;
       double Wtot = 0, W;
       for (const auto &f : p->getFaces()) {
-         auto [p0, p1, p2] = f->getPoints();
-         t3tdd = {position(p0), position(p1), position(p2)};
-         Wtot += (W = TriangleArea(t3tdd));
-         V += W * (X = Centroid(t3tdd));
+         auto [X0, X1, X2] = ToX(f->getPoints(p));
+         X0 = current_pX;
+         Wtot += (W = TriangleArea(X0, X1, X2));
+         FusedMultiplyIncrement(W, Incenter(X0, X1, X2), V);
       }
-      return V / Wtot - position(p);
-   } else
-      return V;
-}
-
-Tddd AreaWeightedSmoothingVector(const networkPoint *p) {
-   Tddd V = {0., 0., 0.};
-   if (!isEdgePoint(p)) {
-      Tddd X = {0., 0., 0.};
-      T3Tddd t3tdd;
-      double Wtot = 0, W;
-      for (const auto &f : p->getFaces()) {
-         t3tdd = ToX(f->getPoints());
-         Wtot += (W = TriangleArea(t3tdd));
-         V += W * (X = Incenter(t3tdd));
-      }
-      return V / Wtot - p->X;
+      return V / Wtot - current_pX;
    } else
       return V;
 };
 
 void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   const double aIN = 0.5;
-   for (auto i = 0; i < iteration; ++i) {
-      double a = aIN * ((i + 1.) / (double)(iteration));
+   for (auto i = 0; i < iteration; ++i)
       for (const auto &p : ps)
-         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * AreaWeightedSmoothingVector(q); });
-   }
+         SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
 };
 /* ------------------------------------------------------ */
 
-Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, std::function<Tddd(const networkPoint *)> position) {
-   Tddd V = {0., 0., 0.};
+Tddd ArithmeticWeightedIncenterSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V{};
+   double Wtot = 0;
    if (!isEdgePoint(p)) {
-      for (const auto &q : p->getNeighbors())
-         V += position(q);
-      return V / static_cast<double>(p->getNeighbors().size()) - position(p);
-   } else {
+      for (const auto &q : p->getNeighbors()) {
+         V += q->X;
+         Wtot += 1.;
+      }
+      for (const auto &face : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(face->getPoints(p));
+         X0 = current_pX;
+         V += Incenter(X0, X1, X2);
+         Wtot += 1.;
+      }
+      return V / Wtot - current_pX;
+   } else
       return V;
-   }
-}
+};
 
-Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p) {
+void ArithmeticWeightedIncenterSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+   for (auto i = 0; i < iteration; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedIncenterSmoothingVector);
+};
+
+/* ------------------------------------------------------ */
+
+Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
    Tddd V = {0., 0, 0.};
    if (!isEdgePoint(p)) {
-      for (const auto &q : p->getNeighbors()) V += q->X;
-      return V / p->getNeighbors().size() - p->X;
+      for (const auto &q : p->getNeighbors())
+         V += q->X;
+      return V / p->getNeighbors().size() - current_pX;
    } else
-      return {0., 0., 0.};
+      return V;
 };
 
 void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   const double aIN = 0.1;
-   for (auto i = 0; i < iteration; ++i) {
-      double a = aIN * ((i + 1.) / (double)(iteration));
-      for (const auto &p : ps)
-         SmoothingPreserveShape(p, [&](const networkPoint *q) -> Tddd { return a * ArithmeticWeightedSmoothingVector(q); });
-   }
+   for (auto i = 0; i < iteration; ++i)
+      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
+};
+
+/* -------------------------------------------------------------------------- */
+
+Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0, 0.};
+   double Wtot = 0;
+   if (!isEdgePoint(p)) {
+      for (const auto &q : p->getNeighbors()) {
+         V += q->X;
+         Wtot += 1.;
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
+Tddd IncenterAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0, 0.};
+   double Wtot = 0;
+   if (!isEdgePoint(p)) {
+      for (const auto &face : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(face->getPoints(p));
+         X0 = current_pX;
+         Wtot += 1.;
+         V += Incenter(X0, X1, X2);
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
+Tddd EquilateralVertexAveragingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0., 0.};
+   if (!isEdgePoint(p)) {
+      Tddd X = {0., 0., 0.}, Xmid, vertical;
+      double Wtot = 0, W, height;
+      for (const auto &f : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(f->getPoints(p));
+         X0 = current_pX;
+         Wtot += 1.;
+         Xmid = (X2 + X1) * 0.5;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         V += height * vertical + Xmid;
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
+Tddd EquilateralVertexAveragingVector2(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0., 0.};
+   if (!isEdgePoint(p)) {
+      Tddd X = {0., 0., 0.}, Xmid, vertical;
+      double Wtot = 0, W, height;
+      for (const auto &f : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(f->getPoints(p));
+         X0 = current_pX;
+         // W = std::log10(std::clamp(CircumradiusToInradius(X0, X1, X2), 1.0, 1E+10) - 1);
+         W = log10_CircumradiusToInradius(X0, X1, X2);
+         Wtot += W;
+         Xmid = (X2 + X1) * 0.5;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         V += W * (height * vertical + Xmid);
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
 };
 
 /* ------------------------------------------------------ */

@@ -101,7 +101,7 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
             elif value == "probe":
                 print(f'{key: <{20}}', '\t', yellow, value, coloroff)
             else:
-                print(f'{key: <{20}}', '\t', white, value, coloroff, does_file_exist(key, value))
+                print(f'{key: <{20}}', '\t', does_file_exist(key, value), white, value, coloroff)
 
         f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
         json.dump(INPUTS, f, ensure_ascii=True, indent=4)

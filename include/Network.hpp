@@ -113,6 +113,7 @@ class networkLine : public CoordinateBounds {
    /* ----------------------------------------------- */
    /*                 MOORING LINE                    */
    /* ----------------------------------------------- */
+
   public:
    double diameter = 0.;                //! [m]
    double natural_length = 0.;          //! [m]
@@ -120,6 +121,7 @@ class networkLine : public CoordinateBounds {
    double damping = 0.;                 //! [N/(m/s^2)]
    double weight_per_unit_length = 0.;  //! [kg/m]
 
+   /* ------------------------------------------------ */
   public:
    bool public_status = false;
 #ifdef DEM
@@ -344,6 +346,48 @@ networkPoint_detail*/
 /*    / \    */
 #include "integrationOfODE.hpp"
 class networkPoint : public CoordinateBounds, public CRS {
+
+   /* ------------------------------ MOORING LINE ------------------------------ */
+  public:
+   std::array<double, 3> getTension() {
+      std::array<double, 3> force, v, relative_velocity;
+      force.fill(0);
+      double disp, strain;
+      for (const auto &l : this->getLines()) {
+         v = (*l)(this)->RK_X.getX() - this->RK_X.getX();
+         disp = Norm(v) - l->natural_length;
+         strain = disp / l->natural_length;
+         if (disp > 0.)
+            force += l->stiffness * strain * Normalize(v);
+         relative_velocity = (*l)(this)->RK_velocity.getX() - this->RK_velocity.getX();
+         force += l->damping * relative_velocity / this->RK_velocity.dt_fixed;
+      }
+      return force;
+   }
+
+   std::array<double, 3> getDragForce() {
+      std::array<double, 3> drag_force, relative_velocity, mean_v, fluid_velocity, normalized_relative_velocity, A2B;
+      drag_force.fill(0);
+      fluid_velocity.fill(0);
+      double Cd = 0.3, A;
+      for (const auto &l : this->getLines()) {
+         mean_v = 0.5 * ((*l)(this)->RK_velocity.getX() + this->RK_velocity.getX());
+         relative_velocity = fluid_velocity - mean_v;
+         // A = M_PI * std::pow(l->diameter, 2);
+         A2B = (*l)(this)->RK_X.getX() - this->RK_X.getX();
+         normalized_relative_velocity = Normalize(relative_velocity);
+         A = l->diameter * Norm(A2B) * 0.5;                                                            //! area
+         A *= Norm(normalized_relative_velocity - Dot(normalized_relative_velocity, Normalize(A2B)));  //! projected area
+         drag_force += 0.5 * _WATER_DENSITY_ * Dot(relative_velocity, relative_velocity) * Cd * A * normalized_relative_velocity;
+      }
+      return drag_force;
+   }
+
+   std::array<double, 3> getForce() {
+      return getTension() + getDragForce() + this->mass * _GRAVITY3_;
+   }
+
+   /* -------------------------------------------------------------------------- */
   protected:
    bool status;
 
@@ -3267,7 +3311,10 @@ Tddd Nearest(const networkPoint *p, const std::unordered_set<networkFace *> &fac
 //%  |/|\|
 //%  @-@-@
 //% ========================================================================== */
+class MooringLine;
 class Network : public CoordinateBounds {
+  public:
+   virtual ~Network();  // = default;  // Virtual destructor
 
   public:
    Network *surfaceNet;
@@ -3561,7 +3608,7 @@ class Network : public CoordinateBounds {
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
       std::cout << this->getName() << "this->scaledBounds(expand_bounds) = " << this->scaledBounds(expand_bounds) << std::endl;
-      this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);      
+      this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       double particlize_spacing;
       for (const auto &f : this->getFaces()) {
          particlize_spacing = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 20.;
@@ -3701,7 +3748,7 @@ class Network : public CoordinateBounds {
 
    /* ------------------------------------------------------ */
 
-   std::vector<Network *> mooringLines;
+   std::vector<MooringLine *> mooringLines;
 
    /* ------------------------------------------------------ */
 
@@ -3981,11 +4028,12 @@ class Network : public CoordinateBounds {
    //       octreeOfFaces(nullptr),
    //       octreeOfPoints(nullptr){};
    // Network(const V_Netp &base_nets, const std::string &name_IN);
-   ~Network();
+   // ~Network();
    //
    //% ------------------------- obj ------------------------ */
    //% NetwrokObjは，Networkとしてコンストラクトするために，下のコンストラクタように修正した．*/
    // \label{Network::constructor}
+   // Netwrokコンストラク
    Network(const std::string &filename = "file name is not given", const std::string &name_IN = "no_name")
        : CoordinateBounds(Tddd{{0., 0., 0.}}),
          name(name_IN),

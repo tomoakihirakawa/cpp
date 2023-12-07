@@ -219,6 +219,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
 
       */
       double start = stod(strings[1] /*start*/);
+      if (t < start)
+         return {0., 0., 0., 0., 0., 0.};
       if (strings.size() > 7) {
          double A = std::abs(stod(strings[2] /*A*/));
          double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
@@ -232,8 +234,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          double S = H / F;
          // wave maker movement is e * sin(w * t)
 
-         t -= 1.5 * M_PI / w;
-         double dsdt = S / 2. * w * cos(-w * (t - start));
+         // t -= 1.5 * M_PI / w;
+         double dsdt = S / 2. * w * cos(w * (t - start));
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
          Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};
          return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
@@ -422,7 +424,9 @@ Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
    auto [X0, X1, X2] = X012;
    auto [phi0, phi1, phi2] = phi012;
    auto n = TriangleNormal(X012);
-   return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
+   // return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
+   return Cross(n, Dot(phi012, T3Tddd{X2 - X1, X0 - X2, X1 - X0})) / (2. * TriangleArea(X012));
+   // return (Cross(n, Dot(phi012, T3Tddd{X2, X0, X1})) - Cross(n, Dot(phi012, T3Tddd{X1, X2, X0}))) / (2. * TriangleArea(X012));
 };
 
 T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
@@ -611,53 +615,45 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
    return ret;
 };
 
+/* -------------------------------------------------------------------------- */
+
 /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
-### $`\phi_{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．
-
-$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
-面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
-面に水平な方向を$`t_0,t_1`$とする座標系で考えることにして，$`\nabla^*`$と書くことにする．
-$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
-新しい座標系でも同じようにすれば，結果は変わらない．
+#### $`\phi`$のヘッセ行列の計算
 
 ```math
-{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
-\quad
-\nabla^* \phi = \left(\phi_n, \phi_{t_0}, \phi_{t_1}\right),
-\quad \nabla^* \nabla^* \phi =
-\begin{bmatrix}
-\phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\
-\phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\
-\phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1}
+\nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
+\begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
+　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
+　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}
 \end{bmatrix}
 ```
 
-最後に第１成分だけが残るので，
-
-```math
-{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi_{nn}, \phi_{t_0n}, \phi_{t_1n})
-```
-
-$`\phi_{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi_{nn}=- \phi_{t_0t_0}- \phi_{t_1t_1}`$となるので，水平方向の勾配の計算から求められる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する\ref{BEM:HessianOfPhi}{`HessianOfPhi`}を用いる．
+節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
+要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
+$`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
+ただし，これは位置座標の基底を変えた後で使用する．
 
 */
 
 /* -------------------------------------------------------------------------- */
 // \label{BEM:HessianOfPhi}
 T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
+   //! 位置座標変換
    auto [P0, P1, P2] = F->getPoints();
-   auto X012 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
+   auto X012_for_s0s1s2 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
 
+   //! 速度ポテンシャルの勾配の座標変換
    auto [g0_s0, g0_s1, g0_s2] = Dot(basis, P0->U_BEM);
    auto [g1_s0, g1_s1, g1_s2] = Dot(basis, P1->U_BEM);
    auto [g2_s0, g2_s1, g2_s2] = Dot(basis, P2->U_BEM);
 
    // auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{getPhin(P0, F), getPhin(P1, F), getPhin(P2, F)}, X012);
 
-   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0}, X012);
-   auto [g_s1s0, g_s1s1, g_s1s2] = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012);
-   auto [g_s2s0, g_s2s1, g_s2s2] = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012);
+   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0}, X012_for_s0s1s2);
+   auto [g_s1s0, g_s1s1, g_s1s2] = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012_for_s0s1s2);
+   auto [g_s2s0, g_s2s1, g_s2s2] = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012_for_s0s1s2);
 
    // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
    //                {g_s1s0, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
@@ -671,6 +667,36 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
                   {g_s0s1, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
                   {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 };
+
+/*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
+
+### $`\phi_{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について．
+
+$`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
+面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
+面に水平な方向を$`t_0,t_1`$とする座標系で考えることにして，$`\nabla^*`$と書くことにする．
+$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
+新しい座標系でも同じようにすれば，結果は変わらない．
+
+```math
+{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\frac{d{\boldsymbol r}^\ast}{dt} \cdot \nabla^* \otimes\nabla^* \phi}\right).
+\quad \nabla^* \otimes\nabla^* \phi =
+\begin{bmatrix}
+\phi_{nn} & \phi_{nt_0} & \phi_{nt_1} \\
+\phi_{t_0n} & \phi_{t_0t_0} & \phi_{t_0t_1} \\
+\phi_{t_1n} & \phi_{t_1t_0} & \phi_{t_1t_1}
+\end{bmatrix}
+```
+
+最後に第１成分だけが残るので，
+
+```math
+{(1,0,0)}\cdot\left({\frac{d{\boldsymbol r}^\ast}{dt}  \cdot \nabla^* \otimes\nabla^* \phi}\right) = \frac{d{\boldsymbol r}^\ast}{dt} \cdot (\phi_{nn}, \phi_{t_0n}, \phi_{t_1n})
+```
+
+$`\phi_{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi_{nn}=- \phi_{t_0t_0}- \phi_{t_1t_1}`$となるので，水平方向の勾配の計算から求められる．
+
+*/
 
 // \label{BEM:phint_Neumann}
 // double phint_Neumann(networkFace *F) {
@@ -696,7 +722,8 @@ double phint_Neumann(const networkPoint *const p, networkFace *F) {
       auto ret = Dot(dndt, U_body - grad_phi);
       ret += Dot(F->normal, accelNeumann(p, F));
       auto basis = OrthogonalBasis(F->normal);
-      ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+      // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+      ret -= Dot(Dot(basis, U_body), HessianOfPhi(F, basis))[0];
       // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
       return ret;
    } else

@@ -49,7 +49,7 @@ period: {0,   T/N,    2T/N, ...,   T*(N-2)/N,   T*(N-1)/N}, {T,     T*(N+1)/N, .
 ```math
 \begin{align}
 c _n &= \frac{1}{T^\ast} \left[ \frac{g _n(0) + g _n(N\delta t)}{2} + \sum _{k=1}^{N-1} g _n(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N}, \quad g _n(0) = g _n(N\delta t),\quad g _n(t) = f(t) \exp(-i n \omega^\ast t)\\
-&= \frac{1}{N} \sum _{k=0}^{N-1} g _n(k \delta t) {\quad\text{became just adding for periodic functions}}\\
+&= \frac{1}{N} \sum _{k=0}^{N-1} g _n(k \delta t) {\quad\text{became simple additions}}\\
 &= \frac{1}{N} \sum _{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{T^\ast} k \frac{T^\ast}{N} \right) \right]\\
 &= \frac{1}{N} \sum _{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
 \end{align}
@@ -95,10 +95,13 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_simple.cpp
 
 結果は，Matheamticaと同じになる．
 
-![sample_ReIm_cn_mathematica.png](sample_ReIm_cn_mathematica.png)
-![sample_ReIm_cn_cosWave.png](sample_ReIm_cn_cosWvce.png)
-![sample_ReIm_cn_squareWave.png](sample_ReIm_cn_squareWave.png)
-![sample_ReIm_cn_triangleWave.png](sample_ReIm_cn_triangleWave.png)
+| list | 元データ| 離散フーリエ変換 |
+|:---:|:---:|:---:|
+| random list | ![sample_original_mathematica.png](sample_original_mathematica.png) | ![sample_ReIm_cn_mathematica.png](sample_ReIm_cn_mathematica.png) |
+| cos wave | ![sample_original_cosWave.png](sample_original_cosWave.png) | ![sample_ReIm_cn_cosWave.png](sample_ReIm_cn_cosWave.png) |
+| square wave | ![sample_original_squareWave.png](sample_original_squareWave.png) | ![sample_ReIm_cn_squareWave.png](sample_ReIm_cn_squareWave.png) |
+| triangle wave | ![sample_original_triangleWave.png](sample_original_triangleWave.png) | ![sample_ReIm_cn_triangleWave.png](sample_ReIm_cn_triangleWave.png) |
+
 
 ## ⛵ 逆離散フーリエ変換 
 
@@ -118,17 +121,14 @@ Column[Table[MyInverseFourier[cn, n]*(Length[list]), {n, 0, Length[list] - 1,1}]
 
 1周期分積分するので，$`T^\ast`$で割っている．$`\delta t`$とかけるので，結果として$`N`$で割ることになる．
 
-![sample_Re_inv_mathematica.png](sample_Re_inv_mathematica.png)
-![sample_Re_inv_cosWave.png](sample_Re_inv_cosWave.png)
-![sample_Re_inv_squareWave.png](sample_Re_inv_squareWave.png)
-![sample_Re_inv_triangleWave.png](sample_Re_inv_triangleWave.png)
-
 ## ⛵ 離散フーリエ変換によるデータの補間 
 
-![sample_interpolation_mathematica.png](sample_interpolation_mathematica.png)
-![sample_interpolation_cosWave.png](sample_interpolation_cosWave.png)
-![sample_interpolation_squareWave.png](sample_interpolation_squareWave.png)
-![sample_interpolation_triangleWave.png](sample_interpolation_triangleWave.png)
+| list | 逆フーリエ変換 | フーリエ級数展開 |
+|:---:|:---:|:---:|
+| random list | ![sample_Re_inv_mathematica.png](sample_Re_inv_mathematica.png) | ![sample_interpolation_mathematica.png](sample_interpolation_mathematica.png) |
+| cos wave | ![sample_Re_inv_cosWave.png](sample_Re_inv_cosWave.png) | ![sample_interpolation_cosWave.png](sample_interpolation_cosWave.png) |
+| square wave | ![sample_Re_inv_squareWave.png](sample_Re_inv_squareWave.png) | ![sample_interpolation_squareWave.png](sample_interpolation_squareWave.png) |
+| triangle wave | ![sample_Re_inv_triangleWave.png](sample_Re_inv_triangleWave.png) | ![sample_interpolation_triangleWave.png](sample_interpolation_triangleWave.png) |
 
 [./example0_simple.cpp#L1](./example0_simple.cpp#L1)
 

@@ -19,8 +19,9 @@ code_home_dir = os.path.join(current_dir, '../../../../code')
 
 def IO_dir(id):
     input_dir = "./input_files/" + id
-    os.makedirs(input_dir, exist_ok=True)
+    os.makedirs(input_dir, exist_ok=True)    
     output_dir = sys_home_dir + "/BEM/" + id
+    # output_dir = "/Volumes/home/BEM/benchmark20231206/" + id
     os.makedirs(output_dir, exist_ok=True)
     return input_dir, output_dir
 
@@ -32,6 +33,67 @@ g = 9.81
 SimulationCase = "Ren2015"
 
 match SimulationCase:
+
+    case "fish_without_free_surface":
+
+        start = 0.
+
+        id = SimulationCase
+
+        objfolder = code_home_dir + "/cpp/obj/fish"
+
+        waterA = {"name": "waterA",
+                 "type": "Fluid",
+                 "reverseNormal" : True,
+                 "objfile": objfolder + "/bodyA50.obj"}
+
+        waterB = {"name": "waterB",
+                 "type": "Fluid",
+                 "reverseNormal" : True,
+                 "objfile": objfolder + "/bodyB50.obj"}
+
+        waterC = {"name": "waterC",
+                 "type": "Fluid",
+                 "reverseNormal" : True,
+                 "objfile": objfolder + "/bodyC50.obj"}
+
+        bodyA = {"name": "bodyA",
+                 "type": "RigidBody",
+                 "COM": [0., 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "./study_fish/bodyA.dat"],
+                 "objfile": objfolder + "/bodyA50.obj"}
+
+        bodyB = {"name": "bodyB",
+                 "type": "RigidBody",
+                 "COM": [0.35, 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "./study_fish/bodyB.dat"],
+                 "objfile": objfolder + "/bodyB50.obj"}
+
+        bodyC = {"name": "bodyC",
+                 "type": "RigidBody",
+                 "COM": [0.7, 0, 0.25],
+                 "mass": 10**10,
+                 "MOI": [10**10, 10**10, 10**10],
+                 "output": "json",
+                 #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+                 "velocity": ["file", "./study_fish/bodyC.dat"],
+                 "objfile": objfolder + "/bodyC50.obj"}
+
+        inputfiles = [waterA, waterB, waterC, bodyA, bodyB, bodyC]
+
+        setting = {"max_dt": 0.01,
+                   "end_time_step": 10000,
+                   "end_time": 9}
+
+        generate_input_files(inputfiles, setting, IO_dir, id)
     case "fish":
 
         start = 0.
@@ -146,8 +208,8 @@ match SimulationCase:
         # id0 = "_no"
         # id0 = "_multiple"
 
-        wavemaker_type = "piston"
-        # wavemaker_type = "potential"
+        # wavemaker_type = "piston"
+        wavemaker_type = "potential"
 
         id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
@@ -212,9 +274,9 @@ match SimulationCase:
 
             # Initialize the object files
             water["objfile"] = f"{objfolder}/water400.obj"
-            wavemaker["objfile"] = f"{objfolder}/wavemaker100.obj"
+            wavemaker["objfile"] = f"{objfolder}/wavemaker20.obj"
             tank["objfile"] = f"{objfolder}/tank50.obj"
-            float["objfile"] = f"{objfolder}/float50.obj"
+            float["objfile"] = f"{objfolder}/float10.obj"
 
             inputfiles = [tank, wavemaker, water]
 
@@ -231,18 +293,18 @@ match SimulationCase:
                 inputfiles.append(new_float)
         elif "_no" in id:
             objfolder = code_home_dir + "/cpp/obj/Ren2015_no_float"
-            water["objfile"] = objfolder + "/water400.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
-            tank["objfile"] = objfolder + "/tank50.obj"
+            water["objfile"] = objfolder + "/water25.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker20.obj"
+            tank["objfile"] = objfolder + "/tank10.obj"
             inputfiles = [tank, wavemaker, water]
         else:
             float["COM"] = [4.6, W/2, z_surface]
             objfolder = code_home_dir + "/cpp/obj/Ren2015"
             # water["objfile"] = objfolder + "/water400meshlab.obj"
-            water["objfile"] = objfolder + "/water400mod.obj"
-            wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
+            water["objfile"] = objfolder + "/water18_mod.obj"
+            wavemaker["objfile"] = objfolder + "/wavemaker20.obj"
             tank["objfile"] = objfolder + "/tank10.obj"
-            float["objfile"] = objfolder+"/float50.obj"
+            float["objfile"] = objfolder+"/float10.obj"
             inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.01,
@@ -388,10 +450,9 @@ match SimulationCase:
                    "GRAVITY": g,
                    "max_dt": max_dt,
                    "end_time_step": 10000,
-                   "end_time": 4,
-                   "output_dir": output_dir}
+                   "end_time": 4}
 
-        id = SimulationCase
+        id = SimulationCase + "_" + id
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "simple_barge":
 

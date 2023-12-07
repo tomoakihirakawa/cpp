@@ -84,7 +84,9 @@ struct calculateFroudeKrylovForce {
       // set PressureVeticies
       for (const auto &f : faces)
          if (f->Neumann) {
-            if (std::ranges::all_of(f->getPoints(), [&](const auto &p) { return std::ranges::any_of(p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+            if (std::ranges::all_of(f->getPoints(), [&](const auto &p) { return std::ranges::any_of(
+                                                             
+                                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
                this->PressureVeticies.push_back({{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
@@ -376,9 +378,12 @@ struct BEM_BVP {
                   tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
                   tmp *= ww;
                   IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012),std::get<2>(std::get<0>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012),std::get<2>(std::get<1>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012),std::get<2>(std::get<2>(ret)));
+                  // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                  // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                  // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
                }
             else
                for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
@@ -386,9 +391,12 @@ struct BEM_BVP {
                   tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
                   tmp *= ww;
                   IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012),std::get<2>(std::get<0>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012),std::get<2>(std::get<1>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012),std::get<2>(std::get<2>(ret)));
+                  // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                  // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                  // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
                }
             /* -------------------------------------------------------------------------- */
             c = {Norm(cross), origin == p0 ? 0. : 1.};
@@ -757,23 +765,6 @@ struct BEM_BVP {
    $`\phi_{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
    $`\phi_{nt}`$は，\ref{BEM:setphint}{ここ}で与えている．
-
-   */
-
-   /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
-
-   ```math
-   \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
-   \begin{bmatrix} \phi_{xx} & \phi_{xy} & \phi_{xz} \\
-   　　　　　　　　　　\phi_{yx} & \phi_{yy} & \phi_{yz} \\
-   　　　　　　　　　　\phi_{zx} & \phi_{zy} & \phi_{zz}
-   \end{bmatrix}
-   ```
-
-   ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する\ref{BEM:HessianOfPhi}{`HessianOfPhi`}を用いる．
-   節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
-   要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
-   $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 
    */
 

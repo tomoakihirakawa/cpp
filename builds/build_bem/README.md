@@ -37,7 +37,8 @@
             - [🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
             - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知))
             - [🐚 ノイマン節点での$`\phi _{nt}`$の与え方](#🐚-ノイマン節点での$`\phi-_{nt}`$の与え方)
-        - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\nabla-\phi-\cdot-\nabla\nabla-\phi}\right)`$について．)
+            - [🐚 $`\phi`$のヘッセ行列の計算](#🐚-$`\phi`$のヘッセ行列の計算)
+        - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\frac{d\boldsymbol-r}{dt}--\cdot-\nabla\otimes\nabla-\phi}\right)`$について．)
         - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
         - [🪼 補助関数を使った方法](#🪼-補助関数を使った方法)
     - [⛵ 陽に与えられる境界条件に対して（造波装置など）](#⛵-陽に与えられる境界条件に対して（造波装置など）)
@@ -250,7 +251,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L416](./main.cpp#L416)
+[./main.cpp#L404](./main.cpp#L404)
 
 ---
 ## ⛵ 境界のタイプを決定する 
@@ -320,7 +321,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L923](../../include/Network.hpp#L923)
+[../../include/Network.hpp#L967](../../include/Network.hpp#L967)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -334,7 +335,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 `uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
-[./BEM_utilities.hpp#L317](./BEM_utilities.hpp#L317)
+[./BEM_utilities.hpp#L319](./BEM_utilities.hpp#L319)
 
 ---
 ## ⛵ 境界値問題 
@@ -454,7 +455,7 @@ $`{2{\bf n} _{k _\vartriangle}} = ((p _1-p _0)\times(p _2-p _0))`$
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この二つをまとめて計算する．
 
-[./BEM_solveBVP.hpp#L195](./BEM_solveBVP.hpp#L195)
+[./BEM_solveBVP.hpp#L197](./BEM_solveBVP.hpp#L197)
 
 #### 🐚 係数行列の作成 
 
@@ -496,7 +497,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L304](./BEM_solveBVP.hpp#L304)
+[./BEM_solveBVP.hpp#L306](./BEM_solveBVP.hpp#L306)
 
 ### 🪼 リジッドモードテクニック 
 
@@ -504,7 +505,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 これはリジッドモードテクニックと呼ばれている．
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
-[./BEM_solveBVP.hpp#L405](./BEM_solveBVP.hpp#L405)
+[./BEM_solveBVP.hpp#L413](./BEM_solveBVP.hpp#L413)
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
@@ -532,7 +533,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
 ```
 
-[./BEM_solveBVP.hpp#L443](./BEM_solveBVP.hpp#L443)
+[./BEM_solveBVP.hpp#L451](./BEM_solveBVP.hpp#L451)
 
 ---
 ## ⛵ 初期値問題 
@@ -576,7 +577,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L495](./BEM_utilities.hpp#L495)
+[./BEM_utilities.hpp#L499](./BEM_utilities.hpp#L499)
 
 ---
 ### 🪼 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
@@ -621,8 +622,8 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L117)と
-[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L104)：
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L119)と
+[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L106)：
 
 ```math
 \boldsymbol{F} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} p\boldsymbol{n}  d S, \quad
@@ -638,7 +639,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L639](./BEM_solveBVP.hpp#L639)
+[./BEM_solveBVP.hpp#L647](./BEM_solveBVP.hpp#L647)
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
@@ -684,7 +685,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L675)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L852)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L701)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L843)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -715,9 +716,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L866)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L857)で与えている．
 
-[./BEM_solveBVP.hpp#L682](./BEM_solveBVP.hpp#L682)
+[./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
+
+#### 🐚 $`\phi`$のヘッセ行列の計算 
 
 ```math
 \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
@@ -727,26 +730,25 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L866)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L647)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L641)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
+ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_solveBVP.hpp#L763](./BEM_solveBVP.hpp#L763)
+[./BEM_utilities.hpp#L638](./BEM_utilities.hpp#L638)
 
-### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$について． 
+### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
 $`\nabla`$を，$`(x,y,z)`$の座標系ではなく，
 面の法線方向$`{\bf n}`$を$`x`$の代わりにとり，
 面に水平な方向を$`t _0,t _1`$とする座標系で考えることにして，$`\nabla^\ast`$と書くことにする．
-$`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
+$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$では，$`{\bf n}`$方向成分だけをとる操作をしているので，
 新しい座標系でも同じようにすれば，結果は変わらない．
 
 ```math
-{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right).
-\quad
-\nabla^* \phi = \left(\phi _n, \phi _{t _0}, \phi _{t _1}\right),
-\quad \nabla^* \nabla^* \phi =
+{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right) =  {(1,0,0)}\cdot\left({\frac{d{\boldsymbol r}^\ast}{dt} \cdot \nabla^* \otimes\nabla^* \phi}\right).
+\quad \nabla^* \otimes\nabla^* \phi =
 \begin{bmatrix}
 \phi _{nn} & \phi _{nt _0} & \phi _{nt _1} \\
 \phi _{t _0n} & \phi _{t _0t _0} & \phi _{t _0t _1} \\
@@ -757,19 +759,19 @@ $`{\bf n}\cdot \left({\nabla \phi \cdot \nabla\nabla \phi}\right)`$では，$`{\
 最後に第１成分だけが残るので，
 
 ```math
-{(1,0,0)}\cdot\left({\nabla^* \phi \cdot \nabla^* \nabla^* \phi}\right) = \nabla^* \phi \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
+{(1,0,0)}\cdot\left({\frac{d{\boldsymbol r}^\ast}{dt}  \cdot \nabla^* \otimes\nabla^* \phi}\right) = \frac{d{\boldsymbol r}^\ast}{dt} \cdot (\phi _{nn}, \phi _{t _0n}, \phi _{t _1n})
 ```
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L632](./BEM_utilities.hpp#L632)
+[./BEM_utilities.hpp#L689](./BEM_utilities.hpp#L689)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L536](./main.cpp#L536)
+[./main.cpp#L524](./main.cpp#L524)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -840,7 +842,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L780](./BEM_solveBVP.hpp#L780)
+[./BEM_solveBVP.hpp#L771](./BEM_solveBVP.hpp#L771)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -848,9 +850,9 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L386)
+[強制運動を課す](../../builds/build_bem/main.cpp#L374)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L297)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L299)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L118)で利用され，$\phi _{n}$を計算する．
@@ -916,7 +918,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
-[./BEM_utilities.hpp#L243](./BEM_utilities.hpp#L243)
+[./BEM_utilities.hpp#L245](./BEM_utilities.hpp#L245)
 
 ---
 ## ⛵ その他 
@@ -926,7 +928,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
-[./BEM_utilities.hpp#L570](./BEM_utilities.hpp#L570)
+[./BEM_utilities.hpp#L574](./BEM_utilities.hpp#L574)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -980,7 +982,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L335](./BEM_calculateVelocities.hpp#L335)
+[./BEM_calculateVelocities.hpp#L341](./BEM_calculateVelocities.hpp#L341)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -995,7 +997,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L422](./BEM_calculateVelocities.hpp#L422)
+[./BEM_calculateVelocities.hpp#L428](./BEM_calculateVelocities.hpp#L428)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -1033,7 +1035,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L669](./main.cpp#L669)
+[./main.cpp#L657](./main.cpp#L657)
 
 ---
 # 🐋 実行方法 
@@ -1072,7 +1074,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L831](./main.cpp#L831)
+[./main.cpp#L819](./main.cpp#L819)
 
 ---
 # 🐋 Input Generator 
@@ -1095,7 +1097,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L255](./input_generator.py#L255)
+[./input_generator.py#L317](./input_generator.py#L317)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1109,7 +1111,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L123](./input_generator.py#L123)
+[./input_generator.py#L185](./input_generator.py#L185)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -1122,13 +1124,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L333](./input_generator.py#L333)
+[./input_generator.py#L395](./input_generator.py#L395)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L871](./main.cpp#L871)
+[./main.cpp#L859](./main.cpp#L859)
 
 ---

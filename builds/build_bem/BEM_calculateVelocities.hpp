@@ -132,13 +132,13 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 };
 
 // \label{BEM:vectorTangentialShift}
-Tddd vectorTangentialShift(const networkPoint *p, double scale = 1.) {
-   Tddd V = {0., 0., 0.};
-   // V += scale * ArithmeticWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-   // V += scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-   V += scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-   return condition_Ua(V, p);
-};
+// Tddd vectorTangentialShift(const networkPoint *p, double scale = 1.) {
+//    Tddd V = {0., 0., 0.};
+//    // V += scale * ArithmeticWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+//    // V += scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+//    V += scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+//    return condition_Ua(V, p);
+// };
 
 // \label{BEM:vectorToNextSurface}
 Tddd vectorToNextSurface(const networkPoint *p) {
@@ -257,10 +257,16 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
          //    p->vecToSurface_BUFFER = condition_Ua(V, p);
          // } else
          {
-            auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            double a = 0.5;
-            auto V = (1. - a) * V0 + a * V1;
+            /* ----------------------------------- OLD ---------------------------------- */
+            // auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            // auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            // double a = 0.5;
+            // auto V = (1. - a) * V0 + a * V1;
+            /* ----------------------------------- NEW ---------------------------------- */
+            auto X = RK_with_Ubuff(p);
+            auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
+            V = scale * V;
+            /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }
          // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);

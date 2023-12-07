@@ -21,11 +21,11 @@
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
    // The solid angle of a plane triangle
    // Van Oosterom, A. and Strackee, J. (1983)
-   auto [a0, a1, a2] = (A -= p);
-   auto [b0, b1, b2] = (B -= p);
-   auto [c0, c1, c2] = (C -= p);
-   double nA = Norm(A);
-   double nB = Norm(B);
+   const auto [a0, a1, a2] = (A -= p);
+   const auto [b0, b1, b2] = (B -= p);
+   const auto [c0, c1, c2] = (C -= p);
+   const double nA = Norm(A);
+   const double nB = Norm(B);
 
    // double nC = Norm(C);
    // return 2. * atan2((-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2
@@ -312,7 +312,24 @@ bool isInside(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
 };
 /* -------------------------------------------------------------------------- */
 // triangle distorsion measure
-double CircumradiusToInradius(const T3Tddd &X012) { return Circumradius(X012) / Inradius(X012); };
+double CircumradiusToInradius(Tddd X0, Tddd X1, Tddd X2) {
+   return Circumradius(X0, X1, X2) / Inradius(X0, X1, X2);
+   // X2 -= X0;
+   // X1 -= X0;
+   // X0.fill(0.);
+   // auto l2 = Norm(X2 - ((-X1) * Dot(X2 - X1, -X1) / Dot(-X1, -X1) + X1));
+   // auto X = Circumcenter(X0, X1, X2);
+   // return ((Norm(X0 - X) + Norm(X1 - X) + Norm(X2 - X))) * (Norm(X1) + Norm(X2) + Norm(X1 - X2)) / (3. * Norm(X1) * l2);
+};
+
+double CircumradiusToInradius(const T3Tddd &X012) {
+   // return Circumradius(X012) / Inradius(X012);
+   return CircumradiusToInradius(std::get<0>(X012), std::get<1>(X012), std::get<2>(X012));
+};
+
+double log10_CircumradiusToInradius(Tddd X0, Tddd X1, Tddd X2) {
+   return std::log10(Circumradius(X0, X1, X2)) - std::log10(Inradius(X0, X1, X2));
+};
 
 /* -------------------------------------------------------------------------- */
 /*
@@ -1511,7 +1528,7 @@ double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
    double diff0 = std::abs(log10(Norm(p0 - a) - log_b_a));
    double diff1 = std::abs(log10(Norm(p1 - a) - log_b_a));
    double diff2 = std::abs(log10(Norm(p2 - a) - log_b_a));
-   Tddd n = TriangleNormal(triangle);
+   Tddd n = TriangleNormal(p0, p1, p2);
    if (diff0 < diff1 && diff0 < diff2)
       return Dot(p0 - a, n) / Dot(b - a, n);
    else if (diff1 < diff0 && diff1 < diff2)

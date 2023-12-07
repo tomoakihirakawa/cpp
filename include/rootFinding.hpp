@@ -24,7 +24,7 @@ template <>
 struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
    NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit){};
    void update(const V_d &F, const VV_d &dFdx) {
-      ludcmp lu(dFdx);
+      lapack_lu lu(dFdx);
       lu.solve(-F, dX);
       X += dX;
    };
