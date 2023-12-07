@@ -125,7 +125,7 @@ q2 * w0 - q1 * w1 + q0 * w2
 ```
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
-[../../include/basic_vectors.hpp#L1504](../../include/basic_vectors.hpp#L1504)
+[../../include/basic_vectors.hpp#L1513](../../include/basic_vectors.hpp#L1513)
 
 
 ![sample_dQdt.gif](sample_dQdt.gif)
@@ -140,7 +140,7 @@ RK4も初期の状態と比べて若干大きくなっているように見え�
 回転行列の行列式が1になっていないことが原因である．
 回転行列の行列式は，スケーリング（拡大縮小）を表しておリ，体積や長さを保つためには，行列式は1でなければならない．
 
-** 必ず回転行列を計算する砕破，正規化したクォータニオンを使うべきである．**
+**必ず回転行列を計算する際は，正規化したクォータニオンを使うべきである．**
 
 ## ⛵ 剛体の回転と平行移動 
 
@@ -155,7 +155,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1615](../../include/basic_vectors.hpp#L1615)
+[../../include/basic_vectors.hpp#L1629](../../include/basic_vectors.hpp#L1629)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

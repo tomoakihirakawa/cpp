@@ -2,6 +2,7 @@
 - [🐋 ケーブルの動的解析](#🐋-ケーブルの動的解析)
     - [⛵ 直線要素を用いたシミュレーション](#⛵-直線要素を用いたシミュレーション)
     - [⛵ 実行方法](#⛵-実行方法)
+    - [⛵ ⛵ 浮体係留用に`Network`の派生クラスを作成](#⛵-⛵-浮体係留用に`Network`の派生クラスを作成)
 
 
 ---
@@ -37,6 +38,17 @@ sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
+
+## ⛵ ⛵ 浮体係留用に`Network`の派生クラスを作成  
+
+`networkLine`には，`natural_length`，`stiffness`，`damping`，`weight_per_unit_length`の4つのパラメータを持たせる．
+
+`natural_length`は，`moorinLine`の`total_length`と`MooringLine`の`getPoints().size()`から決まる．
+
+それをまとめる`MooringLine`は，`total_length`を持つ．
+
+📝 内部で，自動でタイムステップを細かく取り，与えられた時間までシミュレーションするようにしたい．
+[../../include/MooringLine.hpp#L6](../../include/MooringLine.hpp#L6)
 
 [./main.cpp#L16](./main.cpp#L16)
 

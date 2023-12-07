@@ -1372,7 +1372,6 @@ struct Quaternion {
       return {{{a2 + b2 - c2 - d2, 2. * b * c - 2. * a * d, 2. * a * c + 2. * b * d},
                {2. * b * c + 2. * a * d, a2 - b2 + c2 - d2, -2. * a * b + 2. * c * d},
                {-2. * a * c + 2. * b * d, 2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}}};
-      // OK
    }
    T3Tddd Rs() const {
       //%物体座標系を回転することで，global座標が物体座標にとってどのように移動するかを計算するために使う．
@@ -1465,10 +1464,15 @@ struct Quaternion {
    T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/) {
       auto [q0, q1, q2, q3] = this->q;
       auto [w0, w1, w2] = w;
-      return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
-              0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
-              0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
-              0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
+      // return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
+      //         0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
+      //         0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
+      //         0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
+      //! rewrite using std::fma
+      return {0.5 * std::fma(-q1, w0, std::fma(-q2, w1, -q3 * w2)),
+              0.5 * std::fma(q0, w0, std::fma(q3, w1, -q2 * w2)),
+              0.5 * std::fma(-q3, w0, std::fma(q0, w1, q1 * w2)),
+              0.5 * std::fma(q2, w0, std::fma(-q1, w1, q0 * w2))};
    };
 
    void set(const T4d &qIN) {
@@ -1494,10 +1498,15 @@ Quaternion operator*(const Quaternion &A, const Quaternion &B) {
    // 					  std::get<2>(v)}); // ok
    auto [a1, b1, c1, d1] = A.q;
    auto [a2, b2, c2, d2] = B.q;
-   return Quaternion(T4d{a1 * a2 + -b1 * b2 + -c1 * c2 + -d1 * d2,
-                         a1 * b2 + b1 * a2 + c1 * d2 - d1 * c2,
-                         a1 * c2 - b1 * d2 + c1 * a2 + d1 * b2,
-                         a1 * d2 + b1 * c2 - c1 * b2 + d1 * a2});
+   // return Quaternion(T4d{a1 * a2 + -b1 * b2 + -c1 * c2 + -d1 * d2,
+   //                       a1 * b2 + b1 * a2 + c1 * d2 - d1 * c2,
+   //                       a1 * c2 - b1 * d2 + c1 * a2 + d1 * b2,
+   //                       a1 * d2 + b1 * c2 - c1 * b2 + d1 * a2});
+   //! rewrite using std::fma
+   return Quaternion(T4d{std::fma(a1, a2, std::fma(-b1, b2, std::fma(-c1, c2, -d1 * d2))),
+                         std::fma(a1, b2, std::fma(b1, a2, std::fma(c1, d2, -d1 * c2))),
+                         std::fma(a1, c2, std::fma(-b1, d2, std::fma(c1, a2, d1 * b2))),
+                         std::fma(a1, d2, std::fma(b1, c2, std::fma(-c1, b2, d1 * a2)))});
 };
 
 // 角速度からクォータニオンの微分を計算
@@ -1564,10 +1573,15 @@ Quaternion AngularVelocityToQuaternion(const Tddd &w /*angular velocity*/) {
 T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/, const Quaternion &q) {
    auto [q0, q1, q2, q3] = q();
    auto [w0, w1, w2] = w;
-   return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
-           0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
-           0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
-           0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
+   // return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
+   //         0.5 * (q0 * w0 + q3 * w1 - q2 * w2),
+   //         0.5 * (-q3 * w0 + q0 * w1 + q1 * w2),
+   //         0.5 * (q2 * w0 - q1 * w1 + q0 * w2)};
+   //! rewrite using std::fma
+   return {0.5 * std::fma(-q1, w0, std::fma(-q2, w1, -q3 * w2)),
+           0.5 * std::fma(q0, w0, std::fma(q3, w1, -q2 * w2)),
+           0.5 * std::fma(-q3, w0, std::fma(q0, w1, q1 * w2)),
+           0.5 * std::fma(q2, w0, std::fma(-q1, w1, q0 * w2))};
 };
 
 Quaternion &operator*=(Quaternion &A, const Quaternion &B) {
@@ -1853,6 +1867,10 @@ Tddd TriangleAngles(const T3Tddd &abc) {
    return {A0, A1, A2};
 }
 
+Tddd TriangleAngles(const Tddd &a, const Tddd &b, const Tddd &c) {
+   return TriangleAngles(T3Tddd{a, b, c});
+}
+
 Tddd TriangleNormal(const Tddd &a, const Tddd &b, const Tddd &c) {
    return Normalize(Cross((b - a), (c - a)));
 };
@@ -1861,21 +1879,22 @@ Tddd TriangleNormal(const T3Tddd &abc) {
    return Normalize(Cross((b - a), (c - a)));
 };
 
-// \label{isValidTriangle}
-bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI / 180.) {
-   if (TriangleArea(tri) == 0.)
-      return false;
-   auto angles = TriangleAngles(tri);
-   if (!isFinite(angles))
-      return false;
-   if (std::ranges::any_of(angles, [&](const auto &a) { return (a < accuracy_limit_angle) || (M_PI - a < accuracy_limit_angle); }))
-      return false;
-   return Total(angles) == M_PI;
-};
+bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, const std::array<double, 3> &A2,
+            const std::array<double, 3> &B0, const std::array<double, 3> &B1, const std::array<double, 3> &B2,
+            const double lim_rad) {
+   auto nA = Cross(A1 - A0, A2 - A0);
+   auto nB = Cross(B1 - B0, B2 - B0);
+   auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
+   auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
+   auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
+   return dotProduct >= cos(lim_rad) * sqrt(normA2 * normB2);
+}
 
-bool isFlat(const Tddd &a, const Tddd &b, const double lim_rad) {
-   return Dot(a, b) > cos(lim_rad) * Norm(a) * Norm(b);
-   // return Dot(a / Norm(a), b / Norm(b)) > cos(lim_rad);
+bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
+   auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
+   auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
+   auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
+   return dotProduct >= cos(lim_rad) * sqrt(normA2 * normB2);
 };
 
 bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
@@ -1893,10 +1912,31 @@ bool isFlat(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
 
 bool isFlat_(const Tddd &a, const Tddd &b, const double lim_rad) { return isFlat(a, b, lim_rad); };
 
+// \label{isValidTriangle}
+bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI / 180.) {
+   if (TriangleArea(tri) == 0.)
+      return false;
+   auto angles = TriangleAngles(tri);
+   if (!isFinite(angles))
+      return false;
+   // if (std::ranges::any_of(angles, [&](const auto &a) { return (a < accuracy_limit_angle) || (M_PI - a < accuracy_limit_angle); }))
+   //    return false;
+
+   if (isFlat(tri[1] - tri[0], tri[2] - tri[0], accuracy_limit_angle))
+      return false;
+   if (isFlat(tri[2] - tri[1], tri[0] - tri[1], accuracy_limit_angle))
+      return false;
+   if (isFlat(tri[0] - tri[2], tri[1] - tri[2], accuracy_limit_angle))
+      return false;
+
+   return Total(angles) == M_PI;
+};
+
 /* -------------------------------------------------------------------------- */
 
 bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
-   return Dot(a, -b) > cos(lim_rad) * Norm(a) * Norm(b);
+   // return Dot(a, -b) > cos(lim_rad) * Norm(a) * Norm(b);
+   return isFlat(a, -b, lim_rad);
 };
 
 bool isFacing(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
@@ -1975,19 +2015,22 @@ Tddd Projection(const Tddd &v, Tddd n) {
    return Dot(v, n) * n;
 };
 
-std::array<Tddd, 2> DecomposeVector(const Tddd &v, const Tddd &n) {
-   auto vn = Projection(v, n);
-   return {vn, v - vn};
-};
-
-Tddd Chop(const Tddd &v, const Tddd &n) {
+Tddd Chop(const Tddd &v, Tddd n) {
    /* the component in n direction of v will be chopped */
-   return v - Projection(v, n);
+   n = Normalize(n);
+   return FusedMultiplyAdd(-Dot(v, n), n, v);
+   // return v - Dot(v, n) * n;
 };
 
-Tddd Reflect(const Tddd &v, const Tddd &n) {
+std::array<Tddd, 2> DecomposeVector(const Tddd &v, Tddd n) {
+   n = Normalize(n);
+   return {Dot(v, n) * n, Chop(v, n)};
+};
+
+Tddd Reflect(const Tddd &v, Tddd n) {
    /* n is a normal vector of a surface*/
-   return v - 2. * Projection(v, n);
+   n = Normalize(n);
+   return FusedMultiplyAdd(-2. * Dot(v, n), n, v);
 };
 
 Tddd Scaled(const Tddd &v, const double d) {

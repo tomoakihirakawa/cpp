@@ -26,9 +26,12 @@ std::array<double, 3> grad_w_Bspline(const networkPoint *p, Tddd &pX, const netw
 
 double Dot_grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
 #ifdef USE_GRAD_LAPLACIAN_CORRECTION
-   return Dot_grad_w_Bspline(pX, qX, p->SML(), p->laplacian_corr_M);
+   auto m = p->laplacian_corr_M + Transpose(p->laplacian_corr_M);
+   m *= 0.5;
+   m = (m + T3Tddd{{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}}) * 0.5;
+   return Dot_grad_w_Bspline(pX, qX, p->SML(), m);
 #else
-   return Dot_grad_w_Bspline(pX, qX, p->SML());
+   return Dot_grad_w_Bspline(pX, qX, p->SML();
 #endif
    // return Dot_grad_w_Bspline(pX, qX, p->SML());
 }
@@ -71,7 +74,10 @@ std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X) 
 
 double Dot_grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
 #ifdef USE_GRAD_LAPLACIAN_CORRECTION
-   return Dot_grad_w_Bspline(pX, qX, p->SML_next(), p->laplacian_corr_M_next);
+   auto m = p->laplacian_corr_M_next + Transpose(p->laplacian_corr_M_next);
+   m *= 0.5;
+   m = (m + T3Tddd{{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}}) * 0.5;
+   return Dot_grad_w_Bspline(pX, qX, p->SML_next(), m);
 #else
    return Dot_grad_w_Bspline(pX, qX, p->SML_next());
 #endif

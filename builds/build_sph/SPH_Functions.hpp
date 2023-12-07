@@ -452,9 +452,10 @@ void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) 
 #pragma omp single nowait
       {
          T3Tddd nabla_otimes_U;
-         p->U_XSPH = U_next(p);
+         // p->U_XSPH = U_next(p);
+         p->U_XSPH.fill(0.);
          Fill(nabla_otimes_U, 0.);
-         const double c_xsph = 0.01;
+         const double c_xsph = 0.02;
 
          auto add = [&](const auto &q) {
             auto grad = grad_w_Bspline(p, q);
@@ -492,13 +493,15 @@ void updateParticles(const auto &points,
          auto U = p->U_SPH;
          auto X_last = p->X;
 #if defined(USE_RungeKutta)
-         // p->p_SPH = p->RK_P.getX();  // これをいれてうまく行ったことはない．
-         auto Uoriginal = p->RK_U.getX(p->DUDt_SPH);
-         auto Umod = p->U_XSPH;
-         p->RK_U.push(p->DUDt_SPH + Dot(p->nabla_otimes_U, Umod - Uoriginal));  // 速度
-         p->U_SPH = p->RK_U.getX();                                             // 速度の更新は修正を考慮して行う
-         // p->RK_X.push(p->U_SPH);  // 位置
-         p->RK_X.push(Umod);  // 位置の更新はU_XSPHを使う
+         // auto Uoriginal = p->RK_U.getX(p->DUDt_SPH);
+         // auto Umod = p->U_XSPH;
+         // p->RK_U.push(p->DUDt_SPH + Dot(Umod - Uoriginal, p->nabla_otimes_U));  // 速度
+         // p->U_SPH = p->RK_U.getX();                                             // 速度の更新は修正を考慮して行う
+         // p->RK_X.push(Umod);  // 位置の更新はU_XSPHを使う
+
+         p->RK_U.push(p->DUDt_SPH);
+         p->U_SPH = p->RK_U.getX();  // + p->U_XSPH;
+         p->RK_X.push(p->U_SPH);     // 位置の更新はU_XSPHを使う
          p->setXSingle(p->RK_X.getX());
 #elif defined(USE_LeapFrog)
          auto X_next = [&](const auto &p) { return p->X; };
@@ -551,7 +554,7 @@ void updateParticles(const auto &points,
             isReflected = false;
             auto d_ps = particle_spacing;
             auto d0 = (1 - c) * particle_spacing;
-            for (const auto &[closest_p, f2w] : {/*closest(p, RigidBodyObject) ,*/ closest_next(p, RigidBodyObject)}) {
+            for (const auto &[closest_p, f2w] : {closest(p, RigidBodyObject) /* , closest_next(p, RigidBodyObject)*/}) {
                //! X^n+1 = U^n+1*dt + X^n は壁面内部にある
                //! U_mod = Chop(U^n+1,n)
                //! U_mod - U^n+1 = Chop(U^n+1,n) - U^n+1
@@ -564,24 +567,29 @@ void updateParticles(const auto &points,
                   if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        // auto tmp = -Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        // tmp += _GRAVITY_ * n;
-                        // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        auto tmp = -0.025 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        tmp += 0.1 * Dot(_GRAVITY3_, n) * n;
+                           // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                           // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
 
-                        p->DUDt_modify_SPH = Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal);
+                           // p->DUDt_modify_SPH = Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal);
                            // p->DUDt_SPH = p->DUDt_SPH + Dot(p->nabla_otimes_U, p->U_XSPH - p->RK_U.getX()) + p->DUDt_modify_SPH;
    #if defined(USE_RungeKutta)
-                        // p->RK_U.repush(p->DUDt_SPH);  // 速度
-                        // p->U_SPH = p->RK_U.getX();
-                        // p->RK_U.repush(p->DUDt_SPH);  // 速度
-                        // p->U_SPH = Chop(p->RK_U.getX(), n);
-
-                        p->RK_U.repush(p->DUDt_SPH + Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal));  // 速度
-                        p->U_SPH = p->RK_U.getX();
-                        // p->RK_X.repush(p->U_SPH);  // 位置
-                        p->RK_X.repush(Chop(Umod, n));  // 位置
+                        p->DUDt_SPH += tmp;
+                        // if (Norm(p->U_SPH) != 0.)
+                        //    p->DUDt_SPH -= Norm(tmp) * Normalize(Chop(p->U_SPH, n));
+                        p->RK_U.repush(p->DUDt_SPH);  // 速度
+                        p->U_SPH = p->RK_U.getX();    // + p->U_XSPH;
+                        p->RK_X.repush(p->U_SPH);     // 位置
+                        // auto X = p->X + (p->particle_spacing - normal_dist_f2w) * Normalize(n);
+                        // p->setXSingle(X);
                         p->setXSingle(p->RK_X.getX());
+
+                        // p->RK_U.repush(p->DUDt_SPH + Dot(Chop(Umod, n) - Uoriginal, p->nabla_otimes_U));  // 速度
+                        // p->U_SPH = p->RK_U.getX();
+                        // // p->RK_X.repush(p->U_SPH);  // 位置
+                        // p->RK_X.repush(Chop(Umod, n));  // 位置
+                        // p->setXSingle(p->RK_X.getX());
                         isReflected = true;
    #elif defined(USE_LeapFrog)
                         p->LPFG_X.repush(p->DUDt_SPH);  // 速度

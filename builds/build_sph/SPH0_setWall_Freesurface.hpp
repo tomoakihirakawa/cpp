@@ -465,7 +465,8 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                */
                q->U_SPH.fill(0.);
-               std::array<double, 3> DUDT{};
+               std::array<double, 3> DUDT;
+               DUDT.fill(0.);
                double div_U = 0;
                q->intp_density = 0.;
                //! ちょっとした修正11/28
@@ -613,7 +614,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                         w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
                         total_volume_w += w;
                         p->intp_density += q->rho * w;
-                        w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML());
+                        w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML_next());
                         total_volume_w_next += w;
                         p->intp_density_next += rho_next(q) * w;
                         p->COM_SPH += q->mass * q->X;
@@ -705,15 +706,15 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                   if (q->isFluid)
                                                                      return q->isCaptured &&
                                                                             Distance(A, q) < surface_check_r_for_fluid && A != q &&
-                                                                            isFlat(Dot(p->inv_grad_corr_M, p->interp_normal_original), q->X - A->X, M_PI / 6);
+                                                                            isFlat(Dot(p->inv_grad_corr_M, p->interp_normal_original), q->X - A->X, M_PI / 5);
                                                                   else
                                                                      return q->isCaptured &&
                                                                             Distance(A, q) < surface_check_r_for_wall && A != q &&
                                                                             isFlat(Dot(p->inv_grad_corr_M, p->interp_normal_original), q->X - A->X, M_PI / 6);
                                                                });
                             }));
-            if (A->intp_density > _WATER_DENSITY_ * 1.02)
-               A->isSurface = false;
+            // if (A->intp_density > _WATER_DENSITY_ * 1.02)
+            //    A->isSurface = false;
             if (A->var_Eigenvalues_of_M1 > 0.5)
                A->isSurface = true;
 
@@ -725,7 +726,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                        if (q->isFluid)
                                                                           return q->isCaptured &&
                                                                                  Distance(X_next(A), X_next(q)) < surface_check_r_for_fluid && A != q &&
-                                                                                 isFlat(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next), X_next(q) - X_next(A), M_PI / 6);
+                                                                                 isFlat(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next), X_next(q) - X_next(A), M_PI / 5);
                                                                        else
                                                                           return q->isCaptured &&
                                                                                  Distance(X_next(A), X_next(q)) < surface_check_r_for_wall && A != q &&
@@ -733,8 +734,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                     });
                                  }));
 
-            if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
-               A->isSurface_next = false;
+            // if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
+            //    A->isSurface_next = false;
             if (A->var_Eigenvalues_of_M1_next > 0.5)
                A->isSurface_next = true;
 

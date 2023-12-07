@@ -1620,16 +1620,24 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
 
-      if (!isValidTriangle(tri0, M_PI / 180.))
+      if (!isValidTriangle(tri0, 2 * M_PI / 180.))
          return false;
-      if (!isValidTriangle(tri1, M_PI / 180.))
+      if (!isValidTriangle(tri1, 2 * M_PI / 180.))
          return false;
 
+      if (isFlat(tri0[1] - tri0[0], tri0[2] - tri0[0], 1E-1))
+         return false;
+      if (isFlat(tri0[2] - tri0[1], tri0[0] - tri0[1], 1E-1))
+         return false;
+      if (isFlat(tri1[1] - tri1[0], tri1[2] - tri1[0], 1E-1))
+         return false;
+      if (isFlat(tri1[2] - tri1[1], tri1[0] - tri1[1], 1E-1))
+         return false;
       //$ large difference of normal vector after and before flip
-      if (!isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after) ||
-          !isFlat(Cross(tri0[1] - tri0[0], tri0[2] - tri0[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) ||
-          !isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri1_now[1] - tri1_now[0], tri1_now[2] - tri1_now[0]), acceptable_n_diff_before_after) ||
-          !isFlat(Cross(tri1[1] - tri1[0], tri1[2] - tri1[0]), Cross(tri0_now[1] - tri0_now[0], tri0_now[2] - tri0_now[0]), acceptable_n_diff_before_after))
+      if (!isFlat(tri0[0], tri0[1], tri0[2], tri0_now[0], tri0_now[1], tri0_now[2], acceptable_n_diff_before_after))
+         return false;
+
+      if (!isFlat(tri1[0], tri1[1], tri1[2], tri1_now[0], tri1_now[1], tri1_now[2], acceptable_n_diff_before_after))
          return false;
 
       //$ area conservation

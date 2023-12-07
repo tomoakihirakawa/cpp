@@ -48,6 +48,8 @@ cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
 
+\insert{1_MooringLine}
+
 */
 
 // #define USE_EULER

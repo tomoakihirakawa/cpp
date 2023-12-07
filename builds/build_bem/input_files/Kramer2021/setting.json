@@ -1,0 +1,14 @@
+{
+    "WATER_DENSITY": 998.2,
+    "GRAVITY": 9.82,
+    "max_dt": 0.02,
+    "end_time_step": 10000,
+    "end_time": 4,
+    "output_dir": "/Users/tomoaki/BEM/Kramer2021_H00d03_small",
+    "output_directory": "/Users/tomoaki/BEM/Kramer2021",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "float.json"
+    ]
+}

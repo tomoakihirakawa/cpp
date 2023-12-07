@@ -489,7 +489,8 @@ Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
    // std::ranges::for_each(arr, [&](const auto& a) { ret = std::fma(a, ARR[i++], ret); });
    // rewrite this using for
    for (size_t i = 0; i < N; ++i)
-      ret += arr[i] * ARR[i];
+      ret = std::fma(arr[i], ARR[i], ret);
+   // ret += arr[i] * ARR[i];
    return ret;
 }
 
@@ -552,7 +553,8 @@ constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<s
    //
    for (size_t i = 0; const auto& ARR : ARRARR) {
       for (size_t j = 0; j < N1; ++j)
-         ret[j] += arr[i] * ARR[j];
+         ret[j] = std::fma(arr[i], ARR[j], ret[j]);
+      // ret[j] += arr[i] * ARR[j];
       i++;
    }
 
@@ -713,6 +715,14 @@ constexpr T NormSquared(const std::array<T, N>& arr) noexcept {
    return sum;
 }
 
+template <size_t N>
+constexpr double NormSquared(const std::array<double, N>& arr) noexcept {
+   double sum = 0.;
+   for (const auto& a : arr)
+      sum = std::fma(a, a, sum);
+   return sum;
+}
+
 template <size_t N, typename T>
 constexpr T Norm(const std::array<T, N>& arr) noexcept {
    return std::sqrt(Dot(arr, arr));
@@ -767,6 +777,36 @@ inline constexpr std::array<T, 3> Cross(const std::array<T, 3>& A, const std::ar
    return {{std::fma(std::get<1>(A), std::get<2>(B), -std::get<2>(A) * std::get<1>(B)),
             std::fma(std::get<2>(A), std::get<0>(B), -std::get<0>(A) * std::get<2>(B)),
             std::fma(std::get<0>(A), std::get<1>(B), -std::get<1>(A) * std::get<0>(B))}};
+}
+
+/* -------------------------------------------------------------------------- */
+
+// void FusedMultiplyIncrement(std::array<double, 3>& ret, const double arr, const std::array<double, 3>& ARR) noexcept {
+//    std::get<0>(ret) = std::fma(arr, std::get<0>(ARR), std::get<0>(ret));
+//    std::get<1>(ret) = std::fma(arr, std::get<1>(ARR), std::get<1>(ret));
+//    std::get<2>(ret) = std::fma(arr, std::get<2>(ARR), std::get<2>(ret));
+// }
+
+template <size_t N>
+std::array<double, N> FusedMultiplyAdd(const double W, const std::array<double, N>& ARR, std::array<double, N> ret) noexcept {
+   for (size_t i = 0; i < N; ++i) ret[i] = std::fma(W, ARR[i], ret[i]);
+   return ret;
+}
+
+template <size_t N>
+void FusedMultiplyIncrement(const double W, const std::array<double, N>& ARR, std::array<double, N>& ret) noexcept {
+   for (size_t i = 0; i < N; ++i)
+      ret[i] = std::fma(W, ARR[i], ret[i]);
+}
+
+template <size_t N>
+void FusedMultiplyIncrement(const std::array<double, N>& ARR, const double W, std::array<double, N>& ret) noexcept {
+   for (size_t i = 0; i < N; ++i)
+      ret[i] = std::fma(W, ARR[i], ret[i]);
+}
+
+void FusedMultiplyIncrement(const double arr, const double ARR, double& ret) noexcept {
+   ret = std::fma(arr, ARR, ret);
 }
 
 /* -------------------------------------------------------------------------- */

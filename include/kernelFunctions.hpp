@@ -59,7 +59,7 @@ double kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
 Tddd grad_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
-      return {0., 0., 0.};
+      return _ZEROS3_;
    return -(a - x) * (1. + 2. * log(e * r));
 };
 double laplacian_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
@@ -132,7 +132,7 @@ W_{5}(q,h) = \frac{2187}{40\pi h^3}
 //    constexpr double a = 2187. / (40. * M_PI);
 //    constexpr double one_third = 1.0 / 3.0;
 //    constexpr double two_thirds = 2.0 / 3.0;
-//    constexpr std::array<double, 3> zeros = {0., 0., 0.};
+//    constexpr std::array<double, 3> zeros = _ZEROS3_;
 
 //    const double r = Norm(xi - xj);
 //    const double q = r / h;
@@ -166,7 +166,7 @@ Tddd grad_w_Spiky(const Tddd &xi, const Tddd &xj, const double &h) {
       double q = h - r;
       return (45.0 / (M_PI * std::pow(h, 6)) * std::pow(q, 2)) * (-rij / r);
    } else {
-      return {0., 0., 0.};
+      return _ZEROS3_;
    }
 }
 
@@ -195,7 +195,7 @@ Tddd grad_w_Bspline4_(const Tddd &xi, const Tddd &xj, const double h) {
    const double q = r / h;
    const Tddd dqdx = (xi - xj) / (r * h);
    if (q > 2.5 || r < 1E-13)
-      return {0., 0., 0.};
+      return _ZEROS3_;
    else if (q < 0.5)
       return a * (4 * std::pow(2.5 - q, 3) - 5. * 4 * std::pow(1.5 - q, 3) + 10. * 4 * std::pow(0.5 - q, 3)) * (-dqdx);
    else if (q < 1.5)
@@ -237,10 +237,10 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    const double c = a / dinom;
 
    if (q > 1. || r < 1E-13)
-      return {0., 0., 0.};
+      return _ZEROS3_;
    else if (q < one_third) {
       if (r * h * h * h * h == 0.0)
-         return {0., 0., 0.};
+         return _ZEROS3_;
       else
          return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;
    } else if (q < two_thirds)
@@ -264,7 +264,7 @@ double Dot_grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
 //    const double r = Norm(Xij);
 //    const double q = r / h;
 //    if (q > 1. || r < 1E-13)
-//       return {0., 0., 0.};
+//       return _ZEROS3_;
 //    else
 //       return Dot((Xij / (r * r)), grad_w_Bspline5(xi, xj, h));
 //    // return Dot((Xij / (r * r)) * grad_w_Bspline5(xi, xj, h), M);
@@ -343,7 +343,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
    const std::array<double, 3> dqdr = (xi - xj) / (r * h);
    const double dinom = M_PI * h * h * h * h * r;
    if (q > 1. || r < 1E-13)
-      return {0., 0., 0.};
+      return _ZEROS3_;
    else if (q < 0.5)
       // return (xi - xj) * (-96. + 144. * q) * q / dinom;
       return (48 * q * (-2. + 3 * q) * ((xi - xj) / r)) / (std::pow(h, 4) * M_PI);
@@ -357,7 +357,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
    // const double dinom = h * h * h;
    // const double c = 48. / M_PI / dinom;
    // if (q > 1. || dinom < 1E-14)
-   //    return {0., 0., 0.};
+   //    return _ZEROS3_;
    // else if (q < 0.5)
    //    return -c * (-2 * q + 3 * q * q) * grad_q;
    // else
@@ -396,7 +396,7 @@ std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std
 //    const double dinom = h * h * h;
 //    const double c = 8. / M_PI / dinom;
 //    if (q > 1. || dinom < 1E-14)
-//       return {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+//       return {{_ZEROS3_, _ZEROS3_, _ZEROS3_}};
 //    else if (q < 0.5)
 //       return c * (-6. * 2 * q + 6. * 3 * q * q) * grad_q;
 //    else
@@ -432,7 +432,7 @@ double Dot_grad_w_Bspline3(const std::array<double, 3> &xi, const std::array<dou
 //    const double r = Norm(Xij);
 //    const double q = r / h;
 //    if (q > 1. || r < 1E-13)
-//       return {0., 0., 0.};
+//       return _ZEROS3_;
 //    else
 //       // return Dot(Xij / (r * r), grad_w_Bspline3(xi, xj, h));
 //       // return Dot(Dot(Xij / (r * r), M), Dot(grad_w_Bspline3(xi, xj, h), M));
@@ -465,7 +465,7 @@ std::array<double, 3> grad_w_Wendland_(const std::array<double, 3> &xi, const st
       const auto dqdx = (xi - xj) / (r * h);
       return 8 * alpha * 4 * std::pow(1.0 - q, 3) * (-dqdx) * (4.0 * q + 1.0) + 8 * alpha * std::pow(1.0 - q, 4) * (4.0 * dqdx);
    }
-   return {0., 0., 0.};
+   return _ZEROS3_;
 }
 
 Tddd grad_w_Wendland(const Tddd &xi, const Tddd &xj, const double h) {

@@ -1,0 +1,21 @@
+{
+    "name": "bodyB",
+    "type": "RigidBody",
+    "COM": [
+        0.35,
+        0,
+        0.25
+    ],
+    "mass": 10000000000,
+    "MOI": [
+        10000000000,
+        10000000000,
+        10000000000
+    ],
+    "output": "json",
+    "velocity": [
+        "file",
+        "./study_fish/bodyB.dat"
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/fish/bodyB50.obj"
+}

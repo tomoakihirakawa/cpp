@@ -17,6 +17,12 @@
  * rotate関数：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
  * main関数：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
 
+```
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateRotation.cpp
+make
+./validateRotation
+```
+
  ![sample.gif](sample.gif)
 
 $x$軸に対して回転 -> $y$軸に対して回転 -> $z$軸に対して回転
@@ -40,13 +46,16 @@ void rotate(Network* const net, const Quaternion& Q, const Tddd& c = {0, 0, 0}) 
 };
 
 int main() {
-
+   std::string outdir = "./output/";
+   int t = 0;
    if (true) {
+      PVDWriter PVD(outdir + "rotating_bunny.pvd");
       auto net = new Network("bunny.obj", "bunny");
       auto mean = Mean(ToX(net->getPoints()));
       translate(net, -mean);
       net->resetInitialX();
       int l = 0;
+      t = 0;
       for (const auto& center : std::vector<Tddd>{{0, 0, 0}, {0.1, 0., 0.}}) {
          // 各軸に対して回転させる
          for (const auto& axis : std::vector<Tddd>{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}) {
@@ -59,20 +68,26 @@ int main() {
                   vtp.addPolygon(f->getPoints());
                }
                std::cout << l << ", {yaw,pitch,roll} = " << Q.YPR() << std::endl;
-               std::ofstream ofs("./output/bunny" + std::to_string(l++) + ".vtp");
+               std::string name = "bunny" + std::to_string(l++) + ".vtp";
+               PVD.push(name, t);
+               t += 1;
+               std::ofstream ofs(outdir + name);
                vtp.write(ofs);
             }
          }
       }
+      PVD.output();
    }
 
    if (true) {
+      PVDWriter PVD(outdir + "rotating_cow.pvd");
       auto net = new Network("cow.obj", "cow");
       auto mean = Mean(ToX(net->getPoints()));
       translate(net, -mean);
       net->resetInitialX();
       int l = 0;
       Quaternion Q;
+      t = 0;
       for (auto i = 0; i < 50; ++i) {
          vtkPolygonWriter<networkPoint*> vtp;
          // Q *= Quaternion({ 1, 0, 0 }, 2 * M_PI / 50.);
@@ -83,17 +98,23 @@ int main() {
             vtp.addPolygon(f->getPoints());
          }
          std::cout << l << ", {yaw,pitch,roll} = " << Q.YPR() << std::endl;
-         std::ofstream ofs("./output/armadillo" + std::to_string(l++) + ".vtp");
+         std::string name = "armadillo" + std::to_string(l++) + ".vtp";
+         PVD.push(name, t);
+         t += 1;
+         std::ofstream ofs(outdir + name);
          vtp.write(ofs);
       }
+      PVD.output();
    }
 
    if (true) {
+      PVDWriter PVD(outdir + "rotating_camel.pvd");
       auto net = new Network("camel.obj", "camel");
       auto mean = Mean(ToX(net->getPoints()));
       translate(net, -mean);
       net->resetInitialX();
       int l = 0;
+      t = 0;
       Quaternion Qyaw, Qpitch, Qroll;
       for (auto i = 0; i < 50; ++i) {
          vtkPolygonWriter<networkPoint*> vtp;
@@ -109,8 +130,12 @@ int main() {
             vtp.addPolygon(f->getPoints());
          }
          std::cout << l << ", {yaw,pitch,roll} = " << Q.YPR() << std::endl;
-         std::ofstream ofs("./output/camel" + std::to_string(l++) + ".vtp");
+         std::string name = "camel" + std::to_string(l++) + ".vtp";
+         PVD.push(name, t);
+         t += 1;
+         std::ofstream ofs(outdir + name);
          vtp.write(ofs);
       }
+      PVD.output();
    }
 };
