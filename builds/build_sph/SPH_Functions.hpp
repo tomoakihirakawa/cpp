@@ -202,33 +202,33 @@ void setSML(const auto &target_nets) {
                   networkPoint *closest_q = nullptr, *closest_q_next = nullptr;
                   for (const auto &net : target_nets) {
                      net->BucketPoints.apply(p->X, 3.5 * p->particle_spacing, [&](const auto &q) {
-                        if ((q->isSurface || q->isNeumannSurface) && (d = Norm(q->X - p->X)) < closest_d) {
+                        if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(q->X - p->X)) < closest_d) {
                            closest_d = d;
                            closest_q = q;
                            p->C_SML = closest_d / p->particle_spacing + 0.5;
                         }
-                        if ((q->isSurface || q->isNeumannSurface) && (d = Norm(X_next(q) - X_next(p))) < closest_d_next) {
+                        if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(X_next(q) - X_next(p))) < closest_d_next) {
                            closest_d_next = d;
                            closest_q_next = q;
                            p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
                         }
-                        if (q->isSurface && Distance(p, q) < 2. * p->particle_spacing)
+                        if (q->isSurface && Distance(p, q) < 1.5 * p->particle_spacing)
                            p->isNearSurface = true;
                      });
                   }
                   if (closest_q != nullptr) {
                      if (closest_q->isSurface)
                         p->C_SML = std::clamp(p->C_SML, C_SML_min, C_SML_max);
-                     else if (closest_q->isNeumannSurface)
-                        p->C_SML = std::clamp(p->C_SML, C_SML_min, C_SML_max);
+                     // else if (closest_q->isNeumannSurface)
+                     //    p->C_SML = std::clamp(p->C_SML, C_SML_min, C_SML_max);
                   } else
                      p->C_SML = std::clamp(p->C_SML, C_SML_max, C_SML_max);
 
                   if (closest_q_next != nullptr) {
                      if (closest_q_next->isSurface)
                         p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min, C_SML_max);
-                     else if (closest_q_next->isNeumannSurface)
-                        p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min, C_SML_max);
+                     // else if (closest_q_next->isNeumannSurface)
+                     //    p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min, C_SML_max);
                   } else
                      p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
                }
@@ -244,12 +244,12 @@ void setSML(const auto &target_nets) {
                networkPoint *closest_q = nullptr, *closest_q_next = nullptr;
                for (const auto &net : target_nets) {
                   net->BucketPoints.apply(markerX, 3.5 * p->particle_spacing, [&](const auto &q) {
-                     if ((q->isSurface || q->isNeumannSurface) && (d = Norm(q->X - markerX)) < closest_d) {
+                     if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(q->X - markerX)) < closest_d) {
                         closest_d = d;
                         closest_q = q;
                         p->C_SML = closest_d / p->particle_spacing + 0.5;
                      }
-                     if ((q->isSurface || q->isNeumannSurface) && (d = Norm(X_next(q) - markerX_next)) < closest_d_next) {
+                     if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(X_next(q) - markerX_next)) < closest_d_next) {
                         closest_d_next = d;
                         closest_q_next = q;
                         p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
@@ -259,15 +259,15 @@ void setSML(const auto &target_nets) {
                if (closest_q != nullptr) {
                   if (closest_q->isSurface)
                      p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
-                  else if (closest_q->isNeumannSurface)
-                     p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
+                  // else if (closest_q->isNeumannSurface)
+                  //    p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                } else
                   p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                if (closest_q_next != nullptr) {
                   if (closest_q_next->isSurface)
                      p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
-                  else if (closest_q_next->isNeumannSurface)
-                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
+                  // else if (closest_q_next->isNeumannSurface)
+                  //    p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
                } else
                   p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
             }
@@ -370,7 +370,7 @@ Tddd X_next(const networkPoint *p) {
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
    // if (p->getNetwork()->isRigidBody && !p->isFirstWallLayer)
-   return _WATER_DENSITY_;
+   // return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -382,7 +382,7 @@ double rho_next(auto p) {
    // return p->RK_rho.getX(-p->rho * p->div_U);
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
-   // return p->rho + p->DrhoDt_SPH + p->RK_rho.get_dt();
+   return std::fma(p->DrhoDt_SPH, p->RK_rho.get_dt(), _WATER_DENSITY_);
    // #endif
    //    }
 };
@@ -567,8 +567,8 @@ void updateParticles(const auto &points,
                   if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.025 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        tmp += 0.1 * Dot(_GRAVITY3_, n) * n;
+                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                        tmp += 0.2 * Dot(_GRAVITY3_, n) * n;
                            // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                            // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
 

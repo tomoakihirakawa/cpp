@@ -251,8 +251,12 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                const auto BX = X_next(B);
                const auto r = pO->SML_next();
                if (Distance(pO_center, BX) <= r) {
-                  const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
-                  // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());
+                  // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
+                  double Aij;
+                  // if (pO->isNearSurface) {
+                  // Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());  //! 水面付近は修正によってエラーが起きやすいのでそのままにする．
+                  // } else
+                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //! 内部は比較的安定しているようなので修正する
                   // var_Eifen_が大きすぎる内部の点は，計算がこんなんだろうから，EISPHの近似で計算する
                   /* -------------------------------------------------------------------------- */
                   //! 修正
@@ -584,7 +588,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 125;
+   int size = 60;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {

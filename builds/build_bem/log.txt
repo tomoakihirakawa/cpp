@@ -1,4 +1,125 @@
 ----------
+Execution time: Fri Dec  8 12:12:38 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 12:10:17 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 12:04:10 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 12:01:28 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:59:24 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:56:19 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:55:09 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:51:31 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:49:06 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 11:47:42 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Kramer2021_H00d03_small
+----------
+Execution time: Fri Dec  8 09:01:15 2023
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Ren2015_H0d04_T1d2_potential_2
+----------
 Execution time: Thu Dec  7 17:10:52 2023
 
 Machine Information:
@@ -583,6 +704,17 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Hadzic2005
   arg2: ----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

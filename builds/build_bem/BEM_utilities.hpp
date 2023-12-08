@@ -42,7 +42,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
             double z = std::get<2>(p->X) - z_surface;
             double x = 0;
             //
-            t -= M_PI / w / 2.;
+            t -=start;
+            // t -= M_PI / w / 2.;
             T6d ret = {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
                            w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
                        0.,
