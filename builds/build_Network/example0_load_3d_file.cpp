@@ -94,13 +94,9 @@ int main() {
    pvd.output();//最後にpvdファイルを出力
    ```
 
-   #### 面のアニメーション
-
-   ![sample.gif](sample.gif)
-
-   #### 線のアニメーション
-
-   ![sample_line.gif](sample_line.gif)
+   | 面のアニメーション | 線のアニメーション |
+   |:---------------:|:---------------:|
+   | ![sample.gif](sample.gif) | ![sample_line.gif](sample_line.gif) |
 
    NOTE: QuickTimeで作成したmovファイルをgifに変換するには，次のようにする．
 
