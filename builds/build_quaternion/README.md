@@ -52,6 +52,12 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 * rotate関数：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
 * main関数：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
 
+```
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateRotation.cpp
+make
+./validateRotation
+```
+
 ![sample.gif](sample.gif)
 
 $x$軸に対して回転 -> $y$軸に対して回転 -> $z$軸に対して回転
