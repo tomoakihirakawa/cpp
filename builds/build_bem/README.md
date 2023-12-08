@@ -16,6 +16,7 @@
         - [🪼 多重節点](#🪼-多重節点)
         - [🪼 `getContactFaces()`や`getNearestContactFace()`の利用](#🪼-`getContactFaces()`や`getNearestContactFace()`の利用)
             - [🐚 `contact_angle`と`isInContact()`](#🐚-`contact_angle`と`isInContact()`)
+            - [🐚 🐚 接触の概念図](#🐚-🐚-接触の概念図)
             - [🐚 `addContactFaces()`](#🐚-`addContactFaces()`)
             - [🐚 呼び出し方法](#🐚-呼び出し方法)
         - [🪼 `uNeumann()`と`accelNeumann()`](#🪼-`uNeumann()`と`accelNeumann()`)
@@ -258,9 +259,9 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
-* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L176)
-* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L192)
-* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L230)
+* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L181)
+* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L197)
+* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L261)
 
 を使って接触判定を行っている．
 
@@ -298,10 +299,15 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
-| [`contact_angle`](../../include/networkPoint.hpp#L176)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
-| [`isFacing()`](../../include/networkPoint.hpp#L179)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [`isInContact()`](../../include/networkPoint.hpp#L192)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L230)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`contact_angle`](../../include/networkPoint.hpp#L181)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
+| [`isFacing()`](../../include/networkPoint.hpp#L184)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| [`isInContact()`](../../include/networkPoint.hpp#L197)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L261)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+
+
+#### 🐚 🐚 接触の概念図  
+
+![接触の概念図](../../include/contact.png)
 [../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
 
 
@@ -313,7 +319,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L234](../../include/networkPoint.hpp#L234)
+[../../include/networkPoint.hpp#L265](../../include/networkPoint.hpp#L265)
 
 
 #### 🐚 呼び出し方法 
@@ -335,7 +341,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 `uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
-[./BEM_utilities.hpp#L319](./BEM_utilities.hpp#L319)
+[./BEM_utilities.hpp#L320](./BEM_utilities.hpp#L320)
 
 ---
 ## ⛵ 境界値問題 
@@ -577,7 +583,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L499](./BEM_utilities.hpp#L499)
+[./BEM_utilities.hpp#L505](./BEM_utilities.hpp#L505)
 
 ---
 ### 🪼 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい） 
@@ -592,12 +598,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L228)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L245)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L134)で接線方向にシフトし，
 2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L143)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-[./BEM_calculateVelocities.hpp#L207](./BEM_calculateVelocities.hpp#L207)
+[./BEM_calculateVelocities.hpp#L224](./BEM_calculateVelocities.hpp#L224)
 
 ---
 ## ⛵ 浮体動揺解析 
@@ -685,7 +691,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L701)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L843)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L702)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L843)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -730,13 +736,13 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L857)で与
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L641)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L642)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L638](./BEM_utilities.hpp#L638)
+[./BEM_utilities.hpp#L644](./BEM_utilities.hpp#L644)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -764,7 +770,7 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L689](./BEM_utilities.hpp#L689)
+[./BEM_utilities.hpp#L695](./BEM_utilities.hpp#L695)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
@@ -852,7 +858,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L374)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L299)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L300)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L118)で利用され，$\phi _{n}$を計算する．
@@ -873,7 +879,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 | 7 | `axis`  | y       |
 | 8 | `axis`  | z       |
 
-[./BEM_utilities.hpp#L158](./BEM_utilities.hpp#L158)
+[./BEM_utilities.hpp#L159](./BEM_utilities.hpp#L159)
 
 ### 🪼 ピストン型造波装置 
 
@@ -898,7 +904,7 @@ $`S`$は造波版のストロークで振幅の２倍である．例えば，振
 $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see [Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1))
 
-[./BEM_utilities.hpp#L195](./BEM_utilities.hpp#L195)
+[./BEM_utilities.hpp#L196](./BEM_utilities.hpp#L196)
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
 
@@ -918,7 +924,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
-[./BEM_utilities.hpp#L245](./BEM_utilities.hpp#L245)
+[./BEM_utilities.hpp#L246](./BEM_utilities.hpp#L246)
 
 ---
 ## ⛵ その他 
@@ -928,7 +934,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
 多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
 
-[./BEM_utilities.hpp#L574](./BEM_utilities.hpp#L574)
+[./BEM_utilities.hpp#L580](./BEM_utilities.hpp#L580)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -982,7 +988,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L341](./BEM_calculateVelocities.hpp#L341)
+[./BEM_calculateVelocities.hpp#L358](./BEM_calculateVelocities.hpp#L358)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -997,7 +1003,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L428](./BEM_calculateVelocities.hpp#L428)
+[./BEM_calculateVelocities.hpp#L445](./BEM_calculateVelocities.hpp#L445)
 
 ---
 ### 🪼 JSONファイルの出力 

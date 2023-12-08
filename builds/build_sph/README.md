@@ -209,7 +209,7 @@ q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 
 水面の判定条件は，少し複雑である．
 
-[./SPH0_setWall_Freesurface.hpp#L770](./SPH0_setWall_Freesurface.hpp#L770)
+[./SPH0_setWall_Freesurface.hpp#L787](./SPH0_setWall_Freesurface.hpp#L787)
 
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -348,7 +348,7 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 壁の法線方向にある流体の圧力を，壁粒子の圧力とした場合（若干の修正をするが）：あまり力を受けない．
 
-[./SPH2_FindPressure.hpp#L356](./SPH2_FindPressure.hpp#L356)
+[./SPH2_FindPressure.hpp#L361](./SPH2_FindPressure.hpp#L361)
 
 ---
 ### 🪼 圧力の安定化 
@@ -373,14 +373,14 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 `PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-[./SPH2_FindPressure.hpp#L403](./SPH2_FindPressure.hpp#L403)
+[./SPH2_FindPressure.hpp#L408](./SPH2_FindPressure.hpp#L408)
 
 ---
 ## ⛵ ポアソン方程式の解法 
 
 ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph_back/SPH2_FindPressure.hpp#L496)を使う．
 
-[./SPH2_FindPressure.hpp#L504](./SPH2_FindPressure.hpp#L504)
+[./SPH2_FindPressure.hpp#L509](./SPH2_FindPressure.hpp#L509)
 
 ---
 ## ⛵ 圧力勾配$`\nabla p^{n+1}`$の計算 
@@ -400,7 +400,7 @@ ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../build
 $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
 が計算できた．
 
-[./SPH3_grad_P.hpp#L158](./SPH3_grad_P.hpp#L158)
+[./SPH3_grad_P.hpp#L168](./SPH3_grad_P.hpp#L168)
 
 ---
 ## ⛵ 注意点 
