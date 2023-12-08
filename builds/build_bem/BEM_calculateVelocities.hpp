@@ -158,43 +158,60 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    } else if (p->Neumann || p->CORNER) {
       Tddd to_corner = {0., 0., 0.};
       Tddd to_structure_face = {0., 0., 0.};
+      Tddd p_X_on_CORNER = pX;  //! 角にある場合は，正しく修正されるという意味．
 
       if (p->CORNER) {
          for (const auto &l : p->getLines()) {
             if (l->CORNER) {
                auto actual_corner_line = RK_without_Ubuff(p, (*l)(p));
                X = Nearest(pX, actual_corner_line);
-               if (Norm(to_corner) >= Norm(X - pX))
+               if (Norm(to_corner) >= Norm(X - pX)) {
                   to_corner = X - pX;
+                  p_X_on_CORNER = X;
+               }
             }
          }
       }
 
-      Tddd p_X_on_CORNER = pX + to_corner;
       auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 4));
       if (!next_Vrtx.empty()) {
-         std::vector<networkFace *> pf_to_check;
-         for (const auto &pf : p->getFacesNeumann()) {
-            if (std::ranges::none_of(pf_to_check, [pf](const auto f) { return isFlat(pf->normal, f->normal, M_PI / 180.); }))
-               pf_to_check.push_back(pf);
+
+         //! majorFlatFaces 法線方向が被らない面を抽出する
+         std::vector<networkFace *> majorFlatFaces;
+         double total_area = 0;
+         for (const auto &pf0 : p->getFacesNeumann()) {
+            total_area += pf0->area;
+            bool largest_among_close_normal_face = true;
+            for (const auto &pf1 : p->getFacesNeumann()) {
+               if (isFlat(pf0->normal, pf1->normal, M_PI / 180.) && pf0->area < pf1->area)
+                  largest_among_close_normal_face = false;
+            }
+            if (largest_among_close_normal_face)
+               majorFlatFaces.push_back(pf0);
          }
 
          std::vector<Tddd> projected_vec_for_each_p_f;
          // 面p_fが干渉する，最も近い構造物面を抽出
-         for (const auto &pf : pf_to_check) {
+         for (const auto &major : majorFlatFaces) {
             Tddd vec_to_closest_struct_face = {1E+20, 1E+20, 1E+20};
             bool found = false;
             for (const auto &struct_vertex : next_Vrtx) {
-               if (isInContact(p_X_on_CORNER, pf->normal, struct_vertex, p)) {
+               if (isInContact(p_X_on_CORNER, major->normal, struct_vertex, p)) {
                   X = Nearest(p_X_on_CORNER, struct_vertex);
                   if (Norm(vec_to_closest_struct_face) >= Norm(X - p_X_on_CORNER)) {
-                     vec_to_closest_struct_face = X - p_X_on_CORNER;
-                     found = true;
+                     //
+                     const auto n = TriangleNormal(struct_vertex);
+                     const double neglible_range = 1E-3 * std::sqrt(total_area);
+                     const double angle = 60 * M_PI / 180.;
+                     if (isFlat(n, X - p_X_on_CORNER, angle) || isFlat(n, -(X - p_X_on_CORNER), angle) || Norm(X - p_X_on_CORNER) < neglible_range) {
+                        vec_to_closest_struct_face = X - p_X_on_CORNER;
+                        found = true;
+                     }
                   }
                }
             }
             if (found)
-               projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, pf->normal));
+               projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, major->normal));
          }
          to_structure_face = optimumVector(projected_vec_for_each_p_f, {0., 0., 0.}, 1E-12);
       }

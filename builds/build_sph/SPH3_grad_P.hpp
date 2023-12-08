@@ -64,15 +64,25 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
             auto grad = grad_w_Bspline_next(A, B);
 
-#ifdef USE_SYMMETRIC_FORM_FOR_PRESSURE
-            //! これまでの方法
-            // A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
-            // A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
-            FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)), grad, A->gradP_SPH);
-            FusedMultiplyIncrement(A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
-#elif defined(USE_RANDLES_LIBERSKY_FORM_FOR_PRESSURE)
-            FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
-#endif
+            if (A->isNeumannSurface && !A->isSurface) {
+               //! ダムブレイクの計算で壁面付近の粒子の挙動はこっちの方が良かった．
+               FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)), grad, A->gradP_SPH);
+               FusedMultiplyIncrement(A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
+            } else {
+               //! 内部は比較的安定しているようなので修正する
+               FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
+            }
+
+            // #ifdef USE_SYMMETRIC_FORM_FOR_PRESSURE
+            //             //! これまでの方法
+            //             // A->gradP_SPH += B->p_SPH * (c / std::pow(rho_next(B), 2)) * grad;
+            //             // A->gradP_SPH += A->p_SPH * (c / std::pow(rho_next(A), 2)) * grad;
+            //             FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)), grad, A->gradP_SPH);
+            //             FusedMultiplyIncrement(A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
+            // #elif defined(USE_RANDLES_LIBERSKY_FORM_FOR_PRESSURE)
+            //             FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
+            // #endif
+
             // A->gradP_SPH += V_next(B) * B->p_SPH * grad_w_Bspline_next(A, B);
 
             // A->gradP_SPH += (B->p_SPH - A->p_SPH) * B->volume * grad;  //\label{SPH:gradP2}

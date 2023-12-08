@@ -694,11 +694,19 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             */
 
             // 流体粒子に対してはr=2.5*ps，\theta=30度
-            const auto surface_check_r_for_fluid = A->particle_spacing * 2.5;
+            auto surface_check_r_for_fluid = A->particle_spacing * 2.5;
             // 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
-            const auto surface_check_r_for_wall = A->particle_spacing * 2.;
+            auto surface_check_r_for_wall = A->particle_spacing * 2.;
+
+            // if (A->var_Eigenvalues_of_M1 > 0.)
+            {
+               //! 分布が均等でないものは水面になりやすくする
+               surface_check_r_for_fluid = A->particle_spacing * (2.5 - 3. * A->var_Eigenvalues_of_M1);
+               surface_check_r_for_wall = A->particle_spacing * (2. - 3. * A->var_Eigenvalues_of_M1);
+            }
+
             // 以上に該当する粒子があった場合は，水面粒子として認識しない．
-            A->isSurface = A->var_Eigenvalues_of_M1 > 0.3 ||
+            A->isSurface = A->var_Eigenvalues_of_M1 > 0.4 ||
                            (A->intp_density < _WATER_DENSITY_ * 1.05 && A->var_Eigenvalues_of_M1 > 0.1 &&
                             std::ranges::none_of(all_nets, [&](const auto &net) {
                                return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
@@ -715,10 +723,19 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                             }));
             // if (A->intp_density > _WATER_DENSITY_ * 1.02)
             //    A->isSurface = false;
-            if (A->var_Eigenvalues_of_M1 > 0.5)
-               A->isSurface = true;
+            // if (A->var_Eigenvalues_of_M1 > 0.6)
+            //    A->isSurface = true;
 
-            A->isSurface_next = A->var_Eigenvalues_of_M1_next > 0.3 ||
+            // if (A->var_Eigenvalues_of_M1_next > 0.3)
+            {
+               //! 分布が均等でないものは水面になりやすくする
+               surface_check_r_for_fluid = A->particle_spacing * (2.5 - 3. * A->var_Eigenvalues_of_M1_next);
+               surface_check_r_for_wall = A->particle_spacing * (2. - 3. * A->var_Eigenvalues_of_M1_next);
+            }
+
+            // surfaceではないが，var_Eigenvalues_of_M1_nextが大きいものはEISPHで計算する，
+
+            A->isSurface_next = A->var_Eigenvalues_of_M1_next > 0.4 ||
                                 (A->intp_density_next < _WATER_DENSITY_ * 1.05 && A->var_Eigenvalues_of_M1_next > 0.1 &&
                                  std::ranges::none_of(all_nets, [&](const auto &net) {
                                     return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
@@ -736,8 +753,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
             // if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
             //    A->isSurface_next = false;
-            if (A->var_Eigenvalues_of_M1_next > 0.5)
-               A->isSurface_next = true;
+            // if (A->var_Eigenvalues_of_M1_next > 0.5)
+            //    A->isSurface_next = true;
 
             // A->isSurface = std::ranges::none_of(all_nets, [&](const auto &net) {
             //    return net->BucketPoints.any_of(A->X, A->particle_spacing * 2.,

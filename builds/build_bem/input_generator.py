@@ -30,7 +30,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Ren2015"
+SimulationCase = "Kramer2021"
 
 match SimulationCase:
 
@@ -437,7 +437,7 @@ match SimulationCase:
         if id == "H00d03":
             water["objfile"] = objfolder + "/water200_mod.obj"
         else:
-            water["objfile"] = objfolder + "/water300_mod2.obj"
+            water["objfile"] = objfolder + "/water300_mod.obj"
 
         tank["objfile"] = objfolder + "/tank10.obj"
         float["objfile"] = objfolder + "/sphere.obj"
