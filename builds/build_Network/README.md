@@ -7,8 +7,6 @@
             - [🐚 線の出力](#🐚-線の出力)
             - [🐚 実行方法](#🐚-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
-            - [🐚 面のアニメーション](#🐚-面のアニメーション)
-            - [🐚 線のアニメーション](#🐚-線のアニメーション)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
@@ -91,13 +89,9 @@ pvd.push(filename, time);//`filename`には，`vtp`ファイルなどの3Dファ
 pvd.output();//最後にpvdファイルを出力
 ```
 
-#### 🐚 面のアニメーション 
-
-![sample.gif](sample.gif)
-
-#### 🐚 線のアニメーション 
-
-![sample_line.gif](sample_line.gif)
+| 面のアニメーション | 線のアニメーション |
+|:---------------:|:---------------:|
+| ![sample.gif](sample.gif) | ![sample_line.gif](sample_line.gif) |
 
 💡 QuickTimeで作成したmovファイルをgifに変換するには，次のようにする．
 
@@ -173,7 +167,7 @@ make
 ./example3_line_face_interaction
 ```
 
-[./example3_line_face_interaction.cpp#L6](./example3_line_face_interaction.cpp#L6)
+[./example3_line_face_interaction.cpp#L4](./example3_line_face_interaction.cpp#L4)
 
 ---
 # 🐋 CGALを使って四面体を生成する 
