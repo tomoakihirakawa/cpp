@@ -30,7 +30,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Kramer2021"
+SimulationCase = "Hadzic2005"
 
 match SimulationCase:
 
@@ -200,7 +200,7 @@ match SimulationCase:
         start = 0.
 
         T = 1.2
-        H = 0.04
+        H = 0.06
         a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
         h = 0.4
 
@@ -208,8 +208,8 @@ match SimulationCase:
         # id0 = "_no"
         # id0 = "_multiple"
 
-        # wavemaker_type = "piston"
-        wavemaker_type = "potential"
+        wavemaker_type = "piston"
+        # wavemaker_type = "potential"
 
         id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
         id += "_T"+str(T).replace(".", "d")
@@ -377,7 +377,8 @@ match SimulationCase:
         z_floatinbody_bottom = z_surface - d
         # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
-        float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
+        # float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
+        float["MOI"] = [Ixx*10**10,0.01*0.01*14,Izz*10**10]
         inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.05,

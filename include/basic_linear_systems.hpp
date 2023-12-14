@@ -373,6 +373,40 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
    // return inv_array;
 }
 
+// for three dimensional array
+// template <>
+// std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
+//    const double inv_det = 1. / std::fma(-a[0][2], a[1][1] * a[2][0], std::fma(a[0][1], a[1][2] * a[2][0], std::fma(a[0][2], a[1][0] * a[2][1], std::fma(-a[0][0], a[1][2] * a[2][1], std::fma(-a[0][1], a[1][0] * a[2][2], a[0][0] * a[1][1] * a[2][2])))));
+//    return {{{std::fma(-a[1][2], a[2][1], a[1][1] * a[2][2]) * inv_det, std::fma(a[0][2], a[2][1], -a[0][1] * a[2][2]) * inv_det, std::fma(-a[0][2], a[1][1], a[0][1] * a[1][2]) * inv_det},
+//             {std::fma(a[1][2], a[2][0], -a[1][0] * a[2][2]) * inv_det, std::fma(-a[0][2], a[2][0], a[0][0] * a[2][2]) * inv_det, std::fma(a[0][2], a[1][0], -a[0][0] * a[1][2]) * inv_det},
+//             {std::fma(-a[1][1], a[2][0], a[1][0] * a[2][1]) * inv_det, std::fma(a[0][1], a[2][0], -a[0][0] * a[2][1]) * inv_det, std::fma(-a[0][1], a[1][0], a[0][0] * a[1][1]) * inv_det}}};
+// }
+
+template <>
+std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
+   const double inv_det = 1.0 / std::fma(
+                                    -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                    std::fma(
+                                        std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                        std::fma(
+                                            std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                            std::fma(
+                                                -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                                std::fma(
+                                                    -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
+                                                    std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+
+   return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+            {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+            {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
+}
+
 VV_d Inverse(const VV_d &mat) {
    lapack_lu lu(mat);
    return lu.inverse();
@@ -701,10 +735,11 @@ V_d back_substitution(const VV_d &mat, V_d &b, const Tii &mat_size) {
    double bi;
    int i, j;
    for (i = row - 1; i >= 0; --i) {
+      auto &mat_i = mat[i];
       bi = b[i];  // Cache b[i] for better cache locality
       for (j = col - 1; j > i; --j)
-         bi = std::fma(-mat[i][j], b[j], bi);
-      b[i] = bi / mat[i][i];
+         bi = std::fma(-mat_i[j], b[j], bi);
+      b[i] = bi / mat_i[i];
    }
    b.resize(row);  // Resize vector to `row`, this will automatically remove extra elements
    return b;
@@ -792,17 +827,18 @@ struct QR {
       }
       IdentityMatrix(Q);
       QT = Q;
-      double r, c, s, a, b;
-      double Q0, Q1, R0, R1;  // Rのためのtmp
-      double eps = 1e-15;
-      int max = std::max(N_ROW, N_COL);
+      double r, c, s, a, b, Q0, Q1, R0, R1;  // Rのためのtmp
+      const double eps = 1e-15;
+      const int max = std::max(N_ROW, N_COL);
       for (auto j = 0; j < max; ++j) {
          for (auto i = nR - 2; i >= j; --i) {
             // 下から
             // if (!Between(R[i + 1][j], {-eps, eps}))
             if (R[i + 1][j] != 0.) {  // givensの位置
-               a = R[i][j];
-               b = R[i + 1][j];  //! {i+1,j}がゼロとしたい成分
+               auto &Ri = R[i];
+               auto &Ri1 = R[i + 1];
+               a = Ri[j];
+               b = Ri1[j];  //! {i+1,j}がゼロとしたい成分
                r = std::sqrt(a * a + b * b);
                s = -b / r;
                c = a / r;
@@ -818,25 +854,40 @@ struct QR {
                //
                // Rの更新
                for (auto col = 0; col < mR; ++col) {
-                  R0 = c * R[i][col] - s * R[i + 1][col];  //$ row i
-                  R1 = s * R[i][col] + c * R[i + 1][col];  //$ row i+k
-                  R[i][col] = R0;
-                  R[i + 1][col] = R1;
+                  // R0 = c * R[i][col] - s * R[i + 1][col];  //$ row i
+                  R0 = std::fma(c, Ri[col], -s * Ri1[col]);
+                  // R1 = s * R[i][col] + c * R[i + 1][col];  //$ row i+k
+                  R1 = std::fma(s, Ri[col], c * Ri1[col]);
+                  Ri[col] = R0;
+                  Ri1[col] = R1;
                };
 
-               for (auto col = 0; col < QT[i].size(); ++col) {
-                  Q0 = c * QT[i][col] - s * QT[i + 1][col];  //$ row i
-                  Q1 = s * QT[i][col] + c * QT[i + 1][col];  //$ row i+k
-                  QT[i][col] = Q0;
-                  QT[i + 1][col] = Q1;
+               auto &QTi = QT[i];
+               auto &QTi1 = QT[i + 1];
+               for (auto col = 0; col < QTi.size(); ++col) {
+                  // Q0 = c * QT[i][col] - s * QT[i + 1][col];  //$ row i
+                  Q0 = std::fma(c, QTi[col], -s * QTi1[col]);  //$ row i
+                  // Q1 = s * QT[i][col] + c * QT[i + 1][col];  //$ row i+k
+                  Q1 = std::fma(s, QTi[col], c * QTi1[col]);  //$ row i+k
+                  QTi[col] = Q0;
+                  QTi1[col] = Q1;
                };
 
                // Qの更新 * 左から書けるのでRとは逆順
-               for (auto row = 0; row < Q.size(); ++row) {  // # row direction
-                  Q0 = c * Q[row][i] - s * Q[row][i + 1];   //$ row i
-                  Q1 = s * Q[row][i] + c * Q[row][i + 1];   //$ row i+k
-                  Q[row][i] = Q0;
-                  Q[row][i + 1] = Q1;
+               // for (auto row = 0; row < Q.size(); ++row) {  // # row direction
+               //    Q0 = c * Q[row][i] - s * Q[row][i + 1];   //$ row i
+               //    Q1 = s * Q[row][i] + c * Q[row][i + 1];   //$ row i+k
+               //    Q[row][i] = Q0;
+               //    Q[row][i + 1] = Q1;
+               // };
+
+               for (auto &Q_row : Q) {  // # row direction
+                  // Q0 = c * Q_row[i] - s * Q_row[i + 1];
+                  Q0 = std::fma(c, Q_row[i], -s * Q_row[i + 1]);  //$ row i
+                  // Q1 = s * Q_row[i] + c * Q_row[i + 1];
+                  Q1 = std::fma(s, Q_row[i], c * Q_row[i + 1]);  //$ row i+k
+                  Q_row[i] = Q0;
+                  Q_row[i + 1] = Q1;
                };
 
                // std::cout << "-----------------" << std::endl;
@@ -933,11 +984,12 @@ struct QR<std::array<std::array<double, N>, M>> {
                };
 
                // Qの更新 * 左から書けるのでRとは逆順
-               for (auto row = 0; row < Q.size(); ++row) {  // # row direction
-                  Q0 = c * Q[row][i] - s * Q[row][i + 1];   //$ row i
-                  Q1 = s * Q[row][i] + c * Q[row][i + 1];   //$ row i+k
-                  Q[row][i] = Q0;
-                  Q[row][i + 1] = Q1;
+               // for (auto row = 0; row < Q.size(); ++row) {  // # row direction
+               for (auto &Q_row : Q) {                   // # row direction
+                  Q0 = c * Q_row[i] - s * Q_row[i + 1];  //$ row i
+                  Q1 = s * Q_row[i] + c * Q_row[i + 1];  //$ row i+k
+                  Q_row[i] = Q0;
+                  Q_row[i + 1] = Q1;
                };
 
                // std::cout << "-----------------" << std::endl;
@@ -1143,19 +1195,30 @@ V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
 };
 
 V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
-#pragma omp parallel
-   for (auto i = 0; i < A.size(); ++i)
-#pragma omp single nowait
-   {
+#pragma omp parallel for
+   for (auto i = 0; i < A.size(); ++i) {
       auto &a = b[i];
-      // for (auto j = 0; j < V.size(); ++j)
-      //    a = std::fma(-A[i][j], V[j], a);
       int j = 0;
       for (const auto &Aij : A[i])
          a = std::fma(-Aij, V[j++], a);
    }
    return b;
 };
+
+// V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
+// #pragma omp parallel
+//    for (auto i = 0; i < A.size(); ++i)
+// #pragma omp single nowait
+//    {
+//       auto &a = b[i];
+//       // for (auto j = 0; j < V.size(); ++j)
+//       //    a = std::fma(-A[i][j], V[j], a);
+//       int j = 0;
+//       for (const auto &Aij : A[i])
+//          a = std::fma(-Aij, V[j++], a);
+//    }
+//    return b;
+// };
 
 template <typename T>
    requires std::derived_from<T, CRS>
@@ -1323,9 +1386,8 @@ struct ArnoldiProcess {
          n = nIN;
          beta = Norm(v0IN);
          v0 = (v0IN / beta);
-         V_d zeros(n, 0.);
-         H.assign(n + 1, zeros);
-         V.assign(n + 1, v0);
+         H.assign(nIN + 1, V_d(nIN, 0.));
+         V.assign(nIN + 1, v0);
          w.resize(A.size());
       }
 // #if defined(DEBUG_GMRES)
@@ -1350,8 +1412,11 @@ struct ArnoldiProcess {
          mean_elapsed_time_for_AV_count++;
 #endif
          // orthogonalization
-         for (i = 0; i <= j; ++i)
-            w -= (H[i][j] = Dot(V[i], w)) * V[i];
+         for (i = 0; i <= j; ++i) {
+            // w -= (H[i][j] = Dot(V[i], w)) * V[i];
+            //! use std::fma
+            FusedMultiplyIncrement(-(H[i][j] = Dot(V[i], w)), V[i], w);
+         }
 #if defined(DEBUG_GMRES)
          // std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
          tmp = watch();
@@ -1481,8 +1546,11 @@ struct gmres : public ArnoldiProcess<Matrix> {
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
       i = 0;
-      for (i = 0; i < this->n; ++i)
-         this->x += this->y[i] * this->V[i];
+      for (i = 0; i < this->n; ++i) {
+         // this->x += this->y[i] * this->V[i];
+         //! use std::fma
+         FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+      }
 #if defined(DEBUG_GMRES)
       std::cout << "Elapsed time" << watch() << std::endl;
 #endif
@@ -1505,8 +1573,11 @@ struct gmres : public ArnoldiProcess<Matrix> {
       err = g.back();  // 予想される誤差
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
-      for (size_t i = 0; i < this->n; ++i)
-         this->x += this->y[i] * this->V[i];
+      for (size_t i = 0; i < this->n; ++i) {
+         // this->x += this->y[i] * this->V[i];
+         //! use std::fma
+         FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+      }
       std::cout << "done" << std::endl;
    }
 
@@ -1534,8 +1605,11 @@ struct gmres : public ArnoldiProcess<Matrix> {
 
       std::fill(this->x.begin(), this->x.end(), 0);
       this->y = back_substitution(this->qr.R, g, g.size());
-      for (i = 0; i < this->n; ++i)
-         this->x += this->y[i] * this->V[i];
+      for (i = 0; i < this->n; ++i) {
+         // this->x += this->y[i] * this->V[i];
+         //! use std::fma
+         FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+      }
       // std::cout << "done" << std::endl;
    };
 };

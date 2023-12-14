@@ -10,9 +10,17 @@
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
+    - [⛵ ⛵ `Bucket`クラス](#⛵-⛵-`Bucket`クラス)
+        - [🪼 🪼 メンバ変数](#🪼-🪼-メンバ変数)
+        - [🪼 🪼 メソッド](#🪼-🪼-メソッド)
+            - [🐚 🐚 初期化関連](#🐚-🐚-初期化関連)
+            - [🐚 🐚 インデックス変換¸](#🐚-🐚-インデックス変換¸)
+            - [🐚 🐚 データ追加・削除](#🐚-🐚-データ追加・削除)
+            - [🐚 🐚 その他](#🐚-🐚-その他)
     - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
-- [🐋 線と三角形の干渉判定](#🐋-線と三角形の干渉判定)
-    - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
+    - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#⛵-空間分割の応用例：オブジェクトの接触や交差の判定)
+        - [🪼 オブジェクトの接触や交差の判定](#🪼-オブジェクトの接触や交差の判定)
+        - [🪼 面同士の接触判定](#🪼-面同士の接触判定)
 - [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
@@ -36,7 +44,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4035)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4031)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -127,6 +135,64 @@ make
 
 ![example1_space_partitioning.gif](example1_space_partitioning.gif)
 
+
+## ⛵ ⛵ `Bucket`クラス  
+
+`Bucket`クラスは，オブジェクトを３次元空間内に配置し，効率的に検索できるようにするための「バケツ（Bucket）」構造を提供します．
+
+⚠️ テンプレート型`T`のオブジェクトは，予め`getX()`を使ってxyz座標を取得できるようにしておく必要がある．
+
+### 🪼 🪼 メンバ変数  
+
+| 変数名                | 説明                                              |
+|:---------------------:|:-------------------------------------------------:|
+| `xbounds`, `ybounds`, `zbounds` | X,Y,Z 座標の境界値．`Tdd` 型                   |
+| `xsize`, `ysize`, `zsize` | 各座標のサイズ．`ST` 型                          |
+| `bounds`              | 全体のバウンド．`T3Tdd` 型                        |
+| `center`              | 空間の中心座標．`Tddd` 型                          |
+| `dn`                  | 各座標のサイズ（ST3 型）                           |
+| `data`             | バケツ（3D配列）                                  |
+| `data_vector`      | バケツのベクター版                                 |
+| `data_bool`        | バケツが空であるかどうかを示すbool値の3D配列       |
+| `vector_is_set`       | ベクター版が設定されているか                       |
+| `all_stored_objects`  | 保存されている全てのオブジェクト                   |
+| `map_to_ijk`          | オブジェクトからインデックスへのマッピング         |
+| `dL`                  | バケツの１辺の長さ                                 |
+
+### 🪼 🪼 メソッド  
+
+#### 🐚 🐚 初期化関連  
+
+- `initialize(const T3Tdd &boundingboxIN, const double dL_IN)`: バケツを初期化する．
+œa
+#### 🐚 🐚 インデックス変換¸  
+
+- `itox(const ST i, const ST j, const ST k) const`: インデックスから座標へ変換．
+- `indices(const Tddd &x) const`: 座標からインデックスへ変換．
+
+#### 🐚 🐚 データ追加・削除  
+
+- `add(const Tddd &x, const T p)`: オブジェクトを追加．
+- `erase(T const p)`: オブジェクトを削除．
+
+#### 🐚 🐚 その他  
+
+`apply(const Tddd &x, const double d, const std::function<bool(const T &)> &func)`は，バケツの範囲を指定して，その範囲内のオブジェクトに対して関数を適用する．
+これと似た関数として，
+
+* `any_of`
+* `all_of`
+* `none_of`
+
+があり，それぞれ，バケツの範囲内のオブジェクトに対して，関数を適用し，その結果が，それぞれ，`true`，`false`，`false`であれば，`true`を返す．
+
+📝 これらの関数は，`apply`はある点を中心として半径`d`の球状の範囲を指定することができる．これは球状の範囲を指定していることになる．このような範囲指定以外に，直線上の範囲指定や，平面上の範囲指定などもできるようにしたい．
+そのためには，バケツのセルと，線分や平面の交差判定を高速に行う関数が必要になる．
+ラフに行っても問題ない．
+線に関しては細かい分割によってインデックス変換できる．
+平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
+[../../include/lib_spatial_partitioning.hpp#L4](../../include/lib_spatial_partitioning.hpp#L4)
+
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
 ---
@@ -141,7 +207,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L109)は，
+[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L85)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -157,9 +223,15 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 [./example2_tree.cpp#L2](./example2_tree.cpp#L2)
 
 ---
-# 🐋 線と三角形の干渉判定 
+## ⛵ 空間分割の応用例：オブジェクトの接触や交差の判定 
 
-## ⛵ 等間隔のシンプルな空間分割 
+### 🪼 オブジェクトの接触や交差の判定 
+
+`Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
+同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
+
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1580)関数を使う．
+また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example3_line_face_interaction.cpp
@@ -167,7 +239,29 @@ make
 ./example3_line_face_interaction
 ```
 
+![./example3/anim.gif](example3/anim_faster.gif)
+
 [./example3_line_face_interaction.cpp#L4](./example3_line_face_interaction.cpp#L4)
+
+---
+### 🪼 面同士の接触判定 
+
+[`IntersectQ`](../../include/basic_geometry.hpp#L1580)関数は，交差判定には使えるが，接触判定には使えない．
+
+接触は，ギリギリ交差している状態を指すだろうが，
+実際に接触判定を応用する場面では，
+交差していなくとも接触していると判定させたい場合が多いだろう．
+なので，接触判定条件はより緩く設定されることが多い．
+
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example3_line_face_interaction.cpp
+make
+./example3_line_face_interaction
+```
+
+![./example3/anim.gif](example3/anim_faster.gif)
+
+[./example4_face2face_contact.cpp#L4](./example4_face2face_contact.cpp#L4)
 
 ---
 # 🐋 CGALを使って四面体を生成する 

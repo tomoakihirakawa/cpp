@@ -999,6 +999,16 @@ struct BEM_BVP {
                   std::cout << Yellow << "F_mooring = " << F_mooring << ", T_mooring = " << T_mooring << colorReset << std::endl;
                }
             });
+
+            // Calculate and apply mooring forces and torques
+            // for (const auto &mooringLine : net->mooringLines) {
+            //     mooringLine->simulate(/* current_time, dt, ... */);
+            //     auto F_mooring = /* Calculate mooring force */;
+            //     auto T_mooring = /* Calculate mooring torque */;
+            //     F += F_mooring;
+            //     T += T_mooring;
+            // }
+
             /* -------------------------------------------------------------------------- */
             auto F_ext = _GRAVITY3_ * net->getMass3D();
             auto F_hydro = tmp.surfaceIntegralOfPressure();

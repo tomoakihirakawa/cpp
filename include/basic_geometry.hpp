@@ -28,13 +28,13 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Td
    const double nB = Norm(B);
 
    // double nC = Norm(C);
-   // return 2. * atan2((-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2
+   // return 2. * std::atan2((-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2
    // * c1 - a1 * b0 * c2 + a0 * b1 * c2), 				  (nB * (a0 * c0 + a1 * c1 + a2 * c2) +
    // nA * (b0 * c0 + b1 * c1 + b2 * c2) + (a0 * b0 + a1 * b1 + a2 * b2) * nC +
    // nA * nB * nC));
 
-   return 2. * atan2(-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2 * c1 - a1 * b0 * c2 + a0 * b1 * c2,
-                     b0 * c0 * nA + b1 * c1 * nA + b2 * c2 * nA + a0 * c0 * nB + a1 * c1 * nB + a2 * c2 * nB + (a0 * b0 + a1 * b1 + a2 * b2 + nA * nB) * Norm(C));
+   return 2. * std::atan2(-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2 * c1 - a1 * b0 * c2 + a0 * b1 * c2,
+                          b0 * c0 * nA + b1 * c1 * nA + b2 * c2 * nA + a0 * c0 * nB + a1 * c1 * nB + a2 * c2 * nB + (a0 * b0 + a1 * b1 + a2 * b2 + nA * nB) * Norm(C));
 };
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const T3Tddd &ABC) {
    return SolidAngle_VanOosteromAandStrackeeJ1983(p, std::get<0>(ABC), std::get<1>(ABC), std::get<2>(ABC));
@@ -47,7 +47,7 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { r
 //    if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
 //       return 4. * M_PI / 2.;
 //    else
-//       return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
+//       return 4. * std::std::atan(std::sqrt(tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
 //    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 // };
 
@@ -57,7 +57,7 @@ double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p
    if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
       return 4. * M_PI / 2.;
    else
-      return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
+      return 4. * std::atan(std::sqrt(tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
 };
 
 double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
@@ -79,10 +79,10 @@ double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p
    auto A = (p1 - p0);
    auto B = (p2 - p0);
    auto C = (p3 - p0);
-   return 2 * atan2(Det({A, B, C}), Norm(A) * Norm(B) * Norm(C) +
-                                        Dot(A, B) * Norm(C) +
-                                        Dot(A, C) * Norm(B) +
-                                        Dot(B, C) * Norm(A));
+   return 2 * std::atan2(Det({A, B, C}), Norm(A) * Norm(B) * Norm(C) +
+                                             Dot(A, B) * Norm(C) +
+                                             Dot(A, C) * Norm(B) +
+                                             Dot(B, C) * Norm(A));
 };
 
 double SolidAngle(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
@@ -103,7 +103,7 @@ double SolidAngle(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
    // if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
    //    return 4. * M_PI / 2.;
    // else
-   //    return 4. * atan(sqrt(tan(s * 0.5) * tan((s - a) * 0.5) * tan((s - b) * 0.5) * tan((s - c) * 0.5)));
+   //    return 4. * std::atan(std::sqrt(tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
 
    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 };
@@ -383,98 +383,98 @@ T3Tdd Distance(const T3Tdd &b, const Tddd &a) {
 
 /* -------------------------------------------------------------------------- */
 
-namespace geometry {
-struct Line {
-   T2Tddd X;
-   double minX, maxX, minY, maxY, minZ, maxZ;
-   T3Tdd bounds;
-   Line(const T2Tddd &XIN)
-       : X(XIN),
-         minX(Min(Tdd{std::get<0>(std::get<0>(XIN)),
-                      std::get<0>(std::get<1>(XIN))})),
-         maxX(Max(Tdd{std::get<0>(std::get<0>(XIN)),
-                      std::get<0>(std::get<1>(XIN))})),
-         minY(Min(Tdd{std::get<1>(std::get<0>(XIN)),
-                      std::get<1>(std::get<1>(XIN))})),
-         maxY(Max(Tdd{std::get<1>(std::get<0>(XIN)),
-                      std::get<1>(std::get<1>(XIN))})),
-         minZ(Min(Tdd{std::get<2>(std::get<0>(XIN)),
-                      std::get<2>(std::get<1>(XIN))})),
-         maxZ(Max(Tdd{std::get<2>(std::get<0>(XIN)),
-                      std::get<2>(std::get<1>(XIN))})),
-         bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
-   Line(const Tddd &X0IN, const Tddd &X1IN)
-       : X({X0IN, X1IN}),
-         minX(Min(Tdd{std::get<0>(X0IN), std::get<0>(X1IN)})),
-         maxX(Max(Tdd{std::get<0>(X0IN), std::get<0>(X1IN)})),
-         minY(Min(Tdd{std::get<1>(X0IN), std::get<1>(X1IN)})),
-         maxY(Max(Tdd{std::get<1>(X0IN), std::get<1>(X1IN)})),
-         minZ(Min(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
-         maxZ(Max(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
-         bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
-};
-/* ------------------------------------------------------ */
-struct Triangle {
-   T3Tddd X;
-   Tddd center;
-   T3Tdd bounds;
-   Tddd normal;
-   Triangle(const T3Tddd &XIN)
-       : X(XIN),
-         center(Mean(XIN)),
-         bounds{{{(Min(Tddd{std::get<0>(std::get<0>(XIN)),
-                            std::get<0>(std::get<1>(XIN)),
-                            std::get<0>(std::get<2>(XIN))})),
-                  (Max(Tddd{std::get<0>(std::get<0>(XIN)),
-                            std::get<0>(std::get<1>(XIN)),
-                            std::get<0>(std::get<2>(XIN))}))},
-                 {(Min(Tddd{std::get<1>(std::get<0>(XIN)),
-                            std::get<1>(std::get<1>(XIN)),
-                            std::get<1>(std::get<2>(XIN))})),
-                  (Max(Tddd{std::get<1>(std::get<0>(XIN)),
-                            std::get<1>(std::get<1>(XIN)),
-                            std::get<1>(std::get<2>(XIN))}))},
-                 {(Min(Tddd{std::get<2>(std::get<0>(XIN)),
-                            std::get<2>(std::get<1>(XIN)),
-                            std::get<2>(std::get<2>(XIN))})),
-                  (Max(Tddd{std::get<2>(std::get<0>(XIN)),
-                            std::get<2>(std::get<1>(XIN)),
-                            std::get<2>(std::get<2>(XIN))}))}}},
-         normal(Normalize(Cross(std::get<1>(X) - std::get<0>(X),
-                                std::get<2>(X) - std::get<0>(X)))){};
-   Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
-       : X({X0IN, X1IN, X2IN}),
-         center((X0IN + X1IN + X2IN) / 3.),
-         bounds{{{(Min(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
-                            std::get<0>(X2IN)})),
-                  (Max(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
-                            std::get<0>(X2IN)}))},
-                 {(Min(Tddd{std::get<1>(X0IN), std::get<1>(X1IN),
-                            std::get<1>(X2IN)})),
-                  (Max(Tddd{std::get<1>(X0IN), std::get<1>(X1IN),
-                            std::get<1>(X2IN)}))},
-                 {(Min(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
-                            std::get<2>(X2IN)})),
-                  (Max(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
-                            std::get<2>(X2IN)}))}}},
-         normal(Normalize(Cross(X1IN - X0IN, X2IN - X0IN))){};
-};
+// namespace geometry {
+// struct Line {
+//    T2Tddd X;
+//    double minX, maxX, minY, maxY, minZ, maxZ;
+//    T3Tdd bounds;
+//    Line(const T2Tddd &XIN)
+//        : X(XIN),
+//          minX(Min(Tdd{std::get<0>(std::get<0>(XIN)),
+//                       std::get<0>(std::get<1>(XIN))})),
+//          maxX(Max(Tdd{std::get<0>(std::get<0>(XIN)),
+//                       std::get<0>(std::get<1>(XIN))})),
+//          minY(Min(Tdd{std::get<1>(std::get<0>(XIN)),
+//                       std::get<1>(std::get<1>(XIN))})),
+//          maxY(Max(Tdd{std::get<1>(std::get<0>(XIN)),
+//                       std::get<1>(std::get<1>(XIN))})),
+//          minZ(Min(Tdd{std::get<2>(std::get<0>(XIN)),
+//                       std::get<2>(std::get<1>(XIN))})),
+//          maxZ(Max(Tdd{std::get<2>(std::get<0>(XIN)),
+//                       std::get<2>(std::get<1>(XIN))})),
+//          bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
+//    Line(const Tddd &X0IN, const Tddd &X1IN)
+//        : X({X0IN, X1IN}),
+//          minX(Min(Tdd{std::get<0>(X0IN), std::get<0>(X1IN)})),
+//          maxX(Max(Tdd{std::get<0>(X0IN), std::get<0>(X1IN)})),
+//          minY(Min(Tdd{std::get<1>(X0IN), std::get<1>(X1IN)})),
+//          maxY(Max(Tdd{std::get<1>(X0IN), std::get<1>(X1IN)})),
+//          minZ(Min(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
+//          maxZ(Max(Tdd{std::get<2>(X0IN), std::get<2>(X1IN)})),
+//          bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}} {};
+// };
+// /* ------------------------------------------------------ */
+// struct Triangle {
+//    T3Tddd X;
+//    Tddd center;
+//    T3Tdd bounds;
+//    Tddd normal;
+//    Triangle(const T3Tddd &XIN)
+//        : X(XIN),
+//          center(Mean(XIN)),
+//          bounds{{{(Min(Tddd{std::get<0>(std::get<0>(XIN)),
+//                             std::get<0>(std::get<1>(XIN)),
+//                             std::get<0>(std::get<2>(XIN))})),
+//                   (Max(Tddd{std::get<0>(std::get<0>(XIN)),
+//                             std::get<0>(std::get<1>(XIN)),
+//                             std::get<0>(std::get<2>(XIN))}))},
+//                  {(Min(Tddd{std::get<1>(std::get<0>(XIN)),
+//                             std::get<1>(std::get<1>(XIN)),
+//                             std::get<1>(std::get<2>(XIN))})),
+//                   (Max(Tddd{std::get<1>(std::get<0>(XIN)),
+//                             std::get<1>(std::get<1>(XIN)),
+//                             std::get<1>(std::get<2>(XIN))}))},
+//                  {(Min(Tddd{std::get<2>(std::get<0>(XIN)),
+//                             std::get<2>(std::get<1>(XIN)),
+//                             std::get<2>(std::get<2>(XIN))})),
+//                   (Max(Tddd{std::get<2>(std::get<0>(XIN)),
+//                             std::get<2>(std::get<1>(XIN)),
+//                             std::get<2>(std::get<2>(XIN))}))}}},
+//          normal(Normalize(Cross(std::get<1>(X) - std::get<0>(X),
+//                                 std::get<2>(X) - std::get<0>(X)))){};
+//    Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
+//        : X({X0IN, X1IN, X2IN}),
+//          center((X0IN + X1IN + X2IN) / 3.),
+//          bounds{{{(Min(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
+//                             std::get<0>(X2IN)})),
+//                   (Max(Tddd{std::get<0>(X0IN), std::get<0>(X1IN),
+//                             std::get<0>(X2IN)}))},
+//                  {(Min(Tddd{std::get<1>(X0IN), std::get<1>(X1IN),
+//                             std::get<1>(X2IN)})),
+//                   (Max(Tddd{std::get<1>(X0IN), std::get<1>(X1IN),
+//                             std::get<1>(X2IN)}))},
+//                  {(Min(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
+//                             std::get<2>(X2IN)})),
+//                   (Max(Tddd{std::get<2>(X0IN), std::get<2>(X1IN),
+//                             std::get<2>(X2IN)}))}}},
+//          normal(Normalize(Cross(X1IN - X0IN, X2IN - X0IN))){};
+// };
 
-/* ------------------------------------------------------ */
+// /* ------------------------------------------------------ */
 
-struct Sphere {
-   Tddd X;
-   double radius;
-   T3Tdd bounds;
-   Sphere(const Tddd &XIN, const double radiusIN = 0.)
-       : X(XIN),
-         radius(radiusIN),
-         bounds{{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
-                 {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
-                 {(std::get<2>(XIN) - radiusIN),
-                  (std::get<2>(XIN) + radiusIN)}}} {};
-};
-};  // namespace geometry
+// struct Sphere {
+//    Tddd X;
+//    double radius;
+//    T3Tdd bounds;
+//    Sphere(const Tddd &XIN, const double radiusIN = 0.)
+//        : X(XIN),
+//          radius(radiusIN),
+//          bounds{{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)},
+//                  {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
+//                  {(std::get<2>(XIN) - radiusIN),
+//                   (std::get<2>(XIN) + radiusIN)}}} {};
+// };
+// };  // namespace geometry
 
 /* ------------------------------------------------------ */
 
@@ -582,9 +582,9 @@ struct CoordinateBounds {
    CoordinateBounds(const Tddd &x0, const Tddd &x1, const Tddd &x2) : bounds(MinMaxColumns(T3Tddd{x0, x1, x2})), X((x0 + x1 + x2) / 3.){};
    CoordinateBounds(const std::vector<T3Tddd> &V_X);
    CoordinateBounds(const std::vector<Tddd> &X) : bounds(MinMaxColumns(X)), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const geometry::Line &L) : bounds(MinMaxColumns(L.X)){};
-   CoordinateBounds(const geometry::Sphere &S) : bounds{{{std::get<0>(S.X) - S.radius, std::get<0>(S.X) + S.radius}, {std::get<1>(S.X) - S.radius, std::get<1>(S.X) + S.radius}, {std::get<2>(S.X) - S.radius, std::get<2>(S.X) + S.radius}}} {};
-   CoordinateBounds(const geometry::Triangle &T) : bounds(MinMaxColumns(T.X)){};
+   // CoordinateBounds(const geometry::Line &L) : bounds(MinMaxColumns(L.X)){};
+   // CoordinateBounds(const geometry::Sphere &S) : bounds{{{std::get<0>(S.X) - S.radius, std::get<0>(S.X) + S.radius}, {std::get<1>(S.X) - S.radius, std::get<1>(S.X) + S.radius}, {std::get<2>(S.X) - S.radius, std::get<2>(S.X) + S.radius}}} {};
+   // CoordinateBounds(const geometry::Triangle &T) : bounds(MinMaxColumns(T.X)){};
    /* ------------------------------------------------------ */
    Tdd Distance(const Tddd &a) const {
       auto [mmX, mmY, mmZ] = this->bounds;
@@ -737,6 +737,7 @@ struct CoordinateBounds {
    };
 };
 /* -------------------------------------------------------------------------- */
+
 bool isInside(const Tddd &X, const T3Tdd &bounds) {
    // point v.s. cube
    CoordinateBounds b(bounds);
@@ -800,15 +801,15 @@ struct Triangle : public CoordinateBounds {
          inradius(Inradius(vertices)){};
 
    void setProperties(const T3Tddd &vertices_IN) {
-      this->vertices = vertices;
-      this->normal = TriangleNormal(vertices);
-      this->area = TriangleArea(vertices);
-      this->angles = TriangleAngles(vertices);
-      this->centroid = Centroid(vertices);
-      this->circumcenter = Circumcenter(vertices);
-      this->circumradius = Circumradius(vertices);
-      this->incenter = Incenter(vertices);
-      this->inradius = Inradius(vertices);
+      this->vertices = vertices_IN;
+      this->normal = TriangleNormal(vertices_IN);
+      this->area = TriangleArea(vertices_IN);
+      this->angles = TriangleAngles(vertices_IN);
+      this->centroid = Centroid(vertices_IN);
+      this->circumcenter = Circumcenter(vertices_IN);
+      this->circumradius = Circumradius(vertices_IN);
+      this->incenter = Incenter(vertices_IN);
+      this->inradius = Inradius(vertices_IN);
    };
    operator T3Tddd() const { return this->vertices; };
 };
@@ -889,6 +890,43 @@ struct Tetrahedron : public CoordinateBounds {
 
 /* -------------------------------------------------------------------------- */
 
+struct Ellipsoid : public CoordinateBounds {
+   Quaternion Q;    // Rotation matrix
+   Tddd center;     // Center of the ellipsoid
+   double a, b, c;  // Semi-axes lengths in the x, y, and z directions
+
+   // Constructor
+   Ellipsoid(const double aIN, const double bIN, const double cIN, const Tddd &centerIN = {0., 0., 0.}, const Quaternion &QIN = Quaternion()) {
+      this->setProperties(aIN, bIN, cIN, centerIN, QIN);
+   }
+
+   // Method to check if a point is inside the ellipsoid
+   bool isInside(const Tddd &point) const {
+      const auto [x, y, z] = Dot(point - center, Q.Rv());
+      return (std::pow(x / this->a, 2) + std::pow(y / this->b, 2) + std::pow(z / this->c, 2)) <= 1.0;
+   }
+
+   // Function to set properties of the ellipsoid (if they change)
+   void setProperties(const double aIN, const double bIN, const double cIN) {
+      a = aIN;
+      b = bIN;
+      c = cIN;
+      double max = a;
+      if (b > max) max = b;
+      if (c > max) max = c;
+      this->setBounds(std::vector<Tddd>{this->center + max, this->center - max});
+   }
+   void setProperties(const double aIN, const double bIN, const double cIN, const Tddd &centerIN) {
+      this->center = centerIN;
+      setProperties(aIN, bIN, cIN);
+   }
+   void setProperties(const double aIN, const double bIN, const double cIN, const Tddd &centerIN, const Quaternion &QIN) {
+      this->Q = QIN;
+      setProperties(aIN, bIN, cIN, centerIN);
+   }
+};
+
+/* -------------------------------------------------------------------------- */
 std::ostream &operator<<(std::ostream &stream, const CoordinateBounds &bounds) {
    return (stream << bounds.bounds);
 };
@@ -1136,7 +1174,7 @@ struct IntersectionTriangles {
       }
    };
 };
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------ */
 struct IntersectionLineTriangle {
    Tddd v1, v2, v3;    // vertices of the triangle
    Tddd p0, p1;        // endpoints of the line segment
@@ -1519,15 +1557,14 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
 
 Tddd Nearest(const Tddd &X, const Tddd &Y) { return Y; };
 
-//
 double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
    auto [a, b] = line;
    auto [p0, p1, p2] = triangle;
    // オーダーが匹敵する物を選ぶ
-   double log_b_a = log10(Norm(b - a));
-   double diff0 = std::abs(log10(Norm(p0 - a) - log_b_a));
-   double diff1 = std::abs(log10(Norm(p1 - a) - log_b_a));
-   double diff2 = std::abs(log10(Norm(p2 - a) - log_b_a));
+   double log_b_a = std::log10(Norm(b - a));
+   double diff0 = std::abs(std::log10(Norm(p0 - a) - log_b_a));
+   double diff1 = std::abs(std::log10(Norm(p1 - a) - log_b_a));
+   double diff2 = std::abs(std::log10(Norm(p2 - a) - log_b_a));
    Tddd n = TriangleNormal(p0, p1, p2);
    if (diff0 < diff1 && diff0 < diff2)
       return Dot(p0 - a, n) / Dot(b - a, n);
@@ -1536,9 +1573,11 @@ double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
    else
       return Dot(p2 - a, n) / Dot(b - a, n);
 };
+
 // b* -------------------------------------------------------------------------- */
 // b*                                 IntersectQ                                 */
 // b* -------------------------------------------------------------------------- */
+// \label{basic_geometry:IntersectQ}
 //! cube - cube
 // 暗黙の変換は，予期しない変換を行なってしまう場合が多発するので，ここでは型変換が起きないよう，CoordinateBounds同士の干渉は行わないようにする．
 bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
@@ -1606,10 +1645,9 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    const auto [a, b, c] = abc;
    const auto [A, B] = AB;
    // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
-   std::array<double, 3> ans;
-   lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
-   const auto [t0, t1, T] = ans;
-   //
+   std::array<double, 3> x;
+   lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   const auto [t0, t1, T] = x;
    const Tdd range = {0., 1.};
    return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
 };
@@ -1720,9 +1758,9 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    //                                                  {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}));
 
    // use SolveLinearSystem
-   std::array<double, 4> ans;
-   lapack_lu(ans, T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.}, {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.}, {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.}, {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}, T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
-   const auto [t0, t1, t2, t3] = ans;
+   std::array<double, 4> x;
+   lapack_lu(x, T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.}, {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.}, {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.}, {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}, T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
+   const auto [t0, t1, t2, t3] = x;
 
    //
    //
@@ -1797,6 +1835,10 @@ Tddd t0_t1_alpha(const T3Tddd &p0p1p2, const Tddd &X) {
 };
 
 /* -------------------------------------------------------------------------- */
+
+// bool ContactQ(
+
+/* -------------------------------------------------------------------------- */
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using V_i = std::vector<int>;
@@ -1809,10 +1851,10 @@ double normalDirDistanceFromTriangle(const T3Tddd &ps, const Tddd &a) {
 
 double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b) {
    // オーダーが匹敵する物を選ぶ
-   double log_b_a = log10(Norm(b - a));
-   double diff0 = std::abs(log10(Norm(p0 - a) - log_b_a));
-   double diff1 = std::abs(log10(Norm(p1 - a) - log_b_a));
-   double diff2 = std::abs(log10(Norm(p2 - a) - log_b_a));
+   double log_b_a = std::log10(Norm(b - a));
+   double diff0 = std::abs(std::log10(Norm(p0 - a) - log_b_a));
+   double diff1 = std::abs(std::log10(Norm(p1 - a) - log_b_a));
+   double diff2 = std::abs(std::log10(Norm(p2 - a) - log_b_a));
    auto n = TriangleNormal(p0, p1, p2);
    if (diff0 < diff1 && diff0 < diff2)
       return Dot(p0 - a, n) / Dot(b - a, n);
@@ -1958,9 +2000,13 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
    return ret / (4. * M_PI);
 };
 template <>
-T8d windingNumber(const T8Tddd &Xs, const std::vector<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
+T8d windingNumber(const T8Tddd &Xs, const std::vector<Tddd> &V_vertices) {
+   return {0., 0., 0., 0., 0., 0., 0, 0.};
+};
 
-T8d windingNumber(const T8Tddd &Xs, const std::unordered_set<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
+T8d windingNumber(const T8Tddd &Xs, const std::unordered_set<Tddd> &V_vertices) {
+   return {0., 0., 0., 0., 0., 0., 0, 0.};
+};
 
 std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector<T3Tddd> &V_vertices) {
    std::vector<double> ret(Xs.size(), 0.);
@@ -1981,7 +2027,9 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
    return ret / (4. * M_PI);
 };
 
-double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) { return 0.; };
+double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) {
+   return 0.;
+};
 
 /* -------------------------------------------------------------------------- */
 
@@ -1991,26 +2039,32 @@ bool isInside(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
 bool isInside(const Tddd &X, const std::vector<Tddd> &V_vertices) {
    return !CoordinateBounds(V_vertices).isInside(X);
 };
-bool isInside(const CoordinateBounds &bounds, const geometry::Sphere &s) {
-   // cube v.s. sphere
-   // cube < sphere ?
-   auto [X0, X1] = std::get<0>(bounds.bounds);
-   auto [Y0, Y1] = std::get<1>(bounds.bounds);
-   auto [Z0, Z1] = std::get<2>(bounds.bounds);
-   return (Norm(Tddd{X0, Y0, Z0} - s.X) < s.radius &&
-           Norm(Tddd{X1, Y0, Z0} - s.X) < s.radius &&
-           Norm(Tddd{X0, Y1, Z0} - s.X) < s.radius &&
-           Norm(Tddd{X1, Y1, Z0} - s.X) < s.radius &&
-           Norm(Tddd{X0, Y0, Z1} - s.X) < s.radius &&
-           Norm(Tddd{X1, Y0, Z1} - s.X) < s.radius &&
-           Norm(Tddd{X0, Y1, Z1} - s.X) < s.radius &&
-           Norm(Tddd{X1, Y1, Z1} - s.X) < s.radius);
-};
+// bool isInside(const CoordinateBounds &bounds, const geometry::Sphere &s) {
+//    // cube v.s. sphere
+//    // cube < sphere ?
+//    auto [X0, X1] = std::get<0>(bounds.bounds);
+//    auto [Y0, Y1] = std::get<1>(bounds.bounds);
+//    auto [Z0, Z1] = std::get<2>(bounds.bounds);
+//    return (Norm(Tddd{X0, Y0, Z0} - s.X) < s.radius &&
+//            Norm(Tddd{X1, Y0, Z0} - s.X) < s.radius &&
+//            Norm(Tddd{X0, Y1, Z0} - s.X) < s.radius &&
+//            Norm(Tddd{X1, Y1, Z0} - s.X) < s.radius &&
+//            Norm(Tddd{X0, Y0, Z1} - s.X) < s.radius &&
+//            Norm(Tddd{X1, Y0, Z1} - s.X) < s.radius &&
+//            Norm(Tddd{X0, Y1, Z1} - s.X) < s.radius &&
+//            Norm(Tddd{X1, Y1, Z1} - s.X) < s.radius);
+// };
 /* ------------------------------------------------------ */
 
-Tddd ToX(const Tddd *X) { return *X; };
-Tddd ToX(const Tddd X) { return X; };
-T3Tddd ToX(const T3Tddd X) { return X; };
+Tddd ToX(const Tddd *X) {
+   return *X;
+};
+Tddd ToX(const Tddd X) {
+   return X;
+};
+T3Tddd ToX(const T3Tddd X) {
+   return X;
+};
 
 // b% -------------------------------------------------------------------------- */
 // b%                                     八分木                                  */

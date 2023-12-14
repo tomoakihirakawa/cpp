@@ -138,8 +138,6 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp, const
       if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
          auto ps = p->getNeighbors();
          // 無視できる角度
-         const double negligible_angle = 1E-1 * M_PI / 180.;
-         const bool negligibly_flat = isFlat(p, negligible_angle);
          const double acceptable_change_angle = 1E-6 * M_PI / 180.;
          const auto faces = ToVector(p->getFaces());
          double Atot = 0.;
@@ -199,25 +197,17 @@ void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp, const
 
          if (ps.size() > 2) {  // 2点の場合は2点の中点に動いてしまうので，実行しない
             Tddd X_next = p->X, V_try, X_try;
-            // result_V.fill(0.);
-            //! ここで収束させる必要はない．節点全体で緩やかにこれを繰り返せばいい．
-            // for (auto iter = 0; iter < 10; ++iter) {
-            //    V_try = exact_along_surface(p, SmoothingVector(p, X_next));
-            //    V_try = 0.01 * length_scale * Normalize(V_try);
-            //    for (auto i = 0; i < 10; ++i) {
-            //       X_try = X_next + V_try;
-            //       if (check_if_next_faces_valid(X_try)) {
-            //          X_next = X_try;
-            //          break;
-            //       } else
-            //          V_try *= 0.5;
-            //    }
-            // }
-            //
-            //
-            X_try = X_next + 0.05 * exact_along_surface(p, SmoothingVector(p, X_next));
-            if (check_if_next_faces_valid(X_try))
-               p->setX(X_try);
+            const double a_default = 0.01;
+            double a = a_default;
+            for (auto iter = 0; iter < 10; ++iter) {
+               X_try = X_next + a * exact_along_surface(p, SmoothingVector(p, X_next));
+               if (check_if_next_faces_valid(X_try)) {
+                  p->setXSingle(X_try);
+                  X_next = X_try;
+                  a = a_default;
+               } else
+                  a *= 0.5;
+            }
          }
       }
    } catch (std::exception &e) {
@@ -236,12 +226,12 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::
       for (const auto &f : p->getFaces()) {
          auto [X0, X1, X2] = ToX(f->getPoints(p));
          X0 = current_pX;
-         // W = std::log2(CircumradiusToInradius(t3tdd) - 1.);
-         W = std::log2(CircumradiusToInradius(X0, X1, X2));
+         W = std::log10(CircumradiusToInradius(X0, X1, X2) - 1.);
+         // W = std::log2(CircumradiusToInradius(X0, X1, X2));
          Wtot += W;
          Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
          FusedMultiplyIncrement(W, height * vertical + Xmid, V);
          // X = height * vertical + Xmid;
          // V += W * X;
@@ -362,7 +352,7 @@ Tddd EquilateralVertexAveragingVector(const networkPoint *p, const std::array<do
          Wtot += 1.;
          Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
          V += height * vertical + Xmid;
       }
       return V / Wtot - current_pX;
@@ -383,7 +373,7 @@ Tddd EquilateralVertexAveragingVector2(const networkPoint *p, const std::array<d
          Wtot += W;
          Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * sqrt(3) * 0.5;
+         height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
          V += W * (height * vertical + Xmid);
       }
       return V / Wtot - current_pX;

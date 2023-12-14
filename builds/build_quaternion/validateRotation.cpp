@@ -35,7 +35,7 @@ $(0.1,0,0)$を中心にして$x$軸に対して回転 -> $y$軸に対して回�
 
 void translate(Network* const net, const Tddd& shift) {
    for (auto& p : net->getPoints())
-      p->setXSingle(p->initialX + shift);
+      p->setXsingle(p->initialX + shift);
    net->setGeometricProperties();
 };
 

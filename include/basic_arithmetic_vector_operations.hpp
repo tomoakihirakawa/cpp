@@ -15,7 +15,7 @@ auto Sqrt(const auto T) { return std::sqrt(T); };
 auto Tanh(const auto T) { return std::tanh(T); };
 auto Cosh(const auto T) { return std::cosh(T); };
 auto Sin(const auto T) { return std::sin(T); };
-auto Cos(const auto T) { return std::cos(T); };
+auto std::cos(const auto T) { return std::cos(T); };
 auto Sech(const auto T) { return 1 / std::cosh(T); };
 auto Csch(const auto T) { return 1 / std::sinh(T); };
 auto ArcTan(const auto T) { return std::atan(T); };

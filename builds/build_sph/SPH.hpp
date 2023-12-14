@@ -1,17 +1,16 @@
 #ifndef SPH_H
 #define SPH_H
 
+#define USE_ISPH  // USE_ESPH
 #define USE_GRAD_LAPLACIAN_CORRECTION
+#define USE_SYMMETRIC_FORM_FOR_PRESSURE_GRADIENT  // USE_SUBTRACTIVE_FORM_FOR_PRESSURE_GRADIENT
 
-#define SET_AUX_AT_PARTICLE_SPACING
+// #define SET_AUX_AT_PARTICLE_SPACING
 // #define SET_AUX_AT_MASS_CENTER
 // #define USE_AUX_PREESURE
 
 #define USE_RungeKutta
 // #define USE_LeapFrog
-
-// ラプラシナアンの修正をするかどうか
-#define USE_Laplacian_correction
 
 #include "kernelFunctions.hpp"
 #include "vtkWriter.hpp"
@@ -318,8 +317,12 @@ void developByEISPH(Network *net,
          DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 圧力 p^n+1の計算
+#if defined(USE_ISPH)
          solvePoisson(Join(net->getPoints(), wall_p));
-         Print(Green, "solvePoisson", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         Print(Green, "ISPH: solvePoisson", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+#elif defined(USE_ESPH)
+         Print(Yellow, "EISPH: this does not solve Poisson equation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+#endif
          DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 圧力勾配 grad(P)の計算 -> DU/Dtの計算
@@ -355,6 +358,9 @@ void developByEISPH(Network *net,
 void setDataOmitted(auto &vtp, const auto &Fluid) {
    std::unordered_map<networkPoint *, double> uo_double;
    std::unordered_map<networkPoint *, Tddd> uo_3d;
+   uo_double.reserve(Fluid->getPoints().size());
+   uo_3d.reserve(Fluid->getPoints().size());
+
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M;
    vtp.addPointData("Eigenvalues_of_M", uo_3d);
    // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M_rigid;
@@ -364,49 +370,49 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("C_SML", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
-   vtp.addPointData("min_Eigenvalues_of_M", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
+   // vtp.addPointData("min_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;
    vtp.addPointData("Eigenvalues_of_M1", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M1;
    vtp.addPointData("var_Eigenvalues_of_M1", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
-   vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
-   vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.15);
-   vtp.addPointData("isSurface_var_Eigenvalues_of_M1", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
+   // vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
+   // vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.15);
+   // vtp.addPointData("isSurface_var_Eigenvalues_of_M1", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->b_vector;
    vtp.addPointData("b_vector", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->v_to_surface_SPH;
-   vtp.addPointData("v_to_surface_SPH", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Normalize(p->intp_normal_Eigen);
-   vtp.addPointData("intp_normal_Eigen", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->v_to_surface_SPH;
+   // vtp.addPointData("v_to_surface_SPH", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Normalize(p->intp_normal_Eigen);
+   // vtp.addPointData("intp_normal_Eigen", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal;
    vtp.addPointData("interp_normal", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->interp_normal_original;
    vtp.addPointData("interp_normal_original", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM;
-   vtp.addPointData("vec2COM", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM_next;
-   vtp.addPointData("vec2COM_next", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM;
+   // vtp.addPointData("vec2COM", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->vec2COM_next;
+   // vtp.addPointData("vec2COM_next", uo_3d);
 
    // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_Min_gradM;
    // vtp.addPointData("grad_Min_gradM", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
-   vtp.addPointData("contains diagonal", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->DrhoDt_SPH;
-   vtp.addPointData("DrhoDt", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = (double)(p->column_value.find(p) != p->column_value.end());
+   // vtp.addPointData("contains diagonal", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->DrhoDt_SPH;
+   // vtp.addPointData("DrhoDt", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->U_SPH;
    vtp.addPointData("U", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFluid;
    vtp.addPointData("isFluid", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isCaptured ? 1 : -1E+50;
-   vtp.addPointData("isCaptured", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isCaptured ? 1 : -1E+50;
+   // vtp.addPointData("isCaptured", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFirstWallLayer;
    vtp.addPointData("isFirstWallLayer", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isAuxiliary;
-   vtp.addPointData("isAuxiliary", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isAuxiliary;
+   // vtp.addPointData("isAuxiliary", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
    vtp.addPointData("isSurface", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNearSurface;
@@ -417,62 +423,62 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("pressure", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->rho;
    vtp.addPointData("density", uo_double);
-   for (auto i = 0; i < 6; i++) {
-      for (const auto &p : Fluid->getPoints()) {
-         if (p->vector_to_polygon.size() > i)
-            uo_3d[p] = p->vector_to_polygon[i];
-         else
-            uo_3d[p] = {0, 0, 0};
-      }
-      vtp.addPointData("vector_to_polygon" + std::to_string(i), uo_3d);
-   }
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->vector_to_polygon.size();
-   vtp.addPointData("vector_to_polygon size", uo_double);
+   // for (auto i = 0; i < 6; i++) {
+   //    for (const auto &p : Fluid->getPoints()) {
+   //       if (p->vector_to_polygon.size() > i)
+   //          uo_3d[p] = p->vector_to_polygon[i];
+   //       else
+   //          uo_3d[p] = {0, 0, 0};
+   //    }
+   //    vtp.addPointData("vector_to_polygon" + std::to_string(i), uo_3d);
+   // }
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->vector_to_polygon.size();
+   // vtp.addPointData("vector_to_polygon size", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->getContactFaces().size();
    vtp.addPointData("ContactFaces size", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->pressure_equation_index;
    vtp.addPointData("pressure_equation_index", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->intp_density;
    vtp.addPointData("intp_density", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->volume;
-   vtp.addPointData("volume", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->tmp_ViscousAndGravityForce, p->v_to_surface_SPH);
-   vtp.addPointData("Projectioned　tmp_ViscousAndGravityForce", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->v_to_surface_SPH);
-   vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->volume;
+   // vtp.addPointData("volume", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->tmp_ViscousAndGravityForce, p->v_to_surface_SPH);
+   // vtp.addPointData("Projectioned　tmp_ViscousAndGravityForce", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Projection(p->ViscousAndGravityForce, p->v_to_surface_SPH);
+   // vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
    vtp.addPointData("DUDt_modify_SPH", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M_next);
-   vtp.addPointData("laplacian_corr_M_next", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M_next);
+   // vtp.addPointData("laplacian_corr_M_next", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[0];
-   vtp.addPointData("laplacian_corr_M_next_x", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[0];
+   // vtp.addPointData("laplacian_corr_M_next_x", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[1];
-   vtp.addPointData("laplacian_corr_M_next_y", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[1];
+   // vtp.addPointData("laplacian_corr_M_next_y", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[2];
-   vtp.addPointData("laplacian_corr_M_next_z", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[2];
+   // vtp.addPointData("laplacian_corr_M_next_z", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M);
-   vtp.addPointData("laplacian_corr_M", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M);
+   // vtp.addPointData("laplacian_corr_M", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[0];
-   vtp.addPointData("laplacian_corr_M_x", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[0];
+   // vtp.addPointData("laplacian_corr_M_x", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[1];
-   vtp.addPointData("laplacian_corr_M_y", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[1];
+   // vtp.addPointData("laplacian_corr_M_y", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[2];
-   vtp.addPointData("laplacian_corr_M_z", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[2];
+   // vtp.addPointData("laplacian_corr_M_z", uo_3d);
 
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->div_U;
    vtp.addPointData("div U", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = (p->nearest_wall_p_next != nullptr) ? p->nearest_wall_p_next->X - p->X : Tddd{1E+50, 1E+50, 1E+50};
-   vtp.addPointData("vector to nearest wall point next", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = (p->nearest_wall_p != nullptr) ? p->nearest_wall_p->X - p->X : Tddd{1E+50, 1E+50, 1E+50};
-   vtp.addPointData("vector to nearest wall point", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = (p->nearest_wall_p_next != nullptr) ? p->nearest_wall_p_next->X - p->X : Tddd{1E+50, 1E+50, 1E+50};
+   // vtp.addPointData("vector to nearest wall point next", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = (p->nearest_wall_p != nullptr) ? p->nearest_wall_p->X - p->X : Tddd{1E+50, 1E+50, 1E+50};
+   // vtp.addPointData("vector to nearest wall point", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_SPH;
    vtp.addPointData("NS: DUDt", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->mu_SPH / p->rho * p->lap_U;

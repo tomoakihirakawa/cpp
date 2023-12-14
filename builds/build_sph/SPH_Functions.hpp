@@ -287,8 +287,8 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.01;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.01;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -302,9 +302,9 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             if (dt > max_dt_vel && isFinite(max_dt_vel))
                dt = max_dt_vel;
             // 絶対速度
-            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
+            // max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+            // if (dt > max_dt_vel && isFinite(max_dt_vel))
+            //    dt = max_dt_vel;
             /* ------------------------------------------------ */
             // 相対速度
             // double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
@@ -370,7 +370,7 @@ Tddd X_next(const networkPoint *p) {
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
    // if (p->getNetwork()->isRigidBody && !p->isFirstWallLayer)
-   // return _WATER_DENSITY_;
+   return _WATER_DENSITY_;
    /* -------------------------------------------------------------------------- */
    //    if (p->isAuxiliary)
    //       return rho_next(p->surfacePoint);
@@ -382,7 +382,7 @@ double rho_next(auto p) {
    // return p->RK_rho.getX(-p->rho * p->div_U);
    //@ これを使った方が安定するようだ
    // #elif defined(USE_LeapFrog)
-   return std::fma(p->DrhoDt_SPH, p->RK_rho.get_dt(), _WATER_DENSITY_);
+   // return std::fma(p->DrhoDt_SPH, p->RK_rho.get_dt(), _WATER_DENSITY_);
    // #endif
    //    }
 };
@@ -567,8 +567,8 @@ void updateParticles(const auto &points,
                   if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.05 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                        tmp += 0.2 * Dot(_GRAVITY3_, n) * n;
+                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
+                           // tmp += 0.2 * Dot(_GRAVITY3_, n) * n;
                            // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                            // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
 

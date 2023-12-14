@@ -125,7 +125,7 @@ int main() {
       PVDWriter pvd("./line_obj.pvd");
       auto obj = new Network;
       const double L = 10.;
-      auto X = Subdivide({0, L}, 10);
+      auto X = Subdivide(0, L, 10);
       std::vector<networkPoint*> points;
       for (const auto& x : X)
          points.push_back(new networkPoint(obj, {x, 0, 0}));
@@ -133,12 +133,12 @@ int main() {
          new networkLine(obj, points[i], points[i + 1]);
 
       int i = 0;
-      for (const auto& t : Subdivide({0, 2 * M_PI}, 100)) {
+      for (const auto& t : Subdivide(0, 2 * M_PI, 100)) {
          for (auto& p : points) {
             auto [x, y, z] = p->X;
             auto c1 = 0.5, c2 = 0.1;
             auto c = c1 * x / L + c2 * std::pow(x / L, 2);
-            p->setXSingle({x, c * cos(t + 4 * M_PI / L * x), c * sin(t + 4 * M_PI / L * x)});
+            p->setXSingle({x, c * std::cos(t + 4 * M_PI / L * x), c * std::sin(t + 4 * M_PI / L * x)});
          }
          auto filename = "./line_obj" + std::to_string(i++) + ".vtp";
          std::ofstream ofs(filename);

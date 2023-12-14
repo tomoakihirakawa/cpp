@@ -1,23 +1,13 @@
 #ifndef lib_spatial_partitioning_H
 #define lib_spatial_partitioning_H
 
-/*DOC_EXTRACT 0_3_space_partitioning
+/*DOC_EXTRACT lib_spatial_partitioning
 
-## Bucket クラスの説明
+## `Bucket`クラス
 
-このクラスは，オブジェクトを３次元空間内に配置し，効率的に検索できるようにするための「バケツ（Bucket）」構造を提供します．
+`Bucket`クラスは，オブジェクトを３次元空間内に配置し，効率的に検索できるようにするための「バケツ（Bucket）」構造を提供します．
 
-WARNING: テンプレート型`T`のオブジェクトは，`getX()`でxyz座標を取得できる必要があります．
-
-### 型エイリアス
-
-| エイリアス   | 説明                                         |
-|:------------:|:--------------------------------------------:|
-| `sizeType`   | サイズ型（int）                              |
-| `ST`         | sizeTypeの別名                               |
-| `ST2`        | 2次元サイズ配列（std::array<sizeType, 2>）   |
-| `ST3`        | 3次元サイズ配列（std::array<sizeType, 3>）   |
-| `ST6`        | 6次元サイズ配列（std::array<sizeType, 6>）   |
+WARNING: テンプレート型`T`のオブジェクトは，予め`getX()`を使ってxyz座標を取得できるようにしておく必要がある．
 
 ### メンバ変数
 
@@ -41,8 +31,8 @@ WARNING: テンプレート型`T`のオブジェクトは，`getX()`でxyz座標
 #### 初期化関連
 
 - `initialize(const T3Tdd &boundingboxIN, const double dL_IN)`: バケツを初期化する．
-
-#### インデックス変換
+œa
+#### インデックス変換¸
 
 - `itox(const ST i, const ST j, const ST k) const`: インデックスから座標へ変換．
 - `indices(const Tddd &x) const`: 座標からインデックスへ変換．
@@ -54,34 +44,20 @@ WARNING: テンプレート型`T`のオブジェクトは，`getX()`でxyz座標
 
 #### その他
 
-- `none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const`: 条件に合うオブジェクトがないか確認．
+`apply(const Tddd &x, const double d, const std::function<bool(const T &)> &func)`は，バケツの範囲を指定して，その範囲内のオブジェクトに対して関数を適用する．
+これと似た関数として，
 
-### 使用例
+* `any_of`
+* `all_of`
+* `none_of`
 
-```cpp
-// 座標の境界を定義
-T3Tdd bounding_box = {{{0.0, 10.0}, {0.0, 10.0}, {0.0, 10.0}}};
+があり，それぞれ，バケツの範囲内のオブジェクトに対して，関数を適用し，その結果が，それぞれ，`true`，`false`，`false`であれば，`true`を返す．
 
-// バケツの一辺の長さを定義
-double bucket_edge_length = 1.0;
-
-// Bucket インスタンスを初期化
-BaseBuckets<MyObject> my_buckets(bounding_box, bucket_edge_length);
-
-// オブジェクトの座標と初期値を定義
-Tddd obj1_coordinates = {5.0, 5.0, 5.0};
-MyObject obj1 = MyObject(some initializers);
-
-Tddd obj2_coordinates = {6.0, 6.0, 6.0};
-MyObject obj2 = MyObject(some initializers);
-
-// オブジェクトを追加
-my_buckets.add(obj1_coordinates, obj1);
-my_buckets.add(obj2_coordinates, obj2);
-
-// オブジェクトを削除
-my_buckets.erase(obj1);
-```
+TODO: これらの関数は，`apply`はある点を中心として半径`d`の球状の範囲を指定することができる．これは球状の範囲を指定していることになる．このような範囲指定以外に，直線上の範囲指定や，平面上の範囲指定などもできるようにしたい．
+そのためには，バケツのセルと，線分や平面の交差判定を高速に行う関数が必要になる．
+ラフに行っても問題ない．
+線に関しては細かい分割によってインデックス変換できる．
+平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
 
 */
 
@@ -221,14 +197,15 @@ struct Buckets : public CoordinateBounds {
    };
    constexpr Tddd itox(const ST3 &ijk) const { return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
    constexpr ST3 indices_no_clamp(const Tddd &x) const {
+      //! floorは必要！もし直接intキャストを使うと，-0.**が0になってしまい，isInsideがfalseなはずがtrueが返ってしまう．
       return {static_cast<ST>(std::floor((std::get<0>(x) - std::get<0>(this->xbounds())) / this->dL)),
               static_cast<ST>(std::floor((std::get<1>(x) - std::get<0>(this->ybounds())) / this->dL)),
               static_cast<ST>(std::floor((std::get<2>(x) - std::get<0>(this->zbounds())) / this->dL))};
    };
    constexpr ST3 indices(const Tddd &x) const {
       /*
-      intキャストはゼロ方向へ実数を切り捨てた結果を返すので，static_cast<int>によって正しくセルのインデックスに変換できる．
-       0.**    1.**  2.**   3.**
+      //! intキャストはゼロ方向へ実数を切り捨てた結果を返すので，static_cast<int>によって正しくセルのインデックスに変換できる．
+       0.**   1.**   2.**   3.**
       <-dL-> <-dL-> <-dL-> <-dL->
       *-----*------*------*------*
       |  0  |   1  |   2  |   3  |
@@ -443,7 +420,7 @@ struct Buckets : public CoordinateBounds {
             });
          });
       }
-   };
+   }
 
    //! apply
    void apply(const Tddd &x, const double d, const std::function<void(const int, const int, const int)> &func) const {
@@ -491,8 +468,7 @@ struct Buckets : public CoordinateBounds {
    }
 
    //! apply
-   void apply(const Tddd &x, const Tddd dx_dy_dz,
-              const std::function<void(const T &)> &func) const {
+   void apply(const Tddd &x, const Tddd dx_dy_dz, const std::function<void(const T &)> &func) const {
       if (this->data.empty())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D data is empty");
 
@@ -516,6 +492,29 @@ struct Buckets : public CoordinateBounds {
          });
       }
    };
+
+   /* ----------------------------- FOR LINE SEARCH ---------------------------- */
+
+   std::vector<ST3> line2indices(const Tddd &A, const Tddd &B) const {
+      std::unordered_set<ST3> uniqueIndexSet;
+      for (const auto &X : Subdivide(A, B, std::ceil(Norm(A - B) / this->dL)))
+         this->apply(X, this->dL, [&uniqueIndexSet](const int i, const int j, const int k) { uniqueIndexSet.insert({i, j, k}); });
+      std::vector<ST3> uniqueIndices(uniqueIndexSet.begin(), uniqueIndexSet.end());
+      return uniqueIndices;
+   }
+
+   //! apply using indices
+   void apply(const std::vector<ST3> &V_ijk, const std::function<void(const T &)> &func) const {
+      if (!this->vector_is_set) {
+         for (const auto &ijk : V_ijk)
+            for (const auto &p : this->data[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
+               func(p);
+      } else {
+         for (const auto &ijk : V_ijk)
+            for (const auto &p : this->data_vector[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
+               func(p);
+      }
+   }
 };
 
 // template <typename T>

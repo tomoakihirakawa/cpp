@@ -30,6 +30,9 @@ int main() {
 
    ![example1_space_partitioning.gif](example1_space_partitioning.gif)
 
+
+   \insert{lib_spatial_partitioning}
+
    */
 
    auto obj = new Network("./bunny.obj");

@@ -34,9 +34,9 @@ int main() {
    const double h = -58;
    const double r = 500.;
 
-   auto mooring0 = new MooringLine({r * cos(0.), r * sin(0.), h}, {0., 0., 0.}, total_length, n_points);
-   auto mooring1 = new MooringLine({r * cos(120 * M_PI / 180), r * sin(120 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
-   auto mooring2 = new MooringLine({r * cos(240 * M_PI / 180), r * sin(240 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
+   auto mooring0 = new MooringLine({r * std::cos(0.), r * std::sin(0.), h}, {0., 0., 0.}, total_length, n_points);
+   auto mooring1 = new MooringLine({r * std::cos(120 * M_PI / 180), r * std::sin(120 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
+   auto mooring2 = new MooringLine({r * std::cos(240 * M_PI / 180), r * std::sin(240 * M_PI / 180), h}, {0., 0., 0.}, total_length, n_points);
 
    std::map<MooringLine*, PVDWriter> pvd_line = {{mooring0, pvd_line0}, {mooring1, pvd_line1}, {mooring2, pvd_line2}};
    std::map<MooringLine*, PVDWriter> pvd_points = {{mooring0, pvd_points0}, {mooring1, pvd_points1}, {mooring2, pvd_points2}};
@@ -62,14 +62,14 @@ int main() {
          }
          if (p == mooring->lastPoint) {
             if (t < 4) {
+               // 固定される
                p->acceleration.fill(0);
                p->velocity.fill(0);
             } else {
-               std::array<double, 3> additional_force = {0, -9.8 * p->mass * sin(2 * M_PI / 3 * t), 0.};
-               auto > force = p->getForce() + p->mass * additional_force;
-               p->acceleration[0] = force[0] / p->mass;
-               p->acceleration[1] = force[1] / p->mass;
-               p->acceleration[2] = force[2] / p->mass;
+               // 固定されていた点が解放される
+               p->acceleration[0] = 9.8 * std::cos(2. * M_PI / 3. * t);
+               p->acceleration[1] = 9.8 * std::sin(2. * M_PI / 3. * t);
+               p->acceleration[2] = 0.;
             }
          }
       }

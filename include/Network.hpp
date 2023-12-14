@@ -3311,10 +3311,13 @@ Tddd Nearest(const networkPoint *p, const std::unordered_set<networkFace *> &fac
 //%  |/|\|
 //%  @-@-@
 //% ========================================================================== */
+#include "vtkWriter.hpp"
 class MooringLine;
 class Network : public CoordinateBounds {
   public:
    virtual ~Network();  // = default;  // Virtual destructor
+
+   vtkPolygonWriter<networkPoint *> vtpWriter;
 
   public:
    Network *surfaceNet;
@@ -3748,10 +3751,6 @@ class Network : public CoordinateBounds {
 
    /* ------------------------------------------------------ */
 
-   std::vector<MooringLine *> mooringLines;
-
-   /* ------------------------------------------------------ */
-
    void RigidBodyUpdatePoints() {
       // center_of_massとquaternionに従って計算
       Tddd trans = this->center_of_mass - this->ICOM;
@@ -3918,16 +3917,16 @@ class Network : public CoordinateBounds {
       // double a = move_amplitude;
       double k = M_PI / 1.;
       /* ------------------------------------------------------ */
-      // T6d move_dir = {cos(k * t), sin(k * t), 0., 0., 0., 0.};
-      // T6d ddt_move_dir = {-k * sin(k * t), k * cos(k * t), 0., 0., 0., 0.};
+      // T6d move_dir = {std::cos(k * t), std::sin(k * t), 0., 0., 0., 0.};
+      // T6d ddt_move_dir = {-k * std::sin(k * t), k * std::std::cos(k * t), 0., 0., 0., 0.};
       // // /* |U|*n_p . n_surface = phin <-- given
-      // auto tmp = (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
-      // tmp += move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * ddt_move_dir;
+      // auto tmp = (-move_amplitude * std::exp(-t) * (sin(k * t - s) - std::sin(-s)) + move_amplitude * std::exp(-t) * (std::cos(k * t - s) * k)) * move_dir;
+      // tmp += move_amplitude * std::exp(-t) * (sin(k * t - s) - std::sin(-s)) * ddt_move_dir;
       // return tmp;
       /* ------------------------------------------------------ */
       Tddd tmp = Normalize(Tddd{1., 1., 0.});
       T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
-      return (-move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) + move_amplitude * exp(-t) * (cos(k * t - s) * k)) * move_dir;
+      return (-move_amplitude * std::exp(-t) * (std::sin(k * t - s) - std::sin(-s)) + move_amplitude * std::exp(-t) * (std::cos(k * t - s) * k)) * move_dir;
    };
 
    Tddd translationPredefined() {
@@ -3935,11 +3934,11 @@ class Network : public CoordinateBounds {
       double s = M_PI / 2.;
       double k = M_PI / 1.;
       /* ------------------------------------------------------ */
-      // Tddd move_dir = {cos(k * t), sin(k * t), 0.};
-      // return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
+      // Tddd move_dir = {std::cos(k * t), std::sin(k * t), 0.};
+      // return move_amplitude * std::exp(-t) * (sin(k * t - s) - std::sin(-s)) * move_dir;
       /* ------------------------------------------------------ */
       Tddd move_dir = Normalize(Tddd{1., 1., 0.});
-      return move_amplitude * exp(-t) * (sin(k * t - s) - sin(-s)) * move_dir;
+      return move_amplitude * std::exp(-t) * (std::sin(k * t - s) - std::sin(-s)) * move_dir;
    };
    V_d nabla_phi;
    V_d meanX;
@@ -4137,11 +4136,12 @@ class Network : public CoordinateBounds {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       };
    };
-   void translate(const Tddd &direction) {
+   void translate(const Tddd &translation) {
       try {
          for (auto &p : this->getPoints())
-            p->X += direction;
-         setGeometricProperties();
+            p->setXSingle(p->X + translation);
+         // p->X += direction;
+         this->setGeometricProperties();
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -4150,8 +4150,9 @@ class Network : public CoordinateBounds {
    void translateFromInitialX(const Tddd &translation) {
       try {
          for (auto &p : this->getPoints())
-            p->X = p->initialX + translation;
-         setGeometricProperties();
+            p->setXSingle(p->initialX + translation);
+         // p->X = p->initialX + translation;
+         this->setGeometricProperties();
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -4579,6 +4580,10 @@ class Network : public CoordinateBounds {
          if (std::get<0>(p->particlize_info))
             p->Delete();
    };
+
+   /* ------------------------------------------------------ */
+  public:
+   std::vector<MooringLine *> mooringLines;
 };
 //% ========================================================================== */
 //% ========================================================================== */
@@ -5167,5 +5172,9 @@ T4T3P ToT4T3P(const T_4P &p0123) {
    auto [p0, p1, p2, p3] = p0123;
    return {{{p0, p1, p2}, {p0, p1, p3}, {p0, p2, p3}, {p1, p2, p3}}};
 };
+
+/* -------------------------------------------------------------------------- */
+
+#include "MooringLine.hpp"
 
 #endif

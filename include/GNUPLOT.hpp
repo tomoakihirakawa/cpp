@@ -1023,7 +1023,7 @@ GNUPLOT* VectorPlot3D(const std::vector<std::vector<std::vector<double>>>& v, co
  *     {
  *       double x = pi/99 * i;
  *       double y = pi/99 * j;
- *       data[i][j] = sin(pow(y,2) + x);
+ *       data[i][j] = std::sin(pow(y,2) + x);
  *     }
  * GNUPLOT mat;
  * //mat.Set({{"palette","model RGB rgbformulae 33,13,10"},{"xrange","[0:100]"},{"yrange","[0:100]"}});
