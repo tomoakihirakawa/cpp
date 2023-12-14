@@ -1,12 +1,5 @@
 # Contents
 - [🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](#🐋-Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
-    - [⛵ 概要](#⛵-概要)
-        - [🪼 要素法と粒子法](#🪼-要素法と粒子法)
-        - [🪼 SPH](#🪼-SPH)
-        - [🪼 このプログラムの目的](#🪼-このプログラムの目的)
-        - [🪼 大まかな計算の流れ](#🪼-大まかな計算の流れ)
-            - [🐚 Navier-Stokes方程式を解く前の準備](#🐚-Navier-Stokes方程式を解く前の準備)
-            - [🐚 Navier-Stokes方程式を解く](#🐚-Navier-Stokes方程式を解く)
         - [🪼 CFL条件の設定](#🪼-CFL条件の設定)
     - [⛵ N.S.方程式を解く前の準備](#⛵-N.S.方程式を解く前の準備)
     - [⛵ N.S.方程式を解く前の準備](#⛵-N.S.方程式を解く前の準備)
@@ -42,67 +35,10 @@
 ---
 # 🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH 
 
-## ⛵ 概要 
+[README_ABSTRACT.md](README_ABSTRACT.md)
+[README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
 
-### 🪼 要素法と粒子法 
-
-有限要素法や境界要素法など，
-要素を利用する計算手法は，
-節点の接続に基づき要素を構成し（補間），
-微分方程式を離散化して解く．
-基本的には，要素が歪になると計算ができない．
-また，上手に要素を再構成するのは大変である．
-
-一方の粒子法は，節点間になんら決まった（要素の様な）パターンを要求せず，再構成という概念がない．
-きれいに整列した粒子の方が計算精度は高いが，乱れたとしても計算はできる．
-
-### 🪼 SPH 
-
-粒子法には主に２つの種類がある．
-一つは，越塚らによって提案されたMoving Particle Semi-implicit (MPS)法であり，
-もう一つは，[Gingold and Monaghan (1977)](https://academic.oup.com/mnras/article-lookup/doi/10.1093/mnras/181.3.375)と[Lucy (1977)](http://adsabs.harvard.edu/cgi-bin/bib_query?1977AJ.....82.1013L)によって提案されたSmoothed Particle Hydrodynamics (SPH)法である．
-世界的にはSPH法がよく使われている．
-
-SPHの研究者および産業ユーザーから成る[SPHETIC](https://www.spheric-sph.org/sph-projects-and-codes)というコミュニティがある．
-それによるとSPHは，1970年代に天体物理学における非軸対称な現象を研究するために開発され，
-その工学への応用は1990年代と2000年代初頭に登場した．
-過去二十年で、この手法は多くの応用分野で急速に発展しており、
-衝突から破壊，水面波のシミュレーション，流体-構造相互作用に至るまで多岐にわたっている．
-
-### 🪼 このプログラムの目的 
-
-このプログラムは，
-ISPHとISPHを簡単化したEISPHを実装したものである．
-まずは，不安要素が少ないISPHで安定した計算方法を確立し，
-その後，EISPHへと移行する．
-
-### 🪼 大まかな計算の流れ 
-
-このSPHでは，非圧縮性流体のナビエ・ストークス方程式を解く．
-
-```math
-\frac{D\bf u}{Dt} = -\frac{1}{\rho}\nabla {p} + \nu\nabla^2{\bf u} + {\bf g},\quad  \nu=\frac{\mu}{\rho}
-```
-
-#### 🐚 Navier-Stokes方程式を解く前の準備 
-
-1. バケットの生成
-2. 流れの計算に関与する壁粒子を保存
-3. CFL条件を満たすようにタイムステップ間隔 $`\Delta t`$を設定
-4. 水面の判定
-
-#### 🐚 Navier-Stokes方程式を解く 
-
-5. $`\nabla^2 {\bf u}`$の計算
-6. `PoissonRHS`,$`b`$と$`\nabla^2 p^{n+1}`$における$`p^{n+1}`$の係数の計算
-7. 流速の発散から密度 $`{\rho}^\ast`$を計算
-8. 次の時刻の圧力 $`p^{n+1}`$を計算
-* 壁粒子の圧力の計算（流体粒子の現在の圧力$`p^n`$だけを使って近似）
-* 流体粒子の圧力$`p^{n+1}`$の計算
-9. $`\nabla {p^{n+1}}`$が計算でき， $`\frac{D{\bf u}}{D t}=-\frac{1}{\rho}\nabla {p^{n+1}} + \frac{1}{\nu}\nabla^2{\bf u} + {\bf g}`$（粘性率が一定の非圧縮性流れの加速度）を得る．
-10. $`\frac{D\bf u}{Dt}`$を使って，流速を更新．流速を使って位置を更新
-
-[./SPH.hpp#L145](./SPH.hpp#L145)
+[./SPH.hpp#L144](./SPH.hpp#L144)
 
 ---
 ### 🪼 CFL条件の設定 
@@ -282,9 +218,9 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph_back/SPH1_lap_div_U
 
 ✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH2_FindPressure.hpp#L230): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{8 m _j}{(\rho _i+\rho _j)}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{8 m _j}{(\rho _i+\rho _j)}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-⚠️ 密度$\rho$が粒子に関わらず一定の場合，上の２式は同じになる．しかし，補助粒子の密度は，他の粒子と異なるので，[２つ目のラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73)を使うべきだろう．
+⚠️ 密度$\rho$が粒子に関わらず一定の場合，上の２式は同じになる．しかし，補助粒子の密度は，他の粒子と異なるので，[２つ目のラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73)を使うべきだろう．
 
 **ISPH**
 
@@ -348,7 +284,7 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 壁の法線方向にある流体の圧力を，壁粒子の圧力とした場合（若干の修正をするが）：あまり力を受けない．
 
-[./SPH2_FindPressure.hpp#L361](./SPH2_FindPressure.hpp#L361)
+[./SPH2_FindPressure.hpp#L325](./SPH2_FindPressure.hpp#L325)
 
 ---
 ### 🪼 圧力の安定化 
@@ -373,14 +309,14 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 `PoissonRHS`,$`b`$の計算方法と同じである場合に限る．
 もし，計算方法が異なれば，計算方法の違いによって，安定化の効果も変わってくるだろう．
 
-[./SPH2_FindPressure.hpp#L408](./SPH2_FindPressure.hpp#L408)
+[./SPH2_FindPressure.hpp#L372](./SPH2_FindPressure.hpp#L372)
 
 ---
 ## ⛵ ポアソン方程式の解法 
 
 ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_sph_back/SPH2_FindPressure.hpp#L496)を使う．
 
-[./SPH2_FindPressure.hpp#L509](./SPH2_FindPressure.hpp#L509)
+[./SPH2_FindPressure.hpp#L473](./SPH2_FindPressure.hpp#L473)
 
 ---
 ## ⛵ 圧力勾配$`\nabla p^{n+1}`$の計算 
@@ -400,7 +336,7 @@ ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../build
 $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u}^n + {\bf g}`$
 が計算できた．
 
-[./SPH3_grad_P.hpp#L171](./SPH3_grad_P.hpp#L171)
+[./SPH3_grad_P.hpp#L168](./SPH3_grad_P.hpp#L168)
 
 ---
 ## ⛵ 注意点 
@@ -446,7 +382,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 ## ⛵ 出力（ポリゴン）
 
-[./main.cpp#L596](./main.cpp#L596)
+[./main.cpp#L606](./main.cpp#L606)
 
 ---
 # 🐋 実行方法 

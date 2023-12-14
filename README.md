@@ -26,7 +26,6 @@
 
 - [Contents](./builds/build_sph/README.md#Contents)
 - [🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](./builds/build_sph/README.md#🐋-Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
-    - [⛵ 概要](./builds/build_sph/README.md#⛵-概要)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
