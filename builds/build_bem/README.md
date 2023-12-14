@@ -778,7 +778,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L524](./main.cpp#L524)
+[./main.cpp#L522](./main.cpp#L522)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -857,7 +857,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L374)
+[強制運動を課す](../../builds/build_bem/main.cpp#L372)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L300)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -930,7 +930,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L793](./main.cpp#L793)
+[./main.cpp#L791](./main.cpp#L791)
 
 ---
 ## ⛵ その他 
@@ -1047,7 +1047,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L657](./main.cpp#L657)
+[./main.cpp#L655](./main.cpp#L655)
 
 ---
 # 🐋 実行方法 
@@ -1086,7 +1086,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L825](./main.cpp#L825)
+[./main.cpp#L823](./main.cpp#L823)
 
 ---
 # 🐋 Input Generator 
@@ -1136,13 +1136,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L395](./input_generator.py#L395)
+[./input_generator.py#L396](./input_generator.py#L396)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L865](./main.cpp#L865)
+[./main.cpp#L863](./main.cpp#L863)
 
 ---
