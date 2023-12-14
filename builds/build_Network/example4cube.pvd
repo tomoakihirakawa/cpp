@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="../build_Network/example4/cube0.vtu" group="" part="0" timestep="0.000000"/>
+    <DataSet file="../build_Network/example4/cube1.vtu" group="" part="0" timestep="1.000000"/>
+    <DataSet file="../build_Network/example4/cube2.vtu" group="" part="0" timestep="2.000000"/>
+    <DataSet file="../build_Network/example4/cube3.vtu" group="" part="0" timestep="3.000000"/>
+    <DataSet file="../build_Network/example4/cube4.vtu" group="" part="0" timestep="4.000000"/>
+    <DataSet file="../build_Network/example4/cube5.vtu" group="" part="0" timestep="5.000000"/>
+    <DataSet file="../build_Network/example4/cube6.vtu" group="" part="0" timestep="6.000000"/>
+  </Collection>
+</VTKFile>

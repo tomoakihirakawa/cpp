@@ -274,14 +274,12 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
-         if (time_step < 10 && time_step % 3 == 0)
+         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+         if (time_step < 10) {
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-         else
-            flipIf(*water,
-                   {5 * rad /*target n diff*/, 5 * rad /*change n diff*/},
-                   {5 * rad, 5 * rad},
-                   false);
-
+            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+         }
          // b# ------------------------------------------------------ */
          // b#                       刻み時間の決定                     */
          // b# ------------------------------------------------------ */
@@ -629,21 +627,27 @@ int main(int argc, char **argv) {
             //$ --------------------------------------------------- */
             //$                  MOORING LINE                       */
             //$ --------------------------------------------------- */
+            /*DOC_EXTRACT 0_6_MOORING_LINE
+
+            ### 係留索の出力
+
+
+            */
             //! rigid body includes mooring lines output them
-            // for (const auto &mooring_net : net->mooringLines) {
-            //    VV_VarForOutput data;
-            //    uomap_P_Tddd P_accel, P_velocity;
-            //    for (const auto &p : mooring_net->getPoints()) {
-            //       P_accel[p] = net->accelRigidBody(ToX(p));
-            //       P_velocity[p] = net->velocityRigidBody(ToX(p));
-            //    }
-            //    data = {{"velocity", P_velocity}, {"acceleration", P_accel}};
-            //    auto filename = NetOutputInfo[mooring_net].vtu_file_name + std::to_string(time_step) + ".vtp";
-            //    std::ofstream ofs(output_directory + "/" + filename);
-            //    vtkPolygonWrite(ofs, mooring_net->getLines());
-            //    NetOutputInfo[mooring_net].PVD->push(filename, simulation_time);
-            //    NetOutputInfo[mooring_net].PVD->output();
-            // }
+            for (const auto &mooring_net : net->mooringLines) {
+               VV_VarForOutput data;
+               uomap_P_Tddd P_accel, P_velocity;
+               for (const auto &p : mooring_net->Network::getPoints()) {
+                  P_accel[p] = net->accelRigidBody(ToX(p));
+                  P_velocity[p] = net->velocityRigidBody(ToX(p));
+               }
+               data = {{"velocity", P_velocity}, {"acceleration", P_accel}};
+               auto filename = NetOutputInfo[mooring_net].vtu_file_name + std::to_string(time_step) + ".vtp";
+               std::ofstream ofs(output_directory + "/" + filename);
+               vtkPolygonWrite(ofs, mooring_net->getLines());
+               NetOutputInfo[mooring_net].PVD->push(filename, simulation_time);
+               NetOutputInfo[mooring_net].PVD->output();
+            }
          }
 
          // b* ------------------------------------------------------ */

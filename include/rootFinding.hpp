@@ -100,8 +100,11 @@ std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sa
          w = 1;
          drdx = -w;
          for (std::size_t i = 0; i < N; ++i) {
-            Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
-            dFs[i] += drdx * drdx;
+            // Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
+            // dFs[i] += drdx * drdx;
+            // use std::fma
+            Fs[i] = std::fma(w * (vec[i] - NRs[i].X), drdx, Fs[i]);
+            dFs[i] = std::fma(drdx, drdx, dFs[i]);
          }
       }
       bool converged = true;
@@ -141,8 +144,11 @@ std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sa
          w = normalized_weights[i];
          drdx = -w;
          for (size_t j = 0; j < N; ++j) {
-            Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
-            dFs[j] += drdx * drdx;
+            // Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
+            // dFs[j] += drdx * drdx;
+            // use std::fma
+            Fs[j] = std::fma(w * (sample_vectors[i][j] - NRs[j].X), drdx, Fs[j]);
+            dFs[j] = std::fma(drdx, drdx, dFs[j]);
          }
       }
 
@@ -234,11 +240,11 @@ struct LighthillRobot {
    LighthillRobot(double L, double w, double k, double c1, double c2, int n)
        : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1){};
 
-   auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * sin(k * (x / L) - w * t); };
+   auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * std::sin(k * (x / L) - w * t); };
 
    auto X_RB(const std::array<double, 2> &a, const double q) {
       double r = L / n;
-      return a + r * std::array<double, 2>{cos(q), sin(q)};
+      return a + r * std::array<double, 2>{std::cos(q), std::sin(q)};
    };
 
    auto f(const std::array<double, 2> &a, const double q, const double t) {
@@ -247,31 +253,28 @@ struct LighthillRobot {
    };
 
    auto ddx_yLH(const double x, const double t) {
-      return (c1 / L + 2 * c2 * x / std::pow(L, 2)) * sin(k * (x / L) - w * t) +
-             (c1 / L * x + c2 * std::pow(x / L, 2)) * cos(k * (x / L) - w * t) * k / L;
+      const double a = k * (x / L) - w * t;
+      return (c1 / L + 2 * c2 * x / std::pow(L, 2)) * std::sin(a) + (c1 / L * x + c2 * std::pow(x / L, 2)) * std::cos(a) * k / L;
    };
 
    auto ddq_f(const double q, const double t) {
-      double r = L / n;
-      double x = r * cos(q);
-      return -r * sin(q) * ddx_yLH(x, t) - r * cos(q);
+      const double r = L / n;
+      const double x = r * std::cos(q);
+      return -r * std::sin(q) * ddx_yLH(x, t) - r * std::cos(q);
    };
 
    V_d getAngles(const double t) {
       std::vector<double> Q(n, 0.);
       std::array<double, 2> a{{0., 0.}};
-      double error = 0, F, q0;
-      double scale = 0.3;  //\label{LighthillRobot:scale}
+      double error = 0, F, scale = 0.3;  //\label{LighthillRobot:scale}
       NewtonRaphson nr(0.);
       for (auto i = 0; i < Q.size(); i++) {
-         q0 = atan(ddx_yLH(std::get<0>(a), t));
-         nr.initialize(q0);
+         nr.initialize(std::atan(ddx_yLH(std::get<0>(a), t)));
          error = 0;
          for (auto k = 0; k < 100; k++) {
             F = f(a, nr.X, t);
-            nr.update(F * F / 2., F * ddq_f(nr.X, t), scale);
-            if ((error = std::abs(F)) < 1E-10)
-               break;
+            nr.update(F * F * 0.5, F * ddq_f(nr.X, t), scale);
+            if ((error = std::abs(F)) < 1E-10) break;
          }
          Q[i] = nr.X;
          a = X_RB(a, Q[i]);

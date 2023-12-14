@@ -244,8 +244,6 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
          };
 
-#define USE_SYMMETRIC_FORM_FOR_PRESSURE
-
          auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto &B /*column id*/) {
             if (pO != B) {
                const auto BX = X_next(B);
@@ -254,55 +252,21 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
                   double Aij;
                   // if (pO->isNearSurface) {
-                  // Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());  //! 水面付近は修正によってエラーが起きやすいのでそのままにする．
+                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());  //! 水面付近は修正によってエラーが起きやすいのでそのままにする．
                   // } else
-                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //! 内部は比較的安定しているようなので修正する
+                  // Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //! 内部は比較的安定しているようなので修正する
                   // var_Eifen_が大きすぎる内部の点は，計算がこんなんだろうから，EISPHの近似で計算する
                   /* -------------------------------------------------------------------------- */
                   //! 修正
                   const auto DelX = (pO_center - BX);
                   double c, total_c = 0;  //! 毎回すると遅いので
                   for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
-                     c = Dot(Aij * DelX, vol_grad);
-                     total_c += c;
+                     total_c += (c = Dot(Aij * DelX, vol_grad));
                      ROW->increment(Q, -c);
                   }
                   ROW->increment(pO, Aij + total_c);
                   ROW->increment(B, -Aij);
                   /* --------------------------------------------------------------------------- */
-
-                  // /* -------------------------------------------------------------------------- */
-                  // //! 修正
-                  // const auto DelX = (pO_center - BX);
-                  // double c, total_c = 0;  //! 毎回すると遅いので
-                  // applyOverPoints([&](const auto &Q) {
-                  //    c = Aij * Dot(DelX, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
-                  //    // c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline(pO_center, X_next(Q), pO->SML_next()));
-                  //    total_c += c;
-                  //    // ROW->increment(pO, c);
-                  //    ROW->increment(Q, -c);
-                  // },
-                  //                 target_nets);
-                  // ROW->increment(pO, Aij + total_c);
-                  // // ROW->increment(pO, Aij);
-                  // ROW->increment(B, -Aij);
-                  // /* -------------------------------------------------------------------------- */
-
-                  /* -------------------------------------------------------------------------- */
-                  //        //! 修正
-                  // const auto DelX = (pO_center - BX);
-                  // double c;
-                  // applyOverPoints([&](const auto &Q) {
-                  //    c = Aij * Dot(DelX, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
-                  //    // c = Aij * V_next(Q) * Dot(DelX, grad_w_Bspline(pO_center, X_next(Q), pO->SML_next()));
-                  //    ROW->increment(pO, c);
-                  //    ROW->increment(Q, -c);
-                  // },
-                  //                 target_nets);
-
-                  // ROW->increment(pO, Aij);
-                  // ROW->increment(B, -Aij);
-                  /* -------------------------------------------------------------------------- */
 
                   // ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B));
                   FusedMultiplyIncrement(V_next(B), Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B)), ROW->PoissonRHS);
@@ -344,7 +308,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             /* -------------------------------------------------------------------------- */
             // ROW->CRS::set(ROW, 1.);
             // ROW->PoissonRHS = 0;
-         } else if (ROW->isSurface_next || ROW->isSurface) {
+         } else if (ROW->isSurface_next) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
@@ -374,10 +338,10 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             //! pO_center_mirror: これは壁粒子自身の壁内の位置座標
             //! pO_center : よくマーカーと言われる流体内の位置座標
             //! ちょっとした修正11/28
-            // if (ROW->isFirstWallLayer)
-            //    pO_center = pO_center_mirror + pO->v_to_surface_SPH;
-            // else
-            pO_center = pO_center_mirror + 2. * pO->v_to_surface_SPH;
+            if (ROW->isFirstWallLayer)
+               pO_center = pO_center_mirror + pO->v_to_surface_SPH;
+            else
+               pO_center = pO_center_mirror + 2. * pO->v_to_surface_SPH;
 
             //  b% EISPH (initial guess) EISPHは方程式を立てる必要がなく，直接圧力を計算する
             total_volume_w = 0;
@@ -588,7 +552,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 60;
+   int size = 70;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {
@@ -598,11 +562,11 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    x0 = GMRES->x;
-   double torr = 5E-14;
+   double torr = 1E-11;
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
-   if (error > torr)
+   if (GMRES->err > torr)
       for (auto i = 1; i < 10; i++) {
          std::cout << "Restart : " << i << std::endl;
          GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}

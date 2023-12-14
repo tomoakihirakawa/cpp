@@ -1362,8 +1362,8 @@ void p_igign_Linear(networkPoint *p0,
 // 				x1 = x1w1[0];
 // 				w1 = x1w1[1];
 
-// 				auto X0 = x0 * cos(x1);
-// 				auto X1 = x0 * sin(x1);
+// 				auto X0 = x0 * std::cos(x1);
+// 				auto X1 = x0 * std::sin(x1);
 // 				{
 // 					r = intp({X0, X1}) - A;
 // 					nr = Norm(r);

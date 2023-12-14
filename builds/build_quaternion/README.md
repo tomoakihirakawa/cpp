@@ -131,7 +131,7 @@ q2 * w0 - q1 * w1 + q0 * w2
 ```
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
-[../../include/basic_vectors.hpp#L1513](../../include/basic_vectors.hpp#L1513)
+[../../include/basic_vectors.hpp#L1579](../../include/basic_vectors.hpp#L1579)
 
 
 ![sample_dQdt.gif](sample_dQdt.gif)
@@ -161,7 +161,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1629](../../include/basic_vectors.hpp#L1629)
+[../../include/basic_vectors.hpp#L1695](../../include/basic_vectors.hpp#L1695)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

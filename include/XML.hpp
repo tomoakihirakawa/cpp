@@ -19,17 +19,25 @@ struct XMLElement {
    std::vector<XMLElement *> elements;
    std::vector<std::shared_ptr<XMLElement>> elements_shared;
    /* ------------------------------------------------------ */
-   XMLElement(const std::string &nameIN) : name(nameIN){};
-   XMLElement(const std::string &nameIN, const std::map<std::string, std::string> &attributesIN) : name(nameIN), attributes(attributesIN){};
+   XMLElement(const std::string_view &nameIN) : name(nameIN){};
+   XMLElement(const std::string_view &nameIN, const std::map<std::string, std::string> &attributesIN) : name(nameIN), attributes(attributesIN){};
    ~XMLElement(){
        // std::cout << this->name << " is deleted" << std::endl;
    };
    /* ------------------------------------------------------ */
+   // std::string getStartTag() const {
+   //    std::stringstream ss;
+   //    for (const auto &[key, value] : attributes)
+   //       ss << " " << key << "=\"" << value << "\"";
+   //    return "<" + name + ss.str() + ">";
+   // }
+
    std::string getStartTag() const {
-      std::stringstream ss;
+      std::string tag = "<" + name;
       for (const auto &[key, value] : attributes)
-         ss << " " << key << "=\"" << value << "\"";
-      return "<" + name + ss.str() + ">";
+         tag += " " + key + "=\"" + value + "\"";
+      tag += ">";
+      return tag;
    }
 
    std::string getEndTag() const { return "</" + name + ">"; }

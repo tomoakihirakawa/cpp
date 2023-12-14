@@ -12,61 +12,61 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 //* ------------------------------------------------------ */
 
 //! ------------------ Multiquadric 多重二乗 ----------------- */
-double kernel_MQ(const V_d &x, const V_d &a, const double e) { return sqrt(pow(e * Norm(x - a), 2.) + 1.); };
-V_d grad_kernel_MQ(const V_d &x, const V_d &a, const double e) { return (x - a) * (e * e / sqrt(pow(e * Norm(x - a), 2.) + 1.)); };
+double kernel_MQ(const V_d &x, const V_d &a, const double e) { return std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.); };
+V_d grad_kernel_MQ(const V_d &x, const V_d &a, const double e) { return (x - a) * (e * e / std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.)); };
 double laplacian_kernel_MQ(const V_d &x, const V_d &a /*補間点と考える*/, const double e) {
-   double exyz = pow(e * Norm(x - a), 2.);
-   return e * e * (3. + 2. * exyz) / pow(1. + exyz, 1.5);
+   double exyz = std::pow(e * Norm(x - a), 2.);
+   return e * e * (3. + 2. * exyz) / std::pow(1. + exyz, 1.5);
 };
 /* ------------------------------------------------------ */
-double kernel_MQ(const Tdd &x, const Tdd &a, const double e) { return sqrt(pow(e * Norm(x - a), 2.) + 1.); };
-Tdd grad_kernel_MQ(const Tdd &x, const Tdd &a, const double e) { return (x - a) * (e * e / sqrt(pow(e * Norm(x - a), 2.) + 1.)); };
+double kernel_MQ(const Tdd &x, const Tdd &a, const double e) { return std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.); };
+Tdd grad_kernel_MQ(const Tdd &x, const Tdd &a, const double e) { return (x - a) * (e * e / std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.)); };
 double laplacian_kernel_MQ(const Tdd &x, const Tdd &a, const double e) {
-   double exyz = pow(e * Norm(x - a), 2.);
-   return e * e * (3. + 2. * exyz) / pow(1. + exyz, 1.5);
+   double exyz = std::pow(e * Norm(x - a), 2.);
+   return e * e * (3. + 2. * exyz) / std::pow(1. + exyz, 1.5);
 };
-double kernel_MQ(const Tddd &x, const Tddd &a, const double e) { return sqrt(pow(e * Norm(x - a), 2.) + 1.); };
-Tddd grad_kernel_MQ(const Tddd &x, const Tddd &a, const double e) { return (x - a) * (e * e / sqrt(pow(e * Norm(x - a), 2.) + 1.)); };
+double kernel_MQ(const Tddd &x, const Tddd &a, const double e) { return std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.); };
+Tddd grad_kernel_MQ(const Tddd &x, const Tddd &a, const double e) { return (x - a) * (e * e / std::sqrt(std::pow(e * Norm(x - a), 2.) + 1.)); };
 double laplacian_kernel_MQ(const Tddd &x, const Tddd &a, const double e) {
-   double exyz = pow(e * Norm(x - a), 2.);
-   return e * e * (3. + 2. * exyz) / pow(1. + exyz, 1.5);
+   double exyz = std::pow(e * Norm(x - a), 2.);
+   return e * e * (3. + 2. * exyz) / std::pow(1. + exyz, 1.5);
 };
 /* ------------------------------------------------------ */
 double kernel_TPS(const Tdd &x, const Tdd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return 0.;
-   return pow(r, 2.) * log(r * e);
+   return std::pow(r, 2.) * std::log(r * e);
 };
 Tdd grad_kernel_TPS(const Tdd &x, const Tdd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return {0., 0.};
-   return -(a - x) * (1. + 2. * log(e * r));
+   return -(a - x) * (1. + 2. * std::log(e * r));
 };
 double laplacian_kernel_TPS(const Tdd &x, const Tdd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return 0.;
-   return 5. + 6. * log(r * e);
+   return 5. + 6. * std::log(r * e);
 };
 double kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return 0.;
-   return pow(r, 2.) * log(r * e);
+   return std::pow(r, 2.) * std::log(r * e);
 };
 Tddd grad_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return _ZEROS3_;
-   return -(a - x) * (1. + 2. * log(e * r));
+   return -(a - x) * (1. + 2. * std::log(e * r));
 };
 double laplacian_kernel_TPS(const Tddd &x, const Tddd &a, const double e) {
    double r = Norm(x - a);
    if (r < 1E-15)
       return 0.;
-   return pow(r, 2.) * log(r * e);
+   return std::pow(r, 2.) * std::log(r * e);
 };
 
 //! --------------------------------- ５次スプライン -------------------------------- */

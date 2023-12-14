@@ -886,7 +886,7 @@ struct InterpolationRBF {
       //   if (1E-8 > e * r)
       //     return 0.;
       //   else
-      //     return e * r * e * r * log(e * r);
+      //     return e * r * e * r * std::log(e * r);
       // };
       // this->grad_phi = [this](const V_d &x, const V_d &a) {
       //   auto r = Norm(x - a);
@@ -894,7 +894,7 @@ struct InterpolationRBF {
       //   if (1E-13 > e * r)
       //     return 0. * (x - a);
       //   else
-      //     return e * e * (1. + 2. * log(e * r)) * (x - a);
+      //     return e * e * (1. + 2. * std::log(e * r)) * (x - a);
       // };
       ///////////////////////////////////
       this->w = weight(A_IN, V_IN);
@@ -920,7 +920,7 @@ struct InterpolationRBF {
       //   if (1E-8 > e * r)
       //     return 0.;
       //   else
-      //     return e * r * e * r * log(e * r);
+      //     return e * r * e * r * std::log(e * r);
       // };
       // this->grad_phi = [this](const V_d &x, const V_d &a) {
       //   auto r = Norm(x - a);
@@ -928,7 +928,7 @@ struct InterpolationRBF {
       //   if (1E-13 > e * r)
       //     return 0. * (x - a);
       //   else
-      //     return e * e * (1. + 2. * log(e * r)) * (x - a);
+      //     return e * e * (1. + 2. * std::log(e * r)) * (x - a);
       // };
       ///////////////////////////////////
       this->w = weight(A_IN, V_IN);

@@ -141,15 +141,15 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             const double dt = A->RK_X.get_dt();
             if (A->getNetwork()->isRigidBody) {
                A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U;  //! 後で修正されるDUDt
-               A->DUDt_SPH += _GRAVITY3_;
                A->DUDt_SPH += A->U_XSPH / dt;
                A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+               A->DUDt_SPH += _GRAVITY3_;
                A->DrhoDt_SPH = -A->rho * A->div_U;
             } else {
                A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U;  //! 後で修正されるDUDt
-               A->DUDt_SPH += _GRAVITY3_;
                A->DUDt_SPH += A->U_XSPH / dt;
                A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+               A->DUDt_SPH += _GRAVITY3_;
                A->DrhoDt_SPH = -A->rho * A->div_U;
             }
          }

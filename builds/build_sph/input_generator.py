@@ -107,11 +107,11 @@ match SimulationCase:
 
         setting = {"RK_order": 1,
                    "max_dt": 0.0005,
-                   "end_time_step": 20000,
-                   "end_time": 1,
+                   "end_time_step": 100000*5,
+                   "end_time": 2,
                    "CSML": 2.5,
                    "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.02}
+                   "particle_spacing": 0.018}
 
         id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                             + "_CSML" + str(setting["CSML"]).replace(".", "d")\

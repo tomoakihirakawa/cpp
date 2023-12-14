@@ -1609,7 +1609,7 @@ inline bool networkLine::isAdjacentFacesFlat(const double minangle = M_PI / 180.
 */
 
 // \label{canFlip}
-inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M_PI / 180.) const {
+inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 1E-3 * M_PI / 180.) const {
    try {
       auto f_and_F = this->getFaces();
       auto [f0, f1, f2] = f_and_F[0]->getPoints(this);
@@ -1620,19 +1620,19 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = M
       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
 
-      if (!isValidTriangle(tri0, 2 * M_PI / 180.))
+      if (!isValidTriangle(tri0, M_PI / 180.))
          return false;
-      if (!isValidTriangle(tri1, 2 * M_PI / 180.))
+      if (!isValidTriangle(tri1, M_PI / 180.))
          return false;
 
-      if (isFlat(tri0[1] - tri0[0], tri0[2] - tri0[0], 1E-1))
-         return false;
-      if (isFlat(tri0[2] - tri0[1], tri0[0] - tri0[1], 1E-1))
-         return false;
-      if (isFlat(tri1[1] - tri1[0], tri1[2] - tri1[0], 1E-1))
-         return false;
-      if (isFlat(tri1[2] - tri1[1], tri1[0] - tri1[1], 1E-1))
-         return false;
+      // if (isFlat(tri0[1] - tri0[0], tri0[2] - tri0[0], 1E-1))
+      //    return false;
+      // if (isFlat(tri0[2] - tri0[1], tri0[0] - tri0[1], 1E-1))
+      //    return false;
+      // if (isFlat(tri1[1] - tri1[0], tri1[2] - tri1[0], 1E-1))
+      //    return false;
+      // if (isFlat(tri1[2] - tri1[1], tri1[0] - tri1[1], 1E-1))
+      //    return false;
       //$ large difference of normal vector after and before flip
       if (!isFlat(tri0[0], tri0[1], tri0[2], tri0_now[0], tri0_now[1], tri0_now[2], acceptable_n_diff_before_after))
          return false;

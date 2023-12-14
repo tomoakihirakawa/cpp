@@ -268,7 +268,7 @@ void SVD::decompose() {
                   U[k] *= scale;
             }
          }
-         anorm = MAX(anorm, (abs(w[i]) + std::abs(rv1[i])));
+         anorm = MAX(anorm, (std::abs(w[i]) + std::abs(rv1[i])));
       }
       for (i = n - 1; i >= 0; i--) {
          if (i < n - 1) {
@@ -319,7 +319,7 @@ void SVD::decompose() {
                   flag = false;
                   break;
                }
-               if (abs(w[nm]) <= eps * anorm)
+               if (std::abs(w[nm]) <= eps * anorm)
                   break;
             }
             if (flag) {
@@ -328,7 +328,7 @@ void SVD::decompose() {
                for (i = l; i < k + 1; i++) {
                   f = s * rv1[i];
                   rv1[i] = c * rv1[i];
-                  if (abs(f) <= eps * anorm)
+                  if (std::abs(f) <= eps * anorm)
                      break;
                   g = w[i];
                   h = pythag(f, g);

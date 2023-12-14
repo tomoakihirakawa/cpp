@@ -522,7 +522,7 @@ bool initializeLogFile(const std::string &logfilename, int argc, char **argv) {
    }
    ifs.close();
 
-   // Clear and open log file
+   // Clear and open std::log file
    std::ofstream ofs(logfilename);
    if (!ofs.is_open()) {
       std::cerr << "Failed to open " << logfilename << std::endl;

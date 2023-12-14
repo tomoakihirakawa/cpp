@@ -20,7 +20,8 @@ Tddd RK_with_Ubuff_Normal(const networkPoint *p) {
    double a = 0, total = 0;
    for (const auto &f : p->getFaces()) {
       a = RK_with_Ubuff_Area(f);
-      normal += a * RK_with_Ubuff_Normal(f);
+      // normal += a * RK_with_Ubuff_Normal(f);
+      FusedMultiplyIncrement(a, RK_with_Ubuff_Normal(f), normal);
       total += a;
    }
    return Normalize(normal / total);
@@ -37,7 +38,7 @@ Tddd RK_without_Ubuff_Normal(const networkPoint *p) {
    double a = 0, total = 0;
    for (const auto &f : p->getFaces()) {
       a = TriangleArea(RK_without_Ubuff(f));
-      normal += a * RK_without_Ubuff_Normal(f);
+      FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
       total += a;
    }
    return Normalize(normal / total);
@@ -47,7 +48,8 @@ Tddd getNextNormalDirichlet_BEM(const networkPoint *p) {
    double a = 0, total = 0;
    for (const auto &f : p->getFacesDirichlet()) {
       a = TriangleArea(RK_without_Ubuff(f));
-      normal += a * RK_without_Ubuff_Normal(f);
+      // normal += a * RK_without_Ubuff_Normal(f);
+      FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
       total += a;
    }
    return Normalize(normal / total);
@@ -57,7 +59,8 @@ Tddd getNextNormalNeumann_BEM(const networkPoint *p) {
    double a = 0, total = 0;
    for (const auto &f : p->getFacesNeumann()) {
       a = TriangleArea(RK_without_Ubuff(f));
-      normal += a * RK_without_Ubuff_Normal(f);
+      // normal += a * RK_without_Ubuff_Normal(f);
+      FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
       total += a;
    }
    return Normalize(normal / total);
@@ -73,8 +76,9 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
    //    return Chop(VECTOR, RK_without_Ubuff_Normal(p));
    // } else {
    if (p->CORNER) {
+      auto next_normal = getNextNormalDirichlet_BEM(p);
       for (const auto &f : p->getFacesNeumann())
-         VECTOR = Projection(VECTOR, Cross(getNextNormalDirichlet_BEM(p), RK_without_Ubuff_Normal(f)));
+         VECTOR = Projection(VECTOR, Cross(next_normal, RK_without_Ubuff_Normal(f)));
    }
    // for (const auto &f : p->getFacesNeumann()) {
    //    VECTOR = Chop(VECTOR, RK_without_Ubuff_Normal(f));
@@ -157,6 +161,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       return ret;
    } else if (p->Neumann || p->CORNER) {
       Tddd to_corner = {0., 0., 0.};
+      to_corner.fill(1E+20);
       Tddd to_structure_face = {0., 0., 0.};
       Tddd p_X_on_CORNER = pX;  //! 角にある場合は，正しく修正されるという意味．
 
@@ -253,10 +258,11 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.05, a;
+      double aIN = 0.1, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
-      if (scale < 0.0001) scale = 0.0001;
+      // if (scale < 0.0001)
+      //    scale = 0.0001;
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
@@ -281,7 +287,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
             // auto V = (1. - a) * V0 + a * V1;
             /* ----------------------------------- NEW ---------------------------------- */
             auto X = RK_with_Ubuff(p);
-            auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
+            // auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
+            auto V = (0.5 * NeighborAverageSmoothingVector(p, X) + 0.5 * DistorsionMeasureWeightedSmoothingVector(p, X));
             V = scale * V;
             /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);

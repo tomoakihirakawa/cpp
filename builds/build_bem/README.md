@@ -46,6 +46,7 @@
         - [🪼 フラップ型造波装置](#🪼-フラップ型造波装置)
         - [🪼 ピストン型造波装置](#🪼-ピストン型造波装置)
         - [🪼 正弦・余弦（`sin` もしくは `cos`）の運動](#🪼-正弦・余弦（`sin`-もしくは-`cos`）の運動)
+        - [🪼 係留索の出力](#🪼-係留索の出力)
     - [⛵ その他](#⛵-その他)
         - [🪼 境界値問題の未知変数](#🪼-境界値問題の未知変数)
         - [🪼 エネルギー保存則（計算精度のチェックに利用できる）](#🪼-エネルギー保存則（計算精度のチェックに利用できる）)
@@ -598,12 +599,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L245)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L250)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L134)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L143)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L138)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L147)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-[./BEM_calculateVelocities.hpp#L224](./BEM_calculateVelocities.hpp#L224)
+[./BEM_calculateVelocities.hpp#L229](./BEM_calculateVelocities.hpp#L229)
 
 ---
 ## ⛵ 浮体動揺解析 
@@ -927,6 +928,11 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 [./BEM_utilities.hpp#L246](./BEM_utilities.hpp#L246)
 
 ---
+### 🪼 係留索の出力
+
+[./main.cpp#L793](./main.cpp#L793)
+
+---
 ## ⛵ その他 
 
 ### 🪼 境界値問題の未知変数 
@@ -988,7 +994,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L358](./BEM_calculateVelocities.hpp#L358)
+[./BEM_calculateVelocities.hpp#L365](./BEM_calculateVelocities.hpp#L365)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1003,7 +1009,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L445](./BEM_calculateVelocities.hpp#L445)
+[./BEM_calculateVelocities.hpp#L452](./BEM_calculateVelocities.hpp#L452)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -1080,7 +1086,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L819](./main.cpp#L819)
+[./main.cpp#L825](./main.cpp#L825)
 
 ---
 # 🐋 Input Generator 
@@ -1137,6 +1143,6 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L859](./main.cpp#L859)
+[./main.cpp#L865](./main.cpp#L865)
 
 ---

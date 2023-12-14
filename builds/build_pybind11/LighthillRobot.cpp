@@ -9,17 +9,17 @@
 Macだと`LighthillRobot_pybind.cpython-311-darwin.so`が作られる.
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
+make
 ```
 
-具体的には，次のようになる．
+具体的には，以下のようにコンパイルする．
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=LighthillRobot -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-13
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=LighthillRobot -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-13
+make
 ```
 
 */

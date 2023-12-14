@@ -1325,7 +1325,7 @@ struct Quaternion {
    double a, b, c, d;
    T4d q;
 
-   // cos(q/2) + (ux*i + uy*j+ uz*k) * sin(q/2)
+   // std::cos(q/2) + (ux*i + uy*j+ uz*k) * std::sin(q/2)
    Quaternion() : a(1), b(0), c(0), d(0), v({0, 0, 0}), q({1, 0, 0, 0}){};
    Quaternion(const double aIN, const double bIN, const double cIN, const double dIN) : a(aIN),
                                                                                         b(bIN),
@@ -1340,14 +1340,56 @@ struct Quaternion {
                                 v({std::get<1>(qIN), std::get<2>(qIN), std::get<3>(qIN)}),
                                 q(qIN){};
 
-   Quaternion(const Tddd &axis, const double angle) : v(Normalize(axis) * sin(angle / 2.)),
-                                                      a(cos(angle / 2.)),
+   Quaternion(const Tddd &axis, const double angle) : v(Normalize(axis) * std::sin(angle / 2.)),
+                                                      a(std::cos(angle / 2.)),
                                                       b(std::get<0>(v)),
                                                       c(std::get<1>(v)),
                                                       d(std::get<2>(v)),
                                                       q({a, b, c, d}){
-                                                          // 空間回転　q = cos(theta/2) + n*sin(theta/2)
+                                                          // 空間回転　q = std::cos(theta/2) + n*sin(theta/2)
+                                                          // std::cout << "construct from axis and angle" << std::endl;
+                                                          // std::cout << "Normalize(axis) " << Normalize(axis) << std::endl;
+                                                          // std::cout << "Normalize(axis) * std::sin(angle / 2.) " << Normalize(axis) * std::sin(angle / 2.) << std::endl;
+                                                          // std::cout << "std::cos(angle / 2.) " << std::cos(angle / 2.) << std::endl;
+                                                          // std::cout << "std::sin(angle / 2.) " << std::sin(angle / 2.) << std::endl;
+                                                          // std::cout << q << std::endl;
                                                       };
+
+   Quaternion(const Tddd &initial_vector, const Tddd &next_vector) {
+      Tddd u = Normalize(initial_vector);
+      Tddd v = Normalize(next_vector);
+      double nunv = Dot(u, v);
+      a = std::sqrt(std::abs((nunv + 1.) / 2.));
+      if (a == 1.) {
+         // Normalize(Cross(u, v)) is singular
+         b = 0.;
+         c = 0.;
+         d = 0.;
+      } else if (a == 0.) {
+         // Normalize(Cross(u, v)) is singular
+         b = 1.;
+         c = 0.;
+         d = 0.;
+      } else {
+         v = Normalize(Cross(u, v)) * std::sqrt(std::abs((1. - nunv) / 2.));
+         b = std::get<0>(v);
+         c = std::get<1>(v);
+         d = std::get<2>(v);
+      }
+      q = {a, b, c, d};
+      this->normalize();
+      // std::cout << Red << "construct from initial_vector and next_vector" << colorReset << std::endl;
+      // std::cout << "initial_vector " << initial_vector << ", next_vector " << next_vector << std::endl;
+      // std::cout << "Cross(u, v) " << Cross(u, v) << std::endl;
+      // std::cout << "std::abs((nunv + 1.) / 2.) " << std::abs((nunv + 1.) / 2.) << std::endl;
+      // std::cout << q << std::endl;
+   }
+
+   // Normalize(axis) * std::sin(angle / 2.)とcos(angle / 2.)をinitial_vectorとnext_vectorから計算せよ
+   // Normalize(axis) * std::sin(angle / 2.)は
+   // Normalize[Cross[u, v]]* Sqrt[Abs[(1 - Dot[Normalize[u], Normalize[v]])/2]]
+   //
+   // Normalize(axis) * std::sin(angle / 2.)は
 
    /* -------------------------------------------------------------------------- */
    void normalize() {
@@ -1361,7 +1403,7 @@ struct Quaternion {
    };
    /* ------------------------------------------------------ */
    T3Tddd Rv() const {
-      //%固定した座標系(global座標)における．位置ベクトルの回転をするために使う．
+      //%固定した座標系(global座標)に対してベクトルを回転をするために使う．
       // ノーマライズされていなくていい
       double norm = std::sqrt(this->a * this->a + this->b * this->b + this->c * this->c + this->d * this->d);
       double a = this->a / norm;
@@ -1387,12 +1429,20 @@ struct Quaternion {
                {2. * a * c + 2. * b * d, -2. * a * b + 2. * c * d, a2 - b2 - c2 + d2}}};
       // OK
    }
-   Tddd Rv(const Tddd &uIN) const { return Dot(this->Rv(), uIN); }
-   Tddd Rs(const Tddd &uIN) const { return Dot(this->Rs(), uIN); }
+   Tddd Rv(const Tddd &uIN) const {
+      return Dot(this->Rv(), uIN);
+   }
+   Tddd Rs(const Tddd &uIN) const {
+      return Dot(this->Rs(), uIN);
+   }
 
    // ノーマライズされていなくていい
-   T3Tddd R() const { return this->Rv(); }
-   Tddd R(const Tddd &uIN) const { return Dot(this->Rv(), uIN); }
+   T3Tddd R() const {
+      return this->Rv();
+   }
+   Tddd R(const Tddd &uIN) const {
+      return Dot(this->Rv(), uIN);
+   }
    /* ------------------------------------------------------ */
    // ドローン工学入門(1.74) or https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
    //  double yaw() const { return std::atan2(2. * (a * d + b * c), 1. - 2. * (c * c + d * d)); }
@@ -1403,34 +1453,50 @@ struct Quaternion {
    // double pitch() const { return std::asin(-2.0 * (b * d - a * c)); };
    // double roll() const { return std::atan2(2.0 * (b * c + a * d), a * a + b * b - c * c - d * d); };
 
-   double roll() const { return std::atan2(2.0 * (d * c + a * b), 1.0 - 2.0 * (b * b + c * c)); }
-   double pitch() const { return std::asin(2.0 * (c * a - d * b)); }
-   double yaw() const { return std::atan2(2.0 * (d * a + b * c), -1.0 + 2.0 * (a * a + b * b)); }
+   double roll() const {
+      return std::atan2(2.0 * (d * c + a * b), 1.0 - 2.0 * (b * b + c * c));
+   }
+   double pitch() const {
+      return std::asin(2.0 * (c * a - d * b));
+   }
+   double yaw() const {
+      return std::atan2(2.0 * (d * a + b * c), -1.0 + 2.0 * (a * a + b * b));
+   }
 
    // yaw，pitch，rollは，回転の順序でもある
-   Tddd YPR() const { return {this->yaw(), this->pitch(), this->roll()}; }
+   Tddd YPR() const {
+      return {this->yaw(), this->pitch(), this->roll()};
+   }
 
    T3Tddd Ryaw() const {
       double t = this->yaw();
-      return {{{cos(t), sin(t), 0.}, {-sin(t), cos(t), 0.}, {0., 0., 1.}}};
+      return {{{std::cos(t), std::sin(t), 0.}, {-sin(t), std::cos(t), 0.}, {0., 0., 1.}}};
    }
 
    T3Tddd Rpitch() const {
       double t = this->pitch();
-      return {{{cos(t), 0., -sin(t)}, {0., 1., 0.}, {sin(t), 0., cos(t)}}};
+      return {{{std::cos(t), 0., -sin(t)}, {0., 1., 0.}, {std::sin(t), 0., std::cos(t)}}};
    }
 
    T3Tddd Rroll() const {
       double t = this->roll();
-      return {{{1., 0., 0.}, {0., cos(t), sin(t)}, {0., -sin(t), cos(t)}}};
+      return {{{1., 0., 0.}, {0., std::cos(t), std::sin(t)}, {0., -std::sin(t), std::cos(t)}}};
    }
 
-   Tddd Ryaw(const Tddd &uIN) const { return Dot(this->Ryaw(), uIN); }
-   Tddd Rpitch(const Tddd &uIN) const { return Dot(this->Rpitch(), uIN); }
-   Tddd Rroll(const Tddd &uIN) const { return Dot(this->Rroll(), uIN); }
+   Tddd Ryaw(const Tddd &uIN) const {
+      return Dot(this->Ryaw(), uIN);
+   }
+   Tddd Rpitch(const Tddd &uIN) const {
+      return Dot(this->Rpitch(), uIN);
+   }
+   Tddd Rroll(const Tddd &uIN) const {
+      return Dot(this->Rroll(), uIN);
+   }
    /* ------------------------------------------------------ */
 
-   const T4d &operator()() const { return q; }
+   const T4d &operator()() const {
+      return q;
+   }
 
    Quaternion conjugate() const {
       return Quaternion(T4d{a, -b, -c, -d});
@@ -1653,7 +1719,7 @@ std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_old,
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
 double VectorAngle(const Tddd &a, const Tddd &b) {
    // return std::acos(Dot(a, b) / (Norm(a) * Norm(b)));
-   // return std::atan2(Norm(Cross(a, b)), Dot(a, b));
+   // return std::(Norm(Cross(a, b)), Dot(a, b));
 
    double na = Norm(a);
    double nb = Norm(b);
@@ -1887,14 +1953,14 @@ bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, co
    auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
    auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
    auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
-   return dotProduct >= cos(lim_rad) * sqrt(normA2 * normB2);
+   return dotProduct >= std::cos(lim_rad) * std::sqrt(normA2 * normB2);
 }
 
 bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
    auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
    auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
    auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
-   return dotProduct >= cos(lim_rad) * sqrt(normA2 * normB2);
+   return dotProduct >= std::cos(lim_rad) * std::sqrt(normA2 * normB2);
 };
 
 bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
@@ -1935,7 +2001,7 @@ bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI
 /* -------------------------------------------------------------------------- */
 
 bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
-   // return Dot(a, -b) > cos(lim_rad) * Norm(a) * Norm(b);
+   // return Dot(a, -b) > std::cos(lim_rad) * Norm(a) * Norm(b);
    return isFlat(a, -b, lim_rad);
 };
 
@@ -1992,7 +2058,7 @@ double InteriorAngle(const V_d &x, const V_d &b, const V_d &z) {
 
 T3Tddd RotationMatrix(const double theta, const Tddd &V) {
    // // Euler Rodrigues
-   // double c = cos(theta), s = sin(theta), e = (1. - c);
+   // double c = std::cos(theta), s = std::sin(theta), e = (1. - c);
    // return {{std::get<0>(V) * std::get<0>(V) * e + c, std::get<0>(V) * std::get<1>(V) * e - std::get<2>(V) * s, std::get<0>(V) * std::get<2>(V) * e + std::get<1>(V) * s},
    // 		{std::get<0>(V) * std::get<1>(V) * e + std::get<2>(V) * s, std::get<1>(V) * std::get<1>(V) * e + c, std::get<1>(V) * std::get<2>(V) * e - std::get<0>(V) * s},
    // 		{std::get<0>(V) * std::get<2>(V) * e - std::get<1>(V) * s, std::get<2>(V) * std::get<1>(V) * e + std::get<0>(V) * s, std::get<2>(V) * std::get<2>(V) * e + c}};
@@ -2092,7 +2158,19 @@ std::vector<double> Subdivide(const double xmin, const double xmax, const int n)
       ret[i] = i * dx + xmin;
    return ret;
 };
-std::vector<double> Subdivide(const Tdd &xminxmax, const int n) { return Subdivide(std::get<0>(xminxmax), std::get<1>(xminxmax), n); };
+
+template <typename T, size_t N>
+std::vector<std::array<T, N>> Subdivide(const std::array<T, N> &xmin, const std::array<T, N> &xmax, const int n) {
+   std::vector<std::array<T, N>> ret(n + 1);
+   int j = 0;
+   for (auto i = 0; i < N; i++) {
+      j = 0;
+      for (const auto &x : Subdivide(xmin[i], xmax[i], n))
+         ret[j++][i] = x;
+   }
+   return ret;
+};
+
 template <class T>
 std::vector<std::vector<T>> Subdivide(const std::vector<T> &xmin, const std::vector<T> &xmax, const int n) {
    std::vector<T> dx = (xmax - xmin) / n;

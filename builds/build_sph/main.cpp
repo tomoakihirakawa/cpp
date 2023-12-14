@@ -218,9 +218,9 @@ int main(int argc, char **argv) {
    auto [rX0, rX1] = rangeX;
    auto [rY0, rY1] = rangeY;
    auto [rZ0, rZ1] = rangeZ;
-   auto vecX = Subdivide({ps * (int)(rX0 / ps), ps * (int)(rX1 / ps)}, (int)(rX1 / ps) - (int)(rX0 / ps));
-   auto vecY = Subdivide({ps * (int)(rY0 / ps), ps * (int)(rY1 / ps)}, (int)(rY1 / ps) - (int)(rY0 / ps));
-   auto vecZ = Subdivide({ps * (int)(rZ0 / ps), ps * (int)(rZ1 / ps)}, (int)(rZ1 / ps) - (int)(rZ0 / ps));
+   auto vecX = Subdivide(ps * (int)(rX0 / ps), ps * (int)(rX1 / ps), (int)(rX1 / ps) - (int)(rX0 / ps));
+   auto vecY = Subdivide(ps * (int)(rY0 / ps), ps * (int)(rY1 / ps), (int)(rY1 / ps) - (int)(rY0 / ps));
+   auto vecZ = Subdivide(ps * (int)(rZ0 / ps), ps * (int)(rZ1 / ps), (int)(rZ1 / ps) - (int)(rZ0 / ps));
 
    Tddd closest = {0., 0., 0.};
    double min = 1E+20;
@@ -444,8 +444,8 @@ int main(int argc, char **argv) {
             if (Fluid != nullptr) {
                std::vector<networkPoint *> points;
                for (const auto &p : Fluid->getPoints())
-                  // if (!p->isAuxiliary)
-                  points.emplace_back(p);
+                  if (!p->isAuxiliary && p->isCaptured)
+                     points.emplace_back(p);
 
                vtkPolygonWriter<networkPoint *> vtp;
                vtp.add(points);
@@ -468,51 +468,61 @@ int main(int argc, char **argv) {
             }
          };
 
-         Output(Fluid, "FluidSPH", i);
-         Output(Fluid->surfaceNet, "surfaceNet", i);
+         // pallarelize Output using OpenMP
 
+#pragma omp parallel sections
+         {
+#pragma omp section
+            {
+               Output(Fluid, "FluidSPH", i);
+            }
+#pragma omp section
+            {
+               Output(WaveTank, "WaveTankSPH", i);
+            }
+         }
          i++;
 
-         int count = 0;
-         std::vector<networkPoint *> a_wall_p = {};
-         if (time_step % 5 == 0) {
-            vtkPolygonWriter<networkPoint *> vtp;
-            for (const auto &p : WaveTank->getPoints())
-               if (p->isCaptured)
-               // if (p->isChecked)
-               {
-                  a_wall_p.emplace_back(p);
-                  vtp.add(p);
-               }
-            setDataOmitted(vtp, WaveTank);
-            std::ofstream ofs(output_directory + "WaveTankSPH" + std::to_string(j) + ".vtp");
-            vtp.write(ofs);
-            ofs.close();
-            //
-            net2PVD[WaveTank]->push("./WaveTankSPH" + std::to_string(j) + ".vtp", simulation_time);
-            net2PVD[WaveTank]->output();
-            j++;
-         }
+         // int count = 0;
+         // std::vector<networkPoint *> a_wall_p = {};
+         // if (time_step % 5 == 0) {
+         //    vtkPolygonWriter<networkPoint *> vtp;
+         //    for (const auto &p : WaveTank->getPoints())
+         //       if (p->isCaptured)
+         //       // if (p->isChecked)
+         //       {
+         //          a_wall_p.emplace_back(p);
+         //          vtp.add(p);
+         //       }
+         //    setDataOmitted(vtp, WaveTank);
+         //    std::ofstream ofs(output_directory + "WaveTankSPH" + std::to_string(j) + ".vtp");
+         //    vtp.write(ofs);
+         //    ofs.close();
+         //    //
+         //    net2PVD[WaveTank]->push("./WaveTankSPH" + std::to_string(j) + ".vtp", simulation_time);
+         //    net2PVD[WaveTank]->output();
+         //    j++;
+         // }
 
          /* -------------------------------------------------------------------------- */
 
-         count = 0;
-         for (const auto &p : a_wall_p) {
-            vtkPolygonWriter<networkPoint *> vtp;
-            auto X = p->X + 2 * p->v_to_surface_SPH;
-            for (const auto &[particlesNet, _, __] : all_objects) {
-               particlesNet->BucketPoints.apply(X, p->SML(), [&](const auto &q) {
-                  if (Distance(q, X) < p->SML())
-                     vtp.add(q);
-               });
-            }
-            setDataOmitted(vtp, WaveTank);
-            setDataOmitted(vtp, Fluid);
-            std::ofstream ofs(output_directory + "referenced_points_by_a_wall_p_" + std::to_string(count++) + "_" + std::to_string(i) + ".vtp");
-            vtp.write(ofs);
-            ofs.close();
-            break;
-         }
+         // count = 0;
+         // for (const auto &p : a_wall_p) {
+         //    vtkPolygonWriter<networkPoint *> vtp;
+         //    auto X = p->X + 2 * p->v_to_surface_SPH;
+         //    for (const auto &[particlesNet, _, __] : all_objects) {
+         //       particlesNet->BucketPoints.apply(X, p->SML(), [&](const auto &q) {
+         //          if (Distance(q, X) < p->SML())
+         //             vtp.add(q);
+         //       });
+         //    }
+         //    setDataOmitted(vtp, WaveTank);
+         //    setDataOmitted(vtp, Fluid);
+         //    std::ofstream ofs(output_directory + "referenced_points_by_a_wall_p_" + std::to_string(count++) + "_" + std::to_string(i) + ".vtp");
+         //    vtp.write(ofs);
+         //    ofs.close();
+         //    break;
+         // }
 
          //
          // pvdWaveTankSPH.push("./WaveTankSPH" + std::to_string(i) + ".vtp", simulation_time);

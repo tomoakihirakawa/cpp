@@ -138,7 +138,7 @@ void simulateCableDynamics(double t, double dt) {
          //       //! 最後の節点は，10まで最後の接点をぐるぐる回す
          //       // nodes[i].velocity = Cross(nodes[i].X, {0., 0., 1.});
          //       if (Between(t, {2 * T, 3 * T}) || Between(t, {4 * T, 5 * T}))
-         //          nodes[i].acceleration = {0., 50 * cos(w * t), 50 * cos(w * t)};
+         //          nodes[i].acceleration = {0., 50 * std::cos(w * t), 50 * std::cos(w * t)};
          //       else
          //          nodes[i].acceleration = -nodes[i].velocity / dt;
          //    }

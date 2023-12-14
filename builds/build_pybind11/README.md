@@ -3,8 +3,9 @@
     - [⛵ pybind11の書き方](#⛵-pybind11の書き方)
     - [⛵ pybind11で共有ライブラリを作成](#⛵-pybind11で共有ライブラリを作成)
     - [⛵ python内で共有ライブラリを使う](#⛵-python内で共有ライブラリを使う)
-        - [🪼 datファイルの作成](#🪼-datファイルの作成)
-        - [🪼 datファイルを読み込んでグラフを表示する](#🪼-datファイルを読み込んでグラフを表示する)
+        - [🪼 アニメーションgifファイルを作成しロボットの動きを可視化する](#🪼-アニメーションgifファイルを作成しロボットの動きを可視化する)
+        - [🪼 モーターの節の位置と角度の時間変化をdatファイルに出力する](#🪼-モーターの節の位置と角度の時間変化をdatファイルに出力する)
+        - [🪼 作成したdatファイルを読み込んで確認する](#🪼-作成したdatファイルを読み込んで確認する)
 
 
 ---
@@ -39,24 +40,24 @@ py::class_<LighthillRobot>(m, "LighthillRobot")
 ---
 ## ⛵ pybind11で共有ライブラリを作成 
 
-この例は，c++のNewton法を利用して作った[Lighthill Robot](../../include/rootFinding.hpp#L225)をpythonで使うためのもの.
+この例は，c++のNewton法を利用して作った[Lighthill Robot](../../include/rootFinding.hpp#L231)をpythonで使うためのもの.
 
 このディレクトリにCMakelists.txtを用意しているので，
 それを使って，以下のようにターミナル上で実行・`make`すると，
 Macだと`LighthillRobot_pybind.cpython-311-darwin.so`が作られる.
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=shared_file_name_that_will_be_generated
+make
 ```
 
-具体的には，次のようになる．
+具体的には，以下のようにコンパイルする．
 
 ```sh
-$ sh clean
-$ cmake -DCMAKE _BUILD _TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=LighthillRobot -DCMAKE _CXX _COMPILER=/opt/homebrew/bin/g++-13
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=LighthillRobot -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-13
+make
 ```
 
 [./LighthillRobot.cpp#L1](./LighthillRobot.cpp#L1)
@@ -64,8 +65,10 @@ $ make
 ---
 ## ⛵ python内で共有ライブラリを使う 
 
-[このように](../../builds/build_pybind11/runLightHillRobot.py#L21)`import`して利用できる．
-cppと同じように[`robot`オブジェクトを作成](../../builds/build_pybind11/runLightHillRobot.py#L34)．
+### 🪼 アニメーションgifファイルを作成しロボットの動きを可視化する 
+
+[このように](../../builds/build_pybind11/demo_runLightHillRobot_all.py#L21)`import`して利用できる．
+cppと同じように[`robot`オブジェクトを作成](../../builds/build_pybind11/demo_runLightHillRobot_all.py#L34)．
 
 出力結果
 
@@ -73,9 +76,9 @@ cppと同じように[`robot`オブジェクトを作成](../../builds/build_pyb
 |:---:|:---:|
 | <img src="sample_aquarium.gif"  width="80%" height="80%"> | ![sample.gif](sample.gif) |
 
-[./runLightHillRobot.py#L2](./runLightHillRobot.py#L2)
+[./demo_runLightHillRobot1_animate_robot.py#L2](./demo_runLightHillRobot1_animate_robot.py#L2)
 
-### 🪼 datファイルの作成 
+### 🪼 モーターの節の位置と角度の時間変化をdatファイルに出力する 
 
 数値解析で剛体の運動表現したいことがよくある．
 ３次元で剛体の運動は，６自由度の運動で表現される．
@@ -91,14 +94,13 @@ $`t, x, y, z, \theta _x, \theta _y, \theta _z`$の順に並んでいる．
 0.05, 0.6666665982273601, -0.0001239762852648563, 0., 0., 0., 1.3879082155409919e-05
 ```
 
-[./runLightHillRobot.py#L89](./runLightHillRobot.py#L89)
+[./demo_runLightHillRobot2_output_datfile.py#L1](./demo_runLightHillRobot2_output_datfile.py#L1)
 
-### 🪼 datファイルを読み込んでグラフを表示する 
+---
+### 🪼 作成したdatファイルを読み込んで確認する 
 
-正しくdatファイルが作成できているか確認するために，datファイルを読み込んでグラフを表示する．
+![sample.png](sample.png)
 
-<img src="sample.png"  width="50%" height="50%">
-
-[./runLightHillRobot.py#L146](./runLightHillRobot.py#L146)
+[./demo_runLightHillRobot3_load_and_plot.py#L1](./demo_runLightHillRobot3_load_and_plot.py#L1)
 
 ---

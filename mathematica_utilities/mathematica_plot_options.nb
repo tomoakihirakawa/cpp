@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      1658,         54]
-NotebookOptionsPosition[      1358,         41]
-NotebookOutlinePosition[      1706,         56]
-CellTagsIndexPosition[      1663,         53]
+NotebookDataLength[      2043,         60]
+NotebookOptionsPosition[      1651,         46]
+NotebookOutlinePosition[      1999,         61]
+CellTagsIndexPosition[      1956,         58]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -31,13 +31,18 @@ Cell[BoxData[
         RowBox[{"FontSize", "->", "18"}]}], "]"}]}], ",", "\n", 
      RowBox[{"PlotTheme", "->", "\"\<Scientific\>\""}], ",", "\n", 
      RowBox[{"Joined", "->", "True"}], ",", "\n", 
-     RowBox[{"ImageSize", "->", "Medium"}], ",", "\n", 
+     RowBox[{"ImageSize", "\[Rule]", "500"}], ",", "\n", 
      RowBox[{"FrameStyle", "->", 
       RowBox[{"Directive", "[", "Black", "]"}]}]}], "\n", "}"}]}], 
   ";"}]], "Input",
  CellChangeTimes->{{3.910388319292019*^9, 3.910388326178214*^9}, 
-   3.91038855664116*^9},ExpressionUUID->"a6b72dbb-540b-4b84-9132-\
-88302b10c11d"]
+   3.91038855664116*^9, {3.911328582309894*^9, 3.911328582726478*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"a6b72dbb-540b-4b84-9132-88302b10c11d"],
+
+Cell[BoxData[
+ RowBox[{"Print", "[", "\"\<plot2Doption\>\"", "]"}]], "Input",
+ CellChangeTimes->{{3.911328232423584*^9, 3.911328239411758*^9}},
+ CellLabel->"In[2]:=",ExpressionUUID->"013e2048-d849-47a2-bbb4-eb29b192df3f"]
 },
 WindowSize->{808, 911},
 WindowMargins->{{27, Automatic}, {Automatic, 64}},
@@ -55,7 +60,8 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 796, 19, 157, "Input",ExpressionUUID->"a6b72dbb-540b-4b84-9132-88302b10c11d"]
+Cell[558, 20, 865, 19, 157, "Input",ExpressionUUID->"a6b72dbb-540b-4b84-9132-88302b10c11d"],
+Cell[1426, 41, 221, 3, 30, "Input",ExpressionUUID->"013e2048-d849-47a2-bbb4-eb29b192df3f"]
 }
 ]
 *)

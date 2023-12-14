@@ -140,8 +140,8 @@ int main(int arg, char **argv) {
 
       auto ps = net.getPoints();
 #define remesh_type 4
-      for (auto i = 0; i < 5; ++i) {
-         for (auto j = 0; j < 50 /*more than about 10*/; ++j) {
+      for (auto i = 0; i < 2; ++i) {
+         for (auto j = 0; j < 10 /*more than about 10*/; ++j) {
             for (const auto &p : ps) {
                SmoothingPreserveShape(p, [&](auto p, auto X) {
 #if remesh_type == 1
@@ -155,14 +155,13 @@ int main(int arg, char **argv) {
                       return EquilateralVertexAveragingVector(p, X);
 #elif remesh_type == 4
                       //! cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp -DOUTPUT_NAME=remeshD; make;./remeshD ./remesh_test_cases/random.obj ./remesh_test_cases randomD 10
-                      return (0.8 * NeighborAverageSmoothingVector(p, X) + 0.1 * EquilateralVertexAveragingVector2(p, X));
-
+                      return (0.8 * NeighborAverageSmoothingVector(p, X) + 0.1 * EquilateralVertexAveragingVector2(p, X));  d xc
 #endif
                });
             }
             for (const auto &l : net.Lines) l->flipIfBetter(M_PI / 180.);
-            if (i % 2 == 0 && j % 5 == 0)
-               for (const auto &l : net.Lines) l->flipIfTopologicallyBetter(M_PI / 180., M_PI / 180.);
+            // if (i % 2 == 0 && j % 5 == 0)
+            //    for (const auto &l : net.Lines) l->flipIfTopologicallyBetter(M_PI / 180., M_PI / 180.);
          }
       }
       if (count % 1 == 0) {

@@ -531,11 +531,11 @@ double sgn(const double x) { return (x > 0.) ? 1. : (x < 0. ? -1. : 0.); };
 //   double ret(0);
 //   for (const auto &w : v)
 //     ret = ret + w * w;
-//   return ret / N - pow(Mean(v), 2.);
+//   return ret / N - std::pow(Mean(v), 2.);
 // };
 //==========================================================
 double SgLog(const double u, const double hsig, const double maxmin) {
-   return hsig + sgn(u) * exp(maxmin * (std::abs(u) - 1.));
+   return hsig + sgn(u) * std::exp(maxmin * (std::abs(u) - 1.));
 };
 double InvSgLog(const double h, const double hsig, const double maxmin) {
    return sgn(h - hsig) * std::log(std::abs(h - hsig)) / maxmin + 1.;
@@ -546,7 +546,7 @@ V_d SgLog(const V_d &h, const double hsig, const double maxmin) {
    return ret;
 };
 double DSgLog(const double u, const double hsig, const double maxmin) {
-   return maxmin * sgn(u) * exp(maxmin * (std::abs(u) - 1.));
+   return maxmin * sgn(u) * std::exp(maxmin * (std::abs(u) - 1.));
 };  // 単調増加
 V_d DSgLog(const V_d &h, const double hsig, const double maxmin) {
    V_d ret;
@@ -555,10 +555,10 @@ V_d DSgLog(const V_d &h, const double hsig, const double maxmin) {
 };
 //============================================================
 double Sg(const double h, const double h_sig, const double beta) {
-   return sgn(h) * pow(std::abs(h), beta) + h_sig;
+   return sgn(h) * std::pow(std::abs(h), beta) + h_sig;
 };
 double InvSg(const double h, const double h_sig, const double beta) {
-   return sgn(h - h_sig) * pow(std::abs(h - h_sig), 1. / beta);
+   return sgn(h - h_sig) * std::pow(std::abs(h - h_sig), 1. / beta);
 };
 V_d Sg(const V_d &h, const double h_sig, const double beta) {
    V_d ret;
@@ -566,7 +566,7 @@ V_d Sg(const V_d &h, const double h_sig, const double beta) {
    return ret;
 };
 double DSg(const double h, const double h_sig, const double beta) {
-   return beta * pow(std::abs(h), beta - 1.);
+   return beta * std::pow(std::abs(h), beta - 1.);
 };  // 単調増加
 V_d DSg(const V_d &h, const double h_sig, const double beta) {
    V_d ret;
@@ -703,7 +703,7 @@ std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = std::cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -734,7 +734,7 @@ VV_d GaussianQuadratureWeights(const int n,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (auto i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = std::cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -781,7 +781,7 @@ void gauleg(const double x1, const double x2,
    xm = 0.5 * (x2 + x1);
    xl = 0.5 * (x2 - x1);
    for (int i = 0; i < m; i++) {
-      z = cos(M_PI * (i + 0.75) / (n + 0.5));
+      z = std::cos(M_PI * (i + 0.75) / (n + 0.5));
       do {
          p1 = 1.0;
          p2 = 0.0;
@@ -1219,7 +1219,7 @@ class glLINES {
             double y = (-1. + 2. / (row - 1) * i);
             samp3X[i][j] = x * scale;
             samp3Y[i][j] = y * scale;
-            samp3Z[i][j] = sin(2. * M_PI * x) * sin(2. * M_PI * y);
+            samp3Z[i][j] = std::sin(2. * M_PI * x) * std::sin(2. * M_PI * y);
          }
       }
       /* gl.LINESでメッシュがかけるような形式で格納 */
@@ -1489,14 +1489,14 @@ struct RBF_interp {
       double sum = 0.;
       for (int i = 0; i < dim; i++)
          sum += (p1[i] - p2[i]) * (p1[i] - p2[i]);
-      return sqrt(sum);
+      return std::sqrt(sum);
    }
 };
 
 struct RBF_multiquadric : RBF_fn {
    double r02;
    RBF_multiquadric(double scale = 1.) : r02(scale * scale) {}
-   double rbf(double r) { return sqrt(r * r + r02); }
+   double rbf(double r) { return std::sqrt(r * r + r02); }
 };
 struct RBF_thinplate : RBF_fn {
    double r0;
@@ -1511,7 +1511,7 @@ struct RBF_gauss : RBF_fn {
 struct RBF_inversemultiquadric : RBF_fn {
    double r02;
    RBF_inversemultiquadric(double scale = 1.) : r02(scale * scale) {}
-   double rbf(double r) { return 1. / sqrt(r * r + r02); }
+   double rbf(double r) { return 1. / std::sqrt(r * r + r02); }
 };
 struct Shep_interp {
    int dim, n;
@@ -1529,7 +1529,7 @@ struct Shep_interp {
       for (auto i = 0; i < n; i++) {
          if ((r = rad(&pt[0], &pts[i][0])) == 0.)
             return vals[i];
-         sum += (w = pow(r, pneg));
+         sum += (w = std::pow(r, pneg));
          sumw += w * vals[i];
       }
       return sumw / sum;
@@ -1539,7 +1539,7 @@ struct Shep_interp {
       double sum = 0.;
       for (auto i = 0; i < dim; i++)
          sum += (p1[i] - p2[i]) * (p1[i] - p2[i]);
-      return sqrt(sum);
+      return std::sqrt(sum);
    }
 };
 

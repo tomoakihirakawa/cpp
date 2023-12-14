@@ -95,8 +95,8 @@ double P(const double k, const double m, const double x) { return std::pow(-1., 
 
 // Compute the spherical harmonic function sph(k, m, a_far, b_far)
 constexpr std::complex<double> Y(const int k, const int m, const double a_far, const double b_far) {
-   if (k < 0 || abs(m) > k) return std::complex<double>(0.0, 0.0);
-   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - abs(m))) / static_cast<double>(factorial(k + abs(m)))) * P(k, abs(m), std::cos(a_far));
+   if (k < 0 || std::abs(m) > k) return std::complex<double>(0.0, 0.0);
+   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - std::abs(m))) / static_cast<double>(factorial(k + std::abs(m)))) * P(k, std::abs(m), std::cos(a_far));
    return std::polar(assocLegendre, m * b_far);
 }
 
@@ -123,18 +123,18 @@ double dPdx(const double k, const double m, const double x) {
 }
 
 constexpr std::complex<double> dYda(const int k, const int m, const double a_far, const double b_far) {
-   if (k < 0 || abs(m) > k) {
+   if (k < 0 || std::abs(m) > k) {
       return std::complex<double>(0.0, 0.0);
    }
-   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - abs(m))) / static_cast<double>(factorial(k + abs(m)))) * dPdx(k, abs(m), std::cos(a_far)) * (-std::sin(a_far));
+   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - std::abs(m))) / static_cast<double>(factorial(k + std::abs(m)))) * dPdx(k, std::abs(m), std::cos(a_far)) * (-std::sin(a_far));
    return std::polar(assocLegendre, m * b_far);
 }
 
 constexpr std::complex<double> dYdb(const int k, const int m, const double a_far, const double b_far) {
-   if (k < 0 || abs(m) > k) {
+   if (k < 0 || std::abs(m) > k) {
       return std::complex<double>(0.0, 0.0);
    }
-   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - abs(m))) / static_cast<double>(factorial(k + abs(m)))) * P(k, abs(m), std::cos(a_far));
+   const double assocLegendre = std::sqrt(static_cast<double>(factorial(k - std::abs(m))) / static_cast<double>(factorial(k + std::abs(m)))) * P(k, std::abs(m), std::cos(a_far));
    return std::polar(assocLegendre * m, m * b_far) * std::complex<double>(0.0, 1.0);
 }
 

@@ -64,7 +64,7 @@ F _1^{-1} &= F _1^{T}\\
 というふうに繰り返す．
 
 後で具体的にどのような値をかけているかここに示しておく．
-[../../include/basic_linear_systems.hpp#L721](../../include/basic_linear_systems.hpp#L721)
+[../../include/basic_linear_systems.hpp#L722](../../include/basic_linear_systems.hpp#L722)
 
 [./testQR.cpp#L11](./testQR.cpp#L11)
 
