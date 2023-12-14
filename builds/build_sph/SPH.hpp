@@ -145,8 +145,9 @@ void test_Bucket(const auto &water, const auto &nets, const std::string &output_
 
 # Smoothed Particle Hydrodynamics (SPH) ISPH EISPH
 
-[README_ABSTRACT.md](README_ABSTRACT.md)
-[README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
+[README_ABSTRACT.md](./README_ABSTRACT.md)
+
+[README_FOR_STUDENTS.md](./README_FOR_STUDENTS.md)
 
 */
 
