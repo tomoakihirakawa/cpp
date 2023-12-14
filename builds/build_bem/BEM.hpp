@@ -371,8 +371,11 @@ double dt_CFL(const Network &water, double min_dt, const double c) {
       for (const auto &P : p->getNeighbors())
          for (const auto &q : P->getNeighbors())
             if (p != q) {
-               auto dt = c * Distance(p, q) / Norm(p->U_BEM);  // Norm(p->U_BEM - q->U_BEM);
+               // auto dt = c * Distance(p, q) / Norm(p->U_BEM);         // Norm(p->U_BEM - q->U_BEM);
                // auto dt = c * Distance(p, q) / Norm(p->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+
+               auto dt = c * Distance(p, q) / Norm(p->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+
                if (isFinite(dt) && min_dt > dt)
                   min_dt = dt;
             }

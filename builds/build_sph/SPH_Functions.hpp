@@ -287,8 +287,11 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    double dt = dt_IN;
-   const auto C_CFL_velocity = 0.01;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.01;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.2;            // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.2;               // dt = C_CFL_accel*sqrt(h/Max(A))
+                                               //
+   const auto C_CFL_velocity_relative = 0.02;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel_relative = 0.02;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -298,17 +301,17 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
             /* ------------------------------------------------ */
             // 相対速度
             // double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
-            double max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH - q->U_SPH);
+            double max_dt_vel = C_CFL_velocity_relative * distance / Norm(p->U_SPH - q->U_SPH);
             if (dt > max_dt_vel && isFinite(max_dt_vel))
                dt = max_dt_vel;
             // 絶対速度
-            // max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
-            // if (dt > max_dt_vel && isFinite(max_dt_vel))
-            //    dt = max_dt_vel;
+            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+            if (dt > max_dt_vel && isFinite(max_dt_vel))
+               dt = max_dt_vel;
             /* ------------------------------------------------ */
             // 相対速度
             // double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
-            double max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
+            double max_dt_acc = C_CFL_accel_relative * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
             if (dt > max_dt_acc && isFinite(max_dt_acc))
                dt = max_dt_acc;
             // 絶対速度
