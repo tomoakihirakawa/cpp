@@ -378,7 +378,7 @@ match SimulationCase:
         # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
         # float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
-        float["MOI"] = [Ixx*10**10,0.01*0.01*14,Izz*10**10]
+        float["MOI"] = [Ixx*10**10,0.01*0.01*20,Izz*10**10]
         inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.05,

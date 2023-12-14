@@ -70,7 +70,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.01;  // 少しは必要のようだ
+            const double c_xsph = 0.005;  // 少しは必要のようだ
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -96,14 +96,16 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   total_w += vol_w;
                }
 
-               A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));       //\label{SPH:divU}
+               // A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));       //\label{SPH:divU}
+               FusedMultiplyIncrement(B->volume, -Dot(Uij, grad_w_Bspline(A, B)), A->div_U);
                const double Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);  //\label{SPH:lapP1}
                // const double Aij = 2. * B->volume * Dot_grad_w_Bspline(A->X, B->X, A->SML());
 
                //! 修正
                const auto DelX = (A->X - B->X);
 #ifdef USE_PRE_CALC_tensorproduct_grad_Uij
-               A->lap_U -= Dot(Aij * DelX, A->tensorproduct_grad_Uij);
+               // A->lap_U -= Aij * Dot(DelX, A->tensorproduct_grad_Uij);
+               FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
 #else
                applyOverPoints([&](const auto &Q) {
                   if (A != Q)
@@ -111,7 +113,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   // A->lap_U -= Aij * Q->volume * Dot(DelX, grad_w_Bspline(A->X, Q->X, A->SML())) * (Q->U_SPH - A->U_SPH);
                });
 #endif
-               A->lap_U += Aij * Uij;  //\label{SPH:lapU}
+               // A->lap_U += Aij * Uij;  //\label{SPH:lapU}
+               FusedMultiplyIncrement(Aij, Uij, A->lap_U);
 
                if (Between(Distance(A, B), {1E-13, A->SML()})) {
                   A->checked_points_in_radius_SPH++;
