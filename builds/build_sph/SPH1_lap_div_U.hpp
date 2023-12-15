@@ -184,7 +184,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             // 修正１
             auto V = Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original));
             auto [Vn, Vs] = DecomposeVector(V, V);
-            const double c = 0.0001;  // 効果的
+            const double c = 0.00001;  // 効果的
             if (A->isNearSurface) {
                A->DUDt_modify_SPH = c * Vs * std::pow(A->particle_spacing / dt, 2) / 1000.;
             } else {
@@ -224,14 +224,14 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          const double dt = A->LPFG_X.get_dt();
 #endif
          if (A->getNetwork()->isRigidBody) {
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
             A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
-            A->DUDt_SPH += _GRAVITY3_ + A->DUDt_modify_SPH;
+            A->DUDt_SPH += _GRAVITY3_;
             A->DrhoDt_SPH = -A->rho * A->div_U;
          } else {
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
             A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
-            A->DUDt_SPH += _GRAVITY3_ + A->DUDt_modify_SPH;
+            A->DUDt_SPH += _GRAVITY3_;
             A->DrhoDt_SPH = -A->rho * A->div_U;
          }
       }
