@@ -30,9 +30,70 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "WaveGeneration"
 
 match SimulationCase:
+
+    case "WaveGeneration":
+
+        objfolder = code_home_dir + "/cpp/obj/WaveGeneration"
+
+        water = {"name": "water", 
+                 "type": "Fluid",
+                 "objfile": objfolder + "/water10.obj"}
+
+        tank = {"name": "tank", "type": 
+                "RigidBody", "isFixed": True,
+                "objfile": objfolder + "/tank10.obj"}
+
+        start = 0.
+
+        T = 1.2
+        H = 0.06
+        a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
+        h = 0.4
+
+        id0 = ""
+        # id0 = "_no"
+        # id0 = "_multiple"
+
+        wavemaker_type = "piston"
+        wavemaker_type = "flap"
+        # wavemaker_type = "potential"
+
+        id = SimulationCase
+        id += "_" + wavemaker_type
+        id += "_H" + str(H).replace(".", "d")
+        id += "_T"+str(T).replace(".", "d")
+        id += "_h"+str(h).replace(".", "d")
+
+        z_surface = 0.4
+
+        if wavemaker_type == "piston":
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "velocity": ["piston", start, a, T, h, 1, 0, 0],
+                         "objfile": f"{objfolder}/wavemaker10.obj"}
+
+        elif wavemaker_type == "piston":
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "velocity": ["flap", start, a, T, h, h, 1, 0, 0],
+                         "objfile": f"{objfolder}/wavemaker10.obj"}
+        else:
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["linear_traveling_wave", start, a, T, h, z_surface],
+                         "objfile": f"{objfolder}/wavemaker10.obj"}
+
+        inputfiles = [tank, wavemaker, water]
+
+        setting = {"max_dt": 0.01,
+                   "end_time_step": 10000,
+                   "end_time": 9}
+
+        generate_input_files(inputfiles, setting, IO_dir, id)
 
     case "fish_without_free_surface":
 

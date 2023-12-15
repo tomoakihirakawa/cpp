@@ -172,6 +172,12 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       | 7 | `axis`  | y       |
       | 8 | `axis`  | z       |
 
+      フラップ型の造波板の角速度は以下で与えられる．
+
+      ```math
+      \omega_x = \frac{A g k (1 + 2 h k \text{csch}(2 h k)) \sin(t w)}{2 \left(-g+(h+l) w^2+g \text{sech}(h k) \cosh(d k)\right)}
+      ```
+
       */
       // start,A, T, h, l
       // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
