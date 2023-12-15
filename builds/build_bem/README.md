@@ -63,6 +63,11 @@
 ---
 # 🐋 BEM-MEL 
 
+[README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
+
+<details>
+<summary>REVIEW.md</summary>
+
 ## ⛵ BEM-MEL について 
 
 ### 🪼 三角関数を使った古典的な解析手法 
@@ -224,6 +229,8 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 そのため，逆行列に依存しない高速化手法が必要である．
 その方法の指針として，境界値問題を一つにまとめることが考えられる．
 
+</details>
+
 [./main.cpp#L1](./main.cpp#L1)
 
 ---
@@ -233,7 +240,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
 3. 三角形の線形補間を使って節点の流速を計算する
 
-[./main.cpp#L196](./main.cpp#L196)
+[./main.cpp#L205](./main.cpp#L205)
 
 ## ⛵ 計算プログラムの概要 
 
@@ -253,7 +260,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L404](./main.cpp#L404)
+[./main.cpp#L413](./main.cpp#L413)
 
 ---
 ## ⛵ 境界のタイプを決定する 
@@ -778,7 +785,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L522](./main.cpp#L522)
+[./main.cpp#L533](./main.cpp#L533)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -857,7 +864,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L372)
+[強制運動を課す](../../builds/build_bem/main.cpp#L385)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L300)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -930,7 +937,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L791](./main.cpp#L791)
+[./main.cpp#L802](./main.cpp#L802)
 
 ---
 ## ⛵ その他 
@@ -994,7 +1001,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L365](./BEM_calculateVelocities.hpp#L365)
+[./BEM_calculateVelocities.hpp#L367](./BEM_calculateVelocities.hpp#L367)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1009,7 +1016,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L452](./BEM_calculateVelocities.hpp#L452)
+[./BEM_calculateVelocities.hpp#L454](./BEM_calculateVelocities.hpp#L454)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -1047,7 +1054,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L655](./main.cpp#L655)
+[./main.cpp#L666](./main.cpp#L666)
 
 ---
 # 🐋 実行方法 
@@ -1086,7 +1093,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L823](./main.cpp#L823)
+[./main.cpp#L834](./main.cpp#L834)
 
 ---
 # 🐋 Input Generator 
@@ -1143,6 +1150,6 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L863](./main.cpp#L863)
+[./main.cpp#L874](./main.cpp#L874)
 
 ---

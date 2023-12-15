@@ -552,7 +552,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 70;
+   int size = 100;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {

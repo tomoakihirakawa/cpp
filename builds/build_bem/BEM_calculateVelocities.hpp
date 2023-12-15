@@ -258,9 +258,10 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.1, a;
+      double aIN = 0.05, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
+      // const double scale = aIN;
       // if (scale < 0.0001)
       //    scale = 0.0001;
 #pragma omp parallel
@@ -288,7 +289,8 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
             /* ----------------------------------- NEW ---------------------------------- */
             auto X = RK_with_Ubuff(p);
             // auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
-            auto V = (0.5 * NeighborAverageSmoothingVector(p, X) + 0.5 * DistorsionMeasureWeightedSmoothingVector(p, X));
+            // auto V = (NeighborAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X, [&](const auto f) { return f->Dirichlet ? 1. : 0.5; })) / 2.;
+            auto V = (0.5 * NeighborAverageSmoothingVector(p, X) + 0.1 * DistorsionMeasureWeightedSmoothingVector(p, X));
             V = scale * V;
             /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);

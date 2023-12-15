@@ -146,7 +146,7 @@ q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 
 水面の判定条件は，少し複雑である．
 
-[./SPH0_setWall_Freesurface.hpp#L791](./SPH0_setWall_Freesurface.hpp#L791)
+[./SPH0_setWall_Freesurface.hpp#L789](./SPH0_setWall_Freesurface.hpp#L789)
 
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -375,7 +375,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L639](./SPH_Functions.hpp#L639)
+[./SPH_Functions.hpp#L641](./SPH_Functions.hpp#L641)
 
 ## ⛵ 出力
 

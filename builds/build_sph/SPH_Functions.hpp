@@ -290,8 +290,8 @@ double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) 
    const auto C_CFL_velocity = 0.2;            // dt = C_CFL_velocity*h/Max(U)
    const auto C_CFL_accel = 0.2;               // dt = C_CFL_accel*sqrt(h/Max(A))
                                                //
-   const auto C_CFL_velocity_relative = 0.02;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel_relative = 0.02;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity_relative = 0.01;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel_relative = 0.01;     // dt = C_CFL_accel*sqrt(h/Max(A))
    for (const auto &p : net->getPoints()) {
       // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
@@ -488,7 +488,6 @@ void updateParticles(const auto &points,
                      const double &particle_spacing) {
    try {
       DebugPrint("粒子の時間発展", Green);
-
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
@@ -501,7 +500,7 @@ void updateParticles(const auto &points,
          // p->RK_U.push(p->DUDt_SPH + Dot(Umod - Uoriginal, p->nabla_otimes_U));  // 速度
          // p->U_SPH = p->RK_U.getX();                                             // 速度の更新は修正を考慮して行う
          // p->RK_X.push(Umod);  // 位置の更新はU_XSPHを使う
-
+         const double dt = p->RK_X.get_dt();
          p->RK_U.push(p->DUDt_SPH);
          p->U_SPH = p->RK_U.getX();  // + p->U_XSPH;
          p->RK_X.push(p->U_SPH);     // 位置の更新はU_XSPHを使う
@@ -570,8 +569,8 @@ void updateParticles(const auto &points,
                   if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.1 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-                           // tmp += 0.2 * Dot(_GRAVITY3_, n) * n;
+                        auto tmp = -0.01 * Projection(p->U_SPH, n) / dt;
+                           // tmp += -0.01 * ratio * Dot(_GRAVITY3_, n) * n;
                            // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                            // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
 
