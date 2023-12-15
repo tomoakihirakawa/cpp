@@ -219,9 +219,9 @@ $`{\bf b}^n`$ （[`Poisson_b_vector`](../../builds/build_sph_back/SPH1_lap_div_U
 
 ✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH2_FindPressure.hpp#L230): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{8 m _j}{(\rho _i+\rho _j)}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [ラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73): $`\nabla^2 p=\sum _{j}A _{ij}(p _i - p _j),\quad A _{ij} = \frac{8 m _j}{(\rho _i+\rho _j)}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
-⚠️ 密度$\rho$が粒子に関わらず一定の場合，上の２式は同じになる．しかし，補助粒子の密度は，他の粒子と異なるので，[２つ目のラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73)を使うべきだろう．
+⚠️ 密度$\rho$が粒子に関わらず一定の場合，上の２式は同じになる．しかし，補助粒子の密度は，他の粒子と異なるので，[２つ目のラプラシアンの計算方法](../../builds/build_sph_back/SPH1_lap_div_U2 (平川知明 の競合コピー 2023-10-29).hpp#L73)を使うべきだろう．
 
 **ISPH**
 
