@@ -6,13 +6,13 @@
     <tr>
         <td>
             <figure>
-                <img src="./img/README_FOR_STUDENTS_terminal1.png" width="500px" alt="Image Description">
+                <img src="./img/README_FOR_STUDENTS_terminal1.png" width="500px" alt="Image Description"><br>
                 <figcaption>ターミナルを開いてファイルのあるディレクトリまで移動する</figcaption>
             </figure>
         </td>
         <td>
             <figure>
-                <img src="./img/README_FOR_STUDENTS_terminal2.png" width="500px" alt="Image Description">
+                <img src="./img/README_FOR_STUDENTS_terminal2.png" width="500px" alt="Image Description"><br>
                 <figcaption>または，vscodeを開き，Ctrl + jでターミナルを開き，ファイルのあるディレクトリまで移動する</figcaption>
             </figure>
         </td>
