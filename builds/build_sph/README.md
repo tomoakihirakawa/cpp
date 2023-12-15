@@ -375,7 +375,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L641](./SPH_Functions.hpp#L641)
+[./SPH_Functions.hpp#L640](./SPH_Functions.hpp#L640)
 
 ## ⛵ 出力
 

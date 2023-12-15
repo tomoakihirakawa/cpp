@@ -607,7 +607,6 @@ void updateParticles(const auto &points,
             /* ------------------------------------------------------- */
 #endif
       }
-
       // \label{SPH:update_density}
       for (const auto &A : points) {
 #if defined(USE_RungeKutta)
