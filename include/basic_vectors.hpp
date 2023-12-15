@@ -2084,7 +2084,7 @@ Tddd Projection(const Tddd &v, Tddd n) {
 Tddd Chop(const Tddd &v, Tddd n) {
    /* the component in n direction of v will be chopped */
    n = Normalize(n);
-   return FusedMultiplyAdd(-Dot(v, n), n, v);
+   return FusedMultiplyAdd(Dot(v, n), -n, v);
    // return v - Dot(v, n) * n;
 };
 

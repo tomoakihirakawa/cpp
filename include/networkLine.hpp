@@ -1722,13 +1722,11 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
          // 	return true;
          // }
          // else
-         if (min_init <= min_later
-             // &&
-             //     (next_s0 >= min_n || p0->CORNER) &&
-             //     (next_s1 >= min_n || p1->CORNER) &&
-             //     (next_s2 >= min_n || p2->CORNER) &&
-             //     (next_s3 >= min_n || p3->CORNER)
-         ) {
+         if (min_init <= min_later &&
+             (next_s0 >= min_n || p0->CORNER) &&
+             (next_s1 >= min_n || p1->CORNER) &&
+             (next_s2 >= min_n || p2->CORNER) &&
+             (next_s3 >= min_n || p3->CORNER)) {
             this->flip();
             return true;
          } else

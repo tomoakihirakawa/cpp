@@ -696,19 +696,18 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             // 流体粒子に対してはr=2.5*ps，\theta=30度
             auto surface_check_r_for_fluid = A->particle_spacing * 1.75;
             // 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
-            auto surface_check_r_for_wall = A->particle_spacing * 1.25;
+            auto surface_check_r_for_wall = A->particle_spacing * 1.3;
 
             // if (A->var_Eigenvalues_of_M1 > 0.)
             {
                //! 分布が均等でないものは水面になりやすくする
                surface_check_r_for_fluid = A->particle_spacing * 1.75 * (1. - A->var_Eigenvalues_of_M1);
-               surface_check_r_for_wall = A->particle_spacing * 1.25 * (1. - A->var_Eigenvalues_of_M1);
+               surface_check_r_for_wall = A->particle_spacing * 1.3 * (1. - A->var_Eigenvalues_of_M1);
             }
 
             // 以上に該当する粒子があった場合は，水面粒子として認識しない．
             auto n_current = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
-            A->isSurface = A->var_Eigenvalues_of_M1 > 0.4 ||
-                           (A->var_Eigenvalues_of_M1 > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
+            A->isSurface = (A->var_Eigenvalues_of_M1 > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                [&](const auto &q) {
                                                                   if (q->isCaptured && A != q) {
@@ -733,12 +732,11 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             {
                //! 分布が均等でないものは水面になりやすくする
                surface_check_r_for_fluid = A->particle_spacing * 1.75 * (1. - A->var_Eigenvalues_of_M1_next);
-               surface_check_r_for_wall = A->particle_spacing * 1.25 * (1. - A->var_Eigenvalues_of_M1_next);
+               surface_check_r_for_wall = A->particle_spacing * 1.3 * (1. - A->var_Eigenvalues_of_M1_next);
             }
             // surfaceではないが，var_Eigenvalues_of_M1_nextが大きいものはEISPHで計算する，
             auto n_next = Normalize(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next));
-            A->isSurface_next = A->var_Eigenvalues_of_M1_next > 0.4 ||
-                                (A->var_Eigenvalues_of_M1_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
+            A->isSurface_next = (A->var_Eigenvalues_of_M1_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                     return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                     [&](const auto &q) {
                                                                        if (q->isCaptured && A != q) {

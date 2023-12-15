@@ -360,6 +360,25 @@ Tddd EquilateralVertexAveragingVector(const networkPoint *p, const std::array<do
       return V;
 };
 
+Tddd EquilateralVertexAveragingVector(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<double(const networkFace *)> weight) {
+   Tddd V = {0., 0., 0.};
+   if (!isEdgePoint(p)) {
+      Tddd X = {0., 0., 0.}, Xmid, vertical;
+      double Wtot = 0, W, height;
+      for (const auto &f : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(f->getPoints(p));
+         X0 = current_pX;
+         Wtot += weight(f);
+         Xmid = (X2 + X1) * 0.5;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
+         V += Wtot*(height * vertical + Xmid);
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
 Tddd EquilateralVertexAveragingVector2(const networkPoint *p, const std::array<double, 3> &current_pX) {
    Tddd V = {0., 0., 0.};
    if (!isEdgePoint(p)) {
@@ -412,10 +431,10 @@ void flipIf(Network &water,
             } else {
                if (l->Dirichlet) {
                   //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 4);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
                   if (isfound) count++;
                }
             }

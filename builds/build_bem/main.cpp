@@ -1,5 +1,16 @@
 /*DOC_EXTRACT 0_0_BEM
+
+# BEM-MEL
+
+[README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
+
+<details>
+<summary>REVIEW.md</summary>
+
 \insert{REVIEW.md}
+
+</details>
+
 */
 
 // #define _debugging_
@@ -274,6 +285,8 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
+         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
          flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
          if (time_step < 10) {
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
