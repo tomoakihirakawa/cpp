@@ -8,6 +8,8 @@
 
 ## 境界のタイプを決定する
 
+<img src="./img/schematic_boundary_types_without_float.png" width="600px">
+
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
    * \ref{contact_angle}{`networkPoint::contact_angle`}

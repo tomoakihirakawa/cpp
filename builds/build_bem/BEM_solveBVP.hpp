@@ -204,13 +204,15 @@ BIEをGauss-Legendre積分で離散化すると，
 \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi_1}}}\right\|} \right)} }=
 ```
 ```math
-\alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
+\alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{\bf{x}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi_1}}}\right)}\right)}
 ```
 
 ここで，$`\phi_{k_\vartriangle,j}`$における$`k_\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
 $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w_0,w_1`$はGauss-Legendre積分の重み，$`\alpha_{i_\circ}`$は原点$`i_\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi_n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x}_{i_\circ}`$は原点の空間座標である．
 
 #### 線形三角要素
+
+<img src="./img/schematic_linear_triangle_element.png" width="400px">
 
 形状関数$`{\pmb N}_j({\pmb \xi}),{\pmb \xi}=(\xi_0,\xi_1)`$は，$`\xi_0,\xi_1`$が$`0`$から$`1`$動くことで，範囲で三角要素全体を動くように定義している．
 
@@ -240,7 +242,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 これを使えば，BIEは次のように簡単になる．
 
 ```math
-\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}
+\sum\limits_{k_\vartriangle}{2A_{k_\vartriangle}}
 \sum\limits_{{\xi_1},{w_1}}
 {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}
 (1-\xi_0)
@@ -248,15 +250,15 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 ```
 ```math
 \alpha_{i_\circ}(\phi)_{i_\circ}
--\sum\limits_{k_\vartriangle}{2{\bf n}_{k_\vartriangle}}\cdot
+-\sum\limits_{k_\vartriangle}{2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
 \sum\limits_{{\xi_1},{w_1}}
-\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}
+\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{\bf{x}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}
 (1-\xi_0)
 }\right)}
 ```
 
 $`(1-\xi_0)`$は，必ず正の値をとるので，絶対値を取る必要はない．
-$`{2{\bf n}_{k_\vartriangle}} = ((p_1-p_0)\times(p_2-p_0))`$
+$`((p_1-p_0)\times(p_2-p_0))=2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}`$
 
 NOTE: ちなみに，$`\frac{1-\xi_0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}`$の分子に$`1-\xi_0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この二つをまとめて計算する．
@@ -348,6 +350,8 @@ struct BEM_BVP {
       */
       water.setFacesVector();
       water.setPointsVector();
+      const std::array<double, 2> ZEROS2 = {0., 0.};
+      
 #pragma omp parallel
       for (const auto &[PBF, index] : PBF_index)
 #pragma omp single nowait
@@ -358,6 +362,7 @@ struct BEM_BVP {
          double nr, tmp;
          std::array<double, 2> IGIGn, c;
          std::array<double, 3> A, cross, N012, R;
+         std::array<std::array<double, 3>, 3> X012;
          //
          double sum_area = 0;
          int n = 0;
@@ -369,18 +374,18 @@ struct BEM_BVP {
          std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret;
          for (const auto &integ_f : water.getFacesVector()) {
             const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            ret = {{{p0, integ_f, {0., 0.}}, {p1, integ_f, {0., 0.}}, {p2, integ_f, {0., 0.}}}};
+            ret = {{{p0, integ_f, ZEROS2}, {p1, integ_f, ZEROS2}, {p2, integ_f, ZEROS2}}};
             cross = Cross(p0->X - p2->X, p1->X - p2->X);
-
+            X012 = {p0->X, p1->X, p2->X};
             if ((Norm(integ_f->center - origin->X) > 10 * r))
                for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
                   N012 = ModTriShape<3>(t0, t1);
-                  tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
+                  tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
                   tmp *= ww;
                   IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012),std::get<2>(std::get<0>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012),std::get<2>(std::get<1>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012),std::get<2>(std::get<2>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
                   // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
                   // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
                   // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
@@ -388,12 +393,13 @@ struct BEM_BVP {
             else
                for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
                   N012 = ModTriShape<3>(t0, t1);
-                  tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
+                  //# tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
+                  tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
                   tmp *= ww;
                   IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012),std::get<2>(std::get<0>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012),std::get<2>(std::get<1>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012),std::get<2>(std::get<2>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
+                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
                   // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
                   // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
                   // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
