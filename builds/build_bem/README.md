@@ -1,14 +1,5 @@
 # Contents
 - [🐋 BEM-MEL](#🐋-BEM-MEL)
-    - [⛵ BEM-MEL について](#⛵-BEM-MEL-について)
-        - [🪼 三角関数を使った古典的な解析手法](#🪼-三角関数を使った古典的な解析手法)
-        - [🪼 周波数領域のBEM解析](#🪼-周波数領域のBEM解析)
-            - [🐚 BEM周波数領域の問題点](#🐚-BEM周波数領域の問題点)
-        - [🪼 時間領域のBEM解析（ほとんどの場合BEM-MEL）](#🪼-時間領域のBEM解析（ほとんどの場合BEM-MEL）)
-            - [🐚 BEM-MEL の問題点](#🐚-BEM-MEL-の問題点)
-        - [🪼 BEM-MEL の改良](#🪼-BEM-MEL-の改良)
-        - [🪼 浮体動揺解析](#🪼-浮体動揺解析)
-            - [🐚 なぜ今BEM-MELを開発するのか](#🐚-なぜ今BEM-MELを開発するのか)
     - [⛵ 入力ファイルの読み込み](#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
@@ -65,171 +56,9 @@
 
 [README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
 
-<details>
-<summary>REVIEW.md</summary>
+[REVIEW_NOTE0.md](REVIEW_NOTE0.md)
 
-## ⛵ BEM-MEL について 
-
-### 🪼 三角関数を使った古典的な解析手法 
-
-水面がどのような微分方程式に従って運動するか調べると，
-非粘性非圧縮渦なしを仮定しても，水面における境界条件は非線形である．
-
-立てた連立偏微分方程式（境界条件と連続の式）を満たすような，関数，つまり解を，
-三角関数の重ね合わせで求めようとすることは自然で賢い発想であり，この解析方法はある程度の成功を収めてきた．
-この方法による線形理論はよく知られており水面波の基礎となっている．
-また，摂動法を使って弱い非線形性をうまく取り込み三角関数で解を求めることもこの解析手法の延長線上にあり，よく行われている．
-
-しかし，
-複雑な形状を境界に持つ場合や，波が激しい場合においては，
-この解析方法で課すことになる周期境界条件や，弱非線形性までしか考慮しないことが，
-果たして結果に悪影響を及ぼさないか疑問である．
-また，過渡的な現象，実際と同じように時間変化する現象に対する結果を得たい場合には，この解析手法では難しい．
-
-### 🪼 周波数領域のBEM解析 
-
-BEMを使った周波数領域の解析は，海洋工学の分野で標準的に行われているようだ．例えば，WAMITが有名．
-
-周波数領域解析は以下のような流れである（[Kashiwagi et al. (2005)](https://linkinghub.elsevier.com/retrieve/pii/S0029801804002252)，[柏木 (2004)](https://www.jstage.jst.go.jp/article/technom/880/0/880_KJ00001033371/_article/-char/ja/)を参考）
-
-速度ポテンシャルは
-
-* 入射波ポテンシャル$`\phi _0`$
-* 浮体による波の散乱ポテンシャル$`\phi _7`$
-* 浮体動揺に放射ポテンシャル($`\phi _1,..\phi _6`$)．（浮体動揺の振幅が含まれており，運動方程式の解として後で求める）
-
-の和として表す．各ポテンシャルに関して境界積分方程式を解くことで各ポテンシャルを求める．
-次に，浮体にかかる流体力を浮体濡れ面上の圧力を積分し計算する．
-結果として，**波浪強制力**，**付加質量**，**減衰力係数**が現れる．
-
-$`\phi _0,\phi _7`$を含んだ力が得られる．これを**波浪強制力**とよぶ．
-$`\phi _0+\phi _7`$をDiffractionポテンシャルと呼ぶこともあり，
-これに関する境界値問題をDiffraction問題という（浮体の形状には関係するが浮体動揺に関係ない境界値問題でもある）
-
-また，$`\phi _1,\phi _6`$を含んだ力は，
-浮体加速度に比例する**付加質量**，浮体速度に比例する**減衰力係数**として整理できる．
-これらに関する境界値問題をRadiation問題という（浮体動揺に関係する境界値問題でもある）
-
-得られた，波浪強制力，付加質量，減衰力係数を使って，
-浮体の運動方程式を解くことで，浮体動揺の振幅や浮体が受ける力を求めることができる．
-
-#### 🐚 BEM周波数領域の問題点 
-
-[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)も指摘するように，
-以上のBEM周波数領域解析は，線型理論であるため波が激しい場合の精度には疑問が残る．
-
-例えば，
-初めのポテンシャルの表現において，
-Radiationポテンシャルは浮体動揺から切り離されている．
-実際は，速度ポテンシャル自体が浮体動揺に応じて変化し，
-さらにポテンシャルから計算される力自体も浮体姿勢に応じて変化する．
-
-### 🪼 時間領域のBEM解析（ほとんどの場合BEM-MEL） 
-
-1970 年代のコンピュータのメモリ容量は小さく，計算速度も遅かった．
-当時開発された正方格子上でのシミュレーション手法を使って，
-巻波砕破のシミュレーションを行おうと格子を細かくすると，
-直ぐにメモリ容量を超えてしまい，また計算速度の問題もあって，正方格子を使った計算は現実的ではなかった．
-これに対して，
-[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)は，境界線上だけに計算点を設け，
-その計算点の位置と速度ポテンシャルをラグランジュ的に時間発展させる方法を提案した．
-水面で$`\frac{D\phi}{Dt}`$が簡単に計算できること，
-流速(速度ポテンシャルの勾配)を計算するために，
-$`\phi`$の接線方向微分$`\frac{\partial \phi}{\partial s}`$は節点の微分を使って，
-法線方向微分$`\frac{\partial \phi}{\partial n}`$は境界積分方程式を解くことで計算できることを利用した．
-
-<details style="background-color: rgba(144, 238, 144, 0.2);">
-<summary>
-💡 メモリ容量の変化
-</summary>
-
-<img src="./REVIEW/computer_memory.png" width="50%" />
-
-現在，メモリ容量は，以前と比べて格段に大きくなり，メモリの節約を考える必要がなくなった．
-また，領域型の計算手法で作られる代数連立１次方程式の係数行列は，疎行列であることが多く，
-節点数は多けれども，疎行列なら反復解法を使って高速に解を求めることができる．
-一方で，境界型の計算手法は，密行列を作る必要があり，密行列の生成には計算がかかる．
-
-$`O(n _p^2)`$，$`O(n _d^3)`$
-仮に$`n _p=L^3`$，$`n _d=6L^2`$としよう
-$`O(L^6)`$，$`O(216 L^6)`$
-
-つまり，当初の BEM-MEL の優位は，現在では他の手法にうばわれてしまっている．
-
-</details>
-
-#### 🐚 BEM-MEL の問題点 
-
-BEM-MEL の結果に数値的な不安定が生じることは，[Longuet-Higgins and Cokelet (1976)](http://rspa.royalsocietypublishing.org/cgi/doi/10.1098/rspa.1976.0092)が既に紹介している．
-計算精度を悪化させる原因は様々なものが考えられる．
-例えば，係数行列を作成する際，つまり微分方程式を離散化する際に用いる，補間の精度や積分の精度．
-または，時間発展の際に用いる，時間積分の精度などである．
-
-補間と積分はセットで使うので，どちらが原因かを切り分けるのは難しい．
-積分精度だけを考えても，数値積分手法の改良や，解析的な改良などが考えられる．
-補間精度だけを考えても，補間手法の改良や，補間点の位置の調整などが考えられる．
-
-### 🪼 BEM-MEL の改良 
-
-続く研究目的は，BEM-MEL の改良に向けられた．
-
-### 🪼 浮体動揺解析 
-
-浮体の動揺解析を行うためには，次のようなステップを踏む．
-
-1. 浮体に掛かる力とトルクを計算し，
-2. 力と重心に関する運動方程式（トルクと角運動量に関する運動方程式）から加速度（角加速度）を求め，
-3. 加速度（角加速度）を積分し速度（角速度）を更新し，
-4. 速度（角速度）を積分し位置（姿勢）を更新する
-
-浮体に掛かる圧力を面積分することで力を計算できるが，BEM-MEL では，圧力の計算で必要となる$`\phi _t`$が簡単には計算できない．
-これは，FEM-MEL でも同じで，MEL を使った場合に共通雨したことである(これに関しては[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)に詳しく書かれている)．
-
-Wu and {Eatock Taylor} (1996)や[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)の方法は，初めに$`\phi _t`$を計算し，次に圧力，力と計算して行くのではなく，
-BIE と補助関数を使って，始めから圧力の面積分つまり力を別の変数の面積分として表した．
-これと運動方程式を連立することで，直接，加速度を求めることができる．
-[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)は，この方法を発展させ２浮体の動揺解析を行っている．
-
-本当に，複数の浮体に適用しにくい方法なのか？
-
-#### 🐚 なぜ今BEM-MELを開発するのか 
-
-高速多重極展開（FMM）を使った流体-物体相互作用解析は未だに達成されていないようで，
-流体-物体相互作用解析においてBEM-MELが限界まで研究開発されたかというと，そうではないようだ．
-
-##### なぜFMMを使った流体-物体相互作用解析が難しいのか？
-
-流体-物体相互作用解析を行うには，２つの境界値問題を解く必要がある．
-現在の計算手法は，一つ目の境界値問題で得られた係数行列の逆行列を再利用することで，計算コストを抑えている．
-
-<details style="background-color: rgba(144, 238, 144, 0.2);">
-<summary>
-💡 逆行列を使う方法
-</summary>
-
-* **補助関数を使う方法**
-
-補助関数（１浮体につき６つ増える）に関する境界値問題を解く必要がある（$`\phi`$-$`\phi _n`$に関するBIEの係数行列の行列を再利用することで高速化）．
-
-[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)から，補助関数を使う方法も係数行列が共通であるため計算コストを抑えることができるということがわかる．
-言い換えれば，逆行列を使い回すことで，計算コストを抑えるということである．
-
-> To compute the auxiliary functions, extra boundary value problems (BVPs) have to be solved. As th auxiliary functions share the same coefficient matrix with the velocity potential when proper boundary conditions are imposed, they are solved simultaneously with the potential, and not much additional computational effort is needed for solving these extra BVPs for the auxiliary functions.
-
-しかし，FMMで利用されるGMRESのような反復解放を使うと，逆行列は求まらないし，計算が係数行列だけでなく右辺ベクトルにも依存するため，境界値問題をひとつひとつ個別に解く必要がある．
-
-* **補助関数を使わない方法**
-
-反復毎に境界値問題を解き$`\phi _t`$を計算する必要がある（$`\phi`$-$`\phi _n`$に関するBIEの係数行列の行列を再利用することで高速化）．
-
-補助関数を使わない，$`\phi _t`$を反復して計算し徐々に収束させる方法も，逆行列がなければ反復毎に係数行列を求める必要がある．
-
-</details>
-
-そのため，逆行列に依存しない高速化手法が必要である．
-その方法の指針として，境界値問題を一つにまとめることが考えられる．
-
-</details>
+[REVIEW_NOTE1.md](REVIEW_NOTE1.md)
 
 [./main.cpp#L1](./main.cpp#L1)
 
@@ -240,7 +69,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
 3. 三角形の線形補間を使って節点の流速を計算する
 
-[./main.cpp#L205](./main.cpp#L205)
+[./main.cpp#L43](./main.cpp#L43)
 
 ## ⛵ 計算プログラムの概要 
 
@@ -260,10 +89,12 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L413](./main.cpp#L413)
+[./main.cpp#L251](./main.cpp#L251)
 
 ---
 ## ⛵ 境界のタイプを決定する 
+
+<img src="./img/schematic_boundary_types_without_float.png" width="600px">
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
@@ -273,7 +104,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L182)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L184)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -335,7 +166,7 @@ BIE と補助関数を使って，始めから圧力の面積分つまり力を�
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L967](../../include/Network.hpp#L967)
+[../../include/Network.hpp#L959](../../include/Network.hpp#L959)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -412,13 +243,15 @@ BIEをGauss-Legendre積分で離散化すると，
 \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{\bf{x}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}}}}{{\partial{\xi _1}}}\right\|} \right)} }=
 ```
 ```math
-\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{\bf{x}}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}}}}{{\partial {\xi _1}}}\right)}\right)}
 ```
 
 ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
 $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
 
 #### 🐚 線形三角要素 
+
+<img src="./img/schematic_linear_triangle_element.png" width="400px">
 
 形状関数$`{\pmb N} _j({\pmb \xi}),{\pmb \xi}=(\xi _0,\xi _1)`$は，$`\xi _0,\xi _1`$が$`0`$から$`1`$動くことで，範囲で三角要素全体を動くように定義している．
 
@@ -448,7 +281,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 これを使えば，BIEは次のように簡単になる．
 
 ```math
-\sum\limits _{k _\vartriangle}{2{\bf n} _{k _\vartriangle}}
+\sum\limits _{k _\vartriangle}{2A _{k _\vartriangle}}
 \sum\limits _{{\xi _1},{w _1}}
 {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}
 (1-\xi _0)
@@ -456,15 +289,15 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 ```
 ```math
 \alpha _{i _\circ}(\phi) _{i _\circ}
--\sum\limits _{k _\vartriangle}{2{\bf n} _{k _\vartriangle}}\cdot
+-\sum\limits _{k _\vartriangle}{2A _{k _\vartriangle}{\bf n} _{k _\vartriangle}}\cdot
 \sum\limits _{{\xi _1},{w _1}}
-\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{\bf{x}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}}
+\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{\bf{x}}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}}
 (1-\xi _0)
 }\right)}
 ```
 
 $`(1-\xi _0)`$は，必ず正の値をとるので，絶対値を取る必要はない．
-$`{2{\bf n} _{k _\vartriangle}} = ((p _1-p _0)\times(p _2-p _0))`$
+$`((p _1-p _0)\times(p _2-p _0))=2A _{k _\vartriangle}{\bf n} _{k _\vartriangle}`$
 
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この二つをまとめて計算する．
@@ -511,7 +344,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L306](./BEM_solveBVP.hpp#L306)
+[./BEM_solveBVP.hpp#L308](./BEM_solveBVP.hpp#L308)
 
 ### 🪼 リジッドモードテクニック 
 
@@ -519,7 +352,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 これはリジッドモードテクニックと呼ばれている．
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
-[./BEM_solveBVP.hpp#L413](./BEM_solveBVP.hpp#L413)
+[./BEM_solveBVP.hpp#L419](./BEM_solveBVP.hpp#L419)
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
@@ -547,7 +380,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
 ```
 
-[./BEM_solveBVP.hpp#L451](./BEM_solveBVP.hpp#L451)
+[./BEM_solveBVP.hpp#L457](./BEM_solveBVP.hpp#L457)
 
 ---
 ## ⛵ 初期値問題 
@@ -653,7 +486,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L647](./BEM_solveBVP.hpp#L647)
+[./BEM_solveBVP.hpp#L653](./BEM_solveBVP.hpp#L653)
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
@@ -699,7 +532,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U} _{\rm c} + \boldsymbol \Omega _{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L708)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L843)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L708)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L849)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -730,9 +563,9 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L857)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L863)で与えている．
 
-[./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
+[./BEM_solveBVP.hpp#L696](./BEM_solveBVP.hpp#L696)
 
 #### 🐚 $`\phi`$のヘッセ行列の計算 
 
@@ -785,7 +618,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L533](./main.cpp#L533)
+[./main.cpp#L373](./main.cpp#L373)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -856,7 +689,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L771](./BEM_solveBVP.hpp#L771)
+[./BEM_solveBVP.hpp#L777](./BEM_solveBVP.hpp#L777)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -864,12 +697,12 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L385)
+[強制運動を課す](../../builds/build_bem/main.cpp#L384)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L306)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L118)で利用され，$\phi _{n}$を計算する．
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L120)で利用され，$\phi _{n}$を計算する．
 
 [./BEM_utilities.hpp#L15](./BEM_utilities.hpp#L15)
 
@@ -943,7 +776,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L802](./main.cpp#L802)
+[./main.cpp#L642](./main.cpp#L642)
 
 ---
 ## ⛵ その他 
@@ -1060,7 +893,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L666](./main.cpp#L666)
+[./main.cpp#L506](./main.cpp#L506)
 
 ---
 # 🐋 実行方法 
@@ -1099,7 +932,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L834](./main.cpp#L834)
+[./main.cpp#L674](./main.cpp#L674)
 
 ---
 # 🐋 Input Generator 
@@ -1156,6 +989,6 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L874](./main.cpp#L874)
+[./main.cpp#L714](./main.cpp#L714)
 
 ---

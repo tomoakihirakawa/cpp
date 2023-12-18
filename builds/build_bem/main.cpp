@@ -4,12 +4,9 @@
 
 [README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
 
-<details>
-<summary>REVIEW.md</summary>
+[REVIEW_NOTE0.md](REVIEW_NOTE0.md)
 
-\insert{REVIEW.md}
-
-</details>
+[REVIEW_NOTE1.md](REVIEW_NOTE1.md)
 
 */
 
@@ -285,10 +282,12 @@ int main(int argc, char **argv) {
          setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
          double rad = M_PI / 180;
 
-         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-         flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-         if (time_step < 10) {
+         {
+            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+         }
+         if (time_step < 3) {
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
