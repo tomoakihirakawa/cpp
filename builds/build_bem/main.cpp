@@ -192,33 +192,43 @@ int main(int argc, char **argv) {
             if (key.contains("mooring")) {
                std::cout << "mooring" << std::endl;
                //! check if the value contains 12 elements
-               if (value.size() != 12) {
+               if (value.size() != 13) {
                   //! show contents of the value nicely
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mooring line must have 12 elements");
                }
-               const auto name = value[0], type = value[1];
-               const std::array<double, 3> X0 = {std::stod(value[2]), std::stod(value[3]), std::stod(value[4])};
-               const std::array<double, 3> X1 = {std::stod(value[5]), std::stod(value[6]), std::stod(value[7])};
-               const int n_points = std::stoi(value[8]);         //$ number of points
-               const double total_length = std::stod(value[9]);  //! [m]
-               const double w = std::stod(value[10]);            //! [kg/m]
-               const double stiffness = std::stod(value[11]);    //! [N/m]
-               const double damp = std::stod(value[12]);         //! [N/(m/s^2)]
-               const double diam = std::stod(value[13]);         //! [m]
+               const auto name = value[0];
                std::cout << "name = " << name << std::endl;
+               const std::array<double, 3> X_begin = {std::stod(value[1]), std::stod(value[2]), std::stod(value[3])};
+               std::cout << "X_begin = " << X_begin << std::endl;
+               const std::array<double, 3> X_end = {std::stod(value[4]), std::stod(value[5]), std::stod(value[6])};
+               std::cout << "X_end = " << X_end << std::endl;
+               const double total_length = std::stod(value[7]);  //! [m]
+               std::cout << "total_length = " << total_length << std::endl;
+               const int n_points = std::stoi(value[8]);  //$ number of points
                std::cout << "n_points = " << n_points << std::endl;
-               std::cout << "X0 = " << X0 << std::endl;
-               std::cout << "X1 = " << X1 << std::endl;
-               std::cout << "stiffness = " << stiffness << std::endl;
-               std::cout << "damp = " << damp << std::endl;
+               const double w = std::stod(value[9]);  //! [kg/m]
                std::cout << "w = " << w << std::endl;
+               const double stiffness = std::stod(value[10]);  //! [N/m]
+               std::cout << "stiffness = " << stiffness << std::endl;
+               const double damp = std::stod(value[11]);  //! [N/(m/s^2)]
+               std::cout << "damp = " << damp << std::endl;
+               const double diam = std::stod(value[12]);  //! [m]
                std::cout << "diam = " << diam << std::endl;
                //
-               // auto mooring_net = new MooringLine(X0, X1, total_length, n_points);
-               // mooring_net->setName(name);
-               // mooring_net->setDensityStiffnessDampingDiameter(w, stiffness, damp, diam);
-               // mooring_net->mooringLines.emplace_back(mooring_net);
-               // setup_network_output_info(mooring_net, name, output_directory);
+               auto mooring_net = new MooringLine(X_begin, X_end, total_length, n_points);
+               std::cout << "mooring_net->getPoints().size() = " << mooring_net->getPoints().size() << std::endl;
+               mooring_net->setName(name);
+               std::cout << "mooring_net->getName() = " << mooring_net->getName() << std::endl;
+               mooring_net->setDensityStiffnessDampingDiameter(w, stiffness, damp, diam);
+               net->mooringLines.emplace_back(mooring_net);
+               setup_network_output_info(mooring_net, name, output_directory);
+               auto boundary_condition = [&](networkPoint *p) {
+                  if (p == mooring_net->lastPoint || p == mooring_net->firstPoint) {
+                     p->acceleration.fill(0.);
+                     p->velocity.fill(0.);
+                  }
+               };
+               mooring_net->setEquilibriumState(boundary_condition);
             }
          }
          //$ ------------------------------------------------------- */
@@ -287,7 +297,7 @@ int main(int argc, char **argv) {
             flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
             flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
          }
-         if (time_step < 3) {
+         if (time_step < 10) {
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
             flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
@@ -395,14 +405,29 @@ int main(int argc, char **argv) {
                      std::cout << "net->COM - COM_old= " << net->COM - COM_old << std::endl;
                      std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
                   }
-                  //
-                  // if (net->inputJSON.find("angle") && net->inputJSON.at("angle")[0] == "Hadzic2005") {
-                  //    auto axis = stod(net->inputJSON.at("angle")[1]);
-                  //    double start = stod(net->inputJSON.at("angle")[2]);
-                  //    Hadzic2005 hadzic(start);
-                  //    Quaternion q({0., 1., 0.}, hadzic.getAngle(net->RK_Q.get_t()));
-                  //    net->Q = q;
-                  // }
+                  for (auto &mooring : net->mooringLines) {
+                     //! mooring->lastPoint は，浮体ともに動く．
+                     auto Xcurrent = mooring->lastPoint->X;
+                     mooring->lastPoint->X_last = Xcurrent;
+                     Tddd V = (nextPositionOnBody(net, mooring->lastPoint) - Xcurrent) / net->RK_COM.getdt();
+                     mooring->simulate(simulation_time, net->RK_COM.getNextTime() - simulation_time, [&](networkPoint *p) {
+                        if (p == mooring->firstPoint) {
+                           p->acceleration.fill(0);
+                           p->velocity.fill(0);
+                        } else if (p == mooring->lastPoint) {
+                           p->acceleration.fill(0);
+                           p->velocity[0] = V[0];
+                           p->velocity[1] = V[1];
+                           p->velocity[2] = V[2];
+                        }
+                     });
+
+                     if (net->RK_Q.finished)
+                        mooring->applyMooringSimulationResult();
+
+                     for (const auto &p : mooring->getPoints())
+                        mooring->lastPoint->setX(nextPositionOnBody(net, mooring->lastPoint));
+                  }
                }
 
                bool use_given_velocity = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] != "update" && net->inputJSON.at("velocity")[0] != "floating");
@@ -646,19 +671,34 @@ int main(int argc, char **argv) {
 
             */
             //! rigid body includes mooring lines output them
-            for (const auto &mooring_net : net->mooringLines) {
-               VV_VarForOutput data;
-               uomap_P_Tddd P_accel, P_velocity;
-               for (const auto &p : mooring_net->Network::getPoints()) {
-                  P_accel[p] = net->accelRigidBody(ToX(p));
-                  P_velocity[p] = net->velocityRigidBody(ToX(p));
+            for (const auto &mooring : net->mooringLines) {
+
+               std::unordered_map<networkPoint *, Tddd> P_total_force, P_dragforce, P_tension, P_gforce, P_velocity, P_accel;
+               P_total_force.reserve(mooring->getPoints().size());
+               P_dragforce.reserve(mooring->getPoints().size());
+               P_gforce.reserve(mooring->getPoints().size());
+               P_tension.reserve(mooring->getPoints().size());
+               P_velocity.reserve(mooring->getPoints().size());
+               P_accel.reserve(mooring->getPoints().size());
+               for (auto p : mooring->getPoints()) {
+                  P_total_force[p] = p->getForce();
+                  P_dragforce[p] = p->getDragForce();
+                  P_tension[p] = p->getTension();
+                  P_gforce[p] = p->getGravitationalForce();
+                  P_velocity[p] = p->velocityTranslational();
+                  P_accel[p] = p->accelTranslational();
                }
-               data = {{"velocity", P_velocity}, {"acceleration", P_accel}};
-               auto filename = NetOutputInfo[mooring_net].vtu_file_name + std::to_string(time_step) + ".vtp";
+               std::vector<std::tuple<std::string, decltype(P_dragforce)>> data = {std::make_tuple("drag force", P_dragforce),
+                                                                                   std::make_tuple("tension", P_tension),
+                                                                                   std::make_tuple("gravitational force", P_gforce),
+                                                                                   std::make_tuple("total force", P_total_force),
+                                                                                   std::make_tuple("velocity", P_velocity),
+                                                                                   std::make_tuple("acceleration", P_accel)};
+               auto filename = NetOutputInfo[mooring].vtu_file_name + std::to_string(time_step) + ".vtp";
                std::ofstream ofs(output_directory + "/" + filename);
-               vtkPolygonWrite(ofs, mooring_net->getLines());
-               NetOutputInfo[mooring_net].PVD->push(filename, simulation_time);
-               NetOutputInfo[mooring_net].PVD->output();
+               vtkPolygonWrite(ofs, mooring->getPoints(), data);
+               NetOutputInfo[mooring].PVD->push(filename, simulation_time);
+               NetOutputInfo[mooring].PVD->output();
             }
          }
 

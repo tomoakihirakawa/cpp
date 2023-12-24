@@ -3,6 +3,38 @@
 
 // basic_linear_systems2.hpp
 
+//! A.x = b
+void Solve(const std::array<std::array<double, 2>, 2> &A, std::array<double, 2> &x, const std::array<double, 2> &y) {
+   const double inv_det = 1. / std::fma(A[0][0], A[1][1], -A[0][1] * A[1][0]);
+   x[0] = std::fma(A[1][1], y[0], -A[0][1] * y[1]) * inv_det;
+   x[1] = std::fma(-A[1][0], y[0], A[0][0] * y[1]) * inv_det;
+};
+
+//! x.A = b
+void Solve(std::array<double, 2> &x, const std::array<std::array<double, 2>, 2> &A, const std::array<double, 2> &y) {
+   const double inv_det = 1. / std::fma(A[0][0], A[1][1], -A[0][1] * A[1][0]);
+   x[0] = std::fma(A[1][1], y[0], -A[1][0] * y[1]) * inv_det;
+   x[1] = std::fma(-A[0][1], y[0], A[0][0] * y[1]) * inv_det;
+};
+
+// ! x.A = b
+void Solve(std::array<double, 3> &x, const std::array<std::array<double, 3>, 3> &A, const std::array<double, 3> &y) {
+
+   const double inv_det = 1. / std::fma(A[0][2], std::fma(A[1][1], A[2][0], -A[1][0] * A[2][1]), std::fma(A[0][1], std::fma(-A[1][2], A[2][0], A[1][0] * A[2][2]), A[0][0] * std::fma(A[1][2], A[2][1], -A[1][1] * A[2][2])));
+
+   x[0] = inv_det * std::fma(y[2], A[1][1] * A[2][0], std::fma(-y[1], A[1][2] * A[2][0], std::fma(-y[2], A[1][0] * A[2][1], std::fma(y[0], A[1][2] * A[2][1], std::fma(y[1], A[1][0], -y[0] * A[1][1]) * A[2][2]))));
+   x[1] = -inv_det * std::fma(y[2], A[0][1] * A[2][0], std::fma(-y[1], A[0][2] * A[2][0], std::fma(-y[2], A[0][0] * A[2][1], std::fma(y[0], A[0][2] * A[2][1], std::fma(y[1], A[0][0], -y[0] * A[0][1]) * A[2][2]))));
+   x[2] = inv_det * std::fma(y[2], A[0][1] * A[1][0], std::fma(-y[1], A[0][2] * A[1][0], std::fma(-y[2], A[0][0] * A[1][1], std::fma(y[0], A[0][2] * A[1][1], std::fma(y[1], A[0][0], -y[0] * A[0][1]) * A[1][2]))));
+};
+
+// ! A.x = b
+void Solve(std::array<std::array<double, 3>, 3> A, std::array<double, 3> &x, const std::array<double, 3> &y) {
+   std::swap(A[0][1], A[1][0]);
+   std::swap(A[0][2], A[2][0]);
+   std::swap(A[1][2], A[2][1]);
+   Solve(x, A, y);
+};
+
 #include <concepts>
 #include <execution>
 #include <numeric>  // for std::transform_reduce
@@ -184,16 +216,16 @@ struct lapack_lu {
    ~lapack_lu(){};
 
    lapack_lu(const std::vector<std::vector<double>> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      int i, j, k = 0;
+      std::size_t i, j, k = 0;
       for (i = 0; i < dim; ++i)
          for (j = 0; j < dim; ++j)
             a[k++] = aIN[i][j];
       dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
    };
 
-   template <size_t N>
+   template <std::size_t N>
    lapack_lu(const std::array<std::array<double, N>, N> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      int i, j, k = 0;
+      std::size_t i, j, k = 0;
       for (i = 0; i < dim; ++i)
          for (j = 0; j < dim; ++j)
             a[k++] = aIN[i][j];
@@ -203,28 +235,7 @@ struct lapack_lu {
    //!  solve at initialization
    //! solve A.x = b
    lapack_lu(const std::vector<std::vector<double>> &aIN, std::vector<double> &x, const std::vector<double> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      int i, j, k = 0;
-      for (i = 0; i < dim; ++i)
-         for (j = 0; j < dim; ++j)
-            a[k++] = aIN[i][j];
-      x = rhd;
-      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
-      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
-      if (info) {
-         std::stringstream ss;
-         ss << "LDB:" << LDB;
-         ss << "\nLDA:" << LDA;
-         ss << "\nipiv:" << ipiv;
-         // ss << "\na:" << a;
-         ss << "\nb:" << x;
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-      };
-   };
-
-   //! solve A.x = b
-   template <size_t N>
-   lapack_lu(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &x, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
-      int i, j, k = 0;
+      std::size_t i, j, k = 0;
       for (i = 0; i < dim; ++i)
          for (j = 0; j < dim; ++j)
             a[k++] = aIN[i][j];
@@ -243,9 +254,50 @@ struct lapack_lu {
    };
 
    //! solve x.A = b
-   template <size_t N>
+   lapack_lu(std::vector<double> &x, const std::vector<std::vector<double>> &aIN, const std::vector<double> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim), TRANS('N') {
+      std::size_t i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
+      x = rhd;
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      if (info) {
+         std::stringstream ss;
+         ss << "LDB:" << LDB;
+         ss << "\nLDA:" << LDA;
+         ss << "\nipiv:" << ipiv;
+         // ss << "\na:" << a;
+         ss << "\nb:" << x;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      };
+   };
+
+   //! solve A.x = b
+   template <std::size_t N>
+   lapack_lu(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &x, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
+      std::size_t i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
+      x = rhd;
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+      dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
+      if (info) {
+         std::stringstream ss;
+         ss << "LDB:" << LDB;
+         ss << "\nLDA:" << LDA;
+         ss << "\nipiv:" << ipiv;
+         // ss << "\na:" << a;
+         ss << "\nb:" << x;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      };
+   };
+
+   //! solve x.A = b
+   template <std::size_t N>
    lapack_lu(std::array<double, N> &x, const std::array<std::array<double, N>, N> &aIN, const std::array<double, N> &rhd) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim), TRANS('N') {
-      int i, j, k = 0;
+      std::size_t i, j, k = 0;
       for (i = 0; i < dim; ++i)
          for (j = 0; j < dim; ++j)
             a[k++] = aIN[i][j];
@@ -280,7 +332,7 @@ struct lapack_lu {
       };
    };
 
-   template <size_t N>
+   template <std::size_t N>
    void solve(const std::array<double, N> &rhd, std::array<double, N> &x) {
       x = rhd;
       dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
@@ -318,8 +370,8 @@ struct lapack_lu {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       }
 
-      for (int i = 0; i < dim; ++i)
-         for (int j = 0; j < dim; ++j)
+      for (std::size_t i = 0; i < dim; ++i)
+         for (std::size_t j = 0; j < dim; ++j)
             ret[i][j] = a_copy[i * dim + j];  //! do not Transpose back because LAPACK uses column-major order
                                               //! because this comput A^-1
    }
@@ -336,7 +388,7 @@ struct lapack_lu {
    //       throw std::runtime_error("The matrix must be square to compute its inverse.");
    //    //! Create an identity matrix
    //    std::vector<double> id_mat(dim * dim, 0.);
-   //    for (int i = 0; i < dim; ++i)
+   //    for (std::size_t i = 0; i < dim; ++i)
    //       id_mat[i * dim + i] = 1;
    //    // Use dgetrs_ to find each column of the inverse
    //    dgetrs_(&TRANS, &dim, &dim, a.data(), &LDA, ipiv.data(), id_mat.data(), &LDB, &info);
@@ -349,8 +401,8 @@ struct lapack_lu {
 
    //    // Convert the flat array back to a 2D array
    //    std::vector<std::vector<double>> inv_mat(dim, std::vector<double>(dim));
-   //    for (int i = 0; i < dim; ++i) {
-   //       for (int j = 0; j < dim; ++j) {
+   //    for (std::size_t i = 0; i < dim; ++i) {
+   //       for (std::size_t j = 0; j < dim; ++j) {
    //          inv_mat[i][j] = id_mat[j * dim + i];
    //       }
    //    }
@@ -358,7 +410,7 @@ struct lapack_lu {
    // }
 };
 
-template <size_t N>
+template <std::size_t N>
 std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double, N>, N> &A) {
    lapack_lu lu(A);
    std::array<std::array<double, N>, N> inv_array;
@@ -367,8 +419,8 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
    return inv_array;
 
    // auto inv = lu.inverse();
-   // for (int i = 0; i < N; ++i)
-   //    for (int j = 0; j < N; ++j)
+   // for (std::size_t i = 0; i < N; ++i)
+   //    for (std::size_t j = 0; j < N; ++j)
    //       inv_array[i][j] = inv[i][j];
    // return inv_array;
 }
@@ -382,30 +434,34 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
 //             {std::fma(-a[1][1], a[2][0], a[1][0] * a[2][1]) * inv_det, std::fma(a[0][1], a[2][0], -a[0][0] * a[2][1]) * inv_det, std::fma(-a[0][1], a[1][0], a[0][0] * a[1][1]) * inv_det}}};
 // }
 
-template <>
-std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
-   const double inv_det = 1.0 / std::fma(
-                                    -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-                                    std::fma(
-                                        std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-                                        std::fma(
-                                            std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-                                            std::fma(
-                                                -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-                                                std::fma(
-                                                    -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
-                                                    std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+// template <>
+// std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
+//    // lapack_lu lu(a);
+//    // auto ret = lu.inverse();
+//    // return {{{ret[0][0], ret[0][1], ret[0][2]}, {ret[1][0], ret[1][1], ret[1][2]}, {ret[2][0], ret[2][1], ret[2][2]}}};
 
-   return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-            {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-            {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
-}
+//    const double inv_det = 1.0 / std::fma(
+//                                     -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+//                                     std::fma(
+//                                         std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+//                                         std::fma(
+//                                             std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+//                                             std::fma(
+//                                                 -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+//                                                 std::fma(
+//                                                     -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
+//                                                     std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+
+//    return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+//             {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+//             {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
+// }
 
 VV_d Inverse(const VV_d &mat) {
    lapack_lu lu(mat);
@@ -485,17 +541,17 @@ struct lapack_svd {
 
       // Compute S_inv * Ut * b
       std::vector<double> tmp(m);
-      for (int i = 0; i < m; ++i) {
+      for (std::size_t i = 0; i < m; ++i) {
          double inv_s = (s[i] > 1e-9) ? (1 / s[i]) : 0.0;
-         for (int j = 0; j < m; ++j) {
+         for (std::size_t j = 0; j < m; ++j) {
             tmp[j] += u[j * m + i] * inv_s * b[j];
          }
       }
 
       // Compute V * (S_inv * Ut * b)
       x.resize(n);
-      for (int i = 0; i < n; ++i) {
-         for (int j = 0; j < n; ++j) {
+      for (std::size_t i = 0; i < n; ++i) {
+         for (std::size_t j = 0; j < n; ++j) {
             x[i] += vt[j * n + i] * tmp[j];
          }
       }
@@ -705,7 +761,7 @@ struct ludcmp {
 // };
 
 V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
-   int i = 0, j;
+   std::size_t i = 0, j;
    double tmp;
    for (const auto &a : mat) {
       tmp = 0;
@@ -730,8 +786,22 @@ V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
 //    return b;
 // };
 
-V_d back_substitution(const VV_d &mat, V_d &b, const Tii &mat_size) {
-   const auto [row, col] = mat_size;
+// V_d back_substitution(const VV_d &mat, V_d &b, const Tii &mat_size) {
+//    const auto [row, col] = mat_size;
+//    double bi;
+//    int i, j;
+//    for (i = row - 1; i >= 0; --i) {
+//       auto &mat_i = mat[i];
+//       bi = b[i];  // Cache b[i] for better cache locality
+//       for (j = col - 1; j > i; --j)
+//          bi = std::fma(-mat_i[j], b[j], bi);
+//       b[i] = bi / mat_i[i];
+//    }
+//    b.resize(row);  // Resize vector to `row`, this will automatically remove extra elements
+//    return b;
+// };
+
+V_d back_substitution(const VV_d &mat, V_d b, const std::size_t row, const std::size_t col) {
    double bi;
    int i, j;
    for (i = row - 1; i >= 0; --i) {
@@ -745,9 +815,39 @@ V_d back_substitution(const VV_d &mat, V_d &b, const Tii &mat_size) {
    return b;
 };
 
-V_d back_substitution(const VV_d &mat, V_d b, const int mat_size) {
-   return back_substitution(mat, b, Tii{mat_size, mat_size});
-};
+// V_d back_substitution(const VV_d &mat, V_d b, const std::size_t row_col) {
+//    const auto row = row_col;
+//    const auto col = row_col;
+//    // const auto [row, col] = mat_size;
+//    double bi;
+//    int i, j;
+//    for (i = row - 1; i >= 0; --i) {
+//       auto &mat_i = mat[i];
+//       bi = b[i];  // Cache b[i] for better cache locality
+//       for (j = col - 1; j > i; --j)
+//          bi = std::fma(-mat_i[j], b[j], bi);
+//       b[i] = bi / mat_i[i];
+//    }
+//    b.resize(row);  // Resize vector to `row`, this will automatically remove extra elements
+//    return b;
+// };
+
+V_d back_substitution(const VV_d &mat, const V_d &b, const std::size_t row_col) {
+   const auto row = row_col;
+   const auto col = row_col;
+   int i, j;
+   V_d result(b);
+   double bi;
+   for (i = row - 1; i >= 0; --i) {
+      const auto &mat_i = mat[i];
+      bi = result[i];  // Use result instead of modifying b directly
+      for (j = col - 1; j > i; --j)
+         // bi -= mat_i[j] * result[j];
+         bi = std::fma(-mat_i[j], result[j], bi);
+      result[i] = bi / mat_i[i];
+   }
+   return result;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                              QR decomposition                              */
@@ -817,10 +917,10 @@ struct QR {
 
    void Initialize(const T &AIN, const bool constractor = false) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      int N_ROW = AIN.size();
-      int N_COL = AIN[0].size();
-      int nR = AIN.size();
-      int mR = AIN[0].size();
+      const int N_ROW = AIN.size();
+      const int N_COL = AIN[0].size();
+      const int nR = AIN.size();
+      const int mR = AIN[0].size();
       if (!constractor) {
          A = R = AIN;
          Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
@@ -829,9 +929,9 @@ struct QR {
       QT = Q;
       double r, c, s, a, b, Q0, Q1, R0, R1;  // Rのためのtmp
       const double eps = 1e-15;
-      const int max = std::max(N_ROW, N_COL);
-      for (auto j = 0; j < max; ++j) {
-         for (auto i = nR - 2; i >= j; --i) {
+      int max = std::max(N_ROW, N_COL), j, i;
+      for (j = 0; j < max; ++j) {
+         for (i = nR - 2; i >= j; --i) {
             // 下から
             // if (!Between(R[i + 1][j], {-eps, eps}))
             if (R[i + 1][j] != 0.) {  // givensの位置
@@ -889,17 +989,6 @@ struct QR {
                   Q_row[i] = Q0;
                   Q_row[i + 1] = Q1;
                };
-
-               // std::cout << "-----------------" << std::endl;
-               // std::cout << "i: " << i << ", j: " << j << std::endl;
-               // std::cout << "-----------------" << std::endl;
-               // Print("Q");
-               // std::cout << MatrixForm(Q, std::setw(10)) << std::endl;
-               // std::cout << "-----------------" << std::endl;
-               // Print("R");
-               // std::cout << "{i+1,j} = " << i + 1 << "," << j << std::endl;
-               // auto func = [&](auto i_in, auto j_in) { return (i + 1 == i_in && j_in == j); };
-               // std::cout << MatrixForm(R, func, 5, 20) << std::endl;
             }
          }
          // ここで，j列目の下半分はゼロになっているはず
@@ -908,7 +997,7 @@ struct QR {
    };
 
    void IdentityMatrix(T &mat) {
-      size_t i = 0;
+      std::size_t i = 0;
       for (auto &m : mat) {
          m.assign(m.size(), 0.0);
          m[i++] = 1.0;
@@ -935,10 +1024,10 @@ struct QR<std::array<std::array<double, N>, M>> {
 
    void Initialize(const std::array<std::array<double, N>, M> &AIN, const bool constractor = false) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      int N_ROW = AIN.size();
-      int N_COL = AIN[0].size();
-      int nR = AIN.size();
-      int mR = AIN[0].size();
+      const int N_ROW = AIN.size();
+      const int N_COL = AIN[0].size();
+      const int nR = AIN.size();
+      const int mR = AIN[0].size();
       if (!constractor) {
          A = R = AIN;
       }
@@ -947,9 +1036,9 @@ struct QR<std::array<std::array<double, N>, M>> {
       double r, c, s, a, b;
       double Q0, Q1, R0, R1;  // Rのためのtmp
       double eps = 1e-15;
-      int max = std::max(N_ROW, N_COL);
-      for (auto j = 0; j < max; ++j) {
-         for (auto i = nR - 2; i >= j; --i) {
+      int max = std::max(N_ROW, N_COL), i, j;
+      for (j = 0; j < max; ++j) {
+         for (i = nR - 2; i >= j; --i) {
             // 下から
             // if (!Between(R[i + 1][j], {-eps, eps}))
             if (R[i + 1][j] != 0.) {  // givensの位置
@@ -1010,7 +1099,7 @@ struct QR<std::array<std::array<double, N>, M>> {
    };
 
    void IdentityMatrix(auto &mat) {
-      size_t i = 0;
+      std::size_t i = 0;
       for (auto &m : mat) {
          m.fill(0.0);
          m[i++] = 1.0;
@@ -1071,15 +1160,15 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 | `tmp_value` | `double` | 一時的な値の格納用 |
 | `canUseVector` | `bool` | ベクタが使用可能かのフラグ |
 | `value3d` | `std::array<double, 3>` | 3次元空間の値 |
-| `__index__` | `size_t` | インデックス |
+| `__index__` | `std::size_t` | インデックス |
 
 ### メンバ関数
 
 | 関数名 | 引数 | 戻り値 | 説明 |
 |:------:|:----:|:------:|:----:|
 | `clearColumnValue` | なし | `void` | `column_value`をクリアし、`canUseVector`を`false`に設定する |
-| `setIndexCRS` | `size_t i` | `void` | インデックス`__index__`を設定する |
-| `getIndexCRS` | なし | `size_t` | インデックス`__index__`を取得する |
+| `setIndexCRS` | `std::size_t i` | `void` | インデックス`__index__`を設定する |
+| `getIndexCRS` | なし | `std::size_t` | インデックス`__index__`を取得する |
 | `at` | `CRS *const p` | `double` | 指定された`p`に対応する`column_value`の値を取得する |
 | `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
 | `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
@@ -1099,9 +1188,9 @@ struct CRS {
    double tmp_value;
    bool canUseVector;
    std::array<double, 3> value3d;
-   size_t __index__;
-   void setIndexCRS(size_t i) { this->__index__ = i; };
-   size_t getIndexCRS() const { return __index__; };
+   std::size_t __index__;
+   void setIndexCRS(std::size_t i) { this->__index__ = i; };
+   std::size_t getIndexCRS() const { return __index__; };
    CRS() : canUseVector(false){};
    void clear() { this->column_value.clear(); }
    double at(CRS *const p) const { return column_value.at(p); };
@@ -1126,7 +1215,7 @@ struct CRS {
    };
 
    // 高速化のために，vectorに変換する．
-   std::vector<std::tuple<CRS *, double, int>> column_value_vector;
+   std::vector<std::tuple<CRS *, double, std::size_t>> column_value_vector;
    void setVectorCRS() {
       column_value_vector.clear();
       column_value_vector.reserve(column_value.size());
@@ -1196,9 +1285,9 @@ V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
 
 V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
 #pragma omp parallel for
-   for (auto i = 0; i < A.size(); ++i) {
+   for (std::size_t i = 0; i < A.size(); ++i) {
       auto &a = b[i];
-      int j = 0;
+      std::size_t j = 0;
       for (const auto &Aij : A[i])
          a = std::fma(-Aij, V[j++], a);
    }
@@ -1244,9 +1333,9 @@ struct ILU {
          LU.push_back(new CRS(*a));  // assuming CRS has a copy constructor
       }
 
-      size_t n = LU.size();
+      std::size_t n = LU.size();
 
-      for (size_t k = 0; k < n; ++k) {
+      for (std::size_t k = 0; k < n; ++k) {
          if (!LU[k]->contains(LU[k])) {
             throw std::runtime_error("Zero diagonal element in ILU factorization.");
          }
@@ -1273,11 +1362,11 @@ struct ILU {
    }
 
    V_d solve(const V_d &b) {
-      size_t n = LU.size();
+      std::size_t n = LU.size();
       V_d x(n), y(n);
 
       // Forward solve Ly = b
-      for (size_t i = 0; i < n; ++i) {
+      for (std::size_t i = 0; i < n; ++i) {
          y[i] = b[i];
          for (auto &[j, lij] : LU[i]->column_value) {
             if (j->getIndexCRS() < i) {
@@ -1362,14 +1451,14 @@ NOTE: $`\tilde H_n`$は，Hessenberg行列が１行長くなった行列にな�
 template <typename Matrix>
 struct ArnoldiProcess {
 
-   int n;  // the number of interation
+   std::size_t n;  // the number of interation
    double beta;
    V_d v0;
    VV_d H;  // ((n+1) x n) Hessenberg matrix
    VV_d V;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
    V_d w;
    ~ArnoldiProcess() { std::cout << "destructing ArnoldiProcess" << std::endl; };
-   ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN)
+   ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN)
        : n(nIN),
          beta(Norm(v0IN)),
          v0(v0IN / beta),
@@ -1380,7 +1469,7 @@ struct ArnoldiProcess {
       Initialize(A, v0IN, nIN, false);
    };
 
-   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN, const bool do_constract = true) {
+   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN, const bool do_constract = true) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       if (do_constract) {
          n = nIN;
@@ -1390,63 +1479,24 @@ struct ArnoldiProcess {
          V.assign(nIN + 1, v0);
          w.resize(A.size());
       }
-// #if defined(DEBUG_GMRES)
-//       TimeWatch watch;
-//       std::cout << "ArnoldiProcess::Initialize" << std::endl;
-// #endif
-#if defined(DEBUG_GMRES)
-      TimeWatch watch;
-      std::array<double, 2> tmp;
-      double mean_elapsed_time_for_AV = 0., mean_elapsed_time_for_orthogonalization = 0., mean_elapsed_time_for_normalizing_w = 0.;
-      int mean_elapsed_time_for_AV_count = 0, mean_elapsed_time_for_orthogonalization_count = 0, mean_elapsed_time_for_normalizing_w_count = 0;
-      std::cout << "ArnoldiProcess" << std::endl;
-#endif
-      size_t i, j;
+      std::size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
          DotOutput(A, V[j], w);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
                                  // w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
-#if defined(DEBUG_GMRES)
-         // std::cout << "Elapsed time for Dot(A, V[j]) " << tmp = watch() << std::endl;
-         tmp = watch();
-         mean_elapsed_time_for_AV += tmp[0];
-         mean_elapsed_time_for_AV_count++;
-#endif
          // orthogonalization
          for (i = 0; i <= j; ++i) {
             // w -= (H[i][j] = Dot(V[i], w)) * V[i];
             //! use std::fma
             FusedMultiplyIncrement(-(H[i][j] = Dot(V[i], w)), V[i], w);
          }
-#if defined(DEBUG_GMRES)
-         // std::cout << "Elapsed time for orthogonalization " << watch() << std::endl;
-         tmp = watch();
-         mean_elapsed_time_for_orthogonalization += tmp[0];
-         mean_elapsed_time_for_orthogonalization_count++;
-#endif
          // normalize w
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
-#if defined(DEBUG_GMRES)
-         // std::cout << "Elapsed time for normalizing w " << watch() << std::endl;
-         tmp = watch();
-         mean_elapsed_time_for_normalizing_w += tmp[0];
-         mean_elapsed_time_for_normalizing_w_count++;
-#endif
       }
-#if defined(DEBUG_GMRES)
-      std::cout << "Elapsed time" << watch() << std::endl;
-      std::cout << "mean_elapsed_time_for_AV = " << mean_elapsed_time_for_AV / mean_elapsed_time_for_AV_count << std::endl;
-      std::cout << "mean_elapsed_time_for_orthogonalization = " << mean_elapsed_time_for_orthogonalization / mean_elapsed_time_for_orthogonalization_count << std::endl;
-      std::cout << "mean_elapsed_time_for_normalizing_w = " << mean_elapsed_time_for_normalizing_w / mean_elapsed_time_for_normalizing_w_count << std::endl;
-
-#endif
-#if defined(DEBUG_GMRES)
-      std::cout << "Elapsed time" << watch() << std::endl;
-#endif
    };
 
    void AddBasisVector(const Matrix &A) {
       // std::cout << "AddBasisVector" << std::endl;
-      size_t i;
+      std::size_t i;
       // update n, V, H
       this->n++;
       w = Dot(A, *V.rbegin());  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
@@ -1523,7 +1573,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
    gmres() {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    };
-   gmres(const Matrix &A, const V_d &b, const V_d &x0, const int nIN)
+   gmres(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN)
        : ArnoldiProcess<Matrix>(A, b_minus_A_dot_V(b, A, x0) /*b - Dot(A, x0) 行列-ベクトル積*/, nIN),
          x(x0),
          y(b.size()),
@@ -1538,7 +1588,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       //
-      size_t i = 0;
+      std::size_t i = 0;
       for (const auto &q : qr.QT)
          g[i++] = q[0] * this->beta;
 
@@ -1556,7 +1606,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
 #endif
    };
 
-   void Restart(const Matrix &A, const V_d &b, const V_d &x0, const int nIN) {
+   void Restart(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       // this->Initialize(A, b - Dot(A, x0), nIN);
       this->Initialize(A, b_minus_A_dot_V(b, A, x0), nIN);
@@ -1566,19 +1616,19 @@ struct gmres : public ArnoldiProcess<Matrix> {
       this->g.resize(this->qr.Q.size());
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
-      size_t i = 0;
+      std::size_t i = 0;
       for (const auto &q : qr.QT)
          g[i++] = q[0] * this->beta;
 
       err = g.back();  // 予想される誤差
       g.pop_back();
       this->y = back_substitution(qr.R, g, g.size());
-      for (size_t i = 0; i < this->n; ++i) {
+      for (std::size_t i = 0; i < this->n; ++i) {
          // this->x += this->y[i] * this->V[i];
          //! use std::fma
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
       }
-      std::cout << "done" << std::endl;
+      std::cout << "Restart done" << std::endl;
    }
 
    //@今の所このIterateは正しく実装されていない．
@@ -1593,7 +1643,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       // std::cout << "g.size() = " << g.size() << std::endl;
-      size_t i = 0;
+      std::size_t i = 0;
       for (const auto &q : this->qr.QT)
          g[i++] = q[0] * this->beta;
       err = g.back();  // 予想される誤差
@@ -1615,12 +1665,12 @@ struct gmres : public ArnoldiProcess<Matrix> {
 };
 
 /* -------------------------------------------------------------------------- */
-V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const int maxIter = 1000) {
+V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
    VV_d Ak = A, I = A;
    IdentityMatrix(I);
    V_d eigenvalues;
    QR qr(Ak);
-   for (int i = 0; i < maxIter; ++i) {
+   for (std::size_t i = 0; i < maxIter; ++i) {
       qr.Initialize(Ak);
       eigenvalues = Diagonal(Ak = Dot(qr.R, qr.Q));
       if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
@@ -1630,13 +1680,13 @@ V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const int maxIter = 1000
    return eigenvalues;
 }
 
-std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const int maxIter = 1000) {
+std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
    VV_d Ak = A, I = A, Qk = A;
    IdentityMatrix(Qk);
    IdentityMatrix(I);
    V_d eigenvalues;
    QR qr(Ak);
-   for (int i = 0; i < maxIter; ++i) {
+   for (std::size_t i = 0; i < maxIter; ++i) {
       qr.Initialize(Ak);
       Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
       eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
@@ -1649,22 +1699,22 @@ std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const i
 }
 
 template <std::size_t N>
-std::array<double, N> Eigenvalues(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const int maxIter = 1000) {
+std::array<double, N> Eigenvalues(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
    std::array<double, N> eigenvalues;
-   int i = 0;
+   std::size_t i = 0;
    for (const auto &a : Eigenvalues(ToVector(A), tol, maxIter))
       eigenvalues[i++] = a;
    return eigenvalues;
 }
 
 template <std::size_t N>
-std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const int maxIter = 1000) {
+std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
    std::array<std::array<double, N>, N> Ak = A, I = A, Qk = A;
    IdentityMatrix(Qk);
    IdentityMatrix(I);
    std::array<double, N> eigenvalues;
    QR qr(Ak);
-   for (int i = 0; i < maxIter; ++i) {
+   for (std::size_t i = 0; i < maxIter; ++i) {
       qr.Initialize(Ak);
       Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
       eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
@@ -1677,16 +1727,16 @@ std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensyst
 }
 
 // template <std::size_t N>
-// std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const int maxIter = 1000) {
+// std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
 //    auto [E, Qk] = Eigensystem(ToVector(A), tol, maxIter);
 //    std::array<std::array<double, N>, N> Q;
 //    std::array<double, N> eigenvalues;
-//    int i = 0;
+//    std::size_t i = 0;
 //    for (const auto &e : E)
 //       eigenvalues[i++] = e;
 
 //    i = 0;
-//    int j = 0;
+//    std::size_t j = 0;
 //    for (const auto &q : Qk) {
 //       for (const auto &qj : q)
 //          Q[i][j++] = qj;

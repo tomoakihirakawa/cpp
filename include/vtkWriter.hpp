@@ -127,14 +127,37 @@ struct vtkPolygonWriter : XMLElement {
       /* -------------------------------------------------------------------------- */
       {
          std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"NumberOfComponents", "3"}, {"format", "ascii"}}));
+         // DataArray->writer = [&](std::stringstream &ofs) {
+         //    int i = 0;
+         //    for (auto &[_, INT_X] : this->vertices) {
+         //       // 書き出すともに番号を保存
+         //       std::get<0>(INT_X) = i++;
+         //       std::ranges::for_each(std::get<1>(INT_X), [&](auto &x) { ofs << std::setprecision(7) << (float)x << " "; });
+         //    }
+         // };
+         // this->Points->add(DataArray);
+         //
+         // Using make_shared for efficiency and simplicity
+         // auto DataArray = std::make_shared<XMLElement>("DataArray", {{"type", "Float32"}, {"NumberOfComponents", "3"}, {"format", "ascii"}});
+
          DataArray->writer = [&](std::stringstream &ofs) {
             int i = 0;
             for (auto &[_, INT_X] : this->vertices) {
-               // 書き出すともに番号を保存
+               // Incrementing index while assigning
                std::get<0>(INT_X) = i++;
-               std::ranges::for_each(std::get<1>(INT_X), [&](auto &x) { ofs << std::setprecision(7) << (float)x << " "; });
+
+               // Use std::transform for cleaner syntax
+               std::transform(std::get<1>(INT_X).begin(), std::get<1>(INT_X).end(),
+                              std::ostream_iterator<float>(ofs, " "),
+                              [](const auto &x) {
+                                 if (Between(x, {-1E-14, 1E-14}))
+                                    return static_cast<float>(0);
+                                 else
+                                    return static_cast<float>(x);
+                              });
             }
          };
+
          this->Points->add(DataArray);
       }
       /* ------------------------------------------------------ */

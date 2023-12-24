@@ -348,33 +348,42 @@ networkPoint_detail*/
 class networkPoint : public CoordinateBounds, public CRS {
 
    /* ------------------------------ MOORING LINE ------------------------------ */
+   /*
+      例えば，端部には速度が与えられたとしても，内部の節点の速度は，運動方程式に従って，隣の節点との間の張力や重力，抗力そして相対速度に依存する減衰力によって決まる．
+      * RK_X_sub
+      * RK_velocity_sub
+      の二つを使う
+   */
+
   public:
+   std::array<double, 3> getGravitationalForce() { return this->mass * _GRAVITY3_; }
+
    std::array<double, 3> getTension() {
       std::array<double, 3> force, v, relative_velocity;
       force.fill(0);
       double disp, strain;
       for (const auto &l : this->getLines()) {
-         v = (*l)(this)->RK_X.getX() - this->RK_X.getX();
+         v = (*l)(this)->RK_X_sub.getX() - this->RK_X_sub.getX();
          disp = Norm(v) - l->natural_length;
          strain = disp / l->natural_length;
-         if (disp > 0.)
-            force += l->stiffness * strain * Normalize(v);
-         relative_velocity = (*l)(this)->RK_velocity.getX() - this->RK_velocity.getX();
-         force += l->damping * relative_velocity / this->RK_velocity.dt_fixed;
+         if (disp > 0.) force += l->stiffness * strain * Normalize(v);
+         relative_velocity = (*l)(this)->RK_velocity_sub.getX() - this->RK_velocity_sub.getX();
+         force += l->damping * relative_velocity / this->RK_velocity_sub.dt_fixed;
       }
       return force;
    }
 
-   std::array<double, 3> getDragForce() {
+   std::array<double, 3> getDragForce(const double Cd = 0.3) {
       std::array<double, 3> drag_force, relative_velocity, mean_v, fluid_velocity, normalized_relative_velocity, A2B;
       drag_force.fill(0);
       fluid_velocity.fill(0);
-      double Cd = 0.3, A;
+      double A;
       for (const auto &l : this->getLines()) {
-         mean_v = 0.5 * ((*l)(this)->RK_velocity.getX() + this->RK_velocity.getX());
+         // mean_v = 0.5 * ((*l)(this)->RK_velocity_sub.getX() + this->RK_velocity_sub.getX());
+         mean_v = this->RK_velocity_sub.getX();
          relative_velocity = fluid_velocity - mean_v;
          // A = M_PI * std::pow(l->diameter, 2);
-         A2B = (*l)(this)->RK_X.getX() - this->RK_X.getX();
+         A2B = (*l)(this)->RK_X_sub.getX() - this->RK_X_sub.getX();
          normalized_relative_velocity = Normalize(relative_velocity);
          A = l->diameter * Norm(A2B) * 0.5;                                                            //! area
          A *= Norm(normalized_relative_velocity - Dot(normalized_relative_velocity, Normalize(A2B)));  //! projected area
@@ -384,7 +393,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    }
 
    std::array<double, 3> getForce() {
-      return getTension() + getDragForce() + this->mass * _GRAVITY3_;
+      return getTension() + getDragForce() + getGravitationalForce();
    }
 
    /* -------------------------------------------------------------------------- */
@@ -392,6 +401,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    bool status;
 
   public:
+   std::array<double, 3> X_last;
    netPp tmpPoint;
    V_netLp Lines;
    std::unordered_set<networkFace *> Faces;
@@ -433,10 +443,10 @@ class networkPoint : public CoordinateBounds, public CRS {
   public:
    // 今のところBEMのためのもの
    RungeKutta<double> RK_phi;
-   RungeKutta<Tddd> RK_X;
+   RungeKutta<Tddd> RK_X, RK_X_sub;
    //
    // 今のところSoft bodyのためのもの
-   RungeKutta<Tddd> RK_velocity;
+   RungeKutta<Tddd> RK_velocity, RK_velocity_sub;
    RungeKutta<Tddd> RK_force;
    //
    // 今のところSPHのためのもの
@@ -558,6 +568,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    // 物性
    double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
    //
+   double dt_CFL;
    double total_weight, total_weight_, total_weight__, total_N;
    Tddd normal_SPH, v_to_surface_SPH;
    networkFace *mirroring_face;
@@ -600,6 +611,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double DPDt_SPH;
    double div_U_error;
    int checked_points_in_radius_of_fluid_SPH, checked_points_in_radius_SPH, checked_points_SPH;
+   int checked_points_in_radius_of_fluid_SPH_next, checked_points_in_radius_SPH_next, checked_points_SPH_next;
    double pressure_Tait(const double rho, double C0 = 1466.) const {
       // double C0 = 1466.; //[m/s]
       // C0 /= 5;
@@ -686,20 +698,11 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
    //
-   std::array<Tddd, 3> grad_corr_M, inv_grad_corr_M, laplacian_corr_M, laplacian_corr_M_next;
-   std::array<Tddd, 3> grad_corr_M_next, inv_grad_corr_M_next;
-   // Tddd grad_Min_gradM;
-   //
-   // std::array<Tddd, 3> grad_corr_M_mirror, inv_grad_corr_M_mirror;
-   // std::array<Tddd, 3> grad_corr_M_next_mirror, inv_grad_corr_M_next_mirror;
-   //
-   // std::array<Tddd, 3> grad_corr_M_rigid, inv_grad_corr_M_rigid;
-   // std::array<Tddd, 3> grad_corr_M_next_rigid, inv_grad_corr_M_next_rigid;
-   // std::array<double, 3> Eigenvalues_of_M_rigid = {0., 0., 0.};
-   // std::array<double, 3> Eigenvalues_of_M_next_rigid = {0., 0., 0.};
-   // std::array<std::array<double, 3>, 3> Eigenvectors_of_M_rigid;
-   std::array<double, 3> Eigenvalues_of_M, Eigenvalues_of_M1, Eigenvalues_of_M1_next;
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M, Eigenvectors_of_M1, Eigenvectors_of_M_next, Eigenvectors_of_M1_next;
+   std::array<std::array<double, 3>, 3> grad_corr_M = _I3_, grad_corr_M_next = _I3_;
+   std::array<std::array<double, 3>, 3> laplacian_corr_M = _I3_, laplacian_corr_M_next = _I3_;
+   std::array<std::array<double, 3>, 3> inv_grad_corr_M = _I3_, inv_grad_corr_M_next = _I3_;
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = _I3_, Eigenvectors_of_M1 = _I3_, Eigenvectors_of_M_next = _I3_, Eigenvectors_of_M1_next = _I3_;
+   std::array<double, 3> Eigenvalues_of_M, Eigenvalues_of_M1, Eigenvalues_of_M_next, Eigenvalues_of_M1_next;
    //
    double var_Eigenvalues_of_M = 0.;
    double min_Eigenvalues_of_M = 0.;
@@ -1284,6 +1287,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    /*SolidAngle_detail_code*/
    double getSolidAngle() const;
    double getSolidAngleBuffer() const;
+   double getMinimalSolidAngle() const;
    // double getSolidAngle(bool TorF);
    // double getSolidAngle(const V_netFp &faces);
    /*SolidAngle_detail_code*/
@@ -4238,14 +4242,27 @@ class Network : public CoordinateBounds {
       }
    };
    /* -------------------------------------------------------------------------- */
-   netF *getNearestFace(const Tddd &xyz) {
-      netF *ret;
-      double distance = 1E+30;
-      for (const auto &f : this->Faces)
-         if (distance > Norm(f->X - xyz)) {
-            distance = Norm(f->X - xyz);
+   networkFace *getNearestFace(const Tddd &xyz) const {
+      networkFace *ret = nullptr;
+      double nearest_dist = 1E+30, dist;
+      for (const auto &f : this->Faces) {
+         if (nearest_dist > (dist = Norm(f->X - xyz))) {
+            nearest_dist = dist;
             ret = f;
          }
+      }
+      return ret;
+   };
+   // これを使おう．
+   networkPoint *getNearestPoint(const Tddd &xyz) const {
+      networkPoint *ret = nullptr;
+      double nearest_dist = 1E+30, dist;
+      for (const auto &p : this->Points) {
+         if (nearest_dist > (dist = Norm(p->X - xyz))) {
+            nearest_dist = dist;
+            ret = p;
+         }
+      }
       return ret;
    };
 

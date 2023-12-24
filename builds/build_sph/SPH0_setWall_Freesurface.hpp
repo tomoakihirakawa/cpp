@@ -6,6 +6,59 @@
 
 //! -------------------------------------------------------------------------- */
 
+template <typename MatrixType>
+void treatMatrix(MatrixType &matrix, double tolerance = 1e-13, bool check_linearly_dependent = true) {
+   const size_t numRows = matrix.size();
+   const size_t numCols = matrix[0].size();
+
+   auto changeRow = [&](int i) {
+      for (size_t j = 0; j < numCols; ++j) {
+         matrix[i][j] = (i == j) ? 1.0 : 0.0;
+      }
+   };
+
+   for (size_t i = 0; i < numRows; ++i) {
+      // check if zero row
+      if (Norm(matrix[i]) <= tolerance || !isFinite(matrix[i], 1e+13)) {
+         changeRow(i);
+      } else {
+         // check if linearly dependent
+         if (check_linearly_dependent)
+            for (size_t j = i + 1; j < numRows; ++j) {
+               double ratio = 0;
+               bool calculated_once = false;
+               bool duplicated = true;
+               // 一つでも比率が違う場合は，線形従属ではない
+               for (size_t k = 0; k < numCols; ++k) {
+                  if (!std::abs(matrix[i][k]) > tolerance && std::abs(matrix[j][k]) > tolerance) {
+                     duplicated = false;  // 線形従属ではない
+                     break;
+                  } else if (std::abs(matrix[i][k]) > tolerance && !std::abs(matrix[j][k]) > tolerance) {
+                     duplicated = false;  // 線形従属ではない
+                     break;
+                  } else if (std::abs(matrix[i][k]) > tolerance && std::abs(matrix[j][k]) > tolerance) {
+                     if (!calculated_once) {
+                        ratio = matrix[i][k] / matrix[j][k];
+                        calculated_once = true;
+                     } else if (ratio != matrix[i][k] / matrix[j][k]) {
+                        duplicated = false;  // 線形従属ではない
+                        break;
+                     }
+                     // ratioが同じ倍は，duplicateはtrueのまま
+                  }
+                  // どちらとも0の場合は，duplicateはtrueのまま
+               }
+               if (duplicated) {
+                  changeRow(i);
+                  break;
+               }
+            }
+      }
+   }
+   if (Det(matrix) == 0 || std::abs(Det(matrix)) < 1e-20)
+      IdentityMatrix(matrix);
+}
+
 void setCorrectionMatrix(const auto &all_nets) {
 
    /*DOC_EXTRACT 0_1_1_preparation_wall_and_freesurface
@@ -21,13 +74,14 @@ void setCorrectionMatrix(const auto &all_nets) {
    ### `setCorrectionMatrix_gradient`について
 
    \cite{Morikawa2023}で紹介されていた，\cite{Randles1996}の勾配演算の精度を改善する行列を計算する．
-   `grad_corr_M`としている．
+   勾配の演算を修正する行列は，renormalization tensorと呼ばれ，
+   よく$`i`$番目の粒子に対する修正行列は$`{\bf B}_i`$と書く．
+   プログラム上では\ref{SPH:grad_corr_M}{`grad_corr_M`}としている．
 
    ```math
-   \begin{align}
-   {\bf M} = \left(\sum_j V_j ({\bf x}_j-{\bf x}_i) \otimes \nabla W_{ij}\right)^{-1}
-   \end{align}
+   {\bf B}_i = \left(\sum_j V_j ({\bf x}_j-{\bf x}_i) \otimes \nabla W_{ij}\right)^{-1}
    ```
+
    WARNING: `isCaptured`を先に計算しておく必要がある．`isCaptured`が`false`の場合は，`grad_corr_M`は単位行列になる．
 
    */
@@ -40,7 +94,11 @@ void setCorrectionMatrix(const auto &all_nets) {
       //    return;
 
       DebugPrintLevel(2, "setCorrectionMatrix start", Blue);
-
+      A->checked_points_in_radius_SPH = 0;
+      A->checked_points_in_radius_of_fluid_SPH = 0;
+      A->checked_points_in_radius_SPH_next = 0;
+      A->checked_points_in_radius_of_fluid_SPH_next = 0;
+      A->checked_points_SPH = 0;
       // キャプチャされなかった場合
       Fill(A->grad_U, 0.);
       Fill(A->grad_corr_M, 0.);
@@ -63,8 +121,20 @@ void setCorrectionMatrix(const auto &all_nets) {
             total_w += w_Bspline(Norm(B->X - A->X), A->SML());
             total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), A->SML_next());
             //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);
+            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);  //\label{SPH:grad_corr_M}
             A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));
+            //
+            if (Between(Distance(A, B), {1E-13, A->SML()})) {
+               A->checked_points_in_radius_SPH++;
+               if (B->getNetwork()->isFluid || B->isFluid)
+                  A->checked_points_in_radius_of_fluid_SPH++;
+            }
+            if (Between(Distance(X_next(A), X_next(B)), {1E-13, A->SML_next()})) {
+               A->checked_points_in_radius_SPH_next++;
+               if (B->getNetwork()->isFluid || B->isFluid)
+                  A->checked_points_in_radius_of_fluid_SPH_next++;
+            }
+            A->checked_points_SPH++;
          }
       };
 
@@ -78,14 +148,26 @@ void setCorrectionMatrix(const auto &all_nets) {
       DebugPrintLevel(2, "勾配の補正行列の計算 done", Blue);
       A->Eigenvalues_of_M.fill(0.);
 
+      bool is_grad_corr_M_singular = false, is_grad_corr_M_next_singular = false;
       try {
-         if (std::ranges::none_of(A->grad_corr_M, [](const auto &v) { return Norm(v) == 0.; })) {
+         treatMatrix(A->grad_corr_M);
+         treatMatrix(A->grad_corr_M_next);
+         if (std::abs(Det(A->grad_corr_M)) > 1E-13)
             A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-         }
+         else
+            is_grad_corr_M_singular = true;
 
-         if (std::ranges::none_of(A->grad_corr_M_next, [](const auto &v) { return Norm(v) == 0.; })) {
+         if (std::abs(Det(A->grad_corr_M_next)) > 1E-13)
             A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
-         }
+         else
+            is_grad_corr_M_next_singular = true;
+         // if (std::ranges::none_of(A->grad_corr_M, [](const auto &v) { return Norm(v) == 0.; })) {
+         //    A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+         // }
+
+         // if (std::ranges::none_of(A->grad_corr_M_next, [](const auto &v) { return Norm(v) == 0.; })) {
+         //    A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+         // }
 
       } catch (std::exception &e) {
          std::cout << "error in setCorrectionMatrix" << std::endl;
@@ -100,44 +182,67 @@ void setCorrectionMatrix(const auto &all_nets) {
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in setCorrectionMatrix");
       }
 
-      {
-         auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-10, 100);
-         A->Eigenvalues_of_M = lambdas;
-         A->Eigenvectors_of_M = vectors;
-      }
-      {
-         auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-10, 100);
-         A->Eigenvalues_of_M1 = lambdas;
-         A->Eigenvectors_of_M1 = vectors;
-      }
-
-      {
-         auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M_next, 1E-10, 100);
-         A->Eigenvalues_of_M1_next = lambdas;
-         A->Eigenvectors_of_M1_next = vectors;
-      }
-      /* -------------------------------------------------------------------------- */
       A->var_Eigenvalues_of_M = 0.;
-      A->var_Eigenvalues_of_M1 = 0;
-
-      for (const auto &v : A->Eigenvalues_of_M)
-         A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
-      for (const auto &v : A->Eigenvalues_of_M1)
-         A->var_Eigenvalues_of_M1 += std::pow(1. - std::abs(v), 2.);
-      //
-      A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
-      A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
-      /* -------------------------------------------------------------------------- */
+      A->var_Eigenvalues_of_M1 = 0.;
       A->var_Eigenvalues_of_M_next = 0.;
       A->var_Eigenvalues_of_M1_next = 0.;
 
-      for (const auto &v : A->Eigenvalues_of_M)
-         A->var_Eigenvalues_of_M_next += std::pow(1. - std::abs(v), 2.);
-      for (const auto &v : A->Eigenvalues_of_M1)
-         A->var_Eigenvalues_of_M1_next += std::pow(1. - std::abs(v), 2.);
-      //
-      A->var_Eigenvalues_of_M_next = std::sqrt(A->var_Eigenvalues_of_M_next) / 3.;
-      A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
+      //! current
+      if (!is_grad_corr_M_singular) {
+         //$ grad_corr_M
+         {
+            auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-5, 100);
+            A->Eigenvalues_of_M = lambdas;
+            A->Eigenvectors_of_M = vectors;
+
+            for (const auto &v : A->Eigenvalues_of_M)
+               A->var_Eigenvalues_of_M += std::pow(1. - std::abs(v), 2.);
+
+            A->var_Eigenvalues_of_M = std::sqrt(A->var_Eigenvalues_of_M) / 3.;
+         }
+
+         //$ inv_grad_corr_M
+         {
+            auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M, 1E-5, 100);
+            A->Eigenvalues_of_M1 = lambdas;
+            A->Eigenvectors_of_M1 = vectors;
+
+            for (const auto &v : A->Eigenvalues_of_M1)
+               A->var_Eigenvalues_of_M1 += std::pow(1. - std::abs(v), 2.);
+            A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
+         }
+      } else {
+         A->var_Eigenvalues_of_M = 10.;
+         A->var_Eigenvalues_of_M1 = 10.;
+      }
+
+      //! next
+      if (!is_grad_corr_M_next_singular) {
+         //$ grad_corr_M_next
+         {
+            auto [lambdas, vectors] = Eigensystem(A->grad_corr_M_next, 1E-5, 100);
+            A->Eigenvalues_of_M_next = lambdas;
+            A->Eigenvectors_of_M_next = vectors;
+
+            for (const auto &v : A->Eigenvalues_of_M_next)
+               A->var_Eigenvalues_of_M_next += std::pow(1. - std::abs(v), 2.);
+            A->var_Eigenvalues_of_M_next = std::sqrt(A->var_Eigenvalues_of_M_next) / 3.;
+         }
+
+         //$ inv_grad_corr_M_next
+         {
+            auto [lambdas, vectors] = Eigensystem(A->inv_grad_corr_M_next, 1E-5, 100);
+            A->Eigenvalues_of_M1_next = lambdas;
+            A->Eigenvectors_of_M1_next = vectors;
+
+            for (const auto &v : A->Eigenvalues_of_M1_next)
+               A->var_Eigenvalues_of_M1_next += std::pow(1. - std::abs(v), 2.);
+            A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
+         }
+      } else {
+         A->var_Eigenvalues_of_M_next = 10.;
+         A->var_Eigenvalues_of_M1_next = 10.;
+      }
       /* -------------------------------------------------------------------------- */
       A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
       A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
@@ -149,8 +254,26 @@ void setCorrectionMatrix(const auto &all_nets) {
 
    ### `setCorrectionMatrix_laplacian`について
 
-   ラプラシアンの演算の精度を改善する行列を計算する．
-   `laplacian_corr_M`としている．
+   \cite{Fatehi2011}が提案した，ラプラシアンの演算の精度を改善する行列を計算する．
+   プログラム上では`laplacian_corr_M`としている．
+   多くの場合，流速のラプラシアンは次のように計算される．
+
+   ```math
+   \nabla^2 {\bf u}_i=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j),\quad A_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\cdot\nabla W_{ij}}{{\bf x}_{ij}\cdot{\bf x}_{ij}}
+   ```
+
+   これから，流速の勾配を引くことが１段階目の修正である．
+
+   ```math
+   \nabla^2 {\bf u}_i=\sum_{j} A_{ij}({\bf u}_i - {\bf u}_j - {\bf x}_{ij}\cdot{\nabla \otimes {\bf u}_{ij}})
+   ```
+
+   さらに，renomalization tensorを使って，次のように修正する．
+
+   ```math
+   \nabla^2 {\bf u}_i=\sum_{j} {\hat{\bf B}}_i:{\bf A}_{ij}({\bf u}_i - {\bf u}_j - {\bf x}_{ij}\cdot{\nabla \otimes {\bf u}_{ij}})
+   \quad {\bf A}_{ij} = \frac{2m_j}{\rho_i}\frac{{{\bf x}_{ij}}\otimes\nabla W_{ij}}{{\bf x}_{ij}\cdot{\bf x}_{ij}}
+   ```
 
    ```math
    \begin{align}
@@ -177,6 +300,11 @@ void setCorrectionMatrix(const auto &all_nets) {
       Fill(A->v_reeDW_next, 0.);
       Fill(A->v_eeDW_next, 0.);
       Fill(A->v_rrDW_next, 0.);
+      IdentityMatrix(A->laplacian_corr_M);
+      IdentityMatrix(A->laplacian_corr_M_next);
+
+      treatMatrix(A->inv_grad_corr_M, 1E-13, false);
+      treatMatrix(A->inv_grad_corr_M_next, 1E-13, false);
 
       Tddd DW, r, e;
       auto add_for_laplacian_correction = [&](const auto &B) {
@@ -223,18 +351,54 @@ void setCorrectionMatrix(const auto &all_nets) {
       };
       const std::vector<double> I = {-1., 0., 0., 0., -1., 0., 0., 0., -1.};
       std::vector<double> x(9);
-      auto M = toMatrix(A->v_reeDW + Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
+      auto M = toMatrix(A->v_reeDW) + toMatrix(Dot(Dot(A->v_eeDW, A->inv_grad_corr_M), A->v_rrDW));
       lapack_lu(M, x, I);
-      //
+
       std::vector<double> x_next(9);
-      M = toMatrix(A->v_reeDW_next + Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
-      lapack_lu(M, x_next, I);
+      auto M_next = toMatrix(A->v_reeDW_next) + toMatrix(Dot(Dot(A->v_eeDW_next, A->inv_grad_corr_M_next), A->v_rrDW_next));
+      lapack_lu(M_next, x_next, I);
 
       for (auto i = 0; i < 3; ++i)
          for (auto j = 0; j < 3; ++j) {
             A->laplacian_corr_M[i][j] = x[i * 3 + j];
             A->laplacian_corr_M_next[i][j] = x_next[i * 3 + j];
          }
+
+      // for (auto i = 0; i < 3; ++i)
+      //    for (auto j = 0; j < 3; ++j) {
+      //       if (i == j) {
+      //          const double max = 1.1;
+      //          auto v = x[i * 3 + j];
+      //          auto v_abs = std::abs(v);
+      //          A->laplacian_corr_M[i][j] = v_abs < max ? v : max * v / v_abs;
+      //          v = x_next[i * 3 + j];
+      //          v_abs = std::abs(v);
+      //          A->laplacian_corr_M_next[i][j] = v_abs < max ? v : max * v / v_abs;
+      //       }
+      //    }
+
+      //! 諦める
+      /* -------------------------------------------------------------------------- */
+
+      // treatMatrix(A->laplacian_corr_M_next, 1E-13, false);
+      // treatMatrix(A->laplacian_corr_M, 1E-13, false);
+
+      // if (!isFinite(A->laplacian_corr_M, 1e+13))
+      // if (A->isSurface)
+      //    IdentityMatrix(A->laplacian_corr_M);
+
+      // if (!isFinite(A->laplacian_corr_M_next, 1e+13))
+      // if (A->isSurface)
+      //    IdentityMatrix(A->laplacian_corr_M_next);
+
+      //
+      if (!isFinite(A->laplacian_corr_M))
+         IdentityMatrix(A->laplacian_corr_M);
+
+      if (!isFinite(A->laplacian_corr_M_next))
+         IdentityMatrix(A->laplacian_corr_M_next);
+
+      /* -------------------------------------------------------------------------- */
 
       DebugPrintLevel(2, "ラプラシアンの補正行列の計算 done", Blue);
    };
@@ -469,11 +633,11 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                DUDT.fill(0.);
                double div_U = 0;
                q->intp_density = 0.;
-               //! ちょっとした修正11/28
-               if (q->isFirstWallLayer)
-                  q->marker_X = q->X + q->v_to_surface_SPH;
-               else
-                  q->marker_X = q->X + 2. * q->v_to_surface_SPH;
+               //! ちょっとした修正11/28 -> 効果なし
+               // if (q->isFirstWallLayer)
+               //    q->marker_X = q->X + q->v_to_surface_SPH;
+               // else
+               q->marker_X = q->X + 2. * q->v_to_surface_SPH;
                double total_vol_w = 0, r = q->SML(), vol_w;
                net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
                   if (Norm(q->marker_X - Q->X) > r)
@@ -486,7 +650,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                   total_vol_w += vol_w;
                });
 
-               if (total_vol_w != 0.) {
+               if (total_vol_w >= 0.1 /*should be close to unity*/) {
                   DUDT /= total_vol_w;
                   div_U /= total_vol_w;
                   q->U_SPH /= total_vol_w;
@@ -694,28 +858,33 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             */
 
             // 流体粒子に対してはr=2.5*ps，\theta=30度
-            auto surface_check_r_for_fluid = A->particle_spacing * 1.75;
+            auto surface_check_r_for_fluid_ = A->particle_spacing * 2.2;
             // 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
-            auto surface_check_r_for_wall = A->particle_spacing * 1.3;
+            auto surface_check_r_for_wall_ = A->particle_spacing * std::sqrt(2.2);
 
             // if (A->var_Eigenvalues_of_M1 > 0.)
-            {
-               //! 分布が均等でないものは水面になりやすくする
-               surface_check_r_for_fluid = A->particle_spacing * 1.75 * (1. - A->var_Eigenvalues_of_M1);
-               surface_check_r_for_wall = A->particle_spacing * 1.3 * (1. - A->var_Eigenvalues_of_M1);
-            }
+            // {
+            //! 分布が均等でないものは水面になりやすくする
+            double surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * (1. - 0.5 * A->var_Eigenvalues_of_M1);
+            double surface_check_r_for_wall = surface_check_r_for_wall_;    // * (1. - 0.5 * A->var_Eigenvalues_of_M1);
+            double surface_check_agnle_for_fluid = M_PI / 5.;               // * (1. - A->var_Eigenvalues_of_M1);
+            double surface_check_angle_for_wall = M_PI / 4.;                // * (1. - A->var_Eigenvalues_of_M1);
+            // }
 
             // 以上に該当する粒子があった場合は，水面粒子として認識しない．
             auto n_current = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
-            A->isSurface = (A->var_Eigenvalues_of_M1 > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
+            A->isSurface = A->checked_points_in_radius_SPH < 3 ||
+                           A->checked_points_in_radius_of_fluid_SPH < 3 ||
+                           (A->var_Eigenvalues_of_M1_next > 0.15 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                [&](const auto &q) {
                                                                   if (q->isCaptured && A != q) {
                                                                      auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
-                                                                     auto c = A->X + radius * n_current;
+                                                                     auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
+                                                                     auto c = A->X;  // + radius * n_current;
                                                                      // Sphere sphere(c, radius);
                                                                      // return sphere.isInside(q->X);
-                                                                     return Distance(c, q->X) < radius;
+                                                                     return Distance(c, q->X) < radius && isFlat(n_current, q->X - A->X, angle);
                                                                   } else
                                                                      return false;
                                                                   // return q->isCaptured &&
@@ -729,22 +898,25 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             //    A->isSurface = true;
 
             // if (A->var_Eigenvalues_of_M1_next > 0.3)
-            {
-               //! 分布が均等でないものは水面になりやすくする
-               surface_check_r_for_fluid = A->particle_spacing * 1.75 * (1. - A->var_Eigenvalues_of_M1_next);
-               surface_check_r_for_wall = A->particle_spacing * 1.3 * (1. - A->var_Eigenvalues_of_M1_next);
-            }
+            // {
+            //! 分布が均等でないものは水面になりやすくする
+            surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * (1. - 0.5 * A->var_Eigenvalues_of_M1_next);
+            surface_check_r_for_wall = surface_check_r_for_wall_;    // * (1. - 0.5 * A->var_Eigenvalues_of_M1_next);
+            // }
             // surfaceではないが，var_Eigenvalues_of_M1_nextが大きいものはEISPHで計算する，
             auto n_next = Normalize(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next));
-            A->isSurface_next = (A->var_Eigenvalues_of_M1_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
+            A->isSurface_next = A->checked_points_in_radius_SPH_next < 3 ||
+                                A->checked_points_in_radius_of_fluid_SPH_next < 3 ||
+                                (A->var_Eigenvalues_of_M1_next > 0.15 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                     return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                     [&](const auto &q) {
                                                                        if (q->isCaptured && A != q) {
                                                                           auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
-                                                                          auto c = X_next(A) + radius * n_next;
+                                                                          auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
+                                                                          auto c = X_next(A);  // + radius * n_next;
                                                                           //   Sphere sphere(c, radius);
                                                                           //   return sphere.isInside(X_next(q));
-                                                                          return Distance(c, X_next(q)) < radius;
+                                                                          return Distance(c, X_next(q)) < radius && isFlat(n_next, X_next(q) - X_next(A), angle);
                                                                        } else
                                                                           return false;
                                                                        //   return q->isCaptured &&

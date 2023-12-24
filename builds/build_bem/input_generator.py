@@ -30,7 +30,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
+SimulationCase = "simple_barge"
 
 match SimulationCase:
 
@@ -94,7 +94,6 @@ match SimulationCase:
                    "end_time": 9}
 
         generate_input_files(inputfiles, setting, IO_dir, id)
-
     case "fish_without_free_surface":
 
         start = 0.
@@ -439,7 +438,8 @@ match SimulationCase:
         # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
         # float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
-        float["MOI"] = [Ixx*10**10,0.001589233395,Izz*10**10]
+        # float["MOI"] = [Ixx*10**10,0.001589233395,Izz*10**10]
+        float["MOI"] = [Ixx*10**10,0.0019,Izz*10**10]
         inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.05,
@@ -528,7 +528,7 @@ match SimulationCase:
         tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
         start = 0.
-        a = 2.
+        a = 1.
         T = 7.
         h = 80
         z_surface = 80
@@ -543,6 +543,23 @@ match SimulationCase:
                          "isFixed": True,
                          "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
+        # 係留索の設定
+
+        X_anchorA = [50., 50.,0.]
+        X_fair_leadA = [75., 50., 71.]
+
+        X_anchorB = [150., 50., 0.]
+        X_fair_leadB = [125.,50, 71.]
+        
+        stiffness = 14 * 10**8#! [N/m]
+        damp = .5             #! [N/(m/s^2)]
+        density = 100.       #! [kg/m]
+        dt = 0.01             #! [s]
+        total_lengthA = math.sqrt((X_anchorA[0]-X_fair_leadA[0])**2 + (X_anchorA[1]-X_fair_leadA[1])**2 + (X_anchorA[2]-X_fair_leadA[2])**2)
+        total_lengthB = math.sqrt((X_anchorB[0]-X_fair_leadB[0])**2 + (X_anchorB[1]-X_fair_leadB[1])**2 + (X_anchorB[2]-X_fair_leadB[2])**2)
+        n_points = 30
+        diam = 0.1
+
         if False:
             floatingbody = {"name": "floatingbody",
                             "type": "RigidBody",
@@ -550,8 +567,26 @@ match SimulationCase:
         else:
             floatingbody = {"name": "floatingbody",
                             "type": "RigidBody",
-                            "velocity": "floating"}
-
+                            "velocity": "floating",
+                            "mooringA": ["mooringA", 
+                                        X_anchorA[0], X_anchorA[1], X_anchorA[2],
+                                        X_fair_leadA[0], X_fair_leadA[1], X_fair_leadA[2],
+                                        total_lengthA,
+                                        n_points,
+                                        density,
+                                        stiffness,
+                                        damp,
+                                        diam],
+                            "mooringB": ["mooringB", 
+                                        X_anchorB[0], X_anchorB[1], X_anchorB[2],
+                                        X_fair_leadB[0], X_fair_leadB[1], X_fair_leadB[2],
+                                        total_lengthB,
+                                        n_points,
+                                        density,
+                                        stiffness,
+                                        damp,
+                                        diam],
+                        }
         A = 2450.00
         floatingbody["mass"] = m = (rho*g*7.5*A)/g
         floatingbody["COM"] = [100., 50., 75.]
@@ -560,19 +595,19 @@ match SimulationCase:
                                m*math.pow(floatingbody["radius_of_gyration"][1], 2),
                                m*math.pow(floatingbody["radius_of_gyration"][2], 2)]
 
-        objfolder = code_home_dir + "/cpp/obj/tsukada2022_re"
-        water["objfile"] = objfolder + "/water100_mod.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker200.obj"
+        objfolder = code_home_dir + "/cpp/obj/tsukada2022_no_pool_small_case"
+        water["objfile"] = objfolder + "/water100_modmod.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker20.obj"
         tank["objfile"] = objfolder + "/wavetank10.obj"
-        floatingbody["objfile"] = objfolder+"/floatingbody100.obj"
+        floatingbody["objfile"] = objfolder+"/floatingbody10.obj"
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
         setting = {"max_dt": 0.25,
-                   "end_time_step": 10000,
-                   "end_time": 10000}
+                   "end_time_step": 100000,
+                   "end_time": 100}
 
-        id = SimulationCase
+        id = SimulationCase + '_with_mooring'
         generate_input_files(inputfiles, setting, IO_dir, id)
     case "moon_pool":
 

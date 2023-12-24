@@ -28,6 +28,7 @@
 - [🐋 Smoothed Particle Hydrodynamics (SPH) ISPH EISPH](./builds/build_sph/README.md#🐋-Smoothed-Particle-Hydrodynamics-(SPH)-ISPH-EISPH)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
+    - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
     - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p \right)=b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-\right)=b`$)
     - [⛵ ポアソン方程式の解法](./builds/build_sph/README.md#⛵-ポアソン方程式の解法)
@@ -111,7 +112,6 @@
 
 - [Contents](./builds/build_bem/README.md#Contents)
 - [🐋 BEM-MEL](./builds/build_bem/README.md#🐋-BEM-MEL)
-    - [⛵ BEM-MEL について](./builds/build_bem/README.md#⛵-BEM-MEL-について)
     - [⛵ 入力ファイルの読み込み](./builds/build_bem/README.md#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](./builds/build_bem/README.md#⛵-計算プログラムの概要)
     - [⛵ 境界のタイプを決定する](./builds/build_bem/README.md#⛵-境界のタイプを決定する)
@@ -133,7 +133,6 @@
 - [🐋 計算用にメッシュの細分化](./builds/build_remesh/README.md#🐋-計算用にメッシュの細分化)
     - [⛵ メッシュの細分化の方法](./builds/build_remesh/README.md#⛵-メッシュの細分化の方法)
     - [⛵ 実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）](./builds/build_remesh/README.md#⛵-実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）)
-    - [⛵ 実行方法](./builds/build_remesh/README.md#⛵-実行方法)
 ## [build_system_of_linear_eqs](./builds/build_system_of_linear_eqs/README.md)
 
 - [Contents](./builds/build_system_of_linear_eqs/README.md#Contents)

@@ -902,20 +902,10 @@ struct BEM_BVP {
    V_d Func(const auto &ACCELS_IN, const Network &water, const std::vector<Network *> &rigidbodies) {
       TimeWatch watch;
       auto ACCELS = ACCELS_IN;
-
-      // {
-      //    int i = 0;
-      //    for (const auto &net : rigidbodies)
-      //       if (calculatePhintQ(net))
-      //          std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = ACCELS_IN[i++]; });
-      // }
-
       //* --------------------------------------------------- */
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
-      // std::cout << Green << "setPhiPhin_t()" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
       knowns.resize(PBF_index.size());
 #pragma omp parallel
       for (const auto &[PBF, i] : PBF_index)
@@ -981,40 +971,27 @@ struct BEM_BVP {
       }
 
       //* --------------------------------------------------- */
-      //*                     圧力 ---> 加速度                  */
+      //*              圧力 ---> 力 --> 加速度                  */
       //* --------------------------------------------------- */
       int i = 0;
       for (const auto &net : rigidbodies)
          if (net->isFloatingBody) {
+            
+            //# ------------------------------ 流体から受ける力とトルク ----------------------------- */
+
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
             auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
             auto [_, __, ___, Ix, Iy, Iz] = net->getInertiaGC();
-            /* ------------------------------- 係留策 2023/10/11 ------------------------------- */
+            
+            //$ ------------------------------ 係留索から受ける力とトルク ----------------------------- */
+            //$ ------------------------------------------------------------------------------------------ */
+            //$     フェアリードの節点が隣の線要素から受けている張力ベクトル --> 浮体が受ける力とトルク
+            //$ ------------------------------------------------------------------------------------------ */
             std::array<double, 3> F_mooring = {0., 0., 0.}, T_mooring = {0., 0., 0.};
-            net->inputJSON.find("mooring", [&](const auto &values) {
-               if (values[0] == "simple_mooring") {
-                  std::cout << Yellow << "simple_moorings" << colorReset << std::endl;
-                  std::array<double, 3> X_anchor = {stod(values[1]), stod(values[2]), stod(values[3])};            //$ アンカー
-                  std::array<double, 3> X_fairlead_initial = {stod(values[4]), stod(values[5]), stod(values[6])};  //$ フェアリード
-                  double natural_length = Norm(X_anchor - X_fairlead_initial);
-                  std::array<double, 3> X_fairlead = rigidTransformation(net->ICOM, net->COM, net->Q.R(), X_fairlead_initial);
-                  double current_length = Norm(X_anchor - X_fairlead);
-                  F_mooring = stod(values[7]) * (current_length - natural_length) * Normalize(X_anchor - X_fairlead);
-                  T_mooring = Cross(X_fairlead - net->COM, F_mooring);
-                  std::cout << Yellow << "F_mooring = " << F_mooring << ", T_mooring = " << T_mooring << colorReset << std::endl;
-               }
-            });
-
-            // Calculate and apply mooring forces and torques
-            // for (const auto &mooringLine : net->mooringLines) {
-            //     mooringLine->simulate(/* current_time, dt, ... */);
-            //     auto F_mooring = /* Calculate mooring force */;
-            //     auto T_mooring = /* Calculate mooring torque */;
-            //     F += F_mooring;
-            //     T += T_mooring;
-            // }
-
+            //!simulateはアップデートの際に行なっておく．
+            for(auto& mooring_line: net->mooringLines)
+               F_mooring += mooring_line->lastPoint->getForce();
             /* -------------------------------------------------------------------------- */
             auto F_ext = _GRAVITY3_ * net->getMass3D();
             auto F_hydro = tmp.surfaceIntegralOfPressure();

@@ -79,31 +79,29 @@ double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p
    auto A = (p1 - p0);
    auto B = (p2 - p0);
    auto C = (p3 - p0);
-   return 2 * std::atan2(Det({A, B, C}), Norm(A) * Norm(B) * Norm(C) +
-                                             Dot(A, B) * Norm(C) +
-                                             Dot(A, C) * Norm(B) +
-                                             Dot(B, C) * Norm(A));
+   return 2. * std::atan2(Det(T3Tddd{A, B, C}) /*Dot(A, Cross(B, C))*/,
+                          Norm(A) * Norm(B) * Norm(C) + Dot(A, B) * Norm(C) + Dot(A, C) * Norm(B) + Dot(B, C) * Norm(A));
 };
 
-double SolidAngle(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
-   return SolidAngle_(o, a, b, c);
+double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
+   // return SolidAngle_(o, a, b, c);
    //
    // return std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c));
    //
-   //     auto v1 = A - o;
+   // auto v1 = A - o;
    // auto v2 = B - o;
    // auto v3 = C - o;
    // auto cv1v2 = Normalize(Cross(v1, v2));
    // auto cv1v3 = Normalize(Cross(v1, v3));
    // auto cv2v3 = Normalize(Cross(v2, v3));
    // return std::abs(acos(Dot(cv1v2, cv1v3)) + acos(-Dot(cv1v2, cv2v3)) + acos(Dot(cv1v3, cv2v3)) - M_PI);
-   //
-   // double c = VectorAngle(A - o, B - o), a = VectorAngle(B - o, C - o), b = VectorAngle(C - o, A - o);
-   // double s = (a + b + c) * 0.5;
-   // if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
-   //    return 4. * M_PI / 2.;
-   // else
-   //    return 4. * std::atan(std::sqrt(tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
+
+   double c = VectorAngle(A - o, B - o), a = VectorAngle(B - o, C - o), b = VectorAngle(C - o, A - o);
+   double s = (a + b + c) * 0.5;
+   if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
+      return 4. * M_PI / 2.;
+   else
+      return 4. * std::atan(std::sqrt(std::tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
 
    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 };
@@ -134,19 +132,35 @@ T4d SolidAngles(const T4Tddd &oabc) {
 double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
    double total = 0., tmp, angle;
    int sz = xyz.size();
-   Tddd normal = {0., 0., 0.}, X1, X2;
-   for (auto i = 0; i < xyz.size(); ++i) {
-      X1 = Normalize(xyz[(i + sz) % sz] - o);
-      X2 = Normalize(xyz[(i + sz + 1) % sz] - o);
-      angle = VectorAngle(X1, X2);
-      normal += angle * Normalize(Cross(X1, X2));
+   double local_mean_length = 0;
+   std::array<double, 3> local_mean_normal1 = {0., 0., 0.}, local_mean_normal2 = {0., 0., 0.};
+   Tddd cross0, cross1;
+   bool isAllFlat = true;
+   for (auto i = 0; i < sz; ++i) {
+      local_mean_length += Norm(xyz[i] - o);
+      cross1 = Cross(xyz[i] - o, xyz[(i + 1) == sz ? 0 : (i + 1)] - o);
+      local_mean_normal1 += -Normalize(cross0); /*内向き*/
+      if (i != 0) {
+         if (!isFlat(cross0, cross1, 1E-5))
+            isAllFlat = false;
+      }
+      local_mean_normal2 += Normalize(xyz[i] - o);
+      cross0 = cross1;
    }
-   normal = -Normalize(normal);
+   local_mean_length /= sz;
+   local_mean_normal1 /= sz;
+   local_mean_normal2 /= sz;
+   Tddd n = isAllFlat ? Normalize(local_mean_normal1) : Normalize(local_mean_normal2);
+   Tddd A, B, n0, n1;
+   std::array<double, 3> point_at_outward_direction = local_mean_length * n + o;
    for (auto i = 0; i < xyz.size(); ++i) {
-      tmp = SolidAngle(Tddd{0., 0., 0.},
-                       Normalize(xyz[(i + sz) % sz] - o),
-                       Normalize(xyz[(i + sz + 1) % sz] - o), normal);
-      if (Between(tmp, {0., 4. * M_PI})) total += tmp;
+      A = xyz[i];
+      B = xyz[(i + 1) == sz ? 0 : (i + 1)];
+      tmp = SolidAngle(o, A, B, point_at_outward_direction);
+      // n0 = Cross(A - o, B - o);
+      // n1 = Cross(B - o, point_at_outward_direction - o);
+      // if (!isFlat(n0, n1, 1E-10) && !isFlat(n0, -n1, 1E-10))
+      total += tmp;
    }
    return total;
 };
@@ -178,13 +192,17 @@ T4d TetrahedronSolidAngle_UsingVectorAngle(const T4Tddd &abcd) { return Tetrahed
 Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
    Tddd b = b_ - a;
    Tddd c = c_ - a;
-   auto x = Normalize(b);
-   auto z = Normalize(Cross(b, c));
-   auto y = Normalize(Cross(x, z));  // 1x1
+   const auto x = Normalize(b);
+   const auto z = Normalize(Cross(b, c));
+   const auto y = Normalize(Cross(x, z));  // 1x1
    //
    Tdd bxy = {Dot(b, x), Dot(b, y)};
    Tdd cxy = {Dot(c, x), Dot(c, y)};
-   auto [Cx, Cy] = Dot(Inverse(T2Tdd{bxy, cxy}), 0.5 * Tdd{Dot(bxy, bxy), Dot(cxy, cxy)});  // circumcenter
+   // auto [Cx, Cy] = Dot(Inverse(T2Tdd{bxy, cxy}), 0.5 * Tdd{Dot(bxy, bxy), Dot(cxy, cxy)});  // circumcenter
+   //! use solve instead of inverse
+   Tdd CxCy = {0., 0.};
+   Solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   auto [Cx, Cy] = CxCy;
    return a + Cx * x + Cy * y;
 };
 Tddd Circumcenter(const T3Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
@@ -195,7 +213,11 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    auto b_ = b - a;
    auto c_ = c - a;
    auto d_ = d - a;
-   return a + 0.5 * Dot(Inverse(T3Tddd{b_, c_, d_}), Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   // return a + 0.5 * Dot(Inverse(T3Tddd{b_, c_, d_}), Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   //! use solve
+   Tddd CxCyCz;
+   Solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   return a + 0.5 * CxCyCz;
 };
 Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 /* -------------------------------------------------------------------------- */
@@ -1441,7 +1463,10 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    //                               -Dot(b, A_B) + Dot(B, A_B)});
    // use lapack_lu
    std::array<double, 2> ans;
-   lapack_lu(ans, T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}}, Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   // lapack_lu(ans, T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}}, Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   Solve(ans,
+         T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
+         Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
    const auto [t, tau] = ans;
 
    if (Between(t, {0., 1.}) && Between(tau, {0., 1.}))
@@ -1471,7 +1496,8 @@ std::tuple<double, double, Tddd> DistanceToPlane_(const Tddd &X, const T3Tddd &a
 
    // use SolveLinearSystem
    std::array<double, 3> ans;
-   lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
    const auto [t0, t1, alpah] = ans;
 
    return {t0, t1, a * t0 + b * t1 + c * (1 - t0 - t1)};
@@ -1646,7 +1672,8 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    const auto [A, B] = AB;
    // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> x;
-   lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   // lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = x;
    const Tdd range = {0., 1.};
    return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
@@ -1665,14 +1692,25 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
    const Tddd d = {x0, y1, z0};
    const Tddd c = {x1, y1, z0};
    //! --------------------------------- */
-   const auto inv = Inverse(Transpose(T3Tddd{a - d, b - d, c - d}));
-   const auto num = Dot(inv, d - B);
-   const auto den = Dot(inv, A - B);
+   // const auto inv = Inverse(Transpose(T3Tddd{a - d, b - d, c - d}));
+   // const Tddd num = Dot(inv, d - B);
+   // const Tddd den = Dot(inv, A - B);
+   // 変更後
+   const auto adbdcd = T3Tddd{a - d, b - d, c - d};
+   Tddd num, den;
+   Solve(num, adbdcd, d - B);
+   Solve(den, adbdcd, A - B);
+   //
    auto [int0, int1, int2] = Transpose(T2Tddd{num / den, (1 + num) / den});
    //! --------------------------------- */
    //! 線分の成分が一致する場合や，denが０の場合にに発生する，indeterminateな場合結果を避けるための処理
    const double small = 1E-13;
-   const auto [T0, T1, T2] = Dot(inv, (A + B) * 0.5 - d);
+   // const auto [T0, T1, T2] = Dot(inv, (A + B) * 0.5 - d);
+   // 変更後
+   Tddd T0T1T2;
+   Solve(T0T1T2, adbdcd, (A + B) * 0.5 - d);
+   const auto [T0, T1, T2] = T0T1T2;
+   //
    const auto [dx, dy, dz] = A - B;
    if (Norm(dx) < small || std::abs(std::get<0>(den)) < small)
       if (Between(T0, {0., 1.}))
@@ -1727,7 +1765,8 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
    // auto [t0, t1, T] = Dot(Inverse(Transpose(T3Tddd{a - c, b - c, A - B})), A - c);
    // auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> ans;
-   lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   // lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   Solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = ans;
    //
    return A + (B - A) * T;

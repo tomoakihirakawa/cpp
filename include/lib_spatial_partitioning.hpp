@@ -128,15 +128,20 @@ struct Buckets : public CoordinateBounds {
       this->dL = dL_IN;
 
       // check if the size is valid (lesss than 100000)
+      const std::size_t max_size = 1000000;
       {
-         auto s = std::ceil((std::get<1>(this->xbounds()) - std::get<0>(this->xbounds())) / this->dL);
-         if (s == 0)
-            s = 1;
-         if (s > 100000) {
+         double s = std::ceil((std::get<1>(this->xbounds()) - std::get<0>(this->xbounds())) / this->dL);
+         if (s <= 0.)
+            s = 1.;
+         if (s > max_size) {
             std::cout << "xsize : " << s << std::endl;
+            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
+            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
+            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
+            std::cout << "this->dL : " << this->dL << std::endl;
             std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
             std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
             std::cout << "The program will be terminated." << std::endl;
             exit(1);
          } else
@@ -144,28 +149,35 @@ struct Buckets : public CoordinateBounds {
       }
 
       {
-         auto s = std::ceil((std::get<1>(this->ybounds()) - std::get<0>(this->ybounds())) / this->dL);
-         if (s == 0)
-            s = 1;
-         if (s > 100000) {
+         double s = std::ceil((std::get<1>(this->ybounds()) - std::get<0>(this->ybounds())) / this->dL);
+         if (s <= 0.)
+            s = 1.;
+         if (s > max_size) {
             std::cout << "ysize : " << s << std::endl;
+            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
+            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
+            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
+            std::cout << "this->dL : " << this->dL << std::endl;
             std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
             std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
             std::cout << "The program will be terminated." << std::endl;
             exit(1);
          } else
             this->ysize = s;
       }
       {
-         auto s = std::ceil((std::get<1>(this->zbounds()) - std::get<0>(this->zbounds())) / this->dL);
-         if (s == 0)
-            s = 1;  // 以前，0になったためエラーになった．
-         if (s > 100000) {
+         double s = std::ceil((std::get<1>(this->zbounds()) - std::get<0>(this->zbounds())) / this->dL);
+         if (s <= 0.)
+            s = 1.;  // 以前，0になったためエラーになった．
+         if (s > max_size) {
             std::cout << "zsize : " << s << std::endl;
+            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
+            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
+            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
             std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
             std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than 100000." << std::endl;
+            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
             std::cout << "The program will be terminated." << std::endl;
             exit(1);
          } else

@@ -1,14 +1,50 @@
 #ifndef SPH_Functions_H
 #define SPH_Functions_H
-// old
+
 #include "Network.hpp"
 #include "minMaxOfFunctions.hpp"
 
 /* -------------------------------------------------------------------------- */
 
+void showParticleInfo(const networkPoint *A) {
+   // show details
+   std::cout << "A->DUDt_SPH = " << A->DUDt_SPH << std::endl;
+   std::cout << "A->DUDt_modify_SPH = " << A->DUDt_modify_SPH << std::endl;
+   std::cout << "A->mu_SPH = " << A->mu_SPH << std::endl;
+   std::cout << "A->rho = " << A->rho << std::endl;
+   std::cout << "A->lap_U = " << A->lap_U << std::endl;
+   std::cout << "A->U_XSPH = " << A->U_XSPH << std::endl;
+   std::cout << "A->U_SPH = " << A->U_SPH << std::endl;
+   std::cout << "A->b_vector = " << A->b_vector << std::endl;
+   std::cout << "A->DrhoDt_SPH = " << A->DrhoDt_SPH << std::endl;
+   std::cout << "A->div_U = " << A->div_U << std::endl;
+   std::cout << "A->laplacian_corr_M = " << A->laplacian_corr_M << std::endl;
+   std::cout << "A->laplacian_corr_M_next = " << A->laplacian_corr_M_next << std::endl;
+   std::cout << "A->grad_corr_M = " << A->grad_corr_M << std::endl;
+   std::cout << "A->grad_corr_M_next = " << A->grad_corr_M_next << std::endl;
+   std::cout << "A->inv_grad_corr_M = " << A->inv_grad_corr_M << std::endl;
+   std::cout << "A->inv_grad_corr_M_next = " << A->inv_grad_corr_M_next << std::endl;
+   std::cout << "A->nabla_otimes_U = " << A->nabla_otimes_U << std::endl;
+   std::cout << "A->C_SML = " << A->C_SML << std::endl;
+   std::cout << "A->C_SML_next = " << A->C_SML_next << std::endl;
+   std::cout << "A->isFluid = " << A->isFluid << std::endl;
+   std::cout << "A->isSurface = " << A->isSurface << std::endl;
+   std::cout << "A->isSurface_next = " << A->isSurface_next << std::endl;
+   std::cout << "A->isNeumannSurface = " << A->isNeumannSurface << std::endl;
+   std::cout << "A->isAuxiliary = " << A->isAuxiliary << std::endl;
+   std::cout << "A->isCaptured = " << A->isCaptured << std::endl;
+   std::cout << "A->isNearSurface = " << A->isNearSurface << std::endl;
+   std::cout << "A->particle_spacing = " << A->particle_spacing << std::endl;
+   std::cout << "A->volume = " << A->volume << std::endl;
+   std::cout << "A->mass = " << A->mass << std::endl;
+   std::cout << "A->Eigenvalues_of_M1 = " << A->Eigenvalues_of_M1 << std::endl;
+   std::cout << "A->Eigenvectors_of_M1 = " << A->Eigenvectors_of_M1 << std::endl;
+   std::cout << "A->Eigenvectors_of_M1_next = " << A->Eigenvectors_of_M1_next << std::endl;
+   std::cout << "A->Eigenvectors_of_M1_next = " << A->Eigenvectors_of_M1_next << std::endl;
+}
+
 bool canInteract(const networkPoint *A, const networkPoint *B) {
-   if (!B->isCaptured)
-      return false;
+   return B->isCaptured;
    /* ----------------------------------- */
    // if (A->isAuxiliary && B->isAuxiliary)
    //    return false;
@@ -52,143 +88,12 @@ bool canInteract(const networkPoint *A, const networkPoint *B) {
    return true;
 };
 
-/* -------------------------------------------------------------------------- */
-void deleteAuxiliaryPoints(const auto net) {
-   std::cout << "delete auxiliary points" << std::endl;
-   auto points = net->getPoints();
-   for (auto p : points) {
-      p->auxPoint = nullptr;
-      if (p->isAuxiliary) {
-         p->surfacePoint->auxPoint = nullptr;
-         delete p;
-      }
-   }
-
-   for (auto p : net->getPoints())
-      p->isAuxiliary = false;
-
-   net->remakeBucketPoints();
-   std::cout << "delete auxiliary points done" << std::endl;
-}
-
-Tddd aux_position(const networkPoint *p) {
-   auto sp = p->surfacePoint;
-#ifdef SET_AUX_AT_PARTICLE_SPACING
-   return sp->X + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
-#elif defined(SET_AUX_AT_MASS_CENTER)
-   return sp->X - sp->vec2COM;
-#else
-   return sp->X + sp->particle_spacing * Normalize(Dot(sp->inv_grad_corr_M, sp->interp_normal_original));
-#endif
-};
-
-void setAuxiliaryPoints(const auto net, const std::function<Tddd(networkPoint *)> &position = aux_position) {
-   Print("setAuxiliaryPoints");
-   auto points = net->getPoints();
-   for (const auto &p : points) {
-      if (p->hasAuxiliary()) {
-
-         auto q = new networkPoint(net, p->X);
-         q->surfacePoint = p;
-         p->auxPoint = q;
-         q->setX(position(q));
-         //
-         q->grad_corr_M = p->grad_corr_M;
-         q->grad_corr_M_next = p->grad_corr_M_next;
-         q->inv_grad_corr_M = p->inv_grad_corr_M_next;
-         q->inv_grad_corr_M_next = p->inv_grad_corr_M_next;
-         //
-         // q->grad_corr_M_rigid = p->grad_corr_M_next_rigid;
-         // q->grad_corr_M_next_rigid = p->grad_corr_M_next_rigid;
-         // q->inv_grad_corr_M_rigid = p->inv_grad_corr_M_next_rigid;
-         // q->inv_grad_corr_M_next_rigid = p->inv_grad_corr_M_next_rigid;
-         q->laplacian_corr_M = p->laplacian_corr_M;
-         q->laplacian_corr_M_next = p->laplacian_corr_M_next;
-         //
-         q->isSurface = p->isSurface;
-         q->isSurface_next = p->isSurface_next;
-         q->isNeumannSurface = p->isNeumannSurface;
-         q->isAuxiliary = true;
-         //
-         q->b_vector = p->b_vector;
-         q->U_SPH = p->U_SPH;  // - 2 * Chop(p->U_SPH, p->interp_normal);
-         //
-         q->intp_density = p->intp_density;
-         q->intp_density_next = p->intp_density_next;
-         //
-         // q->U_SPH.fill(0.);
-         q->v_to_surface_SPH = p->v_to_surface_SPH;
-         q->interp_normal = p->interp_normal;
-         q->interp_normal_next = p->interp_normal_next;
-         q->intp_normal_Eigen = p->intp_normal_Eigen;
-         q->interp_normal_original = p->interp_normal_original;
-         q->interp_normal_original_next = p->interp_normal_original_next;
-         q->intp_density = p->intp_density;
-         //
-         q->div_U = p->div_U;
-         q->DUDt_SPH = p->DUDt_SPH;
-         q->lap_U = p->lap_U;
-         q->p_SPH = p->p_SPH;
-         q->rho = p->rho;
-         q->setDensityVolume(_WATER_DENSITY_, p->volume);
-         q->particle_spacing = p->particle_spacing;
-         q->C_SML_next = p->C_SML_next;
-         q->C_SML = p->C_SML;
-         q->isFluid = p->isFluid;
-         q->isFirstWallLayer = false;
-         q->isCaptured = true;
-         //
-         auto dt = p->RK_X.getdt();
-         // q->RK_U.initialize(dt, simulation_time, q->U_SPH, 1);
-         // q->RK_X.initialize(dt, simulation_time, q->X, 1);
-         // q->RK_P.initialize(dt, simulation_time, q->p_SPH, 1);
-         // q->RK_rho.initialize(dt, simulation_time, q->rho, 1);
-         q->RK_U = p->RK_U;
-         q->RK_U.Xinit = p->RK_U.Xinit;
-         q->RK_U.t_init = p->RK_U.t_init;
-         q->RK_U.dt_fixed = p->RK_U.dt_fixed;
-         q->RK_U.dt = p->RK_U.dt;
-         q->RK_U.steps = p->RK_U.steps;
-         q->RK_U.current_step = p->RK_U.current_step;
-         q->RK_U._dX = p->RK_U._dX;
-         q->RK_U.dX = p->RK_U.dX;
-         //
-         q->RK_X = p->RK_X;
-         // q->RK_X.Xinit = p->RK_X.Xinit;
-         q->RK_X.Xinit = q->X;
-         q->RK_X.t_init = p->RK_X.t_init;
-         q->RK_X.dt_fixed = p->RK_X.dt_fixed;
-         q->RK_X.dt = p->RK_X.dt;
-         q->RK_X.steps = p->RK_X.steps;
-         q->RK_X.current_step = p->RK_X.current_step;
-         q->RK_X._dX = p->RK_X._dX;
-         q->RK_X.dX = p->RK_X.dX;
-         //
-         q->RK_rho = p->RK_rho;
-         q->RK_rho.Xinit = p->RK_rho.Xinit;
-         q->RK_rho.t_init = p->RK_rho.t_init;
-         q->RK_rho.dt_fixed = p->RK_rho.dt_fixed;
-         q->RK_rho.dt = p->RK_rho.dt;
-         q->RK_rho.steps = p->RK_rho.steps;
-         q->RK_rho.current_step = p->RK_rho.current_step;
-         q->RK_rho._dX = p->RK_rho._dX;
-         q->RK_rho.dX = p->RK_rho.dX;
-      }
-   }
-   Print("setAuxiliaryPoints done");
-   Print("remakeBucketPoints");
-   net->remakeBucketPoints();
-   Print("remakeBucketPoints done");
-}
-
-/* -------------------------------------------------------------------------- */
-
 void setSML(const auto &target_nets) {
    DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   const double C_SML_max = 2.4;
-   const double C_SML_min = 2.4;
-   const double C_SML_min_rigid = 2.4;
+   const double C_SML_max = 2.9;
+   const double C_SML_min = 2.9;
+   const double C_SML_min_rigid = 2.9;
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -286,52 +191,81 @@ $`c_v=0.1,c_a=0.1`$としている．
 */
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
-   double dt = dt_IN;
-   const auto C_CFL_velocity = 0.2;            // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.2;               // dt = C_CFL_accel*sqrt(h/Max(A))
-                                               //
-   const auto C_CFL_velocity_relative = 0.01;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel_relative = 0.01;     // dt = C_CFL_accel*sqrt(h/Max(A))
-   for (const auto &p : net->getPoints()) {
-      // 速度に関するCFL条件
+   // double dt = dt_IN;
+   const auto C_CFL_velocity = 0.1;           // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.1;              // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_viscosity = 0.1;          // dt = C_CFL_viscosity*h^2/Max(Viscosity)
+   const auto C_CFL_velocity_relative = 0.1;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel_relative = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   // 音速
+#pragma omp parallel
+   for (const auto &p : net->getPoints())
+#pragma omp single nowait
+   {
+      p->dt_CFL = dt_IN;  // 速度に関するCFL条件
       auto dt_C_CFL = [&](const auto &q) {
-         if (p != q) {
-            auto pq = Normalize(p->X - q->X);
-            auto distance = Distance(p, q);
-            /* ------------------------------------------------ */
-            // 相対速度
-            // double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
-            double max_dt_vel = C_CFL_velocity_relative * distance / Norm(p->U_SPH - q->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
-            // 絶対速度
-            max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
-            if (dt > max_dt_vel && isFinite(max_dt_vel))
-               dt = max_dt_vel;
-            /* ------------------------------------------------ */
-            // 相対速度
-            // double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
-            double max_dt_acc = C_CFL_accel_relative * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
-            if (dt > max_dt_acc && isFinite(max_dt_acc))
-               dt = max_dt_acc;
-            // 絶対速度
-            max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
-            if (dt > max_dt_acc && isFinite(max_dt_acc))
-               dt = max_dt_acc;
-         }
+         for (double distance : V_d{Distance(p, q), p->particle_spacing})
+            if (p != q) {
+               auto pq = Normalize(p->X - q->X);
+               double max_dt_vel;
+               /* ------------------------------------------------ */
+               // 音速
+               // max_dt_vel = C_CFL_velocity * distance / Cs;
+               // if (p->dt_CFL > max_dt_vel && isFinite(max_dt_vel))
+               //    p->dt_CFL = max_dt_vel;
+               /* ------------------------------------------------ */
+               // 相対速度
+               // double max_dt_vel = C_CFL_velocity * distance / std::abs(Dot(p->U_SPH - q->U_SPH, pq));
+               // max_dt_vel = C_CFL_velocity_relative * distance / Norm(p->U_SPH - q->U_SPH);
+               max_dt_vel = C_CFL_velocity_relative * distance / (Norm(p->U_SPH) + Norm(q->U_SPH));
+               if (p->dt_CFL > max_dt_vel && isFinite(max_dt_vel))
+                  p->dt_CFL = max_dt_vel;
+               // 絶対速度
+               max_dt_vel = C_CFL_velocity * distance / Norm(p->U_SPH);
+               if (p->dt_CFL > max_dt_vel && isFinite(max_dt_vel))
+                  p->dt_CFL = max_dt_vel;
+               /* ------------------------------------------------ */
+               // 相対速度
+               // double max_dt_acc = C_CFL_accel * std::sqrt(distance / std::abs(Dot(p->DUDt_SPH - q->DUDt_SPH, pq)));
+               // double max_dt_acc = C_CFL_accel_relative * std::sqrt(distance / Norm(p->DUDt_SPH - q->DUDt_SPH));
+               // if (p->dt_CFL > max_dt_acc && isFinite(max_dt_acc))
+               //    p->dt_CFL = max_dt_acc;
+               double max_dt_acc = C_CFL_accel_relative * std::sqrt(distance / (Norm(p->DUDt_SPH) + Norm(q->DUDt_SPH)));
+               if (p->dt_CFL > max_dt_acc && isFinite(max_dt_acc))
+                  p->dt_CFL = max_dt_acc;
+               // 絶対速度
+               max_dt_acc = C_CFL_accel * std::sqrt(distance / Norm(p->DUDt_SPH));
+               if (p->dt_CFL > max_dt_acc && isFinite(max_dt_acc))
+                  p->dt_CFL = max_dt_acc;
+               /* -------------------------------------------------------------------------- */
+               double max_dt_visc = distance * distance / std::abs(8. * p->mu_SPH / _WATER_DENSITY_);
+               if (p->dt_CFL > max_dt_visc && isFinite(max_dt_visc))
+                  p->dt_CFL = max_dt_visc;
+            }
       };
-      net->BucketPoints.apply(p->X, p->SML(), dt_C_CFL);
+
+      net->BucketPoints.apply(p->X, 1.5 * p->SML(), dt_C_CFL);
       for (const auto &[obj, poly] : RigidBodyObject)
-         obj->BucketPoints.apply(p->X, p->SML(), dt_C_CFL);
-      double max_dt_vel = C_CFL_velocity * (p->particle_spacing) / Norm(p->U_SPH);
-      if (dt > max_dt_vel && isFinite(max_dt_vel))
-         dt = max_dt_vel;
-      double max_dt_acc = C_CFL_accel * std::sqrt((p->particle_spacing) / Norm(p->DUDt_SPH));
-      if (dt > max_dt_acc && isFinite(max_dt_acc))
-         dt = max_dt_acc;
+         obj->BucketPoints.apply(p->X, 1.5 * p->SML(), dt_C_CFL);
+
+      // double max_dt_vel = C_CFL_velocity * (p->particle_spacing) / Norm(p->U_SPH);
+      // if (dt > max_dt_vel && isFinite(max_dt_vel))
+      //    dt = max_dt_vel;
+      // double max_dt_acc = C_CFL_accel * std::sqrt((p->particle_spacing) / Norm(p->DUDt_SPH));
+      // if (dt > max_dt_acc && isFinite(max_dt_acc))
+      //    dt = max_dt_acc;
    }
+
+   // find smallest dt
+   double dt = dt_IN;
+   for (const auto &p : net->getPoints())
+      if (p->dt_CFL < dt_IN)
+         dt = p->dt_CFL;
+
    return dt;
 }
+
+#include "SPH_Auxiliary.hpp"
 
 /* -------------------------------------------------------------------------- */
 Tddd U_next(const networkPoint *p) {
@@ -372,22 +306,9 @@ Tddd X_next(const networkPoint *p) {
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
-   // if (p->getNetwork()->isRigidBody && !p->isFirstWallLayer)
    return _WATER_DENSITY_;
-   /* -------------------------------------------------------------------------- */
-   //    if (p->isAuxiliary)
-   //       return rho_next(p->surfacePoint);
-   //    else if (p->getNetwork()->isRigidBody)
-   //       return _WATER_DENSITY_;
-   //    else {
-   // #if defined(USE_RungeKutta)
-   // return (p->RK_rho.getX(-p->rho * p->div_U) + _WATER_DENSITY_) / 2.;
+   // else
    // return p->RK_rho.getX(-p->rho * p->div_U);
-   //@ これを使った方が安定するようだ
-   // #elif defined(USE_LeapFrog)
-   // return std::fma(p->DrhoDt_SPH, p->RK_rho.get_dt(), _WATER_DENSITY_);
-   // #endif
-   //    }
 };
 
 // \label{SPH:volume_next}
@@ -480,7 +401,7 @@ void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) 
 }
 
 #define REFLECTION
-
+// #define USE_ALE
 void updateParticles(const auto &points,
                      const std::unordered_set<Network *> &target_nets,
                      // const std::vector<std::tuple<Network *, Network *>> &RigidBodyObject,
@@ -503,7 +424,11 @@ void updateParticles(const auto &points,
          const double dt = p->RK_X.get_dt();
          p->RK_U.push(p->DUDt_SPH);
          p->U_SPH = p->RK_U.getX();  // + p->U_XSPH;
-         p->RK_X.push(p->U_SPH);     // 位置の更新はU_XSPHを使う
+   #ifdef USE_ALE
+         auto DUDt_original = p->DUDt_SPH;
+         auto Uoriginal = p->U_SPH;
+   #endif
+         p->RK_X.push(p->U_SPH);  // 位置の更新はU_XSPHを使う
          p->setXSingle(p->RK_X.getX());
 #elif defined(USE_LeapFrog)
          auto X_next = [&](const auto &p) { return p->X; };
@@ -552,7 +477,8 @@ void updateParticles(const auto &points,
          //          });
          //       }
          /* --------------------------------------------------------- */
-         while (isReflected && count++ < 1) {
+         // var_M1が大きすぎる場合は計算を修正しよう．
+         while (isReflected && count++ < 1000) {  // 厳しく
             isReflected = false;
             auto d_ps = particle_spacing;
             auto d0 = (1 - c) * particle_spacing;
@@ -562,30 +488,31 @@ void updateParticles(const auto &points,
                //! U_mod - U^n+1 = Chop(U^n+1,n) - U^n+1
                if (closest_p != nullptr) {
                   auto dist_f2w = Norm(f2w);
-                  auto n = closest_p->interp_normal;
+                  auto n = Normalize(closest_p->interp_normal_original);
                   auto normal_dist_f2w = Norm(Projection(f2w, n));  //! nomal distance from the fluid particle to the wall particle
-                  auto ratio = (d0 - normal_dist_f2w) / d0;
+                  auto ratio = 1. - normal_dist_f2w / d0;
                   // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
-                  if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < particle_spacing) {
+                  if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < 0.925 * particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
-                        auto tmp = -0.01 * Projection(p->U_SPH, n) / dt;
-                           // tmp += -0.01 * ratio * Dot(_GRAVITY3_, n) * n;
+                        p->DUDt_modify_SPH -= 0.001 * Projection(p->U_SPH, n) / dt;
+                           // p->DUDt_modify_SPH += -0.01 * ratio * Dot(_GRAVITY3_, n) * n;
                            // auto tmp = -0.02 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
                            // auto tmp = -0.01 * Projection(p->U_SPH, n) / p->RK_X.get_dt();
-
                            // p->DUDt_modify_SPH = Dot(p->nabla_otimes_U, Chop(Umod, n) - Uoriginal);
-                           // p->DUDt_SPH = p->DUDt_SPH + Dot(p->nabla_otimes_U, p->U_XSPH - p->RK_U.getX()) + p->DUDt_modify_SPH;
+
    #if defined(USE_RungeKutta)
-                        p->DUDt_SPH += tmp;
-                        // if (Norm(p->U_SPH) != 0.)
-                        //    p->DUDt_SPH -= Norm(tmp) * Normalize(Chop(p->U_SPH, n));
-                        p->RK_U.repush(p->DUDt_SPH);  // 速度
-                        p->U_SPH = p->RK_U.getX();    // + p->U_XSPH;
-                        p->RK_X.repush(p->U_SPH);     // 位置
-                        // auto X = p->X + (p->particle_spacing - normal_dist_f2w) * Normalize(n);
-                        // p->setXSingle(X);
+      #ifdef USE_ALE
+                        p->RK_U.repush(p->DUDt_SPH + tmp);  // 速度
+                        p->U_SPH = p->RK_U.getX();          // + p->U_XSPH;
+                        p->RK_X.repush(p->U_SPH);           // 位置
                         p->setXSingle(p->RK_X.getX());
+      #else
+                        p->RK_U.repush(p->DUDt_SPH + p->DUDt_modify_SPH);  // 速度
+                        p->U_SPH = p->RK_U.getX();                         // + p->U_XSPH;
+                        p->RK_X.repush(p->U_SPH);                          // 位置
+                        p->setXSingle(p->RK_X.getX());
+      #endif
 
                         // p->RK_U.repush(p->DUDt_SPH + Dot(Chop(Umod, n) - Uoriginal, p->nabla_otimes_U));  // 速度
                         // p->U_SPH = p->RK_U.getX();
@@ -604,6 +531,7 @@ void updateParticles(const auto &points,
                }
             }
          };
+
             /* ------------------------------------------------------- */
 #endif
       }

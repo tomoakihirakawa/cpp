@@ -999,18 +999,7 @@ inline Tddd networkPoint::getNormal_BEM_Buffer() const {
 inline V_netPp networkPoint::getNeighborsSort() const {
    try {
       VV_netPp Vps({});
-      // V_netPp qs(0);
       for (const auto &f : this->Faces) {
-         // qs = f->getPoints();
-         // if (qs[0] == this)
-         // 	Vps.push_back(V_netPp{qs[1], qs[2]});
-         // else if (qs[1] == this)
-         // 	Vps.push_back(V_netPp{qs[2], qs[0]});
-         // else if (qs[2] == this)
-         // 	Vps.push_back(V_netPp{qs[0], qs[1]});
-         // else
-         // 	throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ps is empty");
-         // これは以下で実現できる．変更2021/06/18
          auto [q0, q1, q2] = f->getPoints(this);
          Vps.push_back(V_netPp{q1, q2});
       }
@@ -1170,8 +1159,17 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
 };
 // 逆方向の立体角
 inline double networkPoint::getSolidAngle() const {
-   return SolidAngle(this->X, extX(this->getNeighborsSort()));
+   auto ret = SolidAngle(this->X, extX(this->getNeighborsSort()));
+   // std::cout << "ret = " << ret << std::endl;
+   return ret;
 };
+
+inline double networkPoint::getMinimalSolidAngle() const {
+   const double TWO_PI = 2. * M_PI;
+   auto ratio = getSolidAngle() / TWO_PI;
+   return TWO_PI * (ratio >= 1. ? (2. - ratio) : ratio);
+};
+
 // inline double networkPoint::getSolidAngleBuffer() const {
 //    return SolidAngle(this->getXBuffer(), extXBuffer(this->getNeighborsSort()));
 // };
