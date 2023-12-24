@@ -38,13 +38,18 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 #elif defined(USE_LeapFrog)
             const double dt = A->LPFG_X.get_dt();
 #endif
-
-            A->checked_points_in_radius_SPH = A->checked_points_in_radius_of_fluid_SPH = A->checked_points_SPH = 0;
             A->div_U = 0.;
             A->lap_U.fill(0.);
             A->b_vector.fill(0.);
             A->U_XSPH.fill(0.);
             A->U_next.fill(0.);
+            A->DUDt_modify_SPH.fill(0.);
+            A->DUDt_SPH.fill(0.);
+            A->DrhoDt_SPH = 0.;
+
+            //! ラプラシアンの修正行列の一部を計算する
+            Fill(A->tensorproduct_grad_Uij, 0.);
+            Fill(A->tensorproduct_grad_Uij_next, 0.);
             // A->grad_U.fill({0., 0., 0.});
             const auto r = A->SML();
             const auto center = A->X;
@@ -57,9 +62,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             };
 
-            //! ラプラシアンの修正行列の一部を計算する
-            Fill(A->tensorproduct_grad_Uij, 0.);
-            Fill(A->tensorproduct_grad_Uij_next, 0.);
             applyOverPoints([&](const auto &Q) {
                if (canInteract(A, Q) && A != Q) {
                   A->tensorproduct_grad_Uij += TensorProduct(Q->volume * grad_w_Bspline(A, Q), Q->U_SPH - A->U_SPH);
@@ -70,7 +72,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.005;  // 少しは必要のようだ
+            const double c_xsph = 0.01;  // 少しは必要のようだ
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -115,13 +117,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 #endif
                // A->lap_U += Aij * Uij;  //\label{SPH:lapU}
                FusedMultiplyIncrement(Aij, Uij, A->lap_U);
-
-               if (Between(Distance(A, B), {1E-13, A->SML()})) {
-                  A->checked_points_in_radius_SPH++;
-                  if (B->getNetwork()->isFluid || B->isFluid)
-                     A->checked_points_in_radius_of_fluid_SPH++;
-               }
-               A->checked_points_SPH++;
             };
 
             applyOverPoints(add);
@@ -143,98 +138,123 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             // \label{SPH:how_to_set_fluid_b_vector}
             const double dt = A->RK_X.get_dt();
             if (A->getNetwork()->isRigidBody) {
-               A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
-               A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
+               A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;  // + A->DUDt_modify_SPH;
+               A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
                A->DUDt_SPH += _GRAVITY3_;
                A->DrhoDt_SPH = -A->rho * A->div_U;
             } else {
-               A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
-               A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
+               A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;  // + A->DUDt_modify_SPH;
+               A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
                A->DUDt_SPH += _GRAVITY3_;
                A->DrhoDt_SPH = -A->rho * A->div_U;
+            }
+            if (!isFinite(A->DUDt_SPH)) {
+               // show details
+               std::cout << "A->DUDt_SPH = " << A->DUDt_SPH << std::endl;
+               std::cout << "A->mu_SPH = " << A->mu_SPH << std::endl;
+               std::cout << "A->rho = " << A->rho << std::endl;
+               std::cout << "A->lap_U = " << A->lap_U << std::endl;
+               std::cout << "A->U_XSPH = " << A->U_XSPH << std::endl;
+               std::cout << "dt = " << dt << std::endl;
+               std::cout << "A->U_SPH = " << A->U_SPH << std::endl;
+               std::cout << "A->b_vector = " << A->b_vector << std::endl;
+               std::cout << "A->DrhoDt_SPH = " << A->DrhoDt_SPH << std::endl;
+               std::cout << "A->div_U = " << A->div_U << std::endl;
+               std::cout << "A->laplacian_corr_M = " << A->laplacian_corr_M << std::endl;
+               std::cout << "A->laplacian_corr_M_next = " << A->laplacian_corr_M_next << std::endl;
+               std::cout << "A->grad_corr_M = " << A->grad_corr_M << std::endl;
+               std::cout << "A->grad_corr_M_next = " << A->grad_corr_M_next << std::endl;
+               std::cout << "A->inv_grad_corr_M = " << A->inv_grad_corr_M << std::endl;
+               std::cout << "A->inv_grad_corr_M_next = " << A->inv_grad_corr_M_next << std::endl;
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
             }
          }
       }
       //
       // b% ------------------------------------ さらなる修正 ------------------------------------ */
 
-#pragma omp parallel
-      for (const auto &A : points)
-#pragma omp single nowait
-      {
-         A->DUDt_modify_SPH.fill(0.);
-         if (A->isFluid) {
-#if defined(USE_RungeKutta)
-            const double dt = A->RK_X.get_dt();
-#elif defined(USE_LeapFrog)
-            const double dt = A->LPFG_X.get_dt();
-#endif
+      // #pragma omp parallel
+      //       for (const auto &A : points)
+      // #pragma omp single nowait
+      //       {
+      //          A->DUDt_modify_SPH.fill(0.);
+      //          if (A->isFluid) {
+      // #if defined(USE_RungeKutta)
+      //             const double dt = A->RK_X.get_dt();
+      // #elif defined(USE_LeapFrog)
+      //             const double dt = A->LPFG_X.get_dt();
+      // #endif
 
-            const auto r = A->SML();
-            const auto center = A->X;
-            auto applyOverPoints = [&](const auto &equation) {
-               for (const auto &net : target_nets) {
-                  net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
-                     if (canInteract(A, B))
-                        equation(B);
-                  });
-               }
-            };
+      //             const auto r = A->SML();
+      //             const auto center = A->X;
 
-            // 修正１
-            auto V = Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original));
-            auto [Vn, Vs] = DecomposeVector(V, V);
-            const double c = 0.00001;  // 効果的
-            if (A->isNearSurface) {
-               A->DUDt_modify_SPH = c * Vs * std::pow(A->particle_spacing / dt, 2) / 1000.;
-            } else {
-               A->DUDt_modify_SPH = c * V * std::pow(A->particle_spacing / dt, 2) / 1000.;
-            }
+      //             // 修正１
+      //             auto V = Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original));
+      //             auto [Vn, Vs] = DecomposeVector(V, V);
+      //             // const double c = 0.00001;  //よかった2023/12/18
+      //             const double c = dt / 100.;  // 効果的
+      //             if (A->isNearSurface) {
+      //                A->DUDt_modify_SPH = c * Vs * std::pow(A->particle_spacing / dt, 2) / 1000.;
+      //             } else {
+      //                A->DUDt_modify_SPH = c * V * std::pow(A->particle_spacing / dt, 2) / 1000.;
+      //             }
 
-            // 修正２
-            // auto add = [&](const auto &B) {
-            //    if (A == B || A->isAuxiliary || B->isAuxiliary || !A->isFluid)
-            //       return;
-            //    if (A->isFluid && B->isFluid) {
-            //       const auto vec_A2B = X_next(B) - X_next(A);
-            //       if (Norm(vec_A2B) < A->particle_spacing) {
-            //          const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
-            //          if (Dot(relative_velocity, vec_A2B) < 0) {
-            //             if (A->isNearSurface) {
-            //                A->DUDt_modify_SPH -= 0.001 * Projection(relative_velocity, vec_A2B) / dt;
-            //             } else {
-            //                A->DUDt_modify_SPH -= 0.001 * Projection(relative_velocity, vec_A2B) / dt;
-            //             }
-            //          }
-            //       }
-            //    }
-            // };
+      //             // 修正２
+      //             // auto applyOverPoints = [&](const auto &equation) {
+      //             //    for (const auto &net : target_nets) {
+      //             //       net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
+      //             //          if (canInteract(A, B))
+      //             //             equation(B);
+      //             //       });
+      //             //    }
+      //             // };
+      //             // // 次はこれで試す
+      //             // auto add = [&](const auto &B) {
+      //             //    if (A == B || A->isAuxiliary || B->isAuxiliary || !A->isFluid)
+      //             //       return;
+      //             //    if (A->isFluid && B->isFluid) {
+      //             //       const auto vec_A2B = X_next(B) - X_next(A);
+      //             //       auto [vec_A2B_normal, vec_A2B_tangential] = DecomposeVector(vec_A2B, Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original)));
+      //             //       if (Norm(vec_A2B) < 0.5 * A->particle_spacing) {
+      //             //          const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
+      //             //          if (Dot(relative_velocity, vec_A2B) < 0) {
+      //             //             if (A->isSurface) {
+      //             //                A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B_tangential) / dt;
+      //             //             } else {
+      //             //                A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B) / dt;
+      //             //             }
+      //             //          }
+      //             //       }
+      //             //    }
+      //             // };
 
-            // applyOverPoints(add);
-         }
-      }
+      //             // applyOverPoints(add);
+      //          }
+      //       }
 
-#pragma omp parallel
-      for (const auto &A : points)
-#pragma omp single nowait
-      {
-#if defined(USE_RungeKutta)
-         const double dt = A->RK_X.get_dt();
-#elif defined(USE_LeapFrog)
-         const double dt = A->LPFG_X.get_dt();
-#endif
-         if (A->getNetwork()->isRigidBody) {
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
-            A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
-            A->DUDt_SPH += _GRAVITY3_;
-            A->DrhoDt_SPH = -A->rho * A->div_U;
-         } else {
-            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
-            A->b_vector = FusedMultiplyAdd(A->rho / dt, (A->U_SPH + A->U_XSPH), A->mu_SPH * A->lap_U);
-            A->DUDt_SPH += _GRAVITY3_;
-            A->DrhoDt_SPH = -A->rho * A->div_U;
-         }
-      }
+      // #pragma omp parallel
+      //       for (const auto &A : points)
+      // #pragma omp single nowait
+      //       {
+      //          /* ----------------------- calculate DUDt and b_vector ---------------------- */
+
+      //          // \label{SPH:lapU_for_wall}
+      //          // \label{SPH:Poisson_b_vector}
+      //          // \label{SPH:how_to_set_fluid_b_vector}
+      //          const double dt = A->RK_X.get_dt();
+      //          if (A->getNetwork()->isRigidBody) {
+      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
+      //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+      //             A->DUDt_SPH += _GRAVITY3_;
+      //             A->DrhoDt_SPH = -A->rho * A->div_U;
+      //          } else {
+      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
+      //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+      //             A->DUDt_SPH += _GRAVITY3_;
+      //             A->DrhoDt_SPH = -A->rho * A->div_U;
+      //          }
+      //       }
+
       // b$ --------------------------------- 壁面での反射 --------------------------------- */
       //! 壁の反射を先に取り込めば計算精度が上がるかもしれない
       //       {
@@ -289,7 +309,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //          }
       //          // setCorrectionMatrix(target_nets);
       //       }
-
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in calcLaplacianU");
    };

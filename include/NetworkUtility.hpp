@@ -372,7 +372,7 @@ Tddd EquilateralVertexAveragingVector(const networkPoint *p, const std::array<do
          Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
          height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
-         V += Wtot*(height * vertical + Xmid);
+         V += Wtot * (height * vertical + Xmid);
       }
       return V / Wtot - current_pX;
    } else
@@ -416,8 +416,9 @@ void flipIf(Network &water,
       double mean_length = Mean(extLength(water.getLines()));
       bool isfound = false, ismerged = false;
       int count = 0;
-      // auto V = ToVector(water.getLines());
-      for (const auto &l : water.getLines()) {
+      auto V = ToVector(water.getLines());
+      // ランダムにソート
+      for (const auto &l : RandomSample(V)) {
          auto [p0, p1] = l->getPoints();
          if (!l->CORNER) {
             if (force && (iteration == 0 || count < iteration)) {
@@ -431,10 +432,10 @@ void flipIf(Network &water,
             } else {
                if (l->Dirichlet) {
                   //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 4);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
                   if (isfound) count++;
                }
             }

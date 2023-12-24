@@ -1,6 +1,0 @@
-{
-    "name": "tank",
-    "type": "RigidBody",
-    "isFixed": true,
-    "objfile": "/Volumes/home/student/2023Tamatsu/Hadzic2005//tank10.obj"
-}

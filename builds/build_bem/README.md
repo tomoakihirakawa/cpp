@@ -89,7 +89,7 @@
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L251](./main.cpp#L251)
+[./main.cpp#L261](./main.cpp#L261)
 
 ---
 ## ⛵ 境界のタイプを決定する 
@@ -166,7 +166,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L959](../../include/Network.hpp#L959)
+[../../include/Network.hpp#L970](../../include/Network.hpp#L970)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -439,12 +439,12 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L250)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L255)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L138)で接線方向にシフトし，
-2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L147)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L143)で接線方向にシフトし，
+2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L152)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-[./BEM_calculateVelocities.hpp#L229](./BEM_calculateVelocities.hpp#L229)
+[./BEM_calculateVelocities.hpp#L234](./BEM_calculateVelocities.hpp#L234)
 
 ---
 ## ⛵ 浮体動揺解析 
@@ -618,7 +618,7 @@ $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L373](./main.cpp#L373)
+[./main.cpp#L383](./main.cpp#L383)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -697,7 +697,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L384)
+[強制運動を課す](../../builds/build_bem/main.cpp#L394)
 
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L306)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
@@ -776,7 +776,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L642](./main.cpp#L642)
+[./main.cpp#L667](./main.cpp#L667)
 
 ---
 ## ⛵ その他 
@@ -840,7 +840,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L367](./BEM_calculateVelocities.hpp#L367)
+[./BEM_calculateVelocities.hpp#L375](./BEM_calculateVelocities.hpp#L375)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -855,7 +855,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L454](./BEM_calculateVelocities.hpp#L454)
+[./BEM_calculateVelocities.hpp#L462](./BEM_calculateVelocities.hpp#L462)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -893,7 +893,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L506](./main.cpp#L506)
+[./main.cpp#L531](./main.cpp#L531)
 
 ---
 # 🐋 実行方法 
@@ -932,7 +932,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L674](./main.cpp#L674)
+[./main.cpp#L714](./main.cpp#L714)
 
 ---
 # 🐋 Input Generator 
@@ -955,7 +955,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L378](./input_generator.py#L378)
+[./input_generator.py#L377](./input_generator.py#L377)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -969,7 +969,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L246](./input_generator.py#L246)
+[./input_generator.py#L245](./input_generator.py#L245)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -989,6 +989,6 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L714](./main.cpp#L714)
+[./main.cpp#L754](./main.cpp#L754)
 
 ---

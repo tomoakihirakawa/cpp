@@ -1,9 +1,0 @@
-{
-    "name": "wall",
-    "type": "RigidBody",
-    "inactivate": [
-        0.01,
-        1000.0
-    ],
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/../../../../code/cpp/obj/Kamra2019/wall.obj"
-}

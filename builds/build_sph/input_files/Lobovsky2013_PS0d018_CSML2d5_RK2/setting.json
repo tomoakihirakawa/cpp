@@ -1,6 +1,6 @@
 {
     "RK_order": 2,
-    "max_dt": 0.0005,
+    "max_dt": 0.0002,
     "end_time_step": 500000,
     "end_time": 2,
     "CSML": 2.5,

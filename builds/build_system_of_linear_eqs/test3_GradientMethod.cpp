@@ -21,8 +21,8 @@
 #include "lib_measurement.hpp"
 #include "minMaxOfFunctions.hpp"
 
-#define USE_RANDOM_MATRIX
-// #define USE_PREDEFINED_MATRIX
+// #define USE_RANDOM_MATRIX
+#define USE_PREDEFINED_MATRIX
 
 int main() {
 #if defined(USE_RANDOM_MATRIX)

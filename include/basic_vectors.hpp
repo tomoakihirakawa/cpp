@@ -114,7 +114,10 @@ double Det(const VV_d &M) {
 
    // Base case for 2x2 matrix
    if (n == 2) {
-      return M[0][0] * M[1][1] - M[1][0] * M[0][1];
+      // return M[0][0] * M[1][1] - M[1][0] * M[0][1];
+      std::fma(M[0][0], M[1][1], -M[1][0] * M[0][1]);
+   } else if (n == 3) {
+      return std::fma(M[0][0], M[1][1] * M[2][2], M[1][0] * M[2][1] * M[0][2]) - std::fma(M[0][0], M[1][2] * M[2][1], M[1][1] * M[2][2] * M[0][2]) + std::fma(M[0][0], M[1][2] * M[2][1], M[1][1] * M[2][2] * M[0][2]);
    }
 
    double det = 0.0;
@@ -131,8 +134,9 @@ double Det(const VV_d &M) {
          }
       }
 
-      double sign = (col % 2 == 0) ? 1 : -1;
-      det += sign * M[0][col] * Det(subMatrix);
+      // double sign = (col % 2 == 0) ? 1 : -1;
+      // det += sign * M[0][col] * Det(subMatrix);
+      det = std::fma(((col % 2 == 0) ? 1. : -1.) * M[0][col], Det(subMatrix), det);
    }
 
    return det;
@@ -550,7 +554,7 @@ T Dot(const std::vector<T> &vec1, const std::vector<T> &vec2) {
    // return ret;
 
    T ret = 0;
-   const size_t n = vec1.size();
+   const std::size_t n = vec1.size();
    for (size_t i = 0; i < n; ++i)
       ret = std::fma(vec1[i], vec2[i], ret);
    return ret;
@@ -927,8 +931,8 @@ bool myIsfinite(const double v) {
 //       return true;
 // };
 
-bool isFinite(const double v, const double eps = 1E+20) {
-   return !(v < -eps || v > eps || std::isnan(v));
+bool isFinite(const double v, const double max = 1E+20) {
+   return std::abs(v) < max && !std::isinf(v) && !std::isnan(v);
 };
 
 // bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
@@ -1240,7 +1244,7 @@ std::vector<T> Abs(std::vector<T> vec) {
 //       return {std::get<2>(vecs), std::get<0>(vecs), std::get<1>(vecs)};
 // }
 
-// template <typename T, size_t N>
+// template <typename T, std::size_t N>
 // std::array<T, N> RotateLeft(const std::array<T, N> &arr, int n = 1) {
 //    std::array<T, N> result;
 //    n = n % N;
@@ -2159,7 +2163,7 @@ std::vector<double> Subdivide(const double xmin, const double xmax, const int n)
    return ret;
 };
 
-template <typename T, size_t N>
+template <typename T, std::size_t N>
 std::vector<std::array<T, N>> Subdivide(const std::array<T, N> &xmin, const std::array<T, N> &xmax, const int n) {
    std::vector<std::array<T, N>> ret(n + 1);
    int j = 0;

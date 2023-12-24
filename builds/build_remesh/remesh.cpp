@@ -155,7 +155,8 @@ int main(int arg, char **argv) {
                       return EquilateralVertexAveragingVector(p, X);
 #elif remesh_type == 4
                       //! cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp -DOUTPUT_NAME=remeshD; make;./remeshD ./remesh_test_cases/random.obj ./remesh_test_cases randomD 10
-                      return (0.8 * NeighborAverageSmoothingVector(p, X) + 0.1 * EquilateralVertexAveragingVector2(p, X));  d xc
+                      return (0.8 * NeighborAverageSmoothingVector(p, X) + 0.1 * EquilateralVertexAveragingVector2(p, X));
+                      d xc
 #endif
                });
             }

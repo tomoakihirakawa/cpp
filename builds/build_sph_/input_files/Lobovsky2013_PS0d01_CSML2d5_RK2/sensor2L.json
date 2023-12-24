@@ -1,9 +1,0 @@
-{
-    "name": "sensor2L",
-    "type": "probe",
-    "location": [
-        1.61,
-        0.05625,
-        0.015
-    ]
-}

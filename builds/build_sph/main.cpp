@@ -35,7 +35,7 @@ python3 input_generator.py
 */
 
 double delta_t;
-const double too_small_total_w = 1E-3;
+const double too_small_total_w = 1E-2;
 
 #include <filesystem>
 #include <utility>
@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
             // p->v_to_surface_SPH = ((int)(Distance(X, p) / ps) + 1 / 2.) * ps * Normalize(X - p->X);
             // p->v_to_surface_SPH = p->v_to_surface_SPH = ((int)(Distance(X, p) / ps)) * ps * Normalize(X - p->X);
 
-            p->v_to_surface_SPH = p->normal_SPH = ((int)(Distance(X, p) / ps) + .5) * ps * Normalize(X - p->X);
+            p->v_to_surface_SPH = p->normal_SPH = ((int)(std::abs((Distance(X, p) / ps))) + .5) * ps * Normalize(X - p->X);
 
             // p->v_to_surface_SPH = p->normal_SPH = X - p->X;
 
@@ -405,7 +405,7 @@ int main(int argc, char **argv) {
                      simulation_time,
                      CSML,
                      particle_spacing,
-                     time_step < 50 ? max_dt / 100 : max_dt,
+                     time_step < 10 ? max_dt / 100 : max_dt,
                      // max_dt,
                      RK_order);
 
@@ -648,17 +648,19 @@ int main(int argc, char **argv) {
             net2PVD[poly]->push(name, simulation_time);
             net2PVD[poly]->output();
          }
-         /* -------------------------------------------------------------------------- */
-         auto bound = CoordinateBounds(WaveTank->bounds) + CoordinateBounds(Fluid->bounds);
-         auto points = Fluid->getPoints();
-         for (const auto &p : points) {
-            if (!bound.isInside(p->X)) {
-               std::cout << Blue << "delete" << std::endl;
-               delete p;
-            }
-         }
-
          k++;
+      }
+
+      // delete
+      auto bound = CoordinateBounds(WaveTank->scaledBounds(1.5));  // + CoordinateBounds(Fluid->bounds);
+      auto points = Fluid->getPoints();
+      for (const auto &p : points) {
+         if (!bound.isInside(p->X)) {
+            std::cout << Blue << "delete" << std::endl;
+            showParticleInfo(p);
+            // std::cin.ignore();
+            delete p;
+         }
       }
    }
 };

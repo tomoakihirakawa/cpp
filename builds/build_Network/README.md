@@ -44,7 +44,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4034)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4038)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -230,7 +230,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1580)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1606)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -246,7 +246,7 @@ make
 ---
 ### 🪼 面同士の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1580)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](../../include/basic_geometry.hpp#L1606)関数は，交差判定には使えるが，接触判定には使えない．
 
 接触は，ギリギリ交差している状態を指すだろうが，
 実際に接触判定を応用する場面では，

@@ -3,7 +3,7 @@
 
 // # -------------------------------------------------------------------------- */
 std::array<double, 3> grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-#ifdef USE_GRAD_LAPLACIAN_CORRECTION
+#ifdef USE_GRAD_CORRECTION
    return grad_w_Bspline(pX, qX, p->SML(), p->inv_grad_corr_M);
 #else
    return grad_w_Bspline(pX, qX, p->SML());
@@ -25,8 +25,9 @@ std::array<double, 3> grad_w_Bspline(const networkPoint *p, Tddd &pX, const netw
 // # -------------------------------------------------------------------------- */
 
 double Dot_grad_w_Bspline_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-#ifdef USE_GRAD_LAPLACIAN_CORRECTION
+#ifdef USE_LAPLACIAN_CORRECTION
    return Dot_grad_w_Bspline(pX, qX, p->SML(), p->laplacian_corr_M);
+      // return Dot_grad_w_Bspline(pX, qX, p->SML(), p->inv_grad_corr_M);
 #else
    return Dot_grad_w_Bspline(pX, qX, p->SML());
 #endif
@@ -47,7 +48,7 @@ double Dot_grad_w_Bspline(const networkPoint *p, Tddd &X, const Tddd &qX) {
 //! -------------------------------------------------------------------------- */
 
 std::array<double, 3> grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-#ifdef USE_GRAD_LAPLACIAN_CORRECTION
+#ifdef USE_GRAD_CORRECTION
    return grad_w_Bspline(pX, qX, p->SML_next(), p->inv_grad_corr_M_next);
 #else
    return grad_w_Bspline(pX, qX, p->SML_next());
@@ -69,7 +70,7 @@ std::array<double, 3> grad_w_Bspline_next(const networkPoint *p, const Tddd &X) 
 //! -------------------------------------------------------------------------- */
 
 double Dot_grad_w_Bspline_next_helper(const networkPoint *p, const Tddd &pX, const Tddd &qX) {
-#ifdef USE_GRAD_LAPLACIAN_CORRECTION
+#ifdef USE_LAPLACIAN_CORRECTION
    return Dot_grad_w_Bspline(pX, qX, p->SML_next(), p->laplacian_corr_M_next);
 #else
    return Dot_grad_w_Bspline(pX, qX, p->SML_next());

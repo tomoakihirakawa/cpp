@@ -259,6 +259,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
       uomap_P_d P_solidAngle = p_d0;
+      uomap_P_d P_solidAngle_steepness = p_d0;
       uomap_P_d P_phin = p_d0;
       uomap_P_d P_phi_t = p_d0;
       uomap_P_d P_phin_t = p_d0;
@@ -318,6 +319,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_gradPhi[p] = p->U_BEM;
             P_vecToSurface[p] = p->vecToSurface;
             P_solidAngle[p] = p->getSolidAngle();
+            P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -337,6 +339,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"grad_phi", P_gradPhi},
              {"vecToSurface", P_vecToSurface},
              {"solidAngle", P_solidAngle},
+             {"solidAngle_steepness", P_solidAngle_steepness},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},
@@ -371,10 +374,12 @@ double dt_CFL(const Network &water, double min_dt, const double c) {
       for (const auto &P : p->getNeighbors())
          for (const auto &q : P->getNeighbors())
             if (p != q) {
-               // auto dt = c * Distance(p, q) / Norm(p->U_BEM);         // Norm(p->U_BEM - q->U_BEM);
+               auto dt = c * Distance(p, q) / Norm(p->U_BEM);  // Norm(p->U_BEM - q->U_BEM);
                // auto dt = c * Distance(p, q) / Norm(p->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+               if (isFinite(dt) && min_dt > dt)
+                  min_dt = dt;
 
-               auto dt = c * Distance(p, q) / Norm(p->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+               dt = c * Distance(p, q) / Norm(p->U_update_BEM - q->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
 
                if (isFinite(dt) && min_dt > dt)
                   min_dt = dt;

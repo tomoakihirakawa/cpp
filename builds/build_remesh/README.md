@@ -5,7 +5,6 @@
         - [🪼 🪼 `flip`可能かどうかの判定](#🪼-🪼-`flip`可能かどうかの判定)
         - [🪼 🪼 格子の平滑化](#🪼-🪼-格子の平滑化)
     - [⛵ 実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）](#⛵-実行ファイルの作成方法（`remesh.cpp`のコンパイル方法）)
-    - [⛵ 実行方法](#⛵-実行方法)
 
 
 ---
@@ -33,7 +32,7 @@
 * 三角形の内角が小さすぎる，または大きすぎる場合
 * 内角の和が$`\pi`$にならない場合
 
-信頼できる三角形の判定には，[`isValidTriangle`](../../include/basic_vectors.hpp#L1928)を用いる．
+信頼できる三角形の判定には，[`isValidTriangle`](../../include/basic_vectors.hpp#L1981)を用いる．
 [../../include/networkLine.hpp#L1591](../../include/networkLine.hpp#L1591)
 
 
@@ -49,7 +48,7 @@
 | Distorsion measure weighted smoothing   | 隣接面の歪みに関する係数を重みとして掛けて，面の中心に移動させる．|
 
 共通点は，許されない移動を防止する移動前に，移動後の形状をチェックすることである．
-`canFlip`と同様，[`isValidTriangle`](../../include/basic_vectors.hpp#L1928)を用いる．
+`canFlip`と同様，[`isValidTriangle`](../../include/basic_vectors.hpp#L1981)を用いる．
 
 徐々に移動させる場合，誤差の蓄積，条件の変化を把握するのが難しい．
 大きな変化は防げても，小さな変化には対応できない場合が考えられる．
@@ -63,16 +62,12 @@
 3. `make`コマンドで，`Makefile`に基づいて実行ファイルをコンパイルする.
 
 ```shell
-$ sh clean
-$ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
-$ make
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp
+make
 ```
 
-`remesh`という実行ファイルができる．
-
-## ⛵ 実行方法 
-
-`n`回の細分化を行う．
+`remesh`という実行ファイルができる．`n`回の細分化を行う場合は，以下のように実行する．
 
 ```
 ./remesh input_file output_dir output_name n

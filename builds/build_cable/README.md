@@ -42,12 +42,28 @@ make
 ## ⛵ ⛵ 浮体係留用に`Network`の派生クラスを作成  
 
 `networkLine`には，`natural_length`，`stiffness`，`damping`，`weight_per_unit_length`の4つのパラメータを持たせる．
-
 `natural_length`は，`moorinLine`の`total_length`と`MooringLine`の`getPoints().size()`から決まる．
-
 それをまとめる`MooringLine`は，`total_length`を持つ．
 
-📝 内部で，自動でタイムステップを細かく取り，与えられた時間までシミュレーションするようにしたい．
+```cpp
+const int n_points = 100;
+const double total_length = 522.; //! [m]
+std::array<double,3> X_anchor = {r * std::cos(0.), r * std::sin(0.), h}
+std::array<double,3> X_ = {0., 0., 0.}
+auto mooring = new MooringLine(X_anchor, X_fairlead, total_length, n_points);　//mooringオブジェクトの作成
+```
+
+次のように物性の設定を行う．
+
+```cpp
+mooring->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
+```
+
+考えられる係留索クラスの使い道は，
+単点（フェアリード）の位置がわかっていて，そこでの係留索が及ぼす力を計算するというもの．
+前時刻の係留索の曲線から，少しずつ係留索を時間発展させて，現在の係留索の曲線を求め，その節点の配置から，力を計算できる．
+
+移動速度がわかっている節点にはその条件を与え，わからないものに関しては，各時刻の張力と重力と抗力から，運動方程式を解いていく．
 [../../include/MooringLine.hpp#L6](../../include/MooringLine.hpp#L6)
 
 [./main.cpp#L16](./main.cpp#L16)

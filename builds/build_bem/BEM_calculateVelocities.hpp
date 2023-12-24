@@ -96,10 +96,18 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
 };
 
 void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p) {
-   p->vecToSurface += p->vecToSurface_BUFFER;
-   if (!isFinite(p->vecToSurface))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not finite");
+   if (isFinite(p->vecToSurface_BUFFER))
+      p->vecToSurface += p->vecToSurface_BUFFER;
 };
+
+std::array<double, 3> nextPositionOnBody(Network *net, networkPoint *p) {
+   if (!net->isFixed && net->isRigidBody) {
+      auto next_COM = net->RK_COM.getX(net->velocityTranslational());
+      auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(net->velocityRotational(), net->Q)));
+      return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX);
+   } else
+      return p->X;
+}
 
 std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs) {
    std::vector<T3Tddd> ret(Fs.size());
@@ -118,10 +126,7 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 
          auto next_COM = net->RK_COM.getX(net->velocityTranslational());
          auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(net->velocityRotational(), net->Q)));
-
-         auto X_next = [&](const auto &p) {
-            return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX);
-         };
+         auto X_next = [&](const auto &p) { return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX); };
 
          ret[i] = {X_next(p0), X_next(p1), X_next(p2)};
       } else if (net->isSoftBody) {
@@ -258,7 +263,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.15, a;
+      double aIN = 0.1, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
       // const double scale = aIN;
@@ -291,7 +296,10 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
             // auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
             // auto V = (NeighborAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X, [&](const auto f) { return f->Dirichlet ? 1. : 0.5; })) / 2.;
             auto V = (NeighborAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
-            V = scale * V;
+            // std::cout << "angle_coeff = " << angle_coeff << std::endl;
+            double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
+            if (flatness > 0.6) flatness = 1.;
+            V = scale * V * flatness;
             /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);
          }

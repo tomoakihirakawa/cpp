@@ -150,7 +150,7 @@ struct PVDWriter {
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
       for (const auto &name_time : V_vtuFileName_time)
-         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%lf\"/>\n", std::get<0>(name_time).c_str(), std::get<1>(name_time));
+         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%10lf\"/>\n", std::get<0>(name_time).c_str(), std::get<1>(name_time));
       fprintf(fp, "  </Collection>\n");
       fprintf(fp, "</VTKFile>\n");
       fclose(fp);
@@ -669,6 +669,6 @@ void mk_vtu(const std::string &filename,
       for (const auto &v : vv)
          delete v;
 };
-   /*DataArray_code*/
+/*DataArray_code*/
 
 #endif

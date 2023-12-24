@@ -34,7 +34,7 @@ double real_sph_scale_ommited(const int l, const int m, const double theta, cons
 /*              表示方法に関するライブラリ                     */
 /* ------------------------------------------------------ */
 // 2021/08/02追加
-using Var_SID = std::variant<std::string, int, size_t, double, std::vector<double>, std::vector<int>, Tddd, T6d>;
+using Var_SID = std::variant<std::string, int, std::size_t, double, std::vector<double>, std::vector<int>, Tddd, T6d>;
 using V_Var_SID = std::vector<Var_SID>;
 using VV_Var_SID = std::vector<std::vector<Var_SID>>;
 
@@ -682,10 +682,10 @@ std::vector<T> Append(std::vector<T> a, const T &b) {
    a.insert(a.end(), b);
    return a;
 };
-template <typename T, size_t N>
+template <typename T, std::size_t N>
 std::array<T, N + 1> Append(std::array<T, N> a, const T &b) {
    std::array<T, N + 1> ret;
-   size_t i = 0;
+   std::size_t i = 0;
    for (const auto &o : a)
       ret[i++] = o;
    ret[i] = b;
@@ -1726,10 +1726,10 @@ V_s StringSplit(const std::string &strIN, const V_s &SEP) {
    std::string str(strIN), foundFirstSep; /* expexting "1,2,3,4,5" or "1, 2,3, 4,5"*/
    V_s ret(0), tmp(0);
    while (!str.empty()) {
-      size_t foundFirst(999999);
+      std::size_t foundFirst(999999);
       bool bfound(false);
       for (const auto &sep : SEP) {
-         size_t found = str.find(sep);
+         std::size_t found = str.find(sep);
          if (!sep.empty()                                       /* ignore sep, "" */
              && found != std::string::npos                      /* if sep is found */
              && (found < foundFirst)) /* choose closest one */  // do not use "<=" instead
@@ -2410,7 +2410,7 @@ V_d string_to_vector_double(const std::string &strIN, const V_s &SEP) {
    return ret;
    // std::string str(strIN);/* expexting "1,2,3,4,5" or "1, 2,3, 4,5"*/
    // V_d ret(0);
-   // size_t found;
+   // std::size_t found;
    // int i(0);
    // while(!str.empty())
    //   {
@@ -2442,7 +2442,7 @@ V_d string_to_vector_double(const std::string &strIN, const V_s &SEP) {
 V_s to_cell(const std::string &strIN) {
    std::string str(strIN); /* expexting "{1,2,3,4,5} {1,2,3,4,5} {1,2,3,4,5}"*/
    V_s ret(0);
-   size_t right, left;
+   std::size_t right, left;
    // int i(0);
    while (!str.empty()) {
       if ((left = str.find("{")) != std::string::npos) {

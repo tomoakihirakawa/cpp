@@ -179,8 +179,24 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
          // if (A->isNeumannSurface)
          //    A->DUDt_SPH = Chop(A->DUDt_SPH, A->interp_normal_water);
 
-         if (!isFinite(A->DUDt_SPH))
+         if (!isFinite(A->DUDt_SPH)) {
+            std::cout << "A->DUDt_SPH = " << A->DUDt_SPH << std::endl;
+            std::cout << "A->mu_SPH = " << A->mu_SPH << std::endl;
+            std::cout << "A->rho = " << A->rho << std::endl;
+            std::cout << "A->lap_U = " << A->lap_U << std::endl;
+            std::cout << "A->U_XSPH = " << A->U_XSPH << std::endl;
+            std::cout << "A->U_SPH = " << A->U_SPH << std::endl;
+            std::cout << "A->b_vector = " << A->b_vector << std::endl;
+            std::cout << "A->DrhoDt_SPH = " << A->DrhoDt_SPH << std::endl;
+            std::cout << "A->div_U = " << A->div_U << std::endl;
+            std::cout << "A->gradP_SPH = " << A->gradP_SPH << std::endl;
+            std::cout << "A->laplacian_corr_M = " << A->laplacian_corr_M << std::endl;
+            std::cout << "A->grad_corr_M = " << A->grad_corr_M << std::endl;
+            std::cout << "A->grad_corr_M_next = " << A->grad_corr_M_next << std::endl;
+            std::cout << "A->inv_grad_corr_M = " << A->inv_grad_corr_M << std::endl;
+            std::cout << "A->inv_grad_corr_M_next = " << A->inv_grad_corr_M_next << std::endl;
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
+         }
       }
 
       // for (const auto &A : points) {

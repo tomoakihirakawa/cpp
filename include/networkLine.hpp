@@ -1723,10 +1723,10 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
          // }
          // else
          if (min_init <= min_later &&
-             (next_s0 >= min_n || p0->CORNER) &&
-             (next_s1 >= min_n || p1->CORNER) &&
-             (next_s2 >= min_n || p2->CORNER) &&
-             (next_s3 >= min_n || p3->CORNER)) {
+             (next_s0 >= min_n || p0->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+             (next_s1 >= min_n || p1->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+             (next_s2 >= min_n || p2->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+             (next_s3 >= min_n || p3->CORNER /*min_nよりも小さくても，角ならOK*/)) {
             this->flip();
             return true;
          } else

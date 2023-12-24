@@ -389,8 +389,8 @@ namespace std {
 
 template <typename... TT>
 struct hash<std::tuple<TT...>> {
-   size_t operator()(std::tuple<TT...> const &tt) const {
-      size_t seed = 0;
+   std::size_t operator()(std::tuple<TT...> const &tt) const {
+      std::size_t seed = 0;
       std::apply([&](auto const &...args) {
          ((seed ^= hash<TT>()(args) + 0x9e3779b9 + (seed << 6) + (seed >> 2)), ...);
       },
