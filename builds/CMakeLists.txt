@@ -131,8 +131,8 @@ target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
 # target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
 
 # # Find and link CGAL
-# find_package(CGAL REQUIRED)
-# target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
+find_package(CGAL REQUIRED)
+target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
 
 # Include directories
 target_include_directories(${BASE_NAME} PUBLIC

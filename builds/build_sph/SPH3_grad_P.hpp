@@ -67,8 +67,11 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 #ifdef USE_SYMMETRIC_FORM_FOR_PRESSURE_GRADIENT
             //! ダムブレイクの計算で壁面付近の粒子の挙動はこっちの方が良かった．
             //! この方法は運動量を保存するらしい．
-            FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)), grad, A->gradP_SPH);
-            FusedMultiplyIncrement(A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
+            if (A->var_Eigenvalues_of_M < 0.1)
+               FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
+            else
+               FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)) + A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
+
 #elif defined(USE_SUBTRACTIVE_FORM_FOR_PRESSURE_GRADIENT)
             //! 静水の計算でこっちの方が良かった．
             FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);

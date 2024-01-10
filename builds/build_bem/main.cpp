@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
 
    /* -------------------------------------------------------------------------- */
 
-   auto water = FluidObject[0];
+   // auto water = FluidObject[0];
    PVDWriter cornerPointsPVD(output_directory + "/cornerPointsPVD.pvd");
    PVDWriter cornerPVD(output_directory + "/corner.pvd");
    Print("setting done");
@@ -285,54 +285,87 @@ int main(int argc, char **argv) {
       //  b*                         メインループ                      */
       //  b* ------------------------------------------------------ */
       TimeWatch watch;
+      Buckets<networkFace *> FMM_BucketsFaces;
+      Buckets<networkPoint *> FMM_BucketsPoints;
       for (time_step = 0; time_step < end_time_step; time_step++) {
-         if (end_time < simulation_time) break;
-         show_info(*water);
-         //! 体積を保存するようにリメッシュする必要があるだろう．
-         setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
-         double rad = M_PI / 180;
+         if (end_time < simulation_time)
+            break;
 
-         {
-            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-            flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-         }
-         if (time_step < 10) {
-            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-            flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-         }
-         // b# ------------------------------------------------------ */
-         // b#                       刻み時間の決定                     */
-         // b# ------------------------------------------------------ */
+         double dt = 1E+20;
+         int RK_order = 4;
 
-         const auto Points = water->getPoints();
-         const auto Faces = water->getFaces();
-         double dt = dt_CFL(*water, max_dt, .2);
-         if (time_step <= 10)
-            dt = 0.000001;
+         // double spacing = 0.;
+         // for (auto &water : FluidObject)
+         //    spacing += Mean(extLength(water->getLines())) * 10;
+         // spacing /= FluidObject.size();
+
+         CoordinateBounds bounds(FluidObject[0]->bounds);
+         for (auto &water : FluidObject)
+            bounds += water->bounds;
+
+         FMM_BucketsFaces.initialize(bounds, bounds.getScale() / 10.);
+         FMM_BucketsPoints.initialize(bounds, bounds.getScale() / 10.);
+
+         for (auto &water : FluidObject) {
+            show_info(*water);
+            // b# ------------------------------------------------------ */
+            // b#                       刻み時間の決定                     */
+            // b# ------------------------------------------------------ */
+            auto dt_cfl = dt_CFL(*water, max_dt, .5);
+
+            if (dt > dt_cfl)
+               dt = dt_cfl;
+            if (time_step <= 10 && dt > 0.00001)
+               dt = 0.00001;
+         }
+         if (dt < 1E-13)
+            dt = 1E-13;
          Print("===========================================================================");
-         Print("       dt :" + Red + std::to_string(dt) + colorReset);
-         Print("time_step :" + Red + std::to_string(time_step) + colorReset);
-         Print("real time :" + Red + std::to_string(simulation_time) + colorReset);
+         Print("       dt :", Red, std::setprecision(10), dt, colorReset);
+         Print("time_step :", Red, time_step, colorReset);
+         Print("real time :", Red, simulation_time, colorReset);
          Print("---------------------------------------------------------------------------");
 
-         double spacing = Mean(extLength(water->getLines())) * 3;
-         Buckets<networkFace *> FMM_BucketsFaces(water->bounds, spacing);
-         Buckets<networkPoint *> FMM_BucketsPoints(water->bounds, spacing);
-         for (const auto &f : water->getFaces())
-            FMM_BucketsFaces.add(f->getXtuple(), f);
+         Print("makeBucketFaces", Green);
 
-         for (const auto &p : water->getPoints())
-            FMM_BucketsPoints.add(ToX(p), p);
+#pragma omp parallel
+         for (const auto &net : Join(FluidObject, RigidBodyObject, SoftBodyObject))
+#pragma omp single nowait
+         {
+            // auto spacing = 5 * Mean(extLength(net->getLines()));
+            // net->makeBucketFaces(spacing);
+            // auto spacing = 5 * Mean(extLength(net->getLines()));
+            net->makeBucketFaces(net->getScale() / 10.);
+         }
 
-         // b@ ------------------------------------------------------ */
-         // b@        初期値問題を解く（時間微分方程式を数値積分する）           */
-         // b@ ------------------------------------------------------ */
-         int RK_order = 4;
-         for (const auto &p : Points) {
-            p->RK_phi.initialize(dt, simulation_time, std::get<0>(p->phiphin), RK_order);
-            p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
+         for (auto &water : FluidObject) {
+            //! 体積を保存するようにリメッシュする必要があるだろう．
+            setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+            double rad = M_PI / 180;
+
+            {
+               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+            }
+            if (time_step < 10 && time_step % 1 == 1) {
+               flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+               // flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+               // flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+            }
+
+            // b@ ------------------------------------------------------ */
+            // b@        初期値問題を解く（時間微分方程式を数値積分する）           */
+            // b@ ------------------------------------------------------ */
+            for (const auto &p : water->getPoints()) {
+               p->RK_phi.initialize(dt, simulation_time, std::get<0>(p->phiphin), RK_order);
+               p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
+            }
+
+            for (const auto &f : water->getFaces())
+               FMM_BucketsFaces.add(f->getXtuple(), f);
+            for (const auto &p : water->getPoints())
+               FMM_BucketsPoints.add(ToX(p), p);
          }
          for (const auto &net : RigidBodyObject) {
             net->RK_COM.initialize(dt, simulation_time, net->COM, RK_order);
@@ -353,29 +386,39 @@ int main(int argc, char **argv) {
          int RK_step = 0;
          BEM_BVP BVP;
          do {
-            auto RK_time = (*Points.begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
+            auto RK_time = (*(FMM_BucketsPoints.all_stored_objects).begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", simulation_time = " << simulation_time << std::endl;
 
-            setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+#pragma omp parallel
+            for (const auto &net : Join(FluidObject, RigidBodyObject, SoftBodyObject))
+#pragma omp single nowait
+            {
+               net->makeBucketFaces(net->getScale() / 10.);
+            }
+
+            for (auto water : FluidObject)
+               setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
 
-            BVP.solve(*water, FMM_BucketsPoints, FMM_BucketsFaces);
+            BVP.solve(FluidObject, FMM_BucketsPoints, FMM_BucketsFaces);
             std::cout << Green << "BVP.solve -> {Φ,Φn}が決まる" << Blue << "\nElapsed time: " << Red << watch() << " s\n";
 
-            calculateCurrentVelocities(*water);
+            for (auto water : FluidObject)
+               calculateCurrentVelocities(*water);
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // calculateCurrentUpdateVelocities(*water, 100, (RK_step == 4));
             // if (RK_step == 4)
             //    std::cout << Green << "do shift" << colorReset << " s\n";
             //
-            calculateCurrentUpdateVelocities(*water, 20);
+            for (auto water : FluidObject)
+               calculateCurrentUpdateVelocities(*water, 20);
 
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            BVP.solveForPhiPhin_t(*water, RigidBodyObject);
+            BVP.solveForPhiPhin_t(FluidObject, RigidBodyObject);
             std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // b$ --------------------------------------------------- */
@@ -463,7 +506,7 @@ int main(int argc, char **argv) {
             // b$ --------------------------------------------------- */
 
             //@ Φの時間発展，Φnの時間発展はない
-            for (const auto &p : Points) {
+            for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
                if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
                   p->RK_phi.push(p->DphiDt(p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
@@ -473,18 +516,22 @@ int main(int argc, char **argv) {
                p->setXSingle(p->RK_X.getX());
             }
             // b$ --------------------------------------------------- */
-            std::cout << Green << "name:" << water->getName() << ": setBounds" << colorReset << std::endl;
+            for (auto water : FluidObject)
+               std::cout << Green << "name:" << water->getName() << ": setBounds" << colorReset << std::endl;
 
             for (auto &nets : {FluidObject, RigidBodyObject, SoftBodyObject})
                for (auto &net : nets)
                   net->setGeometricProperties();
 
-            std::ofstream ofs(output_directory + "/water" + std::to_string(RK_step) + ".obj");
-            createOBJ(ofs, *water);
-            ofs.close();
+            for (auto water : FluidObject) {
+               auto name = water->getName();
+               std::ofstream ofs(output_directory + "/" + name + std::to_string(RK_step) + ".obj");
+               createOBJ(ofs, *water);
+               ofs.close();
+            }
 
             std::cout << Blue << "Elapsed time: " << Red << watch() << colorReset << " s\n";
-         } while (!((*Points.begin())->RK_X.finished));
+         } while (!((*(FMM_BucketsPoints.all_stored_objects).begin())->RK_X.finished));
 
          /* -------------------------------------------------------------------------- */
          for (const auto &net : SoftBodyObject)
@@ -495,10 +542,10 @@ int main(int argc, char **argv) {
          //! 速度ポテンシャルの平均を0にする
          {
             double mean_phi = 0.;
-            for (const auto &p : water->getPoints())
+            for (const auto &p : FMM_BucketsPoints.all_stored_objects)
                mean_phi += std::get<0>(p->phiphin);
-            mean_phi /= water->getPoints().size();
-            for (const auto &p : water->getPoints()) {
+            mean_phi /= FMM_BucketsPoints.all_stored_objects.size();
+            for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
                p->phi_Dirichlet -= mean_phi;
                // p->phi_Neumann -= mean_phi;
                std::get<0>(p->phiphin) -= mean_phi;
@@ -512,18 +559,20 @@ int main(int argc, char **argv) {
          /* ------------------------------------------------------ */
 
          std::cout << Green << "simulation_timeを取得" << colorReset << std::endl;
-         simulation_time = (*Points.begin())->RK_X.gett();
+         simulation_time = (*(FMM_BucketsPoints.all_stored_objects).begin())->RK_X.gett();
 
-         for (const auto &p : Points) {
+         for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
             p->U_BEM_last = p->U_BEM;
             p->U_tangential_BEM_last = p->U_tangential_BEM;
          }
 
          /* ------------------------------------------------------ */
-
-         std::ofstream ofs(output_directory + "/water_current.obj");
-         createOBJ(ofs, *water);
-         ofs.close();
+         for (auto water : FluidObject) {
+            auto name = water->getName();
+            std::ofstream ofs(output_directory + "/" + name + ".obj");
+            createOBJ(ofs, *water);
+            ofs.close();
+         }
          // b# -------------------------------------------------------------------------- */
          // b#                              output JSON files                             */
          // b# -------------------------------------------------------------------------- */
@@ -579,15 +628,17 @@ int main(int argc, char **argv) {
          jsonout.push("wall_clock_time", wall_clock_time_in_seconds);
 
          // water
-         jsonout.push(water->getName() + "_volume", water->getVolume());
-         jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
-         jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getFaces()));
-         jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
+         for (const auto &water : FluidObject) {
+            jsonout.push(water->getName() + "_volume", water->getVolume());
+            jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
+            jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getFaces()));
+            jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
+         }
          // bodies
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             if ((net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") ||
                 (net->inputJSON.find("output") && std::ranges::any_of(net->inputJSON.at("output"), [](const auto &s) { return s == "json"; }))) {
-               auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
+               auto tmp = calculateFroudeKrylovForce(FMM_BucketsFaces.all_stored_objects, net);
                jsonout.push(net->getName() + "_pitch", net->quaternion.pitch());
                jsonout.push(net->getName() + "_yaw", net->quaternion.yaw());
                jsonout.push(net->getName() + "_roll", net->quaternion.roll());
@@ -620,7 +671,7 @@ int main(int argc, char **argv) {
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             VV_VarForOutput data;
             if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-               auto tmp = calculateFroudeKrylovForce(water->getFaces(), net);
+               auto tmp = calculateFroudeKrylovForce(FMM_BucketsFaces.all_stored_objects, net);
                uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
                uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure, P_radius;
                //    for (const auto &p : water->getPoints()) {

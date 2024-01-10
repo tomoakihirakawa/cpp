@@ -8,6 +8,12 @@
 brew install CGAL
 ```
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL.cpp
+make
+```
+
 */
 
 #include "Network.hpp"
@@ -110,6 +116,7 @@ int main() {
       std::ofstream ofs(_HOME_DIR_ + "/output_CGAL/tetras.vtp");
       vtkPolygonWrite(ofs, net->getTetras());
       ofs.close();
+      std::cout << "paraview " + _HOME_DIR_ + "/output_CGAL/tetras.vtp" << std::endl;
    }
 
    return 0;

@@ -72,7 +72,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.01;  // 少しは必要のようだ
+            const double c_xsph = 0.02;  // 少しは必要のようだ
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -90,7 +90,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 
                if (A->isFluid && B->isFluid && !B->isAuxiliary && A != B) {
                   // if (((A->isFluid && B->isFluid) || (A->isFluid && B->isFirstWallLayer)) && !B->isAuxiliary && A != B) {
-                  vol_w = B->volume * w_Bspline(Norm(A->X - B->X), csml_factor * A->SML());
+                  vol_w = B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing * 2.1);
                   // if (B->isSurface)
                   //    A->U_XSPH += 2 * c_xsph * (-Uij) * vol_w;  //\label{SPH:U_XSPH}
                   // else
@@ -107,7 +107,8 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                const auto DelX = (A->X - B->X);
 #ifdef USE_PRE_CALC_tensorproduct_grad_Uij
                // A->lap_U -= Aij * Dot(DelX, A->tensorproduct_grad_Uij);
-               FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
+               if (!A->is_grad_corr_M_singular)
+                  FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
 #else
                applyOverPoints([&](const auto &Q) {
                   if (A != Q)
@@ -132,7 +133,6 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
 #pragma omp single nowait
          {
             /* ----------------------- calculate DUDt and b_vector ---------------------- */
-
             // \label{SPH:lapU_for_wall}
             // \label{SPH:Poisson_b_vector}
             // \label{SPH:how_to_set_fluid_b_vector}
@@ -178,6 +178,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       // #pragma omp single nowait
       //       {
       //          A->DUDt_modify_SPH.fill(0.);
+      //          A->DUDt_modify_SPH_2.fill(0.);
       //          if (A->isFluid) {
       // #if defined(USE_RungeKutta)
       //             const double dt = A->RK_X.get_dt();
@@ -188,47 +189,67 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //             const auto r = A->SML();
       //             const auto center = A->X;
 
+      //             /* -------------------------------------------------------------------------- */
+      //             A->interp_normal_original_next.fill(0.);
+      //             Tddd interp_normal_original_next_mod = {0., 0., 0.};
+      //             for (const auto &net : target_nets)
+      //                net->BucketPoints.apply(A->X, 1.2 * A->SML_next(), [&](const auto &q) {
+      //                   A->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(A), X_next(q), A->SML_next());
+      //                   interp_normal_original_next_mod -= rho_next(q) * V_next(q) * grad_w_Bspline_next(A, q);
+      //                });
+      //             /* -------------------------------------------------------------------------- */
+
       //             // 修正１
-      //             auto V = Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original));
-      //             auto [Vn, Vs] = DecomposeVector(V, V);
-      //             // const double c = 0.00001;  //よかった2023/12/18
-      //             const double c = dt / 100.;  // 効果的
-      //             if (A->isNearSurface) {
-      //                A->DUDt_modify_SPH = c * Vs * std::pow(A->particle_spacing / dt, 2) / 1000.;
-      //             } else {
-      //                A->DUDt_modify_SPH = c * V * std::pow(A->particle_spacing / dt, 2) / 1000.;
-      //             }
+
+      //             // const double typical_velocity = A->particle_spacing / dt;
+      //             // const double typical_acceleration = typical_velocity / dt;
+      //             // const auto V_org = A->interp_normal_original_next / _WATER_DENSITY_;  // non-dimensional
+      //             // if (A->isSurface) {
+      //             //    const auto V_mod = interp_normal_original_next_mod / _WATER_DENSITY_;
+      //             //    const auto [Vn, Vs] = DecomposeVector(V_org, V_mod);
+      //             //    A->DUDt_modify_SPH = dt * 0.001 * Vs * typical_acceleration;
+      //             // } else {
+      //             //    A->DUDt_modify_SPH = dt * 0.001 * V_org * typical_acceleration;
+      //             // }
 
       //             // 修正２
-      //             // auto applyOverPoints = [&](const auto &equation) {
-      //             //    for (const auto &net : target_nets) {
-      //             //       net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
-      //             //          if (canInteract(A, B))
-      //             //             equation(B);
-      //             //       });
-      //             //    }
-      //             // };
-      //             // // 次はこれで試す
-      //             // auto add = [&](const auto &B) {
-      //             //    if (A == B || A->isAuxiliary || B->isAuxiliary || !A->isFluid)
-      //             //       return;
-      //             //    if (A->isFluid && B->isFluid) {
-      //             //       const auto vec_A2B = X_next(B) - X_next(A);
-      //             //       auto [vec_A2B_normal, vec_A2B_tangential] = DecomposeVector(vec_A2B, Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original)));
-      //             //       if (Norm(vec_A2B) < 0.5 * A->particle_spacing) {
-      //             //          const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
-      //             //          if (Dot(relative_velocity, vec_A2B) < 0) {
-      //             //             if (A->isSurface) {
-      //             //                A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B_tangential) / dt;
-      //             //             } else {
-      //             //                A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B) / dt;
-      //             //             }
-      //             //          }
-      //             //       }
-      //             //    }
-      //             // };
+      //             auto applyOverPoints = [&](const auto &equation) {
+      //                for (const auto &net : target_nets) {
+      //                   net->BucketPoints.apply(center, 1.2 * r, [&](const auto &B) {
+      //                      if (canInteract(A, B))
+      //                         equation(B);
+      //                   });
+      //                }
+      //             };
+      //             // 次はこれで試す
+      //             auto add = [&](const auto &B) {
+      //                if (A == B || A->isAuxiliary || B->isAuxiliary || !A->isFluid)
+      //                   return;
+      //                if (A->isFluid && B->isFluid) {
+      //                   const auto vec_A2B = X_next(B) - X_next(A);
+      //                   // const auto vec_A2B = B->X - A->X;
+      //                   const double ratio = Norm(vec_A2B) / A->particle_spacing;
+      //                   const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
+      //                   if (ratio < 0.9 && Dot(relative_velocity, vec_A2B) < 0) {
+      //                      // if (A->isSurface) {
+      //                      // auto [vec_A2B_normal, vec_A2B_tangential] = DecomposeVector(vec_A2B, Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original)));
+      //                      //    A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B_tangential) / dt;
+      //                      // } else
+      //                      // {
+      //                      // A->DUDt_modify_SPH -= 0.1 * (1. - ratio) * Projection(relative_velocity, vec_A2B) / dt;
+      //                      A->DUDt_modify_SPH_2 -= 0.01 * Projection(relative_velocity, vec_A2B) / dt;
+      //                      // }
+      //                   }
+      //                }
+      //             };
 
-      //             // applyOverPoints(add);
+      //             applyOverPoints(add);
+
+      //             // suppress the change
+      //             double max_scale = 0.1 * Norm(A->DUDt_SPH);
+      //             double original_scale = Norm(A->DUDt_modify_SPH_2);
+      //             if (original_scale > 0.)
+      //                A->DUDt_modify_SPH_2 *= std::min(original_scale, max_scale) / original_scale;
       //          }
       //       }
 
@@ -243,12 +264,12 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       //          // \label{SPH:how_to_set_fluid_b_vector}
       //          const double dt = A->RK_X.get_dt();
       //          if (A->getNetwork()->isRigidBody) {
-      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
+      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
       //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
       //             A->DUDt_SPH += _GRAVITY3_;
       //             A->DrhoDt_SPH = -A->rho * A->div_U;
       //          } else {
-      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH;
+      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
       //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
       //             A->DUDt_SPH += _GRAVITY3_;
       //             A->DrhoDt_SPH = -A->rho * A->div_U;

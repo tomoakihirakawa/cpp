@@ -261,10 +261,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   //! 修正
                   const auto DelX = (pO_center - BX);
                   double c, total_c = 0;  //! 毎回すると遅いので
-                  for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
-                     total_c += (c = Dot(Aij * DelX, vol_grad));
-                     ROW->increment(Q, -c);
-                  }
+                  if (!pO->is_grad_corr_M_next_singular)
+                     for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
+                        total_c += (c = Dot(Aij * DelX, vol_grad));
+                        ROW->increment(Q, -c);
+                     }
                   ROW->increment(pO, Aij + total_c);
                   ROW->increment(B, -Aij);
                   /* --------------------------------------------------------------------------- */
@@ -322,6 +323,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             ROW->PoissonRHS = 0;
          } else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
             //! 壁面の圧力はPoissonを解かない方が計算が安定するようだ
+            //! 　流体に近く内部の壁面粒子だけにPoisson方程式を解かせたとしても安定しない
             // } else if (false) {
             /*DOC_EXTRACT 0_2_2_set_pressure_eq
 
@@ -398,7 +400,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             // if (!ROW->isSurface) {
             // const auto dt = pO->RK_X.get_dt();
             // const double alpha = ROW->SML() > 2.0 ? dt : 0.;
-            // const double gamma = dt * 0.001;
+            // const double gamma = dt * 0.001;  // 逆効果2023/12/26
             // ROW->PoissonRHS = (1. - gamma) * ROW->PoissonRHS + gamma * (_WATER_DENSITY_ - ROW->intp_density) / std::pow(dt, 2);
             // auto DrhoDt = (ROW->intp_density_next - ROW->intp_density) / dt;
             // auto DrhoDt = /;
@@ -553,7 +555,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 80;
+   int size = 100;
    if (GMRES == nullptr) {
       GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
    } else {

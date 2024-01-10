@@ -546,18 +546,26 @@ int main(int argc, char **argv) {
             for (const auto &p : probe->getPoints())
                vtp.add(p);
 
-            std::unordered_map<networkPoint *, double> PRESSURE, RHO, PRESSURE_N, RHO_N;
+            std::unordered_map<networkPoint *, double> PRESSURE, RHO, PRESSURE_N, RHO_N, PRESSURE_fluid, RHO_fluid, PRESSURE_fluid_N, RHO_fluid_N;
             for (const auto &p : probe->getPoints()) {
                double pressure = 0, rho = 0, w, total = 0.;
                double pressure_normalized = 0, rho_normalized = 0;
+               double total_fluid = 0.;
+               double pressure_fluid = 0, rho_fluid = 0;
                int c = 0;
                for (const auto &[particlesNet, _, __] : all_objects) {
-                  particlesNet->BucketPoints.apply(p->X, particle_spacing * CSML, [&](const auto &q) {
+                  particlesNet->BucketPoints.apply(p->X, particle_spacing * 3.1, [&](const auto &q) {
                      if (isFinite(q->p_SPH) && isFinite(q->volume)) {
-                        w = q->volume * w_Bspline(Norm(q->X - p->X), particle_spacing * CSML);
+                        w = q->volume * w_Bspline(Norm(q->X - p->X), 3.1 * particle_spacing);
                         pressure += q->p_SPH * w;
                         rho += q->rho * w;
                         if (particlesNet->isFluid) {
+                           total_fluid += w;
+                           pressure_fluid += q->p_SPH * w;
+                           rho_fluid += q->rho * w;
+                        }
+
+                        {
                            total += w;
                            pressure_normalized += q->p_SPH * w;
                            rho_normalized += q->rho * w;
@@ -577,9 +585,27 @@ int main(int argc, char **argv) {
                   PRESSURE_N[p] = 0.;
                   RHO_N[p] = 0.;
                }
+
+               if (total_fluid > 1E-15) {
+                  PRESSURE_fluid[p] = pressure_fluid;
+                  RHO_fluid[p] = rho_fluid;
+                  PRESSURE_fluid_N[p] = pressure_fluid / total_fluid;
+                  RHO_fluid_N[p] = rho_fluid / total_fluid;
+               } else {
+                  PRESSURE_fluid[p] = 0.;
+                  RHO_fluid[p] = 0.;
+                  PRESSURE_fluid_N[p] = 0.;
+                  RHO_fluid_N[p] = 0.;
+               }
             }
             vtp.addPointData("pressure", PRESSURE);
             vtp.addPointData("density", RHO);
+            vtp.addPointData("pressure_normalized", PRESSURE_N);
+            vtp.addPointData("density_normalized", RHO_N);
+            vtp.addPointData("pressure_fluid", PRESSURE_fluid);
+            vtp.addPointData("density_fluid", RHO_fluid);
+            vtp.addPointData("pressure_fluid_normalized", PRESSURE_fluid_N);
+            vtp.addPointData("density_fluid_normalized", RHO_fluid_N);
             auto name = output_directory + J.at("name")[0] + "_" + std::to_string(k) + ".vtp";
             std::ofstream ofs(name);
             vtp.write(ofs);

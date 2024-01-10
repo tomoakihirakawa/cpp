@@ -383,7 +383,7 @@ double dt_CFL(const Network &water, double min_dt, const double c) {
 
                if (isFinite(dt) && min_dt > dt)
                   min_dt = dt;
-            }
+            }   
    return min_dt;
 };
 

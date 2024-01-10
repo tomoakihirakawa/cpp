@@ -28,41 +28,51 @@ using VV_netFp = std::vector<V_netFp>;
 */
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
-   if (name.contains("linear") && (name.contains("traveling") || name.contains("wave"))) {
-      if (strings.size() == 6) {
-         double start = stod(strings[1] /*start*/);
+   if ((name.contains("velocity") || name.contains("flow"))) {
+      if (strings.size() >= 6) {
+         double start = std::stod(strings[1] /*start*/);
          if (t >= start) {
-            double a = std::abs(stod(strings[2] /*a*/));
-            double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-            double h = std::abs(stod(strings[4] /*h*/));
+            double a = std::abs(std::stod(strings[2] /*a*/));
+            double w = std::abs(2 * M_PI / std::stod(strings[3] /*T*/));
+            double h = std::abs(std::stod(strings[4] /*h*/));
             DispersionRelation DS(w, h);
             double k = std::abs(DS.k);
-            double z_surface = std::abs(stod(strings[5] /*z_surface*/));
+            double z_surface = std::stod(strings[5] /*z_surface*/);
             // auto [x, y, z] = p->X - Tddd{0., 0., z_surface};
-            double z = std::get<2>(p->X) - z_surface;
-            double x = 0;
+            auto [x, y, z] = p->X;
+            z -= z_surface;
             //
             t -= start;
             // t -= M_PI / w / 2.;
-            T6d ret = {a * w * cosh(k * (z + h)) / sinh(k * h) * cos(w * (t - start) - k * x) +
-                           w * k * a * a / 2 * (cosh(2 * k * (z + h)) - cos(2 * (w * (t - start) - k * x))) / std::pow(sinh(k * h), 2),
-                       0.,
-                       -a * w * sinh(k * (z + h)) / sinh(k * h) * sin(w * (t - start) - k * x),
-                       0.,
-                       0.,
-                       0.};
-            return ret;
+            double wtkx = w * t - k * x;
+            double kzh = k * (z + h);
+            double kh = k * h;
+            double phase_shift = 0.;
+            if (strings.size() > 6)
+               phase_shift = std::stod(strings[6]);
+
+            double second_order = w * k * a * a / 2. * (std::cosh(2. * kzh) - std::cos(2. * wtkx)) / std::pow(std::sinh(kh), 2.);
+            T6d linear_stokes_wave_velocity = {a * w * std::cosh(kzh) / std::sinh(kh) * std::cos(wtkx + phase_shift),
+                                               0.,
+                                               -a * w * std::sinh(kzh) / std::sinh(kh) * std::sin(wtkx + phase_shift),
+                                               0., 0., 0.};
+            if (!name.contains("linear"))
+               return linear_stokes_wave_velocity;
+            else {
+               std::get<0>(linear_stokes_wave_velocity) += second_order;
+               return linear_stokes_wave_velocity;
+            }
          } else
             return {0., 0., 0., 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
    } else if (name.contains("weird")) {
       if (strings.size() == 6) {
-         double start = stod(strings[1] /*start*/);
-         double a = std::abs(stod(strings[2] /*a*/));
-         double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-         double h = std::abs(stod(strings[4] /*h*/));
-         double z_surface = std::abs(stod(strings[5] /*z_surface*/));
+         double start = std::stod(strings[1] /*start*/);
+         double a = std::abs(std::stod(strings[2] /*a*/));
+         double w = std::abs(2 * M_PI / std::stod(strings[3] /*T*/));
+         double h = std::abs(std::stod(strings[4] /*h*/));
+         double z_surface = std::abs(std::stod(strings[5] /*z_surface*/));
          auto [x, y, z] = p->X;
          DispersionRelation DS(w, h);
          double k = std::abs(DS.k);
@@ -71,7 +81,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
          //           << ", h = " << h
          //           << ", z_surface = " << z_surface
          //           << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         return {a * w * cos(w * t - k * z), 0., 0., 0., 0., 0.};
+         return {a * w * std::cos(w * t - k * z), 0., 0., 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 6");
    }
@@ -86,8 +96,8 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       double x = 0;
       double c = std::sqrt(g * (H + h));
       double kappa = std::sqrt(3. * H / (4. * h * h * h));
-      double start = stod(strings[1] /*start*/);
-      double eta = H * std::pow(1. / cosh(kappa * (-c * (t - start))), 2.);
+      double start = std::stod(strings[1] /*start*/);
+      double eta = H * std::pow(1. / std::cosh(kappa * (-c * (t - start))), 2.);
       return {c * eta / (h + eta), 0., 0., 0, 0, 0};
    } else if (name == "Retzler2000") {
       const std::vector<Tdd> sample = {
@@ -133,12 +143,12 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
           {0.6, 0.},
           {0.65, 0.},
           {0.7, 0.}};
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       auto [time, value] = Transpose(sample);
       const auto intp = InterpolationBspline(3, time, value);
       return {intp(t - start), 0., 0., 0., 0., 0.};
    } else if (name == "Chaplin2000") {
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       if (t < start)
          return {0., 0., 0., 0., 0., 0.};
       double h = 0.5;
@@ -147,15 +157,15 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       // double A = 0.02 * h;
       double w, A;
       if (strings.size() > 3) {
-         A = stod(strings[2] /*start*/);
-         w = stod(strings[3] /*start*/);
+         A = std::stod(strings[2] /*start*/);
+         w = std::stod(strings[3] /*start*/);
          std::cout << "A = " << A << ", w = " << w << std::endl;
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
 
-      auto v = A * w * sin(w * (t - start));
+      auto v = A * w * std::sin(w * (t - start));
       return {0., v, 0., 0., 0., 0.};
-   } else if (name == "flap") {
+   } else if (name.contains("flap")) {
       /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
       ### フラップ型造波装置
@@ -172,33 +182,67 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       | 7 | `axis`  | y       |
       | 8 | `axis`  | z       |
 
-      フラップ型の造波板の角速度は以下で与えられる．
+      フラップ型造波装置のヒンジ角速度は以下で与えられる．
 
       ```math
-      \omega_x = \frac{A g k (1 + 2 h k \text{csch}(2 h k)) \sin(t w)}{2 \left(-g+(h+l) w^2+g \text{sech}(h k) \cosh(d k)\right)}
+      \theta_y = \arctan \left(\frac{l}{X(t)}\right)
+      ```
+
+      $`X(t)`$は，平均水面の高さでのフラップ造波板表面の$`x`$座標を表しており，$`X(t) = S/2 \cos(w t)`$である．
+      ストローク$`S`$は次のように計算される．
+
+      ```math
+      S = H \frac{kh}{\sinh(kh)} \frac{\sinh(2kh) + 2kh}{kh \sinh(kh) - \cosh(kh) + 1}\\
+      ```
+
+      $`X(t)=a\sin(wt)`$の場合，造波装置のヒンジ角速度は次のように計算できる．
+
+      ```math
+      \frac{d \theta_y}{dt} = -\frac{a l w \cos(w t)}{l^2 + a^2 \sin^2(w t)}
+      ```
+
+      ```Mathematica
+      (* conversion a*sin(w*t) into the rotational velocity {wx, wy, wz} *)
+      ClearAll["Global`*"]
+      X[t_] := a*Sin[w*t]
+      theta[t_] := ArcTan[l/X[t]];
+      dthetadt[t_] = FullSimplify[D[theta[T], T]] /. T -> t;
+      TrigReduce[dthetadt[t]*Sin[t w]]/Sin[t*w]
+      CForm[%]
       ```
 
       */
       // start,A, T, h, l
       // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       double A, w, h, l, d, k;
       if (strings.size() > 7) {
-         A = std::abs(stod(strings[2] /*A*/));
-         w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-         h = std::abs(stod(strings[4] /*h*/));
-         l = std::abs(stod(strings[5] /*l*/));
+         A = std::abs(std::stod(strings[2] /*A*/));
+         w = std::abs(2 * M_PI / std::stod(strings[3] /*T*/));
+         h = std::abs(std::stod(strings[4] /*h*/));
+         l = std::abs(std::stod(strings[5] /*l*/));
          DispersionRelation DS(w, h);
          k = std::abs(DS.k);
          double d = (l >= 0 ? d : -l);
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         Tddd axis = {stod(strings[6]), stod(strings[7]), stod(strings[8])};
-         auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
-                                                      (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
+         Tddd axis = {std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
+
+         // auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
+         //                                              (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
+         // return {0., 0., 0., wx, wy, wz};
+
+         const double kh = k * h;
+         const double H = 2 * A;
+         const double S = H * kh / (4. * std::sinh(kh)) * (std::sinh(2. * kh) + 2. * kh) / (kh * std::sinh(kh) - std::cosh(kh) + 1.);
+         const double a = S / 2.;
+         double dthetadt = -((a * l * w * std::cos(t * w)) / (std::pow(l, 2) + std::pow(a, 2) * std::pow(std::sin(t * w), 2)));
+         if (name.contains("negative"))
+            dthetadt *= -1.;
+         auto [wx, wy, wz] = -dthetadt * Normalize(axis);
          return {0., 0., 0., wx, wy, wz};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-   } else if (name == "piston") {
+   } else if (name.contains("piston")) {
       /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
       ### ピストン型造波装置
@@ -225,26 +269,34 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see \cite{Dean1991})
 
       */
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       if (t < start)
          return {0., 0., 0., 0., 0., 0.};
       if (strings.size() > 7) {
-         double A = std::abs(stod(strings[2] /*A*/));
-         double w = std::abs(2 * M_PI / stod(strings[3] /*T*/));
-         double h = std::abs(stod(strings[4] /*h*/));
+         const double A = std::abs(std::stod(strings[2] /*A*/));
+         const double T = std::abs(std::stod(strings[3] /*T*/));
+         const double w = std::abs(2 * M_PI / T);
+         const double h = std::abs(std::stod(strings[4] /*h*/));
          DispersionRelation DS(w, h);
-         double k = std::abs(DS.k);
+         const double k = std::abs(DS.k);
          //
-         double kh2 = 2. * k * h;
-         double F = 2. * (cosh(kh2) - 1.) / (kh2 + sinh(kh2));  //= H/(2*e)
-         double H = 2. * A;
-         double S = H / F;
-         // wave maker movement is e * sin(w * t)
+         const double kh2 = 2. * k * h;
+         const double F = 2. * (std::cosh(kh2) - 1.) / (kh2 + std::sinh(kh2));  //!= H/(2*e)
+         const double H = 2. * A;
+         const double S = H / F;
+         // wave maker movement is e * std::sin(w * t)
 
          // t -= 1.5 * M_PI / w;
-         double dsdt = S / 2. * w * cos(w * (t - start));
+         // const double smoothing_function = (0.5 * std::tanh(2 * M_PI * (t - start) / T - 0.75 * M_PI) + 1.);
+         // const double shift = -M_PI;
+
+         const double smoothing_function = 1.;
+         const double shift = 0.;
+         double dsdt = smoothing_function * S / 2. * w * std::sin(w * (t - start) + shift);
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         Tddd axis = {stod(strings[5]), stod(strings[6]), stod(strings[7])};
+         Tddd axis = {std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7])};
+         if (name.contains("negative"))
+            dsdt *= -1.;
          return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
@@ -285,26 +337,26 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       else {
          double a = std::stod(strings[2]);
          double w = std::abs(2 * M_PI / std::stod(strings[3]));
-         double A = (name.contains("cos") ? a * w * sin(w * (t - start)) : a * w * cos(w * (t - start)));
+         double A = (name.contains("cos") ? a * w * std::sin(w * (t - start)) : a * w * std::cos(w * (t - start)));
          T6d axis;
          for (size_t i = 4; i < strings.size(); ++i)
             axis[i - 4] = A * std::stod(strings[i]);
          return axis;
       }
    } else if (name.contains("constant") || name.contains("const")) {
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       if (t >= start) {
-         double a = stod(strings[2] /*a*/);
-         T6d axis = {stod(strings[3]), stod(strings[4]), stod(strings[5]), stod(strings[6]), stod(strings[7]), stod(strings[8])};
+         double a = std::stod(strings[2] /*a*/);
+         T6d axis = {std::stod(strings[3]), std::stod(strings[4]), std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
          return a * axis;
       }
    } else if (name.contains("file")) {
-      double a = stod(strings[2] /*a*/);
-      T6d axis = {stod(strings[3]), stod(strings[4]), stod(strings[5]), stod(strings[6]), stod(strings[7]), stod(strings[8])};
+      double a = std::stod(strings[2] /*a*/);
+      T6d axis = {std::stod(strings[3]), std::stod(strings[4]), std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
       return a * axis;
    } else if (name.contains("Hadzic2005")) {
       // \label{BEM:Hadzic2005}
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       Hadzic2005 hadzic2005(start);
       return hadzic2005.getVelocity(t);
    }
@@ -314,7 +366,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
 T6d acceleration(const std::string &name, const std::vector<std::string> strings, const double t) {
    // \label{BEM:Hadzic2005acceleration}
    if (name.contains("Hadzic2005")) {
-      double start = stod(strings[1] /*start*/);
+      double start = std::stod(strings[1] /*start*/);
       Hadzic2005 hadzic2005(start);
       return hadzic2005.getAccel(t);
    }

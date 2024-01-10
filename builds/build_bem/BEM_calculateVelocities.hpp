@@ -253,7 +253,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 */
 
 // \label{BEM:calculateVecToSurface}
-void calculateVecToSurface(const Network &net, const int loop, const bool do_shift = true) {
+void calculateVecToSurface(const Network &net, const int loop, const double coef = 0.1) {
    auto points = ToVector(net.getPoints());
    for (const auto &p : points) {
       p->vecToSurface_BUFFER.fill(0.);
@@ -263,7 +263,7 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = 0.1, a;
+      double aIN = coef, a;
       //! ここを0.5とすると角が壊れる
       double scale = aIN * ((k + 1) / (double)(loop));
       // const double scale = aIN;
@@ -293,12 +293,15 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
             // auto V = (1. - a) * V0 + a * V1;
             /* ----------------------------------- NEW ---------------------------------- */
             auto X = RK_with_Ubuff(p);
-            // auto V = (0.3 * NeighborAverageSmoothingVector(p, X) + 0.5 * IncenterAverageSmoothingVector(p, X) + 0.2 * EquilateralVertexAveragingVector(p, X));
+            // auto V = (NeighborAverageSmoothingVector(p, X) + IncenterAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X)) / 3.;
+            // auto V = (NeighborAverageSmoothingVector(p, X) + IncenterAverageSmoothingVector(p, X)+ DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
             // auto V = (NeighborAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X, [&](const auto f) { return f->Dirichlet ? 1. : 0.5; })) / 2.;
-            auto V = (NeighborAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
+            // auto V = (NeighborAverageSmoothingVector(p, X) + TriangleAreaAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 3.;
+            auto V = (NeighborAverageSmoothingVector(p, X)+ DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
             // std::cout << "angle_coeff = " << angle_coeff << std::endl;
             double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
-            if (flatness > 0.6) flatness = 1.;
+            if (flatness > 0.1) 
+               flatness = 1.;
             V = scale * V * flatness;
             /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);
@@ -325,9 +328,10 @@ void calculateVecToSurface(const Network &net, const int loop, const bool do_shi
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      if (do_shift)
-         // for (auto i = 0; i < 10; ++i)
-         addVectorTangentialShift(kk);  // repeating this may led surface detaching
+      // if (do_shift) {
+      // for (auto i = 0; i < 10; ++i)
+      addVectorTangentialShift(kk);  // repeating this may led surface detaching
+      // }
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
@@ -353,12 +357,37 @@ void calculateCurrentVelocities(const Network &net) {
 
 void calculateCurrentUpdateVelocities(const Network &net, const int loop, const bool do_shift = true) {
 
-   calculateVecToSurface(net, loop, do_shift);
+   for (const auto &p : net.getPoints()) {
+      if (!isFinite(p->U_update_BEM)) {
+         std::cout << "p->X = " << p->X << std::endl;
+         std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
+         std::cout << "p->U_update_BEM = " << p->U_update_BEM << std::endl;
+         std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
+         std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
+         std::cout << "p->Neumann = " << p->Neumann << std::endl;
+         std::cout << "p->CORNER = " << p->CORNER << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+      }
+   }
+
+   double coef = 0.1;
+   calculateVecToSurface(net, loop, coef);
+
+   // check if there is any NaN
+   const double too_fast = 1E+10;
+   for (auto i = 0; i < 10; ++i) {
+      if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
+         calculateVecToSurface(net, loop, 0.1 * std::pow(0.1, i));
+   }
+
+   if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
+      for (const auto &p : net.getPoints())
+         p->vecToSurface.fill(0.);
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
       auto U_update_BEM = p->U_update_BEM + p->vecToSurface / p->RK_X.getdt();
-      if (!isFinite(U_update_BEM, 1E+10) || !isFinite(p->vecToSurface, 1E+10)) {
+      if (!isFinite(U_update_BEM, too_fast) || !isFinite(p->vecToSurface, too_fast)) {
          std::cout << "p->X = " << p->X << std::endl;
          std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
          std::cout << "p->U_update_BEM = " << U_update_BEM << std::endl;
@@ -366,7 +395,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
          std::cout << "p->Neumann = " << p->Neumann << std::endl;
          std::cout << "p->CORNER = " << p->CORNER << std::endl;
-         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       } else
          p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
    }

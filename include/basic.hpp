@@ -660,12 +660,22 @@ std::unordered_set<T> Join(std::unordered_set<T> ret, const std::unordered_set<T
    return ret;
 };
 
+// for two vectors
 template <typename T>
 std::vector<T> Join(std::vector<T> ret, const std::vector<T> &b) {
    ret.reserve(ret.size() + b.size());
    ret.insert(ret.end(), b.begin(), b.end());
    return ret;
 };
+
+//! for arbitrary number of vectors
+template <typename T, typename... Ts>
+std::vector<T> Join(std::vector<T> ret, const std::vector<T> &b, const Ts &...args) {
+   ret.reserve(ret.size() + b.size());
+   ret.insert(ret.end(), b.begin(), b.end());
+   return Join(ret, args...);
+};
+
 template <typename T>
 std::vector<std::vector<T>> Join(std::vector<std::vector<T>> ret, const std::vector<std::vector<T>> &b) {
    ret.reserve(ret.size() + b.size());

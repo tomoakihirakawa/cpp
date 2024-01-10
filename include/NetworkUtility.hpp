@@ -326,6 +326,21 @@ Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<doub
       return V;
 };
 
+Tddd TriangleAreaAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0, 0.};
+   double Wtot = 0, W;
+   if (!isEdgePoint(p)) {
+      for (const auto &face : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(face->getPoints(p));
+         X0 = current_pX;
+         Wtot += (W = TriangleArea(X0, X1, X2));
+         V += W * Centroid(X0, X1, X2);
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
 Tddd IncenterAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
    Tddd V = {0., 0, 0.};
    double Wtot = 0;

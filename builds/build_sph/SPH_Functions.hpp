@@ -88,12 +88,13 @@ bool canInteract(const networkPoint *A, const networkPoint *B) {
    return true;
 };
 
-void setSML(const auto &target_nets) {
+void setSML(const auto &target_nets, const std::array<double, 2> C_SML_min_max = {2.7, 2.7}) {
    DebugPrint("setSML", Yellow);
    /* -------------------------------- C_SMLの調整 -------------------------------- */
-   const double C_SML_max = 2.9;
-   const double C_SML_min = 2.9;
-   const double C_SML_min_rigid = 2.9;
+   const double C_SML_max = C_SML_min_max[1];
+   const double C_SML_min = C_SML_min_max[0];
+   const double C_SML_max_rigid = C_SML_min_max[1];
+   const double C_SML_min_rigid = C_SML_min_max[0];
    for (const auto &NET : target_nets)
       if (NET->isFluid) {
          {
@@ -110,12 +111,12 @@ void setSML(const auto &target_nets) {
                         if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(q->X - p->X)) < closest_d) {
                            closest_d = d;
                            closest_q = q;
-                           p->C_SML = closest_d / p->particle_spacing + 0.5;
+                           p->C_SML = closest_d / p->particle_spacing + 1;
                         }
                         if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(X_next(q) - X_next(p))) < closest_d_next) {
                            closest_d_next = d;
                            closest_q_next = q;
-                           p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
+                           p->C_SML_next = closest_d_next / p->particle_spacing + 1;
                         }
                         if (q->isSurface && Distance(p, q) < 1.5 * p->particle_spacing)
                            p->isNearSurface = true;
@@ -152,31 +153,32 @@ void setSML(const auto &target_nets) {
                      if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(q->X - markerX)) < closest_d) {
                         closest_d = d;
                         closest_q = q;
-                        p->C_SML = closest_d / p->particle_spacing + 0.5;
+                        p->C_SML = closest_d / p->particle_spacing + 1;
                      }
                      if ((q->isSurface /* || q->isNeumannSurface*/) && (d = Norm(X_next(q) - markerX_next)) < closest_d_next) {
                         closest_d_next = d;
                         closest_q_next = q;
-                        p->C_SML_next = closest_d_next / p->particle_spacing + 0.5;
+                        p->C_SML_next = closest_d_next / p->particle_spacing + 1;
                      }
                   });
                }
                if (closest_q != nullptr) {
                   if (closest_q->isSurface)
-                     p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
+                     p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max_rigid);
                   // else if (closest_q->isNeumannSurface)
                   //    p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
                } else
-                  p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max);
+                  p->C_SML = std::clamp(p->C_SML, C_SML_min_rigid, C_SML_max_rigid);
                if (closest_q_next != nullptr) {
                   if (closest_q_next->isSurface)
-                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
+                     p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max_rigid);
                   // else if (closest_q_next->isNeumannSurface)
                   //    p->C_SML_next = std::clamp(p->C_SML_next, C_SML_min_rigid, C_SML_max);
                } else
-                  p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max, C_SML_max);
+                  p->C_SML_next = std::clamp(p->C_SML_next, C_SML_max_rigid, C_SML_max_rigid);
             }
       }
+
    DebugPrint("setSML done", Yellow);
 };
 
@@ -192,11 +194,11 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    // double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;           // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;              // dt = C_CFL_accel*sqrt(h/Max(A))
-   const auto C_CFL_viscosity = 0.1;          // dt = C_CFL_viscosity*h^2/Max(Viscosity)
-   const auto C_CFL_velocity_relative = 0.1;  // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel_relative = 0.1;     // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.05;           // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.05;              // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_viscosity = 0.05;          // dt = C_CFL_viscosity*h^2/Max(Viscosity)
+   const auto C_CFL_velocity_relative = 0.05;  // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel_relative = 0.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
    // 音速
 #pragma omp parallel
    for (const auto &p : net->getPoints())
@@ -306,9 +308,12 @@ Tddd X_next(const networkPoint *p) {
 // \label{SPH:rho_next}
 double rho_next(auto p) {
    // if (p->getNetwork()->isRigidBody)
-   return _WATER_DENSITY_;
-   // else
+   // if ((p->isFluid || p->isFirstWallLayer) && p->var_Eigenvalues_of_M < 0.1)
    // return p->RK_rho.getX(-p->rho * p->div_U);
+   // else
+   // return _WATER_DENSITY_;
+   const double c = 0.9;
+   return c * _WATER_DENSITY_ + (1. - c) * p->RK_rho.getX(-p->rho * p->div_U);
 };
 
 // \label{SPH:volume_next}
@@ -488,11 +493,12 @@ void updateParticles(const auto &points,
                //! U_mod - U^n+1 = Chop(U^n+1,n) - U^n+1
                if (closest_p != nullptr) {
                   auto dist_f2w = Norm(f2w);
-                  auto n = Normalize(closest_p->interp_normal_original);
+                  auto n = closest_p->interp_normal;
+                  // auto n = Normalize(closest_p->interp_normal_original);
                   auto normal_dist_f2w = Norm(Projection(f2w, n));  //! nomal distance from the fluid particle to the wall particle
                   auto ratio = 1. - normal_dist_f2w / d0;
                   // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
-                  if (dist_f2w < std::sqrt(2.) * particle_spacing && normal_dist_f2w < 0.925 * particle_spacing) {
+                  if (dist_f2w < particle_spacing && normal_dist_f2w < 0.9 * particle_spacing) {
                      // auto ratio = (d0 - n_d_f2w) / d0;
                      if (Dot(p->U_SPH, n) < 0) {
                         p->DUDt_modify_SPH -= 0.001 * Projection(p->U_SPH, n) / dt;

@@ -1,4 +1,5 @@
 
+#include <filesystem>
 #include "Network.hpp"
 #include "NetworkUtility.hpp"
 
@@ -54,15 +55,17 @@ JSONoutput output_json;
 
 int main(int arg, char **argv) {
    Timer time;
-   std::string input_file{argv[1]};        // input
-   std::string output_directory{argv[2]};  // output dir
-   std::string output_name{argv[3]};       // output name
+   std::string input_file{argv[1]};                  // input
+   std::filesystem::path output_directory{argv[2]};  // output dir
+   std::string output_name{argv[3]};                 // output name
+   std::filesystem::path output_name_vtu = output_name + ".vtu";
+   std::filesystem::path output_name_pvd = output_name + ".pvd";
    int remesh = std::atoi(argv[4]);
    Network net(input_file, output_name);
-   mk_vtu(output_directory + "/" + output_name + ".vtu", {net.getFaces()});
+   mk_vtu(output_directory / output_name_vtu, {net.getFaces()});
    net.displayStates();
 
-   PVDWriter PVD(output_directory + output_name + ".pvd");
+   PVDWriter PVD(output_directory / output_name_pvd);
 
    V_netLp lines;
    Histogram Histo;
@@ -156,7 +159,6 @@ int main(int arg, char **argv) {
 #elif remesh_type == 4
                       //! cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=remesh.cpp -DOUTPUT_NAME=remeshD; make;./remeshD ./remesh_test_cases/random.obj ./remesh_test_cases randomD 10
                       return (0.8 * NeighborAverageSmoothingVector(p, X) + 0.1 * EquilateralVertexAveragingVector2(p, X));
-                      d xc
 #endif
                });
             }
@@ -166,13 +168,15 @@ int main(int arg, char **argv) {
          }
       }
       if (count % 1 == 0) {
-         std::string filename = output_directory + "/" + output_name + std::to_string(output_count) + ".vtu";
-         mk_vtu(filename, net.getFaces(), getData());
-         std::ofstream ofs(output_directory + "/" + output_name + std::to_string(output_count) + ".obj");
+         std::filesystem::path output_name_vtu = output_name + std::to_string(output_count) + ".vtu";
+         std::filesystem::path output_name_obj = output_name + std::to_string(output_count) + ".obj";
+         mk_vtu(output_directory / output_name_vtu, net.getFaces(), getData());
+
+         std::ofstream ofs(output_directory / output_name_obj);
          createOBJ(ofs, net);
          ofs.close();
          //! PVD
-         PVD.push(filename, count);
+         PVD.push(output_directory / output_name_vtu, count);
          PVD.output();
          output_count++;
       }

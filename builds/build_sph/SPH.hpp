@@ -228,13 +228,14 @@ void developByEISPH(Network *net,
       do {
          //% 壁粒子と水面粒子の設定
          deleteAuxiliaryPoints(net);
-         setSML(Append(net_RigidBody, net));
+         setSML(Append(net_RigidBody, net), {2.8, 2.8});  // 2.7は大きすぎる 2.55は小さすぎる
          captureWallParticle(net, RigidBodyObject, particle_spacing, wall_p);
+         setCorrectionMatrix(Append(net_RigidBody, net));
+         Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         // setSML(Append(net_RigidBody, net), {2.45, 2.45});
          Print(Green, "captureWallParticle", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setWall(net, RigidBodyObject, particle_spacing);
          Print(Green, "setWall", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         setCorrectionMatrix(Append(net_RigidBody, net));
-         Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setFreeSurface(net, net_RigidBody);
          Print(Green, "setFreeSurface", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          //
@@ -248,13 +249,13 @@ void developByEISPH(Network *net,
          //% 粘性項の計算
          calcLaplacianU(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
          Print(Green, "calcLaplacianU", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
+         setCorrectionMatrix(Append(net_RigidBody, net));
+         Print(green, "setCorrectionMatrix", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* ------------------------------- 次時刻の計算が可能に ------------------------ */
          // deleteAuxiliaryPoints(net);
          Print(green, "recalculation", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setWall(net, RigidBodyObject, particle_spacing);
          Print(green, "setWall", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         setCorrectionMatrix(Append(net_RigidBody, net));
-         Print(green, "setCorrectionMatrix", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setFreeSurface(net, net_RigidBody);
          Print(green, "setFreeSurface", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
@@ -324,14 +325,14 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("C_SML", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
-   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
-   // vtp.addPointData("min_Eigenvalues_of_M", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
+   vtp.addPointData("min_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;
    vtp.addPointData("Eigenvalues_of_M1", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M1;
    vtp.addPointData("var_Eigenvalues_of_M1", uo_double);
-   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
-   // vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
+   vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
    // vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.15);
@@ -361,6 +362,12 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("U", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFluid;
    vtp.addPointData("isFluid", uo_double);
+   //
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->is_grad_corr_M_singular;
+   vtp.addPointData("is_grad_corr_M_singular", uo_double);
+   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->is_grad_corr_M_next_singular;
+   vtp.addPointData("is_grad_corr_M_next_singular", uo_double);
+   //
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isCaptured ? 1 : -1E+50;
    // vtp.addPointData("isCaptured", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isFirstWallLayer;
@@ -448,6 +455,9 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    // vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
    vtp.addPointData("DUDt_modify_SPH", uo_3d);
+
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH_2;
+   vtp.addPointData("DUDt_modify_SPH_2", uo_3d);
 
    // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M_next);
    // vtp.addPointData("laplacian_corr_M_next", uo_3d);

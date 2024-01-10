@@ -39,7 +39,7 @@ double Distance(const T3Tddd &X012, const Tddd &X) {
  * ./main bunny.obj 7 1 3
  */
 /* -------------------------------------------------------------------------- */
-// #define check_voronoi
+#define check_voronoi0
 #if defined(check_voronoi0)
 int main(int arg, char **argv) {
    /* -------------------------------------------------------------------------- */
@@ -152,7 +152,7 @@ int main(int arg, char **argv) {
          }
       }
    }
-   std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+   std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
    {
       std::ofstream ofs(_HOME_DIR_ + "/output/first_lines.vtp");
       vtkPolygonWrite(ofs, object->getLines());
@@ -246,12 +246,12 @@ int main(int arg, char **argv) {
       if (f) {
          auto [t0, t1] = f->Tetras;
          if (t0 && !t1) {
-            auto empty_direction = Projection(Normalize(f_center - t0->center), normal);
+            auto empty_direction = Projection(Normalize(f_center - t0->centroid), normal);
             for (const auto &d : candidates_points)
                if (condition(d->X, n) && condition(d->X, empty_direction))
                   update_score({a, b, c, d});
          } else if (!t0 && t1) {
-            auto empty_direction = Projection(Normalize(f_center - t1->center), normal);
+            auto empty_direction = Projection(Normalize(f_center - t1->centroid), normal);
             for (const auto &d : candidates_points)
                if (condition(d->X, n) && condition(d->X, empty_direction))
                   update_score({a, b, c, d});
@@ -332,10 +332,10 @@ int main(int arg, char **argv) {
          Tddd first_X = Circumcenter(ToX(f)) - mean_len * f->normal, empty_direction = {0., 0., 0.};
 
          if (t0 && !t1) {
-            empty_direction = Projection(Normalize(f->center - t0->center), f->normal);
+            empty_direction = Projection(Normalize(f->center - t0->centroid), f->normal);
             first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
          } else if (!t0 && t1) {
-            empty_direction = Projection(Normalize(f->center - t1->center), f->normal);
+            empty_direction = Projection(Normalize(f->center - t1->centroid), f->normal);
             first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
          }
 
@@ -365,7 +365,7 @@ int main(int arg, char **argv) {
          }
 
          if (count++ % 50 == 0) {
-            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
             std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
             vtkPolygonWrite(ofs, object->getTetras());
             ofs.close();
@@ -388,7 +388,7 @@ int main(int arg, char **argv) {
                   //    break;
                }
             }
-            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
             std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
             vtkPolygonWrite(ofs, object->getTetras());
             ofs.close();
@@ -405,7 +405,7 @@ int main(int arg, char **argv) {
                   break;
             }
          }
-         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
          std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
          vtkPolygonWrite(ofs, object->getTetras());
          ofs.close();

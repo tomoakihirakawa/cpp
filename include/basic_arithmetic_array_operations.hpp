@@ -556,6 +556,7 @@ Fill(std::array<std::array<std::array<std::array<T, N3>, N2>, N1>, N0>& arr, con
    for (auto& a : arr)
       Fill(a, d);
 }
+
 /* -------------------------------------------------------------------------- */
 template <size_t N0, std::size_t N1, typename T>
 constexpr std::array<T, N1> Dot(const std::array<T, N0>& arr, const std::array<std::array<T, N1>, N0>& ARRARR) noexcept {
@@ -1116,7 +1117,8 @@ void IdentityMatrix(T& M) {
    std::size_t i = 0;
    for (auto& m : M) {
       m.fill(0.);
-      m[i++] = 1.;
+      m[i] = 1.;
+      i++;
    }
 };
 

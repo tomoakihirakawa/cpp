@@ -165,12 +165,6 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    water.setGeometricProperties();
 
-   Print("makeBucketFaces", Green);
-   for (const auto &net : objects) {
-      auto spacing = 5 * Mean(extLength(net->getLines()));
-      net->makeBucketFaces(spacing);
-   }
-
    std::cout << "step1 点の衝突の判定" << std::endl;
    for (const auto &p : water.getPoints())
       p->clearContactFaces();

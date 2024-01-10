@@ -576,6 +576,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double pn_SPH;
    bool pn_is_set = false;
    bool isSurface = false, isSurface_next = false;
+   bool isSurface_tmp = false, isSurface_next_tmp = false;
    bool isNearSurface = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
@@ -592,6 +593,20 @@ class networkPoint : public CoordinateBounds, public CRS {
       return C_SML * particle_spacing;
    };
    double SML_next() const {
+      return C_SML_next * particle_spacing;
+   };
+
+   double SML_for_lap() const {
+      return C_SML * particle_spacing;
+   };
+   double SML_for_lap_next() const {
+      return C_SML_next * particle_spacing;
+   };
+
+   double SML_for_grad() const {
+      return C_SML * particle_spacing;
+   };
+   double SML_for_grad_next() const {
       return C_SML_next * particle_spacing;
    };
 
@@ -698,6 +713,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
    //
+   bool is_grad_corr_M_singular = false;
+   bool is_grad_corr_M_next_singular = false;
    std::array<std::array<double, 3>, 3> grad_corr_M = _I3_, grad_corr_M_next = _I3_;
    std::array<std::array<double, 3>, 3> laplacian_corr_M = _I3_, laplacian_corr_M_next = _I3_;
    std::array<std::array<double, 3>, 3> inv_grad_corr_M = _I3_, inv_grad_corr_M_next = _I3_;
@@ -719,8 +736,9 @@ class networkPoint : public CoordinateBounds, public CRS {
    std::array<std::array<std::array<double, 3>, 3>, 3> v_rrDW, v_rrDW_next;
 
    /* ------------------- 多段の時間発展スキームのため ------------------- */
-   Tddd DUDt_SPH;
-   Tddd DUDt_modify_SPH;
+   Tddd DUDt_SPH = {0., 0., 0.};
+   Tddd DUDt_modify_SPH = {0., 0., 0.};
+   Tddd DUDt_modify_SPH_2 = {0., 0., 0.};
    Tddd ViscousAndGravityForce_, tmp_ViscousAndGravityForce_;
    Tddd ViscousAndGravityForce, tmp_ViscousAndGravityForce;
    Tddd repulsive_force_SPH;
@@ -1953,12 +1971,16 @@ getPointsOnLines_detail*/
          CoordinateBounds::setBounds(toX_this_points);
          Triangle::setProperties(toX_this_points);
          if (!isFinite(toX_this_points) || !isFinite(this->area) || !isFinite(this->normal) || !isFinite(this->angles)) {
-            std::cout << "this->area = " << this->area << std::endl;
-            std::cout << "this->normal = " << this->normal << std::endl;
-            std::cout << "this->angles = " << this->angles << std::endl;
-            std::cout << "線が更新されておらずエラーになる可能性がある" << std::endl;
-            std::cout << "全ての線が更新されている必要があるため" << std::endl;
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "not finite");
+            std::stringstream ss;
+            ss << "線が更新されておらずエラーになる可能性がある" << std::endl;
+            ss << "全ての線が更新されている必要があるため" << std::endl;
+            ss << "this->Points = " << this->Points << std::endl;
+            ss << "this->Lines = " << this->Lines << std::endl;
+            ss << "toX_this_points = " << toX_this_points << std::endl;
+            ss << "this->area = " << this->area << std::endl;
+            ss << "this->normal = " << this->normal << std::endl;
+            ss << "this->angles = " << this->angles << std::endl;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
          } else
             return true;
       } catch (std::exception &e) {
@@ -3618,7 +3640,7 @@ class Network : public CoordinateBounds {
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
       double particlize_spacing;
       for (const auto &f : this->getFaces()) {
-         particlize_spacing = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 20.;
+         particlize_spacing = Min(Tdd{spacing / 4., Min(extLength(f->getLines())) / 4.}) / 10.;
          for (const auto [xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
             this->BucketFaces.add(xyz, f);
          // add extra points to make sure that the face is included in the bucket
@@ -3788,8 +3810,11 @@ class Network : public CoordinateBounds {
    T6d getInertiaBC() { return this->inertia; };  // Body coordinate
    Tddd getMass3D() { return {std::get<0>(this->inertia), std::get<1>(this->inertia), std::get<2>(this->inertia)}; };
    /* ------------------------------------------------------ */
-   Tddd velocityRigidBody(const Tddd &X) const { return velocityTranslational() + Cross(velocityRotational(), X - this->COM); };
-   Tddd accelRigidBody(const Tddd &X) const { return accelTranslational() + Cross(accelRotational(), X - this->COM); };
+
+   Tddd velocityRigidBody(const Tddd &X) const { return velocityTranslational() + Cross(velocityRotational(), X - this->COM); };  //! \label{velocityRigidBody}
+   Tddd accelRigidBody(const Tddd &X) const {
+      return accelTranslational() + Cross(accelRotational(), X - this->COM) + Cross(velocityRotational(), velocityRigidBody(X) - velocityTranslational());
+   };  //! \label{accelRigidBody}
 
    // calcPhysicalProperties試作．
    void calcPhysicalProperties() {
