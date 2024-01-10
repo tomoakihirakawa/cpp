@@ -10,11 +10,13 @@
 
 ### 基礎方程式
 
+非粘性渦なし流れを仮定し，ラプラス方程式を満たす速度ポテンシャル$`\phi(t,\bf{x})`$によって流れ場$`\bf{u}(t,\bf{x})=\nabla\phi(t,\bf{x})`$を表す．水面，壁面，浮体表面における境界条件は，
+
 ```math
 \begin{align}
 \nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
-\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{(\rm D)}(t),\\
-\phi_n + {{\bf u}_b}\cdot{{\bf n}_b} &=0&&\text{on}&&{\bf x}\in \Gamma^{(\rm N)}(t),
+\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{\rm D}(t),\\
+\phi_n + {{\bf u}_b}\cdot{{\bf n}_b} &=0&&\text{on}&&{\bf x}\in \Gamma^{\rm N}(t),
 \end{align}
 ```
 
@@ -77,7 +79,7 @@ struct calculateFroudeKrylovForce {
    T6d acceleration;
    std::vector<std::tuple<Tddd, T3Tddd>> PressureVeticies;
 
-   calculateFroudeKrylovForce(const std::unordered_set<networkFace *> faces /*waterfaces*/, const Network *PasObj)
+   calculateFroudeKrylovForce(const auto& faces /*waterfaces*/, const Network *PasObj)
        : force({0., 0., 0.}), torque({0., 0., 0.}), area(0.), PressureVeticies({}), acceleration({0., 0., 0., 0., 0., 0.}) {
       // PasObjと接したfaceの頂点にpressureが設定されている前提
       int count = 0;
@@ -298,7 +300,8 @@ struct BEM_BVP {
    isNeumannID_BEMとisDirichletID_BEMの両方を満たす{p,f}は存在しない．
    */
 
-   void setIGIGn(Network &water) {
+   void setIGIGn(const std::vector<Network*> &WATERS) {
+
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
 
 #define use_rigid_mode
@@ -348,8 +351,11 @@ struct BEM_BVP {
       | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi_0} \times \frac{\partial \pmb{x}}{\partial \xi_1}`$ |
 
       */
-      water.setFacesVector();
-      water.setPointsVector();
+
+      for(const auto &water : WATERS){
+         water->setFacesVector();
+         water->setPointsVector();
+      }
       const std::array<double, 2> ZEROS2 = {0., 0.};
       
 #pragma omp parallel
@@ -372,49 +378,50 @@ struct BEM_BVP {
          }
          double r = std::sqrt(sum_area / M_PI);
          std::array<std::tuple<networkPoint *, networkFace *, std::array<double, 2>>, 3> ret;
-         for (const auto &integ_f : water.getFacesVector()) {
-            const auto [p0, p1, p2] = integ_f->getPoints(origin);
-            ret = {{{p0, integ_f, ZEROS2}, {p1, integ_f, ZEROS2}, {p2, integ_f, ZEROS2}}};
-            cross = Cross(p0->X - p2->X, p1->X - p2->X);
-            X012 = {p0->X, p1->X, p2->X};
-            if ((Norm(integ_f->center - origin->X) > 10 * r))
-               for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
-                  tmp *= ww;
-                  IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
-                  // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
-            else
-               for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
-                  N012 = ModTriShape<3>(t0, t1);
-                  //# tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
-                  tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
-                  tmp *= ww;
-                  IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
-                  FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
-                  FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
-                  // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
-                  // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
-                  // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
-               }
-            /* -------------------------------------------------------------------------- */
-            c = {Norm(cross), origin == p0 ? 0. : 1.};
-            for (auto &[_, __, igign] : ret)
-               igign *= c;
+         for(const auto &water : WATERS)
+            for (const auto &integ_f : water->getFacesVector()) {
+               const auto [p0, p1, p2] = integ_f->getPoints(origin);
+               ret = {{{p0, integ_f, ZEROS2}, {p1, integ_f, ZEROS2}, {p2, integ_f, ZEROS2}}};
+               cross = Cross(p0->X - p2->X, p1->X - p2->X);
+               X012 = {p0->X, p1->X, p2->X};
+               if ((Norm(integ_f->center - origin->X) > 10 * r))
+                  for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+                     N012 = ModTriShape<3>(t0, t1);
+                     tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
+                     tmp *= ww;
+                     IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
+                     FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
+                     FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
+                     FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
+                     // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                     // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                     // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+                  }
+               else
+                  for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
+                     N012 = ModTriShape<3>(t0, t1);
+                     //# tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
+                     tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
+                     tmp *= ww;
+                     IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
+                     FusedMultiplyIncrement(IGIGn, std::get<0>(N012), std::get<2>(std::get<0>(ret)));
+                     FusedMultiplyIncrement(IGIGn, std::get<1>(N012), std::get<2>(std::get<1>(ret)));
+                     FusedMultiplyIncrement(IGIGn, std::get<2>(N012), std::get<2>(std::get<2>(ret)));
+                     // std::get<2>(std::get<0>(ret)) += IGIGn * std::get<0>(N012);  // 補間添字0
+                     // std::get<2>(std::get<1>(ret)) += IGIGn * std::get<1>(N012);  // 補間添字1
+                     // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
+                  }
+               /* -------------------------------------------------------------------------- */
+               c = {Norm(cross), origin == p0 ? 0. : 1.};
+               for (auto &[_, __, igign] : ret)
+                  igign *= c;
 
-            for (const auto &[p, which_side_f, igign] : ret) {
-               IGIGn_Row[pf2Index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
-               if (p != origin)                                 // for use_rigid_mode
-                  origin_ign_rigid_mode -= std::get<1>(igign);  // for use_rigid_mode
+               for (const auto &[p, which_side_f, igign] : ret) {
+                  IGIGn_Row[pf2Index(p, which_side_f)] += igign;   // この面に関する積分において，φまたはφnの寄与
+                  if (p != origin)                                 // for use_rigid_mode
+                     origin_ign_rigid_mode -= std::get<1>(igign);  // for use_rigid_mode
+               }
             }
-         }
          /* -------------------------------------------------------------------------- */
          /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
@@ -559,22 +566,31 @@ struct BEM_BVP {
 
    V_d ans;
 
-   void solve(Network &water, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
+   void solve(std::vector<Network*> WATERS, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
 
-      setPhiPhin(water);
+      for(auto water : WATERS)
+         setPhiPhin(*water);
+
+      // std::vector<networkPoint *> points;
+
+      // for (auto water : WATERS)
+      //    for (auto &p : water->getPoints())
+      //       points.emplace_back(p);      
 
       PBF_index.clear();
-      PBF_index.reserve(3 * water.getPoints().size());
+      // PBF_index.reserve(3 * points.size());
       int i = 0;
-      for (const auto &q : water.getPoints())
-         for (const auto &id : variableIDs(q))
-            if (PBF_index.find(id) == PBF_index.end())
-               PBF_index[id] = i++;
+
+      for (const auto water : WATERS)
+         for (const auto &q : water->getPoints())
+            for (const auto &id : variableIDs(q))
+               if (PBF_index.find(id) == PBF_index.end())
+                  PBF_index[id] = i++;
 
       std::cout << Red << "   unknown size : " << PBF_index.size() << colorReset << std::endl;
-      std::cout << Red << "water node size : " << water.getPoints().size() << colorReset << std::endl;
+      std::cout << Red << "water node size : " << i << colorReset << std::endl;
 
-      setIGIGn(water);
+      setIGIGn(WATERS);
 
       std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
 
@@ -585,9 +601,9 @@ struct BEM_BVP {
          auto [p, f] = PBF;
          if (isDirichletID_BEM(PBF) && isNeumannID_BEM(PBF))
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
-         else if (isDirichletID_BEM(PBF))
+         else if (isDirichletID_BEM(PBF)){
             knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
-         else if (isNeumannID_BEM(PBF))
+         }else if (isNeumannID_BEM(PBF))
             knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
          else
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
@@ -639,11 +655,13 @@ struct BEM_BVP {
 
       std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
 
-      storePhiPhin(water, ans);
+      for (auto water : WATERS)
+         storePhiPhin(*water, ans);
 
       std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorReset << " s\n";
 
-      isSolutionFinite(water);
+      for (auto water : WATERS)
+         isSolutionFinite(*water);
    };
 
    // b! ------------------------------------------------------------------------------ */
@@ -656,7 +674,7 @@ struct BEM_BVP {
 
    BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
    浮体に掛かる圧力の計算に必要な$`\phi_t`$が簡単には求まらないためである．
-   これに関しては，\cite{Wu2003}が参考になる．
+   これに関しては，\cite{Wu2003}や\cite{Ma2009a}が参考になる．
 
    ### 浮体の運動方程式
 
@@ -680,7 +698,7 @@ struct BEM_BVP {
    ```math
    \boldsymbol{F}_{\text {hydro }}=\iint_{\Gamma_{\rm float}} p\boldsymbol{n}  d S, \quad
    \boldsymbol{T}_{\text {hydro }}=\iint_{\Gamma_{\rm float}} ({\bf x}-{\bf x}_{\rm c})\times (p\boldsymbol{n})  d S, \quad
-   p= p({\bf x}) =-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} (\nabla \phi)^{2}+g z\right)
+   p= p({\bf x}) =-\rho\left(\frac{\partial \phi}{\partial t}+\frac{1}{2} \|\nabla \phi\|^{2}+g z\right)
    ```
 
    $`\frac{\partial \phi}{\partial t}`$を$`\phi_t`$と書くことにする．この$`\phi_t`$は陽には求められない．
@@ -711,7 +729,7 @@ struct BEM_BVP {
    #### ノイマン節点での$`\phi_{nt}`$の与え方
 
    境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
-   境界面上の点の位置ベクトルを$`\boldsymbol r`$とする．
+   浮体重心$`{\bf x}_c`$から境界面上の点$\bf x$までの位置ベクトルを$`\boldsymbol r = {\bf x} - {\bf x}_c`$とする．
    表面上のある点の移動速度$`\frac{d\boldsymbol r}{dt}`$と流体粒子の流速$`\nabla \phi`$の間には，次の境界条件が成り立つ．
 
    ```math
@@ -736,8 +754,14 @@ struct BEM_BVP {
    ここの$`\frac{d{\bf n}}{dt}`$と$`\frac{d^2\boldsymbol r}{dt^2}`$は，$`{\boldsymbol U}_{\rm c}`$と$`\boldsymbol \Omega_{\rm c}`$を用いて，
 
    ```math
-   \frac{d^2\boldsymbol r}{dt^2} = \frac{d}{dt}\left({\boldsymbol U}_{\rm c} + \boldsymbol \Omega_{\rm c} \times \boldsymbol r\right),\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega}_{\rm c}\times{\bf n}
+   \frac{d^2\boldsymbol r}{dt^2} 
+   = \frac{d}{dt}\left({\boldsymbol U}_{\rm c} + \boldsymbol \Omega_{\rm c} \times \boldsymbol r\right)
+   = \frac{d{\boldsymbol U}_{\rm c}}{dt} + \frac{d{\boldsymbol \Omega_{\rm c}}}{dt} \times \boldsymbol r + \boldsymbol \Omega_{\rm c} \times \frac{d\boldsymbol r}{dt}
+   ,\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega}_{\rm c}\times{\bf n}
    ```
+
+   $`\frac{d \boldsymbol r}{dt}`$は\ref{velocityRigidBody}{`velocityRigidBody`}
+   $`\frac{d^2 \boldsymbol r}{dt^2}`$は\ref{accelRigidBody}{`accelRigidBody`}で計算する．
 
    \ref{BEM:phint_Neumann}{`phin_Neuamnn`}で$`\phi_{nt}`$を計算する．これは\ref{BEM:setPhiPhin_t}{`setPhiPhin_t`}で使っている．
 
@@ -899,7 +923,7 @@ struct BEM_BVP {
    }
 
    /* -------------------------------------------------------------------------- */
-   V_d Func(const auto &ACCELS_IN, const Network &water, const std::vector<Network *> &rigidbodies) {
+   V_d Func(const auto &ACCELS_IN, const std::vector<Network*>  WATERS, const std::vector<Network *> &rigidbodies) {
       TimeWatch watch;
       auto ACCELS = ACCELS_IN;
       //* --------------------------------------------------- */
@@ -955,7 +979,8 @@ struct BEM_BVP {
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
-      storePhiPhin_t(water, ans);
+      for(auto& water: WATERS)
+         storePhiPhin_t(*water, ans);
       // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       //* --------------------------------------------------- */
@@ -974,6 +999,9 @@ struct BEM_BVP {
       //*              圧力 ---> 力 --> 加速度                  */
       //* --------------------------------------------------- */
       int i = 0;
+      std::vector<networkFace*> all_faces;
+      for(auto& water: WATERS)
+         all_faces.insert(all_faces.end(), water->getFaces().begin(), water->getFaces().end());
       for (const auto &net : rigidbodies)
          if (net->isFloatingBody) {
             
@@ -981,7 +1009,8 @@ struct BEM_BVP {
 
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
-            auto tmp = calculateFroudeKrylovForce(water.getFaces(), net);
+
+            auto tmp = calculateFroudeKrylovForce(all_faces, net);
             auto [_, __, ___, Ix, Iy, Iz] = net->getInertiaGC();
             
             //$ ------------------------------ 係留索から受ける力とトルク ----------------------------- */
@@ -1015,8 +1044,9 @@ struct BEM_BVP {
    //@ --------------------------------------------------- */
    //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
    //@ --------------------------------------------------- */
-   void solveForPhiPhin_t(Network &water, const std::vector<Network *> &rigidbodies) {
-      water.setGeometricProperties();
+   void solveForPhiPhin_t(std::vector<Network*> WATERS, const std::vector<Network *> &rigidbodies) {
+      for(auto& water: WATERS)
+         water->setGeometricProperties();
       auto ACCELS_init = initializeAcceleration(rigidbodies);
 
       if (ACCELS_init.empty()) {
@@ -1030,11 +1060,11 @@ struct BEM_BVP {
       BroydenMethod BM(ACCELS_init, ACCELS_init);
 
       insertAcceleration(rigidbodies, BM.X - BM.dX);
-      auto func_ = Func(BM.X - BM.dX, water, rigidbodies);
+      auto func_ = Func(BM.X - BM.dX, WATERS, rigidbodies);
 
       for (auto j = 0; j < 1000; ++j) {
 
-         auto func = Func(BM.X, water, rigidbodies);
+         auto func = Func(BM.X, WATERS, rigidbodies);
          BM.update(func, func_, j == 0 ? 0.1 : alpha);
          func_ = func;
          insertAcceleration(rigidbodies, BM.X);

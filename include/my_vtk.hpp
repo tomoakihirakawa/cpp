@@ -21,7 +21,7 @@ void mk_pvd(const std::string &filename, const std::map<std::string, double> &ma
    fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
    fprintf(fp, "  <Collection>\n");
    for (const auto &[file, time] : map_s_d) {
-      fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%lf\"/>", file.c_str(), time);
+      fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%.15lf\"/>", file.c_str(), time);
       fprintf(fp, "\n");
    }
    fprintf(fp, "  </Collection>\n");
@@ -81,7 +81,7 @@ class pvd {
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
       for (auto i = 0; i < times.size(); i++) {
-         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%lf\" volume=\"0.01\"/>", this->vtu_names[i].c_str(), this->times[i]);
+         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%.15lf\" volume=\"0.01\"/>", this->vtu_names[i].c_str(), this->times[i]);
          fprintf(fp, "\n");
       }
       fprintf(fp, "  </Collection>\n");
@@ -106,7 +106,7 @@ class pvd {
       fprintf(fp, "  <Collection>\n");
       for (const auto &[name, p_vtu] : this->vtu_sets) {
          for (auto i = 0; i < (*p_vtu).times.size(); i++) {
-            fprintf(fp, "    <DataSet group=\"\" part=\"%d\" name=\"%s\" timestep=\"%lf\" file=\"%s\"/>",
+            fprintf(fp, "    <DataSet group=\"\" part=\"%d\" name=\"%s\" timestep=\"%.15lf\" file=\"%s\"/>",
                     (*p_vtu).index,
                     name.c_str(),
                     (*p_vtu).times[i],
@@ -150,7 +150,7 @@ struct PVDWriter {
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
       for (const auto &name_time : V_vtuFileName_time)
-         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%10lf\"/>\n", std::get<0>(name_time).c_str(), std::get<1>(name_time));
+         fprintf(fp, "    <DataSet file=\"%s\" group=\"\" part=\"0\" timestep=\"%.15lf\"/>\n", std::get<0>(name_time).c_str(), std::get<1>(name_time));
       fprintf(fp, "  </Collection>\n");
       fprintf(fp, "</VTKFile>\n");
       fclose(fp);

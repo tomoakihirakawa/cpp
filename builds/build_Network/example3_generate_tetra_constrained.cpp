@@ -125,7 +125,7 @@ int main(int arg, char **argv) {
          }
       }
    }
-   std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+   std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
    {
       std::ofstream ofs(_HOME_DIR_ + "/output/first_lines.vtp");
       vtkPolygonWrite(ofs, object->getLines());
@@ -505,7 +505,7 @@ int main(int arg, char **argv) {
          // }
 
          if (count++ % 50 == 0) {
-            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
             std::ofstream ofs(_HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp");
             vtkPolygonWrite(ofs, object->getTetras());
             ofs.close();

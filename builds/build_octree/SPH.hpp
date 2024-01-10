@@ -1332,7 +1332,7 @@ void calculateDerivativesByEISPH(const auto &water_points, const auto &net, cons
       p->lap_U = laplacian_U_ShaoAndLo2003_polygon_boundary(p->getContactPoints(net), p, p->radius_SPH);
       p->tmp_U_SPH = p->U_SPH + ((p->mu_SPH / p->density) * p->lap_U + _GRAVITY3_) * dt;
    }
-   std::cout << green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+   std::cout << green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
    Print("U*を使って，仮想的な位置X*へ粒子を移動", Green);
    for (const auto &p : water_points)
       p->setX(ToX(p) + p->tmp_U_SPH * dt);
@@ -1347,7 +1347,7 @@ void calculateDerivativesByEISPH(const auto &water_points, const auto &net, cons
       p->div_U = div_tmp_U_polygon_boundary(p->getContactPoints(net), p, p->radius_SPH, dt);
       p->setDensity(p->density + (-p->density * p->div_U) * dt);
    }
-   std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+   std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
    // Print("EISPH: 1.1 ダミー粒子（鏡映関係を使う）の圧力を計算済みの状態で，流体粒子（pressure_EISPH_Hosseini2007）", Red);
    // EISPHの圧力計算は初期の圧力を使うため，ルンゲクッタステップ毎に圧力を初期値に戻す必要がある．
    for (const auto &p : water_points)
@@ -1371,7 +1371,7 @@ void calculateDerivativesByEISPH(const auto &water_points, const auto &net, cons
    {
       p->gradP_SPH = grad_P_Monaghan1992_polygon_boundary_(p->getContactPoints(net), p, p->radius_SPH);
    }
-   std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+   std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
    // b! ------------------------------------------------------ */
    // b!                         DU/Dtの計算                     */
    // b! ------------------------------------------------------ */
@@ -1382,7 +1382,7 @@ void calculateDerivativesByEISPH(const auto &water_points, const auto &net, cons
    {
       p->DUDt_SPH = -p->gradP_SPH / p->density + (p->mu_SPH / p->density) * p->lap_U + _GRAVITY3_;
    }
-   std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+   std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
 };
 /* -------------------------------------------------------------------------- */
 void setData(auto &vtp, const auto &Fluid) {
@@ -1465,7 +1465,7 @@ void setContactPoints(Network *net, const std::vector<Network *> &FluidObject, c
       Timer watch;
       //% --------------------------- 平滑化距離の計算 ------------------------------ */
       /*     密度, 平滑化距離      */
-      std::cout << Green << "固定の平滑化距離の計算: C_SML * particle_spacing = " << C_SML << " * " << particle_spacing << " = " << C_SML * particle_spacing << colorOff << std::endl;
+      std::cout << Green << "固定の平滑化距離の計算: C_SML * particle_spacing = " << C_SML << " * " << particle_spacing << " = " << C_SML * particle_spacing << colorReset << std::endl;
       for (const auto &obj : Join(RigidBodyObject, FluidObject))
          for (const auto &p : obj->getPoints())
             p->setDensity(1000.);
@@ -1486,10 +1486,10 @@ void setContactPoints(Network *net, const std::vector<Network *> &FluidObject, c
       //          for (const auto &obj : Join(RigidBodyObject, FluidObject))
       //             p->addContactPoints(obj->getBucketPoints(), ToX(p), 1.2 * p->radius_SPH);
       //       }
-      std::cout << green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+      std::cout << green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
       Print("近傍粒子探査が終わったら時間ステップを決めることができる", Green);
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
@@ -1548,7 +1548,7 @@ void developByEISPH(Network *net,
             };
          };
 
-         std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
          dt = (*net->getPoints().begin())->RK_X.getdt();
          std::cout << "dt = " << dt << std::endl;
          /* -------------------------------------------------------------------------- */
@@ -1584,7 +1584,7 @@ void developByEISPH(Network *net,
                for (const auto &obj : RigidBodyObject)
                   for (const auto &p : obj->getPoints())
                      p->pressure_SPH = p->pressure_SPH_ * a + p->pressure_SPH * (1 - a);
-               // std::cout << Green << "setRigidBodyObject_Pressure Elapsed time: " << Red << watch() << colorOff << " s\n";
+               // std::cout << Green << "setRigidBodyObject_Pressure Elapsed time: " << Red << watch() << colorReset << " s\n";
             }
          };
          /* -------------------------------------------------------------------------- */
@@ -1647,7 +1647,7 @@ void developByEISPH(Network *net,
                      p_wall->U_SPH = p_wall->U_SPH_ * a + p_wall->U_SPH * (1 - a);
                      p_wall->setDensity(p_wall->density_ * a + p_wall->density * (1 - a));
                   }
-               // std::cout << Green << "setRigidBodyObject_U_SPH Elapsed time: " << Red << watch() << colorOff << " s\n";
+               // std::cout << Green << "setRigidBodyObject_U_SPH Elapsed time: " << Red << watch() << colorReset << " s\n";
             }
             for (const auto &obj : RigidBodyObject)
                for (const auto &p_wall : obj->getPoints())
@@ -1713,7 +1713,7 @@ void developByEISPH(Network *net,
                      p_wall->tmp_U_SPH = p_wall->tmp_U_SPH_ * a + p_wall->tmp_U_SPH * (1 - a);
                      p_wall->setDensity(p_wall->density_ * a + p_wall->density * (1 - a));
                   }
-               // std::cout << Green << "setRigidBodyObject_tmp_U_SPH Elapsed time: " << Red << watch() << colorOff << " s\n";
+               // std::cout << Green << "setRigidBodyObject_tmp_U_SPH Elapsed time: " << Red << watch() << colorReset << " s\n";
             }
          };
          /* -------------------------------------------------------------------------- */
@@ -1748,7 +1748,7 @@ void developByEISPH(Network *net,
                obj->BucketPoints.get_(p->X, r, func);
             p->isSurface = !found;
          }
-         std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
          // ========================================================================== */
          //                          U, DUDt, DPDtを計算                                */
          // ========================================================================== */
@@ -1777,14 +1777,14 @@ void developByEISPH(Network *net,
                p->lap_U = viscous_term / (p->mu_SPH / p->density);
                p->tmp_U_SPH = p->U_SPH + (viscous_term + _GRAVITY3_) * dt;
             }
-            std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
             /* --------------------------------------------------------- */
             Print("U*を使って，仮想的な位置X*へ粒子を移動", Green);
             for (const auto &p : net->getPoints())
                p->setX(p->X + p->tmp_U_SPH * dt);
             //
             setRigidBodyObject_tmp_U_SPH();
-            std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
             // b! ------------------------------------------------------ */
             // b!               div(U), DρDt=-ρdiv(U)の計算               */
             // b! ------------------------------------------------------ */
@@ -1811,7 +1811,7 @@ void developByEISPH(Network *net,
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "div_U is not a finite");
                p->setDensity(p->density + (-p->density * p->div_U) * dt);
             }
-            std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
             // b! ------------------------------------------------------ */
             // b!  　　　　　      仮位置における圧力Pの計算                　　*/
             // b! ------------------------------------------------------ */
@@ -1854,7 +1854,7 @@ void developByEISPH(Network *net,
             }
 
             setRigidBodyObject_Pressure();
-            std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
             // b! ------------------------------------------------------ */
             // b!           圧力勾配 grad(P)の計算 -> DU/Dtの計算            */
             // b! ------------------------------------------------------ */
@@ -1899,7 +1899,7 @@ void developByEISPH(Network *net,
                if (!isFinite(p->DUDt_SPH))
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "DUDt_SPH is not a finite");
             }
-            std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+            std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
          }
          //@ -------------------------------------------------------- */
          //@                        粒子の時間発展                      */
@@ -1925,7 +1925,7 @@ void developByEISPH(Network *net,
          for (const auto &obj : Join(FluidObject, RigidBodyObject))
             for (const auto &p : obj->getPoints())
                p->setDensity(_WATER_DENSITY_);
-         std::cout << Green << "Elapsed time: " << Red << watch() << colorOff << " s\n";
+         std::cout << Green << "Elapsed time: " << Red << watch() << colorReset << " s\n";
 
          // for (const auto &obj : RigidBodyObject) {
          //    vtkPolygonWriter<networkPoint *> vtp;
@@ -1939,7 +1939,7 @@ void developByEISPH(Network *net,
 
       } while (!((*net->getPoints().begin())->RK_X.finished));
    } catch (std::exception &e) {
-      std::cerr << e.what() << colorOff << std::endl;
+      std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };

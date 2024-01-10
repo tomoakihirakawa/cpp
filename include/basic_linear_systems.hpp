@@ -434,34 +434,34 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
 //             {std::fma(-a[1][1], a[2][0], a[1][0] * a[2][1]) * inv_det, std::fma(a[0][1], a[2][0], -a[0][0] * a[2][1]) * inv_det, std::fma(-a[0][1], a[1][0], a[0][0] * a[1][1]) * inv_det}}};
 // }
 
-// template <>
-// std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
-//    // lapack_lu lu(a);
-//    // auto ret = lu.inverse();
-//    // return {{{ret[0][0], ret[0][1], ret[0][2]}, {ret[1][0], ret[1][1], ret[1][2]}, {ret[2][0], ret[2][1], ret[2][2]}}};
+template <>
+std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
+   // lapack_lu lu(a);
+   // auto ret = lu.inverse();
+   // return {{{ret[0][0], ret[0][1], ret[0][2]}, {ret[1][0], ret[1][1], ret[1][2]}, {ret[2][0], ret[2][1], ret[2][2]}}};
 
-//    const double inv_det = 1.0 / std::fma(
-//                                     -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-//                                     std::fma(
-//                                         std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-//                                         std::fma(
-//                                             std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-//                                             std::fma(
-//                                                 -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-//                                                 std::fma(
-//                                                     -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
-//                                                     std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+   const double inv_det = 1.0 / std::fma(
+                                    -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                    std::fma(
+                                        std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                        std::fma(
+                                            std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                            std::fma(
+                                                -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                                std::fma(
+                                                    -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
+                                                    std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
 
-//    return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-//              std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-//              std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-//             {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-//              std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-//              std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-//             {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-//              std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-//              std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
-// }
+   return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+            {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+            {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+             std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+             std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
+}
 
 VV_d Inverse(const VV_d &mat) {
    lapack_lu lu(mat);
@@ -1178,40 +1178,44 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 
 struct CRS {
    std::unordered_map<CRS *, double> column_value;
-   std::vector<std::tuple<CRS *, double>> vector_column_value;
    void clearColumnValue() {
       this->column_value.clear();
       this->canUseVector = false;
    };
-   double value;
-   double diagonal_value;
-   double tmp_value;
-   bool canUseVector;
-   std::array<double, 3> value3d;
+   double value = 0.;
+   double diagonal_value = 0.;
+   double tmp_value = 0.;
+   bool canUseVector = false;
+   std::array<double, 3> value3d = {0., 0., 0.};
    std::size_t __index__;
    void setIndexCRS(std::size_t i) { this->__index__ = i; };
    std::size_t getIndexCRS() const { return __index__; };
-   CRS() : canUseVector(false){};
+   CRS(){};
    void clear() { this->column_value.clear(); }
    double at(CRS *const p) const { return column_value.at(p); };
    bool contains(CRS *const p) const { return column_value.contains(p); };
 
    void set(CRS *const p, const double v) {
-      if (v == 0.)
-         return;
-      auto [it, inserted] = this->column_value.insert({p, v});
-      if (!inserted)
-         it->second = v;
-      this->canUseVector = false;
+      if (v != 0.) {
+         // auto [it, inserted] = this->column_value.insert({p, v});
+         auto [it, inserted] = this->column_value.try_emplace(p, v);
+         if (!inserted)
+            it->second = v;
+         this->canUseVector = false;
+      }
    };
 
    void increment(CRS *const p, const double v) {
-      if (v == 0.)
-         return;
-      auto [it, inserted] = this->column_value.insert({p, v});
-      if (!inserted)
-         it->second += v;
-      this->canUseVector = false;
+      if (v != 0.) {
+         // auto [it, inserted] = this->column_value.insert({p, v});
+         // if (!inserted)
+         //    it->second += v;
+
+         auto [it, inserted] = this->column_value.try_emplace(p, v);
+         if (!inserted)
+            it->second += v;
+         this->canUseVector = false;
+      }
    };
 
    // 高速化のために，vectorに変換する．
@@ -1220,7 +1224,8 @@ struct CRS {
       column_value_vector.clear();
       column_value_vector.reserve(column_value.size());
       for (const auto &[crs, value] : column_value) {
-         column_value_vector.push_back({crs, value, crs->__index__});
+         // column_value_vector.push_back({crs, value, crs->__index__});
+         column_value_vector.emplace_back(crs, value, crs->__index__);
       }
       this->canUseVector = true;
    };
@@ -1264,13 +1269,32 @@ V_d Dot(const Container<T *> &A, const V_d &V) {
    return ret;
 };
 
+// template <template <typename, typename...> class Container, typename T>
+//    requires std::derived_from<T, CRS>
+// V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
+// #pragma omp parallel
+//    for (const auto &crs : A)
+// #pragma omp single nowait
+//    {
+//       auto &a = b[crs->__index__];
+//       if (crs->canUseVector) {
+//          for (const auto &[_, value, i] : crs->column_value_vector)
+//             a = std::fma(-value, V[i], a);
+//       } else {
+//          for (const auto &[crs_local, value] : crs->column_value)
+//             a = std::fma(-value, V[crs_local->__index__], a);
+//       }
+//    }
+//    return b;
+// };
+
 template <template <typename, typename...> class Container, typename T>
    requires std::derived_from<T, CRS>
 V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-   {
+// Assuming 'A' is a container that supports random access, like std::vector
+#pragma omp parallel for schedule(dynamic)
+   for (std::size_t j = 0; j < A.size(); ++j) {
+      auto *crs = A[j];  // Use a pointer to avoid copying the object
       auto &a = b[crs->__index__];
       if (crs->canUseVector) {
          for (const auto &[_, value, i] : crs->column_value_vector)
@@ -1293,6 +1317,26 @@ V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
    }
    return b;
 };
+
+// V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
+// #pragma omp parallel for
+//    for (std::size_t i = 0; i < A.size(); ++i) {
+//       auto &Ai = A[i];
+//       auto &a = b[i];
+//       std::size_t j = 0;
+
+//       // Loop unrolling for inner loop
+//       for (std::size_t k = 0; k + 3 < Ai.size(); k += 4) {
+//          a = std::fma(-Ai[k + 3], V[j + 3], std::fma(-Ai[k + 2], V[j + 2], std::fma(-Ai[k + 1], V[j + 1], std::fma(-Ai[k], V[j], a))));
+//          j += 4;
+//       }
+//       // Handle remaining elements
+//       for (; j < Ai.size(); ++j) {
+//          a = std::fma(-Ai[j], V[j], a);
+//       }
+//    }
+//    return b;
+// };
 
 // V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
 // #pragma omp parallel

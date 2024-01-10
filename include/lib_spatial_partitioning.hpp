@@ -116,6 +116,7 @@ struct Buckets : public CoordinateBounds {
    double dL;
    double bucketVolume() const { return std::pow(this->dL, 3.); };
    //
+   Buckets() = default;
    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : CoordinateBounds(c_bounds) { initialize(this->bounds, dL_IN); };
    Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : CoordinateBounds(boundingboxIN) { initialize(this->bounds, dL_IN); };
 

@@ -59,7 +59,7 @@ void treatMatrix(MatrixType &matrix, double tolerance = 1e-13, bool check_linear
       IdentityMatrix(matrix);
 }
 
-void setCorrectionMatrix(const auto &all_nets) {
+void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
 
    /*DOC_EXTRACT 0_1_1_preparation_wall_and_freesurface
 
@@ -89,7 +89,7 @@ void setCorrectionMatrix(const auto &all_nets) {
    /*                             勾配の補正行列の計算                               */
    /* -------------------------------------------------------------------------- */
 
-   auto setCorrectionMatrix_gradient = [&all_nets](networkPoint *A) {
+   auto setCorrectionMatrix_gradient = [&all_nets, &SML](networkPoint *A) {
       // if (A->isAuxiliary)
       //    return;
 
@@ -118,18 +118,18 @@ void setCorrectionMatrix(const auto &all_nets) {
       double total_w = 0, total_w_next = 0;
       auto add_for_grad_correction = [&](const auto &B) {
          if (A != B) {
-            total_w += w_Bspline(Norm(B->X - A->X), A->SML());
-            total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), A->SML_next());
+            total_w += w_Bspline(Norm(B->X - A->X), SML == 0. ? A->SML() : SML);
+            total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), SML == 0. ? A->SML_next() : SML);
             //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);  //\label{SPH:grad_corr_M}
-            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));
+            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, SML == 0. ? A->SML() : SML), B->X - A->X);  //\label{SPH:grad_corr_M}
+            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), SML == 0. ? A->SML_next() : SML), X_next(B) - X_next(A));
             //
-            if (Between(Distance(A, B), {1E-13, A->SML()})) {
+            if (Between(Distance(A, B), {1E-13, SML == 0. ? A->SML() : SML})) {
                A->checked_points_in_radius_SPH++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH++;
             }
-            if (Between(Distance(X_next(A), X_next(B)), {1E-13, A->SML_next()})) {
+            if (Between(Distance(X_next(A), X_next(B)), {1E-13, SML == 0. ? A->SML_next() : SML})) {
                A->checked_points_in_radius_SPH_next++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH_next++;
@@ -139,7 +139,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.2 * (SML == 0. ? A->SML() : SML), [&](const auto &B) {
             if (canInteract(A, B))
                add_for_grad_correction(B);
          });
@@ -148,19 +148,40 @@ void setCorrectionMatrix(const auto &all_nets) {
       DebugPrintLevel(2, "勾配の補正行列の計算 done", Blue);
       A->Eigenvalues_of_M.fill(0.);
 
-      bool is_grad_corr_M_singular = false, is_grad_corr_M_next_singular = false;
+      A->is_grad_corr_M_singular = false;
+      A->is_grad_corr_M_next_singular = false;
       try {
-         treatMatrix(A->grad_corr_M);
-         treatMatrix(A->grad_corr_M_next);
-         if (std::abs(Det(A->grad_corr_M)) > 1E-13)
+         // treatMatrix(A->grad_corr_M);
+         // treatMatrix(A->grad_corr_M_next);
+         if (std::abs(Det(A->grad_corr_M))) {
             A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-         else
-            is_grad_corr_M_singular = true;
+            if (!isFinite(A->inv_grad_corr_M, 1e+2)) {
+               IdentityMatrix(A->inv_grad_corr_M);
+               A->is_grad_corr_M_singular = true;
+            }
+         } else {
+            IdentityMatrix(A->inv_grad_corr_M);
+            A->is_grad_corr_M_singular = true;
+         }
 
-         if (std::abs(Det(A->grad_corr_M_next)) > 1E-13)
+         if (std::abs(Det(A->grad_corr_M_next)) > 1E-13) {
             A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
-         else
-            is_grad_corr_M_next_singular = true;
+            //! gradがOKでも，inv_gradが大きな値になる場合がある．//経験的に100を超えると，計算が不安定になる．
+            if (!isFinite(A->inv_grad_corr_M_next, 1e+2)) {
+               IdentityMatrix(A->inv_grad_corr_M_next);
+               A->is_grad_corr_M_next_singular = true;
+            }
+         } else {
+            IdentityMatrix(A->inv_grad_corr_M_next);
+            A->is_grad_corr_M_next_singular = true;
+         }
+
+         // if (A->checked_points_in_radius_of_fluid_SPH <= 1) {
+         //    A->is_grad_corr_M_singular = true;
+         // }
+         // if (A->checked_points_in_radius_of_fluid_SPH_next <= 1) {
+         //    A->is_grad_corr_M_next_singular = true;
+         // }
          // if (std::ranges::none_of(A->grad_corr_M, [](const auto &v) { return Norm(v) == 0.; })) {
          //    A->inv_grad_corr_M = Inverse(A->grad_corr_M);
          // }
@@ -188,7 +209,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       A->var_Eigenvalues_of_M1_next = 0.;
 
       //! current
-      if (!is_grad_corr_M_singular) {
+      if (!A->is_grad_corr_M_singular) {
          //$ grad_corr_M
          {
             auto [lambdas, vectors] = Eigensystem(A->grad_corr_M, 1E-5, 100);
@@ -217,7 +238,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       }
 
       //! next
-      if (!is_grad_corr_M_next_singular) {
+      if (!A->is_grad_corr_M_next_singular) {
          //$ grad_corr_M_next
          {
             auto [lambdas, vectors] = Eigensystem(A->grad_corr_M_next, 1E-5, 100);
@@ -240,16 +261,29 @@ void setCorrectionMatrix(const auto &all_nets) {
             A->var_Eigenvalues_of_M1_next = std::sqrt(A->var_Eigenvalues_of_M1_next) / 3.;
          }
       } else {
-         A->var_Eigenvalues_of_M_next = 10.;
-         A->var_Eigenvalues_of_M1_next = 10.;
+         A->var_Eigenvalues_of_M_next = 1.;
+         A->var_Eigenvalues_of_M1_next = 1.;
       }
+      A->var_Eigenvalues_of_M = std::clamp(A->var_Eigenvalues_of_M, 0., 1.);
+      A->var_Eigenvalues_of_M_next = std::clamp(A->var_Eigenvalues_of_M_next, 0., 1.);
       /* -------------------------------------------------------------------------- */
       A->min_Eigenvalues_of_M = Min(A->Eigenvalues_of_M);
       A->min_Eigenvalues_of_M1 = Min(A->Eigenvalues_of_M1);
       A->max_Eigenvalues_of_M = Max(A->Eigenvalues_of_M);
       A->max_Eigenvalues_of_M1 = Max(A->Eigenvalues_of_M1);
-   };
+      /* -------------------------------------------------------------------------- */
 
+      if (!isFinite(A->var_Eigenvalues_of_M1) || A->var_Eigenvalues_of_M1 > 1E+2 || !isFinite(A->inv_grad_corr_M, 10.)) {
+         IdentityMatrix(A->inv_grad_corr_M);
+         A->is_grad_corr_M_singular = true;
+      }
+
+      if (!isFinite(A->var_Eigenvalues_of_M1_next) || A->var_Eigenvalues_of_M1_next > 1E+2 || !isFinite(A->inv_grad_corr_M_next, 10.)) {
+         IdentityMatrix(A->inv_grad_corr_M_next);
+         A->is_grad_corr_M_next_singular = true;
+      }
+   };
+   //
    /*DOC_EXTRACT 0_1_1_set_free_surface
 
    ### `setCorrectionMatrix_laplacian`について
@@ -288,7 +322,7 @@ void setCorrectionMatrix(const auto &all_nets) {
    /*                             ラプラシアンの補正行列の計算                        */
    /* -------------------------------------------------------------------------- */
 
-   auto setCorrectionMatrix_laplacian = [&all_nets](networkPoint *A) {
+   auto setCorrectionMatrix_laplacian = [&all_nets, &SML](networkPoint *A) {
       if (!A->isCaptured)
          return;
 
@@ -303,22 +337,22 @@ void setCorrectionMatrix(const auto &all_nets) {
       IdentityMatrix(A->laplacian_corr_M);
       IdentityMatrix(A->laplacian_corr_M_next);
 
-      treatMatrix(A->inv_grad_corr_M, 1E-13, false);
-      treatMatrix(A->inv_grad_corr_M_next, 1E-13, false);
+      // treatMatrix(A->inv_grad_corr_M, 1E-13, false);
+      // treatMatrix(A->inv_grad_corr_M_next, 1E-13, false);
 
       Tddd DW, r, e;
       auto add_for_laplacian_correction = [&](const auto &B) {
          if (A != B) {
-            if (Distance(A, B) <= A->SML()) {
-               DW = B->volume * grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
+            if (Distance(A, B) <= (SML == 0. ? A->SML() : SML)) {
+               DW = B->volume * grad_w_Bspline(A->X, B->X, (SML == 0. ? A->SML() : SML));  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
                r = A->X - B->X;
                e = Normalize(r);
                A->v_reeDW += TensorProduct(TensorProduct(TensorProduct(r, e), e), DW);
                A->v_eeDW += TensorProduct(TensorProduct(e, e), DW);
                A->v_rrDW += TensorProduct(TensorProduct(r, r), DW);
             }
-            if (Distance(X_next(A), X_next(B)) <= A->SML_next()) {
-               DW = V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
+            if (Distance(X_next(A), X_next(B)) <= SML == 0. ? A->SML_next() : SML) {
+               DW = V_next(B) * grad_w_Bspline(X_next(A), X_next(B), SML == 0. ? A->SML_next() : SML);  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
                r = X_next(A) - X_next(B);
                e = Normalize(r);
                A->v_reeDW_next += TensorProduct(TensorProduct(TensorProduct(r, e), e), DW);
@@ -329,7 +363,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.2 * (SML == 0. ? A->SML() : SML), [&](const auto &B) {
             if (canInteract(A, B)) add_for_laplacian_correction(B);
          });
       });
@@ -392,10 +426,10 @@ void setCorrectionMatrix(const auto &all_nets) {
       //    IdentityMatrix(A->laplacian_corr_M_next);
 
       //
-      if (!isFinite(A->laplacian_corr_M))
+      if (!isFinite(A->laplacian_corr_M) || A->is_grad_corr_M_singular)
          IdentityMatrix(A->laplacian_corr_M);
 
-      if (!isFinite(A->laplacian_corr_M_next))
+      if (!isFinite(A->laplacian_corr_M_next) || A->is_grad_corr_M_next_singular)
          IdentityMatrix(A->laplacian_corr_M_next);
 
       /* -------------------------------------------------------------------------- */
@@ -456,11 +490,12 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
             p->intp_density = 0.;
          }
 
+      const double captureRange = 3.5 * particle_spacing;  //\label{SPH:capture_condition_1st}
+
 #pragma omp parallel
       for (const auto &p : net->getPoints())
 #pragma omp single nowait
       {
-         const double captureRange = 3.5 * p->particle_spacing;  //\label{SPH:capture_condition_1st}
          // const double captureRange_wall_as_fluid = p->SML();
          for (const auto &[obj, poly] : RigidBodyObject) {
             obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
@@ -559,13 +594,14 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
             if (p->isCaptured)
                wall_p.emplace(p);
 
-      setCorrectionMatrix(rigidbody_nets);
+      setCorrectionMatrix(rigidbody_nets, captureRange);
 
 #pragma omp parallel
       for (const auto &p : wall_p)
 #pragma omp single nowait
       {
-         p->interp_normal = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
+         // p->interp_normal = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
+         p->interp_normal = Normalize(p->interp_normal_original);
          if (!isFinite(p->interp_normal))
             p->interp_normal = {0., 0., 1.};
       }
@@ -635,9 +671,9 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                q->intp_density = 0.;
                //! ちょっとした修正11/28 -> 効果なし
                // if (q->isFirstWallLayer)
-               //    q->marker_X = q->X + q->v_to_surface_SPH;
+               q->marker_X = q->X + q->v_to_surface_SPH;
                // else
-               q->marker_X = q->X + 2. * q->v_to_surface_SPH;
+               // q->marker_X = q->X + 2. * q->v_to_surface_SPH;
                double total_vol_w = 0, r = q->SML(), vol_w;
                net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
                   if (Norm(q->marker_X - Q->X) > r)
@@ -686,6 +722,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
    try {
       DebugPrint("水粒子のオブジェクト外向き法線方向を計算", Green);
       // refference: A. Krimi, M. Jandaghian, and A. Shakibaeinia, Water (Switzerland), vol. 12, no. 11, pp. 1–37, 2020.
+
+      for (const auto &A : net->getPoints()) {
+         A->isSurface = false;
+         A->isSurface_tmp = false;
+         A->isSurface_next = false;
+         A->isSurface_next_tmp = false;
+      }
 
       std::vector<Network *> all_nets = {net};
       for (const auto &obj : RigidBodyObject)
@@ -857,25 +900,34 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             しかし，流体内部の粒子にもこの条件が当てはまる場合がある．
             */
 
-            // 流体粒子に対してはr=2.5*ps，\theta=30度
-            auto surface_check_r_for_fluid_ = A->particle_spacing * 2.2;
-            // 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
-            auto surface_check_r_for_wall_ = A->particle_spacing * std::sqrt(2.2);
-
+            //! 流体粒子に対してはr=2.5*ps，\theta=30度
+            const double ratio_flud = 2.3;
+            // 2.2OK
+            // 2.4OUT
+            const double min_ratio_flud = 2.2;
+            const double surface_check_r_for_fluid_ = A->particle_spacing * ratio_flud;
+            const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
+            //! 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
+            //! surface_check_r_for_wall_は最低の値
+            //! 規則正しく並んでいる場合を考えると，水面粒子の探査範囲は，大体，std::sqrt(3.)かstd::sqrt(2.)あたりが妥当な値だろう．
+            const double surface_check_r_for_wall_ = A->particle_spacing * 1.8;  // std::sqrt(3.);
+            const double ratio = surface_check_r_for_wall_ / surface_check_r_for_fluid_;
+            const double surface_check_agnle_for_fluid = M_PI / 5.;  // * (1. - A->var_Eigenvalues_of_M1);
+            const double surface_check_angle_for_wall = M_PI / 4.;   // * (1. - A->var_Eigenvalues_of_M1);
             // if (A->var_Eigenvalues_of_M1 > 0.)
             // {
             //! 分布が均等でないものは水面になりやすくする
-            double surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * (1. - 0.5 * A->var_Eigenvalues_of_M1);
-            double surface_check_r_for_wall = surface_check_r_for_wall_;    // * (1. - 0.5 * A->var_Eigenvalues_of_M1);
-            double surface_check_agnle_for_fluid = M_PI / 5.;               // * (1. - A->var_Eigenvalues_of_M1);
-            double surface_check_angle_for_wall = M_PI / 4.;                // * (1. - A->var_Eigenvalues_of_M1);
+            double surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * std::clamp(1. - 0.5 * A->var_Eigenvalues_of_M, min_ratio_flud / ratio_flud, 1.);
+            double surface_check_r_for_wall = surface_check_r_for_wall_;    // * std::clamp(1. - A->var_Eigenvalues_of_M, ratio, 1.);
             // }
 
             // 以上に該当する粒子があった場合は，水面粒子として認識しない．
-            auto n_current = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
-            A->isSurface = A->checked_points_in_radius_SPH < 3 ||
+            auto n_current = Dot(p->inv_grad_corr_M, p->interp_normal_original);
+            A->isSurface = A->is_grad_corr_M_singular ||
+                           A->checked_points_in_radius_SPH < 3 ||
                            A->checked_points_in_radius_of_fluid_SPH < 3 ||
-                           (A->var_Eigenvalues_of_M1_next > 0.15 && std::ranges::none_of(all_nets, [&](const auto &net) {
+                           // A->var_Eigenvalues_of_M > 0.35 ||
+                           (A->var_Eigenvalues_of_M > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                [&](const auto &q) {
                                                                   if (q->isCaptured && A != q) {
@@ -884,7 +936,15 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                      auto c = A->X;  // + radius * n_current;
                                                                      // Sphere sphere(c, radius);
                                                                      // return sphere.isInside(q->X);
-                                                                     return Distance(c, q->X) < radius && isFlat(n_current, q->X - A->X, angle);
+                                                                     auto n_of_q = Dot(q->inv_grad_corr_M, q->interp_normal_original);
+                                                                     return Distance(c, q->X) < radius && isFlat(n_current, q->X - A->X, angle) &&
+                                                                            (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
+                                                                             (q->isFluid &&
+                                                                              (A->var_Eigenvalues_of_M > 0.8 || Norm(n_current) > 2E+4) &&
+                                                                              (q->var_Eigenvalues_of_M > 0.8 || Norm(n_of_q) > 2E+4)
+                                                                              /*確実な法線ベクトルを意味する*/)
+                                                                                 ? Dot(n_current, Dot(q->inv_grad_corr_M, q->interp_normal_original)) > 0.
+                                                                                 : true);
                                                                   } else
                                                                      return false;
                                                                   // return q->isCaptured &&
@@ -900,14 +960,16 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             // if (A->var_Eigenvalues_of_M1_next > 0.3)
             // {
             //! 分布が均等でないものは水面になりやすくする
-            surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * (1. - 0.5 * A->var_Eigenvalues_of_M1_next);
-            surface_check_r_for_wall = surface_check_r_for_wall_;    // * (1. - 0.5 * A->var_Eigenvalues_of_M1_next);
+            surface_check_r_for_fluid = surface_check_r_for_fluid_;  // * std::clamp(1. - 0.5 * A->var_Eigenvalues_of_M_next, min_ratio_flud / ratio_flud, 1.);
+            surface_check_r_for_wall = surface_check_r_for_wall_;    // * std::clamp(1. - A->var_Eigenvalues_of_M_next, ratio, 1.);
             // }
             // surfaceではないが，var_Eigenvalues_of_M1_nextが大きいものはEISPHで計算する，
-            auto n_next = Normalize(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next));
-            A->isSurface_next = A->checked_points_in_radius_SPH_next < 3 ||
+            auto n_next = Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next);
+            A->isSurface_next = A->is_grad_corr_M_next_singular ||
+                                A->checked_points_in_radius_SPH_next < 3 ||
                                 A->checked_points_in_radius_of_fluid_SPH_next < 3 ||
-                                (A->var_Eigenvalues_of_M1_next > 0.15 && std::ranges::none_of(all_nets, [&](const auto &net) {
+                                //   A->var_Eigenvalues_of_M_next > 0.35 ||
+                                (A->var_Eigenvalues_of_M_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
                                     return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
                                                                     [&](const auto &q) {
                                                                        if (q->isCaptured && A != q) {
@@ -916,7 +978,14 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                           auto c = X_next(A);  // + radius * n_next;
                                                                           //   Sphere sphere(c, radius);
                                                                           //   return sphere.isInside(X_next(q));
-                                                                          return Distance(c, X_next(q)) < radius && isFlat(n_next, X_next(q) - X_next(A), angle);
+                                                                          auto n_of_q = Dot(q->inv_grad_corr_M_next, q->interp_normal_original_next);
+                                                                          return Distance(c, X_next(q)) < radius && isFlat(n_next, X_next(q) - X_next(A), angle) &&
+                                                                                 (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
+                                                                                  (q->isFluid &&
+                                                                                   (A->var_Eigenvalues_of_M_next > 0.8 || Norm(n_next) > 2E+4) &&
+                                                                                   (q->var_Eigenvalues_of_M_next > 0.8 || Norm(n_of_q) > 2E+4 /*確実な法線ベクトルを意味する*/))
+                                                                                      ? Dot(n_next, n_of_q) > 0.
+                                                                                      : true);
                                                                        } else
                                                                           return false;
                                                                        //   return q->isCaptured &&
@@ -924,6 +993,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                        //          isFlat(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next), X_next(q) - X_next(A), M_PI / 5);
                                                                     });
                                  }));
+
+            A->isSurface_tmp = A->isSurface;
+            A->isSurface_next_tmp = A->isSurface_next;
 
             // if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
             //    A->isSurface_next = false;

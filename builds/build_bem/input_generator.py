@@ -30,7 +30,7 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "simple_barge"
+SimulationCase = "Li_Cheng2018"
 
 match SimulationCase:
 
@@ -105,17 +105,17 @@ match SimulationCase:
         waterA = {"name": "waterA",
                  "type": "Fluid",
                  "reverseNormal" : True,
-                 "objfile": objfolder + "/bodyA50.obj"}
+                 "objfile": objfolder + "/bodyA20.obj"}
 
         waterB = {"name": "waterB",
                  "type": "Fluid",
                  "reverseNormal" : True,
-                 "objfile": objfolder + "/bodyB50.obj"}
+                 "objfile": objfolder + "/bodyB20.obj"}
 
         waterC = {"name": "waterC",
                  "type": "Fluid",
                  "reverseNormal" : True,
-                 "objfile": objfolder + "/bodyC50.obj"}
+                 "objfile": objfolder + "/bodyC20.obj"}
 
         bodyA = {"name": "bodyA",
                  "type": "RigidBody",
@@ -125,7 +125,7 @@ match SimulationCase:
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
                  "velocity": ["file", "./study_fish/bodyA.dat"],
-                 "objfile": objfolder + "/bodyA50.obj"}
+                 "objfile": objfolder + "/bodyA20.obj"}
 
         bodyB = {"name": "bodyB",
                  "type": "RigidBody",
@@ -135,7 +135,7 @@ match SimulationCase:
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
                  "velocity": ["file", "./study_fish/bodyB.dat"],
-                 "objfile": objfolder + "/bodyB50.obj"}
+                 "objfile": objfolder + "/bodyB20.obj"}
 
         bodyC = {"name": "bodyC",
                  "type": "RigidBody",
@@ -145,9 +145,10 @@ match SimulationCase:
                  "output": "json",
                  #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
                  "velocity": ["file", "./study_fish/bodyC.dat"],
-                 "objfile": objfolder + "/bodyC50.obj"}
+                 "objfile": objfolder + "/bodyC20.obj"}
 
         inputfiles = [waterA, waterB, waterC, bodyA, bodyB, bodyC]
+        # inputfiles = [waterA, waterC, bodyA, bodyB, bodyC]
 
         setting = {"max_dt": 0.01,
                    "end_time_step": 10000,
@@ -234,6 +235,106 @@ match SimulationCase:
         id = SimulationCase
 
         inputfiles = [water, tank, cylinder, cuboid]
+
+        setting = {"max_dt": 0.02,
+                   "end_time_step": 10000,
+                   "end_time": 9}
+
+        generate_input_files(inputfiles, setting, IO_dir, id)
+    case "Li_Cheng2018":
+
+        use_modified_case = False
+        if use_modified_case:
+            SimulationCase = "Li_Cheng2018_modified"
+
+        start = 0.
+
+        T = 1.2
+        H = 0.04
+        a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
+        h = 0.4
+
+        id0 = "mesh_D"
+        # id0 = "_no"
+        # id0 = "_multiple"
+
+        wavemaker_type = "piston_positive"
+        # wavemaker_type = "potential_pahse_shift"
+        # wavemaker_type = "flap_negative"
+
+        id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
+        id += "_T"+str(T).replace(".", "d")
+        id += "_" + wavemaker_type
+
+        water = {"name": "water", "type": "Fluid"}
+        tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
+
+        gauges = []
+        dx = 0.5
+        for i in range(5):
+            gauges.append({"name": "gauge"+str(i),
+                           "type": "wave gauge",
+                           "position": [0.2 + dx*i, 0, 0.6, 0.2 + dx*i, 0, 0.1]})
+
+        z_surface = 0.4
+        pahse_shift = -pi/2.
+        # if wavemaker_type contains "piston":
+        if "piston" in wavemaker_type:
+            wavemaker = {"name": "wavemaker",
+                         "type": "RigidBody",
+                         "velocity": ["piston", start, a, T, h, 1, 0, 0]}
+        elif "flap" in wavemaker_type:
+            wavemaker = {"name": "wavemaker",
+                        "type": "RigidBody",
+                        "velocity": ["flap", start, a, T, h, h, 0, 1, 0]}        
+        else:
+            wavemaker = {"name": "wavemaker",
+                         "type": "SoftBody",
+                         "isFixed": True,
+                         "velocity": ["velocity", start, a, T, h, z_surface, pahse_shift]}
+
+        Lx = 0.3        
+        Lz = 0.2
+        d = 0.1
+        # 500*Lx*Ly*Lz (浮体全質量) = 1000*Lx*Ly*d (排除される水の質量)       
+        Ly = 0.42
+
+        float = {"name": "float",
+                 "type": "RigidBody",
+                 "velocity": "floating"}
+
+        float["mass"] = m = 500*Lx*Lz*Ly
+        Ixx = 1./12.*m*(Ly*Ly+Lz*Lz)
+        Iyy = 1./12.*m*(Lx*Lx+Lz*Lz)
+        Izz = 1./12.*m*(Lx*Lx+Ly*Ly)
+        z_surface = 0.4
+
+        float["COM"] = [3.35, 0., z_surface]
+        print("COM ", float["COM"], " mass ", float["COM"], " Ly ", Ly)
+        float["MOI"] = [10**10*Ixx, Iyy, 10**10*Izz]
+
+        if use_modified_case:
+            objfolder = code_home_dir + "/cpp/obj/Li_Cheng2018_modified"
+            water["objfile"] = objfolder + "/water6_mod.obj"
+        else:
+            objfolder = code_home_dir + "/cpp/obj/Li_Cheng2018"        
+            if "mesh_A" in id:
+                water["objfile"] = objfolder + "/water8_mesh_A.obj"
+            elif "mesh_B" in id:
+                water["objfile"] = objfolder + "/water8_mesh_B.obj"
+            elif "mesh_C" in id:
+                water["objfile"] = objfolder + "/water8_mesh_C.obj"
+            elif "mesh_D" in id:
+                water["objfile"] = objfolder + "/water8_mesh_D.obj"
+            else:
+                water["objfile"] = objfolder + "/water8_modmodmod.obj"
+            
+
+        wavemaker["objfile"] = objfolder + "/wavemaker10.obj"
+        tank["objfile"] = objfolder + "/tank5.obj"
+        float["objfile"] = objfolder+"/float7.obj"
+        inputfiles = [tank, wavemaker, water, float]
+        inputfiles += gauges
 
         setting = {"max_dt": 0.02,
                    "end_time_step": 10000,
@@ -417,8 +518,7 @@ match SimulationCase:
                  "type": "RigidBody",
                  "objfile": objfolder+"/float20.obj",
                  "output": "json",
-                 "velocity": "floating"
-                 }
+                 "velocity": "floating"}
         
         L = 0.1
         W = 0.29
@@ -438,8 +538,8 @@ match SimulationCase:
         # float["COM"] = [-(4.-2.11), 0., z_floatinbody_bottom + 0.05/2]
         float["COM"] = [2.11, W/2, z_floatinbody_bottom + H/2]
         # float["MOI"] = [Ixx*10**10,Iyy,Izz*10**10]
-        # float["MOI"] = [Ixx*10**10,0.001589233395,Izz*10**10]
-        float["MOI"] = [Ixx*10**10,0.0019,Izz*10**10]
+        float["MOI"] = [Ixx*10**10,0.001589233395,Izz*10**10]
+        # float["MOI"] = [Ixx*10**10,0.0019,Izz*10**10]
         inputfiles = [tank, wavemaker, water, float]
 
         setting = {"max_dt": 0.05,
@@ -921,7 +1021,7 @@ match SimulationCase:
 
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
-                     "isFixed": True,
+                    #  "isFixed": True,
                      "velocity": ["Retzler2000", 0.1]}
 
         objfolder = code_home_dir + "/cpp/obj/chaplin2000simple/"
@@ -953,7 +1053,7 @@ match SimulationCase:
 
         wavemaker = {"name": "wavemaker",
                      "type": "RigidBody",
-                     "isFixed": True,
+                    #  "isFixed": True,
                      "velocity": ["Retzler2000", 0.02]}
 
         objfolder = code_home_dir + "/cpp/obj/chaplin2000/"

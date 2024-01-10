@@ -168,14 +168,14 @@ std::vector<T> Diagonal(const std::vector<std::vector<T>> &A) {
 
 // Tr = trace(M) = M_ii
 
-template <std::size_t N_ROW, std::size_t N_COL, typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-T Tr(const std::array<std::array<T, N_COL>, N_ROW> &A) {
-   T ret = 0;
-   for (std::size_t i = 0; i < std::min(N_ROW, N_COL); ++i) {
-      ret += A[i][i];
-   }
-   return ret;
-}
+// template <std::size_t N_ROW, std::size_t N_COL, typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+// T Tr(const std::array<std::array<T, N_COL>, N_ROW> &A) {
+//    T ret = 0;
+//    for (std::size_t i = 0; i < std::min(N_ROW, N_COL); ++i) {
+//       ret += A[i][i];
+//    }
+//    return ret;
+// }
 
 /* ------------------------------------------------------ */
 template <typename T>
@@ -2161,6 +2161,10 @@ std::vector<double> Subdivide(const double xmin, const double xmax, const int n)
    for (int i = 0; i < n + 1; i++)
       ret[i] = i * dx + xmin;
    return ret;
+};
+
+std::vector<double> Subdivide(const std::array<double, 2> &xminxmax, const int n) {
+   return Subdivide(std::get<0>(xminxmax), std::get<1>(xminxmax), n);
 };
 
 template <typename T, std::size_t N>

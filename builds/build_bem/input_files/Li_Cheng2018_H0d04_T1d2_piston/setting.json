@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.01,
+    "end_time_step": 10000,
+    "end_time": 7,
+    "output_directory": "/Users/tomoaki/BEM/Li_Cheng2018_H0d04_T1d2_piston",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json"
+    ]
+}

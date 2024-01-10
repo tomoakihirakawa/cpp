@@ -609,7 +609,7 @@ int main(int arg, char **argv) {
             }
          }
       }
-      std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+      std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
       {
          std::ofstream ofs("./output/first_lines.vtp");
          vtkPolygonWrite(ofs, net->getLines());
@@ -724,7 +724,7 @@ int main(int arg, char **argv) {
                }
             }
          }
-         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+         std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
          {
             std::unordered_map<std::shared_ptr<Tddd>, double> data;
             vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
@@ -809,7 +809,7 @@ int main(int arg, char **argv) {
          }
       }
 
-      std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+      std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
       {
          std::ofstream ofs("./output/first_tetras.vtp");
          vtkPolygonWrite(ofs, net->getTetras());
@@ -839,7 +839,7 @@ int main(int arg, char **argv) {
       // }
       // for (const auto &[a, b, c, d] : abcd)
       //    genTetra(net, a, b, c, d);
-      // std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+      // std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
       // b% -------------------------------------------------------------------------- */
       // Print("予め繋いだline(２点)から四面体を生成");
       // //! 適当な３点目を選択し，さらに適当な４点目を選ぶ．そして，その四面体の内部に点があるかどうかをチェックする（すでに造られた四面体の外心が内部にあるかチェックすべきだろう）．
@@ -851,7 +851,7 @@ int main(int arg, char **argv) {
       //       return false;
       //    });
       // }
-      // std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+      // std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
       // b% -------------------------------------------------------------------------- */
       Print("形成された面の内，テトラを持たない面の法線方向において，最も近い点を候補とし，新たにテトラを作成できないか調べる");
       for (auto i = 0; i < 30; i++) {
@@ -889,7 +889,7 @@ int main(int arg, char **argv) {
          //       }
          //    }
          // }
-         std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+         std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
          {
             std::ofstream ofs("./output/tetra" + std::to_string(i) + ".vtp");
             vtkPolygonWrite(ofs, net->getTetras());
@@ -963,7 +963,7 @@ int main(int arg, char **argv) {
             std::ofstream ofs("./output/voronoiLines" + std::to_string(I) + ".vtp");
             vtkPolygonWrite(ofs, voronoi_lines, data_voroni);
          }
-         std::cout << Red << "I:" << I << colorOff << std::endl;
+         std::cout << Red << "I:" << I << colorReset << std::endl;
       }
    }
 };

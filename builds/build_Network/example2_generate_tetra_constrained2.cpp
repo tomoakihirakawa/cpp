@@ -16,7 +16,50 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
 このスリーバーをうまく削除することが重要となる．
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
+make
+```
+
+---
+
+このプログラムは、制約付きの四面体分割（Constrained Tetrahedralization）を行うための手順を実装しています。具体的な流れは以下の通りです：
+
+1. **初期設定とオブジェクトの作成**:
+   - `Network` オブジェクトを作成し、与えられた `.obj` ファイル（ここでは `./cube2.obj`）から面を取得します。
+   - 線の長さからバケット（空間を小さなセクションに分割すること）のサイズを計算し、バケットのベクトルをセットアップします。
+
+2. **領域の分割と点の生成**:
+   - オブジェクトの領域を `n` 個のセクションに分割し、各セクションに点を生成します。
+   - 生成された点は `Network` オブジェクトに追加され、その幾何学的特性が設定されます。
+
+3. **バケツの準備**:
+   - 点、面、四面体用のバケツを用意し、点のバケツにオブジェクトの点を追加します。
+
+4. **最短距離にある点の接続**:
+   - 各点に対して、その周囲にある他の点を探索し、一定の距離内にある点と接続します。
+
+5. **四面体の生成条件の設定**:
+   - 四面体を生成するための条件を定義します。これには、四面体の内接円半径や外接円半径、位置などが含まれます。
+
+6. **新たな四面体の生成**:
+   - 生成された面を反復処理し、それぞれの面に対して新たな四面体を生成するための条件を確認します。
+   - 既存の点を利用するか、新たな点を生成して、四面体を作成します。
+
+7. **四面体のスコアリングと選択**:
+   - 各四面体にスコアを割り当て、最も適切なものを選択します。スコアリングには、外接球に他の点がどれだけ食い込むかを評価する処理が含まれます。
+
+8. **結果の保存と可視化**:
+   - 定期的に四面体のデータを `.vtp` ファイルに保存し、Paraview での可視化のために `.pvd` ファイルに出力します。
+
+このプログラムでは、四面体分割のための複数の幾何学的および数値的条件を用いており、これらの条件を満たす四面体を効率的に生成するためのアルゴリズムが組み込まれています。また、バケツというデータ構造を使用して、空間内の点の処理を効率化しています。
+
 */
+
+// * 四面体どうしの干渉のチェックが必要
+// * 干渉しないが面どうしが重なる場合は，面が完全に一致しなければならない
+// * 面がとても近い場合
 
 #include <utility>
 #include "Network.hpp"
@@ -27,7 +70,7 @@ int main(int arg, char **argv) {
    /* -------------------------------------------------------------------------- */
    // 四面体の許容サイズは適切か確認（max_radius_of_sphere）
    Timer timer;
-   std::string name = "./bunny.obj";
+   std::string name = "./cube2.obj";
    /* -------------------------------------------------------------------------- */
    int n = 10;
    auto object = new Network(name, "object");
@@ -127,26 +170,12 @@ int main(int arg, char **argv) {
          }
       }
    }
-   std::cout << Green << "Elapsed time : " << timer() << colorOff << std::endl;
+   std::cout << Green << "Elapsed time : " << timer() << colorReset << std::endl;
    {
       std::ofstream ofs(_HOME_DIR_ + "/output/first_lines.vtp");
       vtkPolygonWrite(ofs, object->getLines());
    }
    check();
-
-   // b% -------------------------------------------------------------------------- */
-
-   auto accumulate = [&](const T_4P &ABCD, const T_2P &pq) {
-      double ACCUM = 0.;
-      if (!(std::ranges::any_of(ABCD, [&](const auto &P) { return P == std::get<0>(pq); }) &&
-            std::ranges::any_of(ABCD, [&](const auto &P) { return P == std::get<1>(pq); })))
-         std::ranges::for_each(ToT4T3P(ABCD), [&](const auto &tri) {
-            auto t = Triangle(ToX(tri));
-            if (IntersectQ(t.incenter, t.inradius, ToX(pq)))
-               ACCUM += std::abs(t.inradius - Norm(t.incenter - Nearest(t.incenter, ToX(pq))));
-         });
-      return ACCUM;
-   };
 
    /* -------------------------------------------------------------------------- */
 
@@ -170,18 +199,18 @@ int main(int arg, char **argv) {
             const double range = 3 * particle_spacing;
             double ACCUM = 0., excess = 0;
             buckets.apply(T.incenter, range, [&](const auto &p) {
-               auto tmp = (T.circumradius - Distance(p->X, T.circumcenter));  // / T.circumradius;
+               auto tmp = (T.circumradius - Distance(p->X, T.circumcenter)) / T.inradius;
                if (tmp > 0)
                   ACCUM += tmp;
             });
             // if (ACCUM > 0.5)
             //    return 1E+50;
 
-            //% 歪な形状の場合ぺネルティー
-            ACCUM += Norm(T.circumcenter - T.incenter) / T.inradius;
-
             // //% 歪な形状の場合ぺネルティー
-            ACCUM = ACCUM * log10(1 / Min(T.solidangles));
+            // ACCUM += Norm(T.circumcenter - T.incenter) / T.inradius;
+
+            // // //% 歪な形状の場合ぺネルティー
+            // ACCUM = ACCUM * log10(1 / Min(T.solidangles));
 
             if (!isFinite(ACCUM))
                return 1E+50;
@@ -221,12 +250,12 @@ int main(int arg, char **argv) {
       if (f) {
          auto [t0, t1] = f->Tetras;
          if (t0 && !t1) {
-            auto empty_direction = Projection(Normalize(f_center - t0->center), normal);
+            auto empty_direction = Projection(Normalize(f_center - t0->centroid), normal);
             for (const auto &d : candidates_points)
                if (condition(d->X, n) && condition(d->X, empty_direction))
                   update_score({a, b, c, d});
          } else if (!t0 && t1) {
-            auto empty_direction = Projection(Normalize(f_center - t1->center), normal);
+            auto empty_direction = Projection(Normalize(f_center - t1->centroid), normal);
             for (const auto &d : candidates_points)
                if (condition(d->X, n) && condition(d->X, empty_direction))
                   update_score({a, b, c, d});
@@ -255,19 +284,9 @@ int main(int arg, char **argv) {
       auto faces = object->getFaces();
       for (const auto &f : faces) {
 
-         auto get_points_inside = [&](const Tddd &X, const networkPoint *except_p = nullptr) {
-            points_inside.clear();
-            auto r = Circumradius(Append(ToX(f), X));
-            auto Xc = Circumcenter(Append(ToX(f), X));
-            buckets.apply(Xc, r, [&](const auto &p) {
-               if (Norm(p->X - Xc) < r * 0.999 && except_p != p)
-                  points_inside.emplace_back(p);
-            });
-         };
-
          auto gen_point = [&](const Tddd &X) -> networkPoint * {
             auto p = new networkPoint(object, X);
-            buckets.add(p->X, p);
+            buckets.add(X, p);
             return p;
          };
 
@@ -284,42 +303,24 @@ int main(int arg, char **argv) {
          if (t0 && t1)
             continue;
 
-         if (!t0 && !t1) {
-            // Print("どちら側でもいいのでとりあえず");
-            first_X = Circumcenter(ToX(f)) - mean_len * f->normal;
-            empty_direction = -f->normal;
-            if (!object->isInside_MethodBucket(first_X)) {
-               first_X = Circumcenter(ToX(f)) + mean_len * f->normal;
-               empty_direction = f->normal;
-            }
-         } else if (t0 && !t1) {
-            // Print("t1 direction");
-            empty_direction = Projection(Normalize(f->center - t0->center), f->normal);
-            first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
-         } else if (!t0 && t1) {
-            // Print("t0 direction");
-            empty_direction = Projection(Normalize(f->center - t1->center), f->normal);
-            first_X = Circumcenter(ToX(f)) + mean_len * Normalize(empty_direction);
-         }
-
          auto good_X = [&](const double a) {
             Tddd X = {0., 0., 0.};
             if (!t0 && !t1) {
                // Print("どちら側でもいいのでとりあえず");
-               X = Circumcenter(ToX(f)) - a * mean_len * f->normal;
+               X = f->circumcenter - a * mean_len * f->normal;
                empty_direction = -f->normal;
-               if (!object->isInside_MethodBucket(first_X)) {
-                  X = Circumcenter(ToX(f)) + a * mean_len * f->normal;
+               if (!object->isInside_MethodBucket(X)) {
+                  X = f->circumcenter + a * mean_len * f->normal;
                   empty_direction = f->normal;
                }
             } else if (t0 && !t1) {
                // Print("t1 direction");
-               empty_direction = Projection(Normalize(f->center - t0->center), f->normal);
-               X = Circumcenter(ToX(f)) + a * mean_len * Normalize(empty_direction);
+               empty_direction = Projection(Normalize(f->center - t0->centroid), f->normal);
+               X = f->circumcenter + a * mean_len * Normalize(empty_direction);
             } else if (!t0 && t1) {
                // Print("t0 direction");
-               empty_direction = Projection(Normalize(f->center - t1->center), f->normal);
-               X = Circumcenter(ToX(f)) + a * mean_len * Normalize(empty_direction);
+               empty_direction = Projection(Normalize(f->center - t1->centroid), f->normal);
+               X = f->circumcenter + a * mean_len * Normalize(empty_direction);
             }
             return X;
          };
@@ -327,7 +328,7 @@ int main(int arg, char **argv) {
          // 対象となる点の候補を取得
          {
             points_inside.clear();
-            auto X = first_X;
+            auto X = good_X(1.);
             auto r = Circumradius(Append(ToX(f), X));
             auto Xc = Circumcenter(Append(ToX(f), X));
             //
@@ -378,9 +379,9 @@ int main(int arg, char **argv) {
             ) {
                if (Norm(empty_direction) < 0.1)
                   return true;
-               else if (t0 && Dot(Projection(t0->center - f->center, f->normal), Projection(X - f->center, f->normal)) > 0.)
+               else if (t0 && Dot(Projection(t0->centroid - f->center, f->normal), Projection(X - f->center, f->normal)) > 0.)
                   return false;
-               else if (t1 && Dot(Projection(t1->center - f->center, f->normal), Projection(X - f->center, f->normal)) > 0.)
+               else if (t1 && Dot(Projection(t1->centroid - f->center, f->normal), Projection(X - f->center, f->normal)) > 0.)
                   return false;
                else if (t0 && t1)
                   return false;
@@ -406,51 +407,63 @@ int main(int arg, char **argv) {
          */
 
          auto score = [&](const Tddd &X) -> double {
-            auto Xc_f = Circumcenter(ToX(f));
-            Tetrahedron T(Append(ToX(f), X));
+            auto Xc_f = f->circumcenter;
+            Tetrahedron testing_Tetra(Append(ToX(f), X));
+
+            const double value_not_acceptable = -1E+10;
 
             // 排除する条件1
             // 外接円が大きすぎる場合は排除する
-            if (T.circumradius > 0.1)
-               return -1E+10;
+            if (testing_Tetra.circumradius > 0.1)
+               return value_not_acceptable;
 
             // 排除する条件2
             // ポリゴンの外部にある場合は排除する
-            if (!object->isInside_MethodBucket(X) || !object->isInside_MethodBucket(T.centroid))
-               return -1E+10;
+            if (!object->isInside_MethodBucket(X) || !object->isInside_MethodBucket(testing_Tetra.centroid))
+               return value_not_acceptable;
 
             // 排除する条件3
             // 周辺のテトラと干渉する場合は排除する
-            auto [p0, p1, p2, p3] = T.vertices;
+            auto [p0, p1, p2, p3] = testing_Tetra.vertices;
             auto S = InSphere(p0, p1, p2, p3);
             auto s0 = InSphere(p0, (p0 + p1) / 2, (p0 + p2) / 2, (p0 + p3) / 2);
             auto s1 = InSphere(p1, (p1 + p0) / 2, (p1 + p2) / 2, (p1 + p3) / 2);
             auto s2 = InSphere(p2, (p2 + p0) / 2, (p2 + p1) / 2, (p2 + p3) / 2);
             auto s3 = InSphere(p3, (p3 + p0) / 2, (p3 + p1) / 2, (p3 + p2) / 2);
-            if (tetra_buckets.any_of(X, 2 * T.circumradius, [&](const auto &t) {
+            auto T6T2Tddd_tet = T6T2Tddd(testing_Tetra);
+            if (tetra_buckets.any_of(X, 2 * testing_Tetra.circumradius, [&](const auto &t) {
+                   auto T6T2Tddd_tet_exist = T6T2Tddd(*t);
                    auto [p0, p1, p2, p3] = t->vertices;
-                   auto S_ = InSphere(p0, p1, p2, p3);
-                   auto s0_ = InSphere(p0, (p0 + p1) / 2, (p0 + p2) / 2, (p0 + p3) / 2);
-                   auto s1_ = InSphere(p1, (p1 + p0) / 2, (p1 + p2) / 2, (p1 + p3) / 2);
-                   auto s2_ = InSphere(p2, (p2 + p0) / 2, (p2 + p1) / 2, (p2 + p3) / 2);
-                   auto s3_ = InSphere(p3, (p3 + p0) / 2, (p3 + p1) / 2, (p3 + p2) / 2);
-                   return IntersectQ(S_, T6T2Tddd(T)) || IntersectQ(s0_, T6T2Tddd(T)) || IntersectQ(s1_, T6T2Tddd(T)) || IntersectQ(s2_, T6T2Tddd(T)) || IntersectQ(s3_, T6T2Tddd(T)) ||
-                          IntersectQ(S, T6T2Tddd(*t)) || IntersectQ(s0, T6T2Tddd(*t)) || IntersectQ(s1, T6T2Tddd(*t)) || IntersectQ(s2, T6T2Tddd(*t)) || IntersectQ(s3, T6T2Tddd(*t));
+                   auto S_exist = InSphere(p0, p1, p2, p3);
+                   auto s0_exist = InSphere(p0, (p0 + p1) / 2, (p0 + p2) / 2, (p0 + p3) / 2);
+                   auto s1_exist = InSphere(p1, (p1 + p0) / 2, (p1 + p2) / 2, (p1 + p3) / 2);
+                   auto s2_exist = InSphere(p2, (p2 + p0) / 2, (p2 + p1) / 2, (p2 + p3) / 2);
+                   auto s3_exist = InSphere(p3, (p3 + p0) / 2, (p3 + p1) / 2, (p3 + p2) / 2);
+                   return IntersectQ(S_exist, T6T2Tddd_tet) ||
+                          IntersectQ(s0_exist, T6T2Tddd_tet) ||
+                          IntersectQ(s1_exist, T6T2Tddd_tet) ||
+                          IntersectQ(s2_exist, T6T2Tddd_tet) ||
+                          IntersectQ(s3_exist, T6T2Tddd_tet) ||
+                          IntersectQ(S, T6T2Tddd_tet_exist) ||
+                          IntersectQ(s0, T6T2Tddd_tet_exist) ||
+                          IntersectQ(s1, T6T2Tddd_tet_exist) ||
+                          IntersectQ(s2, T6T2Tddd_tet_exist) ||
+                          IntersectQ(s3, T6T2Tddd_tet_exist);
                 }))
-               return -1E+10;
+               return value_not_acceptable;
 
             // 新たに作成するテトラの外接球に他の点がどれほど食い込むかを評価し，最もスコアが良いものを選択する．
             double score = 0.;
-            buckets.apply(T.circumcenter, T.circumradius, [&](const auto &p) {
-               score -= w_Bspline(Norm(p->X - T.circumcenter), T.circumradius) / T.circumradius;
+            buckets.apply(testing_Tetra.circumcenter, testing_Tetra.circumradius, [&](const auto &p) {
+               score -= w_Bspline(Norm(p->X - testing_Tetra.circumcenter), testing_Tetra.circumradius) / testing_Tetra.circumradius;
             });
 
-            score -= T.circumradius / std::sqrt(f->area / 2.);
-            score -= (Norm(X - Circumcenter(ToX(f))) - mean_len) / mean_len;
+            score -= testing_Tetra.circumradius / std::sqrt(f->area / 2.);
+            score -= (Norm(X - f->circumcenter) - mean_len) / mean_len;
 
             const double min_score = -10;
             if (score < min_score)
-               return -1E+10;
+               return value_not_acceptable;
             else
                return score;
          };
@@ -480,8 +493,8 @@ int main(int arg, char **argv) {
          auto [p, X, s] = best_p;
 
          //! 新たに作成する点候補
-         for (auto i = 0; i < 10; ++i) {
-            auto Xtmp = good_X(0.15 * i);
+         for (auto i = 10; i > 1; --i) {
+            auto Xtmp = good_X(0.2 * i);
             auto sc = score(Xtmp) - 1.;
             if (sc > s) {
                s = sc;
@@ -502,7 +515,7 @@ int main(int arg, char **argv) {
          }
 
          if (count++ % 50 == 0) {
-            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorOff << std::endl;
+            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
             auto filename = _HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtp";
             std::ofstream ofs(filename);
             vtkPolygonWrite(ofs, object->getTetras());

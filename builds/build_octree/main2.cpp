@@ -626,7 +626,7 @@ int main(int arg, char **argv) {
          std::ofstream ofs("./output/tetras" + std::to_string(I) + ".vtp");
          vtp.write(ofs);
          ofs.close();
-         std::cout << Red << "I:" << I << colorOff << std::endl;
+         std::cout << Red << "I:" << I << colorReset << std::endl;
       }
    }
 };

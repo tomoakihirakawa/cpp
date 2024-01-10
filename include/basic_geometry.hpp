@@ -953,28 +953,29 @@ std::ostream &operator<<(std::ostream &stream, const CoordinateBounds &bounds) {
    return (stream << bounds.bounds);
 };
 CoordinateBounds operator+(const CoordinateBounds &b0, const CoordinateBounds &b1) {
-   auto [minX0, maxX0] = std::get<0 /*x*/>(b0.bounds);
-   auto [minX1, maxX1] = std::get<0 /*x*/>(b1.bounds);
-   auto [minY0, maxY0] = std::get<1 /*y*/>(b0.bounds);
-   auto [minY1, maxY1] = std::get<1 /*y*/>(b1.bounds);
-   auto [minZ0, maxZ0] = std::get<2 /*z*/>(b0.bounds);
-   auto [minZ1, maxZ1] = std::get<2 /*z*/>(b1.bounds);
-   return CoordinateBounds(
-       (minX0 <= minX1 ? minX0 : minX1), (maxX0 >= maxX1 ? maxX0 : maxX1),
-       (minY0 <= minY1 ? minY0 : minY1), (maxY0 >= maxY1 ? maxY0 : maxY1),
-       (minZ0 <= minZ1 ? minZ0 : minZ1), (maxZ0 >= maxZ1 ? maxZ0 : maxZ1));
+   auto [minX0, maxX0] = std::get<0>(b0.bounds);
+   auto [minX1, maxX1] = std::get<0>(b1.bounds);
+   auto [minY0, maxY0] = std::get<1>(b0.bounds);
+   auto [minY1, maxY1] = std::get<1>(b1.bounds);
+   auto [minZ0, maxZ0] = std::get<2>(b0.bounds);
+   auto [minZ1, maxZ1] = std::get<2>(b1.bounds);
+
+   return CoordinateBounds(std::min(minX0, minX1), std::max(maxX0, maxX1),
+                           std::min(minY0, minY1), std::max(maxY0, maxY1),
+                           std::min(minZ0, minZ1), std::max(maxZ0, maxZ1));
 };
+
 CoordinateBounds &operator+=(CoordinateBounds &b0, const CoordinateBounds &b1) {
-   auto [minX0, maxX0] = std::get<0 /*x*/>(b0.bounds);
-   auto [minX1, maxX1] = std::get<0 /*x*/>(b1.bounds);
-   auto [minY0, maxY0] = std::get<1 /*y*/>(b0.bounds);
-   auto [minY1, maxY1] = std::get<1 /*y*/>(b1.bounds);
-   auto [minZ0, maxZ0] = std::get<2 /*z*/>(b0.bounds);
-   auto [minZ1, maxZ1] = std::get<2 /*z*/>(b1.bounds);
-   b0.bounds = {
-       {{(minX0 <= minX1 ? minX0 : minX1), (maxX0 >= maxX1 ? maxX0 : maxX1)},
-        {(minY0 <= minY1 ? minY0 : minY1), (maxY0 >= maxY1 ? maxY0 : maxY1)},
-        {(minZ0 <= minZ1 ? minZ0 : minZ1), (maxZ0 >= maxZ1 ? maxZ0 : maxZ1)}}};
+   auto [minX0, maxX0] = std::get<0>(b0.bounds);
+   auto [minX1, maxX1] = std::get<0>(b1.bounds);
+   auto [minY0, maxY0] = std::get<1>(b0.bounds);
+   auto [minY1, maxY1] = std::get<1>(b1.bounds);
+   auto [minZ0, maxZ0] = std::get<2>(b0.bounds);
+   auto [minZ1, maxZ1] = std::get<2>(b1.bounds);
+
+   b0.bounds = {{{std::min(minX0, minX1), std::max(maxX0, maxX1)},
+                 {std::min(minY0, minY1), std::max(maxY0, maxY1)},
+                 {std::min(minZ0, minZ1), std::max(maxZ0, maxZ1)}}};
    return b0;
 };
 inline CoordinateBounds::CoordinateBounds(const std::vector<T3Tddd> &V_X) {
@@ -1852,6 +1853,7 @@ bool IntersectQ(const Tetrahedron &Tet0, const Tetrahedron &Tet1) {
       if (IntersectQ(Tet0.incenter, Tet0.inradius, Tet1.incenter, Tet1.inradius))
          return true;
       return std::ranges::any_of((T6T2Tddd)(Tet0), [&](const auto &ab) { return IntersectQ(Tet1, ab); }) ||
+
              std::ranges::any_of((T6T2Tddd)(Tet1), [&](const auto &AB) { return IntersectQ(Tet0, AB); });
    } else
       return false;

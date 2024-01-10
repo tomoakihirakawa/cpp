@@ -23,6 +23,10 @@
         - [🪼 面同士の接触判定](#🪼-面同士の接触判定)
 - [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
+    - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
+    - [⛵ CGALを使って四面体を生成し，さらに細分化する](#⛵-CGALを使って四面体を生成し，さらに細分化する)
+    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
+    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
     - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 
 
@@ -44,7 +48,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4038)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4062)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -230,7 +234,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1606)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1607)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -246,7 +250,7 @@ make
 ---
 ### 🪼 面同士の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1606)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](../../include/basic_geometry.hpp#L1607)関数は，交差判定には使えるが，接触判定には使えない．
 
 接触は，ギリギリ交差している状態を指すだろうが，
 実際に接触判定を応用する場面では，
@@ -272,7 +276,40 @@ make
 brew install CGAL
 ```
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL.cpp
+make
+```
+
 [./example1_generate_tetra_using_CGAL.cpp#L1](./example1_generate_tetra_using_CGAL.cpp#L1)
+
+## ⛵ CGALを使って四面体を生成する 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL_constrained.cpp
+make
+```
+
+`CGAL::Mesh_polyhedron_3<K>::type` is typically a typedef for a polyhedron data structure that is compatible with CGAL's mesh generation algorithms.
+`CGAL::Polyhedron_3<K>` is a standard CGAL polyhedron class.
+
+[./example1_generate_tetra_using_CGAL_constrained.cpp#L1](./example1_generate_tetra_using_CGAL_constrained.cpp#L1)
+
+## ⛵ CGALを使って四面体を生成し，さらに細分化する 
+
+```shell
+brew install CGAL
+```
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL_refining.cpp
+make
+```
+
+[./example1_generate_tetra_using_CGAL_refining.cpp#L1](./example1_generate_tetra_using_CGAL_refining.cpp#L1)
 
 ---
 ## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
@@ -290,6 +327,91 @@ CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk
 四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
 このスリーバーをうまく削除することが重要となる．
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
+make
+```
+
+---
+
+このプログラムは、制約付きの四面体分割（Constrained Tetrahedralization）を行うための手順を実装しています。具体的な流れは以下の通りです：
+
+1. **初期設定とオブジェクトの作成**:
+- `Network` オブジェクトを作成し、与えられた `.obj` ファイル（ここでは `./cube2.obj`）から面を取得します。
+- 線の長さからバケット（空間を小さなセクションに分割すること）のサイズを計算し、バケットのベクトルをセットアップします。
+
+2. **領域の分割と点の生成**:
+- オブジェクトの領域を `n` 個のセクションに分割し、各セクションに点を生成します。
+- 生成された点は `Network` オブジェクトに追加され、その幾何学的特性が設定されます。
+
+3. **バケツの準備**:
+- 点、面、四面体用のバケツを用意し、点のバケツにオブジェクトの点を追加します。
+
+4. **最短距離にある点の接続**:
+- 各点に対して、その周囲にある他の点を探索し、一定の距離内にある点と接続します。
+
+5. **四面体の生成条件の設定**:
+- 四面体を生成するための条件を定義します。これには、四面体の内接円半径や外接円半径、位置などが含まれます。
+
+6. **新たな四面体の生成**:
+- 生成された面を反復処理し、それぞれの面に対して新たな四面体を生成するための条件を確認します。
+- 既存の点を利用するか、新たな点を生成して、四面体を作成します。
+
+7. **四面体のスコアリングと選択**:
+- 各四面体にスコアを割り当て、最も適切なものを選択します。スコアリングには、外接球に他の点がどれだけ食い込むかを評価する処理が含まれます。
+
+8. **結果の保存と可視化**:
+- 定期的に四面体のデータを `.vtp` ファイルに保存し、Paraview での可視化のために `.pvd` ファイルに出力します。
+
+このプログラムでは、四面体分割のための複数の幾何学的および数値的条件を用いており、これらの条件を満たす四面体を効率的に生成するためのアルゴリズムが組み込まれています。また、バケツというデータ構造を使用して、空間内の点の処理を効率化しています。
+
 [./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
+
+## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
+
+* PLC: piecewise linear complex
+* CDT: constrained Delaunay triangulation
+
+CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
+
+* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
+* sweep algorithm
+
+
+[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
+四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
+このスリーバーをうまく削除することが重要となる．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
+make
+```
+
+[./example2_generate_tetra_constrained2_2.cpp#L2](./example2_generate_tetra_constrained2_2.cpp#L2)
+
+## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
+
+* PLC: piecewise linear complex
+* CDT: constrained Delaunay triangulation
+
+CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
+
+* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
+* sweep algorithm
+
+
+[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
+四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
+このスリーバーをうまく削除することが重要となる．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
+make
+```
+
+[./example2_generate_tetra_constrained3.cpp#L2](./example2_generate_tetra_constrained3.cpp#L2)
 
 ---

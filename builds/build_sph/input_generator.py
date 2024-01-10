@@ -59,8 +59,8 @@ match SimulationCase:
                    "initial_surface_z_position": 0.1,
                    "particle_spacing": particle_spacing}
 
-        id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
-                            + "_WITHOUT_CORRECTION"
+        id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") 
+        # \                   + "_WITHOUT_CORRECTION"
 
         generate_input_files(input_files, setting,IO_dir, id)
 
@@ -106,8 +106,8 @@ match SimulationCase:
         input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
         setting = {"RK_order": 1,
-                   "max_dt": 0.0004,
-                   "end_time_step": 100000*5,
+                   "max_dt": 0.0002,
+                   "end_time_step": 2000*5,
                    "end_time": 5,
                    "CSML": 2.5,
                    "initial_surface_z_position": 0.6,
@@ -161,7 +161,7 @@ match SimulationCase:
         input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
         setting = {"RK_order": 1,
-                   "max_dt": 0.0004,
+                   "max_dt": 0.0005,
                    "end_time_step": 100000*5,
                    "end_time": 5,
                    "CSML": 2.5,

@@ -56,7 +56,7 @@ $ gnuplot bspline_plot.gnu
 
 ### 🪼 コード 
 
-[Bspline基底関数](../../include/basic.hpp#L806)を用いて，B-spline補間を行う．
+[Bspline基底関数](../../include/basic.hpp#L816)を用いて，B-spline補間を行う．
 
 `InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
 
@@ -219,7 +219,7 @@ N _4 &= 4t _1(1-t _0-t _1) \\
 N _5 &= 4t _0(1-t _0-t _1)
 \end{align}
 ```
-[../../include/basic_arithmetic_array_operations.hpp#L972](../../include/basic_arithmetic_array_operations.hpp#L972)
+[../../include/basic_arithmetic_array_operations.hpp#L987](../../include/basic_arithmetic_array_operations.hpp#L987)
 
 
 ![](sample_tri.png)

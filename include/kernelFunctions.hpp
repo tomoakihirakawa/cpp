@@ -173,7 +173,8 @@ Tddd grad_w_Spiky(const Tddd &xi, const Tddd &xj, const double &h) {
 /* -------------------------------------------------------------------------- */
 
 double w_Bspline4_(double r, const double h) {
-   const double a = 1. / (20. * M_PI * h * h * h);
+   static const double factor = 1.0 / (20.0 * M_PI);
+   const double a = factor / (h * h * h);
    const double q = r / h;
    if (q > 2.5)
       return 0.;
@@ -185,27 +186,28 @@ double w_Bspline4_(double r, const double h) {
       return a * (std::pow(2.5 - q, 4));
 };
 
-double w_Bspline4(double r, const double &h) {
-   return w_Bspline4_(r, h / 2.5);
+double w_Bspline4(double r, const double h) {
+   return w_Bspline4_(r, 0.4 * h);
 };
 
 Tddd grad_w_Bspline4_(const Tddd &xi, const Tddd &xj, const double h) {
-   const double a = 1. / (20. * M_PI * h * h * h);
+   static const double factor = 1.0 / (20.0 * M_PI);
+   const double a = factor / (h * h * h);
    const double r = Norm(xi - xj);
    const double q = r / h;
    const Tddd dqdx = (xi - xj) / (r * h);
    if (q > 2.5 || r < 1E-13)
       return _ZEROS3_;
    else if (q < 0.5)
-      return a * (4 * std::pow(2.5 - q, 3) - 5. * 4 * std::pow(1.5 - q, 3) + 10. * 4 * std::pow(0.5 - q, 3)) * (-dqdx);
+      return a * (4. * std::pow(2.5 - q, 3) - 20. * std::pow(1.5 - q, 3) + 40. * std::pow(0.5 - q, 3)) * (-dqdx);
    else if (q < 1.5)
-      return a * (4 * std::pow(2.5 - q, 3) - 5. * 4 * std ::pow(1.5 - q, 3)) * (-dqdx);
+      return a * (4. * std::pow(2.5 - q, 3) - 20. * std ::pow(1.5 - q, 3)) * (-dqdx);
    else
-      return a * (4 * std::pow(2.5 - q, 3)) * (-dqdx);
+      return a * (4. * std::pow(2.5 - q, 3)) * (-dqdx);
 };
 
 Tddd grad_w_Bspline4(const Tddd &xi, const Tddd &xj, const double h) {
-   return grad_w_Bspline4_(xi, xj, h / 2.5);
+   return grad_w_Bspline4_(xi, xj, 0.4 * h);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -233,8 +235,7 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
    const double r = Norm(xi - xj);
    const double q = r / h;
    const Tddd grad_q = (xi - xj) / (r * h);
-   const double dinom = h * h * h;
-   const double c = a / dinom;
+   const double c = a / (h * h * h);
 
    if (q > 1. || r < 1E-13)
       return _ZEROS3_;
@@ -332,24 +333,22 @@ double w_Bspline3(const double &r, const double &h) {
    if (q > 1.)
       return 0.;
    else if (q < 0.5)
-      return (8. + 48. * (q - 1) * std::pow(q, 2)) / (M_PI * h * h * h);
+      return (8. + 48. * (q - 1.) * std::pow(q, 2)) / (M_PI * h * h * h);
    else
       return 16. * std::pow(1. - q, 3) / (M_PI * h * h * h);
 };
 
 std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
-   const auto r = Norm(xi - xj);
+   const double r = Norm(xi - xj);
    const double q = r / h;
-   const std::array<double, 3> dqdr = (xi - xj) / (r * h);
-   const double dinom = M_PI * h * h * h * h * r;
    if (q > 1. || r < 1E-13)
       return _ZEROS3_;
    else if (q < 0.5)
       // return (xi - xj) * (-96. + 144. * q) * q / dinom;
-      return (48 * q * (-2. + 3 * q) * ((xi - xj) / r)) / (std::pow(h, 4) * M_PI);
+      return q * (-96. + 144. * q) * ((xi - xj) / r) / (std::pow(h, 4) * M_PI);
    else
       // return -48. * (xi - xj) * std::pow(1. - q, 2) / dinom;
-      return (-48 * std::pow(-1. + q, 2) * ((xi - xj) / r)) / (std::pow(h, 4) * M_PI);
+      return (-48. * std::pow(-1. + q, 2) * ((xi - xj) / r)) / (std::pow(h, 4) * M_PI);
    //
    // const auto r = Norm(xi - xj);
    // const double q = r / h;
@@ -500,6 +499,7 @@ Tddd grad_w_Wendland(const Tddd &xi, const Tddd &xj, const double h) {
 // h >2.6 -> w_Bsplin5
 
 const double between_3or5 = 2.5;
+const std::array<double, 2> between_3_4_5 = {2.7, 2.7};
 
 // #define USE_WENDLAND_KERNEL
 
@@ -507,11 +507,18 @@ double w_Bspline(const double &r, const double &h) {
 #ifdef USE_WENDLAND_KERNEL
    return w_Wendland(r, h);
 #else
-   if (h < between_3or5)
-      return w_Bspline3(r, h);
-   else
-      return w_Bspline5(r, h);
-         // return w_Wendland(r, h);
+   // if (h < std::get<0>(between_3_4_5))
+   //    return w_Bspline3(r, h);
+   // else
+   // if (h < std::get<1>(between_3_4_5))
+   return w_Bspline4(r, h);
+      // else
+      // return w_Bspline5(r, h);
+
+      // if (h < std::get<0>(between_3_4_5))
+      //    return w_Bspline4(r, h);
+      // else
+      //    return w_Wendland(r, h);
 
 #endif
 };
@@ -520,13 +527,18 @@ std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std:
 #ifdef USE_WENDLAND_KERNEL
    return grad_w_Wendland(xi, xj, h);
 #else
-   if (h < between_3or5)
-      return grad_w_Bspline3(xi, xj, h);
-   else
-      // return (grad_w_Bspline3(xi, xj, h) + grad_w_Bspline4(xi, xj, h) + grad_w_Bspline5(xi, xj, h)) / 3.;
-      // return grad_w_Spiky(xi, xj, h);
-      return grad_w_Bspline5(xi, xj, h);
-         // return grad_w_Wendland(xi, xj, h);
+   // if (h < std::get<0>(between_3_4_5))
+   //    return grad_w_Bspline3(xi, xj, h);
+   // else
+   // if (h < std::get<1>(between_3_4_5))
+   return grad_w_Bspline4(xi, xj, h);
+      // else
+      // return grad_w_Bspline5(xi, xj, h);
+
+      // if (h < std::get<0>(between_3_4_5))
+      //    return grad_w_Bspline4(xi, xj, h);
+      // else
+      // return grad_w_Wendland(xi, xj, h);
 #endif
 };
 
@@ -534,15 +546,7 @@ std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std:
 #ifdef USE_WENDLAND_KERNEL
    return Dot(grad_w_Wendland(xi, xj, h), M);
 #else
-   // if (h < between_3or5)
-   //    // return Dot(grad_w_Bspline3(xi, xj, h), M);
-   //    return Dot(grad_w_Bspline3(xi, xj, h), M);
-   // else
-   //    return Dot(grad_w_Bspline5(xi, xj, h), M);
-
-   // return Dot(M, grad_w_Bspline5(xi, xj, h));
    return Dot(M, grad_w_Bspline(xi, xj, h));
-      // return Dot(M, grad_w_Wendland(xi, xj, h));
 #endif
 };
 
@@ -552,10 +556,8 @@ double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<doub
    const double q = r / h;
    if (q > 1. || r < 1E-13)
       return 0.;
-   else {
-      // return Dot(Xij / (r * r), grad_w_Wendland(xi, xj, h));
+   else
       return Dot(Xij / (r * r), grad_w_Bspline(xi, xj, h));
-   }
 };
 
 double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, double h, const std::array<Tddd, 3> &M) {
