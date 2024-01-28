@@ -2,6 +2,8 @@
 - [🐋 pybind11の使い方](#🐋-pybind11の使い方)
     - [⛵ pybind11の書き方](#⛵-pybind11の書き方)
     - [⛵ pybind11で共有ライブラリを作成](#⛵-pybind11で共有ライブラリを作成)
+        - [🪼 ラズパイでのコンパイル](#🪼-ラズパイでのコンパイル)
+- [🐋 Commands used in the video https://youtu.be/-bCG87jBDqA :](#🐋-Commands-used-in-the-video-https://youtu.be/-bCG87jBDqA-:)
     - [⛵ python内で共有ライブラリを使う](#⛵-python内で共有ライブラリを使う)
         - [🪼 アニメーションgifファイルを作成しロボットの動きを可視化する](#🪼-アニメーションgifファイルを作成しロボットの動きを可視化する)
         - [🪼 モーターの節の位置と角度の時間変化をdatファイルに出力する](#🪼-モーターの節の位置と角度の時間変化をdatファイルに出力する)
@@ -35,12 +37,12 @@ py::class_<LighthillRobot>(m, "LighthillRobot")
 }
 ```
 
-[./LighthillRobot.cpp#L36](./LighthillRobot.cpp#L36)
+[./LighthillRobot.cpp#L78](./LighthillRobot.cpp#L78)
 
 ---
 ## ⛵ pybind11で共有ライブラリを作成 
 
-この例は，c++のNewton法を利用して作った[Lighthill Robot](../../include/rootFinding.hpp#L231)をpythonで使うためのもの.
+この例は，c++のNewton法を利用して作った[Lighthill Robot](../../include/rootFinding.hpp#L232)をpythonで使うためのもの.
 
 このディレクトリにCMakelists.txtを用意しているので，
 それを使って，以下のようにターミナル上で実行・`make`すると，
@@ -58,6 +60,46 @@ make
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ./ -DINPUT=LighthillRobot.cpp -DOUTPUT=LighthillRobot -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-13
 make
+```
+
+### 🪼 ラズパイでのコンパイル 
+
+c++で-std=c++17を使うためには，gcc-9.1.0以上が必要．
+[https://gist.github.com/sol-prog/95e4e7e3674ac819179acf33172de8a9#file-commands-sh](https://gist.github.com/sol-prog/95e4e7e3674ac819179acf33172de8a9#file-commands-sh)
+ここを参考にして，まずはgcc-9.1.0をインストールする．
+git cloneをする際にプロキシを通す必要がある場合は，以下のようにする．
+
+```sh
+# 🐋 Commands used in the video https://youtu.be/-bCG87jBDqA : 
+
+sudo apt update && sudo apt upgrade -y
+
+git clone https://bitbucket.org/sol_prog/raspberry-pi-gcc-binary.git
+cd raspberry-pi-gcc-binary
+tar -xjvf gcc-9.1.0-armhf-raspbian.tar.bz2
+sudo mv gcc-9.1.0 /opt
+cd ..
+rm -rf raspberry-pi-gcc-binary
+
+cd ~
+echo 'export PATH=/opt/gcc-9.1.0/bin:$PATH' >> ~/.bashrc
+echo 'export LD _LIBRARY _PATH=/opt/gcc-9.1.0/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+. ~/.bashrc
+sudo ln -s /usr/include/arm-linux-gnueabihf/sys /usr/include/sys
+sudo ln -s /usr/include/arm-linux-gnueabihf/bits /usr/include/bits
+sudo ln -s /usr/include/arm-linux-gnueabihf/gnu /usr/include/gnu
+sudo ln -s /usr/include/arm-linux-gnueabihf/asm /usr/include/asm
+sudo ln -s /usr/lib/arm-linux-gnueabihf/crti.o /usr/lib/crti.o
+sudo ln -s /usr/lib/arm-linux-gnueabihf/crt1.o /usr/lib/crt1.o
+sudo ln -s /usr/lib/arm-linux-gnueabihf/crtn.o /usr/lib/crtn.o
+
+g++-9.1 -std=c++17 -Wall -pedantic test_fs.cpp -o test_fs
+./test_fs
+```
+
+```sh
+git config --global http.proxy http://書き換え:8080
+git config --global https.proxy http://書き換え:8080
 ```
 
 [./LighthillRobot.cpp#L1](./LighthillRobot.cpp#L1)

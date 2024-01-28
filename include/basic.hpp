@@ -2066,6 +2066,18 @@ TODO: オブジェクトリテラルに対応する．
 struct JSON {
    std::map<std::string, std::vector<std::string>> map_S_S;
 
+   explicit JSON(const std::filesystem::path &path_IN) : map_S_S() {
+      std::ifstream istrm(path_IN);
+      if (!istrm.is_open())
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "can not open " + std::string(path_IN));
+      else {
+         std::stringstream ss;
+         ss << istrm.rdbuf();
+         map_S_S = parseJSON(ss.str());
+      }
+      istrm.close();
+   };
+
    explicit JSON(const std::string &str_IN) : map_S_S() {
       std::ifstream istrm(str_IN);
       if (!istrm.is_open())

@@ -1,6 +1,5 @@
 #ifndef basic_geometry_H
 #define basic_geometry_H
-#pragma once
 
 #include <execution>
 #include "basic_linear_systems.hpp"
@@ -210,20 +209,22 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    // http://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter#:~:text=For%20all%20tetrahedra%2C%20there%20exists,circumsphere%20is%20called%20the%20circumcentre.
    // double a2 = Dot(a, a);
    // return 0.5 * Dot(Inverse(T3Tddd{b - a, c - a, d - a}), Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
-   auto b_ = b - a;
-   auto c_ = c - a;
-   auto d_ = d - a;
+   std::array<double, 3> b_ = b - a, c_ = c - a, d_ = d - a, CxCyCz;
    // return a + 0.5 * Dot(Inverse(T3Tddd{b_, c_, d_}), Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    //! use solve
-   Tddd CxCyCz;
    Solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    return a + 0.5 * CxCyCz;
 };
 Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 /* -------------------------------------------------------------------------- */
 double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c) {
-   auto X = Circumcenter(a, b, c);
-   return (Norm(a - X) + Norm(b - X) + Norm(c - X)) / 3.;
+   // auto X = Circumcenter(a, b, c);
+   // return (Norm(a - X) + Norm(b - X) + Norm(c - X)) / 3.;
+   const double ab = Norm(a - b);
+   const double bc = Norm(b - c);
+   const double ca = Norm(c - a);
+   const double s = (ab + bc + ca) * 0.5;
+   return ab * bc * ca / (4. * std::sqrt(s * (s - ab) * (s - bc) * (s - ca)));
 };
 double Circumradius(const T3Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
 double CircumArea(const T3Tddd &abcd) { return std::pow(Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)), 2) * M_PI; };
@@ -238,8 +239,8 @@ double Circumradius(const T4Tddd &abcd) { return Circumradius(std::get<0>(abcd),
 double Inradius(Tddd p0, Tddd p1, Tddd p2) {
    p2 -= p0;
    p1 -= p0;
-   p0 = {0, 0, 0};
-   auto l2 = Norm(p2 - ((-p1) * Dot(p2 - p1, -p1) / Dot(-p1, -p1) + p1));
+   p0.fill(0.);
+   auto l2 = Norm(p2 - (-p1 * (Dot(p2 - p1, -p1) / Dot(-p1, -p1)) + p1));
    return (Norm(p1) * l2) / (Norm(p1) + Norm(p2) + Norm(p1 - p2));
 };
 double Inradius(const T3Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
@@ -332,10 +333,47 @@ bool isInside(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
            !isInside({X0, Y1, Z1}, Xcenter, r) &&
            !isInside({X1, Y1, Z1}, Xcenter, r));
 };
+
 /* -------------------------------------------------------------------------- */
+
+Tddd grad_CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
+   auto grad = [](const Tddd &a, const Tddd &b) { return (a - b) / Norm(a - b); };
+   const double ab = Norm(a - b);
+   const double bc = Norm(b - c);
+   const double ac = Norm(a - c);
+   const double den1 = -ab + bc + ac;
+   const double den2 = ab - bc + ac;
+   const double den3 = ab + bc - ac;
+   const double denominator = den1 * den2 * den3;
+   const std::array<double, 3> grad1 = -grad(a, b) + grad(a, c);  // derivative of (-ab + bc + ca)
+   const std::array<double, 3> grad2 = grad(a, b) + grad(a, c);   // derivative of (ab - bc + ca)
+   const std::array<double, 3> grad3 = grad(a, b) - grad(a, c);   // derivative of (ab + bc - ca)
+   const std::array<double, 3> grad_denominator_a = grad1 * den2 * den3 + den1 * grad2 * den3 + den1 * den2 * grad3;
+   //
+   const double numerator = (ab * bc * ac);
+   const std::array<double, 3> grad_numerator_a = grad(a, b) * bc * ac + ab * bc * grad(a, c);
+   //
+   return 2. * (grad_numerator_a * denominator - numerator * grad_denominator_a) / std::pow(denominator, 2);
+};
+
 // triangle distorsion measure
-double CircumradiusToInradius(Tddd X0, Tddd X1, Tddd X2) {
-   return Circumradius(X0, X1, X2) / Inradius(X0, X1, X2);
+double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
+   const double ab = Norm(a - b);
+   const double bc = Norm(b - c);
+   const double ca = Norm(c - a);
+   // const double s = (ab + bc + ca) * 0.5;
+   // const double area = std::sqrt(s * (s - ab) * (s - bc) * (s - ca));
+   // const double inradius = area / s;
+   // const double circumradius = ab * bc * ca / (4. * area);
+   // return ab * bc * ca / (4. * ((s - ab) * (s - bc) * (s - ca)));
+
+   const double den1 = (-ab + bc + ca);
+   const double den2 = (ab - bc + ca);
+   const double den3 = (ab + bc - ca);
+   return 2. * ab * bc * ca / (den1 * den2 * den3);
+   /* ------------------------------- OLD version ------------------------------ */
+   // return Circumradius(X0, X1, X2) / Inradius(X0, X1, X2);
+   /* -------------------------------------------------------------------------- */
    // X2 -= X0;
    // X1 -= X0;
    // X0.fill(0.);
@@ -548,6 +586,7 @@ struct CoordinateBounds {
    T3Tdd bounds;
    // X is center
    Tddd X;
+   Tddd X_temporary;
    /* -------------------------------------------------------- */
    Tdd xbounds() const { return std::get<0>(bounds); };
    Tdd ybounds() const { return std::get<1>(bounds); };
@@ -813,8 +852,8 @@ struct Triangle : public CoordinateBounds {
    Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
        : CoordinateBounds(X0IN, X1IN, X2IN),
          vertices({X0IN, X1IN, X2IN}),
-         normal(TriangleNormal(vertices)),
-         area(TriangleArea(vertices)),
+         normal(TriangleNormal(X0IN, X1IN, X2IN)),
+         area(TriangleArea(X0IN, X1IN, X2IN)),
          angles(TriangleAngles(vertices)),
          centroid(Centroid(vertices)),
          circumcenter(Circumcenter(vertices)),
@@ -834,6 +873,7 @@ struct Triangle : public CoordinateBounds {
       this->inradius = Inradius(vertices_IN);
    };
    operator T3Tddd() const { return this->vertices; };
+   Tddd normal_to_be_preserved;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1197,6 +1237,7 @@ struct IntersectionTriangles {
       }
    };
 };
+
 /* ------------------------------------------------------ */
 struct IntersectionLineTriangle {
    Tddd v1, v2, v3;    // vertices of the triangle
@@ -1470,7 +1511,7 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
          Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
    const auto [t, tau] = ans;
 
-   if (Between(t, {0., 1.}) && Between(tau, {0., 1.}))
+   if (Between(t, array_0_1) && Between(tau, array_0_1))
       return {t, tau};
    auto [t0, X0] = Nearest_(a, {A, B});
    auto [t1, X1] = Nearest_(b, {A, B});
@@ -1490,71 +1531,91 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
       return {t3, 0.};
 };
 Tddd Nearest(const Tddd &X, const T2Tddd &ab) { return std::get<1>(Nearest_(X, ab)); };
-std::tuple<double, double, Tddd> DistanceToPlane_(const Tddd &X, const T3Tddd &abc) {
+std::tuple<double, double, Tddd> NearestXOnPlane_(const Tddd &X, const T3Tddd &abc) {
    // アンダースコアがついているものはパラメタも返す
    const auto [a, b, c] = abc;
-   // const auto [t0, t1, alpah] = Dot(X - c, Inverse(T3Tddd{a - c, b - c, Cross(a - c, b - c)}));
-
    // use SolveLinearSystem
    std::array<double, 3> ans;
    // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   // X.A = b
    Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
    const auto [t0, t1, alpah] = ans;
-
-   return {t0, t1, a * t0 + b * t1 + c * (1 - t0 - t1)};
+   return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
 };
-Tddd DistanceToPlane(const Tddd &X, const T3Tddd &abc) {
+Tddd NearestXOnPlane(const Tddd &X, const T3Tddd &abc) {
    // アンダースコアがついているものはパラメタも返す
-   return std::get<2>(DistanceToPlane_(X, abc));
+   return std::get<2>(NearestXOnPlane_(X, abc));
 };
-Tddd Nearest(const Tddd &X, const T3Tddd &abc) {
-   const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
-   const auto inside = Between(t0, {0., 1.}) && Between(t1, {0., 1.}) && Between(t0 + t1, {0., 1.});
-   const auto [a, b, c] = abc;
-   const auto X0 = Nearest(X, T2Tddd{a, b});
-   auto ret = (inside && (Norm(XOnPlane - X) < Norm(X0 - X))) ? XOnPlane : X0;
-   const auto X1 = Nearest(X, T2Tddd{b, c});
-   if (Norm(ret - X) > Norm(X1 - X))
-      ret = X1;
-   auto X2 = Nearest(X, T2Tddd{c, a});
-   if (Norm(ret - X) > Norm(X2 - X))
-      ret = X2;
-   return ret;
-};
+
 std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
-   double T0, T1;
-   const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
-   //! a*t0 + b*t1 + c*(1-t0-t1)
-   const auto inside = Between(t0, {0., 1.}) && Between(t1, {0., 1.}) && Between(t0 + t1, {0., 1.});
+   /* ----------------------------------- 修正前 ---------------------------------- */
+   // double T0, T1;
+   // const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
+   // //! a*t0 + b*t1 + c*(1-t0-t1)
+   // const auto is_inside_of_triangle_cylinder = Between(t0, array_0_1) && Between(t1, array_0_1) && Between(t0 + t1, array_0_1);
+   // const auto [a, b, c] = abc;
+   // auto [u, X0] = Nearest_(X, T2Tddd{a, b});
+   // //! a*u + b*(1-u)
+   // Tddd ret;
+   // if (is_inside_of_triangle_cylinder && (NormSquared(XOnPlane - X) < NormSquared(X0 - X))) {
+   //    ret = XOnPlane;
+   //    T0 = t0;
+   //    T1 = t1;
+   //    return {T0, T1, ret};
+   // } else {
+   //    ret = X0;
+   //    T0 = u;
+   //    T1 = 1 - u;  //! a*u + b*(1-u) + c * 0
+   // }
+   // auto [v, X1] = Nearest_(X, T2Tddd{b, c});
+   // //! b*v + c*(1-v)
+   // if (NormSquared(ret - X) > NormSquared(X1 - X)) {
+   //    ret = X1;
+   //    T0 = 0;
+   //    T1 = v;  //! a*0 + b*v + c * (1-v)
+   // }
+   // auto [w, X2] = Nearest_(X, T2Tddd{c, a});
+   // //! c*w + a*(1-w)
+   // if (NormSquared(ret - X) > NormSquared(X2 - X)) {
+   //    ret = X2;
+   //    T0 = 1 - w;
+   //    T1 = 0;  //! a*(1-w) + b*0 + c * w
+   // }
+   // return {T0, T1, ret};
+   /* ----------------------------------- 修正後 ---------------------------------- */
+
+   /*
+         t1
+   0>=t0 | 0<=t0| t0>=1, t1>=1
+      -- b -----+---
+         | \    |
+         |   \  |        0<=t1
+         |     \|
+      -- c ---- a --> t0
+         |      |        0>=t1
+   */
+   //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
    const auto [a, b, c] = abc;
-   auto [u, X0] = Nearest_(X, T2Tddd{a, b});
-   //! a*u + b*(1-u)
-   Tddd ret;
-   if (inside && (NormSquared(XOnPlane - X) < NormSquared(X0 - X))) {
-      ret = XOnPlane;
-      T0 = t0;
-      T1 = t1;
-      return {T0, T1, ret};
+   std::array<double, 3> ans;
+   Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   auto [t0, t1, alpah] = ans;
+   if (0 >= t0) {
+      auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+      return {0., t1, closestX};
+   } else if (0 >= t1) {
+      auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+      return {t0, 0., closestX};
+   } else if (t0 <= 1. && t1 <= 1. && t0 + t1 <= 1.) {
+      return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
    } else {
-      ret = X0;
-      T0 = u;
-      T1 = 1 - u;  //! a*u + b*(1-u) + c * 0
+      auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+      return {t, 1. - t, closestX};
    }
-   auto [v, X1] = Nearest_(X, T2Tddd{b, c});
-   //! b*v + c*(1-v)
-   if (NormSquared(ret - X) > NormSquared(X1 - X)) {
-      ret = X1;
-      T0 = 0;
-      T1 = v;  //! a*0 + b*v + c * (1-v)
-   }
-   auto [w, X2] = Nearest_(X, T2Tddd{c, a});
-   //! c*w + a*(1-w)
-   if (NormSquared(ret - X) > NormSquared(X2 - X)) {
-      ret = X2;
-      T0 = 1 - w;
-      T1 = 0;  //! a*(1-w) + b*0 + c * w
-   }
-   return {T0, T1, ret};
+};
+
+// \label{Nearest(const Tddd &X, const T3Tddd &abc)}
+Tddd Nearest(const Tddd &X, const T3Tddd &abc) {
+   return std::get<2>(Nearest_(X, abc));
 };
 
 Tddd Nearest(const Tddd &X, const std::vector<T3Tddd> &ABC) {
@@ -1573,12 +1634,20 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
    double distance = 1E+20, tmp;
    Tddd near, ret;
    CoordinateBounds B(minmax3);
-   std::ranges::for_each((T12T3Tddd)(B), [&](const auto &abc) {
+   // std::ranges::for_each((T12T3Tddd)(B), [&](const auto &abc) {
+   //    if (distance > (tmp = Norm(X - (near = Nearest(X, abc))))) {
+   //       distance = tmp;
+   //       ret = near;
+   //    }
+   // });
+
+   for (const auto &abc : (T12T3Tddd)(B)) {
       if (distance > (tmp = Norm(X - (near = Nearest(X, abc))))) {
          distance = tmp;
          ret = near;
       }
-   });
+   };
+
    return ret;
 };
 
@@ -1666,8 +1735,32 @@ bool IntersectQ(const T2Tddd &ab, const Sphere &sp) { return IntersectQ(sp, ab);
 //! sphere - triangle
 bool IntersectQ(const Tddd &X, const double r, const T3Tddd &abc) { return r >= Norm(Nearest(X, abc) - X); };
 bool IntersectQ(const Sphere &sp, const T3Tddd &abc) { return sp.radius > Norm(Nearest(sp.center, abc) - sp.center); };
-//
 //! line - triangle
+std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
+   const auto [a, b, c] = abc;
+   const auto [A, B] = AB;
+   // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+   /*
+
+   $X$は，$A$と$B$を結ぶ直線上にあるとする．この$X$を頂点の重心座標で表す．
+   この二つの表現を等しくするような$t_0,t_1,T$を求める．
+   結果から，$T$が$0$から$1$の間にあるかどうかで，$X$が線分上にあるかどうかがわかる．
+   また，$t_0,t_1,1-t_0-t_1$が$0$から$1$の間にあるかどうかで，$X$が三角形の内部にあるかどうかがわかる．
+
+   ```math
+   X = (t0,t1,1-t0-t1)\cdot(a-c,b-c,c)\\
+   X = A + T\cdot(B-A)
+   ```
+   */
+   std::array<double, 3> x;
+   Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   const auto [t0, t1, T] = x;
+   static const Tdd range = array_0_1;
+   return {Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range),
+           (1. - T) * A + T * B,
+           {t0, t1, 1. - t0 - t1}};
+};
+
 bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    const auto [a, b, c] = abc;
    const auto [A, B] = AB;
@@ -1676,7 +1769,7 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    // lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
    Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = x;
-   const Tdd range = {0., 1.};
+   static const Tdd range = array_0_1;
    return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
 };
 bool IntersectQ(const T3Tddd &abc, const T2Tddd &AB) { return IntersectQ(AB, abc); };
@@ -1714,17 +1807,17 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
    //
    const auto [dx, dy, dz] = A - B;
    if (Norm(dx) < small || std::abs(std::get<0>(den)) < small)
-      if (Between(T0, {0., 1.}))
+      if (Between(T0, array_0_1))
          int0 = {0, 1};
       else
          return false;
    if (Norm(dy) < small || std::abs(std::get<1>(den)) < small)
-      if (Between(T1, {0., 1.}))
+      if (Between(T1, array_0_1))
          int1 = {0, 1};
       else
          return false;
    if (Norm(dz) < small || std::abs(std::get<2>(den)) < small)
-      if (Between(T2, {0., 1.}))
+      if (Between(T2, array_0_1))
          int2 = {0, 1};
       else
          return false;
@@ -1813,7 +1906,7 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
    //                                                 {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
    //                                                 {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}));
 
-   return (Between(t0, {0., 1.}) && Between(t1, {0., 1. - t0}) && Between(t2, {0., 1. - t0 - t1}));
+   return (Between(t0, array_0_1) && Between(t1, {0., 1. - t0}) && Between(t2, {0., 1. - t0 - t1}));
 }
 
 //! tetrahedron - sphere
@@ -1904,6 +1997,7 @@ double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd 
    else
       return Dot(p2 - a, n) / Dot(b - a, n);
 };
+
 /* ------------------------------------------------------ */
 Tddd vectorToInfiniteLine(const Tddd &P, Tddd A, Tddd B) {
    // Tddd BA = B - A, AP = A - P;
@@ -2022,6 +2116,7 @@ T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &V_vertices) {
          for (const auto &V : V_vertices)
             r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));
       });
+
       // std::ranges::for_each(ret, Xs, [&](auto &r, const auto &X) {
       //    // r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V);
       //    r += SolidAngle_VanOosteromAandStrackeeJ1983(X, ToX(V));

@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 100000,
+    "end_time": 100,
+    "output_directory": "/Users/tomoaki/BEM/simple_barge_with_mooring",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json"
+    ]
+}

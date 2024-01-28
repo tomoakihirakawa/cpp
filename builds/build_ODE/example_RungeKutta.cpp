@@ -2,6 +2,11 @@
 
 ## Runge-Kutta Integration of ODE
 
+```cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_RungeKutta.cpp
+make
+./example_RungeKutta
+```
 ![](RK.png)
 
 */

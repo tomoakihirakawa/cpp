@@ -5,6 +5,310 @@
 
 Tddd ToX(const std::shared_ptr<Tddd> &X) { return *X; };
 
+/*
+vtuとvtpの違いは，PolysかCellsか
+そして，vtkUnstructuredGridWriterには
+```xml
+<DataArray type="UInt8" Name="types" format="ascii">
+10
+</DataArray>
+```
+をCellsタグの中に追加するだけ，四面体の場合は10，三角形の場合は5
+
+*/
+
+template <typename T>
+struct vtkUnstructuredGridWriter : XMLElement {
+   std::shared_ptr<XMLElement> UnstructuredGrid, Piece, Points, PointData, CellData, Cells, Lines;
+   using VertexId = std::tuple<T, int>;
+   std::unordered_map<VertexId, std::tuple<int, Tddd>> vertices;
+   void reserve(const int &n) { this->vertices.reserve(n); };
+   std::vector<std::vector<VertexId>> connectivity_lines;
+   std::vector<std::array<VertexId, 3>> connectivity3;
+   std::vector<std::array<VertexId, 4>> connectivity4;
+   void clear() { vertices.clear(); };
+   void add(const T &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); };
+   void add(const T &v, const T &u) {
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
+   };
+   void add(const T &v, const T &u, const T &w) {
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
+      std::get<1>(this->vertices[{w, 0}]) = ToX(w);
+   };
+   void add(const T &v, const T &u, const T &w, const T &x) {
+      std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+      std::get<1>(this->vertices[{u, 0}]) = ToX(u);
+      std::get<1>(this->vertices[{w, 0}]) = ToX(w);
+      std::get<1>(this->vertices[{x, 0}]) = ToX(x);
+   };
+   void add(const std::vector<std::vector<T>> &verts) {
+      for (const auto &V : verts)
+         for (const auto &v : V)
+            std::get<1>(this->vertices[{v, 0}]) = ToX(v);
+   };
+   template <std::size_t N>
+   void add(const std::array<T, N> &verts) {
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
+   };
+
+   void add(const std::vector<T> &verts) {
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
+   };
+   void add(const std::unordered_set<T> &verts) {
+      std::ranges::for_each(verts, [&](const auto &v) { std::get<1>(this->vertices[{v, 0}]) = ToX(v); });
+   };
+   void addLine(const std::vector<T> &conns) {
+      std::vector<VertexId> tmp(conns.size());
+      for (auto i = 0; i < conns.size(); ++i) tmp[i] = {conns[i], 0};
+      this->connectivity_lines.emplace_back(tmp);
+   };
+   // void addLine(const T &p0, const T &p1) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}}); };
+   // void addLine(const T &p0, const T &p1, const T &p2) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}}); };
+   // void addLine(const T &p0, const T &p1, const T &p2, const T &p3) { this->connectivity_lines.push_back({{p0, 0}, {p1, 0}, {p2, 0}, {p3, 0}}); };
+   // Simplifying addLine methods
+   template <typename... Args>
+   void addLine(Args... args) {
+      std::vector<VertexId> line = {{args, 0}...};
+      this->connectivity_lines.emplace_back(std::move(line));
+   }
+   void addLine(const std::vector<std::vector<T>> &conns) { this->addLine(conns); };
+
+   template <std::size_t N>
+   void addGrid(const std::array<T, N> &conns) {
+      static_assert(N == 3 || N == 4 || N == 8, "addGrid supports only 3, 4 and 8 element arrays");
+      if constexpr (N == 3) {
+         this->connectivity3.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}}});
+      } else if constexpr (N == 4) {
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}, {std::get<3>(conns), 0}}});
+      } else if constexpr (N == 8) {
+         /*
+         cube case
+         0----------1
+         |\         |\
+         | \        | \
+         |  \       |  \
+         |   4------|---5
+         |   |      |   |
+         3---|------2   |
+          \  |       \  |
+           \ |        \ |
+            7----------6
+         */
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}, {std::get<3>(conns), 0}}});  // 0-1-2-3
+         this->connectivity4.push_back({{{std::get<4>(conns), 0}, {std::get<7>(conns), 0}, {std::get<6>(conns), 0}, {std::get<5>(conns), 0}}});  // 4-7-6-5
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<3>(conns), 0}, {std::get<7>(conns), 0}, {std::get<4>(conns), 0}}});  // 0-3-7-4
+         this->connectivity4.push_back({{{std::get<1>(conns), 0}, {std::get<5>(conns), 0}, {std::get<6>(conns), 0}, {std::get<2>(conns), 0}}});  // 1-5-6-2
+         this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<4>(conns), 0}, {std::get<5>(conns), 0}, {std::get<1>(conns), 0}}});  // 0-4-5-1
+         this->connectivity4.push_back({{{std::get<3>(conns), 0}, {std::get<2>(conns), 0}, {std::get<6>(conns), 0}, {std::get<7>(conns), 0}}});  // 3-2-6-7
+      }
+   }
+
+   template <std::size_t N>
+   void addGrid(const std::vector<std::array<T, N>> &conns) {
+      static_assert(N == 3 || N == 4 || N == 8, "addGrid supports only 3, 4 and 8 element arrays");
+      for (const auto &c : conns) this->addGrid(c);
+   }
+
+   vtkUnstructuredGridWriter()
+       : XMLElement("VTKFile", {{"type", "UnstructuredGrid"}, {"version", "0.1"}, {"byte_order", "LittleEndian"}}),  //<- constant setting
+         UnstructuredGrid(new XMLElement("UnstructuredGrid")),
+         Piece(new XMLElement("Piece", {{"NumberOfPoints", "4"}, {"NumberOfVerts", "0"}, {"NumberOfLines", "0"}, {"NumberOfStrips", "0"}, {"NumberOfCells", "4"}})),
+         PointData(new XMLElement("PointData")),
+         CellData(new XMLElement("CellData", {{"Scalars", "cell_scalars"}, {"Normals", "cell_normals"}})),
+         Points(new XMLElement("Points")),
+         Lines(new XMLElement("Lines")),
+         Cells(new XMLElement("Cells")) {
+      this->XMLElement::add(UnstructuredGrid);
+      UnstructuredGrid->add(Piece);
+      Piece->add(Points);
+      Piece->add(PointData);
+      Piece->add(CellData);
+      Piece->add(Cells);
+      Piece->add(Lines);
+      /* -------------------------------------------------------------------------- */
+      {
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"NumberOfComponents", "3"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            int i = 0;
+            for (auto &[_, INT_X] : this->vertices) {
+               // Incrementing index while assigning
+               std::get<0>(INT_X) = i++;
+
+               // Use std::transform for cleaner syntax
+               std::transform(std::get<1>(INT_X).begin(), std::get<1>(INT_X).end(),
+                              std::ostream_iterator<float>(ofs, " "),
+                              [](const auto &x) {
+                                 if (Between(x, {-1E-14, 1E-14}))
+                                    return static_cast<float>(0);
+                                 else
+                                    return static_cast<float>(x);
+                              });
+            }
+         };
+
+         this->Points->add(DataArray);
+      }
+      /* ------------------------------------------------------ */
+      /*                        Polygons                        */
+      /* ------------------------------------------------------ */
+      {  // connectivity
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "connectivity"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            for (const auto &[ID0, ID1, ID2] : this->connectivity3)
+               ofs << std::get<0>(vertices[ID0]) << " " << std::get<0>(vertices[ID1]) << " " << std::get<0>(vertices[ID2]) << " ";
+            for (const auto &[ID0, ID1, ID2, ID3] : this->connectivity4)
+               ofs << std::get<0>(vertices[ID0]) << " " << std::get<0>(vertices[ID1]) << " " << std::get<0>(vertices[ID2]) << " " << std::get<0>(vertices[ID3]) << " ";
+         };
+         this->Cells->add(DataArray);
+      }
+      {  // offsets
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "offsets"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            int j = 0;
+            for (auto i = 0; i < this->connectivity3.size(); ++i)
+               ofs << (j += 3) << " ";
+            for (auto i = 0; i < this->connectivity4.size(); ++i)
+               ofs << (j += 4) << " ";
+         };
+         this->Cells->add(DataArray);
+      }
+      {  // offsets
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "types"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            int j = 0;
+            for (auto i = 0; i < this->connectivity3.size(); ++i)
+               ofs << 5 << " ";
+            for (auto i = 0; i < this->connectivity4.size(); ++i)
+               ofs << 10 << " ";
+         };
+         this->Cells->add(DataArray);
+      }
+      /* ------------------------------------------------------ */
+      /*                          Lines                         */
+      /* ------------------------------------------------------ */
+      {  // connectivity
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "connectivity"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            for (const auto &verts : this->connectivity_lines)
+               for (const auto &ID : verts)
+                  ofs << std::get<0>(vertices[ID]) << " ";
+         };
+         this->Lines->add(DataArray);
+      }
+      {  // offsets
+         std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Int32"}, {"Name", "offsets"}, {"format", "ascii"}}));
+         DataArray->writer = [&](std::stringstream &ofs) {
+            int j = 0;
+            for (auto i = 0; i < this->connectivity_lines.size(); ++i)
+               ofs << (j += this->connectivity_lines[i].size()) << " ";
+         };
+         this->Lines->add(DataArray);
+      }
+   };
+   /* ------------------------------------------------------ */
+   std::unordered_map<std::string, std::unordered_map<T, Tddd>> data_Tddd;
+   std::unordered_map<std::string, std::unordered_map<T, double>> data_double;
+   // std::unordered_map<std::string, std::unordered_map<T, int>> data_int;
+   void addPointData(const std::string &name, const std::unordered_map<T, Tddd> &V) {
+      auto &data = data_Tddd[name];
+      data.insert(V.cbegin(), V.cend());
+      /* ------------------------------------------------------ */
+      std::shared_ptr<XMLElement> DataArray = nullptr;
+      for (const auto &elem : this->PointData->elements_shared)
+         if (elem->attributes["Name"] == name) {
+            DataArray = elem;
+            // break;
+         }
+      /* ------------------------------------------------------ */
+      if (DataArray == nullptr) {
+         // std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"Name", name}, {"format", "ascii"}, {"NumberOfComponents", "3"}}));
+         DataArray = std::make_shared<XMLElement>("DataArray", std::map<std::string, std::string>{{"type", "Float32"}, {"Name", name}, {"format", "ascii"}, {"NumberOfComponents", "3"}});
+         this->PointData->add(DataArray);
+      }
+      DataArray->writer = [&](std::stringstream &ofs) {
+         auto it = data.begin();
+         for (const auto &[ID, value] : this->vertices) {
+            it = data.find(std::get<0>(ID));
+            if (it != data.end()) {
+               std::ranges::for_each(it->second,
+                                     [&](const auto &x) {
+                                        if (isFinite(x))
+                                           ofs << std::setprecision(6) << (Between(x, {-1E-14, 1E-14}) ? 0 : (float)x) << " ";
+                                        else
+                                           ofs << std::setprecision(6) << "NaN ";
+                                     });
+            } else
+               ofs << "NaN NaN NaN ";
+         }
+      };
+   };
+   void addPointData(const std::string &name, const std::unordered_map<T, double> &V) {
+      auto &data = data_double[name];
+      data.insert(V.cbegin(), V.cend());
+      /* ------------------------------------------------------ */
+      std::shared_ptr<XMLElement> DataArray = nullptr;
+      for (const auto &elem : this->PointData->elements_shared)
+         if (elem->attributes["Name"] == name) {
+            DataArray = elem;
+            // break;
+         }
+      /* ------------------------------------------------------ */
+      if (DataArray == nullptr) {
+         // std::shared_ptr<XMLElement> DataArray(new XMLElement("DataArray", {{"type", "Float32"}, {"Name", name}, {"format", "ascii"}}));
+         DataArray = std::make_shared<XMLElement>("DataArray", std::map<std::string, std::string>{{"type", "Float32"}, {"Name", name}, {"format", "ascii"}});
+         this->PointData->add(DataArray);
+      }
+      DataArray->writer = [&](std::stringstream &ofs) {
+         auto it = data.begin();
+         for (const auto &[ID, value] : this->vertices) {
+            it = data.find(std::get<0>(ID));
+            if (it != data.end()) {
+               if (isFinite(it->second))
+                  ofs << std::setprecision(6) << (Between(it->second, {-1E-14, 1E-14}) ? 0 : (float)it->second) << " ";
+               else
+                  ofs << std::setprecision(6) << "NaN ";
+            } else
+               ofs << "NaN ";
+         }
+      };
+   };
+
+   /* ---------------------------------- write --------------------------------- */
+
+   template <typename V>
+   V &write(V &ofs) const {
+      ofs << "<?xml version=\"1.0\"?>\n";
+      Piece->attributes["NumberOfPoints"] = std::to_string(this->vertices.size());
+      Piece->attributes["NumberOfCells"] = std::to_string(this->connectivity3.size() + this->connectivity4.size());
+      Piece->attributes["NumberOfLines"] = std::to_string(this->connectivity_lines.size());
+      if (this->elements.empty() && this->elements_shared.empty()) {
+         if (writer) {
+            std::stringstream ss;
+            writer(ss);
+            ofs << this->getStartTag() << "\n"
+                << ss.str() << "\n"
+                << this->getEndTag() << "\n";
+         } else
+            ofs << this->getStartTag() << "\n"
+                << this->getEndTag() << "\n";
+      } else {
+         ofs << this->getStartTag() << "\n";
+         for (const auto &elem : this->elements)
+            elem->write(ofs);
+         for (const auto &elem : this->elements_shared)
+            elem->write(ofs);
+         ofs << this->getEndTag() << "\n";
+      }
+      return ofs;
+   };
+};
+
+//@ -------------------------------------------------------------------------- */
+//@ -------------------------------------------------------------------------- */
+//@ -------------------------------------------------------------------------- */
+
 template <typename T>
 struct vtkPolygonWriter : XMLElement {
    /*
@@ -516,6 +820,46 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *>
    vtp.write(ofs);
 };
 
+template <typename U>
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL, const std::unordered_map<networkPoint *, U> &data_double) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   vtp.reserve(uoL.size());
+   for (const auto &l : uoL) {
+      auto [a, b] = l->getPoints();
+      vtp.add(a, b);
+      vtp.addLine(a, b);
+   }
+   vtp.addPointData("data", data_double);
+   vtp.write(ofs);
+};
+
+// for const std::vector<std::tuple<std::string, std::unordered_map<T, U>>
+template <typename U>
+void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL,
+                     const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, U>>> &name_uo_data = {}) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   vtp.reserve(uoL.size());
+   for (const auto &l : uoL) {
+      auto [a, b] = l->getPoints();
+      vtp.add(a, b);
+      vtp.addLine(a, b);
+   }
+   for (const auto &[name, data] : name_uo_data)
+      vtp.addPointData(name, data);
+   vtp.write(ofs);
+};
+
+void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
+   vtkUnstructuredGridWriter<networkPoint *> vtu;
+   vtu.reserve(uoF.size());
+   for (const auto &f : uoF) {
+      auto abc = f->getPoints();
+      vtu.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+      vtu.addGrid(abc);
+   };
+   vtu.write(ofs);
+};
+
 void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
    vtkPolygonWriter<networkPoint *> vtp;
    vtp.reserve(uoF.size());
@@ -557,6 +901,17 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkTetra *> &uoTe
          vtp.addPolygon(abc);
       });
    vtp.write(ofs);
+};
+
+void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
+   vtkUnstructuredGridWriter<networkPoint *> vtu;
+   vtu.reserve(uoTet.size());
+   for (const auto &tet : uoTet) {
+      auto abcd = tet->Points;
+      vtu.add(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd));
+      vtu.addGrid(abcd);
+   }
+   vtu.write(ofs);
 };
 
 #endif

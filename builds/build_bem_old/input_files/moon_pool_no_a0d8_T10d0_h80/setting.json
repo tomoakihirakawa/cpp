@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.2,
+    "end_time_step": 1000,
+    "end_time": 100,
+    "output_directory": "/Users/tomoaki/BEM/moon_pool_no_a0d8_T10d0_h80",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "floatingbody.json"
+    ]
+}

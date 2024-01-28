@@ -553,8 +553,7 @@ std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std:
 double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
    const std::array<double, 3> Xij = xi - xj;
    const double r = Norm(Xij);
-   const double q = r / h;
-   if (q > 1. || r < 1E-13)
+   if (r / h > 1. || r < 1E-13)
       return 0.;
    else
       return Dot(Xij / (r * r), grad_w_Bspline(xi, xj, h));
@@ -563,8 +562,7 @@ double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<doub
 double Dot_grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, double h, const std::array<Tddd, 3> &M) {
    const std::array<double, 3> Xij = xi - xj;
    const double r = Norm(Xij);
-   const double q = r / h;
-   if (q > 1. || r < 1E-13)
+   if (r / h > 1. || r < 1E-13)
       return 0.;
    else {
       // #ifdef USE_WENDLAND_KERNEL

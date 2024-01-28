@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="../../obj/Kramer2021_03D_small/water0.vtu" group="" part="0" timestep="0.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water1.vtu" group="" part="0" timestep="1.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water2.vtu" group="" part="0" timestep="2.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water3.vtu" group="" part="0" timestep="3.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water4.vtu" group="" part="0" timestep="4.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water5.vtu" group="" part="0" timestep="5.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water6.vtu" group="" part="0" timestep="6.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water7.vtu" group="" part="0" timestep="7.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water8.vtu" group="" part="0" timestep="8.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water9.vtu" group="" part="0" timestep="9.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/water10.vtu" group="" part="0" timestep="10.000000000000000"/>
+  </Collection>
+</VTKFile>

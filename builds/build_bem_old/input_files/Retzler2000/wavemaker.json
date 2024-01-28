@@ -1,0 +1,10 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "isFixed": true,
+    "velocity": [
+        "Retzler2000",
+        0.02
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/chaplin2000//cylinder200.obj"
+}

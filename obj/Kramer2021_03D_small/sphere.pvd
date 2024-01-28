@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="../../obj/Kramer2021_03D_small/sphere0.vtu" group="" part="0" timestep="0.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/sphere1.vtu" group="" part="0" timestep="1.000000000000000"/>
+    <DataSet file="../../obj/Kramer2021_03D_small/sphere2.vtu" group="" part="0" timestep="2.000000000000000"/>
+  </Collection>
+</VTKFile>

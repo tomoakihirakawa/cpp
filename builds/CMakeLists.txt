@@ -131,8 +131,22 @@ target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
 # target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
 
 # # Find and link CGAL
-find_package(CGAL REQUIRED)
-target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
+# find_package(CGAL REQUIRED)
+# target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
+
+# find_package(CGAL QUIET) # Try to find CGAL quietly
+
+# if (CGAL_FOUND)
+#     message(STATUS "CGAL found")
+#     include(${CGAL_USE_FILE})
+#     target_link_libraries(${BASE_NAME} ${CGAL_LIBRARIES} gmp mpfr)
+#     set(CMAKE_CXX_FLAGS "-I/opt/homebrew/Cellar/gmp/6.3.0/include -I/path/to/CGAL/include -L/opt/homebrew/Cellar/gmp/6.3.0/lib -lgmp -lCGAL -lCGAL_Core")
+# else()
+#     message(STATUS "CGAL not found, proceeding without it")
+#     # Link with other necessary libraries (if any), but not with CGAL
+#     # You might still need to link with GMP and MPFR if they are used independently of CGAL
+#     # target_link_libraries(${BASE_NAME} gmp mpfr)
+# endif()
 
 # Include directories
 target_include_directories(${BASE_NAME} PUBLIC
@@ -140,6 +154,6 @@ target_include_directories(${BASE_NAME} PUBLIC
   ${PROJECT_SOURCE_DIR}/../../include
 )
 
-# Enable verbose makefile and export compile commands for use with various tools
+# Enablce verbose makefile and export compile commands for use with various tools
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

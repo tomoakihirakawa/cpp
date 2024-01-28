@@ -1,0 +1,17 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 12.6,
+    "COM": [
+        3.35,
+        0.0,
+        0.4
+    ],
+    "MOI": [
+        2272199999.9999995,
+        0.13649999999999998,
+        2797199999.999999
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/float7.obj"
+}

@@ -1,0 +1,6 @@
+{
+    "name": "waterA",
+    "type": "Fluid",
+    "reverseNormal": true,
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/fish/bodyA20.obj"
+}

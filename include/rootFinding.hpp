@@ -2,7 +2,8 @@
 #define rootFinding_H
 #pragma once
 
-#include "basic.hpp"
+#include "basic_arithmetic_vector_operations.hpp"
+#include "basic_vectors.hpp"
 
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;

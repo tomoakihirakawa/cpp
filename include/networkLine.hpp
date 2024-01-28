@@ -1497,6 +1497,20 @@ inline bool networkLine::flip() {
       //
       for (const auto &f : p1->getFaces())
          f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+
+      for (auto &p : this->getPoints()) {
+         p->setBoundsSingle();
+         for (auto &f : p->getFaces())
+            f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+      }
+      for (auto &F : this->getFaces()) {
+         for (auto &p : F->getPoints()) {
+            p->setBoundsSingle();
+            for (auto &f : p->getFaces())
+               f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+         }
+      }
+
       return true;
    } catch (std::exception &e) {
       std::cerr << e.what() << colorReset << std::endl;
@@ -1620,9 +1634,7 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 1
       auto tri0 = T3Tddd{f0->X, F2->X, f2->X};
       auto tri1 = T3Tddd{F0->X, f2->X, F2->X};
 
-      if (!isValidTriangle(tri0, M_PI / 180.))
-         return false;
-      if (!isValidTriangle(tri1, M_PI / 180.))
+      if (!isValidTriangle(tri0, M_PI / 180.) || !isValidTriangle(tri1, M_PI / 180.))
          return false;
 
       // if (isFlat(tri0[1] - tri0[0], tri0[2] - tri0[0], 1E-1))
@@ -1634,10 +1646,10 @@ inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 1
       // if (isFlat(tri1[2] - tri1[1], tri1[0] - tri1[1], 1E-1))
       //    return false;
       //$ large difference of normal vector after and before flip
-      if (!isFlat(tri0[0], tri0[1], tri0[2], tri0_now[0], tri0_now[1], tri0_now[2], acceptable_n_diff_before_after))
+      if (!isFlat(tri0[0], tri0[1], tri0[2], tri0_now[0], tri0_now[1], tri0_now[2], acceptable_n_diff_before_after) || !isFlat(tri1[0], tri1[1], tri1[2], tri1_now[0], tri1_now[1], tri1_now[2], acceptable_n_diff_before_after))
          return false;
 
-      if (!isFlat(tri1[0], tri1[1], tri1[2], tri1_now[0], tri1_now[1], tri1_now[2], acceptable_n_diff_before_after))
+      if (!isFlat(TriangleNormal(tri0), TriangleNormal(tri0_now), acceptable_n_diff_before_after) || !isFlat(TriangleNormal(tri1), TriangleNormal(tri1_now), acceptable_n_diff_before_after))
          return false;
 
       //$ area conservation
@@ -1661,6 +1673,53 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
       // else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
       else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal()) {
          auto [p0, p1] = this->getPoints();
+
+         // for (auto &p : {p0, p1}) {
+         //    if (!isFlat(p, 1E-2 * M_PI / 180.)) {
+         //       auto line_faces = this->getFaces();
+         //       if (line_faces.size() != 2)
+         //          return false;
+         //       //
+         //       auto faces = p->getFaces();
+         //       auto line_normal = this->getNormal();
+         //       for (auto it = faces.begin(); it != faces.end();) {
+         //          if (!isFlat((*it)->normal, line_normal, acceptable_n_diff_before_after))
+         //             it = faces.erase(it);
+         //          else
+         //             ++it;
+         //       }
+         //       if (faces.size() >= 2) {
+
+         //          double total_angle = 0.;
+         //          double largest_angle = 0., angle;
+         //          networkFace *largestfaces = nullptr;
+         //          for (const auto &f : faces) {
+         //             angle = f->getAngle(p);
+         //             total_angle += angle;
+         //             if (angle > largest_angle) {
+         //                largest_angle = angle;
+         //                largestfaces = f;
+         //             }
+         //          }
+         //          // pi/3 is good
+         //          // if flip this line, the angle will be incresead
+         //          double average_angle = total_angle / faces.size();
+         //          if (average_angle < 45. * M_PI / 180) {
+         //             //! average angle should be larger than 45 degree
+         //             this->flip();
+         //             return true;
+         //          } else if (average_angle > 75. * M_PI / 180) {
+         //             //! average angle should be larger than 45 degree
+         //             if (largestfaces) {
+         //                auto l = largestfaces->getLineOpposite(p);
+         //                if (!l->canFlip(acceptable_n_diff_before_after))
+         //                   l->flip();
+         //             }
+         //          }
+         //       }
+         //    }
+         // }
+
          auto f0f1_ = this->getFaces();
          int s0 = p0->getLines().size();
          int s1 = p1->getLines().size();
@@ -1689,6 +1748,18 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
 
          double min_init = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f0pf->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f1pf->X, f1po->X})));
          double min_later = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f1po->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f0po->X, f1po->X})));
+
+         // とても大きな面積差が生まれてしまう場合はフリップしない
+         // double area0 = TriangleArea(T3Tddd{f0pb->X, f0pf->X, f0po->X});
+         // double area1 = TriangleArea(T3Tddd{f1pb->X, f1pf->X, f1po->X});
+         // double area_next0 = TriangleArea(T3Tddd{f0pb->X, f1po->X, f0po->X});
+         // double area_next1 = TriangleArea(T3Tddd{f1pb->X, f0po->X, f1po->X});
+
+         // double original_area_diff_ratio = std::abs(area0 - area1) / (area0 + area1);
+         // double next_area_diff_ratio = std::abs(area_next0 - area_next1) / (area_next0 + area_next1);
+         // // if the area difference is too large, comapring to the original area, then do not flip
+         // if (original_area_diff_ratio < next_area_diff_ratio && next_area_diff_ratio > 0.8)
+         //    return false;
 
          //
          // int s0 = f0pb->getLines().size();
@@ -1738,6 +1809,108 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
+
+// inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
+//                                       const double acceptable_n_diff_before_after,
+//                                       const int min_n) {
+//    try {
+//       //@ flipを実行するには面の法線方向が成す全ての角度かこれよりも小さくなければならない
+//       //@ フリップ前後の両方で不正な辺と判定された場合，
+//       //@ 線の数と面の面積の差をチェックし，差が少ない方を選択する．
+//       if (!canFlip(acceptable_n_diff_before_after))
+//          return false;
+//       // else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal() && !isIntxn()) {
+//       else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal()) {
+//          auto [p0, p1] = this->getPoints();
+//          auto f0f1_ = this->getFaces();
+//          int s0 = p0->getLines().size();
+//          int s1 = p1->getLines().size();
+//          auto p2 = f0f1_[0]->getPointOpposite(this);
+//          auto p3 = f0f1_[1]->getPointOpposite(this);
+//          int s2 = p2->getLines().size();
+//          int s3 = p3->getLines().size();
+//          // if (s0 > 3 || s1 > 3 || s2 > 3 || s3 > 3)
+//          //    if (s0 - 1 < 4 || s1 - 1 < 4 || s2 + 1 < 4 || s3 + 1 < 4)
+//          //       return false;  // 3以下はつくらない
+
+//          /* -------------------------------------------------------------------------- */
+//          // auto [p0, p2] = this->getPoints();
+//          auto f0f1 = this->getFaces();
+//          auto [f0pb, f0pf, f0po] = f0f1[0]->getPoints(this);
+//          auto [f1pb, f1pf, f1po] = f0f1[1]->getPoints(this);
+//          // 面積の減少
+//          // double diffAinit = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f0pf->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f1pb->getXtuple(), f1pf->getXtuple(), f1po->getXtuple()}));
+//          // double diffAnext = std::abs(TriangleArea(T3Tddd{f0pb->getXtuple(), f1po->getXtuple(), f0po->getXtuple()}) - TriangleArea(T3Tddd{f0pf->getXtuple(), f0po->getXtuple(), f1po->getXtuple()}));
+//          // double diff = (diffAnext - diffAinit) / (f0f1[0]->getArea() + f0f1[1]->getArea());
+//          /*
+//          //     f0po *------* f0pf,f1pb
+//          //          |   /  |
+//          //f0pb,f1pf *------* f1po
+//          */
+
+//          double min_init = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f0pf->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f1pf->X, f1po->X})));
+//          double min_later = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f1po->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f0po->X, f1po->X})));
+
+//          // とても大きな面積差が生まれてしまう場合はフリップしない
+//          // double area0 = TriangleArea(T3Tddd{f0pb->X, f0pf->X, f0po->X});
+//          // double area1 = TriangleArea(T3Tddd{f1pb->X, f1pf->X, f1po->X});
+//          // double area_next0 = TriangleArea(T3Tddd{f0pb->X, f1po->X, f0po->X});
+//          // double area_next1 = TriangleArea(T3Tddd{f1pb->X, f0po->X, f1po->X});
+
+//          // double original_area_diff_ratio = std::abs(area0 - area1) / (area0 + area1);
+//          // double next_area_diff_ratio = std::abs(area_next0 - area_next1) / (area_next0 + area_next1);
+//          // // if the area difference is too large, comapring to the original area, then do not flip
+//          // if (original_area_diff_ratio < next_area_diff_ratio && next_area_diff_ratio > 0.8)
+//          //    return false;
+
+//          //
+//          // int s0 = f0pb->getLines().size();
+//          // int s1 = f0pf->getLines().size();
+//          // int s2 = f0po->getLines().size();
+//          // int s3 = f1po->getLines().size();
+//          // double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
+//          // double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+//          // double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+//          // double c = 0.;
+//          // int s0 = f0pb->getLines().size();
+//          // int s1 = f0pf->getLines().size();
+//          // int s2 = f0po->getLines().size();
+//          // int s3 = f1po->getLines().size();
+//          // double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
+//          // double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
+//          // double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
+
+//          int next_s0 = s0 - 1;
+//          int next_s1 = s1 - 1;
+//          int next_s2 = s2 + 1;
+//          int next_s3 = s3 + 1;
+//          /*
+//          @ <-------------(-c)------------ (c) --------------
+//          @ <---- flip -----|--- topology --|----- none -----
+//          */
+//          // if (min_init < min_later)
+//          // if (std::abs(min_init - min_later) < M_PI / 180. * 5)
+//          // {
+//          // 	this->flipIfTopologicalyBetter(min_degree_to_flat);
+//          // 	return true;
+//          // }
+//          // else
+//          if (min_init <= min_later &&
+//              (next_s0 >= min_n || p0->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+//              (next_s1 >= min_n || p1->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+//              (next_s2 >= min_n || p2->CORNER /*min_nよりも小さくても，角ならOK*/) &&
+//              (next_s3 >= min_n || p3->CORNER /*min_nよりも小さくても，角ならOK*/)) {
+//             this->flip();
+//             return true;
+//          } else
+//             return false;
+//       } else
+//          return false;
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorReset << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 
 inline bool networkLine::flipIfTopologicallyBetter(const double n_diff_tagert_face,
                                                    const double acceptable_n_diff_before_after,

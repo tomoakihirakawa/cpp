@@ -54,6 +54,7 @@ red = '\033[91m'
 yellow = '\033[93m'
 blue = '\033[96m'
 green = '\033[92m'
+orange = '\033[33m'
 magenta = '\033[95m'
 coloroff = '\033[0m'
 #boldcases
@@ -83,25 +84,41 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
     def does_file_exist(key, filename):
         if key == "objfile":
             if os.path.exists(filename) == False:
-                return red+"❌ file does not exist"+coloroff
+                return "❌" + Red + " file does not exist"+coloroff
             else:
-                return green+"✅ file exists"+coloroff
+                return "✅" + Green + " file exists"+coloroff
         return ''
 
     for INPUTS in inputfiles:
         NAMEJSON = INPUTS["name"]+'.json'
         print(blue,'-'*(40-len(NAMEJSON)), NAMEJSON, coloroff)
         for key, value in INPUTS.items():
-            if value == "floating":
-                print(f'{key: <{20}}', '\t', green, value, coloroff)
+            if key == "velocity":
+                if isinstance(value, list) and "wave" in value[0]:  # Check if the value is a list and if "wave" is in the first element
+                    print(f'{key: >{10}}', ':\t🌊', green, value, coloroff)
+                elif value == "floating":
+                    print(f'{key: >{10}}', ':\t🚢', green, value, coloroff)
+                elif "flap" in value or "piston" in value:
+                    print(f'{key: >{10}}', ':\t🌊', green, value, coloroff)
+                else:
+                    print(f'{key: >{10}}', ':\t', green, value, coloroff)
             elif value == "RigidBody":
-                print(f'{key: <{20}}', '\t', red, value, coloroff)
+                print(f'{key: >{10}}', ':\t🚀', magenta, value, coloroff)
             elif value == "Fluid":
-                print(f'{key: <{20}}', '\t', blue, value, coloroff)
-            elif value == "probe":
-                print(f'{key: <{20}}', '\t', yellow, value, coloroff)
+                print(f'{key: >{10}}', ':\t💧', blue, value, coloroff)
+            elif key == "type" and isinstance(value, (str, list)) and ("probe" in value or "sensor" in value or "gauge" in value):
+                print(f'{key: >{10}}', ':\t📐', yellow, value, coloroff)
+            elif key == "type" and isinstance(value, (str, list)) and ("absorb" in value or "damp"):
+                print(f'{key: >{10}}', ':\t🏖️', orange, value, coloroff)
+            elif key == "isFixed":
+                if value == True:
+                    print(f'{key: >{10}}', ':\t📌', orange, value, coloroff)
+                else:
+                    print(f'{key: >{10}}', ':\t', green, value, coloroff)
+            elif "mooring" in key:
+                print(f'{key: >{10}}', ':\t🔗', green, value, coloroff)
             else:
-                print(f'{key: <{20}}', '\t', does_file_exist(key, value), white, value, coloroff)
+                print(f'{key: >{10}}', ':\t' + does_file_exist(key, value), white, value, coloroff)
 
         f = open(input_directory+"/"+INPUTS["name"]+".json", 'w')
         json.dump(INPUTS, f, ensure_ascii=True, indent=4)
@@ -111,11 +128,42 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
     # @                  setting.json を出力                      #
     # @ -------------------------------------------------------- #    
 
-    print(Blue,'-'*28,'setting.json', coloroff)
+    print(Blue,'='*28,'setting.json', coloroff)
     for key, value in setting.items():
-        print(f'{key: <{20}}', '\t', green, value, coloroff)
+        print(f'{key: >{18}}', ':\t', green, value, coloroff)
     print(Blue,'-'*40, coloroff)
     f = open(input_directory+"/setting.json", 'w')
     json.dump(setting, f, ensure_ascii=True, indent=4)
     f.close()
+
     print("The directory for input files :", magenta, input_directory, coloroff)
+
+# ---------------------------------------------------------------------------- #
+
+try:
+    import numpy as np
+    numpy_available = True
+except ImportError:
+    numpy_available = False
+    np = None
+
+import numpy as np
+
+def parse_vertex(line):
+    parts = line.split()
+    return np.array([float(parts[1]), float(parts[2]), float(parts[3])])
+
+def read_obj(filename):
+    vertices = []
+    triangles = []
+    with open(filename, 'r') as file:
+        for line in file:
+            if line.startswith('v '):
+                vertex = parse_vertex(line)
+                vertices.append(vertex)
+            elif line.startswith('f '):
+                parts = line.split()
+                # Assuming the face is a triangle
+                triangle = [int(parts[1].split('/')[0]), int(parts[2].split('/')[0]), int(parts[3].split('/')[0])]
+                triangles.append(triangle)
+    return len(vertices), len(triangles)

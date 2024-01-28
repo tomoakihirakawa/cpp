@@ -1,0 +1,24 @@
+<!DOCTYPE MeshLabDocument>
+<MeshLabProject>
+ <MeshGroup>
+  <MLMesh filename="water5_meshA.obj" idInFile="-1" label="water5_meshA.obj" visible="0">
+   <MLMatrix44>
+1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 
+</MLMatrix44>
+   <RenderingOption pointSize="3" boxColor="234 234 234 255" pointColor="252 233 79 255" wireWidth="1" solidColor="192 192 192 255" wireColor="64 64 64 255">110001000000000000000110000001011100000010100000010100111011110000001001</RenderingOption>
+  </MLMesh>
+  <MLMesh filename="water5_meshB.obj" idInFile="-1" label="water5_meshB.obj" visible="1">
+   <MLMatrix44>
+1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 
+</MLMatrix44>
+   <RenderingOption pointSize="3" boxColor="234 234 234 255" pointColor="252 233 79 255" wireWidth="1" solidColor="192 192 192 255" wireColor="64 64 64 255">110001000000000000000110000001011100000010100000010100111011110000001001</RenderingOption>
+  </MLMesh>
+  <MLMesh filename="water5_meshC.obj" idInFile="-1" label="water5_meshC.obj" visible="0">
+   <MLMatrix44>
+1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 
+</MLMatrix44>
+   <RenderingOption pointSize="3" boxColor="234 234 234 255" pointColor="252 233 79 255" wireWidth="1" solidColor="192 192 192 255" wireColor="64 64 64 255">110001000000000000000110000001011100000010100000010100111011110000001001</RenderingOption>
+  </MLMesh>
+ </MeshGroup>
+ <RasterGroup/>
+</MeshLabProject>

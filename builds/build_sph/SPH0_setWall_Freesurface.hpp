@@ -59,7 +59,7 @@ void treatMatrix(MatrixType &matrix, double tolerance = 1e-13, bool check_linear
       IdentityMatrix(matrix);
 }
 
-void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
+void setCorrectionMatrix(const auto &all_nets) {
 
    /*DOC_EXTRACT 0_1_1_preparation_wall_and_freesurface
 
@@ -89,10 +89,7 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
    /*                             勾配の補正行列の計算                               */
    /* -------------------------------------------------------------------------- */
 
-   auto setCorrectionMatrix_gradient = [&all_nets, &SML](networkPoint *A) {
-      // if (A->isAuxiliary)
-      //    return;
-
+   auto setCorrectionMatrix_gradient = [&all_nets](networkPoint *A) {
       DebugPrintLevel(2, "setCorrectionMatrix start", Blue);
       A->checked_points_in_radius_SPH = 0;
       A->checked_points_in_radius_of_fluid_SPH = 0;
@@ -118,18 +115,18 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
       double total_w = 0, total_w_next = 0;
       auto add_for_grad_correction = [&](const auto &B) {
          if (A != B) {
-            total_w += w_Bspline(Norm(B->X - A->X), SML == 0. ? A->SML() : SML);
-            total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), SML == 0. ? A->SML_next() : SML);
+            total_w += w_Bspline(Norm(B->X - A->X), A->SML());
+            total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), A->SML_next());
             //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, SML == 0. ? A->SML() : SML), B->X - A->X);  //\label{SPH:grad_corr_M}
-            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), SML == 0. ? A->SML_next() : SML), X_next(B) - X_next(A));
+            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);  //\label{SPH:grad_corr_M}
+            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));
             //
-            if (Between(Distance(A, B), {1E-13, SML == 0. ? A->SML() : SML})) {
+            if (Between(Distance(A, B), {1E-13, A->SML()})) {
                A->checked_points_in_radius_SPH++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH++;
             }
-            if (Between(Distance(X_next(A), X_next(B)), {1E-13, SML == 0. ? A->SML_next() : SML})) {
+            if (Between(Distance(X_next(A), X_next(B)), {1E-13, A->SML_next()})) {
                A->checked_points_in_radius_SPH_next++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH_next++;
@@ -139,7 +136,7 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * (SML == 0. ? A->SML() : SML), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
             if (canInteract(A, B))
                add_for_grad_correction(B);
          });
@@ -264,6 +261,7 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
          A->var_Eigenvalues_of_M_next = 1.;
          A->var_Eigenvalues_of_M1_next = 1.;
       }
+
       A->var_Eigenvalues_of_M = std::clamp(A->var_Eigenvalues_of_M, 0., 1.);
       A->var_Eigenvalues_of_M_next = std::clamp(A->var_Eigenvalues_of_M_next, 0., 1.);
       /* -------------------------------------------------------------------------- */
@@ -283,6 +281,14 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
          A->is_grad_corr_M_next_singular = true;
       }
    };
+
+   for (const auto &net : all_nets) {
+#pragma omp parallel
+      for (const auto &p : net->getPoints())
+#pragma omp single nowait
+         if (p->isCaptured)
+            setCorrectionMatrix_gradient(p);
+   }
    //
    /*DOC_EXTRACT 0_1_1_set_free_surface
 
@@ -322,7 +328,8 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
    /*                             ラプラシアンの補正行列の計算                        */
    /* -------------------------------------------------------------------------- */
 
-   auto setCorrectionMatrix_laplacian = [&all_nets, &SML](networkPoint *A) {
+#ifdef USE_LAPLACIAN_CORRECTION
+   auto setCorrectionMatrix_laplacian = [&all_nets](networkPoint *A) {
       if (!A->isCaptured)
          return;
 
@@ -343,16 +350,16 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
       Tddd DW, r, e;
       auto add_for_laplacian_correction = [&](const auto &B) {
          if (A != B) {
-            if (Distance(A, B) <= (SML == 0. ? A->SML() : SML)) {
-               DW = B->volume * grad_w_Bspline(A->X, B->X, (SML == 0. ? A->SML() : SML));  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
+            if (Distance(A, B) <= A->SML()) {
+               DW = B->volume * grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
                r = A->X - B->X;
                e = Normalize(r);
                A->v_reeDW += TensorProduct(TensorProduct(TensorProduct(r, e), e), DW);
                A->v_eeDW += TensorProduct(TensorProduct(e, e), DW);
                A->v_rrDW += TensorProduct(TensorProduct(r, r), DW);
             }
-            if (Distance(X_next(A), X_next(B)) <= SML == 0. ? A->SML_next() : SML) {
-               DW = V_next(B) * grad_w_Bspline(X_next(A), X_next(B), SML == 0. ? A->SML_next() : SML);  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
+            if (Distance(X_next(A), X_next(B)) <= A->SML_next()) {
+               DW = V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next());  //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
                r = X_next(A) - X_next(B);
                e = Normalize(r);
                A->v_reeDW_next += TensorProduct(TensorProduct(TensorProduct(r, e), e), DW);
@@ -363,7 +370,7 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * (SML == 0. ? A->SML() : SML), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
             if (canInteract(A, B)) add_for_laplacian_correction(B);
          });
       });
@@ -437,24 +444,13 @@ void setCorrectionMatrix(const auto &all_nets, const double SML = 0.) {
       DebugPrintLevel(2, "ラプラシアンの補正行列の計算 done", Blue);
    };
 
-   //$ -------------------------------------------------------------------------- */
-   //$ -------------------------------------------------------------------------- */
-
    for (const auto &net : all_nets)
-#pragma omp parallel
+   #pragma omp parallel
       for (const auto &p : net->getPoints())
-#pragma omp single nowait
-         if (p->isCaptured)
-            setCorrectionMatrix_gradient(p);
-
-   for (const auto &net : all_nets)
-#pragma omp parallel
-      for (const auto &p : net->getPoints())
-#pragma omp single nowait
+   #pragma omp single nowait
          if (p->isCaptured)
             setCorrectionMatrix_laplacian(p);
-   //$ -------------------------------------------------------------------------- */
-   //$ -------------------------------------------------------------------------- */
+#endif
 }
 
 //! -------------------------------------------------------------------------- */
@@ -490,7 +486,7 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
             p->intp_density = 0.;
          }
 
-      const double captureRange = 3.5 * particle_spacing;  //\label{SPH:capture_condition_1st}
+      const double captureRange = 3.3 * particle_spacing;  //\label{SPH:capture_condition_1st}
 
 #pragma omp parallel
       for (const auto &p : net->getPoints())
@@ -500,8 +496,7 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
          for (const auto &[obj, poly] : RigidBodyObject) {
             obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
                // p->grad_Min_gradM -= p->volume * (Min(p->Eigenvalues_of_M_rigid) - Min(q->Eigenvalues_of_M_rigid)) * grad_w_Bspline(p->X, q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
-               if (Distance(p, q) < captureRange && !q->isChecked) {
-
+               if (!q->isChecked && Distance(p, q) < captureRange) {
                   q->isChecked = true;
 
                   /*DOC_EXTRACT 0_1_2_setWall
@@ -514,11 +509,12 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
 
                   */
 
+                  Tddd N = {0., 0., 0.};
                   for (const auto &[obj, poly] : RigidBodyObject)
                      obj->BucketPoints.apply(q->X, captureRange, [&](const auto &Q) {
-                        q->interp_normal_original -= Q->rho * Q->volume * grad_w_Bspline(q->X, Q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
+                        N -= Q->rho * Q->volume * grad_w_Bspline(q->X, Q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
                      });
-                  const auto N = q->interp_normal_original;
+                  q->interp_normal_original = N;
 
                   /*DOC_EXTRACT 0_1_2_setWallb
 
@@ -533,45 +529,34 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
                   q->isNeumannSurface = false;
 
                   auto R = captureRange;
-                  q->isCaptured = net->BucketPoints.any_of(q->X, R,
-                                                           [&](const auto &Q) {
-                                                              if (Q->isAuxiliary)
-                                                                 return false;
-                                                              bool canSeeNear = Distance(q, Q) < 1.1 * Q->SML() && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
-                                                              bool veryClose = Distance(q, Q) < std::sqrt(1.5) * particle_spacing && q != Q;
+                  q->isCaptured = net->BucketPoints.any_of(q->X, R, [&](const auto &Q) {
+                     if (Q->isAuxiliary)
+                        return false;
+                     bool canSeeNear = Distance(q, Q) < Q->SML() && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
+                     bool veryClose = Distance(q, Q) < std::sqrt(1.5) * particle_spacing && q != Q;
 
-                                                              bool canSeeNear_next = Distance(X_next(q), X_next(Q)) < 1.1 * Q->SML() && q != Q && isFlat(N, X_next(Q) - X_next(q), M_PI / 5);
-                                                              bool veryClose_next = Distance(X_next(q), X_next(Q)) < std::sqrt(1.5) * particle_spacing && q != Q;
+                     bool canSeeNear_next = Distance(X_next(q), X_next(Q)) < Q->SML() && q != Q && isFlat(N, X_next(Q) - X_next(q), M_PI / 5);
+                     bool veryClose_next = Distance(X_next(q), X_next(Q)) < std::sqrt(1.5) * particle_spacing && q != Q;
 
-                                                              return canSeeNear || veryClose || canSeeNear_next || veryClose_next;
-                                                           });
+                     return canSeeNear || veryClose || canSeeNear_next || veryClose_next;
+                  });
 
-                  /* -------------------------------------------------------------------------- */
                   if (q->isCaptured) {
+                     const double c = 1.5;
                      R = particle_spacing * 1.8;
-                     q->isFirstWallLayer = net->BucketPoints.any_of(q->X, R,
-                                                                    [&](const auto &Q) {
-                                                                       bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 6);
-                                                                       bool veryClose = Distance(q, Q) < 1.25 * particle_spacing && q != Q;
-                                                                       return canSeeNear || veryClose;
-                                                                    });
+                     q->isFirstWallLayer = net->BucketPoints.any_of(q->X, R, [&](const auto &Q) {
+                        bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 6);
+                        bool veryClose = Distance(q, Q) < c * particle_spacing && q != Q;
+                        return canSeeNear || veryClose;
+                     });
                      /* -------------------------------------------------------------------------- */
                      R = particle_spacing * 1.75;
-                     q->isNeumannSurface = net->BucketPoints.any_of(q->X, R,
-                                                                    [&](const auto &Q) {
-                                                                       bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
-                                                                       bool veryClose = Distance(q, Q) < 1.25 * particle_spacing && q != Q;
-                                                                       return canSeeNear || veryClose;
-                                                                    });
+                     q->isNeumannSurface = net->BucketPoints.any_of(q->X, R, [&](const auto &Q) {
+                        bool canSeeNear = Distance(q, Q) < R && q != Q && isFlat(N, Q->X - q->X, M_PI / 5);
+                        bool veryClose = Distance(q, Q) < c * particle_spacing && q != Q;
+                        return canSeeNear || veryClose;
+                     });
                   }
-
-                  // if (Norm(q->interp_normal_original) > 7500) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 0.5 * Normalize(q->interp_normal_original);
-                  // } else if (Norm(q->interp_normal_original) > 900) {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 1.5 * Normalize(q->interp_normal_original);
-                  // } else {
-                  //    q->v_to_surface_SPH = q->normal_SPH = q->particle_spacing * 2.5 * Normalize(q->interp_normal_original);
-                  // }
                }
             });
          }
@@ -594,13 +579,10 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
             if (p->isCaptured)
                wall_p.emplace(p);
 
-      setCorrectionMatrix(rigidbody_nets, captureRange);
-
 #pragma omp parallel
       for (const auto &p : wall_p)
 #pragma omp single nowait
       {
-         // p->interp_normal = Normalize(Dot(p->inv_grad_corr_M, p->interp_normal_original));
          p->interp_normal = Normalize(p->interp_normal_original);
          if (!isFinite(p->interp_normal))
             p->interp_normal = {0., 0., 1.};
@@ -667,38 +649,52 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                q->U_SPH.fill(0.);
                std::array<double, 3> DUDT;
                DUDT.fill(0.);
-               double div_U = 0;
+               double div_U = 0, div_U_next = 0;
                q->intp_density = 0.;
+               double density = 0., density_next = 0.;
                //! ちょっとした修正11/28 -> 効果なし
-               // if (q->isFirstWallLayer)
-               q->marker_X = q->X + q->v_to_surface_SPH;
-               // else
-               // q->marker_X = q->X + 2. * q->v_to_surface_SPH;
-               double total_vol_w = 0, r = q->SML(), vol_w;
+               if (q->isFirstWallLayer)
+                  q->marker_X = q->X + q->v_to_surface_SPH;
+               else
+                  q->marker_X = q->X + 2. * q->v_to_surface_SPH;
+               double total_vol_w = 0, r = q->SML(), vol_w, vol_w_next, total_vol_w_next = 0;
                net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
                   if (Norm(q->marker_X - Q->X) > r)
                      return;
                   vol_w = Q->volume * w_Bspline(Norm(q->marker_X - Q->X), r);
+                  vol_w_next = Q->volume * w_Bspline(Norm(q->marker_X - X_next(Q)), r);
                   q->U_SPH += Q->U_SPH * vol_w;
+                  density += Q->rho * vol_w;
+                  density_next += Q->rho * vol_w_next;
                   div_U += Q->div_U * vol_w;
+                  div_U_next += Q->div_U_next * vol_w_next;
                   DUDT += Q->DUDt_SPH * vol_w;
                   q->intp_density += Q->rho * vol_w;
                   total_vol_w += vol_w;
+                  total_vol_w_next += vol_w_next;
                });
 
-               if (total_vol_w >= 0.1 /*should be close to unity*/) {
+               if (total_vol_w >= 0.01 /*should be close to unity*/) {
                   DUDT /= total_vol_w;
                   div_U /= total_vol_w;
                   q->U_SPH /= total_vol_w;
                   q->marker_U = q->U_SPH;  //! そのままの値
+                  density /= total_vol_w;
+               }
+               if (total_vol_w_next >= 0.01) {
+                  div_U_next /= total_vol_w_next;
+                  density_next /= total_vol_w_next;
                }
                // q->U_SPH = -q->U_SPH;
                // q->U_SPH.fill(0.);
                q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                // q->DUDt_SPH = Reflect(q->DUDt_SPH, q->v_to_surface_SPH);
                q->div_U = div_U;
+               q->div_U_next = div_U_next;
                // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
+               q->RK_rho.initialize(q->RK_rho.get_dt(), q->RK_rho.t_init, density, q->RK_rho.steps);
+               q->setDensity(_WATER_DENSITY_);
                // if (q->isFirstWallLayer)
                //    q->U_SPH = Chop(q->U_SPH, q->v_to_surface_SPH);
                // q->U_SPH = Projection(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
@@ -776,9 +772,12 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             double w, total_volume_w = 0, total_volume_w_next = 0;
             // std::vector<networkPoint *> samples;
 
-            net->BucketPoints.apply(p->X, 1.2 * p->SML(), [&](const auto &q) {
-               // w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
-               if (Distance(p, q) < p->SML()) {
+            const double SML = p->SML();
+            const double SML_next = p->SML_next();
+
+            net->BucketPoints.apply(p->X, 1.2 * SML, [&](const auto &q) {
+               // w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
+               if (Distance(p, q) < SML) {
                   p->COM_SPH += q->mass * q->X;
                   p->totalMass_SPH += q->mass;
 
@@ -789,16 +788,16 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                      total_w_vec2COM_next += 1;
                   }
                }
-               double w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
+               double w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
                total_volume_w += w;
                p->intp_density += q->rho * w;
-               w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML_next());
+               w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), SML_next);
                total_volume_w_next += w;
                p->intp_density_next += rho_next(q) * w;
 
-               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());  //! DO NOT USE grad_w_Bspline(p, q) because this is original
-               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
-               p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
+               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);  //! DO NOT USE grad_w_Bspline(p, q) because this is original
+               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
+               p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, SML);
 
                auto A = p;
                auto B = q;
@@ -814,14 +813,14 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
             const double a = 1.;
             for (const auto &obj : RigidBodyObject)
-               obj->BucketPoints.apply(p->X, 1.2 * p->SML(), [&](const auto &q) {
+               obj->BucketPoints.apply(p->X, 1.2 * SML, [&](const auto &q) {
                   if (canInteract(p, q)) {
-                     // w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
-                     if (Distance(p, q) < p->SML() || Distance(X_next(p), X_next(q)) < p->SML()) {
-                        w = q->volume * w_Bspline(Norm(p->X - q->X), p->SML());
+                     // w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
+                     if (Distance(p, q) < SML || Distance(X_next(p), X_next(q)) < SML) {
+                        w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
                         total_volume_w += w;
                         p->intp_density += q->rho * w;
-                        w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), p->SML_next());
+                        w = V_next(q) * w_Bspline(Norm(X_next(p) - X_next(q)), SML_next);
                         total_volume_w_next += w;
                         p->intp_density_next += rho_next(q) * w;
                         p->COM_SPH += q->mass * q->X;
@@ -835,13 +834,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                      }
                      if (Distance(p, q) < p->particle_spacing * 1.5)
                         near_wall_particle.emplace_back(q->v_to_surface_SPH);
-                     p->interp_normal_original -= a * q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
-                     p->interp_normal_rigid -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
+                     p->interp_normal_original -= a * q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);
+                     p->interp_normal_rigid -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);
                      if (Distance(X_next(p), X_next(q)) < p->particle_spacing * 1.5)
                         near_wall_particle_next.emplace_back(q->v_to_surface_SPH);
-                     p->interp_normal_original_next -= a * rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
-                     p->interp_normal_rigid_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
-                     p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
+                     p->interp_normal_original_next -= a * rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
+                     p->interp_normal_rigid_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
+                     p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, SML);
                   }
                   // 歪度
                   // p->sample_SPH += 1;
@@ -901,16 +900,16 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             */
 
             //! 流体粒子に対してはr=2.5*ps，\theta=30度
-            const double ratio_flud = 2.3;
+            const double ratio_flud = 2.6;
             // 2.2OK
             // 2.4OUT
-            const double min_ratio_flud = 2.2;
+            // const double min_ratio_flud = 2.2;
             const double surface_check_r_for_fluid_ = A->particle_spacing * ratio_flud;
-            const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
+            // const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
             //! 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
             //! surface_check_r_for_wall_は最低の値
             //! 規則正しく並んでいる場合を考えると，水面粒子の探査範囲は，大体，std::sqrt(3.)かstd::sqrt(2.)あたりが妥当な値だろう．
-            const double surface_check_r_for_wall_ = A->particle_spacing * 1.8;  // std::sqrt(3.);
+            const double surface_check_r_for_wall_ = A->particle_spacing * 2.3;  // std::sqrt(3.);
             const double ratio = surface_check_r_for_wall_ / surface_check_r_for_fluid_;
             const double surface_check_agnle_for_fluid = M_PI / 5.;  // * (1. - A->var_Eigenvalues_of_M1);
             const double surface_check_angle_for_wall = M_PI / 4.;   // * (1. - A->var_Eigenvalues_of_M1);
@@ -937,7 +936,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                      // Sphere sphere(c, radius);
                                                                      // return sphere.isInside(q->X);
                                                                      auto n_of_q = Dot(q->inv_grad_corr_M, q->interp_normal_original);
-                                                                     return Distance(c, q->X) < radius && isFlat(n_current, q->X - A->X, angle) &&
+                                                                     return Distance(c, q->X) < radius &&
+                                                                            isFlat(n_current, q->X - A->X, angle) &&
+                                                                            !q->is_grad_corr_M_singular &&
                                                                             (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
                                                                              (q->isFluid &&
                                                                               (A->var_Eigenvalues_of_M > 0.8 || Norm(n_current) > 2E+4) &&
@@ -979,7 +980,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                                                           //   Sphere sphere(c, radius);
                                                                           //   return sphere.isInside(X_next(q));
                                                                           auto n_of_q = Dot(q->inv_grad_corr_M_next, q->interp_normal_original_next);
-                                                                          return Distance(c, X_next(q)) < radius && isFlat(n_next, X_next(q) - X_next(A), angle) &&
+                                                                          return Distance(c, X_next(q)) < radius &&
+                                                                                 isFlat(n_next, X_next(q) - X_next(A), angle) &&
+                                                                                 !q->is_grad_corr_M_next_singular &&
                                                                                  (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
                                                                                   (q->isFluid &&
                                                                                    (A->var_Eigenvalues_of_M_next > 0.8 || Norm(n_next) > 2E+4) &&
@@ -1042,13 +1045,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
             const auto r_short = (p->particle_spacing) * 2.;
 
-            auto surface = net->BucketPoints.none_of(p->X, p->SML(), [&](const auto &q) {
+            auto surface = net->BucketPoints.none_of(p->X, SML, [&](const auto &q) {
                return Distance(p, q) < r_short && p != q && (isFlat(p->interp_normal_water, q->X - p->X, M_PI / 5));
             });
 
             if (surface)
                p->isNeumannSurface = std::ranges::any_of(RigidBodyObject, [&](const auto &net) {
-                  return net->BucketPoints.any_of(p->X, p->SML(), [&](const auto &q) {
+                  return net->BucketPoints.any_of(p->X, SML, [&](const auto &q) {
                      return Distance(p, q) < r_short && p != q && (isFlat(p->interp_normal_water, q->X - p->X, M_PI / 5));
                   });
                });

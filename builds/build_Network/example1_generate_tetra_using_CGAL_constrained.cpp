@@ -2,6 +2,8 @@
 
 ## CGALを使って四面体を生成する
 
+WARNING:　コンパイルできない
+
 ```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL_constrained.cpp

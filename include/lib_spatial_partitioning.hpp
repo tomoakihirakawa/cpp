@@ -1,6 +1,8 @@
 #ifndef lib_spatial_partitioning_H
 #define lib_spatial_partitioning_H
 
+#include <execution>
+
 /*DOC_EXTRACT lib_spatial_partitioning
 
 ## `Bucket`クラス
@@ -283,6 +285,13 @@ struct Buckets : public CoordinateBounds {
          }
       }
 
+      std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
+      std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
+      std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
+      std::cout << "this->dL : " << this->dL << std::endl;
+      std::cout << "this->xsize : " << this->xsize << std::endl;
+      std::cout << "this->ysize : " << this->ysize << std::endl;
+      std::cout << "this->zsize : " << this->zsize << std::endl;
       this->vector_is_set = true;
    };
    //@ -------------------------------------------------------------------------- */

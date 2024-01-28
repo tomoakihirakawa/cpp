@@ -45,7 +45,11 @@ class MooringLine : public Network {
    networkPoint* firstPoint = nullptr;
    networkPoint* lastPoint = nullptr;
 
-   MooringLine(const std::array<double, 3> X0, const std::array<double, 3> X1, const double total_length, const int n) : Network(), total_length(total_length) {
+   MooringLine(const std::array<double, 3> X0,
+               const std::array<double, 3> X1,
+               const double total_length,
+               const int n)
+       : Network(), total_length(total_length) {
       std::vector<networkPoint*> points;
       for (int i = 0; i < n; ++i) {
          auto p = new networkPoint(this, X0 + (X1 - X0) * i / (n - 1.));
@@ -53,7 +57,8 @@ class MooringLine : public Network {
          if (i == 0) firstPoint = p;
          if (i == n - 1) lastPoint = p;
       }
-      for (auto i = 0; i < points.size() - 1; ++i) new networkLine(this, points[i], points[i + 1]);
+      for (auto i = 0; i < points.size() - 1; ++i)
+         new networkLine(this, points[i], points[i + 1]);
 
       setNaturalLength();
    }
@@ -70,7 +75,7 @@ class MooringLine : public Network {
 
    void setDensityStiffnessDampingDiameter(const double density, const double stiffness, const double damp, const double diam) {
       for (auto& l : this->getLines()) {
-         l->weight_per_unit_length = density * l->natural_length;
+         l->weight_per_unit_length = density;  // * l->diameter * l->diameter * M_PI / 4.;
          l->stiffness = stiffness;
          l->damping = damp;
          l->diameter = diam;
@@ -78,7 +83,7 @@ class MooringLine : public Network {
       for (auto& p : this->getPoints()) {
          p->mass = 0;
          for (auto& l : p->getLines())
-            p->mass += l->natural_length * l->weight_per_unit_length / 2.;
+            p->mass += l->natural_length / 2. * l->weight_per_unit_length;
       }
    };
 
@@ -87,29 +92,21 @@ class MooringLine : public Network {
    /* -------------------------------------------------------------------------- */
    //! function to get dt automatically
    double get_dt(const double max_dt) {
-      const double C_VELOCITY = 0.01, C_ACCEL = 0.01;
-      double dt_cfl = max_dt, dt_tmp;
-      // CFL based on velocity
-      for (const auto& p : this->getPoints())
-         for (const auto& l : p->getLines()) {
-            double norm = (l->stiffness / p->mass * 0.00001) * Norm(Tddd{p->velocity[0], p->velocity[1], p->velocity[2]});
-            if (norm == 0)
-               continue;
-            dt_tmp = C_VELOCITY * l->length() / norm;
-            if (dt_cfl > dt_tmp)
-               dt_cfl = dt_tmp;
-         }
 
-      // CFL based on acceleration
+      const double C_VELOCITY = 0.01, C_ACCEL = 1;
+      double dt_cfl = max_dt, dt_tmp, norm;
+
       for (const auto& p : this->getPoints())
          for (const auto& l : p->getLines()) {
-            double norm = (l->stiffness / p->mass * 0.0001) * Norm(Tddd{p->acceleration[0], p->acceleration[1], p->acceleration[2]});
+            //! CFL based on velocity
+            norm = (l->stiffness / p->mass) * Norm(Tddd{p->velocity[0], p->velocity[1], p->velocity[2]});
             if (norm != 0.) {
-               dt_tmp = C_ACCEL * std::sqrt(l->length() / norm);
+               dt_tmp = C_VELOCITY * l->length() / norm;
                if (dt_cfl > dt_tmp)
                   dt_cfl = dt_tmp;
             }
-            norm = (l->stiffness / p->mass * 0.0001) * _GRAVITY_;
+            // //! CFL based on acceleration
+            norm = (l->stiffness / p->mass) * std::max(0.1 * _GRAVITY_, 0.1 * Norm(Tddd{p->acceleration[0], p->acceleration[1], p->acceleration[2]}));
             if (norm != 0) {
                dt_tmp = C_ACCEL * std::sqrt(l->length() / norm);
                if (dt_cfl > dt_tmp)
@@ -128,8 +125,6 @@ class MooringLine : public Network {
    `RK_velocity_sub`，`RK_X_sub`，`RK_force_sub`だけにとどまり，実際には節点は移動しないし，速度も変わらないので，
    次時刻の速度や位置は，`RK_velocity_sub`，`RK_X_sub`の`get_x`関数で取得する．
 
-
-
    */
 
    double DragForceCoefficient = 0.3;
@@ -142,13 +137,25 @@ class MooringLine : public Network {
       bool first = true;
 
       //! 実際の値は変更されない
+      int i = 0, step = 0;
+      auto points = ToVector(this->getPoints());
       while (dt_acum < dt) {
          double dt_cfl = get_dt(dt);
+         if (step < 10)
+            dt_cfl = dt * 1E-8;
+         else if (step < 100)
+            dt_cfl = dt * 1E-7;
+         else if (step < 1000)
+            dt_cfl = dt * 1E-6;
+         else
+            dt_cfl = std::clamp(dt_cfl, dt * 1E-4, dt * 1E-3);
+
+         // std::cout << Red << "dt_cfl = " << dt_cfl << colorReset << std::endl;
          if (dt_acum + dt_cfl >= dt)
             dt_cfl = dt - dt_acum;
          /* -------------------------------------------------------------------------- */
          //! initialize RK
-         for (auto& p : this->getPoints()) {
+         for (auto& p : points) {
             p->RK_velocity_sub.initialize(dt_cfl, current_time, first ? p->velocityTranslational() : p->RK_velocity_sub.get_x(), 4);
             p->RK_X_sub.initialize(dt_cfl, current_time, first ? p->X : p->RK_X_sub.get_x(), 4);
          }
@@ -158,8 +165,8 @@ class MooringLine : public Network {
          std::array<double, 3> a;
 
          while (1) {
-
-            for (auto& p : this->getPoints()) {
+            // std::cout << "RK : " << (*this->getPoints().begin())->RK_X_sub.current_step << std::endl;
+            for (auto& p : points) {
                a = (p->getTension() + p->getDragForce(DragForceCoefficient) + p->getGravitationalForce()) / p->mass;
                std::get<0>(p->acceleration) = std::get<0>(a);  // accelは変更しても構わない
                std::get<1>(p->acceleration) = std::get<1>(a);  // accelは変更しても構わない
@@ -167,18 +174,47 @@ class MooringLine : public Network {
                setBoundaryCondition(p);
             }
 
-            for (auto& p : this->getPoints()) {
+            for (auto& p : points) {
                p->RK_X_sub.push(p->RK_velocity_sub.get_x());
                p->RK_velocity_sub.push(p->accelTranslational());
+               // std::cout << "---- force ---" << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->getTension() = " << p->getTension() << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->getDragForce(DragForceCoefficient) = " << p->getDragForce(DragForceCoefficient) << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->getGravitationalForce() = " << p->getGravitationalForce() << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->getForce() = " << p->getForce() << std::endl;
+               // std::cout << "--------------" << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->mass = " << p->mass << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->acceleration = " << p->acceleration << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->velocity = " << p->velocity << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->RK_X_sub = " << p->RK_X_sub.get_x() << std::endl;
+               // std::cout << std::right << std::setw(35) << "p->RK_velocity_sub = " << p->RK_velocity_sub.get_x() << std::endl;
             }
 
-            if ((*this->getPoints().begin())->RK_X_sub.finished)
+            if ((*points.begin())->RK_X_sub.finished)
                break;
          }
 
          dt_acum += dt_cfl;
          if (dt_acum >= dt)
             return;
+
+         double norm_velcoity = 0, norm_acceleration = 0;
+         for (auto& p : points) {
+            norm_velcoity += Norm(p->velocity);
+            norm_acceleration += Norm(p->acceleration);
+         }
+         // show percentage
+         auto percentage = (dt_acum / dt) * 100.;
+         if (percentage > 10 * i) {
+            std::cout << "percentage = " << percentage << std::endl;
+            std::cout << "dt = " << dt << ", dt_cfl = " << dt_cfl << ", time = " << dt_acum << ", norm_velcoity = " << norm_velcoity << ", norm_acceleration = " << norm_acceleration << std::endl;
+            i++;
+         }
+         if (step++ > 10000000) {
+            std::stringstream ss;
+            ss << "step > " << step;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+         }
       }
    }
 
@@ -186,15 +222,18 @@ class MooringLine : public Network {
       double norm_total_velocity = 0;
       double current_DragForceCoefficient = this->DragForceCoefficient;
       this->DragForceCoefficient = 1000.;
-      for (auto i = 0; i < 1000; ++i) {
-         this->simulate(0, 5., setBoundaryCondition);
+      auto points = ToVector(this->getPoints());
+      double n = points.size();
+      for (auto i = 0; i < 100; ++i) {
+         //% 内部で計算回数を制限しているのでこのようになる
+         this->simulate(0, 1., setBoundaryCondition);
          norm_total_velocity = 0;
-         for (const auto& p : this->getPoints())
+         for (const auto& p : points)
             norm_total_velocity += Norm(p->RK_velocity_sub.get_x());
-         norm_total_velocity /= this->getPoints().size();
-         if (norm_total_velocity < 1e-3)
-            break;
-         std::cout << norm_total_velocity << std::endl;
+         norm_total_velocity /= n;
+         // if (norm_total_velocity < 1e-3)
+         //    break;
+         std::cout << "norm_total_velocity = " << norm_total_velocity << std::endl;
          applyMooringSimulationResult();
       }
       this->DragForceCoefficient = current_DragForceCoefficient;
@@ -204,9 +243,9 @@ class MooringLine : public Network {
       for (auto& p : this->getPoints()) {
          p->setX(p->RK_X_sub.get_x());
          auto v = p->RK_velocity_sub.get_x();
-         p->velocity[0] = v[0];
-         p->velocity[1] = v[1];
-         p->velocity[2] = v[2];
+         std::get<0>(p->velocity) = std::get<0>(v);
+         std::get<1>(p->velocity) = std::get<1>(v);
+         std::get<2>(p->velocity) = std::get<2>(v);
       }
    }
 };

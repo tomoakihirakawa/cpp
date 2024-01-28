@@ -1,0 +1,16 @@
+{
+    "name": "cuboid",
+    "type": "RigidBody",
+    "velocity": [
+        "const",
+        0,
+        0.017453292519943295,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/testALE/cuboid100.obj"
+}

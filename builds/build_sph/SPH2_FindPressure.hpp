@@ -361,6 +361,13 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                ROW->PoissonRHS /= total_volume_w;
             }
             ROW->increment(ROW, -1.);
+            // if no particle is around the wall particle, then set pressure to zero
+            if (ROW->column_value.empty()) {
+               ROW->clearColumnValue();
+               ROW->CRS::set(ROW, 1.);
+               ROW->PoissonRHS = 0;
+            }
+
          } else {
             // b@ ISPH
             ROW->pressure_equation_index = 3;
@@ -485,6 +492,7 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 #define USE_GMRES
 
 #if defined(USE_GMRES)
+int GMRES_expation_size = 100;
 gmres<std::vector<networkPoint *>> *GMRES = nullptr;
 #endif
 
@@ -526,6 +534,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
       }
       b[index] = p->PoissonRHS;
       x0[index] = p->p_SPH;
+      // x0[index] = p->p_SPH_smoothed;
    }
 
    DebugPrint(Blue, "preconditioning using diagonal value", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -555,13 +564,12 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 100;
    if (GMRES == nullptr) {
-      GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
+      GMRES = new gmres(points, b, x0, GMRES_expation_size);  //\label{SPH:gmres}
    } else {
-      GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
+      GMRES->Restart(points, b, x0, GMRES_expation_size);  //\label{SPH:gmres}
    }
-   // gmres gm(points, b, x0, size);  //\label{SPH:gmres}
+   // gmres gm(points, b, x0, GMRES_expation_size);  //\label{SPH:gmres}
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    x0 = GMRES->x;
@@ -569,10 +577,11 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
+   int i = 0;
    if (GMRES->err > torr)
-      for (auto i = 1; i < 10; i++) {
+      for (i = 1; i < 10; i++) {
          std::cout << "Restart : " << i << std::endl;
-         GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
+         GMRES->Restart(points, b, x0, GMRES_expation_size);  //\label{SPH:gmres}
          x0 = GMRES->x;
          std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
          std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
@@ -580,10 +589,24 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
             break;
       }
 
+   // int target_n = 1;
+   // if (i <= target_n)
+   //    GMRES_expation_size -= 2;
+   // if (i > target_n)
+   //    GMRES_expation_size += 2;
+
+   std::cout << Blue << "GMRES_expation_size : " << GMRES_expation_size << colorReset << std::endl;
+
    DebugPrint(Blue, "set pressure", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 
-   for (const auto &p : points)
+   const double a = 0.8;
+   for (const auto &p : points) {
       p->p_SPH = p->p_SPH_last = GMRES->x[p->getIndexCRS()];
+      p->p_SPH_smoothed = a * p->p_SPH + (1. - a) * p->p_SPH_smoothed;
+   }
+
+      // delete GMRES;
+      // GMRES = nullptr;
 
 #elif defined(USE_LAPACK)
    VV_d A(b.size(), V_d(b.size(), 0.));

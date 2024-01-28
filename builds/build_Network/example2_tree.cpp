@@ -20,7 +20,7 @@
 buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 ```
 
-![example2_tree_faster.gif](example2_tree_faster.gif)
+<img src="example2_tree_faster.gif" width="500px">
 
 レベル０が生成したレベル１のバケットに保存された点を示しており，
 白い線は，１階層上のレベル０のバケットの境界を示している．

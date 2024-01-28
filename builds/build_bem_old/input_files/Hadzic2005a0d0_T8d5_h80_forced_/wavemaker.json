@@ -1,0 +1,6 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2023Tamatu/wavemaker10.obj"
+}

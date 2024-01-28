@@ -1,0 +1,18 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Hadzic2005/float20.obj",
+    "output": "json",
+    "velocity": "floating",
+    "mass": 0.986,
+    "COM": [
+        2.11,
+        0.145,
+        0.391
+    ],
+    "MOI": [
+        71156333.33333333,
+        0.001589233395,
+        77318833.33333333
+    ]
+}

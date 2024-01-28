@@ -132,89 +132,239 @@ bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
 大きな変化は防げても，小さな変化には対応できない場合が考えられる．
 
 */
+// Assuming Tddd is a type that can be used in a constexpr context
 
-void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp, const std::array<double, 3> &)> &SmoothingVector) {
-   try {
-      if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
-         auto ps = p->getNeighbors();
-         // 無視できる角度
-         const double acceptable_change_angle = 1E-6 * M_PI / 180.;
-         const auto faces = ToVector(p->getFaces());
-         double Atot = 0.;
-         for (const auto &f : faces)
-            Atot += f->area;
-         const double length_scale = std::sqrt(Atot / faces.size());
-         Tddd X0, X1, X2, cross_before, cross_after, result_V;
-
-         double min_angle_before = 1E+10;
-         double min_angle_after = 1E+10;
-         auto check_if_next_faces_valid = [&](const Tddd &replace_X) {
-            for (const auto &f : faces) {
-               auto [p0, p1, p2] = f->getPoints();
-               if (p0 != p && p1 != p && p2 != p)
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p0 != p && p1 != p && p2 != p");
-
-               X0 = p0->X;
-               X1 = p1->X;
-               X2 = p2->X;
-
-               auto a = Min(TriangleAngles(X0, X1, X2));
-               if (min_angle_before < a)
-                  min_angle_before = a;
-
-               cross_before = Cross(X1 - X0, X2 - X0);
-
-               if (p0 == p)
-                  X0 = replace_X;
-               else if (p1 == p)
-                  X1 = replace_X;
-               else if (p2 == p)
-                  X2 = replace_X;
-
-               cross_after = Cross(X1 - X0, X2 - X0);
-
-               a = Min(TriangleAngles(X0, X1, X2));
-               if (min_angle_after < a)
-                  min_angle_after = a;
-
-               //! どうやらisValidTriangleはいらないようだ．
-               // if (!isValidTriangle(T3Tddd{X0, X1, X2}, 1E-2 * M_PI / 180.))
-               //    return false;
-               if (Dot(cross_before, cross_after) <= 0.)
-                  return false;
-
-               // if (!isFlat(cross_before, cross_after, acceptable_change_angle))
-               //    return false;
-               if (!isFlat(p0->X, p1->X, p2->X, X0, X1, X2, acceptable_change_angle))
-                  return false;
-            }
-
-            if (min_angle_before > min_angle_after)
-               return false;
-
-            return true;
-         };
-
-         if (ps.size() > 2) {  // 2点の場合は2点の中点に動いてしまうので，実行しない
-            Tddd X_next = p->X, V_try, X_try;
-            const double a_default = 0.01;
-            double a = a_default;
-            for (auto iter = 0; iter < 10; ++iter) {
-               X_try = X_next + a * exact_along_surface(p, SmoothingVector(p, X_next));
-               if (check_if_next_faces_valid(X_try)) {
-                  p->setXSingle(X_try);
-                  X_next = X_try;
-                  a = a_default;
-               } else
-                  a *= 0.5;
-            }
+std::array<std::tuple<double, double, Tddd>, 25> t0t1ModTriShape25(std::array<double, 2> t0_range, std::array<double, 2> t1_range) {
+   auto subdiv_for_t1 = Subdivide<4>(t1_range[0], t1_range[1]);
+   std::array<std::tuple<double, double, Tddd>, 25> result{};
+   size_t index = 0;
+   for (const auto &t0 : Subdivide<4>(t0_range[0], t0_range[1])) {
+      for (const auto &t1 : subdiv_for_t1) {
+         if (index < 25) {
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
          }
       }
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorReset << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   }
+   return result;
+}
+
+std::array<std::tuple<double, double, Tddd>, 400> t0t1ModTriShape400(std::array<double, 2> t0_range, std::array<double, 2> t1_range) {
+   auto subdiv_for_t1 = Subdivide<19>(t1_range[0], t1_range[1]);
+   std::array<std::tuple<double, double, Tddd>, 400> result{};
+   size_t index = 0;
+   for (const auto &t0 : Subdivide<19>(t0_range[0], t0_range[1])) {
+      for (const auto &t1 : subdiv_for_t1) {
+         if (index < 40) {
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
+         }
+      }
+   }
+   return result;
+}
+
+constexpr std::array<std::tuple<double, double, Tddd>, 400> precalculateXtrys400() {
+   constexpr auto subdiv_for_t0 = Subdivide<199>(0.8, 1.);
+   constexpr auto subdiv_for_t1 = Subdivide<199>(0., 1.);
+   std::array<std::tuple<double, double, Tddd>, 400> result{};
+
+   size_t index = 0;
+   for (const auto &t0 : subdiv_for_t0) {
+      for (const auto &t1 : subdiv_for_t1) {
+         if (index < 400) {
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
+         }
+      }
+   }
+
+   return result;
+}
+
+// Variable Initialization
+constexpr auto evaluation_points_for_findOptimalPositionByCriteria400 = precalculateXtrys400();
+
+Tddd findOptimalPositionByCriteriaOn(const networkPoint *p,
+                                     const std::function<double(const Tddd &)> &criteria,
+                                     std::function<Tddd(const networkPoint *)> get_triangle_base_X /*optimum position will be found on this triangle*/) {
+
+   constexpr double acceptable_change_angle = 1E-2 * M_PI / 180.;
+   const auto all_face = ToVector(p->getFaces());
+   std::array<double, 3> where_the_min_score = get_triangle_base_X(p);
+   double min_score = criteria(where_the_min_score), s;
+   if (!isFinite(min_score))
+      min_score = 1E+10;
+   bool found = false;
+
+   auto check_if_next_faces_valid = [&](const Tddd &replace_X) {
+      return std::ranges::all_of(all_face, [&](auto f) {
+         auto [p0, p1, p2] = f->getPoints(p);
+         Tddd base_X0 = get_triangle_base_X(p0), base_X1 = get_triangle_base_X(p1), base_X2 = get_triangle_base_X(p2);
+         if (Dot(TriangleNormal(base_X0, base_X1, base_X2), TriangleNormal(replace_X, base_X1, base_X2)) < 0. /* opposite direction */)
+            return false;
+         // if (isFlat(TriangleNormal(base_X0, base_X1, base_X2), TriangleNormal(replace_X, base_X1, base_X2), acceptable_change_angle))
+         if (p0 != p && p1 != p && p2 != p)
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p0 != p && p1 != p && p2 != p");
+         return true;
+      });
    };
+
+   double min_t0, min_t1;
+   networkFace *min_face = all_face[0];
+   auto check_and_update_min_score = [&](const Tddd &X0_candidate, const double t0, const double t1, networkFace *f) {
+      if (check_if_next_faces_valid(X0_candidate)) {
+         s = criteria(X0_candidate);
+         if (isFinite(s) && min_score > s) {
+            min_score = s;
+            where_the_min_score = X0_candidate;
+            min_t0 = t0;
+            min_t1 = t1;
+            found = true;
+            min_face = f;
+         }
+      }
+   };
+
+   int itr = 5;
+   T3Tddd base_X012;
+
+   auto faces_will_be_updated = ToVector(p->getFaces());
+   for (const auto &f : faces_will_be_updated) {
+      std::array<double, 2> t0_minmax = {0.9, 1.};
+      std::array<double, 2> t1_minmax = {0., 1.};
+      auto subdiv_for_t1 = Subdivide<5>(t1_minmax[0], t1_minmax[1]);
+      auto subdiv_for_t0 = Subdivide<5>(t0_minmax[0], t0_minmax[1]);
+      for (int i = 0; i < itr; ++i) {
+         auto [p0, p1, p2] = f->getPoints(p);
+         base_X012 = {get_triangle_base_X(p0), get_triangle_base_X(p1), get_triangle_base_X(p2)};
+         for (const auto &t0 : subdiv_for_t0)
+            for (const auto &t1 : subdiv_for_t1)
+               check_and_update_min_score(Dot(ModTriShape<double, 3>(t0, t1), base_X012), t0, t1, f);
+         // faces_will_be_updated = {min_face};
+         auto del_t = std::pow(0.2, i + 2);
+         t0_minmax = {std::clamp(min_t0 - del_t, 0.0, 1.0), std::clamp(min_t0 + del_t, 0.0, 1.0)};
+         t1_minmax = {std::clamp(min_t1 - del_t, 0.0, 1.0), std::clamp(min_t1 + del_t, 0.0, 1.0)};
+      }
+   }
+
+   return where_the_min_score;
 };
+
+double calculateScoreIfPointMoved(const networkPoint *p,
+                                  const Tddd &X_candidate,
+                                  std::function<Tddd(const networkPoint *)> get_position_to_be_updated) {
+   double total = 0.;
+   for (const auto &f : p->getFaces()) {
+      auto [_, p1, p2] = f->getPoints(p);
+      Tddd X1 = get_position_to_be_updated(p1), X2 = get_position_to_be_updated(p2);
+      total += CircumradiusToInradius(X_candidate, X1, X2);
+   }
+   return total * total;
+};
+
+void SmoothingPreserveShape(networkPoint *p) {
+   auto calculateScoreIfPointMoved = [](const networkPoint *p,
+                                        const Tddd &X_candidate,
+                                        std::function<Tddd(const networkPoint *)> get_position_to_be_updated) {
+      const auto p_faces = ToVector(p->getFaces());
+      double n = p_faces.size(), area;
+      const double acceptable_change_angle = 1E-2 * M_PI / 180.;
+      double total = 0;
+      for (const auto &f : p_faces) {
+         auto [p0, p1, p2] = f->getPoints(p);
+         Tddd X1 = get_position_to_be_updated(p1);
+         Tddd X2 = get_position_to_be_updated(p2);
+         total += CircumradiusToInradius(X_candidate, X1, X2) * std::pow(Distance(X_candidate, X1) + Distance(X_candidate, X2) + Distance(X1, X2), 2) / TriangleArea(X_candidate, X1, X2);
+         // total += std::pow(Circumradius(X_candidate, X1, X2), 2) * M_PI / TriangleArea(X_candidate, X1, X2);
+         if (!isFlat(X_candidate, p1->X, p2->X, p0->X, p1->X, p2->X, acceptable_change_angle)) return 1E+30;
+      }
+      return total;
+   };
+   auto get_base_X = [](const networkPoint *p) { return p->X; };
+   auto criteria = [&](const Tddd &X) { return calculateScoreIfPointMoved(p, X, get_base_X); };
+   p->X_temporary = 0.5 * (findOptimalPositionByCriteriaOn(p, criteria, get_base_X) - p->X) + p->X;
+};
+
+// void SmoothingPreserveShape(netPp p, const std::function<Tddd(const netPp, const std::array<double, 3> &)> &SmoothingVector) {
+//    try {
+//       if (!isEdgePoint(p)) { /*端の点はsmoothingしない*/
+//          auto ps = p->getNeighbors();
+//          // 無視できる角度
+//          const double acceptable_change_angle = 1E-6 * M_PI / 180.;
+//          const auto faces = ToVector(p->getFaces());
+//          double Atot = 0.;
+//          for (const auto &f : faces)
+//             Atot += f->area;
+//          const double length_scale = std::sqrt(Atot / faces.size());
+//          Tddd X_candidate, X1, X2, cross_before, cross_after, result_V;
+
+//          double min_angle_before = 1E+10;
+//          double min_angle_after = 1E+10;
+//          auto check_if_next_faces_valid = [&](const Tddd &replace_X) {
+//             for (const auto &f : faces) {
+//                auto [p0, p1, p2] = f->getPoints();
+//                if (p0 != p && p1 != p && p2 != p)
+//                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p0 != p && p1 != p && p2 != p");
+
+//                X0 = p0->X;
+//                X1 = p1->X;
+//                X2 = p2->X;
+
+//                auto a = Min(TriangleAngles(X0, X1, X2));
+//                if (min_angle_before < a)
+//                   min_angle_before = a;
+
+//                cross_before = Cross(X1 - X0, X2 - X0);
+
+//                if (p0 == p)
+//                   X0 = replace_X;
+//                else if (p1 == p)
+//                   X1 = replace_X;
+//                else if (p2 == p)
+//                   X2 = replace_X;
+
+//                cross_after = Cross(X1 - X0, X2 - X0);
+
+//                a = Min(TriangleAngles(X0, X1, X2));
+//                if (min_angle_after < a)
+//                   min_angle_after = a;
+
+//                //! どうやらisValidTriangleはいらないようだ．
+//                // if (!isValidTriangle(T3Tddd{X0, X1, X2}, 1E-2 * M_PI / 180.))
+//                //    return false;
+//                if (Dot(cross_before, cross_after) <= 0.)
+//                   return false;
+
+//                // if (!isFlat(cross_before, cross_after, acceptable_change_angle))
+//                //    return false;
+//                if (!isFlat(p0->X, p1->X, p2->X, X0, X1, X2, acceptable_change_angle))
+//                   return false;
+//             }
+
+//             if (min_angle_before > min_angle_after)
+//                return false;
+
+//             return true;
+//          };
+
+//          if (ps.size() > 2) {  // 2点の場合は2点の中点に動いてしまうので，実行しない
+//             Tddd X_next = p->X, V_try, X_try;
+//             const double a_default = 0.01;
+//             double a = a_default;
+//             for (auto iter = 0; iter < 10; ++iter) {
+//                X_try = X_next + a * exact_along_surface(p, SmoothingVector(p, X_next));
+//                if (check_if_next_faces_valid(X_try)) {
+//                   p->setXSingle(X_try);
+//                   X_next = X_try;
+//                   a = a_default;
+//                } else
+//                   a *= 0.5;
+//             }
+//          }
+//       }
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorReset << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 
 /* ------------------------------------------------------ */
 
@@ -226,12 +376,18 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::
       for (const auto &f : p->getFaces()) {
          auto [X0, X1, X2] = ToX(f->getPoints(p));
          X0 = current_pX;
-         W = std::log10(CircumradiusToInradius(X0, X1, X2) - 1.);
+         // W = std::log10(CircumradiusToInradius(X0, X1, X2));
+         W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);
+         W = std::clamp(W, 4., 20.);
+         /*
+         CircumradiusToInradius(X0, X1, X2)は最小で2なので，log2は1以上の値をとる．
+         */
          // W = std::log2(CircumradiusToInradius(X0, X1, X2));
+         // W = std::clamp(W, 1., 2.);
          Wtot += W;
          Xmid = (X2 + X1) * 0.5;
          vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-         height = Norm(X2 - X1) * std::sqrt(3) * 0.5;
+         height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
          FusedMultiplyIncrement(W, height * vertical + Xmid, V);
          // X = height * vertical + Xmid;
          // V += W * X;
@@ -241,10 +397,41 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::
       return V;
 };
 
-void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   for (auto i = 0; i < iteration; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
+Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<Tddd(const networkPoint *)> position) {
+   Tddd V = {0., 0., 0.};
+   if (!isEdgePoint(p)) {
+      Tddd X = {0., 0., 0.}, Xmid, vertical;
+      double Wtot = 0, W, height;
+      for (const auto &f : p->getFaces()) {
+         auto [_, p1, p2] = f->getPoints(p);
+         auto X0 = current_pX;
+         auto X1 = position(p1);
+         auto X2 = position(p2);
+         // W = std::log10(CircumradiusToInradius(X0, X1, X2));
+         W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);
+         W = std::clamp(W, 4., 20.);
+         /*
+         CircumradiusToInradius(X0, X1, X2)は最小で2なので，log2は1以上の値をとる．
+         */
+         // W = std::log2(CircumradiusToInradius(X0, X1, X2));
+         // W = std::clamp(W, 1., 2.);
+         Wtot += W;
+         Xmid = (X2 + X1) * 0.5;
+         vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+         height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
+         FusedMultiplyIncrement(W, height * vertical + Xmid, V);
+         // X = height * vertical + Xmid;
+         // V += W * X;
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
 };
+
+// void DistorsionMeasureWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+//    for (auto i = 0; i < iteration; ++i)
+//       for (const auto &p : ps) SmoothingPreserveShape(p, DistorsionMeasureWeightedSmoothingVector);
+// };
 
 /* ------------------------------------------------------ */
 
@@ -263,11 +450,11 @@ Tddd AreaWeightedSmoothingVector(const networkPoint *p, const std::array<double,
       return V;
 };
 
-void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   for (auto i = 0; i < iteration; ++i)
-      for (const auto &p : ps)
-         SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
-};
+// void AreaWeightedSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+//    for (auto i = 0; i < iteration; ++i)
+//       for (const auto &p : ps)
+//          SmoothingPreserveShape(p, AreaWeightedSmoothingVector);
+// };
 /* ------------------------------------------------------ */
 
 Tddd ArithmeticWeightedIncenterSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
@@ -289,10 +476,10 @@ Tddd ArithmeticWeightedIncenterSmoothingVector(const networkPoint *p, const std:
       return V;
 };
 
-void ArithmeticWeightedIncenterSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   for (auto i = 0; i < iteration; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedIncenterSmoothingVector);
-};
+// void ArithmeticWeightedIncenterSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+//    for (auto i = 0; i < iteration; ++i)
+//       for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedIncenterSmoothingVector);
+// };
 
 /* ------------------------------------------------------ */
 
@@ -306,10 +493,10 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<d
       return V;
 };
 
-void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
-   for (auto i = 0; i < iteration; ++i)
-      for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
-};
+// void LaplacianSmoothingPreserveShape(const auto &ps, const int iteration = 1) {
+//    for (auto i = 0; i < iteration; ++i)
+//       for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
+// };
 
 /* -------------------------------------------------------------------------- */
 
@@ -320,6 +507,21 @@ Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<doub
       for (const auto &q : p->getNeighbors()) {
          V += q->X;
          Wtot += 1.;
+      }
+      return V / Wtot - current_pX;
+   } else
+      return V;
+};
+
+Tddd TriangleCentroidAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+   Tddd V = {0., 0, 0.};
+   double Wtot = 0, W;
+   if (!isEdgePoint(p)) {
+      for (const auto &face : p->getFaces()) {
+         auto [X0, X1, X2] = ToX(face->getPoints(p));
+         X0 = current_pX;
+         Wtot += 1.;
+         V += W * Centroid(X0, X1, X2);
       }
       return V / Wtot - current_pX;
    } else
@@ -417,6 +619,59 @@ Tddd EquilateralVertexAveragingVector2(const networkPoint *p, const std::array<d
 
 /* ------------------------------------------------------ */
 
+void flipIf(networkPoint *p,
+            const Tdd &limit_Dirichlet,
+            const Tdd &limit_Neumann,
+            bool force = false,
+            int s_mean = 0) {
+   try {
+      auto [target_of_max_normal_diffD, acceptable_normal_change_by_flipD] = limit_Dirichlet;
+      auto [target_of_max_normal_diffN, acceptable_normal_change_by_flipN] = limit_Neumann;
+      // 2022/04/13こっちにBEMのmainから持ってきた
+      // std::cout << "flipIf" << std::endl;
+      for (auto &f : p->getFaces())
+         f->setGeometricProperties();
+
+      bool isfound = false;
+      int count = 0;
+      auto V = p->getLines();
+      // ランダムにソート
+      for (const auto &l : V) {
+         auto [p0, p1] = l->getPoints();
+         if (!l->CORNER) {
+            if (force) {
+               if (l->Dirichlet) {
+                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, s_mean == 0 ? 5 : s_mean);
+                  if (isfound) count++;
+               } else {
+                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, s_mean == 0 ? 5 : s_mean);
+                  if (isfound) count++;
+               }
+            } else {
+               if (l->Dirichlet) {
+                  //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
+                  if (isfound) count++;
+               } else {
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
+                  if (isfound) count++;
+               }
+            }
+         }
+      }
+      for (auto &f : p->getFaces())
+         f->setGeometricProperties();
+
+   } catch (std::exception &e) {
+      std::cerr << e.what() << colorReset << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+   };
+};
+
+void flipIf(networkPoint *p, const Tdd &limit, bool force = false, int iteration = 0) {
+   flipIf(p, limit, limit, force, iteration);
+};
+
 void flipIf(Network &water,
             const Tdd &limit_Dirichlet,
             const Tdd &limit_Neumann,
@@ -447,10 +702,10 @@ void flipIf(Network &water,
             } else {
                if (l->Dirichlet) {
                   //! 最小の変の数を３としている．もしこれを増やすと，柔軟に対応でいなくなる．特に角．
-                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 4);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
                   if (isfound) count++;
                }
             }
@@ -541,9 +796,6 @@ void LaplacianSmoothingIfOnStraightLine(V_netPp ps) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
-};
-double Distance(const Tddd &A, const Tddd &B) {
-   return Norm(A - B);
 };
 
 double Distance(const Tddd &X, const networkPoint *const p) {

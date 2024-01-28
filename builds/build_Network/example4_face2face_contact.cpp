@@ -1,87 +1,70 @@
 #include "Network.hpp"
 #include "vtkWriter.hpp"
 
-/*DOC_EXTRACT 0_4_face_to_face_contact
+/*
+DOC_EXTRACT 0_4_face_to_face_contact
 
-### 面同士の接触判定
+### 面と面の接触判定
 
 \ref{basic_geometry:IntersectQ}{`IntersectQ`}関数は，交差判定には使えるが，接触判定には使えない．
 
-接触は，ギリギリ交差している状態を指すだろうが，
-実際に接触判定を応用する場面では，
-交差していなくとも接触していると判定させたい場合が多いだろう．
-なので，接触判定条件はより緩く設定されることが多い．
+**オブジェクト同士の接触**をプログラム上で定義するなら，
+２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
+
+#### ２面の最短距離
+
+２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
+ただし，三角形が曲面を成している場合は違う．
+これには，$N_{vertex}*M_{triangle} + M_{vertex}*N_{triangle}$の計算量がかかり，
+また，この一つひとつの計算において，\ref{Nearest(const Tddd &X, const T3Tddd &abc)}{Nearest}のような計算を行う．
+
+この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
+
+ただし，頂点が面上にある場合など，特異な場合の処理には注意が必要である．
 
 ```shell
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example3_line_face_interaction.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face_interaction.cpp
 make
-./example3_line_face_interaction
+./example4_point2face_interaction
 ```
 
-![./example3/anim.gif](./example3/anim_faster.gif)
+
+![./example4/anim.gif](./example4/anim.gif)
 
 */
 
 std::string outdir = "./example4/";
-PVDWriter pvd_cube(outdir + "cube.pvd");
-PVDWriter pvd_cylinder(outdir + "cylinder.pvd");
-PVDWriter pvd_triangle(outdir + "triangle.pvd");
-PVDWriter pvd_sphere(outdir + "sphere.pvd");
-
 int main() {
 
-   auto center = new Network("./example4/center3.obj");
-   center->makeBucketFaces(center->getScale() / 10.);
-   auto cube = new Network("./example4/cube3.obj");
-   cube->makeBucketFaces(cube->getScale() / 10.);
-   auto cylinder = new Network("./example4/cylinder3.obj");
-   cylinder->makeBucketFaces(cylinder->getScale() / 10.);
-   auto triangle = new Network("./example4/triangle3.obj");
-   triangle->makeBucketFaces(triangle->getScale() / 10.);
-   auto sphere = new Network("./example4/sphere3.obj");
-   sphere->makeBucketFaces(sphere->getScale() / 10.);
+   auto obj = new Network("./bunny.obj");
+   //! 平均を原点に移動
+   obj->translate(-Mean(ToX(obj->getPoints())));
+   obj->resetInitialX();
+   for (const auto &f : obj->getFaces())
+      f->setGeometricProperties(ToX(f->setPoints()));  // @ face->Lines must have been determined
 
-   //! gradually move toward the x-direction
-   const int steps = 100;
-   const double distance = 0.2;
-   for (int i = 0; i < steps; i++) {
-      double x = -distance / steps;
-      cube->translate({x, 0, 0});
-      cylinder->translate({x, 0, 0});
-      triangle->translate({x, 0, 0});
-      sphere->translate({x, 0, 0});
+   //! バケツを作成し，点と面をバケツに保存する．
+   auto edge2edge = obj->getScale();
+   auto bucket_spacing = edge2edge / 10.;
+   obj->makeBucketPoints(bucket_spacing);
+   obj->makeBucketFaces(bucket_spacing);
 
-      {
-         std::string name = "cube" + std::to_string(i) + ".vtp";
-         std::ofstream ofs(outdir + name);
-         vtkPolygonWrite(ofs, cube->getFaces());
-         ofs.close();
-         pvd_cube.push(name, i);
-      }
-      {
-         std::string name = "cylinder" + std::to_string(i) + ".vtp";
-         std::ofstream ofs(outdir + name);
-         vtkPolygonWrite(ofs, cylinder->getFaces());
-         ofs.close();
-         pvd_cylinder.push(name, i);
-      }
-      {
-         std::string name = "triangle" + std::to_string(i) + ".vtp";
-         std::ofstream ofs(outdir + name);
-         vtkPolygonWrite(ofs, triangle->getFaces());
-         ofs.close();
-         pvd_triangle.push(name, i);
-      }
-      {
-         std::string name = "sphere" + std::to_string(i) + ".vtp";
-         std::ofstream ofs(outdir + name);
-         vtkPolygonWrite(ofs, sphere->getFaces());
-         ofs.close();
-         pvd_sphere.push(name, i);
-      }
+   int n = 20;
+   for (auto i = 0; i < n; i++) {
+      double q = 2 * M_PI / n * i;
+      auto formX = std::array<double, 3>{std::cos(q), std::sin(q), 0.};
+      auto closestX = obj->BucketFaces.findClosestPoint(formX);
+      std::string name = "points" + std::to_string(i) + ".vtp";
+      std::ofstream ofs(outdir + name);
+      vtkPolygonWrite(ofs, {(T2Tddd){fromX, closestX}});
+      ofs.close();
+      pvd2.push(name, i);
    }
-   pvd_cube.output();
-   pvd_cylinder.output();
-   pvd_triangle.output();
-   pvd_sphere.output();
+
+   std::ofstream ofs(outdir + "all_intersected_faces.vtp");
+   vtkPolygonWrite(ofs, all_intersected_faces);
+   ofs.close();
+
+   pvd.output();
+   pvd2.output();
 }

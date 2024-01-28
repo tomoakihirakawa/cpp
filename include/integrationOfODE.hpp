@@ -91,50 +91,50 @@ struct RungeKuttaCommon {
    double getNextTime() const { return getTime() + this->getdt(); };
    double get_dt() const { return this->getdt(); };
    double getdt() const {
-      // 次の計算は，t+dtを狙って計算することになる．
-      // ここでのdtを返す
-      if (this->steps == 1)
-         return dt_fixed;  //! 何もプッシュしていない初期状態
-      else if (this->steps == 2) {
-         switch (current_step) {
-            case 0:
-               return dt_fixed;
-            case 1:
-               return dt_fixed / 2.;
-            default:
-               return dt_fixed;
-         }
-      } else if (this->steps == 3) {
-         switch (current_step) {
-            case 0:  //! 何もプッシュしていない初期状態
-               return dt_fixed / 2.;
-            case 1:
-               return dt_fixed;
-            case 2:
-               return dt_fixed / 6.;
-            default:
-               return dt_fixed;
-         }
-      } else if (this->steps == 4) {
-         switch (current_step) {
-            case 0:  //! 何もプッシュしていない初期状態
-               return dt_fixed / 2.;
-            case 1:  // -> {f2, f1(t,v(t))}
-               return dt_fixed / 2.;
-            case 2:  // -> {f2, f1(t,v(t))}
-               return dt_fixed;
-            case 3:  // -> {f2, f1(t,v(t))}
-               return dt_fixed / 6.;
-            default:
-               return dt_fixed;
-         }
-      } else {
-         // show current step and steps
-         std::stringstream ss;
-         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
+      switch (this->steps) {
+         case 1:
+            return dt_fixed;
+
+         case 2:
+            switch (current_step) {
+               case 0:
+               case 1:
+                  return dt_fixed / 2.0;  // caes 0 and 1
+               default:
+                  return dt_fixed;
+            }
+
+         case 3:
+            switch (current_step) {
+               case 0:
+                  return dt_fixed / 2.0;
+               case 1:
+                  return dt_fixed;
+               case 2:
+                  return dt_fixed / 6.0;
+               default:
+                  return dt_fixed;
+            }
+
+         case 4:
+            switch (current_step) {
+               case 0:
+               case 1:
+                  return dt_fixed / 2.0;  // case 0 and 1
+               case 2:
+                  return dt_fixed;
+               case 3:
+                  return dt_fixed / 6.0;
+               default:
+                  return dt_fixed;
+            }
+
+         default:
+            std::stringstream ss;
+            ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
       }
-   };
+   }
 
    bool repush(const T &dXdt_IN) {
       if (current_step != 0) {
@@ -146,74 +146,76 @@ struct RungeKuttaCommon {
 
    bool push(const T &dXdt_IN) {
       _dX.push_back(dXdt_IN * dt_fixed);
-      if (this->steps == 1) {
-         switch (current_step++) {
-            case 0:  // -> {f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed);
-               return this->finished = true;
-            default:
-               std::stringstream ss;
-               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
-         }
-      } else if (this->steps == 2) {
-         switch (current_step++) {
-            case 0:  // -> {f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed);
-               return this->finished = false;
-            case 1:  // -> {f3, f2, f1(t,v(t))}
-               dX = (_dX[0] + _dX[1]) / 2.;
-               dt = dt_fixed;
-               return this->finished = true;
-            default:
-               std::stringstream ss;
-               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
-         }
-      } else if (this->steps == 3) {
-         switch (current_step++) {
-            case 0:  // -> {f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed / 2.);
-               return finished = false;
-            case 1:  // -> {f2, f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed);
-               return finished = false;
-            case 2:  // -> {f3, f2, f1(t,v(t))}
-               dX = (_dX[0] + 4. * _dX[1] + _dX[2]) / 6.;
-               dt = dt_fixed;
-               return finished = true;
-            default:
-               std::stringstream ss;
-               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
-         }
-      } else if (this->steps == 4) {
-         // \label{ODE:RungeKutta4}
-         switch (current_step++) {
-            case 0:  // -> {f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed / 2.);
-               return finished = false;
-            case 1:  // -> {f2, f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed / 2.);
-               return finished = false;
-            case 2:  // -> {f3, f2, f1(t,v(t))}
-               dX = dXdt_IN * (dt = dt_fixed);
-               return finished = false;
-            case 3:  // -> dXdt[1][] = {f4, f3, f2, f1(t,v(t))}
-               dX = (_dX[0] + 2. * _dX[1] + 2. * _dX[2] + _dX[3]) / 6.;
-               dt = dt_fixed;
-               return finished = true;
-            default:
-               std::stringstream ss;
-               ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
-         }
-      } else {
-         std::stringstream ss;
-         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
+
+      switch (this->steps) {
+         case 1:
+            switch (current_step++) {
+               case 0:
+                  dX = dXdt_IN * (dt = dt_fixed);
+                  return this->finished = true;
+               default:
+                  break;
+            }
+            break;
+
+         case 2:
+            switch (current_step++) {
+               case 0:
+                  dX = dXdt_IN * (dt = dt_fixed);
+                  return this->finished = false;
+               case 1:
+                  dX = (_dX[0] + _dX[1]) / 2.0;
+                  dt = dt_fixed;
+                  return this->finished = true;
+               default:
+                  break;
+            }
+            break;
+
+         case 3:
+            switch (current_step++) {
+               case 0:
+                  dX = dXdt_IN * (dt = dt_fixed / 2.0);
+                  return finished = false;
+               case 1:
+                  dX = dXdt_IN * (dt = dt_fixed);
+                  return finished = false;
+               case 2:
+                  dX = (_dX[0] + 4.0 * _dX[1] + _dX[2]) / 6.0;
+                  dt = dt_fixed;
+                  return finished = true;
+               default:
+                  break;
+            }
+            break;
+
+         case 4:
+            switch (current_step++) {
+               case 0:
+               case 1:
+                  dX = dXdt_IN * (dt = dt_fixed / 2.0);
+                  return finished = false;
+               case 2:
+                  dX = dXdt_IN * (dt = dt_fixed);
+                  return finished = false;
+               case 3:
+                  dX = (_dX[0] + 2.0 * _dX[1] + 2.0 * _dX[2] + _dX[3]) / 6.0;
+                  dt = dt_fixed;
+                  return finished = true;
+               default:
+                  break;
+            }
+            break;
+
+         default:
+            break;
       }
-   };
+
+      // If none of the cases are matched, throw an error
+      std::stringstream ss;
+      ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
+   }
 
    T get_U0_for_SPH() const {
       if (current_step == 0)
@@ -232,41 +234,92 @@ struct RungeKuttaCommon {
    /*            微分を与えて，次の時刻に使うべきXを返す            */
    /* ------------------------------------------------------ */
    T getX(const T &dXdt_IN) const {
-      if (this->steps == 1)
-         return this->Xinit + dXdt_IN * dt_fixed;  //! 何もプッシュしていない初期状態
-      else if (this->steps == 2) {
-         switch (current_step) {
-            case 0:  //! 何もプッシュしていない初期状態
-               return this->Xinit + dXdt_IN * dt_fixed;
-            default:
-               return this->Xinit + (_dX[0] + dXdt_IN * dt_fixed) / 2.;
-         }
-      } else if (this->steps == 3) {
-         switch (current_step) {
-            case 0:  //! 何もプッシュしていない初期状態
-               return this->Xinit + dXdt_IN * dt_fixed / 2.;
-            case 1:  // -> {f2, f1(t,v(t))}
-               return this->Xinit + dXdt_IN * dt_fixed;
-            default:
-               return this->Xinit + (_dX[0] + 4. * _dX[1] + dXdt_IN * dt_fixed) / 6.;
-         }
-      } else if (this->steps == 4) {
-         switch (current_step) {
-            case 0:  //! 何もプッシュしていない初期状態
-               return this->Xinit + dXdt_IN * dt_fixed / 2.;
-            case 1:  // -> {f2, f1(t,v(t))}
-               return this->Xinit + dXdt_IN * dt_fixed / 2.;
-            case 2:  // -> {f3, f2, f1(t,v(t))}
-               return this->Xinit + dXdt_IN * dt_fixed;
-            default:  // -> {f3, f2, f1(t,v(t))}
-               return this->Xinit + (_dX[0] + 2. * _dX[1] + 2. * _dX[2] + dXdt_IN * dt_fixed) / 6.;
-         }
-      } else {
-         std::stringstream ss;
-         ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "必要以上に微分をプッシュしている．current_step/steps=" + ss.str());
+      switch (this->steps) {
+         case 1:
+            return this->Xinit + dXdt_IN * dt_fixed;
+
+         case 2:
+            switch (current_step) {
+               case 0:
+                  return this->Xinit + dXdt_IN * dt_fixed;
+               default:
+                  return this->Xinit + (_dX[0] + dXdt_IN * dt_fixed) / 2.0;
+            }
+
+         case 3:
+            switch (current_step) {
+               case 0:
+                  return this->Xinit + dXdt_IN * dt_fixed / 2.0;
+               case 1:
+                  return this->Xinit + dXdt_IN * dt_fixed;
+               default:
+                  return this->Xinit + (_dX[0] + 4.0 * _dX[1] + dXdt_IN * dt_fixed) / 6.0;
+            }
+
+         case 4:
+            switch (current_step) {
+               case 0:
+               case 1:
+                  return this->Xinit + dXdt_IN * dt_fixed / 2.0;
+               case 2:
+                  return this->Xinit + dXdt_IN * dt_fixed;
+               default:
+                  return this->Xinit + (_dX[0] + 2.0 * _dX[1] + 2.0 * _dX[2] + dXdt_IN * dt_fixed) / 6.0;
+            }
+
+         default:
+            std::stringstream ss;
+            ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
       }
-   };
+   }
+
+   /* -------------------------------------------------------------------------- */
+
+   //! QUERY: THE VECTOR TO BE ADDED TO THE ORIGINAL VECTOR TO REACH THE GIVEN POSITION AT THE NEXT TIME STEP
+
+   // dXdt_IN == ((position - this->Xinit)*6.0 - (_dX[0] + 2.0 * _dX[1] + 2.0 * _dX[2])) dt_fixed
+
+   T getVectorToReachAtNextTimeQ(const T &positoin) const {
+      switch (this->steps) {
+         case 1:
+            return (positoin - this->Xinit) / dt_fixed;
+
+         case 2:
+            switch (current_step) {
+               case 0:
+                  return (positoin - this->Xinit) / dt_fixed;
+               default:
+                  return ((positoin - this->Xinit) * 2.0 - _dX[0]) / dt_fixed;
+            }
+         case 3:
+            switch (current_step) {
+               case 0:
+                  return (positoin - this->Xinit) * 2.0 / dt_fixed;
+               case 1:
+                  return (positoin - this->Xinit) / dt_fixed;
+               default:
+                  return ((positoin - this->Xinit) * 6.0 - (_dX[0] + 4.0 * _dX[1])) / dt_fixed;
+            }
+         case 4:
+            switch (current_step) {
+               case 0:
+               case 1:
+                  return (positoin - this->Xinit) * 2.0 / dt_fixed;
+               case 2:
+                  return (positoin - this->Xinit) / dt_fixed;
+               default:
+                  return ((positoin - this->Xinit) * 6.0 - (_dX[0] + 2.0 * _dX[1] + 2.0 * _dX[2])) / dt_fixed;
+            }
+
+         default:
+            std::stringstream ss;
+            ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
+      }
+   }
+
+   /* -------------------------------------------------------------------------- */
 
    T getdXdt(const T &dXdt_IN) const {
       if (this->steps == 1)

@@ -90,7 +90,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, double t) {
    auto g = _GRAVITY_;
-   if (name == "Goring1979") {
+   if (name.contains("Goring1979")) {
       double h = 0.25;
       double H = 0.1 * h;  // 造波する初期入射波の波高
       double x = 0;
@@ -99,7 +99,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       double start = std::stod(strings[1] /*start*/);
       double eta = H * std::pow(1. / std::cosh(kappa * (-c * (t - start))), 2.);
       return {c * eta / (h + eta), 0., 0., 0, 0, 0};
-   } else if (name == "Retzler2000") {
+   } else if (name.contains("Retzler2000")) {
       const std::vector<Tdd> sample = {
           {-0.15000000000000002, 0.},
           {-0.11, 0.},
@@ -147,7 +147,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       auto [time, value] = Transpose(sample);
       const auto intp = InterpolationBspline(3, time, value);
       return {intp(t - start), 0., 0., 0., 0., 0.};
-   } else if (name == "Chaplin2000") {
+   } else if (name.contains("Chaplin2000")) {
       double start = std::stod(strings[1] /*start*/);
       if (t < start)
          return {0., 0., 0., 0., 0., 0.};
@@ -507,7 +507,8 @@ Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
 
 Tddd grad_phi_tangential(const networkFace *const f) {
    auto [p0, p1, p2] = f->getPoints();
-   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}}, T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}},
+                                       T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
 };
 
 T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
@@ -553,6 +554,7 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 ```math
 \nabla \phi_{\parallel} = \frac{\bf n}{2A} \times (({\bf x}_2 - {\bf x}_1) \phi_0 +({\bf x}_0 - {\bf x}_2) \phi_1 + ({\bf x}_1 - {\bf x}_0) \phi_2)
+\\= \frac{\bf n}{2A} \times (({\bf x}_0,{\bf x}_1,{\bf x}_2)\cdot(\phi_1-\phi_2,\phi_2-\phi_0,\phi_0-\phi_1))
 ```
 
 三角要素上の流速$`\nabla \phi`$は，次のように計算する．
@@ -596,6 +598,27 @@ Tddd gradPhi(const networkPoint *const p) {
    for (const auto &f : p->getFaces()) {
 
       u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+
+      V.emplace_back(u);
+#if defined(use_angle_weigted_normal)
+      W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
+#elif defined(use_area_weigted_normal)
+      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+#else
+      W.push_back(f->Dirichlet ? 10 : 1.);
+#endif
+   }
+   return optimumVector(V, {0., 0., 0.}, W);
+   // return optimumVector(V, {0., 0., 0.});
+};
+
+Tddd gradPhi(const networkPoint *const p, const double coeff_for_phin) {
+   Tddd u;
+   V_Tddd V;
+   V_d W;
+   for (const auto &f : p->getFaces()) {
+
+      u = grad_phi_tangential(f) + coeff_for_phin * getPhin(p, f) * f->normal;
 
       V.emplace_back(u);
 #if defined(use_angle_weigted_normal)

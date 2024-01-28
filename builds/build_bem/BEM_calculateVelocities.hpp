@@ -8,25 +8,6 @@
 //$                         calculateVecToSurface                              */
 //$ -------------------------------------------------------------------------- */
 
-Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM + p->vecToSurface / p->RK_X.getdt()); };
-Tddd RK_with_Ubuff(const networkPoint *p, const Tddd &vecToSurface) { return p->RK_X.getX(p->U_update_BEM + vecToSurface / p->RK_X.getdt()); };
-T3Tddd RK_with_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}; };
-T3Tddd RK_with_Ubuff(const T_PPP &p012) { return {RK_with_Ubuff(p012[0]), RK_with_Ubuff(p012[1]), RK_with_Ubuff(p012[2])}; };
-T3Tddd RK_with_Ubuff(const networkFace *f) { return RK_with_Ubuff(f->getPoints()); };
-Tddd RK_with_Ubuff_Normal(const networkFace *f) { return TriangleNormal(RK_with_Ubuff(f->getPoints())); };
-double RK_with_Ubuff_Area(const networkFace *f) { return TriangleArea(RK_with_Ubuff(f->getPoints())); };
-Tddd RK_with_Ubuff_Normal(const networkPoint *p) {
-   Tddd normal = {0., 0., 0.};
-   double a = 0, total = 0;
-   for (const auto &f : p->getFaces()) {
-      a = RK_with_Ubuff_Area(f);
-      // normal += a * RK_with_Ubuff_Normal(f);
-      FusedMultiplyIncrement(a, RK_with_Ubuff_Normal(f), normal);
-      total += a;
-   }
-   return Normalize(normal / total);
-};
-
 Tddd RK_without_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM); };
 T3Tddd RK_without_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2)}; };
 T3Tddd RK_without_Ubuff(const T_PPP &p012) { return RK_without_Ubuff(std::get<0>(p012), std::get<1>(p012), std::get<2>(p012)); };
@@ -61,6 +42,34 @@ Tddd getNextNormalNeumann_BEM(const networkPoint *p) {
       a = TriangleArea(RK_without_Ubuff(f));
       // normal += a * RK_without_Ubuff_Normal(f);
       FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
+      total += a;
+   }
+   return Normalize(normal / total);
+};
+
+// Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM + p->vecToSurface / p->RK_X.getdt()); };
+Tddd RK_with_Ubuff(const networkPoint *p) {
+   // return p->RK_X.toReachAtNextTimeQ(p->RK_X.getX(p->U_update_BEM) + p->vecToSurface);
+   const auto U = p->RK_X.getVectorToReachAtNextTimeQ(RK_without_Ubuff(p) + p->vecToSurface);
+   return p->RK_X.getX(U);
+};
+Tddd RK_with_Ubuff(const networkPoint *p, const Tddd &vecToSurface) {
+   // return p->RK_X.getX(p->U_update_BEM + vecToSurface / p->RK_X.getdt());
+   const auto U = p->RK_X.getVectorToReachAtNextTimeQ(RK_without_Ubuff(p) + vecToSurface);
+   return p->RK_X.getX(U);
+};
+T3Tddd RK_with_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}; };
+T3Tddd RK_with_Ubuff(const T_PPP &p012) { return {RK_with_Ubuff(p012[0]), RK_with_Ubuff(p012[1]), RK_with_Ubuff(p012[2])}; };
+T3Tddd RK_with_Ubuff(const networkFace *f) { return RK_with_Ubuff(f->getPoints()); };
+Tddd RK_with_Ubuff_Normal(const networkFace *f) { return TriangleNormal(RK_with_Ubuff(f->getPoints())); };
+double RK_with_Ubuff_Area(const networkFace *f) { return TriangleArea(RK_with_Ubuff(f->getPoints())); };
+Tddd RK_with_Ubuff_Normal(const networkPoint *p) {
+   Tddd normal = {0., 0., 0.};
+   double a = 0, total = 0;
+   for (const auto &f : p->getFaces()) {
+      a = RK_with_Ubuff_Area(f);
+      // normal += a * RK_with_Ubuff_Normal(f);
+      FusedMultiplyIncrement(a, RK_with_Ubuff_Normal(f), normal);
       total += a;
    }
    return Normalize(normal / total);
@@ -233,7 +242,14 @@ Tddd vectorToNextSurface(const networkPoint *p) {
 
 /*DOC_EXTRACT 0_3_1_INITIAL_VALUE_PROBLEM
 
-### 修正流速（激しい波の計算では格子が歪になりやすく，これがないと計算が難しい）
+### Arbitrary Lagrangian–Eulerian Methods (ALE)
+
+水面を移動する物体が存在する場合，格子が潰れてしまうため，何らかの方法で格子を綺麗に保たなければ，長時間の計算は不可能である．
+その方法の一つが，節点の位置を流速$`\nabla \phi`$ではなく任意のベクトル$`{\bf v}`$で移動させる，ALEである．
+$`{\bf v}`$で移動する節点位置を$`\boldsymbol{\chi}(t)`$と置くと，
+$`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\nabla\phi\cdot\nabla\phi`$の代わりに，
+$`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \cdot\nabla\phi,\frac{d\boldsymbol\chi}{dt} = \bf v`$
+を使って$`\phi`$を時間発展させると次時刻の節点位置$`\boldsymbol{\chi}(t+\delta t)`$での$`\phi`$が得られる．
 
 ディリクレ節点（水面）：
 
@@ -260,60 +276,59 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       p->vecToSurface.fill(0.);
    }
 
+   //! 要素を整えるためのベクトル
    auto addVectorTangentialShift = [&](const int k = 0) {
       // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
       // gradually approching to given a
-      double aIN = coef, a;
-      //! ここを0.5とすると角が壊れる
-      double scale = aIN * ((k + 1) / (double)(loop));
-      // const double scale = aIN;
-      // if (scale < 0.0001)
-      //    scale = 0.0001;
+      if (coef > 0.) {
+         double aIN = coef, a;
+         double scale = aIN * ((k + 1) / (double)(loop));
+         //! ここを0.5とすると角が壊れる
+         // const double scale = aIN;
+         // if (scale < 0.0001)
+         //    scale = 0.0001;
 #pragma omp parallel
-      for (const auto &p : points)
+         for (const auto &p : points)
 #pragma omp single nowait
-      {
-         // double scale;
-         // if (p->isMultipleNode && !p->CORNER)
-         //    scale = a;
-         // else if (p->Neumann)
-         //    scale = a;
-         // else
-         // scale = a;
-
-         // if (k < 3) {
-         //    auto V = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-         //    p->vecToSurface_BUFFER = condition_Ua(V, p);
-         // } else
          {
-            /* ----------------------------------- OLD ---------------------------------- */
-            // auto V0 = scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            // auto V1 = scale * DistorsionMeasureWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-            // double a = 0.5;
-            // auto V = (1. - a) * V0 + a * V1;
-            /* ----------------------------------- NEW ---------------------------------- */
             auto X = RK_with_Ubuff(p);
-            // auto V = (NeighborAverageSmoothingVector(p, X) + IncenterAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X)) / 3.;
-            // auto V = (NeighborAverageSmoothingVector(p, X) + IncenterAverageSmoothingVector(p, X)+ DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
-            // auto V = (NeighborAverageSmoothingVector(p, X) + EquilateralVertexAveragingVector(p, X, [&](const auto f) { return f->Dirichlet ? 1. : 0.5; })) / 2.;
-            // auto V = (NeighborAverageSmoothingVector(p, X) + TriangleAreaAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 3.;
-            auto V = (NeighborAverageSmoothingVector(p, X)+ DistorsionMeasureWeightedSmoothingVector(p, X)) / 2.;
-            // std::cout << "angle_coeff = " << angle_coeff << std::endl;
+            // auto V = (NeighborAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 10.;
+            // auto V = DistorsionMeasureWeightedSmoothingVector(p, X) / 10.;
+
+            auto V = DistorsionMeasureWeightedSmoothingVector(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
+
+            double C = 0;
+            double size = 0.;
+            for (const auto &f : p->getFaces()) {
+               auto [p0, p1, p2] = f->getPoints();
+               C += Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2));
+               size += 1.;
+            }
+            V /= 10.;
+            C /= size;
+            C /= 10;
+
+            if (Norm(V) > C)
+               V = C * Normalize(V);
+            if (!isFinite(V))
+               V.fill(0.);
+
             double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
-            if (flatness > 0.1) 
+            if (flatness > 0.1)
                flatness = 1.;
             V = scale * V * flatness;
             /* -------------------------------------------------------------------------- */
             p->vecToSurface_BUFFER = condition_Ua(V, p);
+            // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
          }
-         // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
-      }
-      for (const auto &p : points) {
-         add_vecToSurface_BUFFER_to_vecToSurface(p);
-         p->vecToSurface_BUFFER.fill(0.);
+         for (const auto &p : points) {
+            add_vecToSurface_BUFFER_to_vecToSurface(p);
+            p->vecToSurface_BUFFER.fill(0.);
+         }
       }
    };
 
+   //! 構造物に貼り付けるためのベクトル
    auto addVectorToNextSurface = [&]() {
 #pragma omp parallel
       for (const auto &p : points)
@@ -328,10 +343,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
 
    TimeWatch watch;
    for (auto kk = 0; kk < loop; ++kk) {
-      // if (do_shift) {
-      // for (auto i = 0; i < 10; ++i)
       addVectorTangentialShift(kk);  // repeating this may led surface detaching
-      // }
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
@@ -355,7 +367,7 @@ void calculateCurrentVelocities(const Network &net) {
    }
 }
 
-void calculateCurrentUpdateVelocities(const Network &net, const int loop, const bool do_shift = true) {
+void calculateCurrentUpdateVelocities(const Network &net, const int loop, const double coef = 0.1) {
 
    for (const auto &p : net.getPoints()) {
       if (!isFinite(p->U_update_BEM)) {
@@ -370,14 +382,11 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
       }
    }
 
-   double coef = 0.1;
    calculateVecToSurface(net, loop, coef);
-
-   // check if there is any NaN
-   const double too_fast = 1E+10;
+   const double too_fast = 1E+13;
    for (auto i = 0; i < 10; ++i) {
       if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
-         calculateVecToSurface(net, loop, 0.1 * std::pow(0.1, i));
+         calculateVecToSurface(net, loop, coef * std::pow(0.1, i));
    }
 
    if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
@@ -386,18 +395,19 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
 
    for (const auto &p : net.getPoints()) {
       // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
-      auto U_update_BEM = p->U_update_BEM + p->vecToSurface / p->RK_X.getdt();
-      if (!isFinite(U_update_BEM, too_fast) || !isFinite(p->vecToSurface, too_fast)) {
-         std::cout << "p->X = " << p->X << std::endl;
-         std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
-         std::cout << "p->U_update_BEM = " << U_update_BEM << std::endl;
-         std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
-         std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
-         std::cout << "p->Neumann = " << p->Neumann << std::endl;
-         std::cout << "p->CORNER = " << p->CORNER << std::endl;
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      } else
-         p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
+      // auto U_update_BEM = p->U_update_BEM + p->vecToSurface / p->RK_X.getdt();
+      // if (!isFinite(U_update_BEM, too_fast) || !isFinite(p->vecToSurface, too_fast)) {
+      //    std::cout << "p->X = " << p->X << std::endl;
+      //    std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
+      //    std::cout << "p->U_update_BEM = " << U_update_BEM << std::endl;
+      //    std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
+      //    std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
+      //    std::cout << "p->Neumann = " << p->Neumann << std::endl;
+      //    std::cout << "p->CORNER = " << p->CORNER << std::endl;
+      //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+      // } else
+      //    p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
+      p->U_update_BEM = p->RK_X.getVectorToReachAtNextTimeQ(p->vecToSurface + RK_without_Ubuff(p));
    }
 }
 

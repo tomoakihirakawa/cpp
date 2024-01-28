@@ -1,0 +1,17 @@
+{
+    "max_dt": 0.02,
+    "end_time_step": 10000,
+    "end_time": 9,
+    "output_directory": "/Users/tomoaki/BEM/Cheng2018meshD_H0d04_T1d2_piston_positive",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json"
+    ]
+}

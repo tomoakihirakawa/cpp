@@ -27,196 +27,203 @@ def IO_dir(id):
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
 
-SimulationCase = "Lobovsky2013_small"
+SimulationCase = "static_pressure"
 id = ""
-match SimulationCase:
-    case "static_pressure":
 
-        objfolder = program_home + "/cpp/obj/SPH/open_closed_tank"
+if len(sys.argv) > 1:
+    # If a value is passed, use it
+    SimulationCase = sys.argv[1]
+    print(f"Value passed from command line: {SimulationCase}")
+else:
+    # Default action if no value is passed
+    print("No value passed. Executing default action.")
 
-        water = {"name": "water",
-                 "type": "Fluid",
-                 "objfile": objfolder + "/water.obj"}
+if "static_pressure" in SimulationCase:
 
-        wavetank = {"name": "wavetank",
-                    "type": "RigidBody",
-                    "objfile": objfolder + "/open_tank.obj"}
+    objfolder = program_home + "/cpp/obj/SPH/open_closed_tank"
 
-        object = {"name": "object",
-                  "type": "RigidBody",
-                  "velocity": "floating",
-                  "objfile": objfolder + "/object.obj"}
+    water = {"name": "water",
+                "type": "Fluid",
+                "objfile": objfolder + "/water.obj"}
 
-        input_files = [wavetank, water]
-
-        particle_spacing = 0.02
-
-        setting = {"RK_order": 1,
-                   "max_dt": particle_spacing/10,
-                   "CSML": 2.8,
-                   "end_time_step": 1000000,
-                   "end_time": 10,
-                   "initial_surface_z_position": 0.1,
-                   "particle_spacing": particle_spacing}
-
-        id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") 
-        # \                   + "_WITHOUT_CORRECTION"
-
-        generate_input_files(input_files, setting,IO_dir, id)
-
-    case "Lobovsky2013":
-
-        objfolder = program_home + "/cpp/obj/Lobovsky2013/original"
-
-        H = 0.3
-        
-        water = {"name": "water",
-                 "type": "Fluid",
-                 "objfile": objfolder + "/water"+"H"+str(H).replace(".", "d")+".obj"}
-
-        gate = {"name": "gate",
+    wavetank = {"name": "wavetank",
                 "type": "RigidBody",
-                "inactivate" : [0.001, 1000.],
-                "objfile": objfolder + "/gate.obj"}
+                "objfile": objfolder + "/open_tank.obj"}
 
-        wavetank = {"name": "wavetank",
-                    "type": "RigidBody",
-                    "objfile": objfolder + "/tank.obj"}
-
-        sensor1 = {"name": "sensor1",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 3 / 1000.]}
-
-        sensor2 = {"name": "sensor2",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 15 / 1000.]}
-
-        sensor2L = {"name": "sensor2L",
-                    "type": "probe",
-                    "location": [1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.]}
-
-        sensor3 = {"name": "sensor3",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 30 / 1000.]}
-
-        sensor4 = {"name": "sensor4",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
-
-        input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
-
-        setting = {"RK_order": 1,
-                   "max_dt": 0.0002,
-                   "end_time_step": 2000*5,
-                   "end_time": 5,
-                   "CSML": 2.5,
-                   "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.02}
-
-        id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
-                            + "_CSML" + str(setting["CSML"]).replace(".", "d")\
-                            + "_RK" + str(setting["RK_order"])
-
-        generate_input_files(input_files, setting, IO_dir, id)
-
-    case "Lobovsky2013_small":
-
-        objfolder = program_home + "/cpp/obj/Lobovsky2013_small"
-
-        H = 0.3
-        
-        water = {"name": "water",
-                 "type": "Fluid",
-                 "objfile": objfolder + "/water"+"H"+str(H).replace(".", "d")+".obj"}
-
-        gate = {"name": "gate",
+    object = {"name": "object",
                 "type": "RigidBody",
-                "inactivate" : [0.001, 1000.],
-                "objfile": objfolder + "/gate.obj"}
+                "velocity": "floating",
+                "objfile": objfolder + "/object.obj"}
 
-        wavetank = {"name": "wavetank",
-                    "type": "RigidBody",
-                    "objfile": objfolder + "/tank.obj"}
+    input_files = [wavetank, water]
 
-        sensor1 = {"name": "sensor1",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 3 / 1000.]}
+    particle_spacing = 0.02
 
-        sensor2 = {"name": "sensor2",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 15 / 1000.]}
+    setting = {"RK_order": 1,
+                "max_dt": particle_spacing/10,
+                "CSML": 2.8,
+                "end_time_step": 1000000,
+                "end_time": 10,
+                "initial_surface_z_position": 0.1,
+                "particle_spacing": particle_spacing}
 
-        sensor2L = {"name": "sensor2L",
-                    "type": "probe",
-                    "location": [1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.]}
+    id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") 
+    # \                   + "_WITHOUT_CORRECTION"
 
-        sensor3 = {"name": "sensor3",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 30 / 1000.]}
+    generate_input_files(input_files, setting,IO_dir, id)
 
-        sensor4 = {"name": "sensor4",
-                   "type": "probe",
-                   "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
+elif "Lobovsky2013" in SimulationCase:
 
-        input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
+    objfolder = program_home + "/cpp/obj/Lobovsky2013/original"
 
-        setting = {"RK_order": 1,
-                   "max_dt": 0.0005,
-                   "end_time_step": 100000*5,
-                   "end_time": 5,
-                   "CSML": 2.5,
-                   "initial_surface_z_position": 0.6,
-                   "particle_spacing": 0.02}
+    H = 0.3
+    
+    water = {"name": "water",
+                "type": "Fluid",
+                "objfile": objfolder + "/water"+"H"+str(H).replace(".", "d")+".obj"}
 
-        id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
-                            + "_CSML" + str(setting["CSML"]).replace(".", "d")\
-                            + "_RK" + str(setting["RK_order"])
+    gate = {"name": "gate",
+            "type": "RigidBody",
+            "inactivate" : [0.001, 1000.],
+            "objfile": objfolder + "/gate.obj"}
 
-        generate_input_files(input_files, setting, IO_dir, id)
-
-
-    case "Kamra2019":
-
-        id = "_square"
-
-        objfolder = program_home + "/cpp/obj/Kamra2019"
-
-        water = {"name": "water",
-                 "type": "Fluid",
-                 "objfile": objfolder + "/water.obj"}
-
-        wall = {"name": "wall",
+    wavetank = {"name": "wavetank",
                 "type": "RigidBody",
-                "inactivate" : [0.0001, 1000.],
-                "objfile": objfolder + "/wall.obj"}
+                "objfile": objfolder + "/tank.obj"}
 
-        wavetank = {"name": "tank",
-                    "type": "RigidBody",
-                    "objfile": objfolder + "/tank"+id+".obj"}
+    sensor1 = {"name": "sensor1",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 3 / 1000.]}
 
-        sensor1 = {"name": "sensor1",
-                   "type": "probe",
-                   "location": [0.6, 0.1, 0.011]}
+    sensor2 = {"name": "sensor2",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 15 / 1000.]}
 
-        sensor2 = {"name": "sensor2",
-                   "type": "probe",
-                   "location": [0.8, 0.1, 0.004]}
+    sensor2L = {"name": "sensor2L",
+                "type": "probe",
+                "location": [1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.]}
 
-        # input_files = [wavetank, water, wall, sensor1, sensor2]
+    sensor3 = {"name": "sensor3",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 30 / 1000.]}
 
-        input_files = [wavetank, water, sensor1, sensor2]
+    sensor4 = {"name": "sensor4",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
 
-        setting = {"RK_order": 1,  # \label{SPH:RK_order}
-                   "max_dt": 0.0005,
-                   "end_time_step": 100000,
-                   "end_time": 4.,
-                   "CSML": 2.4,
-                   "initial_surface_z_position": 0.2,
-                   "particle_spacing": 0.015}
+    input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
-        id = SimulationCase + id \
-                            + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
-                            + "_CSML" + str(setting["CSML"]).replace(".", "d")\
-                            + "_RK" + str(setting["RK_order"])
+    setting = {"RK_order": 1,
+                "max_dt": 0.0002,
+                "end_time_step": 2000*5,
+                "end_time": 5,
+                "CSML": 2.8,
+                "initial_surface_z_position": 0.6,
+                "particle_spacing": 0.015}
 
-        generate_input_files(input_files, setting, IO_dir, id)
+    id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
+                        + "_CSML" + str(setting["CSML"]).replace(".", "d")\
+                        + "_RK" + str(setting["RK_order"])
+
+    generate_input_files(input_files, setting, IO_dir, id)
+
+elif "Lobovsky2013_small" in SimulationCase:
+
+    objfolder = program_home + "/cpp/obj/Lobovsky2013_small"
+
+    H = 0.3
+    
+    water = {"name": "water",
+                "type": "Fluid",
+                "objfile": objfolder + "/water"+"H"+str(H).replace(".", "d")+".obj"}
+
+    gate = {"name": "gate",
+            "type": "RigidBody",
+            "inactivate" : [0.001, 1000.],
+            "objfile": objfolder + "/gate.obj"}
+
+    wavetank = {"name": "wavetank",
+                "type": "RigidBody",
+                "objfile": objfolder + "/tank.obj"}
+
+    sensor1 = {"name": "sensor1",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 3 / 1000.]}
+
+    sensor2 = {"name": "sensor2",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 15 / 1000.]}
+
+    sensor2L = {"name": "sensor2L",
+                "type": "probe",
+                "location": [1610 / 1000., (150 - 37.5) / 2. / 1000., 15 / 1000.]}
+
+    sensor3 = {"name": "sensor3",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 30 / 1000.]}
+
+    sensor4 = {"name": "sensor4",
+                "type": "probe",
+                "location": [1610 / 1000., 150 / 2. / 1000., 80 / 1000.]}
+
+    input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
+
+    setting = {"RK_order": 1,
+                "max_dt": 0.0004,
+                "end_time_step": 100000*5,
+                "end_time": 5,
+                "CSML": 2.5,
+                "initial_surface_z_position": 0.6,
+                "particle_spacing": 0.018}
+
+    id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
+                        + "_CSML" + str(setting["CSML"]).replace(".", "d")\
+                        + "_RK" + str(setting["RK_order"])
+
+    generate_input_files(input_files, setting, IO_dir, id)
+
+elif "Kamra2019" in SimulationCase:
+
+    id = "_square"
+
+    objfolder = program_home + "/cpp/obj/Kamra2019"
+
+    water = {"name": "water",
+                "type": "Fluid",
+                "objfile": objfolder + "/water.obj"}
+
+    wall = {"name": "wall",
+            "type": "RigidBody",
+            "inactivate" : [0.0001, 1000.],
+            "objfile": objfolder + "/wall.obj"}
+
+    wavetank = {"name": "tank",
+                "type": "RigidBody",
+                "objfile": objfolder + "/tank"+id+".obj"}
+
+    sensor1 = {"name": "sensor1",
+                "type": "probe",
+                "location": [0.6, 0.1, 0.011]}
+
+    sensor2 = {"name": "sensor2",
+                "type": "probe",
+                "location": [0.8, 0.1, 0.004]}
+
+    # input_files = [wavetank, water, wall, sensor1, sensor2]
+
+    input_files = [wavetank, water, sensor1, sensor2]
+
+    setting = {"RK_order": 1,  # \label{SPH:RK_order}
+                "max_dt": 0.0005,
+                "end_time_step": 100000,
+                "end_time": 4.,
+                "CSML": 3.,
+                "initial_surface_z_position": 0.2,
+                "particle_spacing": 0.0075}
+
+    id = SimulationCase + id \
+                        + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
+                        + "_CSML" + str(setting["CSML"]).replace(".", "d")\
+                        + "_RK" + str(setting["RK_order"])
+
+    generate_input_files(input_files, setting, IO_dir, id)

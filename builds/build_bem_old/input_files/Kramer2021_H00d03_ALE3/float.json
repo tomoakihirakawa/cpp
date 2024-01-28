@@ -1,0 +1,25 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": [
+        "floating",
+        0.02
+    ],
+    "mass": 7.056,
+    "COM": [
+        0.0,
+        0.0,
+        0.93
+    ],
+    "radius_of_gyration": [
+        10000000000,
+        10000000000,
+        10000000000
+    ],
+    "MOI": [
+        7.056e+20,
+        7.056e+20,
+        7.056e+20
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Kramer2021_01D_small/sphere2.obj"
+}
