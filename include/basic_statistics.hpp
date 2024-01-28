@@ -5,18 +5,28 @@
 #include <vector>
 #include "basic_vectors.hpp"
 /* ------------------------------------------------------ */
-double Variance(const V_d &v) {
-   double ret(0);
-   for (const auto &w : v)
-      ret += w * w;
-   return ret / (v.size()) - std::pow(Mean(v), 2.);
+double Variance(const V_d &V) {
+   if (V.empty())
+      return 0.;
+   double sum_of_squares = 0., total = 0., sum_of_variance = 0.;
+   for (const auto &w : V)
+      total += w;
+   double mean = total / V.size();
+   for (const auto &w : V)
+      sum_of_variance += std::pow(w - mean, 2);
+   return sum_of_variance / V.size();
 };
 
-double Variance(const T4d &V) {
-   double ret = 0, count = 0, sum = 0;
-   std::ranges::for_each(V, [&](const auto &v) { sum += v; ret += v * v; count+=1.; });
-   return ret / count - std::pow(sum / count, 2.);
-};
+template <std::size_t N>
+double Variance(const std::array<double, N> &V) {
+   double sum_of_squares = 0., total = 0., sum_of_variance = 0.;
+   for (const auto &w : V)
+      total += w;
+   double mean = total / N;
+   for (const auto &w : V)
+      sum_of_variance += std::pow(w - mean, 2);
+   return sum_of_variance / N;
+}
 
 template <typename T>
 double RootMeanSquare(const T &TUPLE) {
@@ -24,7 +34,35 @@ double RootMeanSquare(const T &TUPLE) {
    for_each(TUPLE, [&](const auto &t) { ret += t * t; div += 1.; });
    return std::sqrt(ret / div);
 };
+
 /* ------------------------------------------------------ */
+
+/*DOC_EXTRACT
+
+与えられたデータの数によって`sturges = log2(n) + 1`となるようにbinの数を決める．
+
+| Vector             | Length Description                    | Meaning                                                    |
+|--------------------|--------------------------------------|------------------------------------------------------------|
+| `data`             | Length = n (total data points)       | Sorted raw data points.                                    |
+| `bins`             | Length = sturges                     | Groups of data points within specific ranges.              |
+| `count`            | Length = sturges                     | Number of data points in each bin.                         |
+| `cumulative_count` | Length = sturges                     | Running total of data points up to each bin.               |
+| `interval`         | Length = sturges + 1                 | Boundary values of each bin.                               |
+| `mid_interval`     | Length = sturges                     | Midpoint value of each bin's range.                        |
+| `diff`             | Length = sturges - 1                 | Difference in counts between consecutive bins.             |
+| `diffdiff`         | Length = sturges - 2                 | Difference between consecutive `diff` values.              |
+| `cumulative`       | Length = sturges                     | Cumulative distribution percentage up to each bin.         |
+
+- **Data (`data`)**: The starting point, representing the original, sorted dataset.
+- **Bins (`bins`)**: Containers that divide the entire range of data into equal intervals.
+- **Count (`count`)**: Reflects the frequency of data points in each bin.
+- **Cumulative Count (`cumulative_count`)**: Shows the accumulation of data points up to each bin, useful for understanding data distribution.
+- **Interval (`interval`)**: Defines the range of each bin. It's crucial for determining which bin a data point belongs to.
+- **Mid Interval (`mid_interval`)**: Useful for representing each bin by a single value.
+- **Differences (`diff`, `diffdiff`)**: Provide insights into the rate of change in data frequency between bins.
+- **Cumulative (`cumulative`)**: Expresses the cumulative proportion of data points up to each bin, helpful in statistical analyses.
+
+*/
 
 struct Histogram {
    V_d data;     // ソートした生データ

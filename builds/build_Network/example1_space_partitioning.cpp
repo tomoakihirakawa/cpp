@@ -28,8 +28,7 @@ int main() {
    面と交わる全バケットを簡単に確実に見つける方法は，現在のところ思いつかない．
    なので，今の所は，面を無数の点に分けて，各点を含むバケットに面を保存することで対応している．
 
-   ![example1_space_partitioning.gif](example1_space_partitioning.gif)
-
+   <img src="example1_space_partitioning.gif" width="500px">
 
    \insert{lib_spatial_partitioning}
 

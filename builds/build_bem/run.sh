@@ -1,5 +1,20 @@
 #!/bin/sh
 
+./main ./input_files/WaveGeneration_piston_highreso_H0d05_T1d0_h0d4
+./main ./input_files/WaveGeneration_flap_highreso_H0d05_T1d0_h0d4
+./main ./input_files/WaveGeneration_potential_highreso_H0d05_T1d0_h0d4
+
+
+# ./main ./input_files/Cheng2018meshB_H0d04_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshF_H0d04_T1d2_piston_positive
+
+# ./main ./input_files/Cheng2018meshC_H0d1_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshD_H0d1_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshE_H0d1_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshF_H0d1_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshA_H0d1_T1d2_piston_positive
+# ./main ./input_files/Cheng2018meshB_H0d1_T1d2_piston_positive
+
 # --------------------------------- moon pool -------------------------------- #
 
 # for barge in large no; do
@@ -16,4 +31,4 @@
 
 # -------------------------------- Hadzic2005 -------------------------------- #
 
-./main ./input_files/Hadzic2005
+# ./main ./input_files/Hadzic2005

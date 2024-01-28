@@ -44,7 +44,7 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 2 \cdot a \cdot c + 2 \cdot b \cdot d & -2 \cdot a \cdot b + 2 \cdot c \cdot d & a^2 - b^2 - c^2 + d^2 \\
 \end{bmatrix}
 ```
-[../../include/basic_vectors.hpp#L1294](../../include/basic_vectors.hpp#L1294)
+[../../include/basic_vectors.hpp#L1311](../../include/basic_vectors.hpp#L1311)
 
 
 * 以下のコードは、3Dオブジェクトの回転と平行移動を実行します．
@@ -131,7 +131,7 @@ q2 * w0 - q1 * w1 + q0 * w2
 ```
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
-[../../include/basic_vectors.hpp#L1583](../../include/basic_vectors.hpp#L1583)
+[../../include/basic_vectors.hpp#L1600](../../include/basic_vectors.hpp#L1600)
 
 
 ![sample_dQdt.gif](sample_dQdt.gif)
@@ -161,7 +161,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1699](../../include/basic_vectors.hpp#L1699)
+[../../include/basic_vectors.hpp#L1716](../../include/basic_vectors.hpp#L1716)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

@@ -19,15 +19,17 @@
             - [🐚 🐚 その他](#🐚-🐚-その他)
     - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
     - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#⛵-空間分割の応用例：オブジェクトの接触や交差の判定)
-        - [🪼 オブジェクトの接触や交差の判定](#🪼-オブジェクトの接触や交差の判定)
-        - [🪼 面同士の接触判定](#🪼-面同士の接触判定)
-- [🐋 CGALを使って四面体を生成する](#🐋-CGALを使って四面体を生成する)
+        - [🪼 線分と面の交差判定](#🪼-線分と面の交差判定)
+        - [🪼 面と面の接触判定](#🪼-面と面の接触判定)
+            - [🐚 ２面の最短距離](#🐚-２面の最短距離)
+- [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
+- [🐋 四面体の生成](#🐋-四面体の生成)
+    - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
+    - [⛵ スコアリングと選択](#⛵-スコアリングと選択)
+- [🐋 CGALを使って四面体を生成する 9_9_CGAL](#🐋-CGALを使って四面体を生成する-9_9_CGAL)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
     - [⛵ CGALを使って四面体を生成し，さらに細分化する](#⛵-CGALを使って四面体を生成し，さらに細分化する)
-    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
-    - [⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体を生成（制約付き四面分割-constrained-tetrahedralization）)
 
 
 ---
@@ -48,7 +50,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4062)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4108)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -70,7 +72,7 @@ std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getFaces());
 ```
 
-![sample.png](sample.png)
+<img src="sample.png" width="500px">
 
 #### 🐚 線の出力 
 
@@ -103,7 +105,7 @@ pvd.output();//最後にpvdファイルを出力
 
 | 面のアニメーション | 線のアニメーション |
 |:---------------:|:---------------:|
-| ![sample.gif](sample.gif) | ![sample_line.gif](sample_line.gif) |
+| <img src="sample.gif" width="500px"> | <img src="sample_line.gif" width="500px"> |
 
 💡 QuickTimeで作成したmovファイルをgifに変換するには，次のようにする．
 
@@ -137,8 +139,7 @@ make
 面と交わる全バケットを簡単に確実に見つける方法は，現在のところ思いつかない．
 なので，今の所は，面を無数の点に分けて，各点を含むバケットに面を保存することで対応している．
 
-![example1_space_partitioning.gif](example1_space_partitioning.gif)
-
+<img src="example1_space_partitioning.gif" width="500px">
 
 ## ⛵ ⛵ `Bucket`クラス  
 
@@ -195,7 +196,7 @@ make
 ラフに行っても問題ない．
 線に関しては細かい分割によってインデックス変換できる．
 平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
-[../../include/lib_spatial_partitioning.hpp#L4](../../include/lib_spatial_partitioning.hpp#L4)
+[../../include/lib_spatial_partitioning.hpp#L6](../../include/lib_spatial_partitioning.hpp#L6)
 
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
@@ -211,7 +212,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L85)は，
+[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L87)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -219,7 +220,7 @@ make
 buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 ```
 
-![example2_tree_faster.gif](example2_tree_faster.gif)
+<img src="example2_tree_faster.gif" width="500px">
 
 レベル０が生成したレベル１のバケットに保存された点を示しており，
 白い線は，１階層上のレベル０のバケットの境界を示している．
@@ -229,12 +230,12 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 ---
 ## ⛵ 空間分割の応用例：オブジェクトの接触や交差の判定 
 
-### 🪼 オブジェクトの接触や交差の判定 
+### 🪼 線分と面の交差判定 
 
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1607)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1676)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -243,36 +244,168 @@ make
 ./example3_line_face_interaction
 ```
 
-![./example3/anim.gif](example3/anim_faster.gif)
+<gif src="./example3/anim_faster.gif" width="500px">
 
 [./example3_line_face_interaction.cpp#L4](./example3_line_face_interaction.cpp#L4)
 
 ---
-### 🪼 面同士の接触判定 
+### 🪼 面と面の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1607)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](../../include/basic_geometry.hpp#L1676)関数は，交差判定には使えるが，接触判定には使えない．
 
-接触は，ギリギリ交差している状態を指すだろうが，
-実際に接触判定を応用する場面では，
-交差していなくとも接触していると判定させたい場合が多いだろう．
-なので，接触判定条件はより緩く設定されることが多い．
+**オブジェクト同士の接触**をプログラム上で定義するなら，
+２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
+
+#### 🐚 ２面の最短距離 
+
+２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
+ただし，三角形が曲面を成している場合は違う．
+これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
+また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1616)のような計算を行う．
+この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
+
+
+もう一つの方法は，よりナイーブな方法で，
 
 ```shell
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example3_line_face_interaction.cpp
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
 make
-./example3_line_face_interaction
+./example4_point2face
 ```
 
-![./example3/anim.gif](example3/anim_faster.gif)
+![./example4/anim.gif](example4/anim.gif)
 
-[./example4_face2face_contact.cpp#L4](./example4_face2face_contact.cpp#L4)
+[./example4_point2face.cpp#L4](./example4_point2face.cpp#L4)
 
 ---
-# 🐋 CGALを使って四面体を生成する 
+# 🐋 vtk, vtp, vtu 
+
+* VTK (Visualization Toolkit)
+VTKは，3次元データを可視化するためのライブラリでフォーマットという意味ではない．
+* VTU (VTK Unstructured Grid Format)
+VTUは，内部構造や体積データの解析の場合に適している．体積のある非構造格子データを扱う際はこれを使う．
+* VTP (VTK PolyData Format)
+VTPは，表面のみの表示や表面の特性に焦点を当てる場合に適している．
+
+
+以下は，どちらも四面体を表現している．
+
+VTUフォーマット：
+
+```xml
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="4" NumberOfCells="1">
+<Points>
+<DataArray type="Float32" NumberOfComponents="3" format="ascii">
+0.157726 -0.00244936 -0.15 0.140393 -0.05 -0.15 0.123855 -0.0239571 -0.15
+0.162817 -0.05 -0.2
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int32" Name="connectivity" format="ascii">
+0 1 2 3
+</DataArray>
+<DataArray type="Int32" Name="offsets" format="ascii">
+4
+</DataArray>
+<DataArray type="UInt8" Name="types" format="ascii">
+10
+</DataArray>
+</Cells>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
+
+```
+
+VTPフォーマット：
+
+```xml
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian">
+<PolyData>
+<Piece NumberOfLines="0" NumberOfPoints="4" NumberOfPolys="4" NumberOfStrips="0"
+NumberOfVerts="0">
+<Points>
+<DataArray NumberOfComponents="3" format="ascii" type="Float32">
+0.157726 -0.00244936 -0.15 0.140393 -0.05 -0.15 0.123855 -0.0239571 -0.15
+0.162817 -0.05 -0.2
+</DataArray>
+</Points>
+<PointData>
+</PointData>
+<CellData Normals="cell_normals" Scalars="cell_scalars">
+</CellData>
+<Polys>
+<DataArray Name="connectivity" format="ascii" type="Int32">
+2 3 1 0 3 2 0 1 3 0 2 1
+</DataArray>
+<DataArray Name="offsets" format="ascii" type="Int32">
+3 6 9 12
+</DataArray>
+</Polys>
+<Lines>
+<DataArray Name="connectivity" format="ascii" type="Int32">
+
+</DataArray>
+<DataArray Name="offsets" format="ascii" type="Int32">
+
+</DataArray>
+</Lines>
+</Piece>
+</PolyData>
+</VTKFile>
+```
+
+[./example2_generate_tetra_constrained2.cpp#L251](./example2_generate_tetra_constrained2.cpp#L251)
+
+---
+# 🐋 四面体の生成 
+
+## ⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization） 
+
+* PLC: piecewise linear complex
+* CDT: constrained Delaunay triangulation
+
+CDTの生成法には，主に２つの方法がある\ref{Schewchuk2002}：
+
+* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
+* sweep algorithm
+
+[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
+四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
+このスリーバーをうまく削除することが重要となる．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
+make
+```
+
+`bunny.obj`のような複雑なポリゴンには，この方法ではうまくいかない．
+
+[./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
+
+## ⛵ スコアリングと選択 
+
+四面体の外接球の中心に点が近いほどスコアは低くなる．
+
+外接球の半径が小さすぎる場合は四面体の候補から外す．
+
+[./example2_generate_tetra_constrained2.cpp#L140](./example2_generate_tetra_constrained2.cpp#L140)
+
+---
+# 🐋 CGALを使って四面体を生成する 9_9_CGAL 
+
+⚠️ コンパイルできない
 
 ## ⛵ CGALを使って四面体を生成する 
 
 ```shell
+brew install gmp mpfr
 brew install CGAL
 ```
 
@@ -282,9 +415,11 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using
 make
 ```
 
-[./example1_generate_tetra_using_CGAL.cpp#L1](./example1_generate_tetra_using_CGAL.cpp#L1)
+[./example1_generate_tetra_using_CGAL.cpp#L2](./example1_generate_tetra_using_CGAL.cpp#L2)
 
 ## ⛵ CGALを使って四面体を生成する 
+
+⚠️ コンパイルできない
 
 ```shell
 sh clean
@@ -299,6 +434,8 @@ make
 
 ## ⛵ CGALを使って四面体を生成し，さらに細分化する 
 
+⚠️ コンパイルできない
+
 ```shell
 brew install CGAL
 ```
@@ -310,108 +447,5 @@ make
 ```
 
 [./example1_generate_tetra_using_CGAL_refining.cpp#L1](./example1_generate_tetra_using_CGAL_refining.cpp#L1)
-
----
-## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
-
-* PLC: piecewise linear complex
-* CDT: constrained Delaunay triangulation
-
-CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
-
-* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
-* sweep algorithm
-
-
-[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
-四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
-このスリーバーをうまく削除することが重要となる．
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
-make
-```
-
----
-
-このプログラムは、制約付きの四面体分割（Constrained Tetrahedralization）を行うための手順を実装しています。具体的な流れは以下の通りです：
-
-1. **初期設定とオブジェクトの作成**:
-- `Network` オブジェクトを作成し、与えられた `.obj` ファイル（ここでは `./cube2.obj`）から面を取得します。
-- 線の長さからバケット（空間を小さなセクションに分割すること）のサイズを計算し、バケットのベクトルをセットアップします。
-
-2. **領域の分割と点の生成**:
-- オブジェクトの領域を `n` 個のセクションに分割し、各セクションに点を生成します。
-- 生成された点は `Network` オブジェクトに追加され、その幾何学的特性が設定されます。
-
-3. **バケツの準備**:
-- 点、面、四面体用のバケツを用意し、点のバケツにオブジェクトの点を追加します。
-
-4. **最短距離にある点の接続**:
-- 各点に対して、その周囲にある他の点を探索し、一定の距離内にある点と接続します。
-
-5. **四面体の生成条件の設定**:
-- 四面体を生成するための条件を定義します。これには、四面体の内接円半径や外接円半径、位置などが含まれます。
-
-6. **新たな四面体の生成**:
-- 生成された面を反復処理し、それぞれの面に対して新たな四面体を生成するための条件を確認します。
-- 既存の点を利用するか、新たな点を生成して、四面体を作成します。
-
-7. **四面体のスコアリングと選択**:
-- 各四面体にスコアを割り当て、最も適切なものを選択します。スコアリングには、外接球に他の点がどれだけ食い込むかを評価する処理が含まれます。
-
-8. **結果の保存と可視化**:
-- 定期的に四面体のデータを `.vtp` ファイルに保存し、Paraview での可視化のために `.pvd` ファイルに出力します。
-
-このプログラムでは、四面体分割のための複数の幾何学的および数値的条件を用いており、これらの条件を満たす四面体を効率的に生成するためのアルゴリズムが組み込まれています。また、バケツというデータ構造を使用して、空間内の点の処理を効率化しています。
-
-[./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
-
-## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
-
-* PLC: piecewise linear complex
-* CDT: constrained Delaunay triangulation
-
-CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
-
-* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
-* sweep algorithm
-
-
-[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
-四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
-このスリーバーをうまく削除することが重要となる．
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
-make
-```
-
-[./example2_generate_tetra_constrained2_2.cpp#L2](./example2_generate_tetra_constrained2_2.cpp#L2)
-
-## ⛵ 四面体を生成（制約付き四面分割 constrained tetrahedralization） 
-
-* PLC: piecewise linear complex
-* CDT: constrained Delaunay triangulation
-
-CDTの生成法には，主に２つの方法がある[Schewchuk 2002](Schewchuk 2002)：
-
-* naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
-* sweep algorithm
-
-
-[杉原厚吉,計算幾何学](杉原厚吉,計算幾何学)によれば，ドロネー四面体分割以外に，綺麗な四面体分割を作成する方法はほとんど知られていないらしい．
-四面体分割は，三角分割の場合のように，最小内角最大性が成り立たたず，スリーバー（sliver）と呼ばれる，外接円が大きくないものの潰れた悪い四面体が作られる可能性がある．
-このスリーバーをうまく削除することが重要となる．
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
-make
-```
-
-[./example2_generate_tetra_constrained3.cpp#L2](./example2_generate_tetra_constrained3.cpp#L2)
 
 ---

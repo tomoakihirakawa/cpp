@@ -1,14 +1,15 @@
 {
     "name": "wavemaker",
-    "type": "SoftBody",
-    "isFixed": true,
+    "type": "RigidBody",
     "velocity": [
-        "linear_traveling_wave",
+        "piston",
         0.0,
-        1.0,
+        2.0,
         7.0,
         80,
-        80
+        1,
+        0,
+        0
     ],
     "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/tsukada2022_no_pool_small_case/wavemaker20.obj"
 }

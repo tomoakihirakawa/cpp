@@ -1,0 +1,10 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "isFixed": true,
+<<<<<<< Updated upstream
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/tsukada2022_large_pool/tank10.obj"
+=======
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_large_pool/tank10.obj"
+>>>>>>> Stashed changes
+}

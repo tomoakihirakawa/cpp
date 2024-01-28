@@ -15,7 +15,7 @@
 ```math
 \begin{align}
 \nabla\cdot\nabla \phi& = 0&&\text{in}&&{\bf x} \in \Omega(t),\\
-\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi - g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{\rm D}(t),\\
+\frac{\partial\phi}{\partial t} +\frac{1}{2}\nabla\phi\cdot\nabla\phi + g z &=0 &&\text{on}&&{\bf x} \in \Gamma^{\rm D}(t),\\
 \phi_n + {{\bf u}_b}\cdot{{\bf n}_b} &=0&&\text{on}&&{\bf x}\in \Gamma^{\rm N}(t),
 \end{align}
 ```
@@ -113,7 +113,7 @@ struct calculateFroudeKrylovForce {
          auto intpX = interpolationTriangleLinear0101(X012);
          auto n = TriangleNormal(X012);
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            this->torque += Cross(intpX(x0, x1) - COM, n * intpP(x0, x1)) * intpX.J(x0, x1) * w0w1;
+            this->torque += Cross(intpX(x0, x1) - COM, n) * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
       }
       return this->torque;
    };
@@ -124,7 +124,13 @@ struct calculateFroudeKrylovForce {
       for (const auto &[P012, X012] : this->PressureVeticies) {
          auto [p0, p1, p2] = P012;
          auto [X0, X1, X2] = X012;
-         this->force += 1. / 6. * (p0 + p1 + p2) * Cross(X1 - X0, X2 - X0);
+         // this->force += 1. / 6. * (p0 + p1 + p2) * Cross(X1 - X0, X2 - X0);
+
+         auto intpP = interpolationTriangleLinear0101(P012);
+         auto intpX = interpolationTriangleLinear0101(X012);
+         auto n = TriangleNormal(X012);
+         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+            this->force += n * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
       }
       return this->force;
    };
@@ -357,7 +363,14 @@ struct BEM_BVP {
          water->setPointsVector();
       }
       const std::array<double, 2> ZEROS2 = {0., 0.};
-      
+      std::array<std::tuple<double,double,double,Tddd>,__array_GW5xGW5__.size()> t0_t1_ww_N012_LOWRESOLUTION;      
+      for (int i = 0;const auto &[t0, t1, ww] : __array_GW5xGW5__) 
+            t0_t1_ww_N012_LOWRESOLUTION[i++] = {t0,t1,ww,ModTriShape<3>(t0, t1)};
+      auto t0_t1_ww_N012_HIGHRESOLUTION = t0_t1_ww_N012_LOWRESOLUTION;
+      // std::array<std::tuple<double,double,double,Tddd>,__array_GW13xGW13__.size()> t0_t1_ww_N012_HIGHRESOLUTION;
+      // for (int i = 0;const auto &[t0, t1, ww] : __array_GW13xGW13__) 
+      //       t0_t1_ww_N012_HIGHRESOLUTION[i++] = {t0,t1,ww,ModTriShape<3>(t0, t1)};
+
 #pragma omp parallel
       for (const auto &[PBF, index] : PBF_index)
 #pragma omp single nowait
@@ -385,8 +398,8 @@ struct BEM_BVP {
                cross = Cross(p0->X - p2->X, p1->X - p2->X);
                X012 = {p0->X, p1->X, p2->X};
                if ((Norm(integ_f->center - origin->X) > 10 * r))
-                  for (const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-                     N012 = ModTriShape<3>(t0, t1);
+                  for (const auto &[t0, t1, ww, N012] : t0_t1_ww_N012_LOWRESOLUTION) {
+                     // N012 = ModTriShape<3>(t0, t1);
                      tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
                      tmp *= ww;
                      IGIGn = {tmp, (tmp * (Dot(-R / nr, cross))) / nr};
@@ -398,8 +411,8 @@ struct BEM_BVP {
                      // std::get<2>(std::get<2>(ret)) += IGIGn * std::get<2>(N012);  // 補間添字2
                   }
                else
-                  for (const auto &[t0, t1, ww] : __array_GW13xGW13__) {
-                     N012 = ModTriShape<3>(t0, t1);
+                  for (const auto &[t0, t1, ww, N012] : t0_t1_ww_N012_HIGHRESOLUTION) {
+                     // N012 = ModTriShape<3>(t0, t1);
                      //# tmp = (1. - t0) / (nr = Norm(R = (std::get<0>(N012) * p0->X + std::get<1>(N012) * p1->X + std::get<2>(N012) * p2->X - origin->X)));
                      tmp = (1. - t0) / (nr = Norm(R = (Dot(N012,X012) - origin->X)));
                      tmp *= ww;
@@ -795,6 +808,8 @@ struct BEM_BVP {
    $`\phi_{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
    $`\phi_{nt}`$は，\ref{BEM:setphint}{ここ}で与えている．
+
+   この方法は，基本的には\cite{Cao1994}と同じ方法である．
 
    */
 

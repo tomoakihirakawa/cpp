@@ -5,7 +5,7 @@
 
 ## 空間分割の応用例：オブジェクトの接触や交差の判定
 
-### オブジェクトの接触や交差の判定
+### 線分と面の交差判定
 
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
@@ -19,7 +19,7 @@ make
 ./example3_line_face_interaction
 ```
 
-![./example3/anim.gif](./example3/anim_faster.gif)
+<gif src="./example3/anim_faster.gif" width="500px">
 
 */
 

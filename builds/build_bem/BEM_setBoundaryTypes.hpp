@@ -158,7 +158,7 @@ void setIsMultipleNode(const auto &p) {
 };
 
 void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
-
+   std::cout << water.getName() << "の境界条件を決定 setBoundaryTypes" << std::endl;
    /* -------------------------------------------------------------------------- */
    /*                             f,l,pの境界条件を決定                             */
    /* -------------------------------------------------------------------------- */
@@ -168,7 +168,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
    std::cout << "step1 点の衝突の判定" << std::endl;
    for (const auto &p : water.getPoints())
       p->clearContactFaces();
-   //!!! 衝突の判定がよくエラーが出る箇所
+   //!! 衝突の判定がよくエラーが出る箇所
    for (const auto &net : objects) {
 #pragma omp parallel
       for (const auto &p : water.getPoints())
@@ -176,7 +176,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
          // \label{BEM:detection_range}
-         p->detection_range = Mean(extLength(p->getLines())) / 4.;
+         p->detection_range = Mean(extLength(p->getLines())) / 2.5;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }

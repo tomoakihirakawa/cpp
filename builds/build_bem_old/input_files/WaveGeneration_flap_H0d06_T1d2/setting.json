@@ -1,0 +1,11 @@
+{
+    "max_dt": 0.01,
+    "end_time_step": 10000,
+    "end_time": 9,
+    "output_directory": "/Users/tomoaki/BEM/WaveGeneration_flap_H0d06_T1d2",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json"
+    ]
+}

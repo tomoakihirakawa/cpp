@@ -17,6 +17,9 @@ void mk_pvd(const std::string &filename, const std::map<std::string, double> &ma
    Print("Creating " + filename + " ..." + colorReset);
    FILE *fp;
    fp = fopen(filename.c_str(), "wb");
+   // check if file is opened
+   if (fp == NULL)
+      throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, filename + " can not be opened\nMake sure you have the output directory!"));
    fprintf(fp, "<?xml version=\"1.0\"?>\n");
    fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
    fprintf(fp, "  <Collection>\n");
@@ -27,6 +30,7 @@ void mk_pvd(const std::string &filename, const std::map<std::string, double> &ma
    fprintf(fp, "  </Collection>\n");
    fprintf(fp, "</VTKFile>\n");
    fclose(fp);
+   Print("Done." + colorReset);
 }
 
 struct vtu_set {
@@ -77,6 +81,9 @@ class pvd {
       Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
+      // check if file is opened
+      if (fp == NULL)
+         throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, filename + " can not be opened\nMake sure you have the output directory!"));
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
@@ -87,6 +94,7 @@ class pvd {
       fprintf(fp, "  </Collection>\n");
       fprintf(fp, "</VTKFile>\n");
       fclose(fp);
+      Print("Done." + colorReset);
    };
 
    void output_(const std::string &pvd_name_IN = "") const {
@@ -101,6 +109,9 @@ class pvd {
       Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
+      // check if file is opened
+      if (fp == NULL)
+         throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, filename + " can not be opened\nMake sure you have the output directory!"));
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
@@ -117,6 +128,7 @@ class pvd {
       fprintf(fp, "  </Collection>\n");
       fprintf(fp, "</VTKFile>\n");
       fclose(fp);
+      Print("Done." + colorReset);
    };
 };
 
@@ -146,6 +158,9 @@ struct PVDWriter {
       Print("Creating " + filename + " ..." + colorReset);
       FILE *fp;
       fp = fopen(filename.c_str(), "wb");
+      // check if file is opened
+      if (fp == NULL)
+         throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, filename + " can not be opened\nMake sure you have the output directory!"));
       fprintf(fp, "<?xml version=\"1.0\"?>\n");
       fprintf(fp, "<VTKFile type=\"Collection\" version=\"0.1\" ByteOrder=\"LittleEndian\">\n");
       fprintf(fp, "  <Collection>\n");
@@ -154,6 +169,7 @@ struct PVDWriter {
       fprintf(fp, "  </Collection>\n");
       fprintf(fp, "</VTKFile>\n");
       fclose(fp);
+      Print("Done." + colorReset);
    };
 };
 /* ------------------------------------------------------ */

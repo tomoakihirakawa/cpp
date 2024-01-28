@@ -162,7 +162,7 @@ std::unordered_set<networkPoint *> wall_p;
 void developByEISPH(Network *net,
                     const auto &RigidBodyObjectIN,
                     double &simulation_time,
-                    const double C_SML,
+                    const double CSML,
                     const double particle_spacing,
                     const double max_dt,
                     const int RK_order) {
@@ -187,12 +187,10 @@ void developByEISPH(Network *net,
 #pragma omp parallel
       for (const auto &obj : all_net)
 #pragma omp single nowait
-         obj->makeBucketPoints(bucket_spacing);
+         obj->makeBucketPoints(1.25 * bucket_spacing);
       Print(Green, "バケットの生成", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 
       for (const auto &p : net->getPoints()) {
-         // p->C_SML = C_SML * std::pow(_WATER_DENSITY_ / p->rho, 3);  // C_SMLを密度の応じて変えてみる．
-         // p->setDensity(_WATER_DENSITY_);
          p->isFreeFalling = false;
          p->isInsideOfBody = false;
          p->p_SPH_SPP = 0;
@@ -205,19 +203,14 @@ void developByEISPH(Network *net,
       double dt = dt_CFL(max_dt, net, RigidBodyObject);
       std::cout << "dt = " << dt << std::endl;
 
-      deleteAuxiliaryPoints(net);
+      // deleteAuxiliaryPoints(net);
       // ルンゲクッタの準備
       for (auto &N : Append(net_RigidBody, net))
          for (const auto &p : N->getPoints()) {
-#if defined(USE_RungeKutta)
             p->RK_U.initialize(dt, simulation_time, p->U_SPH, RK_order);
             p->RK_X.initialize(dt, simulation_time, p->X, RK_order);
             p->RK_P.initialize(dt, simulation_time, p->p_SPH, RK_order);
             p->RK_rho.initialize(dt, simulation_time, p->rho, RK_order);
-#elif defined(USE_LeapFrog)
-            p->LPFG_X.initialize(dt, simulation_time, p->X, p->U_SPH);
-            p->LPFG_rho.initialize(dt, simulation_time, p->rho, p->DrhoDt_SPH);
-#endif
          }
 
       // ルンゲクッタを使った時間積分
@@ -226,25 +219,18 @@ void developByEISPH(Network *net,
       bool finished = false;
 
       do {
+         watch();
          //% 壁粒子と水面粒子の設定
-         deleteAuxiliaryPoints(net);
-         setSML(Append(net_RigidBody, net), {2.8, 2.8});  // 2.7は大きすぎる 2.55は小さすぎる
+         // deleteAuxiliaryPoints(net);
+         // setSML(Append(net_RigidBody, net), {CSML, CSML});  // 2.7は大きすぎる 2.55は小さすぎる
          captureWallParticle(net, RigidBodyObject, particle_spacing, wall_p);
+         Print(Green, "captureWallParticle", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setCorrectionMatrix(Append(net_RigidBody, net));
          Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         // setSML(Append(net_RigidBody, net), {2.45, 2.45});
-         Print(Green, "captureWallParticle", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setWall(net, RigidBodyObject, particle_spacing);
          Print(Green, "setWall", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setFreeSurface(net, net_RigidBody);
          Print(Green, "setFreeSurface", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         //
-         // setAuxiliaryPoints(net);
-         // Print(Green, "setAuxiliaryPoints", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         // modify_interp_normal_original(net, net_RigidBody);
-         // Print(Green, "modify_interp_normal_original", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
-         // setCorrectionMatrix(Append(net_RigidBody, net));
-         // Print(Green, "setCorrectionMatrix", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* -------------------------------------------------------------------------- */
          //% 粘性項の計算
          calcLaplacianU(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
@@ -252,7 +238,6 @@ void developByEISPH(Network *net,
          setCorrectionMatrix(Append(net_RigidBody, net));
          Print(green, "setCorrectionMatrix", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          /* ------------------------------- 次時刻の計算が可能に ------------------------ */
-         // deleteAuxiliaryPoints(net);
          Print(green, "recalculation", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setWall(net, RigidBodyObject, particle_spacing);
          Print(green, "setWall", blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
@@ -271,26 +256,21 @@ void developByEISPH(Network *net,
 #elif defined(USE_ESPH)
          Print(Yellow, "EISPH: this does not solve Poisson equation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 #endif
-         DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          /* -------------------------------------------------------------------------- */
          //% 圧力勾配 grad(P)の計算 -> DU/Dtの計算
          gradP(net->getPoints(), Append(net_RigidBody, net));
          Print(Green, "calculate grad(P) and increment DU/Dt", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          DebugPrint(Red, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
          //! NEW -------------------------------------------------------------------------- */
-         calculate_nabla_otimes_U_next(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
+         // calculate_nabla_otimes_U_next(Join(net->getPoints(), wall_p), Append(net_RigidBody, net));
          /* -------------------------------------------------------------------------- */
          //% 粒子の時間発展
-         updateParticles(net->getPoints(), Append(net_RigidBody, net), net_RigidBody, particle_spacing);
+         updateParticles(net, Append(net_RigidBody, net), net_RigidBody, particle_spacing);
          Print(Green, "updateParticles", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          net->setGeometricProperties();
-#if defined(USE_RungeKutta)
+
          simulation_time = (*net->getPoints().begin())->RK_X.get_t();
          finished = (*net->getPoints().begin())->RK_X.finished;
-#elif defined(USE_LeapFrog)
-         simulation_time = (*net->getPoints().begin())->LPFG_X.get_t();
-         finished = (*net->getPoints().begin())->LPFG_X.finished;
-#endif
 
       } while (!finished);
 
@@ -325,14 +305,14 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    vtp.addPointData("C_SML", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M;
    vtp.addPointData("var_Eigenvalues_of_M", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
-   vtp.addPointData("min_Eigenvalues_of_M", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M;
+   // vtp.addPointData("min_Eigenvalues_of_M", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->Eigenvalues_of_M1;
    vtp.addPointData("Eigenvalues_of_M1", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->var_Eigenvalues_of_M1;
    vtp.addPointData("var_Eigenvalues_of_M1", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
-   vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->min_Eigenvalues_of_M1;
+   // vtp.addPointData("min_Eigenvalues_of_M1", uo_double);
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M > 0.125);
    // vtp.addPointData("isSurface_var_Eigenvalues_of_M", uo_double);
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = (p->var_Eigenvalues_of_M1 > 0.15);
@@ -376,8 +356,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    // vtp.addPointData("isAuxiliary", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface;
    vtp.addPointData("isSurface", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface_next;
-   vtp.addPointData("isSurface_next", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isSurface_next;
+   // vtp.addPointData("isSurface_next", uo_double);
 
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->isNearSurface;
    vtp.addPointData("isNearSurface", uo_double);
@@ -388,19 +368,19 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->rho;
    vtp.addPointData("density", uo_double);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[0];
-   vtp.addPointData("grad_corr_M0", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[1];
-   vtp.addPointData("grad_corr_M1", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[2];
-   vtp.addPointData("grad_corr_M2", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[0];
+   // vtp.addPointData("grad_corr_M0", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[1];
+   // vtp.addPointData("grad_corr_M1", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M[2];
+   // vtp.addPointData("grad_corr_M2", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[0];
-   vtp.addPointData("grad_corr_M_next0", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[1];
-   vtp.addPointData("grad_corr_M_next1", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[2];
-   vtp.addPointData("grad_corr_M_next2", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[0];
+   // vtp.addPointData("grad_corr_M_next0", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[1];
+   // vtp.addPointData("grad_corr_M_next1", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->grad_corr_M_next[2];
+   // vtp.addPointData("grad_corr_M_next2", uo_3d);
 
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M[0];
    vtp.addPointData("inv_grad_corr_M0", uo_3d);
@@ -409,26 +389,26 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M[2];
    vtp.addPointData("inv_grad_corr_M2", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[0];
-   vtp.addPointData("inv_grad_corr_M_next0", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[1];
-   vtp.addPointData("inv_grad_corr_M_next1", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[2];
-   vtp.addPointData("inv_grad_corr_M_next2", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[0];
+   // vtp.addPointData("inv_grad_corr_M_next0", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[1];
+   // vtp.addPointData("inv_grad_corr_M_next1", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->inv_grad_corr_M_next[2];
+   // vtp.addPointData("inv_grad_corr_M_next2", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[0];
-   vtp.addPointData("laplacian_corr_M0", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[1];
-   vtp.addPointData("laplacian_corr_M1", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[2];
-   vtp.addPointData("laplacian_corr_M2", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[0];
+   // vtp.addPointData("laplacian_corr_M0", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[1];
+   // vtp.addPointData("laplacian_corr_M1", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M[2];
+   // vtp.addPointData("laplacian_corr_M2", uo_3d);
 
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[0];
-   vtp.addPointData("laplacian_corr_M_next0", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[1];
-   vtp.addPointData("laplacian_corr_M_next1", uo_3d);
-   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[2];
-   vtp.addPointData("laplacian_corr_M_next2", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[0];
+   // vtp.addPointData("laplacian_corr_M_next0", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[1];
+   // vtp.addPointData("laplacian_corr_M_next1", uo_3d);
+   // for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->laplacian_corr_M_next[2];
+   // vtp.addPointData("laplacian_corr_M_next2", uo_3d);
 
    // for (auto i = 0; i < 6; i++) {
    //    for (const auto &p : Fluid->getPoints()) {
@@ -441,8 +421,8 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    // }
    // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->vector_to_polygon.size();
    // vtp.addPointData("vector_to_polygon size", uo_double);
-   for (const auto &p : Fluid->getPoints()) uo_double[p] = p->getContactFaces().size();
-   vtp.addPointData("ContactFaces size", uo_double);
+   // for (const auto &p : Fluid->getPoints()) uo_double[p] = p->getContactFaces().size();
+   // vtp.addPointData("ContactFaces size", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->pressure_equation_index;
    vtp.addPointData("pressure_equation_index", uo_double);
    for (const auto &p : Fluid->getPoints()) uo_double[p] = p->intp_density;

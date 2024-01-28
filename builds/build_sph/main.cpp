@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
                   auto p = new networkPoint(object, xyz);
                   p->setDensityVolume(_WATER_DENSITY_, volume);  // 質量(mass)は関数内部で自動で決められる
                   p->particle_spacing = particle_spacing;
-                  p->C_SML_next = p->C_SML = 3.5;  // CSML;
+                  p->C_SML_next = p->C_SML = CSML;
                   p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   p->isFluid = object->isFluid;
@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
          std::cout << std::setw(10) << "wall : " << num_neuman_surface << std::endl;
          std::cout << std::setw(10) << "surface : " << num_surface << std::endl;
 
-         auto Output = [&](Network *Fluid, const std::string &name, const int i) {
+         auto Output = [&net2PVD, &simulation_time, &output_directory](Network *Fluid, const std::string &name, const int i) {
             if (Fluid != nullptr) {
                std::vector<networkPoint *> points;
                for (const auto &p : Fluid->getPoints())

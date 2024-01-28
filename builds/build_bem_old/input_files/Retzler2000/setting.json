@@ -1,0 +1,11 @@
+{
+    "max_dt": 0.002,
+    "end_time_step": 100,
+    "end_time": 0.4,
+    "output_directory": "/Users/tomoaki/BEM/Retzler2000",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json"
+    ]
+}

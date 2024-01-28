@@ -1,0 +1,14 @@
+{
+    "max_dt": 0.01,
+    "end_time_step": 10000,
+    "end_time": 9,
+    "output_directory": "/Users/tomoaki/BEM/fish_without_free_surface",
+    "input_files": [
+        "waterA.json",
+        "waterB.json",
+        "waterC.json",
+        "bodyA.json",
+        "bodyB.json",
+        "bodyC.json"
+    ]
+}

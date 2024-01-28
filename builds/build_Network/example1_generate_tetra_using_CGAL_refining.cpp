@@ -2,6 +2,8 @@
 
 ## CGALを使って四面体を生成し，さらに細分化する
 
+WARNING:　コンパイルできない
+
 ```shell
 brew install CGAL
 ```

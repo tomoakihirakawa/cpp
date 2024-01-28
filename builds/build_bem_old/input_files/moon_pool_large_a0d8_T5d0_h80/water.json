@@ -1,0 +1,9 @@
+{
+    "name": "water",
+    "type": "Fluid",
+<<<<<<< Updated upstream
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/tsukada2022_large_pool/water1000mod.obj"
+=======
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/tsukada2022_large_pool/water300_mod.obj"
+>>>>>>> Stashed changes
+}

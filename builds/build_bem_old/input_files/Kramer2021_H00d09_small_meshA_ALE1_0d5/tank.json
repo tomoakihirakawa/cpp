@@ -1,0 +1,6 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Kramer2021_03D_small/tank4.obj"
+}

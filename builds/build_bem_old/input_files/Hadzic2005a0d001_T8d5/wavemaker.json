@@ -1,0 +1,12 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "sin",
+        0.0,
+        0.001,
+        8.5
+    ],
+    "objfile": "/Users/tomoaki/Dropbox/code//cpp/obj/2023Tamatu/wavemaker10.obj"
+}

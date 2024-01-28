@@ -279,6 +279,7 @@ class networkLine : public CoordinateBounds {
 
    // V_d getNormal() const;
    Tddd getNormal() const;
+
    //---------------------------------
    double length() const;
    //------------------
@@ -366,9 +367,10 @@ class networkPoint : public CoordinateBounds, public CRS {
          v = (*l)(this)->RK_X_sub.getX() - this->RK_X_sub.getX();
          disp = Norm(v) - l->natural_length;
          strain = disp / l->natural_length;
-         if (disp > 0.) force += l->stiffness * strain * Normalize(v);
-         relative_velocity = (*l)(this)->RK_velocity_sub.getX() - this->RK_velocity_sub.getX();
-         force += l->damping * relative_velocity / this->RK_velocity_sub.dt_fixed;
+         if (disp > 0.)
+            force += l->stiffness * strain * Normalize(v);
+         relative_velocity = this->RK_velocity_sub.getX() - (*l)(this)->RK_velocity_sub.getX();
+         force -= l->damping * relative_velocity;  // / this->RK_velocity_sub.dt_fixed;
       }
       return force;
    }
@@ -388,6 +390,15 @@ class networkPoint : public CoordinateBounds, public CRS {
          A = l->diameter * Norm(A2B) * 0.5;                                                            //! area
          A *= Norm(normalized_relative_velocity - Dot(normalized_relative_velocity, Normalize(A2B)));  //! projected area
          drag_force += 0.5 * _WATER_DENSITY_ * Dot(relative_velocity, relative_velocity) * Cd * A * normalized_relative_velocity;
+
+         if (!isFinite(A2B) || !isFinite(Normalize(A2B)) || !isFinite(normalized_relative_velocity) || !isFinite(relative_velocity) || !isFinite(drag_force)) {
+            std::cout << "A2B = " << A2B << std::endl;
+            std::cout << "Normalize(A2B) = " << Normalize(A2B) << std::endl;
+            std::cout << "normalized_relative_velocity = " << normalized_relative_velocity << std::endl;
+            std::cout << "relative_velocity = " << relative_velocity << std::endl;
+            std::cout << "drag_force = " << drag_force << std::endl;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+         }
       }
       return drag_force;
    }
@@ -620,6 +631,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double &p_SPH = this->pressure_SPH;
    double &p_SPH_ = this->pressure_SPH_;
    double &p_SPH__ = this->pressure_SPH__;
+   double p_SPH_smoothed = 0.;
    double p_EISPH = 0, p_SPH_last = 0;
    double dp_SPH, dp_SPH_;
    double p_SPH_SPP;
@@ -679,7 +691,7 @@ class networkPoint : public CoordinateBounds, public CRS {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
-   double div_U, div_tmpU, div_tmpU_, PoissonRHS;
+   double div_U, div_tmpU, div_tmpU_, PoissonRHS, div_U_next, DrhoDt_SPH_next;
    Tddd grad_div_U, grad_div_U_;
    Tddd gradP_SPH, gradP_SPH_;
    std::unordered_map<networkPoint *, Tddd> grad_coeff;
@@ -737,6 +749,7 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    /* ------------------- 多段の時間発展スキームのため ------------------- */
    Tddd DUDt_SPH = {0., 0., 0.};
+   Tddd DUDt_update_SPH = {0., 0., 0.};
    Tddd DUDt_modify_SPH = {0., 0., 0.};
    Tddd DUDt_modify_SPH_2 = {0., 0., 0.};
    Tddd ViscousAndGravityForce_, tmp_ViscousAndGravityForce_;
@@ -822,6 +835,10 @@ class networkPoint : public CoordinateBounds, public CRS {
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
    Tdd phiphin;
    Tdd phiphin_t;
+   Tddd U_absorbed = {0., 0., 0.};
+   Network *absorbedBy = nullptr;
+   double phi_tmp = 0;
+   double phin_tmp = 0;
    // T2T6d phiphin_t_a6;  // 加速度による微分
    T2T6d phiphin_t_a6;  // 加速度による微分
    double phi_Dirichlet;
@@ -835,7 +852,10 @@ class networkPoint : public CoordinateBounds, public CRS {
    // Tddd X_BUFFER;
    // const Tddd &getXBuffer() const { return X_BUFFER; };
    Tddd vecToSurface;
-   Tddd vecToSurface_BUFFER;
+   double shift_coeff = 0;
+   Tddd vecToSurface_BUFFER, vecToSurface_BUFFER_BUFFER;
+   Tddd whereToGo = {0., 0., 0.};
+   Tddd whereToGo_to_check = {0., 0., 0.};
    // const Tddd &getUBuffer() const { return vecToSurface; };
    //
    // Tdd phiphin_BUFFER;
@@ -887,7 +907,12 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const {
       // 重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
-      return Dot(this->X - offset, Normalize(this->X - g_center));
+      // return Dot(this->X - offset, Normalize(this->X - g_center));
+
+      if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
+         return std::get<2>(this->X);
+      else
+         return Dot(this->X - offset, Normalize(this->X - g_center));
    };
 
    double aphiat(const double pressure /*zero if on atmosfere*/,
@@ -895,7 +920,10 @@ class networkPoint : public CoordinateBounds, public CRS {
                  const Tddd &g_center = {0., 0., -1E+20}) const {
       // double g = 9.81;	// [m/s2]
       // double rho = 1000.; // [kg/m3]
-      return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
+      if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
+         return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * std::get<2>(this->X) - pressure / _WATER_DENSITY_;
+      else
+         return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
    };
 
    double DphiDt(const Tddd &U_modified,
@@ -905,6 +933,19 @@ class networkPoint : public CoordinateBounds, public CRS {
       // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D BIM simulation with an application to underwater explosion bubble dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003. equaiton (11)
       // return this->DphiDt(pressure, offset, g_center) + Dot(U_modified - this->U_BEM, this->U_BEM);
       return aphiat(pressure, offset, g_center) + Dot(U_modified, this->U_BEM);  // 以下はと同じ：
+      // return Dot(U_modified - 0.5 * this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
+      //
+   };
+
+   double DphiDt_damped(const std::array<double, 2> gamma_phi,
+                        const Tddd &U_modified,
+                        const double pressure /*zero if on atmosfere*/,
+                        const Tddd &offset = {0., 0., 0.},
+                        const Tddd &g_center = {0., 0., -1E+20}) const {
+      // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D BIM simulation with an application to underwater explosion bubble dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003. equaiton (11)
+      // return this->DphiDt(pressure, offset, g_center) + Dot(U_modified - this->U_BEM, this->U_BEM);
+      auto [gamma, reference_phi] = gamma_phi;
+      return -gamma * (std::get<0>(this->phiphin) - reference_phi) + DphiDt(U_modified, pressure, offset, g_center);  // 以下はと同じ：
       // return Dot(U_modified - 0.5 * this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
       //
    };
@@ -1168,6 +1209,9 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    V_d getAngles() const;
    V_d getAngles(networkLine *const base_line) const;
+
+   Tddd normal_to_be_preserved = {0., 0., 0.};
+
 #define use_binary_search
    /**
    2021/09/02unordered_setを使うよう修正した
@@ -3931,6 +3975,7 @@ class Network : public CoordinateBounds {
    bool isRigidBody;
    bool isSoftBody;
    bool isFloatingBody;
+   bool isAbsorber;
 #ifdef BEM
   public:
    double _current_time_;
@@ -4062,7 +4107,7 @@ class Network : public CoordinateBounds {
    //% NetwrokObjは，Networkとしてコンストラクトするために，下のコンストラクタように修正した．*/
    // \label{Network::constructor}
    // Netwrokコンストラク
-   Network(const std::string &filename = "file name is not given", const std::string &name_IN = "no_name")
+   Network(const std::string &filename = "file_name_is_not_given", const std::string &name_IN = "no_name")
        : CoordinateBounds(Tddd{{0., 0., 0.}}),
          name(name_IN),
          quaternion(Quaternion()),

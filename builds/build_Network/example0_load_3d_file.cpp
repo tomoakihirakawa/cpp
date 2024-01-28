@@ -39,7 +39,7 @@ std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getFaces());
 ```
 
-![sample.png](sample.png)
+<img src="sample.png" width="500px">
 
 #### 線の出力
 
@@ -96,7 +96,7 @@ int main() {
 
    | 面のアニメーション | 線のアニメーション |
    |:---------------:|:---------------:|
-   | ![sample.gif](sample.gif) | ![sample_line.gif](sample_line.gif) |
+   | <img src="sample.gif" width="500px"> | <img src="sample_line.gif" width="500px"> |
 
    NOTE: QuickTimeで作成したmovファイルをgifに変換するには，次のようにする．
 

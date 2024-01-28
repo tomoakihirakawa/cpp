@@ -901,7 +901,10 @@ F_1^{-1} &= F_1^{T}\\
 
 template <typename T>
 struct QR {
-   T Q, R, A, QT;
+   T Q;
+   T QT;
+   T R;
+   T A;
 
    // Copy constructor
    // No need to repeat computation; copy the computed Q, R, and A
@@ -910,10 +913,20 @@ struct QR {
    }
    //  std::cout << "QR destructor" << std::endl;
    ~QR(){};
-   QR(const T &AIN) : R(AIN), A(AIN), Q(AIN.size(), typename T::value_type(AIN.size(), 0.)) {
+   QR(const T &AIN) : Q(AIN.size(), typename T::value_type(AIN.size(), 0.)), A(AIN), R(AIN) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       Initialize(AIN, true);
    };
+
+   QR &operator=(const QR &other) {
+      if (this != &other) {
+         Q = other.Q;
+         QT = other.QT;
+         R = other.R;
+         A = other.A;
+      }
+      return *this;
+   }
 
    void Initialize(const T &AIN, const bool constractor = false) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -921,10 +934,10 @@ struct QR {
       const int N_COL = AIN[0].size();
       const int nR = AIN.size();
       const int mR = AIN[0].size();
-      if (!constractor) {
-         A = R = AIN;
-         Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
-      }
+      // if (!constractor) {
+      A = R = AIN;
+      Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
+      // }
       IdentityMatrix(Q);
       QT = Q;
       double r, c, s, a, b, Q0, Q1, R0, R1;  // Rのためのtmp
@@ -1021,6 +1034,16 @@ struct QR<std::array<std::array<double, N>, M>> {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       Initialize(AIN, true);
    };
+
+   QR &operator=(const QR &other) {
+      if (this != &other) {
+         Q = other.Q;
+         QT = other.QT;
+         R = other.R;
+         A = other.A;
+      }
+      return *this;
+   }
 
    void Initialize(const std::array<std::array<double, N>, M> &AIN, const bool constractor = false) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -1515,14 +1538,14 @@ struct ArnoldiProcess {
 
    void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN, const bool do_constract = true) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      if (do_constract) {
-         n = nIN;
-         beta = Norm(v0IN);
-         v0 = (v0IN / beta);
-         H.assign(nIN + 1, V_d(nIN, 0.));
-         V.assign(nIN + 1, v0);
-         w.resize(A.size());
-      }
+      // if (do_constract) {
+      n = nIN;
+      beta = Norm(v0IN);
+      v0 = (v0IN / beta);
+      H.assign(nIN + 1, V_d(nIN, 0.));
+      V.assign(nIN + 1, v0);
+      w.resize(A.size());
+      // }
       std::size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
          DotOutput(A, V[j], w);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
@@ -1609,10 +1632,11 @@ struct gmres : public ArnoldiProcess<Matrix> {
    Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
    */
    // int n;  // th number of interation
-   V_d x, y;
-   double err;
+   V_d x;
+   V_d y;
    QR<VV_d> qr;
    V_d g;
+   double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
    gmres() {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -1634,11 +1658,11 @@ struct gmres : public ArnoldiProcess<Matrix> {
       //
       std::size_t i = 0;
       for (const auto &q : qr.QT)
-         g[i++] = q[0] * this->beta;
+         this->g[i++] = q[0] * this->beta;
 
-      err = g.back();  // 予想される誤差
-      g.pop_back();
-      this->y = back_substitution(qr.R, g, g.size());
+      this->err = this->g.back();  // 予想される誤差
+      this->g.pop_back();
+      this->y = back_substitution(this->qr.R, this->g, this->g.size());
       i = 0;
       for (i = 0; i < this->n; ++i) {
          // this->x += this->y[i] * this->V[i];
@@ -1652,21 +1676,26 @@ struct gmres : public ArnoldiProcess<Matrix> {
 
    void Restart(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      std::cout << "Restarting" << std::endl;
       // this->Initialize(A, b - Dot(A, x0), nIN);
+      std::cout << "Initialize" << std::endl;
       this->Initialize(A, b_minus_A_dot_V(b, A, x0), nIN);
+      std::cout << "Initialize done" << std::endl;
       this->x = x0;
       // this->y.resize(b.size());
+      std::cout << "QR" << std::endl;
       this->qr.Initialize(this->H);
+      std::cout << "QR done" << std::endl;
       this->g.resize(this->qr.Q.size());
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       std::size_t i = 0;
       for (const auto &q : qr.QT)
-         g[i++] = q[0] * this->beta;
+         this->g[i++] = q[0] * this->beta;
 
-      err = g.back();  // 予想される誤差
-      g.pop_back();
-      this->y = back_substitution(qr.R, g, g.size());
+      err = this->g.back();  // 予想される誤差
+      this->g.pop_back();
+      this->y = back_substitution(this->qr.R, this->g, this->g.size());
       for (std::size_t i = 0; i < this->n; ++i) {
          // this->x += this->y[i] * this->V[i];
          //! use std::fma

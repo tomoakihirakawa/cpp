@@ -379,12 +379,6 @@ constexpr std::array<std::vector<T>, N> Transpose(const std::vector<std::array<T
 }
 
 template <typename T, std::size_t N>
-constexpr T Min(const std::array<T, N>& arr) noexcept { return *std::min_element(arr.begin(), arr.end()); }
-
-template <typename T, std::size_t N>
-constexpr T Max(const std::array<T, N>& arr) noexcept { return *std::max_element(arr.begin(), arr.end()); }
-
-template <typename T, std::size_t N>
 constexpr std::array<T, 2> MinMax(const std::array<T, N>& arr) noexcept {
    auto minmax = std::minmax_element(arr.begin(), arr.end());
    return {*minmax.first, *minmax.second};
@@ -765,18 +759,35 @@ constexpr auto Norm(const std::array<std::array<T, M>, N>& mat) noexcept {
    return std::sqrt(sum);
 }
 
-template <size_t N, typename T>
-constexpr std::array<T, N> Normalize(std::array<T, N> arr) noexcept {
-   static_assert(N > 0, "Array must have at least one element.");
-   T norm = Norm(arr);
-   auto c = (norm == static_cast<T>(0)) ? static_cast<T>(1) : static_cast<T>(1) / norm;
-   std::ranges::transform(arr, arr.begin(), [&c](T a) { return a * c; });
+template <size_t N>
+constexpr std::array<double, N> Normalize(std::array<double, N> arr) noexcept {
+   double norm = 0.;
+   for (const auto& a : arr)
+      norm = std::fma(a, a, norm);
+
+   // Check if norm is zero to avoid division by zero
+   if (norm == 0.)
+      return arr;  // or return {}; for an array of zeros
+
+   norm = std::sqrt(norm);
+
+   for (auto& a : arr)
+      a /= norm;
    return arr;
+   // static_assert(N > 0, "Array must have at least one element.");
+   // T norm = Norm(arr);
+   // auto c = (norm == static_cast<T>(0)) ? static_cast<T>(1) : static_cast<T>(1) / norm;
+   // std::ranges::transform(arr, arr.begin(), [&c](T a) { return a * c; });
+   // return arr;
 }
 
 constexpr double Norm(const double value) noexcept {
    return std::abs(value);
 }
+
+double Distance(const Tddd& A, const Tddd& B) {
+   return Norm(A - B);
+};
 
 template <size_t M = 0, std::size_t N, typename T>
 constexpr T RootMeanSquare(const std::array<T, N>& arr) noexcept { return std::sqrt(Dot(arr, arr) / N); }
@@ -970,12 +981,12 @@ constexpr std::array<T, N> TriShape(T t0, T t1) noexcept {
    if constexpr (N == 3) {
       return {t0, t1, t2};
    } else if constexpr (N == 6) {
-      return {t0 * (2 * t0 - 1),
-              t1 * (2 * t1 - 1),
-              t2 * (2 * t2 - 1),
-              4 * t0 * t1,
-              4 * t1 * t2,
-              4 * t0 * t2};
+      return {t0 * (2. * t0 - 1.),
+              t1 * (2. * t1 - 1.),
+              t2 * (2. * t2 - 1.),
+              4. * t0 * t1,
+              4. * t1 * t2,
+              4. * t0 * t2};
    }
 }
 
@@ -1018,6 +1029,7 @@ N_5 &= 4t_0(1-t_0-t_1)
 
 template <typename T, std::size_t N>
 constexpr std::array<T, N> ModTriShape(const T& t0, const T& t1, const auto& p0p1p2) noexcept {
+   //! p0p1p2 can be std::array<bool,3>, std::tuple<bool,bool,bool> or pointers
    // b! どのポインターにどれだけの係数を加えるかを得られるようにする
    // b!　これは，線形補間であっても利用できる
    //
@@ -1062,13 +1074,11 @@ constexpr std::array<T, N> ModTriShape(const T& t0, const T& t1, const auto& p0p
    }
 }
 
-template <size_t N>
+template <std::size_t N>
 constexpr std::array<double, N> ModTriShape(double t0, double t1) noexcept { return ModTriShape<double, N>(t0, t1, std::array<bool, 3>{true, true, true}); }
 
 template <typename T, std::size_t N>
 constexpr std::array<T, N> ModTriShape(T t0, T t1) noexcept { return ModTriShape<T, N>(t0, t1, std::array<bool, 3>{true, true, true}); }
-
-/* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
 

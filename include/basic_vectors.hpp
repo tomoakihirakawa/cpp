@@ -1052,43 +1052,60 @@ T Max(const std::vector<std::vector<T>> &v) {
    return ret;
 };
 
-double Min(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
-double Max(const Tdd &A) { return ((std::get<0>(A) > std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
+// double Min(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
+// double Max(const Tdd &A) { return ((std::get<0>(A) > std::get<1>(A)) ? std::get<0>(A) : std::get<1>(A)); };
 // Tdd MinMax(const Tdd &A) { return ((std::get<0>(A) < std::get<1>(A)) ? Tdd{std::get<0>(A), std::get<1>(A)} : Tdd{std::get<1>(A), std::get<0>(A)}); };
 // T3Tdd MinMaxTranspose(const T2Tddd &A) {
 //    return {MinMax(Tdd{std::get<0>(std::get<0>(A)), std::get<0>(std::get<1>(A))}),
 //            MinMax(Tdd{std::get<1>(std::get<0>(A)), std::get<1>(std::get<1>(A))}),
 //            MinMax(Tdd{std::get<2>(std::get<0>(A)), std::get<2>(std::get<1>(A))})};
 // };
-double Min(const Tddd &A) {
-   // イコールが重要
-   const auto [X, Y, Z] = A;
-   return X <= Y ? (X <= Z ? X : Z) : (Y <= Z ? Y : Z);
-};
-double Max(const Tddd &A) {
-   auto [X, Y, Z] = A;
-   return X >= Y ? (X >= Z ? X : Z) : (Y >= Z ? Y : Z);
-};
-double Min(const T4d &A) {
-   const auto [X, Y, Z, W] = A;
-   if (X <= Y && X <= Z && X <= W)
-      return X;
-   else if (Y <= Z && Y <= W)
-      return Y;
-   else if (Z <= W)
-      return Z;
-   else
-      return W;
-};
-double Max(const T4d &A) {
-   auto [X, Y, Z, W] = A;
-   return X >= Y ? (X >= Z ? (X >= W ? X : W) : (Z >= W ? Z : W)) : (Y >= Z ? (Y >= W ? Y : W) : (Z >= W ? Z : W));
-};
+// double Min(const Tddd &A) {
+//    // イコールが重要
+//    // const auto [X, Y, Z] = A;
+//    // return X <= Y ? (X <= Z ? X : Z) : (Y <= Z ? Y : Z);
+//    return *std::min_element(std::begin(A), std::end(A));
+// };
+// double Max(const Tddd &A) {
+//    // auto [X, Y, Z] = A;
+//    // return X >= Y ? (X >= Z ? X : Z) : (Y >= Z ? Y : Z);
+//    return *std::max_element(std::begin(A), std::end(A));
+// };
+// double Min(const T4d &A) {
+//    // const auto [X, Y, Z, W] = A;
+//    // if (X <= Y && X <= Z && X <= W)
+//    //    return X;
+//    // else if (Y <= Z && Y <= W)
+//    //    return Y;
+//    // else if (Z <= W)
+//    //    return Z;
+//    // else
+//    //    return W;
+//    return *std::min_element(std::begin(A), std::end(A));
+// };
+// double Max(const T4d &A) {
+//    auto [X, Y, Z, W] = A;
+//    return X >= Y ? (X >= Z ? (X >= W ? X : W) : (Z >= W ? Z : W)) : (Y >= Z ? (Y >= W ? Y : W) : (Z >= W ? Z : W));
+// };
 Tdd MinMax(const T4d &A) {
    auto [X, Y, Z, W] = A;
    return {X >= Y ? (X >= Z ? (X >= W ? X : W) : (Z >= W ? Z : W)) : (Y >= Z ? (Y >= W ? Y : W) : (Z >= W ? Z : W)),
            X <= Y ? (X <= Z ? (X <= W ? X : W) : (Z <= W ? Z : W)) : (Y <= Z ? (Y <= W ? Y : W) : (Z <= W ? Z : W))};
 };
+
+// Max function template
+template <std::size_t N, typename T>
+constexpr typename std::enable_if_t<std::is_arithmetic<T>::value && !is_std_array<T>::value, T>
+Max(const std::array<T, N> &v) {
+   return *std::max_element(std::begin(v), std::end(v));
+}
+
+// Min function template
+template <std::size_t N, typename T>
+constexpr typename std::enable_if_t<std::is_arithmetic<T>::value && !is_std_array<T>::value, T>
+Min(const std::array<T, N> &v) {
+   return *std::min_element(std::begin(v), std::end(v));
+}
 double FiniteMin(const Tddd &A) {
    // イコールが重要
    auto [X, Y, Z] = A;
@@ -1945,27 +1962,25 @@ Tddd TriangleNormal(const Tddd &a, const Tddd &b, const Tddd &c) {
    return Normalize(Cross((b - a), (c - a)));
 };
 Tddd TriangleNormal(const T3Tddd &abc) {
-   auto [a, b, c] = abc;
+   const auto [a, b, c] = abc;
    return Normalize(Cross((b - a), (c - a)));
+};
+
+bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
+   if (!isFinite(nA) || !isFinite(nB))
+      return false;
+   else
+      return Dot(nA, nB) > std::cos(lim_rad) * std::sqrt(Dot(nA, nA)) * std::sqrt(Dot(nB, nB));
+   // return Dot(nA / std::sqrt(Dot(nA, nA)), nB / std::sqrt(Dot(nB, nB))) > std::cos(lim_rad);
+   // return Dot(Normalize(nA), Normalize(nB)) > std::cos(lim_rad);
+   //! 0.==0.の場合を回避するために > を使う
 };
 
 bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, const std::array<double, 3> &A2,
             const std::array<double, 3> &B0, const std::array<double, 3> &B1, const std::array<double, 3> &B2,
             const double lim_rad) {
-   auto nA = Cross(A1 - A0, A2 - A0);
-   auto nB = Cross(B1 - B0, B2 - B0);
-   auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
-   auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
-   auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
-   return dotProduct >= std::cos(lim_rad) * std::sqrt(normA2 * normB2);
+   return isFlat(Cross(A1 - A0, A2 - A0), Cross(B1 - B0, B2 - B0), lim_rad);
 }
-
-bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
-   auto dotProduct = std::fma(nA[0], nB[0], std::fma(nA[1], nB[1], nA[2] * nB[2]));
-   auto normA2 = std::fma(nA[0], nA[0], std::fma(nA[1], nA[1], nA[2] * nA[2]));
-   auto normB2 = std::fma(nB[0], nB[0], std::fma(nB[1], nB[1], nB[2] * nB[2]));
-   return dotProduct >= std::cos(lim_rad) * std::sqrt(normA2 * normB2);
-};
 
 bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
    auto [X0, X1, X2] = tri;
@@ -1999,7 +2014,7 @@ bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI
    if (isFlat(tri[0] - tri[2], tri[1] - tri[2], accuracy_limit_angle))
       return false;
 
-   return Total(angles) == M_PI;
+   return true;  // Total(angles) == M_PI;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -2111,6 +2126,7 @@ Tddd Scaled(const Tddd &v, const double d) {
 Tddd Mirror(const Tddd &position, const Tddd &a_point_on_mirror, const Tddd &normal_vector) {
    return position + 2 * Projection(a_point_on_mirror - position, normal_vector);
 };
+
 /* ------------------------------------------------------ */
 /*                        線形方程式の解法                   */
 /* ------------------------------------------------------ */

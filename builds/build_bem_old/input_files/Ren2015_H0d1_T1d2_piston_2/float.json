@@ -1,0 +1,17 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 12.6,
+    "COM": [
+        2.0,
+        0.21,
+        0.4
+    ],
+    "MOI": [
+        0.22721999999999995,
+        0.13649999999999998,
+        0.2797199999999999
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Ren2015/float50.obj"
+}

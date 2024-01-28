@@ -254,7 +254,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_Tddd P_gradPhi = p_tdd0;
       uomap_P_Tddd P_vecToSurface = p_tdd0;
       uomap_P_Tddd P_uNeumann = p_tdd0;
-      uomap_P_Tddd P_V2ContactFaces0 = p_tdd0, P_V2ContactFaces1 = p_tdd0, P_V2ContactFaces2 = p_tdd0, P_V2ContactFaces3 = p_tdd0, P_V2ContactFaces4 = p_tdd0, P_V2ContactFaces5 = p_tdd0;
+      uomap_P_Tddd P_V2ContactFaces0 = p_tdd0, P_V2ContactFaces1 = p_tdd0, P_V2ContactFaces2 = p_tdd0, P_V2ContactFaces3 = p_tdd0, P_V2ContactFaces4 = p_tdd0, P_V2ContactFaces5 = p_tdd0, P_U_absorbed = p_tdd0;
 
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
@@ -269,6 +269,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_ContactFaces = p_d0;
       uomap_P_d P_facesNeuamnn = p_d0;
       uomap_P_d P_BC = p_d0;
+      uomap_P_d P_isAbsorbed = p_d0;
 
       try {
 #pragma omp parallel
@@ -304,6 +305,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
             P_U_shift_BEM[p] = p->vecToSurface;
             P_isMultipleNode[p] = p->isMultipleNode;
+            P_isAbsorbed[p] = p->absorbedBy != nullptr;
             P_phi[p] = std::get<0>(p->phiphin);
             P_phin[p] = std::get<1>(p->phiphin);
             P_phi_t[p] = std::get<0>(p->phiphin_t);
@@ -320,6 +322,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_vecToSurface[p] = p->vecToSurface;
             P_solidAngle[p] = p->getSolidAngle();
             P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
+            P_U_absorbed[p] = p->U_absorbed;
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -332,7 +335,9 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"accelNeumann", P_accelNeumann},
              {"uNeumann", P_uNeumann},
              {"isMultipleNode", P_isMultipleNode},
+             {"isAbsorbed", P_isAbsorbed},
              {"U_BEM", P_U_BEM},
+             {"U_absorbed", P_U_absorbed},
              {"U_shift_BEM", P_U_shift_BEM},
              {"ContactFaces", P_ContactFaces},
              {"faces Neuamnn", P_facesNeuamnn},
@@ -379,11 +384,12 @@ double dt_CFL(const Network &water, double min_dt, const double c) {
                if (isFinite(dt) && min_dt > dt)
                   min_dt = dt;
 
-               dt = c * Distance(p, q) / Norm(p->U_update_BEM - q->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+               // dt = c * Distance(p, q) / Norm(p->U_update_BEM - q->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
+               // dt = c * Distance(p, q) / Norm(p->U_update_BEM - q->U_update_BEM);  // Norm(p->U_BEM - q->U_BEM);
 
                if (isFinite(dt) && min_dt > dt)
                   min_dt = dt;
-            }   
+            }
    return min_dt;
 };
 
