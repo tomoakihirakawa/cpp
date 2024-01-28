@@ -1,4 +1,3 @@
-
 /*DOC_EXTRACT 1_1_tetra
 
 # 四面体の生成
