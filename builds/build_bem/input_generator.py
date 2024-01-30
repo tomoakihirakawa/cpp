@@ -473,9 +473,13 @@ elif "Palm2016" in SimulationCase:
     #% 造波機の設定
     start = 0.
     a = 0.02
+    H = 2*a
     T = 1.
     h = 0.9
     z_surface = 0.9
+
+    SimulationCase += "_H" + str(H).replace(".", "d")
+    SimulationCase += "_T" + str(T).replace(".", "d")
 
     rho = 1000
     draft = 0.172

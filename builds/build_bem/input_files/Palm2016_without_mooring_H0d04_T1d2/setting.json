@@ -1,0 +1,16 @@
+{
+    "max_dt": 0.03,
+    "end_time_step": 100000,
+    "end_time": 30,
+    "output_directory": "/Users/tomoaki/BEM/Palm2016_without_mooring_H0d04_T1d2",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json",
+        "probe1.json",
+        "probe2.json",
+        "probe3.json",
+        "probe4.json"
+    ]
+}

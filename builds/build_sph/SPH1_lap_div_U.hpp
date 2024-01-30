@@ -70,7 +70,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.03;  // 少しは必要のようだ
+            const double c_xsph = 0.02;  // 少しは必要のようだ
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -167,13 +167,13 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             const auto center = A->X;
 
             /* -------------------------------------------------------------------------- */
-            A->interp_normal_original_next.fill(0.);
-            Tddd interp_normal_original_next_mod = {0., 0., 0.};
-            for (const auto &net : target_nets)
-               net->BucketPoints.apply(A->X, 1.2 * A->SML_next(), [&](const auto &q) {
-                  A->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(A), X_next(q), A->SML_next());
-                  interp_normal_original_next_mod -= rho_next(q) * V_next(q) * grad_w_Bspline_next(A, q);
-               });
+            // A->interp_normal_original_next.fill(0.);
+            // Tddd interp_normal_original_next_mod = {0., 0., 0.};
+            // for (const auto &net : target_nets)
+            //    net->BucketPoints.apply(A->X, 1.2 * A->SML_next(), [&](const auto &q) {
+            //       A->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(A), X_next(q), A->SML_next());
+            //       interp_normal_original_next_mod -= rho_next(q) * V_next(q) * grad_w_Bspline_next(A, q);
+            //    });
             /* -------------------------------------------------------------------------- */
 
             // 修正１
@@ -214,7 +214,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   // const auto vec_A2B = B->X - A->X;
                   const double ratio = Norm(vec_A2B) / A->particle_spacing;
                   const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
-                  if (ratio < 0.8 && Dot(relative_velocity, vec_A2B) < 0) {
+                  if (ratio < 0.8 && Dot(relative_velocity, vec_A2B) > 0) {
                      // if (A->isSurface) {
                      // auto [vec_A2B_normal, vec_A2B_tangential] = DecomposeVector(vec_A2B, Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original)));
                      //    A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B_tangential) / dt;
