@@ -899,6 +899,18 @@ struct Tetrahedron : public CoordinateBounds {
    //
    T4Tddd normals;
    T4d solidangles;  // いつかチェック
+   Tetrahedron(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN, const Tddd &X3IN)
+       : CoordinateBounds(T4Tddd{X0IN, X1IN, X2IN, X3IN}),
+         vertices(T4Tddd{X0IN, X1IN, X2IN, X3IN}),
+         volume(TetrahedronVolume(vertices)),
+         centroid(Centroid(vertices)),
+         circumcenter(Circumcenter(vertices)),
+         circumradius(Circumradius(vertices)),
+         incenter(Incenter(vertices)),
+         inradius(Inradius(vertices)),
+         normals(TetrahedronNormals(vertices)),
+         solidangles(TetrahedronSolidAngle_UsingVectorAngle(vertices)){};
+
    Tetrahedron(const T4Tddd &XIN)
        : CoordinateBounds(XIN),
          vertices(XIN),
@@ -947,6 +959,11 @@ struct Tetrahedron : public CoordinateBounds {
                {p0, p1, p3},
                {p0, p2, p3},
                {p1, p2, p3}}};
+   };
+
+   operator T4Tddd() const {
+      auto [p0, p1, p2, p3] = this->vertices;
+      return {p0, p1, p2, p3};
    };
 };
 

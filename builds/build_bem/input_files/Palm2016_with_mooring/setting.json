@@ -7,6 +7,10 @@
         "tank.json",
         "wavemaker.json",
         "water.json",
-        "float.json"
+        "float.json",
+        "probe1.json",
+        "probe2.json",
+        "probe3.json",
+        "probe4.json"
     ]
 }

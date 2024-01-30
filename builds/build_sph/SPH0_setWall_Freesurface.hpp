@@ -900,18 +900,18 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             */
 
             //! 流体粒子に対してはr=2.5*ps，\theta=30度
-            const double ratio_flud = 2.6;
+            const double ratio_flud = 2.5;
             // 2.2OK
             // 2.4OUT
-            // const double min_ratio_flud = 2.2;
+            const double min_ratio_flud = 2.2;
             const double surface_check_r_for_fluid_ = A->particle_spacing * ratio_flud;
-            // const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
+            const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
             //! 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
             //! surface_check_r_for_wall_は最低の値
             //! 規則正しく並んでいる場合を考えると，水面粒子の探査範囲は，大体，std::sqrt(3.)かstd::sqrt(2.)あたりが妥当な値だろう．
-            const double surface_check_r_for_wall_ = A->particle_spacing * 2.3;  // std::sqrt(3.);
+            const double surface_check_r_for_wall_ = A->particle_spacing * 2.;  // std::sqrt(3.);
             const double ratio = surface_check_r_for_wall_ / surface_check_r_for_fluid_;
-            const double surface_check_agnle_for_fluid = M_PI / 5.;  // * (1. - A->var_Eigenvalues_of_M1);
+            const double surface_check_agnle_for_fluid = M_PI / 6.;  // * (1. - A->var_Eigenvalues_of_M1);
             const double surface_check_angle_for_wall = M_PI / 4.;   // * (1. - A->var_Eigenvalues_of_M1);
             // if (A->var_Eigenvalues_of_M1 > 0.)
             // {

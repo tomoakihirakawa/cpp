@@ -897,9 +897,15 @@ F_1^{-1} &= F_1^{T}\\
 
 後で具体的にどのような値をかけているかここに示しておく．
 
+#### ヘッセンベルグ行列に対するQR分解
+
+$`A`$がヘッセンベルグ行列の場合，
+ゼロとする必要がある成分は，$`A_{i+1,i}`$のみである．
+そのため，普通のQR分解の計算量が$`O(n^2)`$であるのに対し，ヘッセンベルグ行列の場合は$`O(n)`$である．
+
 */
 
-template <typename T>
+template <typename T, bool IsHessenberg = false>
 struct QR {
    T Q;
    T QT;
@@ -920,10 +926,10 @@ struct QR {
 
    QR &operator=(const QR &other) {
       if (this != &other) {
-         Q = other.Q;
-         QT = other.QT;
-         R = other.R;
-         A = other.A;
+         this->Q = other.Q;
+         this->QT = other.QT;
+         this->R = other.R;
+         this->A = other.A;
       }
       return *this;
    }
@@ -935,29 +941,35 @@ struct QR {
       const int nR = AIN.size();
       const int mR = AIN[0].size();
       // if (!constractor) {
-      A = R = AIN;
-      Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
+      this->A = this->R = AIN;
+      this->Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
       // }
-      IdentityMatrix(Q);
-      QT = Q;
-      double r, c, s, a, b, Q0, Q1, R0, R1;  // Rのためのtmp
+      IdentityMatrix(this->Q);
+      this->QT = this->Q;
+      double r, c, s, a, b, Q0, Q1, R0, R1, Ri_col, Ri1_col, QTi_col, QTi1_col, Q_row_i, Q_row_i1;  // Rのためのtmp
       const double eps = 1e-15;
-      int max = std::max(N_ROW, N_COL), j, i;
-      for (j = 0; j < max; ++j) {
-         for (i = nR - 2; i >= j; --i) {
+      // int max = std::max(N_ROW, N_COL);
+      int i, j, i_start = nR - 2;  // マイナスになり得る
+      std::size_t col;
+      for (j = 0; j + 1 < N_ROW; ++j) {
+         if constexpr (IsHessenberg)
+            i_start = j;
+         for (i = i_start; i >= j; --i) {
             // 下から
             // if (!Between(R[i + 1][j], {-eps, eps}))
-            if (R[i + 1][j] != 0.) {  // givensの位置
-               auto &Ri = R[i];
-               auto &Ri1 = R[i + 1];
+            if (this->R[i + 1][j] != 0.) {  // givensの位置
+               auto &Ri = this->R[i];
+               auto &Ri1 = this->R[i + 1];
                a = Ri[j];
                b = Ri1[j];  //! {i+1,j}がゼロとしたい成分
-               r = std::sqrt(a * a + b * b);
-               s = -b / r;
-               c = a / r;
-               if (s != s || c != c) {
+               // r = std::sqrt(a * a + b * b);
+               r = std::hypot(a, b);
+               if (r == 0.0) {
                   s = 0.;
                   c = 1.;
+               } else {
+                  s = -b / r;
+                  c = a / r;
                }
 
                //
@@ -966,43 +978,35 @@ struct QR {
                // Q = F_1^T F_2^T...
                //
                // Rの更新
-               for (auto col = 0; col < mR; ++col) {
-                  // R0 = c * R[i][col] - s * R[i + 1][col];  //$ row i
-                  R0 = std::fma(c, Ri[col], -s * Ri1[col]);
-                  // R1 = s * R[i][col] + c * R[i + 1][col];  //$ row i+k
-                  R1 = std::fma(s, Ri[col], c * Ri1[col]);
-                  Ri[col] = R0;
-                  Ri1[col] = R1;
+               for (col = 0; col < mR; ++col) {
+                  Ri_col = Ri[col];
+                  Ri1_col = Ri1[col];
+                  Ri[col] = std::fma(c, Ri_col, -s * Ri1_col);
+                  Ri1[col] = std::fma(s, Ri_col, c * Ri1_col);
                };
 
-               auto &QTi = QT[i];
-               auto &QTi1 = QT[i + 1];
-               for (auto col = 0; col < QTi.size(); ++col) {
-                  // Q0 = c * QT[i][col] - s * QT[i + 1][col];  //$ row i
-                  Q0 = std::fma(c, QTi[col], -s * QTi1[col]);  //$ row i
-                  // Q1 = s * QT[i][col] + c * QT[i + 1][col];  //$ row i+k
-                  Q1 = std::fma(s, QTi[col], c * QTi1[col]);  //$ row i+k
-                  QTi[col] = Q0;
-                  QTi1[col] = Q1;
+               auto &QTi = this->QT[i];
+               auto &QTi1 = this->QT[i + 1];
+               for (col = 0; col < QTi.size(); ++col) {
+                  QTi_col = QTi[col];
+                  QTi1_col = QTi1[col];
+                  QTi[col] = std::fma(c, QTi_col, -s * QTi1_col);  //$ row i
+                  QTi1[col] = std::fma(s, QTi_col, c * QTi1_col);  //$ row i+k
                };
-
-               // Qの更新 * 左から書けるのでRとは逆順
-               // for (auto row = 0; row < Q.size(); ++row) {  // # row direction
-               //    Q0 = c * Q[row][i] - s * Q[row][i + 1];   //$ row i
-               //    Q1 = s * Q[row][i] + c * Q[row][i + 1];   //$ row i+k
-               //    Q[row][i] = Q0;
-               //    Q[row][i + 1] = Q1;
-               // };
 
                for (auto &Q_row : Q) {  // # row direction
-                  // Q0 = c * Q_row[i] - s * Q_row[i + 1];
-                  Q0 = std::fma(c, Q_row[i], -s * Q_row[i + 1]);  //$ row i
-                  // Q1 = s * Q_row[i] + c * Q_row[i + 1];
-                  Q1 = std::fma(s, Q_row[i], c * Q_row[i + 1]);  //$ row i+k
-                  Q_row[i] = Q0;
-                  Q_row[i + 1] = Q1;
+                  Q_row_i = Q_row[i];
+                  Q_row_i1 = Q_row[i + 1];
+                  Q_row[i] = std::fma(c, Q_row_i, -s * Q_row_i1);     //$ row i
+                  Q_row[i + 1] = std::fma(s, Q_row_i, c * Q_row_i1);  //$ row i+k
                };
             }
+
+            // //
+            // std::cout << "Q = " << MatrixForm(Q, 5, 10) << std::endl;
+            // std::cout << "R = " << MatrixForm(R, 5, 10) << std::endl;
+            // std::cin.ignore();
+            //
          }
          // ここで，j列目の下半分はゼロになっているはず
       }
@@ -1067,12 +1071,13 @@ struct QR<std::array<std::array<double, N>, M>> {
             if (R[i + 1][j] != 0.) {  // givensの位置
                a = R[i][j];
                b = R[i + 1][j];  //! {i+1,j}がゼロとしたい成分
-               r = std::sqrt(a * a + b * b);
-               s = -b / r;
-               c = a / r;
-               if (s != s || c != c) {
+               r = std::hypot(a, b);
+               if (r == 0.0) {
                   s = 0.;
                   c = 1.;
+               } else {
+                  s = -b / r;
+                  c = a / r;
                }
 
                //
@@ -1464,6 +1469,12 @@ struct ILU {
 
 ## Arnoldi過程
 
+アーノルディ分解は，Krylov部分空間の生成のために使われる．
+GMRESは，Krylov部分空間と呼ばれる線形空間内で反復解を探すアルゴリズム．
+この部分空間は，行列Aと初期ベクトルから生成される．
+GMRESにとってアーノルディ分解は，ヘッセンベルグ行列を生成するための手段．
+得られたヘッセンベルグ行列はQR分解され，直交行列と上三角行列に分解される．
+
 1. 正規化した$`{\bf v}_1`$を与えておく．
 2. $`{\bf v}_2 = {\rm Normalize}(\,\,\,\quad\quad\quad\quad\quad A{\bf v}_1 - ((A{\bf v}_1) \cdot {\bf v}_1){\bf v}_1\,\,\qquad\qquad\qquad\qquad\qquad\qquad)`$を計算する．
 3. $`{\bf v}_3 = {\rm Normalize}(\quad\quad\quad({\bf w}=A{\bf v}_2 - ((A{\bf v}_2) \cdot {\bf v}_1){\bf v}_1)) - ({\bf w} \cdot {\bf v}_2){\bf v}_2\quad\quad\quad\quad\quad\quad)`$を計算する．
@@ -1581,7 +1592,7 @@ struct ArnoldiProcess {
 
 /*DOC_EXTRACT GMRES
 
-## 一般化最小残差法/GMRES
+## 一般化最小残差法 (Generalized Minimal Residual Method, GMRES)
 
 残差$`\|{\bf b} - A{\bf x}\|`$を最小とするような$`{\bf x}`$を求めたい．
 そのような$`{\bf x}`$を，クリロフ部分空間の正規直交基底を用いた，$`{\bf x}_n = V_n {\bf y}_n`$の形で近似し，追い求めていく．
@@ -1602,9 +1613,26 @@ $`n`$はこの表現での展開項数である．$`V_n = \{{\bf v}_1,{\bf v}_2,
 \end{align*}
 ```
 
-<details>
-<summary>なぜアーノルディ分解をするのか？</summary>
+ただし，これは理論の話であって，
+簡単には，アーノルディ分解で得られたヘッセンベルグ行列をQR分解して，$`{\bf y}_n`$を求める，ということである．
 
+NOTE: アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x}_{n+1}`$を始めから計算しなおす必要はない．$`V_{n+1}`$と$`{\tilde H}_{n+1}`$は，$`V_n`$と$`{\tilde H}_n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x}_n`$から$`{\bf x}_{n+1}`$へと更新できる．
+
+### GMRESの計算複雑性
+
+単純に考えて，$`A`$が$`m \times m`$行列であるとすると，
+GMRESの行列ベクトル積の計算量は，$`O(m^2)`$．
+もし，クリロフ部分空間の基底を$`n`$個まで展開するとすると，$`O(m^2 n)`$の計算量が必要となる．
+さらに，収束するまでの反復回数を$`k`$とすると，$`O(m^2 n k)`$の計算量が必要となる．
+
+LU分解の場合は，$`O(m^3)`$の計算量が必要となる．
+従って，$`m`$が大きい場合は，GMRESの方が計算量が少なくて済む．
+
+GMRESと多重極展開法（もし$`m`$が$`m/d`$になったとすると）を組み合わせれば，GMRESは$`O(knm^2/d^2)`$で計算できる．
+
+*/
+
+/*
 * $`A`$は$`m \times m`$とすると
 * $`{\bf x}`$と$`{\bf b}`$は，$`m \times 1`$ベクトル（列ベクトル）.
 * $`V_n`$は，$`m \times n`$行列で，$`A`$のクリロフ部分空間の基底ベクトルを列に持つ行列．
@@ -1617,11 +1645,6 @@ $`n`$はこの表現での展開項数である．$`V_n = \{{\bf v}_1,{\bf v}_2,
 
 $`A{\bf x} = {\bf b}`$の問題を解くよりも，
 $`{\tilde H}_n {\bf y}_n = {\bf b}`$という問題を解く方が計算量が少ない．
-
-</details>
-
-NOTE: アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x}_{n+1}`$を始めから計算しなおす必要はない．$`V_{n+1}`$と$`{\tilde H}_{n+1}`$は，$`V_n`$と$`{\tilde H}_n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x}_n`$から$`{\bf x}_{n+1}`$へと更新できる．
-
 */
 
 template <typename Matrix>
@@ -1634,7 +1657,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
    // int n;  // th number of interation
    V_d x;
    V_d y;
-   QR<VV_d> qr;
+   QR<VV_d, true> qr;
    V_d g;
    double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
@@ -1710,7 +1733,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       // std::cout << "Iterate" << std::endl;
       // do not change v0
       this->AddBasisVector(A);
-      this->qr = QR(this->H);
+      this->qr = QR<VV_d, true>(this->H);
       g.resize(qr.Q.size());
       err = 0.;
       if (this->beta /*initial error*/ == static_cast<double>(0.))

@@ -1,9 +1,11 @@
 #!/bin/sh
 
-./main ./input_files/WaveGeneration_piston_highreso_H0d05_T1d0_h0d4
-./main ./input_files/WaveGeneration_flap_highreso_H0d05_T1d0_h0d4
-./main ./input_files/WaveGeneration_potential_highreso_H0d05_T1d0_h0d4
+# ./main ./input_files/WaveGeneration_piston_highreso_H0d05_T1d0_h0d4
+# ./main ./input_files/WaveGeneration_flap_highreso_H0d05_T1d0_h0d4
+# ./main ./input_files/WaveGeneration_potential_highreso_H0d05_T1d0_h0d4
 
+./main ./input_files/Palm2016_without_mooring
+./main ./input_files/Palm2016_with_mooring
 
 # ./main ./input_files/Cheng2018meshB_H0d04_T1d2_piston_positive
 # ./main ./input_files/Cheng2018meshF_H0d04_T1d2_piston_positive

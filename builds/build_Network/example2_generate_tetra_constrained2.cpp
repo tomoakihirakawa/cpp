@@ -110,12 +110,32 @@ int main(int arg, char **argv) {
    // b% -------------------------------------------------------------------------- */
 
    Print("形成された面の内，テトラを持たない面の法線方向において，最も近い点を候補とし，新たにテトラを作成できないか調べる");
-
-   int i = 0;
    PVDWriter pvd(_HOME_DIR_ + "/output/tetras.pvd");
    std::vector<networkPoint *> points_candidates = ToVector(object->getPoints());
-   for (auto k = 0; k < 10; k++) {
+
+   int last_tet_size = 0;
+   int i = 0;
+   auto output = [&]() {
+      last_tet_size = tetra_buckets.all_stored_objects.size();
+      std::cout << "points.size() = " << object->getPoints().size() << std::endl;
+      std::cout << " faces.size() = " << object->getFaces().size() << std::endl;
+      std::cout << "tetras.size() = " << object->getTetras().size() << std::endl;
+      std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
+      auto filename = _HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtu";
+      std::ofstream ofs(filename);
+      // vtkPolygonWrite(ofs, object->getTetras());
+      vtkUnstructuredGridWrite(ofs, object->getTetras());
+      pvd.push(filename, count);
+      pvd.output();
+      ofs.close();
+      i++;
+   };
+
+   int n_loop = 30;
+
+   for (auto k = 0; k <= n_loop; k++) {
       auto faces = object->getFaces();
+      std::cout << "faces.size() = " << faces.size() << std::endl;
       for (const auto &f : faces) {
          const auto [p0, p1, p2] = f->Points;
          const auto f_center = f->centroid;
@@ -136,6 +156,8 @@ int main(int arg, char **argv) {
          else
             direction_to_search.fill(0.);
 
+         if (!object->isInside_MethodBucket(f->center + 1E-5 * direction_to_search))
+            continue;
          /*DOC_EXTRACT 1_1_tetra
 
          ## スコアリングと選択
@@ -146,52 +168,29 @@ int main(int arg, char **argv) {
 
          */
 
-         std::tuple<networkPoint *, Tddd, double> best_p = {nullptr, {0., 0., 0.}, -1E-5};
-
-         auto score = [&](const Tddd &X) -> double {
-            const double value_not_acceptable = -1E+20;
-            Tetrahedron testing_Tetra(Append(ToX(f), X));
-            const auto tet_circum_c = testing_Tetra.circumcenter;
-            const auto tet_circum_r = testing_Tetra.circumradius;
-            const auto tet_in_r = testing_Tetra.inradius;
-
-            if (0. > tet_in_r ||
-                tet_circum_r / tet_in_r > 1E+2 ||
-                tet_in_r < 1E-3 ||
-                tet_circum_r < 1E-3 ||
-                !isFinite(tet_in_r) ||
-                !isFinite(tet_circum_r) ||
-                !isFinite(1. / tet_in_r) ||
-                !isFinite(1. / tet_circum_r))
-               return value_not_acceptable;
-
-            // if (!object->isInside_MethodBucket(X) || !object->isInside_MethodBucket(testing_Tetra.centroid))
-            //    return value_not_acceptable;
-
-            // 新たに作成するテトラの外接球に他の点がどれほど食い込むかを評価し，最もスコアが良いものを選択する．
-            double ret = 0.;
-
-            if (!object->isInside_MethodBucket(X) || !object->isInside_MethodBucket(testing_Tetra.centroid))
-               return -1E+10;
-
-            buckets.apply(tet_circum_c, tet_circum_r, [&](const auto &other_p) {
-               if (ret <= std::get<2>(best_p) || other_p == p0 || other_p == p1 || other_p == p2)
-                  return;
-               ret -= w_Bspline(Norm(other_p->X - tet_circum_c), tet_circum_r);
-               // ret -= Norm(other_p->X - center) / circum_r;
-            });
-
-            return ret;
-         };
-
+         std::tuple<networkPoint *, Tddd, std::array<double, 3>> best_p = {nullptr, {0., 0., 0.}, {-1., 0., 0.}};
+         bool first = true;
          //! 既にある点を候補とする
          const double too_small_height = 1E-8;
          const double too_far_from_face = 1.;
+         const double too_long_edge = 1.;
+
          for (const auto &p : points_candidates) {
 
-            if (p == p0 || p == p1 || p == p2)
+            if (k >= n_loop - 5) {
+               int num = (int)(isFace(p, p0, p1) != nullptr) + (int)(isFace(p, p1, p2) != nullptr) + (int)(isFace(p, p2, p0) != nullptr);
+               if (num == 2) {
+                  auto [is_generated, t] = genTetra(object, Append(f->getPoints(), p));
+                  if (is_generated) {
+                     tetra_buckets.add(t->incenter, t);
+                     break;
+                  }
+               }
+            }
+
+            if (f->MemberQ(p))
                continue;
-            // not direction to search
+
             if (Norm(direction_to_search) != 0.)
                if (Dot(direction_to_search, p->X - f_center) < 0.)
                   continue;
@@ -202,12 +201,50 @@ int main(int arg, char **argv) {
             if (std::abs(Dot(p->X - f_center, f->normal)) < too_small_height)
                continue;
 
-            auto s = score(p->X);
-            // closer to zero (maximum) is better
-            if (std::get<2>(best_p) < s) {
-               std::get<0>(best_p) = p;
-               std::get<1>(best_p) = p->X;
-               std::get<2>(best_p) = s;
+            if (Norm(p->X - p0->X) > too_long_edge || Norm(p->X - p1->X) > too_long_edge || Norm(p->X - p2->X) > too_long_edge)
+               continue;
+
+            /* ----------------------------------- */
+
+            Tetrahedron testing_Tetra(Append(ToX(f), p->X));
+
+            const auto tet_circum_c = testing_Tetra.circumcenter;
+            const auto tet_circum_r = testing_Tetra.circumradius;
+            const auto tet_in_r = testing_Tetra.inradius;
+
+            const double shape_criteria = tet_circum_r / tet_in_r;
+
+            // if (0. > tet_in_r || shape_criteria > 1E+5 || tet_in_r < 1E-5 || tet_circum_r < 1E-5 ||
+            if (!isFinite(tet_in_r) || !isFinite(tet_circum_r) || !isFinite(1. / tet_in_r) || !isFinite(1. / tet_circum_r))
+               continue;
+
+            if (!object->isInside_MethodBucket(p->X) || !object->isInside_MethodBucket(testing_Tetra.centroid) || !object->isInside_MethodBucket(testing_Tetra.incenter))
+               continue;
+
+            std::array<double, 3> scores = {0., 0., shape_criteria};
+            double diff;
+            buckets.apply(tet_circum_c, tet_circum_r, [&](const auto &other_p) {
+               if ((std::get<0>(scores) < std::get<2>(best_p)[0] && std::get<1>(scores) < std::get<2>(best_p)[1]) || f->MemberQ(other_p))
+                  return;
+               // score -= w_Bspline3(Norm(other_p->X - tet_circum_c), tet_circum_r);
+               if ((diff = tet_circum_r - Norm(other_p->X - tet_circum_c)) > 0.)
+                  std::get<0>(scores) -= diff;
+            });
+
+            if (isFace(p, p0, p1))
+               std::get<1>(scores) += 1.;
+            if (isFace(p, p1, p2))
+               std::get<1>(scores) += 1.;
+            if (isFace(p, p2, p0))
+               std::get<1>(scores) += 1.;
+
+            if ((first && std::get<0>(best_p)) ||
+                std::get<2>(best_p)[0] < std::get<0>(scores) /*higher score*/ ||
+                (std::get<2>(best_p)[0] == std::get<0>(scores) && std::get<2>(best_p)[1] <= std::get<1>(scores))) {
+               //  (std::get<2>(best_p)[0] == std::get<0>(scores) && std::get<2>(best_p)[1] == std::get<1>(scores) && std::get<2>(best_p)[2] < shape_criteria)
+               /*if equal score compare second score*/
+               best_p = {p, p->X, scores};
+               first = false;
             }
          }
 
@@ -226,25 +263,34 @@ int main(int arg, char **argv) {
          if (std::get<0>(best_p) == nullptr)
             continue;
          else {
-            auto [is_generated, t] = genTetra(object, Append(f->getPoints(), std::get<0>(best_p)));
-            if (is_generated)
-               tetra_buckets.add(t->incenter, t);
+            auto p = std::get<0>(best_p);
+            const auto X = std::get<0>(best_p)->X;
+            const Tddd center = Centroid(X, p0->X, p1->X, p2->X);
+            const T4Tddd tet_t4tddd = {X, p0->X, p1->X, p2->X};
+            Tetrahedron tet_org(tet_t4tddd);
+            const Tddd mean = tet_org.incenter;
+            const double scale = 1E-3;
+            const T4Tddd tet = tet_t4tddd - scale * (T4Tddd{X - mean, p0->X - mean, p1->X - mean, p2->X - mean});
+            int num = (int)(isFace(p, p0, p1) != nullptr) + (int)(isFace(p, p1, p2) != nullptr) + (int)(isFace(p, p2, p0) != nullptr);
+            if (tetra_buckets.none_of(center, Norm(center - p0->X), [&](const auto &other_tet) {
+                   return IntersectQ((T4Tddd)(*other_tet), tet);
+                })) {
+               auto [is_generated, t] = genTetra(object, Append(f->getPoints(), std::get<0>(best_p)));
+               if (is_generated)
+                  tetra_buckets.add(t->incenter, t);
+            } else if (num >= 2) {
+               auto [is_generated, t] = genTetra(object, Append(f->getPoints(), std::get<0>(best_p)));
+               if (is_generated)
+                  tetra_buckets.add(t->incenter, t);
+            }
          }
 
-         if (count++ % 5 == 0) {
-            std::cout << Magenta << i << Green << ", Elapsed time : " << timer() << colorReset << std::endl;
-            auto filename = _HOME_DIR_ + "/output/tetras" + std::to_string(i) + ".vtu";
-            std::ofstream ofs(filename);
-            // vtkPolygonWrite(ofs, object->getTetras());
-            vtkUnstructuredGridWrite(ofs, object->getTetras());
-            pvd.push(filename, count);
-            pvd.output();
-            ofs.close();
-
-            i++;
-         }
+         if (count++ % 5 == 0 && last_tet_size != tetra_buckets.all_stored_objects.size())
+            output();
       }
    };
+
+   output();
 };
 
 /*DOC_EXTRACT 10_1_vtk

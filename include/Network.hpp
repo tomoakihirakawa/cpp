@@ -3856,11 +3856,9 @@ class Network : public CoordinateBounds {
    /* ------------------------------------------------------ */
 
    Tddd velocityRigidBody(const Tddd &X) const { return velocityTranslational() + Cross(velocityRotational(), X - this->COM); };  //! \label{velocityRigidBody}
-   Tddd accelRigidBody(const Tddd &X) const {
-      return accelTranslational() + Cross(accelRotational(), X - this->COM) + Cross(velocityRotational(), velocityRigidBody(X) - velocityTranslational());
-   };  //! \label{accelRigidBody}
-
-   // calcPhysicalProperties試作．
+   Tddd accelRigidBody(const Tddd &X) const { return accelTranslational() + Cross(accelRotational(), X - this->COM); };           //! \label{accelRigidBody}
+   // # + Cross(velocityRotational(), velocityRigidBody(X) - velocityTranslational());//回転座標系の時はコリオリ項や遠心力を追加すべきだが，慣性系で考えるのでこういうのはいらない
+   //  calcPhysicalProperties試作．
    void calcPhysicalProperties() {
       this->force = {0, 0, 0, 0, 0, 0};
       this->inertia = {0, 0, 0, 0, 0, 0};

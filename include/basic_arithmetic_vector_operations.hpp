@@ -43,6 +43,7 @@ std::vector<T> operator*(std::vector<T> v, const T din) {
       u *= din;
    return v;
 };
+
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> &operator*=(std::vector<T> &v, const T &w) { return (v = v * w); };
 

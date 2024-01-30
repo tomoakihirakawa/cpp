@@ -774,12 +774,16 @@ int main(int argc, char **argv) {
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             if ((net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") ||
                 (net->inputJSON.find("output") && std::ranges::any_of(net->inputJSON.at("output"), [](const auto &s) { return s == "json"; }))) {
-               auto tmp = calculateFroudeKrylovForce(FMM_BucketsFaces.all_stored_objects, net);
+               auto tmp = calculateFluidInteraction(FMM_BucketsFaces.all_stored_objects, net);
                jsonout.push(net->getName() + "_pitch", net->quaternion.pitch());
                jsonout.push(net->getName() + "_yaw", net->quaternion.yaw());
                jsonout.push(net->getName() + "_roll", net->quaternion.roll());
-               jsonout.push(net->getName() + "_force", tmp.surfaceIntegralOfPressure());
-               jsonout.push(net->getName() + "_torque", tmp.getFroudeKrylovTorque(net->COM));
+               auto [force, torque] = tmp.surfaceIntegralOfPressure();
+               jsonout.push(net->getName() + "_force", force);
+               jsonout.push(net->getName() + "_torque", torque);
+               auto [drag_force, drag_torque] = tmp.surfaceIntegralOfVerySimplifiedDrag();
+               jsonout.push(net->getName() + "_drag_force", drag_force);
+               jsonout.push(net->getName() + "_drag_torque", drag_torque);
                jsonout.push(net->getName() + "_accel", net->acceleration);
                jsonout.push(net->getName() + "_velocity", net->velocity);
                jsonout.push(net->getName() + "_COM", net->COM);
@@ -834,7 +838,7 @@ int main(int argc, char **argv) {
          for (const auto &net : Join(RigidBodyObject, SoftBodyObject)) {
             VV_VarForOutput data;
             if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
-               auto tmp = calculateFroudeKrylovForce(FMM_BucketsFaces.all_stored_objects, net);
+               auto tmp = calculateFluidInteraction(FMM_BucketsFaces.all_stored_objects, net);
                uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
                uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure, P_radius;
                //    for (const auto &p : water->getPoints()) {

@@ -114,29 +114,28 @@ double Det(const VV_d &M) {
 
    // Base case for 2x2 matrix
    if (n == 2) {
-      // return M[0][0] * M[1][1] - M[1][0] * M[0][1];
-      std::fma(M[0][0], M[1][1], -M[1][0] * M[0][1]);
+      return std::fma(M[0][0], M[1][1], -M[1][0] * M[0][1]);
    } else if (n == 3) {
-      return std::fma(M[0][0], M[1][1] * M[2][2], M[1][0] * M[2][1] * M[0][2]) - std::fma(M[0][0], M[1][2] * M[2][1], M[1][1] * M[2][2] * M[0][2]) + std::fma(M[0][0], M[1][2] * M[2][1], M[1][1] * M[2][2] * M[0][2]);
+      return M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) -
+             M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) +
+             M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
    }
 
    double det = 0.0;
    for (int col = 0; col < n; ++col) {
-      VV_d subMatrix(n - 1, std::vector<double>(n - 1));
+      VV_d subMatrix(n - 1, V_d(n - 1));
 
       // Construct subMatrix
       for (int i = 1; i < n; ++i) {
          for (int j = 0, colCount = 0; j < n; ++j) {
             if (j != col) {
-               subMatrix[i - 1][colCount] = M[i][j];
-               ++colCount;
+               subMatrix[i - 1][colCount++] = M[i][j];
             }
          }
       }
 
-      // double sign = (col % 2 == 0) ? 1 : -1;
-      // det += sign * M[0][col] * Det(subMatrix);
-      det = std::fma(((col % 2 == 0) ? 1. : -1.) * M[0][col], Det(subMatrix), det);
+      double sign = (col % 2 == 0) ? 1.0 : -1.0;
+      det += sign * M[0][col] * Det(subMatrix);
    }
 
    return det;

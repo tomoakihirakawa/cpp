@@ -50,7 +50,14 @@ if "Cheng2018" in SimulationCase:
     a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
     h = 0.4
 
-    id0 = "meshC"
+    if "meshA" in SimulationCase:
+        id0 = "meshA"
+    elif "meshB" in SimulationCase:
+        id0 = "meshB"
+    elif "meshC" in SimulationCase:
+        id0 = "meshC"
+    else :
+        id0 = "meshA"
     # id0 = "mesh_D"
     # id0 = "_no"
     # id0 = "_multiple"
@@ -59,7 +66,8 @@ if "Cheng2018" in SimulationCase:
     # wavemaker_type = "potential"
     # wavemaker_type = "flap"
 
-    id = SimulationCase + id0 
+    id = SimulationCase
+
     id += "_H" + str(H).replace(".", "d")
     id += "_T" + str(T).replace(".", "d")
     id += "_" + wavemaker_type
@@ -523,7 +531,7 @@ elif "Palm2016" in SimulationCase:
                     "COM": COM,
                     "MOI": [Ixx, Ixx, 10.**10]}
 
-    id = SimulationCase + '_without_mooring'
+    id = SimulationCase
 
     if "with_mooring" in id:
         float["mooringA"] = ["mooringA", 
@@ -556,13 +564,29 @@ elif "Palm2016" in SimulationCase:
                                 damp,
                                 diam]
 
+    probe1 = {"name": "probe1",
+              "type": "wave gauge",
+              "position": [float["COM"][0] - 0.6, float["COM"][1] + 2., 1.2, float["COM"][0] - 0.6, float["COM"][1] + 2., 0.6]}
+    probe2 = {"name": "probe2",
+              "type": "wave gauge",
+              "position": [float["COM"][0]      , float["COM"][1] + 2., 1.2, float["COM"][0]      , float["COM"][1] + 2., 0.6]}
+    probe3 = {"name": "probe3",
+              "type": "wave gauge",
+              "position": [float["COM"][0] + 0.14, float["COM"][1] + 2., 1.2, float["COM"][0] - 0.14, float["COM"][1] + 2., 0.6]}
+    probe4 = {"name": "probe4",
+              "type": "wave gauge",
+              "position": [float["COM"][0] - 0.31, float["COM"][1] + 2., 1.2, float["COM"][0] - 0.31, float["COM"][1] + 2., 0.6]}
+    probes = [probe1, probe2, probe3, probe4]
+
+
     objfolder = code_home_dir + "/cpp/obj/Palm2016"
-    water["objfile"] = objfolder + "/water_mod.obj"
+    water["objfile"] = objfolder + "/water_mod2.obj"
     wavemaker["objfile"] = objfolder + "/wavemaker_mod.obj"
     tank["objfile"] = objfolder + "/tank_mod.obj"
     float["objfile"] = objfolder+"/float_mod.obj"
 
     inputfiles = [tank, wavemaker, water, float]
+    inputfiles += probes
 
     setting = {"max_dt": 0.03,
                 "end_time_step": 100000,

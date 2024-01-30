@@ -7,13 +7,13 @@
     - [⛵ ⛵ 放射関数補間](#⛵-⛵-放射関数補間)
         - [🪼 🪼 重み$`w _i`$の見積もり](#🪼-🪼-重み$`w-_i`$の見積もり)
         - [🪼 🪼 放射基底関数$`\phi`$](#🪼-🪼-放射基底関数$`\phi`$)
-            - [🐚 🐚 多重二乗（multiquadric RBF）](#🐚-🐚-多重二乗（multiquadric-RBF）)
-            - [🐚 🐚 逆多重二乗（inverse multiquadric RBF）](#🐚-🐚-逆多重二乗（inverse-multiquadric-RBF）)
-            - [🐚 🐚 ガウシアン（Gaussian RBF）](#🐚-🐚-ガウシアン（Gaussian-RBF）)
+            - [🪸 🪸 多重二乗（multiquadric RBF）](#🪸-🪸-多重二乗（multiquadric-RBF）)
+            - [🪸 🪸 逆多重二乗（inverse multiquadric RBF）](#🪸-🪸-逆多重二乗（inverse-multiquadric-RBF）)
+            - [🪸 🪸 ガウシアン（Gaussian RBF）](#🪸-🪸-ガウシアン（Gaussian-RBF）)
         - [🪼 🪼 補間関数の微分](#🪼-🪼-補間関数の微分)
-            - [🐚 🐚 多重二乗](#🐚-🐚-多重二乗)
-            - [🐚 🐚 逆多重二乗](#🐚-🐚-逆多重二乗)
-            - [🐚 🐚 ガウシアン](#🐚-🐚-ガウシアン)
+            - [🪸 🪸 多重二乗](#🪸-🪸-多重二乗)
+            - [🪸 🪸 逆多重二乗](#🪸-🪸-逆多重二乗)
+            - [🪸 🪸 ガウシアン](#🪸-🪸-ガウシアン)
         - [🪼 🪼 最適なパラメタ$`{\varepsilon}`$](#🪼-🪼-最適なパラメタ$`{\varepsilon}`$)
     - [⛵ 三角形補間](#⛵-三角形補間)
     - [⛵ ⛵ 範囲を修正した三角形形状関数](#⛵-⛵-範囲を修正した三角形形状関数)
@@ -115,17 +115,17 @@ intpXY.set(5, abscissas, XY);
 
 ### 🪼 🪼 放射基底関数$`\phi`$  
 
-#### 🐚 🐚 多重二乗（multiquadric RBF）  
+#### 🪸 🪸 多重二乗（multiquadric RBF）  
 
 放射基底関数として多重二乗（multiquadric），
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}}`$
 がよく使われる．
 
-#### 🐚 🐚 逆多重二乗（inverse multiquadric RBF）  
+#### 🪸 🪸 逆多重二乗（inverse multiquadric RBF）  
 
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{-\frac{1}{2}}}`$
 
-#### 🐚 🐚 ガウシアン（Gaussian RBF）  
+#### 🪸 🪸 ガウシアン（Gaussian RBF）  
 
 $`\phi \left( r \right)={{e}^{-{{\left( \varepsilon r \right)}^{2}}}}`$
 
@@ -152,7 +152,7 @@ $`\nabla f\left( \mathbf{x} \right)=\sum\limits _{i=0}^{N-1}{{{w} _{i}}\frac{\ma
 
 である．分母がゼロになる可能性があるが，放射基底関数の微分でキャンセルされる．
 
-#### 🐚 🐚 多重二乗  
+#### 🪸 🪸 多重二乗  
 
 $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}^{\frac{1}{2}}},\frac{\partial \phi }{\partial r}\left( r \right)=\frac{\varepsilon^2 r}{\phi \left( r \right)}`$
 
@@ -160,7 +160,7 @@ $`\phi \left( r \right)={{\left( {{\left( \varepsilon r \right)}^{2}}+1 \right)}
 
 $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} _{i}}\frac{\mathbf{x}-{{\mathbf{a}} _{i}}}{\phi \left( {{r} _{i}} \right)}}`$
 
-#### 🐚 🐚 逆多重二乗  
+#### 🪸 🪸 逆多重二乗  
 
 ```math
 \begin{align}
@@ -170,7 +170,7 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 \end{align}
 ```
 
-#### 🐚 🐚 ガウシアン  
+#### 🪸 🪸 ガウシアン  
 
 ```math
 \begin{align}
@@ -219,7 +219,7 @@ N _4 &= 4t _1(1-t _0-t _1) \\
 N _5 &= 4t _0(1-t _0-t _1)
 \end{align}
 ```
-[../../include/basic_arithmetic_array_operations.hpp#L996](../../include/basic_arithmetic_array_operations.hpp#L996)
+[../../include/basic_arithmetic_array_operations.hpp#L1000](../../include/basic_arithmetic_array_operations.hpp#L1000)
 
 
 ![](sample_tri.png)

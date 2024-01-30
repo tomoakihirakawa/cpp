@@ -3,6 +3,7 @@
     - [⛵ 固有値の計算](#⛵-固有値の計算)
     - [⛵ ⛵ QR分解](#⛵-⛵-QR分解)
         - [🪼 🪼 ギブンズ回転](#🪼-🪼-ギブンズ回転)
+            - [🪸 🪸 ヘッセンベルグ行列に対するQR分解](#🪸-🪸-ヘッセンベルグ行列に対するQR分解)
 
 
 ---
@@ -18,6 +19,13 @@ $`A _k`$の対角成分が$`A`$の固有値に収束することを確認する�
 
 ```math
 Q _2^{-1} \cdot (Q _1^{-1} \cdot (Q _0^{-1} \cdot (A = Q _0R _0) \cdot Q _0=Q _1R _1) \cdot Q _1=Q _2 \cdot R _2) \cdot R _2
+```
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release .. -DSOURCE_FILE=testEigenValues.cpp
+make
+./testEigenValues
 ```
 
 [./testEigenValues.cpp#L11](./testEigenValues.cpp#L11)
@@ -64,7 +72,16 @@ F _1^{-1} &= F _1^{T}\\
 というふうに繰り返す．
 
 後で具体的にどのような値をかけているかここに示しておく．
+
+#### 🪸 🪸 ヘッセンベルグ行列に対するQR分解  
+
+$`A`$がヘッセンベルグ行列の場合，
+ゼロとする必要がある成分は，$`A _{i+1,i}`$のみである．
+そのため，普通のQR分解の計算量が$`O(n^2)`$であるのに対し，ヘッセンベルグ行列の場合は$`O(n)`$である．
 [../../include/basic_linear_systems.hpp#L856](../../include/basic_linear_systems.hpp#L856)
+
+
+![QR.png](QR.png)
 
 [./testQR.cpp#L11](./testQR.cpp#L11)
 

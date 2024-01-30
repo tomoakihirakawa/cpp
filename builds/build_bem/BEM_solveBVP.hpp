@@ -72,15 +72,15 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス法廷式の基本解であり，$`\ph
 // #define linear_element
 // #define liear_and_quad_element
 std::unordered_map<std::tuple<netP *, netF *>, int> PBF_index;
-struct calculateFroudeKrylovForce {
+struct calculateFluidInteraction {
+   const Network *PasObj;
    std::vector<networkFace *> actingFaces;
-   Tddd force, torque;
-   double area;
+   Tddd force, torque, simplified_drag, simplified_drag_torque;
+   double area;   
    T6d acceleration;
-   std::vector<std::tuple<Tddd, T3Tddd>> PressureVeticies;
-
-   calculateFroudeKrylovForce(const auto& faces /*waterfaces*/, const Network *PasObj)
-       : force({0., 0., 0.}), torque({0., 0., 0.}), area(0.), PressureVeticies({}), acceleration({0., 0., 0., 0., 0., 0.}) {
+   std::vector<std::tuple<std::array<networkPoint*, 3>, Tddd, T3Tddd>> PressureVeticies;
+   calculateFluidInteraction(const auto& faces /*waterfaces*/, const Network *PasObjIN)
+       : PasObj(PasObjIN), force({0., 0., 0.}), torque({0., 0., 0.}), area(0.), PressureVeticies({}), acceleration({0., 0., 0., 0., 0., 0.}) {
       // PasObjと接したfaceの頂点にpressureが設定されている前提
       int count = 0;
       // set PressureVeticies
@@ -90,14 +90,14 @@ struct calculateFroudeKrylovForce {
                                                              
                                                              p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
-               this->PressureVeticies.push_back({{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
+               this->PressureVeticies.push_back({{p0,p1,p2},{p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
                count++;
             }
          }
 
       // calculate area
-      for (const auto &[P012, X012] : this->PressureVeticies) {
+      for (const auto &[p012, P012, X012] : this->PressureVeticies) {
          auto intpX = interpolationTriangleLinear0101(X012);
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
             area += intpX.J(x0, x1) * w0w1;
@@ -105,39 +105,55 @@ struct calculateFroudeKrylovForce {
       // std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
    };
 
-   // \label{BEM:surfaceIntegralOfTorque}
-   Tddd getFroudeKrylovTorque(const Tddd &COM) {
-      this->torque = {0., 0., 0.};
-      for (const auto &[P012, X012] : this->PressureVeticies) {
-         auto intpP = interpolationTriangleLinear0101(P012);
-         auto intpX = interpolationTriangleLinear0101(X012);
-         auto n = TriangleNormal(X012);
-         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            this->torque += Cross(intpX(x0, x1) - COM, n) * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
-      }
-      return this->torque;
-   };
-
    // \label{BEM:surfaceIntegralOfPressure}
-   Tddd surfaceIntegralOfPressure() {
+   std::array<Tddd,2> surfaceIntegralOfPressure() {
       this->force.fill(0.);
-      for (const auto &[P012, X012] : this->PressureVeticies) {
-         auto [p0, p1, p2] = P012;
+      this->torque.fill(0.);
+      for (const auto &[_, P012, X012] : this->PressureVeticies) {
+         auto [pre0, pre1, pre2] = P012;
          auto [X0, X1, X2] = X012;
-         // this->force += 1. / 6. * (p0 + p1 + p2) * Cross(X1 - X0, X2 - X0);
+         // this->force += (p0 + p1 + p2) / 3. * Cross(X1 - X0, X2 - X0) / 2.;
 
          auto intpP = interpolationTriangleLinear0101(P012);
          auto intpX = interpolationTriangleLinear0101(X012);
          auto n = TriangleNormal(X012);
-         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-            this->force += n * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
+         Tddd f;
+         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple){
+            f = n * intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
+            this->force += f;
+            this->torque += Cross(intpX(x0, x1) - this->PasObj->COM, f);
+         }
       }
-      return this->force;
+      return {this->force, this->torque};
    };
+
+   std::array<Tddd,2> surfaceIntegralOfVerySimplifiedDrag() {
+      this->simplified_drag.fill(0.);
+      this->simplified_drag_torque.fill(0.);
+      for (const auto &[p012, _, X012] : this->PressureVeticies) {
+         auto [p0, p1, p2] = p012;
+         auto [X0, X1, X2] = X012;
+         const Tddd relative_U0 = p0->U_BEM - PasObj->velocityRigidBody(X0);
+         const Tddd relative_U1 = p1->U_BEM - PasObj->velocityRigidBody(X1);
+         const Tddd relative_U2 = p2->U_BEM - PasObj->velocityRigidBody(X2);
+         // this->force += (p0 + p1 + p2) / 3. * Cross(X1 - X0, X2 - X0) / 2.;
+         auto intpRelativeVelocity = interpolationTriangleLinear0101(T3Tddd{relative_U0, relative_U1, relative_U2});
+         auto intpX = interpolationTriangleLinear0101(X012);
+         const double nu = 1000*1000*1.004*10E-6;//m2 /s      
+         Tddd drag_f;
+         for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple){
+            drag_f = nu * intpRelativeVelocity(x0, x1) * intpX.J(x0, x1) * w0w1;
+            this->simplified_drag += drag_f;
+            this->simplified_drag_torque += Cross(intpX(x0, x1) - this->PasObj->COM, drag_f);
+         }
+      }
+      return {this->simplified_drag, this->simplified_drag_torque};
+   };
+
 };
 
 void setPhiPhin(Network &water) {
-   /* -------------------------------------------------------------------------- */
+   /* -----------------------------------------------------------pythr--------------- */
    /*                         phinOnFace, phintOnFaceの設定                       */
    /* -------------------------------------------------------------------------- */
    // b! 点
@@ -726,6 +742,49 @@ struct BEM_BVP {
 
    /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
 
+   ### 加速度の計算の難しさ
+
+   これは，浮体表面の圧力の計算の困難，もっと言えば$`\phi_t`$の計算の困難に起因する． \cite{Ma2009}によると，$`\phi_t`$の計算方法として以下の４つの方法が提案されている．
+
+   1. 間接的法 (indirect method) ：補助関数を使う方法
+   2. モード分解法 (mode-decomposition method)      
+   3. Dalena and Tanizawa's method
+   4. Caoの反復法 (iterative method) \cite{Cao1994}
+   5. Maの方法 \cite{Ma2009}
+
+   #### 間接的法，モード分解法
+
+   間接的法，モード分解法は，$`\phi`$に関するBVPと似ているが異なる新たなBVPを解く必要がある．
+   この新たなBIEの境界条件は違うが，係数行列は同じ（私は違うと思うのだが）らしい．
+   ただ悩ましいので，LU分解のような直接法なら逆行列を保持するので余計な計算が発生しないが，直接法はそもそも遅い．
+   そこで反復法を使いたいが，反復法は逆行列を保持しないので，毎回係数行列を計算する必要がある，というジレンマがある．
+
+   #### Dalena and Tanizawa's method
+   
+   Dalena and Tanizawa's methodは，$`\phi`$に関するBVPと全く違うBVPを解く必要があり，
+   係数行列も違うので，新たに行列を構成する必要がある．
+   この行列に関してはあまり研究されていないので，あまり使われない理由だと考えられる．
+
+   #### 反復法
+
+   Caoの反復法は，新たなBVPを解く必要がないので，上の問題はないらしい\cite{Ma2009}．
+   （これは間違いで，直接法を使った場合はそうだが，反復法（GMRESのような）を使うなら，このCaoの反復法の内部で反復法（GMRESなど）をする必要があり時間がかかり，
+   初めの２つに優っているとは言えない．同じ程度の時間がかかる．）
+   
+   #### Maの反復法
+
+   
+
+   | Method |  |
+   |:---:|:---:|
+   | Indirect method | 浮体１つに対して６つ，新しいBIEを立てる．新たに解く必要があり遅い |
+   | Mode-decomposition method | 浮体１つに対して7つ，新しいBIEを立てる．新たに解く必要があり遅い |
+   | Dalena and Tanizawa's method | ? |
+   | Cao's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
+   | Ma's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
+
+
+
    ### $`\phi_t`$と$`\phi_{nt}`$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
 
    $`\phi_t`$と$`\phi_{nt}`$に関するBIEを解くためには，ディリクレ境界には$`\phi_t`$を，ノイマン境界には$`\phi_{nt}`$を与える．
@@ -1025,7 +1084,7 @@ struct BEM_BVP {
             // std::cout << net->inputJSON.find("velocity") << std::endl;
             // std::cout << net->inputJSON["velocity"][0] << std::endl;
 
-            auto tmp = calculateFroudeKrylovForce(all_faces, net);
+            auto tmp = calculateFluidInteraction(all_faces, net);
             auto [_, __, ___, Ix, Iy, Iz] = net->getInertiaGC();
             
             //$ ------------------------------ 係留索から受ける力とトルク ----------------------------- */
@@ -1034,14 +1093,20 @@ struct BEM_BVP {
             //$ ------------------------------------------------------------------------------------------ */
             std::array<double, 3> F_mooring = {0., 0., 0.}, T_mooring = {0., 0., 0.};
             //!simulateはアップデートの際に行なっておく．
-            for(auto& mooring_line: net->mooringLines)
+            for(auto& mooring_line: net->mooringLines){
                F_mooring += mooring_line->lastPoint->getForce();
+               T_mooring += Cross(mooring_line->lastPoint->X - net->COM, mooring_line->lastPoint->getForce());
+            }
             /* -------------------------------------------------------------------------- */
             auto F_ext = _GRAVITY3_ * net->getMass3D();
-            auto F_hydro = tmp.surfaceIntegralOfPressure();
-            auto F = F_hydro + F_ext + F_mooring;
-            auto T_hydro = tmp.getFroudeKrylovTorque(net->COM);
-            auto T = T_hydro + T_mooring;
+            auto [F_hydro,T_hydro] = tmp.surfaceIntegralOfPressure();
+            auto F = F_ext + F_hydro;
+            auto T = T_hydro;
+            F += F_mooring;
+            T += T_mooring;
+            // auto [Drag_F_hydro, Drag_T_hydro] = tmp.surfaceIntegralOfVerySimplifiedDrag();
+            // F += Drag_F_hydro;
+            // T += Drag_T_hydro;
             auto [a0, a1, a2] = F / net->getMass3D();
             auto [a3, a4, a5] = T / Tddd{Ix, Iy, Iz};
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．

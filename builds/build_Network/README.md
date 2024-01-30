@@ -3,9 +3,9 @@
     - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
         - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
-            - [🐚 面の出力](#🐚-面の出力)
-            - [🐚 線の出力](#🐚-線の出力)
-            - [🐚 実行方法](#🐚-実行方法)
+            - [🪸 面の出力](#🪸-面の出力)
+            - [🪸 線の出力](#🪸-線の出力)
+            - [🪸 実行方法](#🪸-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
@@ -13,15 +13,15 @@
     - [⛵ ⛵ `Bucket`クラス](#⛵-⛵-`Bucket`クラス)
         - [🪼 🪼 メンバ変数](#🪼-🪼-メンバ変数)
         - [🪼 🪼 メソッド](#🪼-🪼-メソッド)
-            - [🐚 🐚 初期化関連](#🐚-🐚-初期化関連)
-            - [🐚 🐚 インデックス変換¸](#🐚-🐚-インデックス変換¸)
-            - [🐚 🐚 データ追加・削除](#🐚-🐚-データ追加・削除)
-            - [🐚 🐚 その他](#🐚-🐚-その他)
+            - [🪸 🪸 初期化関連](#🪸-🪸-初期化関連)
+            - [🪸 🪸 インデックス変換¸](#🪸-🪸-インデックス変換¸)
+            - [🪸 🪸 データ追加・削除](#🪸-🪸-データ追加・削除)
+            - [🪸 🪸 その他](#🪸-🪸-その他)
     - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
     - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#⛵-空間分割の応用例：オブジェクトの接触や交差の判定)
         - [🪼 線分と面の交差判定](#🪼-線分と面の交差判定)
         - [🪼 面と面の接触判定](#🪼-面と面の接触判定)
-            - [🐚 ２面の最短距離](#🐚-２面の最短距離)
+            - [🪸 ２面の最短距離](#🪸-２面の最短距離)
 - [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
 - [🐋 四面体の生成](#🐋-四面体の生成)
     - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
@@ -50,7 +50,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4108)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4106)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -64,7 +64,7 @@ auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェク
 `vtkPolygonWrite`を使うと，`Network`クラスの面の情報を，`vtp`ファイルとして出力できる．
 `vtkPolygonWrite`には，`ofstream`と，`std::vector<networkFace*>`や`std::vector<networkLine*>`などを渡し，出力できる．
 
-#### 🐚 面の出力 
+#### 🪸 面の出力 
 
 ```cpp
 auto obj = new Network("./bunny.obj");
@@ -74,7 +74,7 @@ vtkPolygonWrite(ofs, obj->getFaces());
 
 <img src="sample.png" width="500px">
 
-#### 🐚 線の出力 
+#### 🪸 線の出力 
 
 ```cpp
 auto obj = new Network("./bunny.obj");
@@ -82,7 +82,7 @@ std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getEdges());
 ```
 
-#### 🐚 実行方法 
+#### 🪸 実行方法 
 
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
@@ -166,21 +166,21 @@ make
 
 ### 🪼 🪼 メソッド  
 
-#### 🐚 🐚 初期化関連  
+#### 🪸 🪸 初期化関連  
 
 - `initialize(const T3Tdd &boundingboxIN, const double dL_IN)`: バケツを初期化する．
 œa
-#### 🐚 🐚 インデックス変換¸  
+#### 🪸 🪸 インデックス変換¸  
 
 - `itox(const ST i, const ST j, const ST k) const`: インデックスから座標へ変換．
 - `indices(const Tddd &x) const`: 座標からインデックスへ変換．
 
-#### 🐚 🐚 データ追加・削除  
+#### 🪸 🪸 データ追加・削除  
 
 - `add(const Tddd &x, const T p)`: オブジェクトを追加．
 - `erase(T const p)`: オブジェクトを削除．
 
-#### 🐚 🐚 その他  
+#### 🪸 🪸 その他  
 
 `apply(const Tddd &x, const double d, const std::function<bool(const T &)> &func)`は，バケツの範囲を指定して，その範囲内のオブジェクトに対して関数を適用する．
 これと似た関数として，
@@ -235,7 +235,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1676)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1693)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -251,17 +251,17 @@ make
 ---
 ### 🪼 面と面の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1676)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](../../include/basic_geometry.hpp#L1693)関数は，交差判定には使えるが，接触判定には使えない．
 
 **オブジェクト同士の接触**をプログラム上で定義するなら，
 ２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
 
-#### 🐚 ２面の最短距離 
+#### 🪸 ２面の最短距離 
 
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
 これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1616)のような計算を行う．
+また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1633)のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
 
@@ -360,7 +360,7 @@ NumberOfVerts="0">
 </VTKFile>
 ```
 
-[./example2_generate_tetra_constrained2.cpp#L251](./example2_generate_tetra_constrained2.cpp#L251)
+[./example2_generate_tetra_constrained2.cpp#L296](./example2_generate_tetra_constrained2.cpp#L296)
 
 ---
 # 🐋 四面体の生成 
@@ -387,7 +387,7 @@ make
 
 `bunny.obj`のような複雑なポリゴンには，この方法ではうまくいかない．
 
-[./example2_generate_tetra_constrained2.cpp#L2](./example2_generate_tetra_constrained2.cpp#L2)
+[./example2_generate_tetra_constrained2.cpp#L1](./example2_generate_tetra_constrained2.cpp#L1)
 
 ## ⛵ スコアリングと選択 
 
@@ -395,7 +395,7 @@ make
 
 外接球の半径が小さすぎる場合は四面体の候補から外す．
 
-[./example2_generate_tetra_constrained2.cpp#L140](./example2_generate_tetra_constrained2.cpp#L140)
+[./example2_generate_tetra_constrained2.cpp#L161](./example2_generate_tetra_constrained2.cpp#L161)
 
 ---
 # 🐋 CGALを使って四面体を生成する 9_9_CGAL 
