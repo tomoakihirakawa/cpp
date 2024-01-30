@@ -164,6 +164,6 @@
     - [⛵ ⛵ CRS構造体の仕様](./builds/build_system_of_linear_eqs/README.md#⛵-⛵-CRS構造体の仕様)
 - [🐋 連立一次方程式の解法](./builds/build_system_of_linear_eqs/README.md#🐋-連立一次方程式の解法)
     - [⛵ ⛵ Arnoldi過程](./builds/build_system_of_linear_eqs/README.md#⛵-⛵-Arnoldi過程)
-    - [⛵ ⛵ 一般化最小残差法/GMRES](./builds/build_system_of_linear_eqs/README.md#⛵-⛵-一般化最小残差法/GMRES)
+    - [⛵ ⛵ 一般化最小残差法 (Generalized Minimal Residual Method, GMRES)](./builds/build_system_of_linear_eqs/README.md#⛵-⛵-一般化最小残差法-(Generalized-Minimal-Residual-Method,-GMRES))
     - [⛵ LU分解(LAPACK)](./builds/build_system_of_linear_eqs/README.md#⛵-LU分解(LAPACK))
     - [⛵ 共役勾配法と勾配降下法](./builds/build_system_of_linear_eqs/README.md#⛵-共役勾配法と勾配降下法)

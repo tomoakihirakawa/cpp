@@ -891,15 +891,19 @@ void FusedMultiplyIncrement(const double arr, const double ARR, double& ret) noe
 // };
 
 double Det(const T3Tddd& M) {
-   // Unpacking each row of the matrix
-   auto [a, b, c] = std::get<0>(M);  // First row
-   auto [d, e, f] = std::get<1>(M);  // Second row
-   auto [g, h, i] = std::get<2>(M);  // Third row
+   // // Unpacking each row of the matrix
+   // auto [a, b, c] = std::get<0>(M);  // First row
+   // auto [d, e, f] = std::get<1>(M);  // Second row
+   // auto [g, h, i] = std::get<2>(M);  // Third row
 
-   // Calculating the determinant using std::fma
-   return std::fma(a, std::fma(e, i, -f * h),
-                   std::fma(b, std::fma(f, g, -d * i),
-                            std::fma(c, std::fma(d, h, -e * g), 0.)));
+   // // Calculating the determinant using std::fma
+   // return std::fma(a, std::fma(e, i, -f * h),
+   //                 std::fma(b, std::fma(f, g, -d * i),
+   //                          std::fma(c, std::fma(d, h, -e * g), 0.)));
+
+   return M[0][0] * (std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1])) -
+          M[0][1] * (std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0])) +
+          M[0][2] * (std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0]));
 }
 
 /* -------------------------------------------------------------------------- */

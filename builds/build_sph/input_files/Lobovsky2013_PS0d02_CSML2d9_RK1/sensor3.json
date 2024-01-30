@@ -1,0 +1,9 @@
+{
+    "name": "sensor3",
+    "type": "probe",
+    "location": [
+        1.61,
+        0.075,
+        0.03
+    ]
+}

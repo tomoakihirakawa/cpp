@@ -467,7 +467,7 @@ void updateParticles(const auto &net,
 
       //% 密度の更新
       // \label{SPH:update_density}
-      const double a = 0.5;
+      const double a = 0.25;
       for (const auto &A : net->getPoints()) {
          A->RK_rho.push(A->DrhoDt_SPH);  // 密度
          A->setDensity(a * A->RK_rho.get_x() + (1. - a) * _WATER_DENSITY_);

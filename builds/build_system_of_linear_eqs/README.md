@@ -6,14 +6,15 @@
         - [🪼 🪼 メンバ変数](#🪼-🪼-メンバ変数)
         - [🪼 🪼 メンバ関数](#🪼-🪼-メンバ関数)
         - [🪼 CRSの使用例](#🪼-CRSの使用例)
-            - [🐚 CRSは，ある行ベクトルを格納するクラスと考える](#🐚-CRSは，ある行ベクトルを格納するクラスと考える)
-            - [🐚 `setIndexCRS`](#🐚-`setIndexCRS`)
-            - [🐚 値を格納：`set`と`increment`](#🐚-値を格納：`set`と`increment`)
-            - [🐚 `selfDot`](#🐚-`selfDot`)
+            - [🪸 CRSは，ある行ベクトルを格納するクラスと考える](#🪸-CRSは，ある行ベクトルを格納するクラスと考える)
+            - [🪸 `setIndexCRS`](#🪸-`setIndexCRS`)
+            - [🪸 値を格納：`set`と`increment`](#🪸-値を格納：`set`と`increment`)
+            - [🪸 `selfDot`](#🪸-`selfDot`)
 - [🐋 連立一次方程式の解法](#🐋-連立一次方程式の解法)
     - [⛵ ⛵ Arnoldi過程](#⛵-⛵-Arnoldi過程)
         - [🪼 🪼 基底ベクトルの追加](#🪼-🪼-基底ベクトルの追加)
-    - [⛵ ⛵ 一般化最小残差法/GMRES](#⛵-⛵-一般化最小残差法/GMRES)
+    - [⛵ ⛵ 一般化最小残差法 (Generalized Minimal Residual Method, GMRES)](#⛵-⛵-一般化最小残差法-(Generalized-Minimal-Residual-Method,-GMRES))
+        - [🪼 🪼 GMRESの計算複雑性](#🪼-🪼-GMRESの計算複雑性)
         - [🪼 テスト](#🪼-テスト)
     - [⛵ LU分解(LAPACK)](#⛵-LU分解(LAPACK))
     - [⛵ 共役勾配法と勾配降下法](#⛵-共役勾配法と勾配降下法)
@@ -84,7 +85,7 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 | `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
 | `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
 | `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
-[../../include/basic_linear_systems.hpp#L1135](../../include/basic_linear_systems.hpp#L1135)
+[../../include/basic_linear_systems.hpp#L1140](../../include/basic_linear_systems.hpp#L1140)
 
 
 ### 🪼 CRSの使用例 
@@ -100,7 +101,7 @@ make
 [./test3_CRS.cpp#L1](./test3_CRS.cpp#L1)
 
 ---
-#### 🐚 CRSは，ある行ベクトルを格納するクラスと考える 
+#### 🪸 CRSは，ある行ベクトルを格納するクラスと考える 
 
 私のプログラムでは，Row-major orderで行列を格納しており，次のように行列を定義している．
 
@@ -127,7 +128,7 @@ std::vector<CRS*> Mat_CRS(A.size());
 [./test3_CRS.cpp#L135](./test3_CRS.cpp#L135)
 
 ---
-#### 🐚 `setIndexCRS` 
+#### 🪸 `setIndexCRS` 
 
 CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持しておく．
 このインデックスは，`std::vector<VRS*>`と掛け算をする相手である`V`の行番号に対等させておく必要がある．
@@ -137,7 +138,7 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 [./test3_CRS.cpp#L162](./test3_CRS.cpp#L162)
 
 ---
-#### 🐚 値を格納：`set`と`increment` 
+#### 🪸 値を格納：`set`と`increment` 
 
 値を格納するには，２つの方法があり，`set`と`increment`がある．
 このように，インデックスと値を指定するようにしているのは，
@@ -147,7 +148,7 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 
 [./test3_CRS.cpp#L175](./test3_CRS.cpp#L175)
 
-#### 🐚 `selfDot` 
+#### 🪸 `selfDot` 
 
 `selfDot`は，CRSに保存した`A`と`V`を掛け合わせる関数である．
 
@@ -157,6 +158,12 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 # 🐋 連立一次方程式の解法 
 
 ## ⛵ ⛵ Arnoldi過程  
+
+アーノルディ分解は，Krylov部分空間の生成のために使われる．
+GMRESは，Krylov部分空間と呼ばれる線形空間内で反復解を探すアルゴリズム．
+この部分空間は，行列Aと初期ベクトルから生成される．
+GMRESにとってアーノルディ分解は，ヘッセンベルグ行列を生成するための手段．
+得られたヘッセンベルグ行列はQR分解され，直交行列と上三角行列に分解される．
 
 1. 正規化した$`{\bf v} _1`$を与えておく．
 2. $`{\bf v} _2 = {\rm Normalize}(\,\,\,\quad\quad\quad\quad\quad A{\bf v} _1 - ((A{\bf v} _1) \cdot {\bf v} _1){\bf v} _1\,\,\qquad\qquad\qquad\qquad\qquad\qquad)`$を計算する．
@@ -204,10 +211,10 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 基底ベクトルを追加したい場合にどのような操作が必要となるか整理しておこう．
 これは，GMRES法の繰り返し計算の中で必要となる．
-[../../include/basic_linear_systems.hpp#L1463](../../include/basic_linear_systems.hpp#L1463)
+[../../include/basic_linear_systems.hpp#L1468](../../include/basic_linear_systems.hpp#L1468)
 
 
-## ⛵ ⛵ 一般化最小残差法/GMRES  
+## ⛵ ⛵ 一般化最小残差法 (Generalized Minimal Residual Method, GMRES)  
 
 残差$`\|{\bf b} - A{\bf x}\|`$を最小とするような$`{\bf x}`$を求めたい．
 そのような$`{\bf x}`$を，クリロフ部分空間の正規直交基底を用いた，$`{\bf x} _n = V _n {\bf y} _n`$の形で近似し，追い求めていく．
@@ -228,26 +235,23 @@ $`n`$はこの表現での展開項数である．$`V _n = \{{\bf v} _1,{\bf v} 
 \end{align*}
 ```
 
-<details>
-<summary>なぜアーノルディ分解をするのか？</summary>
-
-* $`A`$は$`m \times m`$とすると
-* $`{\bf x}`$と$`{\bf b}`$は，$`m \times 1`$ベクトル（列ベクトル）.
-* $`V _n`$は，$`m \times n`$行列で，$`A`$のクリロフ部分空間の基底ベクトルを列に持つ行列．
-* $`{\bf y} _n`$は$`n \times 1`$ベクトル．
-* $`\tilde H _n`$は$`(n+1) \times n`$行列．
-
-従って，$`n`$が$`m`$よりも大幅に小さい場合，
-アーノルディ分解によって作られた問題$`\min\|{\bf b} - V _{n+1}{\tilde H} _n {\bf y} _n\|`$は，
-元の問題$`\min\|{\bf b}-A{\bf x}\|`$より計算量が少ない問題となる．
-
-$`A{\bf x} = {\bf b}`$の問題を解くよりも，
-$`{\tilde H} _n {\bf y} _n = {\bf b}`$という問題を解く方が計算量が少ない．
-
-</details>
+ただし，これは理論の話であって，
+簡単には，アーノルディ分解で得られたヘッセンベルグ行列をQR分解して，$`{\bf y} _n`$を求める，ということである．
 
 💡 アーノルディ過程が逐次的に計算できるため，展開項数$`n`$を$`n+1`$へと大きくしようとする際に（精度が$`n`$では十分でない場合），GMRESで近似解$`{\bf x} _{n+1}`$を始めから計算しなおす必要はない．$`V _{n+1}`$と$`{\tilde H} _{n+1}`$は，$`V _n`$と$`{\tilde H} _n`$を再利用するようにして計算でき，従って，比較的安く，得られている$`{\bf x} _n`$から$`{\bf x} _{n+1}`$へと更新できる．
-[../../include/basic_linear_systems.hpp#L1582](../../include/basic_linear_systems.hpp#L1582)
+
+### 🪼 🪼 GMRESの計算複雑性  
+
+単純に考えて，$`A`$が$`m \times m`$行列であるとすると，
+GMRESの行列ベクトル積の計算量は，$`O(m^2)`$．
+もし，クリロフ部分空間の基底を$`n`$個まで展開するとすると，$`O(m^2 n)`$の計算量が必要となる．
+さらに，収束するまでの反復回数を$`k`$とすると，$`O(m^2 n k)`$の計算量が必要となる．
+
+LU分解の場合は，$`O(m^3)`$の計算量が必要となる．
+従って，$`m`$が大きい場合は，GMRESの方が計算量が少なくて済む．
+
+GMRESと多重極展開法（もし$`m`$が$`m/d`$になったとすると）を組み合わせれば，GMRESは$`O(knm^2/d^2)`$で計算できる．
+[../../include/basic_linear_systems.hpp#L1593](../../include/basic_linear_systems.hpp#L1593)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．

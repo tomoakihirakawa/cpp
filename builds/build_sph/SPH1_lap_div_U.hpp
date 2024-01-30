@@ -70,7 +70,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.02;  // 少しは必要のようだ
+            const double c_xsph = 0.03;  // 少しは必要のようだ
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -185,11 +185,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             //    if (A->isNearSurface) {
             //       const auto V_mod = interp_normal_original_next_mod / _WATER_DENSITY_;
             //       const auto [Vn, Vs] = DecomposeVector(V_org, V_mod);
-            //       // A->DUDt_modify_SPH_2 = dt * 0.005 * Vs * typical_acceleration;
-            //       A->DUDt_modify_SPH_2 = 0.01 * Vs * U_next(A);
+            //       A->DUDt_modify_SPH_2 = dt * 0.0001 * Vs * typical_acceleration;
             //       // 変更したが良くなったか
             //    } else {
-            //       A->DUDt_modify_SPH_2 = 0.01 * V_org * U_next(A);
+            //       A->DUDt_modify_SPH_2 = dt * 0.0001 * V_org * typical_acceleration;
             //    }
 
             // 修正２
@@ -231,7 +230,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             applyOverPoints(add);
 
             // suppress the change
-            double max_scale = 0.1 * Norm(A->DUDt_SPH);
+            double max_scale = 0.01 * Norm(A->DUDt_SPH);
             double original_scale = Norm(A->DUDt_modify_SPH_2);
             if (original_scale > 0.)
                A->DUDt_modify_SPH_2 *= std::min(original_scale, max_scale) / original_scale;

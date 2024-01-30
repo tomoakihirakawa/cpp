@@ -12,6 +12,8 @@ typedef std::vector<std::vector<double>> VV_d;
 
 \insert{QR_decomposition}
 
+![QR.png](QR.png)
+
 */
 
 // compare with testQR.nb

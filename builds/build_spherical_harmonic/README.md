@@ -64,6 +64,13 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 
 ## ⛵ 精度の確認 
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_multipole_expansion.cpp
+make
+./test_multipole_expansion
+```
+
 ### 🪼 $`G _{\rm apx}`$の精度 
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
@@ -139,6 +146,8 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
 
+<img src="./fmm.png" width="400px">
+
 ### 🪼 境界積分方程式 
 
 ラプラス方程式とグリーンの定理を合わせて，境界積分方程式が得られる．
@@ -194,6 +203,6 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 
 2
 
-[./test_multipole_expansion.cpp#L155](./test_multipole_expansion.cpp#L155)
+[./test_multipole_expansion.cpp#L169](./test_multipole_expansion.cpp#L169)
 
 ---

@@ -6,18 +6,18 @@
     - [⛵ 境界のタイプを決定する](#⛵-境界のタイプを決定する)
         - [🪼 多重節点](#🪼-多重節点)
         - [🪼 `getContactFaces()`や`getNearestContactFace()`の利用](#🪼-`getContactFaces()`や`getNearestContactFace()`の利用)
-            - [🐚 `contact_angle`と`isInContact()`](#🐚-`contact_angle`と`isInContact()`)
-            - [🐚 🐚 接触の概念図](#🐚-🐚-接触の概念図)
-            - [🐚 `addContactFaces()`](#🐚-`addContactFaces()`)
-            - [🐚 呼び出し方法](#🐚-呼び出し方法)
+            - [🪸 `contact_angle`と`isInContact()`](#🪸-`contact_angle`と`isInContact()`)
+            - [🪸 🪸 接触の概念図](#🪸-🪸-接触の概念図)
+            - [🪸 `addContactFaces()`](#🪸-`addContactFaces()`)
+            - [🪸 呼び出し方法](#🪸-呼び出し方法)
         - [🪼 `uNeumann()`と`accelNeumann()`](#🪼-`uNeumann()`と`accelNeumann()`)
     - [⛵ 境界値問題](#⛵-境界値問題)
         - [🪼 基礎方程式](#🪼-基礎方程式)
         - [🪼 境界積分方程式（BIE）](#🪼-境界積分方程式（BIE）)
         - [🪼 BIEの離散化](#🪼-BIEの離散化)
-            - [🐚 線形三角要素](#🐚-線形三角要素)
-            - [ 🐚 線形三角要素のヤコビアン](#-🐚-線形三角要素のヤコビアン)
-            - [🐚 係数行列の作成](#🐚-係数行列の作成)
+            - [🪸 線形三角要素](#🪸-線形三角要素)
+            - [ 🪸 線形三角要素のヤコビアン](#-🪸-線形三角要素のヤコビアン)
+            - [🪸 係数行列の作成](#🪸-係数行列の作成)
         - [🪼 リジッドモードテクニック](#🪼-リジッドモードテクニック)
     - [⛵ 初期値問題](#⛵-初期値問題)
         - [🪼 流速$`\frac{d\bf x}{dt}`$の計算](#🪼-流速$`\frac{d\bf-x}{dt}`$の計算)
@@ -25,11 +25,16 @@
         - [🪼 Arbitrary Lagrangian–Eulerian Methods (ALE)](#🪼-Arbitrary-Lagrangian–Eulerian-Methods-(ALE))
     - [⛵ 浮体動揺解析](#⛵-浮体動揺解析)
         - [🪼 浮体の運動方程式](#🪼-浮体の運動方程式)
+        - [🪼 加速度の計算の難しさ](#🪼-加速度の計算の難しさ)
+            - [🪸 間接的法，モード分解法](#🪸-間接的法，モード分解法)
+            - [🪸 Dalena and Tanizawa's method](#🪸-Dalena-and-Tanizawa's-method)
+            - [🪸 反復法](#🪸-反復法)
+            - [🪸 Maの反復法](#🪸-Maの反復法)
         - [🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方）](#🪼-$`\phi-_t`$と$`\phi-_{nt}`$に関するBIEの解き方（と$`\phi-_{nt}`$の与え方）)
-            - [🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
-            - [🐚 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知)](#🐚-ディリクレ節点の$`\phi-_{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知))
-            - [🐚 ノイマン節点での$`\phi _{nt}`$の与え方](#🐚-ノイマン節点での$`\phi-_{nt}`$の与え方)
-            - [🐚 $`\phi`$のヘッセ行列の計算](#🐚-$`\phi`$のヘッセ行列の計算)
+            - [🪸 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知)](#🪸-ディリクレ節点の$`\phi-_{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知))
+            - [🪸 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知)](#🪸-ディリクレ節点の$`\phi-_{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知))
+            - [🪸 ノイマン節点での$`\phi _{nt}`$の与え方](#🪸-ノイマン節点での$`\phi-_{nt}`$の与え方)
+            - [🪸 $`\phi`$のヘッセ行列の計算](#🪸-$`\phi`$のヘッセ行列の計算)
         - [🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について．](#🪼-$`\phi-_{nt}`$の計算で必要となる$`{\bf-n}\cdot-\left({\frac{d\boldsymbol-r}{dt}--\cdot-\nabla\otimes\nabla-\phi}\right)`$について．)
         - [🪼 浮体の重心位置・姿勢・速度の更新](#🪼-浮体の重心位置・姿勢・速度の更新)
         - [🪼 補助関数を使った方法](#🪼-補助関数を使った方法)
@@ -135,7 +140,7 @@
 
 ### 🪼 `getContactFaces()`や`getNearestContactFace()`の利用 
 
-#### 🐚 `contact_angle`と`isInContact()` 
+#### 🪸 `contact_angle`と`isInContact()` 
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
@@ -145,13 +150,13 @@
 | [`addContactFaces()`](../../include/networkPoint.hpp#L261)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
 
-#### 🐚 🐚 接触の概念図  
+#### 🪸 🪸 接触の概念図  
 
 ![接触の概念図](../../include/contact.png)
 [../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
 
 
-#### 🐚 `addContactFaces()` 
+#### 🪸 `addContactFaces()` 
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
@@ -162,7 +167,7 @@
 [../../include/networkPoint.hpp#L265](../../include/networkPoint.hpp#L265)
 
 
-#### 🐚 呼び出し方法 
+#### 🪸 呼び出し方法 
 
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
@@ -252,7 +257,7 @@ BIEをGauss-Legendre積分で離散化すると，
 ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
 $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
 
-#### 🐚 線形三角要素 
+#### 🪸 線形三角要素 
 
 <img src="./img/schematic_linear_triangle_element.png" width="400px">
 
@@ -262,7 +267,7 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 {\pmb N}({\pmb \xi}) = (N _0({\pmb \xi}),N _1({\pmb \xi}),N _2({\pmb \xi})) = (\xi _0, - \xi _1 (\xi _0 - 1), (\xi _0-1)(\xi _1-1))
 ```
 
-####  🐚 線形三角要素のヤコビアン 
+####  🪸 線形三角要素のヤコビアン 
 
 線形三角要素のヤコビアンは，$`\|\frac{\partial {\bf{x}}}{\partial {\xi _0}} \times \frac{\partial {\bf{x}}}{\partial {\xi _1}}\|`$である．
 
@@ -305,9 +310,9 @@ $`((p _1-p _0)\times(p _2-p _0))=2A _{k _\vartriangle}{\bf n} _{k _\vartriangle}
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この二つをまとめて計算する．
 
-[./BEM_solveBVP.hpp#L205](./BEM_solveBVP.hpp#L205)
+[./BEM_solveBVP.hpp#L221](./BEM_solveBVP.hpp#L221)
 
-#### 🐚 係数行列の作成 
+#### 🪸 係数行列の作成 
 
 実際のプログラムでは，$`{\bf A}{\bf x}={\bf b}`$の形で整理することが多い．
 上のようにBIEは離散化されるが，
@@ -347,7 +352,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L317](./BEM_solveBVP.hpp#L317)
+[./BEM_solveBVP.hpp#L333](./BEM_solveBVP.hpp#L333)
 
 ### 🪼 リジッドモードテクニック 
 
@@ -355,7 +360,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 これはリジッドモードテクニックと呼ばれている．
 $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激に特異的に変化するため，数値積分精度が悪化するが，リジッドモードテクニックによって積分を回避できる．
 
-[./BEM_solveBVP.hpp#L439](./BEM_solveBVP.hpp#L439)
+[./BEM_solveBVP.hpp#L455](./BEM_solveBVP.hpp#L455)
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
@@ -383,7 +388,7 @@ $`{\bf x} _{i\circ}`$が$`{\bf x}({\pmb \xi})`$に近い場合，$`G`$は急激�
 \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
 ```
 
-[./BEM_solveBVP.hpp#L477](./BEM_solveBVP.hpp#L477)
+[./BEM_solveBVP.hpp#L493](./BEM_solveBVP.hpp#L493)
 
 ---
 ## ⛵ 初期値問題 
@@ -480,8 +485,8 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L121)と
-[トルクの積分](../../builds/build_bem/BEM_solveBVP.hpp#L108)：
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L108)と
+[トルクの積分](../../builds/build_bem_old/BEM_solveBVP.hpp#L107)：
 
 ```math
 \boldsymbol{F} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} p\boldsymbol{n}  d S, \quad
@@ -497,22 +502,65 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L684](./BEM_solveBVP.hpp#L684)
+[./BEM_solveBVP.hpp#L700](./BEM_solveBVP.hpp#L700)
+
+### 🪼 加速度の計算の難しさ 
+
+これは，浮体表面の圧力の計算の困難，もっと言えば$`\phi _t`$の計算の困難に起因する． [Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)によると，$`\phi _t`$の計算方法として以下の４つの方法が提案されている．
+
+1. 間接的法 (indirect method) ：補助関数を使う方法
+2. モード分解法 (mode-decomposition method)      
+3. Dalena and Tanizawa's method
+4. Caoの反復法 (iterative method) [Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)
+5. Maの方法 [Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)
+
+#### 🪸 間接的法，モード分解法 
+
+間接的法，モード分解法は，$`\phi`$に関するBVPと似ているが異なる新たなBVPを解く必要がある．
+この新たなBIEの境界条件は違うが，係数行列は同じ（私は違うと思うのだが）らしい．
+ただ悩ましいので，LU分解のような直接法なら逆行列を保持するので余計な計算が発生しないが，直接法はそもそも遅い．
+そこで反復法を使いたいが，反復法は逆行列を保持しないので，毎回係数行列を計算する必要がある，というジレンマがある．
+
+#### 🪸 Dalena and Tanizawa's method 
+
+Dalena and Tanizawa's methodは，$`\phi`$に関するBVPと全く違うBVPを解く必要があり，
+係数行列も違うので，新たに行列を構成する必要がある．
+この行列に関してはあまり研究されていないので，あまり使われない理由だと考えられる．
+
+#### 🪸 反復法 
+
+Caoの反復法は，新たなBVPを解く必要がないので，上の問題はないらしい[Ma and Yan (2009)](http://doi.wiley.com/10.1002/nme.2505)．
+（これは間違いで，直接法を使った場合はそうだが，反復法（GMRESのような）を使うなら，このCaoの反復法の内部で反復法（GMRESなど）をする必要があり時間がかかり，
+初めの２つに優っているとは言えない．同じ程度の時間がかかる．）
+
+#### 🪸 Maの反復法 
+
+
+
+| Method |  |
+|:---:|:---:|
+| Indirect method | 浮体１つに対して６つ，新しいBIEを立てる．新たに解く必要があり遅い |
+| Mode-decomposition method | 浮体１つに対して7つ，新しいBIEを立てる．新たに解く必要があり遅い |
+| Dalena and Tanizawa's method | ? |
+| Cao's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
+| Ma's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
+
+
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
 $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリクレ境界には$`\phi _t`$を，ノイマン境界には$`\phi _{nt}`$を与える．
 
-#### 🐚 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知) 
+#### 🪸 ディリクレ節点の$`\phi _{nt}`$の与え方(水面：圧力が既知，$`\phi`$が既知) 
 
 このディリクレ境界では，圧力が与えられていないので，このBiEにおいては，ノイマン境界条件を与える．
 ただし，壁が完全に固定されている場合，$`\phi _{nt}`$は0とする．
 
-#### 🐚 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知) 
+#### 🪸 ディリクレ節点の$`\phi _{t}`$の与え方($`\phi`$を与える造波装置：圧力が未知，$`\phi`$が既知) 
 
 ディリクレ境界では$`\phi _t`$は，圧力が大気圧と決まっているので，ベルヌーイの圧力方程式から$`\phi _t`$を求めることができる．
 
-#### 🐚 ノイマン節点での$`\phi _{nt}`$の与え方 
+#### 🪸 ノイマン節点での$`\phi _{nt}`$の与え方 
 
 境界面が静止しているかどうかに関わらず，流体と物体との境界では，境界法線方向速度が一致する．
 浮体重心$`{\bf x} _c`$から境界面上の点$\bf x$までの位置ベクトルを$`\boldsymbol r = {\bf x} - {\bf x} _c`$とする．
@@ -547,9 +595,9 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 ```
 
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/Network.hpp#L3858)
-$`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/Network.hpp#L3861)で計算する．
+$`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/Network.hpp#L3859)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L783)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L888)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L783)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L947)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -580,13 +628,13 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L902)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L961)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L727](./BEM_solveBVP.hpp#L727)
+[./BEM_solveBVP.hpp#L743](./BEM_solveBVP.hpp#L743)
 
-#### 🐚 $`\phi`$のヘッセ行列の計算 
+#### 🪸 $`\phi`$のヘッセ行列の計算 
 
 ```math
 \nabla\otimes{\bf u} = \nabla \otimes \nabla \phi =
@@ -708,7 +756,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L816](./BEM_solveBVP.hpp#L816)
+[./BEM_solveBVP.hpp#L875](./BEM_solveBVP.hpp#L875)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない
@@ -823,7 +871,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L882](./main.cpp#L882)
+[./main.cpp#L886](./main.cpp#L886)
 
 ---
 ## ⛵ その他 
@@ -979,7 +1027,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L929](./main.cpp#L929)
+[./main.cpp#L933](./main.cpp#L933)
 
 ---
 # 🐋 Input Generator 
@@ -1002,7 +1050,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L285](./input_generator.py#L285)
+[./input_generator.py#L293](./input_generator.py#L293)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1016,7 +1064,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L151](./input_generator.py#L151)
+[./input_generator.py#L159](./input_generator.py#L159)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -1029,13 +1077,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L381](./input_generator.py#L381)
+[./input_generator.py#L389](./input_generator.py#L389)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L969](./main.cpp#L969)
+[./main.cpp#L973](./main.cpp#L973)
 
 ---

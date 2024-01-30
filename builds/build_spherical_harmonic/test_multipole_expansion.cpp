@@ -7,6 +7,13 @@
 
 ## 精度の確認
 
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_multipole_expansion.cpp
+make
+./test_multipole_expansion
+```
+
 ### $`G_{\rm apx}`$の精度
 
 $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
@@ -69,37 +76,44 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
 */
 int main() {
-   std::array<double, 3> A = {10, 10, 10};
-   // std::array<double, 3> A = {5, 5, 5};
-   std::array<double, 3> X = {0, 0, 0};
 
-   for (int n : {4, 5, 6, 7, 8}) {
-      std::ofstream ofs("output_n" + std::to_string(n) + "_A_10_10_10.txt");
-      // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5.txt");
-      for (double x = -20.0; x <= 20.0; x += .1) {
-         for (double y = -20.0; y <= 20.0; y += .1) {
-            double z = 0;
-            std::array<double, 3> center = {x, y, z};
-            auto error = std::log10(std::abs(1 - Gapx(n, X, A, center) / G(X, A)));
-            ofs << x << " " << y << " " << 0 << " " << error << "\n";
+   for (auto a = -10.; a <= 10.; a += 1.) {
+      std::array<double, 3> A = {a, a, a};
+      // std::array<double, 3> A = {5, 5, 5};
+      std::array<double, 3> X = {0, 0, 0};
+
+      const double dx = 0.5;
+
+      for (int n : {4, 5, 6, 7, 8}) {
+         std::string name = "./output/output_n" + std::to_string(n) + "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]) + ".txt";
+         std::cout << name << std::endl;
+         std::ofstream ofs(name);
+         // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5.txt");
+         for (double x = -20.0; x <= 20.0; x += dx) {
+            for (double y = -20.0; y <= 20.0; y += dx) {
+               double z = 0;
+               std::array<double, 3> center = {x, y, z};
+               auto error = std::log10(std::abs(1 - Gapx(n, X, A, center) / G(X, A)));
+               ofs << x << " " << y << " " << 0 << " " << error << "\n";
+            }
          }
-         ofs << "\n";
       }
-   }
 
-   for (int n : {4, 5, 6, 7, 8}) {
-      std::ofstream ofs("output_n" + std::to_string(n) + "_A_10_10_10_grad.txt");
-      // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5_grad.txt");
-      for (double x = -20.0; x <= 20.0; x += .1) {
-         for (double y = -20.0; y <= 20.0; y += .1) {
-            double z = 0;
-            std::array<double, 3> center = {x, y, z};
-            auto g = gradG(X, A);
-            auto v = Norm(g - gradGapx(n, X, A, center)) / Norm(g);
-            auto error = std::log10(v);
-            ofs << x << " " << y << " " << 0 << " " << error << "\n";
+      for (int n : {3, 4, 5, 6, 7, 8}) {
+         std::string name = "./output/output_n" + std::to_string(n) + "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]) + "_grad.txt";
+         std::cout << name << std::endl;
+         std::ofstream ofs(name);
+         // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5_grad.txt");
+         for (double x = -20.0; x <= 20.0; x += dx) {
+            for (double y = -20.0; y <= 20.0; y += dx) {
+               double z = 0;
+               std::array<double, 3> center = {x, y, z};
+               auto g = gradG(X, A);
+               auto v = Norm(g - gradGapx(n, X, A, center)) / Norm(g);
+               auto error = std::log10(v);
+               ofs << x << " " << y << " " << 0 << " " << error << "\n";
+            }
          }
-         ofs << "\n";
       }
    }
 }
@@ -118,6 +132,8 @@ int main() {
 多重極展開を使えば，
 **BEMの係数行列をあたかも疎行列のように，行列-ベクトル積が実行でき，
 反復解法を高速に実行できる．**
+
+<img src="./fmm.png" width="400px">
 
 ### 境界積分方程式
 
