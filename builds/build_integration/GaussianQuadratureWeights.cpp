@@ -36,7 +36,6 @@ make
 ##　特異積分
 
 
-
 */
 
 struct GaussianQuadrature {
