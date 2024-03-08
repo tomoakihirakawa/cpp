@@ -1,0 +1,23 @@
+{
+    "max_dt": 0.02,
+    "end_time_step": 10000,
+    "end_time": 20,
+    "output_directory": "/Users/tomoaki/BEM/Cheng2018_free_decay_H0d04_T1d2_piston_with_float",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json",
+        "absorber.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json"
+    ]
+}

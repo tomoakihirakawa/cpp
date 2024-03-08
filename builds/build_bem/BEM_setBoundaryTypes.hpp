@@ -48,11 +48,16 @@ NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分�
 
 void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK_time) {
 
-   if (net->isFixed) {
+   if (std::ranges::all_of(net->isFixed, [](const auto &b) { return b; })) {
       net->mass = 1E+20;
       net->inertia.fill(1E+20);
       net->COM.fill(0.);
       net->initial_center_of_mass.fill(0.);
+   } else {
+      for (auto i = 0; i < net->isFixed.size(); i++) {
+         if (net->isFixed[i])
+            net->inertia[i] = 1E+20;
+      }
    }
 
    std::string move_name_velocity;
@@ -176,7 +181,13 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
          // \label{BEM:detection_range}
-         p->detection_range = Mean(extLength(p->getLines())) / 2.5;
+         double r = 0., s = 0.;
+         for (auto &q : p->getNeighbors())
+            for (auto &l : q->getLines()) {
+               r += l->length();
+               s += 1.;
+            }
+         p->detection_range = r / s / 2.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }

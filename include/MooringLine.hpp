@@ -127,7 +127,8 @@ class MooringLine : public Network {
 
    */
 
-   double DragForceCoefficient = 0.3;
+   // double DragForceCoefficient = 0.3;
+   double DragForceCoefficient = 2.5;  // Palm2016はだいたいこのくらい
 
    void simulate(const double current_time,
                  const double dt,
@@ -167,7 +168,7 @@ class MooringLine : public Network {
          while (1) {
             // std::cout << "RK : " << (*this->getPoints().begin())->RK_X_sub.current_step << std::endl;
             for (auto& p : points) {
-               a = (p->getTension() + p->getDragForce(DragForceCoefficient) + p->getGravitationalForce()) / p->mass;
+               a = (p->getTension() + p->getDragForce(this->DragForceCoefficient) + p->getGravitationalForce()) / p->mass;
                std::get<0>(p->acceleration) = std::get<0>(a);  // accelは変更しても構わない
                std::get<1>(p->acceleration) = std::get<1>(a);  // accelは変更しても構わない
                std::get<2>(p->acceleration) = std::get<2>(a);  // accelは変更しても構わない

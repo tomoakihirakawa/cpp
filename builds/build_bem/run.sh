@@ -1,14 +1,21 @@
 #!/bin/sh
 
-# ./main ./input_files/WaveGeneration_piston_highreso_H0d05_T1d0_h0d4
-# ./main ./input_files/WaveGeneration_flap_highreso_H0d05_T1d0_h0d4
-# ./main ./input_files/WaveGeneration_potential_highreso_H0d05_T1d0_h0d4
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d1
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d09
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d08
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d07
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d06
+./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d05
 
-./main ./input_files/Palm2016_without_mooring
-./main ./input_files/Palm2016_with_mooring
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d1
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d09
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d08
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d07
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d06
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d05
 
-# ./main ./input_files/Cheng2018meshB_H0d04_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshF_H0d04_T1d2_piston_positive
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential
+# ./main ./input_files/Tanizawa1996_H0d05_L2d7_potential
 
 # ./main ./input_files/Cheng2018meshC_H0d1_T1d2_piston_positive
 # ./main ./input_files/Cheng2018meshD_H0d1_T1d2_piston_positive

@@ -1,0 +1,23 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 10000,
+    "end_time": 20,
+    "output_directory": "/Users/tomoaki/BEM/Tanizawa1996_H0d1_L2d7_potential",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "absorber.json",
+        "float.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json"
+    ]
+}

@@ -1,7 +1,7 @@
 #include <array>
 #include "lib_multipole_expansion.hpp"
 
-/*DOC_EXTRACT spherical_harmonics
+/*DOC_EXTRACT 0_1_spherical_harmonics
 
 \insert{Multipole_Expansion}
 
@@ -78,14 +78,16 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 int main() {
 
    for (auto a = -10.; a <= 10.; a += 1.) {
-      std::array<double, 3> A = {a, a, a};
+      std::array<double, 3> A = {-10, -10, 1};
       // std::array<double, 3> A = {5, 5, 5};
-      std::array<double, 3> X = {0, 0, 0};
+      std::array<double, 3> X = {10, 10, 1};
 
       const double dx = 0.5;
 
       for (int n : {4, 5, 6, 7, 8}) {
-         std::string name = "./output/output_n" + std::to_string(n) + "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]) + ".txt";
+         std::string name = "./output/output_n" + std::to_string(n);
+         name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
+         name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + ".txt";
          std::cout << name << std::endl;
          std::ofstream ofs(name);
          // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5.txt");
@@ -99,8 +101,32 @@ int main() {
          }
       }
 
+      for (int n : {4, 5, 6, 7, 8}) {
+         std::string name = "./output/output_n" + std::to_string(n);
+         name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
+         name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + "_switch.txt";
+         std::cout << name << std::endl;
+         std::ofstream ofs(name);
+         // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5.txt");
+         for (double x = -20.0; x <= 20.0; x += dx) {
+            for (double y = -20.0; y <= 20.0; y += dx) {
+               double z = 0;
+               std::array<double, 3> center = {x, y, z};
+               if (Norm(A - center) < Norm(X - center)) {
+                  auto error = std::log10(std::abs(1 - Gapx(n, A, X, center) / G(X, A)));
+                  ofs << x << " " << y << " " << 0 << " " << error << "\n";
+               } else {
+                  auto error = std::log10(std::abs(1 - Gapx(n, X, A, center) / G(X, A)));
+                  ofs << x << " " << y << " " << 0 << " " << error << "\n";
+               }
+            }
+         }
+      }
+
       for (int n : {3, 4, 5, 6, 7, 8}) {
-         std::string name = "./output/output_n" + std::to_string(n) + "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]) + "_grad.txt";
+         std::string name = "./output/output_n" + std::to_string(n);
+         name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
+         name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + "_grad.txt";
          std::cout << name << std::endl;
          std::ofstream ofs(name);
          // std::ofstream ofs("output_n" + std::to_string(n) + "_A_5_5_5_grad.txt");
@@ -179,15 +205,33 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 
 ```math
 \begin{align*}
-\alpha ({\bf{a}})\phi ({\bf{a}})=& \iint_{\Gamma_{\rm near-filed}}( {G({\bf x},{\bf a})\phi_n ({\bf x}) - \phi (\bf x) G_n({\bf x},{\bf a})})dS\\
+\alpha ({\bf{a}})\phi ({\bf{a}})=& \iint_{\Gamma_{\rm near-fields}}( {G({\bf x},{\bf a})\phi_n ({\bf x}) - \phi (\bf x) G_n({\bf x},{\bf a})})dS\\
 & + \sum_{\square i}\{{\bf Y}({\bf a},{\bf c}_{\square i})\cdot\iint _{\Gamma _{\square i}}{({{{\bf Y}^\ast}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y}_n^\ast}({\bf x},{\bf c}_{\square i})})dS}\}
 \end{align*}
 ```
 
-### 離散化
+### 局所展開
 
-この計算手順は，離散化を明確にして初めて理解でき，その有用性がわかる．
+Graf's Addition Theoremを使って，$`{\bf Y}^\ast({\bf x},{\bf c}_{\square i})`$を$`{\bf Y}^\ast({\bf x},{\bf c})`$の線形結合で表す．
 
-2
+```math
+{\bf Y}^\ast({\bf x},{\bf c}_{\square i}) = \sum_{\square j} {\bf Y}^\ast({\bf x},{\bf c}_{\square j}){\bf Y}({\bf c}_{\square j},{\bf c}_{\square i})
+```
 
 */
+
+// ### モーメントの移動
+
+// ```math
+// \iint _{\Gamma _{\square i}} {{{\bf Y}^\ast}({\bf x},{\bf c}_{\square i})\phi_n ({\bf{x}})}dS
+// ```
+
+// は，近似の展開中心を$`\square i`$番目のセルの中心$`{\bf c}_{\square i}`$した場合のモーメントである．
+// $`{\bf c}_{\square j}`$を中心としたモーメントを，$`{\bf c}_{\square i}`$におけるモーメントを使って表す．
+
+// ```math
+// \iint _{\Gamma _{\square j}} {{{\bf Y}^\ast}({\bf x},{\bf c}_{\square j})\phi_n ({\bf{x}})}dS
+// = \iint _{\Gamma _{\square j}} {{{\bf Y}^\ast}({\bf x},{\bf c}_{\square j})\phi_n ({\bf{x}})}dS
+// ```
+
+// これは，$`\phi_n`$と$`\phi`$の積のモーメントである．

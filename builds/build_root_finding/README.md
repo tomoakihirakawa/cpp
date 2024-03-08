@@ -23,9 +23,9 @@
 最適化の問題の多くは，目的関数の最大最小を求めることなので，ヘッセ行列を利用したニュートン法を用いる．
 
 ```bash
-$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=example0 _NewtonRaphson _0.cpp
-$ make
-$ ./example0_NewtonRaphson_0
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_NewtonRaphson_0.cpp
+make
+./example0_NewtonRaphson_0
 ```
 
 [./example0_NewtonRaphson_0.cpp#L1](./example0_NewtonRaphson_0.cpp#L1)
@@ -132,7 +132,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[ここ](../../include/rootFinding.hpp#L270)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[ここ](../../include/rootFinding.hpp#L310)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 
 | `scale` | n=5 | n=10 | n=50 |
@@ -141,7 +141,7 @@ int steps = 20;
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif) | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
 
 
-LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L232)で宣言している．
+LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L272)で宣言している．
 
 ### 🪼 ロボットのエネルギー効率について 
 
@@ -160,19 +160,36 @@ LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L232)で�
 
 ## ⛵ 準ニュートン法 
 
+準ニュートン法は，
+ヤコビ行列を近似し，
+ニュートン法を適用する．
+近似ヤコビ行列を計算する指針として，セカント条件を満たすようにする．
+
+```math
+{\bf J} _{k} \cdot \Delta {\bf x} _k = \Delta {\bf f} _k
+```
+
+
+```math
+{\bf J} _{k} = {\bf J} _{k-1} + \frac{(\Delta {\bf f} _k - {\bf J} _{k-1} \cdot \Delta {\bf x} _k) \otimes \Delta  {\bf x} _k}{\Delta  {\bf x} _k \cdot \Delta {\bf x} _k},\quad \Delta {\bf f} _k = {\bf f} _{k} - {\bf f} _{k-1}
+```
+[../../include/minMaxOfFunctions.hpp#L220](../../include/minMaxOfFunctions.hpp#L220)
+
+
 ニュートン法で使うヤコビ行列などを別のものに置き換えた方法．
 
 ```bash
-$ cmake -DCMAKE _BUILD _TYPE=Release ../ -DSOURCE _FILE=example1 _Broyden.cpp
-$ make
-$ ./example1_Broyden
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_Broyden.cpp
+make
+./example1_Broyden
 ```
 
-![broyden_newton.png](broyden_newton.png)
+![./output_Himmelblau/convergence.gif](output_Himmelblau/convergence.gif)
+
+基本的に，Newton法の方が収束が早いことがわかる．
 
 Newton法では，勾配ベクトルとヘッセ行列を使ったが，Broyden法では，勾配ベクトルのみを使っている．
 勾配ベクトルを異なる点で計算して，ヘッセ行列の近似を行う．
-
 勾配ベクトルがゼロになる点を探すのではなく，目的関数ベクトルがゼロになる点を探すこともできるだろう．
 
 [./example1_Broyden.cpp#L1](./example1_Broyden.cpp#L1)

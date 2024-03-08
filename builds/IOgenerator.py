@@ -66,6 +66,15 @@ Green = '\033[1;92m'
 Magenta = '\033[1;95m'
 
 
+def Norm3d(v):
+    return math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+
+def Differece3d(v1, v2):
+    return [v1[0]-v2[0], v1[1]-v2[1], v1[2]-v2[2]]
+
+def Add3d(v1, v2):
+    return [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]]
+
 # output_directory and input_directory are automatically added to setting
 def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
 

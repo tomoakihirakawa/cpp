@@ -110,12 +110,20 @@ void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p) {
 };
 
 std::array<double, 3> nextPositionOnBody(Network *net, networkPoint *p) {
-   if (!net->isFixed && net->isRigidBody) {
-      auto next_COM = net->RK_COM.getX(net->velocityTranslational());
-      auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(net->velocityRotational(), net->Q)));
-      return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX);
-   } else
-      return p->X;
+   auto velocity = net->velocityTranslational();
+   auto rotation = net->velocityRotational();
+   if (net->isRigidBody) {
+      for (auto i = 0; i < 3; ++i)
+         if (net->isFixed[i])
+            velocity[i] = 0;
+      for (auto i = 3; i < 6; ++i)
+         if (net->isFixed[i])
+            rotation[i - 3] = 0;
+   }
+   auto next_COM = net->RK_COM.getX(velocity);
+   auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->Q)));
+   return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX);
+   // else return p->X;
 }
 
 std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs) {
@@ -124,24 +132,43 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
    for (auto &f : Fs) {
       auto net = f->getNetwork();
       auto [p0, p1, p2] = f->getPoints();
-      if (net->isFixed)
-         ret[i] = ToX(f);
-      else if (net->isRigidBody) {
+      // if (net->isFixed)
+      //    ret[i] = ToX(f);
+      // else
+      if (net->isRigidBody) {
          // 現在のv^nを使って問題ない．加速度はいらない．
          // Quaternion q;
          // q = q.d_dt(net->velocityRotational());
          // Quaternion next_Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(net->velocityRotational())));
          // auto next_COM = net->RK_COM.getX(net->velocityTranslational());
 
-         auto next_COM = net->RK_COM.getX(net->velocityTranslational());
-         auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(net->velocityRotational(), net->Q)));
+         auto velocity = net->velocityTranslational();
+         auto rotation = net->velocityRotational();
+
+         for (auto i = 0; i < 3; ++i)
+            if (net->isFixed[i])
+               velocity[i] = 0;
+         for (auto i = 3; i < 6; ++i)
+            if (net->isFixed[i])
+               rotation[i - 3] = 0;
+
+         auto next_COM = net->RK_COM.getX(velocity);
+         auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->Q)));
          auto X_next = [&](const auto &p) { return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX); };
 
          ret[i] = {X_next(p0), X_next(p1), X_next(p2)};
       } else if (net->isSoftBody) {
-         auto X0 = p0->RK_X.getX(p0->velocityTranslational());
-         auto X1 = p1->RK_X.getX(p1->velocityTranslational());
-         auto X2 = p2->RK_X.getX(p2->velocityTranslational());
+         auto v0 = p0->velocityTranslational();
+         auto v1 = p1->velocityTranslational();
+         auto v2 = p2->velocityTranslational();
+         if (std::ranges::all_of(net->isFixed, [](bool isfixed) { return isfixed; })) {
+            v0.fill(0.);
+            v1.fill(0.);
+            v2.fill(0.);
+         }
+         auto X0 = p0->RK_X.getX(v0);
+         auto X1 = p1->RK_X.getX(v1);
+         auto X2 = p2->RK_X.getX(v2);
          ret[i] = {X0, X1, X2};
       }
       i++;
@@ -266,9 +293,61 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 1. まず，\ref{BEM:vectorTangentialShift}{`vectorTangentialShift`}で接線方向にシフトし，
 2. \ref{BEM:vectorToNextSurface}{`vectorToNextSurface`}で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
+#### 使っているALEの手法
+
+`CircumradiusToInradius`をもとに，節点に隣接する面の歪みを評価し，その歪みに応じて節点を修正する．
+面の歪みを修正するための節点の移動方向は，節点の向かい側にある辺の中点から辺が作る正三角形の高さの方向としている．
+歪みを小さくするための方向を歪みの`CircumradiusToInradius`の微分から求めることもできるだろうが，プログラムが複雑になるためこの方法を採用している．
+
+* 重みの最大値と最小値を設定している
+* よりディリクレ面の歪みを緩和するように重みを大きくしている
+* より喫水線の歪みを緩和するように重みを大きくしている
+
 */
 
 // \label{BEM:calculateVecToSurface}
+
+Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
+                                                       const std::array<double, 3> &current_pX,
+                                                       std::function<Tddd(const networkPoint *)> position) {
+   Tddd V = {0., 0., 0.}, X = {0., 0., 0.}, Xmid, vertical;
+   double Wtot = 0, W, height;
+   const int max_sum_depth = 5;
+
+   for (const auto &f : p->getFaces()) {
+      auto [p0, p1, p2] = f->getPoints(p);
+      auto X0 = current_pX;
+      auto X1 = position(p1);
+      auto X2 = position(p2);
+
+      //! CircumradiusToInradiusの２乗を重みとしている
+      W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+
+      //! 重みの最大値と最小値を設定している
+      W = std::clamp(W, 4., 20.);
+
+      //! よりディリクレ面の歪みを緩和するように重みを大きくする
+      if (f->Dirichlet)
+         W *= 1.25;
+
+      //! より喫水線の歪みを緩和するように重みを大きくする
+      const int min_distance_from_CORNER = p0->minDepthFromCORNER + p1->minDepthFromCORNER + p2->minDepthFromCORNER;
+      double S = 1.;
+      for (int i = 0; i <= max_sum_depth; ++i)
+         if (min_distance_from_CORNER == i)
+            S = std::pow(1.25, max_sum_depth - i);
+      W *= S;
+
+      //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
+      Wtot += W;
+      Xmid = (X2 + X1) * 0.5;
+      vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
+      height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
+      FusedMultiplyIncrement(W, height * vertical + Xmid, V);
+   }
+   return V / Wtot - current_pX;
+};
+
 void calculateVecToSurface(const Network &net, const int loop, const double coef = 0.1) {
    auto points = ToVector(net.getPoints());
    for (const auto &p : points) {
@@ -278,62 +357,51 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
 
    //! 要素を整えるためのベクトル
    auto addVectorTangentialShift = [&](const int k = 0) {
-      // この計算コストは，比較的やすいので，何度も繰り返しても問題ない．
-      // gradually approching to given a
-      if (coef > 0.) {
-         double aIN = coef, a;
-         double scale = aIN * ((k + 1) / (double)(loop));
-         //! ここを0.5とすると角が壊れる
-         // const double scale = aIN;
-         // if (scale < 0.0001)
-         //    scale = 0.0001;
+      if (coef == 0.) return;
+      double scale = coef * ((k + 1.) / (double)(loop));
 #pragma omp parallel
-         for (const auto &p : points)
+      for (const auto &p : points)
 #pragma omp single nowait
-         {
-            auto X = RK_with_Ubuff(p);
-            // auto V = (NeighborAverageSmoothingVector(p, X) + DistorsionMeasureWeightedSmoothingVector(p, X)) / 10.;
-            // auto V = DistorsionMeasureWeightedSmoothingVector(p, X) / 10.;
-
-            auto V = DistorsionMeasureWeightedSmoothingVector(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
-
-            double C = 0;
-            double size = 0.;
-            for (const auto &f : p->getFaces()) {
-               auto [p0, p1, p2] = f->getPoints();
-               C += Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2));
-               size += 1.;
-            }
-            V /= 10.;
-            C /= size;
-            C /= 10;
-
-            if (Norm(V) > C)
-               V = C * Normalize(V);
-            if (!isFinite(V))
-               V.fill(0.);
-
-            double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
-            if (flatness > 0.1)
-               flatness = 1.;
-            V = scale * V * flatness;
-            /* -------------------------------------------------------------------------- */
-            p->vecToSurface_BUFFER = condition_Ua(V, p);
-            // p->vecToSurface_BUFFER = vectorTangentialShift(p, scale);
+      {
+         auto X = RK_with_Ubuff(p);
+         auto V = DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
+         // auto VV = ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         // V = 0.9 * V + 0.1 * VV;
+         double C = 0, size = 0.;
+         for (const auto &f : p->getFaces()) {
+            auto [p0, p1, p2] = f->getPoints();
+            C += Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2));
+            size += 1.;
          }
-         for (const auto &p : points) {
-            add_vecToSurface_BUFFER_to_vecToSurface(p);
-            p->vecToSurface_BUFFER.fill(0.);
-         }
+         C /= size;
+         C /= 5;
+         if (Norm(V) > C)
+            V = C * Normalize(V);
+
+         double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
+         if (flatness > 0.1)
+            flatness = 1.;
+
+         V = scale * V * flatness;
+
+         if (!isFinite(V))
+            V.fill(0.);
+         p->vecToSurface_BUFFER = condition_Ua(V, p);
+      }
+
+      for (const auto &p : points) {
+         add_vecToSurface_BUFFER_to_vecToSurface(p);
+         p->vecToSurface_BUFFER.fill(0.);
       }
    };
 
    //! 構造物に貼り付けるためのベクトル
+   double scale = 0.999;  //! 完全に壁に貼り付けると，初期状態に戻り調整ができない可能性があるので
    auto addVectorToNextSurface = [&]() {
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
-         p->vecToSurface_BUFFER = p->clungSurface = vectorToNextSurface(p);
+         p->vecToSurface_BUFFER = p->clungSurface = scale * vectorToNextSurface(p);
 
       for (const auto &p : points) {
          add_vecToSurface_BUFFER_to_vecToSurface(p);
@@ -384,31 +452,19 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
 
    calculateVecToSurface(net, loop, coef);
    const double too_fast = 1E+13;
-   for (auto i = 0; i < 10; ++i) {
+
+   //! もしvecToSurfaceが大きすぎる場合は，係数を小さくして再計算
+   for (auto i = 0; i < 10; ++i)
       if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
          calculateVecToSurface(net, loop, coef * std::pow(0.1, i));
-   }
 
+   //! もしvecToSurfaceが大きすぎる場合は，0にしてあきらめる
    if (std::ranges::any_of(net.getPoints(), [&](const auto &p) { return !isFinite(p->vecToSurface, too_fast); }))
       for (const auto &p : net.getPoints())
          p->vecToSurface.fill(0.);
 
-   for (const auto &p : net.getPoints()) {
-      // dxdt_correct = p->vecToSurface / p->RK_X.getdt();
-      // auto U_update_BEM = p->U_update_BEM + p->vecToSurface / p->RK_X.getdt();
-      // if (!isFinite(U_update_BEM, too_fast) || !isFinite(p->vecToSurface, too_fast)) {
-      //    std::cout << "p->X = " << p->X << std::endl;
-      //    std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
-      //    std::cout << "p->U_update_BEM = " << U_update_BEM << std::endl;
-      //    std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
-      //    std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
-      //    std::cout << "p->Neumann = " << p->Neumann << std::endl;
-      //    std::cout << "p->CORNER = " << p->CORNER << std::endl;
-      //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // } else
-      //    p->U_update_BEM += p->vecToSurface / p->RK_X.getdt();
+   for (const auto &p : net.getPoints())
       p->U_update_BEM = p->RK_X.getVectorToReachAtNextTimeQ(p->vecToSurface + RK_without_Ubuff(p));
-   }
 }
 
 /*DOC_EXTRACT 0_7_OTHERS

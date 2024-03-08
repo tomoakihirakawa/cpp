@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
-  <Collection>
-    <DataSet file="../build_Network/example4/center0.vtu" group="" part="0" timestep="0.000000"/>
-    <DataSet file="../build_Network/example4/center1.vtu" group="" part="0" timestep="1.000000"/>
-    <DataSet file="../build_Network/example4/center2.vtu" group="" part="0" timestep="2.000000"/>
-    <DataSet file="../build_Network/example4/center3.vtu" group="" part="0" timestep="3.000000"/>
-  </Collection>
-</VTKFile>

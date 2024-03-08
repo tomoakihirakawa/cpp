@@ -1728,11 +1728,11 @@ R_{\rm new}\cdot (X-X_{\rm initial COM}) + X_{\rm new COM}
 
 */
 
-std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_old,
-                                          const std::array<double, 3> &COM_new,
-                                          const std::array<std::array<double, 3>, 3> &M_rotation,
-                                          const std::array<double, 3> &X_old) {
-   return Dot(M_rotation, X_old - COM_old) + COM_new;
+std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_current,
+                                          const std::array<double, 3> &COM_next,
+                                          const std::array<std::array<double, 3>, 3> &M_rotation_current,
+                                          const std::array<double, 3> &X_current) {
+   return Dot(M_rotation_current, X_current - COM_current) + COM_next;
 };
 
 /* -------------------------------------------------------------------------- */

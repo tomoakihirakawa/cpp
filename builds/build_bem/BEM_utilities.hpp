@@ -33,11 +33,25 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
          double start = std::stod(strings[1] /*start*/);
          if (t >= start) {
             double a = std::abs(std::stod(strings[2] /*a*/));
-            double w = std::abs(2 * M_PI / std::stod(strings[3] /*T*/));
+            double T = std::abs(std::stod(strings[3] /*T*/));
+            double w = std::abs(2. * M_PI / T);
             double h = std::abs(std::stod(strings[4] /*h*/));
-            DispersionRelation DS(w, h);
-            double k = std::abs(DS.k);
+            // DispersionRelation DS(w, h);
+            // double k = std::abs(DS.k);
             double z_surface = std::stod(strings[5] /*z_surface*/);
+
+            double L;
+            DispersionRelation DS;
+            if (name.contains("wave_length")) {
+               L = T;
+               DS.set_L_h(L, h);
+            } else
+               DS.set_w_h(w, h);
+
+            w = DS.w;
+            T = DS.T;
+            double k = DS.k;
+
             // auto [x, y, z] = p->X - Tddd{0., 0., z_surface};
             auto [x, y, z] = p->X;
             z -= z_surface;
@@ -274,11 +288,20 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          return {0., 0., 0., 0., 0., 0.};
       if (strings.size() > 7) {
          const double A = std::abs(std::stod(strings[2] /*A*/));
-         const double T = std::abs(std::stod(strings[3] /*T*/));
-         const double w = std::abs(2 * M_PI / T);
          const double h = std::abs(std::stod(strings[4] /*h*/));
-         DispersionRelation DS(w, h);
-         const double k = std::abs(DS.k);
+         double T = std::abs(std::stod(strings[3] /*T or may be L*/));
+         double L, k;
+         double w = std::abs(2 * M_PI / T);
+         DispersionRelation DS;
+         if (name.contains("wave_length")) {
+            L = T;
+            DS.set_L_h(L, h);
+         } else
+            DS.set_w_h(w, h);
+
+         w = DS.w;
+         T = DS.T;
+         k = DS.k;
          //
          const double kh2 = 2. * k * h;
          const double F = 2. * (std::cosh(kh2) - 1.) / (kh2 + std::sinh(kh2));  //!= H/(2*e)
@@ -495,6 +518,66 @@ T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
            gradTangential_LinearElement(Vz012, X012)};
 };
 
+Tddd gradPhiQuadElement(const networkPoint *p, const networkFace *f) {
+   const auto [p0, l0, p1, l1, p2, l2] = f->getPointsAndLines(p);
+   auto get_X_phi = [&](const auto &l, const auto &f) -> std::tuple<Tddd, double> {
+      auto fs = l->getFaces();
+      QuadPoints quadpoint(l, fs[0]);
+      Tddd X = Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToX(quadpoint.points));
+      double phi = Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToPhi(quadpoint.points));
+      {
+         QuadPoints quadpoint(l, fs[1]);
+         X += Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToX(quadpoint.points));
+         phi += Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToPhi(quadpoint.points));
+      }
+      if (l->CORNER)
+         return {l->X, 0.5 * phi};
+      else
+         return {0.5 * X, 0.5 * phi};
+   };
+
+   auto [X3, phi3] = get_X_phi(l0, f);
+   auto [X4, phi4] = get_X_phi(l1, f);
+   auto [X5, phi5] = get_X_phi(l2, f);
+
+   const std::array<Tddd, 6> X012345 = {p0->X, p1->X, p2->X, X3, X4, X5};
+   const std::array<double, 6> phi012345 = {std::get<0>(p0->phiphin),
+                                            std::get<0>(p1->phiphin),
+                                            std::get<0>(p2->phiphin),
+                                            phi3,
+                                            phi4,
+                                            phi5};
+
+   const auto Dt0_N6 = D_TriShape_Quadratic<1, 0>(1., 0.);
+   const auto Dt1_N6 = D_TriShape_Quadratic<0, 1>(1., 0.);
+   const auto dxi0 = Dot(Dt0_N6, X012345);
+   const auto dxi1 = Dot(Dt1_N6, X012345);
+   const auto nxyz = Normalize(Cross(dxi0, dxi1));
+   double phi_t0 = Dot(Dt0_N6, phi012345);
+   double phi_t1 = Dot(Dt1_N6, phi012345);
+   double phi_n = std::get<1>(p0->phiphin);
+   Tddd grad_phi;
+
+   lapack_lu lu(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+   // Solve(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+   return grad_phi;
+
+   // const auto quadpoint = QuadPoints(p, f);
+   // const auto X012345 = ToX(quadpoint.points);
+   // const auto Dt0_N6 = D_TriShape_Quadratic<1, 0>(0., 0.5, quadpoint.ignore);
+   // const auto Dt1_N6 = D_TriShape_Quadratic<0, 1>(0., 0.5, quadpoint.ignore);
+   // const auto dxi0 = Dot(Dt0_N6, X012345);
+   // const auto dxi1 = Dot(Dt1_N6, X012345);
+   // const auto nxyz = Normalize(Cross(dxi0, dxi1));
+   // const auto phi012345 = ToPhi(quadpoint.points);
+   // double phi_t0 = Dot(Dt0_N6, phi012345);
+   // double phi_t1 = Dot(Dt1_N6, phi012345);
+   // double phi_n = std::get<1>(p->phiphin);
+   // Tddd grad_phi;
+   // Solve(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+   // return grad_phi;
+};
+
 T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
    auto [p0, p1, p2] = f->getPoints();
    return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
@@ -535,6 +618,8 @@ double getPhin(const networkPoint *p, const networkFace *f) {
    else
       return p->phinOnFace.at(nullptr);
 };
+
+/* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
 
@@ -596,9 +681,8 @@ Tddd gradPhi(const networkPoint *const p) {
    V_Tddd V;
    V_d W;
    for (const auto &f : p->getFaces()) {
-
       u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
-
+      // u = gradPhiQuadElement(p, f);
       V.emplace_back(u);
 #if defined(use_angle_weigted_normal)
       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
@@ -609,29 +693,37 @@ Tddd gradPhi(const networkPoint *const p) {
 #endif
    }
    return optimumVector(V, {0., 0., 0.}, W);
-   // return optimumVector(V, {0., 0., 0.});
 };
 
-Tddd gradPhi(const networkPoint *const p, const double coeff_for_phin) {
-   Tddd u;
-   V_Tddd V;
-   V_d W;
-   for (const auto &f : p->getFaces()) {
+// Tddd gradPhi(const networkPoint *const p) {
+//    Tddd u;
+//    V_Tddd V;
+//    V_d W;
+//    for (const auto &f : p->getFaces()) {
+//       u = gradPhiQuadElement(p, f);
+//       V.emplace_back(u);
+//    }
+//    return optimumVector(V, {0., 0., 0.}, W);
+// };
 
-      u = grad_phi_tangential(f) + coeff_for_phin * getPhin(p, f) * f->normal;
-
-      V.emplace_back(u);
-#if defined(use_angle_weigted_normal)
-      W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
-#elif defined(use_area_weigted_normal)
-      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
-#else
-      W.push_back(f->Dirichlet ? 10 : 1.);
-#endif
-   }
-   return optimumVector(V, {0., 0., 0.}, W);
-   // return optimumVector(V, {0., 0., 0.});
-};
+// Tddd gradPhi(const networkPoint *const p, const double coeff_for_phin) {
+//    Tddd u;
+//    V_Tddd V;
+//    V_d W;
+//    for (const auto &f : p->getFaces()) {
+//       u = grad_phi_tangential(f) + coeff_for_phin * getPhin(p, f) * f->normal;
+//       V.emplace_back(u);
+// #if defined(use_angle_weigted_normal)
+//       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
+// #elif defined(use_area_weigted_normal)
+//       W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+// #else
+//       W.push_back(f->Dirichlet ? 10 : 1.);
+// #endif
+//    }
+//    return optimumVector(V, {0., 0., 0.}, W);
+//    // return optimumVector(V, {0., 0., 0.});
+// };
 
 /* -------------------------------------------------------------------------- */
 
@@ -799,6 +891,7 @@ double phint_Neumann(const networkPoint *const p, networkFace *F) {
    if (f) {
       Tddd Omega = (f->getNetwork())->velocityRotational();
       auto grad_phi = gradPhi(F);
+      // auto grad_phi = gradPhi(p, F);
       auto U_body = uNeumann(p, F);
       auto dndt = Cross(Omega, F->normal);
       auto ret = Dot(dndt, U_body - grad_phi);

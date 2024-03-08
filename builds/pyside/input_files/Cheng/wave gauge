@@ -1,0 +1,122 @@
+[
+    {
+        "name": "gauge0",
+        "position": [
+            0.2,
+            0,
+            0.6,
+            0.2,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge1",
+        "position": [
+            0.7,
+            0,
+            0.6,
+            0.7,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge2",
+        "position": [
+            1.2,
+            0,
+            0.6,
+            1.2,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge3",
+        "position": [
+            1.7,
+            0,
+            0.6,
+            1.7,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge4",
+        "position": [
+            2.2,
+            0,
+            0.6,
+            2.2,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge5",
+        "position": [
+            2.7,
+            0,
+            0.6,
+            2.7,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge6",
+        "position": [
+            3.2,
+            0,
+            0.6,
+            3.2,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge7",
+        "position": [
+            3.7,
+            0,
+            0.6,
+            3.7,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge8",
+        "position": [
+            4.2,
+            0,
+            0.6,
+            4.2,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "name": "gauge9",
+        "position": [
+            4.7,
+            0,
+            0.6,
+            4.7,
+            0,
+            0.1
+        ],
+        "type": "wave gauge"
+    }
+]

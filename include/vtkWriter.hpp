@@ -6,6 +6,7 @@
 Tddd ToX(const std::shared_ptr<Tddd> &X) { return *X; };
 
 /*
+
 vtuとvtpの違いは，PolysかCellsか
 そして，vtkUnstructuredGridWriterには
 ```xml
@@ -135,7 +136,6 @@ struct vtkUnstructuredGridWriter : XMLElement {
             for (auto &[_, INT_X] : this->vertices) {
                // Incrementing index while assigning
                std::get<0>(INT_X) = i++;
-
                // Use std::transform for cleaner syntax
                std::transform(std::get<1>(INT_X).begin(), std::get<1>(INT_X).end(),
                               std::ostream_iterator<float>(ofs, " "),
@@ -147,7 +147,6 @@ struct vtkUnstructuredGridWriter : XMLElement {
                               });
             }
          };
-
          this->Points->add(DataArray);
       }
       /* ------------------------------------------------------ */
@@ -235,9 +234,9 @@ struct vtkUnstructuredGridWriter : XMLElement {
                std::ranges::for_each(it->second,
                                      [&](const auto &x) {
                                         if (isFinite(x))
-                                           ofs << std::setprecision(6) << (Between(x, {-1E-14, 1E-14}) ? 0 : (float)x) << " ";
+                                           ofs << std::setprecision(7) << (Between(x, {-1E-14, 1E-14}) ? 0 : (float)x) << " ";
                                         else
-                                           ofs << std::setprecision(6) << "NaN ";
+                                           ofs << std::setprecision(7) << "NaN ";
                                      });
             } else
                ofs << "NaN NaN NaN ";

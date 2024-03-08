@@ -1,0 +1,14 @@
+[
+    {
+        "input_file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Tanizawa1996/water.obj",
+        "output_dir": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Tanizawa1996",
+        "file_name": "water",
+        "remesh_number": "10"
+    },
+    {
+        "input_file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Cheng2018/water_inclined.obj",
+        "output_dir": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Cheng2018",
+        "file_name": "water_inclined",
+        "remesh_number": "10"
+    }
+]

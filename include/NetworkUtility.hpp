@@ -141,7 +141,7 @@ std::array<std::tuple<double, double, Tddd>, 25> t0t1ModTriShape25(std::array<do
    for (const auto &t0 : Subdivide<4>(t0_range[0], t0_range[1])) {
       for (const auto &t1 : subdiv_for_t1) {
          if (index < 25) {
-            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<3>(t0, t1));
          }
       }
    }
@@ -155,7 +155,7 @@ std::array<std::tuple<double, double, Tddd>, 400> t0t1ModTriShape400(std::array<
    for (const auto &t0 : Subdivide<19>(t0_range[0], t0_range[1])) {
       for (const auto &t1 : subdiv_for_t1) {
          if (index < 40) {
-            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<3>(t0, t1));
          }
       }
    }
@@ -171,7 +171,7 @@ constexpr std::array<std::tuple<double, double, Tddd>, 400> precalculateXtrys400
    for (const auto &t0 : subdiv_for_t0) {
       for (const auto &t1 : subdiv_for_t1) {
          if (index < 400) {
-            result[index++] = std::make_tuple(t0, t1, ModTriShape<double, 3>(t0, t1));
+            result[index++] = std::make_tuple(t0, t1, ModTriShape<3>(t0, t1));
          }
       }
    }
@@ -237,7 +237,7 @@ Tddd findOptimalPositionByCriteriaOn(const networkPoint *p,
          base_X012 = {get_triangle_base_X(p0), get_triangle_base_X(p1), get_triangle_base_X(p2)};
          for (const auto &t0 : subdiv_for_t0)
             for (const auto &t1 : subdiv_for_t1)
-               check_and_update_min_score(Dot(ModTriShape<double, 3>(t0, t1), base_X012), t0, t1, f);
+               check_and_update_min_score(Dot(ModTriShape<3>(t0, t1), base_X012), t0, t1, f);
          // faces_will_be_updated = {min_face};
          auto del_t = std::pow(0.2, i + 2);
          t0_minmax = {std::clamp(min_t0 - del_t, 0.0, 1.0), std::clamp(min_t0 + del_t, 0.0, 1.0)};
@@ -378,7 +378,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector(const networkPoint *p, const std::
          X0 = current_pX;
          // W = std::log10(CircumradiusToInradius(X0, X1, X2));
          W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);
-         W = std::clamp(W, 4., 20.);
+         W = std::clamp(W, 4., 1000.);
          /*
          CircumradiusToInradius(X0, X1, X2)は最小で2なので，log2は1以上の値をとる．
          */
@@ -497,6 +497,16 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<d
 //    for (auto i = 0; i < iteration; ++i)
 //       for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
 // };
+
+Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<Tddd(const networkPoint *)> position) {
+   Tddd V = {0., 0, 0.};
+   if (!isEdgePoint(p)) {
+      for (const auto &q : p->getNeighbors())
+         V += position(q);
+      return V / p->getNeighbors().size() - current_pX;
+   } else
+      return V;
+};
 
 /* -------------------------------------------------------------------------- */
 

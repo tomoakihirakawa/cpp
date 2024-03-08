@@ -13,6 +13,12 @@
 * 節点や辺や面の相互アクセス
 * メッシュの細分化
 
+## 点・線・面の接続関係とその整理
+
+1. `networkFace->Lines`を設定
+2. `networkFace->setPoints()`は，`networkFace->Lines`が設定されていることを前提として，`networkFace->Points`と`networkFace->PLPLPL`を設定する．
+3. `Network::setGeometricProperties()`は，`f->setGeometricProperties(ToX(f->setPoints()))`を実行している．
+
 ## 3Dファイルの読み込みと出力
 
 ### 読み込み `Network`

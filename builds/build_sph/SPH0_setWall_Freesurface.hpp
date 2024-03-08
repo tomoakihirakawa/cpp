@@ -6,59 +6,6 @@
 
 //! -------------------------------------------------------------------------- */
 
-template <typename MatrixType>
-void treatMatrix(MatrixType &matrix, double tolerance = 1e-13, bool check_linearly_dependent = true) {
-   const size_t numRows = matrix.size();
-   const size_t numCols = matrix[0].size();
-
-   auto changeRow = [&](int i) {
-      for (size_t j = 0; j < numCols; ++j) {
-         matrix[i][j] = (i == j) ? 1.0 : 0.0;
-      }
-   };
-
-   for (size_t i = 0; i < numRows; ++i) {
-      // check if zero row
-      if (Norm(matrix[i]) <= tolerance || !isFinite(matrix[i], 1e+13)) {
-         changeRow(i);
-      } else {
-         // check if linearly dependent
-         if (check_linearly_dependent)
-            for (size_t j = i + 1; j < numRows; ++j) {
-               double ratio = 0;
-               bool calculated_once = false;
-               bool duplicated = true;
-               // 一つでも比率が違う場合は，線形従属ではない
-               for (size_t k = 0; k < numCols; ++k) {
-                  if (!std::abs(matrix[i][k]) > tolerance && std::abs(matrix[j][k]) > tolerance) {
-                     duplicated = false;  // 線形従属ではない
-                     break;
-                  } else if (std::abs(matrix[i][k]) > tolerance && !std::abs(matrix[j][k]) > tolerance) {
-                     duplicated = false;  // 線形従属ではない
-                     break;
-                  } else if (std::abs(matrix[i][k]) > tolerance && std::abs(matrix[j][k]) > tolerance) {
-                     if (!calculated_once) {
-                        ratio = matrix[i][k] / matrix[j][k];
-                        calculated_once = true;
-                     } else if (ratio != matrix[i][k] / matrix[j][k]) {
-                        duplicated = false;  // 線形従属ではない
-                        break;
-                     }
-                     // ratioが同じ倍は，duplicateはtrueのまま
-                  }
-                  // どちらとも0の場合は，duplicateはtrueのまま
-               }
-               if (duplicated) {
-                  changeRow(i);
-                  break;
-               }
-            }
-      }
-   }
-   if (Det(matrix) == 0 || std::abs(Det(matrix)) < 1e-20)
-      IdentityMatrix(matrix);
-}
-
 void setCorrectionMatrix(const auto &all_nets) {
 
    /*DOC_EXTRACT 0_1_1_preparation_wall_and_freesurface
