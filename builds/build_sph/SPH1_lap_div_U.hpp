@@ -70,7 +70,11 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                }
             });
 
-            const double c_xsph = 0.02;  // 少しは必要のようだ
+            double c_xsph = 0;
+            if (A->isFluid) {
+               // c_xsph = std::clamp(0., 0.03, std::pow(A->var_Eigenvalues_of_M, 2));
+               c_xsph = std::clamp(0.01, 0.025, 0.1 * A->var_Eigenvalues_of_M);
+            }
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w;
             double total_w_U_next = 0;
@@ -79,7 +83,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                Uij = A->U_SPH - B->U_SPH;
                if (A->isFluid && B->isFluid && !B->isAuxiliary && A != B && !B->is_grad_corr_M_singular) {
                   // if (((A->isFluid && B->isFluid) || (A->isFluid && B->isFirstWallLayer)) && !B->isAuxiliary && A != B) {
-                  vol_w = B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing * 2.5);
+                  vol_w = B->volume * w_Bspline(Norm(A->X - B->X), A->particle_spacing * 2.4);
                   // if (B->isSurface)
                   //    A->U_XSPH += 2 * c_xsph * (-Uij) * vol_w;  //\label{SPH:U_XSPH}
                   // else
@@ -166,7 +170,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             const auto r = A->SML();
             const auto center = A->X;
 
+            Tddd local_DUDt_modify_SPH_1 = {0., 0., 0.};
+
             /* -------------------------------------------------------------------------- */
+
             // A->interp_normal_original_next.fill(0.);
             // Tddd interp_normal_original_next_mod = {0., 0., 0.};
             // for (const auto &net : target_nets)
@@ -174,23 +181,24 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             //       A->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(A), X_next(q), A->SML_next());
             //       interp_normal_original_next_mod -= rho_next(q) * V_next(q) * grad_w_Bspline_next(A, q);
             //    });
+
             /* -------------------------------------------------------------------------- */
 
             // 修正１
-
-            // const double typical_velocity = A->particle_spacing / dt;
-            // const double typical_acceleration = typical_velocity / dt;
-            // const auto V_org = A->interp_normal_original_next / _WATER_DENSITY_;  // non-dimensional
-            // if (!A->is_grad_corr_M_singular)
-            //    if (A->isNearSurface) {
-            //       const auto V_mod = interp_normal_original_next_mod / _WATER_DENSITY_;
-            //       const auto [Vn, Vs] = DecomposeVector(V_org, V_mod);
-            //       A->DUDt_modify_SPH_2 = dt * 0.0001 * Vs * typical_acceleration;
-            //       // 変更したが良くなったか
-            //    } else {
-            //       A->DUDt_modify_SPH_2 = dt * 0.0001 * V_org * typical_acceleration;
-            //    }
-
+            const double typical_velocity = A->particle_spacing / dt;
+            const double typical_acceleration = typical_velocity / dt;
+            const auto V_org = A->interp_normal_original_next / _WATER_DENSITY_;  // non-dimensional
+            if (!A->is_grad_corr_M_singular) {
+               // if (A->isNearSurface) {
+               //    // const auto V_mod = interp_normal_original_next_mod / _WATER_DENSITY_;
+               //    // const auto [Vn, Vs] = DecomposeVector(V_org, V_mod);
+               //    // A->DUDt_modify_SPH_2 = dt * 0.00000001 * Vs * typical_acceleration;
+               //    // 変更したが良くなったか
+               // } else
+               {
+                  local_DUDt_modify_SPH_1 = 0.00000001 * V_org * typical_acceleration;
+               }
+            }
             // 修正２
             auto applyOverPoints = [&](const auto &equation) {
                for (const auto &net : target_nets) {
@@ -200,41 +208,50 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   });
                }
             };
+
             // 次はこれで試す
 
-            double coeff = 0.1;
-            if (A->isSurface)
-               coeff = 0.01;
+            double coeff = 0.0001;
+            if (A->isNearSurface)
+               coeff = 0.00001;
+
+            Tddd local_DUDt_modify_SPH_2 = {0., 0., 0.};
 
             auto add = [&](const auto &B) {
-               if (A == B || A->isAuxiliary || B->isAuxiliary || !A->isFluid)
-                  return;
-               if (A->isFluid && B->isFluid) {
+               if (A->isFluid && B->isFluid && A != B) {
                   const auto vec_A2B = X_next(B) - X_next(A);
                   // const auto vec_A2B = B->X - A->X;
-                  const double ratio = Norm(vec_A2B) / A->particle_spacing;
-                  const auto relative_velocity = U_next(A) - U_next(B);  //! この意味はAがBに近づく速度
-                  if (ratio < 0.8 && Dot(relative_velocity, vec_A2B) > 0) {
+                  // const double ratio = Norm(vec_A2B) / A->particle_spacing;
+                  const auto A_no_oikoshi_velocity = U_next(A) - U_next(B);
+                  //! Aの速度はBの速度に対してどうなっているか．Aは追い越そうとしているか？Dot(vec_A2B, relative_velocity) > 0追い越し
+                  if (Dot(A_no_oikoshi_velocity, vec_A2B) > 0) {
                      // if (A->isSurface) {
                      // auto [vec_A2B_normal, vec_A2B_tangential] = DecomposeVector(vec_A2B, Normalize(Dot(A->inv_grad_corr_M, A->interp_normal_original)));
                      //    A->DUDt_modify_SPH -= 0.0001 * Projection(relative_velocity, vec_A2B_tangential) / dt;
                      // } else
                      // {
                      // A->DUDt_modify_SPH -= 0.1 * (1. - ratio) * Projection(relative_velocity, vec_A2B) / dt;
-                     A->DUDt_modify_SPH_2 -= coeff * Projection(relative_velocity, vec_A2B);
+                     local_DUDt_modify_SPH_2 -= coeff * V_next(B) * w_Bspline(Norm(vec_A2B), A->particle_spacing * 0.2) * Projection(A_no_oikoshi_velocity, vec_A2B);
                      // }
                   }
                }
             };
-
             applyOverPoints(add);
+            // if (A->var_Eigenvalues_of_M > 0.1 /*no good*/)
+            // if (A->isNearSurface)
+            //    A->DUDt_modify_SPH_2.fill(0.);
+            // else
+            // {
+
+            A->DUDt_modify_SPH_2 = local_DUDt_modify_SPH_2 / dt;
 
             // suppress the change
-            double max_scale = 0.01 * Norm(A->DUDt_SPH);
+
+            double max_scale = 0.001 * Norm(A->DUDt_SPH);
             double original_scale = Norm(A->DUDt_modify_SPH_2);
             if (original_scale > 0.)
                A->DUDt_modify_SPH_2 *= std::min(original_scale, max_scale) / original_scale;
-
+            // }
             //! b_vectorの修正
 
             if (A->getNetwork()->isRigidBody) {
@@ -251,28 +268,28 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          }
       }
 
-      // #pragma omp parallel
-      //       for (const auto &A : points)
-      // #pragma omp single nowait
-      //       {
-      //          /* ----------------------- calculate DUDt and b_vector ---------------------- */
+#pragma omp parallel
+      for (const auto &A : points)
+#pragma omp single nowait
+      {
+         /* ----------------------- calculate DUDt and b_vector ---------------------- */
 
-      //          // \label{SPH:lapU_for_wall}
-      //          // \label{SPH:Poisson_b_vector}
-      //          // \label{SPH:how_to_set_fluid_b_vector}
-      //          const double dt = A->RK_X.get_dt();
-      //          if (A->getNetwork()->isRigidBody) {
-      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
-      //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
-      //             A->DUDt_SPH += _GRAVITY3_;
-      //             A->DrhoDt_SPH = -A->rho * A->div_U;
-      //          } else {
-      //             A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
-      //             A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
-      //             A->DUDt_SPH += _GRAVITY3_;
-      //             A->DrhoDt_SPH = -A->rho * A->div_U;
-      //          }
-      //       }
+         // \label{SPH:lapU_for_wall}
+         // \label{SPH:Poisson_b_vector}
+         // \label{SPH:how_to_set_fluid_b_vector}
+         const double dt = A->RK_X.get_dt();
+         if (A->getNetwork()->isRigidBody) {
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+            A->DUDt_SPH += _GRAVITY3_;
+            A->DrhoDt_SPH = -A->rho * A->div_U;
+         } else {
+            A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
+            A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
+            A->DUDt_SPH += _GRAVITY3_;
+            A->DrhoDt_SPH = -A->rho * A->div_U;
+         }
+      }
 
       //% div_U_nextの計算
 

@@ -1,5 +1,6 @@
 # Contents
 - [🐋 `Network`](#🐋-`Network`)
+    - [⛵ 点・線・面の接続関係とその整理](#⛵-点・線・面の接続関係とその整理)
     - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
         - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
@@ -7,6 +8,7 @@
             - [🪸 線の出力](#🪸-線の出力)
             - [🪸 実行方法](#🪸-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
+    - [⛵ ２次補間](#⛵-２次補間)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
         - [🪼 例](#🪼-例)
@@ -46,11 +48,17 @@
 * 節点や辺や面の相互アクセス
 * メッシュの細分化
 
+## ⛵ 点・線・面の接続関係とその整理 
+
+1. `networkFace->Lines`を設定
+2. `networkFace->setPoints()`は，`networkFace->Lines`が設定されていることを前提として，`networkFace->Points`と`networkFace->PLPLPL`を設定する．
+3. `Network::setGeometricProperties()`は，`f->setGeometricProperties(ToX(f->setPoints()))`を実行している．
+
 ## ⛵ 3Dファイルの読み込みと出力 
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4106)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L4111)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -113,7 +121,19 @@ pvd.output();//最後にpvdファイルを出力
 ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map "[v]" sample_line.gif
 ```
 
-[./example0_load_3d_file.cpp#L85](./example0_load_3d_file.cpp#L85)
+[./example0_load_3d_file.cpp#L91](./example0_load_3d_file.cpp#L91)
+
+---
+## ⛵ ２次補間 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_quadratic_interpolation.cpp
+make
+./example0_quadratic_interpolation
+```
+
+[./example0_quadratic_interpolation.cpp#L1](./example0_quadratic_interpolation.cpp#L1)
 
 ---
 # 🐋 空間分割（space_partitioning） 

@@ -270,6 +270,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_facesNeuamnn = p_d0;
       uomap_P_d P_BC = p_d0;
       uomap_P_d P_isAbsorbed = p_d0;
+      uomap_P_d P_minDepthFromCORNER = p_d0;
 
       try {
 #pragma omp parallel
@@ -323,6 +324,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_solidAngle[p] = p->getSolidAngle();
             P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
             P_U_absorbed[p] = p->U_absorbed;
+            P_minDepthFromCORNER[p] = p->minDepthFromCORNER;
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -358,7 +360,8 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"P_V2ContactFaces2", P_V2ContactFaces2},
              {"P_V2ContactFaces3", P_V2ContactFaces3},
              {"P_V2ContactFaces4", P_V2ContactFaces4},
-             {"P_V2ContactFaces5", P_V2ContactFaces5}};
+             {"P_V2ContactFaces5", P_V2ContactFaces5},
+             {"P_minDepthFromCORNER", P_minDepthFromCORNER}};
          return data;
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -416,8 +419,6 @@ void show_info(const Network &net) {
    std::cout << "Neumann : " << n << std::endl;
    std::cout << "Dirichlet : " << d << std::endl;
 };
-
-JSONoutput jsonout;
 
 // b! ------------------------------------------------------ */
 

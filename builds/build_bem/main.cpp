@@ -14,9 +14,6 @@
 
 #define BEM
 #define use_lapack
-int time_step;
-double simulation_time = 0;
-
 #define simulation
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -30,6 +27,11 @@ double simulation_time = 0;
 #include "minMaxOfFunctions.hpp"
 #include "rootFinding.hpp"
 #include "vtkWriter.hpp"
+
+int time_step;
+double simulation_time = 0;
+JSONoutput jsonout;
+
 // pvd cpg_pvd("./vtu/bem.pvd");
 
 #include "BEM.hpp"
@@ -83,9 +85,9 @@ int main(int argc, char **argv) {
    const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
    const double end_time = stod(settingJSON.at("end_time"))[0];
 
-   int ALE_period_in_step = 1;
-   if (settingJSON.find("ALE_period_in_step"))
-      ALE_period_in_step = stod(settingJSON.at("ALE_period_in_step"))[0];
+   // int ALE_period_in_step = 1;
+   // if (settingJSON.find("ALE_period_in_step"))
+   //    ALE_period_in_step = stod(settingJSON.at("ALE_period_in_step"))[0];
 
    std::cout << "" << std::endl;
 
@@ -141,7 +143,16 @@ int main(int argc, char **argv) {
          net->isRigidBody = net->isSoftBody = net->isFluid = false;
       }
 
-      net->isFixed = (injson.find("isFixed") && stob(injson.at("isFixed"))[0]);
+      //! isFixedはdefaultでfalse．指定された分だけ順に置き換わる
+      //! ただし，指定が１つだけなら，それを全てのに適用する．
+      if (injson.find("isFixed")) {
+         auto isFixed = stob(injson.at("isFixed"));
+         if (isFixed.size() == 1)
+            net->isFixed.fill(isFixed[0]);
+         else
+            for (auto i = 0; i < isFixed.size(); ++i)
+               net->isFixed[i] = isFixed[i];
+      }
       // for (auto i = 0; i < 10; ++i)
       //    AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
       //$ set velocity
@@ -396,7 +407,7 @@ int main(int argc, char **argv) {
             }
 
             // b@ ------------------------------------------------------ */
-            // b@        初期値問題を解く（時間微分方程式を数値積分する）        */
+            // b@           初期値問題を解く（時間微分方程式を数値積分する）        */
             // b@ ------------------------------------------------------ */
             for (const auto &p : water->getPoints()) {
                p->RK_phi.initialize(dt, simulation_time, std::get<0>(p->phiphin), RK_order);
@@ -426,7 +437,10 @@ int main(int argc, char **argv) {
 
          int RK_step = 0;
          BEM_BVP BVP;
+
+         std::vector<double> convergence;
          do {
+
             auto RK_time = (*(FMM_BucketsPoints.all_stored_objects).begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", simulation_time = " << simulation_time << std::endl;
 
@@ -436,8 +450,10 @@ int main(int argc, char **argv) {
                net->makeBucketFaces(net->getScale() / 10.);
             std::cout << Green << "makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            for (auto water : FluidObject)
+            for (auto water : FluidObject) {
                setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+               water->setMinDepthFromCORNER();
+            }
             std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
@@ -451,13 +467,13 @@ int main(int argc, char **argv) {
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             for (auto water : FluidObject) {
-               calculateCurrentUpdateVelocities(*water, 30, RK_step == 4);
+               calculateCurrentUpdateVelocities(*water, 30, RK_step == 4 ? 0.5 : 0.);
                // calculateCurrentUpdateVelocities(*water, 30, (RK_step == 4 && time_step % ALE_period_in_step == 0) ? 0.1 : 0.);
                // calculateCurrentUpdateVelocities(*water, 20);
             }
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            BVP.solveForPhiPhin_t(FluidObject, Join(RigidBodyObject, SoftBodyObject));
+            convergence = BVP.solveForPhiPhin_t(FluidObject, Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // b$ --------------------------------------------------- */
@@ -476,17 +492,26 @@ int main(int argc, char **argv) {
             {  // \label{BEM:impose_velocity}
                //  重心位置と姿勢の時間発展
                if (net->inputJSON.find("velocity")) {
-                  if (net->inputJSON.at("velocity")[0] != "fixed") {
+                  //! 時間まで静止させる
+                  if ((net->inputJSON.at("velocity")[0].contains("floating") && net->inputJSON.at("velocity").size() >= 2 && std::stod(net->inputJSON.at("velocity")[1]) > simulation_time)) {
+                     net->velocity.fill(0);
+                     net->acceleration.fill(0);
+                  }
+
+                  //! 静止した物体は速度ゼロが与えられているので，下を実行しても動かない
+                  if (!net->inputJSON.at("velocity")[0].contains("fixed")) {
                      std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
-                     auto COM_old = net->COM;
+                     //
                      net->RK_COM.push(net->velocityTranslational());
                      net->COM = net->RK_COM.getX();
-                     net->RK_Q.push(AngularVelocityTodQdt(net->velocityRotational(), net->Q));
+                     //
+                     net->RK_Q.push(net->Q.AngularVelocityTodQdt(net->velocityRotational()));
                      net->Q = net->RK_Q.getX();
-                     std::cout << "name = " << net->getName() << std::endl;
-                     std::cout << "net->COM - COM_old= " << net->COM - COM_old << std::endl;
-                     std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
+                     //
                   }
+                  std::cout << "name = " << net->getName() << std::endl;
+                  std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
+
                   for (auto &mooring : net->mooringLines) {
                      //! mooring->lastPoint は，浮体ともに動く．
                      auto Xcurrent = mooring->lastPoint->X;
@@ -528,7 +553,9 @@ int main(int argc, char **argv) {
                   std::cout << net->getName() << "'s (RigidBodyObject) velocity is not updated" << std::endl;
                }
 
-               net->RigidBodyUpdatePoints();
+               for (const auto &p : net->getPoints())
+                  p->setXSingle(net->Q.R(p->initialX - net->ICOM) + net->COM);
+               net->setGeometricProperties();
             }
 
             // b$ --------------------------------------------------- */
@@ -549,38 +576,48 @@ int main(int argc, char **argv) {
             ### 流体の$`\phi`$時間発展，$`\phi_n`$の時間発展はない
 
             */
-            std::unordered_map<Network *, std::array<double, 2>> reference_phi;
 
+            auto isAbsorbed = [&](auto p) -> Network * {
+               for (const auto &net : AbsorberObject)
+                  if (net->isInside(p->X))
+                     return net;
+               return nullptr;
+            };
+
+            // initialize reference_phi and set absorbedBy
+            std::unordered_set<Network *> absorbers;
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-               p->absorbedBy = nullptr;
-               std::ranges::any_of(AbsorberObject, [&](auto net) {
-                  if (net->isInside(p->X)) {
-                     p->absorbedBy = net;
-                     return true;
-                  }
-                  return false;
-               });
-               reference_phi[p->absorbedBy] = Tdd{0., 0.};
+               p->absorbedBy = isAbsorbed(p);
+               if (p->absorbedBy != nullptr)
+                  absorbers.insert(p->absorbedBy);
             }
 
-            for (const auto &p : FMM_BucketsPoints.all_stored_objects)
-               if (p->absorbedBy)
-                  reference_phi[p->absorbedBy] += Tdd{std::get<0>(p->phiphin), 1};
+            std::unordered_map<Network *, std::array<double, 2>> reference_phi;
+            for (const auto &absorber : absorbers)
+               reference_phi[absorber] = {0, 0};
+
+            // calculate reference_phi and weight
+            for (const auto &f : FMM_BucketsFaces.all_stored_objects) {
+               auto [p0, p1, p2] = f->getPoints();
+               auto absorber = p0->absorbedBy;
+               if (absorber != nullptr && absorber == p1->absorbedBy && absorber == p2->absorbedBy) {
+                  auto mean_phi = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3;
+                  reference_phi[absorber] += Tdd{mean_phi * f->area, f->area};
+               }
+            }
 
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-
                p->U_absorbed.fill(0.);
-
                //! damping coeeficient is determined by the horizontal distance from the center of the absorber
 
                double gamma = 0, ref_phi = 0;
 
                if (p->absorbedBy != nullptr) {
                   auto [x, y, z] = p->absorbedBy->bounds;
-                  auto center = Tddd{Mean(x), Mean(y), Mean(z)};
-                  auto horizontal_distance = Norm(Chop(p->X - center, Tddd{0, 0, 1}));
+                  auto absorber_center = Tddd{Mean(x), Mean(y), Mean(z)};
+                  auto horizontal_dist_from_center = Norm(Chop(p->X - absorber_center, Tddd{0, 0, 1}));
                   double x_scale = std::abs(x[0] - x[1]);
-                  gamma = 1. - std::clamp(2 * Norm(horizontal_distance) / x_scale, 0.3, 1.);
+                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0.2, 1.);
                   ref_phi = reference_phi.at(p->absorbedBy)[0] / reference_phi.at(p->absorbedBy)[1];
                }
                //
@@ -593,62 +630,6 @@ int main(int argc, char **argv) {
                p->setXSingle(p->RK_X.getX());
                p->phi_tmp = 0;
             }
-            /* -------------------------------- ABSORBER -------------------------------- */
-            // for (const auto f : FMM_BucketsFaces.all_stored_objects) {
-            //    if (std::ranges::any_of(AbsorberObject, [&](auto absorber) {
-            //           auto [p0, p1, p2] = f->getPoints();
-            //           return absorber->isInside(p0->X) || absorber->isInside(p1->X) || absorber->isInside(p2->X);
-            //        })) {
-            //       auto [p0, p1, p2] = f->getPoints();
-            //       auto mean_phi = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3;
-            //       p0->phi_tmp -= mean_phi;
-            //       p1->phi_tmp -= mean_phi;
-            //       p2->phi_tmp -= mean_phi;
-            //    }
-            // }
-            // for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-            //    p->isAbsorbed = false;
-            //    p->U_absorbed.fill(0.);
-            //    if (p->Dirichlet)
-            //       if (std::ranges::any_of(AbsorberObject, [&](auto absorber) { return absorber->isInside(p->X); })) {
-            //          p->isAbsorbed = true;
-            //          auto [x, y, z] = AbsorberObject[0]->bounds;
-            //          auto center = Tddd{Mean(x), Mean(y), Mean(z)};
-            //          auto horizontal_distance = p->X - center;
-            //          horizontal_distance[2] = 0;
-            //          double horizontal_scale = std::abs(x[0] - x[1]);
-            //          // const double c = std::pow(Norm(horizontal_distance) / horizontal_scale, 1);
-            //          // const double c = 0.9;  // std::pow(Norm(horizontal_distance) / horizontal_scale, 1);
-            //          // std::get<1>(p->phiphin) *= c;
-            //          p->U_absorbed = p->U_update_BEM;
-            //          // p->U_update_BEM = p->U_BEM = gradPhi(p, c);
-            //          p->U_update_BEM *= 0.5;
-            //          p->U_absorbed -= p->U_update_BEM;
-            //       }
-            // }
-            // /* ---------------------------- APPLY ABSORPTION ---------------------------- */
-            // for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-            //    if (p->Dirichlet)
-            //       if (std::ranges::any_of(AbsorberObject, [&](auto absorber) { return absorber->isInside(p->X); })) {
-            //          // p->U_absorbed = p->U_update_BEM;
-            //          // p->U_update_BEM = p->U_BEM = gradPhi(p);
-            //          // p->U_absorbed -= p->U_update_BEM;
-            //          // if (p->Neumann)
-            //          //    p->U_update_BEM = uNeumann(p);
-
-            //          // p->U_update_BEM = p->RK_X.getVectorToReachAtNextTimeQ(p->vecToSurface + RK_without_Ubuff(p));
-
-            //          if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
-            //             p->RK_phi.repush(p->DphiDt(p->U_update_BEM, 0.));
-            //             std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
-            //          }
-            //          //@ 位置xの時間発展
-            //          p->RK_X.repush(p->U_update_BEM);
-            //          p->setXSingle(p->RK_X.getX());
-            //          p->phi_tmp = 0;
-            //       }
-            // }
-            // b$ --------------------------------------------------- */
 
             for (auto water : FluidObject)
                std::cout << Green << "name:" << water->getName() << ": setBounds" << colorReset << std::endl;
@@ -755,6 +736,8 @@ int main(int argc, char **argv) {
          double cpu_time_in_seconds = static_cast<double>(std::clock() - cpu_clock_start) / CLOCKS_PER_SEC;
          jsonout.push("cpu_time", cpu_time_in_seconds);
 
+         jsonout.push("eq_of_motion", convergence);
+
          // Calculate and push wall-clock time
          auto duration = std::chrono::high_resolution_clock::now() - wall_clock_start;
          double wall_clock_time_in_seconds = std::chrono::duration<double>(duration).count();
@@ -839,8 +822,8 @@ int main(int argc, char **argv) {
             VV_VarForOutput data;
             if (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating") {
                auto tmp = calculateFluidInteraction(FMM_BucketsFaces.all_stored_objects, net);
-               uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel, P_FroudeKrylovTorque;
-               uomap_P_d P_Pitch, P_Yaw, P_Roll, P_pressure, P_radius;
+               uomap_P_Tddd P_COM, P_COM_p, P_accel, P_velocity, P_rotational_velocity, P_rotational_accel;
+               uomap_P_d P_Pitch, P_Yaw, P_Roll, P_radius;
                //    for (const auto &p : water->getPoints()) {
                //       P_accel[p] = net->accelRigidBody(ToX(p));
                //       P_velocity[p] = net->velocityRigidBody(ToX(p));
@@ -869,9 +852,7 @@ int main(int argc, char **argv) {
                    {"velocity", P_velocity},
                    {"acceleration", P_accel},
                    {"rotational valocity", P_rotational_velocity},
-                   {"rotational acceleration", P_rotational_accel},
-                   {"pressure", P_pressure},
-                   {"FroudeKrylovTorque", P_FroudeKrylovTorque}};
+                   {"rotational acceleration", P_rotational_accel}};
                std::filesystem::path name = "actingFacesOn" + NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
                mk_vtu(output_directory / name, tmp.actingFaces, data);
             }

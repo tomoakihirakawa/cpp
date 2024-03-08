@@ -11,7 +11,7 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 
 template <typename T>
 struct NewtonRaphson_Common {
-   T X, dX;  // tmp
+   T X, dX;
    NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit){};
    void initialize(const T &Xin) { X = Xin; };
 };
@@ -28,6 +28,12 @@ struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
       lapack_lu lu(dFdx);
       lu.solve(-F, dX);
       X += dX;
+   };
+
+   void update(const V_d &F, const VV_d &dFdx, const double a) {
+      lapack_lu lu(dFdx);
+      lu.solve(-F, dX);
+      X += a * dX;
    };
 };
 /* ------------------------------------------------------ */
@@ -206,18 +212,52 @@ double optimumValue(const std::vector<double> &sample_values,
 /* -------------------------------------------------------------------------- */
 
 struct DispersionRelation {
+   /*DOC_EXTRACT dispersionRelation
+
+   w = \sqrt{|{\bf g}| k  \tanh{h k}}  = \sqrt{|{\bf g}| \frac{2\pi}{L}  \tanh{h \frac{2\pi}{L}}}
+
+   */
    double w;
    double T;
    double k;
    double L;
    double h;
-   DispersionRelation(const double wIN, const double hIN) : w(wIN), h(hIN), T(2 * M_PI / wIN) {
-      NewtonRaphson nr(1.);
-      for (auto i = 0; i < 10; i++)
-         nr.update(omega(nr.X, h) - w, domegadk(nr.X, h));
-      this->k = std::abs(nr.X);
+
+   DispersionRelation() : w(0), h(0), T(0), k(0), L(0){};
+
+   DispersionRelation(const double wIN, const double hIN) {
+      set_w_h(wIN, hIN);
+   };
+
+   void set_w_h(const double wIN, const double hIN) {
+      this->w = wIN;
+      this->T = 2 * M_PI / this->w;
+      this->h = hIN;
+      bool found = false;
+      const std::vector<double> init_L = {0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.};
+      for (const double l : init_L) {
+         NewtonRaphson nr(2. * M_PI / l);
+         for (auto i = 0; i < 30; i++) {
+            nr.update(omega(nr.X, h) - w, domegadk(nr.X, h));
+            if (std::abs(omega(nr.X, h) - w) < 1E-10) {
+               found = true;
+               this->k = std::abs(nr.X);
+               break;
+            }
+         }
+         if (found) break;
+      }
       this->L = 2 * M_PI / this->k;
    };
+
+   void set_L_h(const double LIN, const double hIN) {
+      this->L = LIN;
+      this->h = hIN;
+      this->k = 2 * M_PI / this->L;
+      this->w = omega(this->k, this->h);
+      this->T = 2 * M_PI / this->w;
+   };
+
    double omega(const double k, const double h) {
       return Sqrt(_GRAVITY_ * k * Tanh(h * k));
    };

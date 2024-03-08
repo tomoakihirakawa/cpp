@@ -1,6 +1,7 @@
 #ifndef basic_linear_systems_H
 #define basic_linear_systems_H
 
+#include <cmath>
 // basic_linear_systems2.hpp
 
 //! A.x = b
@@ -19,9 +20,7 @@ void Solve(std::array<double, 2> &x, const std::array<std::array<double, 2>, 2> 
 
 // ! x.A = b
 void Solve(std::array<double, 3> &x, const std::array<std::array<double, 3>, 3> &A, const std::array<double, 3> &y) {
-
    const double inv_det = 1. / std::fma(A[0][2], std::fma(A[1][1], A[2][0], -A[1][0] * A[2][1]), std::fma(A[0][1], std::fma(-A[1][2], A[2][0], A[1][0] * A[2][2]), A[0][0] * std::fma(A[1][2], A[2][1], -A[1][1] * A[2][2])));
-
    x[0] = inv_det * std::fma(y[2], A[1][1] * A[2][0], std::fma(-y[1], A[1][2] * A[2][0], std::fma(-y[2], A[1][0] * A[2][1], std::fma(y[0], A[1][2] * A[2][1], std::fma(y[1], A[1][0], -y[0] * A[1][1]) * A[2][2]))));
    x[1] = -inv_det * std::fma(y[2], A[0][1] * A[2][0], std::fma(-y[1], A[0][2] * A[2][0], std::fma(-y[2], A[0][0] * A[2][1], std::fma(y[0], A[0][2] * A[2][1], std::fma(y[1], A[0][0], -y[0] * A[0][1]) * A[2][2]))));
    x[2] = inv_det * std::fma(y[2], A[0][1] * A[1][0], std::fma(-y[1], A[0][2] * A[1][0], std::fma(-y[2], A[0][0] * A[1][1], std::fma(y[0], A[0][2] * A[1][1], std::fma(y[1], A[0][0], -y[0] * A[0][1]) * A[1][2]))));

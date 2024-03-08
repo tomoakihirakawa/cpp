@@ -5,10 +5,13 @@
     - [⛵ 精度の確認](#⛵-精度の確認)
         - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
         - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
+    - [⛵ `multipole_expansion`クラスのチェック](#⛵-`multipole_expansion`クラスのチェック)
+    - [⛵ 展開中心の移動（M2M）](#⛵-展開中心の移動（M2M）)
+    - [⛵ ベッセル関数](#⛵-ベッセル関数)
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
         - [🪼 境界積分方程式](#🪼-境界積分方程式)
         - [🪼 空間分割](#🪼-空間分割)
-        - [🪼 離散化](#🪼-離散化)
+        - [🪼 局所展開](#🪼-局所展開)
 
 
 ---
@@ -27,11 +30,16 @@ G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
 近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
 
 ```math
-G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{near}}{r _{far}} \right)^k \frac{1}{r _{far}} Y(k, -m, a _{near}, b _{near}) Y(k, m, a _{far}, b _{far})={\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
+{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 ```
 
-ここで，$`(r _{near},a _{near},b _{near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
-$`(r _{far},a _{far},b _{far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+```math
+{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
+```
+
+ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
 
 ```math
 Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
@@ -133,6 +141,60 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 
 [./test_multipole_expansion.cpp#L4](./test_multipole_expansion.cpp#L4)
 
+---
+## ⛵ `multipole_expansion`クラスのチェック 
+
+FMMアルゴリズムでは，展開中心から遠くにある遠方原点の値は，モーメントを計算した後に渡される．
+ここでチェックするのは，その計算過程を行うクラス`multipole_expansion`が問題なく動作するかどうかである．
+
+💡 境界要素法におけるモーメントは，極そのものではなく，極の面積分（３D）である．
+
+💡 多重極モーメントを計算するために，極の値を与えられなければならない．
+\cite{Liu_2009}
+
+💡 効率化するために要求されるオペレーションは，極の値が変化した際に，できるだけ少ない計算でモーメントを更新することである．
+
+1. モーメントの計算（近傍にある複数の極を変数分離し足し合わせる）
+2. 遠方の原点を決めて渡し，計算しておいたモーメントと積和を計算する
+3. この計算結果と，展開しない計算結果との差をプロット
+
+一つ前の例では，展開位置を変えることで，多重極展開の精度がどのように変化するかを調べた．
+原点位置の移動による展開精度の変化は，展開中心の移動による展開精度の変化と同じである．
+展開精度は，（多分）相対距離を規格化した上での，展開中心と極と原点との相対的位置関係で決まっているからである．
+
+## ⛵ 展開中心の移動（M2M） 
+
+多数の極を空間的にグループ分けして，
+グループの中心位置を展開中心として多重極展開したとする．
+
+次に，そのグループをさらにまとめて新たな多重極展開を行うことを考える．
+この操作は，１ステップ目で得られた各グループの多重極展開係数を利用することで効率的に行うことができる．
+各極に対する多重極展開は計算せずに済むからである．
+
+変更されるのは，多重極係数ではなく，球面調和関数自体と，少しの係数のみである．
+
+ここでは，始めに，１ステップ目として座標原点を中心とした多重極展開を行い，
+次に，様々な場所での多重極展開を行って，前回同様に精度を検証する．
+
+もし，２ステップ目において，展開中心が１ステップ目同様に原点であれば，
+前回と同じ結果が得られるはずである．
+
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion.cpp
+make
+./test_translation_of_a_multipole_expansion
+```
+
+[./test_translation_of_a_multipole_expansion.cpp#L5](./test_translation_of_a_multipole_expansion.cpp#L5)
+
+---
+## ⛵ ベッセル関数
+
+[./test_Bessel_function.cpp#L5](./test_Bessel_function.cpp#L5)
+
+---
 ## ⛵ 境界要素法への応用 
 
 境界要素法で最も計算時間を要するのは，連立１次方程式の**係数行列の作成**と**それを解く**ことである．
@@ -192,17 +254,19 @@ $`\bf c`$を一つに固定するのではなく，空間を分割して，そ�
 
 ```math
 \begin{align*}
-\alpha ({\bf{a}})\phi ({\bf{a}})=& \iint _{\Gamma _{\rm near-filed}}( {G({\bf x},{\bf a})\phi _n ({\bf x}) - \phi (\bf x) G _n({\bf x},{\bf a})})dS\\
+\alpha ({\bf{a}})\phi ({\bf{a}})=& \iint _{\Gamma _{\rm near-fields}}( {G({\bf x},{\bf a})\phi _n ({\bf x}) - \phi (\bf x) G _n({\bf x},{\bf a})})dS\\
 & + \sum _{\square i}\{{\bf Y}({\bf a},{\bf c} _{\square i})\cdot\iint _{\Gamma _{\square i}}{({{{\bf Y}^\ast}({\bf x},{\bf c} _{\square i})\phi _n ({\bf{x}}) - \phi ({\bf{x}}){{\bf Y} _n^\ast}({\bf x},{\bf c} _{\square i})})dS}\}
 \end{align*}
 ```
 
-### 🪼 離散化 
+### 🪼 局所展開 
 
-この計算手順は，離散化を明確にして初めて理解でき，その有用性がわかる．
+Graf's Addition Theoremを使って，$`{\bf Y}^\ast({\bf x},{\bf c} _{\square i})`$を$`{\bf Y}^\ast({\bf x},{\bf c})`$の線形結合で表す．
 
-2
+```math
+{\bf Y}^\ast({\bf x},{\bf c} _{\square i}) = \sum _{\square j} {\bf Y}^\ast({\bf x},{\bf c} _{\square j}){\bf Y}({\bf c} _{\square j},{\bf c} _{\square i})
+```
 
-[./test_multipole_expansion.cpp#L169](./test_multipole_expansion.cpp#L169)
+[./test_multipole_expansion.cpp#L200](./test_multipole_expansion.cpp#L200)
 
 ---

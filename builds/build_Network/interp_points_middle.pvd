@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="./points_middle0.vtp" group="" part="0" timestep="0.000000000000000"/>
+    <DataSet file="./points_middle1.vtp" group="" part="0" timestep="1.000000000000000"/>
+    <DataSet file="./points_middle2.vtp" group="" part="0" timestep="2.000000000000000"/>
+    <DataSet file="./points_middle3.vtp" group="" part="0" timestep="3.000000000000000"/>
+    <DataSet file="./points_middle4.vtp" group="" part="0" timestep="4.000000000000000"/>
+    <DataSet file="./points_middle5.vtp" group="" part="0" timestep="5.000000000000000"/>
+    <DataSet file="./points_middle6.vtp" group="" part="0" timestep="6.000000000000000"/>
+    <DataSet file="./points_middle7.vtp" group="" part="0" timestep="7.000000000000000"/>
+    <DataSet file="./points_middle8.vtp" group="" part="0" timestep="8.000000000000000"/>
+    <DataSet file="./points_middle9.vtp" group="" part="0" timestep="9.000000000000000"/>
+  </Collection>
+</VTKFile>

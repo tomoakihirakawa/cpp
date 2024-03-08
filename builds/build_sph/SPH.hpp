@@ -222,7 +222,7 @@ void developByEISPH(Network *net,
          watch();
          //% 壁粒子と水面粒子の設定
          // deleteAuxiliaryPoints(net);
-         // setSML(Append(net_RigidBody, net), {CSML, CSML});  // 2.7は大きすぎる 2.55は小さすぎる
+         setSML(Append(net_RigidBody, net), {CSML, CSML});  // 2.7は大きすぎる 2.55は小さすぎる
          captureWallParticle(net, RigidBodyObject, particle_spacing, wall_p);
          Print(Green, "captureWallParticle", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          setCorrectionMatrix(Append(net_RigidBody, net));
@@ -435,9 +435,11 @@ void setDataOmitted(auto &vtp, const auto &Fluid) {
    // vtp.addPointData("Projectioned　ViscousAndGravityForce", uo_3d);
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH;
    vtp.addPointData("DUDt_modify_SPH", uo_3d);
-
    for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->DUDt_modify_SPH_2;
    vtp.addPointData("DUDt_modify_SPH_2", uo_3d);
+
+   for (const auto &p : Fluid->getPoints()) uo_3d[p] = p->U_XSPH;
+   vtp.addPointData("U_XSPH", uo_3d);
 
    // for (const auto &p : Fluid->getPoints()) uo_3d[p] = Diagonal(p->laplacian_corr_M_next);
    // vtp.addPointData("laplacian_corr_M_next", uo_3d);

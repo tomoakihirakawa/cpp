@@ -1,0 +1,13 @@
+{
+    "filename": "gauge8.json",
+    "name": "gauge8",
+    "position": [
+        4.2,
+        0,
+        5.0,
+        4.2,
+        0,
+        4.0
+    ],
+    "type": "wave gauge"
+}

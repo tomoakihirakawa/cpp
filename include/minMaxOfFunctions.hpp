@@ -216,6 +216,25 @@ struct GradientMethod {
 /* -------------------------------------------------------------------------- */
 /*                               Broyden Method                               */
 /* -------------------------------------------------------------------------- */
+
+/*DOC_EXTRACT Broydens_Method
+
+準ニュートン法は，
+ヤコビ行列を近似し，
+ニュートン法を適用する．
+近似ヤコビ行列を計算する指針として，セカント条件を満たすようにする．
+
+```math
+{\bf J}_{k} \cdot \Delta {\bf x}_k = \Delta {\bf f}_k
+```
+
+
+```math
+{\bf J}_{k} = {\bf J}_{k-1} + \frac{(\Delta {\bf f}_k - {\bf J}_{k-1} \cdot \Delta {\bf x}_k) \otimes \Delta  {\bf x}_k}{\Delta  {\bf x}_k \cdot \Delta {\bf x}_k},\quad \Delta {\bf f}_k = {\bf f}_{k} - {\bf f}_{k-1}
+```
+
+*/
+
 template <typename T>
 struct BroydenMethod;
 

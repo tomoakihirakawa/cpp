@@ -2186,7 +2186,7 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
 
 /* ------------------------------------------------------ */
 
-using JsonValue = std::variant<double, int, std::string, T6d, Tddd>;
+using JsonValue = std::variant<double, int, std::string, T6d, Tddd, std::vector<double>>;
 using JsonVector = std::vector<JsonValue>;
 
 struct JSONoutput {
@@ -2212,6 +2212,15 @@ struct JSONoutput {
                   for (size_t j = 0; j < arg.size(); ++j) {
                      os << arg[j];
                      if (j < arg.size() - 1) os << ", ";
+                  }
+                  os << "]";
+               } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                  os << "[";
+                  for (size_t j = 0; j < arg.size(); ++j) {
+                     if (j == 0) os << "[";
+                     os << arg[j];
+                     if (j < arg.size() - 1) os << ", ";
+                     if (j == arg.size() - 1) os << "]";
                   }
                   os << "]";
                }

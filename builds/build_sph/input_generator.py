@@ -170,18 +170,17 @@ elif "Lobovsky2013" in SimulationCase:
 
     setting = {"RK_order": 1,
                 "max_dt": 0.0002,
-                "end_time_step": 2000*5,
-                "end_time": 5,
+                "end_time_step": 3000*5,
+                "end_time": 2,
                 "CSML": 2.8,
                 "initial_surface_z_position": 0.6,
-                "particle_spacing": 0.015}
+                "particle_spacing": 0.02}
 
     id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                         + "_CSML" + str(setting["CSML"]).replace(".", "d")\
                         + "_RK" + str(setting["RK_order"])
 
     generate_input_files(input_files, setting, IO_dir, id)
-
 
 elif "Kamra2019" in SimulationCase:
 

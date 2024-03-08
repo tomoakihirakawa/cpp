@@ -16,6 +16,7 @@
             - [🪸 🪸 ガウシアン](#🪸-🪸-ガウシアン)
         - [🪼 🪼 最適なパラメタ$`{\varepsilon}`$](#🪼-🪼-最適なパラメタ$`{\varepsilon}`$)
     - [⛵ 三角形補間](#⛵-三角形補間)
+    - [⛵ ⛵ 三角形形状関数](#⛵-⛵-三角形形状関数)
     - [⛵ ⛵ 範囲を修正した三角形形状関数](#⛵-⛵-範囲を修正した三角形形状関数)
 
 
@@ -190,6 +191,33 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 ---
 ## ⛵ 三角形補間 
 
+## ⛵ ⛵ 三角形形状関数  
+
+線形の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+
+```math
+(N _0, N _1, N _2) = (t _0, t _1, t _2)
+```
+
+2次の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+
+```math
+\begin{align}
+N _0 &= t _0(2t _0-1) \\
+N _1 &= t _1(2t _1-1) \\
+N _2 &= t _2(2t _2-1) \\
+N _3 &= 4t _0t _1 \\
+N _4 &= 4t _1t _2 \\
+N _5 &= 4t _2t _0\\
+\end{align}
+```
+[../../include/basic_arithmetic_array_operations.hpp#L981](../../include/basic_arithmetic_array_operations.hpp#L981)
+
+
+| 線形補間 | 2次補間 |
+| --- | --- |
+| <img src="triangle_shape_function_linear.png" width="400"> | <img src="triangle_shape_function_quadratic.png" width="300"> |
+
 ## ⛵ ⛵ 範囲を修正した三角形形状関数  
 
 普通の三角形形状関数は，$`{\mathbf N}=(N _0,N _1,N _2) = (t _0,t _1,1-t _0-t _1)`$．
@@ -202,7 +230,7 @@ $`t _0,t _1=[0,1]`$の範囲で，三角形を形成するように変数変換�
 ```math
 \begin{align}
 N _0 &= t _0 \\
-N _1 &= -t _1(t _0-1) \\
+N _1 &= t _1(1 - t _0) \\
 N _2 &= (t _0-1)(t _1-1)
 \end{align}
 ```
@@ -219,10 +247,16 @@ N _4 &= 4t _1(1-t _0-t _1) \\
 N _5 &= 4t _0(1-t _0-t _1)
 \end{align}
 ```
-[../../include/basic_arithmetic_array_operations.hpp#L1000](../../include/basic_arithmetic_array_operations.hpp#L1000)
+[../../include/basic_arithmetic_array_operations.hpp#L1054](../../include/basic_arithmetic_array_operations.hpp#L1054)
 
 
 ![](sample_tri.png)
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShape.cpp
+make
+```
 
 [./TriShape.cpp#L1](./TriShape.cpp#L1)
 

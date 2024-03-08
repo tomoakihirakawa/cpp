@@ -1,0 +1,132 @@
+[
+    {
+        "filename": "gauge0.json",
+        "name": "gauge0",
+        "position": [
+            0.2,
+            0,
+            5.0,
+            0.2,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge1.json",
+        "name": "gauge1",
+        "position": [
+            0.7,
+            0,
+            5.0,
+            0.7,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge2.json",
+        "name": "gauge2",
+        "position": [
+            1.2,
+            0,
+            5.0,
+            1.2,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge3.json",
+        "name": "gauge3",
+        "position": [
+            1.7,
+            0,
+            5.0,
+            1.7,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge4.json",
+        "name": "gauge4",
+        "position": [
+            2.2,
+            0,
+            5.0,
+            2.2,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge5.json",
+        "name": "gauge5",
+        "position": [
+            2.7,
+            0,
+            5.0,
+            2.7,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge6.json",
+        "name": "gauge6",
+        "position": [
+            3.2,
+            0,
+            5.0,
+            3.2,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge7.json",
+        "name": "gauge7",
+        "position": [
+            3.7,
+            0,
+            5.0,
+            3.7,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge8.json",
+        "name": "gauge8",
+        "position": [
+            4.2,
+            0,
+            5.0,
+            4.2,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    },
+    {
+        "filename": "gauge9.json",
+        "name": "gauge9",
+        "position": [
+            4.7,
+            0,
+            5.0,
+            4.7,
+            0,
+            4.0
+        ],
+        "type": "wave gauge"
+    }
+]

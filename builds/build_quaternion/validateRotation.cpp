@@ -35,13 +35,19 @@ $(0.1,0,0)$を中心にして$x$軸に対して回転 -> $y$軸に対して回�
 
 void translate(Network* const net, const Tddd& shift) {
    for (auto& p : net->getPoints())
-      p->setXsingle(p->initialX + shift);
+      p->setXSingle(p->initialX + shift);
    net->setGeometricProperties();
 };
 
 void rotate(Network* const net, const Quaternion& Q, const Tddd& c = {0, 0, 0}) {
    for (auto& p : net->getPoints())
       p->setXSingle(Q.Rv(p->initialX - c) + c);
+   net->setGeometricProperties();
+};
+
+void rotate_axis(Network* const net, const Quaternion& Q, const Tddd& c = {0, 0, 0}) {
+   for (auto& p : net->getPoints())
+      p->setXSingle(Q.Rs(p->initialX - c) + c);
    net->setGeometricProperties();
 };
 
@@ -62,7 +68,7 @@ int main() {
             for (auto i = 0; i < 50; ++i) {
                auto Q = Quaternion(axis, 2 * M_PI / 50. * i);
                vtkPolygonWriter<networkPoint*> vtp;
-               rotate(net, Q, center);
+               rotate_axis(net, Q, center);
                for (const auto& f : net->getFaces()) {
                   vtp.add(f->getPoints());
                   vtp.addPolygon(f->getPoints());

@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
-  <Collection>
-    <DataSet file=".//cube0.vtu" group="" part="0" timestep="0.000000"/>
-    <DataSet file=".//cube1.vtu" group="" part="0" timestep="1.000000"/>
-    <DataSet file=".//cube2.vtu" group="" part="0" timestep="2.000000"/>
-  </Collection>
-</VTKFile>

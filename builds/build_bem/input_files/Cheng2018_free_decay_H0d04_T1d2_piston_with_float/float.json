@@ -1,0 +1,25 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "isFixed": [
+        false,
+        true,
+        false,
+        true,
+        false,
+        true
+    ],
+    "mass": 12.6,
+    "COM": [
+        3.35,
+        0.0,
+        0.4
+    ],
+    "MOI": [
+        2272199999.9999995,
+        0.1967978007,
+        2797199999.999999
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/float_inclined.obj"
+}

@@ -1632,7 +1632,8 @@ struct interpolationTriangleLinear0101<Tddd> : public interpolationTriangleLinea
    double J(const double t0, const double t1) const {
       auto dxdt0 = this->dXdt0(t0, t1);
       auto dxdt1 = this->dXdt1(t0, t1);
-      return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - std::pow(Dot(dxdt0, dxdt1), 2.));
+      // return std::sqrt(Dot(dxdt0, dxdt0) * Dot(dxdt1, dxdt1) - std::pow(Dot(dxdt0, dxdt1), 2.));
+      return std::sqrt(std::fma(Dot(dxdt0, dxdt0), Dot(dxdt1, dxdt1), -std::pow(Dot(dxdt0, dxdt1), 2.)));
    };
 };
 

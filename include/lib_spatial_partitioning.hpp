@@ -539,6 +539,25 @@ struct Buckets : public CoordinateBounds {
    }
 };
 
+template <typename T>
+Buckets<T> copyPartition(const auto &buckets) {
+   Buckets<T> ret(buckets.bounds, buckets.dL);
+   ret.buckets.resize(buckets.xsize, std::vector<std::vector<std::shared_ptr<Buckets<T>>>>(buckets.ysize, std::vector<std::shared_ptr<Buckets<T>>>(buckets.zsize, nullptr)));
+   ret.level = buckets.level;
+   ret.max_level = buckets.max_level;
+   ret.has_tree = buckets.has_tree;
+   ret.xsize = buckets.xsize;
+   ret.ysize = buckets.ysize;
+   ret.zsize = buckets.zsize;
+   ret.center = buckets.center;
+   ret.dn = buckets.dn;
+   ret.data.resize(buckets.xsize, std::vector<std::vector<std::unordered_set<T>>>(buckets.ysize, std::vector<std::unordered_set<T>>(buckets.zsize, std::unordered_set<T>{})));
+   ret.data_vector.resize(buckets.xsize, std::vector<std::vector<std::vector<T>>>(buckets.ysize, std::vector<std::vector<T>>(buckets.zsize)));
+   ret.data_bool.resize(buckets.xsize, std::vector<std::vector<bool>>(buckets.ysize, std::vector<bool>(buckets.zsize, false)));
+   ret.vector_is_set = false;
+   return ret;
+}
+
 // template <typename T>
 // struct Buckets : public BaseBuckets<T> {
 //    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<T>(c_bounds, dL_IN){};

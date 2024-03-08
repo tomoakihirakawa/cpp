@@ -134,7 +134,7 @@ class pvd {
 
 std::string NumtoString(const auto &x) {
    std::stringstream ss;
-   ss << std::setprecision(5) << (float)(Between(x, {-1E-10, 1E-10}) ? 0. : x);
+   ss << std::setprecision(8) << (float)(Between(x, {-1E-13, 1E-13}) ? 0. : x);
    return ss.str();
 };
 

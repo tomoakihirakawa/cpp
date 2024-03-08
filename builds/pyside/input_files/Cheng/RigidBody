@@ -1,0 +1,48 @@
+[
+    {
+        "isFixed": true,
+        "name": "tank",
+        "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/tank4.obj",
+        "type": "RigidBody"
+    },
+    {
+        "name": "wavemaker",
+        "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/wavemaker8.obj",
+        "type": "RigidBody",
+        "velocity": [
+            "piston",
+            0.0,
+            0.02,
+            1.2,
+            0.4,
+            1,
+            0,
+            0
+        ]
+    },
+    {
+        "COM": [
+            3.35,
+            0.0,
+            0.4
+        ],
+        "MOI": [
+            2272199999.9999995,
+            0.1967978007,
+            2797199999.999999
+        ],
+        "isFixed": [
+            false,
+            true,
+            false,
+            true,
+            false,
+            true
+        ],
+        "mass": 12.6,
+        "name": "float",
+        "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/float7.obj",
+        "type": "RigidBody",
+        "velocity": "floating"
+    }
+]

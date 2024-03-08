@@ -1,0 +1,8 @@
+[
+    {
+        "isFixed": true,
+        "name": "absorber",
+        "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Cheng2018/absorber.obj",
+        "type": "Absorber"
+    }
+]

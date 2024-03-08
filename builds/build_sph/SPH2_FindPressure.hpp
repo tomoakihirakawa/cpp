@@ -573,7 +573,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    x0 = GMRES->x;
-   double torr = 1E-12;
+   double torr = 1E-13;
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
