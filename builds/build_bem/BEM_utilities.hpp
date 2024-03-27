@@ -12,6 +12,28 @@ using V_Netp = std::vector<Network *>;
 using V_netFp = std::vector<networkFace *>;
 using VV_netFp = std::vector<V_netFp>;
 
+/* -------------------------------------------------------------------------- */
+
+std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
+   /**
+   NOTE: non-multiple node ID is {p,nullptr}
+   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
+    */
+   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
+      return {const_cast<networkPoint *>(p), nullptr};
+   else
+      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+}
+
+int pf2Index(const networkPoint *p, networkFace *f) {
+   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
+      return p->face2id.at(nullptr);
+   else
+      return p->face2id.at(f);
+};
+
+/* -------------------------------------------------------------------------- */
+
 /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
 ## 陽に与えられる境界条件に対して（造波装置など）
@@ -232,10 +254,23 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
       double A, w, h, l, d, k;
       if (strings.size() > 7) {
          A = std::abs(std::stod(strings[2] /*A*/));
-         w = std::abs(2 * M_PI / std::stod(strings[3] /*T*/));
+         double T = std::abs(std::stod(strings[3] /*T or may be L*/));
+         double L, k;
+         w = std::abs(2 * M_PI / T);
          h = std::abs(std::stod(strings[4] /*h*/));
          l = std::abs(std::stod(strings[5] /*l*/));
-         DispersionRelation DS(w, h);
+
+         DispersionRelation DS;
+         if (name.contains("wave_length")) {
+            L = T;
+            DS.set_L_h(L, h);
+         } else
+            DS.set_w_h(w, h);
+
+         w = DS.w;
+         T = DS.T;
+         k = DS.k;
+
          k = std::abs(DS.k);
          double d = (l >= 0 ? d : -l);
          std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
@@ -398,7 +433,7 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 /* -------------------------------------------------------------------------- */
 
-/*DOC_EXTRACT 0_1_BOUNDARY_CONDITIONS
+/*DOC_EXTRACT 0_1_2_BOUNDARY_CONDITIONS
 
 ### `getContactFaces()`や`getNearestContactFace()`の利用
 
@@ -518,66 +553,6 @@ T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
            gradTangential_LinearElement(Vz012, X012)};
 };
 
-Tddd gradPhiQuadElement(const networkPoint *p, const networkFace *f) {
-   const auto [p0, l0, p1, l1, p2, l2] = f->getPointsAndLines(p);
-   auto get_X_phi = [&](const auto &l, const auto &f) -> std::tuple<Tddd, double> {
-      auto fs = l->getFaces();
-      QuadPoints quadpoint(l, fs[0]);
-      Tddd X = Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToX(quadpoint.points));
-      double phi = Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToPhi(quadpoint.points));
-      {
-         QuadPoints quadpoint(l, fs[1]);
-         X += Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToX(quadpoint.points));
-         phi += Dot(TriShape<6>(0.25, 0.25, quadpoint.ignore), ToPhi(quadpoint.points));
-      }
-      if (l->CORNER)
-         return {l->X, 0.5 * phi};
-      else
-         return {0.5 * X, 0.5 * phi};
-   };
-
-   auto [X3, phi3] = get_X_phi(l0, f);
-   auto [X4, phi4] = get_X_phi(l1, f);
-   auto [X5, phi5] = get_X_phi(l2, f);
-
-   const std::array<Tddd, 6> X012345 = {p0->X, p1->X, p2->X, X3, X4, X5};
-   const std::array<double, 6> phi012345 = {std::get<0>(p0->phiphin),
-                                            std::get<0>(p1->phiphin),
-                                            std::get<0>(p2->phiphin),
-                                            phi3,
-                                            phi4,
-                                            phi5};
-
-   const auto Dt0_N6 = D_TriShape_Quadratic<1, 0>(1., 0.);
-   const auto Dt1_N6 = D_TriShape_Quadratic<0, 1>(1., 0.);
-   const auto dxi0 = Dot(Dt0_N6, X012345);
-   const auto dxi1 = Dot(Dt1_N6, X012345);
-   const auto nxyz = Normalize(Cross(dxi0, dxi1));
-   double phi_t0 = Dot(Dt0_N6, phi012345);
-   double phi_t1 = Dot(Dt1_N6, phi012345);
-   double phi_n = std::get<1>(p0->phiphin);
-   Tddd grad_phi;
-
-   lapack_lu lu(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
-   // Solve(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
-   return grad_phi;
-
-   // const auto quadpoint = QuadPoints(p, f);
-   // const auto X012345 = ToX(quadpoint.points);
-   // const auto Dt0_N6 = D_TriShape_Quadratic<1, 0>(0., 0.5, quadpoint.ignore);
-   // const auto Dt1_N6 = D_TriShape_Quadratic<0, 1>(0., 0.5, quadpoint.ignore);
-   // const auto dxi0 = Dot(Dt0_N6, X012345);
-   // const auto dxi1 = Dot(Dt1_N6, X012345);
-   // const auto nxyz = Normalize(Cross(dxi0, dxi1));
-   // const auto phi012345 = ToPhi(quadpoint.points);
-   // double phi_t0 = Dot(Dt0_N6, phi012345);
-   // double phi_t1 = Dot(Dt1_N6, phi012345);
-   // double phi_n = std::get<1>(p->phiphin);
-   // Tddd grad_phi;
-   // Solve(T3Tddd{dxi0, dxi1, nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
-   // return grad_phi;
-};
-
 T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
    auto [p0, p1, p2] = f->getPoints();
    return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
@@ -612,14 +587,48 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 };
 
 double getPhin(const networkPoint *p, const networkFace *f) {
-   auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
-   if (iter != p->phinOnFace.end())
-      return iter->second;
-   else
-      return p->phinOnFace.at(nullptr);
+   // auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
+   // if (iter != p->phinOnFace.end())
+   //    return iter->second;
+   // else
+   //    return p->phinOnFace.at(nullptr);
+   return p->phinOnFace.at(std::get<1>(pf2ID(p, f)));
 };
 
-/* -------------------------------------------------------------------------- */
+Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
+   //* p will be set as node 4
+   DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+
+   auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
+
+   auto ToPhin = [&](const networkPoint *p) -> double { return std::get<1>(p->phiphin); };
+
+   auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
+
+   const double phi_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
+   const double phi_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
+   const double phi_n = dodecapoint.interpolate(1., 0., ToPhin);          //! at 4
+
+   const Tddd dX_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToX);  //! at 4
+   const Tddd dX_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToX);  //! at 4
+   const auto Nxyz = Normalize(Cross(dX_t0, dX_t1));
+
+   Tddd grad_phi;
+   lapack_lu lu(T3Tddd{dX_t0, dX_t1, Nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+   return grad_phi;
+
+   /*check!
+
+   `Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]`この計算は，`{Sx, Sy, Sz}`などの成分を取り出す計算．
+
+   ```Mathematica
+   DPHI = {phix, phiy, phiz}
+   Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]
+   Dot[{Sx, Sy, Sz}, DPHI]
+   ```
+
+   */
+};
 
 /* -------------------------------------------------------------------------- */
 
@@ -681,8 +690,12 @@ Tddd gradPhi(const networkPoint *const p) {
    V_Tddd V;
    V_d W;
    for (const auto &f : p->getFaces()) {
-      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
-      // u = gradPhiQuadElement(p, f);
+
+      if (f->isPseudoQuadraticElement)
+         u = gradPhiQuadElement(p, f);
+      else
+         u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+
       V.emplace_back(u);
 #if defined(use_angle_weigted_normal)
       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
@@ -726,68 +739,6 @@ Tddd gradPhi(const networkPoint *const p) {
 // };
 
 /* -------------------------------------------------------------------------- */
-
-/*DOC_EXTRACT 0_6_OTHERS
-
-## その他
-
-### 境界値問題の未知変数
-
-`isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，`{p,f}`が変数のキーとなる．
-
-*/
-
-bool isNeumannID_BEM(const auto p, const auto f) {
-   if (p->Neumann || p->CORNER) {
-      if (p->isMultipleNode) {
-         if (p->MemberQ(f))
-            return f->Neumann;
-         else
-            return false;
-      } else
-         return (f == nullptr);
-   } else
-      return false;
-};
-
-bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) {
-   return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF));
-};
-
-bool isDirichletID_BEM(const auto p, const auto f) {
-   if (p->Dirichlet || p->CORNER)
-      return (f == nullptr);
-   else
-      return false;
-};
-
-bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) {
-   return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF));
-};
-
-std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
-   /**
-   NOTE: non-multiple node ID is {p,nullptr}
-   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
-    */
-   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
-      return {const_cast<networkPoint *>(p), nullptr};
-   else
-      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-}
-
-std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
-   //{p,f}を変換
-   // f cannot be nullptr
-   //  {p,f} --o--> {p,nullptr}
-   //  {p,f} <--x-- {p,nullptr}
-
-   std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
-   for (const auto &f : p->getFaces())
-      ret.emplace(pf2ID(p, f));
-   return ret;
-};
 
 /* -------------------------------------------------------------------------- */
 

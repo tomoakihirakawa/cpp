@@ -504,6 +504,10 @@ Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
    return ret;
 }
 
+double Dot(const std::array<double, 3>& arr, const std::array<double, 3>& ARR) noexcept {
+   return {std::fma(std::get<0>(arr), std::get<0>(ARR), std::fma(std::get<1>(arr), std::get<1>(ARR), std::get<2>(arr) * std::get<2>(ARR)))};
+}
+
 template <typename T, std::size_t N0, std::size_t N1, std::size_t N2>
 constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<T, N2>, N1>>::type
 Dot(const std::array<std::array<T, N0>, N1>& arr, const std::array<std::array<T, N2>, N0>& ARR) noexcept {
@@ -911,13 +915,138 @@ double Det(const T3Tddd& M) {
 template <std::size_t N>
 constexpr std::array<double, N + 1> Subdivide(const double xmin, const double xmax) noexcept {
    static_assert(N > 0, "The number of divisions N must be a positive integer.");
-
    std::array<double, N + 1> ret;
    const double dx = (xmax - xmin) / N;
    for (std::size_t i = 0; i < N + 1; i++)
       ret[i] = i * dx + xmin;
    return ret;
 };
+
+/* -------------------------------------------------------------------------- */
+
+// struct SubdivideDomainIntoTriangles {
+//    const int division;
+//    const double max;
+//    const double min;
+//    std::vector<std::array<int, 3>> parameterOnTriangle_index, parameterOnSquare_index;
+//    std::vector<std::array<std::array<double, 2>, 3>> parameterOnTriangle, parameterOnSquare;
+//    SubdivideDomainIntoTriangles(const int division, const double min = 0., const double max = 1.) : division(division), max(max), min(min) {
+//       if (division < 1)
+//          throw std::invalid_argument("The number of divisions must be a positive integer.");
+
+//       if (min >= max)
+//          throw std::invalid_argument("The minimum value must be less than the maximum value.");
+//       //
+//       std::vector<double> vec(division + 1);
+//       const double dx = (max - min) / (double)division;
+//       for (std::size_t i = 0; i < division + 1; i++)
+//          vec[i] = i * dx + min;
+//       double dt = 1. / (double)division / 2.;
+//       //
+//       std::vector<std::array<std::array<int, 2>, 3>> tmp_index;
+//       int index = 0;
+//       for (auto i = 0; i < vec.size() - 1; ++i)
+//          for (auto j = 0; j < vec.size(); ++j) {
+//             parameterOnTriangle.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
+//             tmp_index.push_back({{{i, j}, {i + 1, j}, {i, j + 1}}});
+//             if (std::abs(1 - vec[i + 1] - vec[j]) < dt && std::abs(1 - vec[i] - vec[j + 1]) < dt)
+//                break;
+//             parameterOnTriangle.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
+//             tmp_index.push_back({{{i, j + 1}, {i + 1, j}, {i + 1, j + 1}}});
+//          }
+
+//       auto convert = [&](Tii ij) { return ij[0] + (division + 1) * ij[1]; };
+
+//       for (auto i = 0; i < tmp_index.size(); ++i) {
+//          auto [ij0, ij1, ij2] = tmp_index[i];
+//          parameterOnTriangle_index.push_back({convert(ij0), convert(ij1), convert(ij2)});
+//       }
+
+//       tmp_index.clear();
+//       for (auto i = 0; i < vec.size() - 1; ++i)
+//          for (auto j = 0; j < vec.size() - 1; ++j) {
+//             parameterOnSquare.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
+//             tmp_index.push_back({{{i, j}, {i + 1, j}, {i, j + 1}}});
+//             parameterOnSquare.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
+//             tmp_index.push_back({{{i, j + 1}, {i + 1, j}, {i + 1, j + 1}}});
+//          }
+
+//       for (auto i = 0; i < tmp_index.size(); ++i) {
+//          auto [ij0, ij1, ij2] = tmp_index[i];
+//          parameterOnSquare_index.push_back({convert(ij0), convert(ij1), convert(ij2)});
+//       }
+
+//       std::cout << "parameterOnTriangle.size() = " << parameterOnTriangle.size() << std::endl;
+//       std::cout << "parameterOnTriangle_index.size() = " << parameterOnTriangle_index.size() << std::endl;
+//       std::cout << "parameterOnSquare.size() = " << parameterOnSquare.size() << std::endl;
+//       std::cout << "parameterOnSquare_index.size() = " << parameterOnSquare_index.size() << std::endl;
+//    };
+// };
+
+std::vector<std::array<std::array<double, 2>, 3>> SubdivideTriangleIntoTriangles(const int divide) {
+   std::vector<double> vec(divide + 1);
+   const double max = 1., min = 0.;
+   const double dt = (max - min) / (double)divide;
+   //
+   for (std::size_t i = 0; i < divide + 1; i++)
+      vec[i] = i * dt + min;
+   //
+   double resolution = 0.5 / (double)divide;
+   //
+   std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles;
+   t0t1_triangles.reserve(divide * divide);
+   //
+   for (auto i = 0; i < vec.size() - 1; ++i)
+      for (auto j = 0; j < vec.size() - 1; ++j) {
+         t0t1_triangles.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
+
+         //@
+         //@ |\
+         //@ | \
+         //@ ----
+
+         if (std::abs(1. - vec[i + 1] - vec[j]) < 1E-10 && std::abs(1. - vec[i] - vec[j + 1]) < 1E-10)
+            break;
+
+         t0t1_triangles.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
+
+         //@ ----
+         //@ |\ |
+         //@ | \|
+         //@ ----
+      }
+
+   return t0t1_triangles;
+};
+
+std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int x_divide, const int y_divide) {
+   std::vector<double> vec_x(x_divide + 1);
+   std::vector<double> vec_y(y_divide + 1);
+   const double xmax = 1., xmin = 0.;
+   const double ymax = 1., ymin = 0.;
+   const double dx = (xmax - xmin) / (double)x_divide;
+   const double dy = (ymax - ymin) / (double)y_divide;
+   //
+   for (std::size_t i = 0; i < x_divide + 1; i++)
+      vec_x[i] = i * dx + xmin;
+   for (std::size_t i = 0; i < y_divide + 1; i++)
+      vec_y[i] = i * dy + ymin;
+   //
+   std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles;
+   t0t1_triangles.reserve(2 * x_divide * y_divide);
+   //
+   for (auto i = 0; i < vec_x.size() - 1; ++i)
+      for (auto j = 0; j < vec_y.size() - 1; ++j) {
+         t0t1_triangles.push_back({{{vec_x[i], vec_y[j]}, {vec_x[i + 1], vec_y[j]}, {vec_x[i], vec_y[j + 1]}}});
+         t0t1_triangles.push_back({{{vec_x[i], vec_y[j + 1]}, {vec_x[i + 1], vec_y[j]}, {vec_x[i + 1], vec_y[j + 1]}}});
+      }
+   return t0t1_triangles;
+};
+
+std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int divide) {
+   return SubdivideSquareIntoTriangles(divide, divide);
+};
+
 /* -------------------------------------------------------------------------- */
 template <size_t N, typename T>
 constexpr std::array<T, N> Reverse(const std::array<T, N>& vecs) {
@@ -980,7 +1109,7 @@ constexpr std::array<T, N> RotateRight(const std::array<T, N>& arr, const int n 
 
 /*DOC_EXTRACT interpolation:TriShape
 
-## 三角形形状関数
+### 三角形形状関数
 
 線形の三角形形状関数は，$`t_2 = 1-t_0-t_1`$として，
 
@@ -991,15 +1120,17 @@ constexpr std::array<T, N> RotateRight(const std::array<T, N>& arr, const int n 
 2次の三角形形状関数は，$`t_2 = 1-t_0-t_1`$として，
 
 ```math
-\begin{align}
-N_0 &= t_0(2t_0-1) \\
-N_1 &= t_1(2t_1-1) \\
-N_2 &= t_2(2t_2-1) \\
-N_3 &= 4t_0t_1 \\
-N_4 &= 4t_1t_2 \\
-N_5 &= 4t_2t_0\\
-\end{align}
+(N_0, N_1, N_2, N_3, N_4, N_5) = (t_0(2t_0-1), t_1(2t_1-1), t_2(2t_2-1), 4t_0t_1, 4t_1t_2, 4t_2t_0)
 ```
+
+ちなみに，節点3と節点5の線上のパラメタは，$`t_0 = 1/2`$である．
+これを2次補間の形状関数に代入すると，
+
+```math
+(N_0, N_1, N_2, N_3, N_4, N_5) = (0, t_1(2 t_1-1), t_1 (2 t_1-1), 2 t_1, 2 (1 - 2 t_1) t_1, 1 - 2 t_1)
+```
+
+となり，この線上では，節点0の影響を受けず，補間値はそれ以外の（内部）の情報からのみ決まる．
 
 */
 
@@ -1010,12 +1141,7 @@ constexpr std::array<double, N> TriShape(double t0, double t1, const auto& p0p1p
    if constexpr (N == 3) {
       return {t0, t1, t2};
    } else if constexpr (N == 6) {
-      std::array<double, 6> deflt{t0 * (2. * t0 - 1.),
-                                  t1 * (2. * t1 - 1.),
-                                  t2 * (2. * t2 - 1.),
-                                  4. * t0 * t1,
-                                  4. * t1 * t2,
-                                  4. * t2 * t0};
+      std::array<double, 6> deflt{t0 * (2. * t0 - 1.), t1 * (2. * t1 - 1.), t2 * (2. * t2 - 1.), 4. * t0 * t1, 4. * t1 * t2, 4. * t2 * t0};
       constexpr Tddd TriShape3 = {1., 1., -1.};
       if (!std::get<0>(p0p1p2)) {
          auto [M0_0, M0_1, M0_2] = deflt[0] * TriShape3;
@@ -1051,36 +1177,91 @@ constexpr std::array<double, N> TriShape(double t0, double t1) noexcept {
    return TriShape<N>(t0, t1, ooo);
 }
 
+template <std::size_t N>
+constexpr std::array<double, N> TriShape(std::array<double, 2> t0t1) noexcept { return TriShape<N>(std::get<0>(t0t1), std::get<1>(t0t1)); }
+
+template <std::size_t N, int i, int j>
+constexpr std::array<double, N> D_TriShape(double t0, double t1, const auto& p0p1p2) noexcept {
+   static_assert(N == 3 || N == 6, "Unsupported shape function size. Only 3 or 6 are supported.");
+   auto t2 = 1 - t0 - t1;
+   if constexpr (N == 3) {
+      if (i == 0 && j == 0)
+         return {t0, t1, t2};
+      else if (i == 1 && j == 0)
+         return {1., 0., -1.};
+      else if (i == 0 && j == 1)
+         return {0., 1., -1.};
+      else
+         return {0., 0., 0.};
+   } else if constexpr (N == 6) {
+      std::array<double, 6> deflt;
+      if (i == 0 && j == 0)
+         return TriShape<6>(t0, t1);
+      else if (i == 1 && j == 0)
+         deflt = {-1. + 4. * t0, 0., 1. - 4. * (1. - t0 - t1), 4. * t1, -4. * t1, -4. * t0 + 4. * (1 - t0 - t1)};
+      else if (i == 2 && j == 0)
+         deflt = {4., 0, 4., 0, 0, -8.};
+      else if (i == 0 && j == 1)
+         deflt = {0, -1 + 4. * t1, 1. - 4. * (1. - t0 - t1), 4 * t0, 4 * (1 - t0 - t1) - 4 * t1, -4 * t0};
+      else if (i == 0 && j == 2)
+         deflt = {0., 4., 4., 0., -8., 0.};
+      else if (i == 1 && j == 1)
+         deflt = {0, 0, 4, 4, -4, -4};
+      else
+         deflt = {0., 0., 0., 0., 0., 0.};
+
+      constexpr Tddd TriShape3 = {1., 1., -1.};
+      if (!std::get<0>(p0p1p2)) {
+         auto [M0_0, M0_1, M0_2] = deflt[0] * TriShape3;
+         deflt[0] = 0;
+         deflt[3] += M0_1;
+         deflt[4] += M0_2;
+         deflt[5] += M0_0;
+      }
+      if (!std::get<1>(p0p1p2)) {
+         auto [M1_0, M1_1, M1_2] = deflt[1] * TriShape3;
+         deflt[1] = 0;
+         deflt[3] += M1_0;
+         deflt[4] += M1_1;
+         deflt[5] += M1_2;
+      }
+      if (!std::get<2>(p0p1p2)) {
+         auto [M2_0, M2_1, M2_2] = deflt[2] * TriShape3;
+         deflt[2] = 0;
+         deflt[4] += M2_0;
+         deflt[5] += M2_1;
+         deflt[3] += M2_2;
+      }
+      return deflt;
+   }
+}
+
+template <std::size_t N, int i, int j>
+constexpr std::array<double, N> D_TriShape(double t0, double t1) noexcept {
+   constexpr std::array<bool, 3> ooo{true, true, true};
+   return D_TriShape<N, i, j>(t0, t1, ooo);
+}
+
 /*DOC_EXTRACT interpolation:ModTriShape
 
-## 範囲を修正した三角形形状関数
+### 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]
 
 普通の三角形形状関数は，$`{\mathbf N}=(N_0,N_1,N_2) = (t_0,t_1,1-t_0-t_1)`$．
 これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X_0},{\mathbf X_1},{\mathbf X_2}\})`$は，$`t_0,t_1=[0,1]`$で平行四辺形を作る．
 $`t_0,t_1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
 そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
 変更した形状関数は，`ModTriShape`にあるように，
+
 3点の場合は，
 
 ```math
-\begin{align}
-N_0 &= t_0 \\
-N_1 &= t_1(1 - t_0) \\
-N_2 &= (t_0-1)(t_1-1)
-\end{align}
+(N_0,N_1,N_2) = (t_0, t_1(1 - t_0),(t_0-1)(t_1-1))
 ```
 
 6点の場合は，
 
 ```math
-\begin{align}
-N_0 &= t_0(2t_0-1) \\
-N_1 &= t_1(2t_1-1) \\
-N_2 &= (1-t_0-t_1)(2(1-t_0-t_1)-1) \\
-N_3 &= 4t_0t_1 \\
-N_4 &= 4t_1(1-t_0-t_1) \\
-N_5 &= 4t_0(1-t_0-t_1)
-\end{align}
+(N_0,N_1,N_2,N_3,N_4,N_5) = (t_0(2t_0-1), t_1(2t_1-1), (1-t_0-t_1)(2(1-t_0-t_1)-1), 4t_0t_1, 4t_1(1-t_0-t_1), 4t_0(1-t_0-t_1))
 ```
 
 */
@@ -1096,12 +1277,7 @@ constexpr std::array<double, N> ModTriShape(double t0, double t1, const auto& p0
               t1 - t1 * t0,
               t0m1 * t1m1};
    } else if constexpr (N == 6) {
-      std::array<double, N> deflt{{t0 * (2. * t0 - 1.),
-                                   t0m1 * t1 * (1 + 2 * t0m1 * t1),
-                                   t1m1 * t0m1 * (1 + 2 * t1m1 * t0 - 2 * t1),
-                                   -4 * t0m1 * t0 * t1,
-                                   -4 * std::pow(t0m1, 2) * t1m1 * t1,
-                                   4 * t1m1 * t0m1 * t0}};
+      std::array<double, N> deflt{{t0 * (2. * t0 - 1.), t0m1 * t1 * (1 + 2 * t0m1 * t1), t1m1 * t0m1 * (1 + 2 * t1m1 * t0 - 2 * t1), -4 * t0m1 * t0 * t1, -4 * std::pow(t0m1, 2) * t1m1 * t1, 4 * t1m1 * t0m1 * t0}};
       constexpr std::array<double, 3> TriShape3 = std::array<double, 3>{1., 1., -1.};
       if (!std::get<0>(p0p1p2)) {
          auto [M0_0, M0_1, M0_2] = deflt[0] * TriShape3;
@@ -1130,6 +1306,11 @@ constexpr std::array<double, N> ModTriShape(double t0, double t1, const auto& p0
 
 template <std::size_t N>
 constexpr std::array<double, N> ModTriShape(double t0, double t1) noexcept { return ModTriShape<N>(t0, t1, std::array<bool, 3>{true, true, true}); }
+
+template <std::size_t N>
+constexpr std::array<double, N> ModTriShape(std::array<double, 2> t0t1) noexcept {
+   return ModTriShape<N>(std::get<0>(t0t1), std::get<1>(t0t1), std::array<bool, 3>{true, true, true});
+}
 
 template <int i, int j>
 constexpr std::array<double, 6> D_TriShape_Quadratic(double t0, double t1, const auto& p0p1p2) noexcept {

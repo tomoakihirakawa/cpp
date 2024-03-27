@@ -242,13 +242,14 @@ template <typename T>
    requires is_std_array<T>::value
 struct BroydenMethod<T> {
    T X, dX;
-   std::array<T, std::tuple_size<T>::value> J;
+   std::array<T, std::tuple_size<T>::value> J, Inv_J;
 
    // Default constructor
    BroydenMethod() = default;
 
    BroydenMethod(const T &Xin, const T &Xin_) : X(Xin), dX(Xin_ - Xin), J(TensorProduct(Xin, Xin)) {
       IdentityMatrix(J);
+      Inv_J = J;
    }
 
    void initialize(const T &Xin, const T &dXin) {
@@ -256,23 +257,44 @@ struct BroydenMethod<T> {
       dX = dXin;
       J = TensorProduct(Xin, Xin);
       IdentityMatrix(J);
+      Inv_J = J;
    }
 
    void initialize(const T &Xin) {
       X = Xin;
       J = TensorProduct(Xin, Xin);
       IdentityMatrix(J);
+      Inv_J = J;
    }
 
-   void update(const T &F, const T &F_, const double alpha = 1.) {
+   void updateGoodBroyden(const T &F, const T &F_, const double alpha = 1.) {
       auto dot = Dot(dX, dX);
-      if (dot != static_cast<double>(0.))
-         J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
-
-      // use lapack_lu
-      lapack_lu(J, dX, -alpha * F);
-      X += dX;
+      auto dF = F - F_;
+      /* -------------------------------------------------------------------------- */
+      // if (dot != static_cast<double>(0.))
+      //    J += TensorProduct((dF - Dot(J, dX)), dX) / dot;
+      // // use lapack_lu
+      // lapack_lu(J, dX, -alpha * F);
+      // X += dX;
       // X += (dX = -alpha * Dot(Inverse(J), F));  // inverseが計算できるかは未検証
+      /* -------------------------------------------------------------------------- */
+      // good Broyden's method
+      if (Dot(dF, dF) != static_cast<double>(0.))
+         Inv_J += TensorProduct((dX - Dot(Inv_J, dF)), Dot(dX, Inv_J)) / Dot(dX, Dot(Inv_J, dF));
+      X += (dX = -alpha * Dot(Inv_J, F));
+   }
+
+   void updateBFGS(const T &F, const T &F_, const double alpha = 1.) {
+      auto dot = Dot(dX, dX);
+      auto dF = F - F_;
+      auto s = dX;
+      auto y = dF;
+      double sy = Dot(s, y);
+      if (sy != static_cast<double>(0.))
+         J += TensorProduct(y, y) / Dot(y, s) - Dot(TensorProduct(Dot(J, s), s), Transpose(J)) / Dot(s, Dot(J, s));
+      // X += (dX = -alpha * Dot(Inv_J, F));
+      Solve(J, dX, -alpha * F);
+      X += dX;
    }
 };
 
@@ -298,18 +320,42 @@ struct BroydenMethod<Vd> {
 
    void initialize(const Vd &Xin) { X = Xin; }
 
-   void update(const Vd &F, const Vd &F_, const double alpha = 1.) {
-      auto dot = Dot(dX, dX);
-      if (dot != static_cast<double>(0.))
-         J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
+   // void update(const Vd &F, const Vd &F_, const double alpha = 1.) {
+   //    auto dot = Dot(dX, dX);
+   //    if (dot != static_cast<double>(0.))
+   //       J += TensorProduct((F - F_ - Dot(J, dX)), dX) / dot;
 
+   //    auto dF = F - F_;
+   //    // good Broyden's method
+   //    if (Dot(dF, dF) != static_cast<double>(0.))
+   //       Inv_J += TensorProduct((dX - Dot(Inv_J, dF)), Dot(dX, Inv_J)) / Dot(dX, Dot(Inv_J, dF));
+
+   //    X += (dX = -alpha * Dot(Inv_J, F));
+   //    // X += (dX = -alpha * Dot(Inverse(J), F));
+   // }
+
+   void update(const Vd &F, const Vd &F_, const double alpha = 1.) {
+      // auto dot = Dot(dX, dX);
+      // auto dF = F - F_;
+
+      // auto s = dX;
+      // auto y = dF;
+      // double sy = Dot(s, y);
+      // if (sy != static_cast<double>(0.))
+      //    J += TensorProduct(y, y) / Dot(y, s) - Dot(TensorProduct(Dot(J, s), s), Transpose(J)) / Dot(s, Dot(J, s));
+
+      // if (sy != static_cast<double>(0.))
+      //    Inv_J += Dot(Dot(s, y) + Dot(Inv_J, y), TensorProduct(s, s)) / std::pow(Dot(s, y), 2) - TensorProduct(Dot(Inv_J, y), s) + Dot(TensorProduct(s, y), Inv_J) / Dot(s, y);
+
+      // // X += (dX = -alpha * Dot(Inv_J, F));
+      // X += (dX = -alpha * Dot(Inverse(J), F));
+      /* -------------------------------------------------------------------------- */
+      auto dot = Dot(dX, dX);
       auto dF = F - F_;
       // good Broyden's method
       if (Dot(dF, dF) != static_cast<double>(0.))
          Inv_J += TensorProduct((dX - Dot(Inv_J, dF)), Dot(dX, Inv_J)) / Dot(dX, Dot(Inv_J, dF));
-
       X += (dX = -alpha * Dot(Inv_J, F));
-      // X += (dX = -alpha * Dot(Inverse(J), F));
    }
 };
 

@@ -12,6 +12,8 @@ import json
 import math
 import os
 import sys
+import argparse
+
 from math import pi
 from os.path import expanduser
 
@@ -39,16 +41,108 @@ g = 9.81
 # ---------------------------------------------------------------------------- #
 
 SimulationCase = "Hadzic2005"
-if len(sys.argv) > 1:
-    # If a value is passed, use it
-    SimulationCase = sys.argv[1]
-    print(f"Value passed from command line: {SimulationCase}")
-else:
-    # Default action if no value is passed
-    print("No value passed. Executing default action.")
 
 # ---------------------------------------------------------------------------- #
-if "Tanizawa1996" in SimulationCase:
+
+parser = argparse.ArgumentParser(description='コマンドライン引数を受け取るためのパーサー')
+parser.add_argument('-case', type=str, help='シミュレーションケース')
+parser.add_argument('-mesh', type=str, help='メッシュの名前')
+parser.add_argument('-wavemaker', type=str, help='波を作る方法')
+parser.add_argument('-element', type=str, help='要素の種類')
+parser.add_argument('-dt', type=float, help='時間刻み幅')
+parser.add_argument('-ALE', type=str, help='シフトさせる面の補間方法')
+parser.add_argument('-suffix', type=str, help='接尾語')
+
+args = parser.parse_args()
+
+# SimulationCase = ""
+meshname = ""
+wavemaker_type = ""
+suffix = ""
+element = "linear"
+if args.case is not None:
+    SimulationCase = args.case
+    print(f"SimulationCase: {SimulationCase}")
+if args.mesh is not None:
+    meshname = args.mesh
+    print(f"meshname: {meshname}")
+if args.wavemaker is not None:
+    wavemaker_type = args.wavemaker
+    print(f"wavemaker_type: {wavemaker_type}")
+if args.element is not None:
+    element = args.element
+    print(f"element: {element}")
+if args.dt is not None:
+    dt = args.dt
+    print(f"dt: {dt}")
+if args.ALE is not None:
+    ALE = args.ALE
+    print(f"ALE: {ALE}")
+if args.suffix is not None:
+    suffix = args.suffix
+    print(f"suffix: {suffix}")
+# ---------------------------------------------------------------------------- #
+if "looping" in SimulationCase:
+    # objfolder = code_home_dir + "/cpp/obj/WaveGeneration"
+
+    objfolder = code_home_dir + "/cpp/obj/looping"
+
+    water = {"name": "water",
+             "type": "Fluid",
+             "objfile": objfolder + "/water_remesh.obj"}
+
+    vertices, triangles = read_obj(water["objfile"])
+    water["vertices"] = vertices
+    water["triangles"] = triangles
+
+    tank = {"name": "tank", "type":
+            "RigidBody", "isFixed": True,
+            "objfile": objfolder + "/tank.obj"}
+
+    start = 0.
+
+    T = 1.
+    H = 0.05
+    a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
+    h = 1.5
+
+    # wavemaker_type = "piston"
+    # wavemaker_type = "flap"
+    # wavemaker_type = "potential"
+
+    id = SimulationCase
+    id += "_H" + str(H).replace(".", "d")
+    id += "_T"+str(T).replace(".", "d")
+    id += "_h"+str(h).replace(".", "d")
+
+    z_surface = h
+
+    if "piston" in SimulationCase:
+        wavemaker = {"name": "wavemaker",
+                     "type": "RigidBody",
+                     "velocity": ["piston", start, a, T, h, 1, 0, 0],
+                     "objfile": f"{objfolder}/wavemaker.obj"}
+
+    elif "flap" in SimulationCase:
+        wavemaker = {"name": "wavemaker",
+                     "type": "RigidBody",
+                     "velocity": ["flap", start, a, T, h, h, 0, 1, 0],
+                     "objfile": f"{objfolder}/wavemaker.obj"}
+    else:
+        wavemaker = {"name": "wavemaker",
+                     "type": "SoftBody",
+                     "isFixed": True,
+                     "velocity": ["velocity", start, a, T, h, z_surface],
+                     "objfile": f"{objfolder}/wavemaker.obj"}
+
+    inputfiles = [tank, wavemaker, water]
+
+    setting = {"max_dt": 0.03,
+               "end_time_step": 10000,
+               "end_time": 9}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Tanizawa1996" in SimulationCase:
 
     '''DOC_EXTRACT 2_1_0_validation_Tanizawa1996
 
@@ -92,20 +186,33 @@ if "Tanizawa1996" in SimulationCase:
     h = 5.
     z_surface = h
 
-    # wavemaker_type = "piston"
-    wavemaker_type = "potential"
-    # wavemaker_type = "flap"
+    if wavemaker_type == "":
+        # wavemaker_type = "piston"
+        wavemaker_type = "potential"
+        # wavemaker_type = "flap"
 
     id = SimulationCase
 
-    meshname = "water_no_float0d06"
-
-    # meshname = "water_mod_0d05"
+    if meshname == "":
+        meshname = "water_no_float0d1"
+    # meshname = "water0d1"
     # meshname = "multiple_water_mod_coarse"
     id += "_H" + str(H).replace(".", "d")
     id += "_L" + str(L).replace(".", "d")
-    id += "_" + wavemaker_type
-    id += "_" +  meshname
+    id += "_WAVE" + wavemaker_type
+    id += "_MESH" + meshname
+    id += "_DT" + str(dt).replace(".", "d")
+
+    if element != "":
+        id += "_ELEM" + element
+
+    if ALE != "":
+        id += "_ALE" + ALE
+
+    if suffix != "":    
+        id += "_" + suffix
+
+
 
     water = {"name": "water", "type": "Fluid"}
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
@@ -125,6 +232,10 @@ if "Tanizawa1996" in SimulationCase:
         wavemaker = {"name": "wavemaker",
                     "type": "RigidBody",
                     "velocity": ["piston_using_wave_length", start, a, L, h, 1, 0, 0]}
+    elif "flap" in wavemaker_type:
+        wavemaker = {"name": "wavemaker",
+                    "type": "RigidBody",
+                    "velocity": ["flap_using_wave_length", start, a, L, h, h, 0, 1, 0]}
     elif "potential" in wavemaker_type:
         wavemaker = {"name": "wavemaker",
                     "type": "SoftBody",
@@ -135,7 +246,6 @@ if "Tanizawa1996" in SimulationCase:
     Lz = 0.415
     d = 0.25
     Ly = 1
-
 
     floats = []
     if "multiple" in id:
@@ -190,9 +300,13 @@ if "Tanizawa1996" in SimulationCase:
 
     # water["objfile"] = objfolder + "/water_mod_coarse.obj"
     
-    wavemaker["objfile"] = objfolder + "/wavemaker.obj"
+    if "no_float" in id:
+        wavemaker["objfile"] = objfolder + "/wavemaker_no_float.obj"
+        tank["objfile"] = objfolder + "/tank_no_float.obj"
+    else:
+        wavemaker["objfile"] = objfolder + "/wavemaker.obj"
+        tank["objfile"] = objfolder + "/tank.obj"
 
-    tank["objfile"] = objfolder + "/tank.obj"
     absorber["objfile"] = objfolder+"/absorber.obj"
 
     inputfiles = [tank, wavemaker, water, absorber]
@@ -200,9 +314,16 @@ if "Tanizawa1996" in SimulationCase:
     if "no_float" not in id:
         inputfiles += floats
 
-    setting = {"max_dt": 1/40.,
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+
+    setting = {"max_dt": max_dt,
                "end_time_step": 20000,
-               "end_time": 30}
+               "end_time": 30,
+               "element": element,
+                "ALE": ALE}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Cheng2018" in SimulationCase:

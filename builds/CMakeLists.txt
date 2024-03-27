@@ -126,6 +126,13 @@ add_executable(${BASE_NAME} ${SOURCE_FILE})
 find_package(LAPACK REQUIRED)
 target_link_libraries(${BASE_NAME} PUBLIC ${LAPACK_LIBRARIES})
 
+# Directly specify the path to libtet.a for linking
+target_link_libraries(${BASE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
+
+# Include directories if tetgen.h is not in the standard include path
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+
 # # Locate and link Eigen3 if find inlcudes and libraries only if found
 # find_package(Eigen3 REQUIRED NO_MODULE)
 # target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
@@ -153,6 +160,7 @@ target_include_directories(${BASE_NAME} PUBLIC
   ${PROJECT_SOURCE_DIR}/../include
   ${PROJECT_SOURCE_DIR}/../../include
 )
+
 
 # Enablce verbose makefile and export compile commands for use with various tools
 set(CMAKE_VERBOSE_MAKEFILE ON)

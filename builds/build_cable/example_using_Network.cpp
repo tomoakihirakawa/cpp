@@ -12,6 +12,17 @@
 // (cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)
 // echo '(cd builds/build_cable; python3 ../../extract_comments.py README.md ./ ../../)'
 
+/*DOC_EXTRACT 0_cable_dynamics
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_using_Network.cpp
+make
+./example_using_Network
+```
+
+*/
+
 auto homeDir = getenv("HOME");
 std::string basePath = std::string(homeDir) + "/Cable/";
 PVDWriter pvd_line0(basePath + "line0.pvd");

@@ -328,6 +328,14 @@ W_{3}(q,h) = \frac{8}{\pi h^3}
 
 #include <numbers>
 
+double w_Linear(const double &r, const double &h) {
+   const double q = r / h;
+   if (q > 1.)
+      return 0.;
+   else
+      return 1. - q / h;
+};
+
 double w_Bspline3(const double &r, const double &h) {
    const double q = r / h;
    if (q > 1.)

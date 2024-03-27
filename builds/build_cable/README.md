@@ -6,6 +6,24 @@
 
 
 ---
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_rupture.cpp
+make
+./example_rupture
+```
+
+[./example_rupture.cpp#L15](./example_rupture.cpp#L15)
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_using_Network.cpp
+make
+./example_using_Network
+```
+
+[./example_using_Network.cpp#L15](./example_using_Network.cpp#L15)
+
 # 🐋 ケーブルの動的解析 
 
 ## ⛵ 直線要素を用いたシミュレーション 
@@ -33,7 +51,7 @@
 
 ## ⛵ 実行方法 
 
-```sh
+```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
@@ -62,7 +80,6 @@ mooring->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
 考えられる係留索クラスの使い道は，
 単点（フェアリード）の位置がわかっていて，そこでの係留索が及ぼす力を計算するというもの．
 前時刻の係留索の曲線から，少しずつ係留索を時間発展させて，現在の係留索の曲線を求め，その節点の配置から，力を計算できる．
-
 移動速度がわかっている節点にはその条件を与え，わからないものに関しては，各時刻の張力と重力と抗力から，運動方程式を解いていく．
 [../../include/MooringLine.hpp#L6](../../include/MooringLine.hpp#L6)
 

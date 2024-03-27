@@ -26,6 +26,7 @@
             - [🪸 ２面の最短距離](#🪸-２面の最短距離)
 - [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
 - [🐋 四面体の生成](#🐋-四面体の生成)
+    - [⛵ TetGenを使った四面体を生成](#⛵-TetGenを使った四面体を生成)
     - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
     - [⛵ スコアリングと選択](#⛵-スコアリングと選択)
 - [🐋 CGALを使って四面体を生成する 9_9_CGAL](#🐋-CGALを使って四面体を生成する-9_9_CGAL)
@@ -58,7 +59,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L4111)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L3765)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -380,11 +381,56 @@ NumberOfVerts="0">
 </VTKFile>
 ```
 
-[./example2_generate_tetra_constrained2.cpp#L296](./example2_generate_tetra_constrained2.cpp#L296)
+[./example2_generate_tetra_constrained2.cpp#L355](./example2_generate_tetra_constrained2.cpp#L355)
 
 ---
 # 🐋 四面体の生成 
 
+## ⛵ TetGenを使った四面体を生成 
+
+[https://wias-berlin.de/software/tetgen](https://wias-berlin.de/software/tetgen)
+
+TetGenを使って四面体を生成し，Networkの四面体へと置き換える．
+
+`tetgenbehavior`は，TetGenのオプションを設定するためのクラスで，`parse_commandline`関数を使ってオプションを設定する．
+次のようなオプションがあり意味がある([https://wias-berlin.de/software/tetgen/switches.html](https://wias-berlin.de/software/tetgen/switches.html))：
+
+| オプション | 意味 |
+|:---:|:---:|
+| `p` | PLC（Piecewise Linear Complex）を四面体化する． 他には，`r`（リージョン）や`y`（境界）などがある． |
+| `q` | 最小radius-edge比を指定する．例えば，`q1.4`は最小radius-edge比1.4を指定する． |
+| `a` | 最大四面体の体積制約を課す．例えば，`a50.`は最大体積50の四面体の体積制約を課す． |
+
+
+現在のフォルダに`tetgen1.6.0`を置き，次のコマンドを実行すると，`libtet.a`が生成される．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ./tetgen1.6.0
+make
+```
+
+これまで使っていたCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
+
+```cmake
+target_link_libraries(${BASE _NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+```
+
+この`CMakelists.txt`を使って，TetGenを使うプログラムをビルドし，実行する．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_tetGen.cpp
+make
+./example_tetGen
+```
+
+<img src="./image.png" width="500px">
+
+[./example_tetGen.cpp#L5](./example_tetGen.cpp#L5)
+
+---
 ## ⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization） 
 
 * PLC: piecewise linear complex
@@ -403,6 +449,7 @@ CDTの生成法には，主に２つの方法がある\ref{Schewchuk2002}：
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
 make
+./example2_generate_tetra_constrained2
 ```
 
 `bunny.obj`のような複雑なポリゴンには，この方法ではうまくいかない．
@@ -415,7 +462,7 @@ make
 
 外接球の半径が小さすぎる場合は四面体の候補から外す．
 
-[./example2_generate_tetra_constrained2.cpp#L161](./example2_generate_tetra_constrained2.cpp#L161)
+[./example2_generate_tetra_constrained2.cpp#L163](./example2_generate_tetra_constrained2.cpp#L163)
 
 ---
 # 🐋 CGALを使って四面体を生成する 9_9_CGAL 

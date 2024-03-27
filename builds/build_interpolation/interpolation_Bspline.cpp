@@ -9,7 +9,7 @@
 #include "basic_arithmetic_array_operations.hpp"
 #include "interpolations.hpp"
 
-/*DOC_EXTRACT 0_2_0_interpolation
+/*DOC_EXTRACT 2_0_0_interpolation
 
 ## B-spline補間
 
@@ -36,7 +36,7 @@ std::vector<double> X;
 InterpolationBspline intpX(5, abscissas, X);
 ```
 
-![sample_body_movement_bspline.png](sample_bspline.png)
+<img src="sample_bspline.png" width="400">
 
 ```cpp
 // example for 2D data
@@ -51,8 +51,7 @@ InterpolationBspline<std::array<double, 2>> intpXY;
 intpXY.set(5, abscissas, XY);
 ```
 
-
-![sample_body_movement_bspline.png](sample_body_movement_bspline.png)
+<img src="sample_body_movement_bspline.png" width="400">
 
 \insert{RBF}
 

@@ -12,6 +12,11 @@
 
 // #define _debugging_
 
+bool _LINEAR_ELEMENT_ = false;
+bool _PSEUDO_QUADRATIC_ELEMENT_ = false;
+bool _ALE_ON_LINEAR_ELEMENT_ = false;
+bool _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = false;
+
 #define BEM
 #define use_lapack
 #define simulation
@@ -36,6 +41,13 @@ JSONoutput jsonout;
 
 #include "BEM.hpp"
 #include "svd.hpp"
+
+std::string toLowerCase(const std::string &str) {
+   std::string strLower = str;
+   std::transform(strLower.begin(), strLower.end(), strLower.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
+   return strLower;
+}
 
 int main(int argc, char **argv) {
 
@@ -82,6 +94,32 @@ int main(int argc, char **argv) {
    // Store values from the JSON file into variables
    const std::filesystem::path output_directory = settingJSON.at("output_directory")[0];
    const double max_dt = stod(settingJSON.at("max_dt"))[0];
+   // Then, in your conditional checks, use this function to ensure case-insensitivity
+
+   if (settingJSON.find("element") && toLowerCase(settingJSON.at("element")[0]) == "linear")
+      _LINEAR_ELEMENT_ = true;
+   else if (settingJSON.find("element") && (toLowerCase(settingJSON.at("element")[0]).contains("quad") && toLowerCase(settingJSON.at("element")[0]).contains("pseudo")))
+      _PSEUDO_QUADRATIC_ELEMENT_ = true;
+   else
+      _LINEAR_ELEMENT_ = true;
+
+   if (_LINEAR_ELEMENT_)
+      std::cout << "LINEAR_ELEMENT" << std::endl;
+   if (_PSEUDO_QUADRATIC_ELEMENT_)
+      std::cout << "PSEUDO_QUADRATIC_ELEMENT" << std::endl;
+
+   if (settingJSON.find("ALE") && toLowerCase(settingJSON.at("ALE")[0]) == "linear")
+      _ALE_ON_LINEAR_ELEMENT_ = true;
+   else if (settingJSON.find("ALE") && (toLowerCase(settingJSON.at("ALE")[0]).contains("quad") || toLowerCase(settingJSON.at("ALE")[0]).contains("pseudo")))
+      _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
+   else
+      _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
+
+   if (_ALE_ON_LINEAR_ELEMENT_)
+      std::cout << "ALE_ON_LINEAR_ELEMENT" << std::endl;
+   if (_ALE_ON_PSEUDO_QUADRATIC_ELEMENT_)
+      std::cout << "ALE_ON_PSEUDO_QUADRATIC_ELEMENT" << std::endl;
+
    const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
    const double end_time = stod(settingJSON.at("end_time"))[0];
 
@@ -300,7 +338,7 @@ int main(int argc, char **argv) {
 
    // auto water = FluidObject[0];
    PVDWriter cornerPointsPVD(output_directory / "cornerPointsPVD.pvd");
-   PVDWriter cornerPVD(output_directory / "corner.pvd");
+   PVDWriter DirichletSurfacePVD(output_directory / "DirichletSurface.pvd");
    Print("setting done");
 
    /* -------------------------------------------------------------------------- */
@@ -365,7 +403,7 @@ int main(int argc, char **argv) {
 
             if (dt > dt_cfl)
                dt = dt_cfl;
-            if (time_step <= 10 && dt > 0.00001)
+            if (time_step == 0 && dt > 0.00001)
                dt = 0.00001;
          }
          if (dt < 1E-13)
@@ -385,7 +423,7 @@ int main(int argc, char **argv) {
             // auto spacing = 5 * Mean(extLength(net->getLines()));
             // net->makeBucketFaces(spacing);
             // auto spacing = 5 * Mean(extLength(net->getLines()));
-            net->makeBucketFaces(net->getScale() / 10.);
+            net->makeBucketFaces(net->getScale() / 7.);
          }
 
          for (auto &water : FluidObject) {
@@ -436,7 +474,7 @@ int main(int argc, char **argv) {
          // b@ ----------------------------------------------------- */
 
          int RK_step = 0;
-         BEM_BVP BVP;
+         BEM_BVP BVP(FluidObject);
 
          std::vector<double> convergence;
          do {
@@ -459,7 +497,7 @@ int main(int argc, char **argv) {
             setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "setNeumannVelocity" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            BVP.solve(FluidObject, FMM_BucketsPoints, FMM_BucketsFaces);
+            BVP.solve(FMM_BucketsPoints, FMM_BucketsFaces);
             std::cout << Green << "BVP.solve -> {Φ,Φn}が決まる" << Blue << "\nElapsed time: " << Red << watch() << " s\n";
 
             for (auto water : FluidObject)
@@ -473,7 +511,7 @@ int main(int argc, char **argv) {
             }
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            convergence = BVP.solveForPhiPhin_t(FluidObject, Join(RigidBodyObject, SoftBodyObject));
+            convergence = BVP.solveForPhiPhin_t(Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             // b$ --------------------------------------------------- */
@@ -809,6 +847,33 @@ int main(int argc, char **argv) {
          // b# -------------------------------------------------------------------------- */
          // b#                            output Paraview files                           */
          // b# -------------------------------------------------------------------------- */
+
+         // check dirichlet surface to check interpolated surface
+         {
+            auto dirichletsurface = new Network();
+            std::filesystem::path filename_dir_surface = "DirichletSurface" + std::to_string(time_step) + ".vtu";
+            std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SubdivideTriangleIntoTriangles(4);
+            for (const auto &water : FluidObject) {
+               for (const auto &f : water->getFaces()) {
+                  if (f->Dirichlet) {
+                     DodecaPoints dodecapoint(f, f->getPoints()[0], [](const networkLine *line) -> bool { return !line->CORNER; });
+                     for (auto t0t1 : t0t1_triangles) {
+                        new networkFace(dirichletsurface, {new networkPoint(dirichletsurface, dodecapoint.X(t0t1[0])),
+                                                           new networkPoint(dirichletsurface, dodecapoint.X(t0t1[1])),
+                                                           new networkPoint(dirichletsurface, dodecapoint.X(t0t1[2]))});
+                     }
+                  }
+               }
+            }
+
+            std::unordered_map<networkPoint *, Tddd> data;
+            for (auto p : dirichletsurface->getPoints())
+               data[p] = ToX(p);
+            mk_vtu(output_directory / filename_dir_surface, dirichletsurface->getFaces(), {{"position", data}});
+            DirichletSurfacePVD.push(filename_dir_surface, simulation_time);
+            DirichletSurfacePVD.output();
+            delete dirichletsurface;
+         }
 
          // 流体
          for (const auto &net : FluidObject) {

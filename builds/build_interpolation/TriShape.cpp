@@ -1,6 +1,4 @@
-/*DOC_EXTRACT interpolation
-
-## 三角形補間
+/*DOC_EXTRACT 1_1_0_interpolation
 
 \insert{interpolation:TriShape}
 
@@ -10,12 +8,15 @@
 
 \insert{interpolation:ModTriShape}
 
-![](sample_tri.png)
+### 例：補間によって，頂点座標から平面を作成する
+
+<img src="sample_tri.png" width="400">
 
 ```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShape.cpp
 make
+./TriShape
 ```
 
 */

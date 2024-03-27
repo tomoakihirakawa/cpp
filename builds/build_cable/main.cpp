@@ -42,7 +42,7 @@ NOTE: 弦の振動を支配する方程式として，波動方程式$`\frac{\pa
 
 ## 実行方法
 
-```sh
+```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make

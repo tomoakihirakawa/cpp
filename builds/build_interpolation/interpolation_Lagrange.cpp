@@ -9,7 +9,7 @@
 #include "basic_arithmetic_array_operations.hpp"
 #include "interpolations.hpp"
 
-/*DOC_EXTRACT 0_1_0_interpolation
+/*DOC_EXTRACT 0_0_0_interpolation
 
 # 補間
 
@@ -27,7 +27,7 @@ f(x) = \sum_{i=0}^n\dfrac{\prod_{j=0,j\neq i}^n{(x - x_j)}}{\prod_{j=0,j\neq i,j
 f(x) = \sum_{i=0}^n\dfrac{\sum_{k=0}^{n}\prod_{j=0,j\neq i}^n{(x - x_j)}}{\prod_{j=0,j\neq i}^n{(x_i - x_j)}}y_i
 ```
 
-![](sample_lag.png)
+<img src="sample_lag.png" width="400">
 
 */
 

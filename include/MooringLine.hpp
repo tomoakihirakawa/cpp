@@ -28,9 +28,7 @@ mooring->setDensityStiffnessDampingDiameter(density, stiffness, damp, diam);
 考えられる係留索クラスの使い道は，
 単点（フェアリード）の位置がわかっていて，そこでの係留索が及ぼす力を計算するというもの．
 前時刻の係留索の曲線から，少しずつ係留索を時間発展させて，現在の係留索の曲線を求め，その節点の配置から，力を計算できる．
-
 移動速度がわかっている節点にはその条件を与え，わからないものに関しては，各時刻の張力と重力と抗力から，運動方程式を解いていく．
-
 
 */
 
@@ -130,9 +128,7 @@ class MooringLine : public Network {
    // double DragForceCoefficient = 0.3;
    double DragForceCoefficient = 2.5;  // Palm2016はだいたいこのくらい
 
-   void simulate(const double current_time,
-                 const double dt,
-                 const std::function<void(networkPoint*)> setBoundaryCondition) {
+   void simulate(const double current_time, const double dt, const std::function<void(networkPoint*)> setBoundaryCondition) {
 
       double dt_acum = 0;
       bool first = true;
@@ -178,17 +174,6 @@ class MooringLine : public Network {
             for (auto& p : points) {
                p->RK_X_sub.push(p->RK_velocity_sub.get_x());
                p->RK_velocity_sub.push(p->accelTranslational());
-               // std::cout << "---- force ---" << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->getTension() = " << p->getTension() << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->getDragForce(DragForceCoefficient) = " << p->getDragForce(DragForceCoefficient) << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->getGravitationalForce() = " << p->getGravitationalForce() << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->getForce() = " << p->getForce() << std::endl;
-               // std::cout << "--------------" << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->mass = " << p->mass << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->acceleration = " << p->acceleration << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->velocity = " << p->velocity << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->RK_X_sub = " << p->RK_X_sub.get_x() << std::endl;
-               // std::cout << std::right << std::setw(35) << "p->RK_velocity_sub = " << p->RK_velocity_sub.get_x() << std::endl;
             }
 
             if ((*points.begin())->RK_X_sub.finished)

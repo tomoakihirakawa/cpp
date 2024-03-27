@@ -191,14 +191,24 @@ Tddd vectorToNextSurface(const networkPoint *p) {
    Tddd X, ret = {1E+20, 1E+20, 1E+20};
 
    if (p->Dirichlet) {
+      auto t0t1 = SubdivideTriangleIntoTriangles(10);
       for (const auto &f : p->getFaces()) {
          if ((p->Dirichlet && f->Dirichlet) || (p->Neumann && f->Neumann)) {
-            auto actual_corner_face = RK_without_Ubuff(f);
-            X = Nearest(pX, actual_corner_face);
-            if (Norm(ret) >= Norm(X - pX))
-               ret = X - pX;
+            if (_ALE_ON_LINEAR_ELEMENT_) {
+               X = Nearest(pX, RK_without_Ubuff(f));
+               if (Norm(ret) >= Norm(X - pX))
+                  ret = X - pX;
+            } else {
+               // DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+               for (const auto &vertices : f->dodecaPoints[0]->interpolate(t0t1, [&](networkPoint *p) -> Tddd { return RK_without_Ubuff(p); })) {
+                  X = Nearest(pX, vertices);
+                  if (Norm(ret) >= Norm(X - pX))
+                     ret = X - pX;
+               }
+            }
          }
       }
+
       return ret;
    } else if (p->Neumann || p->CORNER) {
       Tddd to_corner = {0., 0., 0.};
@@ -396,7 +406,8 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
    };
 
    //! 構造物に貼り付けるためのベクトル
-   double scale = 0.999;  //! 完全に壁に貼り付けると，初期状態に戻り調整ができない可能性があるので
+   // double scale = 0.999;  //! 完全に壁に貼り付けると，初期状態に戻り調整ができない可能性があるので
+   double scale = 1.;  //! 完全に壁に貼り付けると，初期状態に戻り調整ができない可能性があるので
    auto addVectorToNextSurface = [&]() {
 #pragma omp parallel
       for (const auto &p : points)
