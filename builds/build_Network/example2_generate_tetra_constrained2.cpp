@@ -1,6 +1,5 @@
 /*DOC_EXTRACT 1_1_tetra
 
-# 四面体の生成
 
 ## 四面体の生成（制約付き四面分割 constrained tetrahedralization）
 
@@ -20,6 +19,7 @@ CDTの生成法には，主に２つの方法がある\ref{Schewchuk2002}：
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example2_generate_tetra_constrained2.cpp
 make
+./example2_generate_tetra_constrained2
 ```
 
 `bunny.obj`のような複雑なポリゴンには，この方法ではうまくいかない．
@@ -29,6 +29,7 @@ make
 #include <utility>
 #include "Network.hpp"
 #include "kernelFunctions.hpp"
+#include "minMaxOfFunctions.hpp"
 #include "vtkWriter.hpp"
 
 int main(int arg, char **argv) {
@@ -132,11 +133,11 @@ int main(int arg, char **argv) {
    };
 
    int n_loop = 30;
-
+   auto initial_face = object->getFaces();
    for (auto k = 0; k <= n_loop; k++) {
       auto faces = object->getFaces();
       std::cout << "faces.size() = " << faces.size() << std::endl;
-      for (const auto &f : faces) {
+      for (const auto &f : k < 20 ? initial_face : faces) {
          const auto [p0, p1, p2] = f->Points;
          const auto f_center = f->centroid;
          Tddd first_X, empty_direction = {0., 0., 0.};
@@ -158,6 +159,7 @@ int main(int arg, char **argv) {
 
          if (!object->isInside_MethodBucket(f->center + 1E-5 * direction_to_search))
             continue;
+
          /*DOC_EXTRACT 1_1_tetra
 
          ## スコアリングと選択
@@ -177,36 +179,42 @@ int main(int arg, char **argv) {
 
          for (const auto &p : points_candidates) {
 
-            if (k >= n_loop - 5) {
-               int num = (int)(isFace(p, p0, p1) != nullptr) + (int)(isFace(p, p1, p2) != nullptr) + (int)(isFace(p, p2, p0) != nullptr);
-               if (num == 2) {
-                  auto [is_generated, t] = genTetra(object, Append(f->getPoints(), p));
-                  if (is_generated) {
-                     tetra_buckets.add(t->incenter, t);
-                     break;
-                  }
-               }
-            }
+            // if (k >= n_loop - 5) {
+            //    int num = (int)(isFace(p, p0, p1) != nullptr) + (int)(isFace(p, p1, p2) != nullptr) + (int)(isFace(p, p2, p0) != nullptr);
+            //    if (num == 2) {
+            //       auto [is_generated, t] = genTetra(object, Append(f->getPoints(), p));
+            //       if (is_generated) {
+            //          tetra_buckets.add(t->incenter, t);
+            //          break;
+            //       }
+            //    }
+            // }
+
+            //! 明らかに四面体を作成できない点を除外
 
             if (f->MemberQ(p))
-               continue;
+               continue;  //! この点を使って四面体は作成できない
 
             if (Norm(direction_to_search) != 0.)
                if (Dot(direction_to_search, p->X - f_center) < 0.)
-                  continue;
+                  continue;  //! この点を使って四面体は作成できない
 
             if (Norm(p->X - f_center) > too_far_from_face)
-               continue;
+               continue;  //! この点を使って四面体は作成できない
 
             if (std::abs(Dot(p->X - f_center, f->normal)) < too_small_height)
-               continue;
+               continue;  //! この点を使って四面体は作成できない
 
             if (Norm(p->X - p0->X) > too_long_edge || Norm(p->X - p1->X) > too_long_edge || Norm(p->X - p2->X) > too_long_edge)
-               continue;
+               continue;  //! この点を使って四面体は作成できない
 
             /* ----------------------------------- */
 
+            //! 四面体を作成してみて，形状が悪いものは除外
+
             Tetrahedron testing_Tetra(Append(ToX(f), p->X));
+
+            auto [p0, p1, p2] = f->getPoints();
 
             const auto tet_circum_c = testing_Tetra.circumcenter;
             const auto tet_circum_r = testing_Tetra.circumradius;
@@ -214,21 +222,71 @@ int main(int arg, char **argv) {
 
             const double shape_criteria = tet_circum_r / tet_in_r;
 
+            // if (testing_Tetra.volume < 1E-10)
+            //    continue;
             // if (0. > tet_in_r || shape_criteria > 1E+5 || tet_in_r < 1E-5 || tet_circum_r < 1E-5 ||
             if (!isFinite(tet_in_r) || !isFinite(tet_circum_r) || !isFinite(1. / tet_in_r) || !isFinite(1. / tet_circum_r))
-               continue;
+               continue;  //! この点を使って四面体は作成できない
 
-            if (!object->isInside_MethodBucket(p->X) || !object->isInside_MethodBucket(testing_Tetra.centroid) || !object->isInside_MethodBucket(testing_Tetra.incenter))
+            // if (!object->isInside_MethodBucket(p->X) || !object->isInside_MethodBucket(testing_Tetra.centroid) || !object->isInside_MethodBucket(testing_Tetra.incenter))
+            //    continue;  //! この点を使って四面体は作成できない
+
+            bool intersection_found = false;
+            const double e = 1E-10;
+            for (const auto &pq : std::vector<std::array<networkPoint *, 2>>{{p, p0}, {p, p1}, {p, p2}, {p0, p1}, {p1, p2}, {p2, p0}}) {
+               auto [A, B] = pq;
+               for (auto &l : object->getLines()) {
+                  auto [C, D] = l->getPoints();
+                  if (A != C && A != D && B != C && B != D) {
+                     auto s = 0.5, t = 0.5, ds = 0., dt = 0.;
+                     auto justToCheckIfIntersects = [&](const double t, const double s) -> Tddd {
+                        return C->X + s * (D->X - C->X) - (A->X + t * (B->X - A->X));
+                     };
+                     auto gradFF = [&](const double t, const double s) -> Tdd {
+                        auto F = C->X + s * (D->X - C->X) - (A->X + t * (B->X - A->X));
+                        auto dFdt = -(B->X - A->X);
+                        auto dFds = (D->X - C->X);
+                        return {Dot(F, dFdt), Dot(F, dFds)};
+                     };
+                     BroydenMethod<std::array<double, 2>> BM(gradFF(t, s), gradFF(t, s + 1E-10));
+                     // std::cout << "{A,B,C,D} = " << A->X << ", " << B->X << ", " << C->X << ", " << D->X << std::endl;
+                     for (auto i = 0; i < 20; i++) {
+                        BM.updateGoodBroyden(gradFF(t, s), gradFF(std::clamp(t - dt, 0., 1.), std::clamp(s - ds, 0., 1.)));
+                        t = std::clamp(BM.X[0], 0., 1.);
+                        s = std::clamp(BM.X[1], 0., 1.);
+                        dt = BM.dX[0];
+                        ds = BM.dX[1];
+                        // std::cout << "i" << i << ": dt = " << dt << ", ds = " << ds << ", t = " << t << ", s = " << s << std::endl;
+                        // std::cin.ignore();
+                        // if (Norm(BM.dX) < 1E-12)
+                        {
+                           // std::cout << "break" << std::endl;
+                           if (Norm(justToCheckIfIntersects(t, s)) < 1E-10 && 0. - e <= t && t <= 1. + e && 0. - e <= s && s <= 1. + e) {
+                              // std::cout << "is intersected" << justToCheckIfIntersects(t, s) << ", " << Norm(justToCheckIfIntersects(t, s)) << std::endl;
+                              intersection_found = true;
+                              break;
+                           }
+                        }
+                     }
+                     if (intersection_found)
+                        break;
+                  }
+                  if (intersection_found)
+                     break;
+               }
+               if (intersection_found)
+                  break;
+            }
+            if (intersection_found)
                continue;
 
             std::array<double, 3> scores = {0., 0., shape_criteria};
             double diff;
+
             buckets.apply(tet_circum_c, tet_circum_r, [&](const auto &other_p) {
-               if ((std::get<0>(scores) < std::get<2>(best_p)[0] && std::get<1>(scores) < std::get<2>(best_p)[1]) || f->MemberQ(other_p))
-                  return;
-               // score -= w_Bspline3(Norm(other_p->X - tet_circum_c), tet_circum_r);
-               if ((diff = tet_circum_r - Norm(other_p->X - tet_circum_c)) > 0.)
-                  std::get<0>(scores) -= diff;
+               // if ((std::get<0>(scores) < std::get<2>(best_p)[0] && std::get<1>(scores) < std::get<2>(best_p)[1]) || f->MemberQ(other_p))
+               //    return;  //! この点を使って四面体は作成できない
+               std::get<0>(scores) -= std::clamp(tet_circum_r - Norm(other_p->X - tet_circum_c), 0., tet_circum_r);
             });
 
             if (isFace(p, p0, p1))
@@ -239,8 +297,9 @@ int main(int arg, char **argv) {
                std::get<1>(scores) += 1.;
 
             if ((first && std::get<0>(best_p)) ||
-                std::get<2>(best_p)[0] < std::get<0>(scores) /*higher score*/ ||
-                (std::get<2>(best_p)[0] == std::get<0>(scores) && std::get<2>(best_p)[1] <= std::get<1>(scores))) {
+                std::get<2>(best_p)[0] < std::get<0>(scores) /*higher score*/
+                                                             //  || (std::get<2>(best_p)[0] == std::get<0>(scores) && std::get<2>(best_p)[1] <= std::get<1>(scores))
+            ) {
                //  (std::get<2>(best_p)[0] == std::get<0>(scores) && std::get<2>(best_p)[1] == std::get<1>(scores) && std::get<2>(best_p)[2] < shape_criteria)
                /*if equal score compare second score*/
                best_p = {p, p->X, scores};

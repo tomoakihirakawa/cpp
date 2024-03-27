@@ -68,10 +68,6 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define use_gmres 100
 #define use_lapack
 
-// #define quad_element
-// #define linear_element
-// #define liear_and_quad_element
-std::unordered_map<std::tuple<netP *, netF *>, int> PBF_index;
 struct calculateFluidInteraction {
    const Network *PasObj;
    std::vector<networkFace *> actingFaces;
@@ -87,9 +83,10 @@ struct calculateFluidInteraction {
 
       for (const auto &f : faces)
          if (f->Neumann) {
-            if (std::ranges::all_of(f->getPoints(), [&](const auto &p) { return std::ranges::any_of(
-                                                             
-                                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+            if (std::ranges::all_of(f->getPoints(),
+                                    [&](const auto &p) { return std::ranges::any_of(
+                                             
+                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
                this->PressureVeticies.push_back({{p0, p1, p2}, {p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
@@ -288,6 +285,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 (1-\xi_0)
 } \right)} }=
 ```
+
 ```math
 \alpha_{i_\circ}(\phi)_{i_\circ}
 -\sum\limits_{k_\vartriangle}{2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
@@ -300,9 +298,50 @@ NOTE: ちなみに，$`\frac{1-\xi_0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {
 
 */
 
+std::array<double, 3> weight(double t0, double t1) {
+
+   auto shape = [](double t0, double t1) -> std::array<double, 3> {
+      return {t0, t1, 1 - t0 - t1};
+   };
+
+   constexpr std::array<std::array<double, 2>, 3>
+       vertex = {{{std::cos(M_PI / 2), std::sin(M_PI / 2)}, {std::cos(7 * M_PI / 6), std::sin(7 * M_PI / 6)}, {std::cos(11 * M_PI / 6), std::sin(11 * M_PI / 6)}}};
+   auto s = shape(t0, t1);
+   auto s_half_half = shape(2. / 3., 2. / 3.);
+   auto s_minus_half_half = shape(-1. / 3., 2. / 3.);
+   auto s_half_minus_half = shape(2. / 3., -1. / 3.);
+
+   std::array<double, 4> distances;
+
+   distances[0] = Norm(Dot(s, vertex));
+   distances[1] = Norm(Dot(s, vertex) - Dot(s_half_half, vertex));
+   distances[2] = Norm(Dot(s, vertex) - Dot(s_minus_half_half, vertex));
+   distances[3] = Norm(Dot(s, vertex) - Dot(s_half_minus_half, vertex));
+
+   auto weight_func = [&](const double x) {
+      const double h = 1 + 1E-10;
+      return std::pow(w_Linear(x, h), 1);
+      // return std::pow(2. * x, -1.);
+      // return std::pow(std::cosh(M_PI * x), -1.);
+   };
+
+   // double w0 = weight_func(distances[0]);
+   double w1 = weight_func(distances[1]);
+   double w2 = weight_func(distances[2]);
+   double w3 = weight_func(distances[3]);
+   double total = w1 + w2 + w3;
+   // w0 /= total;
+   w1 /= total;
+   w2 /= total;
+   w3 /= total;
+
+   return {w1, w2, w3};
+}
+
 struct BEM_BVP {
    const bool Neumann = false;
    const bool Dirichlet = true;
+   std::vector<Network *> WATERS;
    lapack_lu *lu = nullptr;
 #if defined(use_lapack)
 #else
@@ -321,26 +360,25 @@ struct BEM_BVP {
    VV_d mat_ukn, mat_kn;
    V_d knowns;
    std::vector<std::vector<std::array<double, 2>>> IGIGn;
-   BEM_BVP(){};
+   BEM_BVP(std::vector<Network *> WATERS) : WATERS(WATERS){};
    ~BEM_BVP() {
       if (this->lu) delete this->lu;
    };
 
-   int pf2Index(const networkPoint *p, const networkFace *f) const {
-      // if(PBF_index.find(pf2ID(p, f)) == PBF_index.end())
-      //    throw std::runtime_error("PBF_indexに存在しない{p,f}が指定されました．");
-      return PBF_index.at(pf2ID(p, f));
-   };
+   // int pf2Index(const networkPoint *p, const networkFace *f) const {
+   //    return p->face2id.at(std::get<1>(pf2ID(p, f)));
+   // };
+
    /**
    isNeumannID_BEMとisDirichletID_BEMの両方を満たす{p,f}は存在しない．
    */
 
-   void setIGIGn(const std::vector<Network *> &WATERS) {
+   void setIGIGn() {
 
-      for (auto &net : WATERS)
+      for (auto &net : this->WATERS)
          net->setGeometricProperties();
 
-      IGIGn = std::vector<std::vector<std::array<double, 2>>>(PBF_index.size(), std::vector<std::array<double, 2>>(PBF_index.size(), {0., 0.}));
+      IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
 
 #define use_rigid_mode
       Timer timer;
@@ -394,175 +432,212 @@ struct BEM_BVP {
          water->setFacesVector();
          water->setPointsVector();
       }
+
+      const T3Tdd shape_map_center = {{{0., 0.5} /*quad 4 -> linear 0*/, {0.5, 0.} /*quad 5 -> linear 1*/, {0.5, 0.5} /*quad 3 -> linear 2*/}};
+      //! これとN3の内積を新なパラメタとして利用すると，(t0,t1)=(1,0)で{0., 0.5}に，(t0,t1)=(0,1)で{0.5, 0.}に，t0=t1=0で{0.5, 0.5}になる．
+      const T3Tdd shape_map_l0_face = {{{0.5, 0.} /*0*/, {0., 0.5} /*1*/, {0., 0.} /*2*/}};
+      const T3Tdd shape_map_l1_face = {{{0., 0.} /*0*/, {0.5, 0.} /*1*/, {0., 0.5} /*2*/}};
+      const T3Tdd shape_map_l2_face = {{{0., 0.5} /*0*/, {0., 0.} /*1*/, {0.5, 0.} /*2*/}};
+
       constexpr std::array<double, 2> ZEROS2 = {0., 0.};
       constexpr std::array<double, 3> ZEROS3 = {0., 0., 0.};
       //@ Q：quadratic elementの不安定は，積分点を奇数にするか偶数にするかに依存するか？
       std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_LOWRESOLUTION;
       std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_HIGHRESOLUTION;
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW6xGW6__)
-         t0_t1_ww_N012_LOWRESOLUTION.push_back({t0, t1, ww, ModTriShape<3>(t0, t1)});
+      for (int i = 0; const auto &[t0, t1, ww] : __array_GW6xGW6__) {
+         auto t0t1t2 = ModTriShape<3>(t0, t1);
+         t0_t1_ww_N012_LOWRESOLUTION.push_back({t0, t1, ww, t0t1t2});
+      }
+
       // auto t0_t1_ww_N012_HIGHRESOLUTION = t0_t1_ww_N012_LOWRESOLUTION;
-// 
-      for (int i = 0;const auto &[t0, t1, ww] : __array_GW13xGW13__)
-         t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0,t1,ww,ModTriShape<3>(t0, t1)});
 
-#define USE_LINEAR_ELEMENT
-      // #define USE_QUADRATIC_ELEMENT
-
-#if defined(USE_LINEAR_ELEMENT)
-      std::cout << "線形要素を使ってBIEを離散化" << std::endl;
-#elif defined(USE_QUADRATIC_ELEMENT)
-      std::cout << "二次要素を使ってBIEを離散化" << std::endl;
-#endif
-
+      for (int i = 0; const auto &[t0, t1, ww] : __array_GW13xGW13__) {
+         auto t0t1t2 = ModTriShape<3>(t0, t1);
+         t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0, t1, ww, t0t1t2});
+      }
+                  
+      for (const auto &water : WATERS) 
 #pragma omp parallel
-      for (const auto &[PBF, index] : PBF_index)
+         for (const auto &integ_f : water->getFaces()){
 #pragma omp single nowait
-      {
-         auto [origin, _] = PBF;
-         double origin_ign_rigid_mode = 0.;
-
-         double dist_base = 0;  
-         for(auto f:origin->getFaces())
-               dist_base += f->area;
-         dist_base = std::sqrt(dist_base);
-
-         auto &IGIGn_Row = IGIGn[index];
-         double nr;
-         std::array<double, 3> cross, R;
-         std::array<double, 6> N012_potential;
-#if defined(USE_LINEAR_ELEMENT)
-         std::array<std::tuple<networkPoint *, networkFace *, double, Tddd, double>, 3> ret;
-#elif defined(USE_QUADRATIC_ELEMENT)
-         std::array<std::tuple<networkPoint *, networkFace *, double, Tddd, double>, 6> ret;
-#endif
-
-         // for(const auto &water : WATERS)
-         //    for (const auto &integ_f : water->getFacesVector())
-         //    {
-         //       auto [l0, l1, l2] = integ_f->getLines();
-         //       auto fs = l0->getFaces();
-         //       if(fs.size() == 2)
-         //       {
-         //          auto [p0, p1, p2] = integ_f->getPoints(origin);
-         //          QuadPoints(l0, fs[0]);
-         //          QuadPoints(l1, fs[1]);
-         //       }
-         //    }
-
-         for (const auto &water : WATERS) {
-            double ig;
-            Tddd ign, value_for_rigid_mode = {0., 0., 0.};
-            for (const auto &integ_f : water->getFacesVector()) {
-               value_for_rigid_mode.fill(0.);
-               auto [p0, p1, p2] = integ_f->getPoints(origin);
-               if(p0!=origin)
-               {
-                  auto q0 = p0, q1 = p1, q2 = p2;                  
-                  if(Norm(p0->X - origin->X) >= Norm(p1->X - origin->X) && Norm(p2->X - origin->X) >= Norm(p1->X - origin->X)){
-                     p0 = q1;
-                     p1 = q2;
-                     p2 = q0;
-                  } else if(Norm(p0->X - origin->X) >= Norm(p2->X - origin->X) && Norm(p1->X - origin->X) >= Norm(p2->X - origin->X)){
-                     p0 = q2;
-                     p1 = q0;
-                     p2 = q1;
-                  }
-               }
-
-               cross = Cross(p1->X - p0->X, p2->X - p0->X);
-               const std::array<std::array<double, 3>, 3> X012 = {p0->X, p1->X, p2->X};
-               //! 遠い近いの判定基準がないので，とりあえず基準はorginのfaceのsqrt(面積)としておく
-               const double dist = 5 * Norm((p0->X+ p1->X+ p2->X)/3. - origin->X);               
-#if defined(USE_LINEAR_ELEMENT)
-               ret = {{{p0, integ_f, 0., ZEROS3, 0.},
-                       {p1, integ_f, 0., ZEROS3, 0.},
-                       {p2, integ_f, 0., ZEROS3, 0.}}};
-#elif defined(USE_QUADRATIC_ELEMENT)
-               constexpr std::array<std::array<double, 2>, 3> M_sub{{{0., 0.5}, {0.5, 0.}, {0.5, 0.5}}};
-               auto quadpoint = QuadPoints(origin, integ_f);
-               ret = {{{quadpoint.points[0] /*0*/, quadpoint.faces[0], 0., ZEROS3, 0.},
-                       {quadpoint.points[1] /*1*/, quadpoint.faces[1], 0., ZEROS3, 0.},
-                       {quadpoint.points[2] /*2*/, quadpoint.faces[2], 0., ZEROS3, 0.},
-                       {quadpoint.points[3] /*3*/, integ_f, 0., ZEROS3, 0.},
-                       {quadpoint.points[4] /*4*/, integ_f, 0., ZEROS3, 0.},
-                       {quadpoint.points[5] /*5*/, integ_f, 0., ZEROS3, 0.}}};
-#endif
-
-               for (const auto &[t0, t1, ww, N012_geometry] : (dist < dist_base ? t0_t1_ww_N012_HIGHRESOLUTION : t0_t1_ww_N012_LOWRESOLUTION) ) {
-                  ig = ww * ((1. - t0)) / (nr = Norm(R = (Dot(N012_geometry, X012) - origin->X)));
-                  ign = ig * R / (nr * nr);
-#if defined(USE_LINEAR_ELEMENT)
-                  for (auto i = 0; i < 3; i++) {
-                     FusedMultiplyIncrement(ig, N012_geometry[i], std::get<2>(ret[i]));
-                     FusedMultiplyIncrement(-ign, N012_geometry[i], std::get<3>(ret[i]));
-                  }
-                  value_for_rigid_mode += ign * Total(N012_geometry);
-#elif defined(USE_QUADRATIC_ELEMENT)
-                  N012_potential = TriShape<6>(Dot(N012_geometry, M_sub), quadpoint.ignore);
-                  for (auto i = 0; i < 6; i++) {
-                     FusedMultiplyIncrement(ig, N012_potential[i], std::get<2>(ret[i]));
-                     FusedMultiplyIncrement(-ign, N012_potential[i], std::get<3>(ret[i]));
-                  }
-                  value_for_rigid_mode += ign * Total(N012_potential);
-#endif
-               }
-
-               //! 2Aまたは2Anをかける
-               auto Atimes2 = Norm(cross);
-               for (auto &[_, __, ig, ign_tmp, ign_result] : ret) {
-                  ig *= Atimes2;
-                  ign_result = (origin == p0 ? 0. : Dot(ign_tmp, cross));
-               }
-
-               //! この面 k triangle
-               if (p0 != origin)
-                  origin_ign_rigid_mode += Dot(value_for_rigid_mode, cross);
-
-               for (const auto &[p, integ_f, ig, __, ign_result] : ret)
-                  IGIGn_Row[pf2Index(p, integ_f)] += Tdd{ig, ign_result};  // この面に関する積分において，φまたはφnの寄与
-            }
+            integ_f->setIntegrationInfo();            
          }
-         /* -------------------------------------------------------------------------- */
-         /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
-         ### リジッドモードテクニック
+      int count_pseudo_quadratic_element = 0, count_linear_element = 0, total = 0;
+      for (const auto &water : WATERS) 
+         for (const auto &integ_f : water->getFaces()){
+            if (integ_f->isLinearElement)
+               count_linear_element++;
+            else if (integ_f->isPseudoQuadraticElement)
+               count_pseudo_quadratic_element++;
+            total++;
+         }
 
-         立体角$`\alpha`$はBIEの係数行列の対角成分で正確に計算したいが，正確に計算するプログラムを書くのは面倒である．
-         しかし，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算することができる．
+      std::cout << "線形要素の面の数：" << count_linear_element << " persecent: " << 100. * count_linear_element / total << std::endl;
+      std::cout << "擬似二次要素の面の数：" << count_pseudo_quadratic_element << " persecent: " << 100. * count_pseudo_quadratic_element / total << std::endl;
 
-         立体角はポテンシャルとは関係なく，境界面の形状だけに依存するので，適当に$`\phi=1`$としても立体角は変わらない．
-         こうすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，
-         この式は，境界面形状を線形要素を使って離散化すると，次のようになる．
+      if(_PSEUDO_QUADRATIC_ELEMENT_)
+         std::cout << "擬似二次要素を使ってBIEを離散化" << std::endl;
+      else
+         std::cout << "線形要素を使ってBIEを離散化" << std::endl;
 
-         ```math
-         \alpha_{i_\circ}=\sum\limits_{k_\vartriangle}
-         \left(
-         {2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
-         \sum\limits_{{\xi_1},{w_1}}\sum\limits_{{\xi_0},{w_0}}
-         {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x}_{k _\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}} (1-\xi_0)\right)}
-         \right)
-         ```
 
-         この式の右辺の一部，
-         原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する和だけを左辺に移項したものは，
-         係数行列の対角成分と同じになっている．
-         これはリジッドモードテクニックと呼ばれていて，
-         分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+      for (const auto water : WATERS)
+#pragma omp parallel
+         for (const auto &origin : water->getPoints())
+#pragma omp single nowait
+         {
+            for (const auto &[f, index] : origin->face2id) {
+               double origin_ign_rigid_mode = 0., dist_base = 0;
+               for (auto f : origin->getFaces())
+                  dist_base += f->area;
+               dist_base = std::sqrt(dist_base);
+               auto &IGIGn_Row = IGIGn[index];               
+               double nr, ig, ign;
+               Tdd ig_ign0, ig_ign1, ig_ign2;
+               bool is_near;
+               Tddd R;
+               networkPoint* closest_p_to_origin = nullptr;
+               std::tuple<networkPoint *, networkFace *, double, double> key_ig_ign0, key_ig_ign1, key_ig_ign2;
+               std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign;
 
-         ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
-         よって，そもそも線形要素の場合は，特異的な計算は含まれない．
+               for (const auto &water : WATERS) {
+                  for (const auto &integ_f : water->getFacesVector()) {
 
-         */
+                     auto [p0, p1, p2] = integ_f->getPoints(origin);
+                     if (p0 != origin) {
+                        auto q0 = p0, q1 = p1, q2 = p2;
+                        if (Norm(p0->X - origin->X) >= Norm(p1->X - origin->X) && Norm(p2->X - origin->X) >= Norm(p1->X - origin->X)) {
+                           p0 = q1;
+                           p1 = q2;
+                           p2 = q0;
+                        } else if (Norm(p0->X - origin->X) >= Norm(p2->X - origin->X) && Norm(p1->X - origin->X) >= Norm(p2->X - origin->X)) {
+                           p0 = q2;
+                           p1 = q0;
+                           p2 = q1;
+                        }
+                     }
+                     closest_p_to_origin = p0;
+
+                     //! 遠い近いの判定基準がないので，とりあえず基準はorginのfaceのsqrt(面積)としておく
+                     is_near = dist_base > 5 * Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
+
+                     /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+                     WARNING: この`std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign`の`networkFace`は，どの面側から節点を呼び出すかを決めていて，高次補間の場合，積分面と一致しない場合がある．
+
+                     1. fill key_ig_ign
+                     2. fill IGIGn_Row
+
+                     */
+
+                     if (integ_f->isLinearElement){
+                        ig_ign0 = ig_ign1 = ig_ign2 = {0., 0.};
+                        if(p0 == origin)
+                        {
+                           ign = 0.;
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {                           
+                              ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
+                              std::get<0>(ig_ign0) += ig * shape3[0];
+                              std::get<0>(ig_ign1) += ig * shape3[1];
+                              std::get<0>(ig_ign2) += ig * shape3[2];
+                           }
+                        }else{
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {                           
+                              ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
+                              ign = Dot(R, cross) * (ww / (nr*nr*nr));
+                              std::get<0>(ig_ign0) += ig * shape3[0];
+                              std::get<1>(ig_ign0) -= ign * shape3[0];
+                              std::get<0>(ig_ign1) += ig * shape3[1];
+                              std::get<1>(ig_ign1) -= ign * shape3[1];
+                              std::get<0>(ig_ign2) += ig * shape3[2];
+                              std::get<1>(ig_ign2) -= ign * shape3[2];
+                              origin_ign_rigid_mode += ign;
+                           }
+                        }
+                        IGIGn_Row[pf2Index(p0, integ_f)] += ig_ign0;
+                        IGIGn_Row[pf2Index(p1, integ_f)] += ig_ign1;
+                        IGIGn_Row[pf2Index(p2, integ_f)] += ig_ign2;
+                     }else if (integ_f->isPseudoQuadraticElement){
+
+                        key_ig_ign = integ_f->map_Point_BEM_IGIGn_info_init.at(closest_p_to_origin);
+                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : (is_near ? integ_f->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_PseudoQuadraticIntegrationInfo.at(closest_p_to_origin))) {                           
+                           ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
+                           ign = Dot(R, cross) * (ww / (nr*nr*nr));
+                           for (auto i = 0; i < 6; ++i) {
+                              FusedMultiplyIncrement(ig, std::get<0>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i]));
+                              FusedMultiplyIncrement(-ign, std::get<0>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i]));
+                              if(std::get<0>(key_ig_ign[i]) != origin)
+                                 origin_ign_rigid_mode += ign * std::get<0>(Nc_N0_N1_N2)[i];
+
+                              FusedMultiplyIncrement(ig, std::get<1>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 6]));
+                              FusedMultiplyIncrement(-ign, std::get<1>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 6]));
+                              if(std::get<0>(key_ig_ign[i + 6]) != origin)
+                                 origin_ign_rigid_mode += ign * std::get<1>(Nc_N0_N1_N2)[i];
+
+                              FusedMultiplyIncrement(ig, std::get<2>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 12]));
+                              FusedMultiplyIncrement(-ign, std::get<2>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 12]));
+                              if(std::get<0>(key_ig_ign[i + 12]) != origin)
+                                 origin_ign_rigid_mode += ign * std::get<2>(Nc_N0_N1_N2)[i];
+                                 
+                              FusedMultiplyIncrement(ig, std::get<3>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 18]));
+                              FusedMultiplyIncrement(-ign, std::get<3>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 18]));
+                              if(std::get<0>(key_ig_ign[i + 18]) != origin)
+                                 origin_ign_rigid_mode += ign * std::get<3>(Nc_N0_N1_N2)[i];
+                           }
+                        }
+
+                        for (const auto &[p, integ_f, ig, ign] : key_ig_ign)
+                           IGIGn_Row[pf2Index(p, integ_f)] += Tdd{ig, ign};  // この面に関する積分において，φまたはφnの寄与
+
+                     }
+
+                  }
+               }
+
+               /* -------------------------------------------------------------------------- */
+               /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+               ### リジッドモードテクニック
+
+               立体角$`\alpha`$はBIEの係数行列の対角成分で正確に計算したいが，正確に計算するプログラムを書くのは面倒である．
+               しかし，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算することができる．
+
+               立体角はポテンシャルとは関係なく，境界面の形状だけに依存するので，適当に$`\phi=1`$としても立体角は変わらない．
+               こうすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，
+               この式は，境界面形状を線形要素を使って離散化すると，次のようになる．
+
+               ```math
+               \alpha_{i_\circ}=\sum\limits_{k_\vartriangle}
+               \left(
+               {2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
+               \sum\limits_{{\xi_1},{w_1}}\sum\limits_{{\xi_0},{w_0}}
+               {\left( {{w_0}{w_1}\frac{{{\bf x}_{k _\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}} (1-\xi_0)\right)}
+               \right)
+               ```
+
+               この式の右辺の一部，
+               原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する和だけを左辺に移項したものは，
+               係数行列の対角成分と同じになっている．
+               これはリジッドモードテクニックと呼ばれていて，
+               分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+
+               ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
+               よって，そもそも線形要素の場合は，特異的な計算は含まれない．
+
+               */
 
 #if defined(use_rigid_mode)
-         std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
+               std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
 #else
-         std::get<1>(IGIGn_Row[index]) += origin->getSolidAngle();
+               std::get<1>(IGIGn_Row[index]) += origin->getSolidAngle();
 #endif
-      }
+            }
+         }
       std::cout << Green << "離散化にかかった時間" << timer() << colorReset << std::endl;
    };
+
+   /* -------------------------------------------------------------------------- */
 
    void makeMatrix() {
       double max_value = 0;
@@ -571,71 +646,78 @@ struct BEM_BVP {
             max_value = std::abs(std::get<0>(IGIGn[i][i]));
       }
 
-      mat_kn = mat_ukn = VV_d(PBF_index.size(), V_d(PBF_index.size(), 0.));
+      mat_kn = mat_ukn = VV_d(this->matrix_size, V_d(this->matrix_size, 0.));
+
+      for (const auto water : WATERS)
 #pragma omp parallel
-      for (const auto &[i_row, i] : PBF_index)
+         for (const auto &a : water->getPoints())
 #pragma omp single nowait
-      {
-         std::array<double, 2> igign;
-         for (const auto &[j_col, j] : PBF_index) {
-            igign = IGIGn[i][j];
-            // 未知変数の係数行列は左，既知変数の係数行列は右
-            if (isNeumannID_BEM(j_col))
-               igign = {-std::get<1>(igign), -std::get<0>(igign)};
+            for (const auto &[a_face, i] : a->face2id) {
+               std::array<double, 2> igign;
+               for (const auto water : WATERS)
+                  for (const auto &x : water->getPoints())
+                     for (const auto &[x_face, j] : x->face2id) {
+                        igign = IGIGn[i][j];
+                        // 未知変数の係数行列は左，既知変数の係数行列は右
+                        if (isNeumannID_BEM(x, x_face))
+                           igign = {-std::get<1>(igign), -std::get<0>(igign)};
 
-            /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+                        /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
-            係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．
+                        係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．
 
-            ```math
-            (I_G)_{i_\circ,j_\circ} (\phi_n)_{j_\circ} = (I_{Gn})_{i_\circ,j_\circ}  \phi_{j_\circ}
-            ```
+                        ```math
+                        (I_G)_{i_\circ,j_\circ} (\phi_n)_{j_\circ} = (I_{Gn})_{i_\circ,j_\circ}  \phi_{j_\circ}
+                        ```
 
-            境界条件に応じて，未知変数は$`\phi,\phi_n`$のどちらかに決まる．
-            未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
-            係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
+                        境界条件に応じて，未知変数は$`\phi,\phi_n`$のどちらかに決まる．
+                        未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
+                        係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
 
 
-            移項前:
-            ```math
-            \begin{bmatrix}I_{G0} & I_{G1} & I_{G2} & I_{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & I_{Gn1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}
-            ```
+                        移項前:
+                        ```math
+                        \begin{bmatrix}I_{G0} & I_{G1} & I_{G2} & I_{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & I_{Gn1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}
+                        ```
 
-            移項後:
-            ```math
-            \begin{bmatrix}I_{G0} & -I_{Gn1} & I_{G2} & I_{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & -I_{G1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-            ```
+                        移項後:
+                        ```math
+                        \begin{bmatrix}I_{G0} & -I_{Gn1} & I_{G2} & I_{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & -I_{G1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
+                        ```
 
-            多重節点(1と3が多重節点の場合):
-            ```math
-            \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-            ```
+                        多重節点(1と3が多重節点の場合):
+                        ```math
+                        \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
+                        ```
 
-            */
-            mat_ukn[i][j] = std::get<0>(igign);
-            mat_kn[i][j] = std::get<1>(igign);
-         }
-         auto [a, _] = i_row;
-         if (a->CORNER && isNeumannID_BEM(i_row) /*行の変更*/) {
-            std::ranges::fill(mat_ukn[i], 0.);
-            std::ranges::fill(mat_kn[i], 0.);
-            mat_ukn[i][i] = max_value;                    // φの系数
-            mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
-         }
-      }
+                        */
+                        mat_ukn[i][j] = std::get<0>(igign);
+                        mat_kn[i][j] = std::get<1>(igign);
+                     }
+               // auto [a, _] = i_row;
+               if (a->CORNER && isNeumannID_BEM(a, a_face) /*行の変更*/) {
+                  std::ranges::fill(mat_ukn[i], 0.);
+                  std::ranges::fill(mat_kn[i], 0.);
+                  mat_ukn[i][i] = max_value;                    // φの系数
+                  mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
+               }
+            }
    };
+
+   /* -------------------------------------------------------------------------- */
 
    template <typename T1, typename T2, typename T3>
    void storePhiPhinCommon(const Network &water, const V_d &ans, T1 phiphinProperty, T2 phiOnFaceProperty, T3 phinOnFaceProperty) const {
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(PBF)) {
-            (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
-            (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);
-         }
-         if (isNeumannID_BEM(PBF))
-            (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty) = ans[i];
-      }
+      for (const auto water : WATERS)
+         for (const auto &p : water->getPoints())
+            for (const auto &[f, i] : p->face2id) {
+               if (isDirichletID_BEM(p, f)) {
+                  (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
+                  (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);
+               }
+               if (isNeumannID_BEM(p, f))
+                  (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty) = ans[i];
+            }
 
       for (const auto &p : water.getPoints())
          if (p->Neumann) {
@@ -657,6 +739,8 @@ struct BEM_BVP {
    void storePhiPhin_t(const Network &water, const V_d &ans) const {
       storePhiPhinCommon(water, ans, &networkPoint::phiphin_t, &networkPoint::phitOnFace, &networkPoint::phintOnFace);
    }
+
+   /* -------------------------------------------------------------------------- */
 
    void isSolutionFinite(const auto &water) const {
       for (const auto &p : water.getPoints()) {
@@ -688,48 +772,51 @@ struct BEM_BVP {
 
    V_d ans;
 
-   void solve(std::vector<Network *> WATERS, const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
+   int matrix_size = 0;
+
+   void solve(const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
 
       for (auto water : WATERS)
          setPhiPhin(*water);
 
-      // std::vector<networkPoint *> points;
-
-      // for (auto water : WATERS)
-      //    for (auto &p : water->getPoints())
-      //       points.emplace_back(p);
-
-      PBF_index.clear();
-      // PBF_index.reserve(3 * points.size());
-      int i = 0;
-
       for (const auto water : WATERS)
          for (const auto &q : water->getPoints())
-            for (const auto &id : variableIDs(q))
-               if (PBF_index.find(id) == PBF_index.end())
-                  PBF_index[id] = i++;
+            q->face2id.clear();
 
-      std::cout << Red << "   unknown size : " << PBF_index.size() << colorReset << std::endl;
+      int i = 0;
+
+      for (const auto water : this->WATERS)
+         for (const auto &q : water->getPoints())
+            for (const auto &[_, f] : variableIDs(q)) {
+               // std::unordered_map<networkFace*, int> face2id try to add if succeed then increment i
+               if (q->face2id.find(f) == q->face2id.end())
+                  q->face2id[f] = i++;
+            }
+
+      this->matrix_size = i;
+
+      std::cout << Red << "   unknown size : " << this->matrix_size << colorReset << std::endl;
       std::cout << Red << "water node size : " << i << colorReset << std::endl;
 
-      setIGIGn(WATERS);
+      setIGIGn();
 
       std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
 
       makeMatrix();
 
-      knowns.resize(PBF_index.size());
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(PBF) && isNeumannID_BEM(PBF))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
-         else if (isDirichletID_BEM(PBF)) {
-            knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
-         } else if (isNeumannID_BEM(PBF))
-            knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
-         else
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
-      }
+      knowns.resize(this->matrix_size);
+      for (const auto water : WATERS)
+         for (const auto &p : water->getPoints())
+            for (const auto &[f, i] : p->face2id) {
+               if (isDirichletID_BEM(p, f) && isNeumannID_BEM(p, f))
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
+               else if (isDirichletID_BEM(p, f)) {
+                  knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
+               } else if (isNeumannID_BEM(p, f))
+                  knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
+               else
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
+            }
 
       TimeWatch watch;
 
@@ -1041,22 +1128,23 @@ struct BEM_BVP {
 
    // \label{BEM:setPhiPhin_t}
    void setPhiPhin_t() const {
+      for (const auto water : WATERS)
 #pragma omp parallel
-      for (const auto &[PBF, i] : PBF_index)
+         for (const auto &p : water->getPoints())
 #pragma omp single nowait
-      {
-         auto [p, F] = PBF;
-         //!!ノイマンの場合はこれでDphiDtは計算できませんよ
-         if (isDirichletID_BEM(PBF))
-            p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
-         else if (isNeumannID_BEM(PBF)) {
-            for (auto &[f, phin_t] : p->phintOnFace) {
-               // phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
+            for (const auto &[F, i] : p->face2id) {
+               // auto [p, F] = PBF;
+               //!!ノイマンの場合はこれでDphiDtは計算できませんよ
+               if (isDirichletID_BEM(p, F))
+                  p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
+               else if (isNeumannID_BEM(p, F)) {
+                  for (auto &[f, phin_t] : p->phintOnFace) {
+                     // phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
 
-               phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(p, f) : phint_Neumann(p);  // \label{BEM:setphint}
+                     phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(p, f) : phint_Neumann(p);  // \label{BEM:setphint}
+                  }
+               }
             }
-         }
-      }
    };
 
    /* ------------------------------------------------------ */
@@ -1101,17 +1189,18 @@ struct BEM_BVP {
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
       setPhiPhin_t();
-      knowns.resize(PBF_index.size());
+      knowns.resize(this->matrix_size);
+      for (const auto water : WATERS)
 #pragma omp parallel
-      for (const auto &[PBF, i] : PBF_index)
+         for (const auto &p : water->getPoints())
 #pragma omp single nowait
-      {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(PBF))
-            knowns[i] = p->phitOnFace.at(f);
-         else if (isNeumannID_BEM(PBF))
-            knowns[i] = p->phintOnFace.at(f);
-      }
+            for (const auto &[f, i] : p->face2id) {
+               // auto [p, f] = PBF;
+               if (isDirichletID_BEM(p, f))
+                  knowns[i] = p->phitOnFace.at(f);
+               else if (isNeumannID_BEM(p, f))
+                  knowns[i] = p->phintOnFace.at(f);
+            }
       // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       ans.resize(knowns.size());
       this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
@@ -1128,13 +1217,16 @@ struct BEM_BVP {
       //*                 phiphin_t --> 圧力                   */
       //* --------------------------------------------------- */
 
-      for (const auto &[PBF, i] : PBF_index) {
-         auto [p, f] = PBF;
-         if (isDirichletID_BEM(PBF))
-            p->pressure = p->pressure_BEM = 0;
-         else
-            p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
-      }
+      for (const auto water : WATERS)
+#pragma omp parallel
+         for (const auto &p : water->getPoints())
+#pragma omp single nowait
+            for (const auto &[f, i] : p->face2id) {
+               if (isDirichletID_BEM(p, f))
+                  p->pressure = p->pressure_BEM = 0;
+               else
+                  p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
+            }
 
       //* --------------------------------------------------- */
       //*              圧力 ---> 力 --> 加速度                  */
@@ -1152,7 +1244,7 @@ struct BEM_BVP {
       {\rm R}_{g2l}^{-1}{\bf I_{\rm principal mat}} {\rm R}_{g2l} \frac{d{\bf \Omega}_{\rm G}}{dt}& = {\bf T}_{\rm G}\\
       \end{aligned}
       ```
-      
+
       */
       int i = 0;
       std::vector<networkFace *> all_faces;
@@ -1190,13 +1282,13 @@ struct BEM_BVP {
                std::array<double, 3> c_xyz = {c[0], c[1], c[2]};
                std::array<double, 3> c_abc = {c[3], c[4], c[5]};
                double start_t = 0, end_t = 1E10;
-               if(c.size() == 7)
+               if (c.size() == 7)
                   start_t = c[6];
-               else if(c.size() == 8){
+               else if (c.size() == 8) {
                   start_t = c[6];
                   end_t = c[7];
                }
-               if( start_t <= simulation_time && simulation_time <= end_t){
+               if (start_t <= simulation_time && simulation_time <= end_t) {
                   F -= c_xyz * body->velocityTranslational();
                   T_GLOBAL -= c_abc * body->velocityRotational();
                }
@@ -1210,12 +1302,12 @@ struct BEM_BVP {
             auto [a0, a1, a2] = F / Tddd{mx, my, mz};
             // auto R = body->quaternion.Rv();
             // auto RT = Transpose(R);
-            // T3Tddd I_accounting_float_attitude = Dot(R,Dot(T3Tddd{{{Ix, 0., 0.},{0., Iy, 0.},{0., 0., Iz}}}, RT));            
+            // T3Tddd I_accounting_float_attitude = Dot(R,Dot(T3Tddd{{{Ix, 0., 0.},{0., Iy, 0.},{0., 0., Iz}}}, RT));
             // I_accounting_float_attitude = I;
             Tddd A_rotaton;
             Solve(I_accounting_float_attitude, A_rotaton, T_GLOBAL);
             auto [a3, a4, a5] = A_rotaton;
-            
+
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
             // write out details of the body
             // std::cout << Green << "mass = " << body->mass << std::endl;
@@ -1231,7 +1323,7 @@ struct BEM_BVP {
    //@ --------------------------------------------------- */
    //@        加速度 --> phiphin_t --> 圧力 --> 加速度        */
    //@ --------------------------------------------------- */
-   std::vector<double> solveForPhiPhin_t(std::vector<Network *> WATERS, const std::vector<Network *> &rigidbodies) {
+   std::vector<double> solveForPhiPhin_t(const std::vector<Network *> &rigidbodies) {
       std::vector<double> convergence;
       for (auto &water : WATERS)
          water->setGeometricProperties();
@@ -1256,17 +1348,16 @@ struct BEM_BVP {
          convergence.push_back(Norm(func));
          BM.update(func, func_, j == 0 ? 0.1 : alpha);
          func_ = func;
-         insertAcceleration(rigidbodies, BM.X);         
+         insertAcceleration(rigidbodies, BM.X);
 
          std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorReset << std::endl;
 
-         if (Norm(BM.dX) < 1E-9 && Norm(func) < 1E-9 && count++ > 4) 
+         if (Norm(BM.dX) < 1E-9 && Norm(func) < 1E-9 && count++ > 4)
             break;
          else if (Norm(BM.dX) < 1E-12 && Norm(func) < 1E-12)
             break;
          else
             count = 0;
-
       }
       return convergence;
    };

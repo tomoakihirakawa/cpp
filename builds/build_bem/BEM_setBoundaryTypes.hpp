@@ -4,7 +4,7 @@
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
 
-/*DOC_EXTRACT 0_1_BOUNDARY_CONDITIONS
+/*DOC_EXTRACT 0_1_1_1_BOUNDARY_CONDITIONS
 
 ## 境界のタイプを決定する
 
@@ -35,14 +35,6 @@
    - Neumann点 : 隣接面全てがNeumann面である点
    - Dirichlet点 : 隣接面全てがDirichlet面である点
    - CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
-
-### 多重節点
-
-NOTE: 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi_n`$を計算できるようにする
-
-NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi_n`$を選択し補間に用いなければならない
-
-これを多重節点という．
 
 */
 
@@ -222,6 +214,78 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    for (const auto &p : water.getPoints())
       setIsMultipleNode(p);
+
+   //@ ------------------------------------------ */
+
+   for (const auto &f : water.getFaces()) {
+      f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
+      f->isLinearElement = !f->isPseudoQuadraticElement;
+   }
+
+   //@ ------------------------------------------ */
+};
+
+/* -------------------------------------------------------------------------- */
+//! 境界条件と関連が深いのでここで定義しておく
+
+/*DOC_EXTRACT 0_1_1_2_BOUNDARY_CONDITIONS
+
+## 多重節点
+
+NOTE: 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi_n`$を計算できるようにする
+
+NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi_n`$を選択し補間に用いなければならない
+
+これを多重節点という．
+
+多重節点を導入すると，未知変数idは，節点idだけではなく，節点と面の組みのidとなる．
+
+### 境界値問題の未知変数ID 多重節点との区別
+
+* `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+
+* `pf2ID`は，節点と面の組みを未知変数IDに変換する．多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，与えられた`{p,f}`が変数のidとなる．
+
+*/
+
+bool isNeumannID_BEM(const auto p, const auto f) {
+   if (p->Neumann || p->CORNER) {
+      if (p->isMultipleNode) {
+         if (p->MemberQ(f))
+            return f->Neumann;
+         else
+            return false;
+      } else
+         return (f == nullptr);
+   } else
+      return false;
+};
+
+bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) {
+   return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF));
+};
+
+bool isDirichletID_BEM(const auto p, const auto f) {
+   if (p->Dirichlet || p->CORNER)
+      return (f == nullptr);
+   else
+      return false;
+};
+
+bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) {
+   return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF));
+};
+
+std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
+   //{p,f}を変換
+   // f cannot be nullptr
+   //  {p,f} --o--> {p,nullptr}
+   //  {p,f} <--x-- {p,nullptr}
+
+   std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
+   for (const auto &f : p->getFaces())
+      ret.emplace(pf2ID(p, f));
+   return ret;
 };
 
 #endif

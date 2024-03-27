@@ -466,24 +466,42 @@ double RMS(const V_d &v) {
       ret += u * u;
    return std::sqrt(ret);
 };
+
+// template <typename T>
+// std::vector<T> RandomSample(std::vector<T> ret /*copy may change*/) {
+//    std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine());
+//    return ret;
+//    // if (!n /*if n==0*/) {
+//    //    return ret;
+//    // } else {
+//    //    return Take(ret, {0, n});
+//    // }
+// };
+// template <typename T>
+// std::vector<T *> RandomSample(std::vector<T *> ret /*copy may change*/) {
+//    std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine());
+//    return ret;
+//    // if (!n /*if n==0*/) {
+
+//    // } else {
+//    //    return Take(ret, {0, n});
+//    // }
+// };
+
 template <typename T>
-std::vector<T> RandomSample(std::vector<T> ret /*copy may change*/, const int n = 0) {
-   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine());
-   if (!n /*if n==0*/) {
-      return ret;
-   } else {
-      return Take(ret, {0, n});
-   }
-};
+std::vector<T> RandomSample(std::vector<T> ret) {
+   // Use the current time as a seed for the random number generator
+   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
+   return ret;
+}
+
 template <typename T>
-std::vector<T *> RandomSample(std::vector<T *> ret /*copy may change*/, const int n = 0) {
-   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine());
-   if (!n /*if n==0*/) {
-      return ret;
-   } else {
-      return Take(ret, {0, n});
-   }
-};
+std::vector<T *> RandomSample(std::vector<T *> ret) {
+   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
+   return ret;
+}
 
 #include "basic_vectors.hpp"
 
@@ -3214,6 +3232,12 @@ bool DuplicateFreeQ(const std::tuple<T, T, T, T> &V) {
    auto [t0, t1, t2, t3] = V;
    return (t0 != t1 && t0 != t2 && t0 != t3 && t1 != t2 && t1 != t3 && t2 != t3);
 };
+
+template <typename... Args>
+bool DuplicateFreeQ(Args... args) {
+   std::set<std::common_type_t<Args...>> values = {args...};
+   return values.size() == sizeof...(args);
+}
 /* -------------------------------------------------------------------------- */
 template <typename T>
 T Product(const std::vector<T> &vec) {

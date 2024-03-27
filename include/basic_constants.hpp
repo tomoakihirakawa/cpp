@@ -18,7 +18,7 @@ double _GRAVITY_ = 9.81;
 
 #include <array>
 #include <tuple>
-const std::array<double, 3> _GRAVITY3_ = {0., 0., -_GRAVITY_};
+std::array<double, 3> _GRAVITY3_ = {0., 0., -_GRAVITY_};
 constexpr std::array<double, 3> _ZEROS3_ = {0., 0., 0.};
 // ideneity matrix 3 x 3
 constexpr const std::array<std::array<double, 3>, 3> _I3_ = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}};

@@ -1626,6 +1626,8 @@ inline bool networkLine::isAdjacentFacesFlat(const double minangle = M_PI / 180.
 inline bool networkLine::canFlip(const double acceptable_n_diff_before_after = 1E-3 * M_PI / 180.) const {
    try {
       auto f_and_F = this->getFaces();
+      if (f_and_F.size() != 2)
+         return false;
       auto [f0, f1, f2] = f_and_F[0]->getPoints(this);
       auto [F0, F1, F2] = f_and_F[1]->getPoints(this);
       auto tri0_now = T3Tddd{f0->X, f1->X, f2->X};

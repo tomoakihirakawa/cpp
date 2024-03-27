@@ -45,9 +45,7 @@ int main() {
          // Vd X, dX, gradF, gradF_;
          X = {x, y};  // optimization variables
          dX = {0., 1E-10};
-         BroydenMethod<std::array<double, 2>> BM(X, X + dX);
          std::cout << w << "iteration" << w << "x" << w << "y" << w << "|F(x,y)|" << w << "|dX|" << std::endl;
-
          // to visualize the Himmelblau's function
          std::ofstream ofs("./output_Himmelblau/Himmelblau.csv");
          // ofs << "#x y F(x, y)" << std::endl;
@@ -60,27 +58,57 @@ int main() {
          }
          ofs.close();
          // visualize the path of the optimization
-         std::ofstream ofs_BM("./output_Himmelblau/Himmelblau_Broyden" + std::to_string((int)x) + "_" + std::to_string((int)y) + ".csv");
-         // ofs_BM << "#x y F(x, y)" << std::endl;
-         for (auto i = 0; i < 50; i++) {
-            auto x = BM.X[0];  // optimization variable
-            auto y = BM.X[1];  // optimization variable
-            auto dx = BM.dX[0];
-            auto dy = BM.dX[1];
-            std::cout << w << i << w << x << w << y << w << F(x, y) << w << Norm(BM.dX) << std::endl;
-            ofs_BM << x << "," << y << "," << F(x, y) << std::endl;
-            gradF_ = {dFdx(x - dx, y - dy), dFdy(x - dx, y - dy)};
-            gradF = {dFdx(x, y), dFdy(x, y)};
 
-            // gradF_ = {dFdx(x, y), dFdy(x, y)};
-            // gradF = {dFdx(x + dx, y + dy), dFdy(x + dx, y + dy)};
+         {
+            std::ofstream ofs_BM("./output_Himmelblau/Himmelblau_Broyden" + std::to_string((int)x) + "_" + std::to_string((int)y) + ".csv");
+            BroydenMethod<std::array<double, 2>> BM(X, X + dX);
+            // ofs_BM << "#x y F(x, y)" << std::endl;
+            for (auto i = 0; i < 50; i++) {
+               auto x = BM.X[0];  // optimization variable
+               auto y = BM.X[1];  // optimization variable
+               auto dx = BM.dX[0];
+               auto dy = BM.dX[1];
+               std::cout << w << i << w << x << w << y << w << F(x, y) << w << Norm(BM.dX) << std::endl;
+               ofs_BM << x << "," << y << "," << F(x, y) << std::endl;
+               gradF_ = {dFdx(x - dx, y - dy), dFdy(x - dx, y - dy)};
+               gradF = {dFdx(x, y), dFdy(x, y)};
 
-            BM.update(gradF, gradF_, i < 1 ? 0.01 : 1.);
-            // BM.update(gradF, gradF_, 1.);
+               // gradF_ = {dFdx(x, y), dFdy(x, y)};
+               // gradF = {dFdx(x + dx, y + dy), dFdy(x + dx, y + dy)};
 
-            if (Norm(BM.dX) < 1e-10)
-               break;
+               BM.updateGoodBroyden(gradF, gradF_, i < 1 ? 0.01 : 1.);
+               // BM.update(gradF, gradF_, 1.);
+
+               if (Norm(BM.dX) < 1e-10)
+                  break;
+            }
+            ofs_BM.close();
          }
-         ofs_BM.close();
+
+         {
+            std::ofstream ofs_BM("./output_Himmelblau/Himmelblau_BFGS" + std::to_string((int)x) + "_" + std::to_string((int)y) + ".csv");
+            BroydenMethod<std::array<double, 2>> BM(X, X + dX);
+            // ofs_BM << "#x y F(x, y)" << std::endl;
+            for (auto i = 0; i < 50; i++) {
+               auto x = BM.X[0];  // optimization variable
+               auto y = BM.X[1];  // optimization variable
+               auto dx = BM.dX[0];
+               auto dy = BM.dX[1];
+               std::cout << w << i << w << x << w << y << w << F(x, y) << w << Norm(BM.dX) << std::endl;
+               ofs_BM << x << "," << y << "," << F(x, y) << std::endl;
+               gradF_ = {dFdx(x - dx, y - dy), dFdy(x - dx, y - dy)};
+               gradF = {dFdx(x, y), dFdy(x, y)};
+
+               // gradF_ = {dFdx(x, y), dFdy(x, y)};
+               // gradF = {dFdx(x + dx, y + dy), dFdy(x + dx, y + dy)};
+
+               BM.updateBFGS(gradF, gradF_, i < 1 ? 0.01 : 1.);
+               // BM.update(gradF, gradF_, 1.);
+
+               if (Norm(BM.dX) < 1e-10)
+                  break;
+            }
+            ofs_BM.close();
+         }
       }
 }

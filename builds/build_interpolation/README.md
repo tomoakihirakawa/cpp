@@ -1,6 +1,13 @@
 # Contents
 - [🐋 補間](#🐋-補間)
     - [⛵ ラグランジュ補間](#⛵-ラグランジュ補間)
+    - [⛵ 三角形を使った補間](#⛵-三角形を使った補間)
+        - [🪼 三角分割](#🪼-三角分割)
+        - [🪼 🪼 三角形形状関数](#🪼-🪼-三角形形状関数)
+        - [🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]](#🪼-🪼-範囲-{t_0,t_1}-=-{[0,1],[0,1]}-->-[t0,t1]=[0,1],[0,1-t0])
+        - [🪼 例：補間によって，頂点座標から平面を作成する](#🪼-例：補間によって，頂点座標から平面を作成する)
+    - [⛵ 接続関係を利用した補間精度の向上（擬2次補間）](#⛵-接続関係を利用した補間精度の向上（擬2次補間）)
+    - [⛵ 接続関係を利用した補間精度の向上](#⛵-接続関係を利用した補間精度の向上)
     - [⛵ B-spline補間](#⛵-B-spline補間)
         - [🪼 実行方法](#🪼-実行方法)
         - [🪼 コード](#🪼-コード)
@@ -15,9 +22,6 @@
             - [🪸 🪸 逆多重二乗](#🪸-🪸-逆多重二乗)
             - [🪸 🪸 ガウシアン](#🪸-🪸-ガウシアン)
         - [🪼 🪼 最適なパラメタ$`{\varepsilon}`$](#🪼-🪼-最適なパラメタ$`{\varepsilon}`$)
-    - [⛵ 三角形補間](#⛵-三角形補間)
-    - [⛵ ⛵ 三角形形状関数](#⛵-⛵-三角形形状関数)
-    - [⛵ ⛵ 範囲を修正した三角形形状関数](#⛵-⛵-範囲を修正した三角形形状関数)
 
 
 ---
@@ -37,9 +41,128 @@ f(x) = \sum _{i=0}^n\dfrac{\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq
 f(x) = \sum _{i=0}^n\dfrac{\sum _{k=0}^{n}\prod _{j=0,j\neq i}^n{(x - x _j)}}{\prod _{j=0,j\neq i}^n{(x _i - x _j)}}y _i
 ```
 
-![](sample_lag.png)
+<img src="sample_lag.png" width="400">
 
 [./interpolation_Lagrange.cpp#L12](./interpolation_Lagrange.cpp#L12)
+
+---
+## ⛵ 三角形を使った補間 
+
+### 🪼 三角分割 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriangleParameterSubdivision.cpp
+make
+./TriangleParameterSubdivision
+```
+
+* `SubdivideTriangleIntoTriangles` で三角形を分割
+* `SubdivideSquareIntoTriangles` で矩形領域を三角形に分割
+
+`plot_parametric_subdivision.nb` で描画
+
+<img src="output_TriangleParameterSubdivision.gif" width="400">
+
+<img src="output_SquareParameterSubdivision.gif" width="400">
+
+`ModTriShape`を使うと，(t0,t1)=([0,1],[0,1])領域を(xi0,xi1)=([0,1],[0,1-t0])の三角形に変換できる．
+
+<img src="output_SquareParameterSubdivision_into_Triangle.gif" width="400">
+
+[./TriangleParameterSubdivision.cpp#L11](./TriangleParameterSubdivision.cpp#L11)
+
+---
+### 🪼 🪼 三角形形状関数  
+
+線形の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+
+```math
+(N _0, N _1, N _2) = (t _0, t _1, t _2)
+```
+
+2次の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+
+```math
+(N _0, N _1, N _2, N _3, N _4, N _5) = (t _0(2t _0-1), t _1(2t _1-1), t _2(2t _2-1), 4t _0t _1, 4t _1t _2, 4t _2t _0)
+```
+
+ちなみに，節点3と節点5の線上のパラメタは，$`t _0 = 1/2`$である．
+これを2次補間の形状関数に代入すると，
+
+```math
+(N _0, N _1, N _2, N _3, N _4, N _5) = (0, t _1(2 t _1-1), t _1 (2 t _1-1), 2 t _1, 2 (1 - 2 t _1) t _1, 1 - 2 t _1)
+```
+
+となり，この線上では，節点0の影響を受けず，補間値はそれ以外の（内部）の情報からのみ決まる．
+[../../include/basic_arithmetic_array_operations.hpp#L1110](../../include/basic_arithmetic_array_operations.hpp#L1110)
+
+
+| 線形補間 | 2次補間 |
+| --- | --- |
+| <img src="triangle_shape_function_linear.png" width="400"> | <img src="triangle_shape_function_quadratic.png" width="300"> |
+
+### 🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]  
+
+普通の三角形形状関数は，$`{\mathbf N}=(N _0,N _1,N _2) = (t _0,t _1,1-t _0-t _1)`$．
+これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X _0},{\mathbf X _1},{\mathbf X _2}\})`$は，$`t _0,t _1=[0,1]`$で平行四辺形を作る．
+$`t _0,t _1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
+そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
+変更した形状関数は，`ModTriShape`にあるように，
+
+3点の場合は，
+
+```math
+(N _0,N _1,N _2) = (t _0, t _1(1 - t _0),(t _0-1)(t _1-1))
+```
+
+6点の場合は，
+
+```math
+(N _0,N _1,N _2,N _3,N _4,N _5) = (t _0(2t _0-1), t _1(2t _1-1), (1-t _0-t _1)(2(1-t _0-t _1)-1), 4t _0t _1, 4t _1(1-t _0-t _1), 4t _0(1-t _0-t _1))
+```
+[../../include/basic_arithmetic_array_operations.hpp#L1245](../../include/basic_arithmetic_array_operations.hpp#L1245)
+
+
+### 🪼 例：補間によって，頂点座標から平面を作成する 
+
+<img src="sample_tri.png" width="400">
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShape.cpp
+make
+./TriShape
+```
+
+[./TriShape.cpp#L1](./TriShape.cpp#L1)
+
+---
+## ⛵ 接続関係を利用した補間精度の向上（擬2次補間） 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShapeExample_improved_test1.cpp
+make
+./TriShapeExample_improved_test1
+```
+
+2次補間を利用する，要素は，2次要素と呼ばれ，
+一般的には，三角形の頂点に加え，辺上にもサンプル点を配置する．
+
+[./TriShapeExample_improved_test1.cpp#L1](./TriShapeExample_improved_test1.cpp#L1)
+
+---
+## ⛵ 接続関係を利用した補間精度の向上 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShapeExample_improved_test2.cpp
+make
+./TriShapeExample_improved_test2
+```
+
+[./TriShapeExample_improved_test2.cpp#L1](./TriShapeExample_improved_test2.cpp#L1)
 
 ---
 ## ⛵ B-spline補間 
@@ -57,7 +180,7 @@ $ gnuplot bspline_plot.gnu
 
 ### 🪼 コード 
 
-[Bspline基底関数](../../include/basic.hpp#L816)を用いて，B-spline補間を行う．
+[Bspline基底関数](../../include/basic.hpp#L834)を用いて，B-spline補間を行う．
 
 `InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
 
@@ -67,7 +190,7 @@ std::vector<double> X;
 InterpolationBspline intpX(5, abscissas, X);
 ```
 
-![sample_body_movement_bspline.png](sample_bspline.png)
+<img src="sample_bspline.png" width="400">
 
 ```cpp
 // example for 2D data
@@ -82,8 +205,7 @@ InterpolationBspline<std::array<double, 2>> intpXY;
 intpXY.set(5, abscissas, XY);
 ```
 
-
-![sample_body_movement_bspline.png](sample_body_movement_bspline.png)
+<img src="sample_body_movement_bspline.png" width="400">
 
 ## ⛵ ⛵ 放射関数補間  
 
@@ -187,77 +309,5 @@ $`\nabla f\left( \mathbf{x} \right)=\varepsilon^2 \sum\limits _{i=0}^{N-1}{{{w} 
 [../../include/interpolations.hpp#L238](../../include/interpolations.hpp#L238)
 
 [./interpolation_Bspline.cpp#L12](./interpolation_Bspline.cpp#L12)
-
----
-## ⛵ 三角形補間 
-
-## ⛵ ⛵ 三角形形状関数  
-
-線形の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
-
-```math
-(N _0, N _1, N _2) = (t _0, t _1, t _2)
-```
-
-2次の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
-
-```math
-\begin{align}
-N _0 &= t _0(2t _0-1) \\
-N _1 &= t _1(2t _1-1) \\
-N _2 &= t _2(2t _2-1) \\
-N _3 &= 4t _0t _1 \\
-N _4 &= 4t _1t _2 \\
-N _5 &= 4t _2t _0\\
-\end{align}
-```
-[../../include/basic_arithmetic_array_operations.hpp#L981](../../include/basic_arithmetic_array_operations.hpp#L981)
-
-
-| 線形補間 | 2次補間 |
-| --- | --- |
-| <img src="triangle_shape_function_linear.png" width="400"> | <img src="triangle_shape_function_quadratic.png" width="300"> |
-
-## ⛵ ⛵ 範囲を修正した三角形形状関数  
-
-普通の三角形形状関数は，$`{\mathbf N}=(N _0,N _1,N _2) = (t _0,t _1,1-t _0-t _1)`$．
-これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X _0},{\mathbf X _1},{\mathbf X _2}\})`$は，$`t _0,t _1=[0,1]`$で平行四辺形を作る．
-$`t _0,t _1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
-そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
-変更した形状関数は，`ModTriShape`にあるように，
-3点の場合は，
-
-```math
-\begin{align}
-N _0 &= t _0 \\
-N _1 &= t _1(1 - t _0) \\
-N _2 &= (t _0-1)(t _1-1)
-\end{align}
-```
-
-6点の場合は，
-
-```math
-\begin{align}
-N _0 &= t _0(2t _0-1) \\
-N _1 &= t _1(2t _1-1) \\
-N _2 &= (1-t _0-t _1)(2(1-t _0-t _1)-1) \\
-N _3 &= 4t _0t _1 \\
-N _4 &= 4t _1(1-t _0-t _1) \\
-N _5 &= 4t _0(1-t _0-t _1)
-\end{align}
-```
-[../../include/basic_arithmetic_array_operations.hpp#L1054](../../include/basic_arithmetic_array_operations.hpp#L1054)
-
-
-![](sample_tri.png)
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShape.cpp
-make
-```
-
-[./TriShape.cpp#L1](./TriShape.cpp#L1)
 
 ---
