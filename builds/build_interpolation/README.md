@@ -71,9 +71,9 @@ make
 <th>$(\xi _0,\xi _1(1-\xi _0))$, Range:$(\xi _0,\xi _1)\in[0,1]\times[0,1]$</th>
 </tr>
 <tr>
-<td><img src="output_TriangleParameterSubdivision.gif" width="300"></td>
-<td><img src="output_SquareParameterSubdivision.gif" width="300"></td>
-<td><img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"></td>
+<td><img src="./output_TriangleParameterSubdivision.gif" width="300"></td>
+<td><img src="./output_SquareParameterSubdivision.gif" width="300"></td>
+<td><img src="./output_SquareParameterSubdivision_into_Triangle.gif" width="300"></td>
 </tr>
 </table>
 
