@@ -52,7 +52,8 @@ parser.add_argument('-element', type=str, help='要素の種類')
 parser.add_argument('-dt', type=float, help='時間刻み幅')
 parser.add_argument('-ALE', type=str, help='シフトさせる面の補間方法')
 parser.add_argument('-suffix', type=str, help='接尾語')
-
+parser.add_argument('-wave_height', type=float, help='波の高さ')
+                    
 args = parser.parse_args()
 
 # SimulationCase = ""
@@ -81,6 +82,11 @@ if args.ALE is not None:
 if args.suffix is not None:
     suffix = args.suffix
     print(f"suffix: {suffix}")
+if args.wave_height is not None:
+    wave_height = args.wave_height
+    print(f"wave_height: {wave_height}")
+    
+
 # ---------------------------------------------------------------------------- #
 if "looping" in SimulationCase:
     # objfolder = code_home_dir + "/cpp/obj/WaveGeneration"
@@ -181,8 +187,11 @@ elif "Tanizawa1996" in SimulationCase:
     start = 0.
 
     L = 1.8
-    H = 0.05
+    H = 0.05*2
     a = H/2
+    if wave_height is not None:
+        H = wave_height
+        a = H/2
     h = 5.
     z_surface = h
 

@@ -104,9 +104,9 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
    // }
 };
 
-void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p) {
+void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p, const double a = 1.) {
    if (isFinite(p->vecToSurface_BUFFER))
-      p->vecToSurface += p->vecToSurface_BUFFER;
+      p->vecToSurface += p->vecToSurface_BUFFER * a;
 };
 
 std::array<double, 3> nextPositionOnBody(Network *net, networkPoint *p) {
@@ -189,9 +189,35 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 Tddd vectorToNextSurface(const networkPoint *p) {
    Tddd pX = RK_with_Ubuff(p);
    Tddd X, ret = {1E+20, 1E+20, 1E+20};
-
+   T3Tdd t0t1_vertices = {{{1., 0.}, {0.8, 0.2}, {0.8, 0.}}};
    if (p->Dirichlet) {
-      auto t0t1 = SubdivideTriangleIntoTriangles(10);
+      auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 10);
+      int index = 0;
+      networkFace *closest_face = nullptr;
+
+      auto reset = [&]() {
+         ret = {1E+20, 1E+20, 1E+20};
+      };
+
+      auto find_vector_using_pseudo_quad = [&](networkFace *f) {
+         if (f->Points[0] == p)
+            index = 0;
+         else if (f->Points[1] == p)
+            index = 1;
+         else if (f->Points[2] == p)
+            index = 2;
+         else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
+         //// DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+         for (const auto &vertices : f->dodecaPoints[index]->interpolate(t0t1, [&](networkPoint *p) -> Tddd { return RK_without_Ubuff(p); })) {
+            X = Nearest(pX, vertices);
+            if (Norm(ret) >= Norm(X - pX)) {
+               ret = X - pX;
+               closest_face = f;
+            }
+         }
+      };
+
       for (const auto &f : p->getFaces()) {
          if ((p->Dirichlet && f->Dirichlet) || (p->Neumann && f->Neumann)) {
             if (_ALE_ON_LINEAR_ELEMENT_) {
@@ -199,15 +225,20 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                if (Norm(ret) >= Norm(X - pX))
                   ret = X - pX;
             } else {
-               // DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
-               for (const auto &vertices : f->dodecaPoints[0]->interpolate(t0t1, [&](networkPoint *p) -> Tddd { return RK_without_Ubuff(p); })) {
-                  X = Nearest(pX, vertices);
-                  if (Norm(ret) >= Norm(X - pX))
-                     ret = X - pX;
-               }
+               find_vector_using_pseudo_quad(f);
+               /* -------------------------------------------------------------------------- */
+               // Tdd t0_range = {0., 1.};
+               // std::function<Tddd(networkPoint *)> conversion = [&](networkPoint *p) -> Tddd { return RK_without_Ubuff(p); };
+               // auto [T01, min] = f->dodecaPoints[index]->findMinimum(conversion, [&](const Tddd &X) { return Norm(X - pX); }, t0_range);
+               // ret = f->dodecaPoints[index]->interpolate(T01, [&](networkPoint *p) { return RK_without_Ubuff(p); }) - pX;
             }
          }
       }
+      // if (closest_face != nullptr) {
+      //    reset();
+      //    t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 20);
+      //    find_vector_using_pseudo_quad(closest_face);
+      // }
 
       return ret;
    } else if (p->Neumann || p->CORNER) {
@@ -324,6 +355,9 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
    double Wtot = 0, W, height;
    const int max_sum_depth = 5;
 
+   bool find_neumann_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
+   bool find_dirichlet_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+
    for (const auto &f : p->getFaces()) {
       auto [p0, p1, p2] = f->getPoints(p);
       auto X0 = current_pX;
@@ -334,11 +368,14 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
 
       //! 重みの最大値と最小値を設定している
-      W = std::clamp(W, 4., 20.);
+      W = std::clamp(W, 4., 40.);
 
       //! よりディリクレ面の歪みを緩和するように重みを大きくする
-      if (f->Dirichlet)
-         W *= 1.25;
+      // if (f->Dirichlet)
+      //    W *= 10.;
+
+      // if ((find_neumann_face && find_dirichlet_face) && f->Neumann)
+      //    W *= 0;
 
       //! より喫水線の歪みを緩和するように重みを大きくする
       const int min_distance_from_CORNER = p0->minDepthFromCORNER + p1->minDepthFromCORNER + p2->minDepthFromCORNER;
@@ -353,12 +390,12 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       Xmid = (X2 + X1) * 0.5;
       vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
       height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
-      FusedMultiplyIncrement(W, height * vertical + Xmid, V);
+      FusedMultiplyIncrement(W, height * vertical + Xmid - current_pX, V);
    }
-   return V / Wtot - current_pX;
+   return V / Wtot;
 };
 
-void calculateVecToSurface(const Network &net, const int loop, const double coef = 0.1) {
+void calculateVecToSurface(const Network &net, const int loop, const double coef) {
    auto points = ToVector(net.getPoints());
    for (const auto &p : points) {
       p->vecToSurface_BUFFER.fill(0.);
@@ -366,6 +403,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
    }
 
    //! 要素を整えるためのベクトル
+   const double a = 0.9;
    auto addVectorTangentialShift = [&](const int k = 0) {
       if (coef == 0.) return;
       double scale = coef * ((k + 1.) / (double)(loop));
@@ -374,19 +412,19 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
 #pragma omp single nowait
       {
          auto X = RK_with_Ubuff(p);
-         auto V = DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
-         // auto VV = ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         auto V = a * DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
+         V += (1 - a) * ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); }, 2);
          // V = 0.9 * V + 0.1 * VV;
-         double C = 0, size = 0.;
-         for (const auto &f : p->getFaces()) {
-            auto [p0, p1, p2] = f->getPoints();
-            C += Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2));
-            size += 1.;
-         }
-         C /= size;
-         C /= 5;
-         if (Norm(V) > C)
-            V = C * Normalize(V);
+         // double C = 0, size = 0.;
+         // for (const auto &f : p->getFaces()) {
+         //    auto [p0, p1, p2] = f->getPoints();
+         //    C += Inradius(RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2));
+         //    size += 1.;
+         // }
+         // C /= size;
+         // C /= 5;
+         // if (Norm(V) > C)
+         //    V = C * Normalize(V);
 
          double flatness = p->getMinimalSolidAngle() / (2. * M_PI);
          if (flatness > 0.1)
@@ -446,7 +484,7 @@ void calculateCurrentVelocities(const Network &net) {
    }
 }
 
-void calculateCurrentUpdateVelocities(const Network &net, const int loop, const double coef = 0.1) {
+void calculateCurrentUpdateVelocities(const Network &net, const int loop, const double coef) {
 
    for (const auto &p : net.getPoints()) {
       if (!isFinite(p->U_update_BEM)) {

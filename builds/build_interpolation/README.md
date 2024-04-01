@@ -7,7 +7,8 @@
         - [🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]](#🪼-🪼-範囲-{t_0,t_1}-=-{[0,1],[0,1]}-->-[t0,t1]=[0,1],[0,1-t0])
         - [🪼 例：補間によって，頂点座標から平面を作成する](#🪼-例：補間によって，頂点座標から平面を作成する)
     - [⛵ 接続関係を利用した補間精度の向上（擬2次補間）](#⛵-接続関係を利用した補間精度の向上（擬2次補間）)
-    - [⛵ 接続関係を利用した補間精度の向上](#⛵-接続関係を利用した補間精度の向上)
+        - [🪼 複雑な3Dオブジェクトの形状補間](#🪼-複雑な3Dオブジェクトの形状補間)
+        - [🪼 複雑な3Dオブジェクトの形状補間](#🪼-複雑な3Dオブジェクトの形状補間)
     - [⛵ B-spline補間](#⛵-B-spline補間)
         - [🪼 実行方法](#🪼-実行方法)
         - [🪼 コード](#🪼-コード)
@@ -57,34 +58,131 @@ make
 ./TriangleParameterSubdivision
 ```
 
-* `SubdivideTriangleIntoTriangles` で三角形を分割
+* `SymmetricSubdivisionOfTriangle_00_10_01`で三角形を分割
 * `SubdivideSquareIntoTriangles` で矩形領域を三角形に分割
+* `SymmetricSubdivisionOfTriangle`は`SymmetricSubdivisionOfTriangle_00_10_01`を使って，任意頂点の三角形を分割する
 
 `plot_parametric_subdivision.nb` で描画
 
-<img src="output_TriangleParameterSubdivision.gif" width="400">
+| $(\xi _0,\xi _1)$, Range: $(\xi _0,\xi _1)\in[0,1]\times[0,1-\xi _0]$ | $(\xi _0,\xi _1)$, Range: $(\xi _0,\xi _1)\in[0,1]\times[0,1]$ | $(\xi _0,\xi _1(1-\xi _0))$, Range:$(\xi _0,\xi _1)\in[0,1]\times[0,1]$|
+|:---:|:---:|:---:|
+| <img src="output_TriangleParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300">
+|
 
-<img src="output_SquareParameterSubdivision.gif" width="400">
 
-`ModTriShape`を使うと，(t0,t1)=([0,1],[0,1])領域を(xi0,xi1)=([0,1],[0,1-t0])の三角形に変換できる．
+$`(\xi _0,\xi _1)=(\xi _0,\eta(1-\xi _0))`$とすると，
+$`\eta0`$のとき，$(\xi _0,\xi _1)=(\xi _0,0)$，また
+$`\eta)=1`$のとき，$(\xi _0,\xi _1)=(\xi _0,1-\xi _0)$
+となり，
+$`(\xi _0,\eta)\in[0,1]\times[0,1]`$は
+$`(\xi _0,\xi _1)=(\xi _0,\eta(1-\xi _0))\in[0,1]\times[0,1-\xi _0]`$に写像される．
 
-<img src="output_SquareParameterSubdivision_into_Triangle.gif" width="400">
+このことは，形状関数を使った積分の際に利用できる．
 
 [./TriangleParameterSubdivision.cpp#L11](./TriangleParameterSubdivision.cpp#L11)
 
 ---
 ### 🪼 🪼 三角形形状関数  
 
-線形の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+線形の三角形形状関数は，$`\xi _2 = 1-\xi _0-\xi _1`$として，
 
 ```math
-(N _0, N _1, N _2) = (t _0, t _1, t _2)
+{\bf N} _{\rm l}({\boldsymbol \xi})=
+\left(
+\begin{array}{c}
+\xi _0\\
+\xi _1\\
+\xi _2
+\end{array}
+\right)
 ```
 
-2次の三角形形状関数は，$`t _2 = 1-t _0-t _1`$として，
+2次の三角形形状関数は，$`\xi _2 = 1-\xi _0-\xi _1`$として，
 
 ```math
-(N _0, N _1, N _2, N _3, N _4, N _5) = (t _0(2t _0-1), t _1(2t _1-1), t _2(2t _2-1), 4t _0t _1, 4t _1t _2, 4t _2t _0)
+{\bf N} _{\rm q}({\boldsymbol \xi})=
+\left(
+\begin{array}{c}
+\xi _0 (2  \xi _0 - 1)\\
+\xi _1 (2 \xi _1 - 1)\\
+\xi _2 (2 \xi _2 - 1)\\
+4 \xi _0 \xi _1\\
+4 \xi _1 \xi _2\\
+4 \xi _2 \xi _0
+\end{array}
+\right)
+```
+
+<img src="triangle_vertcies_order_for_shape_functions.png" width="400">
+
+この形状関数の使い方は，節点上の変数が$`(v _0,v _1,v _2,v _4,v _5,v _6)^{\intercal}`$の場合，
+次のようにして，三角形上の値を補間できる．
+
+```math
+v({\boldsymbol \xi}) =
+\left(
+\begin{array}{c}
+\xi _0 (2  \xi _0 - 1)\\
+\xi _1 (2 \xi _1 - 1)\\
+\xi _2 (2 \xi _2 - 1)\\
+4 \xi _0 \xi _1\\
+4 \xi _1 \xi _2\\
+4 \xi _2 \xi _0
+\end{array}
+\right)^{\intercal}
+\left(
+\begin{array}{c}
+v _0\\
+v _1\\
+v _2\\
+v _3\\
+v _4\\
+v _5
+\end{array}
+\right)
+=
+\left(
+\begin{array}{c}
+v _0\\
+v _1\\
+v _2\\
+v _3\\
+v _4\\
+v _5
+\end{array}
+\right)^{\intercal}
+\left(
+\begin{array}{c}
+\xi _0 (2  \xi _0 - 1)\\
+\xi _1 (2 \xi _1 - 1)\\
+\xi _2 (2 \xi _2 - 1)\\
+4 \xi _0 \xi _1\\
+4 \xi _1 \xi _2\\
+4 \xi _2 \xi _0
+\end{array}
+\right)
+```
+
+$v _0$がベクトルであっても，この計算は可能である．
+
+Mathematicaを使った上の計算を考えてみる．Mathematicaのルールとして，
+
+- Mathematicaでは，ベクトルの転置はない
+- Row majorで行列を表現する
+- `Dot[A,B]`の計算は，`B`がベクトルの場合，（Mathematicaにはベクトルの転置はないが）`B`が転置されたかのような計算結果を返す
+
+ということを考えると，上の計算は次のようになる．
+${\bf N}^{\intercal}V$の転置はいらなず，`Dot[N, V]`で計算できる．
+また，$V^{\intercal}{\bf N}$の計算は，`Dot[V, N]`でそのまま計算できる．
+
+```Mathematica
+In[1]:= V = {{a, b}, {c, d}, {e, f}};
+Dot[{N0, N1, N2}, V]　(*第１引数に，転置が要らないことに注意．既に転置されていると考える．*)
+Dot[Transpose[V], {N0, N1, N2}]　(*この順番なら一般的な方法でOK*)
+
+Out[2]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
+
+Out[3]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
 ```
 
 ちなみに，節点3と節点5の線上のパラメタは，$`t _0 = 1/2`$である．
@@ -95,33 +193,21 @@ make
 ```
 
 となり，この線上では，節点0の影響を受けず，補間値はそれ以外の（内部）の情報からのみ決まる．
-[../../include/basic_arithmetic_array_operations.hpp#L1110](../../include/basic_arithmetic_array_operations.hpp#L1110)
+[../../include/basic_arithmetic_array_operations.hpp#L1135](../../include/basic_arithmetic_array_operations.hpp#L1135)
 
-
-| 線形補間 | 2次補間 |
-| --- | --- |
-| <img src="triangle_shape_function_linear.png" width="400"> | <img src="triangle_shape_function_quadratic.png" width="300"> |
 
 ### 🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]  
 
-普通の三角形形状関数は，$`{\mathbf N}=(N _0,N _1,N _2) = (t _0,t _1,1-t _0-t _1)`$．
-これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X _0},{\mathbf X _1},{\mathbf X _2}\})`$は，$`t _0,t _1=[0,1]`$で平行四辺形を作る．
-$`t _0,t _1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
-そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
-変更した形状関数は，`ModTriShape`にあるように，
+前で示した通り，$`(\xi _0,\xi _1)=(\xi _0,\eta(1-\xi _0))`$と置き換えることで，矩形領域を三角形領域に変換できる．
 
-3点の場合は，
+これを利用して，形状関数の引数を$`N(\xi _0,\eta(1-\xi _0))`$として与え，
+$`(\xi _0,\eta)`$をそれぞれ$`[0,1]`$の範囲で変化させることで，
+三角形の形状を補間できる．
 
-```math
-(N _0,N _1,N _2) = (t _0, t _1(1 - t _0),(t _0-1)(t _1-1))
-```
-
-6点の場合は，
-
-```math
-(N _0,N _1,N _2,N _3,N _4,N _5) = (t _0(2t _0-1), t _1(2t _1-1), (1-t _0-t _1)(2(1-t _0-t _1)-1), 4t _0t _1, 4t _1(1-t _0-t _1), 4t _0(1-t _0-t _1))
-```
-[../../include/basic_arithmetic_array_operations.hpp#L1245](../../include/basic_arithmetic_array_operations.hpp#L1245)
+このプログムでは，
+`N(x,y)=TriShape<3>(x,y)`と定義し，
+`N(x,y(1-x))=ModTriShape<3>(x,y)`と定義している．
+[../../include/basic_arithmetic_array_operations.hpp#L1364](../../include/basic_arithmetic_array_operations.hpp#L1364)
 
 
 ### 🪼 例：補間によって，頂点座標から平面を作成する 
@@ -150,10 +236,168 @@ make
 2次補間を利用する，要素は，2次要素と呼ばれ，
 一般的には，三角形の頂点に加え，辺上にもサンプル点を配置する．
 
+<img src="pseudo_quad.png" width="700">
+
+
+ここで紹介する擬2次補間要素は，辺上に存在しない節点を周辺の要素を使って近似し，その値を使って三角形上に2次要素を作る方法である．
+擬2次補間は，線形要素と同じメッシュを使ったとしても節点数を増やす必要はないが，
+メッシュの接続関係を線形補間よりも多く考慮しており，また高次の補間であるため，精度の向上が期待できる．
+
+<!-- この方法の実装には，要素同士の接続情報を計算中に効率的に取得する必要がある． -->
+
+辺上の節点の補間は，2次補間を使って行う．
+この辺に隣接する三角形を中央にもつ2次補間は２通り考えられ，この２通りの補間の平均値を辺上の節点の値とする．
+一度，辺上の節点の値が決まれば，擬2次補間要素は一般的な2次補間と全く同じである．
+
+ただし，次の章で示すが，擬2次補間要素を方程式の離散化に適用するためには，
+一方的に値を補間する機能だけでなく，補間された値がどの節点の値の線形結合で決まるかが取得できる機能もプログラムに実装する必要がある．
+
+擬2次補間は，よく知られている2次補間の形状関数を基本としている．
+
+\begin{equation}
+\begin{aligned}
+v({\boldsymbol \xi}) =
+N({\xi_0,\xi_1})^{\intercal}
+V\end{aligned}
+,\quad
+N({\xi_0,\xi_1})=\left(
+\begin{array}{c}
+\xi _0 (2 \xi _0 - 1)\\
+\xi _1 (2 \xi _1 - 1)\\
+\xi _2 (2 \xi _2 - 1)\\
+4 \xi _0 \xi _1\\
+4 \xi _1 \xi _2\\
+4 \xi _2 \xi _0
+\end{array}
+\right),\quad
+V=\left(
+\begin{array}{c}
+v_0\\v_1\\v_2\\v_3\\v_4\\v_5
+\end{array}
+\right)
+\label{eq:general_usage_of_shape_function}
+\end{equation}
+
+Fig. \ref{fig:pseudo_quad_schematic}に示すように，
+この形状関数の係数を，対応する節点の値に掛けて足し合わせることで，
+三角形要素の内部の任意の点における値を補間することができる．
+
+\begin{figure}[h]
+<!-- 背景を白に -->
+\includegraphics[width=0.6\textwidth]{pseudo_quad_white.png}
+\caption{擬2次補間}
+\label{fig:pseudo_quad_schematic}
+\end{figure}
+
+ただし，辺上の節点$3,4,5$は設定していないので，
+隣接する三角形の頂点の値を使った2次補間の平均で近似する：
+
+\begin{equation}
+\begin{aligned}
+v({\boldsymbol \xi}) =
+N({\xi_0,\xi_1})^{\intercal}
+\left(
+\begin{array}{c}
+v_0\\v_1\\v_2\\
+\frac{1}{2}\left({N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}01in} + N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}01out}}\right)\\
+\frac{1}{2}\left({N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}12in} + N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}12out}}\right)\\
+\frac{1}{2}\left({N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}20in} + N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}20out}}\right)
+\end{array}
+\right)
+\end{aligned}
+\end{equation}
+
+この式を\eqref{eq:general_usage_of_shape_function}の形に書き直すために．
+次のような関係を使う：
+
+\begin{equation}
+\begin{aligned}
+N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}12in} &=N_{\rm q}\left(\frac{1}{4},\frac{1}{2}\right) V_{\rm {\ell}01in},\\
+N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}20in} &=N_{\rm q}\left(\frac{1}{2},\frac{1}{4}\right) V_{\rm {\ell}01in},\\
+N({\xi_0,\xi_1})^{\intercal}
+\left(
+\begin{array}{c}
+v_0\\v_1\\v_2\\0\\0\\0
+\end{array}
+\right)
+&=
+\left(
+\begin{array}{c}
+0\\0\\0\\\xi_2 (2\xi_2 - 1)\\\xi_0 (2\xi_0 - 1)\\\xi_1 (2\xi_1 - 1)
+\end{array}
+\right)
+V_{\rm {\ell}01in}
+\end{aligned}
+\end{equation}
+
+これを使って，$V _{\rm {\ell}12in}$と$V _{\rm {\ell}21in}$の代わりに，$V _{\rm {\ell}01in}$を使った式に置き換える．
+
+\begin{equation}
+\begin{aligned}
+{\bf x}({\boldsymbol \xi})&=
+\left(
+\left(\begin{array}{c}
+0\\0\\0\\\xi_2 (2\xi_2 - 1)\\\xi_0 (2\xi_0 - 1)\\\xi_1 (2\xi_1 - 1)\\
+\end{array}
+\right)
++2 \xi_0 \xi_1 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)
++2 \xi_1 \xi_2 N_{\rm q}\left(\frac{1}{2},\frac{1}{4}\right)
++2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{2}\right)
+\right)V_{\rm {\ell}01in}\\
+&+2 \xi_0 \xi_1 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}01out}\\
+&+2 \xi_1 \xi_2 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}12out}\\
+&+2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}21out}
+\end{aligned}
+\label{eq:pseudo_quadratic_interpolation}
+\end{equation}
+
+このように，\eqref{eq:general_usage_of_shape_function}の形の式を４つ足し合わせることで，擬2次補間を実装することができる．
+
+ただし，辺が角を成している場合，この補間では，角にはならず，滑らかに補間されてしまう．
+そのため，角を成している辺上の節点は，線形補間を使って近似することにする．つまり，辺が繋ぐ２節点の平均で近似する．
+例えば，辺01が角となっている場合，\eqref{eq:pseudo_quadratic_interpolation}は次のように書き換える．
+
+\begin{equation}
+\begin{aligned}
+{\bf x}({\boldsymbol \xi})&=
+\left(
+\left(\begin{array}{c}
+0\\0\\0\\\xi_2 (2\xi_2 - 1)\\\xi_0 (2\xi_0 - 1)\\\xi_1 (2\xi_1 - 1)\\
+\end{array}
+\right)
++
+2\xi_0\xi_1
+\left(\begin{array}{c}
+0\\0\\0\\0\\1\\1
+\end{array}
+\right)
++2 \xi_1 \xi_2 N_{\rm q}\left(\frac{1}{2},\frac{1}{4}\right)
++2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{2}\right)
+\right)V_{\rm {\ell}01in}\\
+&+2 \xi_1 \xi_2 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}12out}\\
+&+2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}21out}
+\end{aligned}
+\end{equation}
+
+0,1節点は，$V _{\rm {\ell}01in}$における4,5節点であるため，$2\xi _0\xi _1(0,0,0,1,1)^{\intercal}$の項に
+
 [./TriShapeExample_improved_test1.cpp#L1](./TriShapeExample_improved_test1.cpp#L1)
 
 ---
-## ⛵ 接続関係を利用した補間精度の向上 
+### 🪼 複雑な3Dオブジェクトの形状補間 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShapeExample_find_nearest.cpp
+make
+./TriShapeExample_find_nearest
+```
+
+[./TriShapeExample_find_nearest.cpp#L1](./TriShapeExample_find_nearest.cpp#L1)
+
+### 🪼 複雑な3Dオブジェクトの形状補間 
+
+この例では，`obj`ファイルを読み込んで，その面を補間する．
 
 ```shell
 sh clean
@@ -161,6 +405,10 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=TriShapeExample_improved_test
 make
 ./TriShapeExample_improved_test2
 ```
+
+<img src="TriShapeExample_improved_test2_torrus0d1remesh_linear0.png" width="700">
+
+<img src="TriShapeExample_improved_test2_torrus0d1remesh_linear0_highreso.png" width="700">
 
 [./TriShapeExample_improved_test2.cpp#L1](./TriShapeExample_improved_test2.cpp#L1)
 

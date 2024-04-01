@@ -587,12 +587,16 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 };
 
 double getPhin(const networkPoint *p, const networkFace *f) {
-   // auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
-   // if (iter != p->phinOnFace.end())
-   //    return iter->second;
-   // else
-   //    return p->phinOnFace.at(nullptr);
-   return p->phinOnFace.at(std::get<1>(pf2ID(p, f)));
+   auto iter = p->phinOnFace.find(std::get<1>(pf2ID(p, f)));
+   if (iter != p->phinOnFace.end())
+      return iter->second;
+   else {
+      if (p->phinOnFace.find(nullptr) != p->phinOnFace.end())
+         return p->phinOnFace.at(nullptr);
+      else
+         return std::get<1>(p->phiphin);
+   }
+   // return p->phinOnFace.at(std::get<1>(pf2ID(p, f)));
 };
 
 Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
@@ -601,13 +605,23 @@ Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
 
    auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
 
-   auto ToPhin = [&](const networkPoint *p) -> double { return std::get<1>(p->phiphin); };
+   // auto getPhin = [&]() -> double {
+   //    auto F = std::get<1>(pf2ID(p, f));
+   //    auto iter = p->phinOnFace.find(const_cast<networkFace *>(F));
+   //    if (iter != p->phinOnFace.end())
+   //       return iter->second;
+   //    else
+   //       return std::get<1>(p->phiphin);
+
+   //    // return getPhin(p, f);
+   //    // return std::get<1>(p->phiphin);
+   // };
 
    auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
 
    const double phi_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
    const double phi_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
-   const double phi_n = dodecapoint.interpolate(1., 0., ToPhin);          //! at 4
+   const double phi_n = getPhin(p, f);
 
    const Tddd dX_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToX);  //! at 4
    const Tddd dX_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToX);  //! at 4
@@ -689,6 +703,11 @@ Tddd gradPhi(const networkPoint *const p) {
    Tddd u;
    V_Tddd V;
    V_d W;
+   bool any_pseudo_quadratic = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->isPseudoQuadraticElement; });
+   double max_area = 0.;
+   for (const auto &f : p->getFaces())
+      if (f->area > max_area)
+         max_area = f->area;
    for (const auto &f : p->getFaces()) {
 
       if (f->isPseudoQuadraticElement)
@@ -700,7 +719,11 @@ Tddd gradPhi(const networkPoint *const p) {
 #if defined(use_angle_weigted_normal)
       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
 #elif defined(use_area_weigted_normal)
-      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+      // if (f->isPseudoQuadraticElement)
+      //    W.push_back(max_area * (f->Dirichlet ? 1E+3 : 1.));
+      // else
+      //    W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+      W.push_back(f->area);
 #else
       W.push_back(f->Dirichlet ? 10 : 1.);
 #endif

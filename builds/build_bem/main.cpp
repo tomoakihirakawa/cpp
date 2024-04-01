@@ -505,7 +505,7 @@ int main(int argc, char **argv) {
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             for (auto water : FluidObject) {
-               calculateCurrentUpdateVelocities(*water, 30, RK_step == 4 ? 0.5 : 0.);
+               calculateCurrentUpdateVelocities(*water, 30, RK_step == 4);
                // calculateCurrentUpdateVelocities(*water, 30, (RK_step == 4 && time_step % ALE_period_in_step == 0) ? 0.1 : 0.);
                // calculateCurrentUpdateVelocities(*water, 20);
             }
@@ -852,7 +852,7 @@ int main(int argc, char **argv) {
          {
             auto dirichletsurface = new Network();
             std::filesystem::path filename_dir_surface = "DirichletSurface" + std::to_string(time_step) + ".vtu";
-            std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SubdivideTriangleIntoTriangles(4);
+            std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SymmetricSubdivisionOfTriangle_00_10_01(4);
             for (const auto &water : FluidObject) {
                for (const auto &f : water->getFaces()) {
                   if (f->Dirichlet) {

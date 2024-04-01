@@ -5126,7 +5126,7 @@ N * t0*(1-t0-t1)は，p4の重みであるが，p4は存在しないので，こ
 N * t1*(1-t0-t1)は，p5の重みであるが，p5は存在しないので，これはさらに分配され，f_l2とfの節点に分配される．
 
 */
-
+#include "minMaxOfFunctions.hpp"
 struct DodecaPoints {
 
    networkFace *f;  // given center face
@@ -5177,6 +5177,210 @@ struct DodecaPoints {
    N * t0*(1-t0-t1)は，p4の重みであるが，p4は存在しないので，これはさらに分配され，f_l1とfの節点に分配される．
    N * t1*(1-t0-t1)は，p5の重みであるが，p5は存在しないので，これはさらに分配され，f_l2とfの節点に分配される．
    */
+
+   /* -------------------------------------------------------------------------- */
+
+   // template <typename T>
+   // std::tuple<Tdd, T> findMinimumCommon(const std::function<T(networkPoint *)> &conversion) {
+
+   //    Tdd first_guess = {0.25, 0.25};
+   //    T first_point = this->interpolate(first_guess, conversion), tmp;
+
+   //    if (first_point > (tmp = this->interpolate(0., 1., conversion))) {
+   //       first_guess = {0., 1.};
+   //       first_point = tmp;
+   //    }
+   //    if (first_point > (tmp = this->interpolate(1., 0., conversion))) {
+   //       first_guess = {1., 0.};
+   //       first_point = tmp;
+   //    }
+   //    if (first_point > (tmp = this->interpolate(0., 0., conversion))) {
+   //       first_guess = {0., 0.};
+   //       first_point = tmp;
+   //    }
+
+   //    const Tdd dt0t1 = {0., 1E-5};
+
+   //    BroydenMethod<Tdd> BM(first_guess, first_guess + dt0t1);
+
+   //    Tddd F, dFdt0, dFdt1;
+   //    auto grad_FF = [&](const double t0, const double t1) -> Tdd {
+   //       F = this->interpolate(t0, t1, conversion);
+   //       dFdt0 = this->D_interpolate<1, 0>(t0, t1, conversion);
+   //       dFdt1 = this->D_interpolate<0, 1>(t0, t1, conversion);
+   //       return Tdd{Dot(dFdt0, F), Dot(dFdt1, F)};
+   //    };
+
+   //    for (auto i = 0; i < 50; i++) {
+   //       BM.updateGoodBroyden(grad_FF(BM.X[0], BM.X[1]), grad_FF(BM.X[0] - BM.dX[0], BM.X[1] - BM.dX[1]));
+   //       BM.X[0] = std::clamp(BM.X[0], 0., 1.);
+   //       BM.X[1] = std::clamp(BM.X[1], 0., 1. - BM.X[0]);
+   //       if (Norm(BM.dX) < 1e-13 && i > 3) {
+   //          std::cout << "iteration : " << i << "\n";
+   //          break;
+   //       }
+   //    }
+   //    return {BM.X, this->interpolate(BM.X[0], BM.X[1], conversion)};
+   // };
+
+   /* -------------------------------------------------------------------------- */
+
+   /*
+
+   `findMininum`は，節点のデータから補間された関数上での最小値を求める関数である．
+   なので，滑らかな関数として補間できない場合は，この関数は使えない．
+
+   節点の空間座標を補間した表面上で，ある別の関数の最小値を探したい場合，
+   対象となる'別の関数'の微分も用意しておく必要がある．
+
+   */
+
+   // #define USE_BROYDEN_METHOD_FOR_FIND_MINIMUM
+   // #define USE_NEWTON_METHOD_FOR_FIND_MINIMUM
+#define USE_SUBDIVISION_METHOD_FOR_FIND_MINIMUM
+
+   template <std::size_t N>
+   std::tuple<Tdd, std::array<double, N>> findMinimum(const std::function<std::array<double, N>(networkPoint *)> &conversion,
+                                                      const auto &minimizing_function,
+                                                      const std::array<double, 2> t0_range = {0., 1.}) {
+
+      Tdd first_guess = {0.25, 0.25};
+      std::array<double, N> first_point = this->interpolate(first_guess, conversion), tmp;
+
+      // if (first_point > (tmp = this->interpolate(0., 1., conversion))) {
+      //    first_guess = {0., 1.};
+      //    first_point = tmp;
+      // }
+      // if (first_point > (tmp = this->interpolate(1., 0., conversion))) {
+      //    first_guess = {1., 0.};
+      //    first_point = tmp;
+      // }
+      // if (first_point > (tmp = this->interpolate(0., 0., conversion))) {
+      //    first_guess = {0., 0.};
+      //    first_point = tmp;
+      // }
+
+      std::array<double, N> F, dFdt0, dFdt1, dFdt0t0, dFdt0t1, dFdt1t1;
+
+#ifdef USE_BROYDEN_METHOD_FOR_FIND_MINIMUM
+      const Tdd dt0t1 = {0., 1E-10};
+      auto grad_FF = [&](const double t0, const double t1) -> Tdd {
+         F = this->interpolate(t0, t1, conversion);
+         dFdt0 = this->D_interpolate<1, 0>(t0, t1, conversion);
+         dFdt1 = this->D_interpolate<0, 1>(t0, t1, conversion);
+         return Tdd{Dot(dFdt0, F), Dot(dFdt1, F)};
+      };
+      BroydenMethod<Tdd> BM(first_guess, first_guess + dt0t1);
+      for (auto i = 0; i < 50; i++) {
+         BM.updateGoodBroyden(grad_FF(BM.X[0], BM.X[1]), grad_FF(BM.X[0] - BM.dX[0], BM.X[1] - BM.dX[1]));
+         BM.X[0] = std::clamp(BM.X[0], t0_range[0], t0_range[1]);
+         BM.X[1] = std::clamp(BM.X[1], 0., 1. - BM.X[0]);
+         if (Norm(BM.dX) < 1e-13 && i > 3) {
+            // std::cout << "iteration : " << i << "\n";
+            break;
+         }
+      }
+      return {BM.X, this->interpolate(BM.X[0], BM.X[1], conversion)};
+#elif defined(USE_NEWTON_METHOD_FOR_FIND_MINIMUM)
+
+      NewtonRaphson<Tdd> NR(first_guess);
+      for (auto i = 0; i < 50; i++) {
+         auto [t0, t1] = NR.X;
+
+         F = this->interpolate(t0, t1, conversion);
+         dFdt0 = this->D_interpolate<1, 0>(t0, t1, conversion);
+         dFdt1 = this->D_interpolate<0, 1>(t0, t1, conversion);
+         Tdd grad = {Dot(dFdt0, F), Dot(dFdt1, F)};
+
+         dFdt0t1 = this->D_interpolate<1, 1>(t0, t1, conversion);
+         dFdt0t0 = this->D_interpolate<2, 0>(t0, t1, conversion);
+         dFdt1t1 = this->D_interpolate<0, 2>(t0, t1, conversion);
+         T2Tdd Hessian = {Tdd{Dot(dFdt0t0, F) + Dot(dFdt0, dFdt0), Dot(dFdt0t1, F) + Dot(dFdt1, dFdt0)},
+                          Tdd{Dot(dFdt0t1, F) + Dot(dFdt0, dFdt1), Dot(dFdt1t1, F) + Dot(dFdt1, dFdt1)}};
+
+         NR.update(grad, Hessian);
+
+         NR.X[0] = std::clamp(NR.X[0], t0_range[0], t0_range[1]);
+         NR.X[1] = std::clamp(NR.X[1], 0., 1. - NR.X[0]);
+         if (Norm(NR.dX) < 1e-13 && i > 2)
+            // std::cout << "iteration : " << i << "\n";
+            break;
+      }
+      return {NR.X, this->interpolate(NR.X[0], NR.X[1], conversion)};
+
+         /* -------------------------------------------------------------------------- */
+#elif defined(USE_SUBDIVISION_METHOD_FOR_FIND_MINIMUM)
+      double min = 1E10;
+      Tdd t0t1_optimum = {0.25, 0.25};
+      double t0_min = 0;
+      double t0_max = 1;
+      double t1_min = 0;
+      double t1_max = 1;
+      double div = 3, TMP;
+      auto samples = convertions(conversion);
+      double t0, t1;
+      int count = 0;
+      double eps = 1E-10;
+      for (auto i = 0; i < 10; i++) {
+         double dt0 = (t0_max - t0_min) / div;
+         double dt1 = (t1_max - t1_min) / div;
+         for (int j = 0; j <= div; j++) {
+            t0 = t0_min + j * dt0;
+            for (int k = 0; k <= div; k++) {  // Adjust based on your constraints
+               t1 = t1_min + k * dt1;
+               if (t0 + t1 > 1) break;
+               TMP = minimizing_function(this->Dot4(N6_new(t0, t1), samples));
+               if (min > TMP) {
+                  min = TMP;
+                  t0t1_optimum = {t0, t1};
+               }
+            }
+         }
+
+         t0_min = std::clamp(t0t1_optimum[0] - 0.5 * dt0, t0_range[0], t0_range[1] - eps);
+         t0_max = std::clamp(t0t1_optimum[0] + 0.5 * dt0, t0_min, t0_range[1]);
+         t1_min = std::clamp(t0t1_optimum[1] - 0.5 * dt1, 0., 1. - eps);
+         t1_max = std::clamp(t0t1_optimum[1] + 0.5 * dt1, t1_min, 1.);
+      }
+
+      // std::cout << "count : " << count << "\n";
+      return {t0t1_optimum, this->interpolate(t0t1_optimum[0], t0t1_optimum[1], conversion)};
+
+#endif
+   };
+
+   std::tuple<Tdd, Tddd> Nearest(const Tddd &A, const Tdd &t0_range = {0., 1.}) {
+
+      Tdd first_guess = {0.25, 0.25};
+      Tddd first_point = this->X(first_guess), tmp;
+      Tddd F, dFdt0, dFdt1, dFdt0t0, dFdt0t1, dFdt1t1;
+
+      NewtonRaphson<Tdd> NR(first_guess);
+      for (auto i = 0; i < 50; i++) {
+         auto [t0, t1] = NR.X;
+         F = this->X(t0, t1) - A;
+         dFdt0 = this->D_X<1, 0>(t0, t1);
+         dFdt1 = this->D_X<0, 1>(t0, t1);
+         Tdd grad = {Dot(dFdt0, F), Dot(dFdt1, F)};
+
+         dFdt0t1 = this->D_X<1, 1>(t0, t1);
+         dFdt0t0 = this->D_X<2, 0>(t0, t1);
+         dFdt1t1 = this->D_X<0, 2>(t0, t1);
+         T2Tdd Hessian = {Tdd{Dot(dFdt0t0, F) + Dot(dFdt0, dFdt0), Dot(dFdt0t1, F) + Dot(dFdt1, dFdt0)},
+                          Tdd{Dot(dFdt0t1, F) + Dot(dFdt0, dFdt1), Dot(dFdt1t1, F) + Dot(dFdt1, dFdt1)}};
+
+         NR.update(grad, Hessian);
+
+         NR.X[0] = std::clamp(NR.X[0], t0_range[0], t0_range[1]);
+         NR.X[1] = std::clamp(NR.X[1], 0., 1. - NR.X[0]);
+         if (Norm(NR.dX) < 1e-13 && i > 2)
+            // std::cout << "iteration : " << i << "\n";
+            break;
+      }
+      return {NR.X, this->X(NR.X[0], NR.X[1])};
+   };
+
+   /* -------------------------------------------------------------------------- */
 
    std::array<T6d, 4> N6_new(const double t0, const double t1) const {
       // auto N3 = TriShape<3>(t0, t1);
@@ -5229,7 +5433,7 @@ struct DodecaPoints {
          Nc += 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint.available) * N6_interface[3];
          Nl0 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l0.available) * N6_interface[3];
       } else {
-         Nc += 0.5 * T6d{0., 0., 0., 0., 1., 1.} * N6_interface[3];
+         Nc += T6d{0., 0., 0., 0., 0.5, 0.5} * N6_interface[3];
          Nl0.fill(0.);
       }
 
@@ -5237,7 +5441,7 @@ struct DodecaPoints {
          Nc += 0.5 * TriShape<6>(0.5, 0.25, this->quadpoint.available) * N6_interface[4];
          Nl1 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l1.available) * N6_interface[4];
       } else {
-         Nc += 0.5 * T6d{0., 0., 0., 1., 0., 1.} * N6_interface[4];
+         Nc += T6d{0., 0., 0., 0.5, 0., 0.5} * N6_interface[4];
          Nl1.fill(0.);
       }
 
@@ -5245,7 +5449,7 @@ struct DodecaPoints {
          Nc += 0.5 * TriShape<6>(0.25, 0.5, this->quadpoint.available) * N6_interface[5];
          Nl2 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l2.available) * N6_interface[5];
       } else {
-         Nc += 0.5 * T6d{0., 0., 0., 1., 1., 0.} * N6_interface[5];
+         Nc += T6d{0., 0., 0., 0.5, 0.5, 0.} * N6_interface[5];
          Nl2.fill(0.);
       }
       return {Nc, Nl0, Nl1, Nl2};

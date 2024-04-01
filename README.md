@@ -7,7 +7,6 @@
     - [⛵ ラグランジュ補間](./builds/build_interpolation/README.md#⛵-ラグランジュ補間)
     - [⛵ 三角形を使った補間](./builds/build_interpolation/README.md#⛵-三角形を使った補間)
     - [⛵ 接続関係を利用した補間精度の向上（擬2次補間）](./builds/build_interpolation/README.md#⛵-接続関係を利用した補間精度の向上（擬2次補間）)
-    - [⛵ 接続関係を利用した補間精度の向上](./builds/build_interpolation/README.md#⛵-接続関係を利用した補間精度の向上)
     - [⛵ B-spline補間](./builds/build_interpolation/README.md#⛵-B-spline補間)
     - [⛵ ⛵ 放射関数補間](./builds/build_interpolation/README.md#⛵-⛵-放射関数補間)
 ## [build_cable](./builds/build_cable/README.md)

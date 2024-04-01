@@ -2,10 +2,6 @@
 
 \insert{interpolation:TriShape}
 
-| 線形補間 | 2次補間 |
-| --- | --- |
-| <img src="triangle_shape_function_linear.png" width="400"> | <img src="triangle_shape_function_quadratic.png" width="300"> |
-
 \insert{interpolation:ModTriShape}
 
 ### 例：補間によって，頂点座標から平面を作成する
