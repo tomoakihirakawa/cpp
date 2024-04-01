@@ -27,11 +27,18 @@ make
 
 `plot_parametric_subdivision.nb` で描画
 
-| $`(\xi_0,\xi_1)`$, Range: $`(\xi_0,\xi_1)\in[0,1]\times[0,1-\xi_0]`$ | $`(\xi_0,\xi_1)`$, Range: $`(\xi_0,\xi_1)\in[0,1]\times[0,1]`$ | $`(\xi_0,\xi_1(1-\xi_0))`$, Range:$`(\xi_0,\xi_1)\in[0,1]\times[0,1]`$ |
-
-| | | |
-|:---:|:---:|:---:|
-| <img src="output_TriangleParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"> |
+<table border="1" style="width:100%; text-align:center;">
+  <tr>
+    <th>$(\xi_0,\xi_1)$, Range: $(\xi_0,\xi_1)\in[0,1]\times[0,1-\xi_0]$</th>
+    <th>$(\xi_0,\xi_1)$, Range: $(\xi_0,\xi_1)\in[0,1]\times[0,1]$</th>
+    <th>$(\xi_0,\xi_1(1-\xi_0))$, Range:$(\xi_0,\xi_1)\in[0,1]\times[0,1]$</th>
+  </tr>
+  <tr>
+    <td><img src="output_TriangleParameterSubdivision.gif" width="300"></td>
+    <td><img src="output_SquareParameterSubdivision.gif" width="300"></td>
+    <td><img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"></td>
+  </tr>
+</table>
 
 
 $`(\xi_0,\xi_1)=(\xi_0,\eta(1-\xi_0))`$とすると，
