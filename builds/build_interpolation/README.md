@@ -281,12 +281,7 @@ Fig. \ref{fig:pseudo_quad_schematic}に示すように，
 この形状関数の係数を，対応する節点の値に掛けて足し合わせることで，
 三角形要素の内部の任意の点における値を補間することができる．
 
-\begin{figure}[h]
-<!-- 背景を白に -->
-\includegraphics[width=0.6\textwidth]{pseudo_quad_white.png}
-\caption{擬2次補間}
-\label{fig:pseudo_quad_schematic}
-\end{figure}
+<img src="pseudo_quad_white.png" width="700">
 
 ただし，辺上の節点$3,4,5$は設定していないので，
 隣接する三角形の頂点の値を使った2次補間の平均で近似する：
