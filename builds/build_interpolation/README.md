@@ -66,8 +66,7 @@ make
 
 | $(\xi _0,\xi _1)$, Range: $(\xi _0,\xi _1)\in[0,1]\times[0,1-\xi _0]$ | $(\xi _0,\xi _1)$, Range: $(\xi _0,\xi _1)\in[0,1]\times[0,1]$ | $(\xi _0,\xi _1(1-\xi _0))$, Range:$(\xi _0,\xi _1)\in[0,1]\times[0,1]$|
 |:---:|:---:|:---:|
-| <img src="output_TriangleParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300">
-|
+| <img src="output_TriangleParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"> |
 
 
 $`(\xi _0,\xi _1)=(\xi _0,\eta(1-\xi _0))`$とすると，
