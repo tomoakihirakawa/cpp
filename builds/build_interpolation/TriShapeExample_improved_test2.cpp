@@ -1,6 +1,8 @@
 /*DOC_EXTRACT 1_3_1_interpolation
 
-## 接続関係を利用した補間精度の向上
+### 複雑な3Dオブジェクトの形状補間
+
+この例では，`obj`ファイルを読み込んで，その面を補間する．
 
 ```shell
 sh clean
@@ -9,10 +11,15 @@ make
 ./TriShapeExample_improved_test2
 ```
 
+<img src="TriShapeExample_improved_test2_torrus0d1remesh_linear0.png" width="700">
+
+<img src="TriShapeExample_improved_test2_torrus0d1remesh_linear0_highreso.png" width="700">
+
 */
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -21,6 +28,8 @@ make
 #include "basic_IO.hpp"
 #include "basic_arithmetic_array_operations.hpp"
 #include "kernelFunctions.hpp"
+
+namespace fs = std::filesystem;
 
 template <std::size_t N>
 std::array<double, N> ToColor(const std::array<networkPoint *, N> &points) {
@@ -41,18 +50,22 @@ bool checker(const networkLine *line) {
 constexpr std::array<std::array<double, 2>, 3> M_sub{{{0., 0.5}, {0.5, 0.}, {0.5, 0.5}}};
 
 int main() {
+   fs::path outputDir = fs::path(_HOME_DIR_) / "output";
+   fs::create_directories(outputDir);
+   //
    Tddd X;
    /* -------------------------------- OBJ を使った例 ------------------------------- */
    for (std::string name : {"torrus0d1remesh", "torrus0d2remesh", "torrus0d3remesh"}) {
       // for (std::string name : {"plate0d2", "plate0d1", "plate0d075"}) {
-      Network net("./" + name + ".obj");
-      std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SubdivideTriangleIntoTriangles(9);
+      Network net(fs::path("./") / (name + ".obj"));
+      std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SymmetricSubdivisionOfTriangle_00_10_01(9);
       int i = 0;
       for (auto f : net.getFaces()) {
-         std::ofstream file_linear(_HOME_DIR_ + "/output/" + name + "_linear" + std::to_string(i) + ".dat");
-         std::ofstream file_quad(_HOME_DIR_ + "/output/" + name + "_quad" + std::to_string(i) + ".dat");
-         std::ofstream file_pseudo_quadratic(_HOME_DIR_ + "/output/" + name + "_pseudo_quad" + std::to_string(i) + ".dat");
-         std::ofstream file_pseudo_quadratic_cornertreated(_HOME_DIR_ + "/output/" + name + "_pseudo_quad_cornertreated" + std::to_string(i) + ".dat");
+         auto baseFileName = outputDir / name;
+         std::ofstream file_linear(baseFileName.string() + "_linear" + std::to_string(i) + ".dat");
+         std::ofstream file_quad(baseFileName.string() + "_quad" + std::to_string(i) + ".dat");
+         std::ofstream file_pseudo_quadratic(baseFileName.string() + "_pseudo_quad" + std::to_string(i) + ".dat");
+         std::ofstream file_pseudo_quadratic_cornertreated(baseFileName.string() + "_pseudo_quad_cornertreated" + std::to_string(i) + ".dat");
          for (auto t0t1 : t0t1_triangles) {
             for (auto [t0, t1] : t0t1) {
                auto X012 = f->vertices;
@@ -101,9 +114,10 @@ int main() {
       }
       i = 0;
       for (auto f : net.getFaces()) {
-         std::ofstream file_linear(_HOME_DIR_ + "/output/" + name + "_linear_color" + std::to_string(i) + ".dat");
-         std::ofstream file_quad(_HOME_DIR_ + "/output/" + name + "_quad_color" + std::to_string(i) + ".dat");
-         std::ofstream file_pseudo_quadratic(_HOME_DIR_ + "/output/" + name + "_pseudo_quad_color" + std::to_string(i) + ".dat");
+         auto baseFileName = outputDir / name;
+         std::ofstream file_linear(baseFileName.string() + "_linear_color" + std::to_string(i) + ".dat");
+         std::ofstream file_quad(baseFileName.string() + "_quad_color" + std::to_string(i) + ".dat");
+         std::ofstream file_pseudo_quadratic(baseFileName.string() + "_pseudo_quad_color" + std::to_string(i) + ".dat");
          for (auto t0t1 : t0t1_triangles) {
             for (auto [t0, t1] : t0t1) {
                auto X012 = f->vertices;

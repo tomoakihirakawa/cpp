@@ -483,12 +483,16 @@ Tddd ArithmeticWeightedIncenterSmoothingVector(const networkPoint *p, const std:
 
 /* ------------------------------------------------------ */
 
-Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, const double power = 1.) {
    Tddd V = {0., 0, 0.};
+   double Wtot = 0, norm;
    if (!isEdgePoint(p)) {
-      for (const auto &q : p->getNeighbors())
-         V += q->X;
-      return V / p->getNeighbors().size() - current_pX;
+      for (const auto &q : p->getNeighbors()) {
+         norm = Norm(q->X - current_pX);
+         V += std::pow(norm, power) * (q->X - current_pX) / norm;
+         Wtot += 1.;
+      }
+      return V / Wtot;
    } else
       return V;
 };
@@ -498,27 +502,33 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<d
 //       for (const auto &p : ps) SmoothingPreserveShape(p, ArithmeticWeightedSmoothingVector);
 // };
 
-Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<Tddd(const networkPoint *)> position) {
-   Tddd V = {0., 0, 0.};
+Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<Tddd(const networkPoint *)> position, const double power = 1.) {
+   Tddd V = {0., 0, 0.}, qX;
+   double Wtot = 0, norm;
    if (!isEdgePoint(p)) {
-      for (const auto &q : p->getNeighbors())
-         V += position(q);
-      return V / p->getNeighbors().size() - current_pX;
+      for (const auto &q : p->getNeighbors()) {
+         qX = position(q);
+         norm = Norm(qX - current_pX);
+         V += std::pow(norm, power) * (qX - current_pX) / norm;
+         Wtot += 1.;
+      }
+      return V / Wtot;
    } else
       return V;
 };
 
 /* -------------------------------------------------------------------------- */
 
-Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX) {
+Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<double, 3> &current_pX, const double power = 1.) {
    Tddd V = {0., 0, 0.};
-   double Wtot = 0;
+   double Wtot = 0, norm;
    if (!isEdgePoint(p)) {
       for (const auto &q : p->getNeighbors()) {
-         V += q->X;
+         norm = Norm(q->X - current_pX);
+         V += std::pow(norm, power) * (q->X - current_pX) / norm;
          Wtot += 1.;
       }
-      return V / Wtot - current_pX;
+      return V / Wtot;
    } else
       return V;
 };

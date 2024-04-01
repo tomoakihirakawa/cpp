@@ -983,7 +983,8 @@ constexpr std::array<double, N + 1> Subdivide(const double xmin, const double xm
 //    };
 // };
 
-std::vector<std::array<std::array<double, 2>, 3>> SubdivideTriangleIntoTriangles(const int divide) {
+// std::vector<std::array<std::array<double, 2>, 3>> SubdivideTriangleIntoTriangles(const int divide) {
+std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle_00_10_01(const int divide) {
    std::vector<double> vec(divide + 1);
    const double max = 1., min = 0.;
    const double dt = (max - min) / (double)divide;
@@ -1017,6 +1018,30 @@ std::vector<std::array<std::array<double, 2>, 3>> SubdivideTriangleIntoTriangles
       }
 
    return t0t1_triangles;
+};
+
+std::vector<T3Tddd> SymmetricSubdivisionOfTriangle(const T3Tddd& ABC, const int divide) {
+   auto parametersOnTriangle = SymmetricSubdivisionOfTriangle_00_10_01(divide);
+   std::vector<T3Tddd> triangle_vertices(parametersOnTriangle.size());
+   auto convert = [&](const Tdd& t0t1) -> Tddd { return std::get<0>(t0t1) * std::get<0>(ABC) +
+                                                        std::get<1>(t0t1) * std::get<1>(ABC) +
+                                                        (1. - std::get<0>(t0t1) - std::get<1>(t0t1)) * std::get<2>(ABC); };
+   int i = 0;
+   for (const auto& t3tdd : parametersOnTriangle)
+      triangle_vertices[i++] = {convert(std::get<0>(t3tdd)), convert(std::get<1>(t3tdd)), convert(std::get<2>(t3tdd))};
+   return triangle_vertices;
+};
+
+std::vector<T3Tdd> SymmetricSubdivisionOfTriangle(const T3Tdd& ABC, const int divide) {
+   auto parametersOnTriangle = SymmetricSubdivisionOfTriangle_00_10_01(divide);
+   std::vector<T3Tdd> triangle_vertices(parametersOnTriangle.size());
+   auto convert = [&](const Tdd& t0t1) -> Tdd { return std::get<0>(t0t1) * std::get<0>(ABC) +
+                                                       std::get<1>(t0t1) * std::get<1>(ABC) +
+                                                       (1. - std::get<0>(t0t1) - std::get<1>(t0t1)) * std::get<2>(ABC); };
+   int i = 0;
+   for (const auto& t3tdd : parametersOnTriangle)
+      triangle_vertices[i++] = {convert(std::get<0>(t3tdd)), convert(std::get<1>(t3tdd)), convert(std::get<2>(t3tdd))};
+   return triangle_vertices;
 };
 
 std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int x_divide, const int y_divide) {
@@ -1111,16 +1136,105 @@ constexpr std::array<T, N> RotateRight(const std::array<T, N>& arr, const int n 
 
 ### 三角形形状関数
 
-線形の三角形形状関数は，$`t_2 = 1-t_0-t_1`$として，
+線形の三角形形状関数は，$`\xi_2 = 1-\xi_0-\xi_1`$として，
 
 ```math
-(N_0, N_1, N_2) = (t_0, t_1, t_2)
+{\bf N}_{\rm l}({\boldsymbol \xi})=
+\left(
+\begin{array}{c}
+\xi_0\\
+\xi_1\\
+\xi_2
+\end{array}
+\right)
 ```
 
-2次の三角形形状関数は，$`t_2 = 1-t_0-t_1`$として，
+2次の三角形形状関数は，$`\xi_2 = 1-\xi_0-\xi_1`$として，
 
 ```math
-(N_0, N_1, N_2, N_3, N_4, N_5) = (t_0(2t_0-1), t_1(2t_1-1), t_2(2t_2-1), 4t_0t_1, 4t_1t_2, 4t_2t_0)
+{\bf N}_{\rm q}({\boldsymbol \xi})=
+\left(
+\begin{array}{c}
+\xi_0 (2  \xi_0 - 1)\\
+\xi_1 (2 \xi_1 - 1)\\
+\xi_2 (2 \xi_2 - 1)\\
+4 \xi_0 \xi_1\\
+4 \xi_1 \xi_2\\
+4 \xi_2 \xi_0
+\end{array}
+\right)
+```
+
+<img src="triangle_vertcies_order_for_shape_functions.png" width="400">
+
+この形状関数の使い方は，節点上の変数が$`(v_0,v_1,v_2,v_4,v_5,v_6)^{\intercal}`$の場合，
+次のようにして，三角形上の値を補間できる．
+
+```math
+v({\boldsymbol \xi}) =
+\left(
+\begin{array}{c}
+\xi_0 (2  \xi_0 - 1)\\
+\xi_1 (2 \xi_1 - 1)\\
+\xi_2 (2 \xi_2 - 1)\\
+4 \xi_0 \xi_1\\
+4 \xi_1 \xi_2\\
+4 \xi_2 \xi_0
+\end{array}
+\right)^{\intercal}
+\left(
+\begin{array}{c}
+v_0\\
+v_1\\
+v_2\\
+v_3\\
+v_4\\
+v_5
+\end{array}
+\right)
+=
+\left(
+\begin{array}{c}
+v_0\\
+v_1\\
+v_2\\
+v_3\\
+v_4\\
+v_5
+\end{array}
+\right)^{\intercal}
+\left(
+\begin{array}{c}
+\xi_0 (2  \xi_0 - 1)\\
+\xi_1 (2 \xi_1 - 1)\\
+\xi_2 (2 \xi_2 - 1)\\
+4 \xi_0 \xi_1\\
+4 \xi_1 \xi_2\\
+4 \xi_2 \xi_0
+\end{array}
+\right)
+```
+
+$v_0$がベクトルであっても，この計算は可能である．
+
+Mathematicaを使った上の計算を考えてみる．Mathematicaのルールとして，
+
+- Mathematicaでは，ベクトルの転置はない
+- Row majorで行列を表現する
+- `Dot[A,B]`の計算は，`B`がベクトルの場合，（Mathematicaにはベクトルの転置はないが）`B`が転置されたかのような計算結果を返す
+
+ということを考えると，上の計算は次のようになる．
+${\bf N}^{\intercal}V$の転置はいらなず，`Dot[N, V]`で計算できる．
+また，$V^{\intercal}{\bf N}$の計算は，`Dot[V, N]`でそのまま計算できる．
+
+```Mathematica
+In[1]:= V = {{a, b}, {c, d}, {e, f}};
+Dot[{N0, N1, N2}, V]　(*第１引数に，転置が要らないことに注意．既に転置されていると考える．*)
+Dot[Transpose[V], {N0, N1, N2}]　(*この順番なら一般的な方法でOK*)
+
+Out[2]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
+
+Out[3]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
 ```
 
 ちなみに，節点3と節点5の線上のパラメタは，$`t_0 = 1/2`$である．
@@ -1141,7 +1255,12 @@ constexpr std::array<double, N> TriShape(double t0, double t1, const auto& p0p1p
    if constexpr (N == 3) {
       return {t0, t1, t2};
    } else if constexpr (N == 6) {
-      std::array<double, 6> deflt{t0 * (2. * t0 - 1.), t1 * (2. * t1 - 1.), t2 * (2. * t2 - 1.), 4. * t0 * t1, 4. * t1 * t2, 4. * t2 * t0};
+      std::array<double, 6> deflt{t0 * (2. * t0 - 1.),
+                                  t1 * (2. * t1 - 1.),
+                                  t2 * (2. * t2 - 1.),
+                                  4. * t0 * t1,
+                                  4. * t1 * t2,
+                                  4. * t2 * t0};
       constexpr Tddd TriShape3 = {1., 1., -1.};
       if (!std::get<0>(p0p1p2)) {
          auto [M0_0, M0_1, M0_2] = deflt[0] * TriShape3;
@@ -1246,23 +1365,15 @@ constexpr std::array<double, N> D_TriShape(double t0, double t1) noexcept {
 
 ### 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]
 
-普通の三角形形状関数は，$`{\mathbf N}=(N_0,N_1,N_2) = (t_0,t_1,1-t_0-t_1)`$．
-これを使った，$`{\rm Dot}({\mathbf N},\{{\mathbf X_0},{\mathbf X_1},{\mathbf X_2}\})`$は，$`t_0,t_1=[0,1]`$で平行四辺形を作る．
-$`t_0,t_1=[0,1]`$の範囲で，三角形を形成するように変数変換したいことがある．
-そのたびに，変数変換をプログラムするのは面倒なので，予め形状関数自体を変更しておく．
-変更した形状関数は，`ModTriShape`にあるように，
+前で示した通り，$`(\xi_0,\xi_1)=(\xi_0,\eta(1-\xi_0))`$と置き換えることで，矩形領域を三角形領域に変換できる．
 
-3点の場合は，
+これを利用して，形状関数の引数を$`N(\xi_0,\eta(1-\xi_0))`$として与え，
+$`(\xi_0,\eta)`$をそれぞれ$`[0,1]`$の範囲で変化させることで，
+三角形の形状を補間できる．
 
-```math
-(N_0,N_1,N_2) = (t_0, t_1(1 - t_0),(t_0-1)(t_1-1))
-```
-
-6点の場合は，
-
-```math
-(N_0,N_1,N_2,N_3,N_4,N_5) = (t_0(2t_0-1), t_1(2t_1-1), (1-t_0-t_1)(2(1-t_0-t_1)-1), 4t_0t_1, 4t_1(1-t_0-t_1), 4t_0(1-t_0-t_1))
-```
+このプログムでは，
+`N(x,y)=TriShape<3>(x,y)`と定義し，
+`N(x,y(1-x))=ModTriShape<3>(x,y)`と定義している．
 
 */
 
@@ -1274,7 +1385,7 @@ constexpr std::array<double, N> ModTriShape(double t0, double t1, const auto& p0
    const double t1m1 = t1 - 1.;
    if constexpr (N == 3) {
       return {t0,
-              t1 - t1 * t0,
+              t1 * (1. - t0),
               t0m1 * t1m1};
    } else if constexpr (N == 6) {
       std::array<double, N> deflt{{t0 * (2. * t0 - 1.), t0m1 * t1 * (1 + 2 * t0m1 * t1), t1m1 * t0m1 * (1 + 2 * t1m1 * t0 - 2 * t1), -4 * t0m1 * t0 * t1, -4 * std::pow(t0m1, 2) * t1m1 * t1, 4 * t1m1 * t0m1 * t0}};
