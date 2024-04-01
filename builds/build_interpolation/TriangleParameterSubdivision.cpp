@@ -28,9 +28,10 @@ make
 `plot_parametric_subdivision.nb` で描画
 
 | $`(\xi_0,\xi_1)`$, Range: $`(\xi_0,\xi_1)\in[0,1]\times[0,1-\xi_0]`$ | $`(\xi_0,\xi_1)`$, Range: $`(\xi_0,\xi_1)\in[0,1]\times[0,1]`$ | $`(\xi_0,\xi_1(1-\xi_0))`$, Range:$`(\xi_0,\xi_1)\in[0,1]\times[0,1]`$|
+
+| a | b | c |
 |:---:|:---:|:---:|
 | <img src="output_TriangleParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision.gif" width="300"> | <img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"> |
-
 
 $`(\xi_0,\xi_1)=(\xi_0,\eta(1-\xi_0))`$とすると，
 $`\eta0`$のとき，$(\xi_0,\xi_1)=(\xi_0,0)$，また
