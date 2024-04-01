@@ -34,9 +34,9 @@ make
     <th>$(\xi_0,\xi_1(1-\xi_0))$, Range:$(\xi_0,\xi_1)\in[0,1]\times[0,1]$</th>
   </tr>
   <tr>
-    <td><img src="output_TriangleParameterSubdivision.gif" width="300"></td>
-    <td><img src="output_SquareParameterSubdivision.gif" width="300"></td>
-    <td><img src="output_SquareParameterSubdivision_into_Triangle.gif" width="300"></td>
+    <td><img src="./output_TriangleParameterSubdivision.gif" width="300"></td>
+    <td><img src="./output_SquareParameterSubdivision.gif" width="300"></td>
+    <td><img src="./output_SquareParameterSubdivision_into_Triangle.gif" width="300"></td>
   </tr>
 </table>
 
