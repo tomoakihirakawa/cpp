@@ -30,7 +30,7 @@ make
 
 擬2次補間は，よく知られている2次補間の形状関数を基本としている．
 
-\begin{equation}
+```math
 \begin{aligned}
 v({\boldsymbol \xi}) =
 N({\xi_0,\xi_1})^{\intercal}
@@ -51,8 +51,7 @@ V=\left(
 v_0\\v_1\\v_2\\v_3\\v_4\\v_5
 \end{array}
 \right)
-\label{eq:general_usage_of_shape_function}
-\end{equation}
+```
 
 Fig. \ref{fig:pseudo_quad_schematic}に示すように，
 この形状関数の係数を，対応する節点の値に掛けて足し合わせることで，
@@ -68,7 +67,7 @@ Fig. \ref{fig:pseudo_quad_schematic}に示すように，
 ただし，辺上の節点$3,4,5$は設定していないので，
 隣接する三角形の頂点の値を使った2次補間の平均で近似する：
 
-\begin{equation}
+```math
 \begin{aligned}
 v({\boldsymbol \xi}) =
 N({\xi_0,\xi_1})^{\intercal}
@@ -81,12 +80,12 @@ v_0\\v_1\\v_2\\
 \end{array}
 \right)
 \end{aligned}
-\end{equation}
+```
 
 この式を\eqref{eq:general_usage_of_shape_function}の形に書き直すために．
 次のような関係を使う：
 
-\begin{equation}
+```math
 \begin{aligned}
 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}12in} &=N_{\rm q}\left(\frac{1}{4},\frac{1}{2}\right) V_{\rm {\ell}01in},\\
 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right) V_{\rm {\ell}20in} &=N_{\rm q}\left(\frac{1}{2},\frac{1}{4}\right) V_{\rm {\ell}01in},\\
@@ -104,11 +103,11 @@ v_0\\v_1\\v_2\\0\\0\\0
 \right)
 V_{\rm {\ell}01in}
 \end{aligned}
-\end{equation}
+```
 
 これを使って，$V_{\rm {\ell}12in}$と$V_{\rm {\ell}21in}$の代わりに，$V_{\rm {\ell}01in}$を使った式に置き換える．
 
-\begin{equation}
+```math
 \begin{aligned}
 {\bf x}({\boldsymbol \xi})&=
 \left(
@@ -125,7 +124,7 @@ V_{\rm {\ell}01in}
 &+2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}21out}
 \end{aligned}
 \label{eq:pseudo_quadratic_interpolation}
-\end{equation}
+```
 
 このように，\eqref{eq:general_usage_of_shape_function}の形の式を４つ足し合わせることで，擬2次補間を実装することができる．
 
@@ -133,7 +132,7 @@ V_{\rm {\ell}01in}
 そのため，角を成している辺上の節点は，線形補間を使って近似することにする．つまり，辺が繋ぐ２節点の平均で近似する．
 例えば，辺01が角となっている場合，\eqref{eq:pseudo_quadratic_interpolation}は次のように書き換える．
 
-\begin{equation}
+```math
 \begin{aligned}
 {\bf x}({\boldsymbol \xi})&=
 \left(
@@ -153,7 +152,7 @@ V_{\rm {\ell}01in}
 &+2 \xi_1 \xi_2 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}12out}\\
 &+2 \xi_2 \xi_0 N_{\rm q}\left(\frac{1}{4},\frac{1}{4}\right)V_{\rm {\ell}21out}
 \end{aligned}
-\end{equation}
+```
 
 0,1節点は，$V_{\rm {\ell}01in}$における4,5節点であるため，$2\xi_0\xi_1(0,0,0,1,1)^{\intercal}$の項に
 
