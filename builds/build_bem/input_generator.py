@@ -2,7 +2,38 @@
 
 # Input Generator
 
-This file is used to generate the input files for the BEM-MEL.
+`input_generator.py`は，BEM-MELの入力ファイルを生成するためのスクリプトである．
+`input_generator.py`を実行する際に，オプションを加えることで，シミュレーションケースやメッシュの名前，波を作る方法，要素の種類，時間刻み幅，シフトさせる面の補間方法，接尾語，波の高さ，出力ディレクトリ
+などを指定することができるようにしている．
+これは，`input_generator.py`を直接編集することなく，コマンドライン引数を使って計算条件を変更することができるようにするためで，
+また，これによって，複数の計算条件を一括で実行することができるようになる．
+
+例えば，次のようにシェルスクリプトを作成し，`input_generator.py`を実行することで，入力ファイルを生成することができる．
+
+```shell
+case=Tanizawa1996
+outputdir=${HOME}/BEM
+H=0.05
+python3.11 input_generator.py -case ${case} -mesh water_no_float0d08 -element pseudo_quad -wavemaker flap -dt 0.03 -H ${H} -ALE linear -outputdir ${outputdir}
+```
+
+```shell
+#!/bin/sh
+outputdir=${HOME}/BEM
+case=Palm2016
+mesh_array=("water_mod")
+dt_array=(0.05 0.03)
+H_array=(0.05 0.1)
+
+for dt in ${dt_array[@]};do
+    for H in ${H_array[@]};do
+        for mesh in ${mesh_array[@]};do
+            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
+            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
+        done
+    done
+done
+```
 
 '''
 
@@ -25,16 +56,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 code_home_dir = os.path.join(current_dir, '../../../../code')
 from IOgenerator import generate_input_files, read_obj, Norm3d, Differece3d, Add3d
 
-
-def IO_dir(id):
-    input_dir = "./input_files/" + id
-    os.makedirs(input_dir, exist_ok=True)
-    output_dir = sys_home_dir + "/BEM/" + id
-    # output_dir = "/Volumes/home/BEM/benchmark20231206/" + id
-    os.makedirs(output_dir, exist_ok=True)
-    return input_dir, output_dir
-
-
 rho = 1000.
 g = 9.81
 
@@ -51,8 +72,10 @@ parser.add_argument('-wavemaker', type=str, help='波を作る方法')
 parser.add_argument('-element', type=str, help='要素の種類')
 parser.add_argument('-dt', type=float, help='時間刻み幅')
 parser.add_argument('-ALE', type=str, help='シフトさせる面の補間方法')
+parser.add_argument('-ALEPERIOD', type=str, help='ALEの周期')
+parser.add_argument('-H', type=float, help='波の高さ')
+parser.add_argument('-outputdir', type=str, help='出力ディレクトリ')
 parser.add_argument('-suffix', type=str, help='接尾語')
-parser.add_argument('-wave_height', type=float, help='波の高さ')
                     
 args = parser.parse_args()
 
@@ -61,6 +84,7 @@ meshname = ""
 wavemaker_type = ""
 suffix = ""
 element = "linear"
+default_output_dir = None
 if args.case is not None:
     SimulationCase = args.case
     print(f"SimulationCase: {SimulationCase}")
@@ -79,13 +103,29 @@ if args.dt is not None:
 if args.ALE is not None:
     ALE = args.ALE
     print(f"ALE: {ALE}")
+if args.ALEPERIOD is not None:
+    ALEPERIOD = args.ALEPERIOD
+    print(f"ALEPERIOD: {ALEPERIOD}")
 if args.suffix is not None:
     suffix = args.suffix
     print(f"suffix: {suffix}")
-if args.wave_height is not None:
-    wave_height = args.wave_height
-    print(f"wave_height: {wave_height}")
+if args.H is not None:
+    H = args.H
+    print(f"H: {H}")
+if args.outputdir is not None:
+    default_output_dir = args.outputdir
+    print(f"outputdir: {default_output_dir}")
     
+def IO_dir(id):
+    input_dir = "./input_files/" + id
+    os.makedirs(input_dir, exist_ok=True)
+    if default_output_dir is None:
+        output_dir = sys_home_dir + "/BEM/" + id
+    else:
+        output_dir = default_output_dir + "/" + id
+    # output_dir = "/Volumes/home/BEM/benchmark20231206/" + id
+    os.makedirs(output_dir, exist_ok=True)
+    return input_dir, output_dir
 
 # ---------------------------------------------------------------------------- #
 if "looping" in SimulationCase:
@@ -187,11 +227,10 @@ elif "Tanizawa1996" in SimulationCase:
     start = 0.
 
     L = 1.8
-    H = 0.05*2
+    if H is None:
+        H = 0.05*2
+
     a = H/2
-    if wave_height is not None:
-        H = wave_height
-        a = H/2
     h = 5.
     z_surface = h
 
@@ -210,13 +249,22 @@ elif "Tanizawa1996" in SimulationCase:
     id += "_L" + str(L).replace(".", "d")
     id += "_WAVE" + wavemaker_type
     id += "_MESH" + meshname
-    id += "_DT" + str(dt).replace(".", "d")
+
+
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+    id += "_DT" + str(max_dt).replace(".", "d")
 
     if element != "":
         id += "_ELEM" + element
 
     if ALE != "":
         id += "_ALE" + ALE
+
+    if ALEPERIOD != "":
+        id += "_ALEPERIOD" + ALEPERIOD
 
     if suffix != "":    
         id += "_" + suffix
@@ -249,7 +297,7 @@ elif "Tanizawa1996" in SimulationCase:
         wavemaker = {"name": "wavemaker",
                     "type": "SoftBody",
                     "isFixed": True,
-                    "velocity": ["velocity__using_wave_length", start, a, L, h, h]}
+                    "velocity": ["velocity_using_wave_length", start, a, L, h, h]}
 
     Lx = 0.74
     Lz = 0.415
@@ -323,16 +371,13 @@ elif "Tanizawa1996" in SimulationCase:
     if "no_float" not in id:
         inputfiles += floats
 
-    if dt is not None:
-        max_dt = dt
-    else:
-        max_dt = 1/20
 
     setting = {"max_dt": max_dt,
                "end_time_step": 20000,
                "end_time": 30,
                "element": element,
-                "ALE": ALE}
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Cheng2018" in SimulationCase:
@@ -788,8 +833,11 @@ elif "Palm2016" in SimulationCase:
 
     # % 造波機の設定
     start = 0.
-    a = 0.02
-    H = 2*a
+
+    if H is None:
+        H = 0.04
+
+    a = H/2
     T = 1.
     h = 0.9
     z_surface = 0.9
@@ -856,6 +904,27 @@ elif "Palm2016" in SimulationCase:
 
     id = SimulationCase
 
+    if meshname == "":
+        meshname = "water_mod"
+    id += "_MESH" + meshname
+
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+
+    id += "_DT" + str(max_dt).replace(".", "d")
+
+    if element != "":
+        id += "_ELEM" + element
+
+    if ALE != "":
+        id += "_ALE" + ALE
+
+    if suffix != "":    
+        id += "_" + suffix
+
+
     if "with_mooring" in id:
         float["mooringA"] = ["mooringA",
                              X_anchorA[0], X_anchorA[1], X_anchorA[2],
@@ -902,22 +971,21 @@ elif "Palm2016" in SimulationCase:
     probes = [probe1, probe2, probe3, probe4]
 
     objfolder = code_home_dir + "/cpp/obj/Palm2016"
-    water["objfile"] = objfolder + "/water_mod.obj"
-    wavemaker["objfile"] = objfolder + "/wavemaker_mod.obj"
+    # water["objfile"] = objfolder + "/water_mod.obj"
+    water["objfile"] = objfolder + "/" + meshname + ".obj"
+    wavemaker["objfile"] = objfolder + "/wavemaker_mod.obj"    
     tank["objfile"] = objfolder + "/tank_mod.obj"
     float["objfile"] = objfolder+"/float_mod.obj"
 
     inputfiles = [tank, wavemaker, water, float]
     inputfiles += probes
 
-    setting = {"max_dt": 0.03,
+    setting = {"max_dt": max_dt,
                "end_time_step": 100000,
-               "end_time": 30}
+               "end_time": 30,
+               "element": element,
+                "ALE": ALE}
 
-    input_dir += SimulationCase
-    os.makedirs(input_dir, exist_ok=True)
-    output_dir = sys_home_dir + "/BEM/" + SimulationCase
-    os.makedirs(output_dir, exist_ok=True)
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Liang2022" in SimulationCase:
 

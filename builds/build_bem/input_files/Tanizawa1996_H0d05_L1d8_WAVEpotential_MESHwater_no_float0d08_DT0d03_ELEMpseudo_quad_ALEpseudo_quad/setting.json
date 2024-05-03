@@ -4,7 +4,7 @@
     "end_time": 30,
     "element": "pseudo_quad",
     "ALE": "pseudo_quad",
-    "output_directory": "/Users/tomoaki/BEM/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad",
+    "output_directory": "/Volumes/home/BEM/benchmark202404/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad",
     "input_files": [
         "tank.json",
         "wavemaker.json",

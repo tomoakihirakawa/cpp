@@ -71,31 +71,361 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 
 */
 
+// Compute the factorial of a_near given number
+// static const std::vector<uint64_t> factorial_list = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000};
+static const std::vector<double> factorial_list_as_double = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000, 2432902008176640000};
+
+constexpr double factorial(const int n) {
+   if (n < 0)
+      throw std::runtime_error("factorial of negative number");
+   else if (n >= factorial_list_as_double.size())
+      return n * factorial(n - 1);
+   else
+      return factorial_list_as_double[n];
+}
+
+std::array<double, 3> ToSphericalCoordinates(const double x, const double y, const double z) {
+   return {std::hypot(x, y, z), std::atan2(std::hypot(x, y), z), std::atan2(y, x)};
+};
+
 // \label{ToSphericalCoordinates}
 std::array<double, 3> ToSphericalCoordinates(const std::array<double, 3>& X) {
-   return {Norm(X),
-           std::atan2(std::hypot(std::get<0>(X), std::get<1>(X)), std::get<2>(X)),
-           std::atan2(std::get<1>(X), std::get<0>(X))};
+   return ToSphericalCoordinates(std::get<0>(X), std::get<1>(X), std::get<2>(X));
 };
 
 std::array<std::array<double, 3>, 3> gradSphericalCoordinates(const std::array<double, 3>& X) {
-   auto [x, y, z] = X;
-   auto r = Norm(X);
-   // auto R = std::sqrt(x * x + y * y);
-   // use hypothesis
-   auto R = std::hypot(x, y);
-   return {std::array<double, 3>{x / r, y / r, z / r},
-           std::array<double, 3>{x * z / (r * r * R), y * z / (r * r * R), -R / (r * r)},
-           std::array<double, 3>{-y / (R * R), x / (R * R), 0.}};
+   const auto [x, y, z] = X;
+   const double r = Norm(X);
+   const double R = std::hypot(x, y);
+   const double R2 = (x * x + y * y);
+   const double x_r = x / r;
+   const double y_r = y / r;
+   const double z_r = z / r;
+   return {std::array<double, 3>{x_r, y_r, z_r},
+           std::array<double, 3>{x_r * z_r / R, y_r * z_r / R, -R / (r * r)},
+           std::array<double, 3>{-y / R2, x / R2, 0.}};
 };
 
-// Compute the factorial of a_near given number
-constexpr int factorial(const int n) {
-   if (n < 0)
-      throw std::runtime_error("factorial of negative number");
-   if (n == 0 || n == 1)
-      return 1;
-   return n * factorial(n - 1);
+/*
+
+grad R = spherical_grad_R \cdot JacobianCartesian2Spherical
+
+*/
+
+std::array<std::array<double, 3>, 3> JacobianCartesian2Spherical(const std::array<double, 3>& X) {
+   auto [x, y, z] = X;
+   const double R = std::hypot(x, y);
+   const double R2 = R * R;
+   const double r = std::hypot(x, y, z);
+   const double x_r = x / r;
+   const double y_r = y / r;
+   const double z_r = z / r;
+   const std::array<double, 3> grad_r = std::array<double, 3>{x_r, y_r, z_r};
+   const std::array<double, 3> grad_theta = std::array<double, 3>{x_r * z_r / R, y_r * z_r / R, -R / (r * r)};
+   const std::array<double, 3> grad_phi = std::array<double, 3>{-y / R2, x / R2, 0.};
+   return {grad_r, grad_theta, grad_phi};
+};
+
+/* -------------------------------------------------------------------------- */
+
+template <typename T>
+void complex_fused_multiply_increment(const std::complex<T>& a, const std::complex<T>& b, std::complex<T>& c) {
+   c = std::complex<T>(std::fma(a.real(), b.real(), std::fma(-a.imag(), b.imag(), c.real())),
+                       std::fma(a.real(), b.imag(), std::fma(a.imag(), b.real(), c.imag())));
+}
+
+std::complex<double> Dot(const std::array<double, 3>& normal, const std::array<std::complex<double>, 3>& abc) {
+   return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal);
+};
+
+std::complex<double> Dot(const std::array<std::complex<double>, 3>& abc, const std::array<double, 3>& normal) {
+   return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal);
+};
+
+std::array<std::complex<double>, 3> Dot(const std::array<std::complex<double>, 3>& abc, const std::array<std::array<double, 3>, 3>& A) {
+   std::array<std::complex<double>, 3> ret;
+   std::get<0>(ret) = abc[0] * A[0][0] + abc[1] * A[1][0] + abc[2] * A[2][0];
+   std::get<1>(ret) = abc[0] * A[0][1] + abc[1] * A[1][1] + abc[2] * A[2][1];
+   std::get<2>(ret) = abc[0] * A[0][2] + abc[1] * A[1][2] + abc[2] * A[2][2];
+   return ret;
+};
+
+/*
+
+\cite{Liu_2009}p.70には，体球調和関数を使った高速多重極展開のアルゴリズムが書かれている．
+以下は，その定義通りの体球調和関数を計算する関数である．
+
+*/
+
+constexpr std::complex<double> complex_zero(0., 0.);
+constexpr std::array<std::complex<double>, 3> complex_zero3D{complex_zero, complex_zero, complex_zero};
+
+//! (-1)^mを含まないルジャンドル陪関数
+double D_assoc_legendre(int n, int m, const double x) {
+   if (std::abs(x) > 1.0)
+      throw std::invalid_argument("Argument out of bounds for Legendre polynomials.");
+   n = std::abs(n);
+   m = std::abs(m);
+   return (-m * x / (1. - x * x) * std::assoc_legendre(n, m, x) + std::assoc_legendre(n, m + 1, x) / std::sqrt(1. - x * x));
+}
+
+std::complex<double> SolidHarmonicR(int n, int m, const std::array<double, 3>& X) {
+   n = std::abs(n);
+   m = std::abs(m);
+   if (n + m < 0)
+      return std::complex<double>(0.0, 0.0);
+   const auto [rho, theta, phi] = ToSphericalCoordinates(X);
+   return std::polar((std::pow(rho, n) / factorial(n + m)) * std::assoc_legendre(n, m, std::cos(theta)), m * phi);
+}
+
+std::array<std::complex<double>, 3> Grad_SolidHarmonicR(int n, int m, const std::array<double, 3>& X) {
+   n = std::abs(n);
+   m = std::abs(m);
+   if (n + m < 0)
+      return complex_zero3D;
+   const auto [rho, theta, phi] = ToSphericalCoordinates(X);
+   const double rho_n = std::pow(rho, n);
+   const double TMP = rho_n / factorial(n + m);
+   const double tmp = TMP * std::assoc_legendre(n, m, std::cos(theta));
+   const std::complex<double> dRdrho = std::polar(n * (tmp / rho), m * phi);
+   const std::complex<double> dRdtheta = std::polar(TMP * D_assoc_legendre(n, m, std::cos(theta)) * (-std::sin(theta)), m * phi);
+   const std::complex<double> dRdphi = std::polar(m * tmp, m * phi) * std::complex<double>(0, m);
+
+   return Dot(std::array<std::complex<double>, 3>{dRdrho, dRdtheta, dRdphi}, JacobianCartesian2Spherical(X));
+}
+
+std::complex<double> SolidHarmonicS(int n, int m, const std::array<double, 3>& X) {
+   n = std::abs(n);
+   m = std::abs(m);
+   if (n - m < 0)
+      return std::complex<double>(0.0, 0.0);
+
+   const auto [rho, theta, phi] = ToSphericalCoordinates(X);
+   return std::polar((factorial(n - m) / std::pow(rho, n + 1.)) * std::assoc_legendre(n, m, std::cos(theta)), m * phi);
+}
+
+/* -------------------------------------------------------------------------- */
+
+#include "basic_exception.hpp"
+
+template <int N>
+struct ExpCoeffs {
+   std::array<double, 3> X;
+   std::array<std::array<std::complex<double>, N + 1 /*0~N*/>, 2 * N> coeffs;
+   std::array<std::array<std::complex<double>, N + 1 /*0~N*/>, 2 * N> coeffs_;
+
+   std::complex<double> zero = {0., 0.};
+   const std::complex<double>& get_coeffs(int n, int m) const {
+      if (!indexedQ(n, m)) {
+         // std::cout << "n = " << n << ", m = " << m << ", n+m = " << n + m << std::endl;
+         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__);
+         return zero;
+      }
+      return coeffs[n][n + m];
+   }
+   const std::complex<double>& get_coeffs_(int n, int m) const {
+      if (!indexedQ(n, m)) {
+         // std::cout << "n = " << n << ", m = " << m << ", n+m = " << n + m << std::endl;
+         // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__);
+         return zero;
+      }
+      return coeffs_[n][n + m];
+   }
+
+   bool indexedQ(const int n, const int m) const { return n <= N && -n <= m && m <= n; }
+
+   ExpCoeffs(const std::array<double, 3>& XIN) : X(XIN) {
+      for (auto& cc : coeffs) cc.fill(0);
+      for (auto& cc : coeffs_) cc.fill(0);
+   }
+
+   void increment(const Tddd& XIN, const std::array<double, 2> weights, const Tddd& normal) {
+      const Tddd R = XIN - this->X;
+      auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
+         return {SolidHarmonicR(n, m, R) * weights[0],
+                 Dot(normal, Grad_SolidHarmonicR(n, m, R)) * weights[1]};
+      };
+      this->set(set_coeffs);
+   };
+
+   void set(const auto& func) {
+      std::array<std::complex<double>, 2> cc;
+      for (int n = 0; n <= N; ++n) {
+         cc = func(n, 0);
+         coeffs[n][n] += std::get<0>(cc);
+         coeffs_[n][n] += std::get<1>(cc);
+         for (int m = 1; m <= n; ++m) {
+            cc = func(n, m);
+            coeffs[n][n + m] += std::get<0>(cc);
+            coeffs_[n][n + m] += std::get<1>(cc);
+            //
+            cc = func(n, -m);
+            coeffs[n][n - m] += std::get<0>(cc);
+            coeffs_[n][n - m] += std::get<1>(cc);
+         }
+      }
+   }
+
+   std::complex<double> IG_using_M(const std::array<double, 3>& O) {
+      std::array<double, 3> Xc2O = O - this->X;
+      std::complex<double> ret = 0;
+      for (int n = 0; n <= N; ++n) {
+         complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, 0, Xc2O)), this->get_coeffs(n, 0), ret);
+         for (int m = 1; m <= n; ++m) {
+            complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, m, Xc2O)), this->get_coeffs(n, m), ret);
+            complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, -m, Xc2O)), this->get_coeffs(n, -m), ret);
+         }
+      }
+
+      return ret;
+   }
+
+   std::complex<double> IG_using_L(const std::array<double, 3>& O) {
+      std::array<double, 3> Xc2O = O - this->X;
+      std::complex<double> ret = 0;
+      for (int n = 0; n <= N; ++n) {
+         complex_fused_multiply_increment(SolidHarmonicR(n, 0, Xc2O), this->get_coeffs(n, 0), ret);
+         for (int m = 1; m <= n; ++m) {
+            complex_fused_multiply_increment(SolidHarmonicR(n, m, Xc2O), this->get_coeffs(n, m), ret);
+            complex_fused_multiply_increment(SolidHarmonicR(n, -m, Xc2O), this->get_coeffs(n, -m), ret);
+         }
+      }
+      return ret;
+   }
+
+   std::complex<double> IGn_using_M(const std::array<double, 3>& O) {
+      std::array<double, 3> Xc2O = O - this->X;
+      std::complex<double> ret = 0;
+      for (int n = 0; n <= N; ++n) {
+         complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, 0, Xc2O)), this->get_coeffs_(n, 0), ret);
+         for (int m = 1; m <= n; ++m) {
+            complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, m, Xc2O)), this->get_coeffs_(n, m), ret);
+            complex_fused_multiply_increment(std::conj(SolidHarmonicS(n, -m, Xc2O)), this->get_coeffs_(n, -m), ret);
+         }
+      }
+      return ret;
+   }
+
+   std::complex<double> IGn_using_L(const std::array<double, 3>& O) {
+      std::array<double, 3> Xc2O = O - this->X;
+      std::complex<double> ret = 0;
+      for (int n = 0; n <= N; ++n) {
+         complex_fused_multiply_increment(SolidHarmonicR(n, 0, Xc2O), this->get_coeffs_(n, 0), ret);
+         for (int m = 1; m <= n; ++m) {
+            complex_fused_multiply_increment(SolidHarmonicR(n, m, Xc2O), this->get_coeffs_(n, m), ret);
+            complex_fused_multiply_increment(SolidHarmonicR(n, -m, Xc2O), this->get_coeffs_(n, -m), ret);
+         }
+      }
+      return ret;
+   }
+};
+
+//! Returns the shifted ExpCoeffs of M to the new center X
+template <int N>
+ExpCoeffs<N> M2M(const ExpCoeffs<N>& M, const std::array<double, 3>& XIN) {
+   ExpCoeffs<N> M_shifted(XIN);
+   std::array<double, 3> r = M.X - XIN;
+   std::complex<double> R;
+
+   auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
+      std::array<std::complex<double>, 2> ret = {0, 0};
+      int m_;
+      for (int n_ = 0; n_ <= n; ++n_) {
+         m_ = 0;
+         R = SolidHarmonicR(n_, m_, r);
+         complex_fused_multiply_increment(R, M.get_coeffs(n - n_, m - m_), std::get<0>(ret));
+         complex_fused_multiply_increment(R, M.get_coeffs_(n - n_, m - m_), std::get<1>(ret));
+         for (m_ = 1; m_ <= n_; ++m_) {
+            R = SolidHarmonicR(n_, m_, r);
+            complex_fused_multiply_increment(R, M.get_coeffs(n - n_, m - m_), std::get<0>(ret));
+            complex_fused_multiply_increment(R, M.get_coeffs_(n - n_, m - m_), std::get<1>(ret));
+            //
+            R = SolidHarmonicR(n_, -m_, r);
+            complex_fused_multiply_increment(R, M.get_coeffs(n - n_, m + m_), std::get<0>(ret));
+            complex_fused_multiply_increment(R, M.get_coeffs_(n - n_, m + m_), std::get<1>(ret));
+         }
+      }
+      return ret;
+   };
+
+   M_shifted.set(set_coeffs);
+
+   return M_shifted;
+};
+
+//! Returns the LocalExp of M at the new center X
+template <int N>
+ExpCoeffs<N> M2L(const ExpCoeffs<N>& M, const std::array<double, 3>& XIN) {
+   ExpCoeffs<N> LocalExp(XIN);
+   std::complex<double> S_;
+   std::array<double, 3> r = XIN - M.X;
+
+   auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
+      std::array<std::complex<double>, 2> ret = {0, 0};
+      int m_;
+      double sign = (n % 2 == 0) ? 1.0 : -1.0;
+      for (int n_ = 0; n_ <= N; ++n_) {
+         m_ = 0;
+         S_ = sign * std::conj(SolidHarmonicS(n + n_, m + m_, r));
+         complex_fused_multiply_increment(S_, M.get_coeffs(n_, m_), std::get<0>(ret));
+         complex_fused_multiply_increment(S_, M.get_coeffs_(n_, m_), std::get<1>(ret));
+         for (m_ = 1; m_ <= n_; ++m_) {
+            S_ = sign * std::conj(SolidHarmonicS(n + n_, m + m_, r));
+            complex_fused_multiply_increment(S_, M.get_coeffs(n_, m_), std::get<0>(ret));
+            complex_fused_multiply_increment(S_, M.get_coeffs_(n_, m_), std::get<1>(ret));
+            //
+            S_ = sign * std::conj(SolidHarmonicS(n + n_, m + -m_, r));
+            complex_fused_multiply_increment(S_, M.get_coeffs(n_, -m_), std::get<0>(ret));
+            complex_fused_multiply_increment(S_, M.get_coeffs_(n_, -m_), std::get<1>(ret));
+         }
+      }
+      return ret;
+   };
+
+   LocalExp.set(set_coeffs);
+
+   return LocalExp;
+};
+
+//! Returns the shifted LocalExp of L to the new center X
+template <int N>
+ExpCoeffs<N> L2L(const ExpCoeffs<N>& L, const std::array<double, 3>& XIN) {
+   ExpCoeffs<N> LocalExp(XIN);
+   std::complex<double> R;
+   std::array<double, 3> r = XIN - L.X;
+
+   auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
+      int m_;
+      std::array<std::complex<double>, 2> ret = {0, 0};
+      for (int n_ = n; n_ <= N; ++n_) {
+         m_ = 0;
+         R = SolidHarmonicR(n_ - n, m_ - m, r);
+         complex_fused_multiply_increment(R, L.get_coeffs(n_, m_), std::get<0>(ret));
+         complex_fused_multiply_increment(R, L.get_coeffs_(n_, m_), std::get<1>(ret));
+         for (m_ = 1; m_ <= n_; ++m_) {
+            R = SolidHarmonicR(n_ - n, m_ - m, r);
+            complex_fused_multiply_increment(R, L.get_coeffs(n_, m_), std::get<0>(ret));
+            complex_fused_multiply_increment(R, L.get_coeffs_(n_, m_), std::get<1>(ret));
+
+            R = SolidHarmonicR(n_ - n, -m_ - m, r);
+            complex_fused_multiply_increment(R, L.get_coeffs(n_, -m_), std::get<0>(ret));
+            complex_fused_multiply_increment(R, L.get_coeffs_(n_, -m_), std::get<1>(ret));
+         }
+      }
+      return ret;
+   };
+
+   LocalExp.set(set_coeffs);
+
+   return LocalExp;
+}
+
+/* -------------------------------------------------------------------------- */
+
+//! (-1)^mを含むルジャンドル陪関数
+double dPdx(const double k, const double m, const double x) {
+   double tmp = 1. / std::sqrt(1 - x * x);
+   return std::pow(-1., m) * tmp * (m * x * tmp * std::assoc_legendre(k, m, x) + std::assoc_legendre(k, m + 1, x));
 }
 
 double P(const double k, const double m, const double x) { return std::pow(-1., m) * std::assoc_legendre(k, m, x); };
@@ -151,7 +481,7 @@ double Gapx(unsigned p,
 //    return {accum_near, accum_far};
 // }
 
-// template <std::size_t max_n>
+// template <int max_n>
 // struct multipole_expansion {
 //    std::array<double, 3> center;
 //    std::vector<std::array<std::array<double, 3>, 3>> vertex_position;
@@ -195,10 +525,10 @@ double Gapx(unsigned p,
 //    const std::complex<double>& getM(const int n, const int m) { return M[(n * n + 1 /*一つ小さいnのサイズ*/) + n + m]; };
 // };
 
-double dPdx(const double k, const double m, const double x) {
-   double tmp = 1. / std::sqrt(1 - x * x);
-   return std::pow(-1., m) * tmp * (m * x * tmp * std::assoc_legendre(k, m, x) + std::assoc_legendre(k, m + 1, x));
-}
+// double dPdx(const double k, const double m, const double x) {
+//    double tmp = 1. / std::sqrt(1 - x * x);
+//    return std::pow(-1., m) * tmp * (m * x * tmp * std::assoc_legendre(k, m, x) + std::assoc_legendre(k, m + 1, x));
+// }
 
 constexpr std::complex<double> dYda(const int k, const int m, const double a_far, const double b_far) {
    if (k < 0 || std::abs(m) > k) {
@@ -235,7 +565,7 @@ std::array<double, 3> gradGapx(unsigned p,
       }
    return Dot(grad_sphe_Gapx, gradSphericalCoordinates(X_far_IN - center));
 }
-
+//
 // struct poleSummation {
 
 //    std::complex<double> G_near = 0;

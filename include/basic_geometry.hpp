@@ -361,16 +361,16 @@ double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
    const double ab = Norm(a - b);
    const double bc = Norm(b - c);
    const double ca = Norm(c - a);
+   const double den1 = (-ab + bc + ca);
+   const double den2 = (ab - bc + ca);
+   const double den3 = (ab + bc - ca);
+   return 2. * ab * bc * ca / (den1 * den2 * den3);
+
    // const double s = (ab + bc + ca) * 0.5;
    // const double area = std::sqrt(s * (s - ab) * (s - bc) * (s - ca));
    // const double inradius = area / s;
    // const double circumradius = ab * bc * ca / (4. * area);
    // return ab * bc * ca / (4. * ((s - ab) * (s - bc) * (s - ca)));
-
-   const double den1 = (-ab + bc + ca);
-   const double den2 = (ab - bc + ca);
-   const double den3 = (ab + bc - ca);
-   return 2. * ab * bc * ca / (den1 * den2 * den3);
    /* ------------------------------- OLD version ------------------------------ */
    // return Circumradius(X0, X1, X2) / Inradius(X0, X1, X2);
    /* -------------------------------------------------------------------------- */

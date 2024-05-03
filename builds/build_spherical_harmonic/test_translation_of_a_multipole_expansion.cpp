@@ -51,141 +51,77 @@ make
 
 */
 
-struct FMM_pole {
-   double value_FMM = 1.;
-   std::array<double, 3> X_FMM = {0., 0., 0.};
-
-   FMM_pole(double value, std::array<double, 3> X) : value_FMM(value), X_FMM(X) {}
-};
-
-struct FMM_triangle_face {
-   std::array<FMM_pole*, 3> poles = {nullptr, nullptr, nullptr};
-
-   FMM_triangle_face(FMM_pole* p0, FMM_pole* p1, FMM_pole* p2) : poles({p0, p1, p2}) {}
-
-   std::array<std::array<double, 3>, 3> getVerticesPosition() { return {poles[0]->X_FMM, poles[1]->X_FMM, poles[2]->X_FMM}; }
-};
-
-template <std::size_t max_n>
-struct FMM_multipole_moment {
-
-   std::array<double, 3> center;
-   std::vector<FMM_triangle_face*> triangles;
-   std::vector<std::tuple<FMM_pole*, std::array<std::array<std::complex<double>, max_n + 1>, max_n + 1>>> pole_values;
-   std::array<std::tuple<double, double, double, Tddd>, __array_GW6xGW6__.size()> t0_t1_ww_N012;
-
-   FMM_multipole_moment(const std::vector<FMM_triangle_face*>& triangles, const std::array<double, 3>& center)
-       : center(center), triangles(triangles) {
-      for (int i = 0; const auto& [t0, t1, ww] : __array_GW6xGW6__)
-         t0_t1_ww_N012[i++] = {t0, t1, ww, ModTriShape<3>(t0, t1)};
-
-      // std::array<std::complex<double>, (max_n + 1) * (max_n + 1)> M;
-      std::array<std::array<std::complex<double>, max_n + 1>, max_n + 1> M;
-      M.fill(0);
-      double weight, c;
-      int m, n;
-      for (const auto& triangle : triangles) {
-         auto X012 = triangle->getVerticesPosition();
-         for (const auto& pole : triangle->poles) {
-            M.fill(0);
-            //! make M
-            for (const auto& [t0, t1, ww, N01] : this->t0_t1_ww_N012) {
-
-               weight = ww * (1. - t0);
-               auto [r_near, a_near, b_near] = ToSphericalCoordinates(Dot(N01, X012) - this->center);
-
-               for (n = 0; n <= max_n; ++n) {
-                  c = weight * std::pow(r_near, n);
-                  for (m = -n; m <= n; ++m)
-                     M[n][max_n + m] += c * Y(n, -m, a_near, b_near);
-               }
-               
-            }
-            //! emplace_back M
-            this->pole_values.emplace_back(pole, M);
-         }
-      }
-      //! pole_values is ready
-   }
-
-   double G_FMM(const std::array<double, 3>& X_far) const {
-      int m, n;
-      const auto [r_far, a_far, b_far] = ToSphericalCoordinates(X_far - this->center);
-      double inv_r_far = 1. / r_far, c;
-
-      //! make S
-      std::array<std::complex<double>, (max_n + 1) * (max_n + 1)> S;
-      for (n = 0; n <= max_n; ++n)
-         for (m = -n; m <= n; ++m)
-            S[this->getIndex(n, m)] += inv_r_far * Y(n, m, a_far, b_far);
-
-      //! retrive pole_values
-      int i = 0;
-      std::complex<double> accum = 0;
-      for (const auto& [pole, M] : this->pole_values)
-         for (n = 0; n <= max_n; ++n) {
-            for (m = -n; m <= n; ++m) {
-               i = this->getIndex(n, m);
-               accum += (M[i] * inv_r_far) * S[i];
-            }
-         }
-      return accum.real();
-   }
-
-   double G_original(std::array<double, 3> X_far) const {
-      double accum = 0, inv_r;
-      for (const auto& triangle : this->triangles) {
-         auto X012 = triangle->getVerticesPosition();
-         for (const auto& pole : triangle->poles) {
-            for (const auto& [t0, t1, ww, N012] : this->t0_t1_ww_N012)
-               accum += ww * (1. - t0) / Norm(Dot(N012, X012) - X_far);
-         }
-      }
-      return accum;
-   }
-
-   // const std::complex<double>& getM(const int n, const int m) { return M[(n * n + 1 /*一つ小さいnのサイズ*/) + n + m]; };
-   int getIndex(const int n, const int m) const { return (n * n + 1 /*一つ小さいnのサイズ*/) + n + m; };
-};
-
-auto p0 = new FMM_pole(1., {0., 0., 0.});
-auto p1 = new FMM_pole(1., {1., 0., 0.});
-auto p2 = new FMM_pole(1., {0., 1., 0.});
-auto p3 = new FMM_pole(1., {0., 0., 1.});
-
-auto face0 = new FMM_triangle_face(p0, p1, p2);
-auto face1 = new FMM_triangle_face(p0, p1, p3);
-
-const std::array<double, 3> center = {{0., 0., 0.}};
-
 int main() {
+   std::array<double, 3> Xc = {0., 0., 0.};
+   std::array<double, 3> Xc_ = Xc + Tddd{.5, .5, .5};
+   std::array<double, 3> OL = Xc_ + Tddd{7., 7., 7.};
+   std::array<double, 3> OL2 = OL + Tddd{-.5, .5, .5};
+   std::array<double, 3> O = OL2 + Tddd{-.5, .5, .5};
+   //
+   ExpCoeffs<15> M0(Xc);
+   auto X012 = std::array<Tddd, 3>{Tddd{-1., 0., -1}, Tddd{1., 0., -1}, Tddd{0., 1., -1}};
+   auto q012 = std::array<double, 3>{1, 1., 1.};
+   auto phi012 = std::array<double, 3>{1., 1., 1.};
+   //
+   double integral0 = 0.0, integral1 = 0.0;
+   std::array<double, 2> weights;
+   auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
+   std::array<double, 3> normal = Normalize(cross);
+   Tddd X, R;
+   double ig = 0, ign = 0, nr, value;
 
-   const double range = 20.0;  // Range of grid from the center
-   const double dx = 0.5;      // Grid spacing
-
-   const FMM_multipole_moment<8> multipole_moment({face0, face1}, center);
-
-   // Output file
-   std::string name = "./output/multipole_expansion_comparison.dat";
-   std::ofstream ofs(name);
-   if (!ofs.is_open()) {
-      std::cerr << "Failed to open " << name << std::endl;
-      return -1;
+   for (const auto& [xi0, xi1, ww] : __array_GW10xGW10__) {
+      X = Dot(ModTriShape<3>(xi0, xi1), X012);
+      value = Dot(ModTriShape<3>(xi0, xi1), q012);
+      R = X - O;
+      weights = Tdd{1., 1.} * Norm(cross) * ww * (1. - xi0);
+      nr = Norm(R);
+      //$ 直接積分
+      ig += weights[0] / nr;
+      ign += -weights[1] * Dot(R / (nr * nr * nr), normal);
+      //$ 多重極展開
+      M0.increment(X, weights, normal);
    }
 
-   std::cout << "X Y Z G_FMM G_Original Error(log10)" << std::endl;
+   auto M2M_0 = M2M(M0, Xc_);
 
-   for (double x = -range; x <= range; x += dx) {
-      for (double y = -range; y <= range; y += dx) {
-         double z = 0;
-         std::array<double, 3> X_far = {x, y, z};
-         double G_FMM = multipole_moment.G_FMM(X_far);
-         double G_Original = multipole_moment.G_original(X_far);
-         double error = std::log10(std::abs(G_FMM - G_Original));
+   auto M2M_M2L_0 = M2L(M2M_0, OL);
 
-         ofs << x << " " << y << " " << z << " " << G_FMM << " " << G_Original << " " << error << std::endl;
+   auto M2M_M2L_L2L_0 = L2L(M2M_M2L_0, OL2);
+
+   auto accuracy = [](std::complex<double> a, double b) { return (a.real() / b - 1.) * 100; };
+
+   int n = 3, m = -2;
+   for (auto x : {0., 0.5, 1.0}) {
+      for (auto y : {0., 0.5, 1.0}) {
+         for (auto z : {0., 0.5, 1.0}) {
+            auto [rho, theta, phi] = ToSphericalCoordinates(x, y, z);
+            std::cout << ToSphericalCoordinates(x, y, z) << SolidHarmonicR(n, m, std::array<double, 3>{x, y, z}) << ", " << std::polar((std::pow(rho, n) / factorial(n + m)) * std::assoc_legendre(n, m, std::cos(theta)), m * phi) << std::endl;
+         }
       }
    }
 
-   std::cout << "Data output to " << name << std::endl;
+   //! 　直接積分
+   std::cout << Red << ig << colorReset << std::endl;
+   std::cout << Green << ign << colorReset << std::endl;
+
+   //! 　P2M後のモーメントを使った積分結果
+   std::cout << "check moment expansion" << std::endl;
+   std::cout << Red << M0.IG_using_M(O) << " accuracy: " << accuracy(M0.IG_using_M(O), ig) << "\%" << colorReset << std::endl;
+   std::cout << Green << M0.IGn_using_M(O) << " accuracy: " << accuracy(M0.IGn_using_M(O), ign) << "\%" << colorReset << std::endl;
+
+   //! 　M2M後のモーメントを使った積分結果
+   std::cout << "check M2M" << std::endl;
+   std::cout << Red << M2M_0.IG_using_M(O) << " accuracy: " << accuracy(M2M_0.IG_using_M(O), ig) << "\%" << colorReset << std::endl;
+   std::cout << Green << M2M_0.IGn_using_M(O) << " accuracy: " << accuracy(M2M_0.IGn_using_M(O), ign) << "\%" << colorReset << std::endl;
+
+   //! 　M2L後のモーメントを使った積分結果
+   std::cout << "check M2L" << std::endl;
+   std::cout << Red << M2M_M2L_0.IG_using_L(O) << " accuracy: " << accuracy(M2M_M2L_0.IG_using_L(O), ig) << "\%" << colorReset << std::endl;
+   std::cout << Green << M2M_M2L_0.IGn_using_L(O) << " accuracy: " << accuracy(M2M_M2L_0.IGn_using_L(O), ign) << "\%" << colorReset << std::endl;
+
+   //! 　L2L後のモーメントを使った積分結果
+   std::cout << "check L2L" << std::endl;
+   std::cout << Red << M2M_M2L_L2L_0.IG_using_L(O) << " accuracy: " << accuracy(M2M_M2L_L2L_0.IG_using_L(O), ig) << "\%" << colorReset << std::endl;
+   std::cout << Green << M2M_M2L_L2L_0.IGn_using_L(O) << " accuracy: " << accuracy(M2M_M2L_L2L_0.IGn_using_L(O), ign) << "\%" << colorReset << std::endl;
 }

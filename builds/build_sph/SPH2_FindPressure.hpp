@@ -123,7 +123,6 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 /* -------------------------------------------------------------------------- */
 /*                     setPoissonEquation A x = b                             */
 /* -------------------------------------------------------------------------- */
-
 // \label{SPH:setPoissonEquation}
 void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                         const std::unordered_set<Network *> &target_nets,
@@ -176,7 +175,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          const double r = pO->SML_next();
          auto applyOverPoints = [&r, &pO, &pO_center](const auto &equation, const std::unordered_set<Network *> NETS) {
             for (const auto &net : NETS) {
-               net->BucketPoints.apply(pO_center, 1.2 * r, [&](const auto &B) {
+               net->BucketPoints.apply(pO_center, 1.1 * r, [&](const auto &B) {
                   if (canInteract(pO, B))
                      equation(B);
                });
@@ -354,20 +353,47 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
             // b@ ISPH like EISPH．　ISPHは方程式を立てる必要がある
             total_volume_w = 0;
-            applyOverPoints(ISPH_wall_pressure, fluid_nets);
-            if (total_volume_w != 0.) {
-               for (auto &[_, v] : ROW->column_value)
-                  v /= total_volume_w;
-               ROW->PoissonRHS /= total_volume_w;
-            }
-            ROW->increment(ROW, -1.);
-            // if no particle is around the wall particle, then set pressure to zero
-            if (ROW->column_value.empty()) {
-               ROW->clearColumnValue();
-               ROW->CRS::set(ROW, 1.);
-               ROW->PoissonRHS = 0;
-            }
+            pO_center = pO_center_mirror + pO->v_to_surface_SPH;
 
+            // case 1
+            // double nearest_d = 1.e10;
+            // networkPoint *pO_nearest = nullptr;
+            // for (const auto &net : fluid_nets) {
+            //    net->BucketPoints.apply(pO_center, pO->SML_next(), [&](const auto &B) {
+            //       if (canInteract(pO, B)) {
+            //          const auto d = Distance(pO_center, X_next(B));
+            //          if (d < nearest_d && !B->isSurface) {
+            //             nearest_d = d;
+            //             pO_nearest = B;
+            //          }
+            //       }
+            //    });
+            // }
+            // //
+            // if (pO_nearest != nullptr) {
+            //    ROW->pressure_equation_index = 3;
+            //    pO = pO_nearest;
+            //    pO_center = X_next(pO);
+            //    applyOverPoints(make_near_particles_and_V_GradW, target_nets);
+            //    applyOverPoints(PoissonEquation, target_nets);
+            // } else
+            {
+               // case 2
+               pO_center = pO_center_mirror + 2 * pO->v_to_surface_SPH;
+               applyOverPoints(ISPH_wall_pressure, fluid_nets);
+               if (total_volume_w != 0.) {
+                  for (auto &[_, v] : ROW->column_value)
+                     v /= total_volume_w;
+                  ROW->PoissonRHS /= total_volume_w;
+               }
+               ROW->increment(ROW, -1.);
+               // if no particle is around the wall particle, then set pressure to zero
+               if (ROW->column_value.empty()) {
+                  ROW->clearColumnValue();
+                  ROW->CRS::set(ROW, 1.);
+                  ROW->PoissonRHS = 0;
+               }
+            }
          } else {
             // b@ ISPH
             ROW->pressure_equation_index = 3;
@@ -495,6 +521,8 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 gmres<std::vector<networkPoint *>> *GMRES = nullptr;
 #endif
 
+int gmres_size = 20;
+
 void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    DebugPrint(Blue, "solvePoisson", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    std::vector<networkPoint *> points;
@@ -563,24 +591,28 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   int size = 100;
+   gmres_size = 40;
+
    if (GMRES == nullptr) {
-      GMRES = new gmres(points, b, x0, size);  //\label{SPH:gmres}
+      GMRES = new gmres(points, b, x0, gmres_size);  //\label{SPH:gmres}
    } else {
-      GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
+      GMRES->Restart(points, b, x0, gmres_size);  //\label{SPH:gmres}
    }
    // gmres gm(points, b, x0, size);  //\label{SPH:gmres}
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+   std::cout << "gmres_size : " << gmres_size << std::endl;
    x0 = GMRES->x;
-   double torr = 1E-13;
+   double torr = 1E-7;
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
    if (GMRES->err > torr)
-      for (auto i = 1; i < 10; i++) {
+      for (auto i = 1; i < 5; i++) {
          std::cout << "Restart : " << i << std::endl;
-         GMRES->Restart(points, b, x0, size);  //\label{SPH:gmres}
+         // if (i % 2 == 0)
+         gmres_size += 5;
+         GMRES->Restart(points, b, x0, gmres_size);  //\label{SPH:gmres}
          x0 = GMRES->x;
          std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
          std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;

@@ -277,8 +277,9 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                majorFlatFaces.push_back(pf0);
          }
 
-         std::vector<Tddd> projected_vec_for_each_p_f;
-         // 面p_fが干渉する，最も近い構造物面を抽出
+         std::vector<double> distances;
+         std::vector<Tddd> directions;
+         //! 面p_fが干渉する，最も近い構造物面を抽出
          for (const auto &major : majorFlatFaces) {
             Tddd vec_to_closest_struct_face = {1E+20, 1E+20, 1E+20};
             bool found = false;
@@ -297,10 +298,12 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                   }
                }
             }
-            if (found)
-               projected_vec_for_each_p_f.push_back(Projection(vec_to_closest_struct_face, major->normal));
+            if (found) {
+               distances.push_back(Dot(vec_to_closest_struct_face, major->normal));
+               directions.push_back(major->normal);
+            }
          }
-         to_structure_face = optimumVector(projected_vec_for_each_p_f, {0., 0., 0.}, 1E-12);
+         to_structure_face = optimalVector(distances, directions, {0., 0., 0.});
       }
 
       return p_X_on_CORNER + to_structure_face - pX;
@@ -352,11 +355,14 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
                                                        const std::array<double, 3> &current_pX,
                                                        std::function<Tddd(const networkPoint *)> position) {
    Tddd V = {0., 0., 0.}, X = {0., 0., 0.}, Xmid, vertical;
-   double Wtot = 0, W, height;
+   double Wtot = 0, W, height, cuurent_height;
    const int max_sum_depth = 5;
 
    bool find_neumann_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
    bool find_dirichlet_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+
+   // std::vector<double> distances;
+   // std::vector<Tddd> directions;
 
    for (const auto &f : p->getFaces()) {
       auto [p0, p1, p2] = f->getPoints(p);
@@ -365,10 +371,12 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       auto X2 = position(p2);
 
       //! CircumradiusToInradiusの２乗を重みとしている
-      W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      // W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
 
       //! 重みの最大値と最小値を設定している
-      W = std::clamp(W, 4., 40.);
+      // W = std::clamp(W, 4., 40.);
+      W = std::clamp(W, 2., 40.);
 
       //! よりディリクレ面の歪みを緩和するように重みを大きくする
       // if (f->Dirichlet)
@@ -390,9 +398,14 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       Xmid = (X2 + X1) * 0.5;
       vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
       height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
+      // cuurent_height = Norm(X0 - Xmid);
       FusedMultiplyIncrement(W, height * vertical + Xmid - current_pX, V);
+
+      // directions.push_back(Normalize(height * vertical + Xmid - current_pX));
+      // distances.push_back(Norm(height * vertical + Xmid - current_pX));
    }
    return V / Wtot;
+   // return optimalVector(distances, directions, V / Wtot);
 };
 
 void calculateVecToSurface(const Network &net, const int loop, const double coef) {
@@ -413,7 +426,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       {
          auto X = RK_with_Ubuff(p);
          auto V = a * DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
-         V += (1 - a) * ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); }, 2);
+         V += (1 - a) * ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); }, 1.);
          // V = 0.9 * V + 0.1 * VV;
          // double C = 0, size = 0.;
          // for (const auto &f : p->getFaces()) {
@@ -434,6 +447,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
 
          if (!isFinite(V))
             V.fill(0.);
+
          p->vecToSurface_BUFFER = condition_Ua(V, p);
       }
 

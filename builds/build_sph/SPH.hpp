@@ -1,7 +1,8 @@
 #ifndef SPH_H
 #define SPH_H
 
-#define USE_ISPH  // USE_ESPH
+#define USE_ISPH
+// #define USE_ESPH
 
 // #define USE_LAPLACIAN_CORRECTION
 #define USE_GRAD_CORRECTION
@@ -187,7 +188,7 @@ void developByEISPH(Network *net,
 #pragma omp parallel
       for (const auto &obj : all_net)
 #pragma omp single nowait
-         obj->makeBucketPoints(1.25 * bucket_spacing);
+         obj->makeBucketPoints(0.75 * bucket_spacing);
       Print(Green, "バケットの生成", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 
       for (const auto &p : net->getPoints()) {
@@ -254,6 +255,8 @@ void developByEISPH(Network *net,
          solvePoisson(Join(net->getPoints(), wall_p));
          Print(Green, "ISPH: solvePoisson", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 #elif defined(USE_ESPH)
+         if (simulation_time < 1E-10)
+            solvePoisson(Join(net->getPoints(), wall_p));
          Print(Yellow, "EISPH: this does not solve Poisson equation", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 #endif
          /* -------------------------------------------------------------------------- */

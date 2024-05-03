@@ -25,15 +25,36 @@ template <>
 struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
    NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit){};
    void update(const V_d &F, const VV_d &dFdx) {
-      lapack_lu lu(dFdx);
-      lu.solve(-F, dX);
+      lapack_lu lu(dFdx, dX, -F);
       X += dX;
    };
 
    void update(const V_d &F, const VV_d &dFdx, const double a) {
-      lapack_lu lu(dFdx);
-      lu.solve(-F, dX);
+      lapack_lu lu(dFdx, dX, -F);
       X += a * dX;
+   };
+
+   // pass lambda function to constrain the solution and update X and dX
+   void constrains(const std::function<V_d(V_d)> &constraint) {
+      /*
+      X^* = X + dX
+      constrained(X^*) = X^* + dX* = X + dX + dX^*
+      constrained(X^*) - (X + dX) = dX^*
+
+      constrained(X^*) = X + dX + dX^* = X + dX^{c}
+      dX^{c} = dX + dX^*
+      */
+
+      //@ tedious way to update X and dX
+      // auto X_ast = X;
+      // auto dX_ast = constraint(X) - X_ast;
+      // auto dX_c = dX + dX_ast;
+      // X = constraint(X);
+      // dX = dX_c;
+
+      //@ concise way to update X and dX
+      dX -= X;
+      dX += (X = constraint(X));
    };
 };
 /* ------------------------------------------------------ */
@@ -68,6 +89,17 @@ struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd> {
       lapack_lu(dX, dFdx, -F);
       X += dX;
    };
+
+   void constrains(const std::function<Tddd(const Tddd &)> &constraint) {
+      dX -= X;
+      dX += (X = constraint(X));
+   };
+
+   void update(const Tddd &F, const T3Tddd &dFdx, const std::function<Tddd(const Tddd &)> &constraint) {
+      lapack_lu(dX, dFdx, -F);
+      X += dX;
+      constraint(X);
+   };
 };
 template <>
 struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
@@ -91,86 +123,281 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
 /*                           利用例                        */
 /* ------------------------------------------------------ */
 
-template <std::size_t N>
-std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
-                                    const std::array<double, N> &init_vector,
-                                    const double tolerance = 1E-12) {
-   std::array<NewtonRaphson<double>, N> NRs;
-   for (std::size_t i = 0; i < N; ++i)
-      NRs[i].X = init_vector[i];
-   std::array<double, N> Fs, dFs;
-   double w, drdx;
-   for (auto j = 0; j < 500; ++j) {
-      Fs.fill(0);
-      dFs.fill(0);
-      for (const auto &vec : sample_vectors) {
-         w = 1;
-         drdx = -w;
-         for (std::size_t i = 0; i < N; ++i) {
-            // Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
-            // dFs[i] += drdx * drdx;
-            // use std::fma
-            Fs[i] = std::fma(w * (vec[i] - NRs[i].X), drdx, Fs[i]);
-            dFs[i] = std::fma(drdx, drdx, dFs[i]);
+//! 成分毎に与えること
+//! v = vx*ex + vy*ey + vz*ezの場合
+//! {vx,vy,vz}, {ex,ey,ez}を与える
+//! ex = {1,0,0}, ey = {0,1,0}, ez = {0,0,1}でなくとも良いが，ほぼ正規直交座標系であることが望ましいだろう
+std::array<double, 3> optimalVector(std::vector<double> Vsample,
+                                    std::vector<Tddd> Directions,
+                                    const Tddd &Vinit,
+                                    std::vector<double> weights,
+                                    std::array<double, 3> &convergence_info) {
+
+   double mean = 0.;
+   for (const auto &v : Vsample)
+      mean += std::abs(v);
+   mean /= Vsample.size();
+   if (mean == 0)
+      return {0., 0., 0.};
+
+   const double tolerance = 1E-12 * mean;
+   convergence_info = {0., 0., 0.};
+   if (Vsample.size() == 1)
+      return Vsample[0] * Directions[0];
+
+   const double threshold_angle_in_rad = 0.1 * M_PI / 180.;
+
+   //! 与えられている情報が不十分な場合がある．
+
+   /* -------------------------------------------------------------------------- */
+   /*                         make directions into groups                        */
+   /* -------------------------------------------------------------------------- */
+
+   std::vector<std::vector<Tddd>> direction_groups;
+   for (auto &d : Directions) {
+      if (direction_groups.empty())
+         direction_groups.push_back({d});
+      else {
+         bool is_new_direction = true;
+         for (auto &dg : direction_groups) {
+            if (std::ranges::any_of(dg, [&](const Tddd &dir) { return isFlat(dir, d, threshold_angle_in_rad); })) {
+               dg.push_back(d);
+               is_new_direction = false;
+               break;
+            }
          }
+         if (is_new_direction)
+            direction_groups.push_back({d});
       }
-      bool converged = true;
-      for (std::size_t i = 0; i < N; ++i) {
-         NRs[i].update(Fs[i], dFs[i]);
-         if (std::abs(NRs[i].dX) >= tolerance) converged = false;
-      }
-      if (converged) break;
-   }
-   std::array<double, N> result;
-   for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
-   return result;
-}
-
-template <std::size_t N>
-std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
-                                    const std::array<double, N> &init_vector,
-                                    const std::vector<double> &weights,
-                                    const double tolerance = 1E-12) {
-   if (weights.size() != sample_vectors.size())
-      throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
-
-   double max_weight = *std::max_element(weights.begin(), weights.end());
-   std::vector<double> normalized_weights(weights.size());
-   std::transform(weights.begin(), weights.end(), normalized_weights.begin(), [&](double w) { return w / max_weight; });
-
-   std::array<NewtonRaphson<double>, N> NRs;
-   for (std::size_t i = 0; i < N; ++i)
-      NRs[i].X = init_vector[i];
-
-   std::array<double, N> Fs, dFs;
-   double w, drdx;
-   for (int iteration = 0; iteration < 500; ++iteration) {
-      Fs.fill(0);
-      dFs.fill(0);
-      for (size_t i = 0; i < sample_vectors.size(); ++i) {
-         w = normalized_weights[i];
-         drdx = -w;
-         for (size_t j = 0; j < N; ++j) {
-            // Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
-            // dFs[j] += drdx * drdx;
-            // use std::fma
-            Fs[j] = std::fma(w * (sample_vectors[i][j] - NRs[j].X), drdx, Fs[j]);
-            dFs[j] = std::fma(drdx, drdx, dFs[j]);
-         }
-      }
-
-      bool converged = true;
-      for (std::size_t i = 0; i < N; ++i) {
-         NRs[i].update(Fs[i], dFs[i]);
-         if (std::abs(NRs[i].dX) >= tolerance) converged = false;
-      }
-      if (converged) break;
    }
 
-   std::array<double, N> result;
-   for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
-   return result;
+   if (direction_groups.size() == 1) {
+      constexpr Tdd angle_range = {std::cos(M_PI / 180. * 30.), std::cos(M_PI / 180. * 150.)};
+      const Tddd eX = {1., 0., 0.}, eY = {0., 1., 0.}, eZ = {0., 0., 1.};
+      Tddd Dir0 = Normalize(Mean(direction_groups[0])), Dir1;
+
+      if (Between(Dot(Dir0, eX), angle_range))
+         Dir1 = Normalize(Cross(Dir0, eX));
+      else if (Between(Dot(Dir0, eY), angle_range))
+         Dir1 = Normalize(Cross(Dir0, eY));
+      else
+         Dir1 = Normalize(Cross(Dir0, eZ));
+
+      double w = Mean(weights);
+      //
+      Vsample.push_back(0.);
+      Directions.push_back(Dir1);
+      weights.push_back(w);
+      //
+      Vsample.push_back(0.);
+      Directions.push_back(Normalize(Cross(Dir0, Dir1)));
+      weights.push_back(w);
+   } else if (direction_groups.size() == 2) {
+      Vsample.push_back(0.);
+      Directions.push_back(Cross(Mean(direction_groups[0]), Mean(direction_groups[1])));
+      weights.push_back(Mean(weights));
+   }
+
+   for (auto &d : Directions)
+      d = Normalize(d);
+
+   /* -------------------------------------------------------------------------- */
+
+   NewtonRaphson<Tddd> NR(Vinit);
+
+   double S, d;
+   Tddd grad;
+   T3Tddd hess;
+
+   int iteration = 0;
+   for (iteration = 0; iteration < 100; ++iteration) {
+      // set grad and hess to zero
+      S = 0.;
+      grad.fill(0.);
+      for (auto &row : hess) row.fill(0.);
+
+      // calculate grad and hess
+      for (std::size_t i = 0; i < Vsample.size(); ++i) {
+         d = Dot(NR.X, Directions[i]) - Vsample[i];
+         S += 0.5 * weights[i] * d * d;
+         grad += weights[i] * Directions[i] * d;
+         hess += weights[i] * TensorProduct(Directions[i], Directions[i]);
+      }
+
+      // update U
+      NR.update(grad, hess);
+
+      // check convergence
+      if (Norm(grad) < tolerance || S < tolerance)
+         break;
+   }
+
+   std::get<0>(convergence_info) = (double)iteration;
+   std::get<1>(convergence_info) = Norm(grad);
+   std::get<2>(convergence_info) = S;
+
+   return NR.X;
 }
+
+std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit) {
+   std::vector<double> weights(Vsample.size(), 1.);
+   std::array<double, 3> convergence_info;
+   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
+}
+
+std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, const std::vector<double> &weights) {
+   std::array<double, 3> convergence_info;
+   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
+}
+
+std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, std::array<double, 3> &convergence_info) {
+   std::vector<double> weights(Vsample.size(), 1.);
+   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
+}
+
+// template <std::size_t N>
+// std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+//                                     const std::array<double, N> &init_vector,
+//                                     const double tolerance = 1E-12) {
+//    std::array<NewtonRaphson<double>, N> NRs;
+//    for (std::size_t i = 0; i < N; ++i)
+//       NRs[i].X = init_vector[i];
+//    std::array<double, N> Fs, dFs;
+//    double w, drdx;
+//    for (auto j = 0; j < 500; ++j) {
+//       Fs.fill(0);
+//       dFs.fill(0);
+//       for (const auto &vec : sample_vectors) {
+//          w = 1;
+//          drdx = -w;
+//          for (std::size_t i = 0; i < N; ++i) {
+//             // Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
+//             // dFs[i] += drdx * drdx;
+//             // use std::fma
+//             Fs[i] = std::fma(w * (vec[i] - NRs[i].X), drdx, Fs[i]);
+//             dFs[i] = std::fma(drdx, drdx, dFs[i]);
+//          }
+//       }
+//       bool converged = true;
+//       for (std::size_t i = 0; i < N; ++i) {
+//          NRs[i].update(Fs[i], dFs[i]);
+//          if (std::abs(NRs[i].dX) >= tolerance) converged = false;
+//       }
+//       if (converged) break;
+//    }
+//    std::array<double, N> result;
+//    for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+//    return result;
+// }
+
+// template <std::size_t N>
+// std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+//                                     const std::array<double, N> &init_vector,
+//                                     const std::vector<double> &weights,
+//                                     const double tolerance = 1E-12) {
+//    if (weights.size() != sample_vectors.size())
+//       throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
+
+//    double max_weight = *std::max_element(weights.begin(), weights.end());
+//    std::vector<double> normalized_weights(weights.size());
+//    std::transform(weights.begin(), weights.end(), normalized_weights.begin(), [&](double w) { return w / max_weight; });
+
+//    std::array<NewtonRaphson<double>, N> NRs;
+//    for (std::size_t i = 0; i < N; ++i)
+//       NRs[i].X = init_vector[i];
+
+//    std::array<double, N> Fs, dFs;
+//    double w, drdx;
+//    for (int iteration = 0; iteration < 500; ++iteration) {
+//       Fs.fill(0);
+//       dFs.fill(0);
+//       for (size_t i = 0; i < sample_vectors.size(); ++i) {
+//          w = normalized_weights[i];
+//          drdx = -w;
+//          for (size_t j = 0; j < N; ++j) {
+//             // Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
+//             // dFs[j] += drdx * drdx;
+//             // use std::fma
+//             Fs[j] = std::fma(w * (sample_vectors[i][j] - NRs[j].X), drdx, Fs[j]);
+//             dFs[j] = std::fma(drdx, drdx, dFs[j]);
+//          }
+//       }
+
+//       bool converged = true;
+//       for (std::size_t i = 0; i < N; ++i) {
+//          NRs[i].update(Fs[i], dFs[i]);
+//          if (std::abs(NRs[i].dX) >= tolerance) converged = false;
+//       }
+//       if (converged) break;
+//    }
+
+//    std::array<double, N> result;
+//    for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+//    return result;
+// }
+
+// template <std::size_t N>
+// std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+//                                     const std::array<double, N> &init_vector,
+//                                     const std::vector<double> &weights,
+//                                     const std::function<std::array<double, N>(const std::array<double, N> &)> &constraint,
+//                                     const double tolerance = 1E-12) {
+//    if (weights.size() != sample_vectors.size())
+//       throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
+
+//    double max_weight = *std::max_element(weights.begin(), weights.end());
+//    std::vector<double> normalized_weights(weights.size());
+//    std::transform(weights.begin(), weights.end(), normalized_weights.begin(), [&](double w) { return w / max_weight; });
+
+//    std::array<NewtonRaphson<double>, N> NRs;
+//    for (std::size_t i = 0; i < N; ++i)
+//       NRs[i].X = init_vector[i];
+
+//    std::array<double, N> Fs, dFs;
+//    double w, drdx;
+//    for (int iteration = 0; iteration < 500; ++iteration) {
+//       Fs.fill(0);
+//       dFs.fill(0);
+//       for (size_t i = 0; i < sample_vectors.size(); ++i) {
+//          w = normalized_weights[i];
+//          drdx = -w;
+//          for (size_t j = 0; j < N; ++j) {
+//             // Fs[j] += w * (sample_vectors[i][j] - NRs[j].X) * drdx;
+//             // dFs[j] += drdx * drdx;
+//             // use std::fma
+//             Fs[j] = std::fma(w * (sample_vectors[i][j] - NRs[j].X), drdx, Fs[j]);
+//             dFs[j] = std::fma(drdx, drdx, dFs[j]);
+//          }
+//       }
+
+//       bool converged = true;
+//       for (std::size_t i = 0; i < N; ++i) {
+//          NRs[i].update(Fs[i], dFs[i]);
+//       }
+//       /*
+//       std::array<NewtonRaphson<double>, N> NRs;としたので，
+//       直接的なconstraintの適用は難しくなった．
+//       */
+
+//       std::array<double, N> tmpX;
+//       for (std::size_t i = 0; i < N; ++i)
+//          tmpX[i] = NRs[i].X;
+
+//       std::array<double, N> constraintX = constraint(tmpX);
+
+//       for (std::size_t i = 0; i < N; ++i) {
+//          NRs[i].dX -= NRs[i].X;
+//          NRs[i].dX += (NRs[i].X = constraintX[i]);
+//          if (iteration > 5 || std::abs(NRs[i].dX) >= tolerance) converged = false;
+//       }
+
+//       if (converged) break;
+//    }
+
+//    std::array<double, N> result;
+//    for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+//    return result;
+// }
 
 double optimumValue(const std::vector<double> &sample_values,
                     const double init_value,

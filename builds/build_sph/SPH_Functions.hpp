@@ -179,6 +179,21 @@ void setSML(const auto &target_nets, const std::array<double, 2> C_SML_min_max =
             }
       }
 
+   //! fluidのpoints_in_SMLを更新
+   for (const auto &NET : target_nets)
+      if (NET->isFluid) {
+#pragma omp parallel
+         for (const auto &p : NET->getPoints())
+#pragma omp single nowait
+         {
+            p->points_in_SML.clear();
+            for (const auto &net : target_nets)
+               net->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
+                  if (Norm(q->X - p->X) < p->SML() && p != q && canInteract(p, q))
+                     p->points_in_SML.emplace_back(q);
+               });
+         }
+      }
    DebugPrint("setSML done", Yellow);
 };
 
@@ -283,10 +298,10 @@ Tddd X_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(const networkPoint *p) {
-   if (!p->isFluid)
-      return _WATER_DENSITY_;
-   else
-      return p->RK_rho.getX(-p->rho * p->div_U_next);
+   // if (!p->isFluid)
+   //    return _WATER_DENSITY_;
+   // else
+   return p->RK_rho.getX(-p->rho * p->div_U_next);
 };
 
 // \label{SPH:volume_next}
@@ -296,6 +311,39 @@ double V_next(const networkPoint *p) {
 
 // \label{SPH:position_next}
 /* -------------------------------------------------------------------------- */
+
+std::vector<networkPoint *> getNearPoints(const networkPoint *p, const auto &RigidBodyObject, double range = -1.) {
+   double closest_d = 1E+20, d;
+   Tddd p_to_q, closest_p_to_q;
+   networkPoint *closest_q = nullptr;
+   if (range < 0.)
+      range = p->SML();
+   std::vector<networkPoint *> nearPoints;
+   // for (const auto &[obj, _] : RigidBodyObject) {
+   for (const auto &obj : RigidBodyObject) {
+      obj->BucketPoints.apply(p->X, range, [&](const auto &q) {
+         p_to_q = q->X - p->X;
+         if (Norm(p_to_q) < range)
+            nearPoints.emplace_back(q);
+      });
+   }
+   return nearPoints;
+};
+
+std::tuple<networkPoint *, Tddd> findClosest(const networkPoint *p, const std::vector<networkPoint *> &nearPoints) {
+   double closest_d = 1E+20, d;
+   Tddd p_to_q, closest_p_to_q;
+   networkPoint *closest_q = nullptr;
+   for (const auto &q : nearPoints) {
+      p_to_q = q->X - p->X;
+      if (closest_d > (d = Norm(p_to_q))) {
+         closest_d = d;
+         closest_p_to_q = p_to_q;
+         closest_q = q;
+      }
+   };
+   return {closest_q, closest_p_to_q};
+};
 
 std::tuple<networkPoint *, Tddd> closest(const networkPoint *p, const auto &RigidBodyObject, double range = -1.) {
    double closest_d = 1E+20, d;
@@ -373,7 +421,7 @@ void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) 
          };
 
          for (const auto &net : target_nets)
-            net->BucketPoints.apply(p->X, 1.2 * p->SML(), add);
+            net->BucketPoints.apply(p->X, 1.1 * p->SML(), add);
 
          p->nabla_otimes_U = nabla_otimes_U;
       }
@@ -412,13 +460,14 @@ void updateParticles(const auto &net,
          bool isReflected = true;
          p->DUDt_modify_SPH.fill(0.);
          // var_M1が大きすぎる場合は計算を修正しよう．
-         const double N = 1000.;
+         const double N = 100000.;
          const double c_reflection = 1. / N;
          const double d_ps = particle_spacing;
          const double d0 = (1 - c) * particle_spacing;
+         auto vector_points = getNearPoints(p, RigidBodyObject, 1.5 * particle_spacing);
          while (isReflected && count++ < N) {  // 厳しく
             isReflected = false;
-            for (const auto &[closest_p, f2w] : {closest(p, RigidBodyObject, 1.5 * particle_spacing) /* , closest_next(p, RigidBodyObject)*/}) {
+            for (const auto &[closest_p, f2w] : {findClosest(p, vector_points) /* , closest_next(p, RigidBodyObject)*/}) {
                if (closest_p != nullptr) {
                   auto dist_f2w = Norm(f2w);
                   auto n = closest_p->interp_normal;
@@ -427,7 +476,8 @@ void updateParticles(const auto &net,
                   auto ratio = 1. - normal_dist_f2w / d0;
                   // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                   if (dist_f2w < particle_spacing) {
-                     bool case0 = normal_dist_f2w < 0.87 * particle_spacing && Dot(p->U_SPH, n) < 0;
+                     // bool case0 = normal_dist_f2w < 0.87 * particle_spacing && Dot(p->U_SPH, n) < 0;
+                     bool case0 = normal_dist_f2w < 0.9 * particle_spacing && Dot(p->U_SPH, n) < 0;
                      // bool case1 = normal_dist_f2w <0.5. * particle_spacing;
                      if (case0) {
                         p->DUDt_modify_SPH -= c_reflection * Projection(U_SPH_original, n) / dt;
@@ -447,19 +497,18 @@ void updateParticles(const auto &net,
 #endif
       }
 
+      /* -------------------------------------------------------------------------- */
+      // % div_U の計算
       setCorrectionMatrix(std::unordered_set<Network *>{net});
-
-      //% div_U の計算
-
 #pragma omp parallel
       for (const auto &A : net->getPoints())
 #pragma omp single nowait
       {
          A->div_U = 0.;
          for (const auto &net : target_nets) {
-            net->BucketPoints.apply(A->X, 1.25 * A->SML(), [&](const auto &B) {
+            net->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
                if (canInteract(A, B))
-                  FusedMultiplyIncrement(B->volume, -Dot(A->U_SPH - B->U_SPH, grad_w_Bspline(A, B)), A->div_U);
+                  FusedMultiplyIncrement(-B->volume, Dot(A->U_SPH - B->U_SPH, grad_w_Bspline(A, B)), A->div_U);
             });
          }
          A->DrhoDt_SPH = -A->rho * A->div_U;
@@ -475,6 +524,7 @@ void updateParticles(const auto &net,
          if (!A->isFluid)
             A->setDensity(_WATER_DENSITY_);
       }
+      /* -------------------------------------------------------------------------- */
 
    } catch (std::exception &e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in updateParticles");

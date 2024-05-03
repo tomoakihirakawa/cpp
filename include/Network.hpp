@@ -560,6 +560,9 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    Tddd signed_distance_vector;
 
+   //! SPH
+   std::vector<networkPoint *> points_in_SML;
+
 #ifdef DEM
   public:
    V_netPp contactP;

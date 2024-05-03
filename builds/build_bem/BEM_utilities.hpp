@@ -33,7 +33,6 @@ int pf2Index(const networkPoint *p, networkFace *f) {
 };
 
 /* -------------------------------------------------------------------------- */
-
 /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
 ## 陽に与えられる境界条件に対して（造波装置など）
@@ -52,6 +51,20 @@ int pf2Index(const networkPoint *p, networkFace *f) {
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
    if ((name.contains("velocity") || name.contains("flow"))) {
       if (strings.size() >= 6) {
+         /*DOC_EXTRACT 0_5_WAVE_GENERATION
+
+         ### 進行波を生成するための流速の境界条件
+
+         \begin{equation}
+         {\bf u}_{\rm gen} =
+         \begin{pmatrix}
+         a \omega \frac{\cosh(k(h+z))}{\sinh(kh)}\cos(\omega t - kx) \\
+         0 \\
+         - a \omega \frac{\sinh(k(h+z))}{\sinh(kh)}\sin(\omega t - kx)
+         \end{pmatrix}
+         \end{equation}
+
+         */
          double start = std::stod(strings[1] /*start*/);
          if (t >= start) {
             double a = std::abs(std::stod(strings[2] /*a*/));
@@ -92,7 +105,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
                                                0.,
                                                -a * w * std::sinh(kzh) / std::sinh(kh) * std::sin(wtkx + phase_shift),
                                                0., 0., 0.};
-            if (!name.contains("linear"))
+            if (name.contains("linear"))
                return linear_stokes_wave_velocity;
             else {
                std::get<0>(linear_stokes_wave_velocity) += second_order;
@@ -489,17 +502,27 @@ Tddd accel_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_
 };
 
 Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
-   std::vector<Tddd> V;
-   const Tddd init = {0., 0., 0.};
-   for (const auto &[_, contact_face_of_body_X] : p->getNearestContactFaces()) {
+   std::vector<Tddd> Directions;
+   Tddd Vinit = {0., 0., 0.};
+   std::vector<double> Vsample;
+   for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
       auto [contact_face_of_body, X] = contact_face_of_body_X;
-      if (contact_face_of_body) V.emplace_back(propertyFunc(contact_face_of_body, X));
+      if (contact_face_of_body) {
+         auto scale = Dot(propertyFunc(contact_face_of_body, X), f->normal);
+         Vsample.emplace_back(scale);
+         Vinit += scale * f->normal;
+         Directions.emplace_back(f->normal);
+      }
    }
-   if (!V.empty()) {
-      auto ret = optimumVector(V, init);
-      if (isFinite(ret)) return ret;
+
+   if (!Vsample.empty()) {
+      Vinit /= Vsample.size();
+      // auto ret = optimumVector(V, init);
+      auto ret = optimalVector(Vsample, Directions, Vinit);
+      if (isFinite(ret))
+         return ret;
    }
-   return init;
+   return Vinit;
 };
 
 Tddd uNeumann(const networkPoint *const p) { return propertyNeumann(p, velocity_of_Body); };
@@ -699,36 +722,103 @@ Tddd gradPhi(const networkFace *const f) {
    return grad_phi_tangential(f) + phi_n / 3. * f->normal;
 };
 
-Tddd gradPhi(const networkPoint *const p) {
-   Tddd u;
-   V_Tddd V;
-   V_d W;
-   bool any_pseudo_quadratic = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->isPseudoQuadraticElement; });
-   double max_area = 0.;
-   for (const auto &f : p->getFaces())
-      if (f->area > max_area)
-         max_area = f->area;
-   for (const auto &f : p->getFaces()) {
+// Tddd gradPhi(const networkPoint *const p) {
+//    Tddd u;
+//    V_Tddd V;
+//    V_d W;
 
+//    bool any_Dirichlet = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+//    bool any_Neumann = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
+
+//    for (const auto &f : p->getFaces()) {
+//       if (f->isPseudoQuadraticElement)
+//          u = gradPhiQuadElement(p, f);
+//       else
+//          u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+
+//       V.emplace_back(u);
+//       W.push_back(f->area);
+//    }
+
+//    std::function<Tddd(const Tddd &V)> constraint = [&](const Tddd &V) -> Tddd {
+//       //@ tedious way to implement the constraint
+//       // auto uN = uNeumann(p);
+//       // auto error = Projection(V, uN) - uN;
+//       // return V - error;
+//       //@ concise way to implement the constraint
+//       auto uN = uNeumann(p);
+//       return V - (Projection(V, uN) - uN);
+//    };
+
+//    if (any_Neumann)
+//       return optimumVector(V, {0., 0., 0.}, W, constraint);
+//    else
+//    return optimumVector(V, {0., 0., 0.}, W);
+// };
+
+//! use simple gradient method but Newton method
+Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_info) {
+   Tddd u;
+   V_Tddd Directions;
+   std::vector<double> Vsample;
+   V_d W;
+
+   bool any_Dirichlet = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+   bool any_Neumann = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
+
+   Tddd Vinit = {0., 0., 0.};
+   double count = 0.;
+   //! fullの流速３成分が与えられている場合
+   std::array<double, 3> X = {1., 0., 0.}, Y = {0., 1., 0.}, Z = {0., 0., 1.};
+   for (const auto &f : p->getFaces()) {
       if (f->isPseudoQuadraticElement)
          u = gradPhiQuadElement(p, f);
       else
          u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
 
-      V.emplace_back(u);
-#if defined(use_angle_weigted_normal)
-      W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
-#elif defined(use_area_weigted_normal)
-      // if (f->isPseudoQuadraticElement)
-      //    W.push_back(max_area * (f->Dirichlet ? 1E+3 : 1.));
-      // else
-      //    W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
-      W.push_back(f->area);
-#else
-      W.push_back(f->Dirichlet ? 10 : 1.);
-#endif
+      Vinit += u;
+      count += 1.;
+
+      Vsample.emplace_back(Dot(u, X));
+      Directions.emplace_back(X);
+      Vsample.emplace_back(Dot(u, Y));
+      Directions.emplace_back(Y);
+      Vsample.emplace_back(Dot(u, Z));
+      Directions.emplace_back(Z);
+      if (f->Dirichlet) {
+         W.push_back(10 * f->area);
+         W.push_back(10 * f->area);
+         W.push_back(10 * f->area);
+      } else {
+         W.push_back(f->area);
+         W.push_back(f->area);
+         W.push_back(f->area);
+      }
    }
-   return optimumVector(V, {0., 0., 0.}, W);
+
+   //! 境界条件のように流速のある方向成分のみが与えられている場合
+   if (any_Neumann) {
+      double w = Mean(W);
+      // Vsample.push_back(uNeumann(p));
+      // W.push_back(Mean(W));
+      for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
+         auto [contact_face_of_body, X] = contact_face_of_body_X;
+         if (contact_face_of_body) {
+            Vsample.emplace_back(Dot(f->normal, velocity_of_Body(contact_face_of_body, X)));
+            Directions.emplace_back(f->normal);
+            W.push_back(w);
+            Vinit += u;
+            count += 1.;
+         }
+      }
+   }
+
+   return optimalVector(Vsample, Directions, Vinit / count, W, convergence_info);
+};
+
+Tddd gradPhi(const networkPoint *const p) {
+   std::array<double, 3> convergence_info;
+   return gradPhi(p, convergence_info);
 };
 
 // Tddd gradPhi(const networkPoint *const p) {

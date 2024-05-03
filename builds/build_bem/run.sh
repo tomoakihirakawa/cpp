@@ -1,120 +1,83 @@
 #!/bin/sh
-# case wave_height for 0.05 and 0.1
 
-for wave_height in 0.05 0.1; do
-    # wave_height as number
-    # 擬2次要素と線形要素の比較 ALEは線形要素上で行う　メッシュも細かくして収束を確認
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element pseudo_quad -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element pseudo_quad -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element linear -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE linear
+outputdir=/Volumes/home/BEM/benchmark202404
+# outputdir=/Volumes/home/BEM/benchmark202404Palm2016
 
-    # 擬2次要素と線形要素の比較 ALEは擬2次要素上で行う　メッシュも細かくして収束を確認
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element pseudo_quad -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element pseudo_quad -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element linear -wavemaker potential -dt 0.03 -wave_height ${wave_height} -ALE pseudo_quad
+# outputdir=${HOME}/BEM
+case=Tanizawa1996
+mesh_array=(water_no_float0d08 water_no_float0d07)
+dt_array=(0.05 0.03)
+H_array=(0.05 0.1)
 
-    # タイムステップを短くして収束を確認
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element pseudo_quad -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element pseudo_quad -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE linear
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element linear -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE linear
+# case=Palm2016
+# mesh_array=(water_mod)
+# dt_array=(0.05 0.1)
+# H_array=(0.04 0.2)
 
-    # タイムステップを短くして収束を確認
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element pseudo_quad -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element pseudo_quad -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE pseudo_quad
-    python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element linear -wavemaker potential -dt 0.05 -wave_height ${wave_height} -ALE pseudo_quad
+wavemaker=potential
+element_array=(pseudo_quad linear)
+ALE_array=(pseudo_quad linear)
 
+for ALE in ${ALE_array[@]};do
+    for element in ${element_array[@]};do
+        for dt in ${dt_array[@]};do
+            for H in ${H_array[@]};do
+                for mesh in ${mesh_array[@]};do
+                    python3.11 input_generator.py -case ${case} -mesh ${mesh} -element ${element} -wavemaker ${wavemaker} -dt ${dt} -H ${H} -ALE ${ALE} -outputdir ${outputdir}
+                done
+            done
+        done
+    done
 done
 
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear
 
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear
-
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALEpseudo_quad
+./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALElinear
+./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALEpseudo_quad
+./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
+./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALElinear
 ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
-./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
-
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALEpseudo_quad
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
-
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALElinear 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALEpseudo_quad 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALElinear 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d025_ELEMlinear_ALElinear 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d025_ELEMlinear_ALEpseudo_quad 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d025_ELEMpseudo_quad_ALElinear 
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d025_ELEMpseudo_quad_ALEpseudo_quad 
-
-# python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d09 -element linear -wavemaker potential
-# python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker potential
-# python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d07 -element linear -wavemaker potential
-
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d09_linear
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d07_linear
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d08_linear
+./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
+./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
+./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMlinear_ALElinear
 
 
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8gradPhiQuadElement__potential_water_no_float0d09
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8gradPhiQuadElement__potential_water_no_float0d08
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8gradPhiQuadElement__potential_water_no_float0d07
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
 
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_quad_potential_water_no_float0d1
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_quad_potential_water_no_float0d09
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_quad_potential_water_no_float0d08
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_quad_potential_water_no_float0d07
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_quad_potential_water_no_float0d06
 
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d1
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d09
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d08
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d07
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d06
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water_no_float0d05
+# ----------------------------------- H005 ----------------------------------- #
 
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d1
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d09
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d08
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d07
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d06
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential_water0d05
+# mac studio
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALEpseudo_quad
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALElinear
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALElinear
 
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_potential
-# ./main ./input_files/Tanizawa1996_H0d05_L2d7_potential
+# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad # prandtl 142
+# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad # Daiki 140
+# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear #macbook 
+# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear #ishiwaka 141
 
-# ./main ./input_files/Cheng2018meshC_H0d1_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshD_H0d1_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshE_H0d1_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshF_H0d1_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshA_H0d1_T1d2_piston_positive
-# ./main ./input_files/Cheng2018meshB_H0d1_T1d2_piston_positive
+# ------------------------------------ H01 ----------------------------------- #
 
-# --------------------------------- moon pool -------------------------------- #
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALElinear
 
-# for barge in large no; do
-# for T in 7d5 5d0 5d5 6d0 6d5 7d0 8d0 8d5 9d0 9d5 10d0; do
-#   file="./input_files/moon_pool_${barge}_a0d8_T${T}_h80"
-#   ./main ${file}
-# #   rsync -v ${file} Kelvin@10.0.1.14:~/BEM/
-# done
-# done
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALEpseudo_quad
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
 
-# -------------------------------- Kramer2021 -------------------------------- #
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad # prandtl 142
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad # Daiki 140
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear #macbook 
+# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear #ishiwaka 141
 
-# ./main ./input_files/Kramer2021_H00d03_small
-
-# -------------------------------- Hadzic2005 -------------------------------- #
-
-# ./main ./input_files/Hadzic2005
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear
+# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
+# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear

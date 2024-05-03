@@ -94,6 +94,8 @@ int main(int argc, char **argv) {
    // Store values from the JSON file into variables
    const std::filesystem::path output_directory = settingJSON.at("output_directory")[0];
    const double max_dt = stod(settingJSON.at("max_dt"))[0];
+
+   const int ALEPERIOD = stoi(settingJSON.at("ALEPERIOD"))[0];
    // Then, in your conditional checks, use this function to ensure case-insensitivity
 
    if (settingJSON.find("element") && toLowerCase(settingJSON.at("element")[0]) == "linear")
@@ -505,8 +507,12 @@ int main(int argc, char **argv) {
             std::cout << Green << "U_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             for (auto water : FluidObject) {
-               calculateCurrentUpdateVelocities(*water, 30, RK_step == 4);
-               // calculateCurrentUpdateVelocities(*water, 30, (RK_step == 4 && time_step % ALE_period_in_step == 0) ? 0.1 : 0.);
+               // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
+               // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
+               bool do_ALE = (RK_step == 4 && (time_step % ALEPERIOD == 0));
+               calculateCurrentUpdateVelocities(*water, 20, do_ALE ? 0.5 : 0.);
+               if (!do_ALE)
+                  std::cout << "ALE is not applied" << std::endl;
                // calculateCurrentUpdateVelocities(*water, 20);
             }
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
@@ -601,17 +607,34 @@ int main(int argc, char **argv) {
             for (const auto &net : SoftBodyObject) {
                std::cout << "updating " << net->getName() << "'s (SoftBodyObject) position" << std::endl;
                for (const auto &p : net->getPoints()) {
-                  p->RK_X.push(p->velocityTranslational());  //@ 位置xの時間発展
+                  auto V = p->velocityTranslational();
+                  if (net->isFixed[0])
+                     V[0] = 0;
+                  if (net->isFixed[1])
+                     V[1] = 0;
+                  if (net->isFixed[2])
+                     V[2] = 0;
+                  p->RK_X.push(V);  //@ 位置xの時間発展
                   // p->setXSingle(p->RK_X.getX());
                }
+
                net->setGeometricProperties();
             }
 
-            // b$ --------------------------------------------------- */
+            // b$ -------------------------------------------------------------------------- */
 
             /*DOC_EXTRACT 0_4_1_UPDATE_POSITION
 
             ### 流体の$`\phi`$時間発展，$`\phi_n`$の時間発展はない
+
+            ### 波の吸収
+
+            ```math
+            \begin{align*}
+            \gamma &= 1 - 2 \frac{\text{horizontal distance from the center of the absorber}}{\text{width of the absorber}} \\
+            \text{ref\_phi} &= \frac{\sum \phi \cdot \text{area}}{\sum \text{area}}
+            \end{align*}
+            ```
 
             */
 
@@ -655,7 +678,7 @@ int main(int argc, char **argv) {
                   auto absorber_center = Tddd{Mean(x), Mean(y), Mean(z)};
                   auto horizontal_dist_from_center = Norm(Chop(p->X - absorber_center, Tddd{0, 0, 1}));
                   double x_scale = std::abs(x[0] - x[1]);
-                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0.2, 1.);
+                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0., 1.);
                   ref_phi = reference_phi.at(p->absorbedBy)[0] / reference_phi.at(p->absorbedBy)[1];
                }
                //
@@ -668,6 +691,8 @@ int main(int argc, char **argv) {
                p->setXSingle(p->RK_X.getX());
                p->phi_tmp = 0;
             }
+
+            // b$ -------------------------------------------------------------------------- */
 
             for (auto water : FluidObject)
                std::cout << Green << "name:" << water->getName() << ": setBounds" << colorReset << std::endl;
@@ -769,6 +794,27 @@ int main(int argc, char **argv) {
          */
 
          std::cout << "output JSON files" << std::endl;
+
+         double worst_iteration = 0;
+         double worst_value = 0;
+         double worst_grad = 0;
+         std::array<double, 3> convergence_info = {0, 0, 0};
+         for (auto water : FluidObject) {
+            for (const auto &p : water->getPoints()) {
+               gradPhi(p, convergence_info);
+               if (convergence_info[0] > worst_iteration)
+                  worst_iteration = convergence_info[0];
+               if (convergence_info[1] > worst_grad)
+                  worst_grad = convergence_info[1];
+               if (convergence_info[2] > worst_value)
+                  worst_value = convergence_info[2];
+            }
+         }
+
+         jsonout.push("gradPhi_worst_iteration", worst_iteration);
+         jsonout.push("gradPhi_worst_value", worst_value);
+         jsonout.push("gradPhi_worst_grad", worst_grad);
+
          jsonout.push("simulation_time", simulation_time);
          // Push CPU time
          double cpu_time_in_seconds = static_cast<double>(std::clock() - cpu_clock_start) / CLOCKS_PER_SEC;

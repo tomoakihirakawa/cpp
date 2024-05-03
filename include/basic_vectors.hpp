@@ -981,12 +981,17 @@ Tddd Mean(const T8Tddd &X) { return Total(X) / 8.; };
 
 Tddd Mean(const std::vector<Tddd> &X) {
    Tddd ret = {0., 0., 0.};
+   double count = 0.;
    for (const auto &x : X) {
       std::get<0>(ret) += std::get<0>(x);
       std::get<1>(ret) += std::get<1>(x);
       std::get<2>(ret) += std::get<2>(x);
+      count += 1.;
    }
-   return ret / ((double)X.size());
+   std::get<0>(ret) /= count;
+   std::get<1>(ret) /= count;
+   std::get<2>(ret) /= count;
+   return ret;
 };
 
 double Mean(const std::vector<double> &X) { return Total(X) / X.size(); };
@@ -1202,11 +1207,11 @@ template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::
 T Norm(const T &x) { return std::abs(x); };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 T Norm(const std::vector<T> &vec) {
-   // return std::sqrt(std::inner_product(vec.cbegin(), vec.cend(), vec.cbegin(), 0.));
-   T ret = 0;
-   for (const auto &v : vec)
-      ret = std::fma(v, v, ret);
-   return std::sqrt(ret);
+   return std::sqrt(std::inner_product(vec.cbegin(), vec.cend(), vec.cbegin(), 0.));
+   // T ret = 0;
+   // for (const auto &v : vec)
+   //    ret = std::fma(v, v, ret);
+   // return std::sqrt(ret);
 };
 double Norm(const std::vector<Tddd> &vec) {
    double ret = 0;
@@ -1737,6 +1742,7 @@ std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_curre
 
 /* -------------------------------------------------------------------------- */
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
+//! CAUTION: VectorAngle returns ambiguous results when the angle is 0 or M_PI
 double VectorAngle(const Tddd &a, const Tddd &b) {
    // return std::acos(Dot(a, b) / (Norm(a) * Norm(b)));
    // return std::(Norm(Cross(a, b)), Dot(a, b));
@@ -2102,7 +2108,7 @@ Tddd Projection(const Tddd &v, Tddd n) {
 Tddd Chop(const Tddd &v, Tddd n) {
    /* the component in n direction of v will be chopped */
    n = Normalize(n);
-   return FusedMultiplyAdd(Dot(v, n), -n, v);
+   return FusedMultiplyAdd(-Dot(v, n), n, v);
    // return v - Dot(v, n) * n;
 };
 
