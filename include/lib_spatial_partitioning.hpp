@@ -312,13 +312,13 @@ struct Buckets : public CoordinateBounds {
    bool add(const std::unordered_set<T> &P) {
       this->vector_is_set = false;
       bool ret = true;
-      for (const auto &p : P) {
-         auto ijk = indices(ToX(p));
-         this->map_to_ijk[p] = ijk;
-         ret = ret && add(ijk, p);
+      for (const auto p : P) {
+         if (!add(indices(ToX(p)), p))
+            ret = false;
       }
       return ret;
    };
+
    /* -------------------------------------------------------------------------- */
    auto getBucket(const Tddd &x) const {
       const auto ijk = this->indices(x);
@@ -348,18 +348,20 @@ struct Buckets : public CoordinateBounds {
       }
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
       if (!this->vector_is_set) {
-         return !std::any_of(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+         return !std::any_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
       } else {
-         return !std::any_of(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+         return !std::any_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
@@ -374,18 +376,20 @@ struct Buckets : public CoordinateBounds {
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
 
       if (!this->vector_is_set) {
-         return std::all_of(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+         return std::all_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::all_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::all_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
       } else {
-         return std::all_of(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::all_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::all_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::all_of(Bijk.cbegin(), Bijk.cend(), func);
+         return std::all_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::all_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::all_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
@@ -400,18 +404,20 @@ struct Buckets : public CoordinateBounds {
       const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
 
       if (!this->vector_is_set) {
-         return std::any_of(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+         return std::any_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
       } else {
-         return std::any_of(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
-            return std::any_of(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
-               return std::any_of(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
-                  return std::any_of(Bijk.cbegin(), Bijk.cend(), func);
+         return std::any_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) {
+            return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) {
+               return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) {
+                  // return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), func);
+                  return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); });
                });
             });
          });
@@ -429,7 +435,8 @@ struct Buckets : public CoordinateBounds {
          std::for_each(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
             std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
                std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
-                  for (const auto &p : Bijk) func(p);
+                  // for (const auto &p : Bijk) func(p);
+                  std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); });
                });
             });
          });
@@ -437,11 +444,26 @@ struct Buckets : public CoordinateBounds {
          std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
             std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
                std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
-                  for (const auto &p : Bijk) func(p);
+                  // for (const auto &p : Bijk) func(p);
+                  std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); });
                });
             });
          });
       }
+   }
+   //
+   //! apply
+   void applyVec1D(const Tddd &x, const double d, const std::function<void(const std::vector<T> &)> &func) const {
+      if (this->data.empty() || !this->vector_is_set)
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D data is empty");
+      const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
+      std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
+         std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
+            std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
+               func(Bijk);
+            });
+         });
+      });
    }
 
    //! apply
@@ -500,7 +522,8 @@ struct Buckets : public CoordinateBounds {
          std::for_each(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
             std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
                std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
-                  for (const auto &p : Bijk) func(p);
+                  // for (const auto &p : Bijk) func(p);
+                  std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); });
                });
             });
          });
@@ -508,7 +531,8 @@ struct Buckets : public CoordinateBounds {
          std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) {
             std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) {
                std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) {
-                  for (const auto &p : Bijk) func(p);
+                  // for (const auto &p : Bijk) func(p);
+                  std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); });
                });
             });
          });

@@ -69,7 +69,7 @@ int main() {
                    {0., 0., 2., 3., 4., 3., 9., 6., 3., 10.}};
    const V_d b = {1., 7., 2., 2., 7., 8., 10., 0., 6., 5.};
    V_d x0(b.size(), 0. /*initial value*/);
-   V_d ans = {6.41725, -0.576444, 1.52755, 1.5933, -0.436665, -7.40106, 4.20872, 0.458307, -0.723366, -1.73434};
+   const V_d ans = {6.41725, -0.576444, 1.52755, 1.5933, -0.436665, -7.40106, 4.20872, 0.458307, -0.723366, -1.73434};
 #endif
    /* -------------------------------------------------------------------------- */
    // auto v = diagonal_scaling_vector(A);
@@ -82,24 +82,26 @@ int main() {
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
-   int n_max = 11;
+   int n_max = 5;
    int n_begin = 3;
    auto x0_for_iterate = x0;
    gmres gm_full(A, b, x0, n_max);
-   gmres gm_iterate(A, b, x0_for_iterate, n_begin);
+   gmres gm_iterate(A, b, x0, n_begin);
    for (auto restart = 0; restart < 5; ++restart) {
-      gm_iterate.Restart(A, b, x0_for_iterate, n_begin);
+      gm_iterate.Restart(A, b, n_begin);
       for (auto i = n_begin + 1; i <= n_max; i++) {
-         gm_iterate.Iterate(A);
          std::cout << "restart " << restart << ", " << Green << "terms in an expansion :" << i << colorReset << std::endl;
          std::cout << "     gm_iterate.V.size() : " << gm_iterate.V.size() << std::endl;
          std::cout << "                    time : " << timer() << std::endl;
          std::cout << "               iteration : " << i << std::endl;
          std::cout << "estimate error (iterate/full) : " << gm_iterate.err << " / " << gm_full.err << std::endl;
+         std::cout << "gm_iterate.x : " << gm_iterate.x << std::endl;
+         std::cout << "   gm_full.x : " << gm_full.x << std::endl;
+         std::cout << "         ans : " << ans << std::endl;
          auto error = Norm(Dot(A, gm_iterate.x) - b);
          std::cout << "  actual error (iterate/full) : " << (error < 1E-10 ? Green : Red) << error << colorReset << " / " << Norm(Dot(A, gm_full.x) - b) << std::endl;
          std::cout << Red << "--------------------------------" << colorReset << std::endl;
-         x0_for_iterate = gm_iterate.x;
+         gm_iterate.Iterate(A);
       }
    }
    std::cout << "time:" << timer() << std::endl;

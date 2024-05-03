@@ -24,6 +24,20 @@ $`A_k`$の対角成分が$`A`$の固有値に収束することを確認する�
 Q_2^{-1} \cdot (Q_1^{-1} \cdot (Q_0^{-1} \cdot (A = Q_0R_0) \cdot Q_0=Q_1R_1) \cdot Q_1=Q_2 \cdot R_2) \cdot R_2
 ```
 
+テストケース
+
+```Mathematica
+In[23]:= A = Table[i*j + i*i + j*j + i + j, {i, 1, 5}, {j, 1, 5}]
+Eigenvalues[N@A]
+
+Out[23]= {{5, 10, 17, 26, 37}, {10, 16, 24, 34, 46}, {17, 24, 33, 44,
+  57}, {26, 34, 44, 56, 70}, {37, 46, 57, 70, 85}}
+
+Out[24]= {210.296, -15.5105, 0.214605,
+ 1.64434*10^-14, -1.77456*10^-15}
+```
+
+
 ```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release .. -DSOURCE_FILE=testEigenValues.cpp
@@ -34,11 +48,15 @@ make
 */
 
 int main() {
-   VV_d A = {{6., 5., 0.},
-             {5., 1., 4.},
-             {0., 4., 3.}};
+   // VV_d A = {{6., 5., 0.},
+   //           {5., 1., 4.},
+   //           {0., 4., 3.}};
 
-   V_d eigenvalues = {9.84316, 4.02176, -3.86492};
+   // V_d eigenvalues = {9.84316, 4.02176, -3.86492};
+
+   VV_d A = {{5, 10, 17, 26, 37}, {10, 16, 24, 34, 46}, {17, 24, 33, 44, 57}, {26, 34, 44, 56, 70}, {37, 46, 57, 70, 85}};
+   std::array<std::array<double, 5>, 5> B = {{{5, 10, 17, 26, 37}, {10, 16, 24, 34, 46}, {17, 24, 33, 44, 57}, {26, 34, 44, 56, 70}, {37, 46, 57, 70, 85}}};
+   V_d eigenvalues = {210.296, -15.5105, 0.214605, 1.64434e-14, -1.77456e-15};
 
    VV_d Ak = A;
 
@@ -65,16 +83,11 @@ int main() {
    }
 
    std::cout << "True eigenvalue: " << eigenvalues << "\n";
-
-   std::array<std::array<double, 3>, 3> B = {{{6., 5., 0.},
-                                              {5., 1., 4.},
-                                              {0., 4., 3.}}};
-
-   std::cout << "eigenvalue using function: " << Eigenvalues(B) << "\n";
+   std::cout << "eigenvalue using function: " << Eigenvalues(A) << "\n";
 
    // Eigensystem returns pair of eigenvalues and eigenvectors
-   std::cout << "eigenvalue using function: " << Eigensystem(B).first << "\n";
-   std::cout << "eigenvector using function: " << Eigensystem(B).second << "\n";
+   std::cout << "eigenvalue using function: " << Eigensystem(A).first << "\n";
+   std::cout << "eigenvector using function: " << Eigensystem(A).second << "\n";
 
    return 0;
 }

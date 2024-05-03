@@ -27,7 +27,7 @@ def IO_dir(id):
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
 
-SimulationCase = "static_pressure"
+SimulationCase = "Lobovsky2013_small"
 id = ""
 
 if len(sys.argv) > 1:
@@ -61,7 +61,7 @@ if "static_pressure" in SimulationCase:
 
     setting = {"RK_order": 1,
                 "max_dt": particle_spacing/10,
-                "CSML": 2.8,
+                "CSML": 2.5,
                 "end_time_step": 1000000,
                 "end_time": 10,
                 "initial_surface_z_position": 0.1,
@@ -117,9 +117,9 @@ elif "Lobovsky2013_small" in SimulationCase:
                 "max_dt": 0.0004,
                 "end_time_step": 100000*5,
                 "end_time": 5,
-                "CSML": 2.8,
+                "CSML": 2.9,
                 "initial_surface_z_position": 0.6,
-                "particle_spacing": 0.015}
+                "particle_spacing": 0.0125}
 
     id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                         + "_CSML" + str(setting["CSML"]).replace(".", "d")\
@@ -172,7 +172,7 @@ elif "Lobovsky2013" in SimulationCase:
                 "max_dt": 0.0002,
                 "end_time_step": 3000*5,
                 "end_time": 2,
-                "CSML": 2.8,
+                "CSML": 2.7,
                 "initial_surface_z_position": 0.6,
                 "particle_spacing": 0.02}
 
@@ -217,9 +217,9 @@ elif "Kamra2019" in SimulationCase:
                 "max_dt": 0.0005,
                 "end_time_step": 100000,
                 "end_time": 4.,
-                "CSML": 3.,
+                "CSML": 2.5,
                 "initial_surface_z_position": 0.2,
-                "particle_spacing": 0.0075}
+                "particle_spacing": 0.008}
 
     id = SimulationCase + id \
                         + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \

@@ -64,6 +64,15 @@ constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std:
       [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
+
+template <typename T>
+constexpr std::array<T, 3>& operator+=(std::array<T, 3>& arr /*ref*/, const std::array<T, 3>& ARR) noexcept {
+   std::get<0>(arr) += std::get<0>(ARR);
+   std::get<1>(arr) += std::get<1>(ARR);
+   std::get<2>(arr) += std::get<2>(ARR);
+   return arr;
+}
+
 // 2d array + 1d array
 template <size_t N, std::size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
@@ -78,6 +87,21 @@ constexpr std::array<std::array<T, M>, N>& operator+=(std::array<std::array<T, M
       [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
+
+template <typename T>
+constexpr std::array<std::array<T, 3>, 3>& operator+=(std::array<std::array<T, 3>, 3>& arr /*ref*/, const std::array<std::array<T, 3>, 3>& ARR) noexcept {
+   std::get<0>(std::get<0>(arr)) += std::get<0>(std::get<0>(ARR));
+   std::get<0>(std::get<1>(arr)) += std::get<0>(std::get<1>(ARR));
+   std::get<0>(std::get<2>(arr)) += std::get<0>(std::get<2>(ARR));
+   std::get<1>(std::get<0>(arr)) += std::get<1>(std::get<0>(ARR));
+   std::get<1>(std::get<1>(arr)) += std::get<1>(std::get<1>(ARR));
+   std::get<1>(std::get<2>(arr)) += std::get<1>(std::get<2>(ARR));
+   std::get<2>(std::get<0>(arr)) += std::get<2>(std::get<0>(ARR));
+   std::get<2>(std::get<1>(arr)) += std::get<2>(std::get<1>(ARR));
+   std::get<2>(std::get<2>(arr)) += std::get<2>(std::get<2>(ARR));
+   return arr;
+}
+
 /* -------------------------------------------------------------------------- */
 // 1d array + value
 template <size_t N, typename T, typename TT>
@@ -110,6 +134,15 @@ constexpr std::array<T, N>& operator-=(std::array<T, N>& arr /*ref*/, const std:
       [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
    return arr;
 }
+
+template <typename T>
+constexpr std::array<T, 3>& operator-=(std::array<T, 3>& arr /*ref*/, const std::array<T, 3>& ARR) noexcept {
+   std::get<0>(arr) -= std::get<0>(ARR);
+   std::get<1>(arr) -= std::get<1>(ARR);
+   std::get<2>(arr) -= std::get<2>(ARR);
+   return arr;
+}
+
 // 2d array -= 1d array
 template <size_t N, std::size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
@@ -122,6 +155,20 @@ template <size_t N, std::size_t M, typename T, typename TT>
 constexpr std::array<std::array<T, M>, N>& operator-=(std::array<std::array<T, M>, N>& arr /*ref*/, const std::array<std::array<TT, M>, N>& ARR) noexcept {
    if constexpr (N > 0)
       [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) -= (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
+   return arr;
+}
+
+template <typename T>
+constexpr std::array<std::array<T, 3>, 3>& operator-=(std::array<std::array<T, 3>, 3>& arr /*ref*/, const std::array<std::array<T, 3>, 3>& ARR) noexcept {
+   std::get<0>(std::get<0>(arr)) -= std::get<0>(std::get<0>(ARR));
+   std::get<0>(std::get<1>(arr)) -= std::get<0>(std::get<1>(ARR));
+   std::get<0>(std::get<2>(arr)) -= std::get<0>(std::get<2>(ARR));
+   std::get<1>(std::get<0>(arr)) -= std::get<1>(std::get<0>(ARR));
+   std::get<1>(std::get<1>(arr)) -= std::get<1>(std::get<1>(ARR));
+   std::get<1>(std::get<2>(arr)) -= std::get<1>(std::get<2>(ARR));
+   std::get<2>(std::get<0>(arr)) -= std::get<2>(std::get<0>(ARR));
+   std::get<2>(std::get<1>(arr)) -= std::get<2>(std::get<1>(ARR));
+   std::get<2>(std::get<2>(arr)) -= std::get<2>(std::get<2>(ARR));
    return arr;
 }
 /* -------------------------------------------------------------------------- */
@@ -435,16 +482,30 @@ Total(const std::array<T, N>& arr) noexcept {
    return ret;
 }
 
+template <typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+Total(const std::array<T, 2>& arr) noexcept {
+   return std::get<0>(arr) + std::get<1>(arr);
+}
+
+template <typename T>
+constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+Total(const std::array<T, 3>& arr) noexcept {
+   return std::get<0>(arr) + std::get<1>(arr) + std::get<2>(arr);
+}
+
 template <size_t N0, std::size_t N1, typename T>
 constexpr std::array<T, N1> Total(const std::array<std::array<T, N1>, N0>& arr) noexcept {
    std::array<T, N1> ret{};
    std::size_t i = 0, j = 0;
-   for (i = 0; i < N0; ++i) {
-      for (j = 0; j < N1; ++j) {
-         ret[j] += arr[i][j];
-      }
-   }
+   for (i = 0; i < N0; ++i)
+      ret += arr[i];
    return ret;
+}
+
+template <std::size_t N1, typename T>
+constexpr std::array<T, N1> Total(const std::array<std::array<T, N1>, 3>& arr) noexcept {
+   return std::get<0>(arr) + std::get<1>(arr) + std::get<2>(arr);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -471,6 +532,14 @@ constexpr std::array<std::array<T, N2>, N1> TensorProduct(const std::array<T, N1
       }
    }
    return ret;
+}
+
+// special case for 3x3 matrix
+template <typename T>
+constexpr std::array<std::array<T, 3>, 3> TensorProduct(const std::array<T, 3>& vec1, const std::array<T, 3>& vec2) noexcept {
+   return {{{std::get<0>(vec1) * std::get<0>(vec2), std::get<0>(vec1) * std::get<1>(vec2), std::get<0>(vec1) * std::get<2>(vec2)},
+            {std::get<1>(vec1) * std::get<0>(vec2), std::get<1>(vec1) * std::get<1>(vec2), std::get<1>(vec1) * std::get<2>(vec2)},
+            {std::get<2>(vec1) * std::get<0>(vec2), std::get<2>(vec1) * std::get<1>(vec2), std::get<2>(vec1) * std::get<2>(vec2)}}};
 }
 
 // Base case for scalar and vector
@@ -785,6 +854,14 @@ constexpr std::array<double, N> Normalize(std::array<double, N> arr) noexcept {
    // return arr;
 }
 
+constexpr double Norm(const std::array<double, 2>& arr) noexcept {
+   return std::hypot(std::get<0>(arr), std::get<1>(arr));
+}
+
+constexpr double Norm(const std::array<double, 3>& arr) noexcept {
+   return std::hypot(std::get<0>(arr), std::get<1>(arr), std::get<2>(arr));
+}
+
 constexpr double Norm(const double value) noexcept {
    return std::abs(value);
 }
@@ -836,10 +913,22 @@ std::array<double, N> FusedMultiplyAdd(const double W, const std::array<double, 
    return ret;
 }
 
+std::array<double, 3> FusedMultiplyAdd(const double W, const std::array<double, 3>& ARR, const std::array<double, 3>& ret) noexcept {
+   return {std::fma(W, std::get<0>(ARR), std::get<0>(ret)),
+           std::fma(W, std::get<1>(ARR), std::get<1>(ret)),
+           std::fma(W, std::get<2>(ARR), std::get<2>(ret))};
+}
+
 template <size_t N>
 void FusedMultiplyIncrement(const double W, const std::array<double, N>& ARR, std::array<double, N>& ret) noexcept {
    for (size_t i = 0; i < N; ++i)
       ret[i] = std::fma(W, ARR[i], ret[i]);
+}
+
+void FusedMultiplyIncrement(const double W, const std::array<double, 3>& ARR, std::array<double, 3>& ret) noexcept {
+   std::get<0>(ret) = std::fma(W, std::get<0>(ARR), std::get<0>(ret));
+   std::get<1>(ret) = std::fma(W, std::get<1>(ARR), std::get<1>(ret));
+   std::get<2>(ret) = std::fma(W, std::get<2>(ARR), std::get<2>(ret));
 }
 
 template <size_t N, size_t N1>
@@ -849,14 +938,12 @@ void FusedMultiplyIncrement(const double W, const std::array<std::array<double, 
 }
 
 void FusedMultiplyIncrement(const double W, const std::vector<double>& ARR, std::vector<double>& ret) noexcept {
-   int i = 0;
-   for (auto& r : ret)
+   for (std::size_t i = 0; auto& r : ret)
       r = std::fma(W, ARR[i++], r);
 }
 
 void FusedMultiplyIncrement(const std::vector<double>& ARR, const double W, std::vector<double>& ret) noexcept {
-   int i = 0;
-   for (auto& r : ret)
+   for (std::size_t i = 0; auto& r : ret)
       r = std::fma(W, ARR[i++], r);
 }
 

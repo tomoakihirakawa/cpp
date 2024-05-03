@@ -71,7 +71,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
                FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
             else
                FusedMultiplyIncrement(B->p_SPH * (c / std::pow(rho_next(B), 2)) + A->p_SPH * (c / std::pow(rho_next(A), 2)), grad, A->gradP_SPH);
-
+            //
             // #elif defined(USE_SUBTRACTIVE_FORM_FOR_PRESSURE_GRADIENT)
             //             //! 静水の計算でこっちの方が良かった．
             //             FusedMultiplyIncrement(V_next(B), (B->p_SPH - A->p_SPH) * grad, A->gradP_SPH);
@@ -146,7 +146,7 @@ void gradP(const std::unordered_set<networkPoint *> &points, const std::unordere
 
          const double r = A->SML_next();
          for (const auto &net : target_nets) {
-            net->BucketPoints.apply(A->X, 1.2 * r, [&](const auto &B) {
+            net->BucketPoints.apply(A->X, 1.1 * r, [&](const auto &B) {
                if (canInteract(A, B) && A != B) {
                   add_gradP_SPH(B);
                   // if (B->isSurface) {

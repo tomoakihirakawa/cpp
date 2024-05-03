@@ -8,7 +8,7 @@
 void Solve(const std::array<std::array<double, 2>, 2> &A, std::array<double, 2> &x, const std::array<double, 2> &y) {
    const double inv_det = 1. / std::fma(A[0][0], A[1][1], -A[0][1] * A[1][0]);
    x[0] = std::fma(A[1][1], y[0], -A[0][1] * y[1]) * inv_det;
-   x[1] = std::fma(-A[1][0], y[0], A[0][0] * y[1]) * inv_det;
+   x[1] = std::fma(-A[1][0], y[0], A[0][0] * y[ 1]) * inv_det;
 };
 
 //! x.A = b
@@ -934,82 +934,75 @@ struct QR {
    }
 
    void Initialize(const T &AIN, const bool constractor = false) {
-      // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      /*DOC_EXTRACT
+
+      もし，`A`が`N+1\times N`の行列である場合，
+      `Q`は`N+1\times N+1`の行列，
+      `R`は`N+1\times N`の行列となる．
+      */
       const int N_ROW = AIN.size();
       const int N_COL = AIN[0].size();
-      const int nR = AIN.size();
-      const int mR = AIN[0].size();
-      // if (!constractor) {
+      const auto N_ROW_Q = AIN.size();
+      const auto N_COL_Q = N_ROW_Q;
+      const auto N_ROW_R = AIN.size();
+      const auto N_COL_R = N_COL;
       this->A = this->R = AIN;
-      this->Q.resize(AIN.size(), typename T::value_type(AIN.size(), 0.));
-      // }
+      this->Q = std::vector(N_ROW_Q, std::vector<double>(N_COL_Q, 0.));
       IdentityMatrix(this->Q);
       this->QT = this->Q;
-      double r, c, s, a, b, Q0, Q1, R0, R1, Ri_col, Ri1_col, QTi_col, QTi1_col, Q_row_i, Q_row_i1;  // Rのためのtmp
-      const double eps = 1e-15;
-      // int max = std::max(N_ROW, N_COL);
-      int i, j, i_start = nR - 2;  // マイナスになり得る
-      std::size_t col;
-      for (j = 0; j + 1 < N_ROW; ++j) {
-         if constexpr (IsHessenberg)
-            i_start = j;
-         for (i = i_start; i >= j; --i) {
-            // 下から
-            // if (!Between(R[i + 1][j], {-eps, eps}))
-            if (this->R[i + 1][j] != 0.) {  // givensの位置
-               auto &Ri = this->R[i];
-               auto &Ri1 = this->R[i + 1];
-               a = Ri[j];
-               b = Ri1[j];  //! {i+1,j}がゼロとしたい成分
-               // r = std::sqrt(a * a + b * b);
-               r = std::hypot(a, b);
+      double r, c, s, a, b;
+      std::vector<double> V_COL_i(N_COL), V_ROW_i(Q.size()), V_COL_j(N_COL), V_ROW_j(Q.size());
+      for (int j = 0; j < N_COL; ++j) {         // Process up to the second-to-last row
+         for (int i = j + 1; i < N_ROW; ++i) {  // Start from the row below j
+            if (this->R[i][j] != 0.) {          // Check if the current element is non-zero for rotation
+               a = R[j][j];                     // Pivot element in row j, column j
+               b = R[i][j];                     // Element to be annihilated in row i, column j
+               r = std::hypot(a, b);            // Compute hypotenuse
                if (r == 0.0) {
-                  s = 0.;
-                  c = 1.;
+                  c = 1.0;
+                  s = 0.0;
                } else {
-                  s = -b / r;
-                  c = a / r;
+                  c = a / r;   // Cosine for Givens rotation
+                  s = -b / r;  // Sine for Givens rotation
+               }
+
+               // Update R matrix
+               for (int col = j; col < N_COL_R; ++col) {
+                  V_COL_i[col] = s * R[j][col] + c * R[i][col];  // Rotate row i
+                  V_COL_j[col] = c * R[j][col] - s * R[i][col];  // Rotate row j
+               }
+               for (int col = j; col < N_COL_R; ++col) {
+                  R[j][col] = V_COL_j[col];
+                  R[i][col] = V_COL_i[col];
+               }
+
+               // Update Q matrix
+               for (int row = 0; row < N_ROW_Q; ++row) {
+                  V_ROW_i[row] = c * Q[row][i] + s * Q[row][j];   // Rotate row j in Q
+                  V_ROW_j[row] = -s * Q[row][i] + c * Q[row][j];  // Rotate row i in Q
+               }
+
+               for (int row = 0; row < N_ROW_Q; ++row) {
+                  Q[row][i] = V_ROW_i[row];
+                  Q[row][j] = V_ROW_j[row];
                }
 
                //
-               // A = F_1^T F_2^T ... F_2 F_1 A = QR
-               // R = ... F_2 F_1 A
-               // Q = F_1^T F_2^T...
-               //
-               // Rの更新
-               for (col = 0; col < mR; ++col) {
-                  Ri_col = Ri[col];
-                  Ri1_col = Ri1[col];
-                  Ri[col] = std::fma(c, Ri_col, -s * Ri1_col);
-                  Ri1[col] = std::fma(s, Ri_col, c * Ri1_col);
-               };
-
-               auto &QTi = this->QT[i];
-               auto &QTi1 = this->QT[i + 1];
-               for (col = 0; col < QTi.size(); ++col) {
-                  QTi_col = QTi[col];
-                  QTi1_col = QTi1[col];
-                  QTi[col] = std::fma(c, QTi_col, -s * QTi1_col);  //$ row i
-                  QTi1[col] = std::fma(s, QTi_col, c * QTi1_col);  //$ row i+k
-               };
-
-               for (auto &Q_row : Q) {  // # row direction
-                  Q_row_i = Q_row[i];
-                  Q_row_i1 = Q_row[i + 1];
-                  Q_row[i] = std::fma(c, Q_row_i, -s * Q_row_i1);     //$ row i
-                  Q_row[i + 1] = std::fma(s, Q_row_i, c * Q_row_i1);  //$ row i+k
-               };
+               // std::cout << "Q = " << MatrixForm(Q, 5, 10) << std::endl;
+               // std::cout << "QT = " << MatrixForm(Transpose(Q), 5, 10) << std::endl;
+               // std::cout << "R = " << MatrixForm(R, 5, 10) << std::endl;
+               // std::cin.ignore();
             }
-
-            // //
-            // std::cout << "Q = " << MatrixForm(Q, 5, 10) << std::endl;
-            // std::cout << "R = " << MatrixForm(R, 5, 10) << std::endl;
-            // std::cin.ignore();
-            //
+            if (IsHessenberg) {
+               /*DOC_EXTRACT
+               Hessenberg行列の場合，既に`R`の`j+2`行目以降はゼロになっているので，
+               `j+1`行目の`j`列目をゼロにすることで，`R`は上三角行列になる．
+               */
+               break;
+            }
          }
-         // ここで，j列目の下半分はゼロになっているはず
       }
-      // ここで，Rは上三角行列になっているはず
+      QT = Transpose(Q);
    };
 
    void IdentityMatrix(T &mat) {
@@ -1050,79 +1043,54 @@ struct QR<std::array<std::array<double, N>, M>> {
 
    void Initialize(const std::array<std::array<double, N>, M> &AIN, const bool constractor = false) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      const int N_ROW = AIN.size();
-      const int N_COL = AIN[0].size();
-      const int nR = AIN.size();
-      const int mR = AIN[0].size();
-      if (!constractor) {
-         A = R = AIN;
-      }
-      IdentityMatrix(Q);
-      QT = Q;
+      const int N_ROW = M;
+      const int N_COL = N;
+      const auto N_ROW_Q = M;
+      const auto N_COL_Q = N_ROW_Q;
+      const auto N_ROW_R = M;
+      const auto N_COL_R = N_COL;
+      this->A = this->R = AIN;
+      IdentityMatrix(this->Q);
+      this->QT = this->Q;
       double r, c, s, a, b;
-      double Q0, Q1, R0, R1;  // Rのためのtmp
-      double eps = 1e-15;
-      int max = std::max(N_ROW, N_COL), i, j;
-      for (j = 0; j < max; ++j) {
-         for (i = nR - 2; i >= j; --i) {
-            // 下から
-            // if (!Between(R[i + 1][j], {-eps, eps}))
-            if (R[i + 1][j] != 0.) {  // givensの位置
-               a = R[i][j];
-               b = R[i + 1][j];  //! {i+1,j}がゼロとしたい成分
-               r = std::hypot(a, b);
+      std::vector<double> V_COL_i(N_COL), V_ROW_i(Q.size()), V_COL_j(N_COL), V_ROW_j(Q.size());
+      for (int j = 0; j < N_COL; ++j) {         // Process up to the second-to-last row
+         for (int i = j + 1; i < N_ROW; ++i) {  // Start from the row below j
+            if (this->R[i][j] != 0.) {          // Check if the current element is non-zero for rotation
+               a = R[j][j];                     // Pivot element in row j, column j
+               b = R[i][j];                     // Element to be annihilated in row i, column j
+               r = std::hypot(a, b);            // Compute hypotenuse
                if (r == 0.0) {
-                  s = 0.;
-                  c = 1.;
+                  c = 1.0;
+                  s = 0.0;
                } else {
-                  s = -b / r;
-                  c = a / r;
+                  c = a / r;   // Cosine for Givens rotation
+                  s = -b / r;  // Sine for Givens rotation
                }
 
-               //
-               // A = F_1^T F_2^T ... F_2 F_1 A = QR
-               // R = ... F_2 F_1 A
-               // Q = F_1^T F_2^T...
-               //
-               // Rの更新
-               for (auto col = 0; col < mR; ++col) {
-                  R0 = c * R[i][col] - s * R[i + 1][col];  //$ row i
-                  R1 = s * R[i][col] + c * R[i + 1][col];  //$ row i+k
-                  R[i][col] = R0;
-                  R[i + 1][col] = R1;
-               };
+               // Update R matrix
+               for (int col = j; col < N_COL_R; ++col) {
+                  V_COL_i[col] = s * R[j][col] + c * R[i][col];  // Rotate row i
+                  V_COL_j[col] = c * R[j][col] - s * R[i][col];  // Rotate row j
+               }
+               for (int col = j; col < N_COL_R; ++col) {
+                  R[j][col] = V_COL_j[col];
+                  R[i][col] = V_COL_i[col];
+               }
 
-               for (auto col = 0; col < QT[i].size(); ++col) {
-                  Q0 = c * QT[i][col] - s * QT[i + 1][col];  //$ row i
-                  Q1 = s * QT[i][col] + c * QT[i + 1][col];  //$ row i+k
-                  QT[i][col] = Q0;
-                  QT[i + 1][col] = Q1;
-               };
-
-               // Qの更新 * 左から書けるのでRとは逆順
-               // for (auto row = 0; row < Q.size(); ++row) {  // # row direction
-               for (auto &Q_row : Q) {                   // # row direction
-                  Q0 = c * Q_row[i] - s * Q_row[i + 1];  //$ row i
-                  Q1 = s * Q_row[i] + c * Q_row[i + 1];  //$ row i+k
-                  Q_row[i] = Q0;
-                  Q_row[i + 1] = Q1;
-               };
-
-               // std::cout << "-----------------" << std::endl;
-               // std::cout << "i: " << i << ", j: " << j << std::endl;
-               // std::cout << "-----------------" << std::endl;
-               // Print("Q");
-               // std::cout << MatrixForm(Q, std::setw(10)) << std::endl;
-               // std::cout << "-----------------" << std::endl;
-               // Print("R");
-               // std::cout << "{i+1,j} = " << i + 1 << "," << j << std::endl;
-               // auto func = [&](auto i_in, auto j_in) { return (i + 1 == i_in && j_in == j); };
-               // std::cout << MatrixForm(R, func, 5, 20) << std::endl;
+               // Update Q matrix
+               for (int row = 0; row < N_ROW_Q; ++row) {
+                  V_ROW_i[row] = c * Q[row][i] + s * Q[row][j];   // Rotate row j in Q
+                  V_ROW_j[row] = -s * Q[row][i] + c * Q[row][j];  // Rotate row i in Q
+               }
+               for (int row = 0; row < N_ROW_Q; ++row) {
+                  Q[row][i] = V_ROW_i[row];
+                  Q[row][j] = V_ROW_j[row];
+               }
             }
          }
-         // ここで，j列目の下半分はゼロになっているはず
       }
-      // ここで，Rは上三角行列になっているはず
+      QT = Transpose(Q);
    };
 
    void IdentityMatrix(auto &mat) {
@@ -1247,22 +1215,58 @@ struct CRS {
 
    // 高速化のために，vectorに変換する．
    std::vector<std::tuple<CRS *, double, std::size_t>> column_value_vector;
+   //
+   std::vector<CRS *> column_value_vector_CRS;
+   std::vector<double> column_value_vector_value;
+   std::vector<std::size_t> column_value_vector_index;
+   //
    void setVectorCRS() {
       column_value_vector.clear();
       column_value_vector.reserve(column_value.size());
+
+      column_value_vector_CRS.clear();
+      column_value_vector_CRS.reserve(column_value.size());
+
+      column_value_vector_value.clear();
+      column_value_vector_value.reserve(column_value.size());
+
+      column_value_vector_index.clear();
+      column_value_vector_index.reserve(column_value.size());
+
       for (const auto &[crs, value] : column_value) {
          // column_value_vector.push_back({crs, value, crs->__index__});
-         column_value_vector.emplace_back(crs, value, crs->__index__);
+         column_value_vector.emplace_back(crs,
+                                          value,
+                                          crs->__index__);
+
+         column_value_vector_CRS.emplace_back(crs);
+         column_value_vector_value.emplace_back(value);
+         column_value_vector_index.emplace_back(crs->__index__);
       }
       this->canUseVector = true;
    };
 
    double selfDot() const {
       double ret = 0.;
-      if (this->canUseVector)
+      if (this->canUseVector) {
          std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
-      else
+      } else {
          std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+      }
+      return ret;
+   };
+
+   double selfDot(const V_d &V) const {
+      double ret = 0.;
+      if (this->canUseVector) {
+         // std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         for (std::size_t i = 0; const auto &index : column_value_vector_index)
+            ret = std::fma(column_value_vector_value[i++], V[index], ret);
+      } else {
+         // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         for (const auto &[crs_local, value] : column_value)
+            ret = std::fma(value, V[crs_local->__index__], ret);
+      }
       return ret;
    };
 };
@@ -1318,24 +1322,26 @@ V_d Dot(const Container<T *> &A, const V_d &V) {
 template <template <typename, typename...> class Container, typename T>
    requires std::derived_from<T, CRS>
 V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
-// Assuming 'A' is a container that supports random access, like std::vector
-#pragma omp parallel for schedule(dynamic)
-   for (std::size_t j = 0; j < A.size(); ++j) {
-      auto *crs = A[j];  // Use a pointer to avoid copying the object
-      auto &a = b[crs->__index__];
-      if (crs->canUseVector) {
-         for (const auto &[_, value, i] : crs->column_value_vector)
-            a = std::fma(-value, V[i], a);
-      } else {
-         for (const auto &[crs_local, value] : crs->column_value)
-            a = std::fma(-value, V[crs_local->__index__], a);
-      }
+   // Assuming 'A' is a container that supports random access, like std::vector
+   // #pragma omp parallel for schedule(dynamic)
+   // for (std::size_t j = 0; j < A.size(); ++j) {
+   for (const auto &crs : A) {
+      // auto *crs = A[j];  // Use a pointer to avoid copying the object
+      // double a = 0.;
+      // if (crs->canUseVector) {
+      //    for (const auto &[_, value, i] : crs->column_value_vector)
+      //       a = std::fma(value, V[i], a);
+      // } else {
+      //    for (const auto &[crs_local, value] : crs->column_value)
+      //       a = std::fma(value, V[crs_local->__index__], a);
+      // }
+      b[crs->__index__] -= crs->selfDot(V);
    }
    return b;
 };
 
 V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
-#pragma omp parallel for
+   // #pragma omp parallel for
    for (std::size_t i = 0; i < A.size(); ++i) {
       auto &a = b[i];
       std::size_t j = 0;
@@ -1524,7 +1530,7 @@ NOTE: $`\tilde H_n`$は，Hessenberg行列が１行長くなった行列にな�
 */
 
 // #define DEBUG_GMRES
-
+//
 template <typename Matrix>
 struct ArnoldiProcess {
 
@@ -1534,7 +1540,9 @@ struct ArnoldiProcess {
    VV_d H;  // ((n+1) x n) Hessenberg matrix
    VV_d V;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
    V_d w;
-   ~ArnoldiProcess() { std::cout << "destructing ArnoldiProcess" << std::endl; };
+   // ~ArnoldiProcess() { std::cout << "destructing ArnoldiProcess" << std::endl; };
+   // make virtul destructor
+   virtual ~ArnoldiProcess() = default;
    ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN)
        : n(nIN),
          beta(Norm(v0IN)),
@@ -1546,27 +1554,24 @@ struct ArnoldiProcess {
       Initialize(A, v0IN, nIN, false);
    };
 
-   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN, const bool do_constract = true) {
+   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN, const bool do_constract = true) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       // if (do_constract) {
       n = nIN;
       beta = Norm(v0IN);
       v0 = (v0IN / beta);
-      H.assign(nIN + 1, V_d(nIN, 0.));
+      V_d zeros(nIN, 0.);
+      H.assign(nIN + 1, zeros);
       V.assign(nIN + 1, v0);
       w.resize(A.size());
       // }
       std::size_t i, j;
+
       for (j = 0; j < n /*展開項数*/; ++j) {
-         DotOutput(A, V[j], w);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
-                                 // w = Dot(A, V[j]);  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
-         // orthogonalization
-         for (i = 0; i <= j; ++i) {
-            // w -= (H[i][j] = Dot(V[i], w)) * V[i];
-            //! use std::fma
+         for (const auto &crs : A)
+            w[crs->__index__] = crs->selfDot(V[j]);
+         for (i = 0; i <= j; ++i)
             FusedMultiplyIncrement(-(H[i][j] = Dot(V[i], w)), V[i], w);
-         }
-         // normalize w
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
       }
    };
@@ -1609,6 +1614,7 @@ $`n`$はこの表現での展開項数である．$`V_n = \{{\bf v}_1,{\bf v}_2,
 & = \|V_{n+1} (\|{\bf b}\| {\bf e}_1 - \tilde H_n {\bf y}_n)\|\\
 & = \|\|{\bf b}\| {\bf e}_1 - \tilde H_n {\bf y}_n\|\quad \text{(the dimension has been reduced!)}\\
 & = \|\|{\bf b}\| {\bf e}_1 - QR {\bf y}_n\|\quad \text{(use QR decomposition)}\\
+& = \|Q^\intercal \|{\bf b}\| {\bf e}_1 - R {\bf y}_n\|\quad \text{(use QR decomposition)}\\
 \end{align*}
 ```
 
@@ -1660,9 +1666,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
    V_d g;
    double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
-   gmres() {
-      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   };
+   gmres() { DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__); };
    gmres(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN)
        : ArnoldiProcess<Matrix>(A, b_minus_A_dot_V(b, A, x0) /*b - Dot(A, x0) 行列-ベクトル積*/, nIN),
          x(x0),
@@ -1682,7 +1686,7 @@ struct gmres : public ArnoldiProcess<Matrix> {
       for (const auto &q : qr.QT)
          this->g[i++] = q[0] * this->beta;
 
-      this->err = this->g.back();  // 予想される誤差
+      this->err = std::abs(this->g.back());  // 予想される誤差
       this->g.pop_back();
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
       i = 0;
@@ -1696,29 +1700,31 @@ struct gmres : public ArnoldiProcess<Matrix> {
 #endif
    };
 
-   void Restart(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN) {
+   void Restart(const Matrix &A, const V_d &b, const V_d x0, const int nIN) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      std::cout << "Restarting" << std::endl;
+      std::cout << "Restart:Restarting" << std::endl;
       // this->Initialize(A, b - Dot(A, x0), nIN);
-      std::cout << "Initialize" << std::endl;
+      // std::cout << "Restart:Initialize" << std::endl;
       this->Initialize(A, b_minus_A_dot_V(b, A, x0), nIN);
-      std::cout << "Initialize done" << std::endl;
+      std::cout << "Restart:Initialize done" << std::endl;
       this->x = x0;
       // this->y.resize(b.size());
       std::cout << "QR" << std::endl;
       this->qr.Initialize(this->H);
       std::cout << "QR done" << std::endl;
-      this->g.resize(this->qr.Q.size());
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       std::size_t i = 0;
-      for (const auto &q : qr.QT)
-         this->g[i++] = q[0] * this->beta;
+      // std::vector<double> tmp_g(this->qr.QT.size());
+      // for (const auto &q : qr.QT)
+      //    tmp_g[i++] = q[0] * this->beta;
+      // this->g = tmp_g;
+      this->g = this->qr.Q[0] * this->beta;
 
-      err = this->g.back();  // 予想される誤差
+      err = std::abs(this->g.back());  // 予想される誤差
       this->g.pop_back();
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
-      for (std::size_t i = 0; i < this->n; ++i) {
+      for (i = 0; i < this->n; ++i) {
          // this->x += this->y[i] * this->V[i];
          //! use std::fma
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
@@ -1726,22 +1732,29 @@ struct gmres : public ArnoldiProcess<Matrix> {
       std::cout << "Restart done" << std::endl;
    }
 
+   void Restart(const Matrix &A, const V_d &b, const int nIN) {
+      this->Restart(A, b, this->x, nIN);
+   }
+
    //@今の所このIterateは正しく実装されていない．
 
    void Iterate(const Matrix &A) {
-      // std::cout << "Iterate" << std::endl;
+      // std::cout << "Iterate" << std:zx:endl;
       // do not change v0
       this->AddBasisVector(A);
       this->qr = QR<VV_d, true>(this->H);
-      g.resize(qr.Q.size());
+      // g.resize(qr.Q.size());
       err = 0.;
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
       // std::cout << "g.size() = " << g.size() << std::endl;
       std::size_t i = 0;
-      for (const auto &q : this->qr.QT)
-         g[i++] = q[0] * this->beta;
-      err = g.back();  // 予想される誤差
+      // for (const auto &q : this->qr.QT)
+      //    g[i++] = q[0] * this->beta;
+
+      this->g = this->qr.Q[0] * this->beta;
+
+      err = std::abs(g.back());  // 予想される誤差
       g.pop_back();
       // std::cout << "back_substitution" << std::endl;
       // this->y = back_substitution(this->qr.R, g, g.size());

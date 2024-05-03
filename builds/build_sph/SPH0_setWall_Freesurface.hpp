@@ -68,12 +68,12 @@ void setCorrectionMatrix(const auto &all_nets) {
             A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);  //\label{SPH:grad_corr_M}
             A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));
             //
-            if (Between(Distance(A, B), {1E-13, A->SML()})) {
+            if (Distance(A, B) <= A->SML()) {
                A->checked_points_in_radius_SPH++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH++;
             }
-            if (Between(Distance(X_next(A), X_next(B)), {1E-13, A->SML_next()})) {
+            if (Distance(X_next(A), X_next(B)) <= A->SML_next()) {
                A->checked_points_in_radius_SPH_next++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH_next++;
@@ -82,57 +82,62 @@ void setCorrectionMatrix(const auto &all_nets) {
          }
       };
 
-      std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
-            if (canInteract(A, B))
-               add_for_grad_correction(B);
-         });
-      });
+      if (A->isFluid) {
+         for (const auto &B : A->points_in_SML)
+            add_for_grad_correction(B);
+      } else {
+         for (const auto &NET : all_nets) {
+            NET->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
+               if (canInteract(A, B))
+                  add_for_grad_correction(B);
+            });
+         };
+      }
 
       DebugPrintLevel(2, "勾配の補正行列の計算 done", Blue);
       A->Eigenvalues_of_M.fill(0.);
-
       A->is_grad_corr_M_singular = false;
       A->is_grad_corr_M_next_singular = false;
       try {
-         // treatMatrix(A->grad_corr_M);
-         // treatMatrix(A->grad_corr_M_next);
-         if (std::abs(Det(A->grad_corr_M))) {
-            A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-            if (!isFinite(A->inv_grad_corr_M, 1e+2)) {
-               IdentityMatrix(A->inv_grad_corr_M);
-               A->is_grad_corr_M_singular = true;
-            }
-         } else {
-            IdentityMatrix(A->inv_grad_corr_M);
-            A->is_grad_corr_M_singular = true;
-         }
-
-         if (std::abs(Det(A->grad_corr_M_next)) > 1E-13) {
-            A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
-            //! gradがOKでも，inv_gradが大きな値になる場合がある．//経験的に100を超えると，計算が不安定になる．
-            if (!isFinite(A->inv_grad_corr_M_next, 1e+2)) {
-               IdentityMatrix(A->inv_grad_corr_M_next);
-               A->is_grad_corr_M_next_singular = true;
-            }
-         } else {
-            IdentityMatrix(A->inv_grad_corr_M_next);
-            A->is_grad_corr_M_next_singular = true;
-         }
-
-         // if (A->checked_points_in_radius_of_fluid_SPH <= 1) {
+         // if (std::abs(Det(A->grad_corr_M))) {
+         //    A->inv_grad_corr_M = Inverse(A->grad_corr_M);
+         //    if (!isFinite(A->inv_grad_corr_M, 1e+2)) {
+         //       IdentityMatrix(A->inv_grad_corr_M);
+         //       A->is_grad_corr_M_singular = true;
+         //    }
+         // } else {
+         //    IdentityMatrix(A->inv_grad_corr_M);
          //    A->is_grad_corr_M_singular = true;
          // }
-         // if (A->checked_points_in_radius_of_fluid_SPH_next <= 1) {
+
+         // if (std::abs(Det(A->grad_corr_M_next)) > 1E-13) {
+         //    A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
+         //    //! gradがOKでも，inv_gradが大きな値になる場合がある．//経験的に100を超えると，計算が不安定になる．
+         //    if (!isFinite(A->inv_grad_corr_M_next, 1e+2)) {
+         //       IdentityMatrix(A->inv_grad_corr_M_next);
+         //       A->is_grad_corr_M_next_singular = true;
+         //    }
+         // } else {
+         //    IdentityMatrix(A->inv_grad_corr_M_next);
          //    A->is_grad_corr_M_next_singular = true;
          // }
-         // if (std::ranges::none_of(A->grad_corr_M, [](const auto &v) { return Norm(v) == 0.; })) {
-         //    A->inv_grad_corr_M = Inverse(A->grad_corr_M);
-         // }
 
-         // if (std::ranges::none_of(A->grad_corr_M_next, [](const auto &v) { return Norm(v) == 0.; })) {
-         //    A->inv_grad_corr_M_next = Inverse(A->grad_corr_M_next);
-         // }
+         auto clamp = [](std::array<std::array<double, 3>, 3> M, const double max_value) {
+            double max = 0.;
+            for (auto i = 0; i < 3; ++i)
+               for (auto j = 0; j < 3; ++j)
+                  max = std::max(max, std::abs(M[i][j]));
+
+            if (max > max_value) {
+               for (auto i = 0; i < 3; ++i)
+                  for (auto j = 0; j < 3; ++j)
+                     M[i][j] = M[i][j] * max_value / max;
+            }
+            return M;
+         };
+
+         A->inv_grad_corr_M = clamp(Inverse(A->grad_corr_M), 100.);
+         A->inv_grad_corr_M_next = clamp(Inverse(A->grad_corr_M_next), 100.);
 
       } catch (std::exception &e) {
          std::cout << "error in setCorrectionMatrix" << std::endl;
@@ -317,7 +322,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.2 * A->SML(), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
             if (canInteract(A, B)) add_for_laplacian_correction(B);
          });
       });
@@ -576,10 +581,11 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
             p->intp_density = 0.;
          }
 
-#pragma omp parallel
       for (const auto &[obj, poly] : RigidBodyObject)
+#pragma omp parallel
+         for (const auto &q : obj->getPoints())
 #pragma omp single nowait
-         for (const auto &q : obj->getPoints()) {
+         {
             if (q->isCaptured) {
 
                /*DOC_EXTRACT 0_1_2_setWall
@@ -599,12 +605,14 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                double div_U = 0, div_U_next = 0;
                q->intp_density = 0.;
                double density = 0., density_next = 0.;
+               double volume = 0., volume_next = 0.;
                //! ちょっとした修正11/28 -> 効果なし
-               if (q->isFirstWallLayer)
-                  q->marker_X = q->X + q->v_to_surface_SPH;
-               else
-                  q->marker_X = q->X + 2. * q->v_to_surface_SPH;
+               // if (q->isFirstWallLayer)
+               //    q->marker_X = q->X + q->v_to_surface_SPH;
+               // else
+               q->marker_X = q->X + 2. * q->v_to_surface_SPH;
                double total_vol_w = 0, r = q->SML(), vol_w, vol_w_next, total_vol_w_next = 0;
+               int count = 0;
                net->BucketPoints.apply(q->marker_X, 1.1 * r, [&](const auto &Q) {
                   if (Norm(q->marker_X - Q->X) > r)
                      return;
@@ -615,10 +623,13 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                   density_next += Q->rho * vol_w_next;
                   div_U += Q->div_U * vol_w;
                   div_U_next += Q->div_U_next * vol_w_next;
+                  volume += vol_w;
+                  volume_next += vol_w_next;
                   DUDT += Q->DUDt_SPH * vol_w;
                   q->intp_density += Q->rho * vol_w;
                   total_vol_w += vol_w;
                   total_vol_w_next += vol_w_next;
+                  count += 1;
                });
 
                if (total_vol_w >= 0.01 /*should be close to unity*/) {
@@ -627,10 +638,16 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                   q->U_SPH /= total_vol_w;
                   q->marker_U = q->U_SPH;  //! そのままの値
                   density /= total_vol_w;
+                  volume /= total_vol_w;
+                  if (density < 1E-10)
+                     density = _WATER_DENSITY_;
                }
                if (total_vol_w_next >= 0.01) {
                   div_U_next /= total_vol_w_next;
                   density_next /= total_vol_w_next;
+                  volume_next /= total_vol_w_next;
+                  if (density_next < 1E-10)
+                     density_next = _WATER_DENSITY_;
                }
                // q->U_SPH = -q->U_SPH;
                // q->U_SPH.fill(0.);
@@ -640,8 +657,17 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                q->div_U_next = div_U_next;
                // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
                q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
+               if (!isFinite(density))
+                  density = _WATER_DENSITY_;
+               if (!isFinite(density_next))
+                  density_next = _WATER_DENSITY_;
+
+               density = 0.99 * density + 0.01 * _WATER_DENSITY_;
+               density_next = 0.99 * density_next + 0.01 * _WATER_DENSITY_;
                q->RK_rho.initialize(q->RK_rho.get_dt(), q->RK_rho.t_init, density, q->RK_rho.steps);
-               q->setDensity(_WATER_DENSITY_);
+               q->setDensityVolume(density, std::pow(particle_spacing, 3.));
+               //
+               // q->setDensity(_WATER_DENSITY_);
                // if (q->isFirstWallLayer)
                //    q->U_SPH = Chop(q->U_SPH, q->v_to_surface_SPH);
                // q->U_SPH = Projection(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
@@ -722,7 +748,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             const double SML = p->SML();
             const double SML_next = p->SML_next();
 
-            net->BucketPoints.apply(p->X, 1.2 * SML, [&](const auto &q) {
+            net->BucketPoints.apply(p->X, 1.1 * SML, [&](const auto &q) {
                // w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
                if (Distance(p, q) < SML) {
                   p->COM_SPH += q->mass * q->X;
@@ -760,7 +786,7 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
             const double a = 1.;
             for (const auto &obj : RigidBodyObject)
-               obj->BucketPoints.apply(p->X, 1.2 * SML, [&](const auto &q) {
+               obj->BucketPoints.apply(p->X, 1.1 * SML, [&](const auto &q) {
                   if (canInteract(p, q)) {
                      // w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
                      if (Distance(p, q) < SML || Distance(X_next(p), X_next(q)) < SML) {
@@ -1024,12 +1050,12 @@ void modify_interp_normal_original(auto &net, const auto &RigidBodyObject) {
          if (p->isCaptured) {
             p->interp_normal_original.fill(0.);
             p->interp_normal_original_next.fill(0.);
-            net->BucketPoints.apply(p->X, 1.2 * p->SML(), [&](const auto &q) {
+            net->BucketPoints.apply(p->X, 1.1 * p->SML(), [&](const auto &q) {
                p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());  //! DO NOT USE grad_w_Bspline(p, q) because this is original
                p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
             });
             for (const auto &obj : RigidBodyObject)
-               obj->BucketPoints.apply(p->X, 1.2 * p->SML(), [&](const auto &q) {
+               obj->BucketPoints.apply(p->X, 1.1 * p->SML(), [&](const auto &q) {
                   if (canInteract(p, q)) {
                      p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
                      p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
@@ -1042,8 +1068,8 @@ void modify_interp_normal_original(auto &net, const auto &RigidBodyObject) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in setFreeSurface");
    };
 };
-//! -------------------------------------------------------------------------- */
 
+//! -------------------------------------------------------------------------- */
 //! ここでSPH_kernel_helper_functions.hppを読み込んでいるのは，上の関数でhelperを使わないようにするため
 #include "SPH_kernel_helper_functions.hpp"
 

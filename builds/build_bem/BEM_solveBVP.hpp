@@ -85,8 +85,8 @@ struct calculateFluidInteraction {
          if (f->Neumann) {
             if (std::ranges::all_of(f->getPoints(),
                                     [&](const auto &p) { return std::ranges::any_of(
-                                             
-                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+
+                                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
                this->PressureVeticies.push_back({{p0, p1, p2}, {p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
                this->actingFaces.emplace_back(f);
@@ -455,17 +455,17 @@ struct BEM_BVP {
          auto t0t1t2 = ModTriShape<3>(t0, t1);
          t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0, t1, ww, t0t1t2});
       }
-                  
-      for (const auto &water : WATERS) 
+
+      for (const auto &water : WATERS)
 #pragma omp parallel
-         for (const auto &integ_f : water->getFaces()){
+         for (const auto &integ_f : water->getFaces()) {
 #pragma omp single nowait
-            integ_f->setIntegrationInfo();            
+            integ_f->setIntegrationInfo();
          }
 
       int count_pseudo_quadratic_element = 0, count_linear_element = 0, total = 0;
-      for (const auto &water : WATERS) 
-         for (const auto &integ_f : water->getFaces()){
+      for (const auto &water : WATERS)
+         for (const auto &integ_f : water->getFaces()) {
             if (integ_f->isLinearElement)
                count_linear_element++;
             else if (integ_f->isPseudoQuadraticElement)
@@ -476,11 +476,10 @@ struct BEM_BVP {
       std::cout << "線形要素の面の数：" << count_linear_element << " persecent: " << 100. * count_linear_element / total << std::endl;
       std::cout << "擬似二次要素の面の数：" << count_pseudo_quadratic_element << " persecent: " << 100. * count_pseudo_quadratic_element / total << std::endl;
 
-      if(_PSEUDO_QUADRATIC_ELEMENT_)
+      if (_PSEUDO_QUADRATIC_ELEMENT_)
          std::cout << "擬似二次要素を使ってBIEを離散化" << std::endl;
       else
          std::cout << "線形要素を使ってBIEを離散化" << std::endl;
-
 
       for (const auto water : WATERS)
 #pragma omp parallel
@@ -492,12 +491,12 @@ struct BEM_BVP {
                for (auto f : origin->getFaces())
                   dist_base += f->area;
                dist_base = std::sqrt(dist_base);
-               auto &IGIGn_Row = IGIGn[index];               
+               auto &IGIGn_Row = IGIGn[index];
                double nr, ig, ign;
                Tdd ig_ign0, ig_ign1, ig_ign2;
                bool is_near;
                Tddd R;
-               networkPoint* closest_p_to_origin = nullptr;
+               networkPoint *closest_p_to_origin = nullptr;
                std::tuple<networkPoint *, networkFace *, double, double> key_ig_ign0, key_ig_ign1, key_ig_ign2;
                std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign;
 
@@ -531,21 +530,20 @@ struct BEM_BVP {
 
                      */
 
-                     if (integ_f->isLinearElement){
+                     if (integ_f->isLinearElement) {
                         ig_ign0 = ig_ign1 = ig_ign2 = {0., 0.};
-                        if(p0 == origin)
-                        {
+                        if (p0 == origin) {
                            ign = 0.;
-                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {                           
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
                               std::get<0>(ig_ign0) += ig * shape3[0];
                               std::get<0>(ig_ign1) += ig * shape3[1];
                               std::get<0>(ig_ign2) += ig * shape3[2];
                            }
-                        }else{
-                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {                           
+                        } else {
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                              ign = Dot(R, cross) * (ww / (nr*nr*nr));
+                              ign = Dot(R, cross) * (ww / (nr * nr * nr));
                               std::get<0>(ig_ign0) += ig * shape3[0];
                               std::get<1>(ig_ign0) -= ign * shape3[0];
                               std::get<0>(ig_ign1) += ig * shape3[1];
@@ -558,40 +556,38 @@ struct BEM_BVP {
                         IGIGn_Row[pf2Index(p0, integ_f)] += ig_ign0;
                         IGIGn_Row[pf2Index(p1, integ_f)] += ig_ign1;
                         IGIGn_Row[pf2Index(p2, integ_f)] += ig_ign2;
-                     }else if (integ_f->isPseudoQuadraticElement){
+                     } else if (integ_f->isPseudoQuadraticElement) {
 
                         key_ig_ign = integ_f->map_Point_BEM_IGIGn_info_init.at(closest_p_to_origin);
-                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : (is_near ? integ_f->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_PseudoQuadraticIntegrationInfo.at(closest_p_to_origin))) {                           
+                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : (is_near ? integ_f->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_PseudoQuadraticIntegrationInfo.at(closest_p_to_origin))) {
                            ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                           ign = Dot(R, cross) * (ww / (nr*nr*nr));
+                           ign = Dot(R, cross) * (ww / (nr * nr * nr));
                            for (auto i = 0; i < 6; ++i) {
                               FusedMultiplyIncrement(ig, std::get<0>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i]));
                               FusedMultiplyIncrement(-ign, std::get<0>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i]));
-                              if(std::get<0>(key_ig_ign[i]) != origin)
+                              if (std::get<0>(key_ig_ign[i]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<0>(Nc_N0_N1_N2)[i];
 
                               FusedMultiplyIncrement(ig, std::get<1>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 6]));
                               FusedMultiplyIncrement(-ign, std::get<1>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 6]));
-                              if(std::get<0>(key_ig_ign[i + 6]) != origin)
+                              if (std::get<0>(key_ig_ign[i + 6]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<1>(Nc_N0_N1_N2)[i];
 
                               FusedMultiplyIncrement(ig, std::get<2>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 12]));
                               FusedMultiplyIncrement(-ign, std::get<2>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 12]));
-                              if(std::get<0>(key_ig_ign[i + 12]) != origin)
+                              if (std::get<0>(key_ig_ign[i + 12]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<2>(Nc_N0_N1_N2)[i];
-                                 
+
                               FusedMultiplyIncrement(ig, std::get<3>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 18]));
                               FusedMultiplyIncrement(-ign, std::get<3>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 18]));
-                              if(std::get<0>(key_ig_ign[i + 18]) != origin)
+                              if (std::get<0>(key_ig_ign[i + 18]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<3>(Nc_N0_N1_N2)[i];
                            }
                         }
 
                         for (const auto &[p, integ_f, ig, ign] : key_ig_ign)
                            IGIGn_Row[pf2Index(p, integ_f)] += Tdd{ig, ign};  // この面に関する積分において，φまたはφnの寄与
-
                      }
-
                   }
                }
 

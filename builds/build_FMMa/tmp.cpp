@@ -941,6 +941,7 @@ T Abs(const std::vector<double> &vec) {
    return std::sqrt(tmp);
 };
 //==========================================================
+//! CAUTION: VectorAngle returns ambiguous results when the angle is 0 or M_PI
 template <class T>
 T VectorAngle(const std::vector<T> &X1, const std::vector<T> &X2, const std::vector<T> &X0) {
    return std::atan2(Rot(std::vector<T>{X1[0] - X0[0], X1[1] - X0[1]}, std::vector<T>{X2[0] - X0[0], X2[1] - X0[1]}),

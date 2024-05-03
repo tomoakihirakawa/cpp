@@ -85,7 +85,7 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 | `contains` | `CRS *const p` | `bool` | 指定された`p`が`column_value`に含まれているかを確認する |
 | `increment` | `CRS *const p, const double v` | `void` | 指定された`p`に対する`column_value`の値に`v`を加算、または新規挿入する |
 | `setVectorCRS` | なし | `void` | `column_value`を`std::vector`形式に変換し、`canUseVector`を`true`に設定する |
-[../../include/basic_linear_systems.hpp#L1139](../../include/basic_linear_systems.hpp#L1139)
+[../../include/basic_linear_systems.hpp#L1107](../../include/basic_linear_systems.hpp#L1107)
 
 
 ### 🪼 CRSの使用例 
@@ -211,7 +211,7 @@ A V _n = V _{n+1} \tilde H _n, \quad V _n = [v _1|v _2|...|v _n],
 
 基底ベクトルを追加したい場合にどのような操作が必要となるか整理しておこう．
 これは，GMRES法の繰り返し計算の中で必要となる．
-[../../include/basic_linear_systems.hpp#L1467](../../include/basic_linear_systems.hpp#L1467)
+[../../include/basic_linear_systems.hpp#L1473](../../include/basic_linear_systems.hpp#L1473)
 
 
 ## ⛵ ⛵ 一般化最小残差法 (Generalized Minimal Residual Method, GMRES)  
@@ -232,6 +232,7 @@ $`n`$はこの表現での展開項数である．$`V _n = \{{\bf v} _1,{\bf v} 
 & = \|V _{n+1} (\|{\bf b}\| {\bf e} _1 - \tilde H _n {\bf y} _n)\|\\
 & = \|\|{\bf b}\| {\bf e} _1 - \tilde H _n {\bf y} _n\|\quad \text{(the dimension has been reduced!)}\\
 & = \|\|{\bf b}\| {\bf e} _1 - QR {\bf y} _n\|\quad \text{(use QR decomposition)}\\
+& = \|Q^\intercal \|{\bf b}\| {\bf e} _1 - R {\bf y} _n\|\quad \text{(use QR decomposition)}\\
 \end{align*}
 ```
 
@@ -251,7 +252,7 @@ LU分解の場合は，$`O(m^3)`$の計算量が必要となる．
 従って，$`m`$が大きい場合は，GMRESの方が計算量が少なくて済む．
 
 GMRESと多重極展開法（もし$`m`$が$`m/d`$になったとすると）を組み合わせれば，GMRESは$`O(knm^2/d^2)`$で計算できる．
-[../../include/basic_linear_systems.hpp#L1592](../../include/basic_linear_systems.hpp#L1592)
+[../../include/basic_linear_systems.hpp#L1597](../../include/basic_linear_systems.hpp#L1597)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．

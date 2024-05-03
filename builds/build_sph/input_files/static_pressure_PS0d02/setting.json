@@ -1,7 +1,7 @@
 {
     "RK_order": 1,
     "max_dt": 0.002,
-    "CSML": 2.8,
+    "CSML": 2.4,
     "end_time_step": 1000000,
     "end_time": 10,
     "initial_surface_z_position": 0.1,

@@ -37,7 +37,7 @@ inline void networkFace::setIntegrationInfo() {
       std::vector<linear_triangle_integration_info> info_linears;
       std::vector<pseudo_quadratic_triangle_integration_info> info_quadratics;
 
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW6xGW6__) {
+      for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
          auto N012_geometry = ModTriShape<3>(t0, t1);
          auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
          auto X = Dot(N012_geometry, X012);

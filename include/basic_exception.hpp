@@ -17,7 +17,7 @@ class error_message : public std::exception {
    error_message(const std::string &filename_,
                  const std::string &name_,
                  const int line_,
-                 const std::string &message_)
+                 const std::string &message_ = std::string())
        : filename(filename_), name(name_), line(line_), message(message_) {
       std::cout << nani() << std::endl;
    };
