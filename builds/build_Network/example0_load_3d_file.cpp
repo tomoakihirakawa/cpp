@@ -207,5 +207,6 @@ int main() {
          vtkPolygonWrite(ofs, obj->getPoints(), data);
          ofs.close();
       }
+      //
    }
 }
