@@ -1,0 +1,17 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 35.82884319657917,
+    "COM": [
+        6,
+        0,
+        0.8038
+    ],
+    "MOI": [
+        0.9,
+        0.9,
+        900.0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Palm2016/float_mod.obj"
+}

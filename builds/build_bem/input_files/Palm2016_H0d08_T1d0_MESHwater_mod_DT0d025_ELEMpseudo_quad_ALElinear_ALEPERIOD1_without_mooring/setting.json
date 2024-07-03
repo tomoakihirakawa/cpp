@@ -1,0 +1,19 @@
+{
+    "max_dt": 0.025,
+    "end_time_step": 100000,
+    "end_time": 30,
+    "element": "pseudo_quad",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/benchmark202405Palm2016/Palm2016_H0d08_T1d0_MESHwater_mod_DT0d025_ELEMpseudo_quad_ALElinear_ALEPERIOD1_without_mooring",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json",
+        "probe1.json",
+        "probe2.json",
+        "probe3.json",
+        "probe4.json"
+    ]
+}

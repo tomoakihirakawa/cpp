@@ -422,7 +422,7 @@ $ gnuplot bspline_plot.gnu
 
 ### 🪼 コード 
 
-[Bspline基底関数](../../include/basic.hpp#L834)を用いて，B-spline補間を行う．
+[Bspline基底関数](../../include/basic.hpp#L838)を用いて，B-spline補間を行う．
 
 `InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
 

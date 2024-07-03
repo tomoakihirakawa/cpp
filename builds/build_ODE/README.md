@@ -43,10 +43,10 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L399)）．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L448)）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](../../include/integrationOfODE.hpp#L399)
-[../../include/integrationOfODE.hpp#L389](../../include/integrationOfODE.hpp#L389)
+[LeapFrogのクラス](../../include/integrationOfODE.hpp#L448)
+[../../include/integrationOfODE.hpp#L438](../../include/integrationOfODE.hpp#L438)
 
 
 ### 🪼 🪼 Runge-Kutta  

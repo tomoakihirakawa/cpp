@@ -55,15 +55,17 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 
          ### 進行波を生成するための流速の境界条件
 
-         \begin{equation}
-         {\bf u}_{\rm gen} =
+
+         構造物に接する節点のNeumann境界条件として，法線方向流速$\phi_n={\bf u}_{\rm wave}\cdot{\bf n}$を与えることで進行波を生成する．
+
+         ```math
+         {\bf u}_{\rm wave} =
          \begin{pmatrix}
-         a \omega \frac{\cosh(k(h+z))}{\sinh(kh)}\cos(\omega t - kx) \\
+         a \omega \frac{\cosh(k(h+z))}{\sinh(kh)}\cos(\omega t - kx) + \frac{\omega k a^2}{2}\frac{\cosh(2k(h+z)) - \cos(2(\omega t - kx))}{\sinh^2(kh)} \\
          0 \\
          - a \omega \frac{\sinh(k(h+z))}{\sinh(kh)}\sin(\omega t - kx)
          \end{pmatrix}
-         \end{equation}
-
+         ```
          */
          double start = std::stod(strings[1] /*start*/);
          if (t >= start) {
@@ -102,15 +104,14 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 
             double second_order = w * k * a * a / 2. * (std::cosh(2. * kzh) - std::cos(2. * wtkx)) / std::pow(std::sinh(kh), 2.);
             T6d linear_stokes_wave_velocity = {a * w * std::cosh(kzh) / std::sinh(kh) * std::cos(wtkx + phase_shift),
-                                               0.,
-                                               -a * w * std::sinh(kzh) / std::sinh(kh) * std::sin(wtkx + phase_shift),
+                                               0., -a * w * std::sinh(kzh) / std::sinh(kh) * std::sin(wtkx + phase_shift),
                                                0., 0., 0.};
-            if (name.contains("linear"))
-               return linear_stokes_wave_velocity;
-            else {
-               std::get<0>(linear_stokes_wave_velocity) += second_order;
-               return linear_stokes_wave_velocity;
-            }
+            // if (name.contains("linear"))
+            return linear_stokes_wave_velocity;
+            // else {
+            //    std::get<0>(linear_stokes_wave_velocity) += second_order;
+            //    return linear_stokes_wave_velocity;
+            // }
          } else
             return {0., 0., 0., 0., 0., 0.};
       } else
@@ -517,8 +518,8 @@ Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const netwo
 
    if (!Vsample.empty()) {
       Vinit /= Vsample.size();
-      // auto ret = optimumVector(V, init);
       auto ret = optimalVector(Vsample, Directions, Vinit);
+      // auto ret = optimalVectorSVD(Vsample, Directions);
       if (isFinite(ret))
          return ret;
    }
@@ -771,6 +772,7 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    //! fullの流速３成分が与えられている場合
    std::array<double, 3> X = {1., 0., 0.}, Y = {0., 1., 0.}, Z = {0., 0., 1.};
    for (const auto &f : p->getFaces()) {
+
       if (f->isPseudoQuadraticElement)
          u = gradPhiQuadElement(p, f);
       else
@@ -785,35 +787,31 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
       Directions.emplace_back(Y);
       Vsample.emplace_back(Dot(u, Z));
       Directions.emplace_back(Z);
-      if (f->Dirichlet) {
-         W.push_back(10 * f->area);
-         W.push_back(10 * f->area);
-         W.push_back(10 * f->area);
-      } else {
-         W.push_back(f->area);
-         W.push_back(f->area);
-         W.push_back(f->area);
-      }
+
+      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
    }
 
    //! 境界条件のように流速のある方向成分のみが与えられている場合
-   if (any_Neumann) {
-      double w = Mean(W);
-      // Vsample.push_back(uNeumann(p));
-      // W.push_back(Mean(W));
-      for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
-         auto [contact_face_of_body, X] = contact_face_of_body_X;
-         if (contact_face_of_body) {
-            Vsample.emplace_back(Dot(f->normal, velocity_of_Body(contact_face_of_body, X)));
-            Directions.emplace_back(f->normal);
-            W.push_back(w);
-            Vinit += u;
-            count += 1.;
-         }
-      }
-   }
+   // if (any_Neumann) {
+   //    double w = Mean(W);
+   //    // Vsample.push_back(uNeumann(p));
+   //    // W.push_back(Mean(W));
+   //    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
+   //       auto [contact_face_of_body, X] = contact_face_of_body_X;
+   //       if (contact_face_of_body) {
+   //          Vsample.emplace_back(Dot(f->normal, velocity_of_Body(contact_face_of_body, X)));
+   //          Directions.emplace_back(f->normal);
+   //          W.push_back(w);
+   //          Vinit += u;
+   //          count += 1.;
+   //       }
+   //    }
+   // }
 
    return optimalVector(Vsample, Directions, Vinit / count, W, convergence_info);
+   // return optimalVectorSVD(Vsample, Directions, W);
 };
 
 Tddd gradPhi(const networkPoint *const p) {

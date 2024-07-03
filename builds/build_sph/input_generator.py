@@ -27,7 +27,7 @@ def IO_dir(id):
     os.makedirs(output_directory, exist_ok=True)
     return input_directory, output_directory
 
-SimulationCase = "Lobovsky2013_small"
+SimulationCase = "static_pressure"
 id = ""
 
 if len(sys.argv) > 1:
@@ -117,9 +117,9 @@ elif "Lobovsky2013_small" in SimulationCase:
                 "max_dt": 0.0004,
                 "end_time_step": 100000*5,
                 "end_time": 5,
-                "CSML": 2.9,
+                "CSML": 2.8,
                 "initial_surface_z_position": 0.6,
-                "particle_spacing": 0.0125}
+                "particle_spacing": 0.015}
 
     id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                         + "_CSML" + str(setting["CSML"]).replace(".", "d")\

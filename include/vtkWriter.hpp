@@ -14,7 +14,7 @@ vtuとvtpの違いは，PolysかCellsか
 10
 </DataArray>
 ```
-をCellsタグの中に追加するだけ，四面体の場合は10，三角形の場合は5
+をCellsタグの中に追加するだけ．四面体（Tetrahedron）の場合はtypeが10、三角形（Triangle）の場合はtypeが5．
 
 */
 
@@ -710,6 +710,7 @@ void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
    }
    vtp.write(ofs);
 };
+
 // void vtkPolygonWrite(const std::string &name, const std::vector<Tddd> &V) {
 //    std::ofstream ofs(name);
 //    vtkPolygonWrite(ofs, V);
@@ -843,10 +844,48 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *>
       vtp.add(a, b);
       vtp.addLine(a, b);
    }
-   for (const auto &[name, data] : name_uo_data)
-      vtp.addPointData(name, data);
+   for (auto i = 0; i < name_uo_data.size(); ++i)
+      vtp.addPointData(std::get<0>(name_uo_data[i]), std::get<1>(name_uo_data[i]));
    vtp.write(ofs);
 };
+
+// for std::variant<double, std::array<double, 3>>
+
+void vtkPolygonWrite(std::ofstream &ofs,
+                     const std::unordered_set<networkPoint *> &uoP,
+                     const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, std::variant<double, std::array<double, 3>>>>> &name_uo_data = {}) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   vtp.reserve(uoP.size());
+   for (const auto &p : uoP) {
+      vtp.add(p);
+   }
+
+   for (const auto &[name, data] : name_uo_data) {
+      std::unordered_map<networkPoint *, double> double_map;
+      std::unordered_map<networkPoint *, std::array<double, 3>> array_map;
+
+      for (const auto &[key, value] : data) {
+         std::visit([&](auto &&arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, double>) {
+               double_map[key] = arg;
+            } else if constexpr (std::is_same_v<T, std::array<double, 3>>) {
+               array_map[key] = arg;
+            }
+         },
+                    value);
+      }
+
+      if (!double_map.empty()) {
+         vtp.addPointData(name, double_map);
+      }
+      if (!array_map.empty()) {
+         vtp.addPointData(name, array_map);
+      }
+   }
+
+   vtp.write(ofs);
+}
 
 void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
    vtkUnstructuredGridWriter<networkPoint *> vtu;

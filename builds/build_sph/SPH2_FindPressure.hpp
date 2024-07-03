@@ -140,7 +140,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
       {
 
 #if defined(USE_RungeKutta)
-         const double dt = ROW->RK_X.get_dt();
+         const double dt = ROW->RK_X.getTimeAtNextStep() - ROW->RK_X.getTimeAtCurrentStep();
 #elif defined(USE_LeapFrog)
          const double dt = ROW->LPFG_X.get_dt();
 #endif

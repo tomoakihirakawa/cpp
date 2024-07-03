@@ -132,9 +132,23 @@ void setCorrectionMatrix(const auto &all_nets) {
                for (auto i = 0; i < 3; ++i)
                   for (auto j = 0; j < 3; ++j)
                      M[i][j] = M[i][j] * max_value / max;
+               // IdentityMatrix(M);
             }
             return M;
          };
+
+         auto modify = [](auto &grad_corr_M) {
+            double too_small = 1E-2;
+            if (Norm(grad_corr_M[0]) < too_small)
+               grad_corr_M[0] = {1., 0., 0.};
+            if (Norm(grad_corr_M[1]) < too_small)
+               grad_corr_M[1] = {0., 1., 0.};
+            if (Norm(grad_corr_M[2]) < too_small)
+               grad_corr_M[2] = {0., 0., 1.};
+         };
+
+         modify(A->grad_corr_M);
+         modify(A->grad_corr_M_next);
 
          A->inv_grad_corr_M = clamp(Inverse(A->grad_corr_M), 100.);
          A->inv_grad_corr_M_next = clamp(Inverse(A->grad_corr_M_next), 100.);
@@ -656,7 +670,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
                q->div_U = div_U;
                q->div_U_next = div_U_next;
                // q->U_SPH = Chop(Reflect(q->U_SPH, q->v_to_surface_SPH), q->v_to_surface_SPH);  //\label{SPH:wall_particle_velocity}
-               q->RK_U.initialize(q->RK_U.get_dt(), q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
+               q->RK_U.initialize(q->RK_U.dt, q->RK_U.t_init, q->U_SPH, q->RK_U.steps);
                if (!isFinite(density))
                   density = _WATER_DENSITY_;
                if (!isFinite(density_next))
@@ -664,7 +678,7 @@ void setWall(const auto &net, const auto &RigidBodyObject, const auto &particle_
 
                density = 0.99 * density + 0.01 * _WATER_DENSITY_;
                density_next = 0.99 * density_next + 0.01 * _WATER_DENSITY_;
-               q->RK_rho.initialize(q->RK_rho.get_dt(), q->RK_rho.t_init, density, q->RK_rho.steps);
+               q->RK_rho.initialize(q->RK_rho.dt, q->RK_rho.t_init, density, q->RK_rho.steps);
                q->setDensityVolume(density, std::pow(particle_spacing, 3.));
                //
                // q->setDensity(_WATER_DENSITY_);

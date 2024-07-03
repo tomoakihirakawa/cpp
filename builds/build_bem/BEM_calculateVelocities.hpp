@@ -84,11 +84,11 @@ Tddd condition_Ua(Tddd VECTOR, const networkPoint *const p) {
    // if (p->Dirichlet) {
    //    return Chop(VECTOR, RK_without_Ubuff_Normal(p));
    // } else {
-   if (p->CORNER) {
-      auto next_normal = getNextNormalDirichlet_BEM(p);
-      for (const auto &f : p->getFacesNeumann())
-         VECTOR = Projection(VECTOR, Cross(next_normal, RK_without_Ubuff_Normal(f)));
-   }
+   // if (p->CORNER) {
+   //    auto next_normal = getNextNormalDirichlet_BEM(p);
+   //    for (const auto &f : p->getFacesNeumann())
+   //       VECTOR = Projection(VECTOR, Cross(next_normal, RK_without_Ubuff_Normal(f)));
+   // }
    // for (const auto &f : p->getFacesNeumann()) {
    //    VECTOR = Chop(VECTOR, RK_without_Ubuff_Normal(f));
    //    // VECTOR = Chop(VECTOR, f->normal);  // f->normalでないといけないのか？ 関係なかった
@@ -189,7 +189,8 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 Tddd vectorToNextSurface(const networkPoint *p) {
    Tddd pX = RK_with_Ubuff(p);
    Tddd X, ret = {1E+20, 1E+20, 1E+20};
-   T3Tdd t0t1_vertices = {{{1., 0.}, {0.8, 0.2}, {0.8, 0.}}};
+   double dxi = 0.3;
+   T3Tdd t0t1_vertices = {{{1., 0.}, {1. - dxi, dxi}, {1. - dxi, 0.}}};
    if (p->Dirichlet) {
       auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 10);
       int index = 0;
@@ -250,7 +251,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       if (p->CORNER) {
          for (const auto &l : p->getLines()) {
             if (l->CORNER) {
-               auto actual_corner_line = RK_without_Ubuff(p, (*l)(p));
+               T2Tddd actual_corner_line = {RK_without_Ubuff(p), (1. - dxi) * RK_without_Ubuff(p) + dxi * RK_without_Ubuff((*l)(p))};
                X = Nearest(pX, actual_corner_line);
                if (Norm(to_corner) >= Norm(X - pX)) {
                   to_corner = X - pX;
@@ -260,7 +261,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          }
       }
 
-      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 4));
+      auto next_Vrtx = nextBodyVertices(bfs(p->getContactFaces(), 3));
       if (!next_Vrtx.empty()) {
 
          //! majorFlatFaces 法線方向が被らない面を抽出する
@@ -303,7 +304,9 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                directions.push_back(major->normal);
             }
          }
+
          to_structure_face = optimalVector(distances, directions, {0., 0., 0.});
+         // to_structure_face = optimalVectorSVD(distances, directions);
       }
 
       return p_X_on_CORNER + to_structure_face - pX;
@@ -356,7 +359,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
                                                        std::function<Tddd(const networkPoint *)> position) {
    Tddd V = {0., 0., 0.}, X = {0., 0., 0.}, Xmid, vertical;
    double Wtot = 0, W, height, cuurent_height;
-   const int max_sum_depth = 5;
+   const int max_sum_depth = 20;
 
    bool find_neumann_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
    bool find_dirichlet_face = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
@@ -364,48 +367,85 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
    // std::vector<double> distances;
    // std::vector<Tddd> directions;
 
+   std::vector<double> weights;
+   std::vector<Tddd> positions;
+
    for (const auto &f : p->getFaces()) {
+      if (find_dirichlet_face && f->Neumann)
+         continue;
       auto [p0, p1, p2] = f->getPoints(p);
       auto X0 = current_pX;
       auto X1 = position(p1);
       auto X2 = position(p2);
-
       //! CircumradiusToInradiusの２乗を重みとしている
-      // W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
-      W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
-
+      W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      // W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
       //! 重みの最大値と最小値を設定している
       // W = std::clamp(W, 4., 40.);
-      W = std::clamp(W, 2., 40.);
+      // if ((find_neumann_face && find_dirichlet_face) && f->Neumann)
+      //    W *= 0;
+      //! より喫水線の歪みを緩和するように重みを大きくする
+      // const int min_distance_from_CORNER = p0->minDepthFromCORNER + p1->minDepthFromCORNER + p2->minDepthFromCORNER;
+      // W = std::clamp(W, 4., 1000.);
+
+      for (int i = 0; i <= max_sum_depth; ++i)
+         if (i == p0->minDepthFromMultipleNode + p1->minDepthFromMultipleNode + p2->minDepthFromMultipleNode) {
+            W *= std::pow(1.25, max_sum_depth - i);
+            break;
+         }
 
       //! よりディリクレ面の歪みを緩和するように重みを大きくする
       // if (f->Dirichlet)
-      //    W *= 10.;
-
-      // if ((find_neumann_face && find_dirichlet_face) && f->Neumann)
-      //    W *= 0;
-
-      //! より喫水線の歪みを緩和するように重みを大きくする
-      const int min_distance_from_CORNER = p0->minDepthFromCORNER + p1->minDepthFromCORNER + p2->minDepthFromCORNER;
-      double S = 1.;
-      for (int i = 0; i <= max_sum_depth; ++i)
-         if (min_distance_from_CORNER == i)
-            S = std::pow(1.25, max_sum_depth - i);
-      W *= S;
-
+      // for (const auto &p : f->getPoints())
+      //    if (p->CORNER)
+      //       W *= 3.;
       //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
       Wtot += W;
       Xmid = (X2 + X1) * 0.5;
       vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
       height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
       // cuurent_height = Norm(X0 - Xmid);
-      FusedMultiplyIncrement(W, height * vertical + Xmid - current_pX, V);
 
+      weights.push_back(W);
+      positions.push_back(height * vertical + Xmid - current_pX);
+      // FusedMultiplyIncrement(W, height * vertical + Xmid - current_pX, V);
       // directions.push_back(Normalize(height * vertical + Xmid - current_pX));
       // distances.push_back(Norm(height * vertical + Xmid - current_pX));
    }
-   return V / Wtot;
+
+   weights /= Sum(weights);
+   V.fill(0.);
+   for (int i = 0; i < weights.size(); ++i)
+      FusedMultiplyIncrement(weights[i], positions[i], V);
+
+   return V;
    // return optimalVector(distances, directions, V / Wtot);
+};
+
+Tddd ArithmeticWeightedSmoothingVector_modified(const networkPoint *p, const std::array<double, 3> &current_pX,
+                                                std::function<Tddd(const networkPoint *)> position,
+                                                const double power = 1.) {
+   Tddd V = {0., 0, 0.}, qX;
+   double Wtot = 0, norm;
+   if (!isEdgePoint(p)) {
+      if (p->CORNER) {
+         for (const auto &l : p->getLines())
+            if (l->CORNER) {
+               auto q = (*l)(p);
+               qX = position(q);
+               V += std::pow(Norm(qX - current_pX), power - 1.) * (qX - current_pX);
+               Wtot += 1.;
+            }
+      } else {
+         for (const auto &q : p->getNeighbors()) {
+            qX = position(q);
+            V += std::pow(Norm(qX - current_pX), power - 1.) * (qX - current_pX);
+            Wtot += 1.;
+         }
+      }
+      return V / Wtot;
+   } else
+      return V;
 };
 
 void calculateVecToSurface(const Network &net, const int loop, const double coef) {
@@ -416,17 +456,18 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
    }
 
    //! 要素を整えるためのベクトル
-   const double a = 0.9;
-   auto addVectorTangentialShift = [&](const int k = 0) {
+   auto addVectorTangentialShift = [&](const int steps = 0) {
       if (coef == 0.) return;
-      double scale = coef * ((k + 1.) / (double)(loop));
+      double scale = coef * ((steps + 1.) / (double)(loop));
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
       {
          auto X = RK_with_Ubuff(p);
-         auto V = a * DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) { return RK_with_Ubuff(p); });
-         V += (1 - a) * ArithmeticWeightedSmoothingVector(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); }, 1.);
+         Tddd V = {0., 0., 0.};
+         const double a = (p->CORNER || steps <= 2) ? 0.5 : 1.;
+         V = a * DistorsionMeasureWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         V += (1. - a) * ArithmeticWeightedSmoothingVector_modified(p, X, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
          // V = 0.9 * V + 0.1 * VV;
          // double C = 0, size = 0.;
          // for (const auto &f : p->getFaces()) {
@@ -443,12 +484,22 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
          if (flatness > 0.1)
             flatness = 1.;
 
-         V = scale * V * flatness;
+         if (p->CORNER)
+            V = scale * V * flatness / 2.;
+         else
+            V = scale * V * flatness;
 
          if (!isFinite(V))
             V.fill(0.);
 
          p->vecToSurface_BUFFER = condition_Ua(V, p);
+
+         if (steps == 0)
+            p->vecToSurface_BUFFER_BUFFER = p->vecToSurface_BUFFER;
+         else
+            p->vecToSurface_BUFFER_BUFFER = 0.8 * p->vecToSurface_BUFFER + 0.2 * p->vecToSurface_BUFFER_BUFFER;
+
+         p->vecToSurface_BUFFER = p->vecToSurface_BUFFER_BUFFER;
       }
 
       for (const auto &p : points) {
@@ -473,8 +524,9 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
    };
 
    TimeWatch watch;
-   for (auto kk = 0; kk < loop; ++kk) {
-      addVectorTangentialShift(kk);  // repeating this may led surface detaching
+   int steps;
+   for (steps = 0; steps < loop; ++steps) {
+      addVectorTangentialShift(steps);  // repeating this may led surface detaching
       std::cout << "Elapsed time for 1.vectorTangentialShift : " << watch() << " [s]" << std::endl;
       addVectorToNextSurface();
       std::cout << "Elapsed time for 2.vectorToNextSurface: " << watch() << " [s]" << std::endl;
@@ -503,7 +555,7 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
    for (const auto &p : net.getPoints()) {
       if (!isFinite(p->U_update_BEM)) {
          std::cout << "p->X = " << p->X << std::endl;
-         std::cout << "p->RK_X.getdt() = " << p->RK_X.getdt() << std::endl;
+         std::cout << "p->U_BEM = " << p->U_BEM << ", gradPhi(p) = " << gradPhi(p) << std::endl;
          std::cout << "p->U_update_BEM = " << p->U_update_BEM << std::endl;
          std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
          std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;

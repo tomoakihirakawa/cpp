@@ -271,6 +271,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_BC = p_d0;
       uomap_P_d P_isAbsorbed = p_d0;
       uomap_P_d P_minDepthFromCORNER = p_d0;
+      uomap_P_d P_minDepthFromMultipleNode = p_d0;
 
       try {
 #pragma omp parallel
@@ -325,6 +326,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
             P_U_absorbed[p] = p->U_absorbed;
             P_minDepthFromCORNER[p] = p->minDepthFromCORNER;
+            P_minDepthFromMultipleNode[p] = p->minDepthFromMultipleNode;
          }
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -361,7 +363,8 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"P_V2ContactFaces3", P_V2ContactFaces3},
              {"P_V2ContactFaces4", P_V2ContactFaces4},
              {"P_V2ContactFaces5", P_V2ContactFaces5},
-             {"P_minDepthFromCORNER", P_minDepthFromCORNER}};
+             {"P_minDepthFromCORNER", P_minDepthFromCORNER},
+             {"P_minDepthFromMultipleNode", P_minDepthFromMultipleNode}};
          return data;
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;

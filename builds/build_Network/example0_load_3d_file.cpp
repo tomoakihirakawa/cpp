@@ -3,15 +3,14 @@
 # `Network`
 
 数値シミュレーションの多くは，三角形や四面体の３Dメッシュを利用して行われる．
-単純に配列にメッシュ情報を格納していては，シミュレーションの質を高めるための工夫を加えることが難しいと思われる．
-例えば，ある節点に隣接する節点や辺や要素を取得するのは，配列に格納しているだけでは効率的に行うことができない．
-`Network`クラスは，節点や辺や面の接続関係を保持し，接続関係から相互にアクセスできるようにするためのクラスである．
-また，メッシュを細分化することもできる．
-また，一度作成した`Network`クラスのオブジェクトから，`vtk`ファイルや`obj`ファイルなどを出力することができる．
 
-* データの読み込みと出力
+ある節点に隣接する節点や辺や要素を素早く効率的に取得するためには，節点や辺や面の接続関係をわかりやすく管理する必要がある．
+`Network`クラスは，節点や辺や面の接続関係を保持し，その接続関係から相互にアクセスできるようにするために作ったクラスである．
+また，メッシュを細分化したり，一度作成した`Network`クラスのオブジェクトから`vtk`や`obj`ファイルなどを出力したりもできる．
+
 * 節点や辺や面の相互アクセス
 * メッシュの細分化
+* データの読み込みと出力
 
 ## 点・線・面の接続関係とその整理
 
@@ -43,6 +42,7 @@ auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェク
 auto obj = new Network("./bunny.obj");
 std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getFaces());
+ofs.close();
 ```
 
 <img src="sample.png" width="500px">
@@ -53,11 +53,25 @@ vtkPolygonWrite(ofs, obj->getFaces());
 auto obj = new Network("./bunny.obj");
 std::ofstream ofs("./bunny_obj.vtp");
 vtkPolygonWrite(ofs, obj->getEdges());
+ofs.close();
 ```
+
+#### 点の出力
+
+```cpp
+auto obj = new Network("./bunny.obj");
+std::ofstream ofs("./bunny_obj.vtp");
+vtkPolygonWrite(ofs, obj->getPoints());
+ofs.close();
+```
+
+\ref{add_data_default_name}{このようにして}，点に値を付与し，vtpとして出力することもできる．
+また，\ref{add_data_custom_name}{カスタム名}を付けることもできる．
 
 #### 実行方法
 
 ```shell
+sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
 make
 ./example0_load_3d_file
@@ -112,7 +126,9 @@ int main() {
 
     */
 
-   // pvd for bunny.obj
+   /* -------------------------------------------------------------------------- */
+   /*                                    面の出力                                 */
+   /* -------------------------------------------------------------------------- */
    {
       PVDWriter pvd("./bunny_obj.pvd");
       auto obj = new Network("./bunny.obj");
@@ -126,20 +142,20 @@ int main() {
       pvd.output();
    }
 
-   // pvd for line.obj
+   /* -------------------------------------------------------------------------- */
+   /*                                    線の出力                                  */
+   /* -------------------------------------------------------------------------- */
    {
       PVDWriter pvd("./line_obj.pvd");
       auto obj = new Network;
       const double L = 10.;
-      auto X = Subdivide(0, L, 10);
       std::vector<networkPoint*> points;
-      for (const auto& x : X)
+      for (const auto& x : Subdivide(0, L, 10))
          points.push_back(new networkPoint(obj, {x, 0, 0}));
       for (auto i = 0; i < points.size() - 1; ++i)
          new networkLine(obj, points[i], points[i + 1]);
 
-      int i = 0;
-      for (const auto& t : Subdivide(0, 2 * M_PI, 100)) {
+      for (int i = 0; const auto& t : Subdivide(0, 2 * M_PI, 100)) {
          for (auto& p : points) {
             auto [x, y, z] = p->X;
             auto c1 = 0.5, c2 = 0.1;
@@ -150,7 +166,46 @@ int main() {
          std::ofstream ofs(filename);
          vtkPolygonWrite(ofs, obj->getLines());
          pvd.push(filename, t);
+         ofs.close();
       }
       pvd.output();
+   }
+
+   /* -------------------------------------------------------------------------- */
+   /*                                    点の出力                                  */
+   /* -------------------------------------------------------------------------- */
+   using Tddd = std::array<double, 3>;
+   using DataVariant = std::variant<double, Tddd>;
+   using DataMap = std::unordered_map<networkPoint*, DataVariant>;
+   {
+      auto obj = new Network("./bunny.obj");
+      {
+         std::ofstream ofs("./point_obj.vtp");
+         vtkPolygonWrite(ofs, obj->getPoints());
+         ofs.close();
+      }
+      {
+         //@ 点に値を付与\label{add_data_default_name}
+         std::unordered_map<networkPoint*, double> data;
+         for (const auto& p : obj->getPoints())
+            data[p] = p->X[0];
+         std::ofstream ofs("./point_obj_with_data_default.vtp");
+         vtkPolygonWrite(ofs, obj->getPoints(), data);
+         ofs.close();
+      }
+      {
+         //@ 点に値を付与\label{add_data_custom_name}
+         auto data1 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+         auto data2 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+         for (const auto& p : obj->getPoints()) {
+            data1[p] = p->X[0];
+            data2[p] = p->X;
+         }
+
+         std::vector<std::tuple<std::string, DataMap>> data = {{"x", data1}, {"xyz", data2}};
+         std::ofstream ofs("./point_obj_with_data_custom.vtp");
+         vtkPolygonWrite(ofs, obj->getPoints(), data);
+         ofs.close();
+      }
    }
 }

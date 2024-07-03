@@ -594,15 +594,21 @@ struct CoordinateBounds {
    /* ------------------------------------------------------ */
    T3Tdd scaledBounds(const double scale) const {
       auto [xrange, yrange, zrange] = this->bounds;
-      auto cX = Mean(xrange);
-      auto cY = Mean(yrange);
-      auto cZ = Mean(zrange);
       auto [x0, x1] = xrange;
       auto [y0, y1] = yrange;
       auto [z0, z1] = zrange;
-      xrange = {cX + scale * (x0 - cX), cX + scale * (x1 - cX)};
-      yrange = {cY + scale * (y0 - cY), cY + scale * (y1 - cY)};
-      zrange = {cZ + scale * (z0 - cZ), cZ + scale * (z1 - cZ)};
+      auto cX = 0.5 * (x0 + x1);
+      auto cY = 0.5 * (y0 + y1);
+      auto cZ = 0.5 * (z0 + z1);
+
+      // xrange = {cX + scale * (x0 - cX), cX + scale * (x1 - cX)};
+      // yrange = {cY + scale * (y0 - cY), cY + scale * (y1 - cY)};
+      // zrange = {cZ + scale * (z0 - cZ), cZ + scale * (z1 - cZ)};
+
+      xrange = {std::fma(scale, x0, (1. - scale) * cX), std::fma(scale, x1, (1. - scale) * cX)};
+      yrange = {std::fma(scale, y0, (1. - scale) * cY), std::fma(scale, y1, (1. - scale) * cY)};
+      zrange = {std::fma(scale, z0, (1. - scale) * cZ), std::fma(scale, z1, (1. - scale) * cZ)};
+
       return {{xrange, yrange, zrange}};
    };
    /* -------------------------------------------------------------------------- */

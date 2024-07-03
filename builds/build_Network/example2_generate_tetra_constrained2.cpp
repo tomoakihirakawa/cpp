@@ -91,7 +91,6 @@ int main(int arg, char **argv) {
    std::unordered_map<networkPoint *, networkFace *> candidate_p2f;
    std::unordered_map<networkFace *, networkPoint *> candidate_f2p;
 
-   //
    std::cout << "timer : " << timer() << std::endl;
    buckets.add(object->getPoints());
    std::cout << "all_stored_objects.size() = " << buckets.all_stored_objects.size() << std::endl;

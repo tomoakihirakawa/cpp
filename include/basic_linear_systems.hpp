@@ -2,13 +2,14 @@
 #define basic_linear_systems_H
 
 #include <cmath>
+#include "basic_vectors.hpp"
 // basic_linear_systems2.hpp
 
 //! A.x = b
 void Solve(const std::array<std::array<double, 2>, 2> &A, std::array<double, 2> &x, const std::array<double, 2> &y) {
    const double inv_det = 1. / std::fma(A[0][0], A[1][1], -A[0][1] * A[1][0]);
    x[0] = std::fma(A[1][1], y[0], -A[0][1] * y[1]) * inv_det;
-   x[1] = std::fma(-A[1][0], y[0], A[0][0] * y[ 1]) * inv_det;
+   x[1] = std::fma(-A[1][0], y[0], A[0][0] * y[1]) * inv_det;
 };
 
 //! x.A = b
@@ -502,7 +503,7 @@ struct lapack_svd {
    std::vector<double> a;
    const int m, n;
    std::vector<double> s, u, vt, work;
-   int lwork;  // remove const
+   int lwork;
    int info;
 
    lapack_svd(const std::vector<std::vector<double>> &aIN)
@@ -522,7 +523,7 @@ struct lapack_svd {
       if (info != 0) {
          throw std::runtime_error("Error in SVD computation");
       }
-   };
+   }
 
    template <typename Container>
    std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
@@ -538,25 +539,81 @@ struct lapack_svd {
       if (m != b.size())
          throw std::runtime_error("dimension mismatch");
 
-      // Compute S_inv * Ut * b
-      std::vector<double> tmp(m);
-      for (std::size_t i = 0; i < m; ++i) {
+      std::vector<double> tmp(std::min(m, n), 0.0);
+      for (std::size_t i = 0; i < std::min(m, n); ++i) {
          double inv_s = (s[i] > 1e-9) ? (1 / s[i]) : 0.0;
          for (std::size_t j = 0; j < m; ++j) {
-            tmp[j] += u[j * m + i] * inv_s * b[j];
+            tmp[i] += u[j * m + i] * b[j];
          }
+         tmp[i] *= inv_s;
       }
 
-      // Compute V * (S_inv * Ut * b)
-      x.resize(n);
+      x.resize(n, 0.0);
       for (std::size_t i = 0; i < n; ++i) {
-         for (std::size_t j = 0; j < n; ++j) {
+         for (std::size_t j = 0; j < std::min(m, n); ++j) {
             x[i] += vt[j * n + i] * tmp[j];
          }
       }
    }
 };
 
+std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample,
+                                       std::vector<Tddd> Directions,
+                                       const std::vector<double> &weights) {
+   if (Vsample.size() == 1)
+      return Vsample[0] * Directions[0];
+
+   double mean = 0.;
+   for (const auto &v : Vsample)
+      mean += std::abs(v);
+   mean /= Vsample.size();
+   if (mean == 0)
+      return {0., 0., 0.};
+
+   for (auto &d : Directions)
+      d = Normalize(d);
+
+   const double tolerance = 1E-12 * mean;
+   Tddd Vinit = {0., 0., 0.};
+   for (std::size_t i = 0; i < Vsample.size(); ++i)
+      Vinit += Vsample[i] * Directions[i];
+   Vinit /= Vsample.size();
+
+   auto diff = [&](const Tddd &U, const std::size_t i) -> double { return Dot(U, Directions[i]) - Vsample[i]; };
+
+   auto optimizing_function = [&](const Tddd &U) -> double {
+      double S = 0;
+      for (std::size_t i = 0; i < Vsample.size(); ++i) {
+         // S += weights[i] * std::pow(diff(U, i), 2);
+         S += weights[i] * std::pow(Dot(U, Directions[i]) - Vsample[i], 2);
+      }
+      return 0.5 * S;
+   };
+
+   if (optimizing_function(Vinit) < tolerance) {
+      return Vinit;
+   }
+
+   std::vector<double> X(3);
+   std::vector<std::vector<double>> A(Directions.size(), std::vector<double>(3));
+   for (std::size_t i = 0; i < Directions.size(); ++i) {
+      Vsample[i] *= weights[i];
+      for (std::size_t j = 0; j < 3; ++j)
+         A[i][j] = Directions[i][j] * weights[i];
+   }
+
+   lapack_svd svd(A);
+   svd.solve(Vsample, X);
+
+   return {X[0], X[1], X[2]};
+}
+
+std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample,
+                                       std::vector<Tddd> Directions) {
+   return optimalVectorSVD(Vsample, Directions, std::vector<double>(Vsample.size(), 1.));
+}
+
+/* -------------------------------------------------------------------------- */
 // #endif
 
 struct ludcmp {

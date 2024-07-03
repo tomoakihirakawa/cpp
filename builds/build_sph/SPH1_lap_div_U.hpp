@@ -33,7 +33,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
          for (const auto &A : points)
 #pragma omp single nowait
          {
-            const double dt = A->RK_X.get_dt();
+            const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
 
             A->div_U = 0.;
             A->lap_U.fill(0.);
@@ -68,7 +68,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   });
                }
 
-            double c_xsph = 0.03;
+            double c_xsph = 0.04;
 
             // if (A->isFluid) {
             //    // c_xsph = std::clamp(0., 0.03, std::pow(A->var_Eigenvalues_of_M, 2));
@@ -109,13 +109,13 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                      FusedMultiplyIncrement(Aij, Uij, A->lap_U);
 
                      /* -------------------------------------------------------------------------- */
-                     if (Dot(A_no_oikoshi_velocity, vec_A2B) > 0 /*まずは，被るかどうかのチェック*/) {
-                        double h = A->particle_spacing;
-                        auto tmp = (0.00001 * Projection(A_no_oikoshi_velocity, vec_A2B) / dt + 0.000001 * _GRAVITY_ * Normalize(vec_A2B)) * w_Bspline(Norm(vec_A2B), h) / w_Bspline(0., h);
-                        if (B->isSurface || !B->isFluid)
-                           tmp *= 5.;
-                        A->DUDt_modify_SPH_2 -= tmp;
-                     }
+                     // if (Dot(A_no_oikoshi_velocity, vec_A2B) > 0 /*まずは，被るかどうかのチェック*/) {
+                     //    double h = A->particle_spacing;
+                     //    auto tmp = (0.00001 * Projection(A_no_oikoshi_velocity, vec_A2B) / dt + 0.000001 * _GRAVITY_ * Normalize(vec_A2B)) * w_Bspline(Norm(vec_A2B), h) / w_Bspline(0., h);
+                     //    if (B->isSurface || !B->isFluid)
+                     //       tmp *= 5.;
+                     //    A->DUDt_modify_SPH_2 -= tmp;
+                     // }
                   }
             };
 
@@ -143,7 +143,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             // \label{SPH:lapU_for_wall}
             // \label{SPH:Poisson_b_vector}
             // \label{SPH:how_to_set_fluid_b_vector}
-            const double dt = A->RK_X.get_dt();
+            const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
             if (A->getNetwork()->isRigidBody) {
                A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
                A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
@@ -289,7 +289,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       for (const auto &A : points)
 #pragma omp single nowait
       {
-         const double dt = A->RK_X.get_dt();
+         const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
          A->div_U_next = 0.;
          const auto U_A = U_next(A);
          if (A->isFluid) {

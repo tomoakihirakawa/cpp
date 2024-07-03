@@ -401,7 +401,7 @@ int main(int argc, char **argv) {
             // b# ------------------------------------------------------ */
             // b#                       刻み時間の決定                     */
             // b# ------------------------------------------------------ */
-            auto dt_cfl = dt_CFL(*water, max_dt, .2);
+            auto dt_cfl = dt_CFL(*water, max_dt, .4);
 
             if (dt > dt_cfl)
                dt = dt_cfl;
@@ -436,14 +436,14 @@ int main(int argc, char **argv) {
             double rad = M_PI / 180;
 
             {
-               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
-               flipIf(*water, {5 * rad /*target n diff*/, 5 * rad /*change n diff*/}, {5 * rad, 5 * rad}, false);
+               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
+               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
+               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
             }
             if (time_step < 10 && time_step % 1 == 1) {
-               flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-               flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
-               flipIf(*water, {5 * rad, 5 * rad}, {5 * rad, 5 * rad}, true);
+               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
             }
 
             // b@ ------------------------------------------------------ */
@@ -560,8 +560,8 @@ int main(int argc, char **argv) {
                      //! mooring->lastPoint は，浮体ともに動く．
                      auto Xcurrent = mooring->lastPoint->X;
                      mooring->lastPoint->X_last = Xcurrent;
-                     Tddd V = (nextPositionOnBody(net, mooring->lastPoint) - Xcurrent) / net->RK_COM.getdt();
-                     mooring->simulate(simulation_time, net->RK_COM.getNextTime() - simulation_time, [&](networkPoint *p) {
+                     Tddd V = (nextPositionOnBody(net, mooring->lastPoint) - Xcurrent) / (net->RK_COM.getTimeAtNextStep() - simulation_time);
+                     mooring->simulate(simulation_time, net->RK_COM.getTimeAtNextStep() - simulation_time, [&](networkPoint *p) {
                         if (p == mooring->firstPoint) {
                            p->acceleration.fill(0);
                            p->velocity.fill(0);
@@ -627,13 +627,13 @@ int main(int argc, char **argv) {
 
             ### 流体の$`\phi`$時間発展，$`\phi_n`$の時間発展はない
 
-            ### 波の吸収
+            ### 波の吸収（ダンピング領域）
 
             ```math
-            \begin{align*}
+            \begin{aligned}
             \gamma &= 1 - 2 \frac{\text{horizontal distance from the center of the absorber}}{\text{width of the absorber}} \\
-            \text{ref\_phi} &= \frac{\sum \phi \cdot \text{area}}{\sum \text{area}}
-            \end{align*}
+            \phi_{\rm ref} &= \frac{\sum \phi \cdot \text{area}}{\sum \text{area}}
+            \end{aligned}
             ```
 
             */
@@ -678,7 +678,7 @@ int main(int argc, char **argv) {
                   auto absorber_center = Tddd{Mean(x), Mean(y), Mean(z)};
                   auto horizontal_dist_from_center = Norm(Chop(p->X - absorber_center, Tddd{0, 0, 1}));
                   double x_scale = std::abs(x[0] - x[1]);
-                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0., 1.);
+                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0.1, 1.);
                   ref_phi = reference_phi.at(p->absorbedBy)[0] / reference_phi.at(p->absorbedBy)[1];
                }
                //
@@ -962,7 +962,7 @@ int main(int argc, char **argv) {
                    {"roll", P_Roll},
                    {"velocity", P_velocity},
                    {"acceleration", P_accel},
-                   {"rotational valocity", P_rotational_velocity},
+                   {"rotational velocity", P_rotational_velocity},
                    {"rotational acceleration", P_rotational_accel}};
                std::filesystem::path name = "actingFacesOn" + NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
                mk_vtu(output_directory / name, tmp.actingFaces, data);

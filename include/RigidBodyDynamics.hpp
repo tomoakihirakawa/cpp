@@ -66,13 +66,19 @@ struct RigidBodyDynamics {
       this->inertia = this->inertia_tmp;
    };
 
-   std::tuple<double, double, double, T3Tddd> getInertiaGC()  // Global coordinate
+   std::tuple<double, double, double, T3Tddd, T3Tddd> getInertiaGC()  // Global coordinate
    {
       auto [mx, my, mz, Ix, Iy, Iz] = this->inertia;
       auto R = this->quaternion.Rv();
       auto RT = Transpose(R);
-      T3Tddd I_accounting_float_attitude = Dot(RT, Dot(T3Tddd{{{Ix, 0., 0.}, {0., Iy, 0.}, {0., 0., Iz}}}, R));
-      return {mx, my, mz, I_accounting_float_attitude};
+      T3Tddd I_accounting_float_attitude = Dot(RT, Dot(T3Tddd{{{Ix, 0., 0.},
+                                                               {0., Iy, 0.},
+                                                               {0., 0., Iz}}},
+                                                       R));
+      // T3Tddd IG_inv = Dot(Transpose(R), Dot(T3Tddd{{{1. / Ix, 0., 0.}, {0., 1. / Iy, 0.}, {0., 0., 1. / Iz}}}, R));
+      T3Tddd IG_inv = Dot(RT, T3Tddd{{R[0] / Ix, R[1] / Iy, R[2] / Iz}});
+
+      return {mx, my, mz, I_accounting_float_attitude, IG_inv};
       // return {mx, my, mz, T3Tddd{{{Ix, 0., 0.}, {0., Iy, 0.}, {0., 0., Iz}}}};
    };
 

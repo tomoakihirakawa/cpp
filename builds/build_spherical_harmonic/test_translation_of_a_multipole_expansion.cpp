@@ -2,51 +2,42 @@
 #include "basic_constants.hpp"
 #include "lib_multipole_expansion.hpp"
 
+// python3.11 ../../extract_comments.py README.md -source ./ -include ../../
+
 /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
 
 ## `multipole_expansion`クラスのチェック
 
-FMMアルゴリズムでは，展開中心から遠くにある遠方原点の値は，モーメントを計算した後に渡される．
-ここでチェックするのは，その計算過程を行うクラス`multipole_expansion`が問題なく動作するかどうかである．
-
-NOTE:境界要素法におけるモーメントは，極そのものではなく，極の面積分（３D）である．
-
-NOTE:多重極モーメントを計算するために，極の値を与えられなければならない．
-\cite{Liu_2009}
-
-NOTE:効率化するために要求されるオペレーションは，極の値が変化した際に，できるだけ少ない計算でモーメントを更新することである．
-
-1. モーメントの計算（近傍にある複数の極を変数分離し足し合わせる）
-2. 遠方の原点を決めて渡し，計算しておいたモーメントと積和を計算する
-3. この計算結果と，展開しない計算結果との差をプロット
-
-一つ前の例では，展開位置を変えることで，多重極展開の精度がどのように変化するかを調べた．
-原点位置の移動による展開精度の変化は，展開中心の移動による展開精度の変化と同じである．
-展開精度は，（多分）相対距離を規格化した上での，展開中心と極と原点との相対的位置関係で決まっているからである．
-
-## 展開中心の移動（M2M）
-
-多数の極を空間的にグループ分けして，
-グループの中心位置を展開中心として多重極展開したとする．
-
-次に，そのグループをさらにまとめて新たな多重極展開を行うことを考える．
-この操作は，１ステップ目で得られた各グループの多重極展開係数を利用することで効率的に行うことができる．
-各極に対する多重極展開は計算せずに済むからである．
-
-変更されるのは，多重極係数ではなく，球面調和関数自体と，少しの係数のみである．
-
-ここでは，始めに，１ステップ目として座標原点を中心とした多重極展開を行い，
-次に，様々な場所での多重極展開を行って，前回同様に精度を検証する．
-
-もし，２ステップ目において，展開中心が１ステップ目同様に原点であれば，
-前回と同じ結果が得られるはずである．
-
+## 多重極展開とその移動
 
 ```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion.cpp
 make
 ./test_translation_of_a_multipole_expansion
+```
+
+ここで示す，多重極展開は次式を近似する．
+
+```math
+(G,\nabla G\cdot {\bf n})=\left(\frac{1}{\|{\bf x}-{\bf a}\|}, -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}\cdot{\bf n}\right)
+```
+
+ガウス・ルジャンドル積分を使う際には，これに重みをかけて足し合わせる．その重みは別に計算し，保存しておく．元々の関数の近似の係数と重みの係数を混同しないように注意する．
+現在のところ，以下のような値を与えて多重極展開を計算している．
+
+* カーネル$G$には，位置と数値積分のための重みを与えている．
+* カーネル$\nabla G\cdot {\bf n}$には，位置と数値積分のための重み，そして法線ベクトルを与えている．
+
+```cpp
+void increment(const Tddd& XIN, const std::array<double, 2> weights, const Tddd& normal) {
+   const Tddd R = XIN - this->X;
+   auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
+      return {SolidHarmonicR(n, m, R) * weights[0],
+               Dot(normal, Grad_SolidHarmonicR(n, m, R)) * weights[1]};
+   };
+   this->set(set_coeffs);
+};
 ```
 
 */
@@ -80,6 +71,7 @@ int main() {
       ig += weights[0] / nr;
       ign += -weights[1] * Dot(R / (nr * nr * nr), normal);
       //$ 多重極展開
+
       M0.increment(X, weights, normal);
    }
 

@@ -272,10 +272,10 @@ void developByEISPH(Network *net,
          Print(Green, "updateParticles", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
          net->setGeometricProperties();
 
-         simulation_time = (*net->getPoints().begin())->RK_X.get_t();
          finished = (*net->getPoints().begin())->RK_X.finished;
 
       } while (!finished);
+      simulation_time = (*net->getPoints().begin())->RK_X.get_t();
 
       Print(Green, "1タイムステップ終了", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 

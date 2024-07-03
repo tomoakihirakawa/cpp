@@ -488,8 +488,12 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<d
    double Wtot = 0, norm;
    if (!isEdgePoint(p)) {
       for (const auto &q : p->getNeighbors()) {
-         norm = Norm(q->X - current_pX);
-         V += std::pow(norm, power) * (q->X - current_pX) / norm;
+         V += std::pow(Norm(q->X - current_pX), power - 1.) * (q->X - current_pX);
+
+         // this is equivalent to the following
+         // norm = Norm(q->X - current_pX);
+         // V += std::pow(norm, power) * (q->X - current_pX) / norm;
+
          Wtot += 1.;
       }
       return V / Wtot;
@@ -508,8 +512,7 @@ Tddd ArithmeticWeightedSmoothingVector(const networkPoint *p, const std::array<d
    if (!isEdgePoint(p)) {
       for (const auto &q : p->getNeighbors()) {
          qX = position(q);
-         norm = Norm(qX - current_pX);
-         V += std::pow(norm, power) * (qX - current_pX) / norm;
+         V += std::pow(Norm(qX - current_pX), power - 1.) * (qX - current_pX);
          Wtot += 1.;
       }
       return V / Wtot;
@@ -524,8 +527,7 @@ Tddd NeighborAverageSmoothingVector(const networkPoint *p, const std::array<doub
    double Wtot = 0, norm;
    if (!isEdgePoint(p)) {
       for (const auto &q : p->getNeighbors()) {
-         norm = Norm(q->X - current_pX);
-         V += std::pow(norm, power) * (q->X - current_pX) / norm;
+         V += std::pow(Norm(q->X - current_pX), power - 1.) * (q->X - current_pX);
          Wtot += 1.;
       }
       return V / Wtot;

@@ -200,10 +200,14 @@ std::vector<bool> stob(const V_s &vec) {
    return ret;
 };
 V_d stod(const V_s &vec) {
-   V_d ret(vec.size());
-   std::transform(vec.begin(), vec.end(), ret.begin(), [](const std::string &str) { return std::stod(str); });
+   V_d ret;
+   ret.reserve(vec.size());
+   for (const auto &str : vec) {
+      ret.push_back(std::stod(str));
+   }
    return ret;
-};
+}
+
 VV_d stod(const std::vector<V_s> &vec) {
    VV_d ret(0);
    for (const auto &v : vec)
@@ -1104,7 +1108,7 @@ struct ParametricInterpolation {
                                                                   q(OpenUniformKnots(Subdivide(double(-1), double(1), samp2_IN.size() - 1), K_IN)),
                                                                   K(K_IN),
                                                                   InvMatBT(Inverse(Transpose(Bspline_matrix(samp2_IN.size(), K_IN)))),
-                                                                  InvMatB(Inverse(Bspline_matrix(samp2_IN.size(), K_IN))){};
+                                                                  InvMatB(Inverse(Bspline_matrix(samp2_IN.size(), K_IN))) {};
    V_d N(const double a) { return Dot(InvMatBT, Bspline_vector(a, s, K)); };
    double operator()(const double a) { return Dot(N(a), samp2); };
    //===========================
@@ -1127,8 +1131,8 @@ struct ParametricInterpolation {
                                                                    q2(OpenUniformKnots(samp3_IN[0].size(), K_IN)),
                                                                    K(K_IN),
                                                                    InvMatB(Inverse(Bspline_matrix(samp3_IN.size() /*y*/, K_IN))),
-                                                                   InvMatBT(Inverse(Transpose(Bspline_matrix(samp3_IN[0].size() /*x*/, K_IN)))){};
-   ParametricInterpolation(){};
+                                                                   InvMatBT(Inverse(Transpose(Bspline_matrix(samp3_IN[0].size() /*x*/, K_IN)))) {};
+   ParametricInterpolation() {};
    void reset(const VV_d &samp3_IN, const int K_IN) {
       q1.clear();
       q2.clear();
@@ -1215,7 +1219,7 @@ class node_complex {
    VV_d v_complex;
    std::vector<node_complex *> nodes;
    std::vector<bool> hits;
-   node_complex(const VV_d &v_complex_IN) : v_complex(v_complex_IN){};
+   node_complex(const VV_d &v_complex_IN) : v_complex(v_complex_IN) {};
 
    void connect(node_complex &node_IN) {
       node_complex *p = std::addressof(node_IN);
@@ -1338,7 +1342,7 @@ struct ParametricInterpolation3D {
          abort();
       }
    };
-   ParametricInterpolation3D(){};
+   ParametricInterpolation3D() {};
    void reset(const VV_d &samp3X_IN,
               const VV_d &samp3Y_IN,
               const VV_d &samp3Z_IN,
@@ -1750,62 +1754,107 @@ void load(std::ifstream &in, std::vector<std::vector<Ttype>> &vec, const int row
 //=====================================================================
 //=================== Mathematica output loader =======================
 //=====================================================================
+
 V_s StringSplit(const std::string &strIN, const V_s &SEP) {
-   std::string str(strIN), foundFirstSep; /* expexting "1,2,3,4,5" or "1, 2,3, 4,5"*/
-   V_s ret(0), tmp(0);
+   std::string str(strIN), foundFirstSep;
+   V_s ret, tmp;
+   size_t foundFirst;
+   bool bfound;
+
    while (!str.empty()) {
-      std::size_t foundFirst(999999);
-      bool bfound(false);
+      foundFirst = std::string::npos;
+      bfound = false;
+
+      // Find the closest separator
       for (const auto &sep : SEP) {
-         std::size_t found = str.find(sep);
-         if (!sep.empty()                                       /* ignore sep, "" */
-             && found != std::string::npos                      /* if sep is found */
-             && (found < foundFirst)) /* choose closest one */  // do not use "<=" instead
-         {
+         size_t found = str.find(sep);
+         if (!sep.empty() && found != std::string::npos && (found < foundFirst)) {
             foundFirst = found;
             foundFirstSep = sep;
             bfound = true;
          }
       }
+
       if (bfound) {
          tmp.emplace_back(str.substr(0, foundFirst));
          str = str.substr(foundFirst + foundFirstSep.length());
       } else {
          tmp.emplace_back(str);
-
-         // remove first and last cells if they are empty strings
-         while (tmp.size() > 0)
-            if ((*tmp.begin()).empty())
-               tmp.erase(tmp.begin());
-            else if ((*tmp.rbegin()).empty() ||
-                     (*tmp.rbegin()).find_first_not_of(" ") == std::string::npos /* there is no string except spaces */ ||
-                     (*tmp.rbegin()).find_first_not_of("\r") == std::string::npos /* there is no string except \r */ ||
-                     (*tmp.rbegin()).find_first_not_of("\n") == std::string::npos /* there is no string except \n */ ||
-                     (*tmp.rbegin()).find_first_not_of("\t") == std::string::npos /* there is no string except \t */)
-               tmp.pop_back();
-            else
-               break;
-
-         return tmp;
+         break;
       }
    }
 
-   // remove first and last cells if they are empty strings
-
-   while (tmp.size() > 0)
-      if ((*tmp.begin()).empty())
-         tmp.erase(tmp.begin());
-      else if ((*tmp.rbegin()).empty() ||
-               (*tmp.rbegin()).find_first_not_of(" ") == std::string::npos /* there is no string except spaces */ ||
-               (*tmp.rbegin()).find_first_not_of("\r") == std::string::npos /* there is no string except \r */ ||
-               (*tmp.rbegin()).find_first_not_of("\n") == std::string::npos /* there is no string except \n */ ||
-               (*tmp.rbegin()).find_first_not_of("\t") == std::string::npos /* there is no string except \t */)
-         tmp.pop_back();
-      else
-         break;
+   // Remove first and last cells if they are empty strings or contain only whitespace characters
+   auto it = tmp.begin();
+   while (it != tmp.end()) {
+      if (it->empty() ||
+          it->find_first_not_of(" \r\n\t") == std::string::npos) {
+         it = tmp.erase(it);
+      } else {
+         ++it;
+      }
+   }
 
    return tmp;
-};
+}
+
+// V_s StringSplit(const std::string &strIN, const V_s &SEP) {
+//    std::string str(strIN), foundFirstSep; /* expexting "1,2,3,4,5" or "1, 2,3, 4,5"*/
+//    V_s ret(0), tmp(0);
+//    while (!str.empty()) {
+//       std::size_t foundFirst(999999);
+//       bool bfound(false);
+//       for (const auto &sep : SEP) {
+//          std::size_t found = str.find(sep);
+//          if (!sep.empty()                                       /* ignore sep, "" */
+//              && found != std::string::npos                      /* if sep is found */
+//              && (found < foundFirst)) /* choose closest one */  // do not use "<=" instead
+//          {
+//             foundFirst = found;
+//             foundFirstSep = sep;
+//             bfound = true;
+//          }
+//       }
+//       if (bfound) {
+//          tmp.emplace_back(str.substr(0, foundFirst));
+//          str = str.substr(foundFirst + foundFirstSep.length());
+//       } else {
+//          tmp.emplace_back(str);
+
+//          // remove first and last cells if they are empty strings
+//          while (tmp.size() > 0)
+//             if ((*tmp.begin()).empty())
+//                tmp.erase(tmp.begin());
+//             else if ((*tmp.rbegin()).empty() ||
+//                      (*tmp.rbegin()).find_first_not_of(" ") == std::string::npos /* there is no string except spaces */ ||
+//                      (*tmp.rbegin()).find_first_not_of("\r") == std::string::npos /* there is no string except \r */ ||
+//                      (*tmp.rbegin()).find_first_not_of("\n") == std::string::npos /* there is no string except \n */ ||
+//                      (*tmp.rbegin()).find_first_not_of("\t") == std::string::npos /* there is no string except \t */)
+//                tmp.pop_back();
+//             else
+//                break;
+
+//          return tmp;
+//       }
+//    }
+
+//    // remove first and last cells if they are empty strings
+
+//    while (tmp.size() > 0)
+//       if ((*tmp.begin()).empty())
+//          tmp.erase(tmp.begin());
+//       else if ((*tmp.rbegin()).empty() ||
+//                (*tmp.rbegin()).find_first_not_of(" ") == std::string::npos /* there is no string except spaces */ ||
+//                (*tmp.rbegin()).find_first_not_of("\r") == std::string::npos /* there is no string except \r */ ||
+//                (*tmp.rbegin()).find_first_not_of("\n") == std::string::npos /* there is no string except \n */ ||
+//                (*tmp.rbegin()).find_first_not_of("\t") == std::string::npos /* there is no string except \t */)
+//          tmp.pop_back();
+//       else
+//          break;
+
+//    return tmp;
+// };
+
 std::string StringTrim(const std::string &strIN, const V_s &SEP) {
    V_s str = StringSplit(strIN, SEP);
    std::string ret;
@@ -2783,7 +2832,7 @@ struct Load3DFile {
       return PointsToSurface(t0, t1, a);
    };
 
-   Load3DFile() : eachMax(3, 0.), eachMin(3, 0.){};
+   Load3DFile() : eachMax(3, 0.), eachMin(3, 0.) {};
 
    Load3DFile(const std::string &filename) : eachMax(3, 0.), eachMin(3, 0.) {
       std::vector<V_s> read_line;
@@ -2855,15 +2904,29 @@ struct Load3DFile {
    // stringを変換しv, f_nに格納
    void load(VV_s &read_line) {
       V_s v_t_vn;
+      size_t estimated_size = read_line.size();  // Estimated size based on the number of lines
+      v.reserve(estimated_size);
+      f_v.reserve(estimated_size);
+      f_t.reserve(estimated_size);
+      f_vn.reserve(estimated_size);
+      l_v.reserve(estimated_size);
+      vn.reserve(estimated_size);
+
+      std::vector<int> f_v_tmp, f_t_tmp, f_vn_tmp;
+      std::vector<int> l_v_tmp;
       for (auto &line : read_line) {
-         if (line[0].empty() || line[0] == "#")
+         auto line0 = line[0];
+         if (line0.empty() || line0 == "#")
             continue;
-         else if (line[0] == "v") {
+         else if (line0 == "v") {
             line.erase(line.begin());
+            v.reserve(3);
             v.emplace_back(stod(line));
-         } else if (line[0] == "f") {
+         } else if (line0 == "f") {
             line.erase(line.begin());
-            std::vector<int> f_v_tmp, f_t_tmp, f_vn_tmp;
+            f_v_tmp.clear();
+            f_t_tmp.clear();
+            f_vn_tmp.clear();
             for (auto &l : line) {
                v_t_vn = StringSplit(l, {"/"});  //! format may be v, v/t, v//vn, v/t/vn
                if (v_t_vn.size() == 1)
@@ -2887,19 +2950,19 @@ struct Load3DFile {
                f_t.emplace_back(f_t_tmp);
             if (f_vn_tmp.size() > 0)
                f_vn.emplace_back(f_vn_tmp);
-         } else if (line[0] == "l") {
+         } else if (line0 == "l") {
             line.erase(line.begin());
-            std::vector<int> l_v_tmp;
+            l_v_tmp.clear();
             for (auto &l : line)
                l_v_tmp.emplace_back(stoi(l) - 1);
             l_v.emplace_back(l_v_tmp);
-         } else if (line[0] == "vn") {
+         } else if (line0 == "vn") {
             line.erase(line.begin());
             vn.emplace_back(stod(line));
          }
-         s.resize(v.size(), std::vector<float>(4, 0));  // RGBS
-         for (auto &tmp : s)
-            tmp = {.9, .9, .9, 1.};
+         // s.resize(v.size(), std::vector<float>(4, 0));  // RGBS
+         // for (auto &tmp : s)
+         //    tmp = {.9, .9, .9, 1.};
       }
    };
 

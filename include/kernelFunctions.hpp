@@ -173,7 +173,7 @@ Tddd grad_w_Spiky(const Tddd &xi, const Tddd &xj, const double &h) {
 /* -------------------------------------------------------------------------- */
 
 double w_Bspline4_(double r, const double h) {
-   static const double factor = 1.0 / (20.0 * M_PI);
+   constexpr double factor = 1.0 / (20.0 * M_PI);
    const double a = factor / (h * h * h);
    const double q = r / h;
    if (q > 2.5)
@@ -191,7 +191,7 @@ double w_Bspline4(double r, const double h) {
 };
 
 Tddd grad_w_Bspline4_(const Tddd &xi, const Tddd &xj, const double h) {
-   static const double factor = 1.0 / (20.0 * M_PI);
+   constexpr double factor = 1.0 / (20.0 * M_PI);
    const double a = factor / (h * h * h);
    const double r = Norm(xi - xj);
    const double q = r / h;
@@ -452,32 +452,34 @@ double Dot_grad_w_Bspline3(const std::array<double, 3> &xi, const std::array<dou
 // Wendland kernel
 #include <cmath>
 
-double w_Wendland(double r, double h) {
-   const double alpha = 21.0 / (16.0 * M_PI * std::pow(h, 3));
-   double w = 0.0;
+double w_Wendland(const double r, const double h) {
    if (r <= h) {
+      constexpr double _alpha_ = 21.0 / (16.0 * M_PI);
+      const double alpha = _alpha_ / (h * h * h);
       double q = r / h;
-      w = 8 * alpha * std::pow(1.0 - q, 4) * (4.0 * q + 1.0);
+      return 8 * alpha * std::pow(1.0 - q, 4) * (4.0 * q + 1.0);
    }
-   return w;
+   return 0.;
 }
 // Gradient of Wendland kernel
 // Tddd is std::array<double, 3>
 std::array<double, 3> grad_w_Wendland_(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
-   const double alpha = 21.0 / (16.0 * M_PI * std::pow(h, 3));
-   double w = 0.0;
    const double r = Norm(xi - xj);
    if (r <= h && r > 1E-13) {
-      double q = r / h;
+      constexpr double _alpha_ = 21.0 / (16.0 * M_PI);
+      const double alpha = _alpha_ / (h * h * h);
+      const double q = r / h;
       const auto dqdx = (xi - xj) / (r * h);
       return 8 * alpha * 4 * std::pow(1.0 - q, 3) * (-dqdx) * (4.0 * q + 1.0) + 8 * alpha * std::pow(1.0 - q, 4) * (4.0 * dqdx);
    }
    return _ZEROS3_;
 }
 
-Tddd grad_w_Wendland(const Tddd &xi, const Tddd &xj, const double h) {
-   return grad_w_Wendland_(xi, xj, h);
-}
+const auto &grad_w_Wendland = grad_w_Wendland_;
+
+// Tddd grad_w_Wendland(const Tddd &xi, const Tddd &xj, const double h) {
+//    return grad_w_Wendland_(xi, xj, h);
+// }
 
 // double Dot_grad_w_Wendland_Dot(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
 //    const double r = Norm(xi - xj);
@@ -531,11 +533,11 @@ const std::array<double, 2> between_3_4_5 = {2.7, 2.7};
 //    // #endif
 // };
 
-const auto &w_Bspline = w_Bspline4;
+const auto &w_Bspline = w_Bspline3;
 
 std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
-   // return grad_w_Wendland(xi, xj, h);
-   return grad_w_Bspline4(xi, xj, h);
+   return grad_w_Bspline3(xi, xj, h);
+   // return grad_w_Bspline4(xi, xj, h);
 };
 
 // std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h, const std::array<Tddd, 3> &M) {

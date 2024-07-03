@@ -53,7 +53,7 @@ sys.path.append("..")
 input_dir = "./input_files/"
 sys_home_dir = expanduser("~")
 current_dir = os.path.dirname(os.path.abspath(__file__))
-code_home_dir = os.path.join(current_dir, '../../../../code')
+code_home_dir = os.path.join(current_dir, '../../../')
 from IOgenerator import generate_input_files, read_obj, Norm3d, Differece3d, Add3d
 
 rho = 1000.
@@ -128,6 +128,7 @@ def IO_dir(id):
     return input_dir, output_dir
 
 # ---------------------------------------------------------------------------- #
+
 if "looping" in SimulationCase:
     # objfolder = code_home_dir + "/cpp/obj/WaveGeneration"
 
@@ -234,12 +235,12 @@ elif "Tanizawa1996" in SimulationCase:
     h = 5.
     z_surface = h
 
+    id = SimulationCase
+
     if wavemaker_type == "":
         # wavemaker_type = "piston"
         wavemaker_type = "potential"
         # wavemaker_type = "flap"
-
-    id = SimulationCase
 
     if meshname == "":
         meshname = "water_no_float0d1"
@@ -249,7 +250,6 @@ elif "Tanizawa1996" in SimulationCase:
     id += "_L" + str(L).replace(".", "d")
     id += "_WAVE" + wavemaker_type
     id += "_MESH" + meshname
-
 
     if dt is not None:
         max_dt = dt
@@ -268,7 +268,6 @@ elif "Tanizawa1996" in SimulationCase:
 
     if suffix != "":    
         id += "_" + suffix
-
 
 
     water = {"name": "water", "type": "Fluid"}
@@ -332,12 +331,12 @@ elif "Tanizawa1996" in SimulationCase:
         m = 184.3
         Ixx = 1./12.*m*(Ly*Ly+Lz*Lz)
         K = 0.266
-        Iyy = m*math.pow(K, 2) # 0.266 is the radius of inertia
+        Iyy = m * K * K # 0.266 is the radius of inertia
         Izz = 1./12.*m*(Lx*Lx+Ly*Ly)
         float = {"name": "float",
                 "type": "RigidBody",
                 "velocity": "floating",
-                "damping": [1000, 1000, 1000, 1000, 1000, 1000, 0., 11.],
+                "damping": [1000, 1000, 1000, 1000, 1000, 1000, 0., 1.],
                 "isFixed": [False,True,False,True,False,True],
                 "mass" : m}
 
@@ -865,7 +864,7 @@ elif "Palm2016" in SimulationCase:
     X_anchorA = Add3d(X_fair_leadA, [horizontal_length*math.cos(q), horizontal_length*math.sin(q), -z_surface])
 
     q = (i+1)*2*pi/3
-    X_fair_leadB = [r * math.cos(q) + COM[0], r*math.sin(q) + COM[1], z_surface]
+    X_fair_leadB = [r * math.cos(q) + COM[water0], r*math.sin(q) + COM[1], z_surface]
     X_anchorB = Add3d(X_fair_leadB, [horizontal_length*math.cos(q), horizontal_length*math.sin(q), -z_surface])
 
     q = (i+2)*2*pi/3
@@ -875,7 +874,6 @@ elif "Palm2016" in SimulationCase:
     total_lengthA = Norm3d(Differece3d(X_anchorA, X_fair_leadA))
     total_lengthB = Norm3d(Differece3d(X_anchorB, X_fair_leadB))
     total_lengthC = Norm3d(Differece3d(X_anchorC, X_fair_leadC)) 
-
 
     stiffness = 300*10**6  # ! [N/m]
     damp = .5  # ! [N/(m/s^2)]
@@ -900,7 +898,7 @@ elif "Palm2016" in SimulationCase:
              "velocity": "floating",
              "mass": M,
              "COM": COM,
-             "MOI": [Ixx, Ixx, 10.**10]}
+             "MOI": [Ixx, Ixx, Ixx*1000.]}
 
     id = SimulationCase
 
@@ -921,9 +919,11 @@ elif "Palm2016" in SimulationCase:
     if ALE != "":
         id += "_ALE" + ALE
 
+    if ALEPERIOD != "":
+        id += "_ALEPERIOD" + ALEPERIOD
+
     if suffix != "":    
         id += "_" + suffix
-
 
     if "with_mooring" in id:
         float["mooringA"] = ["mooringA",
@@ -968,6 +968,7 @@ elif "Palm2016" in SimulationCase:
     probe4 = {"name": "probe4",
               "type": "wave gauge",
               "position": [float["COM"][0] - 0.31, float["COM"][1] + 2., 1.2, float["COM"][0] - 0.31, float["COM"][1] + 2., 0.6]}
+
     probes = [probe1, probe2, probe3, probe4]
 
     objfolder = code_home_dir + "/cpp/obj/Palm2016"
@@ -984,7 +985,8 @@ elif "Palm2016" in SimulationCase:
                "end_time_step": 100000,
                "end_time": 30,
                "element": element,
-                "ALE": ALE}
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Liang2022" in SimulationCase:

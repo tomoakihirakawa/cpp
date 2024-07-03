@@ -209,9 +209,9 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    // double dt = dt_IN;
-   const auto C_CFL_velocity = 0.1;   // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.1;      // dt = C_CFL_accel*sqrt(h/Max(A))
-   const auto C_CFL_viscosity = 0.1;  // dt = C_CFL_viscosity*h^2/Max(Viscosity)
+   const auto C_CFL_velocity = 0.05;   // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.05;      // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_viscosity = 0.05;  // dt = C_CFL_viscosity*h^2/Max(Viscosity)
    // const auto C_CFL_velocity_relative = 1000.05;  // dt = C_CFL_velocity*h/Max(U)
    // const auto C_CFL_accel_relative = 1000.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
    // 音速
@@ -445,7 +445,7 @@ void updateParticles(const auto &net,
       {
          auto U = p->U_SPH;
          auto X_last = p->X;
-         const double dt = p->RK_X.get_dt();
+         const double dt = p->RK_X.getTimeAtNextStep() - p->RK_X.getTimeAtCurrentStep();
          p->RK_U.push(p->DUDt_SPH);
          p->U_SPH = p->RK_U.getX();  // + p->U_XSPH;
          auto U_SPH_original = p->U_SPH;
@@ -477,7 +477,7 @@ void updateParticles(const auto &net,
                   // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                   if (dist_f2w < particle_spacing) {
                      // bool case0 = normal_dist_f2w < 0.87 * particle_spacing && Dot(p->U_SPH, n) < 0;
-                     bool case0 = normal_dist_f2w < 0.9 * particle_spacing && Dot(p->U_SPH, n) < 0;
+                     bool case0 = normal_dist_f2w < 0.75 * particle_spacing && Dot(p->U_SPH, n) < 0;
                      // bool case1 = normal_dist_f2w <0.5. * particle_spacing;
                      if (case0) {
                         p->DUDt_modify_SPH -= c_reflection * Projection(U_SPH_original, n) / dt;
@@ -516,7 +516,7 @@ void updateParticles(const auto &net,
 
       //% 密度の更新
       // \label{SPH:update_density}
-      const double a = 0.3;
+      const double a = 0.;
       for (const auto &A : net->getPoints()) {
          //! 要らなそうだ
          A->RK_rho.push(A->DrhoDt_SPH);  // 密度

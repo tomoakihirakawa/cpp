@@ -46,7 +46,7 @@ endif()
 # Set common compiler flags
 set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold")
 set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-set(CMAKE_CXX_FLAGS_RELEASE "-pthread -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-pthread -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math -march=native -ftree-vectorize -fopt-info-vec-optimized")
 
 
 # Set C++ standard

@@ -1,3 +1,4 @@
+// current
 #ifndef rootFinding_H
 #define rootFinding_H
 #pragma once
@@ -145,7 +146,7 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
    if (Vsample.size() == 1)
       return Vsample[0] * Directions[0];
 
-   const double threshold_angle_in_rad = 0.1 * M_PI / 180.;
+   const double threshold_angle_in_rad = 10 * M_PI / 180.;
 
    //! 与えられている情報が不十分な場合がある．
 
@@ -153,36 +154,40 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
    /*                         make directions into groups                        */
    /* -------------------------------------------------------------------------- */
 
-   std::vector<std::vector<Tddd>> direction_groups;
+   std::vector<std::tuple<Tddd, std::vector<Tddd>>> direction_groups;
    for (auto &d : Directions) {
-      if (direction_groups.empty())
-         direction_groups.push_back({d});
-      else {
-         bool is_new_direction = true;
-         for (auto &dg : direction_groups) {
-            if (std::ranges::any_of(dg, [&](const Tddd &dir) { return isFlat(dir, d, threshold_angle_in_rad); })) {
-               dg.push_back(d);
-               is_new_direction = false;
-               break;
-            }
+      bool added = false;
+      for (auto &[representative_dir, vec] : direction_groups) {
+         if (isFlat(representative_dir, d, threshold_angle_in_rad)) {
+            vec.push_back(Normalize(d));
+            added = true;
+            break;
          }
-         if (is_new_direction)
-            direction_groups.push_back({d});
+      }
+      if (!added) {
+         direction_groups.push_back({Normalize(d), {Normalize(d)}});
       }
    }
 
    if (direction_groups.size() == 1) {
-      constexpr Tdd angle_range = {std::cos(M_PI / 180. * 30.), std::cos(M_PI / 180. * 150.)};
-      const Tddd eX = {1., 0., 0.}, eY = {0., 1., 0.}, eZ = {0., 0., 1.};
-      Tddd Dir0 = Normalize(Mean(direction_groups[0])), Dir1;
+      Tddd Dir0 = Normalize(std::get<0>(direction_groups[0])), Dir1;
+      int i = 0;
+      std::vector<Tddd> basis = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / std::sqrt(3), 1. / std::sqrt(3), 1. / std::sqrt(3)}}};
+      double min_value = 1E+10;
+      int min_index = 0;
 
-      if (Between(Dot(Dir0, eX), angle_range))
-         Dir1 = Normalize(Cross(Dir0, eX));
-      else if (Between(Dot(Dir0, eY), angle_range))
-         Dir1 = Normalize(Cross(Dir0, eY));
-      else
-         Dir1 = Normalize(Cross(Dir0, eZ));
+      for (const auto &e : basis) {
+         double sum = 0;
+         for (const auto &d : Directions) sum += std::abs(Dot(d, e));
 
+         if (min_value >= sum) {
+            min_value = sum;
+            min_index = i;
+         }
+         i++;
+      }
+
+      Dir1 = Normalize(Chop(basis[min_index], Dir0));
       double w = Mean(weights);
       //
       Vsample.push_back(0.);
@@ -194,7 +199,7 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
       weights.push_back(w);
    } else if (direction_groups.size() == 2) {
       Vsample.push_back(0.);
-      Directions.push_back(Cross(Mean(direction_groups[0]), Mean(direction_groups[1])));
+      Directions.push_back(Normalize(Cross(std::get<0>(direction_groups[0]), std::get<0>(direction_groups[1]))));
       weights.push_back(Mean(weights));
    }
 
@@ -203,38 +208,47 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
 
    /* -------------------------------------------------------------------------- */
 
+   auto diff = [&](const Tddd &U, const std::size_t i) -> double { return Dot(U, Directions[i]) - Vsample[i]; };
+
+   auto optimizing_function = [&](const Tddd &U) -> double {
+      double S = 0;
+      for (std::size_t i = 0; i < Vsample.size(); ++i)
+         S += weights[i] * std::pow(diff(U, i), 2);
+      return 0.5 * S;
+   };
+
+   if (optimizing_function(Vinit) < tolerance) {
+      convergence_info = {0., 0., optimizing_function(Vinit)};
+      return Vinit;
+   }
+
    NewtonRaphson<Tddd> NR(Vinit);
 
-   double S, d;
    Tddd grad;
    T3Tddd hess;
 
    int iteration = 0;
-   for (iteration = 0; iteration < 100; ++iteration) {
+   for (iteration = 0; iteration < 50; ++iteration) {
       // set grad and hess to zero
-      S = 0.;
       grad.fill(0.);
       for (auto &row : hess) row.fill(0.);
 
       // calculate grad and hess
       for (std::size_t i = 0; i < Vsample.size(); ++i) {
-         d = Dot(NR.X, Directions[i]) - Vsample[i];
-         S += 0.5 * weights[i] * d * d;
-         grad += weights[i] * Directions[i] * d;
+         grad += weights[i] * Directions[i] * diff(NR.X, i);
          hess += weights[i] * TensorProduct(Directions[i], Directions[i]);
       }
+      // check convergence
+      if (Norm(grad) < tolerance || optimizing_function(NR.X) < tolerance)
+         break;
 
       // update U
       NR.update(grad, hess);
-
-      // check convergence
-      if (Norm(grad) < tolerance || S < tolerance)
-         break;
    }
 
    std::get<0>(convergence_info) = (double)iteration;
    std::get<1>(convergence_info) = Norm(grad);
-   std::get<2>(convergence_info) = S;
+   std::get<2>(convergence_info) = optimizing_function(NR.X);
 
    return NR.X;
 }

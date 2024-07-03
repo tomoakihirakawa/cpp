@@ -2,6 +2,7 @@
 #define basic_vectors_H
 
 #include <algorithm>
+#include <complex>
 #include <cstdio>
 #include <fstream>
 #include <functional>
@@ -934,6 +935,11 @@ bool isFinite(const double v, const double max = 1E+20) {
    return std::abs(v) < max && !std::isinf(v) && !std::isnan(v);
 };
 
+// isFinite for complex numbers
+bool isFinite(const std::complex<double> &v, const double eps = 1E+20) {
+   return isFinite(v.real(), eps) && isFinite(v.imag(), eps);
+};
+
 // bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
 //    if (std::isnan(v)) {
 //       return false;
@@ -954,8 +960,18 @@ bool isFinite(const std::array<double, N> &v_IN, const double eps = 1E+20) {
    return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
+template <std::size_t N>
+bool isFinite(const std::array<std::complex<double>, N> &v_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
+};
+
 template <std::size_t N, std::size_t M>
 bool isFinite(const std::array<std::array<double, M>, N> &v_IN, const double eps = 1E+20) {
+   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
+};
+
+template <std::size_t N, std::size_t M>
+bool isFinite(const std::array<std::array<std::complex<double>, M>, N> &v_IN, const double eps = 1E+20) {
    return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
@@ -1221,6 +1237,8 @@ double Norm(const std::vector<Tddd> &vec) {
 };
 /* ------------------------------------------------------ */
 V_d Normalize(const V_d &X) { return X / Norm(X); };
+
+// 　これは，グラムシュミット直交化法
 VV_d Orthogonalize(VV_d VV) {
    // VVは正方行列に限る
    for (auto i = 0; i < VV.size(); ++i) {
@@ -1230,6 +1248,7 @@ VV_d Orthogonalize(VV_d VV) {
    }
    return VV;
 };
+
 double Norm3d(const V_d &vec) {
    if (vec.size() != 3) {
       std::stringstream ss;

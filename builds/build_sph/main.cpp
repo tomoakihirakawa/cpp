@@ -43,7 +43,7 @@ const double too_small_total_w = 1E-2;
 #include "Network.hpp"
 
 std::unordered_set<Network *> _ALL_NET_;
-
+double simulation_time = 0.;
 #include "SPH.hpp"
 #include "vtkWriter.hpp"
 
@@ -324,7 +324,6 @@ int main(int argc, char **argv) {
       WaveTank->setGeometricProperties();
    }
    /* -------------------------------------------------------------------------- */
-   double simulation_time = 0.;
    // PVDWriter pvdWallSPH(output_directory + "Wall.pvd");q
    int time_step = 0, k = 0, i = 0, j = 0, l = 0;
 
@@ -440,7 +439,7 @@ int main(int argc, char **argv) {
          std::cout << std::setw(10) << "wall : " << num_neuman_surface << std::endl;
          std::cout << std::setw(10) << "surface : " << num_surface << std::endl;
 
-         auto Output = [&net2PVD, &simulation_time, &output_directory](Network *Fluid, const std::string &name, const int i) {
+         auto Output = [&net2PVD, &output_directory](Network *Fluid, const std::string &name, const int i) {
             if (Fluid != nullptr) {
                std::vector<networkPoint *> points;
                for (const auto &p : Fluid->getPoints())

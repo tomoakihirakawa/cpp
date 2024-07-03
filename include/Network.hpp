@@ -424,6 +424,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    // Network *getStorage() const { return this->storage; };
    //
    const V_netLp &getLines() const { return this->Lines; };
+
    V_netLp getLines_toggle(const bool TorF) const {
       V_netLp ret(0);
       for (const auto &line : this->Lines)
@@ -791,7 +792,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    /* -------------------------------------------------------------------------- */
 
    std::map<Network *, int> net_depth;
-   int minDepthFromCORNER, minDepthFromCORNER_;  // remeshのために導入
+   int minDepthFromCORNER, minDepthFromCORNER_;              // remeshのために導入
+   int minDepthFromMultipleNode, minDepthFromMultipleNode_;  // remeshのために導入
    //
    bool isCorner() const { return this->CORNER; };
    bool isDirichlet() const { return this->Dirichlet; };
@@ -3450,6 +3452,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    /*
    面は点と違って，複数のバケツ（セル）と接することがある．
     */
+
    void makeBucketFaces(const double spacing = 1E+20) {
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
@@ -4005,19 +4008,29 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
             p->minDepthFromCORNER_ = p->minDepthFromCORNER = 0;
          else
             p->minDepthFromCORNER_ = p->minDepthFromCORNER = 100000000;
+         //
+         if (p->isMultipleNode)
+            p->minDepthFromMultipleNode_ = p->minDepthFromMultipleNode = 0;
+         else
+            p->minDepthFromMultipleNode_ = p->minDepthFromMultipleNode = 100000000;
       }
+
       for (auto i = 0; i < 100; i++) {
 #pragma omp parallel
          for (auto &p : points)
 #pragma omp single nowait
             for (auto &q : p->getNeighbors()) {
                p->minDepthFromCORNER_ = std::min(p->minDepthFromCORNER_, q->minDepthFromCORNER + 1);
+               p->minDepthFromMultipleNode_ = std::min(p->minDepthFromMultipleNode_, q->minDepthFromMultipleNode + 1);
             }
             // apply
 #pragma omp parallel
          for (const auto &p : points)
 #pragma omp single nowait
+         {
             p->minDepthFromCORNER = p->minDepthFromCORNER_;
+            p->minDepthFromMultipleNode = p->minDepthFromMultipleNode_;
+         }
       }
    };
 
@@ -4263,7 +4276,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       bucket.initialize(bound, bound.getScale() / 20.);
 
       auto findOverlap = [&](const Tddd &X) -> networkPoint * {
-         for (const auto &p : bucket.getBucket(X))
+         for (const auto &p : bucket.getData(X))
             if (Norm(p->X - X) < resolution)
                return p;
          return nullptr;

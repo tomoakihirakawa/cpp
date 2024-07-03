@@ -381,7 +381,7 @@ struct BEM_BVP {
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
 
 #define use_rigid_mode
-      Timer timer;
+      TimeWatch timer;
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
       std::cout << Magenta << timer() << colorReset << std::endl;
       /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
@@ -1229,16 +1229,36 @@ struct BEM_BVP {
       //* --------------------------------------------------- */
       /*DOC_EXTRACT 0_4_0_2_FLOATING_BODY_SIMULATION
 
-      $`{\bf I}`$は慣性モーメントテンソル（2階のテンソル）．
-      実際の実験では，浮体のある基本的な姿勢における主慣性モーメント$`{\bf I}_{\rm principal}={(I_x, I_y, I_z)}`$が与えられる．
-      主慣性モーメント$`{\bf I}_{\rm principal}`$から，global座標における浮体の慣性モーメントテンソルを求めるには，次のように考えればいい．
+      実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
+
+      ```math
+      {\boldsymbol I} = \begin{pmatrix}
+      I_x & 0 & 0 \\
+      0 & I_y & 0 \\
+      0 & 0 & I_z
+      \end{pmatrix}
+      ```
+
+      global座標における浮体の慣性モーメントテンソルを求めるには，次のように考えればいい．
 
       ```math
       \begin{aligned}
-      {\bf I_{\rm principal mat}}\frac{d{\bf \Omega}_{\rm L}}{dt} &= {\bf T}_{\rm L}\\
-      {\bf I_{\rm principal mat}} {\rm R}_{g2l} \frac{d{\bf \Omega}_{\rm G}}{dt}& = {\rm R}_{g2l}{\bf T}_{\rm G}\\
-      {\rm R}_{g2l}^{-1}{\bf I_{\rm principal mat}} {\rm R}_{g2l} \frac{d{\bf \Omega}_{\rm G}}{dt}& = {\bf T}_{\rm G}\\
+      {\boldsymbol I}\frac{d{\bf \Omega}_{\rm L}}{dt} &= {\bf T}_{\rm L}\\
+      {\boldsymbol I}{\rm R}_{g2l} \frac{d{\bf \Omega}_{\rm G}}{dt}& = {\rm R}_{g2l}{\bf T}_{\rm G}\\
+      {\rm R}_{g2l}^{-1}{\boldsymbol I}{\rm R}_{g2l} \frac{d{\bf \Omega}_{\rm G}}{dt}& = {\bf T}_{\rm G}\\
       \end{aligned}
+      ```
+
+      このことから，global座標における慣性モーメントテンソルは，次のようになる．
+
+      ```math
+      {\boldsymbol I}_{\rm G} = {\rm R}_{g2l}^{-1}{\boldsymbol I}{\rm R}_{g2l}
+      ```
+
+      この運動方程式から，求めたいのは$`\frac{d{\bf \Omega}_{\rm G}}{dt}`$である．これはとても簡単で，次のように求めることができる．
+
+      ```math
+      \frac{d{\bf \Omega}_{\rm G}}{dt} = {\rm R}_{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R}_{g2l} {\bf T}_{\rm G}
       ```
 
       */
@@ -1290,7 +1310,7 @@ struct BEM_BVP {
                }
             }
             //% -------------------------------------------------------------------------- */
-            const auto [mx, my, mz, I_accounting_float_attitude] = body->getInertiaGC();
+            const auto [mx, my, mz, IG, inv_IG] = body->getInertiaGC();
             // auto [Drag_F_hydro, Drag_T_hydro] = tmp.surfaceIntegralOfVerySimplifiedDrag();
             // F += Drag_F_hydro;
             // T += Drag_T_hydro;
@@ -1298,10 +1318,13 @@ struct BEM_BVP {
             auto [a0, a1, a2] = F / Tddd{mx, my, mz};
             // auto R = body->quaternion.Rv();
             // auto RT = Transpose(R);
-            // T3Tddd I_accounting_float_attitude = Dot(R,Dot(T3Tddd{{{Ix, 0., 0.},{0., Iy, 0.},{0., 0., Iz}}}, RT));
-            // I_accounting_float_attitude = I;
-            Tddd A_rotaton;
-            Solve(I_accounting_float_attitude, A_rotaton, T_GLOBAL);
+            // T3Tddd IG = Dot(R,Dot(T3Tddd{{{Ix, 0., 0.},{0., Iy, 0.},{0., 0., Iz}}}, RT));
+            // IG = I;
+            // Tddd A_rotaton;
+            // Solve(IG, A_rotaton, T_GLOBAL);
+
+            // T3Tddd IG_inv = Dot(Transpose(R), Dot(T3Tddd{{{1. / Ix, 0., 0.}, {0., 1. / Iy, 0.}, {0., 0., 1. / Iz}}}, R));
+            Tddd A_rotaton = Dot(inv_IG, T_GLOBAL);
             auto [a3, a4, a5] = A_rotaton;
 
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
@@ -1350,7 +1373,7 @@ struct BEM_BVP {
 
          if (Norm(BM.dX) < 1E-9 && Norm(func) < 1E-9 && count++ > 4)
             break;
-         else if (Norm(BM.dX) < 1E-12 && Norm(func) < 1E-12)
+         else if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10)
             break;
          else
             count = 0;

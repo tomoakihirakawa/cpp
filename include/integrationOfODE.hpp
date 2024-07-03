@@ -87,46 +87,95 @@ struct RungeKuttaCommon {
    double gett() const { return this->t_init + this->dt; };
    double get_t() const { return gett(); };
 
-   double getTime() const { return this->t_init + this->dt; };
-   double getNextTime() const { return getTime() + this->getdt(); };
-   double get_dt() const { return this->getdt(); };
-   double getdt() const {
+   double getTimeAtCurrentStep() const {
       switch (this->steps) {
          case 1:
-            return dt_fixed;
+            return this->t_init;
 
          case 2:
             switch (current_step) {
                case 0:
+                  return this->t_init;
                case 1:
-                  return dt_fixed / 2.0;  // caes 0 and 1
-               default:
-                  return dt_fixed;
+                  return this->t_init + dt_fixed / 2.0;
+               case 2:
+                  return this->t_init + dt_fixed;
             }
 
          case 3:
             switch (current_step) {
                case 0:
-                  return dt_fixed / 2.0;
+                  return this->t_init;
                case 1:
-                  return dt_fixed;
+                  return this->t_init + dt_fixed / 2.0;
                case 2:
-                  return dt_fixed / 6.0;
+                  return this->t_init + dt_fixed;
+               case 3:
+                  return this->t_init + dt_fixed / 6.0;
                default:
-                  return dt_fixed;
+                  return this->t_init + dt_fixed;
             }
 
          case 4:
             switch (current_step) {
                case 0:
+                  return this->t_init;
                case 1:
-                  return dt_fixed / 2.0;  // case 0 and 1
+                  return this->t_init + dt_fixed / 2.0;
                case 2:
-                  return dt_fixed;
+                  return this->t_init + dt_fixed / 2.0;
                case 3:
-                  return dt_fixed / 6.0;
+                  return this->t_init + dt_fixed;
+               case 4:
+                  return this->t_init + dt_fixed;
                default:
-                  return dt_fixed;
+                  return this->t_init + dt_fixed;
+            }
+
+         default:
+            std::stringstream ss;
+            ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
+      }
+   }
+
+   double getTimeAtNextStep() const {
+      switch (this->steps) {
+         case 1:
+            return this->t_init + dt_fixed;
+
+         case 2:
+            switch (current_step) {
+               case 0:
+                  return this->t_init + dt_fixed / 2.0;
+               default:
+                  return this->t_init + dt_fixed;
+            }
+
+         case 3:
+            switch (current_step) {
+               case 0:
+                  return this->t_init + dt_fixed / 2.0;
+               case 1:
+                  return this->t_init + dt_fixed;
+               case 2:
+                  return this->t_init + dt_fixed / 6.0;
+               default:
+                  return this->t_init + dt_fixed;
+            }
+
+         case 4:
+            switch (current_step) {
+               case 0:
+                  return this->t_init + dt_fixed / 2.0;
+               case 1:
+                  return this->t_init + dt_fixed / 2.0;
+               case 2:
+                  return this->t_init + dt_fixed;
+               case 3:
+                  return this->t_init + dt_fixed;
+               default:
+                  return this->t_init + dt_fixed;
             }
 
          default:
