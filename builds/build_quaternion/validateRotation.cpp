@@ -6,30 +6,31 @@
 
 # クォータニオンを使った物体の３次元回転
 
-## クォータニオンを使ったシンプルな回転
-
-クォータニオンは，3D回転を効率的に計算するために便利な表現．
-
 \insert{0_0_0_Quaternion}
 
- * 以下のコードは、3Dオブジェクトの回転と平行移動を実行します．
- * translate関数：ネットワークの全点を指定した量だけ平行移動します．
- * rotate関数：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
- * main関数：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
+## クォータニオンを使った物体の３次元回転の例
+
+3Dの物体の回転と平行移動を行う例．
+
+ * translate：ネットワークの全点を指定した量だけ平行移動します．
+ * rotate：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
+ * main：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
 
 ```
+sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateRotation.cpp
 make
 ./validateRotation
 ```
 
- ![sample.gif](sample.gif)
+<img src="./sample.gif" alt="sample" width="300" height="200">
 
-$x$軸に対して回転 -> $y$軸に対して回転 -> $z$軸に対して回転
+クォータニオンから作られた回転行列`Rv`を使って，
 
-$(0.1,0,0)$を中心にして$x$軸に対して回転 -> $y$軸に対して回転 -> $z$軸に対して回転
+1. 物体を$`x`$軸に回転 -> $`y`$軸に回転 -> $`z`$軸の順に回転させる．
+2. 次に，$`(0.1,0,0)`$を中心にして$`x`$軸に対して回転 -> $`y`$軸に対して回転 -> $`z`$軸に対して回転させる．
 
-時計回りが正である．
+`Rv`は自身の目線は変えないまま（自身の座標系を変えないまま），物体をその座標系において回転させる．
 
 */
 
@@ -40,12 +41,6 @@ void translate(Network* const net, const Tddd& shift) {
 };
 
 void rotate(Network* const net, const Quaternion& Q, const Tddd& c = {0, 0, 0}) {
-   for (auto& p : net->getPoints())
-      p->setXSingle(Q.Rv(p->initialX - c) + c);
-   net->setGeometricProperties();
-};
-
-void rotate_axis(Network* const net, const Quaternion& Q, const Tddd& c = {0, 0, 0}) {
    for (auto& p : net->getPoints())
       p->setXSingle(Q.Rs(p->initialX - c) + c);
    net->setGeometricProperties();
@@ -68,7 +63,7 @@ int main() {
             for (auto i = 0; i < 50; ++i) {
                auto Q = Quaternion(axis, 2 * M_PI / 50. * i);
                vtkPolygonWriter<networkPoint*> vtp;
-               rotate_axis(net, Q, center);
+               rotate(net, Q, center);
                for (const auto& f : net->getFaces()) {
                   vtp.add(f->getPoints());
                   vtp.addPolygon(f->getPoints());

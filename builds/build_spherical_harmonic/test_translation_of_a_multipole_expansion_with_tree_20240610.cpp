@@ -3,6 +3,8 @@
 #include "basic_constants.hpp"
 #include "lib_multipole_expansion.hpp"
 
+// ignを正しく計算する．どうやら符号逆．
+
 // python3.11 ../../extract_comments.py README.md -source ./ -include ../../
 
 /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
@@ -24,7 +26,8 @@ int num_DO_NOT_EXPAND = 0;
 #include "Network.hpp"
 #include "vtkWriter.hpp"
 
-auto obj = std::make_unique<Network>("./bunny.obj");
+// auto obj = std::make_unique<Network>("./bunny.obj");
+auto obj = std::make_unique<Network>("./pumpkin.obj");
 // auto obj = std::make_unique<Network>("./Armadillo.obj");
 
 // Function to write polygons to a file
@@ -85,13 +88,48 @@ void checkAndAddBuckets(Buckets<sp_pole4FMM>* A, Buckets<sp_pole4FMM>* B) {
 
 /* -------------------------------------------------------------------------- */
 
+std::array<double, 2> direct_integration(const Buckets<sp_pole4FMM>& b, const Tddd& O) {
+   std::array<double, 2> igign = {0, 0};
+   for (const auto& pole : b.all_stored_objects) {
+      auto R = pole->X - O;
+      auto nr = Norm(R);
+      //$ 直接積分
+      igign[0] += pole->weights[0] / nr;
+      if (nr > 1)
+         igign[1] += -(pole->weights[1] / nr) * Dot((R / nr) / nr, pole->normal);
+   }
+   return igign;
+};
+
+std::array<double, 2> direct_integration(const std::shared_ptr<Buckets<sp_pole4FMM>>& b, const Tddd& O) {
+   std::array<double, 2> igign = {0, 0};
+   for (const auto& pole : b->all_stored_objects) {
+      auto R = pole->X - O;
+      auto nr = Norm(R);
+      //$ 直接積分
+      igign[0] += pole->weights[0] / nr;
+      if (nr > 1)
+         igign[1] += -(pole->weights[1] / nr) * Dot((R / nr) / nr, pole->normal);
+   }
+   return igign;
+};
+
+std::array<double, 2> direct_integration(const std::vector<std::shared_ptr<Buckets<sp_pole4FMM>>>& buckets, const Tddd& O) {
+   std::array<double, 2> igign = {0, 0};
+   for (const auto& b : buckets)
+      igign += direct_integration(b, O);
+   return igign;
+};
+
+/* -------------------------------------------------------------------------- */
+
 int main() {
 
    /* -------------------------------------------------------------------------- */
    /*                  境界面の読み込み．境界面を原点に移動する．                       */
    /* -------------------------------------------------------------------------- */
 
-   std::array<double, 3> center = {0., 0., 0.};
+   std::array<double, 3> center = {0., 0., 0.};  //{5., 5., 5.};
    double num = 0.;
    for (const auto& p : obj->getPoints()) {
       center += p->X;
@@ -99,6 +137,7 @@ int main() {
    }
    center /= num;
    obj->translate(-center);
+   // obj->scale(10.);
 
    std::ofstream ofs("./bunny_obj.vtp");
    vtkPolygonWrite(ofs, obj->getFaces());
@@ -111,9 +150,7 @@ int main() {
    int count_faces = 0;
    TimeWatch tw;
 
-   Buckets<sp_pole4FMM> B_poles(obj->bounds, obj->getScale() / 6);
-
-   double ig = 0, ign = 0;
+   Buckets<sp_pole4FMM> B_poles(obj->scaledBounds(1.1), obj->getScale() / 5);
 
    for (auto& F : obj->getFaces()) {
       auto q012 = std::array<double, 3>{1, 1., 1.};
@@ -121,15 +158,13 @@ int main() {
       auto X012 = ToX(F->getPoints());
       auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
       auto normal = F->normal;
-      for (const auto& [xi0, xi1, ww] : __array_GW10xGW10__) {
+      for (const auto& [xi0, xi1, ww] : __array_GW5xGW5__) {
          auto X = Dot(ModTriShape<3>(xi0, xi1), X012);
          auto value = Dot(ModTriShape<3>(xi0, xi1), q012);
          auto weights = Tdd{1., 1.} * Norm(cross) * ww * (1. - xi0);
          B_poles.add(X, std::make_shared<pole4FMM>(X, weights, normal));  //$ 極の追加
       }
    };
-
-   点に誤差を持たせ，プロットする．
 
    /* -------------------------------------------------------------------------- */
    /*                                ツリー構造を生成                               */
@@ -161,7 +196,7 @@ int main() {
    std::cout << "極の展開" << std::endl;
 
    B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM>* B) {
-      B->multipole_expansion.increment(B->all_stored_objects);
+      B->multipole_expansion.increment_moments(B->all_stored_objects);
    });
 
    std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
@@ -169,7 +204,7 @@ int main() {
    /* -------------------------------------------------------------------------- */
    /*                      各レベルの各セルのM2Lの相手を保存する                       */
    /* -------------------------------------------------------------------------- */
-
+   std::cout << "各レベルの各セルのM2Lの相手を保存する" << std::endl;
    //! store M2L buckets for the bucket at level 1
    //! ここは，Aの展開係数を，M2Lすべきバケツに保存する．Aが空なら，M2LすべきバケツはAにとってないことになる．
    B_poles.forEachAtLevel({1}, [&](Buckets<sp_pole4FMM>* A) {
@@ -191,6 +226,8 @@ int main() {
          });
    });
 
+   std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
    //! -------------------------------------------------------------------------- */
    //!                                   直接積分                                   */
    //! -------------------------------------------------------------------------- */
@@ -199,38 +236,12 @@ int main() {
    // Tddd O = {-0.0012, -0.00376, 0.03518};
    // Tddd O = {-0.05, -0., 0.};
 
-   Tddd O = ToX(RandomSample(ToVector(obj->getPoints()))[0]);
-   const auto& target_bucket = B_poles.getBucketAtDeepest(O);
+   std::cout << "Direct Integration..." << std::endl;
 
-   tw();
+   for (auto& p : obj->getPoints())
+      p->igign = direct_integration(B_poles, p->X);
 
-   for (auto& F : obj->getFaces()) {
-      auto q012 = std::array<double, 3>{1, 1., 1.};
-      auto X012 = ToX(F->getPoints());
-      auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
-      auto normal = F->normal;
-      for (const auto& [xi0, xi1, ww] : __array_GW10xGW10__) {
-         auto X = Dot(ModTriShape<3>(xi0, xi1), X012);
-         auto value = Dot(ModTriShape<3>(xi0, xi1), q012);
-         auto R = X - O;
-         auto weights = Tdd{1., 1.} * Norm(cross) * ww * (1. - xi0);
-         auto nr = Norm(R);
-         //$ 直接積分
-         ig += weights[0] / nr;
-         if (std::ranges::none_of(X012, [&](const auto& x) { return Norm(x - O) < 1e-10; }))
-            ign += -weights[1] * Dot(R / (nr * nr * nr), normal);
-      }
-   };
-
-   auto elapsed_time = tw();
-   std::cout << "Elasped time : " << elapsed_time << std::endl;
-   std::cout << "Approximate elapse time for the whole calculation : " << elapsed_time[0] * obj->getPoints().size() << ", obj->getPoints().size():" << obj->getPoints().size() << std::endl;
-
-   // * ある特定のレベルの全バケツにアクセス
-   // * 自分の下，または上にある全てのバケツにアクセス
-   // * バケツは，自分にExpCoeffsを保存する
-
-   auto accuracy = [](std::complex<double> a, double b) { return (a.real() / b - 1.) * 100; };
+   std::cout << Magenta << "Direct Integration" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
    // $ -------------------------------------------------------------------------- */
    // $                          バケツの可視化のための出力                            */
@@ -271,14 +282,10 @@ int main() {
          // for (auto& b : B->getAllBucket())
          //    M2M(b->multipole_expansion, B->multipole_expansion);
          B->forEachBuckets([&](Buckets<sp_pole4FMM>* b) {
-            M2M(b->multipole_expansion, B->multipole_expansion);
+            B->multipole_expansion.M2M(b->multipole_expansion);
          });
       });
    std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-
-   //! 直接積分
-   std::cout << Red << ig << colorReset << std::endl;
-   std::cout << Green << ign << colorReset << std::endl;
 
    // expansion_M2L_from_level1.initialize(expansion_M2L_from_level1.X);
 
@@ -298,16 +305,64 @@ int main() {
 #pragma omp parallel
       for (auto& B : A->buckets_for_M2L)
 #pragma omp single nowait
-         M2L(A->multipole_expansion, B->local_expansion);
+         B->local_expansion.M2L(A->multipole_expansion);
    });
 
    std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
-   // 根本的にM2Lを高速化する方法があるはず
+   /* -------------------------------------------------------------------------- */
+   /*                           Local 2 Local expansion                          */
+   /* -------------------------------------------------------------------------- */
+   std::cout << "L2Lで，どの程度の精度が得られるか" << std::endl;
+   B_poles.forEachAtLevelParallel(levels_zero2max, [&](Buckets<sp_pole4FMM>* B) {
+      // for (auto& b : B->getAllBucket())
+      //    L2L(B->local_expansion, b->local_expansion);
+      B->forEachBuckets([&](Buckets<sp_pole4FMM>* b) {
+         b->local_expansion.L2L(B->local_expansion);
+      });
+   });
 
-   /* ----------------------------------- 出力 ----------------------------------- */
+   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+   std::cout << Magenta << "L2P ..." << colorReset << std::endl;
+   /* -------------------------------------------------------------------------- */
+   //@ 全体の総積分の速度
+
+   tw();
+   int count_origins = 0;
+
+   for (auto& p : obj->getPoints()) {
+      p->igign_far.fill(0);
+      p->igign_near.fill(0);
+      auto b = B_poles.getBucketAtDeepest(p->X);
+
+      p->igign_near += direct_integration(b, p->X);
+      for (auto& B : b->buckets_near)
+         p->igign_near += direct_integration(B, p->X);
+
+      auto IGIGn = b->local_expansion.IGIGn_using_L(p->X);
+
+      p->igign_far[0] = IGIGn[0].real();
+      p->igign_far[1] = IGIGn[1].real();
+
+      count_origins++;
+      if (count_origins % 1000 == 0)
+         std::cout << "count_origins = " << count_origins << std::endl;
+
+      p->igign_FMM = p->igign_far + p->igign_near;
+   }
+
+   std::cout << "count_origins = " << count_origins << std::endl;
+   std::cout << Magenta << "Total" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+   //@ -------------------------------------------------------------------------- */
+   //@                                     出力                                    */
+   //@ -------------------------------------------------------------------------- */
 
    {
+      Tddd O = ToX(RandomSample(ToVector(obj->getPoints()))[0]);
+      const auto& target_bucket = B_poles.getBucketAtDeepest(O);
+      //
       cube_M2L.resize(max_level + 1);
       line_M2L.resize(max_level + 1);
       poles_in_bucket.resize(max_level + 1);
@@ -350,6 +405,48 @@ int main() {
       }
 
       //
+      {
+         std::unordered_map<networkPoint*, double> data1, data2, data3, data4, data5, data6, data7, data8, data9, data10, data11, data12, data13;
+         double max_abs_ign = 0;
+         for (const auto& p : obj->getPoints()) {
+            auto d_igign = p->igign - p->igign_FMM;
+            data1[p] = d_igign[0];
+            data2[p] = d_igign[1];
+            data3[p] = p->igign[0];
+            data4[p] = p->igign[1];
+            data5[p] = std::abs(d_igign[0] / p->igign[0]);
+            data6[p] = std::abs(d_igign[1] / p->igign[1]);
+            data7[p] = p->igign_FMM[0];
+            data8[p] = p->igign_FMM[1];
+            data9[p] = p->igign_near[0];
+            data10[p] = p->igign_near[1];
+            data11[p] = p->igign_far[0];
+            data12[p] = p->igign_far[1];
+            max_abs_ign = std::max(max_abs_ign, std::abs(p->igign[1]));
+         }
+
+         for (const auto& p : obj->getPoints()) {
+            auto d_igign = p->igign - p->igign_FMM;
+            data13[p] = std::abs(d_igign[1] / max_abs_ign);
+         }
+
+         std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, double>>> data = {{"diff_ig", data1},
+                                                                                                 {"diff_ign", data2},
+                                                                                                 {"ig", data3},
+                                                                                                 {"ign", data4},
+                                                                                                 {"rel_err_ig", data5},
+                                                                                                 {"rel_err_ign", data6},
+                                                                                                 {"ig_FMM", data7},
+                                                                                                 {"ign_FMM", data8},
+                                                                                                 {"ig_near", data9},
+                                                                                                 {"ign_near", data10},
+                                                                                                 {"ig_far", data11},
+                                                                                                 {"ign_far", data12},
+                                                                                                 {"rel_err_ign_max", data13}};
+         std::ofstream ofs("./output/nodes_igign.vtp");
+         vtkPolygonWrite(ofs, obj->getPoints(), data);
+         ofs.close();
+      }
 
       {
          poles_in_bucket[0].clear();
@@ -361,98 +458,15 @@ int main() {
          vtkPolygonWrite(ofs, poles_in_bucket[0]);
          ofs.close();
       }
-   }
 
-   {
-      cube_near.clear();
-      for (auto& B : target_bucket->buckets_near)
-         cube_near.push_back((CoordinateBounds)(B->bounds));
-      std::ofstream ofs("./output/cube_near.vtp");
-      vtkPolygonWrite(ofs, cube_near);
-      ofs.close();
+      {
+         cube_near.clear();
+         for (auto& B : target_bucket->buckets_near)
+            cube_near.push_back((CoordinateBounds)(B->bounds));
+         std::ofstream ofs("./output/cube_near.vtp");
+         vtkPolygonWrite(ofs, cube_near);
+         ofs.close();
+      }
    }
    std::cout << Magenta << "出力" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-   /* -------------------------------------------------------------------------- */
-   /*                           Local 2 Local expansion                          */
-   /* -------------------------------------------------------------------------- */
-   std::cout << "L2Lで，どの程度の精度が得られるか" << std::endl;
-   B_poles.forEachAtLevelParallel(levels_zero2max, [&](Buckets<sp_pole4FMM>* B) {
-      // for (auto& b : B->getAllBucket())
-      //    L2L(B->local_expansion, b->local_expansion);
-      B->forEachBuckets([&](Buckets<sp_pole4FMM>* b) {
-         L2L(B->local_expansion, b->local_expansion);
-      });
-   });
-
-   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-
-   /* -------------------------------------------------------------------------- */
-
-   std::cout << Magenta << "L2P ..." << colorReset << std::endl;
-
-   double IG = 0;
-   double IGn = 0;
-
-   auto direct_integration = [&](const auto& b) {
-      for (const auto& pole : b->all_stored_objects) {
-         auto R = pole->X - O;
-         auto nr = Norm(R);
-         //$ 直接積分
-         IG += pole->weights[0] / nr;
-         IGn += -pole->weights[1] * Dot(R / (nr * nr * nr), pole->normal);
-      }
-   };
-
-   direct_integration(target_bucket);
-   for (auto& B : target_bucket->buckets_near)
-      direct_integration(B);
-
-   // このバケツだけでなく，このバケツに至るまでの，各層のbuckets_for_DIについて，直接積分を行う必要がある．M2Lを行っていないため．
-   for (auto& B : target_bucket->buckets_for_DI)
-      direct_integration(B);
-
-   double ig_at_target = target_bucket->local_expansion.IG_using_L(O).real() + IG;
-   double ign_at_target = target_bucket->local_expansion.IGn_using_L(O).real() + IGn;
-   std::cout << Red << "直接積分:" << ig << ", FMM:" << ig_at_target << ", accuracy: " << accuracy(ig_at_target, ig) << "\%" << colorReset << std::endl;
-   std::cout << Green << "直接積分:" << ign << ", FMM:" << ign_at_target << ", accuracy: " << accuracy(ign_at_target, ign) << "\%" << colorReset << std::endl;
-   std::cout << Red << IG << " accuracy: " << accuracy(IG, ig) << "\%" << colorReset << std::endl;
-   std::cout << Green << IGn << " accuracy: " << accuracy(IGn, ign) << "\%" << colorReset << std::endl;
-   std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-
-   /* -------------------------------------------------------------------------- */
-   //@ 全体の総積分の速度
-
-   tw();
-   int count_origins = 0;
-   {
-      for (auto& p : obj->getPoints()) {
-         IG = 0;
-         IGn = 0;
-         auto b = B_poles.getBucketAtDeepest(p->X);
-         auto O = p->X;
-
-         auto direct_integration = [&](const auto& b) {
-            for (const auto& pole : b->all_stored_objects) {
-               auto R = pole->X - O;
-               auto nr = Norm(R);
-               //$ 直接積分
-               IG += pole->weights[0] / nr;
-               IGn += -pole->weights[1] * Dot(R / (nr * nr * nr), pole->normal);
-            }
-         };
-
-         direct_integration(b);
-         for (auto& B : b->buckets_near)
-            direct_integration(B);
-
-         IG += b->local_expansion.IG_using_L(O).real();
-         IGn += b->local_expansion.IGn_using_L(O).real();
-
-         count_origins++;
-         if (count_origins % 1000 == 0)
-            std::cout << "count_origins = " << count_origins << std::endl;
-      }
-   }
-   std::cout << "count_origins = " << count_origins << std::endl;
-   std::cout << Magenta << "Total" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 }

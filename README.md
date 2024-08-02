@@ -51,8 +51,6 @@
 ## [build_spherical_harmonic](./builds/build_spherical_harmonic/README.md)
 
 - [Contents](./builds/build_spherical_harmonic/README.md#Contents)
-- [🐋 🐋 多重極展開](./builds/build_spherical_harmonic/README.md#🐋-🐋-多重極展開)
-    - [⛵ ⛵ Green関数の多重極展開](./builds/build_spherical_harmonic/README.md#⛵-⛵-Green関数の多重極展開)
     - [⛵ 精度の確認](./builds/build_spherical_harmonic/README.md#⛵-精度の確認)
     - [⛵ ツリー構造を使った多重極展開の移動](./builds/build_spherical_harmonic/README.md#⛵-ツリー構造を使った多重極展開の移動)
     - [⛵ `multipole_expansion`クラスのチェック](./builds/build_spherical_harmonic/README.md#⛵-`multipole_expansion`クラスのチェック)
@@ -95,6 +93,7 @@
     - [⛵ 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）](./builds/build_Fourier/README.md#⛵-離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）)
     - [⛵ 逆離散フーリエ変換](./builds/build_Fourier/README.md#⛵-逆離散フーリエ変換)
     - [⛵ 離散フーリエ変換によるデータの補間](./builds/build_Fourier/README.md#⛵-離散フーリエ変換によるデータの補間)
+    - [⛵ 畳み込み積分](./builds/build_Fourier/README.md#⛵-畳み込み積分)
 ## [build_integration](./builds/build_integration/README.md)
 
 - [Contents](./builds/build_integration/README.md#Contents)
@@ -118,10 +117,11 @@
 
 - [Contents](./builds/build_quaternion/README.md#Contents)
 - [🐋 クォータニオンを使った物体の３次元回転](./builds/build_quaternion/README.md#🐋-クォータニオンを使った物体の３次元回転)
-    - [⛵ クォータニオンを使ったシンプルな回転](./builds/build_quaternion/README.md#⛵-クォータニオンを使ったシンプルな回転)
-    - [⛵ クォータニオンの時間微分，角速度](./builds/build_quaternion/README.md#⛵-クォータニオンの時間微分，角速度)
-    - [⛵ ⛵ クォータニオンの微分](./builds/build_quaternion/README.md#⛵-⛵-クォータニオンの微分)
+    - [⛵ ⛵ クォータニオンを使った回転表現](./builds/build_quaternion/README.md#⛵-⛵-クォータニオンを使った回転表現)
+    - [⛵ クォータニオンを使った物体の３次元回転の例](./builds/build_quaternion/README.md#⛵-クォータニオンを使った物体の３次元回転の例)
+    - [⛵ ⛵ クォータニオンの積は回転の合成　$`{\boldsymbol q} _{12}={\boldsymbol q} _1 * {\boldsymbol q} _2`$](./builds/build_quaternion/README.md#⛵-⛵-クォータニオンの積は回転の合成　$`{\boldsymbol-q}-_{12}={\boldsymbol-q}-_1-*-{\boldsymbol-q}-_2`$)
     - [⛵ ⛵ 角加速度からクォータニオンの微分を計算](./builds/build_quaternion/README.md#⛵-⛵-角加速度からクォータニオンの微分を計算)
+    - [⛵ クォータニオンの微分の数値的な時間積分の例](./builds/build_quaternion/README.md#⛵-クォータニオンの微分の数値的な時間積分の例)
     - [⛵ 剛体の回転と平行移動](./builds/build_quaternion/README.md#⛵-剛体の回転と平行移動)
 ## [build_eigen_value](./builds/build_eigen_value/README.md)
 

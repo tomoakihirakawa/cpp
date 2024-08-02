@@ -4,6 +4,7 @@
     - [⛵ 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）](#⛵-離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）)
     - [⛵ 逆離散フーリエ変換](#⛵-逆離散フーリエ変換)
     - [⛵ 離散フーリエ変換によるデータの補間](#⛵-離散フーリエ変換によるデータの補間)
+    - [⛵ 畳み込み積分](#⛵-畳み込み積分)
 
 
 ---
@@ -22,7 +23,7 @@ $`c _n=\frac{a _n - i \mathrm{sgn}(n) b _n}{2}`$
 
 ## ⛵ 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換） 
 
-次のようなで$`N`$個の離散データがあるとする．
+次のような$`N`$個の離散データがあるとする．
 
 ```cpp
 {1, 1, 2, 2, 1, 1, 0, 0}
@@ -51,25 +52,26 @@ period: {0,   T/N,    2T/N, ...,   T*(N-2)/N,   T*(N-1)/N}, {T,     T*(N+1)/N, .
 c _n &= \frac{1}{T^\ast} \left[ \frac{g _n(0) + g _n(N\delta t)}{2} + \sum _{k=1}^{N-1} g _n(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N}, \quad g _n(0) = g _n(N\delta t),\quad g _n(t) = f(t) \exp(-i n \omega^\ast t)\\
 &= \frac{1}{N} \sum _{k=0}^{N-1} g _n(k \delta t) {\quad\text{became simple additions}}\\
 &= \frac{1}{N} \sum _{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{T^\ast} k \frac{T^\ast}{N} \right) \right]\\
-&= \frac{1}{N} \sum _{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+&= \frac{1}{N} \sum _{k=0}^{N-1} \left[ f _k \exp\left( -i n \frac{2 \pi}{N} k \right) \right], \quad f _k = f\left(k\frac{T^\ast}{N}\right)
 \end{align}
 ```
 
-これからわかるように，$`c _n`$は周期$`T^\ast`$に依存しておらず（$`f(kT^\ast/N)`$は，$`T^\ast`$によらず常に$`k`$番めデータ値を指しているので，$`T^\ast`$に依存していない），データの数$`N`$に依存している．
+これからわかるように，$`c _n`$は周期$`T^\ast`$に依存しておらず，データの数$`N`$に依存している．
+（$`f(kT^\ast/N)`$は，$`T^\ast`$によらず常に$`k`$番目データ値`data[k]`を指しているので，$`T^\ast`$に依存していない）
+離散フーリエ係数は，周期とは無関係なのである．
 
-この結果は，複素フーリエ係数$`c _n`$の式において，$`T^\ast`$を$`N`$として数値積分したものとも考えられる．つまり，時間軸ではなく，インデックス軸で積分していることと同じになっている．
+$`c _n`$が大きさを表す波の周波数は，数式から$`n/T^\ast`$であるとわかる．
 
-💡 $`c _n`$を変形すると，
+最後の式は，連続した関数のフーリエ係数を抽出するための式と照らし合わせると，
+$`T^\ast`$を$`N`$と置き換えた形になっている．
+時間軸ではなく，インデックス軸で積分しているようなものである．
 
-$$
-c _n = \frac{1}{N} \sum _{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right)
-\exp\left(k\right)\right]\exp\left( -i n \frac{2 \pi}{N}\right)
-$$
-
-となっており，$`n`$に関して周期$`N`$の周期関数となっている．
+$`c _n`$は，$`c _n=c _{n+N}`$であり$`n`$に関して周期$`N`$の周期関数となっている．
 また$`\cos(\theta)=\cos(-\theta)`$であるため，$`\Re[c _n]=\Re[c _{-n}]`$で
 $`\sin(\theta)=-\sin(-\theta)`$であるため，$`\Im[c _n]=-\Im[c _{-n}]`$である．
-１周期分つまり$`N`$分の係数ではなく，$`N/2`$分の係数さえわかれば元の関数を復元できる．
+
+１周期分にあたる$`N`$コの係数ではなく，$`N/2`$コの係数さえわかれば元の関数を復元できる．
+後ろ半分の係数はプログラム中で保存する必要はない．
 
 ---
 
@@ -131,5 +133,12 @@ Column[Table[MyInverseFourier[cn, n]*(Length[list]), {n, 0, Length[list] - 1,1}]
 | triangle wave | ![sample_Re_inv_triangleWave.png](sample_Re_inv_triangleWave.png) | ![sample_interpolation_triangleWave.png](sample_interpolation_triangleWave.png) |
 
 [./example0_simple.cpp#L1](./example0_simple.cpp#L1)
+
+## ⛵ 畳み込み積分 
+
+畳み込み積分は，信号解析や画像処理などの分野でよく使われる演算．
+直感的には，2つの関数をスライドさせながら積分することで，2つの関数の類似度を評価する．
+
+[./example1_convolution.cpp#L1](./example1_convolution.cpp#L1)
 
 ---

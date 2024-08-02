@@ -352,7 +352,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ---
 ## ⛵ ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_bem/BEM_solveBVP.hpp#L847)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_bem/BEM_solveBVP.hpp#L869)を使う．
 
 [./SPH2_FindPressure.hpp#L509](./SPH2_FindPressure.hpp#L509)
 

@@ -837,6 +837,8 @@ class networkPoint : public CoordinateBounds, public CRS {
 
 #ifdef BEM
   public:
+   std::array<double, 2> igign, igign_FMM;  // spherical harmonics のチェックに利用2024/07/03
+   std::array<double, 2> igign_near, igign_far;
    // double phi_n();
    using T_PBF = std::tuple<netP *, bool, netF *>;
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
@@ -1603,7 +1605,7 @@ class pathInfo {
    pathInfo(V_netFp face_IN,
             const T3Tddd &xyz_IN,
             const double incidentAngle_IN,
-            const double r_IN) : face(face_IN), xyz(xyz_IN), incidentAngle(incidentAngle_IN), r(r_IN){};
+            const double r_IN) : face(face_IN), xyz(xyz_IN), incidentAngle(incidentAngle_IN), r(r_IN) {};
    ~pathInfo() {
       //    std::cout << Red << "destructed" << colorReset << std::endl;
    }
@@ -5180,7 +5182,7 @@ struct DodecaPoints {
          f2(l2->getFaces().size() == 1 ? l2->getFaces()[0] : (l2->getFaces()[0] == f ? l2->getFaces()[1] : l2->getFaces()[0])),
          quadpoint_l0(f0, l0, checker),
          quadpoint_l1(f1, l1, checker),
-         quadpoint_l2(f2, l2, checker){};
+         quadpoint_l2(f2, l2, checker) {};
    /*
    これをみると，
    {t0, t1, 1-t0-t1, N * t0*t1, N * t0*(1-t0-t1), N * t1*(1-t0-t1)}

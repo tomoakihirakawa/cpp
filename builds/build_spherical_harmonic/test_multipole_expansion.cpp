@@ -78,13 +78,13 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 int main() {
 
    for (auto a = -10.; a <= 10.; a += 1.) {
-      std::array<double, 3> A = {-10, -10, 1};
+      std::array<double, 3> A = {-0, -9, 1};
       // std::array<double, 3> A = {5, 5, 5};
-      std::array<double, 3> X = {10, 10, 1};
+      std::array<double, 3> X = {10, 10, -1};
 
       const double dx = 0.5;
 
-      for (int n : {4, 5, 6, 7, 8}) {
+      for (int n : {4, 5, 6, 7, 8, 9, 10, 15, 20}) {
          std::string name = "./output/output_n" + std::to_string(n);
          name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
          name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + ".txt";
@@ -101,7 +101,7 @@ int main() {
          }
       }
 
-      for (int n : {4, 5, 6, 7, 8}) {
+      for (int n : {4, 5, 6, 7, 8, 9, 10, 15, 20}) {
          std::string name = "./output/output_n" + std::to_string(n);
          name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
          name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + "_switch.txt";
@@ -123,7 +123,7 @@ int main() {
          }
       }
 
-      for (int n : {3, 4, 5, 6, 7, 8}) {
+      for (int n : {3, 4, 5, 6, 7, 8, 9, 10, 15, 20}) {
          std::string name = "./output/output_n" + std::to_string(n);
          name += "_A_" + std::to_string((int)A[0]) + "_" + std::to_string((int)A[1]) + "_" + std::to_string((int)A[2]);
          name += "_X_" + std::to_string((int)X[0]) + "_" + std::to_string((int)X[1]) + "_" + std::to_string((int)X[2]) + "_grad.txt";

@@ -4,7 +4,9 @@
 
 /*DOC_EXTRACT 1_0_0_quaternion
 
-## クォータニオンの時間微分，角速度
+\insert{0_1_0_Quaternion}
+
+## クォータニオンの微分の数値的な時間積分の例
 
 以下を実行して，ルンゲクッタを使いクォータニオンの時間微分を時間積分する．
 
@@ -13,8 +15,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateAngularVelocity.cpp
 make
 ./validateAngularVelocity
 ```
-
-\insert{0_1_0_Quaternion}
 
 ![sample_dQdt.gif](sample_dQdt.gif)
 

@@ -21,6 +21,8 @@
             - [ 🪸 線形三角要素のヤコビアン](#-🪸-線形三角要素のヤコビアン)
             - [🪸 係数行列の作成](#🪸-係数行列の作成)
         - [🪼 リジッドモードテクニック](#🪼-リジッドモードテクニック)
+        - [🪼 左辺と右辺の入れ替え](#🪼-左辺と右辺の入れ替え)
+        - [🪼 高速多重極展開との関係](#🪼-高速多重極展開との関係)
     - [⛵ 初期値問題](#⛵-初期値問題)
         - [🪼 流速$`\frac{d\bf x}{dt}`$の計算](#🪼-流速$`\frac{d\bf-x}{dt}`$の計算)
         - [🪼 $`\frac{d\phi}{dt}`$の計算](#🪼-$`\frac{d\phi}{dt}`$の計算)
@@ -158,7 +160,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L1039](../../include/Network.hpp#L1039)
+[../../include/Network.hpp#L1041](../../include/Network.hpp#L1041)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -337,26 +339,21 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 
 #### 🪸 係数行列の作成 
 
-実際のプログラムでは，$`{\bf A}{\bf x}={\bf b}`$の形で整理することが多い．
-上のようにBIEは離散化されるが，
-この式を見ても，係数行列$`\bf A`$とベクトル$`\bf b`$を具体的にどのように作成するかわかりにくいかもしれない．
+数値シミュレーションでは，境界値問題を$`{\bf A}{\bf x}={\bf b}`$のような線形連立方程式になるよう近似，変形し（離散化），$`{\bf x}`$を求めることが多い．
+BEMでもBIEを離散化してこのような形にする．
 
-- $`\phi`$の係数行列を$`\mathbf{M}`$
-- $`\phi _n`$の係数行列を$`\mathbf{N}`$
-- $`\mathbf{\Phi}`$を$`\phi`$のベクトル
-- $`\mathbf{\Phi _n}`$を$`\phi _n`$のベクトル
+その際，境界条件に応じて，方程式（$`{\bf A}{\bf x}={\bf b}`$の行）の右辺と左辺が入れ替える必要があるので注意する．
+これは，$`{\bf A}{\bf x}={\bf b}`$の未知変数$`{\bf x}`$と既知変数$`{\bf b}`$がポテンシャル$`\phi`$か法線方向のポテンシャル$`\phi _n`$か，境界条件によって違うからである．
+プログラム上では，係数行列$`\bf A`$やベクトル$`\bf b`$を境界条件に応じて適切に作成すれば，求まる$`\bf x`$が適切なものになる．
 
-として，次のような連立一次方程式を得る．
+$`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathbf{N}`$，$`\mathbf{\Phi}`$を$`\phi`$のベクトル，$`\mathbf{\Phi _n}`$を$`\phi _n`$のベクトルとして，
+次のような連立一次方程式を得る．
 
 ```math
-\mathbf{N} \mathbf{\Phi _n} = \mathbf{M} \mathbf{\Phi}
+\mathbf{N} \mathbf{\Phi _n} = \mathbf{M} \mathbf{\Phi} \rightarrow {\bf A}{\bf x}={\bf b}
 ```
 
-$`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求めるわけだが，
-未知変数が$`\phi`$か$`\phi _n`$かは，境界条件によって決まるので，
-境界条件に応じて，$`{\bf A},{\bf b}`$を間違えずに作成する必要がある．
-
-ここでは，$`A`$を`IGIGn`，$`b`$を`knowns`としている．
+このプログラムでは，$`A`$を`IGIGn`，$`b`$を`knowns`としている．
 
 このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
 `IGIGn`は，ある節点$`i _\circ`$（係数行列の行インデックス）に対する
@@ -382,7 +379,7 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 1. fill key_ig_ign
 2. fill IGIGn_Row
 
-[./BEM_solveBVP.hpp#L524](./BEM_solveBVP.hpp#L524)
+[./BEM_solveBVP.hpp#L519](./BEM_solveBVP.hpp#L519)
 
 ### 🪼 リジッドモードテクニック 
 
@@ -411,7 +408,9 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 ただし，線形要素の場合，原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する計算，$`{\bf n} _{k _\vartriangle}\cdot ({{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ}})=0`$となるため，和をとる必要はない．
 よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-[./BEM_solveBVP.hpp#L595](./BEM_solveBVP.hpp#L595)
+[./BEM_solveBVP.hpp#L590](./BEM_solveBVP.hpp#L590)
+
+### 🪼 左辺と右辺の入れ替え 
 
 係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
 
@@ -439,7 +438,28 @@ $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求める�
 \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
 ```
 
-[./BEM_solveBVP.hpp#L661](./BEM_solveBVP.hpp#L661)
+[./BEM_solveBVP.hpp#L656](./BEM_solveBVP.hpp#L656)
+
+### 🪼 高速多重極展開との関係 
+
+GMRES法は，$`A\cdot x`$の計算を何度も行い，その線形和で解を近似するので，$`A`$をプログラム中で保持せずとも，$`A\cdot x`$を計算することができれば解を求めることができる．
+高速多重極展開は，この$`A\cdot x`$を高速に計算するための手法である．$`A\cdot {\bf x}={\bf b}`$のある行において，具体的な計算を考えてみる．
+
+```math
+\begin{align*}
+A\cdot x &= b \\
+\sum\limits _{j=0}^{N-1} A _{i,j}({\bf a} _i)x _j &= b _i \\
+\end{align*}
+```
+
+$`\sum\limits _{j=0}^{N-1} A _{i,j}({\bf a} _i)x _j = b _i`$は，$`{\bf a} _i`$を原点としたBIEを離散化したものである．
+
+$`A _{i,j}({\bf a} _i)`$は，$`{\bf a} _i`$に依存しており，$`{\bf a} _i`$が変わると$`A _{i,j}({\bf a} _i)`$も変わる．
+しかし，これをソース点と観測点の関数の積と和の形に変形することできる．
+また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
+ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
+
+[./BEM_solveBVP.hpp#L700](./BEM_solveBVP.hpp#L700)
 
 ---
 ## ⛵ 初期値問題 
@@ -565,7 +585,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L876](./BEM_solveBVP.hpp#L876)
+[./BEM_solveBVP.hpp#L898](./BEM_solveBVP.hpp#L898)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -600,7 +620,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1230](./BEM_solveBVP.hpp#L1230)
+[./BEM_solveBVP.hpp#L1252](./BEM_solveBVP.hpp#L1252)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -750,7 +770,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L937)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1125)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L937)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1147)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -781,11 +801,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1140)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1162)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L921](./BEM_solveBVP.hpp#L921)
+[./BEM_solveBVP.hpp#L943](./BEM_solveBVP.hpp#L943)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -870,7 +890,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1053](./BEM_solveBVP.hpp#L1053)
+[./BEM_solveBVP.hpp#L1075](./BEM_solveBVP.hpp#L1075)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 

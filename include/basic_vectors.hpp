@@ -1333,7 +1333,9 @@ std::vector<T> Abs(std::vector<T> vec) {
 // 2021/06/14
 /*DOC_EXTRACT 0_0_0_Quaternion
 
-ある回転軸$v$に対して，角度$\theta$だけ回転するクォータニオン$q$は以下のように表される．
+## クォータニオンを使った回転表現
+
+クォータニオンは３次元の回転を表すための数学的な表現であり，このプログラムでは，**ある回転軸$`v`$に対して，角度$`\theta`$だけの回転を表すクォータニオン$`q`$**のような考え方でクォータニンオンを生成する．それは次のように表される．
 
 ```math
 \begin{aligned}
@@ -1342,7 +1344,11 @@ v &= (v_x, v_y, v_z)
 \end{aligned}
 ```
 
-`Rv()` a rotation transformation in the global coordinate system.
+重要なのは，クォータニオンを使ったよくある回転行列の表現方法や，クォータニオン同士の積が回転の合成になるように定義されていることである．
+
+３次元回転というと混同してしまいやすい２つがある．
+一つは，自分の目線を基準にして物体を回転させることである．
+この回転は，$`Rv()`$で定義している．(時計回りを正としている)
 
 ```math
 Rv = \begin{bmatrix}
@@ -1352,8 +1358,8 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c - 2 \cdot a \cdot d & 2 \cdot a \cdot 
 \end{bmatrix}
 ```
 
-The `Rs()` function looks like it's used to calculate how the global coordinates move relative to the object's coordinates, through rotation.
-The matrix representation is:
+もう一つの回転は，物体ではなく，自分自身を回転させることである．つまり自分の座標系を回転させることである．
+これは，並進移動座標系と似たように，自分が時計回りに回転すると，反対に物体は反時計回りに回転しているように見える．
 
 ```math
 Rs = \begin{bmatrix}
@@ -1370,33 +1376,33 @@ struct Quaternion {
    T4d q;
 
    // std::cos(q/2) + (ux*i + uy*j+ uz*k) * std::sin(q/2)
-   Quaternion() : a(1), b(0), c(0), d(0), v({0, 0, 0}), q({1, 0, 0, 0}){};
+   Quaternion() : a(1), b(0), c(0), d(0), v({0, 0, 0}), q({1, 0, 0, 0}) {};
    Quaternion(const double aIN, const double bIN, const double cIN, const double dIN) : a(aIN),
                                                                                         b(bIN),
                                                                                         c(cIN),
                                                                                         d(dIN),
                                                                                         v({bIN, cIN, dIN}),
-                                                                                        q({aIN, bIN, cIN, dIN}){};
+                                                                                        q({aIN, bIN, cIN, dIN}) {};
    Quaternion(const T4d &qIN) : a(std::get<0>(qIN)),
                                 b(std::get<1>(qIN)),
                                 c(std::get<2>(qIN)),
                                 d(std::get<3>(qIN)),
                                 v({std::get<1>(qIN), std::get<2>(qIN), std::get<3>(qIN)}),
-                                q(qIN){};
+                                q(qIN) {};
 
    Quaternion(const Tddd &axis, const double angle) : v(Normalize(axis) * std::sin(angle / 2.)),
                                                       a(std::cos(angle / 2.)),
                                                       b(std::get<0>(v)),
                                                       c(std::get<1>(v)),
                                                       d(std::get<2>(v)),
-                                                      q({a, b, c, d}){
-                                                          // 空間回転　q = std::cos(theta/2) + n*sin(theta/2)
-                                                          // std::cout << "construct from axis and angle" << std::endl;
-                                                          // std::cout << "Normalize(axis) " << Normalize(axis) << std::endl;
-                                                          // std::cout << "Normalize(axis) * std::sin(angle / 2.) " << Normalize(axis) * std::sin(angle / 2.) << std::endl;
-                                                          // std::cout << "std::cos(angle / 2.) " << std::cos(angle / 2.) << std::endl;
-                                                          // std::cout << "std::sin(angle / 2.) " << std::sin(angle / 2.) << std::endl;
-                                                          // std::cout << q << std::endl;
+                                                      q({a, b, c, d}) {
+                                                         // 空間回転　q = std::cos(theta/2) + n*sin(theta/2)
+                                                         // std::cout << "construct from axis and angle" << std::endl;
+                                                         // std::cout << "Normalize(axis) " << Normalize(axis) << std::endl;
+                                                         // std::cout << "Normalize(axis) * std::sin(angle / 2.) " << Normalize(axis) * std::sin(angle / 2.) << std::endl;
+                                                         // std::cout << "std::cos(angle / 2.) " << std::cos(angle / 2.) << std::endl;
+                                                         // std::cout << "std::sin(angle / 2.) " << std::sin(angle / 2.) << std::endl;
+                                                         // std::cout << q << std::endl;
                                                       };
 
    Quaternion(const Tddd &initial_vector, const Tddd &next_vector) {
@@ -1514,12 +1520,12 @@ struct Quaternion {
 
    T3Tddd Ryaw() const {
       double t = this->yaw();
-      return {{{std::cos(t), std::sin(t), 0.}, {-sin(t), std::cos(t), 0.}, {0., 0., 1.}}};
+      return {{{std::cos(t), std::sin(t), 0.}, {-std::sin(t), std::cos(t), 0.}, {0., 0., 1.}}};
    }
 
    T3Tddd Rpitch() const {
       double t = this->pitch();
-      return {{{std::cos(t), 0., -sin(t)}, {0., 1., 0.}, {std::sin(t), 0., std::cos(t)}}};
+      return {{{std::cos(t), 0., -std::sin(t)}, {0., 1., 0.}, {std::sin(t), 0., std::cos(t)}}};
    }
 
    T3Tddd Rroll() const {
@@ -1622,16 +1628,17 @@ Quaternion operator*(const Quaternion &A, const Quaternion &B) {
 // 角速度からクォータニオンの微分を計算
 /*DOC_EXTRACT 0_1_0_Quaternion
 
-## クォータニオンの微分
+## クォータニオンの積は回転の合成　$`{\boldsymbol q}_{12}={\boldsymbol q}_1 * {\boldsymbol q}_2`$
 
-クォータニオンは姿勢を表し，クォータニオンをかけることで姿勢を変化させることができる．
+クォータニオン同士の掛け算は回転の合成になるように定義されている．
 
-上のoperator*に定義されるように
-クォータニオン同士の積$`{\boldsymbol q}_1 * {\boldsymbol q}_2`$は次のように計算される．
+このプログラムでは，クォータニオン同士の積$`{\boldsymbol q}_1 * {\boldsymbol q}_2`$は，
+`Quaternion operator*(const Quaternion &q1, const Quaternion &q2)`で次のように定義されている．
+これは，**２つの回転を合成した回転を表すクォータニオン$`{\boldsymbol q}_{12}`$を作る**ことになる．
 
 ```math
 \begin{aligned}
-{\boldsymbol q}_1 * {\boldsymbol q}_2 =
+{\boldsymbol q}_{12}={\boldsymbol q}_1 * {\boldsymbol q}_2 =
 \begin{bmatrix}
 a1 * a2 + -b1 * b2 + -c1 * c2 + -d1 * d2\\
 a1 * b2 + b1 * a2 + c1 * d2 - d1 * c2\\
@@ -1644,9 +1651,20 @@ a1 * d2 + b1 * c2 - c1 * b2 + d1 * a2
 ## 角加速度からクォータニオンの微分を計算
 
 初期値問題を解くための数値計算は，$`x_{\text next} = x + \frac{dx}{dt} dt`$
-という形に対して考えられているため，これに合わせるために，クォータニオンの微分を考える必要がある．
+という形に対して考える．なので，クォータニオンの微分を計算する必要がある．
 
-次の計算の$`\lim_{dt \to 0}`$を取ると，角加速度からクォータニオンの微分を計算できる．
+**現在の角速度はわかるものとする．**
+
+次時刻の姿勢（基準姿勢からの３次元回転）$`{\boldsymbol q}^{t+\delta t}`$は，現在の姿勢$`{\boldsymbol q}^{t}`$と角速度$`\bf w`$を使って次のように表される．
+
+```math
+\begin{aligned}
+{\boldsymbol q}^{t+\delta t} &= {\boldsymbol q}^{t} * {\boldsymbol q}((1,0,0),w_x \delta t) * {\boldsymbol q}((0,1,0),w_y \delta t) * {\boldsymbol q}((0,0,1),w_z \delta t)\\
+\rightarrow \frac{{\boldsymbol q}^{t+\delta t} - {\boldsymbol q}^{t}}{\delta t} &= \frac{{\boldsymbol q}^{t} * {\boldsymbol q}((1,0,0),w_x \delta t) * {\boldsymbol q}((0,1,0),w_y \delta t) * {\boldsymbol q}((0,0,1),w_z \delta t) - {\boldsymbol q}^{t}}{\delta t}
+\end{aligned}
+```
+
+右辺をまとめると，時間$`\delta t`$は消えてくれる．
 
 ```cpp
 auto nextQ = Quaternion({1., 0., 0.}, w[0] * dt) * Quaternion({0., 1., 0.}, w[1] * dt) * Quaternion({0., 0., 1.}, w[2] * dt);
@@ -1952,6 +1970,24 @@ double TetrahedronVolume(const T4Tddd &X) {
 
 Tddd TetrahedronCircumCenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    double a2 = Dot(a, a);
+   auto Inverse = [](const std::array<std::array<double, 3>, 3> &a) -> std::array<std::array<double, 3>, 3> {
+      const double inv_det = 1.0 / std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                            std::fma(std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+                                                     std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                                              std::fma(-std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+                                                                       std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
+                                                                                std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+
+      return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+                std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+                std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+               {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+                std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+                std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+               {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+                std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+                std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
+   };
    return Dot(Inverse(T3Tddd{b - a, c - a, d - a}), 0.5 * Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
 };
 

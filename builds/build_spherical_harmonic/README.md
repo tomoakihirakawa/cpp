@@ -1,7 +1,4 @@
 # Contents
-- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
-    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
-        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ 精度の確認](#⛵-精度の確認)
         - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
         - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
@@ -23,60 +20,7 @@
 
 
 ---
-# 🐋 🐋 多重極展開  
-
-## ⛵ ⛵ Green関数の多重極展開  
-
-次のGreen関数を考える．
-
-```math
-G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
-\quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
-```
-
-グリーン関数は，球面調和関数を使って近似できる．
-近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
-
-```math
-G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
-{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
-```
-
-```math
-{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
-```
-
-ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
-$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
-
-```math
-Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
-```
-
-$`P _k^m(x)`$はルジャンドル陪関数：
-
-```math
-P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
-```
-
-### 🪼 🪼 球面座標系への変換  
-
-$`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
-
-```math
-r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
-```
-
-$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
-$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
-
-```math
-\nabla r = \frac{\bf x}{r},\quad
-\nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
-\nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
-```
-[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
-
+<!-- Key Multipole_Expansion not found -->
 
 ## ⛵ 精度の確認 
 
@@ -266,15 +210,15 @@ make
 paraview check_M2L.pvsm
 ```
 
-[./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L8](./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L8)
+[./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L10](./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L10)
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240610.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240629.cpp
 make
-./test_translation_of_a_multipole_expansion_with_tree_20240610
+./test_translation_of_a_multipole_expansion_with_tree_20240629
 paraview check_M2L.pvsm
 ```
 
@@ -380,6 +324,6 @@ Graf's Addition Theoremを使って，$`{\bf Y}^\ast({\bf x},{\bf c} _{\square i
 {\bf Y}^\ast({\bf x},{\bf c} _{\square i}) = \sum _{\square j} {\bf Y}^\ast({\bf x},{\bf c} _{\square j}){\bf Y}({\bf c} _{\square j},{\bf c} _{\square i})
 ```
 
-[./test_multipole_expansion.cpp#L200](./test_multipole_expansion.cpp#L200)
+[./test_multipole_expansion.cpp#L147](./test_multipole_expansion.cpp#L147)
 
 ---

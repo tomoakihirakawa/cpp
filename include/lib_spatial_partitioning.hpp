@@ -77,8 +77,8 @@ struct Buckets : public CoordinateBounds {
    std::vector<std::shared_ptr<Buckets<T>>> buckets_for_M2L, buckets_for_DI;  // DI: Direct Interaction
    std::vector<std::shared_ptr<Buckets<T>>> buckets_near;
 
-   ExpCoeffs<7> multipole_expansion;
-   ExpCoeffs<7> local_expansion;
+   ExpCoeffs<10> multipole_expansion;
+   ExpCoeffs<10> local_expansion;
 
    std::vector<std::vector<std::vector<std::shared_ptr<Buckets<T>>>>> buckets;  //! child buckets
 

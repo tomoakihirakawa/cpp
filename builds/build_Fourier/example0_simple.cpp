@@ -15,7 +15,7 @@ $`c_n=\frac{a_n - i \mathrm{sgn}(n) b_n}{2}`$
 
 ## 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換）
 
-次のようなで$`N`$個の離散データがあるとする．
+次のような$`N`$個の離散データがあるとする．
 
 ```cpp
 {1, 1, 2, 2, 1, 1, 0, 0}
@@ -44,25 +44,26 @@ period: {0,   T/N,    2T/N, ...,   T*(N-2)/N,   T*(N-1)/N}, {T,     T*(N+1)/N, .
 c_n &= \frac{1}{T^\ast} \left[ \frac{g_n(0) + g_n(N\delta t)}{2} + \sum_{k=1}^{N-1} g_n(k \delta t) \right] \delta t, \quad \delta t = \frac{T^\ast}{N}, \quad g_n(0) = g_n(N\delta t),\quad g_n(t) = f(t) \exp(-i n \omega^\ast t)\\
 &= \frac{1}{N} \sum_{k=0}^{N-1} g_n(k \delta t) {\quad\text{became simple additions}}\\
 &= \frac{1}{N} \sum_{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{T^\ast} k \frac{T^\ast}{N} \right) \right]\\
-&= \frac{1}{N} \sum_{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right) \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+&= \frac{1}{N} \sum_{k=0}^{N-1} \left[ f_k \exp\left( -i n \frac{2 \pi}{N} k \right) \right], \quad f_k = f\left(k\frac{T^\ast}{N}\right)
 \end{align}
 ```
 
-これからわかるように，$`c_n`$は周期$`T^\ast`$に依存しておらず（$`f(kT^\ast/N)`$は，$`T^\ast`$によらず常に$`k`$番めデータ値を指しているので，$`T^\ast`$に依存していない），データの数$`N`$に依存している．
+これからわかるように，$`c_n`$は周期$`T^\ast`$に依存しておらず，データの数$`N`$に依存している．
+（$`f(kT^\ast/N)`$は，$`T^\ast`$によらず常に$`k`$番目データ値`data[k]`を指しているので，$`T^\ast`$に依存していない）
+離散フーリエ係数は，周期とは無関係なのである．
 
-この結果は，複素フーリエ係数$`c_n`$の式において，$`T^\ast`$を$`N`$として数値積分したものとも考えられる．つまり，時間軸ではなく，インデックス軸で積分していることと同じになっている．
+$`c_n`$が大きさを表す波の周波数は，数式から$`n/T^\ast`$であるとわかる．
 
-NOTE: $`c_n`$を変形すると，
+最後の式は，連続した関数のフーリエ係数を抽出するための式と照らし合わせると，
+$`T^\ast`$を$`N`$と置き換えた形になっている．
+時間軸ではなく，インデックス軸で積分しているようなものである．
 
-$$
-c_n = \frac{1}{N} \sum_{k=0}^{N-1} \left[ f\left(k\frac{T^\ast}{N}\right)
-\exp\left(k\right)\right]\exp\left( -i n \frac{2 \pi}{N}\right)
-$$
-
-となっており，$`n`$に関して周期$`N`$の周期関数となっている．
+$`c_n`$は，$`c_n=c_{n+N}`$であり$`n`$に関して周期$`N`$の周期関数となっている．
 また$`\cos(\theta)=\cos(-\theta)`$であるため，$`\Re[c_n]=\Re[c_{-n}]`$で
 $`\sin(\theta)=-\sin(-\theta)`$であるため，$`\Im[c_n]=-\Im[c_{-n}]`$である．
-１周期分つまり$`N`$分の係数ではなく，$`N/2`$分の係数さえわかれば元の関数を復元できる．
+
+１周期分にあたる$`N`$コの係数ではなく，$`N/2`$コの係数さえわかれば元の関数を復元できる．
+後ろ半分の係数はプログラム中で保存する必要はない．
 
 ---
 

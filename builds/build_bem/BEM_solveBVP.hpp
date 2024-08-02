@@ -360,7 +360,7 @@ struct BEM_BVP {
    VV_d mat_ukn, mat_kn;
    V_d knowns;
    std::vector<std::vector<std::array<double, 2>>> IGIGn;
-   BEM_BVP(std::vector<Network *> WATERS) : WATERS(WATERS){};
+   BEM_BVP(std::vector<Network *> WATERS) : WATERS(WATERS) {};
    ~BEM_BVP() {
       if (this->lu) delete this->lu;
    };
@@ -388,26 +388,21 @@ struct BEM_BVP {
 
       #### 係数行列の作成
 
-      実際のプログラムでは，$`{\bf A}{\bf x}={\bf b}`$の形で整理することが多い．
-      上のようにBIEは離散化されるが，
-      この式を見ても，係数行列$`\bf A`$とベクトル$`\bf b`$を具体的にどのように作成するかわかりにくいかもしれない．
+      数値シミュレーションでは，境界値問題を$`{\bf A}{\bf x}={\bf b}`$のような線形連立方程式になるよう近似，変形し（離散化），$`{\bf x}`$を求めることが多い．
+      BEMでもBIEを離散化してこのような形にする．
 
-      - $`\phi`$の係数行列を$`\mathbf{M}`$
-      - $`\phi_n`$の係数行列を$`\mathbf{N}`$
-      - $`\mathbf{\Phi}`$を$`\phi`$のベクトル
-      - $`\mathbf{\Phi_n}`$を$`\phi_n`$のベクトル
+      その際，境界条件に応じて，方程式（$`{\bf A}{\bf x}={\bf b}`$の行）の右辺と左辺が入れ替える必要があるので注意する．
+      これは，$`{\bf A}{\bf x}={\bf b}`$の未知変数$`{\bf x}`$と既知変数$`{\bf b}`$がポテンシャル$`\phi`$か法線方向のポテンシャル$`\phi_n`$か，境界条件によって違うからである．
+      プログラム上では，係数行列$`\bf A`$やベクトル$`\bf b`$を境界条件に応じて適切に作成すれば，求まる$`\bf x`$が適切なものになる．
 
-      として，次のような連立一次方程式を得る．
+      $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi_n`$の係数行列を$`\mathbf{N}`$，$`\mathbf{\Phi}`$を$`\phi`$のベクトル，$`\mathbf{\Phi_n}`$を$`\phi_n`$のベクトルとして，
+      次のような連立一次方程式を得る．
 
       ```math
-      \mathbf{N} \mathbf{\Phi_n} = \mathbf{M} \mathbf{\Phi}
+      \mathbf{N} \mathbf{\Phi_n} = \mathbf{M} \mathbf{\Phi} \rightarrow {\bf A}{\bf x}={\bf b}
       ```
 
-      $`{\bf A}{\bf x}={\bf b}`$の形にして，未知変数$`{\bf x}`$を求めるわけだが，
-      未知変数が$`\phi`$か$`\phi_n`$かは，境界条件によって決まるので，
-      境界条件に応じて，$`{\bf A},{\bf b}`$を間違えずに作成する必要がある．
-
-      ここでは，$`A`$を`IGIGn`，$`b`$を`knowns`としている．
+      このプログラムでは，$`A`$を`IGIGn`，$`b`$を`knowns`としている．
 
       このループでは，BIEの連立一次方程式の係数行列`IGIGn`を作成する作業を行なっている．
       `IGIGn`は，ある節点$`i_\circ`$（係数行列の行インデックス）に対する
@@ -660,6 +655,8 @@ struct BEM_BVP {
 
                         /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
+                        ### 左辺と右辺の入れ替え
+
                         係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．
 
                         ```math
@@ -699,6 +696,31 @@ struct BEM_BVP {
                }
             }
    };
+
+   /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+   ### 高速多重極展開との関係
+
+   GMRES法は，$`A\cdot x`$の計算を何度も行い，その線形和で解を近似するので，$`A`$をプログラム中で保持せずとも，$`A\cdot x`$を計算することができれば解を求めることができる．
+   高速多重極展開は，この$`A\cdot x`$を高速に計算するための手法である．$`A\cdot {\bf x}={\bf b}`$のある行において，具体的な計算を考えてみる．
+
+   ```math
+   \begin{align*}
+   A\cdot x &= b \\
+   \sum\limits_{j=0}^{N-1} A_{i,j}({\bf a}_i)x_j &= b_i \\
+   \end{align*}
+   ```
+　　
+   $`\sum\limits_{j=0}^{N-1} A_{i,j}({\bf a}_i)x_j = b_i`$は，$`{\bf a}_i`$を原点としたBIEを離散化したものである．
+
+   $`A_{i,j}({\bf a}_i)`$は，$`{\bf a}_i`$に依存しており，$`{\bf a}_i`$が変わると$`A_{i,j}({\bf a}_i)`$も変わる．
+   しかし，これをソース点と観測点の関数の積と和の形に変形することできる．
+   また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
+   ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
+
+
+
+   */
 
    /* -------------------------------------------------------------------------- */
 

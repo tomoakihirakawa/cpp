@@ -11,9 +11,9 @@
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240610.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240629.cpp
 make
-./test_translation_of_a_multipole_expansion_with_tree_20240610
+./test_translation_of_a_multipole_expansion_with_tree_20240629
  paraview check_M2L.pvsm
 ```
 
