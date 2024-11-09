@@ -153,68 +153,6 @@ struct calculateFluidInteraction {
    };
 };
 
-void setPhiPhin(Network &water) {
-   /* -------------------------------------------------------------------------- */
-   /*                         phinOnFace, phintOnFaceの設定                       */
-   /* -------------------------------------------------------------------------- */
-   // b! 点
-   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorReset << std::endl;
-
-#pragma omp parallel
-   for (const auto &p : water.getPoints())
-#pragma omp single nowait
-   {
-      auto setNeumann = [&p](networkFace *const &f) {
-         if (isNeumannID_BEM(p, f)) {
-            if (f == nullptr) {
-               p->phiOnFace.insert({nullptr, 1E+30});
-               p->phitOnFace.insert({nullptr, 1E+30});
-               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
-               p->phintOnFace.insert({nullptr, 1E+30});
-            } else {
-               p->phiOnFace.insert({f, 1E+30});
-               p->phitOnFace.insert({f, 1E+30});
-               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
-               p->phintOnFace.insert({f, 1E+30});
-            }
-         }
-      };
-
-      auto setDirichlet = [&p](networkFace *const &f) {
-         if (isDirichletID_BEM(p, f)) {
-            p->phiOnFace.insert({nullptr, 1E+30});
-            p->phitOnFace.insert({nullptr, 1E+30});
-            p->phinOnFace.insert({nullptr, 1E+30});
-            p->phintOnFace.insert({nullptr, 1E+30});
-         }
-      };
-
-      p->phiOnFace.clear();
-      p->phitOnFace.clear();
-      p->phinOnFace.clear();
-      p->phintOnFace.clear();
-
-      // 全ての組{p,f}を調べ，使えるものをチェックする
-      setNeumann(nullptr);
-      for (const auto &f : p->getFaces())
-         setNeumann(f);
-
-      setDirichlet(nullptr);
-      for (const auto &f : p->getFaces())
-         setDirichlet(f);
-   }
-
-   // b! 面
-   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorReset << std::endl;
-#pragma omp parallel
-   for (const auto &f : water.getFaces())
-#pragma omp single nowait
-   {
-      auto [p0, p1, p2] = f->getPoints();
-      std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
-   }
-};
-
 // b@ -------------------------------------------------------------------------- */
 // b@                                   BEM_BVP                                  */
 // b@ -------------------------------------------------------------------------- */
@@ -223,7 +161,17 @@ void setPhiPhin(Network &water) {
 
 ### BIEの離散化
 
-BIEをGauss-Legendre積分で離散化すると，
+```math
+\alpha ({\bf a})\phi({\bf a})
+= \iint_\Gamma {\left({
+\frac{1}{\|{\bf x}-{\bf a}\|}
+\nabla \phi ({\bf{x}}) + \phi ({\bf{x}})
+\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}}
+\right) \cdot {\bf{n}}({\bf{x}})dS}
+```
+
+面は面上の節点を使って補間され，面積分はこの補間された面上に沿って行われる．
+面の法線ベクトル$`{\bf n}=\frac{\frac{{\partial {\bf x}}}{{\partial \xi_0}}\times\frac{{\partial {\bf x}}}{{\partial \xi_1}}}{\left\|\frac{{\partial {\bf x}}}{{\partial \xi_0}}\times\frac{{\partial {\bf x}}}{{\partial \xi_1}}\right\|}`$を代入し，BIEをGauss-Legendre積分で離散化すると，
 
 ```math
 \sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} {\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left( {\sum\limits_{j=0}^2 {{{\left( {{\phi_n}} \right)}_{k_\vartriangle,j }}{N_{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}}_{k _\vartriangle}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}\left\|\frac{{\partial{{\bf x}_{k _\vartriangle}}}}{{\partial{\xi_0}}} \times \frac{{\partial{\bf{x}}_{k _\vartriangle}}}{{\partial{\xi_1}}}\right\|} \right)} }=
@@ -243,6 +191,14 @@ $`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内
 * $`\phi_{k_\vartriangle}`$は補間で作った関数
 * $`\phi_{k_\vartriangle,j}`$は補間を構成する節点$`j`$での値
 * $`\phi_{i_\circ}`$はより直接的にある節点$`i_\circ`$での値
+
+NOTE: この段階ではまだ，1.数値積分のパラメタと，2.形状関数のパラメタと元々の面都の対応関係は，指定していない．例えば，やり方によっては$`\xi_1`$のパラメタは，$`\xi_0`$に依存するかもしれない．
+
+補間に使うパラメタを$`{\bf \xi}=(\xi_0, \xi_1)`$として，よく使われる３節点を使う線形補間を使うことにする．
+元の面に対応する，線形補間面は，パラメタ上では$`{\xi_0 + \xi_1 = 1}`$を満たす範囲なので，
+積分範囲は例えば$`0\leq \xi_0 \leq 1, 0\leq \xi_1 \leq 1-\xi_0`$となる．
+しかし，数値積分につかう変数と重みの組み合わせは，コンパイルタイムに決めておき計算を効率化したいので，
+この点で，変化する積分範囲は数値積分との相性が悪い．
 
 ### 線形三角要素
 
@@ -358,7 +314,7 @@ struct BEM_BVP {
    using VV_uo_P_uoTiiTdd = std::vector<V_uo_P_uoTiiTdd>;
    using VVV_uo_P_uoTiiTdd = std::vector<VV_uo_P_uoTiiTdd>;
    VV_d mat_ukn, mat_kn;
-   V_d knowns;
+   V_d knowns, b_RHS;
    std::vector<std::vector<std::array<double, 2>>> IGIGn;
    BEM_BVP(std::vector<Network *> WATERS) : WATERS(WATERS) {};
    ~BEM_BVP() {
@@ -451,6 +407,35 @@ struct BEM_BVP {
          t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0, t1, ww, t0t1t2});
       }
 
+      /*
+      ## 積分の効率化
+
+      `linear_triangle_integration_info`と`pseudo_quadratic_triangle_integration_info`は，
+      積分点の位置と重みを事前に計算しておくことで，積分の効率化を図るためのものである．
+      `linear_triangle_integration_info`と`pseudo_quadratic_triangle_integration_info`の引数の詳細
+
+      ### `linear_triangle_integration_info`
+      | 引数名  | 説明                                                              |
+      |---------|-------------------------------------------------------------------|
+      | `Tdd`   | 2D パラメータ {[0,1], [0,1]}：積分変数                             |
+      | `double`| ガウス重み（積分重み）                                               |
+      | `Tddd`  | 3D パラメータ {xi0=[0,1], xi1=[0,1-xi0]}：2Dパラメータと関連        |
+      | `Tddd`  | 3D 位置ベクトル（{xi0, xi1, xi2}を使用）                           |
+      | `Tddd`  | 外積（dX/dxi0 × dX/dxi1）                                        |
+      | `double`| 外積のノルム                                                     |
+
+      ### `pseudo_quadratic_triangle_integration_info`
+      | 引数名              | 説明                                                              |
+      |---------------------|-------------------------------------------------------------------|
+      | `Tdd`               | 2D パラメータ {[0,1], [0,1]}：積分変数                             |
+      | `double`            | ガウス重み（積分重み）                                               |
+      | `Tddd`              | 3D パラメータ {xi0=[0,1], xi1=[0,1-xi0]}：2Dパラメータと関連        |
+      | `std::array<T6d, 4>`| 二次要素の形状関数                                                  |
+      | `Tddd`              | 3D 位置ベクトル（{xi0, xi1, xi2}を使用）                           |
+      | `Tddd`              | 外積（dX/dxi0 × dX/dxi1）                                        |
+      | `double`            | 外積のノルム                                                     |
+      */
+
       for (const auto &water : WATERS)
 #pragma omp parallel
          for (const auto &integ_f : water->getFaces()) {
@@ -538,7 +523,7 @@ struct BEM_BVP {
                         } else {
                            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                              ign = Dot(R, cross) * (ww / (nr * nr * nr));
+                              ign = Dot(R / (nr * nr * nr), cross) * ww;
                               std::get<0>(ig_ign0) += ig * shape3[0];
                               std::get<1>(ig_ign0) -= ign * shape3[0];
                               std::get<0>(ig_ign1) += ig * shape3[1];
@@ -586,37 +571,31 @@ struct BEM_BVP {
                   }
                }
 
-               /* -------------------------------------------------------------------------- */
-               /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+            /* -------------------------------------------------------------------------- */
+            /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
-               ### リジッドモードテクニック
+            ### リジッドモードテクニック（係数行列の対角成分の計算）
 
-               立体角$`\alpha`$はBIEの係数行列の対角成分で正確に計算したいが，正確に計算するプログラムを書くのは面倒である．
-               しかし，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算することができる．
+            BIEの対角成分の計算で注意が必要なのは，原点$`i_\circ`$の頂点の立体角と，係数の特異性である．
 
-               立体角はポテンシャルとは関係なく，境界面の形状だけに依存するので，適当に$`\phi=1`$としても立体角は変わらない．
-               こうすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，
-               この式は，境界面形状を線形要素を使って離散化すると，次のようになる．
+            * 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
+            * 係数の計算には，$`\frac{{\mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
 
-               ```math
-               \alpha_{i_\circ}=\sum\limits_{k_\vartriangle}
-               \left(
-               {2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
-               \sum\limits_{{\xi_1},{w_1}}\sum\limits_{{\xi_0},{w_0}}
-               {\left( {{w_0}{w_1}\frac{{{\bf x}_{k _\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}} (1-\xi_0)\right)}
-               \right)
-               ```
+            そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi_n`$が消える．結局，対角成分，つまり，原点$`i_\circ`$を頂点上の変数に掛かる係数は，次のようになる．
 
-               この式の右辺の一部，
-               原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する和だけを左辺に移項したものは，
-               係数行列の対角成分と同じになっている．
-               これはリジッドモードテクニックと呼ばれていて，
-               分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+            ```math
+            \sum\limits_{k_\vartriangle} 2 A_{k_\vartriangle} \, \mathbf{n}_{k_\vartriangle} \cdot \sum\limits_{\xi_1, w_1} \sum\limits_{\xi_0, w_0} \left( w_0 w_1 \left( \sum\limits_{j=0}^2 \bar\delta_{(k_\vartriangle, j),i_\circ} N_j(\pmb{\xi}) \right) \frac{{\mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ} \|}^3}(1 - \xi_0)\right)
+            ```
 
-               ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
-               よって，そもそも線形要素の場合は，特異的な計算は含まれない．
+            $`\bar\delta_{(k_\vartriangle, j),i_\circ}`$は，$`k_\vartriangle`$の$j$番目の頂点が$i_\circ$である場合に0，それ以外は1となる関数である．
 
-               */
+            数値計算上は，$`\delta_{(k_\vartriangle, j),i_\circ}`$がゼロの場合は，そもそも係数をインクリメントせず，スキップする．
+            これはリジッドモードテクニックと呼ばれていて，分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+
+            ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
+            よって，そもそも線形要素の場合は，特異的な計算は含まれない．
+
+            */
 
 #if defined(use_rigid_mode)
                std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
@@ -630,7 +609,33 @@ struct BEM_BVP {
 
    /* -------------------------------------------------------------------------- */
 
-   void makeMatrix() {
+   void generateBIEMatrix() {
+
+      /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+      ### 左辺と右辺の入れ替え
+
+      係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数行列を表している．
+
+      ```math
+      (I_G)_{i_\circ,j_\circ} (\phi_n)_{j_\circ} = (I_{Gn})_{i_\circ,j_\circ}  \phi_{j_\circ}
+      ```
+
+      境界条件に応じて，未知変数は$`\phi,\phi_n`$のどちらかに決まる．
+      未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
+      係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
+
+      #### ２種類の多重節点
+
+      1. Dirichlet面上であり，かつNeumann面上である多重節点
+      2. Dirichlet面上ではなく，完全にNeumann面上にあるが，法線ベクトルが大きく異なる節点
+
+      1の多重節点の場合，BIEの連立一次方程式の係数行列の行を，Dirchlet面上の$`\phi`$とNeumann面上の$`\phi`$の値が一致する，という式に変更する．
+      2の場合は，特に変更しない．BIEを解くことで，それぞれの面に対して，$`\phi`$が得られるが，それらの平均値，または重み付け平均値を$`\phi`$として採用する．
+
+      */
+
+      //^ ---------------------------- setIGIGnで計算した結果を基に，係数行列を作成する．---------------------------
       double max_value = 0;
       for (auto i = 0; i < IGIGn.size(); ++i) {
          if (max_value < std::abs(std::get<0>(IGIGn[i][i])))
@@ -638,63 +643,48 @@ struct BEM_BVP {
       }
 
       mat_kn = mat_ukn = VV_d(this->matrix_size, V_d(this->matrix_size, 0.));
-
+      knowns.resize(this->matrix_size);
       for (const auto water : WATERS)
 #pragma omp parallel
          for (const auto &a : water->getPoints())
 #pragma omp single nowait
             for (const auto &[a_face, i] : a->face2id) {
-               std::array<double, 2> igign;
+               /* -------------------------------------------------------------------------- */
+               //^ 左辺と右辺の係数行列を作成する．
                for (const auto water : WATERS)
                   for (const auto &x : water->getPoints())
                      for (const auto &[x_face, j] : x->face2id) {
-                        igign = IGIGn[i][j];
-                        // 未知変数の係数行列は左，既知変数の係数行列は右
-                        if (isNeumannID_BEM(x, x_face))
-                           igign = {-std::get<1>(igign), -std::get<0>(igign)};
-
-                        /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
-
-                        ### 左辺と右辺の入れ替え
-
-                        係数行列`IGIGn`は，左辺の$`I_G \phi_n`$，右辺の$`I_{G_n}\phi`$の係数．
-
-                        ```math
-                        (I_G)_{i_\circ,j_\circ} (\phi_n)_{j_\circ} = (I_{Gn})_{i_\circ,j_\circ}  \phi_{j_\circ}
-                        ```
-
-                        境界条件に応じて，未知変数は$`\phi,\phi_n`$のどちらかに決まる．
-                        未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
-                        係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
-
-
-                        移項前:
-                        ```math
-                        \begin{bmatrix}I_{G0} & I_{G1} & I_{G2} & I_{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & I_{Gn1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}
-                        ```
-
-                        移項後:
-                        ```math
-                        \begin{bmatrix}I_{G0} & -I_{Gn1} & I_{G2} & I_{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I_{Gn0} & -I_{G1} & I_{Gn2} & I_{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-                        ```
-
-                        多重節点(1と3が多重節点の場合):
-                        ```math
-                        \begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-                        ```
-
-                        */
-                        mat_ukn[i][j] = std::get<0>(igign);
-                        mat_kn[i][j] = std::get<1>(igign);
+                        mat_ukn[i][j] = IGIGn[i][j][0];
+                        mat_kn[i][j] = IGIGn[i][j][1];
+                        if (isNeumannID_BEM(x, x_face)) {
+                           // 未知変数の係数行列は左，既知変数の係数行列は右
+                           std::swap(mat_ukn[i][j], mat_kn[i][j]);
+                           mat_ukn[i][j] *= -1;
+                           mat_kn[i][j] *= -1;
+                        }
                      }
-               // auto [a, _] = i_row;
+               /* -------------------------------------------------------------------------- */
+               //^ 多重節点の場合，Neumann面上のphiの値は，同じ場所のDirichlet面のphiと一致する
                if (a->CORNER && isNeumannID_BEM(a, a_face) /*行の変更*/) {
                   std::ranges::fill(mat_ukn[i], 0.);
                   std::ranges::fill(mat_kn[i], 0.);
                   mat_ukn[i][i] = max_value;                    // φの系数
                   mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
                }
+               /* -------------------------------------------------------------------------- */
+               //^ 既知変数のベクトルを作成する．
+               if (isDirichletID_BEM(a, a_face) && isNeumannID_BEM(a, a_face))
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Inconsistent BEM condition: isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F) == true");
+               else if (isDirichletID_BEM(a, a_face))
+                  knowns[i] = a->phi_Dirichlet = std::get<0>(a->phiphin);
+               else if (isNeumannID_BEM(a, a_face))
+                  knowns[i] = a->phinOnFace.at(a_face);  // はいってない？はいってた．
+               else
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Undefined BEM condition.");
+               /* -------------------------------------------------------------------------- */
             }
+
+      b_RHS = ParallelDot(mat_kn, knowns);
    };
 
    /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
@@ -707,11 +697,11 @@ struct BEM_BVP {
    ```math
    \begin{align*}
    A\cdot x &= b \\
-   \sum\limits_{j=0}^{N-1} A_{i,j}({\bf a}_i)x_j &= b_i \\
-   \end{align*}
+   \sum\limits_{j=0}^{N-1} A_{i_\circ,j}x_j &= b_{i_\circ} \\
+   \end{align*}t
    ```
 　　
-   $`\sum\limits_{j=0}^{N-1} A_{i,j}({\bf a}_i)x_j = b_i`$は，$`{\bf a}_i`$を原点としたBIEを離散化したものである．
+   $`\sum\limits_{j=0}^{N-1} A_{{i_\circ},j}x_j = b_{i_\circ}`$は，節点$`{i_\circ}`$を原点節点としてBIEを離散化したものである．
 
    $`A_{i,j}({\bf a}_i)`$は，$`{\bf a}_i`$に依存しており，$`{\bf a}_i`$が変わると$`A_{i,j}({\bf a}_i)`$も変わる．
    しかし，これをソース点と観測点の関数の積と和の形に変形することできる．
@@ -721,42 +711,6 @@ struct BEM_BVP {
 
 
    */
-
-   /* -------------------------------------------------------------------------- */
-
-   template <typename T1, typename T2, typename T3>
-   void storePhiPhinCommon(const Network &water, const V_d &ans, T1 phiphinProperty, T2 phiOnFaceProperty, T3 phinOnFaceProperty) const {
-      for (const auto water : WATERS)
-         for (const auto &p : water->getPoints())
-            for (const auto &[f, i] : p->face2id) {
-               if (isDirichletID_BEM(p, f)) {
-                  (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
-                  (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);
-               }
-               if (isNeumannID_BEM(p, f))
-                  (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty) = ans[i];
-            }
-
-      for (const auto &p : water.getPoints())
-         if (p->Neumann) {
-            double total = 0;
-            std::get<0>(p->*phiphinProperty) = 0;
-            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
-            for (const auto &f : p->getFaces()) {
-               if ((p->*phiOnFaceProperty).count(f))
-                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(f) * f->area / total;
-               else
-                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(nullptr) * f->area / total;
-            }
-         }
-   }
-   void storePhiPhin(const Network &water, const V_d &ans) const {
-      storePhiPhinCommon(water, ans, &networkPoint::phiphin, &networkPoint::phiOnFace, &networkPoint::phinOnFace);
-   }
-
-   void storePhiPhin_t(const Network &water, const V_d &ans) const {
-      storePhiPhinCommon(water, ans, &networkPoint::phiphin_t, &networkPoint::phitOnFace, &networkPoint::phintOnFace);
-   }
 
    /* -------------------------------------------------------------------------- */
 
@@ -794,51 +748,19 @@ struct BEM_BVP {
 
    void solve(const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
 
-      for (auto water : WATERS)
-         setPhiPhin(*water);
-
-      for (const auto water : WATERS)
-         for (const auto &q : water->getPoints())
-            q->face2id.clear();
-
-      int i = 0;
-
-      for (const auto water : this->WATERS)
-         for (const auto &q : water->getPoints())
-            for (const auto &[_, f] : variableIDs(q)) {
-               // std::unordered_map<networkFace*, int> face2id try to add if succeed then increment i
-               if (q->face2id.find(f) == q->face2id.end())
-                  q->face2id[f] = i++;
-            }
-
-      this->matrix_size = i;
+      this->matrix_size = resetPhiPhin(WATERS);
 
       std::cout << Red << "   unknown size : " << this->matrix_size << colorReset << std::endl;
-      std::cout << Red << "water node size : " << i << colorReset << std::endl;
 
       setIGIGn();
 
       std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
 
-      makeMatrix();
-
-      knowns.resize(this->matrix_size);
-      for (const auto water : WATERS)
-         for (const auto &p : water->getPoints())
-            for (const auto &[f, i] : p->face2id) {
-               if (isDirichletID_BEM(p, f) && isNeumannID_BEM(p, f))
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F)");
-               else if (isDirichletID_BEM(p, f)) {
-                  knowns[i] = p->phi_Dirichlet = std::get<0>(p->phiphin);
-               } else if (isNeumannID_BEM(p, f))
-                  knowns[i] = p->phinOnFace.at(f);  // はいってない？はいってた．
-               else
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "cannot be");
-            }
-
-      TimeWatch watch;
+      generateBIEMatrix();
 
       ans.resize(knowns.size(), 0.);
+
+      TimeWatch watch;
 
       if (this->lu)
          delete this->lu;
@@ -846,44 +768,47 @@ struct BEM_BVP {
       this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
       std::cout << "The conjugate gradient is used" << std::endl;
       GradientMethod gd1(mat_ukn);
-      ans = gd1.solve(ParallelDot(mat_kn, knowns), {}, 1E-1);
+      ans = gd1.solve(b_RHS, {}, 1E-1);
       GradientMethod gd2(mat_ukn);
-      ans = gd2.solveCG(ParallelDot(mat_kn, knowns), ans);
+      ans = gd2.solveCG(b_RHS, ans);
 #elif defined(use_gmres)
       std::cout << "use gmres for BIE" << std::endl;
-      auto b = ParallelDot(mat_kn, knowns);
-      gmres gm(mat_ukn, b, ans, use_gmres);
+
+      auto return_A_dot_v = [&](const V_d &V) -> V_d { return ParallelDot(mat_ukn, V); };
+      auto b = b_RHS;
+
+      gmres<std::vector<std::vector<double>>> gm(return_A_dot_v, b, ans, use_gmres);
       std::cout << Red << "gmres error = " << gm.err << colorReset << std::endl;
-      if (!isFinite(gm.err, 1E+5) || !isFinite(gm.x, 1E+5)) {
-         std::cout << Red << "gmres failed" << std::endl;
-         std::cout << Red << "lapack lu decomposition" << std::endl;
-         this->lu = new lapack_lu(mat_ukn, b, ans);
-      } else if (simulation_time < 0.001) {
-         std::cout << Red << "new lapack lu decomposition" << std::endl;
-         this->lu = new lapack_lu(mat_ukn, b, ans);
-      } else {
+      std::cout << Red << "isFinite(gm.x) = " << isFinite(gm.x) << colorReset << std::endl;
+      ans = gm.x;
+      for (auto i = 1; i < 10; i++) {
+         if (gm.err < 1E-10)
+            break;
+         gm.Restart(return_A_dot_v, b, ans, use_gmres);  //\label{SPH:gmres}
          ans = gm.x;
-         for (auto i = 1; i < 5; i++) {
-            if (gm.err < 1E-8)
-               break;
-            gm.Restart(mat_ukn, b, ans, use_gmres);  //\label{SPH:gmres}
-            ans = gm.x;
-            std::cout << "       gm.err : " << gm.err << std::endl;
-            std::cout << " actual error : " << Norm(b - ParallelDot(mat_ukn, ans)) << std::endl;
-         }
+         std::cout << "       gm.err : " << gm.err << std::endl;
+         std::cout << " actual error : " << Norm(b - ParallelDot(mat_ukn, ans)) << std::endl;
       }
+      // }
+
+      //! CHECK GMRES ans DEBUG
+      V_d lu_ans = ans;
+      this->lu = new lapack_lu(mat_ukn, lu_ans, b_RHS);
+      std::cout << " isFinite(lu_ans) : " << isFinite(lu_ans) << std::endl;
+
+      ans = lu_ans;
+
          // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
          // std::cout << err << std::endl;
 #elif defined(use_lapack)
       std::cout << "lapack lu decomposition" << std::endl;
       //! A.x = b
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/);
+      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, b_RHS /*既知のベクトル（右辺）*/);
 #endif
 
       std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
 
-      for (auto water : WATERS)
-         storePhiPhin(*water, ans);
+      storePhiPhin(WATERS, ans);
 
       std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorReset << " s\n";
 
@@ -1227,8 +1152,7 @@ struct BEM_BVP {
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
-      for (auto &water : WATERS)
-         storePhiPhin_t(*water, ans);
+      storePhiPhin_t(WATERS, ans);
       // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       //* --------------------------------------------------- */

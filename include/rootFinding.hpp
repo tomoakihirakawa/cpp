@@ -13,18 +13,18 @@ using VVV_d = std::vector<std::vector<std::vector<double>>>;
 template <typename T>
 struct NewtonRaphson_Common {
    T X, dX;
-   NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit){};
+   NewtonRaphson_Common(const T &Xinit) : X(Xinit), dX(Xinit) {};
    void initialize(const T &Xin) { X = Xin; };
 };
 
 template <typename T>
 struct NewtonRaphson : public NewtonRaphson_Common<T> {
-   NewtonRaphson(const T &Xinit) : NewtonRaphson_Common<T>(Xinit){};
+   NewtonRaphson(const T &Xinit) : NewtonRaphson_Common<T>(Xinit) {};
 };
 
 template <>
 struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
-   NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit){};
+   NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit) {};
    void update(const V_d &F, const VV_d &dFdx) {
       lapack_lu lu(dFdx, dX, -F);
       X += dX;
@@ -61,7 +61,7 @@ struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
 /* ------------------------------------------------------ */
 template <>
 struct NewtonRaphson<double> : public NewtonRaphson_Common<double> {
-   NewtonRaphson(const double Xinit = 0) : NewtonRaphson_Common<double>(Xinit){};
+   NewtonRaphson(const double Xinit = 0) : NewtonRaphson_Common<double>(Xinit) {};
    void update(const double F, const double dFdx) {
       if (std::abs(dFdx) > 1E-20)
          X += (dX = F / (-dFdx));
@@ -73,7 +73,7 @@ struct NewtonRaphson<double> : public NewtonRaphson_Common<double> {
 };
 template <>
 struct NewtonRaphson<Tdd> : public NewtonRaphson_Common<Tdd> {
-   NewtonRaphson(const Tdd &Xinit) : NewtonRaphson_Common<Tdd>(Xinit){};
+   NewtonRaphson(const Tdd &Xinit) : NewtonRaphson_Common<Tdd>(Xinit) {};
    void update(const Tdd &F, const T2Tdd &dFdx) {
       lapack_lu(dX, dFdx, -F);
       X += dX;
@@ -85,7 +85,7 @@ struct NewtonRaphson<Tdd> : public NewtonRaphson_Common<Tdd> {
 };
 template <>
 struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd> {
-   NewtonRaphson(const Tddd &Xinit) : NewtonRaphson_Common<Tddd>(Xinit){};
+   NewtonRaphson(const Tddd &Xinit) : NewtonRaphson_Common<Tddd>(Xinit) {};
    void update(const Tddd &F, const T3Tddd &dFdx) {
       lapack_lu(dX, dFdx, -F);
       X += dX;
@@ -464,7 +464,7 @@ struct DispersionRelation {
    double L;
    double h;
 
-   DispersionRelation() : w(0), h(0), T(0), k(0), L(0){};
+   DispersionRelation() : w(0), h(0), T(0), k(0), L(0) {};
 
    DispersionRelation(const double wIN, const double hIN) {
       set_w_h(wIN, hIN);
@@ -520,7 +520,7 @@ struct LighthillRobot {
    int n;  // node + 1 (head node is dummy)
 
    LighthillRobot(double L, double w, double k, double c1, double c2, int n)
-       : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1){};
+       : L(L), w(w), k(k), c1(c1), c2(c2), n(n + 1) {};
 
    auto yLH(const double x, const double t) { return (c1 * x / L + c2 * std::pow(x / L, 2)) * std::sin(k * (x / L) - w * t); };
 

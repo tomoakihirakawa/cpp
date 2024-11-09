@@ -4,7 +4,7 @@
 
 // python3.11 ../../extract_comments.py README.md -source ./ -include ../../
 
-/*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
+/*
 
 ## ツリー構造を使った多重極展開の移動
 
@@ -28,7 +28,7 @@ void writePolygonToFile(const std::string& name, auto polygon) {
    vtkPolygonWrite(ofs, polygon);
    ofs.close();
 }
-
+test_translation_of_a_multipole_expansion_with_tree_saved.cpp
 int main() {
 
    std::array<double, 3> center = {0., 0., 0.};

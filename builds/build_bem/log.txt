@@ -1,4 +1,279 @@
 ----------
+Execution time: Thu Oct 31 22:37:03 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Oct 28 22:39:59 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:27:51 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:23:55 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:22:51 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:22:49 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:22:18 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:20:57 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:17:26 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:15:44 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Sep  2 09:14:15 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:53:56 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:49:33 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:47:32 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:37:10 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:36:14 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:34:30 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Sep  1 18:33:45 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sat Aug 24 14:59:15 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sat Aug 24 14:58:28 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sat Aug 24 14:56:54 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sat Aug 24 14:40:56 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sat Aug 24 14:39:59 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 23.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d05_L1d8_WAVEflap_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Aug 19 23:45:52 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 23.5.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Aug 19 23:45:17 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 23.5.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Hadzic2005
+----------
 Execution time: Thu May 30 20:38:55 2024
 
 Machine Information:
@@ -23532,6 +23807,31 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Hadzic2005
   arg2: ----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

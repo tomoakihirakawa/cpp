@@ -2,7 +2,7 @@
 #include "basic_constants.hpp"
 #include "lib_multipole_expansion.hpp"
 
-/*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
+/*
 
 ## `multipole_expansion`クラスのチェック
 

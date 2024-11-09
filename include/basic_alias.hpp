@@ -9,6 +9,10 @@ using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using VVV_d = std::vector<std::vector<std::vector<double>>>;
 /* ------------------------------------------------------ */
+using V_f = std::vector<float>;
+using VV_f = std::vector<std::vector<float>>;
+using VVV_f = std::vector<std::vector<std::vector<float>>>;
+/* ------------------------------------------------------ */
 using V_s = std::vector<std::string>;
 using VV_s = std::vector<std::vector<std::string>>;
 using VVV_s = std::vector<std::vector<std::string>>;

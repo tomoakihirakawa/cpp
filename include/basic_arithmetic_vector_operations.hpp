@@ -3,6 +3,7 @@
 
 #include <algorithm>  //transformなど
 #include <cmath>
+#include <execution>
 #include <numeric>  //数値のシーケンスの処理に特化したアルゴリズム
 #include <tuple>
 #include <type_traits>
@@ -26,21 +27,24 @@ auto ArcTan(const auto Y, const auto X) { return std::atan2(Y, X); };
 /* ------------------------------------------------------ */
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator-(std::vector<T> ret) {
-   std::transform(ret.begin(), ret.end(), ret.begin(), [](const T tmp) { return -tmp; });
+   // std::transform(std::execution::unseq, ret.begin(), ret.end(), ret.begin(), [](const T tmp) { return -tmp; });
+   std::for_each(std::execution::unseq, ret.begin(), ret.end(), [](T &tmp) { tmp = -tmp; });
    return ret;
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> ret) {
-   std::transform(ret.begin(), ret.end(), ret.begin(), [](const std::vector<T> &tmp) { return -tmp; });
+   // std::transform(std::execution::unseq, ret.begin(), ret.end(), ret.begin(), [](const std::vector<T> &tmp) { return -tmp; });
+   std::for_each(std::execution::unseq, ret.begin(), ret.end(), [](std::vector<T> &tmp) { tmp = -tmp; });
    return ret;
 };
 ///////////////////////////////////////////////////
 // vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator*(std::vector<T> v, const T din) {
-   // std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
-   for (auto &u : v)
-      u *= din;
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](T &c) { c *= din; });
+   // for (auto &u : v)
+   //    u *= din;
    return v;
 };
 
@@ -66,7 +70,7 @@ std::vector<T> &operator*=(std::vector<T> &v, const std::vector<T> &w) {
 //! matrix * scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator*(std::vector<std::vector<T>> v, const T din) {
-   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
    for (auto &u : v)
       u *= din;
    return v;
@@ -74,7 +78,7 @@ std::vector<std::vector<T>> operator*(std::vector<std::vector<T>> v, const T din
 //@ scaler * vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator*(const T din, std::vector<T> v) {
-   // std::transform(v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T c) { return c * din; });
    for (auto &u : v)
       u *= din;
    return v;
@@ -82,7 +86,7 @@ std::vector<T> operator*(const T din, std::vector<T> v) {
 //! scaler * matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator*(const T din, std::vector<std::vector<T>> v) {
-   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &c) { return c * din; });
    for (auto &u : v)
       u *= din;
    return v;
@@ -90,7 +94,7 @@ std::vector<std::vector<T>> operator*(const T din, std::vector<std::vector<T>> v
 // matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<std::vector<T>>> operator*(std::vector<std::vector<std::vector<T>>> v, const T &din) {
-   // std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
    for (auto &u : v)
       u *= din;
    return v;
@@ -98,56 +102,60 @@ std::vector<std::vector<std::vector<T>>> operator*(std::vector<std::vector<std::
 // matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<std::vector<T>>> operator*(const T &din, std::vector<std::vector<std::vector<T>>> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<std::vector<T>> &c) { return c * din; });
    return v;
 };
 //@ vector * vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator*(std::vector<T> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const T a, const T b) { return a * b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const T a, const T b) { return a * b; });
    return v;
 };
 // //vector x matrix
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector<std::vector<T>> operator*(const std::vector<T>& v, std::vector<std::vector<T>> w){
-//   std::transform(w.begin(),w.end(),v.cbegin(),w.begin(),[](const T& a, const T& b){ return a*b; });
+//   std::transform(std::execution::unseq, w.begin(),w.end(),v.cbegin(),w.begin(),[](const T& a, const T& b){ return a*b; });
 //   return w;
 // };
 // //matrix x vector
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator*(std::vector<std::vector<T>> w, const std::vector<T>& v){
-//   std::transform(w.begin(),w.end(),v.cbegin(),w.begin(),[](const T& a, const T& b){ return a*b; });
+//   std::transform(std::execution::unseq, w.begin(),w.end(),v.cbegin(),w.begin(),[](const T& a, const T& b){ return a*b; });
 //   return w;
 // };
 /////////////////////////////////////////////////
 //@vector / scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator/(std::vector<T> v, const T din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp / din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp / din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](T &tmp) { tmp /= din; });
    return v;
 };
 // matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator/(std::vector<std::vector<T>> v, const T din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp / din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp / din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](std::vector<T> &tmp) { tmp = tmp / din; });
    return v;
 };
 // vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator/(const T din, std::vector<T> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return din / tmp; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return din / tmp; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](T &tmp) { tmp = din / tmp; });
    return v;
 };
 // matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator/(const T din, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return din / tmp; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return din / tmp; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](std::vector<T> &tmp) { tmp = din / tmp; });
    return v;
 };
 // vector x vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator/(std::vector<T> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](T a, T b) { return a / b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](T a, T b) { return a / b; });
    return v;
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -158,21 +166,21 @@ std::vector<T> &operator/=(std::vector<T> &v, const std::vector<T> &w) { return 
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator/(const std::vector<T>& w, const std::vector< std::vector<T> >& v){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return b/a; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return b/a; });
 //   return ret;
 // };
 // //matrix x vector
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator/(const std::vector< std::vector<T> >& v, const std::vector<T>& w){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return a/b; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return a/b; });
 //   return ret;
 // };
 // //matrix x matrix
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator/(const std::vector< std::vector<T> >& v, const std::vector< std::vector<T> >& w){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, std::vector<T> b){ return a/b; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, std::vector<T> b){ return a/b; });
 //   return ret;
 // };
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -189,7 +197,7 @@ std::vector<T> &operator/=(std::vector<T> &v, const std::vector<T> &w) { return 
 //@ vector - scaler
 // template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector<T> operator-(std::vector<T> v, const T din) {
-//    std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return tmp - din; });
+//    std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T tmp) { return tmp - din; });
 //    return v;
 // };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -202,13 +210,13 @@ std::vector<T> operator-(std::vector<T> v, const T din) {
 //! matrix - scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const T &din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp - din; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp - din; });
    return v;
 };
 //@ scaler - vector
 // template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector<T> operator-(const T din, std::vector<T> v) {
-//    std::transform(v.begin(), v.end(), v.begin(), [&din](const T tmp) { return din - tmp; });
+//    std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T tmp) { return din - tmp; });
 //    return v;
 // };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -221,7 +229,7 @@ std::vector<T> operator-(const T din, std::vector<T> v) {
 //! scaler - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(const T din, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return din - tmp; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return din - tmp; });
    return v;
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -240,19 +248,19 @@ std::vector<T> operator-(std::vector<T> v, const std::vector<T> &w) {
 //! matrix - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const std::vector<std::vector<T>> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const std::vector<T> &b) { return a - b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const std::vector<T> &b) { return a - b; });
    return v;
 };
 //%matrix - vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a - b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a - b; });
    return v;
 };
 //%vector - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(const std::vector<T> &w, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return b - a; });  // 逆にする
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return b - a; });  // 逆にする
    return v;
 };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -282,21 +290,21 @@ std::vector<std::vector<T>> &operator-=(std::vector<std::vector<T>> &v, const st
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator-(const std::vector<T>& w, const std::vector< std::vector<T> >& v){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return b-a; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return b-a; });
 //   return ret;
 // };
 // //matrix x vector
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator-(const std::vector< std::vector<T> >& v, const std::vector<T>& w){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return a-b; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, T b){ return a-b; });
 //   return ret;
 // };
 // //matrix x matrix
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 // std::vector< std::vector<T> > operator-(const std::vector< std::vector<T> >& v, const std::vector< std::vector<T> >& w){
 //   std::vector< std::vector<T> > ret;
-//   std::transform(v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, std::vector<T> b){ return a-b; });
+//   std::transform(std::execution::unseq, v.cbegin(),v.cend(),w.cbegin(),std::back_inserter(ret),[](std::vector<T> a, std::vector<T> b){ return a-b; });
 //   return ret;
 // };
 // template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
@@ -313,49 +321,53 @@ std::vector<std::vector<T>> &operator-=(std::vector<std::vector<T>> &v, const st
 //@vector + scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator+(std::vector<T> v, const T &din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp + din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp + din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](T &tmp) { tmp += din; });
    return v;
 };
 //! matrix + scaler
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator+(std::vector<std::vector<T>> v, const T &din) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp + din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp + din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](std::vector<T> &tmp) { tmp += din; });
    return v;
 };
 //@scaler + vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator+(const T &din, std::vector<T> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp + din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const T &tmp) { return tmp + din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](T &tmp) { tmp += din; });
    return v;
 };
 //! scaler + matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator+(const T &din, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp + din; });
+   // std::transform(std::execution::unseq, v.begin(), v.end(), v.begin(), [&din](const std::vector<T> &tmp) { return tmp + din; });
+   std::for_each(std::execution::unseq, v.begin(), v.end(), [&din](std::vector<T> &tmp) { tmp += din; });
    return v;
 };
 //@vector + vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<T> operator+(std::vector<T> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const T &a, const T &b) { return a + b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const T &a, const T &b) { return a + b; });
    return v;
 };
 //! matrix + matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator+(std::vector<std::vector<T>> v, const std::vector<std::vector<T>> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const std::vector<T> &b) { return a + b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const std::vector<T> &b) { return a + b; });
    return v;
 };
 //%matrix + vector
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator+(std::vector<std::vector<T>> v, const std::vector<T> &w) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a + b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a + b; });
    return v;
 };
 //%vector + matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator+(const std::vector<T> &w, std::vector<std::vector<T>> v) {
-   std::transform(v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a + b; });
+   std::transform(std::execution::unseq, v.begin(), v.end(), w.cbegin(), v.begin(), [](const std::vector<T> &a, const T &b) { return a + b; });
    return v;
 };
 //@vector += scaler

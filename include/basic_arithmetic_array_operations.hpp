@@ -854,11 +854,11 @@ constexpr std::array<double, N> Normalize(std::array<double, N> arr) noexcept {
    // return arr;
 }
 
-constexpr double Norm(const std::array<double, 2>& arr) noexcept {
+double Norm(const std::array<double, 2>& arr) noexcept {
    return std::hypot(std::get<0>(arr), std::get<1>(arr));
 }
 
-constexpr double Norm(const std::array<double, 3>& arr) noexcept {
+double Norm(const std::array<double, 3>& arr) noexcept {
    return std::hypot(std::get<0>(arr), std::get<1>(arr), std::get<2>(arr));
 }
 
@@ -937,14 +937,65 @@ void FusedMultiplyIncrement(const double W, const std::array<std::array<double, 
       FusedMultiplyIncrement(W, ARR[i], ret[i]);
 }
 
+// void FusedMultiplyIncrement(const double W, const std::vector<double>& ARR, std::vector<double>& ret) noexcept {
+//    for (std::size_t i = 0; auto& r : ret)
+//       r = std::fma(W, ARR[i++], r);
+// }
+
+#include <execution>
+
 void FusedMultiplyIncrement(const double W, const std::vector<double>& ARR, std::vector<double>& ret) noexcept {
-   for (std::size_t i = 0; auto& r : ret)
-      r = std::fma(W, ARR[i++], r);
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const double& a, double& r) {
+                     return std::fma(a, W, r);
+                  });
 }
 
+void FusedMultiplyIncrement(const double W, const std::vector<float>& ARR, std::vector<float>& ret) noexcept {
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const float& a, float& r) {
+                     return std::fma(a, W, r);
+                  });
+}
+
+// void FusedMultiplyIncrement(const std::vector<double>& ARR, const double W, std::vector<double>& ret) noexcept {
+//    for (std::size_t i = 0; auto& r : ret)
+//       r = std::fma(W, ARR[i++], r);
+// }
+
 void FusedMultiplyIncrement(const std::vector<double>& ARR, const double W, std::vector<double>& ret) noexcept {
-   for (std::size_t i = 0; auto& r : ret)
-      r = std::fma(W, ARR[i++], r);
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const double& a, double& r) {
+                     return std::fma(a, W, r);
+                  });
+}
+
+void FusedMultiplyIncrement(const std::vector<float>& ARR, const float W, std::vector<float>& ret) noexcept {
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const float& a, float& r) {
+                     return std::fma(a, W, r);
+                  });
+}
+
+void FusedMultiplyIncrement(const std::vector<double>& ARR, const float W, std::vector<float>& ret) noexcept {
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const float& a, float& r) {
+                     return std::fma(a, W, r);
+                  });
+}
+
+void FusedMultiplyIncrement(const std::vector<double>& ARR, const float W, std::vector<double>& ret) noexcept {
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const double& a, double& r) {
+                     return std::fma(a, W, r);
+                  });
+}
+
+void FusedMultiplyIncrement(const std::vector<float>& ARR, const float W, std::vector<double>& ret) noexcept {
+   std::transform(std::execution::unseq, ARR.begin(), ARR.end(), ret.begin(), ret.begin(),
+                  [W](const double& a, double& r) {
+                     return std::fma(a, W, r);
+                  });
 }
 
 template <size_t N>

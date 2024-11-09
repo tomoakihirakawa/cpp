@@ -11,10 +11,7 @@
 例えば，次のようにシェルスクリプトを作成し，`input_generator.py`を実行することで，入力ファイルを生成することができる．
 
 ```shell
-case=Tanizawa1996
-outputdir=${HOME}/BEM
-H=0.05
-python3.11 input_generator.py -case ${case} -mesh water_no_float0d08 -element pseudo_quad -wavemaker flap -dt 0.03 -H ${H} -ALE linear -outputdir ${outputdir}
+python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker flap -dt 0.03 -H 0.05 -ALE linear -ALEPERIOD 1 -outputdir ~/BEM
 ```
 
 ```shell
@@ -28,12 +25,14 @@ H_array=(0.05 0.1)
 for dt in ${dt_array[@]};do
     for H in ${H_array[@]};do
         for mesh in ${mesh_array[@]};do
-            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
-            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
+            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
+            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
         done
     done
 done
 ```
+
+python3.11 input_generator.py -case Tanizawa1996 -mesh water_no... -element pseudo_quad -wavemaker potential -dt 0.01 -ALE linear
 
 '''
 

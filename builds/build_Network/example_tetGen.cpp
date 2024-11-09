@@ -1,6 +1,6 @@
 #include <iostream>
 #include "Network.hpp"
-#include "tetgen.h"  // Make sure TetGen path is correctly set in your project settings
+#include "tetgen1.6.0/tetgen.h"  // Make sure TetGen path is correctly set in your project settings
 
 /*DOC_EXTRACT 1_0_tetGen
 
@@ -10,19 +10,9 @@
 
 [https://wias-berlin.de/software/tetgen](https://wias-berlin.de/software/tetgen)
 
-TetGenを使って四面体を生成し，Networkの四面体へと置き換える．
-
-`tetgenbehavior`は，TetGenのオプションを設定するためのクラスで，`parse_commandline`関数を使ってオプションを設定する．
-次のようなオプションがあり意味がある([https://wias-berlin.de/software/tetgen/switches.html](https://wias-berlin.de/software/tetgen/switches.html))：
-
-| オプション | 意味 |
-|:---:|:---:|
-| `p` | PLC（Piecewise Linear Complex）を四面体化する． 他には，`r`（リージョン）や`y`（境界）などがある． |
-| `q` | 最小radius-edge比を指定する．例えば，`q1.4`は最小radius-edge比1.4を指定する． |
-| `a` | 最大四面体の体積制約を課す．例えば，`a50.`は最大体積50の四面体の体積制約を課す． |
-
-
-現在のフォルダに`tetgen1.6.0`を置き，次のコマンドを実行すると，`libtet.a`が生成される．
+TetGenを使って四面体を生成し，Networkの四面体へと置き換え，出力するプログラム．
+現在のフォルダに`tetgen1.6.0`を置き（tetgen1.6.0内にCMakelists.txtが保存されている．），次のコマンドを実行すると，`libtet.a`が生成される．
+`.a`は，`.o`ファイルをまとめたアーカイブファイルである．
 
 ```shell
 sh clean
@@ -30,7 +20,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ./tetgen1.6.0
 make
 ```
 
-これまで使っていたCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
+上のアーカイブを利用するメインのcppプログラムのCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
 
 ```cmake
 target_link_libraries(${BASE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
@@ -46,11 +36,44 @@ make
 ./example_tetGen
 ```
 
-<img src="./image.png" width="500px">
+### `tetgenbehavior`クラス
+
+`tetgenbehavior`クラスは，TetGenのメッシュ生成オプションを設定するために使用され，`parse_commandline`関数を通じてオプションを指定できる．
+この関数を使うことで，メッシュ生成の際に必要な条件や制約を細かく調整できる．
+
+例として，pq2.a50.が指定された場合，以下のオプションが適用される．
+
+```cpp
+tetgenbehavior b;
+b.parse_commandline("pq2.a50.");
+```
+
+| オプション | 意味 |
+|:---:|:---:|
+| p | PLC（Piecewise Linear Complex）を四面体メッシュ化する．その他に，再メッシュ用のrや，境界ポイントの保持を行うyなどのオプションもある．|
+| q2 | 最小radius-edge比を2に設定し，品質の高い四面体を生成する．例えば，q1.4なら比率を1.4に設定する．|
+| a50. | 四面体の最大体積を50に制限します．例えば，a100.とすると最大体積が100に制限される．|
+
+
+<figure>
+<img src="./image_tetgen_comparison.png" width="600px">
+<figcaption>pq2.a50, pq1.a50, pq1.a0.00005の比較</figcaption>
+</figure>
 
 */
 
-int main() {
+int main(int argc, char* argv[]) {
+
+   char *name, *parse_command, *out_file;
+   std::cout << "argc: " << argc << std::endl;
+   if (argc == 4) {
+      for (int i = 0; i < argc; i++)
+         std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
+      parse_command = argv[1];
+      name = argv[2];
+      out_file = argv[3];
+   } else
+      throw std::invalid_argument("Invalid argument");
 
    /* -------------------------------------------------------------------------- */
    /*                        tetGenを使って四面体を生成する                          */
@@ -60,11 +83,30 @@ int main() {
    tetgenbehavior b;
 
    // Load a .off file. Replace "socket.off" with your actual file path.
-   if (!in.load_off("socket.off")) {
-      std::cerr << "Error loading .off file" << std::endl;
+
+   // if file name incldeu ".off", load_off is used
+   // if file name incldeu ".stl", load_stl is used
+   std::string filename(name);
+   if (filename.contains(".off")) {
+      if (!in.load_off(name)) {
+         std::cerr << "Error loading .off file" << std::endl;
+         return 1;
+      }
+   } else if (filename.contains(".stl")) {
+      if (!in.load_stl(name)) {
+         std::cerr << "Error loading .stl file" << std::endl;
+         return 1;
+      }
+   } else if (filename.contains(".obj")) {
+      if (!in.load_obj(name)) {
+         std::cerr << "Error loading .obj file" << std::endl;
+         return 1;
+      }
+   } else {
+      std::cerr << "Error loading file" << std::endl;
       return 1;
    }
-   b.parse_commandline("pq2.a50.");
+   b.parse_commandline(parse_command);
 
    try {
       tetrahedralize(&b, &in, &out);
@@ -89,11 +131,11 @@ int main() {
    object->makeBucketPoints(object->getScale() / 50.);
 
    int count = 0;
-   PVDWriter pvd(_HOME_DIR_ + "/output/tetras.pvd");
+   PVDWriter pvd(_HOME_DIR_ + "/output/" + std::string(out_file) + ".pvd");
 
    /* ----------------------------------- 出力 ----------------------------------- */
-   auto output = [&count, &pvd, &object]() {
-      auto filename = _HOME_DIR_ + "/output/tetras" + std::to_string(count) + ".vtu";
+   auto output = [&]() {
+      auto filename = _HOME_DIR_ + "/output/" + std::string(out_file) + "_" + std::to_string(count) + ".vtu";
       std::ofstream ofs(filename);
       vtkUnstructuredGridWrite(ofs, object->getTetras());
       std::cout << "Wrote " << filename << std::endl;
@@ -104,35 +146,23 @@ int main() {
    /* --------------------------------- 置き換えループ -------------------------------- */
    for (int i = 0; i < out.numberoftetrahedra; i++) {
 
-      /* -------------------------------------------------------------------------- */
-      /*                                    置き換え                                  */
-      /* -------------------------------------------------------------------------- */
-
-      auto get4Points = [&]() -> std::array<networkPoint*, 4> {
-         Tddd X;
-         std::array<networkPoint*, 4> points;
-         for (int j = 0; j < 4; j++) {
-            auto index = out.tetrahedronlist[i * 4 + j];
-            X = {out.pointlist[index * 3],
-                 out.pointlist[index * 3 + 1],
-                 out.pointlist[index * 3 + 2]};
-            //! バケツから点を取得
-            for (auto& p : object->BucketPoints.getBucket(X)) {
-               if (Norm(p->X - X) < 1E-10) {
-                  points[j] = p;
-                  break;
-               }
+      std::array<networkPoint*, 4> points;
+      for (int j = 0; j < 4; j++) {
+         auto index = out.tetrahedronlist[i * 4 + j];
+         Tddd X = {out.pointlist[index * 3], out.pointlist[index * 3 + 1], out.pointlist[index * 3 + 2]};
+         //! バケツから点を取得
+         for (auto& p : object->BucketPoints.getData(X)) {
+            if (Norm(p->X - X) < 1E-10) {
+               points[j] = p;
+               break;
             }
          }
-         return points;
-      };
+      }
 
-      genTetra(object, get4Points());
+      genTetra(object, points);
 
-      /* -------------------------------------------------------------------------- */
-      /*                                     出力                                    */
-      /* -------------------------------------------------------------------------- */
-      if (i % 1000 == 0) output();
+      if (i % 1000 == 0)
+         output();
    }
    output();
    pvd.output();
