@@ -1,6 +1,6 @@
 /*DOC_EXTRACT FourierTransform
 
-# フーリエ変換
+# 離散フーリエ変換
 
 ## 複素フーリエ級数展開
 
@@ -152,9 +152,12 @@ std::vector<std::complex<double>> DFT(const std::vector<double>& sample) {
 
 int main() {
    const std::vector<double> list = {1, 1, 2, 2, 1, 1, 0, 0};
+
+   std::cout << "coefficients" << std::endl;
    for (int n = 0; n < list.size(); ++n)
       std::cout << coeff(list, n) << std::endl;
 
+   std::cout << "DFT" << std::endl;
    for (auto&& c : DFT(list))
       std::cout << c << std::endl;
 

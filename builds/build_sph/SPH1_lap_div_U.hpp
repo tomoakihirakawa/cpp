@@ -49,7 +49,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             Fill(A->tensorproduct_grad_Uij, 0.);
             Fill(A->tensorproduct_grad_Uij_next, 0.);
 
-            const auto r = A->SML();
+            const auto r = A->SML_grad();
             const auto center = A->X;
 
             if (A->isFluid) {
@@ -68,8 +68,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                   });
                }
 
-            double c_xsph = 0.04;
-
+            double c_xsph = 0.02;
             // if (A->isFluid) {
             //    // c_xsph = std::clamp(0., 0.03, std::pow(A->var_Eigenvalues_of_M, 2));
             //    c_xsph = std::clamp(0.03, 0.06, 0.1 * A->var_Eigenvalues_of_M);
@@ -298,7 +297,7 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                FusedMultiplyIncrement(-V_next(B), Dot(U_A - U_next(B), grad_w_Bspline_next(A, B)), A->div_U_next);
          } else
             for (const auto &net : target_nets) {
-               net->BucketPoints.apply(X_next(A), 1.1 * A->SML(), [&](const auto &B) {
+               net->BucketPoints.apply(X_next(A), A->SML_grad(), [&](const auto &B) {
                   if (canInteract(A, B))
                      FusedMultiplyIncrement(-V_next(B), Dot(U_A - U_next(B), grad_w_Bspline_next(A, B)), A->div_U_next);
                });

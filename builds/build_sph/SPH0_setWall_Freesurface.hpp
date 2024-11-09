@@ -65,15 +65,15 @@ void setCorrectionMatrix(const auto &all_nets) {
             total_w += w_Bspline(Norm(B->X - A->X), A->SML());
             total_w_next += w_Bspline(Norm(X_next(A) - X_next(B)), A->SML_next());
             //! DO NOT USE grad_w_Bspline_next(A, B) because it will be applied correction matrix
-            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML()), B->X - A->X);  //\label{SPH:grad_corr_M}
-            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_next()), X_next(B) - X_next(A));
+            A->grad_corr_M += TensorProduct(B->volume * grad_w_Bspline(A->X, B->X, A->SML_grad()), B->X - A->X);  //\label{SPH:grad_corr_M}
+            A->grad_corr_M_next += TensorProduct(V_next(B) * grad_w_Bspline(X_next(A), X_next(B), A->SML_grad_next()), X_next(B) - X_next(A));
             //
-            if (Distance(A, B) <= A->SML()) {
+            if (Distance(A, B) <= A->SML_grad()) {
                A->checked_points_in_radius_SPH++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH++;
             }
-            if (Distance(X_next(A), X_next(B)) <= A->SML_next()) {
+            if (Distance(X_next(A), X_next(B)) <= A->SML_grad_next()) {
                A->checked_points_in_radius_SPH_next++;
                if (B->getNetwork()->isFluid || B->isFluid)
                   A->checked_points_in_radius_of_fluid_SPH_next++;
@@ -87,7 +87,7 @@ void setCorrectionMatrix(const auto &all_nets) {
             add_for_grad_correction(B);
       } else {
          for (const auto &NET : all_nets) {
-            NET->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
+            NET->BucketPoints.apply(A->X, A->SML_grad(), [&](const auto &B) {
                if (canInteract(A, B))
                   add_for_grad_correction(B);
             });
@@ -316,8 +316,8 @@ void setCorrectionMatrix(const auto &all_nets) {
       Tddd DW, r, e;
       auto add_for_laplacian_correction = [&](const auto &B) {
          if (A != B) {
-            if (Distance(A, B) <= A->SML()) {
-               DW = B->volume * grad_w_Bspline(A->X, B->X, A->SML());  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
+            if (Distance(A, B) <= A->SML_grad()) {
+               DW = B->volume * grad_w_Bspline(A->X, B->X, A->SML_grad());  //! DO NOT USE grad_w_Bspline(A, B) because it will be applied correction matrix
                r = A->X - B->X;
                e = Normalize(r);
                A->v_reeDW += TensorProduct(TensorProduct(TensorProduct(r, e), e), DW);
@@ -336,7 +336,7 @@ void setCorrectionMatrix(const auto &all_nets) {
       };
 
       std::ranges::for_each(all_nets, [&](const auto &NET) {
-         NET->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
+         NET->BucketPoints.apply(A->X, 1.1 * A->SML_grad(), [&](const auto &B) {
             if (canInteract(A, B)) add_for_laplacian_correction(B);
          });
       });
@@ -458,7 +458,7 @@ void captureWallParticle(const auto &net, const auto &RigidBodyObject, const aut
       for (const auto &p : net->getPoints())
 #pragma omp single nowait
       {
-         // const double captureRange_wall_as_fluid = p->SML();
+         // const double captureRange_wall_as_fluid = p->SML_grad();
          for (const auto &[obj, poly] : RigidBodyObject) {
             obj->BucketPoints.apply(p->X, captureRange, [&](const auto &q) {
                // p->grad_Min_gradM -= p->volume * (Min(p->Eigenvalues_of_M_rigid) - Min(q->Eigenvalues_of_M_rigid)) * grad_w_Bspline(p->X, q->X, captureRange);  //! DO NOT USE grad_w_Bspline(p, q)
@@ -759,8 +759,8 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             double w, total_volume_w = 0, total_volume_w_next = 0;
             // std::vector<networkPoint *> samples;
 
-            const double SML = p->SML();
-            const double SML_next = p->SML_next();
+            const double SML = p->SML_grad();
+            const double SML_next = p->SML_grad_next();
 
             net->BucketPoints.apply(p->X, 1.1 * SML, [&](const auto &q) {
                // w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
@@ -782,9 +782,9 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                total_volume_w_next += w;
                p->intp_density_next += rho_next(q) * w;
 
-               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);  //! DO NOT USE grad_w_Bspline(p, q) because this is original
-               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
-               p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, SML);
+               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());  //! DO NOT USE grad_w_Bspline(p, q) because this is original
+               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_grad_next());
+               p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());
 
                auto A = p;
                auto B = q;
@@ -821,13 +821,13 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                      }
                      if (Distance(p, q) < p->particle_spacing * 1.5)
                         near_wall_particle.emplace_back(q->v_to_surface_SPH);
-                     p->interp_normal_original -= a * q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);
-                     p->interp_normal_rigid -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, SML);
+                     p->interp_normal_original -= a * q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());
+                     p->interp_normal_rigid -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());
                      if (Distance(X_next(p), X_next(q)) < p->particle_spacing * 1.5)
                         near_wall_particle_next.emplace_back(q->v_to_surface_SPH);
-                     p->interp_normal_original_next -= a * rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
-                     p->interp_normal_rigid_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), SML_next);
-                     p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, SML);
+                     p->interp_normal_original_next -= a * rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_grad_next());
+                     p->interp_normal_rigid_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_grad_next());
+                     p->intp_normal_Eigen += q->var_Eigenvalues_of_M * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());
                   }
                   // 歪度
                   // p->sample_SPH += 1;
@@ -890,15 +890,15 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
             const double ratio_flud = 2.5;
             // 2.2OK
             // 2.4OUT
-            const double min_ratio_flud = 2.2;
+            const double min_ratio_flud = 2.25;
             const double surface_check_r_for_fluid_ = A->particle_spacing * ratio_flud;
             const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
             //! 壁粒子に対してはr=2*ps，\theta=30度．理由壁は長く伸びていることがあるため，長距離の粒子を認識しないようにするため．
             //! surface_check_r_for_wall_は最低の値
             //! 規則正しく並んでいる場合を考えると，水面粒子の探査範囲は，大体，std::sqrt(3.)かstd::sqrt(2.)あたりが妥当な値だろう．
-            const double surface_check_r_for_wall_ = A->particle_spacing * 2.;  // std::sqrt(3.);
+            const double surface_check_r_for_wall_ = A->particle_spacing * 2.15;  // std::sqrt(3.);
             const double ratio = surface_check_r_for_wall_ / surface_check_r_for_fluid_;
-            const double surface_check_agnle_for_fluid = M_PI / 6.;  // * (1. - A->var_Eigenvalues_of_M1);
+            const double surface_check_agnle_for_fluid = M_PI / 5.;  // * (1. - A->var_Eigenvalues_of_M1);
             const double surface_check_angle_for_wall = M_PI / 4.;   // * (1. - A->var_Eigenvalues_of_M1);
             // if (A->var_Eigenvalues_of_M1 > 0.)
             // {
@@ -909,37 +909,35 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
 
             // 以上に該当する粒子があった場合は，水面粒子として認識しない．
             auto n_current = Dot(p->inv_grad_corr_M, p->interp_normal_original);
-            A->isSurface = A->is_grad_corr_M_singular ||
-                           A->checked_points_in_radius_SPH < 3 ||
-                           A->checked_points_in_radius_of_fluid_SPH < 3 ||
-                           // A->var_Eigenvalues_of_M > 0.35 ||
-                           (A->var_Eigenvalues_of_M > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
-                               return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
-                                                               [&](const auto &q) {
-                                                                  if (q->isCaptured && A != q) {
-                                                                     auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
-                                                                     auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
-                                                                     auto c = A->X;  // + radius * n_current;
-                                                                     // Sphere sphere(c, radius);
-                                                                     // return sphere.isInside(q->X);
-                                                                     auto n_of_q = Dot(q->inv_grad_corr_M, q->interp_normal_original);
-                                                                     return Distance(c, q->X) < radius &&
-                                                                            isFlat(n_current, q->X - A->X, angle) &&
-                                                                            !q->is_grad_corr_M_singular &&
-                                                                            (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
-                                                                             (q->isFluid &&
-                                                                              (A->var_Eigenvalues_of_M > 0.8 || Norm(n_current) > 2E+4) &&
-                                                                              (q->var_Eigenvalues_of_M > 0.8 || Norm(n_of_q) > 2E+4)
-                                                                              /*確実な法線ベクトルを意味する*/)
-                                                                                 ? Dot(n_current, Dot(q->inv_grad_corr_M, q->interp_normal_original)) > 0.
-                                                                                 : true);
-                                                                  } else
-                                                                     return false;
-                                                                  // return q->isCaptured &&
-                                                                  //        Distance(A, q) < surface_check_r_for_fluid && A != q &&
-                                                                  //        isFlat(Dot(p->inv_grad_corr_M, p->interp_normal_original), q->X - A->X, M_PI / 5);
-                                                               });
-                            }));
+            A->isSurface_tmp = A->is_grad_corr_M_singular ||
+                               A->checked_points_in_radius_SPH < 3 ||
+                               A->checked_points_in_radius_of_fluid_SPH < 3 ||
+                               // A->var_Eigenvalues_of_M > 0.35 ||
+                               (A->var_Eigenvalues_of_M > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) { return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
+                                                                                                                                                       [&](const auto &q) {
+                                                                                                                                                          if (q->isCaptured && A != q) {
+                                                                                                                                                             auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
+                                                                                                                                                             auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
+                                                                                                                                                             auto c = A->X;  // + radius * n_current;
+                                                                                                                                                             // Sphere sphere(c, radius);
+                                                                                                                                                             // return sphere.isInside(q->X);
+                                                                                                                                                             auto n_of_q = Dot(q->inv_grad_corr_M, q->interp_normal_original);
+                                                                                                                                                             return Distance(c, q->X) < radius &&
+                                                                                                                                                                    isFlat(n_current, q->X - A->X, angle) &&
+                                                                                                                                                                    !q->is_grad_corr_M_singular &&
+                                                                                                                                                                    (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
+                                                                                                                                                                     (q->isFluid &&
+                                                                                                                                                                      (A->var_Eigenvalues_of_M > 0.8 || Norm(n_current) > 2E+4) &&
+                                                                                                                                                                      (q->var_Eigenvalues_of_M > 0.8 || Norm(n_of_q) > 2E+4)
+                                                                                                                                                                      /*確実な法線ベクトルを意味する*/)
+                                                                                                                                                                         ? Dot(n_current, Dot(q->inv_grad_corr_M, q->interp_normal_original)) > 0.
+                                                                                                                                                                         : true);
+                                                                                                                                                          } else
+                                                                                                                                                             return false;
+                                                                                                                                                          // return q->isCaptured &&
+                                                                                                                                                          //        Distance(A, q) < surface_check_r_for_fluid && A != q &&
+                                                                                                                                                          //        isFlat(Dot(p->inv_grad_corr_M, p->interp_normal_original), q->X - A->X, M_PI / 5);
+                                                                                                                                                       }); }));
             // if (A->intp_density > _WATER_DENSITY_ * 1.02)
             //    A->isSurface = false;
             // if (A->var_Eigenvalues_of_M1 > 0.6)
@@ -957,34 +955,37 @@ void setFreeSurface(auto &net, const auto &RigidBodyObject) {
                                 A->checked_points_in_radius_SPH_next < 3 ||
                                 A->checked_points_in_radius_of_fluid_SPH_next < 3 ||
                                 //   A->var_Eigenvalues_of_M_next > 0.35 ||
-                                (A->var_Eigenvalues_of_M_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) {
-                                    return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
-                                                                    [&](const auto &q) {
-                                                                       if (q->isCaptured && A != q) {
-                                                                          auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
-                                                                          auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
-                                                                          auto c = X_next(A);  // + radius * n_next;
-                                                                          //   Sphere sphere(c, radius);
-                                                                          //   return sphere.isInside(X_next(q));
-                                                                          auto n_of_q = Dot(q->inv_grad_corr_M_next, q->interp_normal_original_next);
-                                                                          return Distance(c, X_next(q)) < radius &&
-                                                                                 isFlat(n_next, X_next(q) - X_next(A), angle) &&
-                                                                                 !q->is_grad_corr_M_next_singular &&
-                                                                                 (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
-                                                                                  (q->isFluid &&
-                                                                                   (A->var_Eigenvalues_of_M_next > 0.8 || Norm(n_next) > 2E+4) &&
-                                                                                   (q->var_Eigenvalues_of_M_next > 0.8 || Norm(n_of_q) > 2E+4 /*確実な法線ベクトルを意味する*/))
-                                                                                      ? Dot(n_next, n_of_q) > 0.
-                                                                                      : true);
-                                                                       } else
-                                                                          return false;
-                                                                       //   return q->isCaptured &&
-                                                                       //          Distance(X_next(A), X_next(q)) < range && A != q &&
-                                                                       //          isFlat(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next), X_next(q) - X_next(A), M_PI / 5);
-                                                                    });
-                                 }));
+                                (A->var_Eigenvalues_of_M_next > 0.1 && std::ranges::none_of(all_nets, [&](const auto &net) { return net->BucketPoints.any_of(A->X, A->particle_spacing * 3.,
+                                                                                                                                                             [&](const auto &q) {
+                                                                                                                                                                if (q->isCaptured && A != q) {
+                                                                                                                                                                   auto radius = q->isFluid ? surface_check_r_for_fluid : surface_check_r_for_wall;
+                                                                                                                                                                   auto angle = q->isFluid ? surface_check_agnle_for_fluid : surface_check_angle_for_wall;
+                                                                                                                                                                   auto c = X_next(A);  // + radius * n_next;
+                                                                                                                                                                   //   Sphere sphere(c, radius);
+                                                                                                                                                                   //   return sphere.isInside(X_next(q));
+                                                                                                                                                                   auto n_of_q = Dot(q->inv_grad_corr_M_next, q->interp_normal_original_next);
+                                                                                                                                                                   return Distance(c, X_next(q)) < radius &&
+                                                                                                                                                                          isFlat(n_next, X_next(q) - X_next(A), angle) &&
+                                                                                                                                                                          !q->is_grad_corr_M_next_singular &&
+                                                                                                                                                                          (/*この文は，水面をキープするためのもので，これによって，水面らしい面どうしの衝突はギリギリまで水面としてキープされるはず．*/
+                                                                                                                                                                           (q->isFluid &&
+                                                                                                                                                                            (A->var_Eigenvalues_of_M_next > 0.8 || Norm(n_next) > 2E+4) &&
+                                                                                                                                                                            (q->var_Eigenvalues_of_M_next > 0.8 || Norm(n_of_q) > 2E+4 /*確実な法線ベクトルを意味する*/))
+                                                                                                                                                                               ? Dot(n_next, n_of_q) > 0.
+                                                                                                                                                                               : true);
+                                                                                                                                                                } else
+                                                                                                                                                                   return false;
+                                                                                                                                                                //   return q->isCaptured &&
+                                                                                                                                                                //          Distance(X_next(A), X_next(q)) < range && A != q &&
+                                                                                                                                                                //          isFlat(Dot(p->inv_grad_corr_M_next, p->interp_normal_original_next), X_next(q) - X_next(A), M_PI / 5);
+                                                                                                                                                             }); }));
 
-            A->isSurface_tmp = A->isSurface;
+            if (A->isSurface_tmp)
+               A->isSurface_count += 1;
+            else
+               A->isSurface_count = 0;
+            A->isSurface = (A->isSurface_count >= (A->isSurface_count_init + 1));
+            A->isSurface_last_tmp = A->isSurface_tmp;
             A->isSurface_next_tmp = A->isSurface_next;
 
             // if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
@@ -1064,15 +1065,15 @@ void modify_interp_normal_original(auto &net, const auto &RigidBodyObject) {
          if (p->isCaptured) {
             p->interp_normal_original.fill(0.);
             p->interp_normal_original_next.fill(0.);
-            net->BucketPoints.apply(p->X, 1.1 * p->SML(), [&](const auto &q) {
-               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());  //! DO NOT USE grad_w_Bspline(p, q) because this is original
-               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
+            net->BucketPoints.apply(p->X, p->SML_grad(), [&](const auto &q) {
+               p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());  //! DO NOT USE grad_w_Bspline(p, q) because this is original
+               p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_grad_next());
             });
             for (const auto &obj : RigidBodyObject)
-               obj->BucketPoints.apply(p->X, 1.1 * p->SML(), [&](const auto &q) {
+               obj->BucketPoints.apply(p->X, p->SML_grad(), [&](const auto &q) {
                   if (canInteract(p, q)) {
-                     p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML());
-                     p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_next());
+                     p->interp_normal_original -= q->rho * q->volume * grad_w_Bspline(p->X, q->X, p->SML_grad());
+                     p->interp_normal_original_next -= rho_next(q) * V_next(q) * grad_w_Bspline(X_next(p), X_next(q), p->SML_grad_next());
                   }
                });
          }

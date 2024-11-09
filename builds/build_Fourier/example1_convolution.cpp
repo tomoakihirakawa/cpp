@@ -2,9 +2,44 @@
 
 ## 畳み込み積分
 
-畳み込み積分は，信号解析や画像処理などの分野でよく使われる演算．
-直感的には，2つの関数をスライドさせながら積分することで，2つの関数の類似度を評価する．
+```sh
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_convolution.cpp
+make
+./example1_convolution
+```
 
+畳み込み積分は，2つの関数のうち１つをスライドさせながら互いをかけ合わせ積分するものである．
+
+以下は，離散フーリエ変換，逆フーリエ変換，畳み込み積分を行うMatheamticaのコードである．
+
+データをスライドさせて掛け合わせた結果できるデータ列の和は，スライド`len=Length[f] + Length[g] - 1`まで値を持ちえる．
+これ以上のスライド＆掛け算の結果はゼロになる．なので，畳み込み和が返すデータ列は，`Length[f] + Length[g] - 1`となる．
+
+離散フーリエを使った，畳み込み和の内部では，まず`f`と`g`の長さをゼロ埋めして`len`の長さに揃えた後，それぞれのフーリエ変換を計算し，掛け合わせる．
+その結果を逆フーリエ変換して，畳み込み和を求める．
+
+```Mathematica
+MyFourier[list_, n_] := With[{len = Length[list], c = -I*n*2*\[Pi]/Length[list]},
+Sum[list[[k + 1]]*Exp[c*k], {k, 0, len - 1}]/len
+];
+
+MyInverseFourier[list_, n_] := With[{len = Length[list], c = I*n*2*\[Pi]/Length[list]},
+Sum[list[[k + 1]]*Exp[c*k], {k, 0, len - 1}]
+];
+
+MyDiscreteConvolve[f_, g_] := Module[{len, F, G, FourierGF},
+len = Length[f] + Length[g] - 1;
+F = PadRight[f, len];
+G = PadRight[g, len];
+FourierGF = Table[MyFourier[F, n]*MyFourier[G, n], {n, 0, len - 1}];
+Return[N@Table[len*MyInverseFourier[FourierGF, n], {n, 0, len - 1}]];
+]
+```
+
+![sample_conv.png](sample_conv.png)
+
+(see `example0.nb`)
 
 */
 
@@ -13,60 +48,31 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "lib_Fourier.hpp"
 
-std::complex<double> coeff(const std::vector<double>& sample, const int n) {
-   int N = sample.size();
-   std::complex<double> sum = 0;
-   for (int k = 0; k <= N - 1; ++k) {
-      sum += std::polar(sample[k], -n * 2 * M_PI / N * k);
-   }
-   // sample[k] means f(k * dt) or f(k * T / N). T is the maximum time.
-   return sum / static_cast<double>(N);
-};
-
-std::vector<std::complex<double>> DFT(const std::vector<double>& sample) {
-   int N = sample.size();
-   std::vector<std::complex<double>> result(N);
-   for (int n = 0; n < N; ++n)
-      result[n] = coeff(sample, n);
-   return result;
+std::ostream& operator<<(std::ostream& os, const std::vector<std::complex<double>>& cn) {
+   for (auto&& c : cn)
+      os << c << std::endl;
+   return os;
 }
 
 int main() {
-   const std::vector<double> list = {1, 1, 2, 2, 1, 1, 0, 0};
-   for (int n = 0; n < list.size(); ++n)
-      std::cout << coeff(list, n) << std::endl;
+   const std::vector<double> f = {1, 2, 3, 4, 5, 4, 3, 2, 1};
+   const std::vector<double> g = {1, -1, 1, -1, 1, -1, 3, 0, 0};
 
-   for (auto&& c : DFT(list))
-      std::cout << c << std::endl;
-
-   std::vector<double> list2(1000);
-   auto f = [](double t) {
-      double T = 15.;
-      return std::sin(2 * M_PI / T * t);
-   };
-
-   double T0 = 150.;
-   double N = list2.size();
-   {
-      std::ofstream ofs("original.dat");
-      for (int k = 0; k < N; ++k) {
-         list2[k] = f(k * T0 / N);
-         ofs << list2[k] << std::endl;
+   for (int x = 0; x < f.size() + g.size() - 1; ++x) {  // Correct range
+      double sum = 0;
+      for (int i = 0; i < f.size(); ++i) {
+         double a = (0 <= i && i < f.size()) ? f[i] : 0;
+         double b = (0 <= x - i && x - i < g.size()) ? g[x - i] : 0;
+         sum += a * b;
       }
-      ofs.close();
+      std::cout << x << ", " << sum << std::endl;
    }
 
-   {
-      std::ofstream ofs("dft.dat");
-      int n = 0;
-      for (auto&& c : DFT(list2)) {
-         ofs << (double)(n / T0) << " " << c.real() << " " << c.imag() << std::endl;
-         n++;
-         // the index of c is n = 0, 1, ..., N-1
-         // c[n] shows the component of frequency n * 2 * pi / T0
-      }
-      ofs.close();
-   }
+   std::cout << "DiscreteConvolve" << std::endl;
+   std::cout << DiscreteConvolve(f, g) << std::endl;
+
    return 0;
+   // {1., 1., 2., 2., 3., 1., 4., 5., 8., 9., 13., 10., 8., 5., 3.}
 }

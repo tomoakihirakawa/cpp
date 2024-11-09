@@ -20,8 +20,9 @@
             - [🪸 線形三角要素](#🪸-線形三角要素)
             - [ 🪸 線形三角要素のヤコビアン](#-🪸-線形三角要素のヤコビアン)
             - [🪸 係数行列の作成](#🪸-係数行列の作成)
-        - [🪼 リジッドモードテクニック](#🪼-リジッドモードテクニック)
+        - [🪼 リジッドモードテクニック（係数行列の対角成分の計算）](#🪼-リジッドモードテクニック（係数行列の対角成分の計算）)
         - [🪼 左辺と右辺の入れ替え](#🪼-左辺と右辺の入れ替え)
+            - [🪸 ２種類の多重節点](#🪸-２種類の多重節点)
         - [🪼 高速多重極展開との関係](#🪼-高速多重極展開との関係)
     - [⛵ 初期値問題](#⛵-初期値問題)
         - [🪼 流速$`\frac{d\bf x}{dt}`$の計算](#🪼-流速$`\frac{d\bf-x}{dt}`$の計算)
@@ -160,7 +161,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L1041](../../include/Network.hpp#L1041)
+[../../include/Network.hpp#L1044](../../include/Network.hpp#L1044)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -206,6 +207,12 @@
 [./main.cpp#L350](./main.cpp#L350)
 
 ---
+`phiOnFace`は，各節点`p`における各面`f`に対するポテンシャル`phi`を設定するために使用される．
+`phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
+他も同様である．
+
+[./BEM_setBoundaryTypes.hpp#L288](./BEM_setBoundaryTypes.hpp#L288)
+
 ## ⛵ 境界値問題 
 
 ### 🪼 基礎方程式 
@@ -262,7 +269,17 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 
 ### 🪼 BIEの離散化 
 
-BIEをGauss-Legendre積分で離散化すると，
+```math
+\alpha ({\bf a})\phi({\bf a})
+= \iint _\Gamma {\left({
+\frac{1}{\|{\bf x}-{\bf a}\|}
+\nabla \phi ({\bf{x}}) + \phi ({\bf{x}})
+\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}}
+\right) \cdot {\bf{n}}({\bf{x}})dS}
+```
+
+面は面上の節点を使って補間され，面積分はこの補間された面上に沿って行われる．
+面の法線ベクトル$`{\bf n}=\frac{\frac{{\partial {\bf x}}}{{\partial \xi _0}}\times\frac{{\partial {\bf x}}}{{\partial \xi _1}}}{\left\|\frac{{\partial {\bf x}}}{{\partial \xi _0}}\times\frac{{\partial {\bf x}}}{{\partial \xi _1}}\right\|}`$を代入し，BIEをGauss-Legendre積分で離散化すると，
 
 ```math
 \sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} {\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left( {\sum\limits _{j=0}^2 {{{\left( {{\phi _n}} \right)} _{k _\vartriangle,j }}{N _{j }}\left( \pmb{\xi } \right)} } \right)\frac{1}{{\| {{\bf{x}} _{k _\vartriangle}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}\left\|\frac{{\partial{{\bf x} _{k _\vartriangle}}}}{{\partial{\xi _0}}} \times \frac{{\partial{\bf{x}} _{k _\vartriangle}}}{{\partial{\xi _1}}}\right\|} \right)} }=
@@ -282,6 +299,14 @@ $`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の�
 * $`\phi _{k _\vartriangle}`$は補間で作った関数
 * $`\phi _{k _\vartriangle,j}`$は補間を構成する節点$`j`$での値
 * $`\phi _{i _\circ}`$はより直接的にある節点$`i _\circ`$での値
+
+💡 この段階ではまだ，1.数値積分のパラメタと，2.形状関数のパラメタと元々の面都の対応関係は，指定していない．例えば，やり方によっては$`\xi _1`$のパラメタは，$`\xi _0`$に依存するかもしれない．
+
+補間に使うパラメタを$`{\bf \xi}=(\xi _0, \xi _1)`$として，よく使われる３節点を使う線形補間を使うことにする．
+元の面に対応する，線形補間面は，パラメタ上では$`{\xi _0 + \xi _1 = 1}`$を満たす範囲なので，
+積分範囲は例えば$`0\leq \xi _0 \leq 1, 0\leq \xi _1 \leq 1-\xi _0`$となる．
+しかし，数値積分につかう変数と重みの組み合わせは，コンパイルタイムに決めておき計算を効率化したいので，
+この点で，変化する積分範囲は数値積分との相性が悪い．
 
 ### 🪼 線形三角要素 
 
@@ -335,7 +360,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この分数をまとめて計算している．
 
-[./BEM_solveBVP.hpp#L222](./BEM_solveBVP.hpp#L222)
+[./BEM_solveBVP.hpp#L160](./BEM_solveBVP.hpp#L160)
 
 #### 🪸 係数行列の作成 
 
@@ -372,47 +397,41 @@ $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathb
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L387](./BEM_solveBVP.hpp#L387)
+[./BEM_solveBVP.hpp#L343](./BEM_solveBVP.hpp#L343)
 
 ⚠️ この`std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign`の`networkFace`は，どの面側から節点を呼び出すかを決めていて，高次補間の場合，積分面と一致しない場合がある．
 
 1. fill key_ig_ign
 2. fill IGIGn_Row
 
-[./BEM_solveBVP.hpp#L519](./BEM_solveBVP.hpp#L519)
+[./BEM_solveBVP.hpp#L504](./BEM_solveBVP.hpp#L504)
 
-### 🪼 リジッドモードテクニック 
+### 🪼 リジッドモードテクニック（係数行列の対角成分の計算） 
 
-立体角$`\alpha`$はBIEの係数行列の対角成分で正確に計算したいが，正確に計算するプログラムを書くのは面倒である．
-しかし，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算することができる．
+BIEの対角成分の計算で注意が必要なのは，原点$`i _\circ`$の頂点の立体角と，係数の特異性である．
 
-立体角はポテンシャルとは関係なく，境界面の形状だけに依存するので，適当に$`\phi=1`$としても立体角は変わらない．
-こうすると，$`\alpha({\bf a}) = -\int\int{\nabla G({\bf x},{\bf a})\cdot{\bf n}({\bf x})dS}`$となり，
-この式は，境界面形状を線形要素を使って離散化すると，次のようになる．
+* 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
+* 係数の計算には，$`\frac{{\mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
+
+そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi _n`$が消える．結局，対角成分，つまり，原点$`i _\circ`$を頂点上の変数に掛かる係数は，次のようになる．
 
 ```math
-\alpha _{i _\circ}=\sum\limits _{k _\vartriangle}
-\left(
-{2A _{k _\vartriangle}{\bf n} _{k _\vartriangle}}\cdot
-\sum\limits _{{\xi _1},{w _1}}\sum\limits _{{\xi _0},{w _0}}
-{\left( {{w _0}{w _1}\frac{{{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{{\bf x} _{k _\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}}} (1-\xi _0)\right)}
-\right)
+\sum\limits _{k _\vartriangle} 2 A _{k _\vartriangle} \, \mathbf{n} _{k _\vartriangle} \cdot \sum\limits _{\xi _1, w _1} \sum\limits _{\xi _0, w _0} \left( w _0 w _1 \left( \sum\limits _{j=0}^2 \bar\delta _{(k _\vartriangle, j),i _\circ} N _j(\pmb{\xi}) \right) \frac{{\mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ} \|}^3}(1 - \xi _0)\right)
 ```
 
-この式の右辺の一部，
-原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する和だけを左辺に移項したものは，
-係数行列の対角成分と同じになっている．
-これはリジッドモードテクニックと呼ばれていて，
-分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+$`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$番目の頂点が$i _\circ$である場合に0，それ以外は1となる関数である．
+
+数値計算上は，$`\delta _{(k _\vartriangle, j),i _\circ}`$がゼロの場合は，そもそも係数をインクリメントせず，スキップする．
+これはリジッドモードテクニックと呼ばれていて，分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
 
 ただし，線形要素の場合，原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する計算，$`{\bf n} _{k _\vartriangle}\cdot ({{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ}})=0`$となるため，和をとる必要はない．
 よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-[./BEM_solveBVP.hpp#L590](./BEM_solveBVP.hpp#L590)
+[./BEM_solveBVP.hpp#L575](./BEM_solveBVP.hpp#L575)
 
 ### 🪼 左辺と右辺の入れ替え 
 
-係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数．
+係数行列`IGIGn`は，左辺の$`I _G \phi _n`$，右辺の$`I _{G _n}\phi`$の係数行列を表している．
 
 ```math
 (I _G) _{i _\circ,j _\circ} (\phi _n) _{j _\circ} = (I _{Gn}) _{i _\circ,j _\circ}  \phi _{j _\circ}
@@ -422,23 +441,15 @@ $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathb
 未知変数が$`\phi`$の場合（Dirichlet境界条件の場合），
 係数行列`IGIGn`中で対応する列を符号変えて入れ替えることで移項したことになる．
 
+#### 🪸 ２種類の多重節点 
 
-移項前:
-```math
-\begin{bmatrix}I _{G0} & I _{G1} & I _{G2} & I _{G3}\end{bmatrix} \begin{bmatrix}\phi _{n0} \\ \phi _{n1} \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & I _{Gn1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _1 \\ \phi _2 \\ \phi _3\end{bmatrix}
-```
+1. Dirichlet面上であり，かつNeumann面上である多重節点
+2. Dirichlet面上ではなく，完全にNeumann面上にあるが，法線ベクトルが大きく異なる節点
 
-移項後:
-```math
-\begin{bmatrix}I _{G0} & -I _{Gn1} & I _{G2} & I _{G3}\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}I _{Gn0} & -I _{G1} & I _{Gn2} & I _{Gn3}\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-```
+1の多重節点の場合，BIEの連立一次方程式の係数行列の行を，Dirchlet面上の$`\phi`$とNeumann面上の$`\phi`$の値が一致する，という式に変更する．
+2の場合は，特に変更しない．BIEを解くことで，それぞれの面に対して，$`\phi`$が得られるが，それらの平均値，または重み付け平均値を$`\phi`$として採用する．
 
-多重節点(1と3が多重節点の場合):
-```math
-\begin{bmatrix}0 & 1 & 0 & 0\end{bmatrix}\begin{bmatrix}\phi _{n0} \\ \phi _1 \\ \phi _{n2} \\ \phi _{n3}\end{bmatrix} =\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}\begin{bmatrix}\phi _0 \\ \phi _{n1} \\ \phi _2 \\ \phi _3\end{bmatrix}
-```
-
-[./BEM_solveBVP.hpp#L656](./BEM_solveBVP.hpp#L656)
+[./BEM_solveBVP.hpp#L614](./BEM_solveBVP.hpp#L614)
 
 ### 🪼 高速多重極展開との関係 
 
@@ -448,18 +459,18 @@ GMRES法は，$`A\cdot x`$の計算を何度も行い，その線形和で解を
 ```math
 \begin{align*}
 A\cdot x &= b \\
-\sum\limits _{j=0}^{N-1} A _{i,j}({\bf a} _i)x _j &= b _i \\
-\end{align*}
+\sum\limits _{j=0}^{N-1} A _{i _\circ,j}x _j &= b _{i _\circ} \\
+\end{align*}t
 ```
 
-$`\sum\limits _{j=0}^{N-1} A _{i,j}({\bf a} _i)x _j = b _i`$は，$`{\bf a} _i`$を原点としたBIEを離散化したものである．
+$`\sum\limits _{j=0}^{N-1} A _{{i _\circ},j}x _j = b _{i _\circ}`$は，節点$`{i _\circ}`$を原点節点としてBIEを離散化したものである．
 
 $`A _{i,j}({\bf a} _i)`$は，$`{\bf a} _i`$に依存しており，$`{\bf a} _i`$が変わると$`A _{i,j}({\bf a} _i)`$も変わる．
 しかし，これをソース点と観測点の関数の積と和の形に変形することできる．
 また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
 ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
 
-[./BEM_solveBVP.hpp#L700](./BEM_solveBVP.hpp#L700)
+[./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
 
 ---
 ## ⛵ 初期値問題 
@@ -585,7 +596,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L898](./BEM_solveBVP.hpp#L898)
+[./BEM_solveBVP.hpp#L823](./BEM_solveBVP.hpp#L823)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -620,7 +631,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1252](./BEM_solveBVP.hpp#L1252)
+[./BEM_solveBVP.hpp#L1176](./BEM_solveBVP.hpp#L1176)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -770,7 +781,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L937)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1147)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L937)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1072)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -801,11 +812,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1162)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1087)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L943](./BEM_solveBVP.hpp#L943)
+[./BEM_solveBVP.hpp#L868](./BEM_solveBVP.hpp#L868)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -890,7 +901,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1075](./BEM_solveBVP.hpp#L1075)
+[./BEM_solveBVP.hpp#L1000](./BEM_solveBVP.hpp#L1000)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -1176,10 +1187,7 @@ make
 例えば，次のようにシェルスクリプトを作成し，`input_generator.py`を実行することで，入力ファイルを生成することができる．
 
 ```shell
-case=Tanizawa1996
-outputdir=${HOME}/BEM
-H=0.05
-python3.11 input _generator.py -case ${case} -mesh water_no_float0d08 -element pseudo_quad -wavemaker flap -dt 0.03 -H ${H} -ALE linear -outputdir ${outputdir}
+python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker flap -dt 0.03 -H 0.05 -ALE linear -ALEPERIOD 1 -outputdir ~/BEM
 ```
 
 ```shell
@@ -1193,12 +1201,14 @@ H _array=(0.05 0.1)
 for dt in ${dt_array[@]};do
 for H in ${H _array[@]};do
 for mesh in ${mesh_array[@]};do
-python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
-python3.11 input _generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -outputdir ${outputdir}
+python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
+python3.11 input _generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
 done
 done
 done
 ```
+
+python3.11 input_generator.py -case Tanizawa1996 -mesh water_no... -element pseudo_quad -wavemaker potential -dt 0.01 -ALE linear
 
 [./input_generator.py#L1](./input_generator.py#L1)
 
@@ -1216,7 +1226,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L640](./input_generator.py#L640)
+[./input_generator.py#L639](./input_generator.py#L639)
 
 ---
 \cite{Liang2022}
@@ -1256,7 +1266,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L994](./input_generator.py#L994)
+[./input_generator.py#L993](./input_generator.py#L993)
 
 ---
 | wave height (m) | wave period (s) |
@@ -1268,7 +1278,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L820](./input_generator.py#L820)
+[./input_generator.py#L819](./input_generator.py#L819)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1282,7 +1292,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L507](./input_generator.py#L507)
+[./input_generator.py#L506](./input_generator.py#L506)
 
 ---
 <img src="schematic_float_Tanizawa1996.png" width="400px" />
@@ -1315,7 +1325,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 | Natural period of roll | 1.775 s | 6.46 |
 | Spring constant of mooning | 51.07 N/m | 0.00704 |
 
-[./input_generator.py#L194](./input_generator.py#L194)
+[./input_generator.py#L193](./input_generator.py#L193)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -1328,7 +1338,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L735](./input_generator.py#L735)
+[./input_generator.py#L734](./input_generator.py#L734)
 
 ---
 # 🐋 Examples 

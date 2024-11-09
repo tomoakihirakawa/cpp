@@ -188,8 +188,8 @@ void setSML(const auto &target_nets, const std::array<double, 2> C_SML_min_max =
          {
             p->points_in_SML.clear();
             for (const auto &net : target_nets)
-               net->BucketPoints.apply(p->X, p->SML(), [&](const auto &q) {
-                  if (Norm(q->X - p->X) < p->SML() && p != q && canInteract(p, q))
+               net->BucketPoints.apply(p->X, p->SML_grad(), [&](const auto &q) {
+                  if (Norm(q->X - p->X) < p->SML_grad() && p != q && canInteract(p, q))
                      p->points_in_SML.emplace_back(q);
                });
          }
@@ -209,8 +209,8 @@ $`c_v=0.1,c_a=0.1`$としている．
 
 double dt_CFL(const double dt_IN, const auto &net, const auto &RigidBodyObject) {
    // double dt = dt_IN;
-   const auto C_CFL_velocity = 0.05;   // dt = C_CFL_velocity*h/Max(U)
-   const auto C_CFL_accel = 0.05;      // dt = C_CFL_accel*sqrt(h/Max(A))
+   const auto C_CFL_velocity = 0.02;   // dt = C_CFL_velocity*h/Max(U)
+   const auto C_CFL_accel = 0.02;      // dt = C_CFL_accel*sqrt(h/Max(A))
    const auto C_CFL_viscosity = 0.05;  // dt = C_CFL_viscosity*h^2/Max(Viscosity)
    // const auto C_CFL_velocity_relative = 1000.05;  // dt = C_CFL_velocity*h/Max(U)
    // const auto C_CFL_accel_relative = 1000.05;     // dt = C_CFL_accel*sqrt(h/Max(A))
@@ -298,10 +298,13 @@ Tddd X_next(const networkPoint *p) {
 
 // \label{SPH:rho_next}
 double rho_next(const networkPoint *p) {
-   // if (!p->isFluid)
-   //    return _WATER_DENSITY_;
-   // else
-   return p->RK_rho.getX(-p->rho * p->div_U_next);
+   if (!p->isFluid)
+      return _WATER_DENSITY_;
+   else {
+      return p->RK_rho.getX(-p->rho * p->div_U_next);
+      // const double a = 0.6;
+      // return a * p->RK_rho.getX(-p->rho * p->div_U_next) + (1. - a) * _WATER_DENSITY_;
+   }
 };
 
 // \label{SPH:volume_next}
@@ -409,7 +412,7 @@ void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) 
          // p->U_XSPH = U_next(p);
          p->U_XSPH.fill(0.);
          Fill(nabla_otimes_U, 0.);
-         const double c_xsph = 0.02;
+         const double c_xsph = 0.01;
 
          auto add = [&](const auto &q) {
             auto grad = grad_w_Bspline(p, q);
@@ -421,7 +424,7 @@ void calculate_nabla_otimes_U_next(const auto &points, const auto &target_nets) 
          };
 
          for (const auto &net : target_nets)
-            net->BucketPoints.apply(p->X, 1.1 * p->SML(), add);
+            net->BucketPoints.apply(p->X, p->SML_grad(), add);
 
          p->nabla_otimes_U = nabla_otimes_U;
       }
@@ -460,8 +463,8 @@ void updateParticles(const auto &net,
          bool isReflected = true;
          p->DUDt_modify_SPH.fill(0.);
          // var_M1が大きすぎる場合は計算を修正しよう．
-         const double N = 100000.;
-         const double c_reflection = 1. / N;
+         static const double N = 10000.;
+         static const double c_reflection = 1. / N;
          const double d_ps = particle_spacing;
          const double d0 = (1 - c) * particle_spacing;
          auto vector_points = getNearPoints(p, RigidBodyObject, 1.5 * particle_spacing);
@@ -477,9 +480,10 @@ void updateParticles(const auto &net,
                   // if (Norm(f2w) < 1. * d0 && Norm(closest_p->X - p->X) < 1. * d0) {
                   if (dist_f2w < particle_spacing) {
                      // bool case0 = normal_dist_f2w < 0.87 * particle_spacing && Dot(p->U_SPH, n) < 0;
-                     bool case0 = normal_dist_f2w < 0.75 * particle_spacing && Dot(p->U_SPH, n) < 0;
+                     // bool case0 = normal_dist_f2w < 0.75 * particle_spacing && Dot(p->U_SPH, n) < 0;
+                     // bool case0 = normal_dist_f2w < 0.8 * particle_spacing && Dot(p->U_SPH, n) < 0;
                      // bool case1 = normal_dist_f2w <0.5. * particle_spacing;
-                     if (case0) {
+                     if (normal_dist_f2w < 0.8 * particle_spacing && Dot(p->U_SPH, n) < 0) {
                         p->DUDt_modify_SPH -= c_reflection * Projection(U_SPH_original, n) / dt;
                         p->DUDt_update_SPH = p->DUDt_SPH + p->DUDt_modify_SPH;
                         p->RK_U.repush(p->DUDt_update_SPH);  // 速度
@@ -492,11 +496,21 @@ void updateParticles(const auto &net,
                }
             }
          };
-
             /* ------------------------------------------------------- */
 #endif
       }
 
+#pragma omp parallel
+      for (const auto &p : net->getPoints())
+#pragma omp single nowait
+      {
+         double SML = p->SML();
+         p->intp_density = 0.;
+         net->BucketPoints.apply(p->X, 1.1 * SML, [&](const auto &q) {
+            double w = q->volume * w_Bspline(Norm(p->X - q->X), SML);
+            p->intp_density += q->rho * w;
+         });
+      }
       /* -------------------------------------------------------------------------- */
       // % div_U の計算
       setCorrectionMatrix(std::unordered_set<Network *>{net});
@@ -506,7 +520,7 @@ void updateParticles(const auto &net,
       {
          A->div_U = 0.;
          for (const auto &net : target_nets) {
-            net->BucketPoints.apply(A->X, 1.1 * A->SML(), [&](const auto &B) {
+            net->BucketPoints.apply(A->X, A->SML_grad(), [&](const auto &B) {
                if (canInteract(A, B))
                   FusedMultiplyIncrement(-B->volume, Dot(A->U_SPH - B->U_SPH, grad_w_Bspline(A, B)), A->div_U);
             });
@@ -516,11 +530,11 @@ void updateParticles(const auto &net,
 
       //% 密度の更新
       // \label{SPH:update_density}
-      const double a = 0.;
+      const double a = 0.5;
       for (const auto &A : net->getPoints()) {
          //! 要らなそうだ
          A->RK_rho.push(A->DrhoDt_SPH);  // 密度
-         A->setDensity(a * A->RK_rho.get_x() + (1. - a) * _WATER_DENSITY_);
+         A->setDensity(0.98 * (a * A->RK_rho.get_x() + (1 - a) * _WATER_DENSITY_) + 0.02 * A->intp_density);
          if (!A->isFluid)
             A->setDensity(_WATER_DENSITY_);
       }

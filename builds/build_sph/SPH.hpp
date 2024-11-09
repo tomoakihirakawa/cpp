@@ -4,7 +4,7 @@
 #define USE_ISPH
 // #define USE_ESPH
 
-// #define USE_LAPLACIAN_CORRECTION
+#define USE_LAPLACIAN_CORRECTION
 #define USE_GRAD_CORRECTION
 
 #define USE_SYMMETRIC_FORM_FOR_PRESSURE_GRADIENT
@@ -188,7 +188,8 @@ void developByEISPH(Network *net,
 #pragma omp parallel
       for (const auto &obj : all_net)
 #pragma omp single nowait
-         obj->makeBucketPoints(0.75 * bucket_spacing);
+         obj->makeBucketPoints(0.8 * bucket_spacing);
+      // obj->makeBucketPoints(bucket_spacing);
       Print(Green, "バケットの生成", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s");
 
       for (const auto &p : net->getPoints()) {

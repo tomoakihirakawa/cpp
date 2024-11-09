@@ -30,6 +30,12 @@ struct TimeWatch {
       this->start = std::chrono::system_clock::now();
       this->lasttime = start;
    };
+
+   void reset() {
+      this->start = std::chrono::system_clock::now();
+      this->lasttime = start;
+   };
+
    //! 一つ目は，前回からの経過時間，二つ目は作成した時間からの経過時間
    // std::vector<std::chrono::duration<double>> get()
    std::array<double, 2> get() {

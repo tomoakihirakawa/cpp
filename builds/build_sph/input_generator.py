@@ -57,13 +57,13 @@ if "static_pressure" in SimulationCase:
 
     input_files = [wavetank, water]
 
-    particle_spacing = 0.02
+    particle_spacing = 0.01
 
     setting = {"RK_order": 1,
-                "max_dt": particle_spacing/10,
-                "CSML": 2.5,
+                "max_dt": particle_spacing/5,
+                "CSML": 2.4,
                 "end_time_step": 1000000,
-                "end_time": 10,
+                "end_time": 100,
                 "initial_surface_z_position": 0.1,
                 "particle_spacing": particle_spacing}
 
@@ -169,12 +169,12 @@ elif "Lobovsky2013" in SimulationCase:
     input_files = [wavetank, water, gate, sensor1, sensor2, sensor2L, sensor3, sensor4]
 
     setting = {"RK_order": 1,
-                "max_dt": 0.0002,
+                "max_dt": 0.0005,
                 "end_time_step": 3000*5,
                 "end_time": 2,
-                "CSML": 2.7,
+                "CSML": 2.5,
                 "initial_surface_z_position": 0.6,
-                "particle_spacing": 0.02}
+                "particle_spacing": 0.015}
 
     id = SimulationCase + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \
                         + "_CSML" + str(setting["CSML"]).replace(".", "d")\
@@ -216,10 +216,10 @@ elif "Kamra2019" in SimulationCase:
     setting = {"RK_order": 1,  # \label{SPH:RK_order}
                 "max_dt": 0.0005,
                 "end_time_step": 100000,
-                "end_time": 4.,
+                "end_time": 10.,
                 "CSML": 2.5,
                 "initial_surface_z_position": 0.2,
-                "particle_spacing": 0.008}
+                "particle_spacing": 0.007}
 
     id = SimulationCase + id \
                         + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \

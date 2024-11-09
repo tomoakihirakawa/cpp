@@ -71,14 +71,13 @@ template <typename T>
 struct Buckets : public CoordinateBounds {
 
    //@ 変更予定2024/05/10
-
    /* =============================== Tree structure ================================= */
 
-   std::vector<std::shared_ptr<Buckets<T>>> buckets_for_M2L, buckets_for_DI;  // DI: Direct Interaction
+   std::vector<std::shared_ptr<Buckets<T>>> buckets_for_M2L;  // DI: Direct Interaction
    std::vector<std::shared_ptr<Buckets<T>>> buckets_near;
 
-   ExpCoeffs<10> multipole_expansion;
-   ExpCoeffs<10> local_expansion;
+   ExpCoeffs<4> multipole_expansion;
+   ExpCoeffs<4> local_expansion;
 
    std::vector<std::vector<std::vector<std::shared_ptr<Buckets<T>>>>> buckets;  //! child buckets
 
@@ -108,7 +107,12 @@ struct Buckets : public CoordinateBounds {
       // std::cout << "level : " << Green << this->level << "," << Blue << "max_level : " << this->max_level << colorReset << std::endl;
    }
 
+   //! NOTE
+   // !% level_bucketsは，levelがゼロの根っこバケツのみがもつもの．nullptrを含まない．
+   // !%すべてのツリーが同じ深さまで成長していない場合，level_bucketsの最後が最も深いバケツとは限らない．
+   // !%なのでDeepestは別に実装する必要がある．
    std::vector<std::vector<Buckets<T> *>> level_buckets;
+   std::vector<Buckets<T> *> deppest_level_buckets;
 
    //! この方法で，`data[i][j][k]`を８分割しバケツを作成する．\label{buckets_generateTree}
    bool generateTree(const std::function<bool(const Buckets<T> *)> &condition = [](const Buckets<T> *) { return true; }) {
@@ -150,11 +154,17 @@ struct Buckets : public CoordinateBounds {
       // fill level_buckets if the level is 0
       if (this->level == 0) {
          this->level_buckets.clear();
+         this->deppest_level_buckets.clear();
          this->level_buckets.resize(this->max_level + 1);  // zero を含むので+1
          this->level_buckets[0].push_back(this);
          this->forEachAll([&](Buckets<T> *b) -> void {
-            if (b != nullptr)
-               this->level_buckets[b->level].emplace_back(b);
+            if (b != nullptr) {
+               if (!b->all_stored_objects.empty()) {
+                  this->level_buckets[b->level].emplace_back(b);
+                  if (!b->has_child)
+                     this->deppest_level_buckets.emplace_back(b);
+               }
+            }
          });
       }
 
@@ -206,10 +216,11 @@ struct Buckets : public CoordinateBounds {
    }
 
    void forEachAtLevel(const int lv, const std::function<void(Buckets<T> *)> &func_for_bucket) {
-      if (lv <= this->level_buckets.size()) {
-         for (auto &b : this->level_buckets[lv])
-            func_for_bucket(b);
-      }
+      if (lv >= this->level_buckets.size())
+         return;
+
+      for (auto &b : this->level_buckets[lv])
+         func_for_bucket(b);
    }
 
    void forEachAtLevel(const std::vector<int> &levels, const std::function<void(Buckets<T> *)> &func_for_bucket) {
@@ -218,12 +229,13 @@ struct Buckets : public CoordinateBounds {
    }
 
    void forEachAtLevelParallel(const int lv, const std::function<void(Buckets<T> *)> &func_for_bucket) {
-      if (lv < this->level_buckets.size()) {
+      if (lv >= this->level_buckets.size())
+         return;
+
 #pragma omp parallel
-         for (auto &b : this->level_buckets[lv])
+      for (auto &b : this->level_buckets[lv])
 #pragma omp single nowait
-            func_for_bucket(b);
-      }
+         func_for_bucket(b);
    }
 
    void forEachAtLevelParallel(const std::vector<int> &levels, const std::function<void(Buckets<T> *)> &func_for_bucket) {
@@ -233,17 +245,24 @@ struct Buckets : public CoordinateBounds {
          forEachAtLevelParallel(lv, func_for_bucket);
    }
 
+   //    template <typename Func>
+   //    void forEachAtDeepestParallel(Func func_for_bucket) {
+   // #pragma omp parallel
+   //       for (auto &b : this->deppest_level_buckets)
+   // #pragma omp single nowait
+   //          func_for_bucket(b);
+   //    }
+
    template <typename Func>
    void forEachAtDeepestParallel(Func func_for_bucket) {
-#pragma omp parallel
-      for (auto &b : this->level_buckets.back())
-#pragma omp single nowait
-         func_for_bucket(b);
+      // for (auto &b : this->deppest_level_buckets)
+      //    func_for_bucket(b);
+      std::for_each(std::execution::par_unseq, this->deppest_level_buckets.begin(), this->deppest_level_buckets.end(), func_for_bucket);
    }
 
    template <typename Func>
    void forEachAtDeepest(Func func_for_bucket) {
-      for (auto &b : this->level_buckets.back())
+      for (auto &b : this->deppest_level_buckets)
          func_for_bucket(b);
    }
 
@@ -290,6 +309,7 @@ struct Buckets : public CoordinateBounds {
    std::vector<std::vector<std::vector<bool>>> data_bool;
    bool vector_is_set;
    std::unordered_set<T> all_stored_objects;
+   std::vector<T> all_stored_objects_vector;
    std::unordered_map<T, ST3> map_to_ijk;
    double dL;
    double bucketVolume() const { return std::pow(this->dL, 3.); };
@@ -304,87 +324,46 @@ struct Buckets : public CoordinateBounds {
       this->center = this->X;
    };
 
-   void initialize(const auto &boundingboxIN, const double dL_IN) {
-      // Clear existing data
-      this->all_stored_objects.clear();
+   ~Buckets() {
+      std::cout << "Deleting Buckets at level: " << this->level << std::endl;
+      for (auto &i : this->buckets)
+         for (auto &j : i)
+            for (auto &k : j)
+               if (k != nullptr)
+                  k.reset();
+      std::cout << "Buckets at level " << this->level << " deleted." << std::endl;
+   }
 
-      // Set bounds and dimensions
+   void initialize(const auto &boundingboxIN, const double dL_IN) {
+      this->all_stored_objects.clear();
+      this->all_stored_objects_vector.clear();
       CoordinateBounds::setBounds(boundingboxIN);
       this->dL = dL_IN;
 
-      // check if the size is valid (lesss than 100000)
       const std::size_t max_size = 1000000;
-      {
-         double s = std::ceil((std::get<1>(this->xbounds()) - std::get<0>(this->xbounds())) / this->dL);
-         if (s <= 0.)
-            s = 1.;
-         if (s > max_size) {
-            std::cout << "xsize : " << s << std::endl;
-            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
-            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
-            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
-            std::cout << "this->dL : " << this->dL << std::endl;
-            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
-            std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
-            std::cout << "The program will be terminated." << std::endl;
-            exit(1);
-         } else
-            this->xsize = s;
-      }
 
-      {
-         double s = std::ceil((std::get<1>(this->ybounds()) - std::get<0>(this->ybounds())) / this->dL);
-         if (s <= 0.)
-            s = 1.;
-         if (s > max_size) {
-            std::cout << "ysize : " << s << std::endl;
-            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
-            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
-            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
-            std::cout << "this->dL : " << this->dL << std::endl;
-            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
-            std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
-            std::cout << "The program will be terminated." << std::endl;
+      auto calculate_size = [&](const auto &bounds) {
+         double size = std::ceil((std::get<1>(bounds) - std::get<0>(bounds)) / this->dL);
+         if (size <= 0.) size = 1.;
+         if (size > max_size) {
+            std::cerr << "The size of the bucket is too large (" << size << "). Please reduce the bucket size." << std::endl;
             exit(1);
-         } else
-            this->ysize = s;
-      }
-      {
-         double s = std::ceil((std::get<1>(this->zbounds()) - std::get<0>(this->zbounds())) / this->dL);
-         if (s <= 0.)
-            s = 1.;  // 以前，0になったためエラーになった．
-         if (s > max_size) {
-            std::cout << "zsize : " << s << std::endl;
-            std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
-            std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
-            std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
-            std::cout << "The size of the bucket is too large. Please reduce the size of the bucket." << std::endl;
-            std::cout << "The size of the bucket is " << s << std::endl;
-            std::cout << "The size of the bucket should be less than " << max_size << "." << std::endl;
-            std::cout << "The program will be terminated." << std::endl;
-            exit(1);
-         } else
-            this->zsize = s;
-      }
+         }
+         return static_cast<ST>(size);
+      };
+
+      this->xsize = calculate_size(this->xbounds());
+      this->ysize = calculate_size(this->ybounds());
+      this->zsize = calculate_size(this->zbounds());
 
       this->dn = {xsize, ysize, zsize};
 
-      // Clear and resize data
-      this->data.assign(xsize, std::vector<std::vector<std::unordered_set<T>>>(ysize, std::vector<std::unordered_set<T>>(zsize, std::unordered_set<T>{})));
+      this->data.assign(xsize, std::vector<std::vector<std::unordered_set<T>>>(ysize, std::vector<std::unordered_set<T>>(zsize)));
       this->data_bool.assign(xsize, std::vector<std::vector<bool>>(ysize, std::vector<bool>(zsize, false)));
-
-      // Set vector_is_set to false to indicate data are not yet set
       this->vector_is_set = false;
-
-      // Output information for debugging
-      // std::cout << "1 bucket width = " << this->dL << std::endl;  // Changed the comment to English
-      // std::cout << "Bounds = " << this->bounds << std::endl;
-      // std::cout << "Size = " << this->dn << std::endl;
    }
 
-   const std::unordered_set<T> &getAll() const { return this->all_stored_objects; };
+   const std::vector<T> &getAll() const { return this->all_stored_objects_vector; };
    //@ -------------------------------- インデックス変換 -------------------------------- */
    // x座標を内包するバケツのインデックスを返す
    constexpr Tddd itox(const ST i, const ST j, const ST k) const {
@@ -437,6 +416,9 @@ struct Buckets : public CoordinateBounds {
       if (it != this->map_to_ijk.end()) {
          auto [i, j, k] = it->second;
          this->all_stored_objects.erase(p);
+         auto p_it = std::find(this->all_stored_objects_vector.begin(), this->all_stored_objects_vector.end(), p);
+         if (p_it != this->all_stored_objects_vector.end())
+            this->all_stored_objects_vector.erase(p_it);
          this->data[i][j][k].erase(p);
          this->map_to_ijk.erase(it);
       }
@@ -484,6 +466,8 @@ struct Buckets : public CoordinateBounds {
       this->map_to_ijk[p] = ijk;
       const bool bucket_inserted = this->data[i][j][k].emplace(p).second;
       const bool all_objects_inserted = this->all_stored_objects.emplace(p).second;
+      if (all_objects_inserted)
+         this->all_stored_objects_vector.emplace_back(p);
       return bucket_inserted && all_objects_inserted;
    };
    bool add(const Tddd &x, const T p) {
@@ -533,6 +517,7 @@ struct Buckets : public CoordinateBounds {
       this->vector_is_set = false;
       this->data.clear();
       this->all_stored_objects.clear();
+      this->all_stored_objects_vector.clear();
    };
    // b@ -------------------------------------------------------------------------- */
    // b@                             STL like functions                             */
@@ -784,5 +769,242 @@ Buckets<T> copyPartition(const auto &buckets) {
 //    Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : BaseBuckets<T>(c_bounds, dL_IN){};
 //    Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : BaseBuckets<T>(boundingboxIN, dL_IN){};
 // };
+
+/* -------------------------------------------------------------------------- */
+
+using sp_pole4FMM = std::shared_ptr<pole4FMM>;
+
+void MultipoleExpansion(Buckets<sp_pole4FMM> &B_poles) {
+   std::cout << "B_poles.deppest_level_buckets.size() : " << B_poles.deppest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepest([&](Buckets<sp_pole4FMM> *b) {
+      b->multipole_expansion.increment_moments(b->all_stored_objects_vector);
+   });
+}
+
+void MultipoleExpansionReuse(Buckets<sp_pole4FMM> &B_poles) {
+   std::cout << "B_poles.deppest_level_buckets.size() : " << B_poles.deppest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepest([&](Buckets<sp_pole4FMM> *b) {
+      b->multipole_expansion.increment_moments_reuse();
+   });
+}
+
+/* -------------------------------------------------------------------------- */
+
+void M2M(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw;
+   int level = 0;
+   for (int level = B_poles.max_level - 1; level >= 0; level--) {
+      B_poles.forEachAtLevel({level}, [&](Buckets<sp_pole4FMM> *B) {
+         // for (auto& b : B->getAllBucket())
+         //    M2M(b->multipole_expansion, B->multipole_expansion);
+         B->forEachBuckets([&](Buckets<sp_pole4FMM> *b) {
+            B->multipole_expansion.M2M(b->multipole_expansion);
+         });
+      });
+      std::cout << magenta << "M2M" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   }
+};
+
+/* -------------------------------------------------------------------------- */
+
+void L2L(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw;
+   int level = 0;
+   for (auto &buckets_from_top_level : B_poles.level_buckets) {
+      for (auto &B : buckets_from_top_level) {
+         B->forEachBuckets([&](Buckets<sp_pole4FMM> *b) {
+            b->local_expansion.L2L(B->local_expansion);
+         });
+      }
+      std::cout << magenta << "L2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+      level++;
+   }
+}
+
+/* -------------------------------------------------------------------------- */
+
+const double scale = 3;
+bool isFar(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return !isInside(B->X, A->scaledBounds(scale)); };
+bool isNear(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return isInside(B->X, A->scaledBounds(scale)); };
+bool isFar(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return !isInside(B->X, A->scaledBounds(scale)); };
+bool isNear(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return isInside(B->X, A->scaledBounds(scale)); };
+
+// まだ問題がある．
+bool isFar(const Buckets<sp_pole4FMM> *A, const Buckets<sp_pole4FMM> *B);
+
+template <typename T>
+void checkAndAddBucketsImpl(T A, T B) {
+   if (isNear(A, B)) {
+      for (auto &A_c : A->getAllBucket()) {
+         if (!A_c->all_stored_objects_vector.empty() || A_c->has_child) {
+            for (auto &B_c : B->getAllBucket()) {
+               if (!B_c->all_stored_objects_vector.empty()) {
+                  bool isnear = false;
+                  if (A_c != B_c && isNear(A_c, B_c)) {
+                     A_c->buckets_near.emplace_back(B_c);
+                     isnear = true;
+                  }
+
+                  if (isFar(A_c, B_c) && A_c != B_c) {
+                     A_c->buckets_for_M2L.emplace_back(B_c);
+                  } else {
+                     checkAndAddBucketsImpl(A_c, B_c);
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+void checkAndAddBuckets(std::shared_ptr<Buckets<sp_pole4FMM>> A, std::shared_ptr<Buckets<sp_pole4FMM>> B) {
+   checkAndAddBucketsImpl(A, B);
+}
+
+void checkAndAddBuckets(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) {
+   checkAndAddBucketsImpl(A, B);
+}
+
+void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
+   //! store M2L buckets for the bucket at level 1
+   //! ここは，Aの展開係数を，M2Lすべきバケツに保存する．Aが空なら，M2LすべきバケツはAにとってないことになる．
+   B_poles.forEachAtLevel({1}, [&](Buckets<sp_pole4FMM> *A) {
+      A->buckets_for_M2L.clear();
+      //! (1) この設定では，Mする場所が，ソース点があるバケツに限られる．これは，常に妥当な設定である．
+      if (!A->all_stored_objects_vector.empty())
+         B_poles.forEachAtLevel({1}, [&](Buckets<sp_pole4FMM> *B) {  //$ check if another bucket is inside the bucket. If it is not, add it to the list of buckets for M2L
+            if (!B->all_stored_objects_vector.empty()) {
+               //! (2) この設定は，Lできる場所が，節点などに限られる．しかも，nearにすら含めない．．．．
+
+               if (A != B && isNear(A, B))
+                  A->buckets_near.emplace_back(B);
+
+               if (isFar(A, B))
+                  A->buckets_for_M2L.emplace_back(B);
+               else
+                  checkAndAddBuckets(A, B);  // % 次のレベルに移動する．
+            }
+         });
+   });
+}
+void M2L(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw;
+   /* -------------------------------------------------------------------------- */
+   /*                      各レベルの各セルのM2Lの相手を保存する                       */
+   /* -------------------------------------------------------------------------- */
+   std::cout << "各レベルの各セルのM2Lの相手を保存する" << std::endl;
+
+   setBucketsForM2L(B_poles);
+
+   std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+   /*$ -------------------------------------------------------------------------- */
+
+   // A -> M2L -> B
+
+   int level = 0;
+   for (auto &buckets_from_top_level : B_poles.level_buckets) {
+      for (auto &A : buckets_from_top_level)
+         // #pragma omp parallel
+         for (auto &B : A->buckets_for_M2L)
+            // #pragma omp single nowait
+            B->local_expansion.M2L(A->multipole_expansion);
+
+      std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+      level++;
+   }
+};
+
+void MultipoleExpansionReuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
+   /*
+   B_polesには，極の強さの情報もstd::function<Tdd()> get_valuesに保存されている．
+   別に必要なのは，どの点の積分値を出力するかという情報であるので，３次元位置座標と近傍の極，遠方の極それぞれを保存する変数を用意する．
+   */
+   TimeWatch tw;
+   //@ -------------------------------------------------------------------------- */
+   std::cout << "極の展開 reuse" << std::endl;
+   MultipoleExpansionReuse(B_poles);
+   std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   //@ -------------------------------------------------------------------------- */
+   //@                           Multipole to Multipole                           */
+   //@ -------------------------------------------------------------------------- */
+   std::cout << Magenta << "M2M ..." << colorReset << std::endl;
+   M2M(B_poles);
+   std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   //@ -------------------------------------------------------------------------- */
+   //@                         Multipole to Local expansion                       */
+   //@ -------------------------------------------------------------------------- */
+   std::cout << Magenta << "M2L ..." << colorReset << std::endl;
+   M2L(B_poles);
+   std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   //@ -------------------------------------------------------------------------- */
+   //@                           Local to Local expansion                         */
+   //@ -------------------------------------------------------------------------- */
+   std::cout << Magenta << "L2L ..." << colorReset << std::endl;
+   L2L(B_poles);
+   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+};
+
+/* -------------------------------------------------------------------------- */
+
+/*
+pole4FMMは，
+Tddd X;
+Tdd weights;
+Tddd normal;
+std::function<Tdd()> get_values;
+を持つ．これらを使うと，直接数値面積分ができる．
+*/
+
+std::array<double, 2> direct_integration(const Buckets<sp_pole4FMM> &b, const Tddd &O) {
+   double ig = 0, ign = 0;
+   std::array<double, 3> R;
+   double nr, nr_inv;
+   for (const auto &pole : b.all_stored_objects_vector) {
+      nr = Norm(R = pole->X - O);
+      //$ 直接積分
+      if (nr > 0) {
+         nr_inv = 1. / nr;
+         ig += std::get<0>(pole->weights) * nr_inv;
+         ign -= (std::get<1>(pole->weights) * nr_inv) * Dot(R * nr_inv, pole->normal) * nr_inv;
+      }
+   }
+   return std::array<double, 2>{ig, ign};
+};
+
+std::array<double, 2> direct_integration(const std::shared_ptr<Buckets<sp_pole4FMM>> &b, const Tddd &O) {
+   double ig = 0, ign = 0;
+   std::array<double, 3> R;
+   double nr;
+   for (const auto &pole : b->all_stored_objects_vector) {
+      nr = Norm(R = pole->X - O);
+      //$ 直接積分
+      if (nr > 0) {
+         ig += std::get<0>(pole->weights) / nr;
+         ign -= (std::get<1>(pole->weights) / nr) * Dot(R / nr, pole->normal) / nr;
+      }
+   }
+   return std::array<double, 2>{ig, ign};
+};
+
+std::array<double, 2> direct_integration(const std::vector<std::shared_ptr<Buckets<sp_pole4FMM>>> &buckets, const Tddd &O) {
+   std::array<double, 2> igign = {0, 0};
+   for (const auto &b : buckets)
+      igign += direct_integration(b, O);
+   return igign;
+};
+
+/* -------------------------------------------------------------------------- */
+
+std::array<std::array<double, 2>, 2> L2P(Buckets<sp_pole4FMM> &B_poles, const Tddd &X) {
+   auto b = B_poles.getBucketAtDeepest(X);
+   std::array<double, 2> igign_near = direct_integration(b, X);
+   //! Direct integration
+   for (auto &B : b->buckets_near)
+      igign_near += direct_integration(B, X);
+   //! Local expansion
+   std::array<double, 2> igign_far = b->local_expansion.IGIGn_using_L(X);
+   return {igign_near, igign_far};
+}
 
 #endif

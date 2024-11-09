@@ -25,12 +25,12 @@ import LighthillRobot as LHR
 
 # ---------------------------------- ロボットの設定 --------------------------------- #
 
-L = 1.
+L = 0.25
 period = 1.
 w = 2.*math.pi/period
-k = 2.*math.pi
-c1 = 0.05
-c2 = 0.05
+k = 2.*math.pi / L
+c1 = 0.02
+c2 = 0.01
 n = 2
 
 # \label{PYBIND11:GENERATE_OBJECT}

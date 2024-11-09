@@ -172,7 +172,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
 
          /* -------------------------------------------------------------------------- */
 
-         const double r = pO->SML_next();
+         const double r = pO->SML_grad_next();
          auto applyOverPoints = [&r, &pO, &pO_center](const auto &equation, const std::unordered_set<Network *> NETS) {
             for (const auto &net : NETS) {
                net->BucketPoints.apply(pO_center, 1.1 * r, [&](const auto &B) {
@@ -239,14 +239,14 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          std::vector<std::tuple<networkPoint *, std::array<double, 3>>> near_particles_and_V_GradW;
 
          auto make_near_particles_and_V_GradW = [&pO, &pO_center, &near_particles_and_V_GradW](const auto &Q) {
-            if (Distance(pO_center, X_next(Q)) <= pO->SML_next() && pO != Q)
+            if (Distance(pO_center, X_next(Q)) <= pO->SML_grad_next() && pO != Q)
                near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
          };
 
          auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto &B /*column id*/) {
             if (pO != B) {
                const auto BX = X_next(B);
-               const auto r = pO->SML_next();
+               const auto r = pO->SML_grad_next();
                if (Distance(pO_center, BX) <= r) {
                   // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
                   double Aij;
@@ -518,10 +518,10 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 #define USE_GMRES
 
 #if defined(USE_GMRES)
-gmres<std::vector<networkPoint *>> *GMRES = nullptr;
+gmres *GMRES = nullptr;
 #endif
 
-int gmres_size = 20;
+int gmres_size = 50;
 
 void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    DebugPrint(Blue, "solvePoisson", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -531,6 +531,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    for (const auto &p : all_particle)
       points.emplace_back(p);
 
+   //@ 行列のサイズが計算毎に変わる可能性があるのでインデックスを再設定する
    for (auto i = 0; const auto &p : points)
       p->setIndexCRS(i++);
 
@@ -560,29 +561,50 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
          p->p_SPH = 0.;
       }
       b[index] = p->PoissonRHS;
-      x0[index] = p->p_SPH;
-      // x0[index] = p->p_SPH_smoothed;
+      // x0[index] = p->p_SPH;
+      x0[index] = p->p_SPH_smoothed;
    }
 
    DebugPrint(Blue, "preconditioning using diagonal value", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 
    /* ------------------ preconditioning using diagonal value ------------------ */
 
+   // #pragma omp parallel
+   //    for (const auto &p : points)
+   // #pragma omp single nowait
+   //    {
+   //       double max = 0, value = 0;
+   //       for (const auto &[_, v] : p->column_value)
+   //          if (std::abs(v) > max) {
+   //             max = std::abs(v);
+   //             value = 1. / v;
+   //          }
+
+   //       // normalize
+   //       b[p->getIndexCRS()] *= value;
+   //       for (auto &[_, v] : p->column_value)
+   //          v *= value;
+
+   //       p->setVectorCRS();
+   //    }
+
+   /* -------------------------------------------------------------------------- */
+
 #pragma omp parallel
    for (const auto &p : points)
 #pragma omp single nowait
    {
-      double max = 0, value = 0;
-      for (const auto &[_, v] : p->column_value)
-         if (std::abs(v) > max) {
-            max = std::abs(v);
-            value = 1. / v;
-         }
+      double diag_value = 0;
+      for (const auto &[q, v] : p->column_value)
+         if (p == q)
+            diag_value = v;
 
-      // normalize
-      b[p->getIndexCRS()] *= value;
-      for (auto &[_, v] : p->column_value)
-         v *= value;
+      if (diag_value != 0) {
+         double value = 1.0 / diag_value;
+         b[p->getIndexCRS()] *= value;
+         for (auto &[_, v] : p->column_value)
+            v *= value;
+      }
 
       p->setVectorCRS();
    }
@@ -591,31 +613,52 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
 #if defined(USE_GMRES)
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   gmres_size = 40;
 
-   if (GMRES == nullptr) {
-      GMRES = new gmres(points, b, x0, gmres_size);  //\label{SPH:gmres}
-   } else {
-      GMRES->Restart(points, b, x0, gmres_size);  //\label{SPH:gmres}
-   }
+   gmres_size -= 1;
+
+   auto return_A_dot_v = [&points](const V_d &V) -> V_d {
+      // Vの値を取得し、各ポイントに設定（両方の範囲が一致する場合に有効）
+      std::transform(std::execution::unseq, points.begin(), points.end(), V.begin(), points.begin(),
+                     [](auto &point, const auto &v_val) {
+                        point->tmp_value = v_val;
+                        return point;
+                     });
+
+      // 結果を並列・ベクトル化で直接ansに格納
+      V_d ans(points.size());
+      std::transform(std::execution::par_unseq, points.begin(), points.end(), ans.begin(), [](auto &point) {
+         return point->selfDotTmpValue();
+      });
+
+      return ans;
+   };
+
+   if (GMRES == nullptr)
+      // GMRES = new gmres(points, b, x0, gmres_size);  //\label{SPH:gmres}
+      GMRES = new gmres(return_A_dot_v, b, x0, gmres_size);  //\label{SPH:gmres}
+   else
+      // GMRES->Restart(points, b, x0, gmres_size);  //\label{SPH:gmres}
+      GMRES->Restart(return_A_dot_v, b, x0, gmres_size);  //\label{SPH:gmres}
+
    // gmres gm(points, b, x0, size);  //\label{SPH:gmres}
 
    DebugPrint(Blue, "solve Poisson equation", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    std::cout << "gmres_size : " << gmres_size << std::endl;
    x0 = GMRES->x;
-   double torr = 1E-7;
+   // double torr = 1E-13;
+   double torr = 1E-9 * points.size();
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
-   std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
+   std::cout << red << " actual error : " << (error = Norm(b - PreparedDot(points, x0))) << std::endl;
    if (GMRES->err > torr)
-      for (auto i = 1; i < 5; i++) {
+      for (auto i = 1; i < 20; i++) {
          std::cout << "Restart : " << i << std::endl;
-         // if (i % 2 == 0)
-         gmres_size += 5;
-         GMRES->Restart(points, b, x0, gmres_size);  //\label{SPH:gmres}
+         if (i > 3)
+            gmres_size += 5;
+         GMRES->Restart(return_A_dot_v, b, x0, gmres_size);  //\label{SPH:gmres}
          x0 = GMRES->x;
          std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
-         std::cout << red << " actual error : " << (error = Norm(b_minus_A_dot_V(b, points, x0))) << std::endl;
+         std::cout << red << " actual error : " << (error = Norm(b - PreparedDot(points, x0))) << std::endl;
          if (GMRES->err < torr)
             break;
       }

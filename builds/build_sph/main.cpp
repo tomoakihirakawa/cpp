@@ -420,7 +420,7 @@ int main(int argc, char **argv) {
 
       */
 
-      if (time_step % 5 == 0) {
+      if (time_step % 10 == 0) {
 
          int num_aux = 0, num_fluid = 0, num_neuman_surface = 0, num_surface = 0;
          for (const auto &p : Fluid->getPoints()) {

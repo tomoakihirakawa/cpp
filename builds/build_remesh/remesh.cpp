@@ -54,7 +54,7 @@ const double small = M_PI / 180 * 0.01;
 JSONoutput output_json;
 
 int main(int arg, char **argv) {
-   Timer time;
+   TimeWatch time;
    std::string input_file{argv[1]};                  // input
    std::filesystem::path output_directory{argv[2]};  // output dir
    std::string output_name{argv[3]};                 // output name

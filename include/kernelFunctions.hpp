@@ -234,20 +234,22 @@ Tddd grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
 
    const double r = Norm(xi - xj);
    const double q = r / h;
-   const Tddd grad_q = (xi - xj) / (r * h);
-   const double c = a / (h * h * h);
 
    if (q > 1. || r < 1E-13)
       return _ZEROS3_;
-   else if (q < one_third) {
-      if (r * h * h * h * h == 0.0)
-         return _ZEROS3_;
+   else {
+      const Tddd grad_q = (xi - xj) / (r * h);
+      const double c = a / (h * h * h);
+      if (q < one_third) {
+         if (r * h * h * h * h == 0.0)
+            return _ZEROS3_;
+         else
+            return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;
+      } else if (q < two_thirds)
+         return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4)) * c;
       else
-         return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4) + 75. * std::pow(one_third - q, 4)) * c;
-   } else if (q < two_thirds)
-      return grad_q * -(5 * std::pow(1. - q, 4) - 30. * std::pow(two_thirds - q, 4)) * c;
-   else
-      return grad_q * -(5 * std::pow(1. - q, 4)) * c;
+         return grad_q * -(5 * std::pow(1. - q, 4)) * c;
+   }
 };
 
 double Dot_grad_w_Bspline5(const Tddd &xi, const Tddd &xj, const double h) {
@@ -343,7 +345,7 @@ double w_Bspline3(const double r, const double h) {
    else if (q < 0.5)
       return (8. + 48. * (q - 1.) * std::pow(q, 2)) / (M_PI * h * h * h);
    else
-      return 16. * std::pow(1. - q, 3) / (M_PI * h * h * h);
+      return 16. * std::pow((1. - q) / h, 3) / M_PI;
 };
 
 std::array<double, 3> grad_w_Bspline3(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
@@ -533,11 +535,10 @@ const std::array<double, 2> between_3_4_5 = {2.7, 2.7};
 //    // #endif
 // };
 
-const auto &w_Bspline = w_Bspline3;
+const auto &w_Bspline = w_Bspline4;
 
 std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
-   return grad_w_Bspline3(xi, xj, h);
-   // return grad_w_Bspline4(xi, xj, h);
+   return grad_w_Bspline4(xi, xj, h);
 };
 
 // std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h, const std::array<Tddd, 3> &M) {

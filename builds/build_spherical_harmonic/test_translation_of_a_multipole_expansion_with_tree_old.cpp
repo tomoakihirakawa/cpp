@@ -4,7 +4,7 @@
 
 // python3.11 ../../extract_comments.py README.md -source ./ -include ../../
 
-/*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
+/*
 
 ## ツリー構造を使った多重極展開の移動
 
