@@ -594,6 +594,9 @@ class networkPoint : public CoordinateBounds, public CRS {
    bool pn_is_set = false;
    bool isSurface = false, isSurface_next = false;
    bool isSurface_tmp = false, isSurface_next_tmp = false;
+   bool isSurface_last_tmp = true;
+   const int isSurface_count_init = 3;
+   int isSurface_count = isSurface_count_init;
    bool isNearSurface = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
@@ -613,18 +616,18 @@ class networkPoint : public CoordinateBounds, public CRS {
       return C_SML_next * particle_spacing;
    };
 
-   double SML_for_lap() const {
+   double SML_lap() const {
       return C_SML * particle_spacing;
    };
-   double SML_for_lap_next() const {
+   double SML_lap_next() const {
       return C_SML_next * particle_spacing;
    };
 
-   double SML_for_grad() const {
-      return C_SML * particle_spacing;
+   double SML_grad() const {
+      return 1.2 * C_SML * particle_spacing;
    };
-   double SML_for_grad_next() const {
-      return C_SML_next * particle_spacing;
+   double SML_grad_next() const {
+      return 1.2 * C_SML_next * particle_spacing;
    };
 
    networkPoint *nearest_wall_p_next = nullptr;
@@ -1674,14 +1677,14 @@ class networkFace : public Triangle {
 
    using linear_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/,
                                                        double /*1: gaussian weight (integration weight)*/,
-                                                       Tddd /*2: 3D paramert {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/,
+                                                       Tddd /*2: 3D parameter {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/,
                                                        Tddd /*3: 3d position vector using {xi0,xi1,xi2}*/,
                                                        Tddd /*4: cross product dX/dxi0 x dX/dxi1 at the point*/,
                                                        double /*5: the norm of the cross product*/>;
 
    using pseudo_quadratic_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/,
                                                                  double /*1: gaussian weight (integration weight)*/,
-                                                                 Tddd /*2: 3D paramert {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/,
+                                                                 Tddd /*2: 3D parameter {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/,
                                                                  std::array<T6d, 4> /*3: shape function for the quadratic element*/,
                                                                  Tddd /*4: 3d position vector using {xi0,xi1,xi2}*/,
                                                                  Tddd /*5: cross product dX/dxi0 x dX/dxi1 at the point*/,
@@ -3786,7 +3789,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          octreeOfFaces(nullptr),
          octreeOfPoints(nullptr),
          surfaceNet(nullptr) {
-      if (filename.contains(".obj")) {
+      if (filename.contains(".obj") || filename.contains(".off")) {
          Load3DFile objLoader(filename);
          if (!objLoader.f_v.empty())
             this->setFaces(objLoader.f_v, this->setPoints(objLoader.v));  // indexの書き換えも可能だがする必要は今のところない
@@ -4025,7 +4028,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
                p->minDepthFromCORNER_ = std::min(p->minDepthFromCORNER_, q->minDepthFromCORNER + 1);
                p->minDepthFromMultipleNode_ = std::min(p->minDepthFromMultipleNode_, q->minDepthFromMultipleNode + 1);
             }
-            // apply
+         // apply
 #pragma omp parallel
          for (const auto &p : points)
 #pragma omp single nowait

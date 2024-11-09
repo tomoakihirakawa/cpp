@@ -124,18 +124,32 @@ return ((nextQ * q)() - q()) / dt;
 
 ```math
 \begin{aligned}
+\frac{d{\boldsymbol{q}}}{dt} =
 \begin{bmatrix}
-q0\\
-q1\\
-q2\\
-q3
+\frac{dq _0}{dt}\\
+\frac{dq _1}{dt}\\
+\frac{dq _2}{dt}\\
+\frac{dq _3}{dt}
 \end{bmatrix}
 =
+\frac{1}{2}
 \begin{bmatrix}
--q1 * w0 - q2 * w1 - q3 * w2\\
-q0 * w0 + q3 * w1 - q2 * w2\\
--q3 * w0 + q0 * w1 + q1 * w2\\
-q2 * w0 - q1 * w1 + q0 * w2
+-q _1  w _0 - q _2 w _1 - q _3  w _2\\
+q _0  w _0 + q _3  w _1 - q _2  w _2\\
+-q _3  w _0 + q _0  w _1 + q _1  w _2\\
+q _2  w _0 - q _1  w _1 + q _0  w _2
+\end{bmatrix}
+= \frac{1}{2}
+\begin{bmatrix}
+-q _1 & -q _2 & -q _3\\
+q _0 & q _3 & -q _2\\
+-q _3 & q _0 & q _1\\
+q _2 & -q _1 & q _0
+\end{bmatrix}
+\begin{bmatrix}
+w _0\\
+w _1\\
+w _2
 \end{bmatrix}
 \end{aligned}
 ```
@@ -181,7 +195,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1757](../../include/basic_vectors.hpp#L1757)
+[../../include/basic_vectors.hpp#L1771](../../include/basic_vectors.hpp#L1771)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

@@ -213,7 +213,7 @@ struct lapack_lu {
    std::vector<int> ipiv;
    std::vector<double> a;
    char TRANS = 'T';
-   ~lapack_lu(){};
+   ~lapack_lu() {};
 
    lapack_lu(const std::vector<std::vector<double>> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
       std::size_t i, j, k = 0;
@@ -974,7 +974,7 @@ struct QR {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    }
    //  std::cout << "QR destructor" << std::endl;
-   ~QR(){};
+   ~QR() {};
    QR(const T &AIN) : Q(AIN.size(), typename T::value_type(AIN.size(), 0.)), A(AIN), R(AIN) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       Initialize(AIN, true);
@@ -1004,11 +1004,18 @@ struct QR {
       const auto N_ROW_R = AIN.size();
       const auto N_COL_R = N_COL;
       this->A = this->R = AIN;
-      this->Q = std::vector(N_ROW_Q, std::vector<double>(N_COL_Q, 0.));
+      // this->Q = std::vector(N_ROW_Q, std::vector<double>(N_COL_Q, 0.));
+
+      this->Q = T(N_ROW_Q, typename T::value_type(N_COL_Q, 0.));
+
       IdentityMatrix(this->Q);
       this->QT = this->Q;
-      double r, c, s, a, b;
-      std::vector<double> V_COL_i(N_COL), V_ROW_i(Q.size()), V_COL_j(N_COL), V_ROW_j(Q.size());
+      // double r, c, s, a, b;
+      // std::vector<double> V_COL_i(N_COL), V_ROW_i(Q.size()), V_COL_j(N_COL), V_ROW_j(Q.size());
+
+      typename T::value_type::value_type r, c, s, a, b;
+      std::vector<typename T::value_type::value_type> V_COL_i(N_COL), V_ROW_i(Q.size()), V_COL_j(N_COL), V_ROW_j(Q.size());
+
       for (int j = 0; j < N_COL; ++j) {         // Process up to the second-to-last row
          for (int i = j + 1; i < N_ROW; ++i) {  // Start from the row below j
             if (this->R[i][j] != 0.) {          // Check if the current element is non-zero for rotation
@@ -1082,7 +1089,7 @@ struct QR<std::array<std::array<double, N>, M>> {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
    }
    //  std::cout << "QR destructor" << std::endl;
-   ~QR(){};
+   ~QR() {};
    QR(const std::array<std::array<double, N>, M> &AIN) : R(AIN), A(AIN) {
       // DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       Initialize(AIN, true);
@@ -1228,6 +1235,8 @@ CRS（Compressed Row Storage）構造体は、疎行列の一部を効率的に�
 
 */
 
+// #define GMRES_USING_FLOAT
+
 struct CRS {
    std::unordered_map<CRS *, double> column_value;
    void clearColumnValue() {
@@ -1236,79 +1245,183 @@ struct CRS {
    };
    double value = 0.;
    double diagonal_value = 0.;
+#ifdef GMRES_USING_FLOAT
+   float tmp_value = 0.;
+   float tmp_tmp_value = 0.;
+#else
    double tmp_value = 0.;
+   double tmp_tmp_value = 0.;
+#endif
+   double tmp_b = 0.;
    bool canUseVector = false;
    std::array<double, 3> value3d = {0., 0., 0.};
    std::size_t __index__;
-   void setIndexCRS(std::size_t i) { this->__index__ = i; };
+   double *value_ptr = nullptr;
+   float *value_ptr_float = nullptr;
+   void setIndexCRS(const std::size_t i) { this->__index__ = i; };
    std::size_t getIndexCRS() const { return __index__; };
-   CRS(){};
+   CRS() {
+      column_value.reserve(50000);
+      column_value_vector.reserve(50000);
+   };
+
+   // double self_dot_tmp() const {
+   //    double ret = 0.;
+   //    if (this->canUseVector) {
+   //       for (const auto &[crs, value, i] : this->column_value_vector)
+   //          ret = std::fma(value, crs->tmp_value, ret);
+   //    } else {
+   //       for (const auto &[crs, value] : this->column_value)
+   //          ret = std::fma(value, crs->tmp_value, ret);
+   //    }
+   //    return ret;
+   // }
+
+   // double self_dot_tmp_store() {
+   //    this->tmp_b = 0.;
+   //    if (this->canUseVector) {
+   //       std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(),
+   //                     [&](const auto &c_v) { this->tmp_b = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, this->tmp_b); });
+   //    } else {
+   //       std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(),
+   //                     [&](const auto &c_v) { this->tmp_b = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, this->tmp_b); });
+   //    }
+   //    return this->tmp_b;
+   // }
+
    void clear() { this->column_value.clear(); }
    double at(CRS *const p) const { return column_value.at(p); };
    bool contains(CRS *const p) const { return column_value.contains(p); };
 
    void set(CRS *const p, const double v) {
-      if (v != 0.) {
-         // auto [it, inserted] = this->column_value.insert({p, v});
-         auto [it, inserted] = this->column_value.try_emplace(p, v);
-         if (!inserted)
-            it->second = v;
-         this->canUseVector = false;
-      }
+      if (v == 0.) return;
+      auto [it, inserted] = this->column_value.try_emplace(p, v);
+      if (!inserted)
+         it->second = v;
+      this->canUseVector = false;
    };
 
    void increment(CRS *const p, const double v) {
-      if (v != 0.) {
-         // auto [it, inserted] = this->column_value.insert({p, v});
-         // if (!inserted)
-         //    it->second += v;
-
-         auto [it, inserted] = this->column_value.try_emplace(p, v);
-         if (!inserted)
-            it->second += v;
-         this->canUseVector = false;
-      }
+      if (v == 0.) return;
+      auto [it, inserted] = this->column_value.try_emplace(p, v);
+      if (!inserted)
+         it->second += v;
+      this->canUseVector = false;
    };
 
    // 高速化のために，vectorに変換する．
+
+#ifdef GMRES_USING_FLOAT
+   std::vector<std::tuple<CRS *, float, std::size_t>> column_value_vector;
+#else
    std::vector<std::tuple<CRS *, double, std::size_t>> column_value_vector;
-   //
-   std::vector<CRS *> column_value_vector_CRS;
-   std::vector<double> column_value_vector_value;
-   std::vector<std::size_t> column_value_vector_index;
-   //
+#endif
+
    void setVectorCRS() {
-      column_value_vector.clear();
-      column_value_vector.reserve(column_value.size());
-
-      column_value_vector_CRS.clear();
-      column_value_vector_CRS.reserve(column_value.size());
-
-      column_value_vector_value.clear();
-      column_value_vector_value.reserve(column_value.size());
-
-      column_value_vector_index.clear();
-      column_value_vector_index.reserve(column_value.size());
-
+      column_value_vector.resize(column_value.size());
+      std::size_t i = 0;
       for (const auto &[crs, value] : column_value) {
          // column_value_vector.push_back({crs, value, crs->__index__});
-         column_value_vector.emplace_back(crs,
-                                          value,
-                                          crs->__index__);
-
-         column_value_vector_CRS.emplace_back(crs);
-         column_value_vector_value.emplace_back(value);
-         column_value_vector_index.emplace_back(crs->__index__);
+         column_value_vector[i++] = {crs, value, crs->__index__};
       }
       this->canUseVector = true;
    };
 
+#ifdef GMRES_USING_FLOAT
+   float selfDotTmpValue() const {
+      if (this->canUseVector) {
+         return std::transform_reduce(std::execution::unseq,
+                                      this->column_value_vector.cbegin(),
+                                      this->column_value_vector.cend(),
+                                      0.0,
+                                      std::plus<>(),
+                                      [](const auto &c_v) {
+                                         return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                      });
+      } else {
+         return std::transform_reduce(std::execution::unseq,
+                                      this->column_value.cbegin(),
+                                      this->column_value.cend(),
+                                      0.0,
+                                      std::plus<>(),
+                                      [](const auto &c_v) {
+                                         return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                      });
+      }
+   };
+#else
+   // double selfDotTmpValue() const {
+   //    double ret = 0.;
+   //    if (this->canUseVector) {
+   //       // std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, ret); });
+   //       // std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(),
+   //       //               [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, ret); });
+
+   //       std::for_each(std::execution::unseq, this->column_value_vector.cbegin(), this->column_value_vector.cend(),
+   //                     [&ret](const auto &c_v) { ret += std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
+
+   //    } else {
+   //       // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, ret); });
+   //       std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(),
+   //                     [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->tmp_value, ret); });
+   //    }
+   //    return ret;
+   // };
+
+   void selfDotTmpValue_Save() {
+      if (this->canUseVector) {
+         this->tmp_tmp_value = std::transform_reduce(std::execution::unseq,
+                                                     this->column_value_vector.cbegin(),
+                                                     this->column_value_vector.cend(),
+                                                     0.0,
+                                                     std::plus<>(),
+                                                     [](const auto &c_v) {
+                                                        return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                                     });
+      } else {
+         this->tmp_tmp_value = std::transform_reduce(std::execution::unseq,
+                                                     this->column_value.cbegin(),
+                                                     this->column_value.cend(),
+                                                     0.0,
+                                                     std::plus<>(),
+                                                     [](const auto &c_v) {
+                                                        return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                                     });
+      }
+   }
+
+   double selfDotTmpValue() const {
+      if (this->canUseVector) {
+         return std::transform_reduce(std::execution::unseq,
+                                      this->column_value_vector.cbegin(),
+                                      this->column_value_vector.cend(),
+                                      0.0,
+                                      std::plus<>(),
+                                      [](const auto &c_v) {
+                                         return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                      });
+      } else {
+         return std::transform_reduce(std::execution::unseq,
+                                      this->column_value.cbegin(),
+                                      this->column_value.cend(),
+                                      0.0,
+                                      std::plus<>(),
+                                      [](const auto &c_v) {
+                                         return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                      });
+      }
+   }
+#endif
    double selfDot() const {
       double ret = 0.;
       if (this->canUseVector) {
-         std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         // std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(),
+                       [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
       } else {
-         std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+         std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(),
+                       [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
       }
       return ret;
    };
@@ -1317,12 +1430,18 @@ struct CRS {
       double ret = 0.;
       if (this->canUseVector) {
          // std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
-         for (std::size_t i = 0; const auto &index : column_value_vector_index)
-            ret = std::fma(column_value_vector_value[i++], V[index], ret);
+         // for (std::size_t i = 0; const auto &__index : column_value_vector)
+         //    ret = std::fma(std::get<1>(column_value_vector[i++]), V[std::get<2>(__index)], ret);
+         // for (const auto &[crs, v, i] : column_value_vector)
+         //    ret = std::fma(v, V[i], ret);
+         std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(),
+                       [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<2>(c_v)], ret); });
       } else {
          // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
-         for (const auto &[crs_local, value] : column_value)
-            ret = std::fma(value, V[crs_local->__index__], ret);
+         // for (const auto &[crs_local, value] : column_value)
+         //    ret = std::fma(value, V[crs_local->__index__], ret);
+         std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(),
+                       [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<0>(c_v)->__index__], ret); });
       }
       return ret;
    };
@@ -1333,128 +1452,114 @@ template <template <typename, typename...> class Container, typename T>
 void DotOutput(const Container<T *> &A, const V_d &V, V_d &w) {
    w.resize(A.size());
    // \label{CRS:parrallel}
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-   {
-      double tmp = 0.;
-      if (crs->canUseVector) {
-         for (const auto &[_, value, i] : crs->column_value_vector)
-            tmp = std::fma(value, V[i], tmp);
-      } else {
-         for (const auto &[crs_local, value] : crs->column_value)
-            tmp = std::fma(value, V[crs_local->__index__], tmp);
-      }
-      w[crs->__index__] = tmp;
-   }
+   std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&w, &V](T *crs) {
+      w[crs->__index__] = crs->selfDot(V);
+   });
 }
 
 template <template <typename, typename...> class Container, typename T>
    requires std::derived_from<T, CRS>
 V_d Dot(const Container<T *> &A, const V_d &V) {
-   V_d ret = V;
-   DotOutput(A, V, ret);
+   V_d ret(A.size());
+   std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&ret, &V](T *crs) {
+      ret[crs->__index__] = crs->selfDot(V);
+   });
    return ret;
 };
-
-// template <template <typename, typename...> class Container, typename T>
-//    requires std::derived_from<T, CRS>
-// V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
-// #pragma omp parallel
-//    for (const auto &crs : A)
-// #pragma omp single nowait
-//    {
-//       auto &a = b[crs->__index__];
-//       if (crs->canUseVector) {
-//          for (const auto &[_, value, i] : crs->column_value_vector)
-//             a = std::fma(-value, V[i], a);
-//       } else {
-//          for (const auto &[crs_local, value] : crs->column_value)
-//             a = std::fma(-value, V[crs_local->__index__], a);
-//       }
-//    }
-//    return b;
-// };
-
-template <template <typename, typename...> class Container, typename T>
-   requires std::derived_from<T, CRS>
-V_d b_minus_A_dot_V(V_d b, const Container<T *> &A, const V_d &V) {
-   // Assuming 'A' is a container that supports random access, like std::vector
-   // #pragma omp parallel for schedule(dynamic)
-   // for (std::size_t j = 0; j < A.size(); ++j) {
-   for (const auto &crs : A) {
-      // auto *crs = A[j];  // Use a pointer to avoid copying the object
-      // double a = 0.;
-      // if (crs->canUseVector) {
-      //    for (const auto &[_, value, i] : crs->column_value_vector)
-      //       a = std::fma(value, V[i], a);
-      // } else {
-      //    for (const auto &[crs_local, value] : crs->column_value)
-      //       a = std::fma(value, V[crs_local->__index__], a);
-      // }
-      b[crs->__index__] -= crs->selfDot(V);
-   }
-   return b;
-};
-
-V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
-   // #pragma omp parallel for
-   for (std::size_t i = 0; i < A.size(); ++i) {
-      auto &a = b[i];
-      std::size_t j = 0;
-      for (const auto &Aij : A[i])
-         a = std::fma(-Aij, V[j++], a);
-   }
-   return b;
-};
-
-// V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
-// #pragma omp parallel for
-//    for (std::size_t i = 0; i < A.size(); ++i) {
-//       auto &Ai = A[i];
-//       auto &a = b[i];
-//       std::size_t j = 0;
-
-//       // Loop unrolling for inner loop
-//       for (std::size_t k = 0; k + 3 < Ai.size(); k += 4) {
-//          a = std::fma(-Ai[k + 3], V[j + 3], std::fma(-Ai[k + 2], V[j + 2], std::fma(-Ai[k + 1], V[j + 1], std::fma(-Ai[k], V[j], a))));
-//          j += 4;
-//       }
-//       // Handle remaining elements
-//       for (; j < Ai.size(); ++j) {
-//          a = std::fma(-Ai[j], V[j], a);
-//       }
-//    }
-//    return b;
-// };
-
-// V_d b_minus_A_dot_V(V_d b, const VV_d &A, const V_d &V) {
-// #pragma omp parallel
-//    for (auto i = 0; i < A.size(); ++i)
-// #pragma omp single nowait
-//    {
-//       auto &a = b[i];
-//       // for (auto j = 0; j < V.size(); ++j)
-//       //    a = std::fma(-A[i][j], V[j], a);
-//       int j = 0;
-//       for (const auto &Aij : A[i])
-//          a = std::fma(-Aij, V[j++], a);
-//    }
-//    return b;
-// };
 
 template <typename T>
    requires std::derived_from<T, CRS>
-V_d selfDot(const std::vector<T *> &A) {
+V_d Dot(const std::vector<T *> &A) {
    V_d ret(A.size(), 0.);
-#pragma omp parallel
-   for (const auto &crs : A)
-#pragma omp single nowait
-   {
+   std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&ret](T *crs) {
       ret[crs->__index__] = crs->selfDot();
-   }
+   });
    return ret;
 };
+
+template <template <typename, typename...> class Container, typename T>
+   requires std::derived_from<T, CRS>
+void PreparedDotOutput(const Container<T *> &A, V_d &V) {
+
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      double &value = V[crs->__index__];  // V[crs->__index__]に一度だけアクセス
+      crs->tmp_value = value;             // tmp_valueに保存
+      crs->value_ptr = &value;            // V[index]のポインタを設定
+   });
+
+   //! ポインタを使って計算し、Vに直接書き戻す
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      *crs->value_ptr = crs->selfDotTmpValue();  // 計算結果をポインタ経由でVに書き戻す
+   });
+}
+
+// template <template <typename, typename...> class Container, typename T>
+//    requires std::derived_from<T, CRS>
+// V_d PreparedDot(const Container<T *> &A, V_d V) {
+//    //! Vに対するランダムアクセスの回数を減らすために，Vの値をCRSに保存しておく
+//    std::for_each(std::execution::par, A.begin(), A.end(), [&](T *crs) {
+//       crs->tmp_value = V[crs->__index__];
+//    });
+
+//    std::for_each(std::execution::par, A.begin(), A.end(), [&](T *crs) {
+//       V[crs->__index__] = crs->selfDotTmpValue();
+//    });
+
+//    return V;
+// }
+
+/*
+PreparedDotは，GMRESのArnoldi過程において，行列-ベクトル積を計算するために使われている．
+現在の実装では，
+
+double &value = V[crs->__index__];
+
+VがどのAの行に対応しているかがわからないため，遅くなっている．
+もしはじめからわかっていれば，
+
+for(auto &[crs, value] : V) {
+   crs->tmp_value = value;
+}
+
+std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+   *crs->value_ptr = crs->selfDotTmpValue();  // 計算結果をポインタ経由でVに書き戻す
+});
+
+そう考えると，AにVの機能を組み込むことで，高速化が可能である．
+
+*/
+
+template <template <typename, typename...> class Container, typename T>
+   requires std::derived_from<T, CRS>
+V_d PreparedDot(const Container<T *> &A, V_d V) {
+   //! V_dの値を取得しつつポインタを設定
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      double &value = V[crs->__index__];  // V[crs->__index__]に一度だけアクセス
+      crs->tmp_value = value;             // tmp_valueに保存
+      crs->value_ptr = &value;            // V[index]のポインタを設定
+   });
+   //! ポインタを使って計算し、Vに直接書き戻す
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      *crs->value_ptr = crs->selfDotTmpValue();  // 計算結果をポインタ経由でVに書き戻す
+   });
+   return V;
+}
+
+template <template <typename, typename...> class Container, typename T>
+   requires std::derived_from<T, CRS>
+V_f PreparedDot(const Container<T *> &A, V_f V) {
+   //! V_dの値を取得しつつポインタを設定
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      float &value = V[crs->__index__];  // V[crs->__index__]に一度だけアクセス
+      crs->tmp_value = value;            // tmp_valueに保存
+      crs->value_ptr_float = &value;     // V[index]のポインタを設定
+   });
+   //! ポインタを使って計算し、Vに直接書き戻す
+   std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+      *crs->value_ptr_float = crs->selfDotTmpValue();  // 計算結果をポインタ経由でVに書き戻す
+   });
+   return V;
+}
 
 /* -------------------------------------------------------------------------- */
 struct ILU {
@@ -1588,7 +1693,6 @@ NOTE: $`\tilde H_n`$は，Hessenberg行列が１行長くなった行列にな�
 
 // #define DEBUG_GMRES
 //
-template <typename Matrix>
 struct ArnoldiProcess {
 
    std::size_t n;  // the number of interation
@@ -1597,48 +1701,119 @@ struct ArnoldiProcess {
    VV_d H;  // ((n+1) x n) Hessenberg matrix
    VV_d V;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
    V_d w;
-   // ~ArnoldiProcess() { std::cout << "destructing ArnoldiProcess" << std::endl; };
-   // make virtul destructor
+   //
+   float beta_float;
+   V_f v0_float;
+   VV_f H_float;  // ((n+1) x n) Hessenberg matrix
+   VV_f V_float;  // ((n+1) x n) an orthonormal basis of the Krylov subspace like {v0,A.v0,A^2.v0,...}
+   V_f w_float;
+
    virtual ~ArnoldiProcess() = default;
-   ArnoldiProcess(const Matrix &A, const V_d &v0IN /*the first direction*/, const std::size_t nIN)
+
+   ArnoldiProcess(const std::function<V_d(const V_d &v)> &return_A_dot_v,
+                  const V_d &v0IN,
+                  const std::size_t nIN)
        : n(nIN),
          beta(Norm(v0IN)),
          v0(v0IN / beta),
          H(nIN + 1, V_d(nIN, 0.)),
          V(nIN + 1, v0 /*V[0]=v0であればいい．ここではv0=v1=v2=..としている*/),
-         w(A.size()) {
+         w(v0IN.size()) {
+      H.reserve(300);
+      V.reserve(300);
+      v0.reserve(300);
+      w.reserve(300);
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      Initialize(A, v0IN, nIN, false);
+      this->Initialize(return_A_dot_v, v0IN, nIN, false);
    };
 
-   void Initialize(const Matrix &A, const V_d &v0IN /*the first direction*/, const int nIN, const bool do_constract = true) {
-      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-      // if (do_constract) {
-      n = nIN;
-      beta = Norm(v0IN);
-      v0 = (v0IN / beta);
-      V_d zeros(nIN, 0.);
-      H.assign(nIN + 1, zeros);
-      V.assign(nIN + 1, v0);
-      w.resize(A.size());
-      // }
-      std::size_t i, j;
+   /* -------------------------------------------------------------------------- */
 
+   void Initialize_float(const std::function<V_f(const V_f &v)> &return_A_dot_v, const V_f &v0IN, const int nIN, const bool do_constract = true) {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      if (do_constract) {
+         n = nIN;
+         beta = beta_float = Norm(v0IN);
+         v0_float = (v0IN / beta_float);
+         // 既存のHとVのサイズを変更し、メモリを再利用する
+         H_float.resize(nIN + 1);  // Hは (nIN + 1) x nIN のサイズになる
+         H.resize(nIN + 1);
+         V_float.resize(nIN + 1);  // Vは (nIN + 1) x v0_float.size() のサイズになる
+         V.resize(nIN + 1);
+         // Hの各行をゼロで初期化
+         for (std::size_t i = 0; i < nIN + 1; ++i) {
+            H_float[i].assign(nIN, 0.0);  // 既存のメモリを再利用しつつゼロで初期化
+            H[i].assign(nIN, 0.0);        // 既存のメモリを再利用しつつゼロで初期化
+         }
+         // Vの各行をv0で初期化（V[0] = v0_float, 他の行は0にする場合は別途初期化）
+         V_float[0] = v0_float;  // V_float[0] は v0_float に初期化される
+         for (std::size_t i = 1; i <= nIN; ++i) {
+            V_float[i].assign(v0_float.size(), 0.0);  // 他の行はゼロで初期化
+            V[i].assign(v0_float.size(), 0.0);        // 他の行はゼロで初期化
+         }
+         w_float.resize(v0IN.size());
+         w.resize(v0IN.size());
+      }
+      /* --------------------------------------- */
+      std::size_t i, j;
       for (j = 0; j < n /*展開項数*/; ++j) {
-         for (const auto &crs : A)
-            w[crs->__index__] = crs->selfDot(V[j]);
+         w_float = return_A_dot_v(V_float[j]);
+         for (i = 0; i <= j; ++i)
+            FusedMultiplyIncrement(-(H_float[i][j] = Dot(V_float[i], w_float)), V_float[i], w_float);
+         V_float[j + 1] = w_float / (H_float[j + 1][j] = Norm(w_float));
+      }
+      // copy to double H, V, w, v0, beta
+      for (std::size_t i = 0; i < nIN + 1; ++i) {
+         for (std::size_t j = 0; j < H_float[i].size(); ++j)
+            H[i][j] = H_float[i][j];
+         for (std::size_t j = 0; j < V_float[i].size(); ++j)
+            V[i][j] = V_float[i][j];
+      }
+      for (std::size_t i = 0; i < w_float.size(); ++i)
+         w[i] = w_float[i];
+      beta = beta_float;
+   };
+
+   /* -------------------------------------------------------------------------- */
+
+   void Initialize(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &v0IN, const int nIN, const bool do_constract = true) {
+      DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
+      if (do_constract) {
+         n = nIN;
+         beta = Norm(v0IN);
+         v0 = (v0IN / beta);
+         // 既存のHとVのサイズを変更し、メモリを再利用する
+         H.resize(nIN + 1);  // Hは (nIN + 1) x nIN のサイズになる
+         V.resize(nIN + 1);  // Vは (nIN + 1) x v0.size() のサイズになる
+         // Hの各行をゼロで初期化
+         for (auto &row : H) {
+            row.assign(nIN, 0.0);  // 既存のメモリを再利用しつつゼロで初期化
+         }
+         // Vの各行をv0で初期化（V[0] = v0, 他の行は0にする場合は別途初期化）
+         V[0] = v0;  // V[0] は v0 に初期化される
+         for (std::size_t i = 1; i <= nIN; ++i)
+            V[i].assign(v0.size(), 0.0);  // 他の行はゼロで初期化
+         w.resize(v0IN.size());
+      }
+      std::size_t i, j;
+      double tmp = 0;
+      for (j = 0; j < n /*展開項数*/; ++j) {
+         w = return_A_dot_v(V[j]);
          for (i = 0; i <= j; ++i)
             FusedMultiplyIncrement(-(H[i][j] = Dot(V[i], w)), V[i], w);
          V[j + 1] = w / (H[j + 1][j] = Norm(w));
       }
    };
 
-   void AddBasisVector(const Matrix &A) {
+   /* -------------------------------------------------------------------------- */
+
+   void AddBasisVector(const std::function<V_d(const V_d &v)> &return_A_dot_v) {
       // std::cout << "AddBasisVector" << std::endl;
       std::size_t i;
       // update n, V, H
       this->n++;
-      w = Dot(A, *V.rbegin());  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+      // w = Dot(A, *V.rbegin());  //@ 行列-ベクトル積\label{ArnoldiProcess:matrix-vector}
+      w = return_A_dot_v(*V.rbegin());
       for (auto &h : H)
          h.push_back(0.);
       H.push_back(V_d(n, 0.));
@@ -1709,115 +1884,79 @@ $`A{\bf x} = {\bf b}`$の問題を解くよりも，
 $`{\tilde H}_n {\bf y}_n = {\bf b}`$という問題を解く方が計算量が少ない．
 */
 
-template <typename Matrix>
-struct gmres : public ArnoldiProcess<Matrix> {
+struct gmres : public ArnoldiProcess {
+
    /* NOTE:
    r0 = Normalize(b - A.x0)
    to find {r0,A.r0,A^2.r0,...}
    Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
    */
    // int n;  // th number of interation
+
    V_d x;
    V_d y;
    QR<VV_d, true> qr;
    V_d g;
    double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
-   gmres() { DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__); };
-   gmres(const Matrix &A, const V_d &b, const V_d &x0, const std::size_t nIN)
-       : ArnoldiProcess<Matrix>(A, b_minus_A_dot_V(b, A, x0) /*b - Dot(A, x0) 行列-ベクトル積*/, nIN),
+   gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const std::size_t nIN)
+       : ArnoldiProcess(return_A_dot_v, b - return_A_dot_v(x0), nIN),
          x(x0),
          y(b.size()),
-         qr(ArnoldiProcess<Matrix>::H),
+         qr(ArnoldiProcess::H),
          g(qr.Q.size()),
          err(0.) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-#if defined(DEBUG_GMRES)
-      TimeWatch watch;
-      std::cout << "gmres" << std::endl;
-#endif
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
-      //
       std::size_t i = 0;
       for (const auto &q : qr.QT)
          this->g[i++] = q[0] * this->beta;
-
       this->err = std::abs(this->g.back());  // 予想される誤差
       this->g.pop_back();
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
-      i = 0;
-      for (i = 0; i < this->n; ++i) {
-         // this->x += this->y[i] * this->V[i];
-         //! use std::fma
+      for (auto i = 0; i < this->n; ++i)
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
-      }
-#if defined(DEBUG_GMRES)
-      std::cout << "Elapsed time" << watch() << std::endl;
-#endif
    };
 
-   void Restart(const Matrix &A, const V_d &b, const V_d x0, const int nIN) {
+   // std::vector<double>からstd::vector<float>への変換コンストラクタ
+   std::vector<float> convertToFloat(const std::vector<double> &vec) {
+      return std::vector<float>(vec.begin(), vec.end());
+   }
+
+   /* -------------------------------------------------------------------------- */
+
+   void Restart(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const int nIN) {
       DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
       std::cout << "Restart:Restarting" << std::endl;
-      // this->Initialize(A, b - Dot(A, x0), nIN);
-      // std::cout << "Restart:Initialize" << std::endl;
-      this->Initialize(A, b_minus_A_dot_V(b, A, x0), nIN);
+      this->ArnoldiProcess::Initialize(return_A_dot_v, b - return_A_dot_v(x0), nIN);
       std::cout << "Restart:Initialize done" << std::endl;
       this->x = x0;
-      // this->y.resize(b.size());
       std::cout << "QR" << std::endl;
       this->qr.Initialize(this->H);
       std::cout << "QR done" << std::endl;
-      if (this->beta /*initial error*/ == static_cast<double>(0.))
-         return;
-      std::size_t i = 0;
-      // std::vector<double> tmp_g(this->qr.QT.size());
-      // for (const auto &q : qr.QT)
-      //    tmp_g[i++] = q[0] * this->beta;
-      // this->g = tmp_g;
+      if (this->beta /*initial error*/ == static_cast<double>(0.)) return;
       this->g = this->qr.Q[0] * this->beta;
-
       err = std::abs(this->g.back());  // 予想される誤差
       this->g.pop_back();
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
-      for (i = 0; i < this->n; ++i) {
-         // this->x += this->y[i] * this->V[i];
-         //! use std::fma
+      for (auto i = 0; i < this->n; ++i)
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
-      }
       std::cout << "Restart done" << std::endl;
    }
 
-   void Restart(const Matrix &A, const V_d &b, const int nIN) {
-      this->Restart(A, b, this->x, nIN);
-   }
-
+   /* -------------------------------------------------------------------------- */
    //@今の所このIterateは正しく実装されていない．
-
-   void Iterate(const Matrix &A) {
-      // std::cout << "Iterate" << std:zx:endl;
-      // do not change v0
-      this->AddBasisVector(A);
+   void Iterate(const std::function<V_d(const V_d &v)> &return_A_dot_v) {
+      this->AddBasisVector(return_A_dot_v);
       this->qr = QR<VV_d, true>(this->H);
-      // g.resize(qr.Q.size());
       err = 0.;
       if (this->beta /*initial error*/ == static_cast<double>(0.))
          return;
-      // std::cout << "g.size() = " << g.size() << std::endl;
       std::size_t i = 0;
-      // for (const auto &q : this->qr.QT)
-      //    g[i++] = q[0] * this->beta;
-
       this->g = this->qr.Q[0] * this->beta;
-
       err = std::abs(g.back());  // 予想される誤差
       g.pop_back();
-      // std::cout << "back_substitution" << std::endl;
-      // this->y = back_substitution(this->qr.R, g, g.size());
-      // i = this->n - 1;
-      // this->x += this->y[i] * this->V[i];
-
       std::fill(this->x.begin(), this->x.end(), 0);
       this->y = back_substitution(this->qr.R, g, g.size());
       for (i = 0; i < this->n; ++i) {

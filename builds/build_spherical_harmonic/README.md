@@ -1,16 +1,17 @@
 # Contents
+- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
+    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
+        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ 精度の確認](#⛵-精度の確認)
         - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
         - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
+- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
+    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
+        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
-    - [⛵ `multipole_expansion`クラスのチェック](#⛵-`multipole_expansion`クラスのチェック)
-    - [⛵ 多重極展開とその移動](#⛵-多重極展開とその移動)
-    - [⛵ `multipole_expansion`クラスのチェック](#⛵-`multipole_expansion`クラスのチェック)
-    - [⛵ 展開中心の移動（M2M）](#⛵-展開中心の移動（M2M）)
-    - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
-    - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
-    - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
-    - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
+- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
+    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
+        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
     - [⛵ ベッセル関数](#⛵-ベッセル関数)
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
@@ -20,7 +21,62 @@
 
 
 ---
-<!-- Key Multipole_Expansion not found -->
+# 🐋 🐋 多重極展開  
+
+この実装は，\cite{Greengard1997a}に基づいている．
+
+## ⛵ ⛵ Green関数の多重極展開  
+
+次のGreen関数を考える．
+
+```math
+G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
+\quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
+```
+
+グリーン関数は，球面調和関数を使って近似できる．
+近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
+
+```math
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
+{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+```
+
+```math
+{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
+```
+
+ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+
+```math
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
+```
+
+$`P _k^m(x)`$はルジャンドル陪関数：
+
+```math
+P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+```
+
+### 🪼 🪼 球面座標系への変換  
+
+$`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
+
+```math
+r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
+```
+
+$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
+
+```math
+\nabla r = \frac{\bf x}{r},\quad
+\nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
+\nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
+```
+[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+
 
 ## ⛵ 精度の確認 
 
@@ -94,157 +150,143 @@ $`{\bf c}=(x,y,0)`$を変化させてプロットした結果：
 [./test_multipole_expansion.cpp#L4](./test_multipole_expansion.cpp#L4)
 
 ---
-## ⛵ ツリー構造を使った多重極展開の移動 
+# 🐋 🐋 多重極展開  
 
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240610.cpp
-make
-./test_translation_of_a_multipole_expansion_with_tree_20240610
-paraview check_M2L.pvsm
-```
+この実装は，\cite{Greengard1997a}に基づいている．
 
-[./20240629.cpp#L8](./20240629.cpp#L8)
+## ⛵ ⛵ Green関数の多重極展開  
 
-## ⛵ `multipole_expansion`クラスのチェック 
-
-## ⛵ 多重極展開とその移動 
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion.cpp
-make
-./test_translation_of_a_multipole_expansion
-```
-
-ここで示す，多重極展開は次式を近似する．
+次のGreen関数を考える．
 
 ```math
-(G,\nabla G\cdot {\bf n})=\left(\frac{1}{\|{\bf x}-{\bf a}\|}, -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}\cdot{\bf n}\right)
+G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
+\quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
 ```
 
-ガウス・ルジャンドル積分を使う際には，これに重みをかけて足し合わせる．その重みは別に計算し，保存しておく．元々の関数の近似の係数と重みの係数を混同しないように注意する．
-現在のところ，以下のような値を与えて多重極展開を計算している．
+グリーン関数は，球面調和関数を使って近似できる．
+近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
 
-* カーネル$G$には，位置と数値積分のための重みを与えている．
-* カーネル$\nabla G\cdot {\bf n}$には，位置と数値積分のための重み，そして法線ベクトルを与えている．
-
-```cpp
-void increment(const Tddd& XIN, const std::array<double, 2> weights, const Tddd& normal) {
-const Tddd R = XIN - this->X;
-auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
-return {SolidHarmonicR(n, m, R) * weights[0],
-Dot(normal, Grad_SolidHarmonicR(n, m, R)) * weights[1]};
-};
-this->set(set_coeffs);
-};
+```math
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
+{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
 ```
 
-[./test_translation_of_a_multipole_expansion.cpp#L7](./test_translation_of_a_multipole_expansion.cpp#L7)
-
-## ⛵ `multipole_expansion`クラスのチェック 
-
-FMMアルゴリズムでは，展開中心から遠くにある遠方原点の値は，モーメントを計算した後に渡される．
-ここでチェックするのは，その計算過程を行うクラス`multipole_expansion`が問題なく動作するかどうかである．
-
-💡 境界要素法におけるモーメントは，極そのものではなく，極の面積分（３D）である．
-
-💡 多重極モーメントを計算するために，極の値を与えられなければならない．
-\cite{Liu_2009}
-
-💡 効率化するために要求されるオペレーションは，極の値が変化した際に，できるだけ少ない計算でモーメントを更新することである．
-
-1. モーメントの計算（近傍にある複数の極を変数分離し足し合わせる）
-2. 遠方の原点を決めて渡し，計算しておいたモーメントと積和を計算する
-3. この計算結果と，展開しない計算結果との差をプロット
-
-一つ前の例では，展開位置を変えることで，多重極展開の精度がどのように変化するかを調べた．
-原点位置の移動による展開精度の変化は，展開中心の移動による展開精度の変化と同じである．
-展開精度は，（多分）相対距離を規格化した上での，展開中心と極と原点との相対的位置関係で決まっているからである．
-
-## ⛵ 展開中心の移動（M2M） 
-
-多数の極を空間的にグループ分けして，
-グループの中心位置を展開中心として多重極展開したとする．
-
-次に，そのグループをさらにまとめて新たな多重極展開を行うことを考える．
-この操作は，１ステップ目で得られた各グループの多重極展開係数を利用することで効率的に行うことができる．
-各極に対する多重極展開は計算せずに済むからである．
-
-変更されるのは，多重極係数ではなく，球面調和関数自体と，少しの係数のみである．
-
-ここでは，始めに，１ステップ目として座標原点を中心とした多重極展開を行い，
-次に，様々な場所での多重極展開を行って，前回同様に精度を検証する．
-
-もし，２ステップ目において，展開中心が１ステップ目同様に原点であれば，
-前回と同じ結果が得られるはずである．
-
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion.cpp
-make
-./test_translation_of_a_multipole_expansion
+```math
+{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
 ```
 
-[./test_translation_of_a_multipole_expansion_trash.cpp#L5](./test_translation_of_a_multipole_expansion_trash.cpp#L5)
+ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+
+```math
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
+```
+
+$`P _k^m(x)`$はルジャンドル陪関数：
+
+```math
+P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+```
+
+### 🪼 🪼 球面座標系への変換  
+
+$`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
+
+```math
+r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
+```
+
+$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
+
+```math
+\nabla r = \frac{\bf x}{r},\quad
+\nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
+\nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
+```
+[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240818.cpp
 make
-./test_translation_of_a_multipole_expansion_with_tree
-```
-
-[./test_translation_of_a_multipole_expansion_with_tree.cpp#L7](./test_translation_of_a_multipole_expansion_with_tree.cpp#L7)
-
-## ⛵ ツリー構造を使った多重極展開の移動 
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240610.cpp
-make
-./test_translation_of_a_multipole_expansion_with_tree_20240610
+./test_translation_of_a_multipole_expansion_with_tree_20240818
 paraview check_M2L.pvsm
 ```
 
-[./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L10](./test_translation_of_a_multipole_expansion_with_tree_20240610.cpp#L10)
+[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L9](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L9)
+
+# 🐋 🐋 多重極展開  
+
+この実装は，\cite{Greengard1997a}に基づいている．
+
+## ⛵ ⛵ Green関数の多重極展開  
+
+次のGreen関数を考える．
+
+```math
+G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
+\quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
+```
+
+グリーン関数は，球面調和関数を使って近似できる．
+近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
+
+```math
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
+{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+```
+
+```math
+{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
+```
+
+ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+
+```math
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
+```
+
+$`P _k^m(x)`$はルジャンドル陪関数：
+
+```math
+P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+```
+
+### 🪼 🪼 球面座標系への変換  
+
+$`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
+
+```math
+r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
+```
+
+$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
+
+```math
+\nabla r = \frac{\bf x}{r},\quad
+\nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
+\nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
+```
+[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240629.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES.cpp
 make
-./test_translation_of_a_multipole_expansion_with_tree_20240629
+./test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES
 paraview check_M2L.pvsm
 ```
 
-[./test_translation_of_a_multipole_expansion_with_tree_20240629.cpp#L8](./test_translation_of_a_multipole_expansion_with_tree_20240629.cpp#L8)
-
-## ⛵ ツリー構造を使った多重極展開の移動 
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree.cpp
-make
-./test_translation_of_a_multipole_expansion_with_tree
-```
-
-[./test_translation_of_a_multipole_expansion_with_tree_old.cpp#L7](./test_translation_of_a_multipole_expansion_with_tree_old.cpp#L7)
-
-## ⛵ ツリー構造を使った多重極展開の移動 
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree.cpp
-make
-./test_translation_of_a_multipole_expansion_with_tree
-```
-
-[./test_translation_of_a_multipole_expansion_with_tree_saved.cpp#L7](./test_translation_of_a_multipole_expansion_with_tree_saved.cpp#L7)
+[./test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES.cpp#L14](./test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES.cpp#L14)
 
 ---
 ## ⛵ ベッセル関数
@@ -324,6 +366,6 @@ Graf's Addition Theoremを使って，$`{\bf Y}^\ast({\bf x},{\bf c} _{\square i
 {\bf Y}^\ast({\bf x},{\bf c} _{\square i}) = \sum _{\square j} {\bf Y}^\ast({\bf x},{\bf c} _{\square j}){\bf Y}({\bf c} _{\square j},{\bf c} _{\square i})
 ```
 
-[./test_multipole_expansion.cpp#L147](./test_multipole_expansion.cpp#L147)
+[./test_multipole_expansion.cpp#L202](./test_multipole_expansion.cpp#L202)
 
 ---

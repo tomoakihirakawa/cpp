@@ -28,6 +28,7 @@
 - [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
 - [🐋 四面体の生成](#🐋-四面体の生成)
     - [⛵ TetGenを使った四面体を生成](#⛵-TetGenを使った四面体を生成)
+        - [🪼 `tetgenbehavior`クラス](#🪼-`tetgenbehavior`クラス)
     - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
     - [⛵ スコアリングと選択](#⛵-スコアリングと選択)
 - [🐋 CGALを使って四面体を生成する 9_9_CGAL](#🐋-CGALを使って四面体を生成する-9_9_CGAL)
@@ -59,7 +60,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3773)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L3776)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -232,7 +233,7 @@ make
 ラフに行っても問題ない．
 線に関しては細かい分割によってインデックス変換できる．
 平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
-[../../include/lib_spatial_partitioning_saved.hpp#L7](../../include/lib_spatial_partitioning_saved.hpp#L7)
+[../../include/lib_spatial_partitioning.hpp#L8](../../include/lib_spatial_partitioning.hpp#L8)
 
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
@@ -248,7 +249,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L113)は，
+[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L117)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -405,19 +406,9 @@ NumberOfVerts="0">
 
 [https://wias-berlin.de/software/tetgen](https://wias-berlin.de/software/tetgen)
 
-TetGenを使って四面体を生成し，Networkの四面体へと置き換える．
-
-`tetgenbehavior`は，TetGenのオプションを設定するためのクラスで，`parse_commandline`関数を使ってオプションを設定する．
-次のようなオプションがあり意味がある([https://wias-berlin.de/software/tetgen/switches.html](https://wias-berlin.de/software/tetgen/switches.html))：
-
-| オプション | 意味 |
-|:---:|:---:|
-| `p` | PLC（Piecewise Linear Complex）を四面体化する． 他には，`r`（リージョン）や`y`（境界）などがある． |
-| `q` | 最小radius-edge比を指定する．例えば，`q1.4`は最小radius-edge比1.4を指定する． |
-| `a` | 最大四面体の体積制約を課す．例えば，`a50.`は最大体積50の四面体の体積制約を課す． |
-
-
-現在のフォルダに`tetgen1.6.0`を置き，次のコマンドを実行すると，`libtet.a`が生成される．
+TetGenを使って四面体を生成し，Networkの四面体へと置き換え，出力するプログラム．
+現在のフォルダに`tetgen1.6.0`を置き（tetgen1.6.0内にCMakelists.txtが保存されている．），次のコマンドを実行すると，`libtet.a`が生成される．
+`.a`は，`.o`ファイルをまとめたアーカイブファイルである．
 
 ```shell
 sh clean
@@ -425,7 +416,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ./tetgen1.6.0
 make
 ```
 
-これまで使っていたCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
+上のアーカイブを利用するメインのcppプログラムのCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
 
 ```cmake
 target_link_libraries(${BASE _NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
@@ -441,7 +432,29 @@ make
 ./example_tetGen
 ```
 
-<img src="./image.png" width="500px">
+### 🪼 `tetgenbehavior`クラス 
+
+`tetgenbehavior`クラスは，TetGenのメッシュ生成オプションを設定するために使用され，`parse_commandline`関数を通じてオプションを指定できる．
+この関数を使うことで，メッシュ生成の際に必要な条件や制約を細かく調整できる．
+
+例として，pq2.a50.が指定された場合，以下のオプションが適用される．
+
+```cpp
+tetgenbehavior b;
+b.parse_commandline("pq2.a50.");
+```
+
+| オプション | 意味 |
+|:---:|:---:|
+| p | PLC（Piecewise Linear Complex）を四面体メッシュ化する．その他に，再メッシュ用のrや，境界ポイントの保持を行うyなどのオプションもある．|
+| q2 | 最小radius-edge比を2に設定し，品質の高い四面体を生成する．例えば，q1.4なら比率を1.4に設定する．|
+| a50. | 四面体の最大体積を50に制限します．例えば，a100.とすると最大体積が100に制限される．|
+
+
+<figure>
+<img src="./image_tetgen_comparison.png" width="600px">
+<figcaption>pq2.a50, pq1.a50, pq1.a0.00005の比較</figcaption>
+</figure>
 
 [./example_tetGen.cpp#L5](./example_tetGen.cpp#L5)
 
@@ -493,7 +506,7 @@ brew install CGAL
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_generate_tetra_using_CGAL.cpp -I/opt/homebrew/Cellar/cgal/6.0.1/include
 make
 ```
 

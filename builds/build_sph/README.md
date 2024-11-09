@@ -167,7 +167,7 @@ q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 
 水面の判定条件は，少し複雑である．
 
-[./SPH0_setWall_Freesurface.hpp#L1023](./SPH0_setWall_Freesurface.hpp#L1023)
+[./SPH0_setWall_Freesurface.hpp#L1024](./SPH0_setWall_Freesurface.hpp#L1024)
 
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -295,9 +295,9 @@ p _i^{\rm new} = \frac{b + \sum _j A _{ij} p _j^{\rm old}}{\sum _j A _{ij}}
 
 $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} + {\bf u}^{n+1} \Delta t`$が必要である．
 
-* [次時刻の粒子体積](../../builds/build_sph/SPH_Functions.hpp#L307)
+* [次時刻の粒子体積](../../builds/build_sph/SPH_Functions.hpp#L310)
 * [次時刻の粒子密度](../../builds/build_sph/SPH_Functions.hpp#L299)
-* [次時刻の粒子位置](../../builds/build_sph/SPH_Functions.hpp#L312)
+* [次時刻の粒子位置](../../builds/build_sph/SPH_Functions.hpp#L315)
 
 [./SPH2_FindPressure.hpp#L104](./SPH2_FindPressure.hpp#L104)
 
@@ -352,7 +352,7 @@ $`\rho^\ast`$を計算する際に，$`\rho^\ast = \rho _w + \frac{D\rho^\ast}{D
 ---
 ## ⛵ ポアソン方程式の解法 
 
-ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_bem/BEM_solveBVP.hpp#L869)を使う．
+ISPHのポアソン方程式を解く場合，[ここではGMRES法](../../builds/build_bem/BEM_solveBVP.hpp#L787)を使う．
 
 [./SPH2_FindPressure.hpp#L509](./SPH2_FindPressure.hpp#L509)
 
@@ -396,7 +396,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [流体として扱う壁粒子を設定するかどうか](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L455)/[視野角に流体粒子が含まない壁粒子は除外する](not found)
 - [壁粒子の圧力をどのように壁面にマッピングするか](not found)
 - [壁粒子の法線方向ベクトルの計算方法](../../builds/build_sph/SPH0_setWall_Freesurface.hpp#L850)
-- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L457)
+- [反射の計算方法](../../builds/build_sph/SPH_Functions.hpp#L460)
 
 **水面粒子**
 
@@ -405,14 +405,14 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L518)
+- [密度を更新するかどうか](../../builds/build_sph/SPH_Functions.hpp#L532)
 - [圧力の安定化をするかどうか](not found)
 - [ルンゲクッタの段数](../../builds/build_sph/from os.py#L145)
 
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L534](./SPH_Functions.hpp#L534)
+[./SPH_Functions.hpp#L548](./SPH_Functions.hpp#L548)
 
 ## ⛵ 出力
 
@@ -481,7 +481,7 @@ Smoothed Particle Hydrodynamics (SPH)では，効率的な近傍粒子探査が�
 
 <!-- Key SPH:kernelFunctions not found -->
 
-プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L276)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
+プログラムした[3次スプライン関数](../../include/kernelFunctions.hpp#L278)と[5次スプライン関数](../../include/kernelFunctions.hpp#L73)のテストコード
 
 ```sh
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_KernelFunctions.cpp

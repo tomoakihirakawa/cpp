@@ -250,12 +250,9 @@ NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分�
 
 bool isNeumannID_BEM(const auto p, const auto f) {
    if (p->Neumann || p->CORNER) {
-      if (p->isMultipleNode) {
-         if (p->MemberQ(f))
-            return f->Neumann;
-         else
-            return false;
-      } else
+      if (p->isMultipleNode)
+         return p->MemberQ(f) && f->Neumann;
+      else
          return (f == nullptr);
    } else
       return false;
@@ -287,5 +284,136 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
       ret.emplace(pf2ID(p, f));
    return ret;
 };
+
+/*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+
+`phiOnFace`は，各節点`p`における各面`f`に対するポテンシャル`phi`を設定するために使用される．
+`phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
+他も同様である．
+
+
+*/
+
+void resetPhiPhin(Network &water) {
+   /* -------------------------------------------------------------------------- */
+   /*                         phinOnFace, phintOnFaceの設定                       */
+   /* -------------------------------------------------------------------------- */
+   // b! 点
+   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorReset << std::endl;
+
+#pragma omp parallel
+   for (const auto &p : water.getPoints())
+#pragma omp single nowait
+   {
+      auto setNeumann = [&p](networkFace *const &f) {
+         if (isNeumannID_BEM(p, f)) {
+            if (f == nullptr) {
+               p->phiOnFace.insert({nullptr, 1E+30});
+               p->phitOnFace.insert({nullptr, 1E+30});
+               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
+               p->phintOnFace.insert({nullptr, 1E+30});
+            } else {
+               p->phiOnFace.insert({f, 1E+30});
+               p->phitOnFace.insert({f, 1E+30});
+               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
+               p->phintOnFace.insert({f, 1E+30});
+            }
+         }
+      };
+
+      auto setDirichlet = [&p](networkFace *const &f) {
+         if (isDirichletID_BEM(p, f)) {
+            p->phiOnFace.insert({nullptr, 1E+30});
+            p->phitOnFace.insert({nullptr, 1E+30});
+            p->phinOnFace.insert({nullptr, 1E+30});
+            p->phintOnFace.insert({nullptr, 1E+30});
+         }
+      };
+
+      p->phiOnFace.clear();
+      p->phitOnFace.clear();
+      p->phinOnFace.clear();
+      p->phintOnFace.clear();
+
+      // 全ての組{p,f}を調べ，使えるものをチェックする
+      setNeumann(nullptr);
+      for (const auto &f : p->getFaces())
+         setNeumann(f);
+
+      setDirichlet(nullptr);
+      for (const auto &f : p->getFaces())
+         setDirichlet(f);
+   }
+
+   // b! 面
+   std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorReset << std::endl;
+#pragma omp parallel
+   for (const auto &f : water.getFaces())
+#pragma omp single nowait
+   {
+      auto [p0, p1, p2] = f->getPoints();
+      std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
+   }
+};
+
+std::size_t resetPhiPhin(const std::vector<Network *> &objects) {
+   for (const auto &water : objects)
+      resetPhiPhin(*water);
+
+   for (const auto water : objects)
+      for (const auto &q : water->getPoints())
+         q->face2id.clear();
+
+   std::size_t i = 0;
+   for (const auto water : objects)
+      for (const auto &q : water->getPoints())
+         for (const auto &[_, f] : variableIDs(q)) {
+            // std::unordered_map<networkFace*, int> face2id try to add if succeed then increment i
+            if (q->face2id.find(f) == q->face2id.end())
+               q->face2id[f] = i++;
+         }
+
+   return i;
+};
+
+/* -------------------------------------------------------------------------- */
+
+template <typename T1, typename T2, typename T3>
+void storePhiPhinCommon(const std::vector<Network *> &WATERS, const V_d &ans, T1 phiphinProperty, T2 phiOnFaceProperty, T3 phinOnFaceProperty) {
+
+   for (const auto water : WATERS)
+      for (const auto &p : water->getPoints())
+         for (const auto &[f, i] : p->face2id) {
+            if (isDirichletID_BEM(p, f)) {
+               (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
+               (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);
+            }
+            if (isNeumannID_BEM(p, f))
+               (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty) = ans[i];
+         }
+
+   //^ 隣接フェイスの面積で重み付けした phi 値の寄与を計算し，結果を phiphinProperty に格納
+   for (const auto water : WATERS)
+      for (const auto &p : water->getPoints())
+         if (p->Neumann) {
+            double total = 0;
+            std::get<0>(p->*phiphinProperty) = 0;
+            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
+            for (const auto &f : p->getFaces()) {
+               if ((p->*phiOnFaceProperty).count(f))
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(f) * f->area / total;
+               else
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(nullptr) * f->area / total;
+            }
+         }
+}
+
+void storePhiPhin(const std::vector<Network *> &WATERS, const V_d &ans) {
+   storePhiPhinCommon(WATERS, ans, &networkPoint::phiphin, &networkPoint::phiOnFace, &networkPoint::phinOnFace);
+}
+
+void storePhiPhin_t(const std::vector<Network *> &WATERS, const V_d &ans) {
+   storePhiPhinCommon(WATERS, ans, &networkPoint::phiphin_t, &networkPoint::phitOnFace, &networkPoint::phintOnFace);
+}
 
 #endif

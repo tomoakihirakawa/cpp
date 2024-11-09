@@ -1675,18 +1675,32 @@ return ((nextQ * q)() - q()) / dt;
 
 ```math
 \begin{aligned}
+\frac{d{\boldsymbol{q}}}{dt} =
 \begin{bmatrix}
-q0\\
-q1\\
-q2\\
-q3
+\frac{dq_0}{dt}\\
+\frac{dq_1}{dt}\\
+\frac{dq_2}{dt}\\
+\frac{dq_3}{dt}
 \end{bmatrix}
 =
+\frac{1}{2}
 \begin{bmatrix}
--q1 * w0 - q2 * w1 - q3 * w2\\
-q0 * w0 + q3 * w1 - q2 * w2\\
--q3 * w0 + q0 * w1 + q1 * w2\\
-q2 * w0 - q1 * w1 + q0 * w2
+-q_1  w_0 - q_2 w_1 - q_3  w_2\\
+q_0  w_0 + q_3  w_1 - q_2  w_2\\
+-q_3  w_0 + q_0  w_1 + q_1  w_2\\
+q_2  w_0 - q_1  w_1 + q_0  w_2
+\end{bmatrix}
+= \frac{1}{2}
+\begin{bmatrix}
+-q_1 & -q_2 & -q_3\\
+q_0 & q_3 & -q_2\\
+-q_3 & q_0 & q_1\\
+q_2 & -q_1 & q_0
+\end{bmatrix}
+\begin{bmatrix}
+w_0\\
+w_1\\
+w_2
 \end{bmatrix}
 \end{aligned}
 ```
