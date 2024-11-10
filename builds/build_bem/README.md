@@ -66,6 +66,8 @@
 ---
 # 🐋 BEM-MEL 
 
+<img src="./sample_Goring1979.gif">
+
 [README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
 
 [REVIEW_NOTE0.md](REVIEW_NOTE0.md)
@@ -175,7 +177,7 @@
 `uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
-[./BEM_utilities.hpp#L450](./BEM_utilities.hpp#L450)
+[./BEM_utilities.hpp#L455](./BEM_utilities.hpp#L455)
 
 ---
 ## ⛵ 入力ファイルの読み込み 
@@ -184,7 +186,7 @@
 2. 境界値問題（BIE）を解き，$`\phi`$と$`\phi _n`$を求める
 3. 三角形の線形補間を使って節点の流速を計算する
 
-[./main.cpp#L57](./main.cpp#L57)
+[./main.cpp#L59](./main.cpp#L59)
 
 ## ⛵ 計算プログラムの概要 
 
@@ -204,7 +206,7 @@
 5. 浮体の加速度を計算する．境界値問題（BIE）を解き，$`\phi _t`$と$`\phi _{nt}`$を求め，浮体面上の圧力$`p`$を計算する必要がある
 6. 全境界面の節点の位置を更新．ディリクレ境界では$`\phi`$を次時刻の値へ更新
 
-[./main.cpp#L350](./main.cpp#L350)
+[./main.cpp#L352](./main.cpp#L352)
 
 ---
 `phiOnFace`は，各節点`p`における各面`f`に対するポテンシャル`phi`を設定するために使用される．
@@ -515,7 +517,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L696](./BEM_utilities.hpp#L696)
+[./BEM_utilities.hpp#L701](./BEM_utilities.hpp#L701)
 
 ---
 ### 🪼 Arbitrary Lagrangian–Eulerian Methods (ALE) 
@@ -644,13 +646,13 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L877)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L882)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L879](./BEM_utilities.hpp#L879)
+[./BEM_utilities.hpp#L884](./BEM_utilities.hpp#L884)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -678,14 +680,14 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L930](./BEM_utilities.hpp#L930)
+[./BEM_utilities.hpp#L935](./BEM_utilities.hpp#L935)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
 浮体の重心位置は，重心に関する運動方程式を解くことで求める．
 姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
 
-[./main.cpp#L525](./main.cpp#L525)
+[./main.cpp#L527](./main.cpp#L527)
 
 ---
 ### 🪼 加速度の計算の難しさ 
@@ -781,7 +783,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L937)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1072)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L942)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1072)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -830,7 +832,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1087)で�
 \end{aligned}
 ```
 
-[./main.cpp#L626](./main.cpp#L626)
+[./main.cpp#L628](./main.cpp#L628)
 
 ---
 ### 🪼 補助関数を使った方法 
@@ -909,9 +911,9 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[強制運動を課す](../../builds/build_bem/main.cpp#L536)
+[強制運動を課す](../../builds/build_bem/main.cpp#L538)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L430)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L435)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
 [`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L117)で利用され，$\phi _{n}$を計算する．
@@ -977,7 +979,7 @@ TrigReduce[dthetadt[t]*Sin[t w]]/Sin[t*w]
 CForm[%]
 ```
 
-[./BEM_utilities.hpp#L219](./BEM_utilities.hpp#L219)
+[./BEM_utilities.hpp#L224](./BEM_utilities.hpp#L224)
 
 ### 🪼 ピストン型造波装置 
 
@@ -1002,7 +1004,7 @@ $`S`$は造波版のストロークで振幅の２倍である．例えば，振
 $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see [Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1))
 
-[./BEM_utilities.hpp#L309](./BEM_utilities.hpp#L309)
+[./BEM_utilities.hpp#L314](./BEM_utilities.hpp#L314)
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
 
@@ -1022,12 +1024,12 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
-[./BEM_utilities.hpp#L376](./BEM_utilities.hpp#L376)
+[./BEM_utilities.hpp#L381](./BEM_utilities.hpp#L381)
 
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L978](./main.cpp#L978)
+[./main.cpp#L980](./main.cpp#L980)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -1134,7 +1136,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L757](./main.cpp#L757)
+[./main.cpp#L759](./main.cpp#L759)
 
 ---
 # 🐋 実行方法 
@@ -1173,7 +1175,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L1025](./main.cpp#L1025)
+[./main.cpp#L1027](./main.cpp#L1027)
 
 ---
 # 🐋 Input Generator 
@@ -1345,6 +1347,6 @@ The sphere is dropped from the height of 0.03 m above the water surface.
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L1065](./main.cpp#L1065)
+[./main.cpp#L1067](./main.cpp#L1067)
 
 ---

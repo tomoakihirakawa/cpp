@@ -141,14 +141,19 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 T6d velocity(const std::string &name, const std::vector<std::string> strings, double t) {
    auto g = _GRAVITY_;
    if (name.contains("Goring1979")) {
-      double h = 0.25;
-      double H = 0.1 * h;  // 造波する初期入射波の波高
-      double x = 0;
-      double c = std::sqrt(g * (H + h));
-      double kappa = std::sqrt(3. * H / (4. * h * h * h));
-      double start = std::stod(strings[1] /*start*/);
-      double eta = H * std::pow(1. / std::cosh(kappa * (-c * (t - start))), 2.);
-      return {c * eta / (h + eta), 0., 0., 0, 0, 0};
+      if (strings.size() == 2) {
+         double start = std::stod(strings[1] /*start*/);
+         // if (t < start)
+         //    return {0., 0., 0., 0., 0., 0.};
+         double h = 0.25;
+         double H = 0.1 * h;  // 造波する初期入射波の波高
+         double x = 0;
+         double c = std::sqrt(g * (H + h));
+         double kappa = std::sqrt(3. * H / (4. * h * h * h));
+         double eta = H * std::pow(1. / std::cosh(kappa * (-c * (t - start))), 2.);
+         return {c * eta / (h + eta), 0., 0., 0, 0, 0};
+      } else
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 2");
    } else if (name.contains("Retzler2000")) {
       const std::vector<Tdd> sample = {
           {-0.15000000000000002, 0.},

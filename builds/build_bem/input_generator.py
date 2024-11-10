@@ -1912,3 +1912,78 @@ elif "three_200" in SimulationCase:
 
     id = SimulationCase
     generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Goring1979" in SimulationCase:
+
+    objfolder = code_home_dir + "/cpp/obj/Goring1979"
+
+    water = {"name": "water",
+             "type": "Fluid",
+             "objfile": objfolder + "/water120.obj"}
+
+    vertices, triangles = read_obj(water["objfile"])
+    water["vertices"] = vertices
+    water["triangles"] = triangles
+
+    tank = {"name": "tank", 
+            "type": "RigidBody", 
+            "isFixed": True,
+            "objfile": objfolder + "/wavetank.obj"}
+
+    start = 0.
+
+    T = 1.
+    a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
+
+    # wavemaker_type = "piston"
+    # wavemaker_type = "flap"
+    # wavemaker_type = "potential"
+
+    wavemaker = {"name": "wavemaker",
+                 "type": "RigidBody",
+                 "velocity": ["Goring1979", 2.],
+                 "objfile": f"{objfolder}/wavemaker.obj"}
+
+    gauges = []
+    gauges.append({"name": "gauge0", 
+                   "type": "wave gauge",
+                   "position": [-5.75, 0, 0.4, -5.75, 0, 0.2]})
+    gauges.append({"name": "gauge1",
+                    "type": "wave gauge",
+                    "position": [0, 0, 0.4, 0, 0, 0.2]})
+    gauges.append({"name": "gauge2",
+                    "type": "wave gauge",
+                    "position": [5.68, 0, 0.4, 5.68, 0, 0.2]})
+
+    inputfiles = [tank, wavemaker, water] + gauges
+
+    id = SimulationCase
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+    id += "_DT" + str(max_dt).replace(".", "d")
+
+    if element != "":
+        id += "_ELEM" + element
+
+    if ALE != "":
+        id += "_ALE" + ALE
+
+    if ALEPERIOD != "":
+        id += "_ALEPERIOD" + ALEPERIOD
+
+    if suffix != "":    
+        id += "_" + suffix
+
+    setting = {"max_dt": max_dt,
+               "end_time_step": 100000,
+               "end_time": 20,
+               "element": element,
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
+    
+    generate_input_files(inputfiles, setting, IO_dir, id)
+
+# シミュレーションケースのモジュールを動的にインポート
+# case_module = importlib.import_module(f"cases.{args.case}")
+# case_module.generate_input_files(args)

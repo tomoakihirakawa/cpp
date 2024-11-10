@@ -1,0 +1,14 @@
+{
+    "max_dt": 0.006,
+    "end_time_step": 100000,
+    "end_time": 15,
+    "element": "pseudo_quad",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Volumes/home/BEM/benchmark202404/Goring1979_DT0d006_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json"
+    ]
+}
