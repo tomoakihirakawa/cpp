@@ -60,6 +60,8 @@
     - [⛵ 入力ファイルの生成．](#⛵-入力ファイルの生成．)
     - [⛵ プログラムのコンパイルと実行](#⛵-プログラムのコンパイルと実行)
 - [🐋 Input Generator](#🐋-Input-Generator)
+    - [⛵ For Ubuntu](#⛵-For-Ubuntu)
+    - [⛵ For Mac OS X](#⛵-For-Mac-OS-X)
 - [🐋 Examples](#🐋-Examples)
 
 
@@ -83,9 +85,9 @@
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
-* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L181)
-* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L197)
-* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L261)
+* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L193)
+* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L209)
+* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L277)
 
 を使って接触判定を行っている．
 
@@ -135,11 +137,21 @@
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
-| [`contact_angle`](../../include/networkPoint.hpp#L181)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
-| [`isFacing()`](../../include/networkPoint.hpp#L184)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [`isInContact()`](../../include/networkPoint.hpp#L197)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L261)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`contact_angle`](../../include/networkPoint.hpp#L193)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
+| [`isFacing()`](../../include/networkPoint.hpp#L196)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| [`isInContact()`](../../include/networkPoint.hpp#L209)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L277)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
+現在の実装方法では，接触判定は`networkPoint::addContactFaces`が起点となる．
+
+`networkPoint::addContactFaces`は，節点と隣接する面の組み合わせに対して，接触判定を行い，
+`networkPoint::ContactFaces`，`networkPoint::nearestContactFace`，`networkPoint::f_nearestContactFaces`を追加する．
+
+面がノイマン境界条件であるとは，面の全３節点が，`f_nearestContactFaces`に登錄されていることを意味する．
+１つでも，p->f_nearestContactFaces[f]が存在しない場合，fはノイマン境界条件でない（また，同時に，pはノイマン節点でないことになる）．
+
+また，節点がノイマン節点であるためには，隣接する全面がノイマン境界条件である必要がある．
+そのため，`p->f_nearestContactFaces[隣接面]`が存在しない場合，pはノイマン境界条件でない．
 
 #### 🪸 🪸 接触の概念図  
 
@@ -155,7 +167,7 @@
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L265](../../include/networkPoint.hpp#L265)
+[../../include/networkPoint.hpp#L281](../../include/networkPoint.hpp#L281)
 
 
 #### 🪸 呼び出し方法 
@@ -517,7 +529,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L701](./BEM_utilities.hpp#L701)
+[./BEM_utilities.hpp#L711](./BEM_utilities.hpp#L711)
 
 ---
 ### 🪼 Arbitrary Lagrangian–Eulerian Methods (ALE) 
@@ -652,7 +664,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L884](./BEM_utilities.hpp#L884)
+[./BEM_utilities.hpp#L894](./BEM_utilities.hpp#L894)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -680,7 +692,7 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L935](./BEM_utilities.hpp#L935)
+[./BEM_utilities.hpp#L945](./BEM_utilities.hpp#L945)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
@@ -1180,6 +1192,16 @@ make
 ---
 # 🐋 Input Generator 
 
+## ⛵ For Ubuntu 
+
+はじめに，以下のコマンドを実行して，必要なパッケージをインストールする．
+
+```shell
+python3.11 -m pip install numpy==1.25.0
+```
+
+## ⛵ For Mac OS X 
+
 `input_generator.py`は，BEM-MELの入力ファイルを生成するためのスクリプトである．
 `input_generator.py`を実行する際に，オプションを加えることで，シミュレーションケースやメッシュの名前，波を作る方法，要素の種類，時間刻み幅，シフトさせる面の補間方法，接尾語，波の高さ，出力ディレクトリ
 などを指定することができるようにしている．
@@ -1228,7 +1250,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L639](./input_generator.py#L639)
+[./input_generator.py#L649](./input_generator.py#L649)
 
 ---
 \cite{Liang2022}
@@ -1268,7 +1290,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L993](./input_generator.py#L993)
+[./input_generator.py#L1003](./input_generator.py#L1003)
 
 ---
 | wave height (m) | wave period (s) |
@@ -1280,7 +1302,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L819](./input_generator.py#L819)
+[./input_generator.py#L829](./input_generator.py#L829)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1294,7 +1316,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L506](./input_generator.py#L506)
+[./input_generator.py#L516](./input_generator.py#L516)
 
 ---
 <img src="schematic_float_Tanizawa1996.png" width="400px" />
@@ -1327,7 +1349,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 | Natural period of roll | 1.775 s | 6.46 |
 | Spring constant of mooning | 51.07 N/m | 0.00704 |
 
-[./input_generator.py#L193](./input_generator.py#L193)
+[./input_generator.py#L203](./input_generator.py#L203)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -1340,7 +1362,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L734](./input_generator.py#L734)
+[./input_generator.py#L744](./input_generator.py#L744)
 
 ---
 # 🐋 Examples 

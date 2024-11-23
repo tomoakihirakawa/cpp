@@ -2,8 +2,8 @@
 
 outputdir=/Volumes/home/BEM/benchmark202411
 case=Goring1979
-mesh_array=(water100 water150 water200)
-dt_array=(0.02 0.04 0.06)
+mesh_array=(water120 water140 water160)
+dt_array=(0.03 0.06)
 
 wavemaker=Goring1979
 element_array=(pseudo_quad linear)
@@ -19,17 +19,32 @@ for ALE in ${ALE_array[@]}; do
     done
 done
 
-./main ./input_files/Goring1979_DT0d06_ELEMlinear_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater120_DT0d06_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater120_DT0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater120_DT0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater120_DT0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
 
-./main ./input_files/Goring1979_DT0d04_ELEMlinear_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d04_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d04_ELEMpseudo_quad_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d04_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater140_DT0d06_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater140_DT0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater140_DT0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater140_DT0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
 
-./main ./input_files/Goring1979_DT0d02_ELEMlinear_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d02_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d02_ELEMpseudo_quad_ALElinear_ALEPERIOD1
-./main ./input_files/Goring1979_DT0d02_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater160_DT0d06_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater160_DT0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater160_DT0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater160_DT0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+
+# ./main ./input_files/Goring1979_MESHwater120_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater120_DT0d03_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater120_DT0d03_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater120_DT0d03_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+
+# ./main ./input_files/Goring1979_MESHwater140_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater140_DT0d03_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater140_DT0d03_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater140_DT0d03_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+
+# ./main ./input_files/Goring1979_MESHwater160_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater160_DT0d03_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+# ./main ./input_files/Goring1979_MESHwater160_DT0d03_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+./main ./input_files/Goring1979_MESHwater160_DT0d03_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1

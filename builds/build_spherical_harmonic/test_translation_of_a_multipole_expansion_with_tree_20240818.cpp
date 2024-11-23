@@ -116,7 +116,7 @@ int main() {
 
       auto X012 = ToX(F->getPoints());
       auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
-      for (const auto& [xi0, xi1, ww] : __array_GW5xGW5__) {
+      for (const auto& [xi0, xi1, ww] : __array_GW4xGW4__) {
          auto N = ModTriShape<3>(xi0, xi1);
          auto X = Dot(N, X012);
          auto weights = Tdd{1., 1.} * Norm(cross) * ww * (1. - xi0);
@@ -164,10 +164,19 @@ int main() {
    //! どのように修正するかは要検討．
    //! 途中で展開が不要になるくらい，ソースが少ない場合，その内部のソースは直接積分で計算する．
    std::cout << "ツリー構造を生成" << std::endl;
-   int max_level = 5;
+   int max_level = 4;
    B_poles.setLevel(0, max_level);
    B_poles.generateTree([](auto bucket) { return (!bucket->all_stored_objects_vector.empty() && bucket->level < bucket->max_level); });
    std::cout << Magenta << "Tree" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+   // show info of tree
+   for (auto i = 0; i < B_poles.level_buckets.size(); ++i) {
+      int mean_M2L_size = 0;
+      for (auto m2l : B_poles.level_buckets[i])
+         mean_M2L_size += m2l->buckets_for_M2L.size();
+      mean_M2L_size /= B_poles.level_buckets[i].size();
+      std::cout << "level = " << i << ", size = " << B_poles.level_buckets[i].size() << ", mean M2L size = " << mean_M2L_size << std::endl;
+   }
 
    //@ -------------------------------------------------------------------------- */
    //@                                 極の展開                                    */

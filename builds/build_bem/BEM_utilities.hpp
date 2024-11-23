@@ -150,7 +150,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          double x = 0;
          double c = std::sqrt(g * (H + h));
          double kappa = std::sqrt(3. * H / (4. * h * h * h));
-         double eta = H * std::pow(1. / std::cosh(kappa * (-c * (t - start))), 2.);
+         double eta = H * std::pow(std::cosh(kappa * (-c * (t - start))), -2);
          return {c * eta / (h + eta), 0., 0., 0, 0, 0};
       } else
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 2");
@@ -954,6 +954,8 @@ $`\phi_{nn}`$は，直接計算できないが，ラプラス方程式から$`\p
 // };
 
 double phint_Neumann(const networkPoint *const p, networkFace *F) {
+   //$ faceがNeumannである条件は，faceの持つpointがすべて，外部の面と接触している場合である．
+   //$ なので，{p,f}は，かならずp->getNearestContactFace(F)を持つ．
    auto f = p->getNearestContactFace(F);
    if (f) {
       Tddd Omega = (f->getNetwork())->velocityRotational();

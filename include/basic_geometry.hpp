@@ -408,7 +408,7 @@ Tddd ToSphericalCoodrinates(const Tddd &xyz) {
 
 struct Point {
    Tddd X;
-   Point(const Tddd &XIN) : X(XIN){};
+   Point(const Tddd &XIN) : X(XIN) {};
 };
 
 /* -------------------------------------------------------------------------- */
@@ -638,17 +638,17 @@ struct CoordinateBounds {
    const T3Tdd &getBounds() const { return this->bounds; };
    /* ------------------------------------------------------ */
    CoordinateBounds() : bounds{{{1E+20, -1E+20}, {1E+20, -1E+20}, {1E+20, -1E+20}}} {};
-   CoordinateBounds(const CoordinateBounds &bs) : bounds(bs.bounds), X(bs.X){};
-   CoordinateBounds(const Tdd &minmaxX, const Tdd &minmaxY, const Tdd &minmaxZ) : bounds({minmaxX, minmaxY, minmaxZ}), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const Tddd &x) : bounds{{{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}}}, X(x){};
-   CoordinateBounds(const T3Tdd &minmax) : bounds(minmax), X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const double minX, const double maxX, const double minY, const double maxY, const double minZ, const double maxZ) : bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}}, X(Mean(Transpose(bounds))){};
-   CoordinateBounds(const T2Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
-   CoordinateBounds(const T3Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
-   CoordinateBounds(const T4Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)){};
-   CoordinateBounds(const Tddd &x0, const Tddd &x1, const Tddd &x2) : bounds(MinMaxColumns(T3Tddd{x0, x1, x2})), X((x0 + x1 + x2) / 3.){};
+   CoordinateBounds(const CoordinateBounds &bs) : bounds(bs.bounds), X(bs.X) {};
+   CoordinateBounds(const Tdd &minmaxX, const Tdd &minmaxY, const Tdd &minmaxZ) : bounds({minmaxX, minmaxY, minmaxZ}), X(Mean(Transpose(bounds))) {};
+   CoordinateBounds(const Tddd &x) : bounds{{{std::get<0>(x), std::get<0>(x)}, {std::get<1>(x), std::get<1>(x)}, {std::get<2>(x), std::get<2>(x)}}}, X(x) {};
+   CoordinateBounds(const T3Tdd &minmax) : bounds(minmax), X(Mean(Transpose(bounds))) {};
+   CoordinateBounds(const double minX, const double maxX, const double minY, const double maxY, const double minZ, const double maxZ) : bounds{{{minX, maxX}, {minY, maxY}, {minZ, maxZ}}}, X(Mean(Transpose(bounds))) {};
+   CoordinateBounds(const T2Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)) {};
+   CoordinateBounds(const T3Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)) {};
+   CoordinateBounds(const T4Tddd &x) : bounds(MinMaxColumns(x)), X(Mean(x)) {};
+   CoordinateBounds(const Tddd &x0, const Tddd &x1, const Tddd &x2) : bounds(MinMaxColumns(T3Tddd{x0, x1, x2})), X((x0 + x1 + x2) / 3.) {};
    CoordinateBounds(const std::vector<T3Tddd> &V_X);
-   CoordinateBounds(const std::vector<Tddd> &X) : bounds(MinMaxColumns(X)), X(Mean(Transpose(bounds))){};
+   CoordinateBounds(const std::vector<Tddd> &X) : bounds(MinMaxColumns(X)), X(Mean(Transpose(bounds))) {};
    // CoordinateBounds(const geometry::Line &L) : bounds(MinMaxColumns(L.X)){};
    // CoordinateBounds(const geometry::Sphere &S) : bounds{{{std::get<0>(S.X) - S.radius, std::get<0>(S.X) + S.radius}, {std::get<1>(S.X) - S.radius, std::get<1>(S.X) + S.radius}, {std::get<2>(S.X) - S.radius, std::get<2>(S.X) + S.radius}}} {};
    // CoordinateBounds(const geometry::Triangle &T) : bounds(MinMaxColumns(T.X)){};
@@ -818,7 +818,7 @@ struct Sphere : public CoordinateBounds {
                                  {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)},
                                  {(std::get<2>(XIN) - radiusIN), (std::get<2>(XIN) + radiusIN)}}}),
          center(XIN),
-         radius(radiusIN){};
+         radius(radiusIN) {};
 };
 
 Sphere InSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
@@ -854,7 +854,7 @@ struct Triangle : public CoordinateBounds {
          circumcenter(Circumcenter(XIN)),
          circumradius(Circumradius(XIN)),
          incenter(Incenter(XIN)),
-         inradius(Inradius(XIN)){};
+         inradius(Inradius(XIN)) {};
    Triangle(const Tddd &X0IN, const Tddd &X1IN, const Tddd &X2IN)
        : CoordinateBounds(X0IN, X1IN, X2IN),
          vertices({X0IN, X1IN, X2IN}),
@@ -865,7 +865,7 @@ struct Triangle : public CoordinateBounds {
          circumcenter(Circumcenter(vertices)),
          circumradius(Circumradius(vertices)),
          incenter(Incenter(vertices)),
-         inradius(Inradius(vertices)){};
+         inradius(Inradius(vertices)) {};
 
    void setProperties(const T3Tddd &vertices_IN) {
       this->vertices = vertices_IN;
@@ -915,7 +915,7 @@ struct Tetrahedron : public CoordinateBounds {
          incenter(Incenter(vertices)),
          inradius(Inradius(vertices)),
          normals(TetrahedronNormals(vertices)),
-         solidangles(TetrahedronSolidAngle_UsingVectorAngle(vertices)){};
+         solidangles(TetrahedronSolidAngle_UsingVectorAngle(vertices)) {};
 
    Tetrahedron(const T4Tddd &XIN)
        : CoordinateBounds(XIN),
@@ -927,7 +927,7 @@ struct Tetrahedron : public CoordinateBounds {
          incenter(Incenter(XIN)),
          inradius(Inradius(XIN)),
          normals(TetrahedronNormals(XIN)),
-         solidangles(TetrahedronSolidAngle_UsingVectorAngle(XIN)){};
+         solidangles(TetrahedronSolidAngle_UsingVectorAngle(XIN)) {};
 
    Tetrahedron scaled(const auto &s = 0.9) {
       return Tetrahedron({(std::get<0>(this->vertices) - centroid) * s + centroid,
@@ -1459,7 +1459,7 @@ struct IntersectionSphereTriangleLimitedToNormalRegion {
          t1(std::get<1>(ans)),
          scale(std::get<2>(ans)),
          X(scale * n + center),
-         isIntersecting((std::abs(determ) > eps) && (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))){};
+         isIntersecting((std::abs(determ) > eps) && (std::abs(scale) <= radius && (0 <= t0 && t0 <= 1) && (0 <= t1 && t1 <= 1) && (0 <= (1 - t0 - t1) && (1 - t0 - t1) <= 1))) {};
    Tddd getNearestX() const {
       if (this->isIntersecting)
          return this->X;
@@ -2254,19 +2254,19 @@ struct octree : public CoordinateBounds {
        : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(FACES), faces_({}),  // inside(windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75),
          WNs(windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
          inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
-         children(generateChildrenParallel(depthlimit, objnum, FACES)){};
+         children(generateChildrenParallel(depthlimit, objnum, FACES)) {};
    octree(const CoordinateBounds &boundsIN, const Tii &depthlimit, const int objnum, const std::unordered_set<T> &FACES)
        : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(std::vector<T>(FACES.begin(), FACES.end())), faces_({}),  // inside(windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75),
          WNs(windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
          inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
-         children(generateChildrenParallel(depthlimit, objnum, faces_only_for_top)){};
+         children(generateChildrenParallel(depthlimit, objnum, faces_only_for_top)) {};
    /* ------------------------------------------------------ */
    octree(const CoordinateBounds &boundsIN, const Tii &depthlimit, const int objnum, const std::vector<T> &FACES, octree<T> *const parentIN)
        : CoordinateBounds(boundsIN), parent(parentIN), depth(parentIN->depth + 1), top(parentIN->top), faces_only_for_top({}), faces_({}),
          //  inside((parentIN && FACES.empty()) ? parentIN->inside : (windingNumber(boundsIN.getCenter(), top->faces_only_for_top) > 0.75)),
          WNs((parentIN && FACES.empty()) ? parentIN->WNs : windingNumber((T8Tddd)boundsIN, top->faces_only_for_top)),
          inside(std::ranges::any_of(WNs, [](const auto &w_num) { return w_num > 0.6; })),
-         children(generateChildrenParallel(depthlimit, objnum, FACES)){};
+         children(generateChildrenParallel(depthlimit, objnum, FACES)) {};
    /* ------------------------------------------------------ */
    std::vector<octree<T> *> generateChildrenParallel(const Tii &depthlimit, const int objnum, const std::vector<T> &FACES) {
       // std::vector<T> faces_;
@@ -2339,9 +2339,9 @@ struct octree : public CoordinateBounds {
    };
    /* ------------------------------------------------------ */
    octree(const CoordinateBounds &boundsIN, const std::vector<T> &FACES, const Tii &depthlimit)
-       : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(FACES), faces_(voronoiConnectivity(FACES)), children(voronoiChildren(depthlimit, faces_)){};
+       : CoordinateBounds(boundsIN), parent(nullptr), depth(0), top(this), faces_only_for_top(FACES), faces_(voronoiConnectivity(FACES)), children(voronoiChildren(depthlimit, faces_)) {};
    octree(const CoordinateBounds &boundsIN, const std::vector<T> &FACES, const Tii &depthlimit, octree<T> *const parentIN)
-       : CoordinateBounds(boundsIN), parent(parentIN), depth(parentIN->depth + 1), top(parentIN->top), faces_(voronoiConnectivity(FACES)), children(voronoiChildren(depthlimit, faces_)){};
+       : CoordinateBounds(boundsIN), parent(parentIN), depth(parentIN->depth + 1), top(parentIN->top), faces_(voronoiConnectivity(FACES)), children(voronoiChildren(depthlimit, faces_)) {};
    std::vector<T> voronoiConnectivity(const std::vector<T> &FACES) const {
       Tdd minmax, r = {1E+10, 1E+10};
       std::vector<T> ret;
