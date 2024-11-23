@@ -2,6 +2,16 @@
 
 # Input Generator
 
+## For Ubuntu
+
+はじめに，以下のコマンドを実行して，必要なパッケージをインストールする．
+
+```shell
+python3.11 -m pip install numpy==1.25.0
+```
+
+## For Mac OS X
+
 `input_generator.py`は，BEM-MELの入力ファイルを生成するためのスクリプトである．
 `input_generator.py`を実行する際に，オプションを加えることで，シミュレーションケースやメッシュの名前，波を作る方法，要素の種類，時間刻み幅，シフトさせる面の補間方法，接尾語，波の高さ，出力ディレクトリ
 などを指定することができるようにしている．
@@ -1912,3 +1922,73 @@ elif "three_200" in SimulationCase:
 
     id = SimulationCase
     generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Goring1979" in SimulationCase:
+
+    id = SimulationCase
+    
+    id += "_MESH" + meshname
+
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+    id += "_DT" + str(max_dt).replace(".", "d")
+
+    if element != "":
+        id += "_ELEM" + element
+
+    if ALE != "":
+        id += "_ALE" + ALE
+
+    if ALEPERIOD != "":
+        id += "_ALEPERIOD" + ALEPERIOD
+
+    if suffix != "":    
+        id += "_" + suffix
+
+    objfolder = code_home_dir + "/cpp/obj/Goring1979"
+
+    water = {"name": "water",
+             "type": "Fluid",
+             "objfile" : objfolder + "/" + meshname + ".obj"}
+
+
+    vertices, triangles = read_obj(water["objfile"])
+    water["vertices"] = vertices
+    water["triangles"] = triangles
+
+    tank = {"name": "tank", 
+            "type": "RigidBody", 
+            "isFixed": True,
+            "objfile": objfolder + "/wavetank.obj"}
+
+    wavemaker = {"name": "wavemaker",
+                 "type": "RigidBody",
+                 "velocity": ["Goring1979", 3.],
+                 "objfile": f"{objfolder}/wavemaker.obj"}
+
+    gauges = []
+    gauges.append({"name": "gauge0", 
+                   "type": "wave gauge",
+                   "position": [-5.75, 0, 0.4, -5.75, 0, 0.2]})
+    gauges.append({"name": "gauge1",
+                    "type": "wave gauge",
+                    "position": [0, 0, 0.4, 0, 0, 0.2]})
+    gauges.append({"name": "gauge2",
+                    "type": "wave gauge",
+                    "position": [5.68, 0, 0.4, 5.68, 0, 0.2]})
+
+    inputfiles = [tank, wavemaker, water] + gauges
+
+    setting = {"max_dt": max_dt,
+               "end_time_step": 100000,
+               "end_time": 25,
+               "element": element,
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
+    
+    generate_input_files(inputfiles, setting, IO_dir, id)
+
+# シミュレーションケースのモジュールを動的にインポート
+# case_module = importlib.import_module(f"cases.{args.case}")
+# case_module.generate_input_files(args)

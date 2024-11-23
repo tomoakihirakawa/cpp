@@ -73,16 +73,19 @@ struct Buckets : public CoordinateBounds {
    //@ 変更予定2024/05/10
    /* =============================== Tree structure ================================= */
 
-   std::vector<std::shared_ptr<Buckets<T>>> buckets_for_M2L;  // DI: Direct Interaction
-   std::vector<std::shared_ptr<Buckets<T>>> buckets_near;
+   //$ buckets_for_M2Lは，このバケツが局所展開する対象を保存している．
+   std::vector<Buckets<T> *> buckets_for_M2L;
+   //$ buckets_for_L2Mは，このバケツが局所展開を受け取る対象を保存している．
+   std::vector<Buckets<T> *> buckets_for_L2M;
+   std::vector<Buckets<T> *> buckets_near;
 
-   ExpCoeffs<4> multipole_expansion;
-   ExpCoeffs<4> local_expansion;
+   ExpCoeffs<8> multipole_expansion;
+   ExpCoeffs<8> local_expansion;
 
-   std::vector<std::vector<std::vector<std::shared_ptr<Buckets<T>>>>> buckets;  //! child buckets
+   std::vector<std::vector<std::vector<Buckets<T> *>>> buckets;  //! child buckets
 
-   std::vector<std::shared_ptr<Buckets<T>>> getAllBucket() {
-      std::vector<std::shared_ptr<Buckets<T>>> all_buckets;
+   std::vector<Buckets<T> *> getAllBucket() {
+      std::vector<Buckets<T> *> all_buckets;
       for (auto i = 0; i < this->buckets.size(); ++i)
          for (auto j = 0; j < this->buckets[i].size(); ++j)
             for (auto k = 0; k < this->buckets[i][j].size(); ++k)
@@ -94,7 +97,7 @@ struct Buckets : public CoordinateBounds {
       for (auto &i : this->buckets)
          for (auto &j : i)
             for (auto &k : j)
-               func_for_bucket(k.get());
+               func_for_bucket(k);
    }
 
    bool has_child = false;  //! このバケツはツリー構造を持っているかどうか
@@ -125,7 +128,7 @@ struct Buckets : public CoordinateBounds {
       if (condition(this))
       // if (this->level < 1 || (this->all_stored_objects.size() > 3000 && this->level + 1 <= this->max_level))
       {
-         buckets.resize(this->xsize, std::vector<std::vector<std::shared_ptr<Buckets<T>>>>(this->ysize, std::vector<std::shared_ptr<Buckets<T>>>(this->zsize, nullptr)));
+         buckets.resize(this->xsize, std::vector<std::vector<Buckets<T> *>>(this->ysize, std::vector<Buckets<T> *>(this->zsize, nullptr)));
 
          std::vector<std::array<int, 3>> ijk;
          for (auto i = 0; i < this->xsize; ++i)
@@ -140,7 +143,7 @@ struct Buckets : public CoordinateBounds {
             // Create a local reference to the current bucket
             auto &bucket = buckets[i][j][k];
             // Initialize the bucket
-            bucket = std::make_shared<Buckets<T>>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+            bucket = new Buckets<T>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
             // Add elements to the bucket if they satisfy the condition
             for (auto &p : this->data[i][j][k])
                bucket->add(p->X, p);
@@ -177,13 +180,14 @@ struct Buckets : public CoordinateBounds {
       buckets.clear();
       this->has_child = false;
       if (condition(this)) {
-         buckets.resize(this->xsize, std::vector<std::vector<std::shared_ptr<Buckets<T>>>>(this->ysize, std::vector<std::shared_ptr<Buckets<T>>>(this->zsize, nullptr)));
+         buckets.resize(this->xsize, std::vector<std::vector<Buckets<T> *>>(this->ysize, std::vector<Buckets<T> *>(this->zsize, nullptr)));
 
          for (auto i = 0; i < this->xsize; ++i)
             for (auto j = 0; j < this->ysize; ++j)
                for (auto k = 0; k < this->zsize; ++k) {
                   auto &bucket = buckets[i][j][k];
-                  bucket = std::make_shared<Buckets<T>>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+                  // bucket = std::make_shared<Buckets<T>>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+                  bucket = new Buckets<T>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
                   for (auto &p : this->data[i][j][k])
                      bucket->add(p->X, p);
                   bucket->setLevel(this->level + 1, this->max_level);
@@ -266,7 +270,7 @@ struct Buckets : public CoordinateBounds {
          func_for_bucket(b);
    }
 
-   std::shared_ptr<Buckets<T>> getBucketAtLevel(const int level, const Tddd &x) const {
+   Buckets<T> *getBucketAtLevel(const int level, const Tddd &x) const {
       if (!this->has_child || level > this->max_level)
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The tree structure does not exist or the level is too large.");
 
@@ -282,7 +286,7 @@ struct Buckets : public CoordinateBounds {
       return ret;
    };
 
-   std::shared_ptr<Buckets<T>> getBucketAtDeepest(const Tddd &x) const {
+   Buckets<T> *getBucketAtDeepest(const Tddd &x) const {
       if (!this->has_child)
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The tree structure does not exist.");
       auto ret = this->getBucket(x);
@@ -325,13 +329,13 @@ struct Buckets : public CoordinateBounds {
    };
 
    ~Buckets() {
-      std::cout << "Deleting Buckets at level: " << this->level << std::endl;
+      // std::cout << "Deleting Buckets at level: " << this->level << std::endl;
       for (auto &i : this->buckets)
          for (auto &j : i)
             for (auto &k : j)
                if (k != nullptr)
-                  k.reset();
-      std::cout << "Buckets at level " << this->level << " deleted." << std::endl;
+                  delete k;
+      // std::cout << "Buckets at level " << this->level << " deleted." << std::endl;
    }
 
    void initialize(const auto &boundingboxIN, const double dL_IN) {
@@ -748,7 +752,7 @@ struct Buckets : public CoordinateBounds {
 template <typename T>
 Buckets<T> copyPartition(const auto &buckets) {
    Buckets<T> ret(buckets.bounds, buckets.dL);
-   ret.buckets.resize(buckets.xsize, std::vector<std::vector<std::shared_ptr<Buckets<T>>>>(buckets.ysize, std::vector<std::shared_ptr<Buckets<T>>>(buckets.zsize, nullptr)));
+   ret.buckets.resize(buckets.xsize, std::vector<std::vector<Buckets<T> *>>(buckets.ysize, std::vector<Buckets<T> *>(buckets.zsize, nullptr)));
    ret.level = buckets.level;
    ret.max_level = buckets.max_level;
    ret.has_child = buckets.has_child;
@@ -771,8 +775,6 @@ Buckets<T> copyPartition(const auto &buckets) {
 // };
 
 /* -------------------------------------------------------------------------- */
-
-using sp_pole4FMM = std::shared_ptr<pole4FMM>;
 
 void MultipoleExpansion(Buckets<sp_pole4FMM> &B_poles) {
    std::cout << "B_poles.deppest_level_buckets.size() : " << B_poles.deppest_level_buckets.size() << std::endl;
@@ -879,6 +881,20 @@ void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
                if (A != B && isNear(A, B))
                   A->buckets_near.emplace_back(B);
 
+               /*
+                  +----+----+----+----+----+
+                  |    |    |    |    |    |
+                  +----+----+----+----+----+
+                  |    | X  | X  | X  |    |
+                  +----+----+----+----+----+
+                  |    | X  | A  | X  |    |
+                  +----+----+----+----+----+
+                  |    | X  | X  | X  |    |
+                  +----+----+----+----+----+
+                  |    |    |    |    |    |
+                  +----+----+----+----+----+
+               */
+
                if (isFar(A, B))
                   A->buckets_for_M2L.emplace_back(B);
                else
@@ -886,7 +902,18 @@ void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
             }
          });
    });
+
+   for (auto &buckets_from_top_level : B_poles.level_buckets)
+      for (auto &A : buckets_from_top_level)
+         A->buckets_for_L2M.clear();
+
+   for (auto &buckets_from_top_level : B_poles.level_buckets) {
+      for (auto &A : buckets_from_top_level)
+         for (auto &B : A->buckets_for_M2L)
+            B->buckets_for_L2M.emplace_back(A);
+   }
 }
+
 void M2L(Buckets<sp_pole4FMM> &B_poles) {
    TimeWatch tw;
    /* -------------------------------------------------------------------------- */
@@ -898,21 +925,39 @@ void M2L(Buckets<sp_pole4FMM> &B_poles) {
 
    std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
-   /*$ -------------------------------------------------------------------------- */
-
    // A -> M2L -> B
 
    int level = 0;
-   for (auto &buckets_from_top_level : B_poles.level_buckets) {
-      for (auto &A : buckets_from_top_level)
-         // #pragma omp parallel
-         for (auto &B : A->buckets_for_M2L)
-            // #pragma omp single nowait
-            B->local_expansion.M2L(A->multipole_expansion);
+   for (auto &buckets_at_a_level : B_poles.level_buckets) {
+#pragma omp parallel
+      for (auto &A : buckets_at_a_level)
+#pragma omp single nowait
+         A->local_expansion.M2L(A->buckets_for_L2M);
 
       std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
       level++;
    }
+
+   /* -------------------------------------------------------------------------- */
+   // int level = 0;
+
+   // for (auto &buckets_from_top_level : B_poles.level_buckets) {
+   //    for (auto &A : buckets_from_top_level) {
+   //       for (auto &B : A->buckets_for_M2L)
+   //          B->local_expansion.prepareM2L(A->multipole_expansion);
+   //       A->copyM2LcacheToM2LcacheVector();
+   //    }
+   // }
+
+   // level = 0;
+   // for (auto &buckets_from_top_level : B_poles.level_buckets) {
+   //    for (auto &A : buckets_from_top_level)
+   //       for (auto &B : A->buckets_for_M2L)
+   //          B->local_expansion.M2LWithCache();
+   //    std::cout << magenta << "M2LWithCache" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   //    level++;
+   // }
+   /* -------------------------------------------------------------------------- */
 };
 
 void MultipoleExpansionReuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
@@ -972,7 +1017,7 @@ std::array<double, 2> direct_integration(const Buckets<sp_pole4FMM> &b, const Td
    return std::array<double, 2>{ig, ign};
 };
 
-std::array<double, 2> direct_integration(const std::shared_ptr<Buckets<sp_pole4FMM>> &b, const Tddd &O) {
+std::array<double, 2> direct_integration(Buckets<sp_pole4FMM> *b, const Tddd &O) {
    double ig = 0, ign = 0;
    std::array<double, 3> R;
    double nr;
@@ -987,7 +1032,7 @@ std::array<double, 2> direct_integration(const std::shared_ptr<Buckets<sp_pole4F
    return std::array<double, 2>{ig, ign};
 };
 
-std::array<double, 2> direct_integration(const std::vector<std::shared_ptr<Buckets<sp_pole4FMM>>> &buckets, const Tddd &O) {
+std::array<double, 2> direct_integration(const std::vector<Buckets<sp_pole4FMM> *> &buckets, const Tddd &O) {
    std::array<double, 2> igign = {0, 0};
    for (const auto &b : buckets)
       igign += direct_integration(b, O);
