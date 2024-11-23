@@ -171,10 +171,22 @@ inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_fac
 | \ref{isInContact}{`isInContact()`}         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
 | \ref{addContactFaces}{`addContactFaces()`}     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
+現在の実装方法では，接触判定は`networkPoint::addContactFaces`が起点となる．
+
+`networkPoint::addContactFaces`は，節点と隣接する面の組み合わせに対して，接触判定を行い，
+`networkPoint::ContactFaces`，`networkPoint::nearestContactFace`，`networkPoint::f_nearestContactFaces`を追加する．
+
+面がノイマン境界条件であるとは，面の全３節点が，`f_nearestContactFaces`に登錄されていることを意味する．
+１つでも，p->f_nearestContactFaces[f]が存在しない場合，fはノイマン境界条件でない（また，同時に，pはノイマン節点でないことになる）．
+
+また，節点がノイマン節点であるためには，隣接する全面がノイマン境界条件である必要がある．
+そのため，`p->f_nearestContactFaces[隣接面]`が存在しない場合，pはノイマン境界条件でない．
 
 #### 接触の概念図
 
 ![接触の概念図](./contact.png)
+
+
 
 */
 
@@ -197,7 +209,7 @@ bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, cont
 // \label{isInContact}
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    const auto toNearstX = Nearest(p->X, f_target) - p->X;
-   const double angle = 60 * M_PI / 180.;
+   // const double angle = 60 * M_PI / 180.;
    //! toNearstX < 1E-5 * std::sqrt(TriangleArea(f_target))この場合，接触点へのベクトルの向きに関わらず，接触していると判定する．
    //! そうでない場合，接触点へのベクトルが，接触面の法線方向を向いているかどうかを判定する．
    // const double neglible_range = 1E-2 * std::sqrt(TriangleArea(f_target));
@@ -205,15 +217,17 @@ bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    // if (!rough_check)
    //    return false;
    //
-   bool is_in_range = p->detection_range > Norm(toNearstX);
+   if (p->detection_range < Norm(toNearstX))
+      return false;  // not in range!
+
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
    bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
-   return is_in_range && (is_close_normal || any_close_normal);
+   return is_close_normal || any_close_normal;
 };
 
 bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) {
    const auto toNearstX = Nearest(pX, f_target) - pX;
-   const double angle = 60 * M_PI / 180.;
+   // const double angle = 60 * M_PI / 180.;
    //! toNearstX < 1E-5 * std::sqrt(TriangleArea(f_target))この場合，接触点へのベクトルの向きに関わらず，接触していると判定する．
    //! そうでない場合，接触点へのベクトルが，接触面の法線方向を向いているかどうかを判定する．
    // const double neglible_range = 1E-2 * std::sqrt(TriangleArea(f_target));
@@ -221,10 +235,12 @@ bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) 
    // if (!rough_check)
    //    return false;
    //
-   bool is_in_range = p->detection_range > Norm(toNearstX);
+   if (p->detection_range < Norm(toNearstX))
+      return false;  // not in range!
+
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
    bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
-   return is_in_range && (is_close_normal || any_close_normal);
+   return is_close_normal || any_close_normal;
 };
 
 bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/, const T3Tddd &f_target, const networkPoint *p) {
@@ -239,7 +255,7 @@ bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/, const T3Tddd &f
    // if (!rough_check)
    //    return false;
    //!
-   if (!(p->detection_range > Norm(toNearstX)))
+   if (p->detection_range < Norm(toNearstX))
       return false;  // not in range!
    return true;
 };

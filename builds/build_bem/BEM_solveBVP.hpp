@@ -393,19 +393,19 @@ struct BEM_BVP {
       constexpr std::array<double, 2> ZEROS2 = {0., 0.};
       constexpr std::array<double, 3> ZEROS3 = {0., 0., 0.};
       //@ Q：quadratic elementの不安定は，積分点を奇数にするか偶数にするかに依存するか？
-      std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_LOWRESOLUTION;
-      std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_HIGHRESOLUTION;
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW6xGW6__) {
-         auto t0t1t2 = ModTriShape<3>(t0, t1);
-         t0_t1_ww_N012_LOWRESOLUTION.push_back({t0, t1, ww, t0t1t2});
-      }
+      // std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_LOWRESOLUTION;
+      // std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_HIGHRESOLUTION;
+      // for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+      //    auto t0t1t2 = ModTriShape<3>(t0, t1);
+      //    t0_t1_ww_N012_LOWRESOLUTION.push_back({t0, t1, ww, t0t1t2});
+      // }
 
-      // auto t0_t1_ww_N012_HIGHRESOLUTION = t0_t1_ww_N012_LOWRESOLUTION;
+      // // auto t0_t1_ww_N012_HIGHRESOLUTION = t0_t1_ww_N012_LOWRESOLUTION;
 
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW13xGW13__) {
-         auto t0t1t2 = ModTriShape<3>(t0, t1);
-         t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0, t1, ww, t0t1t2});
-      }
+      // for (int i = 0; const auto &[t0, t1, ww] : __array_GW10xGW10__) {
+      //    auto t0t1t2 = ModTriShape<3>(t0, t1);
+      //    t0_t1_ww_N012_HIGHRESOLUTION.push_back({t0, t1, ww, t0t1t2});
+      // }
 
       /*
       ## 積分の効率化
@@ -516,20 +516,20 @@ struct BEM_BVP {
                            ign = 0.;
                            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                              std::get<0>(ig_ign0) += ig * shape3[0];
-                              std::get<0>(ig_ign1) += ig * shape3[1];
-                              std::get<0>(ig_ign2) += ig * shape3[2];
+                              std::get<0>(ig_ign0) += ig * std::get<0>(shape3);
+                              std::get<0>(ig_ign1) += ig * std::get<1>(shape3);
+                              std::get<0>(ig_ign2) += ig * std::get<2>(shape3);
                            }
                         } else {
                            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
                               ign = Dot(R / (nr * nr * nr), cross) * ww;
-                              std::get<0>(ig_ign0) += ig * shape3[0];
-                              std::get<1>(ig_ign0) -= ign * shape3[0];
-                              std::get<0>(ig_ign1) += ig * shape3[1];
-                              std::get<1>(ig_ign1) -= ign * shape3[1];
-                              std::get<0>(ig_ign2) += ig * shape3[2];
-                              std::get<1>(ig_ign2) -= ign * shape3[2];
+                              std::get<0>(ig_ign0) += ig * std::get<0>(shape3);
+                              std::get<1>(ig_ign0) -= ign * std::get<0>(shape3);
+                              std::get<0>(ig_ign1) += ig * std::get<1>(shape3);
+                              std::get<1>(ig_ign1) -= ign * std::get<1>(shape3);
+                              std::get<0>(ig_ign2) += ig * std::get<2>(shape3);
+                              std::get<1>(ig_ign2) -= ign * std::get<2>(shape3);
                               origin_ign_rigid_mode += ign;
                            }
                         }

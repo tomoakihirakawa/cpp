@@ -49,6 +49,7 @@ Return[N@Table[len*MyInverseFourier[FourierGF, n], {n, 0, len - 1}]];
 #include <iostream>
 #include <vector>
 #include "lib_Fourier.hpp"
+#include "lib_measurement.hpp"
 
 std::ostream& operator<<(std::ostream& os, const std::vector<std::complex<double>>& cn) {
    for (auto&& c : cn)
@@ -57,22 +58,57 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::complex<double
 }
 
 int main() {
-   const std::vector<double> f = {1, 2, 3, 4, 5, 4, 3, 2, 1};
-   const std::vector<double> g = {1, -1, 1, -1, 1, -1, 3, 0, 0};
+   // const std::vector<double> f = {1, 2, 3, 4, 5, 4, 3, 2, 1};
+   // const std::vector<double> g = {1, -1, 1, -1, 1, -1, 3, 0, 0};
+   // auto len = f.size() + g.size() - 1;
+   // std::vector<double> convolution(len, 0);
+   // double sum = 0;
 
-   for (int x = 0; x < f.size() + g.size() - 1; ++x) {  // Correct range
-      double sum = 0;
-      for (int i = 0; i < f.size(); ++i) {
-         double a = (0 <= i && i < f.size()) ? f[i] : 0;
-         double b = (0 <= x - i && x - i < g.size()) ? g[x - i] : 0;
+   // const std::vector<std::complex<double>> f = {1, 2, 3, 4, 5, 4, 3, 2, 1, 1};
+   // const std::vector<std::complex<double>> g = {1, -1, 1, -1, 1, -1, 3, 0, 0, 1};
+
+   std::vector<std::complex<double>> f = {1, 2, 3, 4, 5, 4, 3, 2, 1, 1};
+   std::vector<std::complex<double>> g = {1, -1, 1, -1, 1, -1, 3, 0, 0, 1};
+
+   f.resize(16 * 2, 0);
+   g.resize(16 * 2, 0);
+
+   auto len = f.size() + g.size() - 1;
+   std::vector<std::complex<double>> convolution(len, 0);
+   std::complex<double> sum = 0;
+
+   TimeWatch tw;
+
+   for (int x = 0; x < len; ++x) {  // Correct range
+      sum = 0;
+      for (int i = 0; i < len; ++i) {
+         auto a = (0 <= i && i < f.size()) ? f[i] : 0;
+         auto b = (0 <= x - i && x - i < g.size()) ? g[x - i] : 0;
          sum += a * b;
       }
-      std::cout << x << ", " << sum << std::endl;
+      convolution[x] = sum;
    }
 
-   std::cout << "DiscreteConvolve" << std::endl;
-   std::cout << DiscreteConvolve(f, g) << std::endl;
+   std::cout << "convolution" << std::endl;
+   // for (auto i = 0; i < len; ++i)
+   //    std::cout << i << " " << convolution[i] << std::endl;
 
+   std::cout << "Elapsed time : " << tw()[0] << std::endl;
+
+   std::cout << "DiscreteConvolve" << std::endl;
+   DiscreteConvolveClass DCC(f, g);
+   // std::cout << DCC.FourierF << std::endl;
+   // std::cout << DCC.FourierG << std::endl;
+   // std::cout << DCC.FourierGF << std::endl;
+   // std::cout << DCC.InverseFourierGF << std::endl;
+
+   std::cout << "Elapsed time : " << tw()[0] << std::endl;
+
+   ConvolveFFT(f, g);
+   // std::cout << ConvolveFFT(f, g) << std::endl;
+
+   std::cout
+       << "Elapsed time : " << tw()[0] << std::endl;
    return 0;
    // {1., 1., 2., 2., 3., 1., 4., 5., 8., 9., 13., 10., 8., 5., 3.}
 }

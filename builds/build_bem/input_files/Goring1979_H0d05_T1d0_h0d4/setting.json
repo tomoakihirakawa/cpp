@@ -1,0 +1,14 @@
+{
+    "max_dt": 0.03,
+    "end_time_step": 100000,
+    "end_time": 10,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Goring1979_H0d05_T1d0_h0d4",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json"
+    ]
+}

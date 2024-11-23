@@ -111,7 +111,7 @@ void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK
 };
 
 // b# ------------------------------------------------------ */
-// b#      物体のノイマン境界の速度 u(t) at Neumann を設定         */
+// b#      物体のノイマン境界の速度 u(t) at Neumann を設定        */
 // b# ------------------------------------------------------ */
 
 //\label{BEM:setNeumannVelocity}
@@ -189,15 +189,15 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
    for (const auto &f : water.getFaces())
 #pragma omp single nowait
    {
-      f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
+      // f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
+      //$ faceがNeumannであるための条件は，faceのもつpointがすべて外部の面と接触していることである．
+      //$ 以下の設定を使うことで，f->Neumannは自分の頂点pとで，p->getNearestContactFace(f)を使うことができる．
+      f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return p->getNearestContactFace(f) != nullptr; });
       f->Dirichlet = !f->Neumann;
    }
 
    std::cout << "step3 線の境界条件を決定" << std::endl;
-   // #pragma omp parallel
-   for (const auto &l : water.getLines())
-   // #pragma omp single nowait
-   {
+   for (const auto &l : water.getLines()) {
       l->Neumann = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
       l->Dirichlet = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });
       l->CORNER = (!l->Neumann && !l->Dirichlet);

@@ -2,16 +2,19 @@
 - [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
     - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
+    - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
     - [⛵ 精度の確認](#⛵-精度の確認)
         - [🪼 $`G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の精度)
         - [🪼 $`G _{\rm apx}`$の勾配$`\nabla G _{\rm apx}`$の精度](#🪼-$`G-_{\rm-apx}`$の勾配$`\nabla-G-_{\rm-apx}`$の精度)
 - [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
     - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
+    - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
 - [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
     - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
+    - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
     - [⛵ ベッセル関数](#⛵-ベッセル関数)
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
@@ -75,7 +78,39 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+## ⛵ ⛵ C++上での，Greengardの球面調和関数  
+
+`sph_harmonics_`
+
+Greengardｎ(1997)の(3.15)と同じように，球面調和関数を定義する．
+c++の`std::sph_legendre`を使って(3.15)を使う場合，係数を調整と，mの絶対値を考慮する必要がある．
+
+c++での球面調和関数の定義は次のようになる[球面調和関数](https://cpprefjp.github.io/reference/cmath/sph_legendre.html)．
+ただし，$`\phi=0`$の結果が返ってくるので，$`e^{im\phi}`$をかける必要がある．
+
+```math
+\begin{align*}
+{\mathrm{std::sph\ _legendre(n,m,\theta)}} &= (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} {\rm{std::assoc _legendre}(n,m,cos(\theta))}\\
+& = (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} (1-x^2)^{m/2} \frac{d^m}{dx^m} P _n(x), \quad x = \cos(\theta)
+\end{align*}
+```
+
+Greengardｎ(1997)の(3.15)：
+
+```math
+\begin{align*}
+Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta)) e^{im \phi}\\
+& = (-1)^{|m|}\sqrt{\frac{(n-|m|)!}{(n+|m|)!}} (1-x^2)^{|m|/2} \frac{d^{|m|}}{dx^{|m|}} P _n(x) e^{im \phi}, \quad x = \cos(\theta)
+\end{align*}
+```
+
+従って，$`Y(n, m, \theta, \phi)`$はc++の`std::sph_legendre`を使って次のように計算できる．
+
+```math
+Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
+```
+[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
 
 
 ## ⛵ 精度の確認 
@@ -204,7 +239,39 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+## ⛵ ⛵ C++上での，Greengardの球面調和関数  
+
+`sph_harmonics_`
+
+Greengardｎ(1997)の(3.15)と同じように，球面調和関数を定義する．
+c++の`std::sph_legendre`を使って(3.15)を使う場合，係数を調整と，mの絶対値を考慮する必要がある．
+
+c++での球面調和関数の定義は次のようになる[球面調和関数](https://cpprefjp.github.io/reference/cmath/sph_legendre.html)．
+ただし，$`\phi=0`$の結果が返ってくるので，$`e^{im\phi}`$をかける必要がある．
+
+```math
+\begin{align*}
+{\mathrm{std::sph\ _legendre(n,m,\theta)}} &= (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} {\rm{std::assoc _legendre}(n,m,cos(\theta))}\\
+& = (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} (1-x^2)^{m/2} \frac{d^m}{dx^m} P _n(x), \quad x = \cos(\theta)
+\end{align*}
+```
+
+Greengardｎ(1997)の(3.15)：
+
+```math
+\begin{align*}
+Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta)) e^{im \phi}\\
+& = (-1)^{|m|}\sqrt{\frac{(n-|m|)!}{(n+|m|)!}} (1-x^2)^{|m|/2} \frac{d^{|m|}}{dx^{|m|}} P _n(x) e^{im \phi}, \quad x = \cos(\theta)
+\end{align*}
+```
+
+従って，$`Y(n, m, \theta, \phi)`$はc++の`std::sph_legendre`を使って次のように計算できる．
+
+```math
+Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
+```
+[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -273,7 +340,39 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L19](../../include/lib_multipole_expansion.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+## ⛵ ⛵ C++上での，Greengardの球面調和関数  
+
+`sph_harmonics_`
+
+Greengardｎ(1997)の(3.15)と同じように，球面調和関数を定義する．
+c++の`std::sph_legendre`を使って(3.15)を使う場合，係数を調整と，mの絶対値を考慮する必要がある．
+
+c++での球面調和関数の定義は次のようになる[球面調和関数](https://cpprefjp.github.io/reference/cmath/sph_legendre.html)．
+ただし，$`\phi=0`$の結果が返ってくるので，$`e^{im\phi}`$をかける必要がある．
+
+```math
+\begin{align*}
+{\mathrm{std::sph\ _legendre(n,m,\theta)}} &= (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} {\rm{std::assoc _legendre}(n,m,cos(\theta))}\\
+& = (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} (1-x^2)^{m/2} \frac{d^m}{dx^m} P _n(x), \quad x = \cos(\theta)
+\end{align*}
+```
+
+Greengardｎ(1997)の(3.15)：
+
+```math
+\begin{align*}
+Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta)) e^{im \phi}\\
+& = (-1)^{|m|}\sqrt{\frac{(n-|m|)!}{(n+|m|)!}} (1-x^2)^{|m|/2} \frac{d^{|m|}}{dx^{|m|}} P _n(x) e^{im \phi}, \quad x = \cos(\theta)
+\end{align*}
+```
+
+従って，$`Y(n, m, \theta, \phi)`$はc++の`std::sph_legendre`を使って次のように計算できる．
+
+```math
+Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
+```
+[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -366,6 +465,6 @@ Graf's Addition Theoremを使って，$`{\bf Y}^\ast({\bf x},{\bf c} _{\square i
 {\bf Y}^\ast({\bf x},{\bf c} _{\square i}) = \sum _{\square j} {\bf Y}^\ast({\bf x},{\bf c} _{\square j}){\bf Y}({\bf c} _{\square j},{\bf c} _{\square i})
 ```
 
-[./test_multipole_expansion.cpp#L202](./test_multipole_expansion.cpp#L202)
+[./test_multipole_expansion.cpp#L234](./test_multipole_expansion.cpp#L234)
 
 ---

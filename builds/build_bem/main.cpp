@@ -2,6 +2,8 @@
 
 # BEM-MEL
 
+<img src="./sample_Goring1979.gif">
+
 [README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
 
 [REVIEW_NOTE0.md](REVIEW_NOTE0.md)
@@ -895,7 +897,7 @@ int main(int argc, char **argv) {
          // b# -------------------------------------------------------------------------- */
 
          // check dirichlet surface to check interpolated surface
-         {
+         if (false) {
             auto dirichletsurface = new Network();
             std::filesystem::path filename_dir_surface = "DirichletSurface" + std::to_string(time_step) + ".vtu";
             std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SymmetricSubdivisionOfTriangle_00_10_01(4);
