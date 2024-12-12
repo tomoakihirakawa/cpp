@@ -1,84 +1,23 @@
 #!/bin/sh
 
-outputdir=/Volumes/home/BEM/benchmark202404
-# outputdir=/Volumes/home/BEM/benchmark202404Palm2016
-
-# outputdir=${HOME}/BEM
-case=Tanizawa1996
-mesh_array=(water_no_float0d08 water_no_float0d07)
-dt_array=(0.05 0.03)
-H_array=(0.05 0.1)
-
-# case=Palm2016
-# mesh_array=(water_mod)
-# dt_array=(0.05 0.1)
-# H_array=(0.04 0.2)
-
-wavemaker=potential
-element_array=(pseudo_quad linear)
-ALE_array=(pseudo_quad linear)
-
-for ALE in ${ALE_array[@]};do
-    for element in ${element_array[@]};do
-        for dt in ${dt_array[@]};do
-            for H in ${H_array[@]};do
-                for mesh in ${mesh_array[@]};do
-                    python3.11 input_generator.py -case ${case} -mesh ${mesh} -element ${element} -wavemaker ${wavemaker} -dt ${dt} -H ${H} -ALE ${ALE} -outputdir ${outputdir}
-                done
-            done
-        done
-    done
+T_list=(0.65 0.64 0.63 0.62 0.61 0.6 0.59 0.58 0.57 0.56 0.55 0.54 0.53 0.52 0.51 0.5)
+for t in ${T_list[@]}; do
+    python3 input_generator.py -case Tonegawa2024 -ALEPERIOD 1 -dt 0.025 -ALE quasi_quad -T ${t} -suffix B10d125
 done
 
-./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
-
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMlinear_ALElinear
-
-
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d03_ELEMpseudo_quad_ALEpseudo_quad
-
-
-# ----------------------------------- H005 ----------------------------------- #
-
-# mac studio
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALEpseudo_quad
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALElinear
-
-# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad # prandtl 142
-# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad # Daiki 140
-# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear #macbook 
-# ./main ./input_files/${case}_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear #ishiwaka 141
-
-# ------------------------------------ H01 ----------------------------------- #
-
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMlinear_ALElinear
-
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALEpseudo_quad
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
-
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALEpseudo_quad # prandtl 142
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALEpseudo_quad # Daiki 140
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear #macbook 
-# ./main ./input_files/${case}_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear #ishiwaka 141
-
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d07_DT0d05_ELEMpseudo_quad_ALEpseudo_quad
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMlinear_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d1_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d03_ELEMpseudo_quad_ALElinear
-# ./main ./input_files/Tanizawa1996_H0d05_L1d8_WAVEpotential_MESHwater_no_float0d08_DT0d05_ELEMlinear_ALElinear
+./main ./input_files/Tonegawa2024_T0d5_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d51_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d52_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d53_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d54_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d55_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d56_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d57_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d58_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d59_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d6_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d61_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d62_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d63_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d64_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125
+./main ./input_files/Tonegawa2024_T0d65_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125

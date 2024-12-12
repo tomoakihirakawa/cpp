@@ -1,6 +1,8 @@
 #ifndef lib_spatial_partitioning_H
 #define lib_spatial_partitioning_H
 
+#define _DEBUG_FMM_
+
 #include <execution>
 #include <ranges>
 #include "lib_multipole_expansion.hpp"
@@ -77,12 +79,13 @@ struct Buckets : public CoordinateBounds {
    std::vector<Buckets<T> *> buckets_for_M2L;
    //$ buckets_for_L2Mは，このバケツが局所展開を受け取る対象を保存している．
    std::vector<Buckets<T> *> buckets_for_L2M;
-   std::vector<Buckets<T> *> buckets_near;
+   std::vector<Buckets<T> *> buckets_near;  //@ 近傍バケツかつ，（重要）子バケツを持たないバケツ．途中までしか育たないツリーを使ったFMMにおいてこの性質が重要．;
 
-   ExpCoeffs<8> multipole_expansion;
-   ExpCoeffs<8> local_expansion;
+   ExpCoeffs<4> multipole_expansion;
+   ExpCoeffs<4> local_expansion;
 
    std::vector<std::vector<std::vector<Buckets<T> *>>> buckets;  //! child buckets
+   Buckets<T> *parent = nullptr;                                 // 親バケツへのポインタを追加
 
    std::vector<Buckets<T> *> getAllBucket() {
       std::vector<Buckets<T> *> all_buckets;
@@ -115,7 +118,7 @@ struct Buckets : public CoordinateBounds {
    // !%すべてのツリーが同じ深さまで成長していない場合，level_bucketsの最後が最も深いバケツとは限らない．
    // !%なのでDeepestは別に実装する必要がある．
    std::vector<std::vector<Buckets<T> *>> level_buckets;
-   std::vector<Buckets<T> *> deppest_level_buckets;
+   std::vector<Buckets<T> *> deepest_level_buckets;
 
    //! この方法で，`data[i][j][k]`を８分割しバケツを作成する．\label{buckets_generateTree}
    bool generateTree(const std::function<bool(const Buckets<T> *)> &condition = [](const Buckets<T> *) { return true; }) {
@@ -144,6 +147,7 @@ struct Buckets : public CoordinateBounds {
             auto &bucket = buckets[i][j][k];
             // Initialize the bucket
             bucket = new Buckets<T>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+            bucket->parent = this;  // 親バケツを設定
             // Add elements to the bucket if they satisfy the condition
             for (auto &p : this->data[i][j][k])
                bucket->add(p->X, p);
@@ -157,7 +161,7 @@ struct Buckets : public CoordinateBounds {
       // fill level_buckets if the level is 0
       if (this->level == 0) {
          this->level_buckets.clear();
-         this->deppest_level_buckets.clear();
+         this->deepest_level_buckets.clear();
          this->level_buckets.resize(this->max_level + 1);  // zero を含むので+1
          this->level_buckets[0].push_back(this);
          this->forEachAll([&](Buckets<T> *b) -> void {
@@ -165,7 +169,7 @@ struct Buckets : public CoordinateBounds {
                if (!b->all_stored_objects.empty()) {
                   this->level_buckets[b->level].emplace_back(b);
                   if (!b->has_child)
-                     this->deppest_level_buckets.emplace_back(b);
+                     this->deepest_level_buckets.emplace_back(b);
                }
             }
          });
@@ -188,6 +192,7 @@ struct Buckets : public CoordinateBounds {
                   auto &bucket = buckets[i][j][k];
                   // bucket = std::make_shared<Buckets<T>>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
                   bucket = new Buckets<T>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+                  bucket->parent = this;  // 親バケツを設定
                   for (auto &p : this->data[i][j][k])
                      bucket->add(p->X, p);
                   bucket->setLevel(this->level + 1, this->max_level);
@@ -252,21 +257,21 @@ struct Buckets : public CoordinateBounds {
    //    template <typename Func>
    //    void forEachAtDeepestParallel(Func func_for_bucket) {
    // #pragma omp parallel
-   //       for (auto &b : this->deppest_level_buckets)
+   //       for (auto &b : this->deepest_level_buckets)
    // #pragma omp single nowait
    //          func_for_bucket(b);
    //    }
 
    template <typename Func>
-   void forEachAtDeepestParallel(Func func_for_bucket) {
-      // for (auto &b : this->deppest_level_buckets)
+   void forEachAtDeepestParallel(const Func &func_for_bucket) {
+      // for (auto &b : this->deepest_level_buckets)
       //    func_for_bucket(b);
-      std::for_each(std::execution::par_unseq, this->deppest_level_buckets.begin(), this->deppest_level_buckets.end(), func_for_bucket);
+      std::for_each(std::execution::par_unseq, this->deepest_level_buckets.begin(), this->deepest_level_buckets.end(), func_for_bucket);
    }
 
    template <typename Func>
-   void forEachAtDeepest(Func func_for_bucket) {
-      for (auto &b : this->deppest_level_buckets)
+   void forEachAtDeepest(const Func &func_for_bucket) {
+      for (auto &b : this->deepest_level_buckets)
          func_for_bucket(b);
    }
 
@@ -777,15 +782,15 @@ Buckets<T> copyPartition(const auto &buckets) {
 /* -------------------------------------------------------------------------- */
 
 void MultipoleExpansion(Buckets<sp_pole4FMM> &B_poles) {
-   std::cout << "B_poles.deppest_level_buckets.size() : " << B_poles.deppest_level_buckets.size() << std::endl;
-   B_poles.forEachAtDeepest([&](Buckets<sp_pole4FMM> *b) {
+   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
       b->multipole_expansion.increment_moments(b->all_stored_objects_vector);
    });
 }
 
 void MultipoleExpansionReuse(Buckets<sp_pole4FMM> &B_poles) {
-   std::cout << "B_poles.deppest_level_buckets.size() : " << B_poles.deppest_level_buckets.size() << std::endl;
-   B_poles.forEachAtDeepest([&](Buckets<sp_pole4FMM> *b) {
+   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
       b->multipole_expansion.increment_moments_reuse();
    });
 }
@@ -794,7 +799,6 @@ void MultipoleExpansionReuse(Buckets<sp_pole4FMM> &B_poles) {
 
 void M2M(Buckets<sp_pole4FMM> &B_poles) {
    TimeWatch tw;
-   int level = 0;
    for (int level = B_poles.max_level - 1; level >= 0; level--) {
       B_poles.forEachAtLevel({level}, [&](Buckets<sp_pole4FMM> *B) {
          // for (auto& b : B->getAllBucket())
@@ -803,7 +807,9 @@ void M2M(Buckets<sp_pole4FMM> &B_poles) {
             B->multipole_expansion.M2M(b->multipole_expansion);
          });
       });
+#if defined(_DEBUG_FMM_)
       std::cout << magenta << "M2M" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
    }
 };
 
@@ -818,7 +824,9 @@ void L2L(Buckets<sp_pole4FMM> &B_poles) {
             b->local_expansion.L2L(B->local_expansion);
          });
       }
+#if defined(_DEBUG_FMM_)
       std::cout << magenta << "L2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
       level++;
    }
 }
@@ -835,22 +843,25 @@ bool isNear(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_pt
 bool isFar(const Buckets<sp_pole4FMM> *A, const Buckets<sp_pole4FMM> *B);
 
 template <typename T>
-void checkAndAddBucketsImpl(T A, T B) {
+void checkAndAddBuckets(T A, T B) {
    if (isNear(A, B)) {
+
+      if (!A->all_stored_objects_vector.empty() && !B->all_stored_objects_vector.empty())
+         if (A != B && isNear(A, B)) {
+            A->buckets_near.emplace_back(B);
+            // isnear = true;
+         }
+
       for (auto &A_c : A->getAllBucket()) {
          if (!A_c->all_stored_objects_vector.empty() || A_c->has_child) {
             for (auto &B_c : B->getAllBucket()) {
                if (!B_c->all_stored_objects_vector.empty()) {
-                  bool isnear = false;
-                  if (A_c != B_c && isNear(A_c, B_c)) {
-                     A_c->buckets_near.emplace_back(B_c);
-                     isnear = true;
-                  }
+                  // bool isnear = false;
 
-                  if (isFar(A_c, B_c) && A_c != B_c) {
+                  if (A_c != B_c && isFar(A_c, B_c)) {
                      A_c->buckets_for_M2L.emplace_back(B_c);
                   } else {
-                     checkAndAddBucketsImpl(A_c, B_c);
+                     checkAndAddBuckets(A_c, B_c);
                   }
                }
             }
@@ -859,27 +870,26 @@ void checkAndAddBucketsImpl(T A, T B) {
    }
 }
 
-void checkAndAddBuckets(std::shared_ptr<Buckets<sp_pole4FMM>> A, std::shared_ptr<Buckets<sp_pole4FMM>> B) {
-   checkAndAddBucketsImpl(A, B);
-}
-
-void checkAndAddBuckets(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) {
-   checkAndAddBucketsImpl(A, B);
-}
+// ツリーはとりあえず生成しなければならない．
+// 極が少ないバケツは，M2Lの時に省略する．
 
 void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
+   B_poles.forEachAll([&](Buckets<sp_pole4FMM> *A) {
+      A->buckets_for_M2L.clear();
+      A->buckets_near.clear();
+      A->buckets_for_L2M.clear();
+   });
    //! store M2L buckets for the bucket at level 1
    //! ここは，Aの展開係数を，M2Lすべきバケツに保存する．Aが空なら，M2LすべきバケツはAにとってないことになる．
    B_poles.forEachAtLevel({1}, [&](Buckets<sp_pole4FMM> *A) {
-      A->buckets_for_M2L.clear();
       //! (1) この設定では，Mする場所が，ソース点があるバケツに限られる．これは，常に妥当な設定である．
       if (!A->all_stored_objects_vector.empty())
          B_poles.forEachAtLevel({1}, [&](Buckets<sp_pole4FMM> *B) {  //$ check if another bucket is inside the bucket. If it is not, add it to the list of buckets for M2L
             if (!B->all_stored_objects_vector.empty()) {
                //! (2) この設定は，Lできる場所が，節点などに限られる．しかも，nearにすら含めない．．．．
 
-               if (A != B && isNear(A, B))
-                  A->buckets_near.emplace_back(B);
+               // if (A != B && isNear(A, B))
+               //    A->buckets_near.emplace_back(B);
 
                /*
                   +----+----+----+----+----+
@@ -903,10 +913,6 @@ void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
          });
    });
 
-   for (auto &buckets_from_top_level : B_poles.level_buckets)
-      for (auto &A : buckets_from_top_level)
-         A->buckets_for_L2M.clear();
-
    for (auto &buckets_from_top_level : B_poles.level_buckets) {
       for (auto &A : buckets_from_top_level)
          for (auto &B : A->buckets_for_M2L)
@@ -923,8 +929,9 @@ void M2L(Buckets<sp_pole4FMM> &B_poles) {
 
    setBucketsForM2L(B_poles);
 
+#if defined(_DEBUG_FMM_)
    std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-
+#endif
    // A -> M2L -> B
 
    int level = 0;
@@ -934,7 +941,9 @@ void M2L(Buckets<sp_pole4FMM> &B_poles) {
 #pragma omp single nowait
          A->local_expansion.M2L(A->buckets_for_L2M);
 
+#if defined(_DEBUG_FMM_)
       std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
       level++;
    }
 
@@ -962,7 +971,7 @@ void M2L(Buckets<sp_pole4FMM> &B_poles) {
 
 void MultipoleExpansionReuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
    /*
-   B_polesには，極の強さの情報もstd::function<Tdd()> get_valuesに保存されている．
+   B_polesには，極の強さの情報もstd::function<Tdd()> getValuesに保存されている．
    別に必要なのは，どの点の積分値を出力するかという情報であるので，３次元位置座標と近傍の極，遠方の極それぞれを保存する変数を用意する．
    */
    TimeWatch tw;
@@ -997,39 +1006,77 @@ pole4FMMは，
 Tddd X;
 Tdd weights;
 Tddd normal;
-std::function<Tdd()> get_values;
+std::function<Tdd()> getValues;
 を持つ．これらを使うと，直接数値面積分ができる．
 */
 
+/*
+
+BIE：alpha_phi = ign_phin - ign_phiの，ign_phin，ign_phiをまず計算する．
+
+ここで，ign_phi，ign_phiはそれぞれ，
+
+```math
+\begin{align*}
+\int\int_{\Gamma} G \nabla \phi \cdot {\boldsymbol n} dS\\
+\int\int_{\Gamma} \phi \nabla G \cdot {\boldsymbol n} dS
+\end{align*}
+```
+
+ign_phiのincrementにおいて，符号が負になっている．
+これは，勘違いして修正してしまいそうだが，ign_phi自体が負になっているためで，
+BIEの符号と混同しないように注意する．
+
+BIEは次の形である．
+
+alpha_phi = ign_phin - ign_phi
+
+多重極展開（see L2P）も，ign_phin，ign_phiの近似を計算しており，直接積分しているものと対応している．
+
+*/
+
 std::array<double, 2> direct_integration(const Buckets<sp_pole4FMM> &b, const Tddd &O) {
-   double ig = 0, ign = 0;
+   double ig_phin = 0, ign_phi = 0;
    std::array<double, 3> R;
    double nr, nr_inv;
    for (const auto &pole : b.all_stored_objects_vector) {
       nr = Norm(R = pole->X - O);
       //$ 直接積分
       if (nr > 0) {
-         nr_inv = 1. / nr;
-         ig += std::get<0>(pole->weights) * nr_inv;
-         ign -= (std::get<1>(pole->weights) * nr_inv) * Dot(R * nr_inv, pole->normal) * nr_inv;
+         ig_phin += std::get<1>(pole->values) * std::get<0>(pole->weights) / nr;
+         ign_phi += -std::get<0>(pole->values) * std::get<1>(pole->weights) * Dot(R, pole->normal) / std::pow(nr, 3);
       }
    }
-   return std::array<double, 2>{ig, ign};
+   return std::array<double, 2>{ig_phin, ign_phi};
+};
+
+std::array<double, 2> direct_integration_rigid_mode_technique(Buckets<sp_pole4FMM> *b, const Tddd &O, const double eps = 1e-4) {
+   std::array<double, 2> IgPhin_IgnPhi = {0, 0};
+   std::array<double, 3> R;
+   double nr;
+   for (const auto &pole : b->all_stored_objects_vector) {
+      if ((nr = Norm(R = pole->X - O)) > 0) {
+         std::get<0>(IgPhin_IgnPhi) += std::get<0>(pole->values_x_weight) / nr;
+         if (nr > eps)
+            std::get<1>(IgPhin_IgnPhi) -= std::get<1>(pole->values_x_weight) * Dot(R, pole->normal) / std::pow(nr, 3);
+      }
+   }
+   return IgPhin_IgnPhi;
 };
 
 std::array<double, 2> direct_integration(Buckets<sp_pole4FMM> *b, const Tddd &O) {
-   double ig = 0, ign = 0;
+   double ig_phin = 0, ign_phi = 0;
    std::array<double, 3> R;
    double nr;
    for (const auto &pole : b->all_stored_objects_vector) {
       nr = Norm(R = pole->X - O);
       //$ 直接積分
       if (nr > 0) {
-         ig += std::get<0>(pole->weights) / nr;
-         ign -= (std::get<1>(pole->weights) / nr) * Dot(R / nr, pole->normal) / nr;
+         ig_phin += std::get<1>(pole->values) * std::get<0>(pole->weights) / nr;
+         ign_phi += -std::get<0>(pole->values) * std::get<1>(pole->weights) * Dot(R, pole->normal) / std::pow(nr, 3);
       }
    }
-   return std::array<double, 2>{ig, ign};
+   return std::array<double, 2>{ig_phin, ign_phi};
 };
 
 std::array<double, 2> direct_integration(const std::vector<Buckets<sp_pole4FMM> *> &buckets, const Tddd &O) {
@@ -1040,16 +1087,122 @@ std::array<double, 2> direct_integration(const std::vector<Buckets<sp_pole4FMM> 
 };
 
 /* -------------------------------------------------------------------------- */
+//@ リジッドモードテクニックには対応していない
+// 境界条件に応じて初めからどちらを足し合わせるか決めておく必要がある．
+// これはGMRESからの要請であって，FMMの要請ではない．
+// なのでFMMにこれを組み込むことは良い方法ではない．
+std::array<std::array<double, 2>, 2> integrate(Buckets<sp_pole4FMM> &B_poles, const Tddd &X) {
 
-std::array<std::array<double, 2>, 2> L2P(Buckets<sp_pole4FMM> &B_poles, const Tddd &X) {
-   auto b = B_poles.getBucketAtDeepest(X);
-   std::array<double, 2> igign_near = direct_integration(b, X);
+   //% ここで，`direct_integration`の近似が，`L2P`であり，２つは対応している．
+
+   auto b_deepest = B_poles.getBucketAtDeepest(X);
+
+   /*
+   最深階層のnearバケツにあるpoleに対して直接積分を行う．
+   */
+
+   std::array<double, 2> IgPhin_IgnPhi_near = direct_integration(b_deepest, X);
    //! Direct integration
-   for (auto &B : b->buckets_near)
-      igign_near += direct_integration(B, X);
+
+   for (const auto &b : b_deepest->buckets_near)
+      IgPhin_IgnPhi_near += direct_integration(b, X);
+
+   /*
+   ## 中断されたツリーのバケツのpoleに対して直接積分を行う．
+
+   nearバケツの一部はM2Lで，残りは直接積分によって，計算される．
+   しかし，中には，poleの数が少ないため，octree分割されておらず，同じ階層にはバケツが用意されていないpoleがある．このままでは．M2Lも直接積分も適用されない．
+   それらのpoleを考慮にいれるためには，上の階層に遡って，ツリーが生成が中断したバケツを探し，そのバケツのpoleい対して直接積分を行う必要がある．
+   そのようなバケツは，中断した階層においてnearバケツに当たるため，直接積分を使う必要がある．
+   */
+
+   auto integrate_parent = [&](auto b, auto &integrate_parent__) -> void {
+      if (b != nullptr) {
+         for (auto B : b->buckets_near)
+            if (!B->has_child)
+               IgPhin_IgnPhi_near += direct_integration(B, X);
+         integrate_parent__(b->parent, integrate_parent__);
+      }
+   };
+   integrate_parent(b_deepest->parent, integrate_parent);
+
+   /*
+   ## 遠方バケツのpoleに対して，多重極展開を使って積分を行う．
+   */
+
    //! Local expansion
-   std::array<double, 2> igign_far = b->local_expansion.IGIGn_using_L(X);
-   return {igign_near, igign_far};
+   std::array<double, 2> IgPhin_IgnPhi_far = b_deepest->local_expansion.L2P(X);
+   return {IgPhin_IgnPhi_near, IgPhin_IgnPhi_far};
 }
+
+std::array<std::array<double, 2>, 2> integrate(Buckets<sp_pole4FMM> &B_poles, const Tddd &X, const double eps) {
+
+   // | X_pole - X | > eps の積分をphiを1にして計算し，保存しておく，almost_solid_angleとでもする． この関数の最後に，almost_solid_angle *phiを加える．
+   //% ここで，`direct_integration`の近似が，`L2P`であり，２つは対応している．
+   auto b_deepest = B_poles.getBucketAtDeepest(X);
+
+   /*最深階層のnearバケツにあるpoleに対して直接積分を行う*/
+
+   std::array<double, 2> IgPhin_IgnPhi_near = direct_integration_rigid_mode_technique(b_deepest, X, eps);
+   //! Direct integration
+
+   for (const auto &b : b_deepest->buckets_near)
+      IgPhin_IgnPhi_near += direct_integration_rigid_mode_technique(b, X, eps);
+
+   /*
+   ## 中断されたツリーのバケツのpoleに対して直接積分を行う．
+
+   nearバケツの一部はM2Lで，残りは直接積分によって，計算される．
+   しかし，中には，poleの数が少ないため，octree分割されておらず，同じ階層にはバケツが用意されていないpoleがある．このままでは．M2Lも直接積分も適用されない．
+   それらのpoleを考慮にいれるためには，上の階層に遡って，ツリーが生成が中断したバケツを探し，そのバケツのpoleい対して直接積分を行う必要がある．
+   そのようなバケツは，中断した階層においてnearバケツに当たるため，直接積分を使う必要がある．
+   */
+
+   auto integrate_parent = [&](auto b, auto &integrate_parent__) -> void {
+      if (b != nullptr) {
+         for (auto B : b->buckets_near)
+            if (!B->has_child)
+               IgPhin_IgnPhi_near += direct_integration_rigid_mode_technique(B, X, eps);
+         integrate_parent__(b->parent, integrate_parent__);
+      }
+   };
+   integrate_parent(b_deepest->parent, integrate_parent);
+
+   /*
+   ## 遠方バケツのpoleに対して，多重極展開を使って積分を行う．
+   */
+
+   //! Local expansion
+   return {IgPhin_IgnPhi_near, b_deepest->local_expansion.L2P(X)};
+}
+
+/* -------------------------------------------------------------------------- */
+
+void MEreuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw;
+   B_poles.forEachAll([&](Buckets<sp_pole4FMM> *B) {
+      B->multipole_expansion.initialize();
+      B->local_expansion.initialize();
+   });
+   MultipoleExpansionReuse(B_poles);
+#if defined(_DEBUG_FMM_)
+   std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   std::cout << Magenta << "M2M ..." << colorReset << std::endl;
+#endif
+   M2M(B_poles);
+#if defined(_DEBUG_FMM_)
+   std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   std::cout << Magenta << "M2L ..." << colorReset << std::endl;
+#endif
+   M2L(B_poles);
+#if defined(_DEBUG_FMM_)
+   std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   std::cout << Magenta << "L2L ..." << colorReset << std::endl;
+#endif
+   L2L(B_poles);
+#if defined(_DEBUG_FMM_)
+   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
+};
 
 #endif

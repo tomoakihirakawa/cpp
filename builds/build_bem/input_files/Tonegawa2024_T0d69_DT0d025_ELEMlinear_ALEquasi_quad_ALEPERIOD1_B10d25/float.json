@@ -1,0 +1,17 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 4.375,
+    "COM": [
+        2,
+        0,
+        0.586
+    ],
+    "MOI": [
+        0.07943494545,
+        0.07943494545,
+        0.1514044693
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tonegawa2024/float0d25.obj"
+}

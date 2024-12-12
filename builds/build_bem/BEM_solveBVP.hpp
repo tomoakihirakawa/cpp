@@ -3,6 +3,7 @@
 
 #include "BEM_utilities.hpp"
 #include "Network.hpp"
+#include "lib_multipole_expansion.hpp"
 
 /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
@@ -65,8 +66,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-// #define use_gmres 100
-#define use_lapack
+#define use_gmres
+// #define use_lapack
 
 struct calculateFluidInteraction {
    const Network *PasObj;
@@ -299,10 +300,10 @@ struct BEM_BVP {
    const bool Dirichlet = true;
    std::vector<Network *> WATERS;
    lapack_lu *lu = nullptr;
-#if defined(use_lapack)
-#else
-   ludcmp_parallel *lu;
-#endif
+   // #if defined(use_lapack)
+   // #else
+   //    ludcmp_parallel *lu;
+   // #endif
 
    using T_PBF = std::tuple<netP *, netF *>;
    using mapTPBF_Tdd = std::map<T_PBF, Tdd>;
@@ -322,7 +323,7 @@ struct BEM_BVP {
    };
 
    // int pf2Index(const networkPoint *p, const networkFace *f) const {
-   //    return p->face2id.at(std::get<1>(pf2ID(p, f)));
+   //    return p->f2Index.at(std::get<1>(pf2ID(p, f)));
    // };
 
    /**
@@ -333,6 +334,12 @@ struct BEM_BVP {
 
       for (auto &net : this->WATERS)
          net->setGeometricProperties();
+
+      for (const auto &water : WATERS)
+#pragma omp parallel
+         for (const auto &integ_f : water->getFaces())
+#pragma omp single nowait
+            integ_f->setIntegrationInfo();
 
       IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
 
@@ -436,13 +443,6 @@ struct BEM_BVP {
       | `double`            | 外積のノルム                                                     |
       */
 
-      for (const auto &water : WATERS)
-#pragma omp parallel
-         for (const auto &integ_f : water->getFaces()) {
-#pragma omp single nowait
-            integ_f->setIntegrationInfo();
-         }
-
       int count_pseudo_quadratic_element = 0, count_linear_element = 0, total = 0;
       for (const auto &water : WATERS)
          for (const auto &integ_f : water->getFaces()) {
@@ -466,7 +466,7 @@ struct BEM_BVP {
          for (const auto &origin : water->getPoints())
 #pragma omp single nowait
          {
-            for (const auto &[f, index] : origin->face2id) {
+            for (const auto &[f, index] : origin->f2Index) {
                double origin_ign_rigid_mode = 0., dist_base = 0;
                for (auto f : origin->getFaces())
                   dist_base += f->area;
@@ -648,12 +648,12 @@ struct BEM_BVP {
 #pragma omp parallel
          for (const auto &a : water->getPoints())
 #pragma omp single nowait
-            for (const auto &[a_face, i] : a->face2id) {
+            for (const auto &[a_face, i] : a->f2Index) {
                /* -------------------------------------------------------------------------- */
                //^ 左辺と右辺の係数行列を作成する．
                for (const auto water : WATERS)
                   for (const auto &x : water->getPoints())
-                     for (const auto &[x_face, j] : x->face2id) {
+                     for (const auto &[x_face, j] : x->f2Index) {
                         mat_ukn[i][j] = IGIGn[i][j][0];
                         mat_kn[i][j] = IGIGn[i][j][1];
                         if (isNeumannID_BEM(x, x_face)) {
@@ -668,8 +668,19 @@ struct BEM_BVP {
                if (a->CORNER && isNeumannID_BEM(a, a_face) /*行の変更*/) {
                   std::ranges::fill(mat_ukn[i], 0.);
                   std::ranges::fill(mat_kn[i], 0.);
-                  mat_ukn[i][i] = max_value;                    // φの系数
+                  mat_ukn[i][i] = max_value;  // φの系数
+
+                  //! nullptrと指定するのは，全てNeumannのコーナに対して使えないのではないかということでこうした．
                   mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
+                  // auto it = a->f2Index.find(a_face);
+                  // if (it == a->f2Index.end())
+                  //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "f2Index.find(currentFace) == f2Index.end()");
+                  // else {
+                  //    ++it;
+                  //    if (it == a->f2Index.end())
+                  //       it = a->f2Index.begin();
+                  //    mat_kn[i][it->second] = max_value;
+                  // }
                }
                /* -------------------------------------------------------------------------- */
                //^ 既知変数のベクトルを作成する．
@@ -747,73 +758,357 @@ struct BEM_BVP {
    int matrix_size = 0;
 
    void solve(const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
-
-      this->matrix_size = resetPhiPhin(WATERS);
-
-      std::cout << Red << "   unknown size : " << this->matrix_size << colorReset << std::endl;
-
-      setIGIGn();
-
-      std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
-
-      generateBIEMatrix();
-
-      ans.resize(knowns.size(), 0.);
+      if (this->lu != nullptr) {
+         delete this->lu;
+         this->lu = nullptr;
+      }
 
       TimeWatch watch;
 
-      if (this->lu)
-         delete this->lu;
-#if defined(use_CG)
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/);
-      std::cout << "The conjugate gradient is used" << std::endl;
-      GradientMethod gd1(mat_ukn);
-      ans = gd1.solve(b_RHS, {}, 1E-1);
-      GradientMethod gd2(mat_ukn);
-      ans = gd2.solveCG(b_RHS, ans);
-#elif defined(use_gmres)
-      std::cout << "use gmres for BIE" << std::endl;
+      setPhiPhinOnFace(WATERS);
+      this->matrix_size = setNodeFaceIndices(WATERS);
 
-      auto return_A_dot_v = [&](const V_d &V) -> V_d { return ParallelDot(mat_ukn, V); };
-      auto b = b_RHS;
-
-      gmres<std::vector<std::vector<double>>> gm(return_A_dot_v, b, ans, use_gmres);
-      std::cout << Red << "gmres error = " << gm.err << colorReset << std::endl;
-      std::cout << Red << "isFinite(gm.x) = " << isFinite(gm.x) << colorReset << std::endl;
-      ans = gm.x;
-      for (auto i = 1; i < 10; i++) {
-         if (gm.err < 1E-10)
-            break;
-         gm.Restart(return_A_dot_v, b, ans, use_gmres);  //\label{SPH:gmres}
-         ans = gm.x;
-         std::cout << "       gm.err : " << gm.err << std::endl;
-         std::cout << " actual error : " << Norm(b - ParallelDot(mat_ukn, ans)) << std::endl;
-      }
-      // }
-
-      //! CHECK GMRES ans DEBUG
-      V_d lu_ans = ans;
-      this->lu = new lapack_lu(mat_ukn, lu_ans, b_RHS);
-      std::cout << " isFinite(lu_ans) : " << isFinite(lu_ans) << std::endl;
-
-      ans = lu_ans;
-
-         // auto err = Norm(Dot(mat_ukn, gm.x) - Dot(mat_kn, knowns));
-         // std::cout << err << std::endl;
-#elif defined(use_lapack)
+#if defined(use_lapack)
+      std::cout << Red << "   unknown size : " << this->matrix_size << colorReset << std::endl;
+      setIGIGn();
+      std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
+      generateBIEMatrix();
+      ans.resize(knowns.size(), 0.);
       std::cout << "lapack lu decomposition" << std::endl;
       //! A.x = b
       this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, b_RHS /*既知のベクトル（右辺）*/);
-#endif
 
       std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
-
       storePhiPhin(WATERS, ans);
 
       std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorReset << " s\n";
 
       for (auto water : WATERS)
          isSolutionFinite(*water);
+
+#elif defined(use_gmres)
+      /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
+
+      1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
+      2. 極の追加：各面に対して極を追加し，バケットに格納する．
+      3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
+      4. 多重極展開：ツリー構造を用いて多重極展開を行う．
+      5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
+      6. 線形連立方程式の右辺bを計算する（FMMを利用）．
+      7. GMRESに与える，行列ベクトル積を返す関数を作成する．
+      8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+
+      */
+
+      for (auto &net : this->WATERS)
+         net->setGeometricProperties();
+
+      for (const auto &water : WATERS)
+   #pragma omp parallel
+         for (const auto &integ_f : water->getFaces())
+   #pragma omp single nowait
+            integ_f->setIntegrationInfo();
+      //@ -------------------------------------------------------------------------- */
+      //@                       バケットの作成．極の追加 add                             */
+      //@ -------------------------------------------------------------------------- */
+
+      auto obj = WATERS[0];
+
+      Buckets<sp_pole4FMM> B_poles(obj->scaledBounds(1.1), obj->getScale() / 6.);
+
+      std::cout << "バケットの作成．極の追加" << std::endl;
+
+      /*
+         phiOnFaceやphinOnFaceを更新することで，getValuesの結果は自動的に更新される．
+      */
+
+      TimeWatch tw;
+
+      // for (auto &F : obj->getFaces()) {
+      //    auto [p0, p1, p2] = F->getPoints();
+      //    auto closest_p_to_origin = p0;
+      //    auto X012 = ToX(F->getPoints());
+      //    auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
+
+      //    for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
+      //       auto [xi0, xi1] = t0t1;
+      //       auto weights = Tdd{norm_cross * ww, norm_cross * ww};
+      //       std::function<Tdd()> getValues = [p0, p1, p2, F, shape3,
+      //                                         id0 = std::get<1>(pf2ID(p0, F)),
+      //                                         id1 = std::get<1>(pf2ID(p1, F)),
+      //                                         id2 = std::get<1>(pf2ID(p2, F))]() {
+      //          return Tdd{
+      //              std::get<0>(shape3) * p0->meanPhiOnFace() + std::get<1>(shape3) * p1->meanPhiOnFace() + std::get<2>(shape3) * p2->meanPhiOnFace(),
+      //              std::get<0>(shape3) * p0->phinOnFace.at(id0) + std::get<1>(shape3) * p1->phinOnFace.at(id1) + std::get<2>(shape3) * p2->phinOnFace.at(id2)};
+      //       };
+
+      //       auto tmp = std::make_shared<pole4FMM>(X, weights, F->normal, getValues);
+      //       tmp.update = [p0, p1, p2, F, shape3, id0 = std::get<1>(pf2ID(p0, F)), id1 = std::get<1>(pf2ID(p1, F)), id2 = std::get<1>(pf2ID(p2, F))]() {
+      //          tmp.getValues = std::function<Tdd()> getValues = [p0_phinOnFace = &p0->phinOnFace.at(id0), p1_phinOnFace = &p1->phinOnFace.at(id1), p2_phinOnFace = &p2->phinOnFace.at(id2), shape3, p0_meanPhiOnFace = p0->meanPhiOnFace(), p1_meanPhiOnFace = p1->meanPhiOnFace(), p2_meanPhiOnFace = p2->meanPhiOnFace]() {
+      //             return Tdd{
+      //                 std::get<0>(shape3) * p0->meanPhiOnFace() + std::get<1>(shape3) * p1->meanPhiOnFace() + std::get<2>(shape3) * p2->meanPhiOnFace(),
+      //                 std::get<0>(shape3) * p0->phinOnFace.at(id0) + std::get<1>(shape3) * p1->phinOnFace.at(id1) + std::get<2>(shape3) * p2->phinOnFace.at(id2)};
+      //          };
+      //       };
+
+      //       B_poles.add(X, tmp);  //$ 極の追加
+      //    }
+      // };
+
+      for (auto &F : obj->getFaces()) {
+         auto [p0, p1, p2] = F->getPoints();
+         auto closest_p_to_origin = p0;
+         auto X012 = ToX(F->getPoints());
+         auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
+
+         for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
+            auto [xi0, xi1] = t0t1;
+            auto weights = Tdd{norm_cross * ww, norm_cross * ww};
+            //$ 極の追加
+            auto pole = std::make_shared<pole4FMM>(X,
+                                                   weights,
+                                                   F->normal,
+                                                   [p0, p1, p2, F, shape3](pole4FMM *self) -> void {
+                                                      //! 再度計算する updater
+                                                      self->values[0] = Dot(shape3, Tddd{p0->meanPhiOnFace(), p1->meanPhiOnFace(), p2->meanPhiOnFace()});
+                                                      self->values[1] = Dot(shape3, Tddd{p0->phinOnFace.at(std::get<1>(pf2ID(p0, F))), p1->phinOnFace.at(std::get<1>(pf2ID(p1, F))), p2->phinOnFace.at(std::get<1>(pf2ID(p2, F)))});
+                                                   });
+            B_poles.add(X, pole);
+            pole->update();
+         }
+      }
+
+      std::cout << Magenta << "Add poles" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+      //@ -------------------------------------------------------------------------- */
+      //@                                ツリー構造を生成                               */
+      //@ -------------------------------------------------------------------------- */
+
+      std::cout << "ツリー構造を生成" << std::endl;
+      int max_level = 8;
+      B_poles.setLevel(0, max_level);
+      B_poles.generateTree([](auto bucket) {
+         if (bucket->all_stored_objects_vector.empty())
+            return false;
+         else
+            return bucket->all_stored_objects_vector.size() > 500 && bucket->level < bucket->max_level;
+      });
+      std::cout << Magenta << "Tree" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+      // show info of tree
+      for (auto i = 0; i < B_poles.level_buckets.size(); ++i) {
+         int mean_M2L_size = 0;
+         for (auto m2l : B_poles.level_buckets[i])
+            mean_M2L_size += m2l->buckets_for_M2L.size();
+         mean_M2L_size /= B_poles.level_buckets[i].size();
+         std::cout << "level = " << i << ", size = " << B_poles.level_buckets[i].size() << ", mean M2L size = " << mean_M2L_size << std::endl;
+      }
+
+      /* -------------------------------------------------------------------------- */
+
+      double area = 0.;
+      for (auto &F : obj->getFaces())
+         area += F->area;
+
+      //@ -------------------------------------------------------------------------- */
+      //@                                  FMM                                      */
+      //@ -------------------------------------------------------------------------- */
+
+      std::cout << "極の展開" << std::endl;
+      MultipoleExpansion(B_poles);
+      std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+
+      TimeWatch twFMM;
+
+      /* ---------------------------------- bの計算 ---------------------------------- */
+
+      auto MatrixVectorProduct = [&obj, &B_poles](const bool solidangle = true) -> V_d {
+         for (auto pole : B_poles.all_stored_objects_vector)
+            pole->update();
+         /*
+            基本とする形，左辺
+            {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,phin,phin,phin}-{{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi,phi,phi,phi}
+
+            node1がNeumanの場合，他はDirichletの場合
+            左辺，未知変数側：
+            {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,0,phin,phin} - {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{0,phi,0,0}
+            右辺，既知変数側：
+            - {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{0, phin, 0, 0} + {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi, 0, phi, phi}
+         */
+         std::size_t count = 0;
+         for (const auto &p : obj->getPoints())
+            count += p->f2Index.size();
+         std::vector<double> V(count, 0.);
+         // std::vector<double> V_RHS(count, 0.);
+
+         MEreuse_M2M_M2L_L2L(B_poles);
+
+         std::cout << Red << "direct integration ..." << colorReset << std::endl;
+
+         TimeWatch tw;
+
+   #pragma omp parallel
+         for (const auto &p : obj->getPoints())
+   #pragma omp single nowait
+         {
+            double A = 0, n = 0, eps = 0;
+            for (auto &f : p->getFaces())
+               A += f->area;
+            eps = std::sqrt(A / M_PI) * 0.01;
+            for (const auto &[f, i] : p->f2Index) {
+               auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
+               if (solidangle) {
+                  std::get<1>(IgPhin_IgnPhi_near) += p->solid_angle * p->phiOnFace.at(f);
+                  // std::get<1>(IgPhin_IgnPhi_near) += p->almost_solid_angle * p->phiOnFace.at(f);
+               }
+               auto [IgPhin, IgnPhi] = IgPhin_IgnPhi_near + IgPhin_IgnPhi_far;
+               V[i] = IgPhin - IgnPhi;  // known
+            }
+         }
+
+         std::cout << Red << "direct integration : " << Green << tw() << colorReset << std::endl;
+
+         return V;
+      };
+
+      /* ----------------------------- almost solid angleの計算 ----------------------------- */
+
+      TimeWatch tw_solid_angle;
+      for (const auto &p : obj->getPoints()) {
+         p->phiOnFace_copy = p->phiOnFace;
+         p->phinOnFace_copy = p->phinOnFace;
+         for (const auto &[f, i] : p->f2Index) {
+            p->phiOnFace.at(f) = 1.;   //! this is known value to calculate b
+            p->phinOnFace.at(f) = 0.;  //! this is known value to calculate b
+            p->almost_solid_angle = 0.;
+            p->solid_angle = p->getSolidAngle();
+         }
+      }
+
+      MEreuse_M2M_M2L_L2L(B_poles);
+
+   #pragma omp parallel
+      for (const auto &p : obj->getPoints())
+   #pragma omp single nowait
+      {
+         double A = 0, n = 0;
+         for (auto &f : p->getFaces()) A += f->area;
+         double eps = std::sqrt(A / M_PI) * 0.01;
+         for (const auto &[f, i] : p->f2Index) {
+            auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
+            p->almost_solid_angle = -std::get<1>(IgPhin_IgnPhi_near + IgPhin_IgnPhi_far);
+         }
+      }
+
+      for (const auto &p : obj->getPoints()) {
+         p->phiOnFace = p->phiOnFace_copy;
+         p->phinOnFace = p->phinOnFace_copy;
+      }
+
+      std::cout << Magenta << "対角成分の計算" << Green << ", Elapsed time : " << tw_solid_angle() << colorReset << std::endl;
+
+      /* -------------------------------------------------------------------------- */
+
+      //! 　未知変数側
+      auto return_A_dot_v = [&](const V_d &V) -> V_d {
+         //! 値を更新
+         for (const auto &p : obj->getPoints()) {
+            p->phiOnFace_copy = p->phiOnFace;
+            p->phinOnFace_copy = p->phinOnFace;
+            for (const auto &[f, i] : p->f2Index) {
+               if (isDirichletID_BEM(p, f)) {
+                  p->phinOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
+                  p->phiOnFace.at(f) = 0.;
+               } else if (isNeumannID_BEM(p, f)) {
+                  p->phinOnFace.at(f) = 0.;
+                  p->phiOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
+               } else
+                  throw std::runtime_error("Error: Boundary type is not defined.");
+            }
+         }
+         auto ret = MatrixVectorProduct();
+
+         //! 値を戻す
+         for (const auto &p : obj->getPoints()) {
+            p->phiOnFace = p->phiOnFace_copy;
+            p->phinOnFace = p->phinOnFace_copy;
+         }
+
+         return ret;
+      };
+
+      /* -------------------------------------------------------------------------- */
+
+      //@ 既知変数側
+      for (const auto &p : obj->getPoints()) {
+         p->phiOnFace_copy = p->phiOnFace;
+         p->phinOnFace_copy = p->phinOnFace;
+         for (const auto &[f, i] : p->f2Index) {
+            if (isDirichletID_BEM(p, f)) {
+               p->phinOnFace.at(f) = 0.;
+               p->phiOnFace.at(f) = -p->phiOnFace.at(f);
+            } else if (isNeumannID_BEM(p, f)) {
+               p->phinOnFace.at(f) = -p->phinOnFace.at(f);
+               p->phiOnFace.at(f) = 0.;
+            } else
+               throw std::runtime_error("Error: Boundary type is not defined.");
+         }
+      }
+
+      std::vector<double> b = MatrixVectorProduct();
+
+      //! 値を戻す
+      for (const auto &p : obj->getPoints()) {
+         p->phiOnFace = p->phiOnFace_copy;
+         p->phinOnFace = p->phinOnFace_copy;
+      }
+
+      /* -------------------------------------------------------------------------- */
+
+      std::cout << Red << "Total Elapsed time : " << twFMM() << colorReset << std::endl;
+
+      /* ------------------------------ GMRES ------------------------------------- */
+
+      // std::cout << "use gmres" << std::endl;
+      std::vector<int> list = {5, 15, 30};
+      std::vector<double> error;
+      std::unordered_map<networkPoint *, double> data_gmres_ans, data_b;
+      std::vector<double> x0(b.size(), 0.);
+
+      for (auto &p : obj->getPoints())
+         for (const auto &[f, i] : p->f2Index) {
+            if (isDirichletID_BEM(p, f))
+               x0[i] = p->phinOnFace.at(f);  //! this is unknown value that will be calculated
+            else if (isNeumannID_BEM(p, f))
+               x0[i] = p->phiOnFace.at(f);  //! this is unknown value that will be calculated
+            else
+               throw std::runtime_error("Error: Boundary type is not defined.");
+         }
+
+      const double torrelance = 1.e-9 * obj->getPoints().size();
+      for (auto gmres_size : list) {
+         gmres *GMRES = new gmres(return_A_dot_v, b, x0, gmres_size);
+         std::cout << "gmres size = " << gmres_size << std::endl;
+         std::cout << "gmres error = " << GMRES->err << std::endl;
+         error.push_back(GMRES->err);
+         x0 = GMRES->x;
+         delete GMRES;
+         if (GMRES->err < torrelance)
+            break;
+      }
+
+      std::cout << "gmres size list = " << list << std::endl;
+      std::cout << "gmres error = " << error << std::endl;
+
+      std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
+      storePhiPhin(WATERS, x0);
+
+      std::cout << Green << "Elapsed time for solving BIE: " << Red << watch() << colorReset << " s\n";
+
+      for (auto water : WATERS)
+         isSolutionFinite(*water);
+
+#endif
    };
 
    // b! ------------------------------------------------------------------------------ */
@@ -1075,7 +1370,7 @@ struct BEM_BVP {
 #pragma omp parallel
          for (const auto &p : water->getPoints())
 #pragma omp single nowait
-            for (const auto &[F, i] : p->face2id) {
+            for (const auto &[F, i] : p->f2Index) {
                // auto [p, F] = PBF;
                //!!ノイマンの場合はこれでDphiDtは計算できませんよ
                if (isDirichletID_BEM(p, F))
@@ -1137,7 +1432,7 @@ struct BEM_BVP {
 #pragma omp parallel
          for (const auto &p : water->getPoints())
 #pragma omp single nowait
-            for (const auto &[f, i] : p->face2id) {
+            for (const auto &[f, i] : p->f2Index) {
                // auto [p, f] = PBF;
                if (isDirichletID_BEM(p, f))
                   knowns[i] = p->phitOnFace.at(f);
@@ -1145,8 +1440,9 @@ struct BEM_BVP {
                   knowns[i] = p->phintOnFace.at(f);
             }
       // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-      ans.resize(knowns.size());
-      this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      ans.resize(knowns.size(), 0);
+      if (this->lu != nullptr)
+         this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
       // std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
@@ -1163,7 +1459,7 @@ struct BEM_BVP {
 #pragma omp parallel
          for (const auto &p : water->getPoints())
 #pragma omp single nowait
-            for (const auto &[f, i] : p->face2id) {
+            for (const auto &[f, i] : p->f2Index) {
                if (isDirichletID_BEM(p, f))
                   p->pressure = p->pressure_BEM = 0;
                else

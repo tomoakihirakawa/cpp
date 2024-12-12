@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.01,
+    "end_time_step": 100000,
+    "end_time": 30,
+    "output_directory": "/Users/tomoaki/BEM/Tonegawa2024",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json"
+    ]
+}

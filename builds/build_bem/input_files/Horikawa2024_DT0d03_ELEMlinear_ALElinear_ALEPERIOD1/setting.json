@@ -1,0 +1,14 @@
+{
+    "max_dt": 0.03,
+    "end_time_step": 10000,
+    "end_time": 10,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Horikawa2024_DT0d03_ELEMlinear_ALElinear_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "float.json"
+    ]
+}

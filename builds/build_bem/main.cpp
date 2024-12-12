@@ -20,7 +20,7 @@ bool _ALE_ON_LINEAR_ELEMENT_ = false;
 bool _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = false;
 
 #define BEM
-#define use_lapack
+// #define use_lapack
 #define simulation
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -433,7 +433,7 @@ int main(int argc, char **argv) {
          for (auto &water : FluidObject) {
             //! 体積を保存するようにリメッシュする必要があるだろう．
             Print("setBoundaryTypes", Green);
-            setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+            setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
             Print("setBoundaryTypes", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s\n");
             double rad = M_PI / 180;
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv) {
             std::cout << Green << "makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
             for (auto water : FluidObject) {
-               setBoundaryTypes(*water, Join(RigidBodyObject, SoftBodyObject));
+               setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
                water->setMinDepthFromCORNER();
             }
             std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
@@ -680,11 +680,14 @@ int main(int argc, char **argv) {
                   auto absorber_center = Tddd{Mean(x), Mean(y), Mean(z)};
                   auto horizontal_dist_from_center = Norm(Chop(p->X - absorber_center, Tddd{0, 0, 1}));
                   double x_scale = std::abs(x[0] - x[1]);
-                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / x_scale, 0.1, 1.);
+                  double y_scale = std::abs(y[0] - y[1]);
+                  double max_scale = std::max(x_scale, y_scale);
+                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / max_scale, 0.1, 1.);
                   ref_phi = reference_phi.at(p->absorbedBy)[0] / reference_phi.at(p->absorbedBy)[1];
                }
                //
-               if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
+               // if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/)
+               {
                   p->RK_phi.push(p->DphiDt_damped({gamma, ref_phi}, p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
                }

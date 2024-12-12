@@ -666,7 +666,7 @@ void flipIf(networkPoint *p,
                   isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, s_mean == 0 ? 5 : s_mean);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, s_mean == 0 ? 5 : s_mean);
+                  isfound = l->flipIfTopologicallyBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, s_mean == 0 ? 4 : s_mean);
                   if (isfound) count++;
                }
             } else {
@@ -675,7 +675,7 @@ void flipIf(networkPoint *p,
                   isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
                   if (isfound) count++;
                }
             }
@@ -727,7 +727,7 @@ void flipIf(Network &water,
                   isfound = l->flipIfBetter(target_of_max_normal_diffD, acceptable_normal_change_by_flipD, 5);
                   if (isfound) count++;
                } else {
-                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 5);
+                  isfound = l->flipIfBetter(target_of_max_normal_diffN, acceptable_normal_change_by_flipN, 4);
                   if (isfound) count++;
                }
             }

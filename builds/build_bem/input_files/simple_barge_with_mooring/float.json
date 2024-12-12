@@ -1,0 +1,52 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mooringA": [
+        "mooringA",
+        50.0,
+        50.0,
+        0.0,
+        75.0,
+        50.0,
+        71.0,
+        75.27283706623525,
+        30,
+        100.0,
+        1400000000,
+        0.5,
+        0.1
+    ],
+    "mooringB": [
+        "mooringB",
+        150.0,
+        50.0,
+        0.0,
+        125.0,
+        50,
+        71.0,
+        75.27283706623525,
+        30,
+        100.0,
+        1400000000,
+        0.5,
+        0.1
+    ],
+    "mass": 18375000.0,
+    "COM": [
+        100.0,
+        50.0,
+        75.0
+    ],
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
+    ],
+    "MOI": [
+        7350000000.0,
+        7350000000.0,
+        7350000000.0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/tsukada2022_no_pool_small_case/floatingbody10.obj"
+}

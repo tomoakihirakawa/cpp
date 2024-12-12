@@ -85,6 +85,7 @@ parser.add_argument('-ALEPERIOD', type=str, help='ALEの周期')
 parser.add_argument('-H', type=float, help='波の高さ')
 parser.add_argument('-outputdir', type=str, help='出力ディレクトリ')
 parser.add_argument('-suffix', type=str, help='接尾語')
+parser.add_argument('-T', type=float, help='波の周期')
                     
 args = parser.parse_args()
 
@@ -109,6 +110,9 @@ if args.element is not None:
 if args.dt is not None:
     dt = args.dt
     print(f"dt: {dt}")
+if args.T is not None:
+    T = args.T
+    print(f"T: {T}")    
 if args.ALE is not None:
     ALE = args.ALE
     print(f"ALE: {ALE}")
@@ -136,6 +140,29 @@ def IO_dir(id):
     os.makedirs(output_dir, exist_ok=True)
     return input_dir, output_dir
 
+# ---------------------------------------------------------------------------- #
+# add id
+def add_id(id):
+    global arg
+
+    if dt is not None:
+        max_dt = dt
+    else:
+        max_dt = 1/20
+    id += "_DT" + str(max_dt).replace(".", "d")
+
+    if element is not None:
+        id += "_ELEM" + element
+
+    if args.ALE is not None:
+        id += "_ALE" + args.ALE
+
+    if args.ALEPERIOD != "":
+        id += "_ALEPERIOD" + ALEPERIOD
+
+    if suffix != "":    
+        id += "_" + suffix
+    return id
 # ---------------------------------------------------------------------------- #
 
 if "looping" in SimulationCase:
@@ -1413,29 +1440,22 @@ elif "simple_barge" in SimulationCase:
     os.makedirs(input_dir, exist_ok=True)
     output_dir = sys_home_dir + "/BEM/" + SimulationCase
     os.makedirs(output_dir, exist_ok=True)
-
     id = SimulationCase
-    id += '_with_mooring'
-
+    id = add_id(id)
+    # id += '_with_mooring'
     water = {"name": "water", "type": "Fluid"}
-
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
     start = 0.
-    a = 2.
+    a = 1.
     T = 7.
     h = 80
     z_surface = 80
-
-    if False:
-        wavemaker = {"name": "wavemaker",
-                     "type": "RigidBody",
-                     "isFixed": True}
-    else:
-        wavemaker = {"name": "wavemaker",
-                     "type": "RigidBody",
-                     "velocity": ["piston", start, a, T, h, 1, 0, 0]}
-
+    wavemaker = {"name": "wavemaker",
+                    "type": "RigidBody",
+                    "velocity": ["piston", start, a, T, h, 1, 0, 0]
+                    }
+    
     # 係留索の設定
 
     X_anchorA = [50., 50., 0.]
@@ -1447,7 +1467,6 @@ elif "simple_barge" in SimulationCase:
     stiffness = 14 * 10**8  # ! [N/m]
     damp = .5  # ! [N/(m/s^2)]
     density = 100.  # ! [kg/m]
-    dt = 0.01  # ! [s]
     total_lengthA = math.sqrt((X_anchorA[0]-X_fair_leadA[0])**2 + (
         X_anchorA[1]-X_fair_leadA[1])**2 + (X_anchorA[2]-X_fair_leadA[2])**2)
     total_lengthB = math.sqrt((X_anchorB[0]-X_fair_leadB[0])**2 + (
@@ -1499,9 +1518,124 @@ elif "simple_barge" in SimulationCase:
 
     inputfiles = [tank, wavemaker, water, floatingbody]
 
-    setting = {"max_dt": 0.1,
+    setting = {"max_dt": dt,
                "end_time_step": 100000,
-               "end_time": 100}
+               "end_time": 100,
+               "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Tonegawa2024" in SimulationCase:
+
+    '''
+    Tonegawa2024
+
+    浮体：
+    float size WxLxH 0.375x0.375x0.84
+    moon pool size WxL 0.25x0.25 m
+    喫水 0.056 m
+    重量 0.828 kg
+    慣性モーメント 
+
+    重心位置：
+    (x,y,z) = (2,0,h-draft+H_float/2)
+
+    水槽：
+    WxLxDepth 2.15x4.45x0.6
+    
+    使用するobjファイル：
+    Tonegawa2024/water.obj
+    Tonegawa2024/float.obj
+    Tonegawa2024/tank.obj
+    Tonegawa2024/wavemaker.obj
+
+    (x,z) = (-0.31,0)を通るy軸を中心として，wavemakerの運動をflap型造波で行う．
+
+    '''
+
+    start = 0.
+    H = 0.01  # 波高
+    # if not degined 
+    try:       
+        T
+    except:
+        T = 0.6   # 波周期
+    
+    a = H / 2  # 振幅
+    h = 0.6   # 水深
+    z_surface = h
+
+    # 浮体設定
+    W, L, H_float = 0.375, 0.375, 0.084
+    draft = 0.056
+    # mass = 4.375
+    # mass = 7.
+    COM = [2, 0, h - draft + H_float / 2]
+    # MOI = [0.07943494545, 0.07943494545, 0.1514044693]
+    # MOI = [0.1078722037,0.1078722037,0.2013731481]
+
+    # 水槽設定
+    tank_dim = [2.15, 4.45, 0.6]
+
+    # obj ファイル
+    objfolder = code_home_dir + "/cpp/obj/Tonegawa2024"
+
+    if "0d075" in suffix:
+        float_obj = objfolder + "/float0d075.obj"
+        water_obj = objfolder + "/water0d075.obj"
+        mass = 7.56
+        MOI = [0.1139241482,0.1139241482,0.2117076729]
+    if "0d125" in suffix:
+        float_obj = objfolder + "/float0d125.obj"
+        water_obj = objfolder + "/water0d125.obj"
+        mass = 7.
+        MOI = [0.1078722037,0.1078722037,0.2013731481]
+    elif "0d25" in suffix:
+        float_obj = objfolder + "/float0d25.obj"
+        water_obj = objfolder + "/water0d25.obj"
+        mass = 4.375
+        MOI = [0.07943494545, 0.07943494545, 0.1514044693]
+
+    water = {"name": "water", 
+             "type": "Fluid", 
+             "objfile": water_obj}
+
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating",
+             "mass": mass,
+             "COM": COM,
+             "MOI": MOI,
+             "objfile": float_obj}
+
+    tank = {"name": "tank", "type": "RigidBody", "isFixed": True, "objfile": objfolder + "/tank.obj"}
+
+    wavemaker = {"name": "wavemaker",
+                 "type": "RigidBody",
+                 "velocity": ["flap", start, a, T, h, h, 0, 1, 0],
+                 "objfile": objfolder + "/wavemaker.obj"}
+    
+    absorber = {"name": "absorber", 
+                "type": "Absorber", 
+                "isFixed": True,
+                "objfile": objfolder+"/absorber.obj"}
+
+    gauges = []
+    for i in range(8):
+        gauges.append({"name": f"gauge{i}", 
+                       "type": "wave gauge",
+                       "position": [0.25*(i+1), 0., 1., 0.25*(i+1), 0., 0.2]})
+
+    inputfiles = [tank, wavemaker, water, float, absorber]
+    inputfiles += gauges
+    
+    id = SimulationCase
+    id += "_T"+str(T).replace(".", "d")
+    id = add_id(id)
+    
+    setting = {"max_dt": dt,
+               "end_time_step": 100000,
+               "end_time": 12,
+                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "moon_pool" in SimulationCase:
@@ -1573,9 +1707,10 @@ elif "moon_pool" in SimulationCase:
 
         inputfiles = [tank, wavemaker, water, floatingbody]
 
-        setting = {"max_dt": 0.2,
+        setting = {"max_dt": dt,
                    "end_time_step": 1000,
-                   "end_time": 100}
+                   "end_time": 100,
+                   "ALEPERIOD": 1}
 
         id = SimulationCase
         generate_input_files(inputfiles, setting, IO_dir, id)
@@ -1685,8 +1820,7 @@ elif "Tonegawa" in SimulationCase:
     os.makedirs(output_dir, exist_ok=True)
 
     water = {"name": "water",
-             "type": "Fluid"
-             }
+             "type": "Fluid"}
 
     tank = {"name": "tank",
             "type": "RigidBody",
@@ -1928,23 +2062,8 @@ elif "Goring1979" in SimulationCase:
     
     id += "_MESH" + meshname
 
-    if dt is not None:
-        max_dt = dt
-    else:
-        max_dt = 1/20
-    id += "_DT" + str(max_dt).replace(".", "d")
-
-    if element != "":
-        id += "_ELEM" + element
-
-    if ALE != "":
-        id += "_ALE" + ALE
-
-    if ALEPERIOD != "":
-        id += "_ALEPERIOD" + ALEPERIOD
-
-    if suffix != "":    
-        id += "_" + suffix
+    id += add_id(id)
+    max_dt = dt
 
     objfolder = code_home_dir + "/cpp/obj/Goring1979"
 
@@ -1987,6 +2106,45 @@ elif "Goring1979" in SimulationCase:
                 "ALE": ALE,
                 "ALEPERIOD": ALEPERIOD}
     
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Horikawa2024" in SimulationCase:
+    objfolder = code_home_dir + "/cpp/obj/Horikawa2024"
+
+    # 水とタンク、浮体の設定
+    water = {"name": "water",
+             "type": "Fluid",
+            #  "objfile": objfolder + "/water.obj"}
+            "objfile": objfolder + "/waterHigh.obj"}
+
+    tank = {"name": "tank",
+            "type": "RigidBody",
+            "isFixed": True,
+            "objfile": objfolder + "/tank.obj"}
+
+    start = 0.
+    a = 0.003
+    T=0.625
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": ["sin", start, a, T, 1, 0, 0, 0, 0, 0],
+             "objfile": objfolder + "/float.obj"}
+
+    # IDの生成
+    id = SimulationCase
+    id = add_id(id)
+
+    # 入力ファイルの設定
+    inputfiles = [tank, water, float]
+
+    # シミュレーション設定
+    setting = {"max_dt": dt,  # デフォルトの時間刻み幅
+               "end_time_step": 10000,
+               "end_time": 10,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
+
+    # 入力ファイルを生成
     generate_input_files(inputfiles, setting, IO_dir, id)
 
 # シミュレーションケースのモジュールを動的にインポート

@@ -13,6 +13,16 @@ inline void networkFace::setDodecaPoints() {
    }
 }
 
+/*
+   原点を変えて積分する際に，積分のどこが，原点に依存し，どこが依存しないかを把握しておく．
+   原点に依存しない部分は，事前に計算しておくことで，計算量を削減できる．
+
+   また，積分で面をトラバースする際に，係数行列のどの行に（どの点に）重みをかけるかを把握しておく．
+
+   積分では，原点（行）・面・点（列）が重要である．
+
+*/
+
 inline void networkFace::setIntegrationInfo() {
    // set linear integration info
    this->map_Point_BEM_IGIGn_info_init.clear();
@@ -37,7 +47,8 @@ inline void networkFace::setIntegrationInfo() {
       std::vector<linear_triangle_integration_info> info_linears;
       std::vector<pseudo_quadratic_triangle_integration_info> info_quadratics;
 
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+      // for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
+      for (int i = 0; const auto &[t0, t1, ww] : __array_GW4xGW4__) {
          auto N012_geometry = ModTriShape<3>(t0, t1);
          auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
          auto X = Dot(N012_geometry, X012);

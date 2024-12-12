@@ -370,6 +370,23 @@ void complex_fused_multiply_increment(const std::complex<T>& a, const std::compl
 #include <functional>
 #include "basic_exception.hpp"
 
+// struct pole4FMM {
+//    /*DOC_EXTRACT
+//    境界要素法において，pole4FMMは，ある節点における変数値を表すわけではなく，
+//    数値的な面積分における和のある一項に相当する．
+//    この一項は，複数の節点における変数値の積に重みをかけたものである．
+//    */
+//    Tddd X;
+//    Tdd weights;
+//    Tddd normal;
+//    std::function<Tdd()> getValues;
+//    std::function<void()> update;
+//    pole4FMM(const Tddd& X, const Tdd& weights, const Tddd& normal, std::function<Tdd()> getValues)
+//        : X(X), weights(weights), normal(normal), getValues(getValues) {}
+
+//    void setUpdateFunction(std::function<void()> update) { this->update = update; }
+// };
+
 struct pole4FMM {
    /*DOC_EXTRACT
    境界要素法において，pole4FMMは，ある節点における変数値を表すわけではなく，
@@ -379,9 +396,22 @@ struct pole4FMM {
    Tddd X;
    Tdd weights;
    Tddd normal;
-   std::function<Tdd()> get_values;
-   pole4FMM(const Tddd& X, const Tdd& weights, const Tddd& normal, std::function<Tdd()> get_values)
-       : X(X), weights(weights), normal(normal), get_values(get_values) {}
+   std::array<double, 2> values;
+   std::array<double, 2> values_x_weight;
+   std::function<void(pole4FMM*)> updater;
+   pole4FMM(const Tddd& X,
+            const Tdd& weights,
+            const Tddd& normal,
+            std::function<void(pole4FMM*)> updater)
+       : X(X),
+         weights(weights),
+         normal(normal),
+         updater(updater) {}
+
+   void update() {
+      updater(this);
+      this->values_x_weight = {values[1] * weights[0], values[0] * weights[1]};
+   }
 };
 
 using sp_pole4FMM = std::shared_ptr<pole4FMM>;
@@ -443,23 +473,29 @@ struct ExpCoeffs {
 
    /* -------------------------------------------------------------------------- */
 
+   void initialize() {
+      coeffs.fill(0.0);
+      coeffs_.fill(0.0);
+      set_nm_set();
+   }
+
    void initialize(const std::array<double, 3>& XIN) {
       this->X = XIN;
-      std::fill(coeffs.begin(), coeffs.end(), std::complex<double>(0.0, 0.0));
-      std::fill(coeffs_.begin(), coeffs_.end(), std::complex<double>(0.0, 0.0));
+      coeffs.fill(0.0);
+      coeffs_.fill(0.0);
       set_nm_set();
    }
 
    // Default constructor
    ExpCoeffs() : X{0.0, 0.0, 0.0} {
-      std::fill(coeffs.begin(), coeffs.end(), std::complex<double>(0.0, 0.0));
-      std::fill(coeffs_.begin(), coeffs_.end(), std::complex<double>(0.0, 0.0));
+      coeffs.fill(0.0);
+      coeffs_.fill(0.0);
       set_nm_set();
    }
 
    ExpCoeffs(const std::array<double, 3>& XIN) : X(XIN) {
-      std::fill(coeffs.begin(), coeffs.end(), std::complex<double>(0.0, 0.0));
-      std::fill(coeffs_.begin(), coeffs_.end(), std::complex<double>(0.0, 0.0));
+      coeffs.fill(0.0);
+      coeffs_.fill(0.0);
       set_nm_set();
    }
 
@@ -495,37 +531,37 @@ struct ExpCoeffs {
    //       }
    //    }
    // }
-   std::vector<std::tuple<std::function<Tdd()>, std::vector<std::tuple<int, int, int, std::array<std::complex<double>, 2>>>>> saved_getValue_SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal;
-
-   void increment_moments_reuse() {
-      coeffs.fill(0.0);
-      coeffs_.fill(0.0);
-
-      for (const auto& [get_values_func, tuple_vector] : saved_getValue_SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal) {
-         auto coefficients = get_values_func();
-
-         for (const auto& [ind, n, m, values] : tuple_vector) {
-            coeffs[ind] += std::get<0>(coefficients) * std::get<0>(values);
-            coeffs_[ind] += std::get<1>(coefficients) * std::get<1>(values);
-         }
-      }
-   }
 
    template <typename T>
    void increment_moments(const T& poles) {
+      std::array<std::complex<double>, 2> W;
+      value_weight4integration_accums.reserve(poles.size());
+      ArrayType tuple_vector;
       for (const auto& pole : poles) {
-         auto weights = pole->get_values() * pole->weights;  // Call the function to get the values
+         auto [V0, V1] = pole->values;
          SphericalCoordinates R(pole->X - this->X);
+         for (size_t ind = 0; ind < nm_set.size(); ++ind) {
+            auto [n, m] = nm_set[ind];
+            W = R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal) * pole->weights;
+            tuple_vector[ind] = {W,
+                                 &(coeffs[ind] += V1 * std::get<0>(W)),
+                                 &(coeffs_[ind] += V0 * std::get<1>(W))};
+         }
+         value_weight4integration_accums.emplace_back(&pole->values, tuple_vector);
+      }
+   }
 
-         this->increment_coeffs3([&](int ind, int n, int m) -> std::array<std::complex<double>, 2> {
-            auto tmp = R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal) * weights;
+   using TupleType = std::tuple<std::array<std::complex<double>, 2>, std::complex<double>*, std::complex<double>*>;
+   using ArrayType = std::array<TupleType, (N + 1) * (N + 1)>;
+   std::vector<std::tuple<std::array<double, 2>*, ArrayType>> value_weight4integration_accums;
 
-            saved_getValue_SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal.emplace_back(
-                pole->get_values,
-                std::vector<std::tuple<int, int, int, std::array<std::complex<double>, 2>>>{std::make_tuple(ind, n, m, tmp)});
-
-            return tmp;
-         });
+   void increment_moments_reuse() {
+      for (const auto& [values, tuple_vector] : this->value_weight4integration_accums) {
+         auto [V0, V1] = *values;
+         for (auto& [W, c, c_] : tuple_vector) {
+            *c += V1 * std::get<0>(W);
+            *c_ += V0 * std::get<1>(W);
+         }
       }
    }
 
@@ -547,12 +583,13 @@ struct ExpCoeffs {
       }
    }
 
-   std::array<double, 2> IGIGn_using_L(const std::array<double, 3>& a) const {
+   std::array<double, 2> L2P(const std::array<double, 3>& a) const {
       // SphericalCoordinates Xc2O(this->X - a);
       SphericalCoordinates P(a - this->X);
       std::array<std::complex<double>, 2> ret = {0, 0};
       std::complex<double> R;
       std::size_t index;
+
       for (const auto& [n, m] : this->nm_set) {
          // auto R = P.SolidHarmonicR_ForNear(n, -m);
          // auto R = std::pow(P.rho, n) * P.sph_harmonics(n, m);
@@ -644,25 +681,33 @@ struct ExpCoeffs {
       SphericalCoordinates rab(M.X - this->X);
       rab.precompute_sph(2 * N);
 
-      this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
-         std::array<std::complex<double>, 2> ret = {0, 0};
-         auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
-         double rho_inv;
-         std::size_t index;
-         for (int n = 0; n <= N; ++n) {
-            rho_inv = std::pow(rab.rho, -(j + n + 1));
-            for (int m = -n; m <= n; ++m) {
-               AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-               if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-                  S_ = AAA * rab.sph_harmonics(j + n, m - k) * rho_inv;
-                  index = M.index(n, m);
-                  complex_fused_multiply_increment(S_, M.get_coeffs(index), std::get<0>(ret));
-                  complex_fused_multiply_increment(S_, M.get_coeffs_(index), std::get<1>(ret));
-               }
-            }
-         }
-         return ret;
-      });
+      for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+         S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
+         c += S_ * M->multipole_expansion.get_coeffs(index);
+         c_ += S_ * M->multipole_expansion.get_coeffs_(index);
+      }
+
+      // this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
+      //    std::array<std::complex<double>, 2> ret = {0, 0};
+      //    auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
+      //    double rho_inv;
+      //    std::size_t index;
+      //    for (int n = 0; n <= N; ++n) {
+      //       rho_inv = std::pow(rab.rho, -(j + n + 1));
+      //       for (int m = -n; m <= n; ++m) {
+      //          AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
+      //          if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
+      //             S_ = AAA * rab.sph_harmonics(j + n, m - k) * rho_inv;
+      //             index = M.index(n, m);
+      //             std::get<0>(ret) += S_ * M.get_coeffs(index);
+      //             std::get<1>(ret) += S_ * M.get_coeffs_(index);
+      //             // complex_fused_multiply_increment(S_, M.get_coeffs(index), std::get<0>(ret));
+      //             // complex_fused_multiply_increment(S_, M.get_coeffs_(index), std::get<1>(ret));
+      //          }
+      //       }
+      //    }
+      //    return ret;
+      // });
    }
 
    template <typename T>
@@ -674,9 +719,8 @@ struct ExpCoeffs {
       for (const auto& b : buckets) {
          SphericalCoordinates rab(b->multipole_expansion.X - this->X);
          rab.precompute_sph(2 * N);
-
-         for (const auto& [j, k, c, c_, n, m, index, AAA] : index_map_for_M2L) {
-            auto S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
+         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+            S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
             c += S_ * b->multipole_expansion.get_coeffs(index);
             c_ += S_ * b->multipole_expansion.get_coeffs_(index);
          }
@@ -769,8 +813,10 @@ struct ExpCoeffs {
                if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
                   // R = AAA * rab.sph_harmonics(n - j, m - k) * rho;
                   R = AAA * rab.sph_harmonics_rho(n - j, m - k);
-                  complex_fused_multiply_increment(R, L.get_coeffs(n, m), std::get<0>(ret));
-                  complex_fused_multiply_increment(R, L.get_coeffs_(n, m), std::get<1>(ret));
+                  std::get<0>(ret) += R * L.get_coeffs(n, m);
+                  std::get<1>(ret) += R * L.get_coeffs_(n, m);
+                  // complex_fused_multiply_increment(R, L.get_coeffs(n, m), std::get<0>(ret));
+                  // complex_fused_multiply_increment(R, L.get_coeffs_(n, m), std::get<1>(ret));
                }
             }
          }

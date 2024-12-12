@@ -13,26 +13,6 @@ using V_netFp = std::vector<networkFace *>;
 using VV_netFp = std::vector<V_netFp>;
 
 /* -------------------------------------------------------------------------- */
-
-std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
-   /**
-   NOTE: non-multiple node ID is {p,nullptr}
-   NOTE: Iterating over p->getFaces() and p may not get all IDs since p->getFaces() doesn't contain nullptr which is often used for an ID of a non-multiple node.
-    */
-   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
-      return {const_cast<networkPoint *>(p), nullptr};
-   else
-      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
-}
-
-int pf2Index(const networkPoint *p, networkFace *f) {
-   if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
-      return p->face2id.at(nullptr);
-   else
-      return p->face2id.at(f);
-};
-
-/* -------------------------------------------------------------------------- */
 /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
 ## 陽に与えられる境界条件に対して（造波装置など）
@@ -616,7 +596,9 @@ T3Tddd OrthogonalBasis(const Tddd &n_IN) {
 };
 
 double getPhin(const networkPoint *p, const networkFace *f) {
-   auto iter = p->phinOnFace.find(std::get<1>(pf2ID(p, f)));
+   // auto iter = p->phinOnFace.find(std::get<1>(pf2ID(p, f)));
+
+   auto iter = p->phinOnFace.find(const_cast<networkFace *>(f));
    if (iter != p->phinOnFace.end())
       return iter->second;
    else {

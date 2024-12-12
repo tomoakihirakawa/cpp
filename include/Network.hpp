@@ -418,7 +418,9 @@ class networkPoint : public CoordinateBounds, public CRS {
    netPp tmpPoint;
    V_netLp Lines;
    std::unordered_set<networkFace *> Faces;
-   bool MemberQ(networkFace *const &f_IN) const { return this->Faces.contains(f_IN); };
+
+   bool MemberQ(const networkFace *f_IN) const { return std::find(Faces.begin(), Faces.end(), f_IN) != Faces.end(); };
+
    Network *network;
    Network *getNetwork() const { return this->network; };
    // Network *getStorage() const { return this->storage; };
@@ -840,13 +842,15 @@ class networkPoint : public CoordinateBounds, public CRS {
 
 #ifdef BEM
   public:
-   std::array<double, 2> igign, igign_FMM;  // spherical harmonics のチェックに利用2024/07/03
-   std::array<double, 2> igign_near, igign_far;
+   std::array<double, 2> igign, IgPhi_IgnPhin_FMM;  // spherical harmonics のチェックに利用2024/07/03
+   std::array<double, 2> IgPhi_IgnPhin_near, IgPhi_IgnPhin_far;
    // double phi_n();
    using T_PBF = std::tuple<netP *, bool, netF *>;
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
    Tdd phiphin;
    Tdd phiphin_t;
+   double almost_solid_angle = 0.;
+   double solid_angle = 0.;
    Tddd U_absorbed = {0., 0., 0.};
    Network *absorbedBy = nullptr;
    double phi_tmp = 0;
@@ -857,10 +861,23 @@ class networkPoint : public CoordinateBounds, public CRS {
    double phin_Dirichlet;
    double dpda;
 
-   std::map<networkFace *, int> face2id;
+   // std::map<networkFace *, int> f2Index;
+   // std::map<networkFace *, double> phiOnFace, phinOnFace;
+   // std::map<networkFace *, double> phiOnFace_copy, phinOnFace_copy;
+   // std::map<networkFace *, double> phitOnFace, phintOnFace;
 
-   std::map<networkFace *, double> phiOnFace, phinOnFace;
-   std::map<networkFace *, double> phitOnFace, phintOnFace;
+   std::unordered_map<networkFace *, int> f2Index;
+   std::unordered_map<networkFace *, double> phiOnFace, phinOnFace;
+   std::unordered_map<networkFace *, double> phiOnFace_copy, phinOnFace_copy;
+   std::unordered_map<networkFace *, double> phitOnFace, phintOnFace;
+
+   double meanPhiOnFace() const {
+      double sum = 0.;
+      for (const auto &f : this->phiOnFace)
+         sum += f.second;
+      return sum / phiOnFace.size();
+   };
+
    // std::unordered_map<networkFace *, std::tuple<double, T6d>> phintOnFace;
    // std::unordered_map<networkFace *, double> phintOnFace_a;  // 加速度による微分
    //* ------------------------------------------------- */
@@ -4021,17 +4038,17 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       }
 
       for (auto i = 0; i < 100; i++) {
-#pragma omp parallel
+         // #pragma omp parallel
          for (auto &p : points)
-#pragma omp single nowait
+            // #pragma omp single nowait
             for (auto &q : p->getNeighbors()) {
                p->minDepthFromCORNER_ = std::min(p->minDepthFromCORNER_, q->minDepthFromCORNER + 1);
                p->minDepthFromMultipleNode_ = std::min(p->minDepthFromMultipleNode_, q->minDepthFromMultipleNode + 1);
             }
          // apply
-#pragma omp parallel
+         // #pragma omp parallel
          for (const auto &p : points)
-#pragma omp single nowait
+         // #pragma omp single nowait
          {
             p->minDepthFromCORNER = p->minDepthFromCORNER_;
             p->minDepthFromMultipleNode = p->minDepthFromMultipleNode_;
