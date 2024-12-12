@@ -1,8 +1,127 @@
 #ifndef BEM_setBoundaryConditions_H
 #define BEM_setBoundaryConditions_H
 
-#include "BEM_utilities.hpp"
 #include "Network.hpp"
+
+//! 境界条件と関連が深いのでここで定義しておく
+
+/*DOC_EXTRACT 0_1_1_2_BOUNDARY_CONDITIONS
+
+## 多重節点
+
+NOTE: 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi_n`$を計算できるようにする
+
+NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi_n`$を選択し補間に用いなければならない
+
+これを多重節点という．
+
+多重節点を導入すると，未知変数idは，節点idだけではなく，節点と面の組みのidとなる．
+
+### 境界値問題の未知変数ID 多重節点との区別
+
+* `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
+
+* `pf2ID`は，節点と面の組みを未知変数IDに変換する．多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，与えられた`{p,f}`が変数のidとなる．
+
+*/
+
+bool isNeumannID_BEM(const netP *p, const netF *f) {
+   if (p->Neumann || p->CORNER) {
+      if (p->isMultipleNode)
+         return p->MemberQ(f) && f->Neumann;
+      else
+         return (f == nullptr);
+   } else
+      return false;
+};
+bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) { return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+bool isDirichletID_BEM(const auto p, const auto f) { return (p->Dirichlet || p->CORNER) && (f == nullptr); };
+bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) { return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF)); };
+
+/*DOC_EXTRACT 0_3_BEM_utilities
+
+## 多重節点を考慮したIDの設定方法
+
+*/
+
+//@ pf2IDは，setNodeFaceIndicesを実行せずとも使える．pf2Indexは，setNodeFaceIndicesを実行してから使う．
+std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const networkFace *f) {
+   if (isNeumannID_BEM(p, f) || isDirichletID_BEM(p, f))
+      return {const_cast<networkPoint *>(p), const_cast<networkFace *>(f)};
+   else
+      return {const_cast<networkPoint *>(p), nullptr};
+}
+
+std::vector<std::tuple<networkPoint *, networkFace *>> p2AllIDs(const networkPoint *p) {
+   std::vector<std::tuple<networkPoint *, networkFace *>> ret;
+   bool nullptr_found = false;
+   for (const auto &f : p->getFaces()) {
+      auto PF = pf2ID(p, f);
+      if (nullptr_found && std::get<1>(PF) != nullptr)
+         ret.emplace_back(PF);
+      else if (!nullptr_found)
+         ret.emplace_back(PF);
+      if (std::get<1>(PF) == nullptr)
+         nullptr_found = true;
+   }
+   return ret;
+};
+
+/*
+
+   係数行列を作成する場合（LU分解など）：
+   pf2Index(p0, integ_f)は，積分の重みとに掛かる節点上のある量を指定のに使われる．
+   これは，係数行列を作成する際に使うことになる．
+   多重節点の場合でも適切にIDを返す．
+
+   係数行列を作成する必要がない場合（GMRESなど）：
+   もし，p->f2Index.at(f)が存在するなら，それは多重節点として扱われる．その値を使う．
+   つまり，
+
+*/
+
+int pf2Index(const networkPoint *p, networkFace *f) {
+   try {
+      if (f == nullptr || !p->isMultipleNode || f->Dirichlet)
+         return p->f2Index.at(nullptr);
+      else
+         return p->f2Index.at(f);
+   } catch (const std::out_of_range &e) {
+      for (const auto &[f, i] : p->f2Index)
+         std::cout << f << " " << i << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
+   }
+};
+
+/*
+
+   pf2Index(p0, integ_f)を使えるように刷るためには，setNodeFaceIndicesを実行する必要がある．
+
+*/
+
+std::size_t setNodeFaceIndices(const std::vector<Network *> &objects) {
+   std::size_t i = 0;
+   for (const auto water : objects)
+      for (const auto &q : water->getPoints()) {
+         q->f2Index.clear();
+         if (isNeumannID_BEM(q, nullptr) || isDirichletID_BEM(q, nullptr))
+            q->f2Index[nullptr] = i++;
+         for (const auto &f : q->getFaces())
+            if (isNeumannID_BEM(q, f) || isDirichletID_BEM(q, f))
+               q->f2Index[f] = i++;
+      }
+   return i;
+};
+
+std::size_t setNodeFaceIndices(const Network *objects) {
+   return setNodeFaceIndices(std::vector<Network *>{const_cast<Network *>(objects)});
+};
+
+/* -------------------------------------------------------------------------- */
+
+#include "BEM_utilities.hpp"
+
+/* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT 0_1_1_1_BOUNDARY_CONDITIONS
 
@@ -154,21 +273,22 @@ void setIsMultipleNode(const auto &p) {
       p->isMultipleNode = false;
 };
 
-void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
-   std::cout << water.getName() << "の境界条件を決定 setBoundaryTypes" << std::endl;
-   /* -------------------------------------------------------------------------- */
-   /*                             f,l,pの境界条件を決定                             */
-   /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                             f,l,pの境界条件を決定                             */
+/* -------------------------------------------------------------------------- */
 
-   water.setGeometricProperties();
+void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}) {
+   std::cout << water->getName() << "の境界条件を決定 setBoundaryTypes" << std::endl;
+
+   water->setGeometricProperties();
 
    std::cout << "step1 点の衝突の判定" << std::endl;
-   for (const auto &p : water.getPoints())
+   for (const auto &p : water->getPoints())
       p->clearContactFaces();
    //!! 衝突の判定がよくエラーが出る箇所
    for (const auto &net : objects) {
 #pragma omp parallel
-      for (const auto &p : water.getPoints())
+      for (const auto &p : water->getPoints())
 #pragma omp single nowait
       {
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
@@ -179,6 +299,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
                r += l->length();
                s += 1.;
             }
+         // p->detection_range = r / s / 2.;
          p->detection_range = r / s / 2.;
          p->addContactFaces(net->getBucketFaces(), false);
       }
@@ -186,7 +307,7 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
 
    std::cout << "step2 面の境界条件を判定" << std::endl;
 #pragma omp parallel
-   for (const auto &f : water.getFaces())
+   for (const auto &f : water->getFaces())
 #pragma omp single nowait
    {
       // f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
@@ -197,93 +318,41 @@ void setBoundaryTypes(Network &water, const std::vector<Network *> &objects) {
    }
 
    std::cout << "step3 線の境界条件を決定" << std::endl;
-   for (const auto &l : water.getLines()) {
+   for (const auto &l : water->getLines()) {
       l->Neumann = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
       l->Dirichlet = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });
       l->CORNER = (!l->Neumann && !l->Dirichlet);
    }
    std::cout << "step4 点の境界条件を決定" << std::endl;
 #pragma omp parallel
-   for (const auto &p : water.getPoints())
+   for (const auto &p : water->getPoints())
 #pragma omp single nowait
    {
       p->Neumann = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
       p->Dirichlet = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
       p->CORNER = (!p->Neumann && !p->Dirichlet);
-   }
-
-   for (const auto &p : water.getPoints())
+      // step5 多重節点の判定
       setIsMultipleNode(p);
+   }
 
    //@ ------------------------------------------ */
 
-   for (const auto &f : water.getFaces()) {
+   for (const auto &f : water->getFaces()) {
+#ifndef _PSEUDO_QUADRATIC_ELEMENT_
+      f->isPseudoQuadraticElement = false;
+#else
       f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
+#endif
+
       f->isLinearElement = !f->isPseudoQuadraticElement;
    }
 
    //@ ------------------------------------------ */
+
+   std::cout << "setBoundaryTypes終了" << std::endl;
 };
 
 /* -------------------------------------------------------------------------- */
-//! 境界条件と関連が深いのでここで定義しておく
-
-/*DOC_EXTRACT 0_1_1_2_BOUNDARY_CONDITIONS
-
-## 多重節点
-
-NOTE: 面の向き$`\bf n`$がカクッと不連続に変わる節点には，$`\phi`$は同じでも，隣接面にそれぞれ対して異なる$`\phi_n`$を計算できるようにする
-
-NOTE: $`\bf n`$が不連続に変化する節点まわりの要素は，自分のために用意された$`\phi_n`$を選択し補間に用いなければならない
-
-これを多重節点という．
-
-多重節点を導入すると，未知変数idは，節点idだけではなく，節点と面の組みのidとなる．
-
-### 境界値問題の未知変数ID 多重節点との区別
-
-* `isNeumannID_BEM`と`isDirichletID_BEM`は，節点と面の組みが，境界値問題の未知変数かどうかを判定する．
-
-* `pf2ID`は，節点と面の組みを未知変数IDに変換する．多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，与えられた`{p,f}`が変数のidとなる．
-
-*/
-
-bool isNeumannID_BEM(const auto p, const auto f) {
-   if (p->Neumann || p->CORNER) {
-      if (p->isMultipleNode)
-         return p->MemberQ(f) && f->Neumann;
-      else
-         return (f == nullptr);
-   } else
-      return false;
-};
-
-bool isNeumannID_BEM(const std::tuple<netP *, netF *> &PF) {
-   return isNeumannID_BEM(std::get<0>(PF), std::get<1>(PF));
-};
-
-bool isDirichletID_BEM(const auto p, const auto f) {
-   if (p->Dirichlet || p->CORNER)
-      return (f == nullptr);
-   else
-      return false;
-};
-
-bool isDirichletID_BEM(const std::tuple<netP *, netF *> &PF) {
-   return isDirichletID_BEM(std::get<0>(PF), std::get<1>(PF));
-};
-
-std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const networkPoint *p) {
-   //{p,f}を変換
-   // f cannot be nullptr
-   //  {p,f} --o--> {p,nullptr}
-   //  {p,f} <--x-- {p,nullptr}
-
-   std::unordered_set<std::tuple<networkPoint *, networkFace *>> ret;
-   for (const auto &f : p->getFaces())
-      ret.emplace(pf2ID(p, f));
-   return ret;
-};
 
 /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
@@ -291,89 +360,67 @@ std::unordered_set<std::tuple<networkPoint *, networkFace *>> variableIDs(const 
 `phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
 他も同様である．
 
-
 */
 
-void resetPhiPhin(Network &water) {
-   /* -------------------------------------------------------------------------- */
-   /*                         phinOnFace, phintOnFaceの設定                       */
-   /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                         phinOnFace, phintOnFaceの設定                       */
+/* -------------------------------------------------------------------------- */
+void setPhiPhinOnFace(Network *water) {
    // b! 点
    std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦを与える．Neumann点にはΦnを与える" << colorReset << std::endl;
 
 #pragma omp parallel
-   for (const auto &p : water.getPoints())
+   for (const auto &p : water->getPoints())
 #pragma omp single nowait
    {
-      auto setNeumann = [&p](networkFace *const &f) {
-         if (isNeumannID_BEM(p, f)) {
-            if (f == nullptr) {
-               p->phiOnFace.insert({nullptr, 1E+30});
-               p->phitOnFace.insert({nullptr, 1E+30});
-               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
-               p->phintOnFace.insert({nullptr, 1E+30});
-            } else {
-               p->phiOnFace.insert({f, 1E+30});
-               p->phitOnFace.insert({f, 1E+30});
-               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
-               p->phintOnFace.insert({f, 1E+30});
-            }
-         }
-      };
-
-      auto setDirichlet = [&p](networkFace *const &f) {
-         if (isDirichletID_BEM(p, f)) {
-            p->phiOnFace.insert({nullptr, 1E+30});
-            p->phitOnFace.insert({nullptr, 1E+30});
-            p->phinOnFace.insert({nullptr, 1E+30});
-            p->phintOnFace.insert({nullptr, 1E+30});
-         }
-      };
-
       p->phiOnFace.clear();
       p->phitOnFace.clear();
       p->phinOnFace.clear();
       p->phintOnFace.clear();
 
-      // 全ての組{p,f}を調べ，使えるものをチェックする
-      setNeumann(nullptr);
-      for (const auto &f : p->getFaces())
-         setNeumann(f);
+      auto run = [p](networkFace *const &f) {
+         /*
+         Neumann境界のphinは，現在，接触しているオブジェクトの速度uNeumann(p)またはuNeumann(p,f)を使って計算しており，前の時刻のphinは使っていない．
+         */
+         if (isNeumannID_BEM(p, f)) {
+            if (f == nullptr) {
+               p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
+               p->phitOnFace.insert({nullptr, 1E+30});
+               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
+               p->phintOnFace.insert({nullptr, 1E+30});
+            } else {
+               p->phiOnFace.insert({f, std::get<0>(p->phiphin)});
+               p->phitOnFace.insert({f, 1E+30});
+               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
+               p->phintOnFace.insert({f, 1E+30});
+            }
+         }
 
-      setDirichlet(nullptr);
+         if (isDirichletID_BEM(p, f)) {
+            p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
+            p->phitOnFace.insert({nullptr, 1E+30});
+            p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin)});
+            p->phintOnFace.insert({nullptr, 1E+30});
+         }
+      };
+
+      //! 全ての組{p,f}を調べ，使えるものをチェックする
+      run(nullptr);
       for (const auto &f : p->getFaces())
-         setDirichlet(f);
+         run(f);
    }
 
    // b! 面
    std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorReset << std::endl;
-#pragma omp parallel
-   for (const auto &f : water.getFaces())
-#pragma omp single nowait
-   {
+   for (const auto &f : water->getFaces()) {
       auto [p0, p1, p2] = f->getPoints();
       std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
    }
 };
 
-std::size_t resetPhiPhin(const std::vector<Network *> &objects) {
+void setPhiPhinOnFace(const std::vector<Network *> &objects) {
    for (const auto &water : objects)
-      resetPhiPhin(*water);
-
-   for (const auto water : objects)
-      for (const auto &q : water->getPoints())
-         q->face2id.clear();
-
-   std::size_t i = 0;
-   for (const auto water : objects)
-      for (const auto &q : water->getPoints())
-         for (const auto &[_, f] : variableIDs(q)) {
-            // std::unordered_map<networkFace*, int> face2id try to add if succeed then increment i
-            if (q->face2id.find(f) == q->face2id.end())
-               q->face2id[f] = i++;
-         }
-
-   return i;
+      setPhiPhinOnFace(water);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -383,7 +430,7 @@ void storePhiPhinCommon(const std::vector<Network *> &WATERS, const V_d &ans, T1
 
    for (const auto water : WATERS)
       for (const auto &p : water->getPoints())
-         for (const auto &[f, i] : p->face2id) {
+         for (const auto &[f, i] : p->f2Index) {
             if (isDirichletID_BEM(p, f)) {
                (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
                (p->*phiOnFaceProperty).at(f) = std::get<0>(p->*phiphinProperty);

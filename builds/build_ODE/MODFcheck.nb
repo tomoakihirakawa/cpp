@@ -1,0 +1,428 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     16564,        420]
+NotebookOptionsPosition[     15975,        401]
+NotebookOutlinePosition[     16382,        418]
+CellTagsIndexPosition[     16339,        415]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Column", "@", 
+  RowBox[{"NotebookEvaluate", "[", 
+   RowBox[{"FileNameJoin", "[", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"NotebookDirectory", "[", "]"}], ",", 
+      "\"\<../../../mathematica_plot_options.nb\>\""}], "}"}], "]"}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"data", "=", 
+   RowBox[{"Import", "[", 
+    RowBox[{"FileNameJoin", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"\<result.csv\>\""}], 
+      "}"}], "]"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"data", "=", 
+    RowBox[{"data", "[", 
+     RowBox[{"[", 
+      RowBox[{"2", ";;"}], "]"}], "]"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"lenNode", "=", 
+    RowBox[{
+     RowBox[{"Length", "[", 
+      RowBox[{"data", "[", 
+       RowBox[{"[", "1", "]"}], "]"}], "]"}], "-", "1"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{"Animate", "[", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"ListPlot", "[", 
+    RowBox[{
+     RowBox[{"Table", "[", 
+      RowBox[{
+       RowBox[{"Transpose", "[", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"data", "[", 
+           RowBox[{"[", 
+            RowBox[{"t", ",", 
+             RowBox[{"i", "+", "1"}]}], "]"}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"i", "-", "1"}], ")"}], "/", "lenNode"}]}], "}"}], "]"}], 
+       ",", 
+       RowBox[{"{", 
+        RowBox[{"i", ",", "1", ",", "lenNode"}], "}"}]}], "]"}], 
+     "\[IndentingNewLine]", ",", 
+     RowBox[{"PlotMarkers", "\[Rule]", "Automatic"}], "\[IndentingNewLine]", 
+     ",", 
+     RowBox[{"PlotRange", "->", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"-", "0.1"}], ",", "0.1"}], "}"}], "*", "0.01"}], ",", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"-", "0.1"}], ",", "1"}], "}"}]}], "}"}]}], 
+     "\[IndentingNewLine]", ",", 
+     RowBox[{"FrameLabel", "->", 
+      RowBox[{"{", 
+       RowBox[{"\"\<x [m]\>\"", ",", "\"\<y [m]\>\""}], "}"}]}], 
+     "\[IndentingNewLine]", ",", 
+     RowBox[{"Evaluate", "[", "plot2Doption", "]"}], "\[IndentingNewLine]", 
+     ",", 
+     RowBox[{"PlotLabel", "->", 
+      RowBox[{"Style", "[", 
+       RowBox[{"\"\<\!\(\*StyleBox[\"T\",FontSlant->\"Italic\"]\)=\>\"", "<>", 
+        RowBox[{"ToString", "@", 
+         RowBox[{"data", "[", 
+          RowBox[{"[", 
+           RowBox[{"t", ",", "1"}], "]"}], "]"}]}]}], "]"}]}], 
+     "\[IndentingNewLine]", ",", 
+     RowBox[{"Joined", "->", "True"}], "\[IndentingNewLine]", ",", 
+     RowBox[{"AspectRatio", "->", "1.5"}]}], "]"}], "\[IndentingNewLine]", 
+   ",", 
+   RowBox[{"{", 
+    RowBox[{"t", ",", "1", ",", 
+     RowBox[{"Length", "[", "data", "]"}], ",", "1"}], "}"}]}], 
+  "]"}]}], "Input",
+ CellChangeTimes->{{3.942348712648417*^9, 3.9423489173191357`*^9}, {
+   3.94234897942118*^9, 3.9423489795711946`*^9}, 3.942349045643321*^9, {
+   3.94234907700176*^9, 3.942349144745407*^9}, {3.942349216939218*^9, 
+   3.942349297310912*^9}, {3.942349332778607*^9, 3.94234937450212*^9}, {
+   3.942349622362751*^9, 3.9423496428047*^9}, 3.94235067207696*^9, {
+   3.942350880741301*^9, 3.942350897657366*^9}, {3.942350951186385*^9, 
+   3.942350958546752*^9}, {3.942351598698048*^9, 3.942351601606653*^9}, {
+   3.942351663995882*^9, 3.942351839633882*^9}, {3.942351871486409*^9, 
+   3.942351872678348*^9}, {3.9423519181047688`*^9, 3.9423519488634377`*^9}, 
+   3.9423558520168037`*^9, 3.942356651683494*^9, {3.9423570083908863`*^9, 
+   3.942357009623931*^9}, {3.942357510225486*^9, 3.94235751813449*^9}},
+ CellLabel->
+  "In[350]:=",ExpressionUUID->"062f1ac4-c86a-4f1f-be67-01543281bc81"],
+
+Cell[BoxData[
+ TagBox[GridBox[{
+    {
+     StyleBox["\<\"plot2Doption\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"plot3Doption\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"framelabel[xlabel_String,ylabel_String,size_:20]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"axeslabel2D[xlabel_String,ylabel_String,size_:20]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"axeslabel3D[xlabel_String,ylabel_String,zlabel_String,size_\
+:20]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"axeslabel[labels_List,size_: 20]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"importData\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"jsonInfo\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"interpolateAndFourier\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"interpolateAndFourierTr\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"MyFourier[list_,n_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"MyInverseFourier[list_,n_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"MyDiscreteConvolve[f_,g_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"MyDiscreteConvolveUsingCn[FourierGF_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"Rv[q_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"Rs[q_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"W2dQdt[q_,w_]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"Q2Roll[{a_,b_,c_,d_}]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"Q2Pitch[{a_,b_,c_,d_}]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"Q2Yaw[{a_,b_,c_,d_}]\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"getOmegaFromKandDepth\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]},
+    {
+     StyleBox["\<\"getTFromLandDepth\"\>",
+      StripOnInput->False,
+      LineColor->RGBColor[1, 0, 1],
+      FrontFaceColor->RGBColor[1, 0, 1],
+      BackFaceColor->RGBColor[1, 0, 1],
+      GraphicsColor->RGBColor[1, 0, 1],
+      FontColor->RGBColor[1, 0, 1]]}
+   },
+   DefaultBaseStyle->"Column",
+   GridBoxAlignment->{"Columns" -> {{Left}}},
+   GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+  "Column"]], "Output",
+ CellChangeTimes->{
+  3.942348979953383*^9, {3.942349107360428*^9, 3.942349146978209*^9}, {
+   3.942349323869356*^9, 3.9423493356357937`*^9}, {3.942349368672896*^9, 
+   3.942349375036838*^9}, 3.942349458074751*^9, 3.9423495092737303`*^9, {
+   3.942349658299136*^9, 3.9423496673296967`*^9}, 3.9423497486834307`*^9, 
+   3.942349804662674*^9, 3.942350294804599*^9, {3.942350377018311*^9, 
+   3.942350382197731*^9}, {3.94235066921421*^9, 3.942350672517716*^9}, {
+   3.942350885884282*^9, 3.942350898749661*^9}, {3.942350932807128*^9, 
+   3.94235095891319*^9}, 3.9423511039440813`*^9, 3.942351269479072*^9, 
+   3.942351365874159*^9, 3.9423515191167583`*^9, {3.9423515874566*^9, 
+   3.942351601857214*^9}, {3.9423516686150017`*^9, 3.942351702090589*^9}, 
+   3.942351740433113*^9, {3.9423517726152554`*^9, 3.942351799415855*^9}, {
+   3.942351830767071*^9, 3.942351840657668*^9}, 3.94235187352372*^9, {
+   3.94235193232376*^9, 3.942351950006351*^9}, 3.9423556548729343`*^9, {
+   3.94235583062178*^9, 3.942355852817923*^9}, 3.9423559961985197`*^9, 
+   3.942356281644779*^9, 3.942356480418181*^9, {3.942356647513626*^9, 
+   3.9423566523518047`*^9}, 3.942356914047414*^9, 3.942357011525099*^9, 
+   3.942357106478529*^9, {3.942357498335874*^9, 3.942357518911343*^9}, 
+   3.942358550926722*^9, 3.942358702603066*^9, 3.942360825808268*^9},
+ CellLabel->
+  "Out[351]=",ExpressionUUID->"9edbd81a-52b5-475d-80e3-e1870278ba15"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`t$$ = 133, Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"\:540d\:79f0\:672a\:5b9a\:7fa9\"", Typeset`specs$$ = {{
+      Hold[$CellContext`t$$], 1, 202, 1}}, Typeset`size$$ = {
+    1094., {60.642578125, 20.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, "Variables" :> {$CellContext`t$$ = 1}, 
+      "ControllerVariables" :> {}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> ListPlot[
+        Table[
+         Transpose[{
+           
+           Part[$CellContext`data, $CellContext`t$$, $CellContext`i + 
+            1], ($CellContext`i - 1)/$CellContext`lenNode}], {$CellContext`i, 
+          1, $CellContext`lenNode}], PlotMarkers -> Automatic, 
+        PlotRange -> {{-0.1, 0.1} 0.01, {-0.1, 1}}, 
+        FrameLabel -> {"x [m]", "y [m]"}, 
+        Evaluate[$CellContext`plot2Doption], PlotLabel -> 
+        Style["\!\(\*StyleBox[\"T\",FontSlant->\"Italic\"]\)=" <> ToString[
+            Part[$CellContext`data, $CellContext`t$$, 1]]], Joined -> True, 
+        AspectRatio -> 1.5], 
+      "Specifications" :> {{$CellContext`t$$, 1, 202, 1, 
+         AppearanceElements -> {
+          "ProgressSlider", "PlayPauseButton", "FasterSlowerButtons", 
+           "DirectionButton"}}}, 
+      "Options" :> {
+       ControlType -> Animator, AppearanceElements -> None, DefaultBaseStyle -> 
+        "Animate", DefaultLabelStyle -> "AnimateLabel", SynchronousUpdating -> 
+        True, ShrinkingDelay -> 10.}, "DefaultOptions" :> {}],
+     ImageSizeCache->{1138., {75., 80.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Animate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{
+  3.942348979953383*^9, {3.942349107360428*^9, 3.942349146978209*^9}, {
+   3.942349323869356*^9, 3.9423493356357937`*^9}, {3.942349368672896*^9, 
+   3.942349375036838*^9}, 3.942349458074751*^9, 3.9423495092737303`*^9, {
+   3.942349658299136*^9, 3.9423496673296967`*^9}, 3.9423497486834307`*^9, 
+   3.942349804662674*^9, 3.942350294804599*^9, {3.942350377018311*^9, 
+   3.942350382197731*^9}, {3.94235066921421*^9, 3.942350672517716*^9}, {
+   3.942350885884282*^9, 3.942350898749661*^9}, {3.942350932807128*^9, 
+   3.94235095891319*^9}, 3.9423511039440813`*^9, 3.942351269479072*^9, 
+   3.942351365874159*^9, 3.9423515191167583`*^9, {3.9423515874566*^9, 
+   3.942351601857214*^9}, {3.9423516686150017`*^9, 3.942351702090589*^9}, 
+   3.942351740433113*^9, {3.9423517726152554`*^9, 3.942351799415855*^9}, {
+   3.942351830767071*^9, 3.942351840657668*^9}, 3.94235187352372*^9, {
+   3.94235193232376*^9, 3.942351950006351*^9}, 3.9423556548729343`*^9, {
+   3.94235583062178*^9, 3.942355852817923*^9}, 3.9423559961985197`*^9, 
+   3.942356281644779*^9, 3.942356480418181*^9, {3.942356647513626*^9, 
+   3.9423566523518047`*^9}, 3.942356914047414*^9, 3.942357011525099*^9, 
+   3.942357106478529*^9, {3.942357498335874*^9, 3.942357518911343*^9}, 
+   3.942358550926722*^9, 3.942358702603066*^9, 3.942360825854084*^9},
+ CellLabel->
+  "Out[355]=",ExpressionUUID->"5d0c1a90-0d76-4ef7-9c32-08ef92fd476d"]
+}, Open  ]]
+},
+WindowSize->{1451, 2190},
+WindowMargins->{{4, Automatic}, {Automatic, 4}},
+FrontEndVersion->"13.3 for Mac OS X ARM (64-bit) \
+(2023\:5e747\:670824\:65e5)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"18fe4aaa-650d-42c4-a1c5-9010d9fc4d54"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 3864, 99, 367, "Input",ExpressionUUID->"062f1ac4-c86a-4f1f-be67-01543281bc81"],
+Cell[4447, 123, 7723, 204, 411, "Output",ExpressionUUID->"9edbd81a-52b5-475d-80e3-e1870278ba15"],
+Cell[12173, 329, 3786, 69, 174, "Output",ExpressionUUID->"5d0c1a90-0d76-4ef7-9c32-08ef92fd476d"]
+}, Open  ]]
+}
+]
+*)
+

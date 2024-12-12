@@ -1786,9 +1786,8 @@ struct ArnoldiProcess {
          H.resize(nIN + 1);  // Hは (nIN + 1) x nIN のサイズになる
          V.resize(nIN + 1);  // Vは (nIN + 1) x v0.size() のサイズになる
          // Hの各行をゼロで初期化
-         for (auto &row : H) {
+         for (auto &row : H)
             row.assign(nIN, 0.0);  // 既存のメモリを再利用しつつゼロで初期化
-         }
          // Vの各行をv0で初期化（V[0] = v0, 他の行は0にする場合は別途初期化）
          V[0] = v0;  // V[0] は v0 に初期化される
          for (std::size_t i = 1; i <= nIN; ++i)
@@ -1899,7 +1898,10 @@ struct gmres : public ArnoldiProcess {
    V_d g;
    double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
-   gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const std::size_t nIN)
+   gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v,
+         const V_d &b,
+         const V_d x0,
+         const std::size_t nIN)
        : ArnoldiProcess(return_A_dot_v, b - return_A_dot_v(x0), nIN),
          x(x0),
          y(b.size()),
