@@ -1,0 +1,22 @@
+{
+    "max_dt": 0.025,
+    "end_time_step": 100000,
+    "end_time": 12,
+    "ALEPERIOD": "1",
+    "output_directory": "/Volumes/home/BEM/Tonegawa2024/Tonegawa2024_T0d66_DT0d025_ELEMlinear_ALEquasi_quad_ALEPERIOD1_B10d125",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json",
+        "absorber.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json"
+    ]
+}

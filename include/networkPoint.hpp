@@ -1175,9 +1175,24 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
 };
 // 逆方向の立体角
 inline double networkPoint::getSolidAngle() const {
-   auto ret = SolidAngle(this->X, extX(this->getNeighborsSort()));
+   // auto ret = SolidAngle(this->X, extX(this->getNeighborsSort()));
+   std::array<double, 3> normal;
+   double length = 0., count = 0.;
+   for (const auto &f : this->Faces) {
+      normal += f->normal;
+      length += std::sqrt(2. * f->area);
+      count += 1;
+   }
+
+   length /= count;
+   normal = length * Normalize(normal);
+   double ret = 0.;
+   for (const auto &f : this->Faces) {
+      auto [p0, p1, p2] = f->getPoints(this);
+      ret += SolidAngle(p0->X, p1->X, p2->X, normal + p0->X);
+   }
    // std::cout << "ret = " << ret << std::endl;
-   return ret;
+   return 4. * M_PI - ret;
 };
 
 inline double networkPoint::getMinimalSolidAngle() const {

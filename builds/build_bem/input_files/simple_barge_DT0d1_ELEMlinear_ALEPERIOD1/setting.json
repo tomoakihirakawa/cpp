@@ -1,0 +1,13 @@
+{
+    "max_dt": 0.1,
+    "end_time_step": 100000,
+    "end_time": 100,
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/simple_barge_DT0d1_ELEMlinear_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json"
+    ]
+}

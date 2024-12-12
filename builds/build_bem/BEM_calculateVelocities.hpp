@@ -378,7 +378,8 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       auto X1 = position(p1);
       auto X2 = position(p2);
       //! CircumradiusToInradiusの２乗を重みとしている
-      W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      // W = std::pow(CircumradiusToInradius(X0, X1, X2), 2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
       // W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
       //! 重みの最大値と最小値を設定している
       // W = std::clamp(W, 4., 40.);
@@ -390,7 +391,8 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
 
       for (int i = 0; i <= max_sum_depth; ++i)
          if (i == p0->minDepthFromMultipleNode + p1->minDepthFromMultipleNode + p2->minDepthFromMultipleNode) {
-            W *= std::pow(1.25, max_sum_depth - i);
+            // W *= std::pow(1.25, max_sum_depth - i);
+            W *= std::pow(1.1, max_sum_depth - i);
             break;
          }
 
@@ -406,7 +408,9 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
       // cuurent_height = Norm(X0 - Xmid);
 
-      weights.push_back(W);
+      auto error = Norm(height * vertical + Xmid - current_pX) / height;
+
+      weights.push_back(error * W);
       positions.push_back(height * vertical + Xmid - current_pX);
       // FusedMultiplyIncrement(W, height * vertical + Xmid - current_pX, V);
       // directions.push_back(Normalize(height * vertical + Xmid - current_pX));
