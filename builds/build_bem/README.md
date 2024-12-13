@@ -63,9 +63,14 @@
 - [🐋 Input Generator](#🐋-Input-Generator)
     - [⛵ For Ubuntu](#⛵-For-Ubuntu)
     - [⛵ For Mac OS X](#⛵-For-Mac-OS-X)
+    - [⛵ Horikawa2024](#⛵-Horikawa2024)
     - [⛵ inputファイルの生成](#⛵-inputファイルの生成)
     - [⛵ 実行ファイルの生成（毎回する必要はない）](#⛵-実行ファイルの生成（毎回する必要はない）)
     - [⛵ 実行](#⛵-実行)
+    - [⛵ Hadzic2005](#⛵-Hadzic2005)
+    - [⛵ Liang2022](#⛵-Liang2022)
+    - [⛵ Palm2016](#⛵-Palm2016)
+    - [⛵ Kramer2021](#⛵-Kramer2021)
 - [🐋 Examples](#🐋-Examples)
 
 
@@ -1258,6 +1263,8 @@ python3.11 input_generator.py -case Tanizawa1996 -mesh water_no... -element pseu
 [./input_generator.py#L1](./input_generator.py#L1)
 
 ---
+## ⛵ Horikawa2024 
+
 ## ⛵ inputファイルの生成 
 
 ```sh
@@ -1293,9 +1300,11 @@ make
 ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
 ```
 
-[./input_generator.py#L2126](./input_generator.py#L2126)
+[./input_generator.py#L2125](./input_generator.py#L2125)
 
 ---
+## ⛵ Hadzic2005 
+
 <img src="schematic_Hadzic2005.png" width="400px"/>
 
 This case based on [Had{\v{z}}i{\'{c}} et al. (2005)](https://linkinghub.elsevier.com/retrieve/pii/S0307904X05000417) is for the validation of the floating body motion analysis using the BEM-MEL.        
@@ -1309,9 +1318,11 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L682](./input_generator.py#L682)
+[./input_generator.py#L680](./input_generator.py#L680)
 
 ---
+## ⛵ Liang2022 
+
 \cite{Liang2022}
 Shandong Provincial Key Laboratory of Ocean Engineering, Ocean University of China.
 The flume was 3 m wide, 60 m long, and 1.8 m deep.
@@ -1349,9 +1360,11 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L1042](./input_generator.py#L1042)
+[./input_generator.py#L1040](./input_generator.py#L1040)
 
 ---
+## ⛵ Palm2016 
+
 | wave height (m) | wave period (s) |
 |:-------|:------|
 | 0.04   | 1.0   |
@@ -1361,7 +1374,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L866](./input_generator.py#L866)
+[./input_generator.py#L864](./input_generator.py#L864)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1411,6 +1424,8 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 [./input_generator.py#L234](./input_generator.py#L234)
 
 ---
+## ⛵ Kramer2021 
+
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
 
 <img src="schematic_Kramer2021.png" width="400px" />
@@ -1421,7 +1436,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L779](./input_generator.py#L779)
+[./input_generator.py#L777](./input_generator.py#L777)
 
 ---
 # 🐋 Examples 
