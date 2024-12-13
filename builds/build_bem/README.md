@@ -1293,7 +1293,7 @@ make
 ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
 ```
 
-[./input_generator.py#L2116](./input_generator.py#L2116)
+[./input_generator.py#L2126](./input_generator.py#L2126)
 
 ---
 <img src="schematic_Hadzic2005.png" width="400px"/>
@@ -1309,7 +1309,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L680](./input_generator.py#L680)
+[./input_generator.py#L682](./input_generator.py#L682)
 
 ---
 \cite{Liang2022}
@@ -1349,7 +1349,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L1034](./input_generator.py#L1034)
+[./input_generator.py#L1042](./input_generator.py#L1042)
 
 ---
 | wave height (m) | wave period (s) |
@@ -1361,7 +1361,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L860](./input_generator.py#L860)
+[./input_generator.py#L866](./input_generator.py#L866)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1421,7 +1421,7 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L775](./input_generator.py#L775)
+[./input_generator.py#L779](./input_generator.py#L779)
 
 ---
 # 🐋 Examples 
