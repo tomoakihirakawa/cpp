@@ -677,6 +677,8 @@ elif "Ren2015" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Hadzic2005" in SimulationCase:
 
+    ## Hadzic2005
+
     r'''DOC_EXTRACT 2_1_0_validation_Hadzic2005                
 
     <img src="schematic_Hadzic2005.png" width="400px"/>
@@ -772,6 +774,8 @@ elif "Hadzic2005" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Kramer2021" in SimulationCase:
 
+    ## Kramer2021
+
     r'''DOC_EXTRACT 2_1_1_validation_Kramer2021
 
     This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -856,6 +860,8 @@ elif "Kramer2021" in SimulationCase:
     id += "_ALE" + str(setting["ALE_period_in_step"]) + "_0d5"
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Palm2016" in SimulationCase:
+
+    ## Palm2016
 
     r'''DOC_EXTRACT 2_1_0_validation_Palm2016
 
@@ -1030,6 +1036,8 @@ elif "Palm2016" in SimulationCase:
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Liang2022" in SimulationCase:
+
+    ## Liang2022
 
     r'''DOC_EXTRACT 2_1_0_validation_Liang2022
 
@@ -2113,6 +2121,8 @@ elif "Goring1979" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Horikawa2024" in SimulationCase:
         
+    ## Horikawa2024
+
     r'''DOC_EXTRACT 2_1_0_input_generator
     
     ## inputファイルの生成
