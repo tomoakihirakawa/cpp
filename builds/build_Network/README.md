@@ -60,7 +60,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3776)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L3794)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -233,7 +233,7 @@ make
 ラフに行っても問題ない．
 線に関しては細かい分割によってインデックス変換できる．
 平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
-[../../include/lib_spatial_partitioning.hpp#L8](../../include/lib_spatial_partitioning.hpp#L8)
+[../../include/lib_spatial_partitioning.hpp#L10](../../include/lib_spatial_partitioning.hpp#L10)
 
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
@@ -249,7 +249,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L120)は，
+[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L123)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 

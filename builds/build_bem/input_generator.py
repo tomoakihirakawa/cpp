@@ -1,4 +1,4 @@
-'''DOC_EXTRACT 2_0_0_input_generator
+r'''DOC_EXTRACT 2_0_0_input_generator
 
 # Input Generator
 
@@ -107,6 +107,8 @@ if args.wavemaker is not None:
 if args.element is not None:
     element = args.element
     print(f"element: {element}")
+else:
+    element = "linear"
 if args.dt is not None:
     dt = args.dt
     print(f"dt: {dt}")
@@ -116,9 +118,13 @@ if args.T is not None:
 if args.ALE is not None:
     ALE = args.ALE
     print(f"ALE: {ALE}")
+else:
+    ALE = "linear"
 if args.ALEPERIOD is not None:
     ALEPERIOD = args.ALEPERIOD
-    print(f"ALEPERIOD: {ALEPERIOD}")
+    print(f"ALEPERIOD: {ALEPERIOD}")    
+else:
+    ALEPERIOD = "1"
 if args.suffix is not None:
     suffix = args.suffix
     print(f"suffix: {suffix}")
@@ -143,8 +149,6 @@ def IO_dir(id):
 # ---------------------------------------------------------------------------- #
 # add id
 def add_id(id):
-    global arg
-
     if dt is not None:
         max_dt = dt
     else:
@@ -154,10 +158,10 @@ def add_id(id):
     if element is not None:
         id += "_ELEM" + element
 
-    if args.ALE is not None:
-        id += "_ALE" + args.ALE
+    if ALE is not None:
+        id += "_ALE" + ALE
 
-    if args.ALEPERIOD != "":
+    if ALEPERIOD != "":
         id += "_ALEPERIOD" + ALEPERIOD
 
     if suffix != "":    
@@ -227,7 +231,7 @@ if "looping" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Tanizawa1996" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_0_validation_Tanizawa1996
+    r'''DOC_EXTRACT 2_1_0_validation_Tanizawa1996
 
     <img src="schematic_float_Tanizawa1996.png" width="400px" />
 
@@ -540,7 +544,7 @@ elif "Cheng2018" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Ren2015" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_0_validation_Ren2015
+    r'''DOC_EXTRACT 2_1_0_validation_Ren2015
 
     <img src="schematic_Ren2015.png" width="400px" />
 
@@ -673,7 +677,7 @@ elif "Ren2015" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Hadzic2005" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_0_validation_Hadzic2005                
+    r'''DOC_EXTRACT 2_1_0_validation_Hadzic2005                
 
     <img src="schematic_Hadzic2005.png" width="400px"/>
 
@@ -768,7 +772,7 @@ elif "Hadzic2005" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Kramer2021" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_1_validation_Kramer2021
+    r'''DOC_EXTRACT 2_1_1_validation_Kramer2021
 
     This case is for the validation of the floating body motion analysis using the BEM-MEL.
 
@@ -853,7 +857,7 @@ elif "Kramer2021" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Palm2016" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_0_validation_Palm2016
+    r'''DOC_EXTRACT 2_1_0_validation_Palm2016
 
     | wave height (m) | wave period (s) |
     |:-------|:------|
@@ -1027,7 +1031,7 @@ elif "Palm2016" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Liang2022" in SimulationCase:
 
-    '''DOC_EXTRACT 2_1_0_validation_Liang2022
+    r'''DOC_EXTRACT 2_1_0_validation_Liang2022
 
     \cite{Liang2022}
     Shandong Provincial Key Laboratory of Ocean Engineering, Ocean University of China.
@@ -1526,7 +1530,7 @@ elif "simple_barge" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Tonegawa2024" in SimulationCase:
 
-    '''
+    r'''
     Tonegawa2024
 
     浮体：
@@ -2108,6 +2112,46 @@ elif "Goring1979" in SimulationCase:
     
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Horikawa2024" in SimulationCase:
+        
+    r'''DOC_EXTRACT 2_1_0_input_generator
+    
+    ## inputファイルの生成
+    
+    ```sh
+    python3 input_generator.py -case Horikawa2024 -dt 0.05 -ALEPERIOD 1 -ALE linear -element linear -output ~/BEM/Horikawa2024
+    ```
+    
+    または，省略して次のように実行する．
+
+    ```sh
+    python3 input_generator.py -case Horikawa2024 -dt 0.05 -output ~/BEM/Horikawa2024
+    ```
+
+    <img src="how_to_run_example.png" width="400">
+
+    `/input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1`をコピーして，実行時に指定する．
+
+    ## 実行ファイルの生成（毎回する必要はない）
+
+    `sh clean`で古いファイルを削除する．`cmake`を使ってcppのコンパイル方法を設定する．
+    cmakeをした後に，コンパイル（make）する．以下の場合，実行ファイル名はhorikawaとなる．
+
+    ```sh
+    sh clean
+    cmake -DCMAKE_BUILD_TYPE=Release ../ -DOUTPUT_NAME=horikawa
+    make
+    ```
+
+    実行ファイル`horikawa`を使って事項する．ただし，`input_files`ディレクトリに保存されているinputファイルを指定して実行する．
+
+    ## 実行
+
+    ```sh
+    ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+    ```
+
+    '''
+    
     objfolder = code_home_dir + "/cpp/obj/Horikawa2024"
 
     # 水とタンク、浮体の設定
@@ -2123,7 +2167,7 @@ elif "Horikawa2024" in SimulationCase:
 
     start = 0.
     a = 0.003
-    T=0.625
+    T = 0.625
     float = {"name": "float",
              "type": "RigidBody",
              "velocity": ["sin", start, a, T, 1, 0, 0, 0, 0, 0],
@@ -2131,6 +2175,8 @@ elif "Horikawa2024" in SimulationCase:
 
     # IDの生成
     id = SimulationCase
+    id += "_a" + str(a).replace(".", "d")
+    id += "_T" + str(T).replace(".", "d")
     id = add_id(id)
 
     # 入力ファイルの設定

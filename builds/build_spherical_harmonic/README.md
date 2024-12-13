@@ -16,6 +16,11 @@
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
+- [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
+    - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
+        - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
+    - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
+    - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
     - [⛵ ベッセル関数](#⛵-ベッセル関数)
     - [⛵ 境界要素法への応用](#⛵-境界要素法への応用)
         - [🪼 境界積分方程式](#🪼-境界積分方程式)
@@ -110,7 +115,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
+[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
 
 
 ## ⛵ 精度の確認 
@@ -271,7 +276,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
+[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -280,11 +285,22 @@ Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240818.cpp
 make
-./test_translation_of_a_multipole_expansion_with_tree_20240818
+./test_translation_of_a_multipole_expansion_with_tree_20240818 ./pumpkin.obj
 paraview check_M2L.pvsm
 ```
 
-[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L9](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L9)
+[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L10](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L10)
+
+1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
+2. 極の追加：各面に対して極を追加し，バケットに格納する．
+3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
+4. 多重極展開：ツリー構造を用いて多重極展開を行う．
+5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
+6. 線形連立方程式の右辺bを計算する（FMMを利用）．
+7. GMRESに与える，行列ベクトル積を返す関数を作成する．
+8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+
+[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L269](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L269)
 
 # 🐋 🐋 多重極展開  
 
@@ -372,7 +388,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L220](../../include/lib_multipole_expansion.hpp#L220)
+[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -386,6 +402,107 @@ paraview check_M2L.pvsm
 ```
 
 [./test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES.cpp#L14](./test_translation_of_a_multipole_expansion_with_tree_20241017_withGMRES.cpp#L14)
+
+# 🐋 🐋 多重極展開  
+
+この実装は，\cite{Greengard1997a}に基づいている．
+
+## ⛵ ⛵ Green関数の多重極展開  
+
+次のGreen関数を考える．
+
+```math
+G({\bf x},{\bf a}) = \frac{1}{\|{\bf x}-{\bf a}\|},
+\quad \nabla G({\bf x},{\bf a}) = -\frac{{\bf x}-{\bf a}}{\|{\bf x}-{\bf a}\|^3}
+```
+
+グリーン関数は，球面調和関数を使って近似できる．
+近似を$`G _{\rm apx}({\bf x},{\bf a},{\bf c})`$とする．
+
+```math
+G _{\rm apx}(n, {\bf x},{\bf a},{\bf c}) = \sum _{k=0}^n \sum _{m=-k}^k \left( \frac{r _{\rm near}}{r _{\rm far}} \right)^k \frac{1}{r _{\rm far}} Y(k, -m, a _{\rm near}, b _{\rm near}) Y(k, m, a _{\rm far}, b _{\rm far})=
+{\bf Y}^\ast({\bf x},{\bf c})\cdot{\bf Y}({\bf a},{\bf c})
+```
+
+```math
+{\bf Y}^\ast({\bf x},{\bf c}) = r _{\rm near}^k Y(k, -m, a _{\rm near},b _{\rm near}), \quad {\bf Y}({\bf a},{\bf c}) = r _{\rm far}^{-k-1} Y(k, m, a _{\rm far}, b _{\rm far})
+```
+
+ここで，$`(r _{\rm near},a _{\rm near},b _{\rm near})`$は，球面座標系に$`{\bf x}-{\bf c}`$を変換したものであり，
+$`(r _{\rm far},a _{\rm far},b _{\rm far})`$は，球面座標系に$`{\bf a}-{\bf c}`$を変換したもの．$`Y(k, m, a, b)`$は球面調和関数：
+
+```math
+Y(k, m, a, b) = \sqrt{\frac{(k - |m|)!}{(k + |m|)!}} P _k^{|m|}(\cos(a)) e^{i mb}
+```
+
+$`P _k^m(x)`$はルジャンドル陪関数：
+
+```math
+P _k^m(x) = \frac{(-1)^m}{2^k k!} (1-x^2)^{m/2} \frac{d^{k+m}}{dx^{k+m}}(x^2-1)^k
+```
+
+### 🪼 🪼 球面座標系への変換  
+
+$`{\bf x}=(x,y,z)`$から球面座標$`(r,a,b)`$への変換は次のように行う．
+
+```math
+r = \|{\bf x}\|, \quad a = \arctan \frac{\sqrt{x^2 + y^2}}{z}, \quad b = \arctan \frac{y}{x}
+```
+
+$`r _\parallel=\sqrt{x^2+y^2}`$とする．$`\frac{\partial}{\partial t}(\arctan(f(t))) = \frac{f'(t)}{1 + f(t)^2}`$なので，
+$`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
+
+```math
+\nabla r = \frac{\bf x}{r},\quad
+\nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
+\nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
+```
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+## ⛵ ⛵ C++上での，Greengardの球面調和関数  
+
+`sph_harmonics_`
+
+Greengardｎ(1997)の(3.15)と同じように，球面調和関数を定義する．
+c++の`std::sph_legendre`を使って(3.15)を使う場合，係数を調整と，mの絶対値を考慮する必要がある．
+
+c++での球面調和関数の定義は次のようになる[球面調和関数](https://cpprefjp.github.io/reference/cmath/sph_legendre.html)．
+ただし，$`\phi=0`$の結果が返ってくるので，$`e^{im\phi}`$をかける必要がある．
+
+```math
+\begin{align*}
+{\mathrm{std::sph\ _legendre(n,m,\theta)}} &= (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} {\rm{std::assoc _legendre}(n,m,cos(\theta))}\\
+& = (-1)^m \sqrt{\frac{(2n+1)(n-m)!}{4\pi(n+m)!}} (1-x^2)^{m/2} \frac{d^m}{dx^m} P _n(x), \quad x = \cos(\theta)
+\end{align*}
+```
+
+Greengardｎ(1997)の(3.15)：
+
+```math
+\begin{align*}
+Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta)) e^{im \phi}\\
+& = (-1)^{|m|}\sqrt{\frac{(n-|m|)!}{(n+|m|)!}} (1-x^2)^{|m|/2} \frac{d^{|m|}}{dx^{|m|}} P _n(x) e^{im \phi}, \quad x = \cos(\theta)
+\end{align*}
+```
+
+従って，$`Y(n, m, \theta, \phi)`$はc++の`std::sph_legendre`を使って次のように計算できる．
+
+```math
+Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
+```
+[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
+
+
+## ⛵ ツリー構造を使った多重極展開の移動 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=test_translation_of_a_multipole_expansion_with_tree_20240818.cpp
+make
+./test_translation_of_a_multipole_expansion_with_tree_20240818
+paraview check_M2L.pvsm
+```
+
+[./test_translation_of_a_multipole_expansion_with_tree_20241126_solve.cpp#L9](./test_translation_of_a_multipole_expansion_with_tree_20241126_solve.cpp#L9)
 
 ---
 ## ⛵ ベッセル関数

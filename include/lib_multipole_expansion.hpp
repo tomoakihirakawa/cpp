@@ -155,12 +155,17 @@ struct SphericalCoordinates {
          phi(std::atan2(std::get<1>(X), std::get<0>(X))),
          x_r(std::get<0>(X) / rho),
          y_r(std::get<1>(X) / rho),
-         z_r(std::get<2>(X) / rho)
-   // Jacobian({{/*grad_sph x*/ {x_r, y_r, z_r},
-   //            /*grad_sph y*/ {x_r * z_r * div_r2D, y_r * z_r * div_r2D, -r2D * div_rho * div_rho},
-   //            /*grad_sph zr*/ {-std::get<1>(X) * div_r2D * div_r2D, std::get<0>(X) * div_r2D * div_r2D, 0.}}}),
-   {
-      // compute_precomputed_values();
+         z_r(std::get<2>(X) / rho) {}
+
+   void initialize(const std::array<double, 3>& X) {
+      this->X = X;
+      this->div_r2D = 1. / (r2D = std::hypot(std::get<0>(X), std::get<1>(X)));
+      this->rho = std::hypot(std::get<0>(X), std::get<1>(X), std::get<2>(X));
+      this->theta = std::atan2(r2D, std::get<2>(X));
+      this->phi = std::atan2(std::get<1>(X), std::get<0>(X));
+      this->x_r = std::get<0>(X) / this->rho;
+      this->y_r = std::get<1>(X) / this->rho;
+      this->z_r = std::get<2>(X) / this->rho;
    }
 
    // int pre_max = -1;  // 0,1,2,...,pre_max
@@ -433,7 +438,7 @@ struct ExpCoeffs {
    std::array<std::complex<double>, (N + 1) * (N + 1)> coeffs;
    std::array<std::complex<double>, (N + 1) * (N + 1)> coeffs_;
    // std::array<std::array<int, 2>, (N + 1) * (N + 1)> index_map;
-   std::array<std::array<int, 2>, (N + 1) * (N + 1)> nm_set;
+   std::array<std::array<int, 2>, (N + 1) * (N + 1)> nm_set = nm_set_();
    const std::complex<double> zero = {0., 0.};
    std::size_t index(int n, int m) const { return n * (n + 1) + m; }
    const std::complex<double>& get_coeffs(const int n, const int m) const { return coeffs[index(n, m)]; }
@@ -447,56 +452,80 @@ struct ExpCoeffs {
    // それを，各nに対して，n+1個の配列を用意する
    std::array<std::array<std::complex<double>, (2 * N + 1) + (2 * N + 1) + 1>, N + 1> DFT_Cn;
 
-   std::vector<std::tuple<std::size_t, std::size_t, std::complex<double>&, std::complex<double>&, std::size_t, std::size_t, std::size_t, std::complex<double>>> index_map_for_M2L;  // i,j,index, n, m, index
-
-   void set_nm_set() {
+   constexpr std::array<std::array<int, 2>, (N + 1) * (N + 1)> nm_set_() {
       int ind = 0;
+      std::array<std::array<int, 2>, (N + 1) * (N + 1)> ret;
       for (int n = 0; n <= N; ++n)
          for (int m = -n; m <= n; ++m)
-            this->nm_set[ind++] = {n, m};
+            ret[ind++] = {n, m};
+      return ret;
+   };
 
-      index_map_for_M2L.clear();
-      index_map_for_M2L.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
+   std::vector<std::tuple<std::size_t, std::size_t, std::complex<double>&, std::complex<double>&, std::size_t, std::size_t, std::size_t, std::complex<double>>> index_map_for_M2L = index_map_for_M2L_();  // i,j,index, n, m, index
+   constexpr std::vector<std::tuple<std::size_t, std::size_t, std::complex<double>&, std::complex<double>&, std::size_t, std::size_t, std::size_t, std::complex<double>>> index_map_for_M2L_() {
+      std::vector<std::tuple<std::size_t, std::size_t, std::complex<double>&, std::complex<double>&, std::size_t, std::size_t, std::size_t, std::complex<double>>> ret;
       for (int j = 0; j <= N; ++j)
          for (int k = -j; k <= j; ++k) {
-            auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
             for (int n = 0; n <= N; ++n) {
                for (int m = -n; m <= n; ++m) {
-                  auto AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-                  if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-                     index_map_for_M2L.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
+                  auto AAA = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM][n][m + N_AAA_M2L_FMM];
+                  if (std::abs(AAA.real()) > 1e-20 || std::abs(AAA.imag()) > 1e-20) {
+                     ret.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
                   }
                }
             }
          }
+      return ret;
    }
+
+   // void set_nm_set() {
+   //    int ind = 0;
+   //    for (int n = 0; n <= N; ++n)
+   //       for (int m = -n; m <= n; ++m)
+   //          this->nm_set[ind++] = {n, m};
+
+   //    index_map_for_M2L.clear();
+   //    index_map_for_M2L.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
+   //    for (int j = 0; j <= N; ++j)
+   //       for (int k = -j; k <= j; ++k) {
+   //          auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
+   //          for (int n = 0; n <= N; ++n) {
+   //             for (int m = -n; m <= n; ++m) {
+   //                auto AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
+   //                if (std::abs(AAA.real()) > 1e-20 || std::abs(AAA.imag()) > 1e-20) {
+   //                   index_map_for_M2L.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
+   //                }
+   //             }
+   //          }
+   //       }
+   // }
 
    /* -------------------------------------------------------------------------- */
 
    void initialize() {
       coeffs.fill(0.0);
       coeffs_.fill(0.0);
-      set_nm_set();
+      // set_nm_set();
    }
 
    void initialize(const std::array<double, 3>& XIN) {
       this->X = XIN;
       coeffs.fill(0.0);
       coeffs_.fill(0.0);
-      set_nm_set();
+      // set_nm_set();
    }
 
    // Default constructor
    ExpCoeffs() : X{0.0, 0.0, 0.0} {
       coeffs.fill(0.0);
       coeffs_.fill(0.0);
-      set_nm_set();
+      // set_nm_set();
    }
 
    ExpCoeffs(const std::array<double, 3>& XIN) : X(XIN) {
       coeffs.fill(0.0);
       coeffs_.fill(0.0);
-      set_nm_set();
+      // set_nm_set();
    }
 
    /* -------------------------------------------------------------------------- */
@@ -583,7 +612,7 @@ struct ExpCoeffs {
       }
    }
 
-   std::array<double, 2> L2P(const std::array<double, 3>& a) const {
+   std::array<double, 2> l2p(const std::array<double, 3>& a) const {
       // SphericalCoordinates Xc2O(this->X - a);
       SphericalCoordinates P(a - this->X);
       std::array<std::complex<double>, 2> ret = {0, 0};
@@ -611,7 +640,7 @@ struct ExpCoeffs {
 
    */
 
-   void M2M(const ExpCoeffs<N>& M) {
+   void m2m(const ExpCoeffs<N>& M) {
       // SphericalCoordinates r(M_shifted.X - M.X);
       SphericalCoordinates rab(M.X - this->X);
       rab.precompute_sph(2 * N);
@@ -648,7 +677,7 @@ struct ExpCoeffs {
 
     */
 
-   // void M2L(const ExpCoeffs<N>& M) {
+   // void m2l(const ExpCoeffs<N>& M) {
    //    std::complex<double> S_, AAA;
    //    // SphericalCoordinates r(LocalExp.X - M.X);
    //    SphericalCoordinates rab(M.X - this->X);
@@ -675,7 +704,7 @@ struct ExpCoeffs {
    //    });
    // }
 
-   void M2L(const ExpCoeffs<N>& M) {
+   void m2l(const ExpCoeffs<N>& M) {
       std::complex<double> S_, AAA;
       // SphericalCoordinates r(LocalExp.X - M.X);
       SphericalCoordinates rab(M.X - this->X);
@@ -686,63 +715,64 @@ struct ExpCoeffs {
          c += S_ * M->multipole_expansion.get_coeffs(index);
          c_ += S_ * M->multipole_expansion.get_coeffs_(index);
       }
-
-      // this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
-      //    std::array<std::complex<double>, 2> ret = {0, 0};
-      //    auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
-      //    double rho_inv;
-      //    std::size_t index;
-      //    for (int n = 0; n <= N; ++n) {
-      //       rho_inv = std::pow(rab.rho, -(j + n + 1));
-      //       for (int m = -n; m <= n; ++m) {
-      //          AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-      //          if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-      //             S_ = AAA * rab.sph_harmonics(j + n, m - k) * rho_inv;
-      //             index = M.index(n, m);
-      //             std::get<0>(ret) += S_ * M.get_coeffs(index);
-      //             std::get<1>(ret) += S_ * M.get_coeffs_(index);
-      //             // complex_fused_multiply_increment(S_, M.get_coeffs(index), std::get<0>(ret));
-      //             // complex_fused_multiply_increment(S_, M.get_coeffs_(index), std::get<1>(ret));
-      //          }
-      //       }
-      //    }
-      //    return ret;
-      // });
    }
 
+   std::vector<std::tuple<std::shared_ptr<SphericalCoordinates>, ExpCoeffs<N>*>> m2l_cache;
+
    template <typename T>
-   void M2L(const std::vector<T>& buckets) {
-      std::complex<double> S_, AAA;
-      // SphericalCoordinates r(LocalExp.X - M.X);
-      int count = 0;
-
+   void set_m2l(const std::vector<T>& buckets) {
+      m2l_cache.clear();
       for (const auto& b : buckets) {
-         SphericalCoordinates rab(b->multipole_expansion.X - this->X);
-         rab.precompute_sph(2 * N);
-         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
-            S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
-            c += S_ * b->multipole_expansion.get_coeffs(index);
-            c_ += S_ * b->multipole_expansion.get_coeffs_(index);
-         }
-
-         // for (size_t ind = 0; ind < this->nm_set.size(); ++ind) {
-         //    auto [j, k] = this->nm_set[ind];
-         //    auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
-         //    std::size_t index;
-         //    for (int n = 0; n <= N; ++n) {
-         //       for (int m = -n; m <= n; ++m) {
-         //          AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-         //          if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-         //             S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
-         //             index = b->multipole_expansion.index(n, m);
-         //             complex_fused_multiply_increment(S_, b->multipole_expansion.get_coeffs(index), this->coeffs[ind]);
-         //             complex_fused_multiply_increment(S_, b->multipole_expansion.get_coeffs_(index), this->coeffs_[ind]);
-         //          }
-         //       }
-         //    }
+         auto rab = std::make_shared<SphericalCoordinates>(b->multipole_expansion.X - this->X);
+         rab->precompute_sph(2 * N);
+         m2l_cache.emplace_back(rab, &b->multipole_expansion);
+         // for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+         //    S_ = AAA * rab->sph_harmonics_div_rhon1(j + n, m - k);
+         //    c += S_ * b->multipole_expansion.get_coeffs(index);
+         //    c_ += S_ * b->multipole_expansion.get_coeffs_(index);
          // }
       }
    }
+
+   // void reuseM2L() {
+   //    std::complex<double> S_;
+   //    for (auto& [rab, multipole_expansion] : record_index_map_for_M2L) {
+   //       for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+   //          S_ = AAA * rab->sph_harmonics_div_rhon1(j + n, m - k);
+   //          c += S_ * multipole_expansion->get_coeffs(index);
+   //          c_ += S_ * multipole_expansion->get_coeffs_(index);
+   //       }
+   //    }
+   // }
+
+   void m2l() {
+      std::complex<double> S_;
+      for (const auto& [sph, expansion] : m2l_cache) {
+         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+            // S_ = AAA * sph->sph_harmonics_div_rhon1(j + n, m - k);
+            S_ = AAA * sph->pre_compute_sph_harmonics_div_rhon1[j + n][m - k + sph->pre_max];
+            c += S_ * expansion->coeffs[index];
+            c_ += S_ * expansion->coeffs_[index];
+         }
+      }
+   }
+
+   // template <typename T>
+   // void m2l(const std::vector<T>& buckets) {
+   //    std::complex<double> S_, AAA;
+   //    // SphericalCoordinates r(LocalExp.X - M.X);
+   //    int count = 0;
+   //    SphericalCoordinates rab(this->X);
+   //    for (const auto& b : buckets) {
+   //       rab.initialize(b->multipole_expansion.X - this->X);
+   //       rab.precompute_sph(2 * N);
+   //       for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
+   //          S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
+   //          c += S_ * b->multipole_expansion.get_coeffs(index);
+   //          c_ += S_ * b->multipole_expansion.get_coeffs_(index);
+   //       }
+   //    }
+   // }
 
    std::unordered_map<ExpCoeffs<N>*, std::vector<std::vector<std::complex<double>>>> M2L_cache;
    std::vector<std::tuple<ExpCoeffs<N>*, std::vector<std::vector<std::complex<double>>>>> M2L_cache_vector;
@@ -797,7 +827,7 @@ struct ExpCoeffs {
       }
    }
 
-   void L2L(const ExpCoeffs<N>& L) {
+   void l2l(const ExpCoeffs<N>& L) {
       std::complex<double> R, AAA;
       double rho;
       // SphericalCoordinates r(LocalExp.X - L.X);
