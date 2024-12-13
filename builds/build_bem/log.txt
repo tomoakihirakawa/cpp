@@ -1,4 +1,312 @@
 ----------
+Execution time: Fri Dec 13 11:39:43 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./horikawa
+  arg1: ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 11:21:58 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 11:17:26 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 11:16:32 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 02:26:07 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 02:22:00 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 02:18:52 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 01:58:19 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 01:54:32 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 01:02:54 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 01:00:17 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 00:43:49 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 00:08:52 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Fri Dec 13 00:00:18 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 23:54:51 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 23:45:11 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 23:39:12 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 23:35:30 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 23:05:22 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 22:31:52 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 21:55:01 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 21:48:34 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 21:38:13 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 19:05:53 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 19:00:38 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 13:04:12 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 12:58:35 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Thu Dec 12 12:55:28 2024
+
+Machine Information:
+  Hostname: hirakawatomoakinoMacBook-Pro.local
+  Operating System: Darwin 24.1.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./test
+  arg1: ./input_files/Horikawa2024_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+----------
 Execution time: Thu Dec 12 09:49:05 2024
 
 Machine Information:
@@ -31085,6 +31393,34 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Hadzic2005
   arg2: ----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

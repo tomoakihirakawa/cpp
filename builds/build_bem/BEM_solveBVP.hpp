@@ -66,8 +66,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-#define use_gmres
-// #define use_lapack
+// #define use_gmres
+#define use_lapack
 
 struct calculateFluidInteraction {
    const Network *PasObj;
@@ -466,6 +466,7 @@ struct BEM_BVP {
          for (const auto &origin : water->getPoints())
 #pragma omp single nowait
          {
+            //@ this loop is for the multiple nodes
             for (const auto &[f, index] : origin->f2Index) {
                double origin_ign_rigid_mode = 0., dist_base = 0;
                for (auto f : origin->getFaces())
@@ -480,7 +481,9 @@ struct BEM_BVP {
                std::tuple<networkPoint *, networkFace *, double, double> key_ig_ign0, key_ig_ign1, key_ig_ign2;
                std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign;
 
+               //@ for all water faces
                for (const auto &water : WATERS) {
+                  // b@ integrate over all faces
                   for (const auto &integ_f : water->getFacesVector()) {
 
                      auto [p0, p1, p2] = integ_f->getPoints(origin);
@@ -920,7 +923,7 @@ struct BEM_BVP {
 
       TimeWatch twFMM;
 
-      /* ---------------------------------- bの計算 ---------------------------------- */
+      /* -------------------------------------------------------------------------- */
 
       auto MatrixVectorProduct = [&obj, &B_poles](const bool solidangle = true) -> V_d {
          for (auto pole : B_poles.all_stored_objects_vector)
@@ -985,6 +988,7 @@ struct BEM_BVP {
          }
       }
 
+      setM2L(B_poles);
       MEreuse_M2M_M2L_L2L(B_poles);
 
    #pragma omp parallel
@@ -1007,7 +1011,26 @@ struct BEM_BVP {
 
       std::cout << Magenta << "対角成分の計算" << Green << ", Elapsed time : " << tw_solid_angle() << colorReset << std::endl;
 
-      /* -------------------------------------------------------------------------- */
+      /* ------------ calculate diagonal elements for pre conditioners ------------ */
+
+      for (auto &origin : obj->getPoints()) {
+         origin->diagIgIgn = {0., origin->solid_angle};
+         for (auto &integ_f : origin->getFaces()) {
+            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(origin)) {
+               auto R = (X - origin->X);
+               double nr = Norm(R);
+               if (nr > 0.) {
+                  double ig = norm_cross * (ww / nr);
+                  double ign = Dot(R / (nr * nr * nr), cross) * ww;
+                  std::get<0>(origin->diagIgIgn) += ig * std::get<0>(shape3);
+                  if (nr > std::sqrt(integ_f->area) * 0.01)
+                     std::get<1>(origin->diagIgIgn) -= ign * std::get<0>(shape3);
+               }
+            }
+         }
+      }
+
+      /* --------------------------- GMRESで利用する関数を定義する． --------------------------- */
 
       //! 　未知変数側
       auto return_A_dot_v = [&](const V_d &V) -> V_d {
@@ -1034,10 +1057,19 @@ struct BEM_BVP {
             p->phinOnFace = p->phinOnFace_copy;
          }
 
+         // for (const auto &p : obj->getPoints())
+         //    for (const auto &[f, i] : p->f2Index)
+         //       if (isDirichletID_BEM(p, f))
+         //          ret[i] /= std::get<1>(p->diagIgIgn);
+         //       else if (isNeumannID_BEM(p, f))
+         //          ret[i] /= std::get<0>(p->diagIgIgn);
+         //       else
+         //          throw std::runtime_error("Error: Boundary type is not defined.");
+
          return ret;
       };
 
-      /* -------------------------------------------------------------------------- */
+      /* ---------------------------------- bの計算 ---------------------------------- */
 
       //@ 既知変数側
       for (const auto &p : obj->getPoints()) {
@@ -1063,6 +1095,15 @@ struct BEM_BVP {
          p->phinOnFace = p->phinOnFace_copy;
       }
 
+      // for (const auto &p : obj->getPoints())
+      //    for (const auto &[f, i] : p->f2Index)
+      //       if (isDirichletID_BEM(p, f))
+      //          b[i] /= std::get<1>(p->diagIgIgn);
+      //       else if (isNeumannID_BEM(p, f))
+      //          b[i] /= std::get<0>(p->diagIgIgn);
+      //       else
+      //          throw std::runtime_error("Error: Boundary type is not defined.");
+
       /* -------------------------------------------------------------------------- */
 
       std::cout << Red << "Total Elapsed time : " << twFMM() << colorReset << std::endl;
@@ -1070,7 +1111,7 @@ struct BEM_BVP {
       /* ------------------------------ GMRES ------------------------------------- */
 
       // std::cout << "use gmres" << std::endl;
-      std::vector<int> list = {5, 15, 30};
+      std::vector<int> list = {5, 20};
       std::vector<double> error;
       std::unordered_map<networkPoint *, double> data_gmres_ans, data_b;
       std::vector<double> x0(b.size(), 0.);

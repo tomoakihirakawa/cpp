@@ -29,6 +29,7 @@
         - [🪼 $`\frac{d\phi}{dt}`$の計算](#🪼-$`\frac{d\phi}{dt}`$の計算)
         - [🪼 Arbitrary Lagrangian–Eulerian Methods (ALE)](#🪼-Arbitrary-Lagrangian–Eulerian-Methods-(ALE))
             - [🪸 使っているALEの手法](#🪸-使っているALEの手法)
+    - [⛵ 多重節点を考慮したIDの設定方法](#⛵-多重節点を考慮したIDの設定方法)
     - [⛵ 浮体動揺解析](#⛵-浮体動揺解析)
         - [🪼 浮体の運動方程式](#🪼-浮体の運動方程式)
             - [🪸 $`\phi`$のヘッセ行列の計算](#🪸-$`\phi`$のヘッセ行列の計算)
@@ -62,6 +63,9 @@
 - [🐋 Input Generator](#🐋-Input-Generator)
     - [⛵ For Ubuntu](#⛵-For-Ubuntu)
     - [⛵ For Mac OS X](#⛵-For-Mac-OS-X)
+    - [⛵ inputファイルの生成](#⛵-inputファイルの生成)
+    - [⛵ 実行ファイルの生成（毎回する必要はない）](#⛵-実行ファイルの生成（毎回する必要はない）)
+    - [⛵ 実行](#⛵-実行)
 - [🐋 Examples](#🐋-Examples)
 
 
@@ -91,7 +95,7 @@
 
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L175)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L295)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -109,7 +113,7 @@
 - Dirichlet点 : 隣接面全てがDirichlet面である点
 - CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
 
-[./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
+[./BEM_setBoundaryTypes.hpp#L126](./BEM_setBoundaryTypes.hpp#L126)
 
 ---
 ## ⛵ 多重節点 
@@ -128,7 +132,7 @@
 
 * `pf2ID`は，節点と面の組みを未知変数IDに変換する．多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，与えられた`{p,f}`が変数のidとなる．
 
-[./BEM_setBoundaryTypes.hpp#L231](./BEM_setBoundaryTypes.hpp#L231)
+[./BEM_setBoundaryTypes.hpp#L8](./BEM_setBoundaryTypes.hpp#L8)
 
 ---
 ### 🪼 `getContactFaces()`や`getNearestContactFace()`の利用 
@@ -175,7 +179,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L1044](../../include/Network.hpp#L1044)
+[../../include/Network.hpp#L1062](../../include/Network.hpp#L1062)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -189,7 +193,7 @@
 `uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
-[./BEM_utilities.hpp#L455](./BEM_utilities.hpp#L455)
+[./BEM_utilities.hpp#L435](./BEM_utilities.hpp#L435)
 
 ---
 ## ⛵ 入力ファイルの読み込み 
@@ -221,11 +225,23 @@
 [./main.cpp#L352](./main.cpp#L352)
 
 ---
+1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
+2. 極の追加：各面に対して極を追加し，バケットに格納する．
+3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
+4. 多重極展開：ツリー構造を用いて多重極展開を行う．
+5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
+6. 線形連立方程式の右辺bを計算する（FMMを利用）．
+7. GMRESに与える，行列ベクトル積を返す関数を作成する．
+8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+
+[./BEM_solveBVP.hpp#L793](./BEM_solveBVP.hpp#L793)
+
+---
 `phiOnFace`は，各節点`p`における各面`f`に対するポテンシャル`phi`を設定するために使用される．
 `phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
 他も同様である．
 
-[./BEM_setBoundaryTypes.hpp#L288](./BEM_setBoundaryTypes.hpp#L288)
+[./BEM_setBoundaryTypes.hpp#L357](./BEM_setBoundaryTypes.hpp#L357)
 
 ## ⛵ 境界値問題 
 
@@ -279,7 +295,7 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
 $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
-[./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
+[./BEM_solveBVP.hpp#L8](./BEM_solveBVP.hpp#L8)
 
 ### 🪼 BIEの離散化 
 
@@ -374,7 +390,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この分数をまとめて計算している．
 
-[./BEM_solveBVP.hpp#L160](./BEM_solveBVP.hpp#L160)
+[./BEM_solveBVP.hpp#L161](./BEM_solveBVP.hpp#L161)
 
 #### 🪸 係数行列の作成 
 
@@ -411,14 +427,14 @@ $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathb
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L343](./BEM_solveBVP.hpp#L343)
+[./BEM_solveBVP.hpp#L350](./BEM_solveBVP.hpp#L350)
 
 ⚠️ この`std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign`の`networkFace`は，どの面側から節点を呼び出すかを決めていて，高次補間の場合，積分面と一致しない場合がある．
 
 1. fill key_ig_ign
 2. fill IGIGn_Row
 
-[./BEM_solveBVP.hpp#L504](./BEM_solveBVP.hpp#L504)
+[./BEM_solveBVP.hpp#L507](./BEM_solveBVP.hpp#L507)
 
 ### 🪼 リジッドモードテクニック（係数行列の対角成分の計算） 
 
@@ -441,7 +457,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 ただし，線形要素の場合，原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する計算，$`{\bf n} _{k _\vartriangle}\cdot ({{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ}})=0`$となるため，和をとる必要はない．
 よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-[./BEM_solveBVP.hpp#L575](./BEM_solveBVP.hpp#L575)
+[./BEM_solveBVP.hpp#L578](./BEM_solveBVP.hpp#L578)
 
 ### 🪼 左辺と右辺の入れ替え 
 
@@ -463,7 +479,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 1の多重節点の場合，BIEの連立一次方程式の係数行列の行を，Dirchlet面上の$`\phi`$とNeumann面上の$`\phi`$の値が一致する，という式に変更する．
 2の場合は，特に変更しない．BIEを解くことで，それぞれの面に対して，$`\phi`$が得られるが，それらの平均値，または重み付け平均値を$`\phi`$として採用する．
 
-[./BEM_solveBVP.hpp#L614](./BEM_solveBVP.hpp#L614)
+[./BEM_solveBVP.hpp#L617](./BEM_solveBVP.hpp#L617)
 
 ### 🪼 高速多重極展開との関係 
 
@@ -484,7 +500,7 @@ $`A _{i,j}({\bf a} _i)`$は，$`{\bf a} _i`$に依存しており，$`{\bf a} _i
 また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
 ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
 
-[./BEM_solveBVP.hpp#L690](./BEM_solveBVP.hpp#L690)
+[./BEM_solveBVP.hpp#L704](./BEM_solveBVP.hpp#L704)
 
 ---
 ## ⛵ 初期値問題 
@@ -529,7 +545,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L711](./BEM_utilities.hpp#L711)
+[./BEM_utilities.hpp#L693](./BEM_utilities.hpp#L693)
 
 ---
 ### 🪼 Arbitrary Lagrangian–Eulerian Methods (ALE) 
@@ -569,6 +585,11 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 [./BEM_calculateVelocities.hpp#L317](./BEM_calculateVelocities.hpp#L317)
 
 ---
+## ⛵ 多重節点を考慮したIDの設定方法
+
+[./BEM_setBoundaryTypes.hpp#L41](./BEM_setBoundaryTypes.hpp#L41)
+
+---
 ## ⛵ 浮体動揺解析 
 
 BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
@@ -593,7 +614,7 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L106)と
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L107)と
 [トルクの積分](not found)：
 
 ```math
@@ -610,7 +631,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L823](./BEM_solveBVP.hpp#L823)
+[./BEM_solveBVP.hpp#L1159](./BEM_solveBVP.hpp#L1159)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -645,7 +666,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1176](./BEM_solveBVP.hpp#L1176)
+[./BEM_solveBVP.hpp#L1513](./BEM_solveBVP.hpp#L1513)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -658,13 +679,13 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L882)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](../../builds/build_bem/BEM_utilities.hpp#L864)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L894](./BEM_utilities.hpp#L894)
+[./BEM_utilities.hpp#L876](./BEM_utilities.hpp#L876)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -692,7 +713,7 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L945](./BEM_utilities.hpp#L945)
+[./BEM_utilities.hpp#L927](./BEM_utilities.hpp#L927)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
@@ -795,7 +816,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L942)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1072)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L924)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1408)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -826,11 +847,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1087)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1423)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L868](./BEM_solveBVP.hpp#L868)
+[./BEM_solveBVP.hpp#L1204](./BEM_solveBVP.hpp#L1204)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -915,7 +936,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1000](./BEM_solveBVP.hpp#L1000)
+[./BEM_solveBVP.hpp#L1336](./BEM_solveBVP.hpp#L1336)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -925,12 +946,12 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
 [強制運動を課す](../../builds/build_bem/main.cpp#L538)
 
-[ここ](../../builds/build_bem/BEM_utilities.hpp#L435)では，Hadzic et al. 2005の造波板の動きを模擬している．
+[ここ](../../builds/build_bem/BEM_utilities.hpp#L415)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L117)で利用され，$\phi _{n}$を計算する．
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L236)で利用され，$\phi _{n}$を計算する．
 
-[./BEM_utilities.hpp#L36](./BEM_utilities.hpp#L36)
+[./BEM_utilities.hpp#L16](./BEM_utilities.hpp#L16)
 
 ### 🪼 進行波を生成するための流速の境界条件 
 
@@ -946,7 +967,7 @@ a \omega \frac{\cosh(k(h+z))}{\sinh(kh)}\cos(\omega t - kx) + \frac{\omega k a^2
 \end{pmatrix}
 ```
 
-[./BEM_utilities.hpp#L54](./BEM_utilities.hpp#L54)
+[./BEM_utilities.hpp#L34](./BEM_utilities.hpp#L34)
 
 ### 🪼 フラップ型造波装置 
 
@@ -991,7 +1012,7 @@ TrigReduce[dthetadt[t]*Sin[t w]]/Sin[t*w]
 CForm[%]
 ```
 
-[./BEM_utilities.hpp#L224](./BEM_utilities.hpp#L224)
+[./BEM_utilities.hpp#L204](./BEM_utilities.hpp#L204)
 
 ### 🪼 ピストン型造波装置 
 
@@ -1016,7 +1037,7 @@ $`S`$は造波版のストロークで振幅の２倍である．例えば，振
 $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see [Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1))
 
-[./BEM_utilities.hpp#L314](./BEM_utilities.hpp#L314)
+[./BEM_utilities.hpp#L294](./BEM_utilities.hpp#L294)
 
 ### 🪼 正弦・余弦（`sin` もしくは `cos`）の運動 
 
@@ -1036,12 +1057,12 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
 名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
-[./BEM_utilities.hpp#L381](./BEM_utilities.hpp#L381)
+[./BEM_utilities.hpp#L361](./BEM_utilities.hpp#L361)
 
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L980](./main.cpp#L980)
+[./main.cpp#L983](./main.cpp#L983)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -1095,7 +1116,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L585](./BEM_calculateVelocities.hpp#L585)
+[./BEM_calculateVelocities.hpp#L589](./BEM_calculateVelocities.hpp#L589)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1110,7 +1131,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L672](./BEM_calculateVelocities.hpp#L672)
+[./BEM_calculateVelocities.hpp#L676](./BEM_calculateVelocities.hpp#L676)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -1148,7 +1169,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L759](./main.cpp#L759)
+[./main.cpp#L762](./main.cpp#L762)
 
 ---
 # 🐋 実行方法 
@@ -1187,7 +1208,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L1027](./main.cpp#L1027)
+[./main.cpp#L1030](./main.cpp#L1030)
 
 ---
 # 🐋 Input Generator 
@@ -1237,6 +1258,44 @@ python3.11 input_generator.py -case Tanizawa1996 -mesh water_no... -element pseu
 [./input_generator.py#L1](./input_generator.py#L1)
 
 ---
+## ⛵ inputファイルの生成 
+
+```sh
+python3 input_generator.py -case Horikawa2024 -dt 0.05 -ALEPERIOD 1 -ALE linear -element linear -output ~/BEM/Horikawa2024
+```
+
+または，省略して次のように実行する．
+
+```sh
+python3 input_generator.py -case Horikawa2024 -dt 0.05 -output ~/BEM/Horikawa2024
+```
+
+<img src="how_to_run_example.png" width="400">
+
+`/input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1`をコピーして，実行時に指定する．
+
+## ⛵ 実行ファイルの生成（毎回する必要はない） 
+
+`sh clean`で古いファイルを削除する．`cmake`を使ってcppのコンパイル方法を設定する．
+cmakeをした後に，コンパイル（make）する．以下の場合，実行ファイル名はhorikawaとなる．
+
+```sh
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DOUTPUT_NAME=horikawa
+make
+```
+
+実行ファイル`horikawa`を使って事項する．ただし，`input_files`ディレクトリに保存されているinputファイルを指定して実行する．
+
+## ⛵ 実行 
+
+```sh
+./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
+```
+
+[./input_generator.py#L2116](./input_generator.py#L2116)
+
+---
 <img src="schematic_Hadzic2005.png" width="400px"/>
 
 This case based on [Had{\v{z}}i{\'{c}} et al. (2005)](https://linkinghub.elsevier.com/retrieve/pii/S0307904X05000417) is for the validation of the floating body motion analysis using the BEM-MEL.        
@@ -1250,7 +1309,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L649](./input_generator.py#L649)
+[./input_generator.py#L680](./input_generator.py#L680)
 
 ---
 \cite{Liang2022}
@@ -1290,7 +1349,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L1003](./input_generator.py#L1003)
+[./input_generator.py#L1034](./input_generator.py#L1034)
 
 ---
 | wave height (m) | wave period (s) |
@@ -1302,7 +1361,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L829](./input_generator.py#L829)
+[./input_generator.py#L860](./input_generator.py#L860)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1316,7 +1375,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L516](./input_generator.py#L516)
+[./input_generator.py#L547](./input_generator.py#L547)
 
 ---
 <img src="schematic_float_Tanizawa1996.png" width="400px" />
@@ -1349,7 +1408,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 | Natural period of roll | 1.775 s | 6.46 |
 | Spring constant of mooning | 51.07 N/m | 0.00704 |
 
-[./input_generator.py#L203](./input_generator.py#L203)
+[./input_generator.py#L234](./input_generator.py#L234)
 
 ---
 This case is for the validation of the floating body motion analysis using the BEM-MEL.
@@ -1362,13 +1421,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L744](./input_generator.py#L744)
+[./input_generator.py#L775](./input_generator.py#L775)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L1067](./main.cpp#L1067)
+[./main.cpp#L1070](./main.cpp#L1070)
 
 ---

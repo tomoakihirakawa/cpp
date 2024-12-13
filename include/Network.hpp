@@ -867,6 +867,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    // std::map<networkFace *, double> phitOnFace, phintOnFace;
 
    std::unordered_map<networkFace *, int> f2Index;
+   std::array<double, 2> diagIgIgn = {0., 0.};
    std::unordered_map<networkFace *, double> phiOnFace, phinOnFace;
    std::unordered_map<networkFace *, double> phiOnFace_copy, phinOnFace_copy;
    std::unordered_map<networkFace *, double> phitOnFace, phintOnFace;

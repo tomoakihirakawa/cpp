@@ -253,7 +253,7 @@ LU分解の場合は，$`O(m^3)`$の計算量が必要となる．
 従って，$`m`$が大きい場合は，GMRESの方が計算量が少なくて済む．
 
 GMRESと多重極展開法（もし$`m`$が$`m/d`$になったとすると）を組み合わせれば，GMRESは$`O(knm^2/d^2)`$で計算できる．
-[../../include/basic_linear_systems.hpp#L1829](../../include/basic_linear_systems.hpp#L1829)
+[../../include/basic_linear_systems.hpp#L1828](../../include/basic_linear_systems.hpp#L1828)
 
 
 * GMRESは反復的な方法で，特に大規模で疎な非対称行列の線形システムを解くのに適している．
