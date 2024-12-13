@@ -119,7 +119,7 @@ if args.ALE is not None:
     ALE = args.ALE
     print(f"ALE: {ALE}")
 else:
-    ALE = "linear"
+    ALE = "pseudo_quad"
 if args.ALEPERIOD is not None:
     ALEPERIOD = args.ALEPERIOD
     print(f"ALEPERIOD: {ALEPERIOD}")    
@@ -2102,8 +2102,8 @@ elif "Tonegawa2024" in SimulationCase:
     | サイズ (WxLxH)     | 0.375 x 0.375 x 0.84 m      |
     | ムーンプールサイズ (WxL) | 0.25 x 0.25 m            |
     | 喫水               | 0.056 m                     |
-    | 重量               | 0.828 kg                    |
-    | 慣性モーメント     | -                           |
+    | 重量               | 7.56 kg (0d075) / 7.0 kg (0d125) / 4.375 kg (0d25) |
+    | 慣性モーメント     | [0.1139241482, 0.1139241482, 0.2117076729] (0d075) / [0.1078722037, 0.1078722037, 0.2013731481] (0d125) / [0.07943494545, 0.07943494545, 0.1514044693] (0d25) |
     | 重心位置           | (x, y, z) = (2, 0, h - draft + H_float / 2) |
 
     ### 水槽
@@ -2116,14 +2116,14 @@ elif "Tonegawa2024" in SimulationCase:
 
     | ファイル名                       |
     |----------------------------------|
-    | Tonegawa2024/water.obj           |
-    | Tonegawa2024/float.obj           |
+    | Tonegawa2024/water0d075.obj (0d075) / Tonegawa2024/water0d125.obj (0d125) / Tonegawa2024/water0d25.obj (0d25) |
+    | Tonegawa2024/float0d075.obj (0d075) / Tonegawa2024/float0d125.obj (0d125) / Tonegawa2024/float0d25.obj (0d25) |
     | Tonegawa2024/tank.obj            |
     | Tonegawa2024/wavemaker.obj       |
 
     ### 造波装置の運動
 
-    - (x, z) = (-0.31, 0) を通る y 軸を中心として、wavemaker の運動を flap 型造波で行う。
+    - (x, z) = (-0.31, 0)を通るy軸を中心として，wavemakerの運動をflap型造波で行う．
 
     '''
 
@@ -2210,7 +2210,8 @@ elif "Tonegawa2024" in SimulationCase:
     setting = {"max_dt": dt,
                "end_time_step": 100000,
                "end_time": 12,
-                "ALEPERIOD": ALEPERIOD}
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 
