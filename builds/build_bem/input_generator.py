@@ -1536,120 +1536,6 @@ elif "simple_barge" in SimulationCase:
                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
-elif "Tonegawa2024" in SimulationCase:
-
-    r'''
-    Tonegawa2024
-
-    浮体：
-    float size WxLxH 0.375x0.375x0.84
-    moon pool size WxL 0.25x0.25 m
-    喫水 0.056 m
-    重量 0.828 kg
-    慣性モーメント 
-
-    重心位置：
-    (x,y,z) = (2,0,h-draft+H_float/2)
-
-    水槽：
-    WxLxDepth 2.15x4.45x0.6
-    
-    使用するobjファイル：
-    Tonegawa2024/water.obj
-    Tonegawa2024/float.obj
-    Tonegawa2024/tank.obj
-    Tonegawa2024/wavemaker.obj
-
-    (x,z) = (-0.31,0)を通るy軸を中心として，wavemakerの運動をflap型造波で行う．
-
-    '''
-
-    start = 0.
-    H = 0.01  # 波高
-    # if not degined 
-    try:       
-        T
-    except:
-        T = 0.6   # 波周期
-    
-    a = H / 2  # 振幅
-    h = 0.6   # 水深
-    z_surface = h
-
-    # 浮体設定
-    W, L, H_float = 0.375, 0.375, 0.084
-    draft = 0.056
-    # mass = 4.375
-    # mass = 7.
-    COM = [2, 0, h - draft + H_float / 2]
-    # MOI = [0.07943494545, 0.07943494545, 0.1514044693]
-    # MOI = [0.1078722037,0.1078722037,0.2013731481]
-
-    # 水槽設定
-    tank_dim = [2.15, 4.45, 0.6]
-
-    # obj ファイル
-    objfolder = code_home_dir + "/cpp/obj/Tonegawa2024"
-
-    if "0d075" in suffix:
-        float_obj = objfolder + "/float0d075.obj"
-        water_obj = objfolder + "/water0d075.obj"
-        mass = 7.56
-        MOI = [0.1139241482,0.1139241482,0.2117076729]
-    if "0d125" in suffix:
-        float_obj = objfolder + "/float0d125.obj"
-        water_obj = objfolder + "/water0d125.obj"
-        mass = 7.
-        MOI = [0.1078722037,0.1078722037,0.2013731481]
-    elif "0d25" in suffix:
-        float_obj = objfolder + "/float0d25.obj"
-        water_obj = objfolder + "/water0d25.obj"
-        mass = 4.375
-        MOI = [0.07943494545, 0.07943494545, 0.1514044693]
-
-    water = {"name": "water", 
-             "type": "Fluid", 
-             "objfile": water_obj}
-
-    float = {"name": "float",
-             "type": "RigidBody",
-             "velocity": "floating",
-             "mass": mass,
-             "COM": COM,
-             "MOI": MOI,
-             "objfile": float_obj}
-
-    tank = {"name": "tank", "type": "RigidBody", "isFixed": True, "objfile": objfolder + "/tank.obj"}
-
-    wavemaker = {"name": "wavemaker",
-                 "type": "RigidBody",
-                 "velocity": ["flap", start, a, T, h, h, 0, 1, 0],
-                 "objfile": objfolder + "/wavemaker.obj"}
-    
-    absorber = {"name": "absorber", 
-                "type": "Absorber", 
-                "isFixed": True,
-                "objfile": objfolder+"/absorber.obj"}
-
-    gauges = []
-    for i in range(8):
-        gauges.append({"name": f"gauge{i}", 
-                       "type": "wave gauge",
-                       "position": [0.25*(i+1), 0., 1., 0.25*(i+1), 0., 0.2]})
-
-    inputfiles = [tank, wavemaker, water, float, absorber]
-    inputfiles += gauges
-    
-    id = SimulationCase
-    id += "_T"+str(T).replace(".", "d")
-    id = add_id(id)
-    
-    setting = {"max_dt": dt,
-               "end_time_step": 100000,
-               "end_time": 12,
-                "ALEPERIOD": ALEPERIOD}
-
-    generate_input_files(inputfiles, setting, IO_dir, id)
 elif "moon_pool" in SimulationCase:
     for T in [5 + 0.5 * i for i in range(0, 11)]:
 
@@ -2126,7 +2012,7 @@ elif "Horikawa2024" in SimulationCase:
 
     ## Horikawa2024
 
-    ## inputファイルの生成
+    ### inputファイルの生成
     
     ```sh
     python3 input_generator.py -case Horikawa2024 -dt 0.05 -ALEPERIOD 1 -ALE linear -element linear -output ~/BEM/Horikawa2024
@@ -2142,7 +2028,7 @@ elif "Horikawa2024" in SimulationCase:
 
     `/input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1`をコピーして，実行時に指定する．
 
-    ## 実行ファイルの生成（毎回する必要はない）
+    ### 実行ファイルの生成（毎回する必要はない）
 
     `sh clean`で古いファイルを削除する．`cmake`を使ってcppのコンパイル方法を設定する．
     cmakeをした後に，コンパイル（make）する．以下の場合，実行ファイル名はhorikawaとなる．
@@ -2155,7 +2041,7 @@ elif "Horikawa2024" in SimulationCase:
 
     実行ファイル`horikawa`を使って事項する．ただし，`input_files`ディレクトリに保存されているinputファイルを指定して実行する．
 
-    ## 実行
+    ### 実行
 
     ```sh
     ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
@@ -2202,6 +2088,130 @@ elif "Horikawa2024" in SimulationCase:
                "ALEPERIOD": ALEPERIOD}
 
     # 入力ファイルを生成
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Tonegawa2024" in SimulationCase:
+
+    r'''DOC_EXTRACT 2_1_0_input_generator
+
+    ## Tonegawa2024
+
+    ### 浮体
+
+    | 項目               | 値                          |
+    |--------------------|-----------------------------|
+    | サイズ (WxLxH)     | 0.375 x 0.375 x 0.84 m      |
+    | ムーンプールサイズ (WxL) | 0.25 x 0.25 m            |
+    | 喫水               | 0.056 m                     |
+    | 重量               | 0.828 kg                    |
+    | 慣性モーメント     | -                           |
+    | 重心位置           | (x, y, z) = (2, 0, h - draft + H_float / 2) |
+
+    ### 水槽
+
+    | 項目               | 値                          |
+    |--------------------|-----------------------------|
+    | サイズ (WxLxDepth) | 2.15 x 4.45 x 0.6 m         |
+
+    ### 使用するobjファイル
+
+    | ファイル名                       |
+    |----------------------------------|
+    | Tonegawa2024/water.obj           |
+    | Tonegawa2024/float.obj           |
+    | Tonegawa2024/tank.obj            |
+    | Tonegawa2024/wavemaker.obj       |
+
+    ### 造波装置の運動
+
+    - (x, z) = (-0.31, 0) を通る y 軸を中心として、wavemaker の運動を flap 型造波で行う。
+
+    '''
+
+    start = 0.
+    H = 0.01  # 波高
+    # if not degined 
+    try:       
+        T
+    except:
+        T = 0.6   # 波周期
+    
+    a = H / 2  # 振幅
+    h = 0.6   # 水深
+    z_surface = h
+
+    # 浮体設定
+    W, L, H_float = 0.375, 0.375, 0.084
+    draft = 0.056
+    # mass = 4.375
+    # mass = 7.
+    COM = [2, 0, h - draft + H_float / 2]
+    # MOI = [0.07943494545, 0.07943494545, 0.1514044693]
+    # MOI = [0.1078722037,0.1078722037,0.2013731481]
+
+    # 水槽設定
+    tank_dim = [2.15, 4.45, 0.6]
+
+    # obj ファイル
+    objfolder = code_home_dir + "/cpp/obj/Tonegawa2024"
+
+    if "0d075" in suffix:
+        float_obj = objfolder + "/float0d075.obj"
+        water_obj = objfolder + "/water0d075.obj"
+        mass = 7.56
+        MOI = [0.1139241482,0.1139241482,0.2117076729]
+    if "0d125" in suffix:
+        float_obj = objfolder + "/float0d125.obj"
+        water_obj = objfolder + "/water0d125.obj"
+        mass = 7.
+        MOI = [0.1078722037,0.1078722037,0.2013731481]
+    elif "0d25" in suffix:
+        float_obj = objfolder + "/float0d25.obj"
+        water_obj = objfolder + "/water0d25.obj"
+        mass = 4.375
+        MOI = [0.07943494545, 0.07943494545, 0.1514044693]
+
+    water = {"name": "water", 
+             "type": "Fluid", 
+             "objfile": water_obj}
+
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating",
+             "mass": mass,
+             "COM": COM,
+             "MOI": MOI,
+             "objfile": float_obj}
+
+    tank = {"name": "tank", "type": "RigidBody", "isFixed": True, "objfile": objfolder + "/tank.obj"}
+
+    wavemaker = {"name": "wavemaker",
+                 "type": "RigidBody",
+                 "velocity": ["flap", start, a, T, h, h, 0, 1, 0],
+                 "objfile": objfolder + "/wavemaker.obj"}
+    
+    absorber = {"name": "absorber", 
+                "type": "Absorber", 
+                "isFixed": True,
+                "objfile": objfolder+"/absorber.obj"}
+
+    gauges = []
+    for i in range(8):
+        gauges.append({"name": f"gauge{i}", 
+                       "type": "wave gauge",
+                       "position": [0.25*(i+1), 0., 1., 0.25*(i+1), 0., 0.2]})
+
+    inputfiles = [tank, wavemaker, water, float, absorber]
+    inputfiles += gauges
+    
+    id = SimulationCase
+    id += "_T"+str(T).replace(".", "d")
+    id = add_id(id)
+    
+    setting = {"max_dt": dt,
+               "end_time_step": 100000,
+               "end_time": 12,
+                "ALEPERIOD": ALEPERIOD}
+
     generate_input_files(inputfiles, setting, IO_dir, id)
 
 # シミュレーションケースのモジュールを動的にインポート
