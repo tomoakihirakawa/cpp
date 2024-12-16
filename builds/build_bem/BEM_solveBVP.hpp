@@ -66,8 +66,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-// #define use_gmres
-#define use_lapack
+#define use_gmres
+// #define use_lapack
 
 struct calculateFluidInteraction {
    const Network *PasObj;
@@ -792,20 +792,48 @@ struct BEM_BVP {
 #elif defined(use_gmres)
       /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
 
-      1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
-      2. 極の追加：各面に対して極を追加し，バケットに格納する．
-      3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
-      4. 多重極展開：ツリー構造を用いて多重極展開を行う．
-      5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
-      6. 線形連立方程式の右辺bを計算する（FMMを利用）．
-      7. GMRESに与える，行列ベクトル積を返す関数を作成する．
-      8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+      # Fast Multipole Method
 
+      ## pole class
+
+      pole class has the following attributes:
+
+      - position
+      - weights
+      - normal vector
+      - updater function (to update the intensity, that is the potential, of the pole)
+
+      ## Buckets class
+
+      Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
+
+      The step to generate the tree structure should be as follows:
+
+      1. add objects to the bucket
+      2. set the maximum level of the tree using `setLevel`
+      3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
+
+
+      # Fast Multipole Method
+
+      The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
+
+      | First steps | GRMES iterative step | description | | |
+      | --- | --- | --- | --- | --- |
+      | 1 | | add poles to the root bucket | | |
+      | 2 | | generate the tree structure from the root bucket | | |
+      | 3 (before M2M) | | expansion of the poles | | |
+      | 4 | 1 | **update the intensity of the poles** | | |
+      | 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
+      | 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
+      | 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
+      | 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
+
+      Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
       */
 
       for (auto &net : this->WATERS)
          net->setGeometricProperties();
-
       for (const auto &water : WATERS)
    #pragma omp parallel
          for (const auto &integ_f : water->getFaces())
@@ -827,37 +855,6 @@ struct BEM_BVP {
 
       TimeWatch tw;
 
-      // for (auto &F : obj->getFaces()) {
-      //    auto [p0, p1, p2] = F->getPoints();
-      //    auto closest_p_to_origin = p0;
-      //    auto X012 = ToX(F->getPoints());
-      //    auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
-
-      //    for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
-      //       auto [xi0, xi1] = t0t1;
-      //       auto weights = Tdd{norm_cross * ww, norm_cross * ww};
-      //       std::function<Tdd()> getValues = [p0, p1, p2, F, shape3,
-      //                                         id0 = std::get<1>(pf2ID(p0, F)),
-      //                                         id1 = std::get<1>(pf2ID(p1, F)),
-      //                                         id2 = std::get<1>(pf2ID(p2, F))]() {
-      //          return Tdd{
-      //              std::get<0>(shape3) * p0->meanPhiOnFace() + std::get<1>(shape3) * p1->meanPhiOnFace() + std::get<2>(shape3) * p2->meanPhiOnFace(),
-      //              std::get<0>(shape3) * p0->phinOnFace.at(id0) + std::get<1>(shape3) * p1->phinOnFace.at(id1) + std::get<2>(shape3) * p2->phinOnFace.at(id2)};
-      //       };
-
-      //       auto tmp = std::make_shared<pole4FMM>(X, weights, F->normal, getValues);
-      //       tmp.update = [p0, p1, p2, F, shape3, id0 = std::get<1>(pf2ID(p0, F)), id1 = std::get<1>(pf2ID(p1, F)), id2 = std::get<1>(pf2ID(p2, F))]() {
-      //          tmp.getValues = std::function<Tdd()> getValues = [p0_phinOnFace = &p0->phinOnFace.at(id0), p1_phinOnFace = &p1->phinOnFace.at(id1), p2_phinOnFace = &p2->phinOnFace.at(id2), shape3, p0_meanPhiOnFace = p0->meanPhiOnFace(), p1_meanPhiOnFace = p1->meanPhiOnFace(), p2_meanPhiOnFace = p2->meanPhiOnFace]() {
-      //             return Tdd{
-      //                 std::get<0>(shape3) * p0->meanPhiOnFace() + std::get<1>(shape3) * p1->meanPhiOnFace() + std::get<2>(shape3) * p2->meanPhiOnFace(),
-      //                 std::get<0>(shape3) * p0->phinOnFace.at(id0) + std::get<1>(shape3) * p1->phinOnFace.at(id1) + std::get<2>(shape3) * p2->phinOnFace.at(id2)};
-      //          };
-      //       };
-
-      //       B_poles.add(X, tmp);  //$ 極の追加
-      //    }
-      // };
-
       for (auto &F : obj->getFaces()) {
          auto [p0, p1, p2] = F->getPoints();
          auto closest_p_to_origin = p0;
@@ -871,10 +868,19 @@ struct BEM_BVP {
             auto pole = std::make_shared<pole4FMM>(X,
                                                    weights,
                                                    F->normal,
-                                                   [p0, p1, p2, F, shape3](pole4FMM *self) -> void {
-                                                      //! 再度計算する updater
-                                                      self->values[0] = Dot(shape3, Tddd{p0->meanPhiOnFace(), p1->meanPhiOnFace(), p2->meanPhiOnFace()});
-                                                      self->values[1] = Dot(shape3, Tddd{p0->phinOnFace.at(std::get<1>(pf2ID(p0, F))), p1->phinOnFace.at(std::get<1>(pf2ID(p1, F))), p2->phinOnFace.at(std::get<1>(pf2ID(p2, F)))});
+                                                   [p0, p1, p2, F,
+                                                    key0 = std::get<1>(pf2ID(p0, F)),
+                                                    key1 = std::get<1>(pf2ID(p1, F)),
+                                                    key2 = std::get<1>(pf2ID(p2, F)),
+                                                    shape3](pole4FMM *self) -> void {
+                                                      auto phi = [](auto *p) {
+                                                         double sum = 0.;
+                                                         for (const auto &[f, phi] : p->phiOnFace)
+                                                            sum += phi;
+                                                         return sum / p->phiOnFace.size();
+                                                      };
+                                                      std::get<0>(self->values) = Dot(shape3, Tddd{phi(p0), phi(p1), phi(p2)});
+                                                      std::get<1>(self->values) = Dot(shape3, Tddd{p0->phinOnFace.at(key0), p1->phinOnFace.at(key1), p2->phinOnFace.at(key2)});
                                                    });
             B_poles.add(X, pole);
             pole->update();
@@ -894,7 +900,7 @@ struct BEM_BVP {
          if (bucket->all_stored_objects_vector.empty())
             return false;
          else
-            return bucket->all_stored_objects_vector.size() > 500 && bucket->level < bucket->max_level;
+            return bucket->all_stored_objects_vector.size() > 1000 && bucket->level < bucket->max_level;
       });
       std::cout << Magenta << "Tree" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
@@ -926,8 +932,6 @@ struct BEM_BVP {
       /* -------------------------------------------------------------------------- */
 
       auto MatrixVectorProduct = [&obj, &B_poles](const bool solidangle = true) -> V_d {
-         for (auto pole : B_poles.all_stored_objects_vector)
-            pole->update();
          /*
             基本とする形，左辺
             {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,phin,phin,phin}-{{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi,phi,phi,phi}
@@ -944,7 +948,7 @@ struct BEM_BVP {
          std::vector<double> V(count, 0.);
          // std::vector<double> V_RHS(count, 0.);
 
-         MEreuse_M2M_M2L_L2L(B_poles);
+         updatePole_ME_M2M_M2L_L2L(B_poles);
 
          std::cout << Red << "direct integration ..." << colorReset << std::endl;
 
@@ -989,7 +993,7 @@ struct BEM_BVP {
       }
 
       setM2L(B_poles);
-      MEreuse_M2M_M2L_L2L(B_poles);
+      updatePole_ME_M2M_M2L_L2L(B_poles);
 
    #pragma omp parallel
       for (const auto &p : obj->getPoints())
@@ -1014,20 +1018,27 @@ struct BEM_BVP {
       /* ------------ calculate diagonal elements for pre conditioners ------------ */
 
       for (auto &origin : obj->getPoints()) {
-         origin->diagIgIgn = {0., origin->solid_angle};
+         origin->diagIgIgn.fill(0.);
          for (auto &integ_f : origin->getFaces()) {
             for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(origin)) {
                auto R = (X - origin->X);
                double nr = Norm(R);
+
+               double A = 0, eps = 0;
+               for (auto &f : origin->getFaces())
+                  A += f->area;
+               eps = std::sqrt(A / M_PI) * 0.01;
+
                if (nr > 0.) {
                   double ig = norm_cross * (ww / nr);
                   double ign = Dot(R / (nr * nr * nr), cross) * ww;
                   std::get<0>(origin->diagIgIgn) += ig * std::get<0>(shape3);
-                  if (nr > std::sqrt(integ_f->area) * 0.01)
+                  if (nr > eps)
                      std::get<1>(origin->diagIgIgn) -= ign * std::get<0>(shape3);
                }
             }
          }
+         std::get<1>(origin->diagIgIgn) += origin->solid_angle;
       }
 
       /* --------------------------- GMRESで利用する関数を定義する． --------------------------- */
@@ -1057,15 +1068,18 @@ struct BEM_BVP {
             p->phinOnFace = p->phinOnFace_copy;
          }
 
-         // for (const auto &p : obj->getPoints())
-         //    for (const auto &[f, i] : p->f2Index)
-         //       if (isDirichletID_BEM(p, f))
-         //          ret[i] /= std::get<1>(p->diagIgIgn);
-         //       else if (isNeumannID_BEM(p, f))
-         //          ret[i] /= std::get<0>(p->diagIgIgn);
-         //       else
-         //          throw std::runtime_error("Error: Boundary type is not defined.");
+         for (const auto &p : obj->getPoints()) {
+            for (const auto &[f, i] : p->f2Index) {
+               // if (isDirichletID_BEM(p, f))
+               //    ret[i] /= std::get<0>(p->diagIgIgn);
+               // else if (isNeumannID_BEM(p, f))
+               //    ret[i] /= std::get<1>(p->diagIgIgn);
+               // else
+               //    throw std::runtime_error("Error: Boundary type is not defined.");
 
+               ret[i] /= std::get<1>(p->diagIgIgn);
+            }
+         }
          return ret;
       };
 
@@ -1095,14 +1109,17 @@ struct BEM_BVP {
          p->phinOnFace = p->phinOnFace_copy;
       }
 
-      // for (const auto &p : obj->getPoints())
-      //    for (const auto &[f, i] : p->f2Index)
-      //       if (isDirichletID_BEM(p, f))
-      //          b[i] /= std::get<1>(p->diagIgIgn);
-      //       else if (isNeumannID_BEM(p, f))
-      //          b[i] /= std::get<0>(p->diagIgIgn);
-      //       else
-      //          throw std::runtime_error("Error: Boundary type is not defined.");
+      for (const auto &p : obj->getPoints())
+         for (const auto &[f, i] : p->f2Index) {
+            // if (isDirichletID_BEM(p, f))
+            //    b[i] /= std::get<0>(p->diagIgIgn);
+            // else if (isNeumannID_BEM(p, f))
+            //    b[i] /= std::get<1>(p->diagIgIgn);
+            // else
+            //    throw std::runtime_error("Error: Boundary type is not defined.");
+
+            b[i] /= std::get<1>(p->diagIgIgn);
+         }
 
       /* -------------------------------------------------------------------------- */
 
@@ -1111,20 +1128,20 @@ struct BEM_BVP {
       /* ------------------------------ GMRES ------------------------------------- */
 
       // std::cout << "use gmres" << std::endl;
-      std::vector<int> list = {5, 20};
+      std::vector<int> list = {60};
       std::vector<double> error;
       std::unordered_map<networkPoint *, double> data_gmres_ans, data_b;
       std::vector<double> x0(b.size(), 0.);
 
-      for (auto &p : obj->getPoints())
-         for (const auto &[f, i] : p->f2Index) {
-            if (isDirichletID_BEM(p, f))
-               x0[i] = p->phinOnFace.at(f);  //! this is unknown value that will be calculated
-            else if (isNeumannID_BEM(p, f))
-               x0[i] = p->phiOnFace.at(f);  //! this is unknown value that will be calculated
-            else
-               throw std::runtime_error("Error: Boundary type is not defined.");
-         }
+      // for (auto &p : obj->getPoints())
+      //    for (const auto &[f, i] : p->f2Index) {
+      //       if (isDirichletID_BEM(p, f))
+      //          x0[i] = p->phinOnFace.at(f);  //! this is unknown value that will be calculated
+      //       else if (isNeumannID_BEM(p, f))
+      //          x0[i] = p->phiOnFace.at(f);  //! this is unknown value that will be calculated
+      //       else
+      //          throw std::runtime_error("Error: Boundary type is not defined.");
+      //    }
 
       const double torrelance = 1.e-9 * obj->getPoints().size();
       for (auto gmres_size : list) {
