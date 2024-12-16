@@ -2054,8 +2054,8 @@ elif "Horikawa2024" in SimulationCase:
     # 水とタンク、浮体の設定
     water = {"name": "water",
              "type": "Fluid",
-            #  "objfile": objfolder + "/water.obj"}
-            "objfile": objfolder + "/waterHigh.obj"}
+             "objfile": objfolder + "/water.obj"}
+            # "objfile": objfolder + "/waterHigh.obj"}
 
     tank = {"name": "tank",
             "type": "RigidBody",

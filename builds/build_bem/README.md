@@ -12,6 +12,10 @@
     - [⛵ 入力ファイルの読み込み](#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
+- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
+    - [⛵ pole class](#⛵-pole-class)
+    - [⛵ Buckets class](#⛵-Buckets-class)
+- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
     - [⛵ 境界値問題](#⛵-境界値問題)
         - [🪼 基礎方程式](#🪼-基礎方程式)
         - [🪼 境界積分方程式（BIE）](#🪼-境界積分方程式（BIE）)
@@ -235,14 +239,44 @@
 [./main.cpp#L352](./main.cpp#L352)
 
 ---
-1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
-2. 極の追加：各面に対して極を追加し，バケットに格納する．
-3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
-4. 多重極展開：ツリー構造を用いて多重極展開を行う．
-5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
-6. 線形連立方程式の右辺bを計算する（FMMを利用）．
-7. GMRESに与える，行列ベクトル積を返す関数を作成する．
-8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+# 🐋 Fast Multipole Method 
+
+## ⛵ pole class 
+
+pole class has the following attributes:
+
+- position
+- weights
+- normal vector
+- updater function (to update the intensity, that is the potential, of the pole)
+
+## ⛵ Buckets class 
+
+Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
+
+The step to generate the tree structure should be as follows:
+
+1. add objects to the bucket
+2. set the maximum level of the tree using `setLevel`
+3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
+
+
+# 🐋 Fast Multipole Method 
+
+The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
+
+| First steps | GRMES iterative step | description | | |
+| --- | --- | --- | --- | --- |
+| 1 | | add poles to the root bucket | | |
+| 2 | | generate the tree structure from the root bucket | | |
+| 3 (before M2M) | | expansion of the poles | | |
+| 4 | 1 | **update the intensity of the poles** | | |
+| 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
+| 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
+| 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
+| 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
+
+Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
 
 [./BEM_solveBVP.hpp#L793](./BEM_solveBVP.hpp#L793)
 
@@ -641,7 +675,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L1159](./BEM_solveBVP.hpp#L1159)
+[./BEM_solveBVP.hpp#L1176](./BEM_solveBVP.hpp#L1176)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -676,7 +710,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1513](./BEM_solveBVP.hpp#L1513)
+[./BEM_solveBVP.hpp#L1530](./BEM_solveBVP.hpp#L1530)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -826,7 +860,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L924)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1408)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L924)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1425)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -857,11 +891,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1423)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1440)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L1204](./BEM_solveBVP.hpp#L1204)
+[./BEM_solveBVP.hpp#L1221](./BEM_solveBVP.hpp#L1221)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -946,7 +980,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1336](./BEM_solveBVP.hpp#L1336)
+[./BEM_solveBVP.hpp#L1353](./BEM_solveBVP.hpp#L1353)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
