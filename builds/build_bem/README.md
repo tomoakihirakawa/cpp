@@ -12,10 +12,6 @@
     - [⛵ 入力ファイルの読み込み](#⛵-入力ファイルの読み込み)
     - [⛵ 計算プログラムの概要](#⛵-計算プログラムの概要)
         - [🪼 計算の流れ](#🪼-計算の流れ)
-- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
-    - [⛵ pole class](#⛵-pole-class)
-    - [⛵ Buckets class](#⛵-Buckets-class)
-- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
     - [⛵ 境界値問題](#⛵-境界値問題)
         - [🪼 基礎方程式](#🪼-基礎方程式)
         - [🪼 境界積分方程式（BIE）](#🪼-境界積分方程式（BIE）)
@@ -103,13 +99,13 @@
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
-* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L193)
-* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L209)
-* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L277)
+* [`networkPoint::contact_angle`](../../include/networkPoint.hpp#L191)
+* [`networkPoint::isInContact`](../../include/networkPoint.hpp#L207)
+* [`networkPoint::addContactFaces`](../../include/networkPoint.hpp#L275)
 
 を使って接触判定を行っている．
 
-[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L295)の設置も重要．
+[流体が構造物との接触を感知する半径](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L294)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -127,7 +123,7 @@
 - Dirichlet点 : 隣接面全てがDirichlet面である点
 - CORNER点 : それ以外の点（Neumann面とDirichlet面の間にある点）
 
-[./BEM_setBoundaryTypes.hpp#L126](./BEM_setBoundaryTypes.hpp#L126)
+[./BEM_setBoundaryTypes.hpp#L125](./BEM_setBoundaryTypes.hpp#L125)
 
 ---
 ## ⛵ 多重節点 
@@ -146,7 +142,7 @@
 
 * `pf2ID`は，節点と面の組みを未知変数IDに変換する．多重節点でない場合は，`{p,nullptr}`が変数のキーとなり，多重節点の場合は，与えられた`{p,f}`が変数のidとなる．
 
-[./BEM_setBoundaryTypes.hpp#L8](./BEM_setBoundaryTypes.hpp#L8)
+[./BEM_setBoundaryTypes.hpp#L7](./BEM_setBoundaryTypes.hpp#L7)
 
 ---
 ### 🪼 `getContactFaces()`や`getNearestContactFace()`の利用 
@@ -155,10 +151,10 @@
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
-| [`contact_angle`](../../include/networkPoint.hpp#L193)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
-| [`isFacing()`](../../include/networkPoint.hpp#L196)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [`isInContact()`](../../include/networkPoint.hpp#L209)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [`addContactFaces()`](../../include/networkPoint.hpp#L277)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [`contact_angle`](../../include/networkPoint.hpp#L191)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
+| [`isFacing()`](../../include/networkPoint.hpp#L194)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| [`isInContact()`](../../include/networkPoint.hpp#L207)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [`addContactFaces()`](../../include/networkPoint.hpp#L275)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
 現在の実装方法では，接触判定は`networkPoint::addContactFaces`が起点となる．
 
@@ -174,7 +170,7 @@
 #### 🪸 🪸 接触の概念図  
 
 ![接触の概念図](../../include/contact.png)
-[../../include/networkPoint.hpp#L165](../../include/networkPoint.hpp#L165)
+[../../include/networkPoint.hpp#L163](../../include/networkPoint.hpp#L163)
 
 
 #### 🪸 `addContactFaces()` 
@@ -185,7 +181,7 @@
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L281](../../include/networkPoint.hpp#L281)
+[../../include/networkPoint.hpp#L279](../../include/networkPoint.hpp#L279)
 
 
 #### 🪸 呼び出し方法 
@@ -193,7 +189,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L1062](../../include/Network.hpp#L1062)
+[../../include/Network.hpp#L1061](../../include/Network.hpp#L1061)
 
 
 これらは，`uNeumann()`や`accelNeumann()`で利用される．
@@ -239,53 +235,11 @@
 [./main.cpp#L352](./main.cpp#L352)
 
 ---
-# 🐋 Fast Multipole Method 
-
-## ⛵ pole class 
-
-pole class has the following attributes:
-
-- position
-- weights
-- normal vector
-- updater function (to update the intensity, that is the potential, of the pole)
-
-## ⛵ Buckets class 
-
-Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
-
-The step to generate the tree structure should be as follows:
-
-1. add objects to the bucket
-2. set the maximum level of the tree using `setLevel`
-3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
-
-
-# 🐋 Fast Multipole Method 
-
-The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
-
-| First steps | GRMES iterative step | description | | |
-| --- | --- | --- | --- | --- |
-| 1 | | add poles to the root bucket | | |
-| 2 | | generate the tree structure from the root bucket | | |
-| 3 (before M2M) | | expansion of the poles | | |
-| 4 | 1 | **update the intensity of the poles** | | |
-| 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
-| 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
-| 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
-| 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
-
-Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
-
-[./BEM_solveBVP.hpp#L793](./BEM_solveBVP.hpp#L793)
-
----
 `phiOnFace`は，各節点`p`における各面`f`に対するポテンシャル`phi`を設定するために使用される．
 `phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
 他も同様である．
 
-[./BEM_setBoundaryTypes.hpp#L357](./BEM_setBoundaryTypes.hpp#L357)
+[./BEM_setBoundaryTypes.hpp#L356](./BEM_setBoundaryTypes.hpp#L356)
 
 ## ⛵ 境界値問題 
 
@@ -339,7 +293,7 @@ $`G`$は任意のスカラー関数で$`G=1/\|{\bf x}-{\bf a}\|`$とすること
 この式は，$`\bf{a}`$におけるポテンシャル$`\phi ({\bf{a}})`$が，右辺の１重層ポテンシャルと２重層ポテンシャルの和で表されることを示している．
 $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\phi`$は境界におけるポテンシャルの分布である．
 
-[./BEM_solveBVP.hpp#L8](./BEM_solveBVP.hpp#L8)
+[./BEM_solveBVP.hpp#L7](./BEM_solveBVP.hpp#L7)
 
 ### 🪼 BIEの離散化 
 
@@ -434,7 +388,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
 関数の特異的な変化を抑えることができる．プログラム上ではこの性質が利用できるように，この分数をまとめて計算している．
 
-[./BEM_solveBVP.hpp#L161](./BEM_solveBVP.hpp#L161)
+[./BEM_solveBVP.hpp#L160](./BEM_solveBVP.hpp#L160)
 
 #### 🪸 係数行列の作成 
 
@@ -471,14 +425,14 @@ $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathb
 | `tmp` | $`w _0 w _1 \frac{1 - \xi _0}{\| \pmb{x} - \pmb{x} _{i\circ } \|}`$ |
 | `cross` | $`\frac{\partial \pmb{x}}{\partial \xi _0} \times \frac{\partial \pmb{x}}{\partial \xi _1}`$ |
 
-[./BEM_solveBVP.hpp#L350](./BEM_solveBVP.hpp#L350)
+[./BEM_solveBVP.hpp#L349](./BEM_solveBVP.hpp#L349)
 
 ⚠️ この`std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign`の`networkFace`は，どの面側から節点を呼び出すかを決めていて，高次補間の場合，積分面と一致しない場合がある．
 
 1. fill key_ig_ign
 2. fill IGIGn_Row
 
-[./BEM_solveBVP.hpp#L507](./BEM_solveBVP.hpp#L507)
+[./BEM_solveBVP.hpp#L506](./BEM_solveBVP.hpp#L506)
 
 ### 🪼 リジッドモードテクニック（係数行列の対角成分の計算） 
 
@@ -501,7 +455,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 ただし，線形要素の場合，原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する計算，$`{\bf n} _{k _\vartriangle}\cdot ({{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ}})=0`$となるため，和をとる必要はない．
 よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-[./BEM_solveBVP.hpp#L578](./BEM_solveBVP.hpp#L578)
+[./BEM_solveBVP.hpp#L577](./BEM_solveBVP.hpp#L577)
 
 ### 🪼 左辺と右辺の入れ替え 
 
@@ -523,7 +477,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 1の多重節点の場合，BIEの連立一次方程式の係数行列の行を，Dirchlet面上の$`\phi`$とNeumann面上の$`\phi`$の値が一致する，という式に変更する．
 2の場合は，特に変更しない．BIEを解くことで，それぞれの面に対して，$`\phi`$が得られるが，それらの平均値，または重み付け平均値を$`\phi`$として採用する．
 
-[./BEM_solveBVP.hpp#L617](./BEM_solveBVP.hpp#L617)
+[./BEM_solveBVP.hpp#L616](./BEM_solveBVP.hpp#L616)
 
 ### 🪼 高速多重極展開との関係 
 
@@ -544,7 +498,7 @@ $`A _{i,j}({\bf a} _i)`$は，$`{\bf a} _i`$に依存しており，$`{\bf a} _i
 また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
 ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
 
-[./BEM_solveBVP.hpp#L704](./BEM_solveBVP.hpp#L704)
+[./BEM_solveBVP.hpp#L703](./BEM_solveBVP.hpp#L703)
 
 ---
 ## ⛵ 初期値問題 
@@ -631,7 +585,7 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 ---
 ## ⛵ 多重節点を考慮したIDの設定方法
 
-[./BEM_setBoundaryTypes.hpp#L41](./BEM_setBoundaryTypes.hpp#L41)
+[./BEM_setBoundaryTypes.hpp#L40](./BEM_setBoundaryTypes.hpp#L40)
 
 ---
 ## ⛵ 浮体動揺解析 
@@ -658,7 +612,7 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L107)と
+[圧力積分](../../builds/build_bem/BEM_solveBVP.hpp#L106)と
 [トルクの積分](not found)：
 
 ```math
@@ -675,7 +629,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L1176](./BEM_solveBVP.hpp#L1176)
+[./BEM_solveBVP.hpp#L1136](./BEM_solveBVP.hpp#L1136)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -710,7 +664,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1530](./BEM_solveBVP.hpp#L1530)
+[./BEM_solveBVP.hpp#L1490](./BEM_solveBVP.hpp#L1490)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -860,7 +814,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](../../include/RigidBodyDynamics.hpp#L90)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](../../include/RigidBodyDynamics.hpp#L91)で計算する．
 
-[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L924)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1425)で使っている．
+[`phin_Neuamnn`](../../builds/build_bem/BEM_utilities.hpp#L924)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](../../builds/build_bem/BEM_solveBVP.hpp#L1385)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -891,11 +845,11 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1440)で与えている．
+$`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_solveBVP.hpp#L1400)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L1221](./BEM_solveBVP.hpp#L1221)
+[./BEM_solveBVP.hpp#L1181](./BEM_solveBVP.hpp#L1181)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -980,7 +934,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1353](./BEM_solveBVP.hpp#L1353)
+[./BEM_solveBVP.hpp#L1313](./BEM_solveBVP.hpp#L1313)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -993,7 +947,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 [ここ](../../builds/build_bem/BEM_utilities.hpp#L415)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L236)で利用され，$\phi _{n}$を計算する．
+[`setNeumannVelocity`](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L235)で利用され，$\phi _{n}$を計算する．
 
 [./BEM_utilities.hpp#L16](./BEM_utilities.hpp#L16)
 
