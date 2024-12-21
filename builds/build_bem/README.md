@@ -314,15 +314,15 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 ```
 
 ```math
-\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x} _{k \vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{{\bf x} _{k _\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}} _{k _\vartriangle}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}} _{k _\vartriangle}}}{{\partial {\xi _1}}}\right)}\right)}
+\alpha _{i _\circ}(\phi) _{i _\circ}-\sum\limits _{k _\vartriangle}\sum\limits _{{\xi _1},{w _1}} \sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x} _{k \vartriangle}}({\pmb{\xi}})-{{\bf x} _{i _\circ} }}{{{{\| {{{\bf x} _{k _\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}} _{k _\vartriangle}}}{{\partial {\xi _0}}}\times\frac{{\partial {\bf{x}} _{k _\vartriangle}}}{{\partial {\xi _1}}}\right)}\right)}
 ```
 
 離散化では，$`\phi _{i _\circ}`$と$`{\phi _n} _{i _\circ}`$の係数を知りたいので，
-$`\phi _{k _\vartriangle}(\pmb{\xi})`$と$`{\phi _n} _{k _\vartriangle}(\pmb{\xi})`$と書くのではなく，
-$`\phi _{i _\circ}`$と$`{\phi _n} _{i _\circ}`$が見えるように$`\phi _{k _\vartriangle}(\pmb{\xi})`$と$`{\phi _n} _{k _\vartriangle}(\pmb{\xi})`$の補間を書いている．
+$`\phi _{k _\vartriangle}({\pmb{\xi}})`$と$`{\phi _n} _{k _\vartriangle}({\pmb{\xi}})`$と書くのではなく，
+$`\phi _{i _\circ}`$と$`{\phi _n} _{i _\circ}`$が見えるように$`\phi _{k _\vartriangle}({\pmb{\xi}})`$と$`{\phi _n} _{k _\vartriangle}({\pmb{\xi}})`$の補間を書いている．
 
 ここで，$`\phi _{k _\vartriangle,j}`$における$`k _\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
-$`N _j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
+$`N _j`$は三角形要素の形状関数，$`{\pmb{\xi}}`$は三角形要素の内部座標，$`w _0,w _1`$はGauss-Legendre積分の重み，$`\alpha _{i _\circ}`$は原点$`i _\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi _n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x} _{i _\circ}`$は原点の空間座標である．
 
 * $`\phi _{k _\vartriangle}`$は補間で作った関数
 * $`\phi _{k _\vartriangle,j}`$は補間を構成する節点$`j`$での値
@@ -382,7 +382,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 \alpha _{i _\circ}(\phi) _{i _\circ}
 -\sum\limits _{k _\vartriangle}{2A _{k _\vartriangle}{\bf n} _{k _\vartriangle}}\cdot
 \sum\limits _{{\xi _1},{w _1}}
-\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ} }}{{{{\| {{{\bf x} _{k _\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}}} (1-\xi _0)\right)}
+\sum\limits _{{\xi _0},{w _0}} {\left( {{w _0}{w _1}\left({\sum\limits _{j =0}^2{{{\left( \phi  \right)} _{k _\vartriangle,j }}{N _{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x} _{k _\vartriangle}}({\pmb{\xi}})-{{\bf x} _{i _\circ} }}{{{{\| {{{\bf x} _{k _\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}}\|}^3}}}} (1-\xi _0)\right)}
 ```
 
 💡 ちなみに，$`\frac{1-\xi _0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x} _{i _\circ}}} \|}}`$の分子に$`1-\xi _0`$があることで，
@@ -439,12 +439,12 @@ $`\phi`$の係数行列を$`\mathbf{M}`$，$`\phi _n`$の係数行列を$`\mathb
 BIEの対角成分の計算で注意が必要なのは，原点$`i _\circ`$の頂点の立体角と，係数の特異性である．
 
 * 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
-* 係数の計算には，$`\frac{{\mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
+* 係数の計算には，$`\frac{{\mathbf{x} _{k _\vartriangle}({\pmb{\xi}}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}({\pmb{\xi}}) - \mathbf{x} _{i _\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
 
 そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi _n`$が消える．結局，対角成分，つまり，原点$`i _\circ`$を頂点上の変数に掛かる係数は，次のようになる．
 
 ```math
-\sum\limits _{k _\vartriangle} 2 A _{k _\vartriangle} \, \mathbf{n} _{k _\vartriangle} \cdot \sum\limits _{\xi _1, w _1} \sum\limits _{\xi _0, w _0} \left( w _0 w _1 \left( \sum\limits _{j=0}^2 \bar\delta _{(k _\vartriangle, j),i _\circ} N _j(\pmb{\xi}) \right) \frac{{\mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}(\pmb{\xi}) - \mathbf{x} _{i _\circ} \|}^3}(1 - \xi _0)\right)
+\sum\limits _{k _\vartriangle} 2 A _{k _\vartriangle} \, \mathbf{n} _{k _\vartriangle} \cdot \sum\limits _{\xi _1, w _1} \sum\limits _{\xi _0, w _0} \left( w _0 w _1 \left( \sum\limits _{j=0}^2 \bar\delta _{(k _\vartriangle, j),i _\circ} N _j({\pmb{\xi}}) \right) \frac{{\mathbf{x} _{k _\vartriangle}({\pmb{\xi}}) - \mathbf{x} _{i _\circ}}}{{\| \mathbf{x} _{k _\vartriangle}({\pmb{\xi}}) - \mathbf{x} _{i _\circ} \|}^3}(1 - \xi _0)\right)
 ```
 
 $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$番目の頂点が$i _\circ$である場合に0，それ以外は1となる関数である．
