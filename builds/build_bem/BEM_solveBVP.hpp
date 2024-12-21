@@ -178,15 +178,15 @@ struct calculateFluidInteraction {
 ```
 
 ```math
-\alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x}_{k \vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}_{k_\vartriangle}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}_{k_\vartriangle}}}{{\partial {\xi_1}}}\right)}\right)}
+\alpha_{i_\circ}(\phi)_{i_\circ}-\sum\limits_{k_\vartriangle}\sum\limits_{{\xi_1},{w_1}} \sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x}_{k \vartriangle}}({\pmb{\xi}})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}} \cdot\left(\frac{{\partial {\bf{x}}_{k_\vartriangle}}}{{\partial {\xi_0}}}\times\frac{{\partial {\bf{x}}_{k_\vartriangle}}}{{\partial {\xi_1}}}\right)}\right)}
 ```
 
 離散化では，$`\phi_{i_\circ}`$と$`{\phi_n}_{i_\circ}`$の係数を知りたいので，
-$`\phi_{k_\vartriangle}(\pmb{\xi})`$と$`{\phi_n}_{k_\vartriangle}(\pmb{\xi})`$と書くのではなく，
-$`\phi_{i_\circ}`$と$`{\phi_n}_{i_\circ}`$が見えるように$`\phi_{k_\vartriangle}(\pmb{\xi})`$と$`{\phi_n}_{k_\vartriangle}(\pmb{\xi})`$の補間を書いている．
+$`\phi_{k_\vartriangle}({\pmb{\xi}})`$と$`{\phi_n}_{k_\vartriangle}({\pmb{\xi}})`$と書くのではなく，
+$`\phi_{i_\circ}`$と$`{\phi_n}_{i_\circ}`$が見えるように$`\phi_{k_\vartriangle}({\pmb{\xi}})`$と$`{\phi_n}_{k_\vartriangle}({\pmb{\xi}})`$の補間を書いている．
 
 ここで，$`\phi_{k_\vartriangle,j}`$における$`k_\vartriangle`$は三角形要素の番号，$`j`$は三角形要素の頂点番号．
-$`N_j`$は三角形要素の形状関数，$`\pmb{\xi}`$は三角形要素の内部座標，$`w_0,w_1`$はGauss-Legendre積分の重み，$`\alpha_{i_\circ}`$は原点$`i_\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi_n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x}_{i_\circ}`$は原点の空間座標である．
+$`N_j`$は三角形要素の形状関数，$`{\pmb{\xi}}`$は三角形要素の内部座標，$`w_0,w_1`$はGauss-Legendre積分の重み，$`\alpha_{i_\circ}`$は原点$`i_\circ`$における立体角，$`\phi`$はポテンシャル，$`\phi_n`$は法線方向のポテンシャル，$`\bf{x}`$は空間座標，$`{\bf x}_{i_\circ}`$は原点の空間座標である．
 
 * $`\phi_{k_\vartriangle}`$は補間で作った関数
 * $`\phi_{k_\vartriangle,j}`$は補間を構成する節点$`j`$での値
@@ -246,7 +246,7 @@ FullSimplify[Cross[Dot[D[shape[T0, t1], T0], {a, b, c}], Dot[D[shape[t0, T1], T1
 \alpha_{i_\circ}(\phi)_{i_\circ}
 -\sum\limits_{k_\vartriangle}{2A_{k_\vartriangle}{\bf n}_{k_\vartriangle}}\cdot
 \sum\limits_{{\xi_1},{w_1}}
-\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x}_{k _\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}} (1-\xi_0)\right)}
+\sum\limits_{{\xi_0},{w_0}} {\left( {{w_0}{w_1}\left({\sum\limits_{j =0}^2{{{\left( \phi  \right)}_{k_\vartriangle,j }}{N_{j}}\left( \pmb{\xi } \right)} } \right)\frac{{{\bf x}_{k _\vartriangle}}({\pmb{\xi}})-{{\bf x}_{i_\circ} }}{{{{\| {{{\bf x}_{k_\vartriangle}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}}\|}^3}}}} (1-\xi_0)\right)}
 ```
 
 NOTE: ちなみに，$`\frac{1-\xi_0}{{\| {{\bf{x}}\left( \pmb{\xi } \right) - {{\bf x}_{i_\circ}}} \|}}`$の分子に$`1-\xi_0`$があることで，
@@ -581,12 +581,12 @@ struct BEM_BVP {
             BIEの対角成分の計算で注意が必要なのは，原点$`i_\circ`$の頂点の立体角と，係数の特異性である．
 
             * 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
-            * 係数の計算には，$`\frac{{\mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
+            * 係数の計算には，$`\frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
 
             そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi_n`$が消える．結局，対角成分，つまり，原点$`i_\circ`$を頂点上の変数に掛かる係数は，次のようになる．
 
             ```math
-            \sum\limits_{k_\vartriangle} 2 A_{k_\vartriangle} \, \mathbf{n}_{k_\vartriangle} \cdot \sum\limits_{\xi_1, w_1} \sum\limits_{\xi_0, w_0} \left( w_0 w_1 \left( \sum\limits_{j=0}^2 \bar\delta_{(k_\vartriangle, j),i_\circ} N_j(\pmb{\xi}) \right) \frac{{\mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}(\pmb{\xi}) - \mathbf{x}_{i_\circ} \|}^3}(1 - \xi_0)\right)
+            \sum\limits_{k_\vartriangle} 2 A_{k_\vartriangle} \, \mathbf{n}_{k_\vartriangle} \cdot \sum\limits_{\xi_1, w_1} \sum\limits_{\xi_0, w_0} \left( w_0 w_1 \left( \sum\limits_{j=0}^2 \bar\delta_{(k_\vartriangle, j),i_\circ} N_j({\pmb{\xi}}) \right) \frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}(1 - \xi_0)\right)
             ```
 
             $`\bar\delta_{(k_\vartriangle, j),i_\circ}`$は，$`k_\vartriangle`$の$j$番目の頂点が$i_\circ$である場合に0，それ以外は1となる関数である．
