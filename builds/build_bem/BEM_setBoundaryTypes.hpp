@@ -1,5 +1,4 @@
-#ifndef BEM_setBoundaryConditions_H
-#define BEM_setBoundaryConditions_H
+#pragma once
 
 #include "Network.hpp"
 
@@ -462,5 +461,3 @@ void storePhiPhin(const std::vector<Network *> &WATERS, const V_d &ans) {
 void storePhiPhin_t(const std::vector<Network *> &WATERS, const V_d &ans) {
    storePhiPhinCommon(WATERS, ans, &networkPoint::phiphin_t, &networkPoint::phitOnFace, &networkPoint::phintOnFace);
 }
-
-#endif
