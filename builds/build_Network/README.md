@@ -429,7 +429,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example_tetGen.cpp
 make
-./example_tetGen
+./example_tetGen pq2.a10. coil.off coil_pq2a10
 ```
 
 ### 🪼 `tetgenbehavior`クラス 
