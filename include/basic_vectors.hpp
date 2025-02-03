@@ -25,6 +25,32 @@
 
 /* -------------------------------------------------------------------------- */
 
+template <typename T>
+bool erase_element(std::vector<T> &vec, const T &val) {
+   auto it = std::find(vec.begin(), vec.end(), val);
+   if (it != vec.end()) {
+      vec.erase(it);
+      return true;
+   }
+   return false;
+};
+
+template <typename T>
+bool add_element(std::unordered_set<T> &vec, const T &val) {
+   return vec.insert(val).second;
+};
+
+template <typename T>
+bool add_element(std::vector<T> &vec, const T &val) {
+   if (std::find(vec.begin(), vec.end(), val) == vec.end()) {
+      vec.push_back(val);
+      return true;
+   }
+   return false;
+};
+
+/* -------------------------------------------------------------------------- */
+
 template <>
 void IdentityMatrix<VV_d>(VV_d &mat) {
    int i = 0, j = 0;
@@ -110,37 +136,25 @@ void Swap(std::array<T, 2> &ab) {
 //    return inv / det;
 // };
 
-double Det(const VV_d &M) {
-   int n = M.size();
+//    double det = 0.0;
+//    for (int col = 0; col < n; ++col) {
+//       VV_d subMatrix(n - 1, V_d(n - 1));
 
-   // Base case for 2x2 matrix
-   if (n == 2) {
-      return std::fma(M[0][0], M[1][1], -M[1][0] * M[0][1]);
-   } else if (n == 3) {
-      return M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) -
-             M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) +
-             M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
-   }
+//       // Construct subMatrix
+//       for (int i = 1; i < n; ++i) {
+//          for (int j = 0, colCount = 0; j < n; ++j) {
+//             if (j != col) {
+//                subMatrix[i - 1][colCount++] = M[i][j];
+//             }
+//          }
+//       }
 
-   double det = 0.0;
-   for (int col = 0; col < n; ++col) {
-      VV_d subMatrix(n - 1, V_d(n - 1));
+//       double sign = (col % 2 == 0) ? 1.0 : -1.0;
+//       det += sign * M[0][col] * Det(subMatrix);
+//    }
 
-      // Construct subMatrix
-      for (int i = 1; i < n; ++i) {
-         for (int j = 0, colCount = 0; j < n; ++j) {
-            if (j != col) {
-               subMatrix[i - 1][colCount++] = M[i][j];
-            }
-         }
-      }
-
-      double sign = (col % 2 == 0) ? 1.0 : -1.0;
-      det += sign * M[0][col] * Det(subMatrix);
-   }
-
-   return det;
-}
+//    return det;
+// }
 
 // 行列 m の主対角上の要素のarrayを返す
 
@@ -1784,11 +1798,11 @@ R_{\rm new}\cdot (X-X_{\rm initial COM}) + X_{\rm new COM}
 
 */
 
-std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_current,
+std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_initial,
                                           const std::array<double, 3> &COM_next,
                                           const std::array<std::array<double, 3>, 3> &M_rotation_current,
-                                          const std::array<double, 3> &X_current) {
-   return Dot(M_rotation_current, X_current - COM_current) + COM_next;
+                                          const std::array<double, 3> &X_initial) {
+   return Dot(M_rotation_current, X_initial - COM_initial) + COM_next;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -2053,12 +2067,12 @@ bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
 bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, const std::array<double, 3> &A2,
             const std::array<double, 3> &B0, const std::array<double, 3> &B1, const std::array<double, 3> &B2,
             const double lim_rad) {
-   return isFlat(Cross(A1 - A0, A2 - A0), Cross(B1 - B0, B2 - B0), lim_rad);
+   return isFlat(Normalize(Cross(A1 - A0, A2 - A0)), Normalize(Cross(B1 - B0, B2 - B0)), lim_rad);
 }
 
 bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
    auto [X0, X1, X2] = tri;
-   return isFlat(a, Cross(X1 - X0, X2 - X0), lim_rad);
+   return isFlat(a, Normalize(Cross(X1 - X0, X2 - X0)), lim_rad);
 };
 
 bool isFlat(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFlat(a, tri, lim_rad); };
@@ -2066,7 +2080,7 @@ bool isFlat(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isF
 bool isFlat(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
    auto [X0, X1, X2] = tri0;
    auto [A0, A1, A2] = tri1;
-   return isFlat(Cross(X1 - X0, X2 - X0), Cross(A1 - A0, A2 - A0), lim_rad);
+   return isFlat(Normalize(Cross(X1 - X0, X2 - X0)), Normalize(Cross(A1 - A0, A2 - A0)), lim_rad);
 };
 
 bool isFlat_(const Tddd &a, const Tddd &b, const double lim_rad) { return isFlat(a, b, lim_rad); };
@@ -2096,6 +2110,7 @@ bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI
 bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
    // return Dot(a, -b) > std::cos(lim_rad) * Norm(a) * Norm(b);
    return isFlat(a, -b, lim_rad);
+   //!  isFlat(a, b, lim_rad)はまちがい．
 };
 
 bool isFacing(const Tddd &a, const T3Tddd &tri, const double lim_rad) {

@@ -11,6 +11,10 @@
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
     - [⛵ ⛵ C++上での，Greengardの球面調和関数](#⛵-⛵-C++上での，Greengardの球面調和関数)
     - [⛵ ツリー構造を使った多重極展開の移動](#⛵-ツリー構造を使った多重極展開の移動)
+- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
+    - [⛵ pole class](#⛵-pole-class)
+    - [⛵ Buckets class](#⛵-Buckets-class)
+- [🐋 Fast Multipole Method](#🐋-Fast-Multipole-Method)
 - [🐋 🐋 多重極展開](#🐋-🐋-多重極展開)
     - [⛵ ⛵ Green関数の多重極展開](#⛵-⛵-Green関数の多重極展開)
         - [🪼 🪼 球面座標系への変換](#🪼-🪼-球面座標系への変換)
@@ -83,7 +87,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -115,7 +119,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
+[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
 
 
 ## ⛵ 精度の確認 
@@ -244,7 +248,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -276,7 +280,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
+[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -291,16 +295,46 @@ paraview check_M2L.pvsm
 
 [./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L10](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L10)
 
-1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
-2. 極の追加：各面に対して極を追加し，バケットに格納する．
-3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
-4. 多重極展開：ツリー構造を用いて多重極展開を行う．
-5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
-6. 線形連立方程式の右辺bを計算する（FMMを利用）．
-7. GMRESに与える，行列ベクトル積を返す関数を作成する．
-8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
+# 🐋 Fast Multipole Method 
 
-[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L269](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L269)
+## ⛵ pole class 
+
+pole class has the following attributes:
+
+- position
+- weights
+- normal vector
+- updater function (to update the intensity, that is the potential, of the pole)
+
+## ⛵ Buckets class 
+
+Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
+
+The step to generate the tree structure should be as follows:
+
+1. add objects to the bucket
+2. set the maximum level of the tree using `setLevel`
+3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
+
+
+# 🐋 Fast Multipole Method 
+
+The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
+
+| First steps | GRMES iterative step | description | | |
+| --- | --- | --- | --- | --- |
+| 1 | | add poles to the root bucket | | |
+| 2 | | generate the tree structure from the root bucket | | |
+| 3 (before M2M) | | expansion of the poles | | |
+| 4 | 1 | **update the intensity of the poles** | | |
+| 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
+| 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
+| 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
+| 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
+
+Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
+
+[./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L113](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L113)
 
 # 🐋 🐋 多重極展開  
 
@@ -356,7 +390,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -388,7 +422,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
+[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -457,7 +491,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
+[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -489,7 +523,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion.hpp#L225](../../include/lib_multipole_expansion.hpp#L225)
+[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 

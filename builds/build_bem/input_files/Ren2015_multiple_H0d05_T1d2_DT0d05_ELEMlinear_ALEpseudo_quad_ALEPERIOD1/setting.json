@@ -1,0 +1,21 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 10000,
+    "end_time": 10,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Ren2015_multiple_H0d05_T1d2_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float_a.json",
+        "float_b.json",
+        "float_c.json",
+        "float_d.json",
+        "float_e.json",
+        "float_f.json",
+        "float_g.json"
+    ]
+}

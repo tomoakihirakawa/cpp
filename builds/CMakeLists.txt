@@ -1,4 +1,3 @@
-# Set minimum CMake version
 cmake_minimum_required(VERSION 3.11)
 
 if(NOT WIN32)
@@ -24,14 +23,13 @@ endif()
 # Set project name
 project(ProjectName)
 
-set(CXX_VERSIONS 15 14 13 12)
+set(CXX_VERSIONS 13)
 
 # Find C++ compiler
 foreach(ver IN LISTS CXX_VERSIONS)
   unset(CXX_COMPILER CACHE)
   string(CONCAT CXX "g++-" ${ver})
   find_program(CXX_COMPILER ${CXX})
-
   if(CXX_COMPILER)
     message(STATUS "${Green}Found ${CXX}: ${Magenta}${CXX_COMPILER}${ColourReset}")
     set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
@@ -44,45 +42,31 @@ if(NOT CXX_COMPILER)
 endif()
 
 # Set common compiler flags
-set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts -fuse-ld=gold -funroll-loops")
+set(CMAKE_CXX_FLAGS "-fopenmp -llapack -lblas -fconcepts")
 set(CMAKE_CXX_FLAGS_DEBUG "-Og")
-set(CMAKE_CXX_FLAGS_RELEASE "-pthread -Ofast -Wunused-label -Wunused-value -fno-math-errno -funsafe-math-optimizations -fno-signed-zeros -fno-trapping-math -march=native -ftree-vectorize -fopt-info-vec-optimized  -funroll-loops")
-
+set(CMAKE_CXX_FLAGS_RELEASE "-pthread -Ofast -march=native -funroll-loops -H")
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
-# Check for GNU gold linker
-execute_process(
-  COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version
-  ERROR_QUIET
-  OUTPUT_VARIABLE ld_version)
+###########################################################################
+# time make
+# gold:
+# make  41.96s user 1.10s system 100% cpu 42.908 total
+# bfd:
+# make  43.08s user 1.12s system 100% cpu 44.087 total
+# lld"
+# make  41.95s user 1.02s system 99% cpu 42.995 total
 
-if("${ld_version}" MATCHES "GNU gold")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--disable-new-dtags")
-endif()
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
 
-# # Use LLVM's lld linker
-# if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-#   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
-#   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
-# endif()
-
-# Set compiler launcher
-set(CMAKE_C_COMPILER_LAUNCHER ccache)
-set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+###########################################################################
 
 # Enable ccache
 option(CCACHE_ENABLE "If the command ccache is available, use it for compile." ON)
 find_program(CCACHE_EXE ccache)
-
-# if(CCACHE_EXE AND CCACHE_ENABLE)
-#   message(STATUS "${Green}ccache is enabled${ColourReset}")
-#   set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_C_COMPILER_LAUNCHER}" "${CCACHE_EXE}")
-#   set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_CXX_COMPILER_LAUNCHER}" "${CCACHE_EXE}")
-# endif()
 
 if(CCACHE_ENABLE AND CCACHE_EXE)
   set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_EXE}")
@@ -93,6 +77,24 @@ else()
 endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+# Enable parallel build
+if(NOT DEFINED CMAKE_BUILD_PARALLEL_LEVEL)
+  if(DEFINED CMAKE_HOST_SYSTEM_PROCESSORS AND CMAKE_HOST_SYSTEM_PROCESSORS GREATER 0)
+    set(CMAKE_BUILD_PARALLEL_LEVEL ${CMAKE_HOST_SYSTEM_PROCESSORS})
+  else()
+    # Fallback to platform-specific methods to get processor count
+    if(UNIX AND NOT APPLE)
+      execute_process(COMMAND nproc OUTPUT_VARIABLE NUM_PROCESSORS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    elseif(APPLE)
+      execute_process(COMMAND sysctl -n hw.logicalcpu OUTPUT_VARIABLE NUM_PROCESSORS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    elseif(WIN32)
+      execute_process(COMMAND WMIC CPU Get NumberOfLogicalProcessors OUTPUT_VARIABLE NUM_PROCESSORS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
+    set(CMAKE_BUILD_PARALLEL_LEVEL ${NUM_PROCESSORS})
+  endif()
+  message(STATUS "Parallel build level set to ${CMAKE_BUILD_PARALLEL_LEVEL}")
+endif()
 
 # Set default source file
 set(DEFAULT_SOURCE_FILE "main.cpp")
@@ -110,15 +112,6 @@ if(NOT DEFINED SOURCE_FILE)
   set(SOURCE_FILE ${DEFAULT_SOURCE_FILE})
 endif()
 
-# Create executable
-# message(STATUS "${Green}SOURCE_FILE is ${Magenta}" ${SOURCE_FILE} "${ColourReset}")
-# get_filename_component(BASE_NAME ${SOURCE_FILE} NAME_WE)
-# add_executable(${BASE_NAME} ${SOURCE_FILE})
-
-# # Set default output file name
-# set(DEFAULT_OUTPUT_NAME "MyExecutable")
-
-# Allow the output file name to be passed as a command-line option
 if(DEFINED OUTPUT_NAME)
   set(BASE_NAME ${OUTPUT_NAME})
 else()
@@ -130,36 +123,22 @@ message(STATUS "${Green}BASE_NAME is ${Magenta}" ${BASE_NAME} "${ColourReset}")
 
 add_executable(${BASE_NAME} ${SOURCE_FILE})
 
-# Find and link LAPACK BRARIES})
 
-# Directly specify the path to libtet.a for linking
-target_link_libraries(${BASE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
+###########################################################################
+# libtet.a のパスを変数に設定
+# set(LIBTET_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
+set(LIBTET_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../include/tetgen1.6.0/libtet.a")
+# ファイルの存在を確認
+if(EXISTS "${LIBTET_PATH}")
+  message(STATUS "Found libtet.a: ${LIBTET_PATH}")
+  target_link_libraries(${BASE_NAME} "${LIBTET_PATH}")
+else()
+  message(WARNING "libtet.a not found at ${LIBTET_PATH}. Skipping linkage.")
+endif()
+###########################################################################
 
 # Include directories if tetgen.h is not in the standard include path
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-
-# # Locate and link Eigen3 if find inlcudes and libraries only if found
-# find_package(Eigen3 REQUIRED NO_MODULE)
-# target_link_libraries(${BASE_NAME} PUBLIC Eigen3::Eigen)
-
-# # Find and link CGAL
-# find_package(CGAL REQUIRED)
-# target_link_libraries(${BASE_NAME} PUBLIC CGAL::CGAL)
-
-# find_package(CGAL QUIET) # Try to find CGAL quietly
-
-# if (CGAL_FOUND)
-#     message(STATUS "CGAL found")
-#     include(${CGAL_USE_FILE})
-#     target_link_libraries(${BASE_NAME} ${CGAL_LIBRARIES} gmp mpfr)
-#     set(CMAKE_CXX_FLAGS "-I/opt/homebrew/Cellar/gmp/6.3.0/include -I/path/to/CGAL/include -L/opt/homebrew/Cellar/gmp/6.3.0/lib -lgmp -lCGAL -lCGAL_Core")
-# else()
-#     message(STATUS "CGAL not found, proceeding without it")
-#     # Link with other necessary libraries (if any), but not with CGAL
-#     # You might still need to link with GMP and MPFR if they are used independently of CGAL
-#     # target_link_libraries(${BASE_NAME} gmp mpfr)
-# endif()
 
 # Include directories
 target_include_directories(${BASE_NAME} PUBLIC
@@ -167,7 +146,33 @@ target_include_directories(${BASE_NAME} PUBLIC
   ${PROJECT_SOURCE_DIR}/../../include
 )
 
-
 # Enablce verbose makefile and export compile commands for use with various tools
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+message(STATUS "====================================================")
+
+message(STATUS "${Green}CMAKE_CXX_COMPILER is ${Magenta}" ${CMAKE_CXX_COMPILER} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CXX_FLAGS is ${Magenta}" ${CMAKE_CXX_FLAGS} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CXX_FLAGS_DEBUG is ${Magenta}" ${CMAKE_CXX_FLAGS_DEBUG} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CXX_FLAGS_RELEASE is ${Magenta}" ${CMAKE_CXX_FLAGS_RELEASE} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CXX_STANDARD is ${Magenta}" ${CMAKE_CXX_STANDARD} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CURRENT_SOURCE_DIR is ${Magenta}" ${CMAKE_CURRENT_SOURCE_DIR} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CURRENT_BINARY_DIR is ${Magenta}" ${CMAKE_CURRENT_BINARY_DIR} "${ColourReset}")
+message(STATUS "${Green}CMAKE_BUILD_PARALLEL_LEVEL is ${Magenta}" ${CMAKE_BUILD_PARALLEL_LEVEL} "${ColourReset}")
+message(STATUS "${Green}CMAKE_EXE_LINKER_FLAGS is ${Magenta}" ${CMAKE_EXE_LINKER_FLAGS} "${ColourReset}")
+message(STATUS "${Green}CMAKE_SHARED_LINKER_FLAGS is ${Magenta}" ${CMAKE_SHARED_LINKER_FLAGS} "${ColourReset}")
+message(STATUS "${Green}CMAKE_CXX_COMPILER_LAUNCHER is ${Magenta}" ${CMAKE_CXX_COMPILER_LAUNCHER} "${ColourReset}")
+message(STATUS "${Green}CMAKE_VERBOSE_MAKEFILE is ${Magenta}" ${CMAKE_VERBOSE_MAKEFILE} "${ColourReset}")
+message(STATUS "${Green}CMAKE_EXPORT_COMPILE_COMMANDS is ${Magenta}" ${CMAKE_EXPORT_COMPILE_COMMANDS} "${ColourReset}")
+message(STATUS "${Green}CMAKE_ARGS is ${Magenta}" ${CMAKE_ARGS} "${ColourReset}")
+message(STATUS "${Green}SOURCE_FILE_IDX is ${Magenta}" ${SOURCE_FILE_IDX} "${ColourReset}")
+message(STATUS "${Green}SOURCE_FILE_ARG is ${Magenta}" ${SOURCE_FILE_ARG} "${ColourReset}")
+message(STATUS "${Green}SOURCE_FILE is ${Magenta}" ${SOURCE_FILE} "${ColourReset}")
+message(STATUS "${Green}BASE_NAME is ${Magenta}" ${BASE_NAME} "${ColourReset}")
+
+message(STATUS "${Yellow} ============================================================== ${ColourReset}")
+message(STATUS "${Red} MAKE SURE YOU HAVE PRECOMPILED HEADER FILE ``sh precompile.sh`` ${ColourReset}")
+message(STATUS "${Yellow} ============================================================== ${ColourReset}")
+
+# /opt/homebrew/bin/g++-13 -std=gnu++2b -x c++-header -fopenmp -fconcepts -pthread -Ofast -march=native -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -o ./pch.hpp.gch ./pch.hpp

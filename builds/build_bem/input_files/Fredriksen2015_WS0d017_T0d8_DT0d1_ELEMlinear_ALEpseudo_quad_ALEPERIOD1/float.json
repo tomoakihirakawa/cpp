@@ -1,0 +1,44 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 22.850484,
+    "COM": [
+        0,
+        0,
+        0.994
+    ],
+    "MOI": [
+        500,
+        0.7403556816,
+        500
+    ],
+    "spring1": [
+        -2.201,
+        0.25,
+        1.05,
+        -2.701,
+        0.25,
+        1.05,
+        43.7
+    ],
+    "spring2": [
+        -2.201,
+        -0.25,
+        1.05,
+        -2.701,
+        -0.25,
+        1.05,
+        42.5
+    ],
+    "spring3": [
+        2.201,
+        0.0,
+        1.05,
+        2.701,
+        0.0,
+        1.05,
+        88.2
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Fredriksen2015/float.obj"
+}

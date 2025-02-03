@@ -1,8 +1,17 @@
-#ifndef networkLine_H
-#define networkLine_H
 #pragma once
 
-#include "Network.hpp"
+inline V_netFp networkLine::getSurfaces() const {
+   V_netFp surfaces;
+   surfaces.reserve(this->Faces.size());
+   for (const auto &f : this->Faces)
+      if (f->SurfaceQ())
+         surfaces.emplace_back(f);
+   return surfaces;
+};
+
+inline bool networkLine::SurfaceQ() const {
+   return std::any_of(this->Faces.begin(), this->Faces.end(), [](const auto &f) { return f->SurfaceQ(); });
+};
 
 inline T2Tddd networkLine::getLocationsTuple() const {
    return {this->Point_A->getXtuple(), this->Point_B->getXtuple()};
@@ -10,7 +19,7 @@ inline T2Tddd networkLine::getLocationsTuple() const {
 // inline bool networkLine::setBounds()
 // {
 // 	CoordinateBounds::setBounds(getLocationsTuple());
-// 	for (auto &f : this->getFaces())
+// 	for (auto &f : this->getSurfaces())
 // 		if (f)
 // 		{
 // 			f->setPointsFromLines();
@@ -23,8 +32,8 @@ inline void networkLine::setBoundsSingle() {
 };
 inline bool networkLine::Replace(netP *oldP, netP *newP) {
    auto bool1 = this->replace(oldP, newP);  // 1
-   auto bool2 = oldP->Erase(this);          // 2
-   auto bool3 = newP->Add(this);            // 3
+   auto bool2 = oldP->erase(this);          // 2
+   auto bool3 = newP->add(this);            // 3
    // このステップがdouble replace
    //  switchでないと，順番に意味のあるFaceではおかしくなるので注意
    if (bool1 && bool2 & bool3)
@@ -35,15 +44,15 @@ inline bool networkLine::Replace(netP *oldP, netP *newP) {
 // inline bool networkLine::Replace(netF *oldF, netF *newF, netL *newL)
 // {
 // 	auto bool1 = this->replace(oldF, newF); // 1
-// 	auto bool2 = oldF->Erase(this);		   // 2
-// 	auto bool3 = newF->Add(this);		   // 3
+// 	auto bool2 = oldF->erase(this);		   // 2
+// 	auto bool3 = newF->add(this);		   // 3
 // 										   //このステップがdouble replace
 // 										   // switchでないと，順番に意味のあるFaceではおかしくなるので注意
 
 // 	if (newL != nullptr)
 // 	{
-// 		auto bool4 = oldF->Add(newL);
-// 		auto bool5 = newL->Add(oldF); //許されない，Pointの場合
+// 		auto bool4 = oldF->add(newL);
+// 		auto bool5 = newL->add(oldF); //許されない，Pointの場合
 
 // 		if (bool1 && bool2 & bool3 && bool4 & bool5)
 // 			return true;
@@ -78,8 +87,8 @@ inline networkLine::networkLine(Network *network_IN,
 #endif
    network->Lines.emplace(this);
    set(sPoint_IN, ePoint_IN);
-   sPoint_IN->Add(this);
-   ePoint_IN->Add(this);
+   sPoint_IN->add(this);
+   ePoint_IN->add(this);
    setBoundsSingle();
    // setBounds();
 };
@@ -123,15 +132,6 @@ inline Tddd networkLine::getNormal() const {
    return ret / (double)(this->Faces.size());
 };
 
-inline V_netFp networkLine::getFacesPenetrating() const {
-   V_netFp ret({});
-   netFp f;
-   for (const auto &p : this->XPoints)
-      if ((f = p->getXFace()))
-         ret.emplace_back(f);
-   return ret;
-};
-
 // class boundsSetter
 // {
 // public:
@@ -145,7 +145,7 @@ inline V_netFp networkLine::getFacesPenetrating() const {
 // 		network::add(this->Points, ps);
 // 		for (const auto &p : ps)
 // 		{
-// 			this->add(p->getFaces());
+// 			this->add(p->getSurfaces());
 // 			this->add(p->getLines()); //その時点のlineを保存しておくことが大事
 // 		}
 // 	};
@@ -377,7 +377,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              */
             if (!(this->replace(fP, newP)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-            newP->Add(this);
+            newP->add(this);
 #ifdef debug_divide
             std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
 #endif
@@ -393,7 +393,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
              *  bP-><------this      <-fP        ----this----
              *                \-------><-newP-><-------newDivL-----><-fP
              */
-            if (!(fP->Erase(this)))
+            if (!(fP->erase(this)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 #ifdef debug_divide
             std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
@@ -512,7 +512,7 @@ inline netPp networkLine::divide(const Tddd &midX) {
             std::cout << "debug divide, " << __FILE__ << ", " << __PRETTY_FUNCTION__ << ", " << __LINE__ << std::endl;
 #endif
 
-            newDivL->Add(newF);
+            newDivL->add(newF);
 
             /*            oP ------><--------                      oP
              *           V                   |                       V
@@ -569,59 +569,59 @@ inline netPp networkLine::divide(const Tddd &midX) {
 #endif
             if (!(oldF1->replace(bL1, newMidL1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-               /*             oP ------><--------                      oP
-                *           V                   |                       V
-                *          A                    |                        A
-                *         /                     |                         \
-                *        /    / \               |             / \    \     \
-                *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
-                *      /    /oldF \　　　        |           /newF \    \     \
-                *     V     ---V---             V           ---|---           \
-                *    A         A                A              V              V
-                *  bP-><------this      fP      |              A              A
-                *   V          |  \-----+--><--newP-><-------newDivL-----><-fP
-                *    A         V        V       V                this
-                *     \     ---A---     A       A              ---A---
-                *   fL1\-><-\oldF1/    /        |         fL1<-\newF1/
-                *       \    \   /  <-/bL1      |               \   /->bL1
-                *        \    \ / ---------->newMidL1            \ /
-                *          V       V            |
-                *           A     A             |
-                *             oP1 ------><-------
-                */
-               // std::cout << ColorFunction(c++) << "|" << colorReset;
+            /*             oP ------><--------                      oP
+             *           V                   |                       V
+             *          A                    |                        A
+             *         /                     |                         \
+             *        /    / \               |             / \    \     \
+             *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
+             *      /    /oldF \　　　        |           /newF \    \     \
+             *     V     ---V---             V           ---|---           \
+             *    A         A                A              V              V
+             *  bP-><------this      fP      |              A              A
+             *   V          |  \-----+--><--newP-><-------newDivL-----><-fP
+             *    A         V        V       V                this
+             *     \     ---A---     A       A              ---A---
+             *   fL1\-><-\oldF1/    /        |         fL1<-\newF1/
+             *       \    \   /  <-/bL1      |               \   /->bL1
+             *        \    \ / ---------->newMidL1            \ /
+             *          V       V            |
+             *           A     A             |
+             *             oP1 ------><-------
+             */
+            // std::cout << ColorFunction(c++) << "|" << colorReset;
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
             if (!(bL1->replace(oldF1, newF1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-               /*             oP ------><--------                      oP
-                *           V                   |                       V
-                *          A                    |                        A
-                *         /                     |                         \
-                *        /    / \               |             / \    \     \
-                *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
-                *      /    /oldF \　　　        |           /newF \    \     \
-                *     V     ---V---             V           ---|---           \
-                *    A         A                A              V              V
-                *  bP-><------this              |              A              A
-                *   V          |  \--------><--newP-><-------newDivL-----><-fP
-                *    A         V                V                this       V
-                *     \     ---A---             A              ---A---      A
-                *   fL1\-><-\oldF1/             |         fL1<-\newF1/     /
-                *       \    \   /              |               \   /-><-/bL1
-                *        \    \ / ---------->newMidL1            \ /    /
-                *          V                    |                      /
-                *           A                   |                     /
-                *             oP1 ------><-------
-                */
-               // std::cout << ColorFunction(c++) << "|" << colorReset;
+            /*             oP ------><--------                      oP
+             *           V                   |                       V
+             *          A                    |                        A
+             *         /                     |                         \
+             *        /    / \               |             / \    \     \
+             *     bL/-><-/   \------><-----newMidL--><---/   \-><-\fL   \
+             *      /    /oldF \　　　        |           /newF \    \     \
+             *     V     ---V---             V           ---|---           \
+             *    A         A                A              V              V
+             *  bP-><------this              |              A              A
+             *   V          |  \--------><--newP-><-------newDivL-----><-fP
+             *    A         V                V                this       V
+             *     \     ---A---             A              ---A---      A
+             *   fL1\-><-\oldF1/             |         fL1<-\newF1/     /
+             *       \    \   /              |               \   /-><-/bL1
+             *        \    \ / ---------->newMidL1            \ /    /
+             *          V                    |                      /
+             *           A                   |                     /
+             *             oP1 ------><-------
+             */
+            // std::cout << ColorFunction(c++) << "|" << colorReset;
 #if defined(debug_divide)
             std::cout << red << "|";
 #endif
             if (!(newF1->replace(fL1, newMidL1)))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-            newDivL->Add(newF1);
+            newDivL->add(newF1);
             /*           oP ------><--------                      oP
              *           V                   |                       V
              *          A                    |                        A
@@ -689,16 +689,17 @@ inline netPp networkLine::divide(const Tddd &midX) {
             //
             newP->setBoundsSingle();
             newP->setFaces(newP->Lines);
-            for (const auto &f : newP->getFaces())
-               f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
-            bP->setBoundsSingle();
-            bP->setFaces(bP->Lines);
-            for (const auto &f : bP->getFaces())
-               f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
-            fP->setBoundsSingle();
-            fP->setFaces(fP->Lines);
-            for (const auto &f : fP->getFaces())
-               f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+            // for (const auto &f : newP->getFaces())
+            //    f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+            // bP->setBoundsSingle();
+            // bP->setFaces(bP->Lines);
+            // for (const auto &f : bP->getFaces())
+            //    f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+            // fP->setBoundsSingle();
+            // fP->setFaces(fP->Lines);
+            // for (const auto &f : fP->getFaces()) {
+            //    f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+            // }
             //
             newP->Dirichlet = this->Dirichlet;
             newP->Neumann = this->Neumann;
@@ -721,8 +722,9 @@ inline netPp networkLine::divide(const Tddd &midX) {
             // set(oP1);
             /* ---------------------------------------------------------- */
             // fP->getNetwork()->setGeometricProperties();
-            for (auto &f : related_faces)
+            for (auto &f : related_faces) {
                f->setGeometricProperties(ToX(f->setPoints()));
+            }
             /* ---------------------------------------------------------- */
          }
 #ifdef debug_divide
@@ -862,18 +864,18 @@ inline netPp networkLine::merge() {
       }
    }
    // std::cout << "replace and add" << std::endl;
-   p_rem->Erase(this);
+   p_rem->erase(this);
    for (const auto &l : lines) {
       if (l != l_del0 && l != l_del1 && l != this) {
          l->replace(p_del, p_rem);
-         p_rem->Add(l);
+         p_rem->add(l);
       }
-      p_del->Erase(l);
+      p_del->erase(l);
    }
    for (const auto &p : points) {
-      p->Erase(this);
-      p->Erase(l_del0);
-      p->Erase(l_del1);
+      p->erase(this);
+      p->erase(l_del0);
+      p->erase(l_del1);
    }
 
    std::cout << "delete f_del0 " << f_del0 << std::endl;
@@ -999,7 +1001,7 @@ inline netPp networkLine::merge() {
 // #if defined(debug_merge)
 //       std::cout << green << "|" << colorReset;
 // #endif
-//       if (!(this->Erase(A)))
+//       if (!(this->erase(A)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //       if (!(a->replace(Abl, Afl)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -1007,7 +1009,7 @@ inline netPp networkLine::merge() {
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //       if (!(Afl->replace(A, a)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//       if (!(Abl->Erase(a)))
+//       if (!(Abl->erase(a)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //          /*                     Aps[2]
 //           *                    V       V
@@ -1033,7 +1035,7 @@ inline netPp networkLine::merge() {
 // #if defined(debug_merge)
 //       std::cout << green << "|" << colorReset;
 // #endif
-//       if (!(this->Erase(B)))
+//       if (!(this->erase(B)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //       if (!(b->replace(Bfl, Bbl)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
@@ -1041,7 +1043,7 @@ inline netPp networkLine::merge() {
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //       if (!(Bbl->replace(B, b)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//       if (!(Bfl->Erase(b)))
+//       if (!(Bfl->erase(b)))
 //          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 
 //       /*                   Aps[2]
@@ -1073,24 +1075,24 @@ inline netPp networkLine::merge() {
 //          {
 //             if (!(l->replace(std::get<0>(Aps), std::get<1>(Aps))))
 //                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//             if (!(std::get<0>(Aps)->Erase(l)))
+//             if (!(std::get<0>(Aps)->erase(l)))
 //                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-//             std::get<1>(Aps)->Add(l);
+//             std::get<1>(Aps)->add(l);
 //          }
 //          // Aps[1]が3lineしか持っていない場合もあり得るので，Addできない場合もある
 //          // throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
 //       }
 
 //       for (auto &l : std::get<0>(Aps)->getLines()) {
-//          std::get<0>(Aps)->Erase(l);
+//          std::get<0>(Aps)->erase(l);
 //       }
-//       this->Erase(std::get<0>(Aps));
-//       Abl->Erase(std::get<0>(Aps));
-//       Bfl->Erase(std::get<0>(Aps));
-//       Abl->Erase(A);
-//       Bfl->Erase(B);
-//       this->Erase(A);
-//       this->Erase(B);
+//       this->erase(std::get<0>(Aps));
+//       Abl->erase(std::get<0>(Aps));
+//       Bfl->erase(std::get<0>(Aps));
+//       Abl->erase(A);
+//       Bfl->erase(B);
+//       this->erase(A);
+//       this->erase(B);
 //       /*                   Aps[2]
 //        *                   V       V
 //        *       ____       A         A
@@ -1236,288 +1238,164 @@ inline netPp networkLine::mergeIfMergeable() {
 };
 
 /*networkLine::divide_code*/
+#include <csignal>
+#include <iostream>
+void signal_handler(int signal) {
+   if (signal == SIGABRT) {
+      std::cerr << "SIGABRT received: The program called abort()." << std::endl;
+   }
+}
 
-// #define debug_flip
 inline bool networkLine::flip() {
-#if defined(debug_flip)
-   std::cout << Green << "flip |" << colorReset;
-#endif
    try {
-      // isConsistent(this);
 
-      ///////////
-      auto AB = this->getFaces();
-
+      auto AB = this->getSurfaces();
       if (AB.size() != 2)
          return false;
 
-      // std::cout << ColorFunction(c++) << "|" << colorReset;
-      // auto oldPoints = this->getPoints(); //最後にsetBoundsする必要がる
+      auto fA = AB[0];
+      auto fB = AB[1];
 
-      auto A = AB[0];
-      auto B = AB[1];
-      auto Aps = A->getPoints(this);
-      auto Bps = B->getPoints(this);
+      auto [p0, this_, p1, l1, p2, l2] = fA->getPointsAndLines(this);
+      auto [q0, this__, q1, e1, q2, e2] = fB->getPointsAndLines(this);
 
-      // std::cout << ColorFunction(c++) << "|" << colorReset;
-      // for (const auto &p : Join(Bps, Aps))
-      // 	if (p->getLines().empty())
-      // 	{
-      // 		// mk_vtu("./vtu/p->getLines().empty().vtu", {{p}});
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
-      // 	}
+      /* -------------------------------------------------------------------------- */
+      /*
+            {p0, p1, p2}, {q0, q1, q2} -> {q2, p2, p0}, {p2, q2, q0}
+     tmporary remove,  tmporary remove -> tmporary add, tmporary add
+      */
 
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
+      tetgenio out;
+      bool adjust_tetra = false;
+      if (!this->Tetras.empty()) {
 
-      /*ここが間違っていたconcaveの場合，拒否する*/
-      // 凹凸包かどうかのチェックは，チェックできなかった場合falseを返す．チェックできなかった場合もflipさせないためには，!isConvexPolygonとしなければならない
-      //  if (!isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
-      //  {
-      //  	return false;
-      //  }
-      //  if (!isConvexPolygon({std::get<1>(Aps)->getX(), Aps[2]->getX(), Bps[1]->getX(), Bps[2]->getX()}))
-      //  {
-      //  	return false;
-      //  }
+         auto net = new Network();
+         auto tmp_q2 = new networkPoint(net, q2->X);
+         auto tmp_p2 = new networkPoint(net, p2->X);
+         auto tmp_p0 = new networkPoint(net, p0->X);
+         auto tmp_q0 = new networkPoint(net, q0->X);
+         auto tmp_f0 = new networkFace(net, tmp_q2, tmp_p2, tmp_p0);
+         auto tmp_f1 = new networkFace(net, tmp_p2, tmp_q2, tmp_q0);
 
-      //  std::cout << ColorFunction(c++) << "|" << colorReset;
-      //                     Aps[2]
-      //                   V    V
-      //                  A      A
-      //                 /         \
-		//                /    / \    \
-		//            Abl/-><-/   \-><-\Afl
-      //              /    /  FA \ 　  \　　
-      //             V     ---V---      V
-      //            A         A          A
-      // Bps[1],Aps[0]---><--this---><---Aps[1],Bps[0]
-      //           V          |          V
-      //            A         V         A
-      //             \     ---A---     /
-      //           Bfl\-><-\     /-><-/Bbl
-      //               \    \ FB/    /
-      //                \    \ /    /
-      //                  V        V
-      //                   A      A
-      //                    Bps[2]
-
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
-
-      auto Abl = A->getLine(this, -1);
-      auto Afl = A->getLine(this, 1);
-      auto Bbl = B->getLine(this, -1);
-      auto Bfl = B->getLine(this, 1);
-
-      auto [p0, p1] = this->getPoints();
-
-      // std::cout << ColorFunction(c++) << "|" << colorReset;
-      if (!(std::get<2>(Aps)->Add(this)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      if (!(std::get<2>(Bps)->Add(this)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      if (!(p0->Erase(this)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      if (!(p1->Erase(this)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      this->set(std::get<2>(Aps), std::get<2>(Bps));  // setBoundsされないので注意
-
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
-
-      //                --><-std::get<2>(Aps)
-      //                |  V    V
-      //                | A      A
-      //                |/         \
-        //                |    / \    \
-        //            Abl/+><-/   \-><-\Afl
-      //              / |  /  FA \ 　  \　　
-      //             V  |  ---V---      V
-      //            A   |      A          A
-      // Bps[1],Aps[0]  ----this------    Aps[1],Bps[0]
-      //           V          |      |   V
-      //            A         V      |   A
-      //             \     ---A---   |  /
-      //           Bfl\-><-\     /-><|-/Bbl
-      //               \    \ FB/    | /
-      //                \    \ /    /|
-      //                  V        V |
-      //                   A      AV |
-      //                  Bps[2]-> <-
-
-      // std::cout << ColorFunction(c++) << "|" << colorReset;
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
-
-      if (!(Abl->replace(A, B)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      if (!(Bbl->replace(B, A)))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
-
-      //                --><-Aps[2]
-      //                |  V    V
-      //                | A      A
-      //                |/         \
-        //                |    / \    \
-        //            Abl/  <-/   \-><-\Afl
-      //              /||  /  FA \ 　  \　　
-      //             V ||  ---V---      V
-      //            A  ||     A   A----+  A
-      // Bps[1],Aps[0] |----this------ |  Aps[1],Bps[0]
-      //           V   |      |      | | V
-      //            A   \     V      | | A
-      //             \   V ---A---   | |/
-      //           Bfl\-><-\     /-> | /Bbl
-      //               \    \ FB/    |/
-      //                \    \ /    /|
-      //                  V        V |
-      //                   A      AV |
-      //                  Bps[2]-> <--
-
-      // std::cout << ColorFunction(c++) << "|" << colorReset;
-      A->setLines({Afl, this, Bbl});
-      B->setLines({Bfl, this, Abl});
-#if defined(debug_flip)
-      std::cout << green << "|" << colorReset;
-#endif
-
-      //                --><-Aps[2]
-      //                |  V    V
-      //                | A      A
-      //                |/         \
-        //                |    / \    \
-        //            Abl/|   /   \-><-\Afl
-      //              /||  /  FA \ 　  \　　
-      //             V ||  ---V---V      V
-      //            A  ||     A   A----+  A
-      // Bps[1],Aps[0] |----this------ |  Aps[1],Bps[0]
-      //           V   |      |      | | V
-      //            A   V     V      | | A
-      //             \   A ---A---   | |/
-      //           Bfl\-><-\     /   | /Bbl
-      //               \    \ FB/    |/
-      //                \    \ /    /|
-      //                  V        V |
-      //                   A      AV |
-      //                  Bps[2]-> <--
-
-#if defined(debug_flip)
-      std::cout << "オブジェクトが互いに参照できる状態にあるか（リストにお互いに保存されているか）チェック" << std::endl;
-      // line--><--face
-      for (const auto &f : Afl->getFaces())
-         if (!isLinkedDoubly(f, Afl))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &f : this->getFaces())
-         if (!isLinkedDoubly(f, this))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &f : Bbl->getFaces())
-         if (!isLinkedDoubly(f, Bbl))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &f : Abl->getFaces())
-         if (!isLinkedDoubly(f, Abl))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &f : Bfl->getFaces())
-         if (!isLinkedDoubly(f, Bfl))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      // line--><--point
-      // for (const auto &f : Afl->getPoints())
-      // 	if (!isLinkedDoubly(f, Afl))
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // for (const auto &f : this->getPoints())
-      // 	if (!isLinkedDoubly(f, this))
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // for (const auto &f : Bbl->getPoints())
-      // 	if (!isLinkedDoubly(f, Bbl))
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // for (const auto &f : Abl->getPoints())
-      // 	if (!isLinkedDoubly(f, Abl))
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      // for (const auto &f : Bfl->getPoints())
-      // 	if (!isLinkedDoubly(f, Bfl))
-      // 		throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      // point--><--line
-      for (const auto &l : Aps[0]->getLines())
-         if (!isLinkedDoubly(l, Aps[0]))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &l : Aps[1]->getLines())
-         if (!isLinkedDoubly(l, Aps[1]))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &l : Bps[2]->getLines())
-         if (!isLinkedDoubly(l, Bps[2]))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &l : Aps[2]->getLines())
-         if (!isLinkedDoubly(l, Aps[2]))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-      // face--><--line
-      for (const auto &l : A->getLines())
-         if (!isLinkedDoubly(l, A))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-      for (const auto &l : B->getLines())
-         if (!isLinkedDoubly(l, B))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-
-               // std::cout << "Abl->getPoints() = " << Abl->getPoints() << std::endl;
-               // std::cout << "Afl->getPoints() = " << Afl->getPoints() << std::endl;
-               // std::cout << "Bfl->getPoints() = " << Bfl->getPoints() << std::endl;
-               // std::cout << "Bbl->getPoints() = " << Bbl->getPoints() << std::endl;
-               // std::cout << "this->getPoints() = " << this->getPoints() << std::endl;
-#endif
-
-      Afl->setBoundsSingle();  // lineのセット
-      Abl->setBoundsSingle();  // lineのセット
-      Bfl->setBoundsSingle();  // lineのセット
-      Bbl->setBoundsSingle();  // lineのセット
-      //
-      A->setGeometricProperties(ToX(A->setPoints(A->Lines)));
-      B->setGeometricProperties(ToX(B->setPoints(B->Lines)));
-      //
-      p0->setBoundsSingle();
-      p0->setFaces(p0->Lines);
-      for (const auto &f : p0->getFaces())
-         f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
-      p1->setBoundsSingle();
-      p1->setFaces(p1->Lines);
-      //
-      for (const auto &f : p1->getFaces())
-         f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
-
-      for (auto &p : this->getPoints()) {
-         p->setBoundsSingle();
-         for (auto &f : p->getFaces())
-            f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
-      }
-      for (auto &F : this->getFaces()) {
-         for (auto &p : F->getPoints()) {
-            p->setBoundsSingle();
-            for (auto &f : p->getFaces())
-               f->setGeometricProperties(ToX(f->setPoints(f->Lines)));
+         std::unordered_set<networkFace *> tmp = {tmp_f0, tmp_f1};
+         std::vector<networkFace *> faces_init = {tmp_f0, tmp_f1};
+         double triangle_scale = 0, max_volume = 0;
+         int count = 0;
+         for (const auto &t : this->Tetras) {
+            max_volume = std::max(max_volume, t->getVolume());
+            for (const auto &f : t->Faces) {
+               if (fA != f && fB != f && (tmp.emplace(f)).second) {
+                  faces_init.push_back(f);
+                  triangle_scale += f->area;
+                  count++;
+               }
+            }
          }
+
+         if (count > 0) {
+            triangle_scale /= count;
+         }
+
+         tetgenio in = generate_tetgenio_input(faces_init);
+
+         tetgenbehavior b;
+         b.docheck = 1;   // 入力データの整合性をチェック
+         b.nobisect = 1;  // 自己交差を許可しない
+         b.parse_commandline(const_cast<char *>("pq2.a10Y"));
+         std::cout << Red << "Trying to tetrahedralize..." << colorReset << std::endl;
+
+         /*
+
+         tetgenをライブラリとして使う場合は，以下のdefineを有効にする
+         ```#define TETLIBRARY``` @ tetgen.h
+
+         */
+
+         try {
+            ::tetrahedralize(&b, &in, &out);
+            adjust_tetra = true;
+         } catch (std::exception &e) {
+            std::cerr << Red << "Caught std::exception: " << e.what() << colorReset << std::endl;
+            return false;
+         } catch (...) {
+            std::cerr << Red << "Caught unknown exception" << colorReset << std::endl;
+            return false;
+         }
+
+         delete tmp_q2;
+         delete tmp_p2;
+         delete tmp_p0;
+         delete tmp_q0;
+         delete tmp_f0;
+         delete tmp_f1;
+         delete net;
+      }
+
+      /* -------------------------------------------------------------------------- */
+
+      /*
+       the order
+         p0 - this -  p1  - l_fA_f - p0mew - l_fA_b
+         p1 - this -  p0  - l_fB_f - p1mew - l_fB_b
+      */
+
+      /* ------------ */
+
+      // #線の入れ替え
+      p0->erase(this);
+      p1->erase(this);
+      p2->add(this);
+      q2->add(this);
+
+      // #この線の点の入れ替え
+      this->set(p2, q2);  // setBoundsされないので注意
+
+      // b% 線と点の接続関係については入れ替え終了
+      std::cout << "線と点の接続関係については入れ替え終了" << std::endl;
+      std::cout << "p0,p1 = {" << p0 << "," << p1 << "} -> l->getPoints() = " << this->getPoints() << std::endl;
+
+      // #線の面の入れ替え
+      l1->replace(fA, fB);
+      e1->replace(fB, fA);
+
+      // #面に点・線を入れる
+      fA->setPoints(q2, this, p2, l2, p0, e1);
+      fB->setPoints(p2, this, q2, e2, q0, l1);
+
+      // b% 面と線の接続関係については入れ替え終了
+      std::cout << "面と線の接続関係については入れ替え終了" << std::endl;
+
+      // #面の持つ点の入れ替え
+      fA->setGeometricProperties(std::array<std::array<double, 3>, 3>{q2->X, p2->X, p0->X});
+      fB->setGeometricProperties(std::array<std::array<double, 3>, 3>{p2->X, q2->X, q0->X});
+
+      // #点の面の入れ替え
+      p0->erase(fB);
+      p1->erase(fA);
+      p2->add(fB);
+      q2->add(fA);
+
+      // b% 点と面の接続関係については入れ替え終了
+      std::cout << "点と面の接続関係については入れ替え終了" << std::endl;
+
+      if (adjust_tetra) {
+         std::cout << "delete this->Tetras " << fA << std::endl;
+         auto tmp = this->Tetras;
+         for (const auto &t : tmp)
+            delete t;
+         std::cout << "delete done" << std::endl;
+         this->getNetwork()->genTetra(out);
+         std::cout << "this->getNetwork()->genTetra(out)" << std::endl;
       }
 
       return true;
+
    } catch (std::exception &e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
-//
+
 inline bool networkLine::islegal() const {
    try {
       auto fs = this->getFaces();
@@ -1998,5 +1876,3 @@ inline void networkLine::divideIfIllegal() {
 //         return false;
 //     /*face-face intersection*/
 // };
-
-#endif

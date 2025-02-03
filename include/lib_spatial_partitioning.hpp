@@ -1,6 +1,4 @@
-#ifndef lib_spatial_partitioning_H
-#define lib_spatial_partitioning_H
-
+#pragma once
 #define _DEBUG_FMM_
 
 #include <execution>
@@ -69,7 +67,7 @@ TODO: これらの関数は，`apply`はある点を中心として半径`d`の�
 
 // Buckets is derived from CoordinateBounds
 
-template <typename T>
+template <typename T, int N = 10>
 struct Buckets : public CoordinateBounds {
 
    //@ 変更予定2024/05/10
@@ -81,8 +79,8 @@ struct Buckets : public CoordinateBounds {
    std::vector<Buckets<T> *> buckets_for_L2M;
    std::vector<Buckets<T> *> buckets_near;  //@ 近傍バケツかつ，（重要）子バケツを持たないバケツ．途中までしか育たないツリーを使ったFMMにおいてこの性質が重要．;
 
-   ExpCoeffs<8> multipole_expansion;
-   ExpCoeffs<8> local_expansion;
+   ExpCoeffs<N> multipole_expansion;
+   ExpCoeffs<N> local_expansion;
 
    std::vector<std::vector<std::vector<Buckets<T> *>>> buckets;  //! child buckets
    Buckets<T> *parent = nullptr;                                 // 親バケツへのポインタを追加
@@ -417,9 +415,9 @@ struct Buckets : public CoordinateBounds {
               std::get<4>(minmax_z), std::get<5>(minmax_z)};
    };
    //@ ------------------------ インデックスがboundsに収まっているかどうか ------------------------ */
-   bool isInside(const ST i, const ST j, const ST k) const { return (i >= 0 && j >= 0 && k >= 0 && i < this->xsize && j < this->ysize && k < this->zsize); };
-   bool isInside(const ST3 &ijk) const { return isInside(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
-   bool isInside(const Tddd &x) const { return isInside(indices_no_clamp(x)); };
+   bool InsideQ(const ST i, const ST j, const ST k) const { return (i >= 0 && j >= 0 && k >= 0 && i < this->xsize && j < this->ysize && k < this->zsize); };
+   bool InsideQ(const ST3 &ijk) const { return InsideQ(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
+   bool InsideQ(const Tddd &x) const { return InsideQ(indices_no_clamp(x)); };
    void erase(T const p) {
       auto it = this->map_to_ijk.find(p);
       if (it != this->map_to_ijk.end()) {
@@ -458,13 +456,9 @@ struct Buckets : public CoordinateBounds {
          }
       }
 
-      std::cout << "this->xbounds() : " << this->xbounds() << std::endl;
-      std::cout << "this->ybounds() : " << this->ybounds() << std::endl;
-      std::cout << "this->zbounds() : " << this->zbounds() << std::endl;
-      std::cout << "this->dL : " << this->dL << std::endl;
-      std::cout << "this->xsize : " << this->xsize << std::endl;
-      std::cout << "this->ysize : " << this->ysize << std::endl;
-      std::cout << "this->zsize : " << this->zsize << std::endl;
+      std::cout << "      bounds : " << this->bounds << std::endl;
+      std::cout << "          dL : " << this->dL << std::endl;
+      std::cout << "bucket sizes : {" << this->xsize << ", " << this->ysize << ", " << this->zsize << "}" << std::endl;
       this->vector_is_set = true;
    };
    //@ -------------------------------------------------------------------------- */
@@ -483,6 +477,19 @@ struct Buckets : public CoordinateBounds {
       this->vector_is_set = false;
       return add(indices(x), p);
    };
+
+   std::tuple<bool, std::array<int, 3>> addAndGetIndices(const Tddd &x, const T p) {
+      this->vector_is_set = false;
+      auto ijk = indices(x);
+      const auto [i, j, k] = ijk;
+      this->map_to_ijk[p] = ijk;
+      const bool bucket_inserted = this->data[i][j][k].emplace(p).second;
+      const bool all_objects_inserted = this->all_stored_objects.emplace(p).second;
+      if (all_objects_inserted)
+         this->all_stored_objects_vector.emplace_back(p);
+      return {bucket_inserted && all_objects_inserted, ijk};
+   };
+
    //! automatically specify coordinates
    bool add(const std::unordered_set<T> &P) {
       this->vector_is_set = false;
@@ -781,63 +788,11 @@ Buckets<T> copyPartition(const auto &buckets) {
 
 /* -------------------------------------------------------------------------- */
 
-void MultipoleExpansion(Buckets<sp_pole4FMM> &B_poles) {
-   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
-   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
-      b->multipole_expansion.increment_moments(b->all_stored_objects_vector);
-   });
-}
-
-void MultipoleExpansionReuse(Buckets<sp_pole4FMM> &B_poles) {
-   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
-   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
-      b->multipole_expansion.increment_moments_reuse();
-   });
-}
-
-/* -------------------------------------------------------------------------- */
-
-void M2M(Buckets<sp_pole4FMM> &B_poles) {
-   TimeWatch tw;
-   for (int level = B_poles.max_level - 1; level >= 0; level--) {
-      B_poles.forEachAtLevel({level}, [&](Buckets<sp_pole4FMM> *B) {
-         // for (auto& b : B->getAllBucket())
-         //    M2M(b->multipole_expansion, B->multipole_expansion);
-         B->forEachBuckets([&](Buckets<sp_pole4FMM> *b) {
-            B->multipole_expansion.m2m(b->multipole_expansion);
-         });
-      });
-#if defined(_DEBUG_FMM_)
-      std::cout << magenta << "M2M" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-#endif
-   }
-};
-
-/* -------------------------------------------------------------------------- */
-
-void L2L(Buckets<sp_pole4FMM> &B_poles) {
-   TimeWatch tw;
-   int level = 0;
-   for (auto &buckets_from_top_level : B_poles.level_buckets) {
-      for (auto &B : buckets_from_top_level) {
-         B->forEachBuckets([&](Buckets<sp_pole4FMM> *b) {
-            b->local_expansion.l2l(B->local_expansion);
-         });
-      }
-#if defined(_DEBUG_FMM_)
-      std::cout << magenta << "L2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-#endif
-      level++;
-   }
-}
-
-/* -------------------------------------------------------------------------- */
-
 const double scale = 3;
-bool isFar(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return !isInside(B->X, A->scaledBounds(scale)); };
-bool isNear(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return isInside(B->X, A->scaledBounds(scale)); };
-bool isFar(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return !isInside(B->X, A->scaledBounds(scale)); };
-bool isNear(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return isInside(B->X, A->scaledBounds(scale)); };
+bool isFar(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return !InsideQ(B->X, A->scaledBounds(scale)); };
+bool isNear(Buckets<sp_pole4FMM> *A, Buckets<sp_pole4FMM> *B) { return InsideQ(B->X, A->scaledBounds(scale)); };
+bool isFar(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return !InsideQ(B->X, A->scaledBounds(scale)); };
+bool isNear(const std::shared_ptr<Buckets<sp_pole4FMM>> &A, const std::shared_ptr<Buckets<sp_pole4FMM>> &B) { return InsideQ(B->X, A->scaledBounds(scale)); };
 
 // まだ問題がある．
 bool isFar(const Buckets<sp_pole4FMM> *A, const Buckets<sp_pole4FMM> *B);
@@ -869,6 +824,89 @@ void checkAndAddBuckets(T A, T B) {
       }
    }
 }
+
+/* -------------------------------------------------------------------------- */
+
+void MultipoleExpansion(Buckets<sp_pole4FMM> &B_poles) {
+   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
+      b->multipole_expansion.increment_moments(b->all_stored_objects_vector);
+   });
+}
+
+void MultipoleExpansionReuse(Buckets<sp_pole4FMM> &B_poles) {
+   std::cout << "B_poles.deepest_level_buckets.size() : " << B_poles.deepest_level_buckets.size() << std::endl;
+   B_poles.forEachAtDeepestParallel([&](Buckets<sp_pole4FMM> *b) {
+      b->multipole_expansion.increment_moments_reuse();
+   });
+}
+
+/* -------------------------------------------------------------------------- */
+
+// setM2Lを参考に
+void setM2M(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw, tw_all;
+   for (int level = B_poles.max_level - 1; level >= 0; level--) {
+      B_poles.forEachAtLevel({level}, [&](Buckets<sp_pole4FMM> *B) {
+         B->multipole_expansion.set_m2m(B->getAllBucket());
+      });
+#if defined(_DEBUG_FMM_)
+      std::cout << yellow << "setM2M" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
+   }
+   std::cout << Yellow << "setM2M" << Green << ", Elapsed time : " << tw_all() << colorReset << std::endl;
+}
+
+void M2M(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw, tw_all;
+   for (int level = B_poles.max_level - 1; level >= 0; level--) {
+      B_poles.forEachAtLevel({level}, [&](Buckets<sp_pole4FMM> *B) {
+         B->multipole_expansion.m2m();
+      });
+#if defined(_DEBUG_FMM_)
+      std::cout << magenta << "M2M" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
+   }
+   std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw_all() << colorReset << std::endl;
+};
+
+/* -------------------------------------------------------------------------- */
+
+void setL2L(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw, tw_all;
+   int level = 0;
+   for (auto &buckets_from_top_level : B_poles.level_buckets) {
+      for (auto &parent : buckets_from_top_level) {
+         parent->forEachBuckets([&](Buckets<sp_pole4FMM> *child) {
+            child->local_expansion.set_l2l(&parent->local_expansion);
+         });
+      }
+#if defined(_DEBUG_FMM_)
+      std::cout << yellow << "setL2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
+      level++;
+   }
+   std::cout << Yellow << "setL2L" << Green << ", Elapsed time : " << tw_all() << colorReset << std::endl;
+}
+
+void L2L(Buckets<sp_pole4FMM> &B_poles) {
+   TimeWatch tw, tw_all;
+   int level = 0;
+   for (auto &buckets_from_top_level : B_poles.level_buckets) {
+      for (auto &parent : buckets_from_top_level) {
+         parent->forEachBuckets([&](Buckets<sp_pole4FMM> *child) {
+            child->local_expansion.l2l();
+         });
+      }
+#if defined(_DEBUG_FMM_)
+      std::cout << magenta << "L2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+#endif
+      level++;
+   }
+   std::cout << Magenta << "L2L" << Green << ", overall Elapsed time : " << tw_all() << colorReset << std::endl;
+}
+
+/* -------------------------------------------------------------------------- */
 
 // ツリーはとりあえず生成しなければならない．
 // 極が少ないバケツは，M2Lの時に省略する．
@@ -921,12 +959,9 @@ void setBucketsForM2L(Buckets<sp_pole4FMM> &B_poles) {
 }
 
 void setM2L(Buckets<sp_pole4FMM> &B_poles) {
-   TimeWatch tw;
-   std::cout << "各レベルの各セルのM2Lの相手を保存する" << std::endl;
+   TimeWatch tw, tw_all;
+   // std::cout << "各レベルの各セルのM2Lの相手を保存する" << std::endl;
    setBucketsForM2L(B_poles);
-#if defined(_DEBUG_FMM_)
-   std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-#endif
    // A -> M2L -> B
    int level = 0;
    for (auto &buckets_at_a_level : B_poles.level_buckets) {
@@ -934,89 +969,29 @@ void setM2L(Buckets<sp_pole4FMM> &B_poles) {
       for (auto &A : buckets_at_a_level)
 #pragma omp single nowait
          A->local_expansion.set_m2l(A->buckets_for_L2M);
+
 #if defined(_DEBUG_FMM_)
-      std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+      std::cout << yellow << "setM2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 #endif
       level++;
    }
+   std::cout << Yellow << "setM2L" << Green << ", Elapsed time : " << tw_all() << colorReset << std::endl;
 };
 
 void M2L(Buckets<sp_pole4FMM> &B_poles) {
-   TimeWatch tw;
-#if defined(_DEBUG_FMM_)
-   std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-#endif
-   // A -> M2L -> B
+   TimeWatch tw, tw_all;
    int level = 0;
    for (auto &buckets_at_a_level : B_poles.level_buckets) {
 #pragma omp parallel
       for (auto &A : buckets_at_a_level)
 #pragma omp single nowait
          A->local_expansion.m2l();
-
 #if defined(_DEBUG_FMM_)
       std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 #endif
       level++;
    }
-};
-
-// void reuseM2L(Buckets<sp_pole4FMM> &B_poles) {
-//    TimeWatch tw;
-//    /* -------------------------------------------------------------------------- */
-//    /*                      各レベルの各セルのM2Lの相手を保存する                       */
-//    /* -------------------------------------------------------------------------- */
-//    std::cout << "各レベルの各セルのM2Lの相手を保存する" << std::endl;
-
-//    setBucketsForM2L(B_poles);
-
-// #if defined(_DEBUG_FMM_)
-//    std::cout << Magenta << "M2L buckets for the bucket at level 1" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-// #endif
-//    // A -> M2L -> B
-
-//    int level = 0;
-//    for (auto &buckets_at_a_level : B_poles.level_buckets) {
-// #pragma omp parallel
-//       for (auto &A : buckets_at_a_level)
-// #pragma omp single nowait
-//          A->local_expansion.reuseM2L();
-
-// #if defined(_DEBUG_FMM_)
-//       std::cout << magenta << "M2L" << ", level=" << level << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-// #endif
-//       level++;
-//    }
-// };
-
-void MultipoleExpansionReuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
-   /*
-   B_polesには，極の強さの情報もstd::function<Tdd()> getValuesに保存されている．
-   別に必要なのは，どの点の積分値を出力するかという情報であるので，３次元位置座標と近傍の極，遠方の極それぞれを保存する変数を用意する．
-   */
-   TimeWatch tw;
-   //@ -------------------------------------------------------------------------- */
-   std::cout << "極の展開 reuse" << std::endl;
-   MultipoleExpansionReuse(B_poles);
-   std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-   //@ -------------------------------------------------------------------------- */
-   //@                           Multipole to Multipole                           */
-   //@ -------------------------------------------------------------------------- */
-   std::cout << Magenta << "M2M ..." << colorReset << std::endl;
-   M2M(B_poles);
-   std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-   //@ -------------------------------------------------------------------------- */
-   //@                         Multipole to Local expansion                       */
-   //@ -------------------------------------------------------------------------- */
-   std::cout << Magenta << "M2L ..." << colorReset << std::endl;
-   M2L(B_poles);
-   std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-   //@ -------------------------------------------------------------------------- */
-   //@                           Local to Local expansion                         */
-   //@ -------------------------------------------------------------------------- */
-   std::cout << Magenta << "L2L ..." << colorReset << std::endl;
-   L2L(B_poles);
-   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+   std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw_all() << colorReset << std::endl;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1151,7 +1126,7 @@ std::array<std::array<double, 2>, 2> integrate(Buckets<sp_pole4FMM> &B_poles, co
    */
 
    //! Local expansion
-   std::array<double, 2> IgPhin_IgnPhi_far = b_deepest->local_expansion.l2p(X);
+   std::array<double, 2> IgPhin_IgnPhi_far = b_deepest->local_expansion.L2P(X);
    return {IgPhin_IgnPhi_near, IgPhin_IgnPhi_far};
 }
 
@@ -1193,44 +1168,21 @@ std::array<std::array<double, 2>, 2> integrate(Buckets<sp_pole4FMM> &B_poles, co
    */
 
    //! Local expansion
-   return {IgPhin_IgnPhi_near, b_deepest->local_expansion.l2p(X)};
+   return {IgPhin_IgnPhi_near, b_deepest->local_expansion.L2P(X)};
 }
 
 /* -------------------------------------------------------------------------- */
 
-// void MEreuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles, const bool record = false) {
-//    TimeWatch tw;
-//    B_poles.forEachAll([&](Buckets<sp_pole4FMM> *B) {
-//       B->multipole_expansion.initialize();
-//       B->local_expansion.initialize();
-//    });
-//    MultipoleExpansionReuse(B_poles);
-// #if defined(_DEBUG_FMM_)
-//    std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-//    std::cout << Magenta << "M2M ..." << colorReset << std::endl;
-// #endif
-//    M2M(B_poles);
-// #if defined(_DEBUG_FMM_)
-//    std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-//    std::cout << Magenta << "M2L ..." << colorReset << std::endl;
-// #endif
-//    M2L(B_poles, record);
-// #if defined(_DEBUG_FMM_)
-//    std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-//    std::cout << Magenta << "L2L ..." << colorReset << std::endl;
-// #endif
-//    L2L(B_poles);
-// #if defined(_DEBUG_FMM_)
-//    std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-// #endif
-// };
-
-void MEreuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
+void updatePole_ME_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
    TimeWatch tw;
+   for (auto pole : B_poles.all_stored_objects_vector)
+      pole->update();
+
    B_poles.forEachAll([&](Buckets<sp_pole4FMM> *B) {
       B->multipole_expansion.initialize();
       B->local_expansion.initialize();
    });
+
    MultipoleExpansionReuse(B_poles);
 #if defined(_DEBUG_FMM_)
    std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
@@ -1238,18 +1190,11 @@ void MEreuse_M2M_M2L_L2L(Buckets<sp_pole4FMM> &B_poles) {
 #endif
    M2M(B_poles);
 #if defined(_DEBUG_FMM_)
-   std::cout << Magenta << "M2M" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
    std::cout << Magenta << "M2L ..." << colorReset << std::endl;
 #endif
    M2L(B_poles);
 #if defined(_DEBUG_FMM_)
-   std::cout << Magenta << "M2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
    std::cout << Magenta << "L2L ..." << colorReset << std::endl;
 #endif
    L2L(B_poles);
-#if defined(_DEBUG_FMM_)
-   std::cout << Magenta << "L2L" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-#endif
 };
-
-#endif

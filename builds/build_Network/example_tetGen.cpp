@@ -8,6 +8,63 @@
 
 ## TetGenを使った四面体を生成
 
+* TETLIBRARYを有効にしない
+* `terminatetetgen`を修正する
+* コンパイラを合わせる
+
+tetgen.h内のTETLIBRARYを有効にすると，コンパイルができなかった．errorによって，abortすることを防ぐために，直接throwするよう以下のように`terminatetetgen`関数を修正した．
+
+```cpp
+inline void terminatetetgen(tetgenmesh* m, int x) {
+   throw x;
+}
+```
+
+```cmake
+# Set  the minimum  required version  of cmake  for a  project.
+cmake_minimum_required(VERSION 3.5)
+
+project(tetgen)
+
+set(CXX_VERSIONS 13)
+
+# Find C++ compiler
+foreach(ver IN LISTS CXX_VERSIONS)
+  unset(CXX_COMPILER CACHE)
+  string(CONCAT CXX "g++-" ${ver})
+  find_program(CXX_COMPILER ${CXX})
+  if(CXX_COMPILER)
+    message(STATUS "${Green}Found ${CXX}: ${Magenta}${CXX_COMPILER}${ColourReset}")
+    set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
+    break()
+  endif()
+endforeach()
+
+
+# Add an executable to the project using the specified source files.
+add_executable(tetgen tetgen.cxx predicates.cxx)
+
+#Add a library to the project using the specified source files.
+# In Linux/Unix, it will creates the libtet.a
+add_library(tet STATIC tetgen.cxx predicates.cxx)
+set_target_properties(tet PROPERTIES PUBLIC_HEADER tetgen.h)
+
+#Set properties on a target.
+#We use this here to set -DTETLIBRARY for when compiling the
+#library
+set_target_properties(tet PROPERTIES "COMPILE_DEFINITIONS" TETLIBRARY)
+
+if(NOT TETGEN_SKIP_INSTALL)
+    include(GNUInstallDirs)
+    install(TARGETS tet
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    install(TARGETS tetgen RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+```
+
+
 [https://wias-berlin.de/software/tetgen](https://wias-berlin.de/software/tetgen)
 
 TetGenを使って四面体を生成し，Networkの四面体へと置き換え，出力するプログラム．
@@ -122,31 +179,75 @@ int main(int argc, char* argv[]) {
    /*                         Networkの四面体へと置き換える                          */
    /* -------------------------------------------------------------------------- */
 
-   auto object = new Network;
+   auto object = new Network(filename);
+   object->makeBucketPoints(object->getScale() / 50.);
 
-   for (int i = 0; i < out.numberofpoints; i++)
-      new networkPoint(object, {out.pointlist[i * 3], out.pointlist[i * 3 + 1], out.pointlist[i * 3 + 2]});
+   for (int i = 0; i < out.numberofpoints; i++) {
+      std::array<double, 3> X = {out.pointlist[i * 3], out.pointlist[i * 3 + 1], out.pointlist[i * 3 + 2]};
+      // getDataとgetBucketの使い分けは？
+      if (std::ranges::none_of(object->BucketPoints.getData(X), [&](auto& p) { return Norm(p->X - X) < 1E-10; })) {
+         std::cout << "X: " << X[0] << " " << X[1] << " " << X[2] << std::endl;
+         object->BucketPoints.add(X, new networkPoint(object, X));
+      }
+   }
 
    object->setGeometricProperties();
-   object->makeBucketPoints(object->getScale() / 50.);
 
    int count = 0;
    PVDWriter pvd(_HOME_DIR_ + "/output/" + std::string(out_file) + ".pvd");
+   PVDWriter pvd_surface(_HOME_DIR_ + "/output/" + std::string(out_file) + "_surface.pvd");
 
-   /* ----------------------------------- 出力 ----------------------------------- */
+   /* ----------------------------------- 出力用関数 ----------------------------------- */
+
+   /*
+   四面体と表面のFaceを出力している
+   */
+
    auto output = [&]() {
       auto filename = _HOME_DIR_ + "/output/" + std::string(out_file) + "_" + std::to_string(count) + ".vtu";
+      auto filename_surface = _HOME_DIR_ + "/output/" + std::string(out_file) + "_surface_" + std::to_string(count) + ".vtu";
       std::ofstream ofs(filename);
-      vtkUnstructuredGridWrite(ofs, object->getTetras());
+      std::ofstream ofs_surface(filename_surface);
+      std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, std::variant<double, std::array<double, 3>>>>> data;
+      std::unordered_map<networkPoint*, std::variant<double, std::array<double, 3>>> data_vector;
+      for (auto& p : object->getPoints())
+         data_vector[p] = p->X;
+      data.push_back({"X", data_vector});
+
+      data_vector.clear();
+      for (auto& p : object->getPoints())
+         data_vector[p] = (double)p->getFaces().size();
+      data.push_back({"face_size", data_vector});
+
+      data_vector.clear();
+      for (auto& p : object->getPoints())
+         data_vector[p] = (double)p->getNeighbors().size();
+      data.push_back({"neighbors_size", data_vector});
+
+      data_vector.clear();
+      for (auto& p : object->getPoints())
+         data_vector[p] = (double)p->SurfaceQ();
+      data.push_back({"any_of_no_tetra", data_vector});
+
+      vtkUnstructuredGridWrite(ofs, object->getTetras(), data);
       std::cout << "Wrote " << filename << std::endl;
       ofs.close();
-      pvd.push(filename, count++);
+      pvd.push(filename, count);
+      vtkPolygonWrite(ofs_surface, object->getSurfaces(), data);
+      std::cout << "Wrote " << filename_surface << std::endl;
+      ofs_surface.close();
+      pvd_surface.push(filename_surface, count);
+      count++;
    };
 
    /* --------------------------------- 置き換えループ -------------------------------- */
+
+   std::cout << "Replacing tetrahedra..." << std::endl;
+
    for (int i = 0; i < out.numberoftetrahedra; i++) {
 
-      std::array<networkPoint*, 4> points;
+      std::array<networkPoint*, 4> points = {nullptr, nullptr, nullptr, nullptr};
+
       for (int j = 0; j < 4; j++) {
          auto index = out.tetrahedronlist[i * 4 + j];
          Tddd X = {out.pointlist[index * 3], out.pointlist[index * 3 + 1], out.pointlist[index * 3 + 2]};
@@ -166,6 +267,7 @@ int main(int argc, char* argv[]) {
    }
    output();
    pvd.output();
+   pvd_surface.output();
 
    return 0;
 }

@@ -1,15 +1,14 @@
 {
     "name": "wavemaker",
-    "type": "RigidBody",
+    "type": "SoftBody",
+    "isFixed": true,
     "velocity": [
-        "flap",
+        "linear_traveling_wave",
         0.0,
-        0.005,
-        0.5,
-        0.6,
-        0.6,
-        -0.31,
-        0
+        1.0,
+        7.0,
+        150,
+        150
     ],
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tonegawa2024/wavemaker.obj"
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/2022Tonegawa/three_d100/wavemaker100.obj"
 }

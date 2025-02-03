@@ -1,0 +1,22 @@
+{
+    "name": "float05",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 13550760.999999998,
+    "COM": [
+        300,
+        0,
+        194.09
+    ],
+    "MOI": [
+        87800000.0,
+        87800000.0,
+        169000000.0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/DeepCWind/float.obj",
+    "translation": [
+        300,
+        0,
+        0
+    ]
+}

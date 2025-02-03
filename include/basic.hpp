@@ -1,5 +1,4 @@
-#ifndef basic_H
-#define basic_H
+#pragma once
 
 #include <algorithm>
 #include <chrono>
@@ -2211,6 +2210,11 @@ struct JSON {
    bool find(const std::string &key) const { return this->map_S_S.contains(key); };
 
    bool contains(const std::string &key) const { return this->map_S_S.contains(key); };
+
+   void for_each(const std::function<void(const std::string &, const std::vector<std::string> &)> &func) const {
+      for (const auto &[key, value] : this->map_S_S)
+         func(key, value);
+   };
 };
 
 /* ------------------------------------------------------ */
@@ -2253,7 +2257,7 @@ std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
 
 /* ------------------------------------------------------ */
 
-using JsonValue = std::variant<double, int, std::string, T6d, Tddd, std::vector<double>>;
+using JsonValue = std::variant<double, int, std::string, T6d, Tddd, Tdd, std::vector<double>>;
 using JsonVector = std::vector<JsonValue>;
 
 struct JSONoutput {
@@ -2261,6 +2265,13 @@ struct JSONoutput {
 
    void push(const std::string &key, const JsonValue &value) {
       map[key].emplace_back(value);
+   }
+
+   template <typename T>
+   void set(const std::string &key, const std::vector<T> &vec_value) {
+      for (const auto &value : vec_value) {
+         this->push(key, value);
+      }
    }
 
    void output(std::ofstream &os) {
@@ -2274,7 +2285,7 @@ struct JSONoutput {
                   os << arg;
                } else if constexpr (std::is_same_v<T, std::string>) {
                   os << "\"" << arg << "\"";
-               } else if constexpr (std::is_same_v<T, T6d> || std::is_same_v<T, Tddd>) {
+               } else if constexpr (std::is_same_v<T, T6d> || std::is_same_v<T, Tdd> || std::is_same_v<T, Tddd>) {
                   os << "[";
                   for (size_t j = 0; j < arg.size(); ++j) {
                      os << arg[j];
@@ -2284,10 +2295,10 @@ struct JSONoutput {
                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
                   os << "[";
                   for (size_t j = 0; j < arg.size(); ++j) {
-                     if (j == 0) os << "[";
+                     // if (j == 0) os << "[";
                      os << arg[j];
                      if (j < arg.size() - 1) os << ", ";
-                     if (j == arg.size() - 1) os << "]";
+                     // if (j == arg.size() - 1) os << "]";
                   }
                   os << "]";
                }
@@ -3365,7 +3376,7 @@ V_d midPointOfLines(const VVV_d &vecs) {
 template <class T>
 std::vector<T> Intersection(const std::vector<T> &A, const std::vector<T> &B) {
    std::vector<T> ret;
-   ret.reserve((A.size() > B.size()) ? B.size() : A.size());
+   ret.reserve(std::min(A.size(), B.size()));
    for (const auto &b : B) {
       if (std::find_if(A.cbegin(), A.cend(), [&](const auto &a) { return a == b; }) != A.end())
          ret.emplace_back(b);
@@ -3375,9 +3386,9 @@ std::vector<T> Intersection(const std::vector<T> &A, const std::vector<T> &B) {
 template <class T>
 std::vector<T> Intersection(const std::unordered_set<T> &A, const std::unordered_set<T> &B) {
    std::vector<T> ret;
-   ret.reserve((A.size() > B.size()) ? B.size() : A.size());
+   ret.reserve(std::min(A.size(), B.size()));
    for (const auto &b : B) {
-      if (std::find_if(A.cbegin(), A.cend(), [&](const auto &a) { return a == b; }) != A.end())
+      if (A.find(b) != A.end())
          ret.emplace_back(b);
    }
    return ret;
@@ -3553,5 +3564,3 @@ class SLE {
    };
    //! ------------------------------------------------------ */
 };
-
-#endif

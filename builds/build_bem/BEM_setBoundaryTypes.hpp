@@ -54,7 +54,7 @@ std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const net
 std::vector<std::tuple<networkPoint *, networkFace *>> p2AllIDs(const networkPoint *p) {
    std::vector<std::tuple<networkPoint *, networkFace *>> ret;
    bool nullptr_found = false;
-   for (const auto &f : p->getFaces()) {
+   for (const auto &f : p->getSurfaces()) {
       auto PF = pf2ID(p, f);
       if (nullptr_found && std::get<1>(PF) != nullptr)
          ret.emplace_back(PF);
@@ -101,11 +101,11 @@ int pf2Index(const networkPoint *p, networkFace *f) {
 std::size_t setNodeFaceIndices(const std::vector<Network *> &objects) {
    std::size_t i = 0;
    for (const auto water : objects)
-      for (const auto &q : water->getPoints()) {
+      for (const auto &q : water->getSurfacePoints()) {
          q->f2Index.clear();
          if (isNeumannID_BEM(q, nullptr) || isDirichletID_BEM(q, nullptr))
             q->f2Index[nullptr] = i++;
-         for (const auto &f : q->getFaces())
+         for (const auto &f : q->getSurfaces())
             if (isNeumannID_BEM(q, f) || isDirichletID_BEM(q, f))
                q->f2Index[f] = i++;
       }
@@ -247,7 +247,7 @@ void setNeumannVelocity(const std::vector<Network *> &objects) {
          auto RK_time = net->RK_COM.gett();  //%各ルンゲクッタの時刻を使う
          setRigidBodyVelocityAndAccel_IfPredetermined(net, RK_time);
       } else if (net->isSoftBody) {
-         std::cout << net->getName() << "　の流速の計算方法．soft bodyの場合，各節点に速度を与える．" << std::endl;
+         std::cout << net->getName() << "の流速の計算方法．soft bodyの場合，各節点に速度を与える．" << std::endl;
          if (net->inputJSON.find("velocity")) {
             std::string move_name = net->inputJSON["velocity"][0];
             std::cout << "move_name = " << move_name << std::endl;
@@ -293,22 +293,25 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}
          //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
          // \label{BEM:detection_range}
          double r = 0., s = 0.;
-         for (auto &q : p->getNeighbors())
-            for (auto &l : q->getLines()) {
-               r += l->length();
+         for (auto &Q : p->getNeighbors())
+            for (auto &q : Q->getNeighbors()) {
+               r += Norm(q->X - p->X);
                s += 1.;
             }
          // p->detection_range = r / s / 2.;
-         p->detection_range = r / s / 2.;
+         p->detection_range = r / s;
          p->addContactFaces(net->getBucketFaces(), false);
       }
    }
 
+   // 接触判定の問題がか
+   // nextvectorの問題？
+   // tankを変えてやってみる
+
    std::cout << "step2 面の境界条件を判定" << std::endl;
-#pragma omp parallel
-   for (const auto &f : water->getFaces())
-#pragma omp single nowait
-   {
+   auto faces = water->getSurfaces();
+
+   for (const auto &f : faces) {
       // f->Neumann = std::ranges::all_of(f->getPoints(), [&f](const auto &p) { return isInContact(p, f, bfs(p->getContactFaces(), 2)); });
       //$ faceがNeumannであるための条件は，faceのもつpointがすべて外部の面と接触していることである．
       //$ 以下の設定を使うことで，f->Neumannは自分の頂点pとで，p->getNearestContactFace(f)を使うことができる．
@@ -318,17 +321,15 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}
 
    std::cout << "step3 線の境界条件を決定" << std::endl;
    for (const auto &l : water->getLines()) {
-      l->Neumann = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Neumann; });
-      l->Dirichlet = std::ranges::all_of(l->getFaces(), [](const auto &f) { return f->Dirichlet; });
+      l->Neumann = std::ranges::all_of(l->getSurfaces(), [](const auto &f) { return f->Neumann; });
+      l->Dirichlet = std::ranges::all_of(l->getSurfaces(), [](const auto &f) { return f->Dirichlet; });
       l->CORNER = (!l->Neumann && !l->Dirichlet);
    }
    std::cout << "step4 点の境界条件を決定" << std::endl;
-#pragma omp parallel
-   for (const auto &p : water->getPoints())
-#pragma omp single nowait
-   {
-      p->Neumann = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
-      p->Dirichlet = std::ranges::all_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
+
+   for (const auto &p : water->getPoints()) {
+      p->Neumann = std::ranges::all_of(p->getSurfaces(), [](const auto &f) { return f->Neumann; });
+      p->Dirichlet = std::ranges::all_of(p->getSurfaces(), [](const auto &f) { return f->Dirichlet; });
       p->CORNER = (!p->Neumann && !p->Dirichlet);
       // step5 多重節点の判定
       setIsMultipleNode(p);
@@ -336,13 +337,8 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}
 
    //@ ------------------------------------------ */
 
-   for (const auto &f : water->getFaces()) {
-#ifndef _PSEUDO_QUADRATIC_ELEMENT_
-      f->isPseudoQuadraticElement = false;
-#else
+   for (const auto &f : faces) {
       f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
-#endif
-
       f->isLinearElement = !f->isPseudoQuadraticElement;
    }
 
@@ -378,40 +374,58 @@ void setPhiPhinOnFace(Network *water) {
       p->phintOnFace.clear();
 
       auto run = [p](networkFace *const &f) {
-         /*
-         Neumann境界のphinは，現在，接触しているオブジェクトの速度uNeumann(p)またはuNeumann(p,f)を使って計算しており，前の時刻のphinは使っていない．
-         */
-         if (isNeumannID_BEM(p, f)) {
-            if (f == nullptr) {
+         /*Neumann境界のphinは，現在，接触しているオブジェクトの速度contactNormalVelocity(p)またはcontactNormalVelocity(p,f)を使って計算しており，前の時刻のphinは使っていない．*/
+         if (p->absorbedBy != nullptr) {
+            if (isNeumannID_BEM(p, f)) {
+               if (f == nullptr) {
+                  p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
+                  p->phitOnFace.insert({nullptr, 1E+30});
+                  p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(p->absorbedBy->absorb_velocity(p), p->getNormalNeumann_BEM())});
+                  p->phintOnFace.insert({nullptr, 1E+30});
+               } else {
+                  p->phiOnFace.insert({f, std::get<0>(p->phiphin)});
+                  p->phitOnFace.insert({f, 1E+30});
+                  p->phinOnFace.insert({f, Dot(p->absorbedBy->absorb_velocity(p), f->normal)});
+                  p->phintOnFace.insert({f, 1E+30});
+               }
+            }
+            if (isDirichletID_BEM(p, f)) {
                p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
                p->phitOnFace.insert({nullptr, 1E+30});
-               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(uNeumann(p), p->getNormalNeumann_BEM())});
+               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin)});
                p->phintOnFace.insert({nullptr, 1E+30});
-            } else {
-               p->phiOnFace.insert({f, std::get<0>(p->phiphin)});
-               p->phitOnFace.insert({f, 1E+30});
-               p->phinOnFace.insert({f, Dot(uNeumann(p, f), f->normal)});
-               p->phintOnFace.insert({f, 1E+30});
             }
-         }
-
-         if (isDirichletID_BEM(p, f)) {
-            p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
-            p->phitOnFace.insert({nullptr, 1E+30});
-            p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin)});
-            p->phintOnFace.insert({nullptr, 1E+30});
+         } else {
+            if (isNeumannID_BEM(p, f)) {
+               if (f == nullptr) {
+                  p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
+                  p->phitOnFace.insert({nullptr, 1E+30});
+                  p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin) = Dot(contactNormalVelocity(p), p->getNormalNeumann_BEM())});
+                  p->phintOnFace.insert({nullptr, 1E+30});
+               } else {
+                  p->phiOnFace.insert({f, std::get<0>(p->phiphin)});
+                  p->phitOnFace.insert({f, 1E+30});
+                  p->phinOnFace.insert({f, Dot(contactNormalVelocity(p, f), f->normal)});
+                  p->phintOnFace.insert({f, 1E+30});
+               }
+            }
+            if (isDirichletID_BEM(p, f)) {
+               p->phiOnFace.insert({nullptr, std::get<0>(p->phiphin)});
+               p->phitOnFace.insert({nullptr, 1E+30});
+               p->phinOnFace.insert({nullptr, std::get<1>(p->phiphin)});
+               p->phintOnFace.insert({nullptr, 1E+30});
+            }
          }
       };
 
-      //! 全ての組{p,f}を調べ，使えるものをチェックする
       run(nullptr);
-      for (const auto &f : p->getFaces())
+      for (const auto &f : p->getSurfaces())
          run(f);
    }
 
    // b! 面
    std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦを与える．Neumann面にはΦnを与える．" << colorReset << std::endl;
-   for (const auto &f : water->getFaces()) {
+   for (const auto &f : water->getSurfaces()) {
       auto [p0, p1, p2] = f->getPoints();
       std::get<0>(f->phiphin) = (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3.;
    }
@@ -422,6 +436,91 @@ void setPhiPhinOnFace(const std::vector<Network *> &objects) {
       setPhiPhinOnFace(water);
 };
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+// \label{BEM:setPhiPhin_t}
+void setPhiPhin_t(std::vector<Network *> WATERS) {
+   //    for (const auto water : WATERS)
+   // #pragma omp parallel
+   //       for (const auto &p : water->getPoints())
+   // #pragma omp single nowait
+   //          for (const auto &[F, i] : p->f2Index) {
+   //             // auto [p, F] = PBF;
+   //             //!!ノイマンの場合はこれでDphiDtは計算できませんよ
+   //             if (isDirichletID_BEM(p, F))
+   //                p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
+   //             else if (isNeumannID_BEM(p, F)) {
+   //                for (auto &[f, phin_t] : p->phintOnFace) {
+   //                   // phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);
+   //                   phin_t = (f != nullptr) ? phint_Neumann(p, f) : phint_Neumann(p);  // \label{BEM:setphint}
+   //                }
+   //                std::get<1>(p->phiphin_t) = phint_Neumann(p);
+   //             }
+   //          }
+
+   /* -------------------------------------------------------------------------- */
+   // b! 点
+   std::cout << Green << "RKのtime step毎に，Dirichlet点にはΦtを与える．Neumann点にはΦntを与える" << colorReset << std::endl;
+
+   for (const auto water : WATERS)
+#pragma omp parallel
+      for (const auto &p : water->getPoints())
+#pragma omp single nowait
+      {
+         p->phitOnFace.clear();
+         p->phintOnFace.clear();
+
+         auto run = [p](networkFace *const &f) {
+            /*Neumann境界のphinは，現在，接触しているオブジェクトの速度contactNormalVelocity(p)またはcontactNormalVelocity(p,f)を使って計算しており，前の時刻のphinは使っていない．*/
+            if (p->absorbedBy != nullptr) {
+               if (isNeumannID_BEM(p, f)) {
+                  if (f == nullptr) {
+                     p->phitOnFace.insert({nullptr, 1E+30});
+                     p->phintOnFace.insert({nullptr, std::get<1>(p->phiphin_t) = Dot(p->absorbedBy->absorb_gradPhi_t(p), p->getNormalNeumann_BEM())});
+                  } else {
+                     p->phitOnFace.insert({f, 1E+30});
+                     p->phintOnFace.insert({f, Dot(p->absorbedBy->absorb_gradPhi_t(p), f->normal)});
+                  }
+               }
+               if (isDirichletID_BEM(p, f)) {
+                  p->phitOnFace.insert({nullptr, p->aphiat(0.)});
+                  p->phintOnFace.insert({nullptr, 1E+30});
+               }
+            } else {
+               if (isNeumannID_BEM(p, f)) {
+                  if (f == nullptr) {
+                     p->phitOnFace.insert({nullptr, 1E+30});
+                     p->phintOnFace.insert({nullptr, std::get<1>(p->phiphin_t) = phint_Neumann(p)});
+                  } else {
+                     p->phitOnFace.insert({f, 1E+30});
+                     p->phintOnFace.insert({f, phint_Neumann(p, f)});
+                  }
+               }
+               if (isDirichletID_BEM(p, f)) {
+                  p->phitOnFace.insert({nullptr, p->aphiat(0.)});
+                  p->phintOnFace.insert({nullptr, 1E+30});
+               }
+            }
+         };
+
+         run(nullptr);
+         for (const auto &f : p->getSurfaces())
+            run(f);
+
+         // b! 面
+         // std::cout << Green << "RKのtime step毎に，Dirichlet面にはΦtを与える．Neumann面にはΦntを与える．" << colorReset << std::endl;
+         // for (const auto &f : water->getSurfaces()) {
+         //    auto [p0, p1, p2] = f->getPoints();
+         //    std::get<0>(f->phiphin_t) = (std::get<0>(p0->phiphin_t) + std::get<0>(p1->phiphin_t) + std::get<0>(p2->phiphin_t)) / 3.;
+         // }
+      }
+   std::cout << "setPhiPhin_t終了" << std::endl;
+};
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
 template <typename T1, typename T2, typename T3>
@@ -444,13 +543,14 @@ void storePhiPhinCommon(const std::vector<Network *> &WATERS, const V_d &ans, T1
          if (p->Neumann) {
             double total = 0;
             std::get<0>(p->*phiphinProperty) = 0;
-            std::ranges::for_each(p->getFaces(), [&total](const auto &f) { total += f->area; });
-            for (const auto &f : p->getFaces()) {
+            for (const auto &f : p->getSurfaces()) {
+               total += f->area;
                if ((p->*phiOnFaceProperty).count(f))
-                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(f) * f->area / total;
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(f) * f->area;
                else
-                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(nullptr) * f->area / total;
+                  std::get<0>(p->*phiphinProperty) += (p->*phiOnFaceProperty).at(nullptr) * f->area;
             }
+            std::get<0>(p->*phiphinProperty) /= total;
          }
 }
 

@@ -2,16 +2,21 @@
     "name": "float",
     "type": "RigidBody",
     "velocity": "floating",
-    "mass": 4.375,
+    "mass": 12645516.0,
     "COM": [
-        2,
-        0,
-        0.964
+        75.0,
+        50.0,
+        111.0
+    ],
+    "radius_of_gyration": [
+        20.0,
+        20.0,
+        20.0
     ],
     "MOI": [
-        10000000000,
-        10000000000,
-        10000000000
+        5058206400.0,
+        5058206400.0,
+        5058206400.0
     ],
-    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tonegawa2024/float.obj"
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/2022Tonegawa/three_d100/floatingbody50.obj"
 }

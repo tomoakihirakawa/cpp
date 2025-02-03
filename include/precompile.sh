@@ -1,10 +1,19 @@
-# !/bin/zh
+#!/bin/zsh
 
-g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o fundamental_exception.hpp.gch fundamental_exception.hpp
-g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o basic_arithmetic_vector_operations.hpp.gch basic_arithmetic_vector_operations.hpp
-g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o fundamental_constants.hpp.gch fundamental_constants.hpp
-g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o fundamental_vectors.hpp.gch fundamental_vectors.hpp
-g++-10 -std=c++17 -Ofast -Winvalid-pch -fopenmp -H -x c++-header -o fundamental.hpp.gch fundamental.hpp
-# g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o fundamental_geometry.hpp.gch fundamental_geometry.hpp 
-# g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o Network.hpp.gch Network.hpp
-g++-10 -std=c++17 -Ofast -fopenmp -x c++-header -o GNUPLOT.hpp.gch GNUPLOT.hpp
+#@ Network.hppに関するヘッダーファイルは，このプリコンパイル`pch.hpp`に含めていない
+#@ 変更があまりされないものだけを，`pch.hpp`に含めている
+
+SCRIPT_DIR=$(cd $(dirname $0) && pwd)
+
+# (
+#    cd "${SCRIPT_DIR}/tetgen1.6.0"
+#    sh clean
+#    cmake -DCMAKE_BUILD_TYPE=Release ./
+#    make
+# )
+
+(
+   cd "${SCRIPT_DIR}"
+   /opt/homebrew/bin/g++-13 -std=gnu++2b -x c++-header -fopenmp -fconcepts -pthread -Ofast -march=native -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -o ./pch.hpp.gch ./pch.hpp
+   # /opt/homebrew/bin/g++-13 -v -Wall -std=gnu++2b -x c++-header -fopenmp -fconcepts -pthread -Ofast -march=native -I"${SCRIPT_DIR}" -I"${SCRIPT_DIR}/tetgen" -o ./pch.hpp.gch ./pch.hpp
+)

@@ -10,8 +10,8 @@ const std::vector<std::array<double, 2>> Hadzic2005_time_angle = {{-0.003, 0.}, 
 
 struct Hadzic2005 {
 
-   Hadzic2005(const double startIN) : start(startIN){};
-   Hadzic2005() : start(0.){};
+   Hadzic2005(const double startIN) : start(startIN) {};
+   Hadzic2005() : start(0.) {};
    double start;
 
    int find_index(const double t) {

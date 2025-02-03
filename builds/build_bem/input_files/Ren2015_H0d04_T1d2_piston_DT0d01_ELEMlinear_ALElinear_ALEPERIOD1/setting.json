@@ -1,0 +1,15 @@
+{
+    "max_dt": 0.01,
+    "end_time_step": 10000,
+    "end_time": 9,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Ren2015_H0d04_T1d2_piston_DT0d01_ELEMlinear_ALElinear_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "float.json"
+    ]
+}

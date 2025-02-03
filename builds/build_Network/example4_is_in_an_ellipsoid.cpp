@@ -41,7 +41,7 @@ int main() {
          for (int j = -gridCount; j < gridCount; ++j)
             for (int k = -gridCount; k < gridCount; ++k) {
                Tddd point = {i * gridSize, j * gridSize, k * gridSize};
-               if (ellipsoid_front.isInside(point) || ellipsoid_back.isInside(point)) {
+               if (ellipsoid_front.InsideQ(point) || ellipsoid_back.InsideQ(point)) {
                   new networkPoint(net, point);
                   count++;
                }

@@ -1,5 +1,4 @@
-#ifndef basic_linear_systems_H
-#define basic_linear_systems_H
+#pragma once
 
 #include <cmath>
 #include "basic_vectors.hpp"
@@ -208,12 +207,59 @@ extern "C" void dgetrs_(const char *TRANS, const int *N, const int *NRHS, const 
 extern "C" void dgetri_(const int *n, double *a, const int *lda, const int *ipiv, double *work, int *lwork, int *info);
 
 struct lapack_lu {
-   const int dim, nrhs = 1, LDB, LDA;
+   int dim, nrhs = 1, LDB, LDA;
    int info;
    std::vector<int> ipiv;
    std::vector<double> a;
+   std::vector<std::vector<double>> L;  // Lower triangular matrix
+   std::vector<std::vector<double>> U;  // Upper triangular matrix
    char TRANS = 'T';
+
+   //! Decompose the matrix into L and U
+   void decompose() {
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+      if (info != 0) {
+         throw std::runtime_error("LU decomposition failed");
+      }
+
+      // Extract L and U matrices
+      L.resize(dim, std::vector<double>(dim, 0.0));
+      U.resize(dim, std::vector<double>(dim, 0.0));
+      for (int i = 0; i < dim; ++i) {
+         for (int j = 0; j < dim; ++j) {
+            if (i > j) {
+               L[i][j] = a[i * dim + j];  // Below diagonal
+            } else if (i == j) {
+               L[i][j] = 1.0;             // Diagonal of L is 1
+               U[i][j] = a[i * dim + j];  // Diagonal of U
+            } else {
+               U[i][j] = a[i * dim + j];  // Above diagonal
+            }
+         }
+      }
+   }
    ~lapack_lu() {};
+
+   void init(const std::vector<std::vector<double>> &aIN) {
+      dim = aIN.size();
+      LDB = dim;
+      LDA = dim;
+      ipiv.resize(dim);
+      a.resize(dim * dim);
+      std::size_t i, j, k = 0;
+      for (i = 0; i < dim; ++i)
+         for (j = 0; j < dim; ++j)
+            a[k++] = aIN[i][j];
+      dgetrf_(&dim, &dim, a.data(), &LDA, ipiv.data(), &info);
+      if (info) {
+         std::stringstream ss;
+         ss << "LDB:" << LDB;
+         ss << "\nLDA:" << LDA;
+         ss << "\nipiv:" << ipiv;
+         // ss << "\na:" << a;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+      };
+   };
 
    lapack_lu(const std::vector<std::vector<double>> &aIN) : dim(aIN.size()), LDB(dim), LDA(dim), ipiv(dim), a(dim * dim) {
       std::size_t i, j, k = 0;
@@ -410,6 +456,37 @@ struct lapack_lu {
    // }
 };
 
+double Det(const VV_d &M) {
+   int n = M.size();
+
+   // Base case for 2x2 matrix
+   if (n == 2) {
+      return std::fma(M[0][0], M[1][1], -M[1][0] * M[0][1]);
+   } else if (n == 3) {
+      return M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1]) -
+             M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0]) +
+             M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+   }
+
+   lapack_lu lu(M);
+
+   // Calculate determinant
+   double det = 1.0;
+   for (int i = 0; i < n; ++i) {
+      det *= lu.a[i * n + i];  // LU分解後の対角要素
+   }
+
+   // Consider pivot sign
+   int pivotSign = 1;
+   for (int i = 0; i < n; ++i) {
+      if (lu.ipiv[i] != i + 1) {  // ピボット操作がある場合
+         pivotSign = -pivotSign;
+      }
+   }
+
+   return det * pivotSign;
+}
+
 template <std::size_t N>
 std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double, N>, N> &A) {
    lapack_lu lu(A);
@@ -489,7 +566,127 @@ VV_d Inverse(const VV_d &mat) {
 //    lapack_lu(b, A, x);
 // };
 
+// #include <algorithm>
+
+// extern "C" void dgesvd_(const char *jobu, const char *jobvt,
+//                         const int *m, const int *n,
+//                         double *a, const int *lda,
+//                         double *s,
+//                         double *u, const int *ldu,
+//                         double *vt, const int *ldvt,
+//                         double *work, const int *lwork, int *info);
+
+// struct lapack_svd {
+//    std::vector<double> a;
+//    const int m, n;
+//    std::vector<double> s, u, vt, work;
+//    int lwork;
+//    int info;
+
+//    lapack_svd(const std::vector<std::vector<double>> &aIN)
+//        : a(flatten(aIN)), m(aIN.size()), n(aIN[0].size()), s(std::min(m, n)), u(m * m), vt(n * n) {
+//       // char jobu = 'A', jobvt = 'A';
+//       // double work_query;
+//       // int lwork_query = -1;
+//       // dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//       //         s.data(), u.data(), &m, vt.data(), &n,
+//       //         &work_query, &lwork_query, &info);
+//       // lwork = static_cast<int>(work_query);
+//       // work.resize(lwork);
+
+//       // dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//       //         s.data(), u.data(), &m, vt.data(), &n,
+//       //         work.data(), &lwork, &info);
+//       // if (info != 0) {
+//       //    throw std::runtime_error("Error in SVD computation");
+//       // }
+//       char jobu = 'A', jobvt = 'A';
+//       double work_query;
+//       int lwork_query = -1;
+
+//       // Query optimal work size
+//       dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//               s.data(), u.data(), &m, vt.data(), &n,
+//               &work_query, &lwork_query, &info);
+
+//       if (info < 0) {
+//          throw std::runtime_error("Illegal value in argument " + std::to_string(-info) + " during workspace query.");
+//       }
+
+//       lwork = static_cast<int>(work_query);
+//       work.resize(lwork);
+
+//       // Compute SVD
+//       dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//               s.data(), u.data(), &m, vt.data(), &n,
+//               work.data(), &lwork, &info);
+
+//       if (info < 0) {
+//          throw std::runtime_error("Illegal value in argument " + std::to_string(-info) + " during SVD computation.");
+//       } else if (info > 0) {
+//          throw std::runtime_error("SVD did not converge; " + std::to_string(info) + " superdiagonals did not converge.");
+//       }
+//    }
+
+//    //! solve A.x = b
+//    template <std::size_t N>
+//    lapack_svd(const std::array<std::array<double, N>, N> &aIN, std::array<double, N> &ans, const std::array<double, N> &rhd)
+//        : a(flatten(aIN)), m(aIN.size()), n(aIN[0].size()), s(std::min(m, n)), u(m * m), vt(n * n) {
+//       char jobu = 'A', jobvt = 'A';
+//       double work_query;
+//       int lwork_query = -1;
+//       dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//               s.data(), u.data(), &m, vt.data(), &n,
+//               &work_query, &lwork_query, &info);
+//       lwork = static_cast<int>(work_query);
+//       work.resize(lwork);
+
+//       ans = rhd;
+//       dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
+//               s.data(), u.data(), &m, vt.data(), &n,
+//               work.data(), &lwork, &info);
+
+//       this->solve(rhd, ans);
+//       if (info != 0)
+//          throw std::runtime_error("Error in SVD computation");
+//    }
+
+//    template <typename Container>
+//    std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
+//       using ValueType = typename Container::value_type::value_type;
+//       std::vector<ValueType> flattened;
+//       flattened.reserve(mat.size() * mat[0].size());
+//       for (const auto &part : mat)
+//          flattened.insert(flattened.end(), part.begin(), part.end());
+//       return flattened;
+//    }
+
+//    void solve(const auto &b, auto &x) {
+//       if (m != b.size())
+//          throw std::runtime_error("dimension mismatch");
+
+//       std::vector<double> tmp(std::min(m, n), 0.0);
+//       for (std::size_t i = 0; i < std::min(m, n); ++i) {
+//          double inv_s = (s[i] > 1e-9) ? (1 / s[i]) : 0.0;
+//          for (std::size_t j = 0; j < m; ++j) {
+//             tmp[i] += u[j * m + i] * b[j];
+//          }
+//          tmp[i] *= inv_s;
+//       }
+
+//       // x.resize(n, 0.0);
+//       for (std::size_t i = 0; i < n; ++i) {
+//          for (std::size_t j = 0; j < std::min(m, n); ++j) {
+//             x[i] += vt[j * n + i] * tmp[j];
+//          }
+//       }
+//    }
+// };
+
+/* -------------------------------------------------------------------------- */
 #include <algorithm>
+#include <stdexcept>
+#include <vector>
 
 extern "C" void dgesvd_(const char *jobu, const char *jobvt,
                         const int *m, const int *n,
@@ -498,64 +695,546 @@ extern "C" void dgesvd_(const char *jobu, const char *jobvt,
                         double *u, const int *ldu,
                         double *vt, const int *ldvt,
                         double *work, const int *lwork, int *info);
-
 struct lapack_svd {
-   std::vector<double> a;
-   const int m, n;
-   std::vector<double> s, u, vt, work;
-   int lwork;
-   int info;
+   std::vector<std::vector<double>> A;  // Flattened input matrix
+   int m, n;                            // Dimensions of the input matrix
+   // std::vector<double> s, u, vt, work;  // Singular values, U, VT, and workspace
+   int lwork;  // Workspace size
+   int info;   // Status code
 
-   lapack_svd(const std::vector<std::vector<double>> &aIN)
-       : a(flatten(aIN)), m(aIN.size()), n(aIN[0].size()), s(std::min(m, n)), u(m * m), vt(n * n) {
-      char jobu = 'A', jobvt = 'A';
+   std::vector<std::vector<double>> U;
+   std::vector<double> S;
+   std::vector<std::vector<double>> VT;
+
+   /* -------------------------------------------------------------------------- */
+
+   explicit lapack_svd(const std::vector<std::vector<double>> &A)
+       : A(A), m(A.size()), n(A[0].size()) {
+      int lda = m;
+      int ldu = m;
+      int ldvt = n;
+
+      std::vector<double> a(m * n);
+      std::vector<double> u(m * m);
+      std::vector<double> vt(n * n);
+      S.resize(std::min(m, n));
+
+      // Flatten A into a 1D array
+      for (int i = 0; i < m; ++i) {
+         for (int j = 0; j < n; ++j) {
+            a[i + j * m] = A[i][j];
+         }
+      }
+
+      // Workspace query
       double work_query;
-      int lwork_query = -1;
-      dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
-              s.data(), u.data(), &m, vt.data(), &n,
-              &work_query, &lwork_query, &info);
+      lwork = -1;
+
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during workspace query.");
+      }
+
+      // Allocate workspace
       lwork = static_cast<int>(work_query);
-      work.resize(lwork);
+      std::vector<double> work(lwork);
 
-      dgesvd_(&jobu, &jobvt, &m, &n, a.data(), &m,
-              s.data(), u.data(), &m, vt.data(), &n,
-              work.data(), &lwork, &info);
-      if (info != 0) {
-         throw std::runtime_error("Error in SVD computation");
+      // Perform SVD
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during SVD computation.");
+      } else if (info > 0) {
+         throw std::runtime_error("SVD did not converge.");
+      }
+
+      // Reshape U and VT into 2D arrays
+      U.resize(m, std::vector<double>(m));
+      VT.resize(n, std::vector<double>(n));
+
+      for (int i = 0; i < m; ++i) {
+         for (int j = 0; j < m; ++j) {
+            U[i][j] = u[i + j * m];
+         }
+      }
+
+      for (int i = 0; i < n; ++i) {
+         for (int j = 0; j < n; ++j) {
+            VT[i][j] = vt[i + j * n];
+         }
       }
    }
 
-   template <typename Container>
-   std::vector<typename Container::value_type::value_type> flatten(const Container &mat) {
-      using ValueType = typename Container::value_type::value_type;
-      std::vector<ValueType> flattened;
-      flattened.reserve(mat.size() * mat[0].size());
-      for (const auto &part : mat)
-         flattened.insert(flattened.end(), part.begin(), part.end());
-      return flattened;
+   // std::vector<std::vector<double>> inverse() {
+   //    std::vector<std::vector<double>> inv_mat(n, std::vector<double>(m, 0.0));
+   //    for (int i = 0; i < n; ++i) {
+   //       for (int j = 0; j < m; ++j) {
+   //          for (int k = 0; k < S.size(); ++k) {
+   //             inv_mat[i][j] += VT[i][k] * U[j][k] / S[k];
+   //          }
+   //       }
+   //    }
+   //    return inv_mat;
+   // }
+
+   std::vector<std::vector<double>> inverse(double threshold = 1e-9) {
+      std::vector<std::vector<double>> inv_mat(n, std::vector<double>(m, 0.0));
+      for (int i = 0; i < n; ++i) {
+         for (int j = 0; j < m; ++j) {
+            for (int k = 0; k < S.size(); ++k) {
+               if (S[k] > threshold) {  // 特異値が小さすぎる場合は無視
+                  inv_mat[i][j] += VT[i][k] * U[j][k] / S[k];
+               }
+            }
+         }
+      }
+      return inv_mat;
+   }
+   std::vector<std::vector<double>> inverse_dot(const std::vector<std::vector<double>> &Mat, double threshold = 1e-9) const {
+      if (Mat.size() != n) {
+         throw std::runtime_error("Dimension mismatch: The input matrix Mat must have the same number of rows as A.");
+      }
+
+      std::vector<std::vector<double>> result(n, std::vector<double>(Mat[0].size(), 0.0));
+
+      // **(1) 直接 inv(A) * Mat を計算**
+      for (int i = 0; i < n; ++i) {
+         for (int j = 0; j < Mat[0].size(); ++j) {
+            for (int k = 0; k < S.size(); ++k) {
+               // if (S[k] > threshold)
+               {  // 小さすぎる特異値は無視
+                  for (int l = 0; l < m; ++l) {
+                     result[i][j] += (VT[i][k] * U[l][k] * Mat[l][j] / S[k]);
+                  }
+               }
+            }
+         }
+      }
+
+      return result;
+   }
+   /* -------------------------------------------------------------------------- */
+
+   explicit lapack_svd(const std::vector<std::vector<double>> &A, std::vector<double> &x, const std::vector<double> &b)
+       : A(A), m(A.size()), n(A[0].size()) {
+      int lda = m;
+      int ldu = m;
+      int ldvt = n;
+
+      std::vector<double> a(m * n);
+      std::vector<double> u(m * m);
+      std::vector<double> vt(n * n);
+      S.resize(std::min(m, n));
+
+      // Flatten A into a 1D array
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < n; ++j)
+            a[i + j * m] = A[i][j];
+
+      // Workspace query
+      double work_query;
+      lwork = -1;
+
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during workspace query.");
+      }
+
+      // Allocate workspace
+      lwork = static_cast<int>(work_query);
+      std::vector<double> work(lwork);
+
+      // Perform SVD
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during SVD computation.");
+      } else if (info > 0) {
+         throw std::runtime_error("SVD did not converge.");
+      }
+
+      // Reshape U and VT into 2D arrays
+      U.resize(m, std::vector<double>(m));
+      VT.resize(n, std::vector<double>(n));
+
+      for (int i = 0; i < m; ++i) {
+         for (int j = 0; j < m; ++j) {
+            U[i][j] = u[i + j * m];
+         }
+      }
+
+      for (int i = 0; i < n; ++i) {
+         for (int j = 0; j < n; ++j) {
+            VT[i][j] = vt[i + j * n];
+         }
+      }
+
+      solve(b, x);
    }
 
-   void solve(const std::vector<double> &b, std::vector<double> &x) {
-      if (m != b.size())
-         throw std::runtime_error("dimension mismatch");
-
-      std::vector<double> tmp(std::min(m, n), 0.0);
-      for (std::size_t i = 0; i < std::min(m, n); ++i) {
-         double inv_s = (s[i] > 1e-9) ? (1 / s[i]) : 0.0;
-         for (std::size_t j = 0; j < m; ++j) {
-            tmp[i] += u[j * m + i] * b[j];
-         }
-         tmp[i] *= inv_s;
+   explicit lapack_svd(std::vector<double> &x, const std::vector<std::vector<double>> &A, const std::vector<double> &b) {
+      std::vector<std::vector<double>> A_transposed;
+      std::vector<double> row(A.size());
+      for (std::size_t i = 0; i < A[0].size(); ++i) {
+         for (std::size_t j = 0; j < A.size(); ++j)
+            row[j] = A[j][i];
+         A_transposed.emplace_back(row);
       }
 
-      x.resize(n, 0.0);
-      for (std::size_t i = 0; i < n; ++i) {
-         for (std::size_t j = 0; j < std::min(m, n); ++j) {
-            x[i] += vt[j * n + i] * tmp[j];
+      // Perform SVD on the transposed matrix
+      lapack_svd svd(A_transposed);
+      this->U = svd.U;
+      this->S = svd.S;
+      this->VT = svd.VT;
+      this->m = svd.m;
+      this->n = svd.n;
+      this->lwork = svd.lwork;
+      this->info = svd.info;
+      svd.solve(b, x);
+   }
+
+   /* -------------------------------------------------------------------------- */
+
+   template <std::size_t N, std::size_t M>
+   explicit lapack_svd(const std::array<std::array<double, N>, M> &AIN, std::array<double, N> &x, const std::array<double, M> &b)
+       : m(AIN.size()), n(AIN[0].size()) {
+      std::vector<std::vector<double>> A(m, std::vector<double>(n));
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < n; ++j)
+            A[i][j] = AIN[i][j];
+      int lda = m;
+      int ldu = m;
+      int ldvt = n;
+
+      std::vector<double> a(m * n);
+      std::vector<double> u(m * m);
+      std::vector<double> vt(n * n);
+      S.resize(std::min(m, n));
+
+      // Flatten A into a 1D array
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < n; ++j)
+            a[i + j * m] = A[i][j];
+
+      // Workspace query
+      double work_query;
+      lwork = -1;
+
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during workspace query.");
+      }
+
+      // Allocate workspace
+      lwork = static_cast<int>(work_query);
+      std::vector<double> work(lwork);
+
+      // Perform SVD
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+      if (info < 0) {
+         throw std::runtime_error("Illegal value in argument during SVD computation.");
+      } else if (info > 0) {
+         throw std::runtime_error("SVD did not converge.");
+      }
+
+      // Reshape U and VT into 2D arrays
+      U.resize(m, std::vector<double>(m));
+      VT.resize(n, std::vector<double>(n));
+
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < m; ++j)
+            U[i][j] = u[i + j * m];
+
+      for (int i = 0; i < n; ++i)
+         for (int j = 0; j < n; ++j)
+            VT[i][j] = vt[i + j * n];
+
+      solve(b, x);
+   }
+
+   //! Solve x.A = b
+   template <std::size_t N, std::size_t M>
+   lapack_svd(std::array<double, N> &x, const std::array<std::array<double, N>, M> &A, const std::array<double, M> &b) {
+      std::vector<std::vector<double>> A_transposed;
+      std::vector<double> row(A.size());
+      for (std::size_t i = 0; i < A[0].size(); ++i) {
+         for (std::size_t j = 0; j < A.size(); ++j)
+            row[j] = A[j][i];
+         A_transposed.emplace_back(row);
+      }
+
+      // Perform SVD on the transposed matrix
+      lapack_svd svd(A_transposed);
+      this->U = svd.U;
+      this->S = svd.S;
+      this->VT = svd.VT;
+      this->m = svd.m;
+      this->n = svd.n;
+      this->lwork = svd.lwork;
+      this->info = svd.info;
+      svd.solve(b, x);
+   }
+
+   template <std::size_t N, std::size_t M>
+   std::array<double, N> solve(const std::array<double, M> &b, std::array<double, N> &x) {
+
+      if (b.size() != static_cast<size_t>(m)) {
+         throw std::runtime_error("Dimension mismatch between A and b.");
+      }
+
+      // Compute U^T * b
+      std::vector<double> c(m, 0.0);
+      for (int i = 0; i < m; ++i) {
+         for (int j = 0; j < m; ++j) {
+            c[i] += U[j][i] * b[j];
          }
       }
+
+      // Solve for y = S^(-1) * c
+      std::vector<double> y(std::min(m, n), 0.0);
+      for (int i = 0; i < std::min(m, n); ++i) {
+         if (S[i] > 1e-9) {
+            y[i] = c[i] / S[i];
+         }
+      }
+
+      // Compute x = V * y
+      for (int i = 0; i < n; ++i) {
+         x[i] = 0.0;
+         for (int j = 0; j < std::min(m, n); ++j) {
+            x[i] += VT[j][i] * y[j];
+         }
+      }
+
+      return x;
+   }
+   std::vector<double> solve(const std::vector<double> &b, std::vector<double> &x) {
+
+      if (b.size() != static_cast<size_t>(m)) {
+         throw std::runtime_error("Dimension mismatch between A and b.");
+      }
+
+      // Compute U^T * b
+      std::vector<double> c(m, 0.0);
+      for (int i = 0; i < m; ++i) {
+         for (int j = 0; j < m; ++j) {
+            c[i] += U[j][i] * b[j];
+         }
+      }
+
+      // Solve for y = S^(-1) * c
+      std::vector<double> y(std::min(m, n), 0.0);
+      for (int i = 0; i < std::min(m, n); ++i) {
+         if (S[i] > 1e-9) {
+            y[i] = c[i] / S[i];
+         }
+      }
+
+      // Compute x = V * y
+      for (int i = 0; i < n; ++i) {
+         x[i] = 0.0;
+         for (int j = 0; j < std::min(m, n); ++j) {
+            x[i] += VT[j][i] * y[j];
+         }
+      }
+
+      return x;
    }
 };
+
+template <std::size_t N>
+void lapack_svd_solve(std::array<double, N> &x,
+                      const std::array<std::array<double, N>, N> &A,
+                      const std::array<double, N> &b) {
+   int lda = N, ldu = N, ldvt = N, info;
+
+   // ローカル変数にキャストしてポインタを渡せるようにする
+   int m = static_cast<int>(N);
+   int n = static_cast<int>(N);
+
+   // Flatten the input matrix A
+   std::array<double, N * N> a = {};
+   for (int j = 0; j < N; ++j)
+      for (int i = 0; i < N; ++i)
+         a[i + j * N] = A[j][i];
+
+   // Prepare singular values, U, VT, and workspace
+   std::array<double, N> s;  // Singular values
+   std::array<double, N * N> u, vt;
+   double work_query;
+   int lwork = -1;
+
+   // Query workspace size
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+   if (info < 0)
+      throw std::runtime_error("Illegal value in argument during workspace query.");
+   // Allocate workspace
+   lwork = static_cast<int>(work_query);
+   std::vector<double> work(lwork);
+   // Perform SVD
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+   if (info < 0) {
+      throw std::runtime_error("Illegal value in argument during SVD computation.");
+   } else if (info > 0) {
+      throw std::runtime_error("SVD did not converge.");
+   }
+
+   // Solve the system using SVD results
+   std::array<double, N> c;
+   c.fill(0.0);
+   // Compute U^T * b
+   double bj;
+   for (int j = 0; j < N; ++j) {
+      bj = b[j];
+      for (int i = 0; i < N; ++i) {
+         c[i] += u[j + i * N] * bj;
+      }
+   }
+
+   // Compute x = V * y
+   x.fill(0.0);  // Initialize x to zero
+   double factor;
+   for (int j = 0; j < N; ++j)
+      if (s[j] > 1e-9) {
+         factor = c[j] / s[j];
+         for (int i = 0; i < N; ++i) {
+            x[i] += vt[j + i * N] * factor;
+         }
+      }
+}
+
+template <std::size_t N>
+void lapack_svd_solve(const std::array<std::array<double, N>, N> &A,
+                      std::array<double, N> &x,
+                      const std::array<double, N> &b) {
+   int lda = N, ldu = N, ldvt = N, info;
+
+   // ローカル変数にキャストしてポインタを渡せるようにする
+   int m = static_cast<int>(N);
+   int n = static_cast<int>(N);
+
+   // Flatten the input matrix A
+   std::array<double, N * N> a = {};
+   for (int i = 0; i < N; ++i)
+      for (int j = 0; j < N; ++j)
+         a[i + j * N] = A[i][j];
+
+   // Prepare singular values, U, VT, and workspace
+   std::array<double, N> s;  // Singular values
+   std::array<double, N * N> u, vt;
+   double work_query;
+   int lwork = -1;
+
+   // Query workspace size
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+   if (info < 0)
+      throw std::runtime_error("Illegal value in argument during workspace query.");
+   // Allocate workspace
+   lwork = static_cast<int>(work_query);
+   std::vector<double> work(lwork);
+   // Perform SVD
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+   if (info < 0) {
+      throw std::runtime_error("Illegal value in argument during SVD computation.");
+   } else if (info > 0) {
+      throw std::runtime_error("SVD did not converge.");
+   }
+
+   // Solve the system using SVD results
+   std::array<double, N> c;
+   c.fill(0.0);
+   // Compute U^T * b
+   double bj;
+   for (int j = 0; j < N; ++j) {
+      bj = b[j];
+      for (int i = 0; i < N; ++i) {
+         c[i] += u[j + i * N] * bj;
+      }
+   }
+
+   // Compute x = V * y
+   x.fill(0.0);  // Initialize x to zero
+   double factor;
+   for (int j = 0; j < N; ++j)
+      if (s[j] > 1e-9) {
+         factor = c[j] / s[j];
+         for (int i = 0; i < N; ++i) {
+            x[i] += vt[j + i * N] * factor;
+         }
+      }
+}
+
+// lapack_svd_solve for std::vector<double,std::vector<double>>
+
+void lapack_svd_solve(const std::vector<std::vector<double>> &A,
+                      std::vector<double> &x,
+                      const std::vector<double> &b) {
+   // ローカル変数にキャストしてポインタを渡せるようにする
+   int m = A.size();
+   int n = A[0].size();
+   int lda = m, ldu = m, ldvt = n, info;
+
+   // Flatten the input matrix A
+   std::vector<double> a(m * n);
+   for (int i = 0; i < m; ++i)
+      for (int j = 0; j < n; ++j)
+         a[i + j * m] = A[i][j];
+
+   // Prepare singular values, U, VT, and workspace
+   std::vector<double> s(m);  // Singular values
+   std::vector<double> u(m * m), vt(n * n);
+   double work_query;
+   int lwork = -1;
+
+   // Query workspace size
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+   if (info < 0)
+      throw std::runtime_error("Illegal value in argument during workspace query.");
+   // Allocate workspace
+   lwork = static_cast<int>(work_query);
+   std::vector<double> work(lwork);
+   // Perform SVD
+   dgesvd_("A", "A", &m, &n, a.data(), &lda, s.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+   if (info < 0) {
+      throw std::runtime_error("Illegal value in argument during SVD computation.");
+   } else if (info > 0) {
+      throw std::runtime_error("SVD did not converge.");
+   }
+
+   // Solve the system using SVD results
+   std::vector<double> c(m, 0.0);
+   // Compute U^T * b
+   double bj;
+   for (int j = 0; j < m; ++j) {
+      bj = b[j];
+      for (int i = 0; i < m; ++i) {
+         c[i] += u[j + i * m] * bj;
+      }
+   }
+
+   // Compute x = V * y
+   for (auto &xi : x) xi = 0.0;  // Initialize x to zero
+   double factor;
+   for (int j = 0; j < m; ++j)
+      if (s[j] > 1e-9) {
+         factor = c[j] / s[j];
+         for (int i = 0; i < n; ++i) {
+            x[i] += vt[j + i * n] * factor;
+         }
+      }
+}
+
+/* -------------------------------------------------------------------------- */
 
 std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample,
                                        std::vector<Tddd> Directions,
@@ -1971,7 +2650,7 @@ struct gmres : public ArnoldiProcess {
 };
 
 /* -------------------------------------------------------------------------- */
-V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
+V_d Eigenvalues(const VV_d &A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
    VV_d Ak = A, I = A;
    IdentityMatrix(I);
    V_d eigenvalues;
@@ -1979,14 +2658,15 @@ V_d Eigenvalues(const VV_d &A, const double tol = 1e-9, const std::size_t maxIte
    for (std::size_t i = 0; i < maxIter; ++i) {
       qr.Initialize(Ak);
       eigenvalues = Diagonal(Ak = Dot(qr.R, qr.Q));
-      if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
-         return eigenvalues;
-      }
+      if (i > 5)
+         if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
+            return eigenvalues;
+         }
    }
    return eigenvalues;
 }
 
-std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
+std::pair<V_d, VV_d> Eigensystem(VV_d A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
    VV_d Ak = A, I = A, Qk = A;
    IdentityMatrix(Qk);
    IdentityMatrix(I);
@@ -1996,12 +2676,26 @@ std::pair<V_d, VV_d> Eigensystem(const VV_d &A, const double tol = 1e-9, const s
       qr.Initialize(Ak);
       Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
       eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
-      Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
-      if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
-         return {eigenvalues, Qk};
-      }
+      // Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
+      Qk = Dot(Qk, qr.Q);  // Update the transformation matrix
+      if (i > 5)
+         if (std::ranges::all_of(eigenvalues, [&](const auto lambda) {
+                double error = std::abs(Det(A - lambda * I));
+                //  std::cout << "error: " << error << std::endl;
+                return error < tol;
+             })) {
+            return {eigenvalues, Qk};
+            //! 注意: ここでのQkの**列ベクトル**が，固有ベクトルである．
+         }
    }
    return {eigenvalues, Qk};  // Return both eigenvalues and eigenvectors
+}
+
+std::pair<V_d, VV_d> Eigensystem(VV_d A, VV_d B, const double tol = 1e-13, const std::size_t maxIter = 1000) {
+   // lapack_svd svd(B);
+   lapack_lu svd(B);
+   // return Eigensystem(Dot(svd.inverse(), A), tol, maxIter);
+   return Eigensystem(Dot(svd.inverse(), A), tol, maxIter);
 }
 
 template <std::size_t N>
@@ -2058,5 +2752,3 @@ std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensyst
 
 //    return {eigenvalues, Q};
 // }
-
-#endif

@@ -39,8 +39,8 @@ static const std::array<std::array<double, 61>, 31> A_FMM = {{{q_NaN, q_NaN, q_N
 
 const std::complex<double> complex0(0, 0);
 
-#include <AAA_L2L_FMM.hpp>
-#include <AAA_M2L_FMM.hpp>
-#include <AAA_M2M_FMM.hpp>
+#include "AAA_L2L_FMM.hpp"
+#include "AAA_M2L_FMM.hpp"
+#include "AAA_M2M_FMM.hpp"
 
 #endif

@@ -1,6 +1,3 @@
-// current
-#ifndef rootFinding_H
-#define rootFinding_H
 #pragma once
 
 #include "basic_arithmetic_vector_operations.hpp"
@@ -26,12 +23,12 @@ template <>
 struct NewtonRaphson<V_d> : public NewtonRaphson_Common<V_d> {
    NewtonRaphson(const V_d &Xinit) : NewtonRaphson_Common<V_d>(Xinit) {};
    void update(const V_d &F, const VV_d &dFdx) {
-      lapack_lu lu(dFdx, dX, -F);
+      lapack_svd lu(dFdx, dX, -F);
       X += dX;
    };
 
    void update(const V_d &F, const VV_d &dFdx, const double a) {
-      lapack_lu lu(dFdx, dX, -F);
+      lapack_svd lu(dFdx, dX, -F);
       X += a * dX;
    };
 
@@ -75,11 +72,11 @@ template <>
 struct NewtonRaphson<Tdd> : public NewtonRaphson_Common<Tdd> {
    NewtonRaphson(const Tdd &Xinit) : NewtonRaphson_Common<Tdd>(Xinit) {};
    void update(const Tdd &F, const T2Tdd &dFdx) {
-      lapack_lu(dX, dFdx, -F);
+      lapack_svd(dX, dFdx, -F);
       X += dX;
    };
    void update(const Tdd &F, const T2Tdd &dFdx, const double a) {
-      lapack_lu(dX, dFdx, -F);
+      lapack_svd(dX, dFdx, -F);
       X += a * dX;
    };
 };
@@ -87,7 +84,7 @@ template <>
 struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd> {
    NewtonRaphson(const Tddd &Xinit) : NewtonRaphson_Common<Tddd>(Xinit) {};
    void update(const Tddd &F, const T3Tddd &dFdx) {
-      lapack_lu(dX, dFdx, -F);
+      lapack_svd(dX, dFdx, -F);
       X += dX;
    };
 
@@ -97,7 +94,7 @@ struct NewtonRaphson<Tddd> : public NewtonRaphson_Common<Tddd> {
    };
 
    void update(const Tddd &F, const T3Tddd &dFdx, const std::function<Tddd(const Tddd &)> &constraint) {
-      lapack_lu(dX, dFdx, -F);
+      lapack_svd(dX, dFdx, -F);
       X += dX;
       constraint(X);
    };
@@ -109,7 +106,7 @@ struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
    };
    V_d ans;
    void update(const T4d &F, const T4T4d &dFdx) {
-      lapack_lu(dX, dFdx, -F);
+      lapack_svd(dX, dFdx, -F);
       X += dX;
       // ludcmp lu(ToVector(dFdx));
       // lu.solve(ToVector(-F), ans);
@@ -134,6 +131,9 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
                                     std::vector<double> weights,
                                     std::array<double, 3> &convergence_info) {
 
+   if (Vsample.size() == 1)
+      return Vsample[0] * Directions[0];
+
    double mean = 0.;
    for (const auto &v : Vsample)
       mean += std::abs(v);
@@ -141,10 +141,8 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
    if (mean == 0)
       return {0., 0., 0.};
 
-   const double tolerance = 1E-12 * mean;
+   const double tolerance = 1E-13 * mean;
    convergence_info = {0., 0., 0.};
-   if (Vsample.size() == 1)
-      return Vsample[0] * Directions[0];
 
    const double threshold_angle_in_rad = 10 * M_PI / 180.;
 
@@ -155,51 +153,29 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
    /* -------------------------------------------------------------------------- */
 
    std::vector<std::tuple<Tddd, std::vector<Tddd>>> direction_groups;
-   for (auto &d : Directions) {
-      bool added = false;
+   for (auto &dir : Directions) {
+      bool colinear = false;
       for (auto &[representative_dir, vec] : direction_groups) {
-         if (isFlat(representative_dir, d, threshold_angle_in_rad)) {
-            vec.push_back(Normalize(d));
-            added = true;
+         if (isFlat(representative_dir, dir, threshold_angle_in_rad)) {
+            vec.push_back(Normalize(dir));
+            representative_dir = Normalize(Mean(vec));
+            colinear = true;
             break;
          }
       }
-      if (!added) {
-         direction_groups.push_back({Normalize(d), {Normalize(d)}});
+      if (!colinear) {
+         direction_groups.push_back({Normalize(dir), {Normalize(dir)}});
       }
    }
 
    if (direction_groups.size() == 1) {
-      Tddd Dir0 = Normalize(std::get<0>(direction_groups[0])), Dir1;
-      int i = 0;
-      std::vector<Tddd> basis = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / std::sqrt(3), 1. / std::sqrt(3), 1. / std::sqrt(3)}}};
-      double min_value = 1E+10;
-      int min_index = 0;
-
-      for (const auto &e : basis) {
-         double sum = 0;
-         for (const auto &d : Directions) sum += std::abs(Dot(d, e));
-
-         if (min_value >= sum) {
-            min_value = sum;
-            min_index = i;
-         }
-         i++;
-      }
-
-      Dir1 = Normalize(Chop(basis[min_index], Dir0));
-      double w = Mean(weights);
-      //
-      Vsample.push_back(0.);
-      Directions.push_back(Dir1);
-      weights.push_back(w);
-      //
-      Vsample.push_back(0.);
-      Directions.push_back(Normalize(Cross(Dir0, Dir1)));
-      weights.push_back(w);
+      Tddd ret = {0., 0., 0.};
+      for (std::size_t i = 0; i < Vsample.size(); ++i)
+         ret += Vsample[i] * Directions[i];
+      return ret / Vsample.size();
    } else if (direction_groups.size() == 2) {
       Vsample.push_back(0.);
-      Directions.push_back(Normalize(Cross(std::get<0>(direction_groups[0]), std::get<0>(direction_groups[1]))));
+      Directions.push_back(Normalize(Cross(Normalize(Mean(std::get<1>(direction_groups[0]))), Normalize(Mean(std::get<1>(direction_groups[1]))))));
       weights.push_back(Mean(weights));
    }
 
@@ -217,33 +193,20 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample,
       return 0.5 * S;
    };
 
-   if (optimizing_function(Vinit) < tolerance) {
-      convergence_info = {0., 0., optimizing_function(Vinit)};
-      return Vinit;
-   }
-
    NewtonRaphson<Tddd> NR(Vinit);
-
    Tddd grad;
    T3Tddd hess;
-
    int iteration = 0;
    for (iteration = 0; iteration < 50; ++iteration) {
-      // set grad and hess to zero
       grad.fill(0.);
       for (auto &row : hess) row.fill(0.);
-
-      // calculate grad and hess
       for (std::size_t i = 0; i < Vsample.size(); ++i) {
          grad += weights[i] * Directions[i] * diff(NR.X, i);
          hess += weights[i] * TensorProduct(Directions[i], Directions[i]);
       }
-      // check convergence
-      if (Norm(grad) < tolerance || optimizing_function(NR.X) < tolerance)
-         break;
-
-      // update U
       NR.update(grad, hess);
+      if ((Norm(grad) < tolerance || optimizing_function(NR.X) < tolerance))
+         break;
    }
 
    std::get<0>(convergence_info) = (double)iteration;
@@ -269,40 +232,40 @@ std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const st
    return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
 }
 
-// template <std::size_t N>
-// std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
-//                                     const std::array<double, N> &init_vector,
-//                                     const double tolerance = 1E-12) {
-//    std::array<NewtonRaphson<double>, N> NRs;
-//    for (std::size_t i = 0; i < N; ++i)
-//       NRs[i].X = init_vector[i];
-//    std::array<double, N> Fs, dFs;
-//    double w, drdx;
-//    for (auto j = 0; j < 500; ++j) {
-//       Fs.fill(0);
-//       dFs.fill(0);
-//       for (const auto &vec : sample_vectors) {
-//          w = 1;
-//          drdx = -w;
-//          for (std::size_t i = 0; i < N; ++i) {
-//             // Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
-//             // dFs[i] += drdx * drdx;
-//             // use std::fma
-//             Fs[i] = std::fma(w * (vec[i] - NRs[i].X), drdx, Fs[i]);
-//             dFs[i] = std::fma(drdx, drdx, dFs[i]);
-//          }
-//       }
-//       bool converged = true;
-//       for (std::size_t i = 0; i < N; ++i) {
-//          NRs[i].update(Fs[i], dFs[i]);
-//          if (std::abs(NRs[i].dX) >= tolerance) converged = false;
-//       }
-//       if (converged) break;
-//    }
-//    std::array<double, N> result;
-//    for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
-//    return result;
-// }
+template <std::size_t N>
+std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
+                                    const std::array<double, N> &init_vector,
+                                    const double tolerance = 1E-12) {
+   std::array<NewtonRaphson<double>, N> NRs;
+   for (std::size_t i = 0; i < N; ++i)
+      NRs[i].X = init_vector[i];
+   std::array<double, N> Fs, dFs;
+   double w, drdx;
+   for (auto j = 0; j < 500; ++j) {
+      Fs.fill(0);
+      dFs.fill(0);
+      for (const auto &vec : sample_vectors) {
+         w = 1;
+         drdx = -w;
+         for (std::size_t i = 0; i < N; ++i) {
+            // Fs[i] += (w * (vec[i] - NRs[i].X)) * drdx;  //<- d/dx (d*d)
+            // dFs[i] += drdx * drdx;
+            // use std::fma
+            Fs[i] = std::fma(w * (vec[i] - NRs[i].X), drdx, Fs[i]);
+            dFs[i] = std::fma(drdx, drdx, dFs[i]);
+         }
+      }
+      bool converged = true;
+      for (std::size_t i = 0; i < N; ++i) {
+         NRs[i].update(Fs[i], dFs[i]);
+         if (std::abs(NRs[i].dX) >= tolerance) converged = false;
+      }
+      if (converged) break;
+   }
+   std::array<double, N> result;
+   for (std::size_t i = 0; i < N; ++i) result[i] = NRs[i].X;
+   return result;
+}
 
 // template <std::size_t N>
 // std::array<double, N> optimumVector(const std::vector<std::array<double, N>> &sample_vectors,
@@ -470,6 +433,10 @@ struct DispersionRelation {
       set_w_h(wIN, hIN);
    };
 
+   void set_T_h(const double TIN, const double hIN) {
+      set_w_h(2 * M_PI / TIN, hIN);
+   };
+
    void set_w_h(const double wIN, const double hIN) {
       this->w = wIN;
       this->T = 2 * M_PI / this->w;
@@ -505,6 +472,118 @@ struct DispersionRelation {
 
    double domegadk(const double k, const double h) {
       return (_GRAVITY_ * (h * k * Power(Sech(h * k), 2) + Tanh(h * k))) / (2. * Sqrt(_GRAVITY_ * k * Tanh(h * k)));
+   };
+};
+
+struct WaterWaveTheory {
+   double h;
+   double L;
+   double T;
+   double w;
+   double k;
+   double c;
+
+   double theta = 0.;  //[rad]
+
+   WaterWaveTheory() : h(0), L(0), T(0), w(0), k(0), c(0) {};
+
+   void set_T_h(const double TIN, const double hIN) {
+      set_w_h(2 * M_PI / TIN, hIN);
+   };
+
+   void set_w_h(const double wIN, const double hIN) {
+      this->w = wIN;
+      this->T = 2 * M_PI / this->w;
+      this->h = hIN;
+      bool found = false;
+      const std::vector<double> init_L = {0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.};
+      for (const double l : init_L) {
+         NewtonRaphson nr(2. * M_PI / l);
+         for (auto i = 0; i < 30; i++) {
+            nr.update(omega(nr.X, h) - w, dwdk(nr.X, h));
+            if (std::abs(omega(nr.X, h) - w) < 1E-10) {
+               found = true;
+               this->k = std::abs(nr.X);
+               break;
+            }
+         }
+         if (found) break;
+      }
+      this->L = 2 * M_PI / this->k;
+   };
+
+   void set_L_h(const double LIN, const double hIN) {
+      this->L = LIN;
+      this->h = hIN;
+      this->k = 2 * M_PI / this->L;
+      this->w = omega(this->k, this->h);
+      this->T = 2 * M_PI / this->w;
+   };
+
+   double omega(const double k, const double h) {
+      return Sqrt(_GRAVITY_ * k * Tanh(h * k));
+   };
+
+   double dwdk(const double k, const double h) {
+      return (_GRAVITY_ * (h * k * Power(Sech(h * k), 2) + Tanh(h * k))) / (2. * Sqrt(_GRAVITY_ * k * Tanh(h * k)));
+   };
+
+   double phi(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+      auto [x, y, z] = X;
+      z = z - h - bottom_z;  //! distance from the bottom
+      // return A * _GRAVITY_ / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(k * x - w * t);
+      double kx = k * std::cos(theta);
+      double ky = k * std::sin(theta);
+      return A * _GRAVITY_ / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t);
+   };
+
+   double phi(const std::array<double, 3> &X, const double t) const {
+      return this->phi(X, t, A, bottom_z);
+   };
+
+   double A;
+   double bottom_z;
+
+   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+      auto [x, y, z] = X;
+      double kx = k * std::cos(theta);
+      double ky = k * std::sin(theta);
+      z = z - h - bottom_z;  //! distance from the bottom
+      return {A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t),
+              A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t),
+              A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t)};
+      // return {-A * w * std::cosh(k * (z + h)) / std::sinh(k * h) * std::cos(k * x - w * t),
+      //         0.,
+      //         A * w * std::sinh(k * (z + h)) / std::sinh(k * h) * std::sin(k * x - w * t)};
+   };
+
+   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t) const {
+      return this->gradPhi(X, t, A, bottom_z);
+   };
+
+   std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+      auto [x, y, z] = X;
+      double kx = k * std::cos(theta);
+      double ky = k * std::sin(theta);
+      z = z - h - bottom_z;  //! distance from the bottom
+      return {w * A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t),
+              w * A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t),
+              -w * A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t)};
+   };
+
+   std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t) const {
+      return this->gradPhi_t(X, t, A, bottom_z);
+   };
+
+   double eta(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+      auto [x, y, z] = X;
+      double kx = k * std::cos(theta);
+      double ky = k * std::sin(theta);
+      return A * std::cos(kx * x + ky * y - w * t) + h + bottom_z;
+   };
+
+   double eta(const std::array<double, 3> &X, const double t) const {
+      return this->eta(X, t, A, bottom_z);
    };
 };
 
@@ -574,5 +653,3 @@ struct LighthillRobot {
       return ret;
    };
 };
-
-#endif

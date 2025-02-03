@@ -28,6 +28,10 @@
 - [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
 - [🐋 四面体の生成](#🐋-四面体の生成)
     - [⛵ TetGenを使った四面体を生成](#⛵-TetGenを使った四面体を生成)
+- [🐋 Set  the minimum  required version  of cmake  for a  project.](#🐋-Set--the-minimum--required-version--of-cmake--for-a--project.)
+- [🐋 Find C++ compiler](#🐋-Find-C++-compiler)
+- [🐋 Add an executable to the project using the specified source files.](#🐋-Add-an-executable-to-the-project-using-the-specified-source-files.)
+- [🐋 In Linux/Unix, it will creates the libtet.a](#🐋-In-Linux/Unix,-it-will-creates-the-libtet.a)
         - [🪼 `tetgenbehavior`クラス](#🪼-`tetgenbehavior`クラス)
     - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
     - [⛵ スコアリングと選択](#⛵-スコアリングと選択)
@@ -60,7 +64,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3793)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L3437)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -103,8 +107,8 @@ vtkPolygonWrite(ofs, obj->getPoints());
 ofs.close();
 ```
 
-[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L188)，点に値を付与し，vtpとして出力することもできる．
-また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L197)を付けることもできる．
+[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L224)，点に値を付与し，vtpとして出力することもできる．
+また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L255)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -138,7 +142,7 @@ pvd.output();//最後にpvdファイルを出力
 ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map "[v]" sample_line.gif
 ```
 
-[./example0_load_3d_file.cpp#L105](./example0_load_3d_file.cpp#L105)
+[./example0_load_3d_file.cpp#L140](./example0_load_3d_file.cpp#L140)
 
 ---
 ## ⛵ ２次補間 
@@ -233,7 +237,7 @@ make
 ラフに行っても問題ない．
 線に関しては細かい分割によってインデックス変換できる．
 平面に関しては，平面の方程式を使って，バケツのセルとの交差判定を行う．
-[../../include/lib_spatial_partitioning_.hpp#L9](../../include/lib_spatial_partitioning_.hpp#L9)
+[../../include/lib_spatial_partitioning.hpp#L8](../../include/lib_spatial_partitioning.hpp#L8)
 
 [./example1_space_partitioning.cpp#L6](./example1_space_partitioning.cpp#L6)
 
@@ -272,7 +276,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1699)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1787)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -288,7 +292,7 @@ make
 ---
 ### 🪼 面と面の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1699)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](../../include/basic_geometry.hpp#L1787)関数は，交差判定には使えるが，接触判定には使えない．
 
 **オブジェクト同士の接触**をプログラム上で定義するなら，
 ２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
@@ -298,7 +302,7 @@ make
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
 これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1639)のような計算を行う．
+また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1727)のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
 
@@ -404,6 +408,63 @@ NumberOfVerts="0">
 
 ## ⛵ TetGenを使った四面体を生成 
 
+* TETLIBRARYを有効にしない
+* `terminatetetgen`を修正する
+* コンパイラを合わせる
+
+tetgen.h内のTETLIBRARYを有効にすると，コンパイルができなかった．errorによって，abortすることを防ぐために，直接throwするよう以下のように`terminatetetgen`関数を修正した．
+
+```cpp
+inline void terminatetetgen(tetgenmesh* m, int x) {
+throw x;
+}
+```
+
+```cmake
+# 🐋 Set  the minimum  required version  of cmake  for a  project. 
+cmake_minimum_required(VERSION 3.5)
+
+project(tetgen)
+
+set(CXX_VERSIONS 13)
+
+# 🐋 Find C++ compiler 
+foreach(ver IN LISTS CXX_VERSIONS)
+unset(CXX_COMPILER CACHE)
+string(CONCAT CXX "g++-" ${ver})
+find _program(CXX _COMPILER ${CXX})
+if(CXX_COMPILER)
+message(STATUS "${Green}Found ${CXX}: ${Magenta}${CXX_COMPILER}${ColourReset}")
+set(CMAKE _CXX _COMPILER ${CXX_COMPILER})
+break()
+endif()
+endforeach()
+
+
+# 🐋 Add an executable to the project using the specified source files. 
+add_executable(tetgen tetgen.cxx predicates.cxx)
+
+#Add a library to the project using the specified source files.
+# 🐋 In Linux/Unix, it will creates the libtet.a 
+add_library(tet STATIC tetgen.cxx predicates.cxx)
+set_target_properties(tet PROPERTIES PUBLIC_HEADER tetgen.h)
+
+#Set properties on a target.
+#We use this here to set -DTETLIBRARY for when compiling the
+#library
+set_target_properties(tet PROPERTIES "COMPILE_DEFINITIONS" TETLIBRARY)
+
+if(NOT TETGEN_SKIP_INSTALL)
+include(GNUInstallDirs)
+install(TARGETS tet
+ARCHIVE DESTINATION ${CMAKE _INSTALL _LIBDIR}
+PUBLIC _HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(TARGETS tetgen RUNTIME DESTINATION ${CMAKE _INSTALL _BINDIR})
+endif()
+```
+
+
 [https://wias-berlin.de/software/tetgen](https://wias-berlin.de/software/tetgen)
 
 TetGenを使って四面体を生成し，Networkの四面体へと置き換え，出力するプログラム．
@@ -412,15 +473,15 @@ TetGenを使って四面体を生成し，Networkの四面体へと置き換え�
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ./tetgen1.6.0
+cmake -DCMAKE _BUILD _TYPE=Release ./tetgen1.6.0
 make
 ```
 
 上のアーカイブを利用するメインのcppプログラムのCMakeLists.txt（`./tetgen1.6.0/CMakeLists.txt`ではない）に次の行を追加する．
 
 ```cmake
-target_link_libraries(${BASE _NAME} "${CMAKE_CURRENT_SOURCE_DIR}/build_Network/libtet.a")
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+target _link _libraries(${BASE_NAME} "${CMAKE _CURRENT _SOURCE _DIR}/build _Network/libtet.a")
+include _directories(${CMAKE_CURRENT_SOURCE_DIR})
 ```
 
 この`CMakelists.txt`を使って，TetGenを使うプログラムをビルドし，実行する．

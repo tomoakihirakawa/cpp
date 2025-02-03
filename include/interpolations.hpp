@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <vector>
 #include "basic.hpp"
-#include "svd.hpp"
+// #include "svd.hpp"
 // 必要な微分，ラプラシアンなどを定義し，SPHを計算してみる．
 
 using V_d = std::vector<double>;
@@ -123,9 +123,9 @@ struct InterpolationLagrange {
    std::vector<T> values;
    std::vector<double> denominator;
 
-   InterpolationLagrange(){};
+   InterpolationLagrange() {};
 
-   InterpolationLagrange(const std::vector<double> abscissas) : abscissas(abscissas){};
+   InterpolationLagrange(const std::vector<double> abscissas) : abscissas(abscissas) {};
 
    InterpolationLagrange(const std::vector<double> abscissas, const std::vector<T> values)
        : abscissas(abscissas), values(values) {
@@ -175,7 +175,7 @@ struct InterpolationLagrange {
       return ret;
    };
 
-   T integrate(const double x_beg, const double x_end){
+   T integrate(const double x_beg, const double x_end) {
 
    };
 
@@ -367,7 +367,7 @@ class InterpolationVectorRBF {
    VV_d VV_values;  // values of position, {{nx,ny,nz},{nx,ny,nz},{nx,ny,nz},...}
 
   public:
-   InterpolationVectorRBF(){/*これを使う場合setupをかならず行うこと*/};
+   InterpolationVectorRBF() { /*これを使う場合setupをかならず行うこと*/ };
    void set(const VV_d &P_IN, const VV_d &VV_IN) {
       this->P = P_IN;
       this->VV_values = VV_IN;
@@ -733,7 +733,7 @@ struct InterpolationRBF {
 
       this->F = M;
       this->w.resize(A.size(), 0.);
-      SVD lu(M);
+      lapack_svd lu(M);
       std::cout << M << std::endl;
       lu.solve(vOFx, this->w);
    };
@@ -1189,7 +1189,7 @@ struct InterpolationRBF_Common {
        : kernel_X_s_w(kernel_X_s_IN.size()), M(kernel_X_s_IN.size(), V_d(kernel_X_s_IN.size())), b(EQs_IN.size()), EQs(EQs_IN) {
       set_M_b(kernel_X_s_IN, EQs_IN);
    };
-   InterpolationRBF_Common(){};
+   InterpolationRBF_Common() {};
    void set_M_b(const std::vector<std::tuple<T, double>> &kernel_X_s_IN,
                 const std::vector<std::tuple<T, U>> &EQs_IN) {
       try {
@@ -1225,12 +1225,12 @@ struct InterpolationRBF_Common {
 //@ ------------------------------------------------------ */
 template <typename T, typename U>
 struct InterpolationRBF_ : public InterpolationRBF_Common<T, U> {
-   InterpolationRBF_(const std::vector<std::tuple<T, U>> &kernel_X_s_IN, const std::vector<std::tuple<T, U>> &EQs_IN) : InterpolationRBF_Common<T, U>(kernel_X_s_IN, EQs_IN){};
+   InterpolationRBF_(const std::vector<std::tuple<T, U>> &kernel_X_s_IN, const std::vector<std::tuple<T, U>> &EQs_IN) : InterpolationRBF_Common<T, U>(kernel_X_s_IN, EQs_IN) {};
 };
 //@ ------------------------------------------------------ */
 template <>
 struct InterpolationRBF_<Tdd, Tddd> : public InterpolationRBF_Common<Tdd, Tddd> {
-   InterpolationRBF_() : InterpolationRBF_Common<Tdd, Tddd>(){};
+   InterpolationRBF_() : InterpolationRBF_Common<Tdd, Tddd>() {};
    InterpolationRBF_(const std::vector<std::tuple<Tdd, double>> &kernel_X_s_IN,
                      const std::vector<std::tuple<Tdd, Tddd>> &EQs_IN)
        : InterpolationRBF_Common<Tdd, Tddd>(kernel_X_s_IN, EQs_IN) {
@@ -1354,13 +1354,13 @@ class InterpolationIDW {
   public:
    // ディフォルトの補間基底関数，多重二乗を使う場合
    InterpolationIDW(const VV_d &A_IN, const V_d &V_IN)
-       : A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()){};
+       : A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()) {};
    //
    InterpolationIDW(const VV_d &A_IN, const V_d &V_IN, const double p_IN /*std::pow*/)
-       : A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()), p(p_IN){};
+       : A(A_IN), V(V_IN), VV({}), parameter_dim(A_IN[0].size()), p(p_IN) {};
    //
    InterpolationIDW(const VV_d &A_IN, const VV_d &VV_IN, const double p_IN = 1. /*std::pow*/)
-       : A(A_IN), V({}), VV(VV_IN), parameter_dim(A_IN[0].size()), p(p_IN){};
+       : A(A_IN), V({}), VV(VV_IN), parameter_dim(A_IN[0].size()), p(p_IN) {};
    //
    double operator()(const V_d &x) const {
       if (this->parameter_dim != x.size()) {
@@ -1465,14 +1465,14 @@ struct interpolationTriangleLinearTuple {
    /*
     * 全体(0,1,2)をパラメタ[0,1],[0,1]で線形補間する
     */
-   interpolationTriangleLinearTuple(){};
+   interpolationTriangleLinearTuple() {};
    // ~interpolationTriangleLinear() { std::cout << "interpolationTriangleLinear deleted" << std::endl; };
    const Tddd dndt0 = {1., 0., -1.};
    const Tddd dndt1 = {0., 1., -1.};
    Tddd N(const double &t0, const double &t1) const { return {t0, t1, 1 - t0 - t1}; };
    Tddd dNdt0(const double &t0, const double &t1) const { return dndt0; };
    Tddd dNdt1(const double &t0, const double &t1) const { return dndt1; };
-   interpolationTriangleLinearTuple(const T3Tddd &s_IN) : s(s_IN){};
+   interpolationTriangleLinearTuple(const T3Tddd &s_IN) : s(s_IN) {};
    /* ------------------------------------------------------ */
    void set(const T3Tddd &s_IN) { this->s = s_IN; };
 
@@ -1500,7 +1500,7 @@ struct interpolationTriangleLinearTuple {
 ////////////////////////////////////////////////////////////////////////
 struct interpolationTriangleLinear3D {
    T3Tddd s;  // sample points
-   interpolationTriangleLinear3D(const T3Tddd &s_IN) : s(s_IN){};
+   interpolationTriangleLinear3D(const T3Tddd &s_IN) : s(s_IN) {};
    Tddd N(const double &t0, const double &t1) const { return {t0, t1, 1 - t0 - t1}; };
    Tddd dNdt0(const double &t0, const double &t1) const { return {1., 0., -1.}; };
    Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1., -1.}; };
@@ -1529,7 +1529,7 @@ struct interpolationTriangleLinear3D {
 ////////////////////////////////////////////////////////////////////////
 struct interpolationTriangleLinearByFixedRange3D {
    T3Tddd s;  // sample points
-   interpolationTriangleLinearByFixedRange3D(const T3Tddd &s_IN) : s(s_IN){};
+   interpolationTriangleLinearByFixedRange3D(const T3Tddd &s_IN) : s(s_IN) {};
    Tddd N(const double &t0, const double &t1) const { return {t0, t1 * (1. - t0), (-1. + t0) * (-1. + t1)}; };
    Tddd dNdt0(const double &t0, const double &t1) const { return {1., -t1, -1. + t1}; };
    Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1. - t0, -1. + t0}; };
@@ -1562,7 +1562,7 @@ struct interpolationTriangleLinearByFixedRange3D {
 template <typename T>
 struct interpolationTriangleLinearCommon {
    std::array<T, 3> s;  // sample points
-   interpolationTriangleLinearCommon(const std::array<T, 3> &s_IN) : s(s_IN){};
+   interpolationTriangleLinearCommon(const std::array<T, 3> &s_IN) : s(s_IN) {};
    Tddd N(const double &t0, const double &t1) const { return {t0, t1, 1 - t0 - t1}; };
    Tddd dNdt0(const double &t0, const double &t1) const { return {1., 0., -1.}; };
    Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1., -1.}; };
@@ -1573,12 +1573,12 @@ struct interpolationTriangleLinearCommon {
 
 template <typename T>
 struct interpolationTriangleLinear_ : public interpolationTriangleLinearCommon<T> {
-   interpolationTriangleLinear_(const std::array<T, 3> &s_IN) : interpolationTriangleLinearCommon<T>(s_IN){};
+   interpolationTriangleLinear_(const std::array<T, 3> &s_IN) : interpolationTriangleLinearCommon<T>(s_IN) {};
 };
 
 template <>
 struct interpolationTriangleLinear_<double> : public interpolationTriangleLinearCommon<double> {
-   interpolationTriangleLinear_(const Tddd &s_IN) : interpolationTriangleLinearCommon<double>(s_IN){};
+   interpolationTriangleLinear_(const Tddd &s_IN) : interpolationTriangleLinearCommon<double>(s_IN) {};
    Tdd grad(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
    double J(const double t0, const double t1) const {
       return this->dXdt0(t0, t1) * this->dXdt1(t0, t1);
@@ -1587,7 +1587,7 @@ struct interpolationTriangleLinear_<double> : public interpolationTriangleLinear
 
 template <>
 struct interpolationTriangleLinear_<Tddd> : public interpolationTriangleLinearCommon<Tddd> {
-   interpolationTriangleLinear_(const T3Tddd &s_IN) : interpolationTriangleLinearCommon<Tddd>(s_IN){};
+   interpolationTriangleLinear_(const T3Tddd &s_IN) : interpolationTriangleLinearCommon<Tddd>(s_IN) {};
    /* ------------------------------------------------------ */
    T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
    Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
@@ -1602,7 +1602,7 @@ struct interpolationTriangleLinear_<Tddd> : public interpolationTriangleLinearCo
 template <typename T>
 struct interpolationTriangleLinearCommon0101 {
    std::array<T, 3> s;  // sample points
-   interpolationTriangleLinearCommon0101(const std::array<T, 3> &s_IN) : s(s_IN){};
+   interpolationTriangleLinearCommon0101(const std::array<T, 3> &s_IN) : s(s_IN) {};
    Tddd N(const double &t0, const double &t1) const { return {t0, t1 * (1. - t0), (-1. + t0) * (-1. + t1)}; };
    Tddd dNdt0(const double &t0, const double &t1) const { return {1., -t1, -1. + t1}; };
    Tddd dNdt1(const double &t0, const double &t1) const { return {0., 1. - t0, -1. + t0}; };
@@ -1613,19 +1613,19 @@ struct interpolationTriangleLinearCommon0101 {
 
 template <typename T>
 struct interpolationTriangleLinear0101 : public interpolationTriangleLinearCommon0101<T> {
-   interpolationTriangleLinear0101(const std::array<T, 3> &s_IN) : interpolationTriangleLinearCommon0101<T>(s_IN){};
+   interpolationTriangleLinear0101(const std::array<T, 3> &s_IN) : interpolationTriangleLinearCommon0101<T>(s_IN) {};
 };
 
 template <>
 struct interpolationTriangleLinear0101<double> : public interpolationTriangleLinearCommon0101<double> {
-   interpolationTriangleLinear0101(const Tddd &s_IN) : interpolationTriangleLinearCommon0101<double>(s_IN){};
+   interpolationTriangleLinear0101(const Tddd &s_IN) : interpolationTriangleLinearCommon0101<double>(s_IN) {};
    Tdd grad(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
    double J(const double t0, const double t1) const { return this->dXdt0(t0, t1) * this->dXdt1(t0, t1); };
 };
 
 template <>
 struct interpolationTriangleLinear0101<Tddd> : public interpolationTriangleLinearCommon0101<Tddd> {
-   interpolationTriangleLinear0101(const T3Tddd &s_IN) : interpolationTriangleLinearCommon0101<Tddd>(s_IN){};
+   interpolationTriangleLinear0101(const T3Tddd &s_IN) : interpolationTriangleLinearCommon0101<Tddd>(s_IN) {};
    /* ------------------------------------------------------ */
    T2Tddd div(const double t0, const double t1) const { return {this->dXdt0(t0, t1), this->dXdt1(t0, t1)}; };
    Tddd cross(const double t0, const double t1) const { return Cross(this->dXdt0(t0, t1), this->dXdt1(t0, t1)); };
@@ -1651,12 +1651,12 @@ struct interpolationTriangleQuadByFixedRange3D {
    interpolationTriangleQuadByFixedRange3D() : approx_p0(false),
                                                approx_p1(false),
                                                approx_p2(false),
-                                               no_approx(true){};
+                                               no_approx(true) {};
    interpolationTriangleQuadByFixedRange3D(const T6Tddd &s_IN) : s(s_IN),
                                                                  approx_p0(false),
                                                                  approx_p1(false),
                                                                  approx_p2(false),
-                                                                 no_approx(true){};
+                                                                 no_approx(true) {};
    void noApprox() {
       no_approx = true;
    };
@@ -1760,7 +1760,7 @@ struct interpolationTriangleQuadByFixedRange3D {
 };
 struct interpolationTriangleQuadByFixedRange3D_Center {
    T6Tddd s;  // sample points
-   interpolationTriangleQuadByFixedRange3D_Center(const T6Tddd &s_IN) : s(s_IN){};
+   interpolationTriangleQuadByFixedRange3D_Center(const T6Tddd &s_IN) : s(s_IN) {};
    T6d N(const double &t0, const double &t1) const {
       return {((-1 + t0) * t0) / 2.,
               (t0 * (1 + t0 * (-1 + t1)) * (-1 + t1)) / 2.,
@@ -1802,9 +1802,9 @@ class interpolationTriangle {
   public:
    VV_d s;  // sample points
 
-   interpolationTriangle(){};
+   interpolationTriangle() {};
    // ~interpolationTriangle() { std::cout << "interpolationTriangle deleted" << std::endl; };
-   interpolationTriangle(const VV_d &s_IN) : s(s_IN){};
+   interpolationTriangle(const VV_d &s_IN) : s(s_IN) {};
    virtual V_d N(const double &t0, const double &t1) const = 0;
    virtual V_d dNdt0(const double &t0, const double &t1) const = 0;
    virtual V_d dNdt1(const double &t0, const double &t1) const = 0;
@@ -1842,11 +1842,11 @@ class interpolationTriangleLinear : public interpolationTriangle {
    /*
     * 全体(0,1,2)をパラメタ[0,1],[0,1]で線形補間する
     */
-   interpolationTriangleLinear(){};
+   interpolationTriangleLinear() {};
    // ~interpolationTriangleLinear() { std::cout << "interpolationTriangleLinear deleted" << std::endl; };
    const V_d dndt0 = {1., 0., -1.};
    const V_d dndt1 = {0., 1., -1.};
-   interpolationTriangleLinear(const VV_d &s_IN) : interpolationTriangle(s_IN){};
+   interpolationTriangleLinear(const VV_d &s_IN) : interpolationTriangle(s_IN) {};
    V_d N(const double &t0, const double &t1) const override { return {t0, t1, 1 - t0 - t1}; };
    V_d dNdt0(const double &t0, const double &t1) const override { return dndt0; };
    V_d dNdt1(const double &t0, const double &t1) const override { return dndt1; };
@@ -1861,8 +1861,8 @@ class interpolationTriangleLinearByFixedRange : public interpolationTriangleLine
    /*
     * 全体(0,1,2)をパラメタ[0,1],[0,1]で線形補間する
     */
-   interpolationTriangleLinearByFixedRange(){};
-   interpolationTriangleLinearByFixedRange(const VV_d &s_IN) : interpolationTriangleLinear(s_IN){};
+   interpolationTriangleLinearByFixedRange() {};
+   interpolationTriangleLinearByFixedRange(const VV_d &s_IN) : interpolationTriangleLinear(s_IN) {};
    V_d N(const double &t0, const double &t1) const override { return {t0, t1 * (1. - t0), (-1. + t0) * (-1. + t1)}; };
    V_d dNdt0(const double &t0, const double &t1) const override { return {1., -t1, -1. + t1}; };
    V_d dNdt1(const double &t0, const double &t1) const override { return {0., 1. - t0, -1. + t0}; };
@@ -1879,8 +1879,8 @@ class interpolationTriangleQuad : public interpolationTriangle {
     * 全体(0,1,2)をパラメタ[0,1],[0,1]で補間する
     */
   public:
-   interpolationTriangleQuad(){};
-   interpolationTriangleQuad(const VV_d &s_IN) : interpolationTriangle(s_IN){};
+   interpolationTriangleQuad() {};
+   interpolationTriangleQuad(const VV_d &s_IN) : interpolationTriangle(s_IN) {};
    V_d N(const double &t0, const double &t1) const override {
       double t2 = 1 - t0 - t1;
       return {t0 * (2 * t0 - 1),
@@ -1908,8 +1908,8 @@ class interpolationTriangleQuadByFixedRangeCenter : public interpolationTriangle
     * 中央の三角形(3,4,5)を[0,1],[0,1]で補間するようにしたもの
     */
   public:
-   interpolationTriangleQuadByFixedRangeCenter(){};
-   interpolationTriangleQuadByFixedRangeCenter(const VV_d &s_IN) : interpolationTriangle(s_IN){};
+   interpolationTriangleQuadByFixedRangeCenter() {};
+   interpolationTriangleQuadByFixedRangeCenter(const VV_d &s_IN) : interpolationTriangle(s_IN) {};
    V_d N(const double &t0, const double &t1) const override {
       // CForm[FullSimplify[shape2FixedRangeCenter[t0, t1]]]
       return {((-1 + t0) * t0) / 2., (t0 * (1 + t0 * (-1 + t1)) * (-1 + t1)) / 2., (t0 * t1 * (-1 + t0 * t1)) / 2., t0 * (1 + t0 * (-1 + t1)), -((1 + t0 * (-1 + t1)) * (-1 + t0 * t1)), t0 - std::pow(t0, 2) * t1};
@@ -1938,8 +1938,8 @@ class interpolationCenterTriangleQuadIDW12 : public interpolationTriangle {
     * 中央の三角形(3,4,5)を[0,1],[0,1]で補間するようにしたもの
     */
   public:
-   interpolationCenterTriangleQuadIDW12(){};
-   interpolationCenterTriangleQuadIDW12(const VV_d &s_IN) : interpolationTriangle(s_IN){};
+   interpolationCenterTriangleQuadIDW12() {};
+   interpolationCenterTriangleQuadIDW12(const VV_d &s_IN) : interpolationTriangle(s_IN) {};
    V_d N(const double &t0, const double &t1) const override {
       V_d ret = {t0 * (-3 + 2 * (-1 + t1) * t1 + t0 * (9 + (-1 + t1) * t1) + (-9 + t1 * (7 + t1 * (5 + 12 * (-2 + t1) * t1))) * std::pow(t0, 2) + (3 - (-1 + t1) * t1 * (-3 + 17 * (-1 + t1) * t1)) * std::pow(t0, 3) - (-1 + t1) * t1 * (-1 + (-1 + t1) * t1) * (1 + 6 * (-1 + t1) * t1) * std::pow(t0, 4)), t0 * (1 + t0 * (-1 + t1)) * (-3 + t1 + t0 * (6 + t1 * (-9 + t1 * (-10 + t1 * (-9 + 4 * t1)))) + (-3 + t1 * (7 + 2 * t1 * (-4 + t1 * (17 + (-7 + t1) * t1)))) * std::pow(t0, 2) + 2 * (7 - 3 * t1) * std::pow(t1, 2) + t1 * std::pow(t0, 3) * (1 + t1 - 10 * std::pow(t1, 2) + std::pow(t1, 3) + std::pow(t1, 4))), t0 * (-1 + t0 * t1) * (-6 + t0 * (18 + t1 * (-40 + t1 * (13 + (7 - 4 * t1) * t1))) + (-18 + t1 * (47 + 2 * t1 * (-15 + t1 * (-1 + t1 * (2 + t1))))) * std::pow(t0, 2) + t1 * (11 + 4 * t1 - 6 * std::pow(t1, 2)) + (-1 + t1) * (6 + (-6 + t1) * t1) * std::pow(t0, 3) * (-1 + t1 + std::pow(t1, 2))), t0 * ((7 + 2 * t0 * (8 + t0)) * t1 * std::pow(-1 + t0, 2) - 6 * std::pow(-1 + t0, 3) - (-1 + t0) * (5 + 2 * t0 * (18 + t0 * (-5 + 3 * t0))) * std::pow(t1, 2) + (-6 + t0 * (-41 + t0 * (72 + (6 - 19 * t0) * t0))) * std::pow(t1, 3) + t0 * (2 + t0 * (-15 + t0 * (-59 + 48 * t0))) * std::pow(t1, 4) + 3 * (2 + (11 - 9 * t0) * t0) * std::pow(t0, 2) * std::pow(t1, 5) + 2 * (-1 + t0) * std::pow(t0, 3) * std::pow(t1, 6)), -4 * t0 * (9 + 4 * (-1 + t1) * t1) + (36 + (-1 + t1) * t1 * (81 + 16 * (-1 + t1) * t1)) * std::pow(t0, 2) + 2 * (-6 + (-1 + t1) * t1 * (-32 + 9 * (-1 + t1) * t1)) * std::pow(t0, 3) - (-1 + t1) * t1 * (-9 + (-1 + t1) * t1 * (59 + 4 * (-1 + t1) * t1)) * std::pow(t0, 4) + t1 * (-2 + t1 * (27 + t1 * (-48 + t1 * (19 - 2 * (-3 + t1) * t1)))) * std::pow(t0, 5) + 12 * (1 + t1 - std::pow(t1, 2)), t0 * (12 + t1 + t0 * (-24 + t1 * (51 + t1 * (-80 + t1 * (33 + 2 * t1)))) + (12 + t1 * (-71 + t1 * (140 - 3 * t1 * (24 + t1 * (-5 + 2 * t1))))) * std::pow(t0, 2) - t1 * (-21 + t1 * (20 + t1 * (-3 + 2 * t1) * (-20 + t1 * (12 + t1)))) * std::pow(t0, 3) + (-1 + t1) * t1 * (2 + t1 * (17 + t1 * (-40 + t1 * (17 + 2 * t1)))) * std::pow(t0, 4) + (-13 + 6 * t1) * std::pow(t1, 2)), (1 + t0 * (-1 + t1)) * t1 * (-7 + t0 * (9 + t0 * (-2 + 3 * (-1 + t1) * t1))) * std::pow(t0, 2) * std::pow(-1 + t1, 2), (-1 + t1) * (-1 + t0 * t1) * (-7 + t0 * (9 + t0 * (-2 + 3 * (-1 + t1) * t1))) * std::pow(t0, 2) * std::pow(t1, 2), -((-1 + t0) * t0 * (1 + t0 * (-1 + t1)) * (-1 + t0 * t1) * (5 - 2 * t1 + t0 * (2 + t1 * (-7 + 2 * t1))) * std::pow(t1, 2)), -(t0 * (1 + t0 * (-1 + t1)) * t1 * (5 - 2 * t1 + t0 * (2 + t1 * (-7 + 2 * t1))) * std::pow(-1 + t0, 2)), -(t0 * (-1 + t1) * (-1 + t0 * t1) * (3 + 2 * t1 + t0 * (-3 + t1 * (3 + 2 * t1))) * std::pow(-1 + t0, 2)), -((-1 + t0) * t0 * (1 + t0 * (-1 + t1)) * (-1 + t0 * t1) * (3 + 2 * t1 + t0 * (-3 + t1 * (3 + 2 * t1))) * std::pow(-1 + t1, 2))};
       return ret / (12 * (1 + t1 + t0 * (-2 + t1 - std::pow(t1, 2)) - std::pow(t1, 2) + std::pow(t0 + t0 * (-1 + t1) * t1, 2)));

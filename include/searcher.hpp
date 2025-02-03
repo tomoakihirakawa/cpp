@@ -126,7 +126,7 @@ class searcherCommon {
    };
 
    searcherCommon()
-       : enteredLines({}), enteredLines_({}), reachedLines({}), reachedLines_({}), penetrateLines({}), netObjs({}), netObjs_({}), netObjs__({}), /*startObj(nullptr), */ networks({}), network(nullptr), netObjsAtDepth({}){};
+       : enteredLines({}), enteredLines_({}), reachedLines({}), reachedLines_({}), penetrateLines({}), netObjs({}), netObjs_({}), netObjs__({}), /*startObj(nullptr), */ networks({}), network(nullptr), netObjsAtDepth({}) {};
 
    ///*condEnterLine_*/`condEnterLine`は，`searcher`が目の前にある`networkLine`を通るかどうかを決定する．判断材料は現在地の`networkObect`と目の前にある`networkLine`の持つ内容．**一度チェックした`networkLine`は二度と通らないので注意．**/*condEnterLine_*/
    virtual bool condEnterLine(const T *p, const netLp l) { return true; };
@@ -134,7 +134,7 @@ class searcherCommon {
    virtual bool condGetObject(const netLp l, const T *P) { return true; };
    ///*condKeepSearch_*/`condKeepSearch`は，`searcher`が現在地の（手元にある）`networkObject`から，再び探査を開始するかどうかを判断する．判断材料は通ってしまい後ろにある`networkLine`と現在地の`networkObject`の持つ内容．/*condKeepSearch_*/
    virtual bool condKeepSearch(const netLp l, const T *P) { return true; };
-   virtual void initSearch(){};
+   virtual void initSearch() {};
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ class searcher;
 template <>
 class searcher<networkPoint> : public searcherCommon<networkPoint> {
   public:
-   searcher() : searcherCommon<networkPoint>(){};
+   searcher() : searcherCommon<networkPoint>() {};
 
    /*search_detail
 点と点は，直接繋がっておらず，間には`networkLine`が存在する．これによって，`search()`は，`condEnterLine`を使って，通過する線の条件も変更することができる．このことは，オブジェクトの干渉チェックの実装を容易にしている．
@@ -238,7 +238,7 @@ template <>
 class searcher<networkFace> : public searcherCommon<networkFace> {
   public:
    std::vector<T2Tddd> path;
-   searcher() : searcherCommon<networkFace>(){};
+   searcher() : searcherCommon<networkFace>() {};
 
    /*search_detail
 点と点は，直接繋がっておらず，間には`networkLine`が存在する．これによって，`search()`は，`condEnterLine`を使って，通過する線の条件も変更することができる．このことは，オブジェクトの干渉チェックの実装を容易にしている．
@@ -352,8 +352,8 @@ template <typename T>
 class depth_searcher : public searcher<T> {
   public:
    int depth_lim;
-   depth_searcher(const int depth_lim_IN) : depth_lim(depth_lim_IN), searcher<T>(){};
-   depth_searcher() : searcher<T>(){};
+   depth_searcher(const int depth_lim_IN) : depth_lim(depth_lim_IN), searcher<T>() {};
+   depth_searcher() : searcher<T>() {};
    void setDepth(const int depth_lim_IN) { this->depth_lim = depth_lim_IN; };
    bool condEnterLine(const T *p, const netLp l) override {
       // 自身(startobj):0
@@ -378,7 +378,7 @@ class BreadthFirstSearcher : public searcher<T> {
    int depth_lim;
 
   public:
-   BreadthFirstSearcher(const int depth_lim_IN /*0は自分だけ，depth_limまで検索*/) : depth_lim(depth_lim_IN), searcher<T>(){};
+   BreadthFirstSearcher(const int depth_lim_IN /*0は自分だけ，depth_limまで検索*/) : depth_lim(depth_lim_IN), searcher<T>() {};
 
    std::vector<T *> operator()(const int n) {
       if (n > this->netObjsAtDepth.size()) {
@@ -501,7 +501,8 @@ std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &F
    for (auto i = 0; i < s; i++) {
       for (const auto &F : tmp) {
          std::ranges::for_each(F->getPoints(), [&](const auto &p) {
-            for (const auto &f : p->getFaces()) ret.emplace(f);
+            for (const auto &f : p->getFaces())
+               ret.emplace(f);
          });
       }
       tmp = ret;

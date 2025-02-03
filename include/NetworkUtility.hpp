@@ -25,49 +25,49 @@ void writeFaces(std::ofstream &ofs, const std::map<networkPoint *, int> &P_i, co
 void createOBJ(std::ofstream &ofs, Network &net) {
    std::map<networkPoint *, int> pointIndices;
    writeVertices(ofs, pointIndices, net.getPoints());
-   writeFaces(ofs, pointIndices, net.getFaces());
+   writeFaces(ofs, pointIndices, net.getSurfaces());
 }
 
 //% ------------------------------------------------------ */
 //%                         反射点の計算                     */
 //% ------------------------------------------------------ */
 
-bool isInConvexPolygon(const networkPoint *const p) {
-   try {
-      auto ps = p->getNeighborsSort();  // ソートできない場合エラーとなる
-      if (ps.size() < 2)
-         return false;
-      if (ps.size() == 3)
-         return true;
-      if (ps.size() != p->getNeighbors().size())
-         return false;  // 面が重複する場合を覗くために設置
+// bool isInConvexPolygon(const networkPoint *const p) {
+//    try {
+//       auto ps = p->getNeighborsSort();  // ソートできない場合エラーとなる
+//       if (ps.size() < 2)
+//          return false;
+//       if (ps.size() == 3)
+//          return true;
+//       if (ps.size() != p->getNeighbors().size())
+//          return false;  // 面が重複する場合を覗くために設置
 
-      return isConvexPolygon(extX(ps), p->getNormalTuple());
-   } catch (std::exception &e) {
-      std::cerr << e.what() << colorReset << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-   };
-};
+//       return isConvexPolygon(extX(ps), p->getNormalTuple());
+//    } catch (std::exception &e) {
+//       std::cerr << e.what() << colorReset << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+//    };
+// };
 
-bool isStraight(const V_d &v0, const V_d &v1, const double angle = 1E-2 /*閾値*/) {
-   //        ^
-   //      v1|angle (positive)
-   // ---v0-->----
-   //      v1|angle (negative)
-   //        v
-   if (std::abs(MyVectorAngle(v0, v1)) < angle)
-      return true;
-   return false;
-};
+// bool isStraight(const V_d &v0, const V_d &v1, const double angle = 1E-2 /*閾値*/) {
+//    //        ^
+//    //      v1|angle (positive)
+//    // ---v0-->----
+//    //      v1|angle (negative)
+//    //        v
+//    if (std::abs(MyVectorAngle(v0, v1)) < angle)
+//       return true;
+//    return false;
+// };
 
-bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double angle = 1E-2 /*閾値*/) {
-   return (isStraight(ToVector(ToX(p0) - ToX(p1)), ToVector(ToX(p1) - ToX(p2))) < angle);
-};
+// bool isStraight(const netPp p0, const netPp p1, const netPp p2, const double angle = 1E-2 /*閾値*/) {
+//    return (isStraight(ToVector(ToX(p0) - ToX(p1)), ToVector(ToX(p1) - ToX(p2))) < angle);
+// };
 
 bool isFlat(const netPp p, double minangle = M_PI / 180.) {
    if (p->getLines().empty())
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p->getLines().empty()");
-   auto faces = ToVector(p->getFaces());
+   auto faces = p->getSurfaces();
    for (auto i = 0; i < faces.size(); i++)
       for (auto j = i; j < faces.size(); j++)
          if (!isFlat(ToX(faces[i]), ToX(faces[j]), minangle))
@@ -76,7 +76,7 @@ bool isFlat(const netPp p, double minangle = M_PI / 180.) {
 };
 
 bool isFlat(const netLp line, double minangle = M_PI / 180.) {
-   auto fs = line->getFaces();
+   auto fs = line->getSurfaces();
    if (fs.size() != 2)
       return false;
    else
@@ -86,7 +86,7 @@ bool isFlat(const netLp line, double minangle = M_PI / 180.) {
 /* -------------------------------------------------------------------------- */
 
 Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
-   for (const auto &f : p->getFaces())
+   for (const auto &f : p->getSurfaces())
       VECTOR = Chop(VECTOR, f->normal);
    return VECTOR;
    // auto faces = ToVector(p->getFaces());
@@ -102,7 +102,7 @@ Tddd exact_along_surface(const networkPoint *const p, Tddd VECTOR) {
 };
 
 bool isFlat(const auto p, const double lim_rad = 1E-2 * M_PI / 180.) {
-   auto faces = p->getFaces();
+   auto faces = p->getSurfaces();
    for (auto i = 0; i < faces.size(); i++)
       for (auto j = i; j < faces.size(); j++)
          if (!isFlat(faces[i]->normal, faces[j]->normal, lim_rad))
@@ -187,7 +187,7 @@ Tddd findOptimalPositionByCriteriaOn(const networkPoint *p,
                                      std::function<Tddd(const networkPoint *)> get_triangle_base_X /*optimum position will be found on this triangle*/) {
 
    constexpr double acceptable_change_angle = 1E-2 * M_PI / 180.;
-   const auto all_face = ToVector(p->getFaces());
+   const auto all_face = p->getFaces();
    std::array<double, 3> where_the_min_score = get_triangle_base_X(p);
    double min_score = criteria(where_the_min_score), s;
    if (!isFinite(min_score))
@@ -226,7 +226,7 @@ Tddd findOptimalPositionByCriteriaOn(const networkPoint *p,
    int itr = 5;
    T3Tddd base_X012;
 
-   auto faces_will_be_updated = ToVector(p->getFaces());
+   auto faces_will_be_updated = p->getFaces();
    for (const auto &f : faces_will_be_updated) {
       std::array<double, 2> t0_minmax = {0.9, 1.};
       std::array<double, 2> t1_minmax = {0., 1.};
@@ -264,7 +264,7 @@ void SmoothingPreserveShape(networkPoint *p) {
    auto calculateScoreIfPointMoved = [](const networkPoint *p,
                                         const Tddd &X_candidate,
                                         std::function<Tddd(const networkPoint *)> get_position_to_be_updated) {
-      const auto p_faces = ToVector(p->getFaces());
+      const auto p_faces = p->getFaces();
       double n = p_faces.size(), area;
       const double acceptable_change_angle = 1E-2 * M_PI / 180.;
       double total = 0;
@@ -273,6 +273,7 @@ void SmoothingPreserveShape(networkPoint *p) {
          Tddd X1 = get_position_to_be_updated(p1);
          Tddd X2 = get_position_to_be_updated(p2);
          total += CircumradiusToInradius(X_candidate, X1, X2) * std::pow(Distance(X_candidate, X1) + Distance(X_candidate, X2) + Distance(X1, X2), 2) / TriangleArea(X_candidate, X1, X2);
+         total += differenceFromEquilateralTriangle(X_candidate, X1, X2);
          // total += std::pow(Circumradius(X_candidate, X1, X2), 2) * M_PI / TriangleArea(X_candidate, X1, X2);
          if (!isFlat(X_candidate, p1->X, p2->X, p0->X, p1->X, p2->X, acceptable_change_angle)) return 1E+30;
       }
@@ -1268,31 +1269,31 @@ Tddd particlize(const networkFace *f, const Tdd &t0t1, const double d) {
 };
 
 // b% ------------------------------------------------------ */
-Tddd oppositeX(const std::tuple<networkFace * /*補間に使った三角形の頂点*/,
-                                T_PPP /*補間に使った三角形の頂点*/,
-                                Tdd /*パラメタt0,t1*/,
-                                double /*深さ方向距離*/,
-                                double /*粒子間隔*/> &particlize_info) {
-   // 粒子化された点の面にたいする反対側の位置を返す．
-   // 単純にp+2*Dot(f->p0 - p,n)*nでは，角の面において重なりが生じてしまう．
-   // パラメタを使って計算すれば重なりは生じない．
-   auto [f, p0p1p2, t0t1, d, dx] = particlize_info;
-   if (f) {
-      auto [p0, p1, p2] = p0p1p2;  // f->getPoints();
-      return Dot(Tddd{std::get<0>(t0t1), std::get<1>(t0t1), 1. - std::get<0>(t0t1) - std::get<1>(t0t1)},
-                 T3Tddd{ToX(p0) + d / Dot(p0->getNormalTuple(), f->normal) * p0->getNormalTuple(),
-                        ToX(p1) + d / Dot(p1->getNormalTuple(), f->normal) * p1->getNormalTuple(),
-                        ToX(p2) + d / Dot(p2->getNormalTuple(), f->normal) * p2->getNormalTuple()});
-   } else {
-      std::stringstream ss;
-      // ss << "particlize_info = " << f << ", " << t0 << ", " << t1 << ", " << d << ", " << dx << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-   };
-};
+// Tddd oppositeX(const std::tuple<networkFace * /*補間に使った三角形の頂点*/,
+//                                 T_PPP /*補間に使った三角形の頂点*/,
+//                                 Tdd /*パラメタt0,t1*/,
+//                                 double /*深さ方向距離*/,
+//                                 double /*粒子間隔*/> &particlize_info) {
+//    // 粒子化された点の面にたいする反対側の位置を返す．
+//    // 単純にp+2*Dot(f->p0 - p,n)*nでは，角の面において重なりが生じてしまう．
+//    // パラメタを使って計算すれば重なりは生じない．
+//    auto [f, p0p1p2, t0t1, d, dx] = particlize_info;
+//    if (f) {
+//       auto [p0, p1, p2] = p0p1p2;  // f->getPoints();
+//       return Dot(Tddd{std::get<0>(t0t1), std::get<1>(t0t1), 1. - std::get<0>(t0t1) - std::get<1>(t0t1)},
+//                  T3Tddd{ToX(p0) + d / Dot(p0->getNormalTuple(), f->normal) * p0->getNormalTuple(),
+//                         ToX(p1) + d / Dot(p1->getNormalTuple(), f->normal) * p1->getNormalTuple(),
+//                         ToX(p2) + d / Dot(p2->getNormalTuple(), f->normal) * p2->getNormalTuple()});
+//    } else {
+//       std::stringstream ss;
+//       // ss << "particlize_info = " << f << ", " << t0 << ", " << t1 << ", " << d << ", " << dx << std::endl;
+//       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+//    };
+// };
 
-Tddd oppositeX(const networkPoint *p) {
-   return oppositeX(p->particlize_info);
-};
+// Tddd oppositeX(const networkPoint *p) {
+//    return oppositeX(p->particlize_info);
+// };
 /* ------------------------------------------------------ */
 
 std::vector<networkPoint *> operator+(std::vector<networkPoint *> A /*copy and return*/, const std::vector<networkPoint *> &B) {

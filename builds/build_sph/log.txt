@@ -1,4 +1,15 @@
 ----------
+Execution time: Tue Jan 21 14:05:50 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.0.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph"
+
+Command line arguments:
+  arg0: ./main
+  arg1: ./input_files/Lobovsky2013_PS0d015_CSML2d5_RK1
+----------
 Execution time: Tue Nov  5 20:45:19 2024
 
 Machine Information:
@@ -53351,6 +53362,7 @@ Machine Information:
 Command line arguments:
   arg0: ./main
   arg1: ./input_files/Lobovsky2013_PS0d02_CSML2d5_RK1
+----------
 ----------
 ----------
 ----------

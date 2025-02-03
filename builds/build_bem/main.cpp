@@ -1,3 +1,5 @@
+#include "pch.hpp"
+
 /*DOC_EXTRACT 0_0_BEM
 
 # BEM-MEL
@@ -18,38 +20,36 @@ bool _LINEAR_ELEMENT_ = false;
 bool _PSEUDO_QUADRATIC_ELEMENT_ = false;
 bool _ALE_ON_LINEAR_ELEMENT_ = false;
 bool _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = false;
-
-#define BEM
-// #define use_lapack
-#define simulation
-#include <sys/utsname.h>
-#include <unistd.h>
-#include <chrono>
-#include <ctime>
-#include <filesystem>
-#include <regex>
-#include "Network.hpp"
-#include "integrationOfODE.hpp"
-#include "kernelFunctions.hpp"
-#include "minMaxOfFunctions.hpp"
-#include "rootFinding.hpp"
-#include "vtkWriter.hpp"
-
 int time_step;
 double simulation_time = 0;
+
+#define BEM
+
+// #define use_lapack
+
+#define simulation
+// #include <sys/utsname.h>
+// #include <unistd.h>
+// #include <chrono>
+// #include <ctime>
+// #include <filesystem>
+// #include <regex>
+// #include "tetgen1.6.0/tetgen.h"
+//
+#include "Network.hpp"
+// #include "integrationOfODE.hpp"
+// #include "kernelFunctions.hpp"
+// #include "minMaxOfFunctions.hpp"
+// #include "rootFinding.hpp"
+// #include "vtkWriter.hpp"
+
 JSONoutput jsonout;
 
 // pvd cpg_pvd("./vtu/bem.pvd");
 
 #include "BEM.hpp"
-#include "svd.hpp"
-
-std::string toLowerCase(const std::string &str) {
-   std::string strLower = str;
-   std::transform(strLower.begin(), strLower.end(), strLower.begin(),
-                  [](unsigned char c) { return std::tolower(c); });
-   return strLower;
-}
+#include "BEM_inputfile_reader.hpp"
+// #include "svd.hpp"
 
 int main(int argc, char **argv) {
 
@@ -71,262 +71,64 @@ int main(int argc, char **argv) {
    /* -------------------------------------------------------------------------- */
    if (!initializeLogFile("log.txt", argc, argv))
       return 1;
-
-   /* -------------------------------------------------------------------------- */
-
    if (argc <= 1)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "argv <= 1. write input json file directory!\nex.\n$ ./main ./input");
-
-   std::filesystem::path input_directory(argv[1]);  // input directory
-   // input_directory += "/";
-   std::cout << input_directory << std::endl;
-
+   SimulationSettings setting(argv[1]);
+   std::filesystem::path input_directory = setting.input_directory;
+   JSON settingJSON = setting.settingJSON;
+   const double max_dt = setting.max_dt;
+   const int ALEPERIOD = setting.ALEPERIOD;
+   const int end_time_step = setting.end_time_step;
+   const double end_time = setting.end_time;
+   const double stop_remesh_time = setting.stop_remesh_time;
+   const double force_remesh_time = setting.force_remesh_time;
+   const int grid_refinement = setting.grid_refinement;
+   const std::filesystem::path output_directory = setting.output_directory;
+   _LINEAR_ELEMENT_ = setting._LINEAR_ELEMENT_;
+   _PSEUDO_QUADRATIC_ELEMENT_ = setting._PSEUDO_QUADRATIC_ELEMENT_;
+   _ALE_ON_LINEAR_ELEMENT_ = setting._ALE_ON_LINEAR_ELEMENT_;
+   _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = setting._ALE_ON_PSEUDO_QUADRATIC_ELEMENT_;
+   std::map<Network *, outputInfo> NetOutputInfo = setting.NetOutputInfo;
+   std::vector<Network *> FluidObject = setting.FluidObject;
+   std::vector<Network *> RigidBodyObject = setting.RigidBodyObject;
+   std::vector<Network *> SoftBodyObject = setting.SoftBodyObject;
+   std::vector<Network *> AbsorberObject = setting.AbsorberObject;
+   std::vector<JSON> MeasurementJSONs = setting.MeasurementJSONs;
    /* -------------------------------------------------------------------------- */
-   /*                           read setting.json                                */
-   /* -------------------------------------------------------------------------- */
+   if (false)
+      for (auto &network : FluidObject) {
 
-   // Read settings from a JSON file and store values
-   JSON settingJSON(input_directory / "setting.json");
-   for (auto &[key, value] : settingJSON()) std::cout << key << ": " << value << std::endl;
-
-   // Check for the existence of required keys in the JSON file
-   if (!std::ranges::all_of(settingJSON.find({"end_time_step", "end_time", "output_directory", "max_dt", "input_files"}), [](auto v) { return v; }))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "there is missing key in setting.json");
-
-   // Store values from the JSON file into variables
-   const std::filesystem::path output_directory = settingJSON.at("output_directory")[0];
-   const double max_dt = stod(settingJSON.at("max_dt"))[0];
-
-   const int ALEPERIOD = stoi(settingJSON.at("ALEPERIOD"))[0];
-   // Then, in your conditional checks, use this function to ensure case-insensitivity
-
-   if (settingJSON.find("element") && toLowerCase(settingJSON.at("element")[0]) == "linear")
-      _LINEAR_ELEMENT_ = true;
-   else if (settingJSON.find("element") && (toLowerCase(settingJSON.at("element")[0]).contains("quad") && toLowerCase(settingJSON.at("element")[0]).contains("pseudo")))
-      _PSEUDO_QUADRATIC_ELEMENT_ = true;
-   else
-      _LINEAR_ELEMENT_ = true;
-
-   if (_LINEAR_ELEMENT_)
-      std::cout << "LINEAR_ELEMENT" << std::endl;
-   if (_PSEUDO_QUADRATIC_ELEMENT_)
-      std::cout << "PSEUDO_QUADRATIC_ELEMENT" << std::endl;
-
-   if (settingJSON.find("ALE") && toLowerCase(settingJSON.at("ALE")[0]) == "linear")
-      _ALE_ON_LINEAR_ELEMENT_ = true;
-   else if (settingJSON.find("ALE") && (toLowerCase(settingJSON.at("ALE")[0]).contains("quad") || toLowerCase(settingJSON.at("ALE")[0]).contains("pseudo")))
-      _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
-   else
-      _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
-
-   if (_ALE_ON_LINEAR_ELEMENT_)
-      std::cout << "ALE_ON_LINEAR_ELEMENT" << std::endl;
-   if (_ALE_ON_PSEUDO_QUADRATIC_ELEMENT_)
-      std::cout << "ALE_ON_PSEUDO_QUADRATIC_ELEMENT" << std::endl;
-
-   const int end_time_step = stoi(settingJSON.at("end_time_step"))[0];
-   const double end_time = stod(settingJSON.at("end_time"))[0];
-
-   // int ALE_period_in_step = 1;
-   // if (settingJSON.find("ALE_period_in_step"))
-   //    ALE_period_in_step = stod(settingJSON.at("ALE_period_in_step"))[0];
-
-   std::cout << "" << std::endl;
-
-   if (settingJSON.find("WATER_DENSITY", [](auto STR_VEC) { _WATER_DENSITY_ = stod(STR_VEC[0]); }))
-      std::cout << "WATER_DENSITY: " << _WATER_DENSITY_ << std::endl;
-
-   if (settingJSON.find("GRAVITY", [](auto STR_VEC) { _GRAVITY_ = stod(STR_VEC[0]); }))
-      std::cout << "GRAVITY: " << _GRAVITY_ << std::endl;
-
-   // Set default values for optional keys and update if found in the JSON file
-   double stop_remesh_time = 1E+10;
-   double force_remesh_time = 0;
-   int grid_refinement = 0;
-
-   settingJSON.find("stop_remesh_time", [&](auto STR_VEC) { stop_remesh_time = stod(STR_VEC[0]); });
-   settingJSON.find("force_remesh_time", [&](auto STR_VEC) { force_remesh_time = stod(STR_VEC[0]); });
-   settingJSON.find("grid_refinement", [&](auto STR_VEC) { grid_refinement = stoi(STR_VEC[0]); });
-   /* -------------------------------------------------------------------------- */
-   /*                read JSON files, input_files in setting.json                */
-   /* -------------------------------------------------------------------------- */
-
-   // Define containers and helper functions for network objects and output information
-   std::map<Network *, outputInfo> NetOutputInfo;
-   auto setOutputInfo = [&NetOutputInfo](Network *net, auto output_name, const std::filesystem::path &output_directory) {
-      std::cout << "setOutputInfo" << std::endl;
-      NetOutputInfo[net].pvd_file_name = output_name;
-      NetOutputInfo[net].vtu_file_name = output_name + "_";
-      NetOutputInfo[net].PVD = new PVDWriter(output_directory / (output_name + ".pvd"));
-   };
-
-   std::vector<Network *> FluidObject, RigidBodyObject, SoftBodyObject, AbsorberObject;
-   std::vector<JSON> MeasurementJSONs;
-   auto setTypes = [&FluidObject, &RigidBodyObject, &SoftBodyObject, &AbsorberObject](Network *net, const JSON &injson) {
-      std::cout << "setTypes" << std::endl;
-
-      //$ set type
-      auto type = injson.at("type")[0];
-      if (type.contains("RigidBody")) {
-         RigidBodyObject.emplace_back(net);
-         net->isRigidBody = true;
-         net->isSoftBody = net->isFluid = false;
-      } else if (type.contains("SoftBody") || type.contains("FixedBody")) {
-         SoftBodyObject.emplace_back(net);
-         net->isSoftBody = true;
-         net->isRigidBody = net->isFluid = false;
-      } else if (type.contains("Fluid")) {
-         FluidObject.emplace_back(net);
-         net->isFluid = true;
-         net->isRigidBody = net->isSoftBody = false;
-      } else if (type.contains("Absorber") || type.contains("absorb") || type.contains("damping")) {
-         AbsorberObject.emplace_back(net);
-         net->isAbsorber = true;
-         net->isRigidBody = net->isSoftBody = net->isFluid = false;
-      }
-
-      //! isFixedはdefaultでfalse．指定された分だけ順に置き換わる
-      //! ただし，指定が１つだけなら，それを全てのに適用する．
-      if (injson.find("isFixed")) {
-         auto isFixed = stob(injson.at("isFixed"));
-         if (isFixed.size() == 1)
-            net->isFixed.fill(isFixed[0]);
-         else
-            for (auto i = 0; i < isFixed.size(); ++i)
-               net->isFixed[i] = isFixed[i];
-      }
-      // for (auto i = 0; i < 10; ++i)
-      //    AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
-      //$ set velocity
-      net->isFloatingBody = (injson.find("velocity") && injson.at("velocity")[0] == "floating");
-      // velocityにfileが指定されている場合は，そのファイルを読み込み，
-      // interpolationBsplineであるnet->intpMotionRigidBodyをsetする．
-      injson.find("velocity", [&](auto STR_VEC) {
-         if (STR_VEC[0].contains("file")) {
-            if (STR_VEC.size() == 1) throw std::runtime_error("Failed to open the input file.");
-            std::ifstream file(STR_VEC[1]);
-            if (!file.is_open()) throw std::runtime_error("Failed to open the input file.");
-            std::vector<double> T;
-            std::vector<std::array<double, 6>> XYZ_Angles;
-            std::string line;
-            double t, x, y, z, q0, q1, q2;
-            while (std::getline(file, line)) {
-               if (line[0] == '#') continue;
-               replace(line.begin(), line.end(), ',', ' ');
-               std::istringstream iss(line);
-               iss >> t >> x >> y >> z >> q0 >> q1 >> q2;
-               T.push_back(t);
-               XYZ_Angles.push_back({x, y, z, q0, q1, q2});
-            }
-            file.close();
-            net->intpMotionRigidBody.set(3, T, XYZ_Angles);
+         {
+            std::ofstream ofs0(output_directory / (network->getName() + "_tetra_before.vtp"));
+            std::ofstream ofs1(output_directory / (network->getName() + "_lines_before.vtp"));
+            vtkPolygonWrite(ofs0, network->getFaces());
+            vtkPolygonWrite(ofs1, network->getLines());
          }
-      });
-      net->isFloatingBody = net->isFloatingBody || (injson.find("acceleration") && injson.at("acceleration")[0] == "floating");
 
-      net->resetInitialX();
-      net->setGeometricProperties();
-   };
+         network->tetrahedralize();
 
-   /* generate network objects from input JSON files */
-
-   for (auto input_file_name : settingJSON["input_files"]) {
-      std::cout << Green << input_directory / input_file_name << colorReset << std::endl;
-      JSON injson(input_directory / input_file_name);
-
-      /* --------------------------- check required keys -------------------------- */
-      if (!injson.find("name"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, (input_directory / input_file_name).string() + " does not have \"name\" key");
-      if (!injson.find("type"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, (input_directory / input_file_name).string() + " does not have \"type\" key");
-      auto type = injson.at("type")[0];
-      if ((type.contains("Fluid") || type.contains("Body")) && !injson.find("objfile"))
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, (input_directory / input_file_name).string() + " does not have \"objfile\" key");
-      else if (type.contains("Measurement") || type.contains("gauge")) {
-         MeasurementJSONs.emplace_back(injson);
-         std::cout << "type = " << type << std::endl;
-         std::cout << "skipped" << std::endl;
-         continue;
-      }
-      /* -------------------------------------------------------------------------- */
-      /* -------------------- display contents of the JSON file ------------------- */
-      for (auto &[key, value] : injson()) std::cout << Green << key << colorReset << ": " << value << std::endl;
-      auto object_name = injson.at("name")[0];
-
-      if (!injson.find("ignore") || !stob(injson["ignore"])[0]) {
-
-         auto net = new Network(injson.at("objfile")[0], object_name);
-         net->inputJSON = injson;
-         net->applyTransformations(injson);
-         setOutputInfo(net, injson.at("name")[0], output_directory);
-         setTypes(net, injson);
-         // output initial state
-         std::filesystem::copy_file(input_directory / input_file_name, output_directory / input_file_name, std::filesystem::copy_options::overwrite_existing);
-         mk_vtu(output_directory / (object_name + "_init.vtu"), {net->getFaces()});
-         /* -------------------------------------------------------------------------- */
-         for (auto &[key, value] : injson()) {
-            if (key.contains("mooring")) {
-               //$ ------------------------ MOORING ---------------------- */
-               //$ extract key the contains "mooring" as key name. extract them as vector
-               std::cout << "/* ------------------------ MOORING ---------------------- */" << std::endl;
-               std::cout << "initialize mooring" << std::endl;
-
-               //! check if the value contains 12 elements
-               if (value.size() != 13)  //! show contents of the value nicely
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "mooring line must have 12 elements");
-
-               const auto name = value[0];
-               const int n_points = std::stoi(value[8]);  //$ number of points
-               const std::array<double, 3> X_begin = {std::stod(value[1]), std::stod(value[2]), std::stod(value[3])};
-               const std::array<double, 3> X_end = {std::stod(value[4]), std::stod(value[5]), std::stod(value[6])};
-               const double total_length = std::stod(value[7]);  //! [m]
-               const double w = std::stod(value[9]);             //! [kg/m]
-               const double stiffness = std::stod(value[10]);    //! [N/m]
-               const double damp = std::stod(value[11]);         //! [N/(m/s^2)]
-               const double diam = std::stod(value[12]);         //! [m]
-
-               std::cout << std::right << std::setw(15) << "name : " << name << std::endl;
-               std::cout << std::right << std::setw(15) << "X_begin : " << X_begin << std::endl;
-               std::cout << std::right << std::setw(15) << "X_end : " << X_end << std::endl;
-               std::cout << std::right << std::setw(15) << "total_length : " << total_length << std::endl;
-               std::cout << std::right << std::setw(15) << "n_points : " << n_points << std::endl;
-               std::cout << std::right << std::setw(15) << "mass per unit length : " << w << std::endl;
-               std::cout << std::right << std::setw(15) << "stiffness : " << stiffness << std::endl;
-               std::cout << std::right << std::setw(15) << "damp : " << damp << std::endl;
-               std::cout << std::right << std::setw(15) << "diam : " << diam << std::endl;
-               std::cout << std::right << std::setw(15) << "total mass" << w * total_length << std::endl;
-
-               std::cout << std::right << std::setw(15) << "initialize MooringLine" << std::endl;
-               auto mooring_net = new MooringLine(X_begin, X_end, total_length, n_points);
-               mooring_net->setName(name);
-
-               std::cout << std::right << std::setw(15) << "MooringLine->getPoints().size() = " << mooring_net->getPoints().size() << std::endl;
-               std::cout << std::right << std::setw(15) << "MooringLine->getName() = " << mooring_net->getName() << std::endl;
-
-               std::cout << std::right << std::setw(15) << "MooringLine->setDensityStiffnessDampingDiameter" << std::endl;
-               mooring_net->setDensityStiffnessDampingDiameter(w, stiffness, damp, diam);
-
-               net->mooringLines.emplace_back(mooring_net);
-               setOutputInfo(mooring_net, name, output_directory);
-
-               std::cout << std::right << std::setw(15) << "MooringLine->setEquilibriumState" << std::endl;
-               auto boundary_condition = [&](networkPoint *p) {
-                  if (p == mooring_net->lastPoint || p == mooring_net->firstPoint) {
-                     p->acceleration.fill(0.);
-                     p->velocity.fill(0.);
-                  }
-               };
-
-               mooring_net->setEquilibriumState(boundary_condition);
-
-               std::cout << "/* ------------------------------------------------------- */" << std::endl;
-            }
+         {
+            std::ofstream ofs0(output_directory / (network->getName() + "_tetra_after.vtp"));
+            std::ofstream ofs1(output_directory / (network->getName() + "_lines_after.vtp"));
+            vtkPolygonWrite(ofs0, network->getFaces());
+            vtkPolygonWrite(ofs1, network->getLines());
          }
-         //$ ------------------------------------------------------- */
-      } else
-         Print("skipped");
-   }
 
+         for (auto &t : network->getTetras())
+            for (auto &l : t->Lines)
+               if (l->Tetras.empty()) {
+                  std::cout << "tetra empty" << std::endl;
+                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+               }
+
+         for (auto &l : network->getLines())
+            if (l->Tetras.empty()) {
+               std::cout << "tetra empty 2" << std::endl;
+               throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
+            }
+      }
+
+   /* -------------------------------------------------------------------------- */
    /* ----------------- Create output directory and copy files ----------------- */
 
    std::filesystem::create_directories(output_directory);
@@ -385,14 +187,28 @@ int main(int argc, char **argv) {
          double dt = 1E+20;
          int RK_order = 4;
 
-         // double spacing = 0.;
-         // for (auto &water : FluidObject)
-         //    spacing += Mean(extLength(water->getLines())) * 10;
-         // spacing /= FluidObject.size();
-
-         CoordinateBounds bounds(FluidObject[0]->bounds);
+         double spacing = 0.;
          for (auto &water : FluidObject)
-            bounds += water->bounds;
+            spacing += Mean(extLength(water->getLines())) * 10;
+         spacing /= FluidObject.size();
+         double rad = M_PI / 180;
+
+         for (auto &water : FluidObject) {
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
+            if (time_step < 10 && time_step % 1 == 1) {
+               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+               // flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+            }
+         }
+         //
+         CoordinateBounds bounds_org(FluidObject[0]->bounds);
+         for (auto &water : FluidObject)
+            bounds_org += water->bounds;
+
+         CoordinateBounds bounds = bounds_org.scaledBounds(1.5);
 
          FMM_BucketsFaces.initialize(bounds, bounds.getScale() / 10.);
          FMM_BucketsPoints.initialize(bounds, bounds.getScale() / 10.);
@@ -403,7 +219,7 @@ int main(int argc, char **argv) {
             // b# ------------------------------------------------------ */
             // b#                       刻み時間の決定                     */
             // b# ------------------------------------------------------ */
-            auto dt_cfl = dt_CFL(*water, max_dt, .4);
+            auto dt_cfl = dt_CFL(*water, max_dt, .3);
 
             if (dt > dt_cfl)
                dt = dt_cfl;
@@ -418,36 +234,7 @@ int main(int argc, char **argv) {
          Print("real time :", Red, simulation_time, colorReset);
          Print("---------------------------------------------------------------------------");
 
-         Print("makeBucketFaces", Green);
-
-#pragma omp parallel
-         for (const auto &net : AllObjects)
-#pragma omp single nowait
-         {
-            // auto spacing = 5 * Mean(extLength(net->getLines()));
-            // net->makeBucketFaces(spacing);
-            // auto spacing = 5 * Mean(extLength(net->getLines()));
-            net->makeBucketFaces(net->getScale() / 7.);
-         }
-
          for (auto &water : FluidObject) {
-            //! 体積を保存するようにリメッシュする必要があるだろう．
-            Print("setBoundaryTypes", Green);
-            setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
-            Print("setBoundaryTypes", Blue, "\nElapsed time: ", Red, watch(), colorReset, " s\n");
-            double rad = M_PI / 180;
-
-            {
-               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-               flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-            }
-            if (time_step < 10 && time_step % 1 == 1) {
-               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-            }
-
             // b@ ------------------------------------------------------ */
             // b@           初期値問題を解く（時間微分方程式を数値積分する）        */
             // b@ ------------------------------------------------------ */
@@ -456,7 +243,7 @@ int main(int argc, char **argv) {
                p->RK_X.initialize(dt, simulation_time, ToX(p), RK_order);
             }
 
-            for (const auto &f : water->getFaces())
+            for (const auto &f : water->getSurfaces())
                FMM_BucketsFaces.add(f->getXtuple(), f);
             for (const auto &p : water->getPoints())
                FMM_BucketsPoints.add(ToX(p), p);
@@ -482,21 +269,38 @@ int main(int argc, char **argv) {
 
          std::vector<double> convergence;
          do {
-
             auto RK_time = (*(FMM_BucketsPoints.all_stored_objects).begin())->RK_X.gett();  //%各ルンゲクッタの時刻を使う
             std::cout << "RK_step = " << ++RK_step << "/" << RK_order << ", RK_time = " << RK_time << ", simulation_time = " << simulation_time << std::endl;
 
+            /* --------------------------------------------------- */
+            if (RK_step == 1) {
+               /*
+               RKで節点が大きく移動する可能性がるので，setBoundaryTypesをここに移動した．
+               RKの間，flipはされない．
+               setBoundaryTypesは，接触面を更新するためにここに移動した．
+               ただ，今は大きく動かないとしてはじめだけにしている．
+               */
 #pragma omp parallel
-            for (const auto &net : AllObjects)
+               for (const auto &net : AllObjects)
 #pragma omp single nowait
-               net->makeBucketFaces(net->getScale() / 10.);
-            std::cout << Green << "makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+                  net->makeBucketFaces(net->getScale() / 10.);
+               std::cout << Green << "makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            for (auto water : FluidObject) {
-               setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
-               water->setMinDepthFromCORNER();
+               //! 体積を保存するようにリメッシュする必要があるだろう．
+               for (auto &water : FluidObject) {
+                  setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
+                  water->setMinDepthFromCORNER();
+               }
+               std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+               /* ----------------------- */
+               for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
+                  p->absorbedBy = nullptr;
+                  for (const auto &net : AbsorberObject)
+                     if (net->InsideQ(p->X))
+                        p->absorbedBy = net;
+               }
             }
-            std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+            /* --------------------------------------------------- */
 
             setNeumannVelocity(Join(RigidBodyObject, SoftBodyObject));
             std::cout << Green << "setNeumannVelocity" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
@@ -512,26 +316,16 @@ int main(int argc, char **argv) {
                // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
                // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
                bool do_ALE = (RK_step == 4 && (time_step % ALEPERIOD == 0));
-               calculateCurrentUpdateVelocities(*water, 20, do_ALE ? 0.5 : 0.);
-               if (!do_ALE)
+               if (do_ALE)
+                  calculateCurrentUpdateVelocities(*water, 10, do_ALE ? (time_step <= 10 ? 0.1 * time_step : 1.) : 0.);
+               else
                   std::cout << "ALE is not applied" << std::endl;
                // calculateCurrentUpdateVelocities(*water, 20);
             }
             std::cout << Green << "U_update_BEMを計算" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
-            convergence = BVP.solveForPhiPhin_t(Join(RigidBodyObject, SoftBodyObject));
-            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+            /* -------------------------------------------------------------------------- */
 
-            // b$ --------------------------------------------------- */
-
-            /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
-
-            ### 浮体の重心位置・姿勢・速度の更新
-
-            浮体の重心位置は，重心に関する運動方程式を解くことで求める．
-            姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
-
-            */
 #pragma omp parallel
             for (const auto &net : RigidBodyObject)
 #pragma omp single nowait
@@ -547,13 +341,8 @@ int main(int argc, char **argv) {
                   //! 静止した物体は速度ゼロが与えられているので，下を実行しても動かない
                   if (!net->inputJSON.at("velocity")[0].contains("fixed")) {
                      std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
-                     //
-                     net->RK_COM.push(net->velocityTranslational());
                      net->COM = net->RK_COM.getX();
-                     //
-                     net->RK_Q.push(net->Q.AngularVelocityTodQdt(net->velocityRotational()));
-                     net->Q = net->RK_Q.getX();
-                     //
+                     net->Q = Normalize(net->RK_Q.getX());
                   }
                   std::cout << "name = " << net->getName() << std::endl;
                   std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
@@ -583,6 +372,88 @@ int main(int argc, char **argv) {
                   }
                }
 
+               // 人工的な粘性で結果が一致するようになるかどうかチェックする．
+
+               bool use_given_velocity = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] != "update" && net->inputJSON.at("velocity")[0] != "floating");
+               bool update_velocity_using_predetermined_accel = (net->inputJSON.find("velocity") && net->inputJSON.find("acceleration") && net->inputJSON.at("velocity")[0] == "update");
+               bool update_velocity_using_solved_accel = (net->inputJSON.find("acceleration") && net->inputJSON.at("acceleration")[0] == "floating");
+               bool update_velocity_using_solved_accel2 = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating");
+               if (use_given_velocity) {
+                  std::cout << "use " << net->getName() << "'s (RigidBodyObject) predetermiend velocity" << std::endl;
+               } else if (update_velocity_using_solved_accel || update_velocity_using_predetermined_accel || update_velocity_using_solved_accel2) {
+                  std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity from acceleration" << std::endl;
+                  net->velocity = net->RK_Velocity.getX();
+                  std::cout << "acceleration = " << net->acceleration << std::endl;
+                  std::cout << "velocity = " << net->velocity << std::endl;
+               } else {
+                  std::cout << net->getName() << "'s (RigidBodyObject) velocity is not updated" << std::endl;
+               }
+            }
+
+            /* -------------------------------------------------------------------------- */
+
+            convergence = BVP.solveForPhiPhin_t(Join(RigidBodyObject, SoftBodyObject));
+            std::cout << Green << "BVP.solveForPhiPhin_t-> {Φt,Φtn}とnet->accelerationが決まる" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+
+            // b$ --------------------------------------------------- */
+
+            /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
+
+            ### 浮体の重心位置・姿勢・速度の更新
+
+            浮体の重心位置は，重心に関する運動方程式を解くことで求める．
+            姿勢は，角運動量に関する運動方程式などを使って，各加速度を求める．姿勢はクオータニオンを使って表現する．
+
+            */
+
+#pragma omp parallel
+            for (const auto &net : RigidBodyObject)
+#pragma omp single nowait
+            {  // \label{BEM:impose_velocity}
+               //  重心位置と姿勢の時間発展
+               if (net->inputJSON.find("velocity")) {
+                  //! 時間まで静止させる
+                  if ((net->inputJSON.at("velocity")[0].contains("floating") && net->inputJSON.at("velocity").size() >= 2 && std::stod(net->inputJSON.at("velocity")[1]) > simulation_time)) {
+                     net->velocity.fill(0);
+                     net->acceleration.fill(0);
+                  }
+
+                  //! 静止した物体は速度ゼロが与えられているので，下を実行しても動かない
+                  if (!net->inputJSON.at("velocity")[0].contains("fixed")) {
+                     std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity" << std::endl;
+                     net->RK_COM.push(net->velocityTranslational());
+                     net->RK_Q.push(net->Q.AngularVelocityTodQdt(net->velocityRotational()));
+                  }
+                  std::cout << "name = " << net->getName() << std::endl;
+                  std::cout << "net->velocityTranslational() = " << net->velocityTranslational() << std::endl;
+
+                  for (auto &mooring : net->mooringLines) {
+                     //! mooring->lastPoint は，浮体ともに動く．
+                     auto Xcurrent = mooring->lastPoint->X;
+                     mooring->lastPoint->X_last = Xcurrent;
+                     Tddd V = (nextPositionOnBody(net, mooring->lastPoint) - Xcurrent) / (net->RK_COM.getTimeAtNextStep() - simulation_time);
+                     mooring->simulate(simulation_time, net->RK_COM.getTimeAtNextStep() - simulation_time, [&](networkPoint *p) {
+                        if (p == mooring->firstPoint) {
+                           p->acceleration.fill(0);
+                           p->velocity.fill(0);
+                        } else if (p == mooring->lastPoint) {
+                           p->acceleration.fill(0);
+                           p->velocity[0] = V[0];
+                           p->velocity[1] = V[1];
+                           p->velocity[2] = V[2];
+                        }
+                     });
+
+                     if (net->RK_Q.finished)
+                        mooring->applyMooringSimulationResult();
+
+                     for (const auto &p : mooring->getPoints())
+                        mooring->lastPoint->setX(nextPositionOnBody(net, mooring->lastPoint));
+                  }
+               }
+
+               // 人工的な粘性で結果が一致するようになるかどうかチェックする．
+
                bool use_given_velocity = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] != "update" && net->inputJSON.at("velocity")[0] != "floating");
                bool update_velocity_using_predetermined_accel = (net->inputJSON.find("velocity") && net->inputJSON.find("acceleration") && net->inputJSON.at("velocity")[0] == "update");
                bool update_velocity_using_solved_accel = (net->inputJSON.find("acceleration") && net->inputJSON.at("acceleration")[0] == "floating");
@@ -592,15 +463,15 @@ int main(int argc, char **argv) {
                } else if (update_velocity_using_solved_accel || update_velocity_using_predetermined_accel || update_velocity_using_solved_accel2) {
                   std::cout << "updating " << net->getName() << "'s (RigidBodyObject) velocity from acceleration" << std::endl;
                   net->RK_Velocity.push(net->acceleration);
-                  net->velocity = net->RK_Velocity.getX();
                   std::cout << "acceleration = " << net->acceleration << std::endl;
                   std::cout << "velocity = " << net->velocity << std::endl;
                } else {
                   std::cout << net->getName() << "'s (RigidBodyObject) velocity is not updated" << std::endl;
                }
 
+               //! pushしていなので，上にもっていっても変化しないはず
                for (const auto &p : net->getPoints())
-                  p->setXSingle(net->Q.R(p->initialX - net->ICOM) + net->COM);
+                  p->setXSingle(net->rigidTransformation(p->initialX));
                net->setGeometricProperties();
             }
 
@@ -639,20 +510,49 @@ int main(int argc, char **argv) {
             ```
 
             */
-
-            auto isAbsorbed = [&](auto p) -> Network * {
-               for (const auto &net : AbsorberObject)
-                  if (net->isInside(p->X))
-                     return net;
-               return nullptr;
-            };
-
             // initialize reference_phi and set absorbedBy
             std::unordered_set<Network *> absorbers;
+
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-               p->absorbedBy = isAbsorbed(p);
                if (p->absorbedBy != nullptr)
                   absorbers.insert(p->absorbedBy);
+            }
+
+#pragma omp parallel
+            for (const auto &p : FMM_BucketsPoints.all_stored_objects)
+#pragma omp single nowait
+            {
+               //! ------------------ Signed Distance Function (SDF)を計算する． ------------------ */
+               bool too_close = false;
+               p->signed_distance = 0.;
+               if (p->absorbedBy != nullptr) {
+                  const int P = 15;
+                  Tddd R;
+                  double nr;
+                  for (const auto &target_face : p->absorbedBy->getSurfaces()) {
+                     auto X012 = ToX(target_face->getPoints(p));
+                     auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
+                     for (int i = 0; const auto &[t0, t1, ww] : __array_GW14xGW14__) {
+                        R = Dot(ModTriShape<3>(t0, t1), X012) - p->X;
+                        nr = Norm(R);
+                        auto tmp = Dot((R / nr) / (nr * nr * std::pow(nr, P)), cross) * ww * (1. - t0);
+                        if (std::abs(tmp) < 1E+40 && tmp == tmp) {
+                           p->signed_distance += tmp;
+                           too_close = true;
+                        }
+                     }
+                  }
+                  if (too_close) {
+                     p->signed_distance = 1E+10;
+                     for (const auto &f : p->absorbedBy->getSurfaces()) {
+                        auto d = Norm(Nearest(p->X, ToX(f)) - p->X);
+                        if (d < p->signed_distance)
+                           p->signed_distance = d;
+                     }
+                  } else
+                     p->signed_distance = std::pow(p->signed_distance, -1. / P);
+               }
+               //! ------------------------------------------------------------------------------- */
             }
 
             std::unordered_map<Network *, std::array<double, 2>> reference_phi;
@@ -669,30 +569,55 @@ int main(int argc, char **argv) {
                }
             }
 
+            // auto PHI_U_eta = [t = simulation_time, g = _GRAVITY_](auto p) -> std::array<double, 5> {
+            //    auto [x, y, z] = p->X;
+            //    double h = 1.;    //! [m]
+            //    double L = 1.;    //! [m]
+            //    double a = 0.05;  //! [m]
+            //    double k = 2. * M_PI / L;
+            //    double omega = std::sqrt(g * k * std::tanh(k * h));
+            //    return {a * g / omega * std::cosh(k * (z - h)) / std::cosh(k * h) * std::sin(k * x - omega * t),
+            //            a * g * k / omega * std::cosh(k * (z - h)) / std::cosh(k * h) * std::cos(k * x - omega * t),
+            //            0.,
+            //            a * g * k / omega * std::sinh(k * (z - h)) / std::cosh(k * h) * std::sin(k * x - omega * t),
+            //            a * std::cos(k * x - omega * t)};
+            // };
+
+            double mean_phi = 0., total_area = 0;
+            for (const auto &f : FMM_BucketsFaces.all_stored_objects) {
+               auto [p0, p1, p2] = f->getPoints();
+               mean_phi += (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3 * f->area;
+               total_area += f->area;
+            }
+            mean_phi /= total_area;
+
+            int count = 0;
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
                p->U_absorbed.fill(0.);
-               //! damping coeeficient is determined by the horizontal distance from the center of the absorber
-
                double gamma = 0, ref_phi = 0;
+               Tddd ref_U = {0, 0, 0};
 
-               if (p->absorbedBy != nullptr) {
-                  auto [x, y, z] = p->absorbedBy->bounds;
-                  auto absorber_center = Tddd{Mean(x), Mean(y), Mean(z)};
-                  auto horizontal_dist_from_center = Norm(Chop(p->X - absorber_center, Tddd{0, 0, 1}));
-                  double x_scale = std::abs(x[0] - x[1]);
-                  double y_scale = std::abs(y[0] - y[1]);
-                  double max_scale = std::max(x_scale, y_scale);
-                  gamma = 1. - std::clamp(2 * Norm(horizontal_dist_from_center) / max_scale, 0.1, 1.);
-                  ref_phi = reference_phi.at(p->absorbedBy)[0] / reference_phi.at(p->absorbedBy)[1];
+               if (p->RK_X.finished) {
+                  if (dt > 0.00001)
+                     if (p->absorbedBy != nullptr) {
+                        double L = p->absorbedBy->water_wave_theory.L;
+                        //! (2 * L)とは，つまり，2波長の距離で，gammaが1になる．
+                        gamma = std::clamp(p->signed_distance / (2 * L), 0., 1.);                          //! gammaが大きいと，計算が不安定になることがある．
+                        ref_phi = p->absorbedBy->water_wave_theory.phi(p->X, simulation_time) + mean_phi;  //@@@@CHANGED TO
+                        if (std::ranges::any_of(p->getSurfaces(), [](auto f) { return f->Dirichlet; })) {
+                           auto nextX = p->RK_X.getX(p->U_update_BEM);
+                           auto to_eta_in_z = p->absorbedBy->water_wave_theory.eta(nextX, simulation_time) - nextX[2];
+                           p->U_update_BEM[2] += gamma * to_eta_in_z / p->RK_X.getdt();
+                        }
+                     }
                }
-               //
-               // if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/)
-               {
+               if (!p->Neumann /*Neumannを変更しても，あとでBIEによって上書きされるので，からわない．*/) {
                   p->RK_phi.push(p->DphiDt_damped({gamma, ref_phi}, p->U_update_BEM, 0.));
                   std::get<0>(p->phiphin) = p->phi_Dirichlet = p->RK_phi.getX();  // 角点の法線方向はわからないので，ノイマンの境界条件phinを与えることができない．
                }
                //@ 位置xの時間発展
-               p->RK_X.push(p->U_update_BEM - gamma * p->U_update_BEM);
+               // p->RK_X.push(p->U_update_BEM - gamma * p->U_update_BEM);  //@@@@CHANGED  FROM
+               p->RK_X.push(p->U_update_BEM);  //@@@@CHANGED  TO
                p->setXSingle(p->RK_X.getX());
                p->phi_tmp = 0;
             }
@@ -723,10 +648,14 @@ int main(int argc, char **argv) {
 
          //! 速度ポテンシャルの平均を0にする
          {
-            double mean_phi = 0.;
-            for (const auto &p : FMM_BucketsPoints.all_stored_objects)
-               mean_phi += std::get<0>(p->phiphin);
-            mean_phi /= FMM_BucketsPoints.all_stored_objects.size();
+            double mean_phi = 0., total_area = 0;
+            for (const auto &f : FMM_BucketsFaces.all_stored_objects) {
+               auto [p0, p1, p2] = f->getPoints();
+               mean_phi += (std::get<0>(p0->phiphin) + std::get<0>(p1->phiphin) + std::get<0>(p2->phiphin)) / 3 * f->area;
+               total_area += f->area;
+            }
+            mean_phi /= total_area;
+            // mean_phi /= FMM_BucketsPoints.all_stored_objects.size();
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
                p->phi_Dirichlet -= mean_phi;
                // p->phi_Neumann -= mean_phi;
@@ -835,11 +764,11 @@ int main(int argc, char **argv) {
          /* 流体 */
          for (const auto &water : FluidObject) {
             jsonout.push(water->getName() + "_volume", water->getVolume());
-            jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getFaces()));
-            jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getFaces()));
-            jsonout.push(water->getName() + "_E", TotalEnergy(water->getFaces()));
+            jsonout.push(water->getName() + "_EK", KinematicEnergy(water->getSurfaces()));
+            jsonout.push(water->getName() + "_EP", PotentialEnergy(water->getSurfaces()));
+            jsonout.push(water->getName() + "_E", TotalEnergy(water->getSurfaces()));
             // fluid mesh size faces and point
-            jsonout.push(water->getName() + "_face_size", (double)water->getFaces().size());
+            jsonout.push(water->getName() + "_face_size", (double)water->getSurfaces().size());
             jsonout.push(water->getName() + "_point_size", (double)water->getPoints().size());
          }
          /* 物体 */
@@ -905,13 +834,14 @@ int main(int argc, char **argv) {
             std::filesystem::path filename_dir_surface = "DirichletSurface" + std::to_string(time_step) + ".vtu";
             std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles = SymmetricSubdivisionOfTriangle_00_10_01(4);
             for (const auto &water : FluidObject) {
-               for (const auto &f : water->getFaces()) {
+               for (const auto &f : water->getSurfaces()) {
                   if (f->Dirichlet) {
                      DodecaPoints dodecapoint(f, f->getPoints()[0], [](const networkLine *line) -> bool { return !line->CORNER; });
                      for (auto t0t1 : t0t1_triangles) {
-                        new networkFace(dirichletsurface, {new networkPoint(dirichletsurface, dodecapoint.X(t0t1[0])),
-                                                           new networkPoint(dirichletsurface, dodecapoint.X(t0t1[1])),
-                                                           new networkPoint(dirichletsurface, dodecapoint.X(t0t1[2]))});
+                        new networkFace(dirichletsurface,
+                                        new networkPoint(dirichletsurface, dodecapoint.X(t0t1[0])),
+                                        new networkPoint(dirichletsurface, dodecapoint.X(t0t1[1])),
+                                        new networkPoint(dirichletsurface, dodecapoint.X(t0t1[2])));
                      }
                   }
                }
@@ -920,7 +850,7 @@ int main(int argc, char **argv) {
             std::unordered_map<networkPoint *, Tddd> data;
             for (auto p : dirichletsurface->getPoints())
                data[p] = ToX(p);
-            mk_vtu(output_directory / filename_dir_surface, dirichletsurface->getFaces(), {{"position", data}});
+            mk_vtu(output_directory / filename_dir_surface, dirichletsurface->getSurfaces(), {{"position", data}});
             DirichletSurfacePVD.push(filename_dir_surface, simulation_time);
             DirichletSurfacePVD.output();
             delete dirichletsurface;
@@ -929,7 +859,7 @@ int main(int argc, char **argv) {
          // 流体
          for (const auto &net : FluidObject) {
             std::filesystem::path filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
-            mk_vtu(output_directory / filename, net->getFaces(), dataForOutput(net, dt));
+            mk_vtu(output_directory / filename, net->getSurfaces(), dataForOutput(net, dt));
             NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
          }
@@ -973,7 +903,7 @@ int main(int argc, char **argv) {
                mk_vtu(output_directory / name, tmp.actingFaces, data);
             }
             std::filesystem::path filename = NetOutputInfo[net].vtu_file_name + std::to_string(time_step) + ".vtu";
-            mk_vtu(output_directory / filename, net->getFaces(), data);
+            mk_vtu(output_directory / filename, net->getSurfaces(), data);
             NetOutputInfo[net].PVD->push(filename, simulation_time);
             NetOutputInfo[net].PVD->output();
 

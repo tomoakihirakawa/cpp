@@ -1,5 +1,5 @@
-#ifndef MooringLine_H
-#define MooringLine_H
+#pragma once
+
 #include "Network.hpp"
 #include "integrationOfODE.hpp"
 
@@ -235,5 +235,3 @@ class MooringLine : public Network {
       }
    }
 };
-
-#endif

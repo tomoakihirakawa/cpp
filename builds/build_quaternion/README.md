@@ -47,7 +47,7 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 2 \cdot a \cdot c + 2 \cdot b \cdot d & -2 \cdot a \cdot b + 2 \cdot c \cdot d & a^2 - b^2 - c^2 + d^2 \\
 \end{bmatrix}
 ```
-[../../include/basic_vectors.hpp#L1334](../../include/basic_vectors.hpp#L1334)
+[../../include/basic_vectors.hpp#L1348](../../include/basic_vectors.hpp#L1348)
 
 
 ## ⛵ クォータニオンを使った物体の３次元回転の例 
@@ -58,7 +58,7 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 * rotate：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
 * main：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
 
-```
+```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateRotation.cpp
 make
@@ -155,7 +155,7 @@ w _2
 ```
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
-[../../include/basic_vectors.hpp#L1629](../../include/basic_vectors.hpp#L1629)
+[../../include/basic_vectors.hpp#L1643](../../include/basic_vectors.hpp#L1643)
 
 
 ## ⛵ クォータニオンの微分の数値的な時間積分の例 
@@ -163,6 +163,7 @@ w _2
 以下を実行して，ルンゲクッタを使いクォータニオンの時間微分を時間積分する．
 
 ```
+sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateAngularVelocity.cpp
 make
 ./validateAngularVelocity
@@ -195,7 +196,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1771](../../include/basic_vectors.hpp#L1771)
+[../../include/basic_vectors.hpp#L1785](../../include/basic_vectors.hpp#L1785)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

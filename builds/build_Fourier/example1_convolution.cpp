@@ -2,14 +2,31 @@
 
 ## 畳み込み積分
 
-```sh
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_convolution.cpp
-make
-./example1_convolution
+畳み込み積分は，関数`g`をスライドさせながら`f`と掛け合わせ和を求めることである．
+
+```math
+(f \ast g)(t) = \int_{-\infty}^{\infty} dx f(x) g(t-x)
 ```
 
-畳み込み積分は，2つの関数のうち１つをスライドさせながら互いをかけ合わせ積分するものである．
+の形の積分である．ここで，$`\ast`$は畳み込み積分を表す．離散データの畳み込み積分は，次のように計算できる．
+
+```math
+(f \ast g)_j = \sum_{k=0}^{N-1} f_k g_{j-k}
+```
+
+畳み込み積分の値は，フーリエ変換された`f`と`g`の積を逆フーリエ変換した結果と等しい．
+
+```math
+(f \ast g)_j = \mathcal{F}^{-1}[\mathcal{F}[f] \cdot \mathcal{F}[g]]_j
+```
+
+$`\mathcal{F}^{-1}[\mathcal{F}[f] \cdot \mathcal{F}[g]]`$はデータ列であって，`_j`は，そのデータ列の`j`番目をとることを意味する．
+
+全て逆フーリエ変換してから一つだけを抜き出す必要はなく，`j`だけが必要なら`j`番目のデータだけを取り出すよう和を取ればいい．
+
+```math
+(f \ast g)_j = \sum_{n=0}^{N-1} (\mathcal{F}[f] \cdot \mathcal{F}[g])_n \exp\left(i n \frac{2\pi}{N} j\right)
+```
 
 以下は，離散フーリエ変換，逆フーリエ変換，畳み込み積分を行うMatheamticaのコードである．
 
@@ -41,6 +58,15 @@ Return[N@Table[len*MyInverseFourier[FourierGF, n], {n, 0, len - 1}]];
 
 (see `example0.nb`)
 
+*/
+
+/*
+```sh
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_convolution.cpp
+make
+./example1_convolution
+```
 */
 
 #include <cmath>

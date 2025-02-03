@@ -124,7 +124,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 //     //  |newL|<---|this|    |oldL|    |newF|
 //     //  |    |    |PorF|<---|-   |    |    |
 //     //  +----+    +----+    +----+    +----+
-//     oldL->Erase(this_ /*PorF*/);
+//     oldL->erase(this_ /*PorF*/);
 //     //  +----+    +----+    +----+    +----+
 //     //  |newL|<---|this|    |oldL|    |newF|
 //     //  |    |    |PorF|    |    |    |    |
@@ -157,7 +157,7 @@ oldObjはFの代わりにnewFに接続しなおす．
 // bool doubleReplace(U *Uthis, T *Ta /*孤立するオブジェクト*/, T *Tb, U *Uother)
 // {
 //   Uthis->swap(Ta, Tb); //1
-//   Ta->Erase(Uthis);      //2
+//   Ta->erase(Uthis);      //2
 //   Tb->Add(Uthis);        //3
 //                          //このステップがdouble replace
 //                          //switchでないと，順番に意味のあるFaceではおかしくなるので注意

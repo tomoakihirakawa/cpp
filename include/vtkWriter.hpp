@@ -692,6 +692,7 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::array<Tddd, N> &V) {
 // /* ------------------------------------------------------ */
 // /*                          Tddd                          */
 // /* ------------------------------------------------------ */
+
 void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    vtp.reserve(V.size());
@@ -701,21 +702,75 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
    }
    vtp.write(ofs);
 };
+
+// void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
+//    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+//    vtp.reserve(V.size());
+//    for (const auto &X : V) {
+//       std::shared_ptr<Tddd> x(new Tddd(ToX(X)));
+//       vtp.add(x);
+//    }
+//    vtp.write(ofs);
+// };
+
 void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
    vtp.reserve(V.size());
-   for (const auto &X : V) {
-      std::shared_ptr<Tddd> x(new Tddd(ToX(X)));
-      vtp.add(x);
+   for (const auto &PorF : V) {
+      auto X = ToX(PorF);
+      if constexpr (std::is_same_v<decltype(X), Tddd>) {
+         auto x = std::make_shared<Tddd>(X);
+         vtp.add(x);
+      } else if constexpr (std::is_same_v<decltype(X), T2Tddd>) {
+         auto [X0, X1] = X;
+         auto x0 = std::make_shared<Tddd>(X0);
+         auto x1 = std::make_shared<Tddd>(X1);
+         vtp.add(x0);
+         vtp.add(x1);
+         vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 2>{x0, x1});
+      } else if constexpr (std::is_same_v<decltype(X), T3Tddd>) {
+         auto [X0, X1, X2] = X;
+         auto x0 = std::make_shared<Tddd>(X0);
+         auto x1 = std::make_shared<Tddd>(X1);
+         auto x2 = std::make_shared<Tddd>(X2);
+         vtp.add(x0);
+         vtp.add(x1);
+         vtp.add(x2);
+         vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 3>{x0, x1, x2});
+      }
    }
    vtp.write(ofs);
-};
+}
 
-// void vtkPolygonWrite(const std::string &name, const std::vector<Tddd> &V) {
-//    std::ofstream ofs(name);
-//    vtkPolygonWrite(ofs, V);
-//    ofs.close();
-// };
+// template <typename U>
+// void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
+//    vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
+//    vtp.reserve(V.size());
+//    for (const auto &PorF : V) {
+//       auto X = ToX(PorF);
+//       if constexpr (std::is_same_v<decltype(X), Tddd>) {
+//          auto x = std::make_shared<Tddd>(X);
+//          vtp.add(x);
+//       } else if constexpr (std::is_same_v<decltype(X), T2Tddd>) {
+//          auto [X0, X1] = X;
+//          auto x0 = std::make_shared<Tddd>(X0);
+//          auto x1 = std::make_shared<Tddd>(X1);
+//          vtp.add(x0);
+//          vtp.add(x1);
+//          vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 2>{x0, x1});
+//       } else if constexpr (std::is_same_v<decltype(X), T3Tddd>) {
+//          auto [X0, X1, X2] = X;
+//          auto x0 = std::make_shared<Tddd>(X0);
+//          auto x1 = std::make_shared<Tddd>(X1);
+//          auto x2 = std::make_shared<Tddd>(X2);
+//          vtp.add(x0);
+//          vtp.add(x1);
+//          vtp.add(x2);
+//          vtp.addPolygon(std::array<std::shared_ptr<Tddd>, 3>{x0, x1, x2});
+//       }
+//    }
+//    vtp.write(ofs);
+// }
 
 /* ------------------------------------------------------ */
 /*                         T2Tddd                         */
@@ -783,181 +838,5 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<T> &V,
       vtp.addPointData(name, data);
    vtp.write(ofs);
 };
-
-#if defined(Network_H)
-template <typename U>
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uo_f, const std::unordered_map<networkPoint *, U> &data_double = {}) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uo_f.size());
-   for (const auto &f : uo_f) {
-      auto abc = f->getPoints();
-      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtp.addPolygon(abc);
-   }
-   if (!data_double.empty())
-      vtp.addPointData("data", data_double);
-   vtp.write(ofs);
-};
-
-void vtkPolygonWrite(std::ofstream &ofs, const T_4F &tuple_f) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   std::ranges::for_each(tuple_f, [&](const auto &f) {
-      auto abc = f->getPoints();
-      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtp.addPolygon(abc);
-   });
-   vtp.write(ofs);
-};
-
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoL.size());
-   for (const auto &l : uoL) {
-      auto [a, b] = l->getPoints();
-      vtp.add(a, b);
-      vtp.addLine(a, b);
-   }
-   vtp.write(ofs);
-};
-
-template <typename U>
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL, const std::unordered_map<networkPoint *, U> &data_double) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoL.size());
-   for (const auto &l : uoL) {
-      auto [a, b] = l->getPoints();
-      vtp.add(a, b);
-      vtp.addLine(a, b);
-   }
-   vtp.addPointData("data", data_double);
-   vtp.write(ofs);
-};
-
-// for const std::vector<std::tuple<std::string, std::unordered_map<T, U>>
-template <typename U>
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL,
-                     const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, U>>> &name_uo_data = {}) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoL.size());
-   for (const auto &l : uoL) {
-      auto [a, b] = l->getPoints();
-      vtp.add(a, b);
-      vtp.addLine(a, b);
-   }
-   for (auto i = 0; i < name_uo_data.size(); ++i)
-      vtp.addPointData(std::get<0>(name_uo_data[i]), std::get<1>(name_uo_data[i]));
-   vtp.write(ofs);
-};
-
-// for std::variant<double, std::array<double, 3>>
-
-void vtkPolygonWrite(std::ofstream &ofs,
-                     const std::unordered_set<networkPoint *> &uoP,
-                     const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, std::variant<double, std::array<double, 3>>>>> &name_uo_data = {}) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoP.size());
-   for (const auto &p : uoP) {
-      vtp.add(p);
-   }
-
-   for (const auto &[name, data] : name_uo_data) {
-      std::unordered_map<networkPoint *, double> double_map;
-      std::unordered_map<networkPoint *, std::array<double, 3>> array_map;
-
-      for (const auto &[key, value] : data) {
-         std::visit([&](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, double>) {
-               double_map[key] = arg;
-            } else if constexpr (std::is_same_v<T, std::array<double, 3>>) {
-               array_map[key] = arg;
-            }
-         },
-                    value);
-      }
-
-      if (!double_map.empty()) {
-         vtp.addPointData(name, double_map);
-      }
-      if (!array_map.empty()) {
-         vtp.addPointData(name, array_map);
-      }
-   }
-
-   vtp.write(ofs);
-}
-
-void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
-   vtkUnstructuredGridWriter<networkPoint *> vtu;
-   vtu.reserve(uoF.size());
-   for (const auto &f : uoF) {
-      auto abc = f->getPoints();
-      vtu.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtu.addGrid(abc);
-   };
-   vtu.write(ofs);
-};
-
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoF.size());
-   for (const auto &f : uoF) {
-      auto abc = f->getPoints();
-      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtp.addPolygon(abc);
-   };
-   vtp.write(ofs);
-};
-
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
-   // vtuがいいならそうなるように修正しなければならない．
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoTet.size());
-   for (const auto &tet : uoTet)
-      std::ranges::for_each(tet->Faces, [&](const auto &f) {
-         auto abc = f->getPoints();
-         vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-         vtp.addPolygon(abc);
-      });
-   // for (const auto &tet : uoTet) {
-   //    vtp.add(std::get<0>(tet->Points),
-   //            std::get<1>(tet->Points),
-   //            std::get<2>(tet->Points),
-   //            std::get<3>(tet->Points));
-   //    vtp.addPolygon(tet->Points);
-   // };
-   vtp.write(ofs);
-};
-
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkTetra *> &uoTet) {
-   vtkPolygonWriter<networkPoint *> vtp;
-   vtp.reserve(uoTet.size());
-   for (const auto &tet : uoTet)
-      std::ranges::for_each(tet->Faces, [&](const auto &f) {
-         auto abc = f->getPoints();
-         vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-         vtp.addPolygon(abc);
-      });
-   vtp.write(ofs);
-};
-
-void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
-   vtkUnstructuredGridWriter<networkPoint *> vtu;
-   vtu.reserve(uoTet.size());
-   for (const auto &tet : uoTet) {
-      auto abcd = tet->Points;
-      vtu.add(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd));
-      vtu.addGrid(abcd);
-   }
-   vtu.write(ofs);
-};
-
-#endif
-// template <typename T, typename U>
-// void vtkPolygonWrite(const std::string &name, const std::unordered_set<T> &V, const std::unordered_map<T, U> &data_double) {
-//    std::ofstream ofs(name);
-//    vtkPolygonWrite(ofs, V, data_double);
-//    ofs.close();
-// };
 
 #endif

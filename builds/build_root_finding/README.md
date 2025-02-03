@@ -132,7 +132,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[ここ](../../include/rootFinding.hpp#L551)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[ここ](../../include/rootFinding.hpp#L630)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 
 | `scale` | n=5 | n=10 | n=50 |
@@ -141,7 +141,7 @@ int steps = 20;
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif) | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
 
 
-LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L513)で宣言している．
+LighthillRobotのクラスは，[ここ](../../include/rootFinding.hpp#L592)で宣言している．
 
 ### 🪼 ロボットのエネルギー効率について 
 

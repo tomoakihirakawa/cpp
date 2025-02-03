@@ -10,6 +10,27 @@
 ---
 # 🐋 離散フーリエ変換 
 
+離散フーリエ変換と逆離散フーリエ変換を端的に示すと次のようになる．
+結果は，Mathematicaの`Fourier`関数，`InverseFourier`関数の`FourierParameters`オプションが，`{-1,-1}`の場合と一致する．
+
+```Mathematica
+MyFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[-I*n*2 \[Pi]/len*k], {k, 0, len - 1}]/len];
+MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]];
+
+(*離散データ*)
+u = N@{1, 2, 3, 4, 5, 4, 3, 2, 1};
+
+Grid[
+Transpose@{cn = Table[MyFourier[u, n], {n, 0, Length[u] - 1}],
+Fourier[u, FourierParameters -> {-1, -1}]}
+, Frame -> All]
+
+Grid[
+Transpose@{Table[MyInverseFourier[cn, n], {n, 0, Length[cn] - 1}],
+InverseFourier[cn, FourierParameters -> {-1, -1}]}
+, Frame -> All]
+```
+
 ## ⛵ 複素フーリエ級数展開 
 
 ```math
@@ -107,21 +128,40 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_simple.cpp
 
 ## ⛵ 逆離散フーリエ変換 
 
-フーリエ係数$`c _n`$から元の関数$`f(t)`$を復元することを考える．
+フーリエ係数$`c _n`$から元の関数$`f _\kappa=f(t=\kappa \delta t)`$を復元することを考える．
 三角関数を掛けて積分することで係数を抽出できたので，その方法で関数を抽出する．
 
+フーリエ変換は次のように定義している．
+
 ```math
-f\left(k\frac{T^\ast}{N}=k\delta t\right) = \frac{1}{N} \sum _{k=0}^{N-1} \left[ c _n \exp\left( i n \frac{2 \pi}{N} k \right) \right]
+c _n = \frac{1}{N} \sum _{k=0}^{N-1} \left[ f _k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
 ```
+
+$`\exp\left( -i n \frac{2 \pi}{N} k \right)`$ではなく，$`\exp\left( i n \frac{2 \pi}{N} \kappa \right)`$を掛けて積分する．ここで，$`k`$と区別するために$`\kappa`$を使っている．
+
+```math
+\begin{equation}
+\begin{aligned}
+\sum _{n=0}^{N-1}{c _n} \exp\left( i n \frac{2 \pi}{N} \kappa \right)&=\sum _{n=0}^{N-1}{\frac{1}{N} \sum _{k=0}^{N-1} \left[ f _k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+} \exp\left( i n \frac{2 \pi}{N} \kappa \right)\\
+&=\sum _{n=0}^{N-1}{\frac{1}{N} \sum _{k=0}^{N-1} \left[ f _k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+} \exp\left( i n \frac{2 \pi}{N} \kappa \right)\\
+&=\sum _{n=0}^{N-1}{\frac{1}{N} f _\kappa} \\
+&=f _\kappa\\
+&=f\left(\kappa\frac{T^\ast}{N}=\kappa\delta t\right)
+\end{aligned}
+\end{equation}
+```
+
+このように，フーリエ係数を使って元の関数を復元できる．下の値を取り出すために$`N`$で割る必要はない．
 
 ```Mathematica
 list = {1., 1., 2., 2., 1., 1., 0., 0.};
-MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]/len];
+MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]];
 Column[InverseFourier[cn, FourierParameters -> {-1, -1}], Frame -> All]
-Column[Table[MyInverseFourier[cn, n]*(Length[list]), {n, 0, Length[list] - 1,1}], Frame -> All]
+Column[Table[MyInverseFourier[cn, n], {n, 0, Length[list] - 1}],
+Frame -> All]
 ```
-
-1周期分積分するので，$`T^\ast`$で割っている．$`\delta t`$とかけるので，結果として$`N`$で割ることになる．
 
 ## ⛵ 離散フーリエ変換によるデータの補間 
 
@@ -136,14 +176,31 @@ Column[Table[MyInverseFourier[cn, n]*(Length[list]), {n, 0, Length[list] - 1,1}]
 
 ## ⛵ 畳み込み積分 
 
-```sh
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example1_convolution.cpp
-make
-./example1_convolution
+畳み込み積分は，関数`g`をスライドさせながら`f`と掛け合わせ和を求めることである．
+
+```math
+(f \ast g)(t) = \int _{-\infty}^{\infty} dx f(x) g(t-x)
 ```
 
-畳み込み積分は，2つの関数のうち１つをスライドさせながら互いをかけ合わせ積分するものである．
+の形の積分である．ここで，$`\ast`$は畳み込み積分を表す．離散データの畳み込み積分は，次のように計算できる．
+
+```math
+(f \ast g) _j = \sum _{k=0}^{N-1} f _k g _{j-k}
+```
+
+畳み込み積分の値は，フーリエ変換された`f`と`g`の積を逆フーリエ変換した結果と等しい．
+
+```math
+(f \ast g) _j = \mathcal{F}^{-1}[\mathcal{F}[f] \cdot \mathcal{F}[g]] _j
+```
+
+$`\mathcal{F}^{-1}[\mathcal{F}[f] \cdot \mathcal{F}[g]]`$はデータ列であって，`_j`は，そのデータ列の`j`番目をとることを意味する．
+
+全て逆フーリエ変換してから一つだけを抜き出す必要はなく，`j`だけが必要なら`j`番目のデータだけを取り出すよう和を取ればいい．
+
+```math
+(f \ast g) _j = \sum _{n=0}^{N-1} (\mathcal{F}[f] \cdot \mathcal{F}[g]) _n \exp\left(i n \frac{2\pi}{N} j\right)
+```
 
 以下は，離散フーリエ変換，逆フーリエ変換，畳み込み積分を行うMatheamticaのコードである．
 

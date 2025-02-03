@@ -13,7 +13,7 @@
 
 Tdd estimate_phiphin(const networkLine *const l) {
 
-   // auto fs = l->getFaces();
+   // auto fs = l->getSurfaces();
    // interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_0(fs[0], l);
    // interpolationTriangleQuadByFixedRange3D_use_only_good_lines intp_l0_1(fs[1], l);
    // auto phi0 = Dot(intp_l0_0.N(.5, .5), ToPhi(intp_l0_0.Points));
@@ -57,7 +57,7 @@ void remesh(Network &water,
          /* ------------------------------------------------------ */
          meanArea = Mean(p->getFaceAreas());
          if (false)
-            for (const auto &f : p->getFaces()) {
+            for (const auto &f : p->getSurfaces()) {
                if (f->area / meanArea < 1E-3) {
                   p->sortLinesByLength();
                   l = *(p->getLines().rbegin());
@@ -121,7 +121,7 @@ void remesh(Network &water,
          sortByLength(lines);
          for (const auto &l : Reverse(lines)) {
             auto [p0, p1] = l->getPoints();
-            Fs = l->getFaces();
+            Fs = l->getSurfaces();
             //@ ------------------------------------------------------ */
             // if (l->length() > mean_length * 1.75 /*長すぎる*/)
             if (l->length() > local_mean_length * 1.5 /*長すぎる*/) {
@@ -200,7 +200,7 @@ void remesh(Network &water,
          // for (const auto &l : water.getLines())
          // {
          // 	auto [p0, p1] = l->getPoints();
-         // 	Fs = l->getFaces();
+         // 	Fs = l->getSurfaces();
          // 	if (!l->CORNER)
          // 		if (force)
          // 		{
@@ -252,6 +252,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_Tddd P_position = p_tdd0;
       uomap_P_Tddd P_normal_BEM = p_tdd0;
       uomap_P_Tddd P_gradPhi = p_tdd0;
+      uomap_P_Tddd P_velocity_convergence = p_tdd0;
       uomap_P_Tddd P_vecToSurface = p_tdd0;
       uomap_P_Tddd P_uNeumann = p_tdd0;
       uomap_P_Tddd P_V2ContactFaces0 = p_tdd0, P_V2ContactFaces1 = p_tdd0, P_V2ContactFaces2 = p_tdd0, P_V2ContactFaces3 = p_tdd0, P_V2ContactFaces4 = p_tdd0, P_V2ContactFaces5 = p_tdd0, P_U_absorbed = p_tdd0;
@@ -270,6 +271,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_facesNeuamnn = p_d0;
       uomap_P_d P_BC = p_d0;
       uomap_P_d P_isAbsorbed = p_d0;
+      uomap_P_d P_isAbsorbed_SDF = p_d0;
       uomap_P_d P_minDepthFromCORNER = p_d0;
       uomap_P_d P_minDepthFromMultipleNode = p_d0;
       uomap_P_d P_almost_solid_angle = p_d0;
@@ -304,11 +306,13 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             }
 
             P_accelNeumann[p] = accelNeumann(p);
-            P_uNeumann[p] = uNeumann(p);
+            P_uNeumann[p] = contactNormalVelocity(p);
             P_phin_Dirichlet[p] = p->getNormalDirichlet_BEM() * p->phin_Dirichlet;
             P_U_shift_BEM[p] = p->vecToSurface;
             P_isMultipleNode[p] = p->isMultipleNode;
             P_isAbsorbed[p] = p->absorbedBy != nullptr;
+            P_isAbsorbed_SDF[p] = p->signed_distance;
+
             P_phi[p] = std::get<0>(p->phiphin);
             P_phin[p] = std::get<1>(p->phiphin);
             P_phi_t[p] = std::get<0>(p->phiphin_t);
@@ -322,6 +326,9 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_pressure[p] = p->pressure_BEM;
             P_DphiDt[p] = p->DphiDt(p->U_update_BEM, 0.);
             P_gradPhi[p] = p->U_BEM;
+            Tddd convergence_info;
+            gradPhi(p, convergence_info);
+            P_velocity_convergence[p] = convergence_info;
             P_vecToSurface[p] = p->vecToSurface;
             P_solidAngle[p] = p->getSolidAngle();
             P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
@@ -337,37 +344,41 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       try {
          VV_VarForOutput data = {
              //  {"body accel", P_accel_body},
-             {"body velocity", P_velocity_body},
-             {"accelNeumann", P_accelNeumann},
-             {"uNeumann", P_uNeumann},
-             {"isMultipleNode", P_isMultipleNode},
+             //  {"body velocity", P_velocity_body},
+             //  {"accelNeumann", P_accelNeumann},
+             //  {"uNeumann", P_uNeumann},
+             //  {"isMultipleNode", P_isMultipleNode},
              {"isAbsorbed", P_isAbsorbed},
-             {"U_BEM", P_U_BEM},
-             {"U_absorbed", P_U_absorbed},
+             {"isAbsorbed_SDF", P_isAbsorbed_SDF},
+             //  {"U_BEM", P_U_BEM},
+             //  {"U_absorbed", P_U_absorbed},
              {"U_shift_BEM", P_U_shift_BEM},
              {"ContactFaces", P_ContactFaces},
-             {"faces Neuamnn", P_facesNeuamnn},
+             //  {"faces Neuamnn", P_facesNeuamnn},
              {"grad_phi", P_gradPhi},
-             {"vecToSurface", P_vecToSurface},
-             {"solidAngle", P_solidAngle},
-             {"solidAngle_steepness", P_solidAngle_steepness},
+             {"velocity_convergence", P_velocity_convergence},
+             //  {"vecToSurface", P_vecToSurface},
+             //  {"solidAngle", P_solidAngle},
+             //  {"solidAngle_steepness", P_solidAngle_steepness},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},
              {"φt", P_phi_t},
              {"φnt", P_phin_t},
-             {"φnt hess", P_phin_t_from_Hessian},
-             {"boundary condition", P_BC},
-             {"pressure", P_pressure},
-             {"P_V2ContactFaces0", P_V2ContactFaces0},
-             {"P_V2ContactFaces1", P_V2ContactFaces1},
-             {"P_V2ContactFaces2", P_V2ContactFaces2},
-             {"P_V2ContactFaces3", P_V2ContactFaces3},
-             {"P_V2ContactFaces4", P_V2ContactFaces4},
-             {"P_V2ContactFaces5", P_V2ContactFaces5},
-             {"P_minDepthFromCORNER", P_minDepthFromCORNER},
-             {"P_minDepthFromMultipleNode", P_minDepthFromMultipleNode},
-             {"P_almost_solid_angle", P_almost_solid_angle}};
+             //  {"φnt hess", P_phin_t_from_Hessian},
+             {"boundary condition", P_BC}
+             //  ,
+             //  {"pressure", P_pressure},
+             //  {"P_V2ContactFaces0", P_V2ContactFaces0},
+             //  {"P_V2ContactFaces1", P_V2ContactFaces1},
+             //  {"P_V2ContactFaces2", P_V2ContactFaces2},
+             //  {"P_V2ContactFaces3", P_V2ContactFaces3},
+             //  {"P_V2ContactFaces4", P_V2ContactFaces4},
+             //  {"P_V2ContactFaces5", P_V2ContactFaces5},
+             //  {"P_minDepthFromCORNER", P_minDepthFromCORNER},
+             //  {"P_minDepthFromMultipleNode", P_minDepthFromMultipleNode},
+             //  {"P_almost_solid_angle", P_almost_solid_angle}
+         };
          return data;
       } catch (std::exception &e) {
          std::cerr << e.what() << colorReset << std::endl;
@@ -408,7 +419,7 @@ void show_info(const Network &net) {
       total++;
       if (p->CORNER) {
          c++;
-         total_c_face += p->getFaces().size();
+         total_c_face += p->getSurfaces().size();
       } else if (p->Neumann)
          n++;
       else if (p->Dirichlet)

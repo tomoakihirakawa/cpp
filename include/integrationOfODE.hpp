@@ -1,6 +1,3 @@
-#ifndef integrationOfODE_H
-#define integrationOfODE_H
-
 #pragma once
 
 #include "basic.hpp"
@@ -55,10 +52,10 @@ struct RungeKuttaCommon {
    };
    int steps;
    int current_step;
-   RungeKuttaCommon(){};
+   RungeKuttaCommon() {};
    RungeKuttaCommon(const double dt_IN, const double t0, const T &X0, int stepsIN)
-       : dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN), current_step(0){};
-   ~RungeKuttaCommon(){};
+       : dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN), current_step(0) {};
+   ~RungeKuttaCommon() {};
 
    void initialize(const double dt_IN, const double t0, const T &X0, int stepsIN) {
       this->dt_fixed = dt_IN;
@@ -176,6 +173,52 @@ struct RungeKuttaCommon {
                   return this->t_init + dt_fixed;
                default:
                   return this->t_init + dt_fixed;
+            }
+
+         default:
+            std::stringstream ss;
+            ss << std::to_string(this->current_step) << "/" << std::to_string(this->steps);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "current_step/steps=" + ss.str());
+      }
+   }
+
+   double getdt() const {
+      switch (this->steps) {
+         case 1:
+            return dt_fixed;
+
+         case 2:
+            switch (current_step) {
+               case 0:
+                  return dt_fixed / 2.0;
+               default:
+                  return dt_fixed;
+            }
+
+         case 3:
+            switch (current_step) {
+               case 0:
+                  return dt_fixed / 2.0;
+               case 1:
+                  return dt_fixed;
+               case 2:
+                  return dt_fixed / 6.0;
+               default:
+                  return dt_fixed;
+            }
+
+         case 4:
+            switch (current_step) {
+               case 0:
+                  return dt_fixed / 2.0;
+               case 1:
+                  return dt_fixed / 2.0;
+               case 2:
+                  return dt_fixed;
+               case 3:
+                  return dt_fixed;
+               default:
+                  return dt_fixed;
             }
 
          default:
@@ -410,27 +453,27 @@ struct RungeKuttaCommon {
 
 template <typename T>
 struct RungeKutta : public RungeKuttaCommon<T> {
-   RungeKutta(const double dt_IN, const double t0, const T &X0, int stepsIN) : RungeKuttaCommon<T>(dt_IN, t0, X0, stepsIN){};
-   RungeKutta() : RungeKuttaCommon<T>(){};
+   RungeKutta(const double dt_IN, const double t0, const T &X0, int stepsIN) : RungeKuttaCommon<T>(dt_IN, t0, X0, stepsIN) {};
+   RungeKutta() : RungeKuttaCommon<T>() {};
 };
 template <>
 struct RungeKutta<std::vector<double>> : public RungeKuttaCommon<std::vector<double>> {
    RungeKutta(const double dt_IN, const double t0, const std::vector<double> &X0, int stepsIN) : RungeKuttaCommon<std::vector<double>>(dt_IN, t0, X0, stepsIN) {
       this->dX = V_d(X0.size(), 0.);
    };
-   RungeKutta() : RungeKuttaCommon<std::vector<double>>(){};
+   RungeKutta() : RungeKuttaCommon<std::vector<double>>() {};
 };
 template <>
 struct RungeKutta<double> : public RungeKuttaCommon<double> {
    RungeKutta(const double dt_IN, const double t0, const double &X0, int stepsIN) : RungeKuttaCommon<double>(dt_IN, t0, X0, stepsIN) {
       this->dX = 0.;
    };
-   RungeKutta() : RungeKuttaCommon<double>(){};
+   RungeKutta() : RungeKuttaCommon<double>() {};
 };
 template <std::size_t N>
 struct RungeKutta<std::array<double, N>> : public RungeKuttaCommon<std::array<double, N>> {
    RungeKutta(const double dt_IN, const double t0, const std::array<double, N> &X0, int stepsIN) : RungeKuttaCommon<std::array<double, N>>(dt_IN, t0, X0, stepsIN) { this->dX.fill(0.); };
-   RungeKutta() : RungeKuttaCommon<std::array<double, N>>(){};
+   RungeKutta() : RungeKuttaCommon<std::array<double, N>>() {};
 };
 
 /* -------------------------------------------------------------------------- */
@@ -449,9 +492,9 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 template <typename T>
 class LeapFrog {
   public:
-   LeapFrog() : is_first(true), finished(false){};
+   LeapFrog() : is_first(true), finished(false) {};
    LeapFrog(double dt, double t0, const T &x0, const T &v0)
-       : dt(dt), t(t0), x(x0), v(v0), is_first(true), finished(false){};
+       : dt(dt), t(t0), x(x0), v(v0), is_first(true), finished(false) {};
 
    void initialize(double dt, double t0, const T &x0, const T &v0) {
       this->dt = dt;
@@ -542,7 +585,7 @@ class LeapFrog {
 template <typename T>
 class VelocityVerlet {
   public:
-   VelocityVerlet(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0){};
+   VelocityVerlet(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0) {};
 
    void push(const T &new_a) {
       v += dt * (a + new_a) * 0.5;  // this should be perfomed after x is updated though this sometimes stabilizes the calculation
@@ -566,8 +609,8 @@ class VelocityVerlet {
 template <typename T>
 class Beeman {
   public:
-   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0, const T &old_a) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(old_a){};
-   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(a0){};
+   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0, const T &old_a) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(old_a) {};
+   Beeman(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0), old_a(a0) {};
 
    void push(const T &new_a) {
       x += v * dt + (2.0 / 3) * a * dt * dt - (1.0 / 6) * old_a * dt * dt;
@@ -593,7 +636,7 @@ class Beeman {
 template <typename T>
 class Gear {
   public:
-   Gear(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0){};
+   Gear(double dt, double t0, const T &x0, const T &v0, const T &a0) : dt(dt), t(t0), x(x0), v(v0), a(a0) {};
 
    void push(const T &new_a) {
       T pred_x = x + v * dt + 0.5 * a * dt * dt;
@@ -614,7 +657,3 @@ class Gear {
    double dt, t;
    T x, v, a;
 };
-
-/* -------------------------------------------------------------------------- */
-
-#endif

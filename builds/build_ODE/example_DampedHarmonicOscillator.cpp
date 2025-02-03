@@ -1,6 +1,7 @@
 #include "GNUPLOT.hpp"
 #include "integrationOfODE.hpp"
 #include "interpolations.hpp"
+
 /*DOC_EXTRACT ODE
 
 # ODEの初期値問題
@@ -53,11 +54,11 @@ double acceleration(double x, double v) {
 }
 
 double solution_x(double t) {
-   return exp(-gamma / 2 * t) * cos(sqrt(omega * omega - gamma * gamma / 4.) * t);
+   return std::exp(-gamma / 2 * t) * std::cos(std::sqrt(omega * omega - gamma * gamma / 4.) * t);
 }
 
 double solution_v(double t) {
-   return -gamma / 2 * exp(-gamma / 2 * t) * cos(sqrt(omega * omega - gamma * gamma / 4.) * t) - exp(-gamma / 2 * t) * sin(sqrt(omega * omega - gamma * gamma / 4.) * t) * sqrt(omega * omega - gamma * gamma / 4.);
+   return -gamma / 2 * std::exp(-gamma / 2 * t) * std::cos(sqrt(omega * omega - gamma * gamma / 4.) * t) - std::exp(-gamma / 2 * t) * std::sin(sqrt(omega * omega - gamma * gamma / 4.) * t) * std::sqrt(omega * omega - gamma * gamma / 4.);
 }
 
 double error_x(const auto& result_t_x) {
@@ -127,11 +128,11 @@ int main() {
          RungeKutta RK_v(dt, t, v, order);
          do {
             // good
+            //@ 加速度の評価には，x,vともに現在の値を使う
             x = RK_x.get_x();               // get value at this stage
-            v = RK_v.get_x();               // get value at this stage
-            RK_x.push(v);                   // value at this stage is used to calculate next stage
+            v = RK_v.get_x();               // value at this stage is used to calculate next stage
             RK_v.push(acceleration(x, v));  // value at this stage is used to calculate next stage
-                                            // Already RK_x can know x at next stage
+            RK_x.push(v);                   // value at this stage is used to calculate next stage
          } while (!RK_x.finished);
          t = RK_x.get_t();
          x = RK_x.get_x();

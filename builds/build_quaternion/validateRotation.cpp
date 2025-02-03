@@ -16,7 +16,7 @@
  * rotate：指定したクォータニオンと中心点を使用して、ネットワークの全点を回転します．
  * main：bunny、cow、camelオブジェクトをロードして、それぞれを回転させ、結果をファイルに出力します．
 
-```
+```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateRotation.cpp
 make
@@ -60,8 +60,9 @@ int main() {
       for (const auto& center : std::vector<Tddd>{{0, 0, 0}, {0.1, 0., 0.}}) {
          // 各軸に対して回転させる
          for (const auto& axis : std::vector<Tddd>{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}) {
-            for (auto i = 0; i < 50; ++i) {
-               auto Q = Quaternion(axis, 2 * M_PI / 50. * i);
+            for (auto i = 0; i < N; ++i) {
+               auto dtheta = 2 * M_PI / N;
+               auto Q = Quaternion(axis, dtheta * i);
                vtkPolygonWriter<networkPoint*> vtp;
                rotate(net, Q, center);
                for (const auto& f : net->getFaces()) {

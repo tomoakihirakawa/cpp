@@ -22,7 +22,7 @@ struct GradientMethod {
 
    bool use_diagonal_scaling;
    V_d diagonal_scaling_vector;
-   GradientMethod(const VV_d &A_IN) : org_A(A_IN), A(A_IN), use_diagonal_scaling(false){};
+   GradientMethod(const VV_d &A_IN) : org_A(A_IN), A(A_IN), use_diagonal_scaling(false) {};
 
    void diagonal_scaling() {
       this->use_diagonal_scaling = true;
@@ -293,7 +293,10 @@ struct BroydenMethod<T> {
       if (sy != static_cast<double>(0.))
          J += TensorProduct(y, y) / Dot(y, s) - Dot(TensorProduct(Dot(J, s), s), Transpose(J)) / Dot(s, Dot(J, s));
       // X += (dX = -alpha * Dot(Inv_J, F));
-      Solve(J, dX, -alpha * F);
+      // Solve(J, dX, -alpha * F);
+      // lapack_lu(J, dX, -alpha * F);
+      lapack_svd(J, dX, -alpha * F);
+
       X += dX;
    }
 };

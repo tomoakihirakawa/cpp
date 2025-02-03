@@ -18,10 +18,14 @@ python3.11 -m pip install numpy==1.25.0
 これは，`input_generator.py`を直接編集することなく，コマンドライン引数を使って計算条件を変更することができるようにするためで，
 また，これによって，複数の計算条件を一括で実行することができるようになる．
 
+```shell
+python3.11 input_generator.py -h
+```
+
 例えば，次のようにシェルスクリプトを作成し，`input_generator.py`を実行することで，入力ファイルを生成することができる．
 
 ```shell
-python3.11 input_generator.py -case Tanizawa1996 -mesh water_no_float0d08 -element linear -wavemaker flap -dt 0.03 -H 0.05 -ALE linear -ALEPERIOD 1 -outputdir ~/BEM
+python3.11 input_generator.py Tanizawa1996 -m water_no_float0d08 -e linear -wavemaker flap -dt 0.03 -H 0.05 -ALE linear -ALEPERIOD 1 -outputdir ~/BEM
 ```
 
 ```shell
@@ -35,14 +39,14 @@ H_array=(0.05 0.1)
 for dt in ${dt_array[@]};do
     for H in ${H_array[@]};do
         for mesh in ${mesh_array[@]};do
-            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
-            python3.11 input_generator.py -case ${case} -mesh ${mesh} -element linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
+            python3.11 input_generator.py ${case} -m ${mesh} -e pseudo_quad -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
+            python3.11 input_generator.py ${case} -m ${mesh} -e linear -wavemaker flap -dt ${dt} -H ${H} -ALE linear -ALEPERIOD 1 -outputdir ${outputdir}
         done
     done
 done
 ```
 
-python3.11 input_generator.py -case Tanizawa1996 -mesh water_no... -element pseudo_quad -wavemaker potential -dt 0.01 -ALE linear
+python3.11 input_generator.py Tanizawa1996 -m water_no... -e pseudo_quad -wavemaker potential -dt 0.01 -ALE linear
 
 '''
 
@@ -70,22 +74,19 @@ g = 9.81
 
 # ---------------------------------------------------------------------------- #
 
-SimulationCase = "Hadzic2005"
-
-# ---------------------------------------------------------------------------- #
-
 parser = argparse.ArgumentParser(description='コマンドライン引数を受け取るためのパーサー')
-parser.add_argument('-case', type=str, help='シミュレーションケース')
-parser.add_argument('-mesh', type=str, help='メッシュの名前')
+parser.add_argument('case', type=str, help='シミュレーションケース')
+parser.add_argument('-m', '--mesh', type=str, help='メッシュの名前')
 parser.add_argument('-wavemaker', type=str, help='波を作る方法')
-parser.add_argument('-element', type=str, help='要素の種類')
-parser.add_argument('-dt', type=float, help='時間刻み幅')
-parser.add_argument('-ALE', type=str, help='シフトさせる面の補間方法')
-parser.add_argument('-ALEPERIOD', type=str, help='ALEの周期')
-parser.add_argument('-H', type=float, help='波の高さ')
-parser.add_argument('-outputdir', type=str, help='出力ディレクトリ')
-parser.add_argument('-suffix', type=str, help='接尾語')
-parser.add_argument('-T', type=float, help='波の周期')
+parser.add_argument('-e', '--element', default='linear', type=str, help='要素の種類 (default: linear)')
+parser.add_argument('-dt', '--max_dt', type=float, required=True, help='時間刻み幅')
+parser.add_argument('-ALE', type=str, default='pseudo_quad', help='シフトさせる面の補間方法 (default: pseudo_quad)')
+parser.add_argument('-ALEPERIOD', type=str, default='1', help='ALEの周期 (default: 1)')
+parser.add_argument('-H', '--wave_height', type=float, help='波の高さ')
+parser.add_argument('-o', '--outputdir', type=str, help='出力ディレクトリ')
+parser.add_argument('-T', '--wave_period', type=float, help='波の周期')
+parser.add_argument('-theta', type=float, help='波の進行方向')
+parser.add_argument('-s', '--suffix', type=str, help='接尾語')
                     
 args = parser.parse_args()
 
@@ -93,48 +94,47 @@ args = parser.parse_args()
 meshname = ""
 wavemaker_type = ""
 suffix = ""
-element = "linear"
 default_output_dir = None
-if args.case is not None:
-    SimulationCase = args.case
-    print(f"SimulationCase: {SimulationCase}")
+
+padding = 20
+
+SimulationCase = args.case
+print(f"{'SimulationCase:':>{padding}} {SimulationCase}")
+element = args.element
+print(f"{'element:':>{padding}} {element}")
+ALE = args.ALE
+print(f"{'ALE:':>{padding}} {ALE}")
+ALEPERIOD = args.ALEPERIOD
+print(f"{'ALEPERIOD:':>{padding}} {ALEPERIOD}")
+
 if args.mesh is not None:
     meshname = args.mesh
     print(f"meshname: {meshname}")
 if args.wavemaker is not None:
     wavemaker_type = args.wavemaker
     print(f"wavemaker_type: {wavemaker_type}")
-if args.element is not None:
-    element = args.element
-    print(f"element: {element}")
-else:
-    element = "linear"
-if args.dt is not None:
-    dt = args.dt
-    print(f"dt: {dt}")
-if args.T is not None:
-    T = args.T
-    print(f"T: {T}")    
-if args.ALE is not None:
-    ALE = args.ALE
-    print(f"ALE: {ALE}")
-else:
-    ALE = "pseudo_quad"
-if args.ALEPERIOD is not None:
-    ALEPERIOD = args.ALEPERIOD
-    print(f"ALEPERIOD: {ALEPERIOD}")    
-else:
-    ALEPERIOD = "1"
+
+if args.max_dt:
+    dt = args.max_dt
+    print(f"{'max_dt:':>{padding}} {dt}")
+if args.wave_period is not None:
+    T = args.wave_period
+    print(f"{'T:':>{padding}} {T}")
 if args.suffix is not None:
     suffix = args.suffix
-    print(f"suffix: {suffix}")
-if args.H is not None:
-    H = args.H
-    print(f"H: {H}")
+    print(f"{'suffix:':>{padding}} {suffix}")
+if args.wave_height is not None:
+    H = args.wave_height
+    print(f"{'H:':>{padding}} {H}")
 if args.outputdir is not None:
     default_output_dir = args.outputdir
-    print(f"outputdir: {default_output_dir}")
-    
+    print(f"{'outputdir:':>{padding}} {default_output_dir}")
+if args.theta is not None:
+    theta = args.theta
+    print(f"{'theta:':>{padding}} {theta}")
+else:
+    theta = None
+
 def IO_dir(id):
     input_dir = "./input_files/" + id
     os.makedirs(input_dir, exist_ok=True)
@@ -268,11 +268,8 @@ elif "Tanizawa1996" in SimulationCase:
     start = 0.
 
     L = 1.8
-    if H is None:
-        H = 0.05*2
-
     a = H/2
-    h = 5.
+    h = 4.5
     z_surface = h
 
     id = SimulationCase
@@ -284,31 +281,8 @@ elif "Tanizawa1996" in SimulationCase:
 
     if meshname == "":
         meshname = "water_no_float0d1"
-    # meshname = "water0d1"
-    # meshname = "multiple_water_mod_coarse"
-    id += "_H" + str(H).replace(".", "d")
-    id += "_L" + str(L).replace(".", "d")
-    id += "_WAVE" + wavemaker_type
-    id += "_MESH" + meshname
 
-    if dt is not None:
-        max_dt = dt
-    else:
-        max_dt = 1/20
-    id += "_DT" + str(max_dt).replace(".", "d")
-
-    if element != "":
-        id += "_ELEM" + element
-
-    if ALE != "":
-        id += "_ALE" + ALE
-
-    if ALEPERIOD != "":
-        id += "_ALEPERIOD" + ALEPERIOD
-
-    if suffix != "":    
-        id += "_" + suffix
-
+    id = add_id(id)
 
     water = {"name": "water", "type": "Fluid"}
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
@@ -316,10 +290,10 @@ elif "Tanizawa1996" in SimulationCase:
 
     gauges = []
     dx = 0.5
-    for i in range(24):
+    for i in range(10):
         gauges.append({"name": "gauge"+str(i),
                        "type": "wave gauge",
-                       "position": [0.2 + dx*i, 0, h + 2, 0.2 + dx*i, 0, h - 2]})
+                       "position": [-2.5 + dx*i, 0, h + 2, 0.2 + dx*i, 0, h - 2]})
 
     phase_shift = -pi/2.
     # if wavemaker_type contains "piston":
@@ -340,7 +314,7 @@ elif "Tanizawa1996" in SimulationCase:
 
     Lx = 0.74
     Lz = 0.415
-    d = 0.25
+    draft = 0.25
     Ly = 1
 
     floats = []
@@ -360,15 +334,15 @@ elif "Tanizawa1996" in SimulationCase:
                 Ixx = 1./12.*m*(Ly*Ly+Lz*Lz)
                 Iyy = m*math.pow(0.266, 2)
                 Izz = 1./12.*m*(Lx*Lx+Ly*Ly)
-                float["COM"] = [12 - 1.5*(i-1),-2 + 2 *(j-1) ,z_surface - d + 0.22]
+                float["COM"] = [12 - 1.5*(i-1),-2 + 2 *(j-1) ,z_surface - draft + 0.22]
                 float["spring"] = [float["COM"][0], float["COM"][1], float["COM"][2], 51., 1000., 0.]
-                float["MOI"] = [1000*Iyy, Iyy, 1000*Iyy]
+                float["MOI"] = [100.*Iyy, Iyy, 100.*Iyy]
                 float["objfile"] = objfolder+"/float"+str(i+8*(j-1))+".obj"
                 floats.append(float)
         water["objfile"] = objfolder + "/water_mod_coarse.obj"
     else:
-        objfolder = code_home_dir + "/cpp/obj/Tanizawa1996_2d"
-        m = 184.3
+        objfolder = code_home_dir + "/cpp/obj/Tanizawa1996"
+        m = 184.3 # 184.3 kg
         Ixx = 1./12.*m*(Ly*Ly+Lz*Lz)
         K = 0.266
         Iyy = m * K * K # 0.266 is the radius of inertia
@@ -376,23 +350,39 @@ elif "Tanizawa1996" in SimulationCase:
         float = {"name": "float",
                 "type": "RigidBody",
                 "velocity": "floating",
-                "damping": [1000, 1000, 1000, 1000, 1000, 1000, 0., 1.],
+                # "damping": [100, 100, 100, 0, 100, 0, 0., 1000000.],
                 "isFixed": [False,True,False,True,False,True],
                 "mass" : m}
+        
+        absorber1 = {"name": "absorber1",
+                    "type": "Absorber",
+                    "isFixed": True,
+                    "objfile": objfolder+"/absorber1.obj",
+                    "wave_theory_L" : [a, L, h, 0]}
+
+        absorber2 = {"name": "absorber2",
+                    "type": "Absorber",
+                    "isFixed": True,
+                    "objfile": objfolder+"/absorber2.obj",
+                    "wave_theory" : [0, L, h, 0]}
+
+        water["objfile"] = objfolder + "/water.obj"
+
 
         # 密度1.18g/cm^3と質量から計算，{Ixx,Iyy,Izz}={0.3034752725,0.1967978007,0.3692731657}
         # 板厚0.08mmと質量から計算した結果，{Ixx,Iyy,Izz}={0.3320104413,0.2204711483,0.4018598521}
 
-        # float["COM"] = [7.5, 0., z_surface - d + 0.22]
-        float["COM"] = [12., 0., z_surface - d + 0.22]
-        float["spring"] = [float["COM"][0], float["COM"][1], float["COM"][2], 51., 1000., 0.]#実際は[51., 0., 0.]だがy方向にずれが生じるためこのようにした
+        float["COM"] = [0., 0., z_surface - draft + 0.22]
+        anchor =[float["COM"][0] -2, float["COM"][1], float["COM"][2]] 
+        kx = 51
+        ky = 0.
+        kz = 0.
+        float["spring"] = [float["COM"][0], float["COM"][1], float["COM"][2], anchor[0], anchor[1], anchor[2], kx, ky, kz]#実際は[51., 0., 0.]だがy方向にずれが生じるためこのようにした
         print("COM ", float["COM"], " mass ", float["COM"], " Ly ", Ly)
         float["MOI"] = [1000*Iyy, Iyy, 1000*Iyy]
         float["objfile"] = objfolder+"/float.obj"
         floats.append(float)
 
-        # water["objfile"] = objfolder + "/water_mod1.obj"
-        water["objfile"] = objfolder + "/" + meshname + ".obj"
 
     # water["objfile"] = objfolder + "/water_mod_coarse.obj"
     
@@ -405,13 +395,13 @@ elif "Tanizawa1996" in SimulationCase:
 
     absorber["objfile"] = objfolder+"/absorber.obj"
 
-    inputfiles = [tank, wavemaker, water, absorber]
+    inputfiles = [tank, water, absorber1, absorber2]
     inputfiles += gauges
     if "no_float" not in id:
         inputfiles += floats
 
 
-    setting = {"max_dt": max_dt,
+    setting = {"max_dt": dt,
                "end_time_step": 20000,
                "end_time": 30,
                "element": element,
@@ -562,7 +552,8 @@ elif "Ren2015" in SimulationCase:
     start = 0.
 
     T = 1.2
-    H = 0.04
+    if H is None:
+        H = 0.04
     a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
     h = 0.4
 
@@ -575,7 +566,10 @@ elif "Ren2015" in SimulationCase:
 
     id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
     id += "_T"+str(T).replace(".", "d")
-    id += "_" + wavemaker_type
+
+    if theta is not None:
+        id += "_theta"+str(theta).replace(".", "d")
+
 
     water = {"name": "water", "type": "Fluid"}
     tank = {"name": "tank",
@@ -595,38 +589,28 @@ elif "Ren2015" in SimulationCase:
                      "velocity": ["linear_traveling_wave", start, a, T, h, z_surface]}
 
     L = 0.3
-    H = 0.2
     d = 0.1
     # 500*L*W*H (浮体全質量) = 1000*L*W*d (排除される水の質量)
     # d = H/2 = 0.1
-    W = 0.42
+    W = 0.5
 
     float = {"name": "float",
              "type": "RigidBody",
-             # "isFixed": True,
-             # "output": "json"}
-             # "mooring": ["simple_mooring", 4.6, W/2, 0., 4.6, W/2., 0.3, 1.],
-             #  "mooring": ["mooring1", # 1
-             #              "simple_mooring", # 2
-             #              4.6, W/2, 0.,   # x,y,z body side
-             #              4.6, W/2., 0.3, # x,y,z
-             #              10,     #div 9
-             #              10**7., # stiffness 10
-             #              0.9,    # damping 11
-             #              348.5   # weight 12
-             #              ],
              "velocity": "floating"}
 
-    float["mass"] = m = 500*L*H*W
-    Ixx = 1./12.*m*(W*W+H*H)
-    Iyy = 1./12.*m*(L*L+H*H)
-    Iyy = 0.1967978007  # MathematicaでrhoPMMA=1180 kg/m^3 として計算した結果
-    Izz = 1./12.*m*(L*L+W*W)
+    float_H = 0.2
+    float_W = 0.42
+    float["mass"] = m = 500*L*float_H*float_W
+    Ixx = 1./12.*m*(float_W*float_W+float_H*float_H)
+    Iyy = 1./12.*m*(L*L+float_H*float_H)
+    # Iyy = 0.13
+    Izz = 1./12.*m*(L*L+float_W*float_W)
     MOI = [Ixx, Iyy, Izz]
     z_surface = 0.4
     z_floatinbody_bottom = z_surface - d
     # float["COM"] = [2+L/2., W/2, z_surface]
-    float["COM"] = [4.6+L/2, W/2, z_surface]
+    # float["COM"] = [4.6+L/2, W/2, z_surface]
+    float["COM"] = [0, W/2, z_surface]
     print("COM ", float["COM"], " mass ", float["COM"], " W ", W)
     float["MOI"] = [10**10*Ixx, Iyy, 10**10*Izz]
 
@@ -638,7 +622,7 @@ elif "Ren2015" in SimulationCase:
         # Initialize the object files
         water["objfile"] = f"{objfolder}/water400.obj"
         wavemaker["objfile"] = f"{objfolder}/wavemaker20.obj"
-        tank["objfile"] = f"{objfolder}/tank50.obj"
+        tank["objfile"] = f"{objfolder}/tank.obj"
         float["objfile"] = f"{objfolder}/float10.obj"
 
         inputfiles = [tank, wavemaker, water]
@@ -652,27 +636,66 @@ elif "Ren2015" in SimulationCase:
             new_float["name"] = f"float_{name}"
             new_float["objfile"] = f"{objfolder}/float_{name}50.obj"
             new_float["COM"][0] = float["COM"][0] + offset
-
             inputfiles.append(new_float)
     elif "_no" in id:
         objfolder = code_home_dir + "/cpp/obj/Ren2015_no_float"
         water["objfile"] = objfolder + "/water25.obj"
         wavemaker["objfile"] = objfolder + "/wavemaker20.obj"
-        tank["objfile"] = objfolder + "/tank10.obj"
+        tank["objfile"] = objfolder + "/tank2.obj"
         inputfiles = [tank, wavemaker, water]
+    elif "2D" in id:
+        float["COM"] = [0, 0, z_surface]#新しい設定
+        objfolder = code_home_dir + "/cpp/obj/Ren2015_2D"
+        water["objfile"] = objfolder + "/water.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker.obj"
+        tank["objfile"] = objfolder + "/tank.obj"
+        float["objfile"] = objfolder+"/float.obj"
+        bottom_in_z = 0
+        a = H /2
+        h = 0.4
+        absorber1 = {"name": "absorber1",
+                    "type": "Absorber",
+                    "isFixed": True,
+                    "objfile": objfolder+"/absorber1.obj",
+                    "wave_theory" : [a, T, h, bottom_in_z]}
+
+        absorber2 = {"name": "absorber2",
+                    "type": "Absorber",
+                    "isFixed": True,
+                    "objfile": objfolder+"/absorber2.obj",
+                    "wave_theory" : [0, T, h, bottom_in_z]}
+
+        # inputfiles = [tank, wavemaker, water, float, absorber]
+        inputfiles = [tank, water, float, absorber1, absorber2]
     else:
-        float["COM"] = [4.6, W/2, z_surface]
+        # float["COM"] = [5, 0, z_surface]#新しい設定
+        float["COM"] = [0, 0, z_surface]#新しい設定
         objfolder = code_home_dir + "/cpp/obj/Ren2015"
         # water["objfile"] = objfolder + "/water400meshlab.obj"
-        water["objfile"] = objfolder + "/water18_mod.obj"
-        wavemaker["objfile"] = objfolder + "/wavemaker20.obj"
-        tank["objfile"] = objfolder + "/tank10.obj"
-        float["objfile"] = objfolder+"/float10.obj"
-        inputfiles = [tank, wavemaker, water, float]
+        water["objfile"] = objfolder + "/water.obj"
+        wavemaker["objfile"] = objfolder + "/wavemaker.obj"
+        tank["objfile"] = objfolder + "/tank.obj"
+        float["objfile"] = objfolder+"/float.obj"
+        bottom_in_z = 0
+        a = H /2
+        h = 0.4
+        wave_theory = [a, T, h, bottom_in_z, theta] if theta is not None else [a, T, h, bottom_in_z]
+        absorber = {"name": "absorber",
+                    "type": "Absorber",
+                    "isFixed": True,
+                    "objfile": objfolder+"/absorber.obj",
+                    "wave_theory" : wave_theory}
+        # inputfiles = [tank, wavemaker, water, float, absorber]
+        inputfiles = [tank, water, float, absorber]
 
-    setting = {"max_dt": 0.01,
+    id = add_id(id)
+
+    setting = {"max_dt": dt,
                "end_time_step": 10000,
-               "end_time": 9}
+               "end_time": 10,
+               "element": element,
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Hadzic2005" in SimulationCase:
@@ -789,20 +812,9 @@ elif "Kramer2021" in SimulationCase:
     The sphere is dropped from the height of 0.03 m above the water surface.
     '''
 
-    max_dt = 0.001
     D = 300/1000
-    H0 = D*0.3
-    small = True
-    id = "H0"+str(H0).replace(".", "d")
-    if small:
-        id += "_small"
     # id = "H0"+str(H0).replace(".", "d")
-
-    input_dir += SimulationCase + "_" + id
-    os.makedirs(input_dir, exist_ok=True)
-    output_dir = sys_home_dir + "/BEM/" + SimulationCase + "_" + id
-    os.makedirs(output_dir, exist_ok=True)
-
+    
     water = {"name": "water", "type": "Fluid"}
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
 
@@ -814,28 +826,29 @@ elif "Kramer2021" in SimulationCase:
     float["mass"] = m = 7.056
     # float["reverseNormal"] = True
     z_surface = 900/1000
-    float["COM"] = [0., 0., z_surface + H0]  # 今回は重要ではない
     float["radius_of_gyration"] = [10**10, 10**10, 10**10]
     float["MOI"] = [m*math.pow(float["radius_of_gyration"][0], 2),
                     m*math.pow(float["radius_of_gyration"][1], 2),
                     m*math.pow(float["radius_of_gyration"][2], 2)]
     # float["translate"] = [0., 0., 0.1*D + 900/1000]
+    z_surface = 900/1000
+    id = SimulationCase
+    if "H00d03" in id or "H00d03" in suffix:
+        H0 = D*0.1
+        float["COM"] = [0., 0., z_surface + H0]  # 今回は重要ではない
+        objfolder = code_home_dir + "/cpp/obj/Kramer2021_H00d03"
+        water["objfile"] = objfolder + "/water_test.obj"
+        tank["objfile"] = objfolder + "/tank.obj"
+        float["objfile"] = objfolder + "/sphere.obj"
+    elif "H00d09" in id or "H00d09" in suffix:
+        H0 = D*0.3
+        float["COM"] = [0., 0., z_surface + H0]  # 今回は重要ではない
+        objfolder = code_home_dir + "/cpp/obj/Kramer2021_H00d09"
+        water["objfile"] = objfolder + "/water.obj"
+        tank["objfile"] = objfolder + "/tank.obj"
+        float["objfile"] = objfolder + "/sphere.obj"
 
-    mesh = "meshB"
-    id += "_" + mesh
-    if "H00d03" in id:
-        objfolder = code_home_dir + "/cpp/obj/" + SimulationCase + "_01D"
-        if small:
-            objfolder += "_small"
-        water["objfile"] = objfolder + "/water5_" + mesh + ".obj"
-    elif "H00d09" in id:
-        objfolder = code_home_dir + "/cpp/obj/" + SimulationCase + "_03D"
-        if small:
-            objfolder += "_small"
-        water["objfile"] = objfolder + "/water4_" + mesh + ".obj"
-
-    tank["objfile"] = objfolder + "/tank4.obj"
-    float["objfile"] = objfolder + "/sphere.obj"
+    id = add_id(id)
 
     gauges = []
     dx = 0.6
@@ -849,15 +862,15 @@ elif "Kramer2021" in SimulationCase:
     rho = 998.2
     g = 9.82
 
-    setting = {"WATER_DENSITY": rho,
-               "GRAVITY": g,
-               "max_dt": max_dt,
-               "end_time_step": 10000,
-               "end_time": 4,
-               "ALE_period_in_step": 1}
+    setting = {"max_dt": dt,
+               "WATER_DENSITY": rho,
+               "GRAVITY": g,               
+               "end_time_step": 1000000,
+               "end_time": 15,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
 
-    id = SimulationCase + "_" + id
-    id += "_ALE" + str(setting["ALE_period_in_step"]) + "_0d5"
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Palm2016" in SimulationCase:
 
@@ -887,8 +900,10 @@ elif "Palm2016" in SimulationCase:
     h = 0.9
     z_surface = 0.9
 
-    SimulationCase += "_H" + str(H).replace(".", "d")
-    SimulationCase += "_T" + str(T).replace(".", "d")
+    # SimulationCase += "_H" + str(H).replace(".", "d")
+    # SimulationCase += "_T" + str(T).replace(".", "d")
+
+    id = add_id(id)
 
     rho = 1000
     draft = 0.172
@@ -910,7 +925,7 @@ elif "Palm2016" in SimulationCase:
     X_anchorA = Add3d(X_fair_leadA, [horizontal_length*math.cos(q), horizontal_length*math.sin(q), -z_surface])
 
     q = (i+1)*2*pi/3
-    X_fair_leadB = [r * math.cos(q) + COM[water0], r*math.sin(q) + COM[1], z_surface]
+    X_fair_leadB = [r * math.cos(q) + COM[0], r*math.sin(q) + COM[1], z_surface]
     X_anchorB = Add3d(X_fair_leadB, [horizontal_length*math.cos(q), horizontal_length*math.sin(q), -z_surface])
 
     q = (i+2)*2*pi/3
@@ -948,28 +963,28 @@ elif "Palm2016" in SimulationCase:
 
     id = SimulationCase
 
-    if meshname == "":
-        meshname = "water_mod"
-    id += "_MESH" + meshname
+    # if meshname == "":
+    #     meshname = "water_mod"
+    # id += "_MESH" + meshname
 
-    if dt is not None:
-        max_dt = dt
-    else:
-        max_dt = 1/20
+    # if dt is not None:
+    #     max_dt = dt
+    # else:
+    #     max_dt = 1/20
 
-    id += "_DT" + str(max_dt).replace(".", "d")
+    # id += "_DT" + str(max_dt).replace(".", "d")
 
-    if element != "":
-        id += "_ELEM" + element
+    # if element != "":
+    #     id += "_ELEM" + element
 
-    if ALE != "":
-        id += "_ALE" + ALE
+    # if ALE != "":
+    #     id += "_ALE" + ALE
 
-    if ALEPERIOD != "":
-        id += "_ALEPERIOD" + ALEPERIOD
+    # if ALEPERIOD != "":
+    #     id += "_ALEPERIOD" + ALEPERIOD
 
-    if suffix != "":    
-        id += "_" + suffix
+    # if suffix != "":    
+    #     id += "_" + suffix
 
     if "with_mooring" in id:
         float["mooringA"] = ["mooringA",
@@ -1027,7 +1042,7 @@ elif "Palm2016" in SimulationCase:
     inputfiles = [tank, wavemaker, water, float]
     inputfiles += probes
 
-    setting = {"max_dt": max_dt,
+    setting = {"max_dt": dt,
                "end_time_step": 100000,
                "end_time": 30,
                "element": element,
@@ -1711,7 +1726,7 @@ elif "Gu2018Float1_offset_neg0d074" in SimulationCase:
                "end_time": 4}
     id = SimulationCase
     generate_input_files(inputfiles, setting, IO_dir, id)
-elif "Tonegawa" in SimulationCase:
+elif "Tonegawa2022" in SimulationCase:
     input_dir += SimulationCase
     os.makedirs(input_dir, exist_ok=True)
     output_dir = sys_home_dir + "/BEM/2022Tonegawa3"
@@ -1851,11 +1866,13 @@ elif "Retzler2000simple" in SimulationCase:
     tank["objfile"] = objfolder+"/tank.obj"
     wavetank_ignore = False
     inputfiles = [tank, wavemaker, water]
-    setting = {"max_dt": 0.002,
-               "end_time_step": 1000,
-               "end_time": 0.4}
+    setting = {"max_dt": dt,
+               "end_time_step": 10000,
+               "end_time": 0.5,
+                "ALEPERIOD": ALEPERIOD}
 
     id = SimulationCase
+    id = add_id(id)
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Retzler2000" in SimulationCase:
     input_dir += SimulationCase
@@ -2015,13 +2032,13 @@ elif "Horikawa2024" in SimulationCase:
     ### inputファイルの生成
     
     ```sh
-    python3 input_generator.py -case Horikawa2024 -dt 0.05 -ALEPERIOD 1 -ALE linear -element linear -output ~/BEM/Horikawa2024
+    python3 input_generator.py Horikawa2024 -dt 0.05 -ALEPERIOD 1 -ALE linear -element linear -output ~/BEM/Horikawa2024
     ```
     
     または，省略して次のように実行する．
 
     ```sh
-    python3 input_generator.py -case Horikawa2024 -dt 0.05 -output ~/BEM/Horikawa2024
+    python3 input_generator.py Horikawa2024 -dt 0.05 -output ~/BEM/Horikawa2024
     ```
 
     <img src="how_to_run_example.png" width="400">
@@ -2089,6 +2106,85 @@ elif "Horikawa2024" in SimulationCase:
 
     # 入力ファイルを生成
     generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Tonegawa2024Akita" in SimulationCase:
+
+    start = 0.
+
+    a = H/2  # Ren 2015 used H=[0.1(a=0.05), 0.03(a=0.06), 0.04(a=0.02)]
+    h = 80
+
+    id0 = ""
+    id = SimulationCase + id0 + "_H"+str(H).replace(".", "d")
+    id += "_T"+str(T).replace(".", "d")
+
+    if theta is not None:
+        id += "_theta"+str(theta).replace(".", "d")
+
+    water = {"name": "water", "type": "Fluid"}
+    
+    tank = {"name": "tank",
+            "type": "RigidBody",
+            "isFixed": True}
+
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating"}
+    
+    draft = 7.5
+    float_H = 12
+    float_W = 45
+    float_L = 45
+    MP_W = float_W/1.5
+    MP_L = float_L/1.5
+    float["mass"] = m = rho*draft*(float_W*float_L - MP_W*MP_L)
+    # Ixx = 1./12.*m*(float_W*float_W+float_H*float_H)
+    # Iyy = 1./12.*m*(float_L*float_L+float_H*float_H)
+    # Izz = 1./12.*m*(float_L*float_L+float_W*float_W)
+
+    kx = 18.7
+    ky = 20.3
+    kz = 21.1
+
+    Ixx = m * kx * kx
+    Iyy = m * ky * ky
+    Izz = m * kz * kz
+
+    MOI = [Ixx, Iyy, Izz]
+    z_surface = 80
+    z_floatinbody_bottom = z_surface - draft
+
+    float["MOI"] = [Ixx, Iyy, Izz]
+    float["COM"] = [0, 0, z_surface - draft + 7.275]
+
+    objfolder = code_home_dir + "/cpp/obj/Tonegawa2024Akita"
+
+    index = "_MP1d5"
+
+    water["objfile"] = objfolder + "/water"+index+".obj"
+    tank["objfile"] = objfolder + "/tank.obj"
+    float["objfile"] = objfolder+"/float"+index+".obj"
+    bottom_in_z = 0
+
+    wave_theory = [a, T, h, bottom_in_z, theta] if theta is not None else [a, T, h, bottom_in_z]
+
+    absorber = {"name": "absorber",
+                "type": "Absorber",
+                "isFixed": True,
+                "objfile": objfolder+"/absorber.obj",
+                "wave_theory" : wave_theory}
+
+    inputfiles = [tank, water, float, absorber]
+
+    id = add_id(id)
+
+    setting = {"max_dt": dt,
+               "end_time_step": 10000000,
+               "end_time": 100,
+               "element": element,
+                "ALE": ALE,
+                "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Tonegawa2024" in SimulationCase:
 
     r'''DOC_EXTRACT 2_1_0_input_generator
@@ -2128,7 +2224,7 @@ elif "Tonegawa2024" in SimulationCase:
     '''
 
     start = 0.
-    H = 0.01  # 波高
+    H = 0.015  # 波高
     # if not degined 
     try:       
         T
@@ -2144,7 +2240,8 @@ elif "Tonegawa2024" in SimulationCase:
     draft = 0.056
     # mass = 4.375
     # mass = 7.
-    COM = [2, 0, h - draft + H_float / 2]
+    # COM = [2, 0, h - draft + H_float / 2]
+    COM = [1.8675, 0, h - draft + H_float / 2]
     # MOI = [0.07943494545, 0.07943494545, 0.1514044693]
     # MOI = [0.1078722037,0.1078722037,0.2013731481]
 
@@ -2158,17 +2255,17 @@ elif "Tonegawa2024" in SimulationCase:
         float_obj = objfolder + "/float0d075.obj"
         water_obj = objfolder + "/water0d075.obj"
         mass = 7.56
-        MOI = [0.1139241482,0.1139241482,0.2117076729]
+        MOI = [0.0899209,0.0899209,0.163718]
     if "0d125" in suffix:
         float_obj = objfolder + "/float0d125.obj"
         water_obj = objfolder + "/water0d125.obj"
         mass = 7.
-        MOI = [0.1078722037,0.1078722037,0.2013731481]
+        MOI = [0.0899375,0.0899375,0.16452]
     elif "0d25" in suffix:
         float_obj = objfolder + "/float0d25.obj"
-        water_obj = objfolder + "/water0d25.obj"
+        water_obj = objfolder + "/water0d25_new.obj"
         mass = 4.375
-        MOI = [0.07943494545, 0.07943494545, 0.1514044693]
+        MOI = [0.0985854,0.0985854,0.182528]
 
     water = {"name": "water", 
              "type": "Fluid", 
@@ -2189,9 +2286,12 @@ elif "Tonegawa2024" in SimulationCase:
                  "velocity": ["flap", start, a, T, h, h, 0, 1, 0],
                  "objfile": objfolder + "/wavemaker.obj"}
     
+    bottom_in_z = 0
+    h = 0.6
     absorber = {"name": "absorber", 
                 "type": "Absorber", 
                 "isFixed": True,
+                "wave_theory" : [0, T, h, bottom_in_z],
                 "objfile": objfolder+"/absorber.obj"}
 
     gauges = []
@@ -2208,13 +2308,328 @@ elif "Tonegawa2024" in SimulationCase:
     id = add_id(id)
     
     setting = {"max_dt": dt,
-               "end_time_step": 100000,
-               "end_time": 12,
+               "end_time_step": 1000000,
+               "end_time": 15,
                "ALE": ALE,
                "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Fredriksen2015" in SimulationCase:
+
+    r'''DOC_EXTRACT 2_1_0_validation_Fredriksen2015
+
+    ## Fredriksen2015
+
+    '''
+
+    # 波の設定
+    start = 0.
+    H = 0.05
+    eps = 1/60.
+    # T = 0.9
+    h = 1.
+    z_surface = h
+
+    # 浮体の設定
+    draft = 0.097 # 喫水
+    vol = draft * (0.201*0.586)*2.
+    M = rho * vol
+    COM = [0, 0, h-draft+0.091]  # 重心位置
+    ryy = 0.18  # radius of gyration
+    Ixx = 500
+    Iyy = M*ryy**2
+    Izz = 500
+
+    water = {"name": "water",
+             "type": "Fluid"}
+
+    tank = {"name": "tank",
+            "type": "RigidBody",
+            "isFixed": True}
+
+    # wavemaker = {"name": "wavemaker",
+    #              "type": "RigidBody",
+    #              "velocity": ["flap_wave_steepness", start, eps, T, h, h, 0, 1, 0]}
+
+    z = 0.05 + 1.
+    x = 0.201 + 2.
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating",
+             "mass": M,
+             "COM": COM,
+             "MOI": [Ixx, Iyy, Izz],
+             "spring1" : [ -x, 0.25, z, -x - 0.5, 0.25, z, 43.7, 7.5],
+             "spring2" : [ -x, -0.25, z, -x - 0.5, -0.25, z, 42.5, 7.5],
+             "spring3" : [ x, 0., z, x + 0.5, 0., z, 88.2, 15]}
+    
+    h = 1
+    WS = 1/60 # H/h = 2a/h -> a = eps*h/2
+    bottom_in_z = 0.
+    absorber1 = {"name": "absorber1",
+                "type": "Absorber",
+                "isFixed": True,
+                "wave_theory" : [WS*h/2, T, h, bottom_in_z]}
+
+    absorber2 = {"name": "absorber2",
+                "type": "Absorber",
+                "isFixed": True,
+                "wave_theory" : [0, T, h, bottom_in_z]}
+
+    objfolder = code_home_dir + "/cpp/obj/Fredriksen2015"
+    water["objfile"] = objfolder + "/water.obj"
+    # wavemaker["objfile"] = objfolder + "/wavemaker.obj"
+    tank["objfile"] = objfolder + "/tank.obj"
+    float["objfile"] = objfolder + "/float.obj"
+    absorber1["objfile"] = objfolder + "/absorber1.obj"
+    absorber2["objfile"] = objfolder + "/absorber2.obj"
+
+    inputfiles = [tank, water, float, absorber1, absorber2]
+
+    id = SimulationCase
+    id += "_WS" + "{:.5f}".format(WS).replace(".", "d")
+    id += "_T" + "{:.2f}".format(T).replace(".", "d")
+    id = add_id(id)
+
+    setting = {"max_dt": dt,
+               "end_time_step": 1000000,
+               "end_time": 15,
+               "ALE": ALE,
+               "element": element,
+               "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "OC6DeepCwind" in SimulationCase:
+
+    start = 0.0
+
+    # Wave parameters (JONSWAP as default)
+    H = 7.4  # Significant wave height in meters
+    T = 12.0  # Peak wave period in seconds
+    gamma = 3.3  # JONSWAP spectrum parameter
+
+    id0 = ""
+    id = SimulationCase + id0 + "_H" + str(H).replace(".", "d")
+    id += "_T" + str(T).replace(".", "d")
+
+    water = {"name": "water", "type": "Fluid"}
+
+    tank = {"name": "tank",
+            "type": "RigidBody",
+            "isFixed": True}
+
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating"}
+
+    # Semisubmersible parameters
+    draft = 20.0  # Approximate draft in meters
+    float_H = 38.0  # Overall height in meters
+    float_W = 60.0  # Width in meters
+    float_L = 60.0  # Length in meters
+
+    rho = 1025.0  # Seawater density in kg/m^3
+    displacement_volume = 14053.0  # Displacement volume in m^3
+
+    float["mass"] = m = rho * displacement_volume
+
+    kx, ky, kz = 18.7, 20.3, 21.1  # Radius of gyration values (approx.)
+
+    Ixx = m * kx**2
+    Iyy = m * ky**2
+    Izz = m * kz**2
+
+    float["MOI"] = [Ixx, Iyy, Izz]
+    float["COM"] = [0, 0, -7.32]  # Center of mass (Gz value)
+
+    objfolder = code_home_dir + "/cpp/obj/OC6DeepCwind"
+
+    water["objfile"] = objfolder + "/water.obj"
+    tank["objfile"] = objfolder + "/tank.obj"
+    float["objfile"] = objfolder + "/float.obj"
+
+    # Wave theory (JONSWAP parameters)
+    bottom_in_z = -draft
+    wave_theory = [H / 2, T, 80.0, bottom_in_z, gamma]
+
+    absorber = {"name": "absorber",
+                "type": "Absorber",
+                "isFixed": True,
+                "objfile": objfolder + "/absorber.obj",
+                "wave_theory": wave_theory}
+
+    inputfiles = [tank, water, float, absorber]
+
+    id = add_id(id)
+
+    setting = {"max_dt": dt,
+               "end_time_step": 1000000,
+               "end_time": 100,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "DeepCWind" in SimulationCase:
+
+    start = 0.0
+
+    # Water depth
+    h = 180.0  # [m]
+
+    # 項目	値
+    # 全体質量	1.3958E+7 kg
+    # 喫水 (Draft)	20 m
+    # 排水量	1.3917E+4 m³
+    # 重心位置 (CM)（SWLからの距離）	8.07 m
+    # ロール慣性モーメント	1.3947E+10 kg-m²
+    # ピッチ慣性モーメント	1.5552E+10 kg-m²
+    # ヨー慣性モーメント	1.3692E+10 kg-m²
+
+    # Mass properties
+    displacement_volume = (4297.7 * 3 + 663.661)
+    mass = 1000 * displacement_volume # kg
+
+    # Center of Mass
+    COM = [0, 0, h - 8.07]
+
+    # Moments of Inertia
+    Ixx = 1.3947e10
+    Iyy = 1.5552e10
+    Izz = 1.3692e10
+
+    id = SimulationCase
+
+    # Define objects
+    water = {"name": "water", "type": "Fluid"}
+
+    tank = {"name": "tank",
+            "type": "RigidBody",
+            "isFixed": True}
+
+    float = {"name": "float",
+             "type": "RigidBody",
+             "velocity": "floating",
+             "mass": mass,
+             "COM": COM,
+             "MOI": [Ixx, Iyy, Izz]}
+
+    objfolder = code_home_dir + "/cpp/obj/DeepCWind"
+
+    water["objfile"] = objfolder + "/water.obj"
+    tank["objfile"] = objfolder + "/tank.obj"
+    float["objfile"] = objfolder + "/float.obj"
+
+    # if suffix contains 9floats, then use water9floats.obj
+    # and inclrease the number of floats to 9 (-300,300), (-300,0), (-300,-300), (0,300), (0,0), (0,-300), (300,300), (300,0), (300,-300)
+    # (0,0) is the original float position
+
+    # Wave theory (JONSWAP parameters)
+    bottom_in_z = 0
+    h = 180.0
+    L =  150.0
+    theta = 180.0
+    wave_theory_L = [H / 2, L, h, bottom_in_z, theta]
+
+    absorber = {"name": "absorber",
+                "type": "Absorber",
+                "isFixed": True,
+                "objfile": objfolder + "/absorber.obj",
+                "wave_theory_L": wave_theory_L}
+
+    if "9floats" in suffix:
+
+
+        water["objfile"] = objfolder + "/water9floats.obj"
+
+        shift_in_m = 300
+
+        float00 = copy.copy(float)
+        float00["name"] = "float00"
+        float00["COM"] = [-shift_in_m, shift_in_m, COM[2]]
+        float00["translation"] = [-shift_in_m, shift_in_m, 0]
+
+        float01 = copy.copy(float)
+        float01["name"] = "float01"
+        float01["COM"] = [0, shift_in_m, COM[2]]
+        float01["translation"] = [0, shift_in_m, 0]
+
+        float02 = copy.copy(float)
+        float02["name"] = "float02"
+        float02["COM"] = [shift_in_m, shift_in_m, COM[2]]
+        float02["translation"] = [shift_in_m, shift_in_m, 0]
+
+        float03 = copy.copy(float)
+        float03["name"] = "float03"
+        float03["COM"] = [-shift_in_m, 0, COM[2]]
+        float03["translation"] = [-shift_in_m, 0, 0]
+
+        float04 = copy.copy(float)
+        float04["name"] = "float04"
+        float04["COM"] = [0, 0, COM[2]]
+        float04["translation"] = [0, 0, 0]
+
+        float05 = copy.copy(float)
+        float05["name"] = "float05"
+        float05["COM"] = [shift_in_m, 0, COM[2]]
+        float05["translation"] = [shift_in_m, 0, 0]
+
+        float06 = copy.copy(float)
+        float06["name"] = "float06"
+        float06["COM"] = [-shift_in_m, -shift_in_m, COM[2]]
+        float06["translation"] = [-shift_in_m, -shift_in_m, 0]
+
+        float07 = copy.copy(float)
+        float07["name"] = "float07"
+        float07["COM"] = [0, -shift_in_m, COM[2]]
+        float07["translation"] = [0, -shift_in_m, 0]
+
+        float08 = copy.copy(float)
+        float08["name"] = "float08"
+        float08["COM"] = [shift_in_m, -shift_in_m, COM[2]]
+        float08["translation"] = [shift_in_m, -shift_in_m, 0]
+
+        inputfiles = [tank, water, float00, float01, float02, float03, float04, float05, float06, float07, float08, absorber]
+
+    elif "3floats" in suffix:
+
+        water["objfile"] = objfolder + "/water3floats.obj"
+
+        shift_in_m = 300
+
+        float00 = copy.copy(float)
+        float00["name"] = "float00"
+        float00["COM"] = [0, -shift_in_m, COM[2]]
+        float00["translation"] = [0, -shift_in_m, 0]
+
+        float01 = copy.copy(float)
+        float01["name"] = "float01"
+        float01["COM"] = [0, 0, COM[2]]
+
+        float02 = copy.copy(float)
+        float02["name"] = "float02"
+        float02["COM"] = [0, shift_in_m, COM[2]]
+        float02["translation"] = [0, shift_in_m, 0]
+
+        inputfiles = [tank, water, float00, float01, float02, absorber]
+
+    else:
+        water["objfile"] = objfolder + "/water1float.obj"
+        inputfiles = [tank, water, float, absorber]
+
+    setting = {"max_dt": dt,
+               "end_time_step": 10000000,
+               "end_time": 600,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
+
+
+    id = add_id(id)
 
     generate_input_files(inputfiles, setting, IO_dir, id)
 
 # シミュレーションケースのモジュールを動的にインポート
 # case_module = importlib.import_module(f"cases.{args.case}")
 # case_module.generate_input_files(args)
+

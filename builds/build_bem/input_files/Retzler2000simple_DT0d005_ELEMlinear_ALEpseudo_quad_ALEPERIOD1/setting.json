@@ -1,0 +1,12 @@
+{
+    "max_dt": 0.005,
+    "end_time_step": 10000,
+    "end_time": 0.5,
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Retzler2000simple_DT0d005_ELEMlinear_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json"
+    ]
+}

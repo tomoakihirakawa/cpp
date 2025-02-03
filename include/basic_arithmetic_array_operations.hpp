@@ -938,7 +938,7 @@ void FusedMultiplyIncrement(const double W, const std::array<std::array<double, 
 }
 
 // void FusedMultiplyIncrement(const double W, const std::vector<double>& ARR, std::vector<double>& ret) noexcept {
-//    for (std::size_t i = 0; auto& r : ret)
+//    for (auto i = 0; auto& r : ret)
 //       r = std::fma(W, ARR[i++], r);
 // }
 
@@ -959,7 +959,7 @@ void FusedMultiplyIncrement(const double W, const std::vector<float>& ARR, std::
 }
 
 // void FusedMultiplyIncrement(const std::vector<double>& ARR, const double W, std::vector<double>& ret) noexcept {
-//    for (std::size_t i = 0; auto& r : ret)
+//    for (auto i = 0; auto& r : ret)
 //       r = std::fma(W, ARR[i++], r);
 // }
 
@@ -1000,7 +1000,7 @@ void FusedMultiplyIncrement(const std::vector<float>& ARR, const float W, std::v
 
 template <size_t N>
 void FusedMultiplyIncrement(const std::array<double, N>& ARR, const double W, std::array<double, N>& ret) noexcept {
-   for (std::size_t i = 0; i < N; ++i)
+   for (auto i = 0; i < N; ++i)
       ret[i] = std::fma(W, ARR[i], ret[i]);
 }
 
@@ -1055,7 +1055,7 @@ constexpr std::array<double, N + 1> Subdivide(const double xmin, const double xm
    static_assert(N > 0, "The number of divisions N must be a positive integer.");
    std::array<double, N + 1> ret;
    const double dx = (xmax - xmin) / N;
-   for (std::size_t i = 0; i < N + 1; i++)
+   for (auto i = 0; i < N + 1; i++)
       ret[i] = i * dx + xmin;
    return ret;
 };
@@ -1077,7 +1077,7 @@ constexpr std::array<double, N + 1> Subdivide(const double xmin, const double xm
 //       //
 //       std::vector<double> vec(division + 1);
 //       const double dx = (max - min) / (double)division;
-//       for (std::size_t i = 0; i < division + 1; i++)
+//       for (auto i = 0; i < division + 1; i++)
 //          vec[i] = i * dx + min;
 //       double dt = 1. / (double)division / 2.;
 //       //
@@ -1127,7 +1127,7 @@ std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle
    const double max = 1., min = 0.;
    const double dt = (max - min) / (double)divide;
    //
-   for (std::size_t i = 0; i < divide + 1; i++)
+   for (auto i = 0; i < divide + 1; i++)
       vec[i] = i * dt + min;
    //
    double resolution = 0.5 / (double)divide;
@@ -1139,20 +1139,10 @@ std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle
       for (auto j = 0; j < vec.size() - 1; ++j) {
          t0t1_triangles.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
 
-         //@
-         //@ |\
-         //@ | \
-         //@ ----
-
          if (std::abs(1. - vec[i + 1] - vec[j]) < 1E-10 && std::abs(1. - vec[i] - vec[j + 1]) < 1E-10)
             break;
 
          t0t1_triangles.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
-
-         //@ ----
-         //@ |\ |
-         //@ | \|
-         //@ ----
       }
 
    return t0t1_triangles;
@@ -1190,9 +1180,9 @@ std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(c
    const double dx = (xmax - xmin) / (double)x_divide;
    const double dy = (ymax - ymin) / (double)y_divide;
    //
-   for (std::size_t i = 0; i < x_divide + 1; i++)
+   for (auto i = 0; i < x_divide + 1; i++)
       vec_x[i] = i * dx + xmin;
-   for (std::size_t i = 0; i < y_divide + 1; i++)
+   for (auto i = 0; i < y_divide + 1; i++)
       vec_y[i] = i * dy + ymin;
    //
    std::vector<std::array<std::array<double, 2>, 3>> t0t1_triangles;

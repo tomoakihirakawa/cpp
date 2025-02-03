@@ -35,8 +35,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 
          ### 進行波を生成するための流速の境界条件
 
-
-         構造物に接する節点のNeumann境界条件として，法線方向流速$\phi_n={\bf u}_{\rm wave}\cdot{\bf n}$を与えることで進行波を生成する．
+         構造物に接する節点のNeumann境界条件として，法線方向流速$`\phi_n={\bf u}_{\rm wave}\cdot{\bf n}`$を与えることで進行波を生成する．
 
          ```math
          {\bf u}_{\rm wave} =
@@ -120,304 +119,319 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, double t) {
    auto g = _GRAVITY_;
-   if (name.contains("Goring1979")) {
-      if (strings.size() == 2) {
+   try {
+
+      if (name.contains("Goring1979")) {
+         if (strings.size() == 2) {
+            double start = std::stod(strings[1] /*start*/);
+            // if (t < start)
+            //    return {0., 0., 0., 0., 0., 0.};
+            double h = 0.25;
+            double H = 0.1 * h;  // 造波する初期入射波の波高
+            double x = 0;
+            double c = std::sqrt(g * (H + h));
+            double kappa = std::sqrt(3. * H / (4. * h * h * h));
+            double eta = H * std::pow(std::cosh(kappa * (-c * (t - start))), -2);
+            return {c * eta / (h + eta), 0., 0., 0, 0, 0};
+         } else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 2");
+      } else if (name.contains("Retzler2000")) {
+         const std::vector<Tdd> sample = {
+             {-0.15000000000000002, 0.},
+             {-0.11, 0.},
+             {-0.1, 0.},
+             {-0.09, 0.},
+             {-0.08, 0.},
+             {-0.07, 0.},
+             {-0.06, 0.},
+             {-0.050409836065573754, 0.007920792079208039},
+             {-0.02397540983606558, 0.06930693069306948},
+             {-0.0006147540983606481, 0.13762376237623775},
+             {0.0282786885245902, 0.24851485148514862},
+             {0.05040983606557381, 0.3594059405940595},
+             {0.05901639344262294, 0.40297029702970305},
+             {0.06946721311475412, 0.4425742574257427},
+             {0.08299180327868855, 0.4792079207920793},
+             {0.10020491803278692, 0.516831683168317},
+             {0.11065573770491804, 0.5415841584158416},
+             {0.12110655737704923, 0.5663366336633664},
+             {0.132172131147541, 0.5910891089108912},
+             {0.15000000000000008, 0.6198019801980199},
+             {0.1616803278688525, 0.6306930693069308},
+             {0.17643442622950822, 0.6445544554455447},
+             {0.18872950819672135, 0.6603960396039605},
+             {0.20102459016393448, 0.6792079207920793},
+             {0.21823770491803285, 0.6801980198019802},
+             {0.23053278688524592, 0.6445544554455447},
+             {0.25081967213114753, 0.5742574257425743},
+             {0.27848360655737703, 0.40297029702970305},
+             {0.30000000000000004, 0.23564356435643574},
+             {0.319672131147541, 0.10396039603960416},
+             {0.3319672131147542, 0.02772277227722786},
+             {0.35040983606557385, -0.03960396039603942},
+             {0.37069672131147546, -0.085148514851485},
+             {0.38913934426229513, -0.08316831683168302},
+             {0.4002049180327869, -0.06831683168316827},
+             {0.4254098360655738, -0.03069306930693061},
+             {0.45000000000000007, -0.009900990099009799},
+             {0.5, 0.},
+             {0.55, 0.},
+             {0.6, 0.},
+             {0.65, 0.},
+             {0.7, 0.}};
          double start = std::stod(strings[1] /*start*/);
-         // if (t < start)
-         //    return {0., 0., 0., 0., 0., 0.};
-         double h = 0.25;
-         double H = 0.1 * h;  // 造波する初期入射波の波高
-         double x = 0;
-         double c = std::sqrt(g * (H + h));
-         double kappa = std::sqrt(3. * H / (4. * h * h * h));
-         double eta = H * std::pow(std::cosh(kappa * (-c * (t - start))), -2);
-         return {c * eta / (h + eta), 0., 0., 0, 0, 0};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 2");
-   } else if (name.contains("Retzler2000")) {
-      const std::vector<Tdd> sample = {
-          {-0.15000000000000002, 0.},
-          {-0.11, 0.},
-          {-0.1, 0.},
-          {-0.09, 0.},
-          {-0.08, 0.},
-          {-0.07, 0.},
-          {-0.06, 0.},
-          {-0.050409836065573754, 0.007920792079208039},
-          {-0.02397540983606558, 0.06930693069306948},
-          {-0.0006147540983606481, 0.13762376237623775},
-          {0.0282786885245902, 0.24851485148514862},
-          {0.05040983606557381, 0.3594059405940595},
-          {0.05901639344262294, 0.40297029702970305},
-          {0.06946721311475412, 0.4425742574257427},
-          {0.08299180327868855, 0.4792079207920793},
-          {0.10020491803278692, 0.516831683168317},
-          {0.11065573770491804, 0.5415841584158416},
-          {0.12110655737704923, 0.5663366336633664},
-          {0.132172131147541, 0.5910891089108912},
-          {0.15000000000000008, 0.6198019801980199},
-          {0.1616803278688525, 0.6306930693069308},
-          {0.17643442622950822, 0.6445544554455447},
-          {0.18872950819672135, 0.6603960396039605},
-          {0.20102459016393448, 0.6792079207920793},
-          {0.21823770491803285, 0.6801980198019802},
-          {0.23053278688524592, 0.6445544554455447},
-          {0.25081967213114753, 0.5742574257425743},
-          {0.27848360655737703, 0.40297029702970305},
-          {0.30000000000000004, 0.23564356435643574},
-          {0.319672131147541, 0.10396039603960416},
-          {0.3319672131147542, 0.02772277227722786},
-          {0.35040983606557385, -0.03960396039603942},
-          {0.37069672131147546, -0.085148514851485},
-          {0.38913934426229513, -0.08316831683168302},
-          {0.4002049180327869, -0.06831683168316827},
-          {0.4254098360655738, -0.03069306930693061},
-          {0.45000000000000007, -0.009900990099009799},
-          {0.5, 0.},
-          {0.55, 0.},
-          {0.6, 0.},
-          {0.65, 0.},
-          {0.7, 0.}};
-      double start = std::stod(strings[1] /*start*/);
-      auto [time, value] = Transpose(sample);
-      const auto intp = InterpolationBspline(3, time, value);
-      return {intp(t - start), 0., 0., 0., 0., 0.};
-   } else if (name.contains("Chaplin2000")) {
-      double start = std::stod(strings[1] /*start*/);
-      if (t < start)
-         return {0., 0., 0., 0., 0., 0.};
-      double h = 0.5;
-      // double w = 1.257 / std::sqrt(h / g); /*5.57065*/
-      // double A = 0.046 * h;
-      // double A = 0.02 * h;
-      double w, A;
-      if (strings.size() > 3) {
-         A = std::stod(strings[2] /*start*/);
-         w = std::stod(strings[3] /*start*/);
-         std::cout << "A = " << A << ", w = " << w << std::endl;
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-
-      auto v = A * w * std::sin(w * (t - start));
-      return {0., v, 0., 0., 0., 0.};
-   } else if (name.contains("flap")) {
-      /*DOC_EXTRACT 0_5_WAVE_GENERATION
-
-      ### フラップ型造波装置
-
-      |   | name   |  description  |
-      |:-:|:-------:|:-------------:|
-      | 0 | `flap`|    name       |
-      | 1 | `start` | start time    |
-      | 2 | `A`     | wave amplitude|
-      | 3 | `T`     | wave period   |
-      | 4 | `h`     | water depth   |
-      | 5 | `l`     | length from hinge to flap end |
-      | 6 | `axis`  | x       |
-      | 7 | `axis`  | y       |
-      | 8 | `axis`  | z       |
-
-      フラップ型造波装置のヒンジ角速度は以下で与えられる．
-
-      ```math
-      \theta_y = \arctan \left(\frac{l}{X(t)}\right)
-      ```
-
-      $`X(t)`$は，平均水面の高さでのフラップ造波板表面の$`x`$座標を表しており，$`X(t) = S/2 \cos(w t)`$である．
-      ストローク$`S`$は次のように計算される．
-
-      ```math
-      S = H \frac{kh}{\sinh(kh)} \frac{\sinh(2kh) + 2kh}{kh \sinh(kh) - \cosh(kh) + 1}\\
-      ```
-
-      $`X(t)=a\sin(wt)`$の場合，造波装置のヒンジ角速度は次のように計算できる．
-
-      ```math
-      \frac{d \theta_y}{dt} = -\frac{a l w \cos(w t)}{l^2 + a^2 \sin^2(w t)}
-      ```
-
-      ```Mathematica
-      (* conversion a*sin(w*t) into the rotational velocity {wx, wy, wz} *)
-      ClearAll["Global`*"]
-      X[t_] := a*Sin[w*t]
-      theta[t_] := ArcTan[l/X[t]];
-      dthetadt[t_] = FullSimplify[D[theta[T], T]] /. T -> t;
-      TrigReduce[dthetadt[t]*Sin[t w]]/Sin[t*w]
-      CForm[%]
-      ```
-
-      */
-      // start,A, T, h, l
-      // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
-      double start = std::stod(strings[1] /*start*/);
-      double A, w, h, l, d, k;
-      if (strings.size() > 7) {
-         A = std::abs(std::stod(strings[2] /*A*/));
-         double T = std::abs(std::stod(strings[3] /*T or may be L*/));
-         double L, k;
-         w = std::abs(2 * M_PI / T);
-         h = std::abs(std::stod(strings[4] /*h*/));
-         l = std::abs(std::stod(strings[5] /*l*/));
-
-         DispersionRelation DS;
-         if (name.contains("wave_length")) {
-            L = T;
-            DS.set_L_h(L, h);
+         auto [time, value] = Transpose(sample);
+         const auto intp = InterpolationBspline(3, time, value);
+         return {intp(t - start), 0., 0., 0., 0., 0.};
+      } else if (name.contains("Chaplin2000")) {
+         double start = std::stod(strings[1] /*start*/);
+         if (t < start)
+            return {0., 0., 0., 0., 0., 0.};
+         double h = 0.5;
+         // double w = 1.257 / std::sqrt(h / g); /*5.57065*/
+         // double A = 0.046 * h;
+         // double A = 0.02 * h;
+         double w, A;
+         if (strings.size() > 3) {
+            A = std::stod(strings[2] /*start*/);
+            w = std::stod(strings[3] /*start*/);
+            std::cout << "A = " << A << ", w = " << w << std::endl;
          } else
-            DS.set_w_h(w, h);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
 
-         w = DS.w;
-         T = DS.T;
-         k = DS.k;
+         auto v = A * w * std::sin(w * (t - start));
+         return {0., v, 0., 0., 0., 0.};
+      } else if (name.contains("flap")) {
+         /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
-         k = std::abs(DS.k);
-         double d = (l >= 0 ? d : -l);
-         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         Tddd axis = {std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
+         ### フラップ型造波装置
 
-         // auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
-         //                                              (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
-         // return {0., 0., 0., wx, wy, wz};
+         |   | name   |  description  |
+         |:-:|:-------:|:-------------:|
+         | 0 | `flap`|    name       |
+         | 1 | `start` | start time    |
+         | 2 | `A`     | wave amplitude|
+         | 3 | `T`     | wave period   |
+         | 4 | `h`     | water depth   |
+         | 5 | `l`     | length from hinge to flap end |
+         | 6 | `axis`  | x       |
+         | 7 | `axis`  | y       |
+         | 8 | `axis`  | z       |
 
-         const double kh = k * h;
-         const double H = 2 * A;
-         const double S = H * kh / (4. * std::sinh(kh)) * (std::sinh(2. * kh) + 2. * kh) / (kh * std::sinh(kh) - std::cosh(kh) + 1.);
-         const double a = S / 2.;
-         double dthetadt = -((a * l * w * std::cos(t * w)) / (std::pow(l, 2) + std::pow(a, 2) * std::pow(std::sin(t * w), 2)));
-         if (name.contains("negative"))
-            dthetadt *= -1.;
-         auto [wx, wy, wz] = -dthetadt * Normalize(axis);
-         return {0., 0., 0., wx, wy, wz};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-   } else if (name.contains("piston")) {
-      /*DOC_EXTRACT 0_5_WAVE_GENERATION
+         フラップ型造波装置のヒンジ角速度は以下で与えられる．
 
-      ### ピストン型造波装置
+         ```math
+         \theta_y = \arctan \left(\frac{l}{X(t)}\right)
+         ```
 
-      |   | name   |  description  |
-      |:-:|:-------:|:-------------:|
-      | 0 | `piston`|    name       |
-      | 1 | `start` | start time    |
-      | 2 | `A`     | wave amplitude|
-      | 3 | `T`     | wave period   |
-      | 4 | `h`     | water depth   |
-      | 5 | `axis`  | x       |
-      | 6 | `axis`  | y       |
-      | 7 | `axis`  | z       |
+         $`X(t)`$は，平均水面の高さでのフラップ造波板表面の$`x`$座標を表しており，$`X(t) = S/2 \cos(w t)`$である．
+         ストローク$`S`$は次のように計算される．
 
-      ピストン型の造波特性関数：
+         ```math
+         S = H \frac{kh}{\sinh(kh)} \frac{\sinh(2kh) + 2kh}{kh \sinh(kh) - \cosh(kh) + 1}
+         ```
 
-      ```math
-      F(f,h) = \frac{H}{S}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}=\frac{2 (\cosh(2kh) - 1)}{2kh+\sinh(2kh)}
-      ```
+         $`X(t)=a\sin(wt)`$の場合，造波装置のヒンジ角速度は次のように計算できる．
 
-      $`S`$は造波版のストロークで振幅の２倍である．例えば，振幅が$`A=1`$mの波を発生させたい場合，
-      $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
-      これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see \cite{Dean1991})
+         ```math
+         \frac{d \theta_y}{dt} = -\frac{a l w \cos(w t)}{l^2 + a^2 \sin^2(w t)}
+         ```
 
-      */
-      double start = std::stod(strings[1] /*start*/);
-      if (t < start)
-         return {0., 0., 0., 0., 0., 0.};
-      if (strings.size() > 7) {
-         const double A = std::abs(std::stod(strings[2] /*A*/));
-         const double h = std::abs(std::stod(strings[4] /*h*/));
-         double T = std::abs(std::stod(strings[3] /*T or may be L*/));
-         double L, k;
-         double w = std::abs(2 * M_PI / T);
-         DispersionRelation DS;
-         if (name.contains("wave_length")) {
-            L = T;
-            DS.set_L_h(L, h);
+         ```Mathematica
+         (* conversion a*sin(w*t) into the rotational velocity {wx, wy, wz} *)
+         ClearAll["Global`*"]
+         X[t_] := a*Sin[w*t]
+         theta[t_] := ArcTan[l/X[t]];
+         dthetadt[t_] = FullSimplify[D[theta[T], T]] /. T -> t;
+         TrigReduce[dthetadt[t]*Sin[t w]]/Sin[t*w]
+         CForm[%]
+         ```
+
+         */
+         // start,A, T, h, l
+         // Schaffer,H.A. : Second-order wavemaker theory for irregular waves, Ocean Engineering, 23(1), 47-88, (1996)
+         double start = std::stod(strings[1] /*start*/);
+         double A, w, h, l, d, k;
+         if (strings.size() > 7) {
+            A = std::abs(std::stod(strings[2] /*A*/));
+            double T = std::abs(std::stod(strings[3] /*T or may be L*/));
+            double L, k;
+            w = std::abs(2 * M_PI / T);
+            h = std::abs(std::stod(strings[4] /*h*/));
+            l = std::abs(std::stod(strings[5] /*l*/));
+
+            DispersionRelation DS;
+            if (name.contains("wave_length")) {
+               L = T;
+               DS.set_L_h(L, h);
+            } else
+               DS.set_w_h(w, h);
+
+            w = DS.w;
+            T = DS.T;
+            k = DS.k;
+            L = DS.L;
+
+            if (name.contains("wave_steepness")) {
+               std::cout << "eps = " << A << std::endl;
+               //! eps = H / L, H is the wave height, L is the wave length
+               auto eps = A;
+               auto H = eps * L;
+               A = H / 2.;
+            }
+
+            k = std::abs(DS.k);
+            double d = (l >= 0 ? d : -l);
+            std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", d = " << d << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+            Tddd axis = {std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
+
+            // auto [wx, wy, wz] = Normalize(axis) * ArcTan((A * g * k * (1 + 2 * h * k * Csch(2 * h * k)) * Sin(t * w)),
+            //                                              (2. * (-g + (h + l) * Power(w, 2) + g * Cosh(d * k) * Sech(h * k))));
+            // return {0., 0., 0., wx, wy, wz};
+
+            const double kh = k * h;
+            const double H = 2 * A;
+            const double S = H * kh / (4. * std::sinh(kh)) * (std::sinh(2. * kh) + 2. * kh) / (kh * std::sinh(kh) - std::cosh(kh) + 1.);
+            const double a = S / 2.;
+            double dthetadt = -((a * l * w * std::cos(t * w)) / (std::pow(l, 2) + std::pow(a, 2) * std::pow(std::sin(t * w), 2)));
+            if (name.contains("negative"))
+               dthetadt *= -1.;
+            auto [wx, wy, wz] = -dthetadt * Normalize(axis);
+            return {0., 0., 0., wx, wy, wz};
          } else
-            DS.set_w_h(w, h);
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
+      } else if (name.contains("piston")) {
+         /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
-         w = DS.w;
-         T = DS.T;
-         k = DS.k;
-         //
-         const double kh2 = 2. * k * h;
-         const double F = 2. * (std::cosh(kh2) - 1.) / (kh2 + std::sinh(kh2));  //!= H/(2*e)
-         const double H = 2. * A;
-         const double S = H / F;
-         // wave maker movement is e * std::sin(w * t)
+         ### ピストン型造波装置
 
-         // t -= 1.5 * M_PI / w;
-         // const double smoothing_function = (0.5 * std::tanh(2 * M_PI * (t - start) / T - 0.75 * M_PI) + 1.);
-         // const double shift = -M_PI;
+         |   | name   |  description  |
+         |:-:|:-------:|:-------------:|
+         | 0 | `piston`|    name       |
+         | 1 | `start` | start time    |
+         | 2 | `A`     | wave amplitude|
+         | 3 | `T`     | wave period   |
+         | 4 | `h`     | water depth   |
+         | 5 | `axis`  | x       |
+         | 6 | `axis`  | y       |
+         | 7 | `axis`  | z       |
 
-         const double smoothing_function = 1.;
-         const double shift = 0.;
-         double dsdt = smoothing_function * S / 2. * w * std::sin(w * (t - start) + shift);
-         std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
-         Tddd axis = {std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7])};
-         if (name.contains("negative"))
-            dsdt *= -1.;
-         return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
-      } else
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
-   } else if (name.contains("sinusoidal") || name.contains("sin") || name.contains("cos")) {
-      /*DOC_EXTRACT 0_5_WAVE_GENERATION
+         ピストン型の造波特性関数：
 
-      ### 正弦・余弦（`sin` もしくは `cos`）の運動
+         ```math
+         F(f,h) = \frac{H}{S}=\frac{4\sinh^2(kh)}{2kh+\sinh(2kh)}=\frac{2 (\cosh(2kh) - 1)}{2kh+\sinh(2kh)}
+         ```
 
-      |   | name        |  description  |
-      |:-:|:-----------:|:-------------:|
-      | 0 | `sin`/`cos` |    name       |
-      | 1 | `start`     | start time    |
-      | 2 | `a`         | amplitude     |
-      | 3 | `T`         | period        |
-      | 4 | `axis`      | x             |
-      | 5 | `axis`      | y             |
-      | 6 | `axis`      | z             |
-      | 7 | `axis`      | rotation in x axis  |
-      | 8 | `axis`      | rotation in y axis  |
-      | 9 | `axis`      | rotation in z axis  |
+         $`S`$は造波版のストロークで振幅の２倍である．例えば，振幅が$`A=1`$mの波を発生させたい場合，
+         $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
+         これを造波板の変位：$`s(t) = \frac{S}{2} \cos(wt)`$と速度：$`\frac{ds}{dt}(t) = \frac{S}{2} w \sin(wt)`$に与えればよい．(see \cite{Dean1991})
 
-      名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
-      名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
+         */
+         double start = std::stod(strings[1] /*start*/);
+         if (t < start)
+            return {0., 0., 0., 0., 0., 0.};
+         if (strings.size() > 7) {
+            const double A = std::abs(std::stod(strings[2] /*A*/));
+            const double h = std::abs(std::stod(strings[4] /*h*/));
+            double T = std::abs(std::stod(strings[3] /*T or may be L*/));
+            double L, k;
+            double w = std::abs(2 * M_PI / T);
+            DispersionRelation DS;
+            if (name.contains("wave_length")) {
+               L = T;
+               DS.set_L_h(L, h);
+            } else
+               DS.set_w_h(w, h);
 
-      */
-      if (strings.size() != 7 &&
-          strings.size() != 10 &&
-          strings.size() != 13 /*with a center rotation*/) {
-         std::stringstream ss;
-         for (size_t i = 0; i < strings.size(); ++i)
-            ss << i << ":" << strings[i] << std::endl;
-         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-      }
+            w = DS.w;
+            T = DS.T;
+            k = DS.k;
+            //
+            const double kh2 = 2. * k * h;
+            const double F = 2. * (std::cosh(kh2) - 1.) / (kh2 + std::sinh(kh2));  //!= H/(2*e)
+            const double H = 2. * A;
+            const double S = H / F;
+            // wave maker movement is e * std::sin(w * t)
 
-      double start = std::stod(strings[1]);
-      if (t < start)
-         return {0, 0, 0, 0, 0, 0};
-      else {
-         double a = std::stod(strings[2]);
-         double w = std::abs(2 * M_PI / std::stod(strings[3]));
-         double A = (name.contains("cos") ? a * w * std::sin(w * (t - start)) : a * w * std::cos(w * (t - start)));
-         T6d axis;
-         for (size_t i = 4; i < strings.size(); ++i)
-            axis[i - 4] = A * std::stod(strings[i]);
-         return axis;
-      }
-   } else if (name.contains("constant") || name.contains("const")) {
-      double start = std::stod(strings[1] /*start*/);
-      if (t >= start) {
+            // t -= 1.5 * M_PI / w;
+            // const double smoothing_function = (0.5 * std::tanh(2 * M_PI * (t - start) / T - 0.75 * M_PI) + 1.);
+            // const double shift = -M_PI;
+
+            const double smoothing_function = 1.;
+            const double shift = 0.;
+            double dsdt = smoothing_function * S / 2. * w * std::sin(w * (t - start) + shift);
+            std::cout << "A = " << A << ", w = " << w << ", k = " << k << ", h = " << h << ", {T, L} = {" << DS.T << ", " << DS.L << "}" << std::endl;
+            Tddd axis = {std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7])};
+            if (name.contains("negative"))
+               dsdt *= -1.;
+            return {dsdt * axis[0], dsdt * axis[1], dsdt * axis[2], 0., 0., 0.};
+         } else
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be > 3. amplitude and frequency");
+      } else if (name.contains("sinusoidal") || name.contains("sin") || name.contains("cos")) {
+         /*DOC_EXTRACT 0_5_WAVE_GENERATION
+
+         ### 正弦・余弦（`sin` もしくは `cos`）の運動
+
+         |   | name        |  description  |
+         |:-:|:-----------:|:-------------:|
+         | 0 | `sin`/`cos` |    name       |
+         | 1 | `start`     | start time    |
+         | 2 | `a`         | amplitude     |
+         | 3 | `T`         | period        |
+         | 4 | `axis`      | x             |
+         | 5 | `axis`      | y             |
+         | 6 | `axis`      | z             |
+         | 7 | `axis`      | rotation in x axis  |
+         | 8 | `axis`      | rotation in y axis  |
+         | 9 | `axis`      | rotation in z axis  |
+
+         名前が$`\cos`$の場合、$`{\bf v}={\rm axis}\, A w \sin(w (t - \text{start}))`$ と計算されます．
+         名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
+
+         */
+         if (strings.size() != 7 &&
+             strings.size() != 10 &&
+             strings.size() != 13 /*with a center rotation*/) {
+            std::stringstream ss;
+            for (size_t i = 0; i < strings.size(); ++i)
+               ss << i << ":" << strings[i] << std::endl;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
+         }
+
+         double start = std::stod(strings[1]);
+         if (t < start)
+            return {0, 0, 0, 0, 0, 0};
+         else {
+            double a = std::stod(strings[2]);
+            double w = std::abs(2 * M_PI / std::stod(strings[3]));
+            double A = (name.contains("cos") ? a * w * std::sin(w * (t - start)) : a * w * std::cos(w * (t - start)));
+            T6d axis;
+            for (size_t i = 4; i < strings.size(); ++i)
+               axis[i - 4] = A * std::stod(strings[i]);
+            return axis;
+         }
+      } else if (name.contains("constant") || name.contains("const")) {
+         double start = std::stod(strings[1] /*start*/);
+         if (t >= start) {
+            double a = std::stod(strings[2] /*a*/);
+            T6d axis = {std::stod(strings[3]), std::stod(strings[4]), std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
+            return a * axis;
+         }
+      } else if (name.contains("file")) {
          double a = std::stod(strings[2] /*a*/);
          T6d axis = {std::stod(strings[3]), std::stod(strings[4]), std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
          return a * axis;
+      } else if (name.contains("Hadzic2005")) {
+         // \label{BEM:Hadzic2005}
+         double start = std::stod(strings[1] /*start*/);
+         Hadzic2005 hadzic2005(start);
+         return hadzic2005.getVelocity(t);
       }
-   } else if (name.contains("file")) {
-      double a = std::stod(strings[2] /*a*/);
-      T6d axis = {std::stod(strings[3]), std::stod(strings[4]), std::stod(strings[5]), std::stod(strings[6]), std::stod(strings[7]), std::stod(strings[8])};
-      return a * axis;
-   } else if (name.contains("Hadzic2005")) {
-      // \label{BEM:Hadzic2005}
-      double start = std::stod(strings[1] /*start*/);
-      Hadzic2005 hadzic2005(start);
-      return hadzic2005.getVelocity(t);
+      return {0., 0., 0., 0., 0., 0.};
+   } catch (std::exception &e) {
+      std::cerr << e.what() << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in velocity");
    }
-   return {0., 0., 0., 0., 0., 0.};
 };
 
 T6d acceleration(const std::string &name, const std::vector<std::string> strings, const double t) {
@@ -448,15 +462,15 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 
 \insert{networkPoint::getContactFaces()}
 
-これらは，`uNeumann()`や`accelNeumann()`で利用される．
+これらは，`contactNormalVelocity()`や`accelNeumann()`で利用される．
 
-### `uNeumann()`と`accelNeumann()`
+### `contactNormalVelocity()`と`accelNeumann()`
 
 接触している物体が，剛体でない場合，
 `velocity_of_Body`は，物体の節点（ `networkPoint` ）の速度（加速度）を元にして速度（加速度）を計算する．
 そのため，`networkPoint::velocity`や`networkPoint::accel`を設定しておく必要がある．
 
-`uNeumann(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
+`contactNormalVelocity(p, const adjacent_f)`や`accelNeumann(p, const adjacent_f)`
 を使う時は，必ず`adjacent_f`が`p`に**隣接面するノイマン面**であることを確認する．
 
 */
@@ -464,15 +478,18 @@ T6d acceleration(const std::string &name, const std::vector<std::string> strings
 //$ --------------------------------------------------------------- */
 
 Tddd velocity_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_contact) {
+
    if (contact_face_of_body->getNetwork()->isRigidBody)
       return contact_face_of_body->getNetwork()->velocityRigidBody(X_contact);
-   else if (contact_face_of_body->getNetwork()->isSoftBody) {
-      //! do not forget to set velocity of networkPoint before calling this function
+
+   //! do not forget to set velocity of networkPoint before calling this function
+   if (contact_face_of_body->getNetwork()->isSoftBody) {
       auto [p0, p1, p2] = contact_face_of_body->getPoints();
       auto [t0, t1, X] = Nearest_(X_contact, ToX(contact_face_of_body));
       return p0->velocityTranslational() * t0 + p1->velocityTranslational() * t1 + p2->velocityTranslational() * (1. - t0 - t1);
-   } else
-      return {0., 0., 0.};
+   }
+
+   return {0., 0., 0.};
 };
 
 Tddd accel_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_contact) {
@@ -489,14 +506,15 @@ Tddd accel_of_Body(const networkFace *const contact_face_of_body, const Tddd &X_
 
 Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
    std::vector<Tddd> Directions;
-   Tddd Vinit = {0., 0., 0.};
    std::vector<double> Vsample;
+   Tddd Vinit = {0., 0., 0.};
+   Tddd V;
    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
       auto [contact_face_of_body, X] = contact_face_of_body_X;
       if (contact_face_of_body) {
-         auto scale = Dot(propertyFunc(contact_face_of_body, X), f->normal);
-         Vsample.emplace_back(scale);
-         Vinit += scale * f->normal;
+         V = propertyFunc(contact_face_of_body, X);
+         Vsample.emplace_back(Dot(V, f->normal));
+         Vinit += V;
          Directions.emplace_back(f->normal);
       }
    }
@@ -511,7 +529,7 @@ Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const netwo
    return Vinit;
 };
 
-Tddd uNeumann(const networkPoint *const p) { return propertyNeumann(p, velocity_of_Body); };
+Tddd contactNormalVelocity(const networkPoint *const p) { return propertyNeumann(p, velocity_of_Body); };
 Tddd accelNeumann(const networkPoint *const p) { return propertyNeumann(p, accel_of_Body); };
 
 Tddd propertyNeumann(const networkPoint *const p, const networkFace *const adjacent_f, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
@@ -519,9 +537,52 @@ Tddd propertyNeumann(const networkPoint *const p, const networkFace *const adjac
    return contact_face_of_body ? propertyFunc(contact_face_of_body, X_contact) : Tddd{0., 0., 0.};
 };
 
-Tddd uNeumann(const networkPoint *const p, const networkFace *const adjacent_f) { return propertyNeumann(p, adjacent_f, velocity_of_Body); };
+Tddd contactNormalVelocity(const networkPoint *const p, const networkFace *const adjacent_f) { return propertyNeumann(p, adjacent_f, velocity_of_Body); };
 Tddd accelNeumann(const networkPoint *const p, const networkFace *const adjacent_f) { return propertyNeumann(p, adjacent_f, accel_of_Body); };
 
+Tddd contactPureVelocity(const networkPoint *const p) {
+   V_d Vsample;
+   std::vector<Tddd> Directions;
+   Tddd Vinit = {0., 0., 0.}, u, ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
+   for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
+      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      if (contact_face_of_body) {
+         u = velocity_of_Body(contact_face_of_body, X);
+         Vsample.emplace_back(Dot(u, ex));
+         Directions.emplace_back(ex);
+         Vsample.emplace_back(Dot(u, ey));
+         Directions.emplace_back(ey);
+         Vsample.emplace_back(Dot(u, ez));
+         Directions.emplace_back(ez);
+      }
+   }
+   if (!Vsample.empty())
+      return optimalVector(Vsample, Directions, Vinit);
+   else
+      return Vinit;
+};
+
+Tddd contactPureAccel(const networkPoint *const p) {
+   V_d Vsample;
+   std::vector<Tddd> Directions;
+   Tddd Vinit = {0., 0., 0.}, u, ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
+   for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
+      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      if (contact_face_of_body) {
+         u = accel_of_Body(contact_face_of_body, X);
+         Vsample.emplace_back(Dot(u, ex));
+         Directions.emplace_back(ex);
+         Vsample.emplace_back(Dot(u, ey));
+         Directions.emplace_back(ey);
+         Vsample.emplace_back(Dot(u, ez));
+         Directions.emplace_back(ez);
+      }
+   }
+   if (!Vsample.empty())
+      return optimalVector(Vsample, Directions, Vinit);
+   else
+      return Vinit;
+};
 //$ --------------------------------------------------------------- */
 
 using map_P_d = std::map<netP *, double>;
@@ -539,7 +600,7 @@ using VV_SorIorMap = std::vector<std::vector<std::variant<std::string, int, map_
 V_netFp takeFaces(const V_Netp &nets) {
    V_netFp ret({});
    for (const auto &n : nets)
-      ret.insert(ret.end(), n->getFaces().begin(), n->getFaces().end());
+      ret.insert(ret.end(), n->getSurfaces().begin(), n->getSurfaces().end());
    return DeleteDuplicates(ret);
 };
 
@@ -615,19 +676,6 @@ Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
    DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
 
    auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
-
-   // auto getPhin = [&]() -> double {
-   //    auto F = std::get<1>(pf2ID(p, f));
-   //    auto iter = p->phinOnFace.find(const_cast<networkFace *>(F));
-   //    if (iter != p->phinOnFace.end())
-   //       return iter->second;
-   //    else
-   //       return std::get<1>(p->phiphin);
-
-   //    // return getPhin(p, f);
-   //    // return std::get<1>(p->phiphin);
-   // };
-
    auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
 
    const double phi_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
@@ -639,7 +687,7 @@ Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
    const auto Nxyz = Normalize(Cross(dX_t0, dX_t1));
 
    Tddd grad_phi;
-   lapack_lu lu(T3Tddd{dX_t0, dX_t1, Nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+   lapack_svd_solve(T3Tddd{dX_t0, dX_t1, Nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
    return grad_phi;
 
    /*check!
@@ -710,131 +758,63 @@ Tddd gradPhi(const networkFace *const f) {
    return grad_phi_tangential(f) + phi_n / 3. * f->normal;
 };
 
-// Tddd gradPhi(const networkPoint *const p) {
-//    Tddd u;
-//    V_Tddd V;
-//    V_d W;
-
-//    bool any_Dirichlet = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
-//    bool any_Neumann = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
-
-//    for (const auto &f : p->getFaces()) {
-//       if (f->isPseudoQuadraticElement)
-//          u = gradPhiQuadElement(p, f);
-//       else
-//          u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
-
-//       V.emplace_back(u);
-//       W.push_back(f->area);
-//    }
-
-//    std::function<Tddd(const Tddd &V)> constraint = [&](const Tddd &V) -> Tddd {
-//       //@ tedious way to implement the constraint
-//       // auto uN = uNeumann(p);
-//       // auto error = Projection(V, uN) - uN;
-//       // return V - error;
-//       //@ concise way to implement the constraint
-//       auto uN = uNeumann(p);
-//       return V - (Projection(V, uN) - uN);
-//    };
-
-//    if (any_Neumann)
-//       return optimumVector(V, {0., 0., 0.}, W, constraint);
-//    else
-//    return optimumVector(V, {0., 0., 0.}, W);
-// };
-
 //! use simple gradient method but Newton method
 Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_info) {
    Tddd u;
+   const Tddd ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
+   auto s = p->getSurfaces().size();
    V_Tddd Directions;
-   std::vector<double> Vsample;
-   V_d W;
+   V_d W, Vsample;
+   Directions.reserve(3 * s);
+   W.reserve(s);
+   Vsample.reserve(3 * s);
+   for (const auto &f : p->getSurfaces()) {
+      u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
 
-   bool any_Dirichlet = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Dirichlet; });
-   bool any_Neumann = std::ranges::any_of(p->getFaces(), [](const auto &f) { return f->Neumann; });
-
-   Tddd Vinit = {0., 0., 0.};
-   double count = 0.;
-   //! fullの流速３成分が与えられている場合
-   std::array<double, 3> X = {1., 0., 0.}, Y = {0., 1., 0.}, Z = {0., 0., 1.};
-   for (const auto &f : p->getFaces()) {
-
-      if (f->isPseudoQuadraticElement)
-         u = gradPhiQuadElement(p, f);
-      else
-         u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
-
-      Vinit += u;
-      count += 1.;
-
-      Vsample.emplace_back(Dot(u, X));
-      Directions.emplace_back(X);
-      Vsample.emplace_back(Dot(u, Y));
-      Directions.emplace_back(Y);
-      Vsample.emplace_back(Dot(u, Z));
-      Directions.emplace_back(Z);
-
-      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
-      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
-      W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
+      Vsample.emplace_back(Dot(u, ex));
+      Directions.emplace_back(ex);
+      W.emplace_back(f->area);
+      Vsample.emplace_back(Dot(u, ey));
+      Directions.emplace_back(ey);
+      W.emplace_back(f->area);
+      Vsample.emplace_back(Dot(u, ez));
+      Directions.emplace_back(ez);
+      W.emplace_back(f->area);
    }
 
-   //! 境界条件のように流速のある方向成分のみが与えられている場合
-   // if (any_Neumann) {
-   //    double w = Mean(W);
-   //    // Vsample.push_back(uNeumann(p));
-   //    // W.push_back(Mean(W));
+   double meanW = std::accumulate(W.begin(), W.end(), 0.) / W.size();
+
+   /*
+   このようなCORNERが必要なのは，水面の喫水線において，接線方向に流れが大きくなり，構造物にめり込んでしまうことが生じるため．
+   構造物にはめり込まないような，phinが与えられているはずだが，最小値問題において，めり込む方が最小になるのだろう．
+   以下を加えれば，めり込まない流れの方が最小となりやすくはなるだろう，
+   接線流速の精度が良くないとい，ということもできるだろう．
+
+   ->
+   2025/01/19
+   下はいらない．メッシュ解像度を上げることで，不安定はおさっまった．
+   下をつけると，運動しないが，phinを与えたい境界条件のphinが０になる．
+   */
+
+   // if (p->CORNER) {
    //    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
    //       auto [contact_face_of_body, X] = contact_face_of_body_X;
    //       if (contact_face_of_body) {
-   //          Vsample.emplace_back(Dot(f->normal, velocity_of_Body(contact_face_of_body, X)));
+   //          u = velocity_of_Body(contact_face_of_body, X);
+   //          Vsample.emplace_back(Dot(u, f->normal));
    //          Directions.emplace_back(f->normal);
-   //          W.push_back(w);
-   //          Vinit += u;
-   //          count += 1.;
+   //          W.emplace_back(10 * meanW);
    //       }
    //    }
    // }
 
-   return optimalVector(Vsample, Directions, Vinit / count, W, convergence_info);
-   // return optimalVectorSVD(Vsample, Directions, W);
+   return optimalVector(Vsample, Directions, Tddd{0., 0., 0.}, W, convergence_info);
 };
 
 Tddd gradPhi(const networkPoint *const p) {
    std::array<double, 3> convergence_info;
    return gradPhi(p, convergence_info);
 };
-
-// Tddd gradPhi(const networkPoint *const p) {
-//    Tddd u;
-//    V_Tddd V;
-//    V_d W;
-//    for (const auto &f : p->getFaces()) {
-//       u = gradPhiQuadElement(p, f);
-//       V.emplace_back(u);
-//    }
-//    return optimumVector(V, {0., 0., 0.}, W);
-// };
-
-// Tddd gradPhi(const networkPoint *const p, const double coeff_for_phin) {
-//    Tddd u;
-//    V_Tddd V;
-//    V_d W;
-//    for (const auto &f : p->getFaces()) {
-//       u = grad_phi_tangential(f) + coeff_for_phin * getPhin(p, f) * f->normal;
-//       V.emplace_back(u);
-// #if defined(use_angle_weigted_normal)
-//       W.push_back(f->getAngle(p) * (f->Dirichlet ? 10 : 1.));
-// #elif defined(use_area_weigted_normal)
-//       W.push_back(f->area * (f->Dirichlet ? 1E+3 : 1.));
-// #else
-//       W.push_back(f->Dirichlet ? 10 : 1.);
-// #endif
-//    }
-//    return optimumVector(V, {0., 0., 0.}, W);
-//    // return optimumVector(V, {0., 0., 0.});
-// };
 
 /* -------------------------------------------------------------------------- */
 
@@ -882,13 +862,13 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    //                {g_s1s0, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
    //                {g_s2s0, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 
-   // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
-   //                {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
-   //                {(g_s0s2 + g_s2s0) * 0.5, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
+   return T3Tddd{{{-g_s1s1 - g_s2s2, (g_s0s1 + g_s1s0) * 0.5 /*wont be used*/, (g_s0s2 + g_s2s0) * 0.5 /*wont be used*/},
+                  {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, (g_s2s1 + g_s1s2) * 0.5 /*wont be used*/},
+                  {(g_s0s2 + g_s2s0) * 0.5, (g_s2s1 + g_s1s2) * 0.5 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 
-   return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
-                  {g_s0s1, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
-                  {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
+   // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
+   //                {g_s0s1, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
+   //                {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
 };
 
 /*DOC_EXTRACT 0_4_0_FLOATING_BODY_SIMULATION
@@ -922,96 +902,86 @@ $`\phi_{nn}`$は，直接計算できないが，ラプラス方程式から$`\p
 */
 
 // \label{BEM:phint_Neumann}
-// double phint_Neumann(networkFace *F) {
-//    auto Omega = (NearestContactFace(F)->getNetwork())->velocityRotational();
-//    auto grad_phi = gradPhi(F);
-//    auto U_body = uNeumann(F);
-//    auto dndt = Cross(Omega, F->normal);
-//    auto ret = Dot(dndt, U_body - grad_phi);
-//    ret += Dot(F->normal, accelNeumann(F));
-//    auto basis = OrthogonalBasis(F->normal);
-//    ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
-//    // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
-//    return ret;
-// };
 
 double phint_Neumann(const networkPoint *const p, networkFace *F) {
    //$ faceがNeumannである条件は，faceの持つpointがすべて，外部の面と接触している場合である．
    //$ なので，{p,f}は，かならずp->getNearestContactFace(F)を持つ．
-   auto f = p->getNearestContactFace(F);
-   if (f) {
-      Tddd Omega = (f->getNetwork())->velocityRotational();
-      auto grad_phi = gradPhi(F);
-      // auto grad_phi = gradPhi(p, F);
-      auto U_body = uNeumann(p, F);
-      auto dndt = Cross(Omega, F->normal);
-      auto ret = Dot(dndt, U_body - grad_phi);
-      ret += Dot(F->normal, accelNeumann(p, F));
-      auto basis = OrthogonalBasis(F->normal);
-      // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
-      ret -= Dot(Dot(basis, U_body), HessianOfPhi(F, basis))[0];
-      // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
-      return ret;
-   } else
+   auto structure_f = p->getNearestContactFace(F);
+   if (!structure_f)
       throw std::runtime_error("p is not in contact with F");
+   try {
+      // Tddd Omega = (structure_f->getNetwork())->velocityRotational();
+      // Tddd n = structure_f->normal;
+      // auto dndt = Cross(Omega, n);
+      // auto drdt = contactPureVelocity(p);
+      // auto dr2dt2 = contactPureAccel(p);
+      // auto basis = OrthogonalBasis(n);
+      // Tddd tmp = {Dot(basis[0], drdt), Dot(basis[1], drdt), Dot(basis[2], drdt)};
+      // auto phint = Dot(dndt, drdt - gradPhi(p)) + Dot(n, dr2dt2) - Dot(tmp, HessianOfPhi(F, basis))[0];
+      // return -phint;
+
+      Tddd Omega = (structure_f->getNetwork())->velocityRotational();
+      Tddd n = F->normal;
+      auto dndt = Cross(Omega, n);
+      auto drdt = contactPureVelocity(p);
+      auto dr2dt2 = contactPureAccel(p);
+      auto basis = OrthogonalBasis(n);
+      Tddd tmp = {Dot(basis[0], drdt), Dot(basis[1], drdt), Dot(basis[2], drdt)};
+      auto phint = Dot(n, dr2dt2) + Dot(dndt, drdt - gradPhi(p)) - Dot(tmp, HessianOfPhi(F, basis))[0];
+      return phint;
+   } catch (const std::exception &e) {
+      std::cerr << e.what() << std::endl;
+      return 0.;
+   }
 };
 
-// double phint_Neumann(const networkPoint *const p) {
-//    double phint_acum = 0, W_acum = 0, w, phint;
-//    V_d Phin, W;
-
-//    auto grad_phi = gradPhi(p);
-//    auto U_body = uNeumann(p);
-//    auto A_body = accelNeumann(p);
-//    auto phint_Neumann = [&](networkFace *F) {
-//       auto Omega = (NearestContactFace(p, F)->getNetwork())->velocityRotational();
+// double phint_Neumann(const networkPoint *const p, networkFace *F) {
+//    //$ faceがNeumannである条件は，faceの持つpointがすべて，外部の面と接触している場合である．
+//    //$ なので，{p,f}は，かならずp->getNearestContactFace(F)を持つ．
+//    auto f = p->getNearestContactFace(F);
+//    if (f) {
+//       Tddd Omega = (f->getNetwork())->velocityRotational();
+//       auto grad_phi = gradPhi(F);
+//       // auto grad_phi = gradPhi(p, F);
+//       auto U_body = contactPureVelocity(p, F);
 //       auto dndt = Cross(Omega, F->normal);
+//       auto ret = Dot(dndt, U_body - grad_phi);
+//       ret += Dot(F->normal, accelNeumann(p, F));
 //       auto basis = OrthogonalBasis(F->normal);
-//       return Dot(dndt, uNeumann(F) - gradPhi(F)) + Dot(F->normal, A_body) - Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
-//    };
-//    //
-//    for (const auto &f : p->getFacesNeumann()) {
-// #if defined(use_angle_weigted_normal)
-//       w = f->getAngle(p);
-// #elif defined(use_area_weigted_normal)
-//       w = f->area;
-// #else
-//       w = 1.;
-// #endif
-//       phint = phint_Neumann(f);
-//       phint_acum += w * phint;
-//       W_acum += w;
-//       Phin.push_back(phint);
-//       W.push_back(w);
-//    }
-//    // return phint_acum / W_acum;
-//    return optimumValue(Phin, 0., W);
+//       // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, U_body), HessianOfPhi(F, basis)));
+//       ret -= Dot(Dot(basis, U_body), HessianOfPhi(F, basis))[0];
+//       // ret -= Dot(Dot(basis, F->normal) /*=(1,0,0)*/, Dot(Dot(basis, grad_phi), HessianOfPhi(F, basis)));
+//       return ret;
+//    } else
+//       throw std::runtime_error("p is not in contact with F");
 // };
 
 double phint_Neumann(const networkPoint *const p) {
-   double phint_acum = 0, W_acum = 0, w, phint;
-   V_d Phin, W;
-   Phin.reserve(10);
-   W.reserve(10);
-   for (const auto &f : p->getFaces())
+   // V_d Phin, W;
+   // std::vector<Tddd> Direcctions;
+   // double total = 0;
+   // Tddd normal = {0., 0., 0.};
+   // Phin.reserve(10);
+   // W.reserve(10);
+   // Direcctions.reserve(10);
+   // for (const auto &f : p->getSurfaces())
+   //    if (f->Neumann) {
+   //       Phin.emplace_back(phint_Neumann(p, f));
+   //       Direcctions.emplace_back(f->normal);
+   //       W.emplace_back(f->area);
+   //       normal += f->normal * f->area;
+   //       total += f->area;
+   //    }
+
+   // return Dot(optimalVector(Phin, Direcctions, {0., 0., 0.}, W), normal / total);
+
+   double total = 0, phin = 0;
+   for (const auto &f : p->getSurfaces())
       if (f->Neumann) {
-#if defined(use_angle_weigted_normal)
-         w = f->getAngle(p);
-#elif defined(use_area_weigted_normal)
-         w = f->area;
-#else
-         w = 1.;
-#endif
-
-         phint = phint_Neumann(p, f);  // 修正した．元々は，phint = phint_Neumann(f);だった．
-         phint_acum += w * phint;
-         W_acum += w;
-
-         Phin.emplace_back(phint);
-         W.emplace_back(w);
+         phin += phint_Neumann(p, f) * f->area;
+         total += f->area;
       }
-   // return phint_acum / W_acum;
-   return optimumValue(Phin, 0., W);
+   return total ? (phin / total) : 0.;
 };
 
 #endif

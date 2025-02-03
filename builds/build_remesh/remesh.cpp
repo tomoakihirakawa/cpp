@@ -190,8 +190,8 @@ int main(int arg, char **argv) {
          for (const auto &l : net.Lines)
             l->flipIfBetter(limit_angle_to_distinguish_flat);
 
-         for (const auto &l : net.Lines)
-            l->flipIfBetter(limit_angle_to_distinguish_flat);
+         // for (const auto &l : net.Lines)
+         //    l->flipIfBetter(limit_angle_to_distinguish_flat);
 
          flipIf(net, {0.1 * rad, 0.1 * rad}, true);
 
@@ -204,7 +204,7 @@ int main(int arg, char **argv) {
          // }
 
          for (auto j = 0; j < 5 /*more than about 10*/; ++j) {
-            net.setGeometricProperties();
+            // net.setGeometricProperties();
 #pragma omp parallel
             for (const auto &p : ps)
 #pragma omp single nowait
@@ -232,7 +232,7 @@ int main(int arg, char **argv) {
          createOBJ(ofs, net);
          ofs.close();
          //! PVD
-         PVD.push(output_directory / output_name_vtu, count);
+         PVD.push(output_name_vtu, count);
          PVD.output();
          output_count++;
       }

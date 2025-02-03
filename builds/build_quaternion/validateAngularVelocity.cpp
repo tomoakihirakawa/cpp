@@ -11,6 +11,7 @@
 以下を実行して，ルンゲクッタを使いクォータニオンの時間微分を時間積分する．
 
 ```
+sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=validateAngularVelocity.cpp
 make
 ./validateAngularVelocity
@@ -44,14 +45,16 @@ void translate(Network* const net, const Tddd& shift) {
 
 int main() {
    const double dt = 1.;
-   const int iteration = 50;
+   const int iteration = 10;
    std::string outdir = "./output/";
-   for (const auto normaliaze : {true, false})
+   for (const auto normaliaze : {1, 2, 3})
       for (const auto RK_order : {1, 2, 4}) {
 
          std::string id = "RK_" + std::to_string(RK_order);
-         if (normaliaze)
-            id = id + "_normalized";
+         if (normaliaze == 1)
+            id = id + "_normalized_at_end";
+         else if (normaliaze == 2)
+            id = id + "_normalized_at_middle";
          else
             id = id + "_not_normalized";
 
@@ -72,15 +75,18 @@ int main() {
                /* -------------------------------------------------------------------------- */
                // RK法で時間積分
                for (auto j = 0; j < RK_order; ++j) {
-                  net->RK_Q.push(AngularVelocityTodQdt(axis * 2 * M_PI / iteration, net->Q));  // クォータニオン->T4dとしてプッシュ
-                  net->Q = net->RK_Q.getX();
+                  auto w = axis * 2 * M_PI / iteration;
+                  auto dqdt = AngularVelocityTodQdt(w, net->RK_Q.getX());
+                  net->RK_Q.push(dqdt);  // クォータニオン->T4dとしてプッシュ
+                  net->Q = normaliaze == 2 ? Normalize(net->RK_Q.getX()) : net->RK_Q.getX();
                   std::cout << "Q = " << net->Q() << ", Det(net->Q.R()) = " << Det(net->Q.R()) << std::endl;
-                  //! ここに正規化を入れると，時間積分がうまくいかない．
                }
-               if (normaliaze) net->Q.normalize();
+               if (normaliaze == 1)
+                  net->Q.normalize();
                /* -------------------------------------------------------------------------- */
                for (auto& p : net->getPoints())
-                  p->setXSingle(rigidTransformation(net->ICOM, net->COM, net->Q.R(), p->initialX));
+                  p->setXSingle(net->rigidTransformation(p->initialX));
+               // p->setXSingle(rigidTransformation(net->ICOM, net->COM, net->Q.R(), p->initialX));
                // p->setXSingle(net->Q.Rv(p->initialX - net->ICOM) + net->ICOM);
                net->setGeometricProperties();
                //
@@ -102,4 +108,5 @@ int main() {
          std::cout << "Done." << std::endl;
          std::cout << "paraview " + outdir + "cow_time_integrated" + id + ".pvd" << std::endl;
       }
+   std::cout << "paraview ./output/cow_time_integratedRK_4_not_normalized.pvd ./output/cow_time_integratedRK_4_normalized_at_end.pvd ./output/cow_time_integratedRK_4_normalized_at_middle.pvd" << std::endl;
 };

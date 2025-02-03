@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
       std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
    };
 
-   auto ME_M2M_M2L_L2L_integrate = [&](auto& B_poles, auto& points) {
+   auto updatePole_M2M_M2L_L2L_integrate = [&](auto& B_poles, auto& points) {
       TimeWatch tw;
 
 #pragma omp parallel
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 
    setAlmostSolidAngle(B_poles, obj->getPoints());
 
-   ME_M2M_M2L_L2L_integrate(B_poles, obj->getPoints());
+   updatePole_M2M_M2L_L2L_integrate(B_poles, obj->getPoints());
 
    std::cout << Red << "Total Elapsed time : " << twFMM() << colorReset << std::endl;
 

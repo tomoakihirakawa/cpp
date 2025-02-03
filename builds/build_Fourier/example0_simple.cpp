@@ -2,6 +2,27 @@
 
 # 離散フーリエ変換
 
+離散フーリエ変換と逆離散フーリエ変換を端的に示すと次のようになる．
+結果は，Mathematicaの`Fourier`関数，`InverseFourier`関数の`FourierParameters`オプションが，`{-1,-1}`の場合と一致する．
+
+```Mathematica
+MyFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[-I*n*2 \[Pi]/len*k], {k, 0, len - 1}]/len];
+MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]];
+
+(*離散データ*)
+u = N@{1, 2, 3, 4, 5, 4, 3, 2, 1};
+
+Grid[
+ Transpose@{cn = Table[MyFourier[u, n], {n, 0, Length[u] - 1}],
+   Fourier[u, FourierParameters -> {-1, -1}]}
+ , Frame -> All]
+
+Grid[
+ Transpose@{Table[MyInverseFourier[cn, n], {n, 0, Length[cn] - 1}],
+   InverseFourier[cn, FourierParameters -> {-1, -1}]}
+ , Frame -> All]
+```
+
 ## 複素フーリエ級数展開
 
 ```math
@@ -99,21 +120,40 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_simple.cpp
 
 ## 逆離散フーリエ変換
 
-フーリエ係数$`c_n`$から元の関数$`f(t)`$を復元することを考える．
+フーリエ係数$`c_n`$から元の関数$`f_\kappa=f(t=\kappa \delta t)`$を復元することを考える．
 三角関数を掛けて積分することで係数を抽出できたので，その方法で関数を抽出する．
 
+フーリエ変換は次のように定義している．
+
 ```math
-f\left(k\frac{T^\ast}{N}=k\delta t\right) = \frac{1}{N} \sum_{k=0}^{N-1} \left[ c_n \exp\left( i n \frac{2 \pi}{N} k \right) \right]
+c_n = \frac{1}{N} \sum_{k=0}^{N-1} \left[ f_k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
 ```
+
+$`\exp\left( -i n \frac{2 \pi}{N} k \right)`$ではなく，$`\exp\left( i n \frac{2 \pi}{N} \kappa \right)`$を掛けて積分する．ここで，$`k`$と区別するために$`\kappa`$を使っている．
+
+```math
+\begin{equation}
+\begin{aligned}
+\sum_{n=0}^{N-1}{c_n} \exp\left( i n \frac{2 \pi}{N} \kappa \right)&=\sum_{n=0}^{N-1}{\frac{1}{N} \sum_{k=0}^{N-1} \left[ f_k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+} \exp\left( i n \frac{2 \pi}{N} \kappa \right)\\
+&=\sum_{n=0}^{N-1}{\frac{1}{N} \sum_{k=0}^{N-1} \left[ f_k \exp\left( -i n \frac{2 \pi}{N} k \right) \right]
+} \exp\left( i n \frac{2 \pi}{N} \kappa \right)\\
+&=\sum_{n=0}^{N-1}{\frac{1}{N} f_\kappa} \\
+&=f_\kappa\\
+&=f\left(\kappa\frac{T^\ast}{N}=\kappa\delta t\right)
+\end{aligned}
+\end{equation}
+```
+
+このように，フーリエ係数を使って元の関数を復元できる．下の値を取り出すために$`N`$で割る必要はない．
 
 ```Mathematica
 list = {1., 1., 2., 2., 1., 1., 0., 0.};
-MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]/len];
+MyInverseFourier[list_, n_] := With[{len = Length[list]}, Sum[list[[k + 1]]*Exp[I*n*2 \[Pi]/len*k], {k, 0, len - 1}]];
 Column[InverseFourier[cn, FourierParameters -> {-1, -1}], Frame -> All]
-Column[Table[MyInverseFourier[cn, n]*(Length[list]), {n, 0, Length[list] - 1,1}], Frame -> All]
-```
-
-1周期分積分するので，$`T^\ast`$で割っている．$`\delta t`$とかけるので，結果として$`N`$で割ることになる．
+Column[Table[MyInverseFourier[cn, n], {n, 0, Length[list] - 1}],
+ Frame -> All]
+ ```
 
 ## 離散フーリエ変換によるデータの補間
 

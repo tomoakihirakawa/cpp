@@ -1,0 +1,12 @@
+{
+    "name": "absorber1",
+    "type": "Absorber",
+    "isFixed": true,
+    "wave_theory": [
+        0.008333333333333333,
+        1.0,
+        1,
+        0.0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Fredriksen2015/absorber1.obj"
+}

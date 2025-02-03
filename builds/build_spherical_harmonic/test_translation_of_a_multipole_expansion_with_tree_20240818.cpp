@@ -1,11 +1,11 @@
 #include <array>
 #include <memory>
+
+bool _PSEUDO_QUADRATIC_ELEMENT_ = false;
+
 #include "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/BEM_setBoundaryTypes.hpp"
 #include "basic_constants.hpp"
 #include "lib_multipole_expansion.hpp"
-
-// ignを正しく計算する．どうやら符号逆．
-// python3.11 ../../extract_comments.py README.md -source ./ -include ../../
 
 /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
 
@@ -21,6 +21,48 @@ make
 paraview check_M2L.pvsm
 ```
 
+*/
+
+/*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
+
+# Fast Multipole Method
+
+## pole class
+
+pole class has the following attributes:
+
+- position
+- weights
+- normal vector
+- updater function (to update the intensity, that is the potential, of the pole)
+
+## Buckets class
+
+Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
+
+The step to generate the tree structure should be as follows:
+
+1. add objects to the bucket
+2. set the maximum level of the tree using `setLevel`
+3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
+
+
+# Fast Multipole Method
+
+The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
+
+| First steps | GRMES iterative step | description | | |
+| --- | --- | --- | --- | --- |
+| 1 | | add poles to the root bucket | | |
+| 2 | | generate the tree structure from the root bucket | | |
+| 3 (before M2M) | | expansion of the poles | | |
+| 4 | 1 | **update the intensity of the poles** | | |
+| 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
+| 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
+| 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
+| 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
+
+Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
 */
 
 #define _BEM_
@@ -43,12 +85,16 @@ void writePolygonToFile(const std::string& name, auto polygon) {
 
 /* -------------------------------------------------------------------------- */
 
+bool bool_output = true;
+
 int main(int argc, char* argv[]) {
 
    if (argc != 2) {
       std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
       return 1;
    }
+   if (argc > 2)
+      bool_output = argv[2];
 
    auto obj = std::make_unique<Network>(std::string(argv[1]));
 
@@ -86,7 +132,7 @@ int main(int argc, char* argv[]) {
    for (const auto& f : obj->getFaces())
       f->setIntegrationInfo();
    setBoundaryTypes(obj.get());
-   initializePhiPhinOnFace(obj.get());
+   setPhiPhinOnFace(obj.get());
    auto size = setNodeFaceIndices(obj.get());
    std::cout << "size = " << size << std::endl;
 #endif
@@ -110,28 +156,26 @@ int main(int argc, char* argv[]) {
       auto X012 = ToX(F->getPoints());
       auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
 
-      for (const auto& [t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
+      for (const auto& [t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo_vector[0].at(closest_p_to_origin)) {
          auto [xi0, xi1] = t0t1;
-         auto weights = Tdd{1., 1.} * norm_cross * ww;
-
-         auto id0 = pf2ID(p0, F);
-         auto id1 = pf2ID(p1, F);
-         auto id2 = pf2ID(p2, F);
-
-         auto phi0 = &p0->phiOnFace[std::get<1>(id0)];
-         auto phi1 = &p1->phiOnFace[std::get<1>(id1)];
-         auto phi2 = &p2->phiOnFace[std::get<1>(id2)];
-         auto phin0 = &p0->phinOnFace[std::get<1>(id0)];
-         auto phin1 = &p1->phinOnFace[std::get<1>(id1)];
-         auto phin2 = &p2->phinOnFace[std::get<1>(id2)];
-
-         std::function<Tdd()> get_values = [phi0, phi1, phi2, phin0, phin1, phin2, shape3]() {
-            return Tdd{Dot(shape3, std::array<double, 3>{*phi0, *phi1, *phi2}),
-                       Dot(shape3, std::array<double, 3>{*phin0, *phin1, *phin2})};
-         };
-         B_poles.add(X, std::make_shared<pole4FMM>(X, weights, F->normal, get_values));  //$ 極の追加
+         auto weights = Tdd{norm_cross * ww, norm_cross * ww};
+         //$ 極の追加
+         auto pole = std::make_shared<pole4FMM>(X,
+                                                weights,
+                                                F->normal,
+                                                [p0, p1, p2, F,
+                                                 f0 = std::get<1>(pf2ID(p0, F)),
+                                                 f1 = std::get<1>(pf2ID(p1, F)),
+                                                 f2 = std::get<1>(pf2ID(p2, F)),
+                                                 shape3](pole4FMM* self) -> void {
+                                                   //! 再度計算する updater
+                                                   std::get<0>(self->values) = Dot(shape3, Tddd{p0->meanPhiOnFace(), p1->meanPhiOnFace(), p2->meanPhiOnFace()});
+                                                   std::get<1>(self->values) = Dot(shape3, Tddd{p0->phinOnFace.at(f0), p1->phinOnFace.at(f1), p2->phinOnFace.at(f2)});
+                                                });
+         B_poles.add(X, pole);
+         pole->update();
       }
-   };
+   }
 
    std::cout << Magenta << "Add poles" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
@@ -179,172 +223,65 @@ int main(int argc, char* argv[]) {
       }
    }
 
-   /*DOC_EXTRACT 0_2_1_translation_of_a_multipole_expansion
-
-   1. 立体角と特異的な計算を含む係数を，積分を使って計算する（リジッドモードテクニック）　ただ，直接解法とは違って，phiの係数行列を完全に抜き出す必要はない．
-   2. 極の追加：各面に対して極を追加し，バケットに格納する．
-   3. ツリー構造の生成：バケットに格納された極を基にツリー構造を生成する．
-   4. 多重極展開：ツリー構造を用いて多重極展開を行う．
-   5. 特異的な積分計算を省くために，BIEを使って特異でない部分を使って計算する（FMMを利用）．
-   6. 線形連立方程式の右辺bを計算する（FMMを利用）．
-   7. GMRESに与える，行列ベクトル積を返す関数を作成する．
-   8. GMRESクラスに，AdotV関数，b，first guessを与えて解く．
-
-   */
-
    std::cout << "極の展開" << std::endl;
    MultipoleExpansion(B_poles);
    std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
    TimeWatch twFMM;
 
-   /* ----------------------------- almost solid angleの計算 ----------------------------- */
+   /* -------------------------------------------------------------------------- */
 
-   TimeWatch tw_solid_angle;
-   std::size_t count = 0;
-   for (const auto& p : obj->getPoints()) {
-      count += p->f2Index.size();
-      //! copy
-      p->phiOnFace_copy = p->phiOnFace;
-      p->phinOnFace_copy = p->phinOnFace;
-      for (const auto& [f, i] : p->f2Index) {
-         p->phiOnFace.at(f) = 1.;   //! this is known value to calculate b
-         p->phinOnFace.at(f) = 0.;  //! this is known value to calculate b
-      }
-   }
+   setM2M(B_poles);
+   setM2L(B_poles);
+   setL2L(B_poles);
 
-   MEreuse_M2M_M2L_L2L(B_poles);
-
-#pragma omp parallel
-   for (auto& p : obj->getPoints())
-#pragma omp single nowait
-   {
-      auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, too_close_distance);
-      p->almost_solid_angle = -(IgPhin_IgnPhi_near[1] + IgPhin_IgnPhi_far[1]);
-   }
-
-   std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw_solid_angle() << colorReset << std::endl;
-
-   for (const auto& p : obj->getPoints()) {
-      count += p->f2Index.size();
-      p->phiOnFace = p->phiOnFace_copy;
-      p->phinOnFace = p->phinOnFace_copy;
-   }
-
-   /* ---------------------------------- bの計算 ---------------------------------- */
-
-   auto MatrixVectorProduct = [too_close_distance, &obj, &B_poles](const bool LHS = true) -> V_d {
-      /*
-         基本とする形　(G,G,G,G).(phin,phin,phin,phin) = (Gn,Gn,Gn,Gn).(phi,phi,phi,phi)
-         境界条件に応じて変形　(G,-Gn,G,G).(phin,phi,phin,phin) = (Gn,-G,Gn,Gn).(phi,phin,phi,phi)
-      */
-      std::size_t count = 0;
-      for (const auto& p : obj->getPoints())
-         count += p->f2Index.size();
-      std::vector<double> V(count, 0.);
-
-      MEreuse_M2M_M2L_L2L(B_poles);
-#pragma omp parallel
-      for (const auto& p : obj->getPoints())
-#pragma omp single nowait
-      {
-         for (const auto& [f, i] : p->f2Index) {
-            /*
-
-            元々は，IgnPhiのIgnの一部に特異的な計算が含まれているが，それを除いている．
-
-            */
-            auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, too_close_distance);
-            std::get<1>(IgPhin_IgnPhi_near) -= p->almost_solid_angle * p->phiOnFace.at(f);
-            auto [IgPhin, IgnPhi] = IgPhin_IgnPhi_near + IgPhin_IgnPhi_far;
-            if (p->CORNER && isNeumannID_BEM(p, f) /*行の変更*/) {
-               if (LHS)
-                  V[i] = p->phiOnFace.at(f);  // unknown
-               else
-                  V[pf2Index(p, nullptr)] = p->phiOnFace.at(nullptr);  // known
-            } else {
-               if (LHS) {
-                  if (isDirichletID_BEM(p, f))
-                     V[i] = IgPhin;  // unknown
-                  else if (isNeumannID_BEM(p, f))
-                     V[i] = -IgnPhi;  // unknown
-                  else
-                     throw std::runtime_error("Error: Boundary type is not defined.");
-               } else {
-                  if (isDirichletID_BEM(p, f))
-                     V[i] = IgnPhi;  // known
-                  else if (isNeumannID_BEM(p, f))
-                     V[i] = -IgPhin;  // known
-                  else
-                     throw std::runtime_error("Error: Boundary type is not defined.");
-               }
-            }
-         }
-      }
-      return V;
-   };
-
-   auto return_A_dot_v = [&](const V_d& V) -> V_d {
-      //! 値を更新
-      for (const auto& p : obj->getPoints()) {
-         for (const auto& [f, i] : p->f2Index) {
-            if (isDirichletID_BEM(p, f))
-               p->phinOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
-            else if (isNeumannID_BEM(p, f))
-               p->phiOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
-            else
-               throw std::runtime_error("Error: Boundary type is not defined.");
-         }
-      }
-      return MatrixVectorProduct(true);
-   };
-
-   std::vector<double> b = MatrixVectorProduct(false);
+   /* -------------------------------------------------------------------------- */
 
    std::cout << Red << "Total Elapsed time : " << twFMM() << colorReset << std::endl;
 
-   /* ------------------------------ GMRES ------------------------------------- */
-
-   // std::cout << "use gmres" << std::endl;
-   std::vector<int> list = {3, 3};
-   std::vector<double> error;
-   std::unordered_map<networkPoint*, double> data_gmres_ans, data_b;
-   std::vector<double> x0(count, 1.);
-   for (auto gmres_size : list) {
-      gmres* GMRES = new gmres(return_A_dot_v, b, x0, gmres_size);
-      for (auto& p : obj->getPoints())
-         for (const auto& [f, i] : p->f2Index) {
-            data_gmres_ans[p] = GMRES->x[i];
-            data_b[p] = b[i];
-         }
-      std::cout << "gmres size = " << gmres_size << std::endl;
-      std::cout << "gmres error = " << GMRES->err << std::endl;
-      error.push_back(GMRES->err);
-      x0 = GMRES->x;
-   }
-
-   std::cout << "gmres size list = " << list << std::endl;
-   std::cout << "gmres error = " << error << std::endl;
-
    /* ----------------------------------- 比較 ----------------------------------- */
 
-   for (auto& p : obj->getPoints())
-      p->phiphin = {1., 1.};
+   for (const auto& p : obj->getPoints()) {
+      p->phiOnFace_copy = p->phiOnFace;
+      p->phinOnFace_copy = p->phinOnFace;
+      for (const auto& [f, i] : p->f2Index) {
+         if (isDirichletID_BEM(p, f)) {
+            p->phinOnFace.at(f) = 1;
+            p->phiOnFace.at(f) = 1;
+         } else if (isNeumannID_BEM(p, f)) {
+            p->phinOnFace.at(f) = 1;
+            p->phiOnFace.at(f) = 1;
+         } else
+            throw std::runtime_error("Error: Boundary type is not defined.");
+      }
+   }
 
-   MEreuse_M2M_M2L_L2L(B_poles);
+   updatePole_ME_M2M_M2L_L2L(B_poles);
 
    TimeWatch twFMM2;
 #pragma omp parallel
    for (auto& p : obj->getPoints())
 #pragma omp single nowait
    {
-      auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, too_close_distance);
-      p->IgPhi_IgnPhin_near = IgPhin_IgnPhi_near;
-      std::get<1>(p->IgPhi_IgnPhin_near) -= p->almost_solid_angle * p->phiphin[0];
-      p->IgPhi_IgnPhin_far = IgPhin_IgnPhi_far;
-      p->IgPhi_IgnPhin_FMM = p->IgPhi_IgnPhin_near + p->IgPhi_IgnPhin_far;
+      double A = 0, n = 0, eps = 0;
+      for (auto& f : p->getFaces())
+         A += f->area;
+      eps = std::sqrt(A / M_PI) * 0.01;
+      for (const auto& [f, i] : p->f2Index) {
+         auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
+         std::get<1>(IgPhin_IgnPhi_near) += p->solid_angle * p->phiOnFace.at(f);
+         p->IgPhi_IgnPhin_near = IgPhin_IgnPhi_near;
+         p->IgPhi_IgnPhin_far = IgPhin_IgnPhi_far;
+         p->IgPhi_IgnPhin_FMM = p->IgPhi_IgnPhin_near + p->IgPhi_IgnPhin_far;
+      }
    }
-   std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << twFMM2() << colorReset << std::endl;
+
+   std::cout << Magenta << "integration including L2P" << Green << ", Elapsed time : " << twFMM2() << colorReset << std::endl;
+
+   for (const auto& p : obj->getPoints()) {
+      p->phiOnFace = p->phiOnFace_copy;
+      p->phinOnFace = p->phinOnFace_copy;
+   }
 
    //! -------------------------------------------------------------------------- */
    //!                                   直接積分                                   */
@@ -354,13 +291,21 @@ int main(int argc, char* argv[]) {
       TimeWatch twDirect;
       std::cout << "Direct Integration..." << std::endl;
 
+      for (const auto& p : obj->getPoints())
+         p->phiphin = {std::get<2>(p->X), std::get<2>(p->X)};
+
       auto v = ToVector(obj->getPoints());
 #pragma omp parallel for
       for (int i = 0; i < v.size(); ++i) {
          auto& p = v[i];  // Safe as 'p' is now private to each thread
-         p->igign = direct_integration_rigid_mode_technique(&B_poles, p->X, too_close_distance);
+         double A = 0, n = 0, eps = 0;
+         for (auto& f : p->getFaces())
+            A += f->area;
+         eps = std::sqrt(A / M_PI) * 0.01;
+         p->igign = direct_integration_rigid_mode_technique(&B_poles, p->X, eps);
          // p->igign = direct_integration(&B_poles, p->X);
-         std::get<1>(p->igign) -= p->almost_solid_angle * p->phiphin[0];
+         // std::get<1>(p->igign) -= p->almost_solid_angle * p->phiphin[0];
+         std::get<1>(p->igign) -= p->solid_angle * p->phiphin[0];
       }
 
       std::cout << Magenta << "Direct Integration" << Green << ", Elapsed time : " << twDirect() << colorReset << std::endl;
@@ -371,7 +316,7 @@ int main(int argc, char* argv[]) {
    // % -------------------------------------------------------------------------- */
    // %                                     出力                                    */
    // % -------------------------------------------------------------------------- */
-   if (true) {
+   if (bool_output) {
 
       //! バケツの可視化のための出力
 
@@ -379,6 +324,8 @@ int main(int argc, char* argv[]) {
       std::vector<std::vector<T8Tddd>> cube_M2L;
       std::vector<std::vector<Tddd>> poles_in_bucket;
       std::vector<std::vector<T2Tddd>> line_M2L;
+
+      std::cout << "output" << std::endl;
 
       {
          B_poles.forEachAtDeepest([&](Buckets<sp_pole4FMM>* B) {
@@ -390,6 +337,8 @@ int main(int argc, char* argv[]) {
          ofs.close();
       }
 
+      std::cout << "paraview ./output/cube_level_deepest.vtp" << std::endl;
+
       for (int i = 0; i < B_poles.max_level; i++) {
          cube_level.clear();
          B_poles.forEachAtLevel(i, [&](Buckets<sp_pole4FMM>* B) {
@@ -397,9 +346,12 @@ int main(int argc, char* argv[]) {
             cube_level.push_back(t8tddd);
          });
          std::ofstream ofs("./output/cube_level" + std::to_string(i) + ".vtp");
+
          vtkPolygonWrite(ofs, cube_level);
          ofs.close();
       }
+
+      std::cout << "paraview ./output/cube_level*.vtp" << std::endl;
 
       Tddd O = ToX(RandomSample(ToVector(obj->getPoints()))[0]);
       const auto& target_bucket = B_poles.getBucketAtDeepest(O);
@@ -445,7 +397,9 @@ int main(int argc, char* argv[]) {
          }
       }
 
-      //
+      std::cout << "paraview ./output/cube_M2L*.vtp" << std::endl;
+      std::cout << "paraview ./output/line_M2L*.vtp" << std::endl;
+
       {
          std::unordered_map<networkPoint*, double> data1, data2, data3, data4, data5, data6, data7, data8, data9, data10, data11, data12, data13, data14;
 #ifdef _BEM_
@@ -490,9 +444,7 @@ int main(int argc, char* argv[]) {
                                                                                                  {"ign_far", data12},
                                                                                                  {"rel_err_ign_max", data13},
                                                                                                  {"almost_solid_angle", data14},
-                                                                                                 {"boundary_type", data1_BEM},
-                                                                                                 {"gmres_ans", data_gmres_ans},
-                                                                                                 {"b", data_b}};
+                                                                                                 {"boundary_type", data1_BEM}};
 
          std::ofstream ofs("./output/nodes_igign.vtp");
          vtkPolygonWrite(ofs, obj->getPoints(), data);

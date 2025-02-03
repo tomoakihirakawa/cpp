@@ -1,0 +1,15 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 10000,
+    "end_time": 10,
+    "element": "pseudo_quad",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Ren2015_H0d04_T1d2_DT0d05_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "float.json",
+        "absorber.json"
+    ]
+}

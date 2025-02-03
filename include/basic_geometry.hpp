@@ -5,6 +5,7 @@
 #include "basic_linear_systems.hpp"
 #include "basic_statistics.hpp"
 #include "basic_vectors.hpp"
+#include "rootFinding.hpp"
 // 面と面の干渉？？？
 // 球と面の干渉チェックか．
 // そのために，
@@ -200,7 +201,9 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
    // auto [Cx, Cy] = Dot(Inverse(T2Tdd{bxy, cxy}), 0.5 * Tdd{Dot(bxy, bxy), Dot(cxy, cxy)});  // circumcenter
    //! use solve instead of inverse
    Tdd CxCy = {0., 0.};
-   Solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   // Solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   // lapack_lu lu(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   lapack_svd_solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
    auto [Cx, Cy] = CxCy;
    return a + Cx * x + Cy * y;
 };
@@ -212,7 +215,9 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    std::array<double, 3> b_ = b - a, c_ = c - a, d_ = d - a, CxCyCz;
    // return a + 0.5 * Dot(Inverse(T3Tddd{b_, c_, d_}), Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    //! use solve
-   Solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   // Solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   // lapack_lu lu(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   lapack_svd_solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    return a + 0.5 * CxCyCz;
 };
 Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
@@ -293,13 +298,28 @@ Tddd Centroid(const T3Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<
 Tddd Centroid(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) { return (a + b + c + d) / 4.; };
 Tddd Centroid(const T4Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 // % -------------------------------------------------------------------------- */
-bool isInside(const Tddd &X, const Tddd &Xcenter, const double &r) {
-   // point v.s. sphere
+bool InsideQ(const T3Tdd &bounds, const T3Tdd &bounds_) {
+   //! bounds < bounds_ ?
+   //! Is bounds inside bounds_ ?
+   auto [X0, X1] = std::get<0>(bounds);
+   auto [Y0, Y1] = std::get<1>(bounds);
+   auto [Z0, Z1] = std::get<2>(bounds);
+   auto [X0_, X1_] = std::get<0>(bounds_);
+   auto [Y0_, Y1_] = std::get<1>(bounds_);
+   auto [Z0_, Z1_] = std::get<2>(bounds_);
+   return {X0_ < X0 && X1 < X1_ && Y0_ < Y0 && Y1 < Y1_ && Z0_ < Z0 && Z1 < Z1_};
+};
+
+bool InsideQ(const Tddd &X, const Tddd &Xcenter, const double &r) {
+   //! point v.s. sphere
+   //! point < sphere ?
+   //! Is point X inside the sphere with center Xcenter and radius r ?
    return Norm(X - Xcenter) < r;
 };
-bool isInside(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
-   // cube v.s. sphere
-   // cube < sphere ?
+bool InsideQ(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
+   //! cube v.s. sphere
+   //! cube < sphere ?
+   //! Is cube bounds inside the sphere with center Xcenter and radius r ?
    auto [X0, X1] = std::get<0>(bounds);
    auto [Y0, Y1] = std::get<1>(bounds);
    auto [Z0, Z1] = std::get<2>(bounds);
@@ -316,7 +336,7 @@ bool isInside(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
            isInside({X0, Y1, Z1}, Xcenter, r) &&
            isInside({X1, Y1, Z1}, Xcenter, r));
 };
-bool isInside(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
+bool InsideQ(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
    auto [X0, X1] = std::get<0>(bounds);
    auto [Y0, Y1] = std::get<1>(bounds);
    auto [Z0, Z1] = std::get<2>(bounds);
@@ -356,6 +376,16 @@ Tddd grad_CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
    return 2. * (grad_numerator_a * denominator - numerator * grad_denominator_a) / std::pow(denominator, 2);
 };
 
+double differenceFromEquilateralTriangle(const Tddd &a, const Tddd &b, const Tddd &c) {
+   auto weight = [&](const Tddd &a, const Tddd &b, const Tddd &c) -> double {
+      Tddd Xmid = (c + b) * 0.5;
+      double height = Norm(c - b) * std::sqrt(3.) * 0.5;
+      Tddd vertical = Normalize(Chop(a - Xmid, c - b));
+      return Norm(height * vertical + Xmid - a) / height;
+   };
+   return (weight(a, b, c) + weight(b, c, a) + weight(c, a, b)) / 3.;
+};
+
 // triangle distorsion measure
 double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
    const double ab = Norm(a - b);
@@ -365,7 +395,7 @@ double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
    const double den2 = (ab - bc + ca);
    const double den3 = (ab + bc - ca);
    return 2. * ab * bc * ca / (den1 * den2 * den3);
-
+   //
    // const double s = (ab + bc + ca) * 0.5;
    // const double area = std::sqrt(s * (s - ab) * (s - bc) * (s - ca));
    // const double inradius = area / s;
@@ -794,7 +824,7 @@ struct CoordinateBounds {
               CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}),
               CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}})};
    };
-   bool isInside(const Tddd &X) const {
+   bool InsideQ(const Tddd &X) const {
       if ((std::get<0>(X) < std::get<0>(std::get<0>(this->bounds)) || std::get<1>(std::get<0>(this->bounds)) < std::get<0>(X)) ||
           (std::get<1>(X) < std::get<0>(std::get<1>(this->bounds)) || std::get<1>(std::get<1>(this->bounds)) < std::get<1>(X)) ||
           (std::get<2>(X) < std::get<0>(std::get<2>(this->bounds)) || std::get<1>(std::get<2>(this->bounds)) < std::get<2>(X)))
@@ -805,10 +835,10 @@ struct CoordinateBounds {
 };
 /* -------------------------------------------------------------------------- */
 
-bool isInside(const Tddd &X, const T3Tdd &bounds) {
+bool InsideQ(const Tddd &X, const T3Tdd &bounds) {
    // point v.s. cube
    CoordinateBounds b(bounds);
-   return b.isInside(X);
+   return b.InsideQ(X);
 };
 struct Sphere : public CoordinateBounds {
    Tddd center;
@@ -936,6 +966,21 @@ struct Tetrahedron : public CoordinateBounds {
                           (std::get<3>(this->vertices) - centroid) * s + centroid});
    };
 
+   bool InsideQ(const std::array<double, 3> &X) const {
+      if (CoordinateBounds::InsideQ(X)) {
+         const auto [x, y, z] = X;
+         const auto [X0, X1, X2, X3] = this->vertices;
+         std::array<double, 4> W;
+         lapack_svd_solve(std::array<std::array<double, 4>, 4>{{{X0[0], X1[0], X2[0], X3[0]},
+                                                                {X0[1], X1[1], X2[1], X3[1]},
+                                                                {X0[2], X1[2], X2[2], X3[2]},
+                                                                {1., 1., 1., 1.}}},
+                          W, {x, y, z, 1.});
+         return 0. <= W[0] && W[0] <= 1. && 0. <= W[1] && W[1] <= 1. - W[0] && 0. <= W[2] && W[2] <= 1. - W[0] - W[1];
+      }
+      return false;
+   };
+
    // T4d SolidAngles(const T4Tddd &X) {
    //    auto [X0, X1, X2, X3] = X;
    //    return {(SolidAngle_(X0, X1, X2, X3)),
@@ -986,7 +1031,7 @@ struct Ellipsoid : public CoordinateBounds {
    }
 
    // Method to check if a point is inside the ellipsoid
-   bool isInside(const Tddd &point) const {
+   bool InsideQ(const Tddd &point) const {
       const auto [x, y, z] = Dot(point - center, Q.Rv());
       return (std::pow(x / this->a, 2) + std::pow(y / this->b, 2) + std::pow(z / this->c, 2)) <= 1.0;
    }
@@ -1512,9 +1557,18 @@ std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
    ( (a-b)*t + (b - X) ).(a-b) = 0
    t = (X-b).(a-b)/(a-b).(a-b)
    */
-   const auto a_b = std::get<0>(ab) - std::get<1>(ab);
-   const auto t = std::clamp(Dot(X - std::get<1>(ab), a_b) / Dot(a_b, a_b), 0.0, 1.0);
-   return {t, std::get<0>(ab) * t + std::get<1>(ab) * (1. - t)};
+   // const auto a_b = std::get<0>(ab) - std::get<1>(ab);
+   // const auto t = std::clamp(Dot(X - std::get<1>(ab), a_b) / Dot(a_b, a_b), 0.0, 1.0);
+   // return {t, std::get<0>(ab) * t + std::get<1>(ab) * (1. - t)};
+
+   const auto &a = std::get<0>(ab);
+   const auto &b = std::get<1>(ab);
+   const auto a_b = a - b;
+   const auto dot_a_b = Dot(a_b, a_b);
+   if (dot_a_b == 0.0)
+      return {0.0, b};  // a and b are the same point
+   const auto t = std::clamp(Dot(X - b, a_b) / dot_a_b, 0.0, 1.0);
+   return {t, a * t + b * (1.0 - t)};
 };
 
 Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
@@ -1529,9 +1583,15 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    // use lapack_lu
    std::array<double, 2> ans;
    // lapack_lu(ans, T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}}, Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
-   Solve(ans,
-         T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
-         Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   // Solve(ans,
+   //       T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
+   //       Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   // lapack_lu lu(ans,
+   //              T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
+   //              Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   lapack_svd_solve(ans,
+                    T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
+                    Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
    const auto [t, tau] = ans;
 
    if (Between(t, array_0_1) && Between(tau, array_0_1))
@@ -1561,7 +1621,12 @@ std::tuple<double, double, Tddd> NearestXOnPlane_(const Tddd &X, const T3Tddd &a
    std::array<double, 3> ans;
    // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
    // X.A = b
-   Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   // Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   // lapack_lu lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+
+   // lapack_svd_solve(Transpose(T3Tddd{a - c, b - c, Cross(a - c, b - c)}), ans, X - c);
+   lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+
    const auto [t0, t1, alpah] = ans;
    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
 };
@@ -1609,31 +1674,54 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
 
    /*
          t1
-   0>=t0 | 0<=t0| t0>=1, t1>=1
-      -- b -----+---
+         A
+         |      |        t1>= 1
+      -- b -----+------  t1 = 1
          | \    |
-         |   \  |        0<=t1
+         |   \  |
          |     \|
-      -- c ---- a --> t0
-         |      |        0>=t1
+      -- c ---- a -----  t1 = 0
+         |      |        t1<=0
+   t0<=0 |      | 1<=t0
+       t0=0    t0=1
+
    */
    //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
    const auto [a, b, c] = abc;
-   std::array<double, 3> ans;
-   Solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   Tddd ans;
+   lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
    auto [t0, t1, alpah] = ans;
-   if (0 >= t0) {
+   if (0 >= t0 && 0 >= t1)
+      return {0., 0., c};
+   else if (0 >= t0 && 1 <= t1)
+      return {0., 1., b};
+   else if (1 <= t0 && 0 >= t1)
+      return {1., 0., a};
+   else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
+      return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
+   else if (0 >= t0) {
       auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
       return {0., t1, closestX};
    } else if (0 >= t1) {
       auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
       return {t0, 0., closestX};
-   } else if (t0 <= 1. && t1 <= 1. && t0 + t1 <= 1.) {
-      return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
    } else {
       auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
       return {t, 1. - t, closestX};
    }
+
+   // if (0 >= t0) {
+   //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+   //    return {0., t1, closestX};
+   // } else if (0 >= t1) {
+   //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+   //    return {t0, 0., closestX};
+   // } else if (t0 <= 1. && t1 <= 1. && t0 + t1 <= 1.) {
+   //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
+   // } else {
+   //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+   //    return {t, 1. - t, closestX};
+   // }
 };
 
 // \label{Nearest(const Tddd &X, const T3Tddd &abc)}
@@ -1776,7 +1864,9 @@ std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
    ```
    */
    std::array<double, 3> x;
-   Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   // Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   // lapack_lu lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = x;
    static const Tdd range = array_0_1;
    return {Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range),
@@ -1790,7 +1880,8 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> x;
    // lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
-   Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   // Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = x;
    static const Tdd range = array_0_1;
    return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
@@ -1815,8 +1906,12 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
    // 変更後
    const auto adbdcd = T3Tddd{a - d, b - d, c - d};
    Tddd num, den;
-   Solve(num, adbdcd, d - B);
-   Solve(den, adbdcd, A - B);
+   // Solve(num, adbdcd, d - B);
+   // Solve(den, adbdcd, A - B);
+   // lapack_lu lu_num(num, adbdcd, d - B);
+   lapack_svd_solve(num, adbdcd, d - B);
+   // lapack_lu lu_den(den, adbdcd, A - B);
+   lapack_svd_solve(den, adbdcd, A - B);
    //
    auto [int0, int1, int2] = Transpose(T2Tddd{num / den, (1 + num) / den});
    //! --------------------------------- */
@@ -1825,7 +1920,9 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
    // const auto [T0, T1, T2] = Dot(inv, (A + B) * 0.5 - d);
    // 変更後
    Tddd T0T1T2;
-   Solve(T0T1T2, adbdcd, (A + B) * 0.5 - d);
+   // Solve(T0T1T2, adbdcd, (A + B) * 0.5 - d);
+   // lapack_lu lu_T0T1T2(T0T1T2, adbdcd, (A + B) * 0.5 - d);
+   lapack_svd svd_T0T1T2(Transpose(adbdcd), T0T1T2, (A + B) * 0.5 - d);
    const auto [T0, T1, T2] = T0T1T2;
    //
    const auto [dx, dy, dz] = A - B;
@@ -1883,7 +1980,8 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
    // auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> ans;
    // lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
-   Solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   lapack_svd_solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   // Solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = ans;
    //
    return A + (B - A) * T;
@@ -1915,7 +2013,13 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
 
    // use SolveLinearSystem
    std::array<double, 4> x;
-   lapack_lu(x, T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.}, {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.}, {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.}, {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}, T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
+   // lapack_lu(x, T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.}, {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.}, {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.}, {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}}, T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
+   lapack_svd_solve(x,
+                    T4T4d{{{std::get<0>(a), std::get<1>(a), std::get<2>(a), 1.},
+                           {std::get<0>(b), std::get<1>(b), std::get<2>(b), 1.},
+                           {std::get<0>(c), std::get<1>(c), std::get<2>(c), 1.},
+                           {std::get<0>(d), std::get<1>(d), std::get<2>(d), 1.}}},
+                    T4d{std::get<0>(X), std::get<1>(X), std::get<2>(X), 1.});
    const auto [t0, t1, t2, t3] = x;
 
    //
@@ -2192,13 +2296,13 @@ double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) {
 
 /* -------------------------------------------------------------------------- */
 
-bool isInside(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
-   return (CoordinateBounds(V_vertices).isInside(X) && windingNumber(X, V_vertices) < 0.75);
+bool InsideQ(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
+   return (CoordinateBounds(V_vertices).InsideQ(X) && windingNumber(X, V_vertices) < 0.75);
 };
-bool isInside(const Tddd &X, const std::vector<Tddd> &V_vertices) {
-   return !CoordinateBounds(V_vertices).isInside(X);
+bool InsideQ(const Tddd &X, const std::vector<Tddd> &V_vertices) {
+   return !CoordinateBounds(V_vertices).InsideQ(X);
 };
-// bool isInside(const CoordinateBounds &bounds, const geometry::Sphere &s) {
+// bool InsideQ(const CoordinateBounds &bounds, const geometry::Sphere &s) {
 //    // cube v.s. sphere
 //    // cube < sphere ?
 //    auto [X0, X1] = std::get<0>(bounds.bounds);

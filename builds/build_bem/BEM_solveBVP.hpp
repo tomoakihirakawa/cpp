@@ -65,83 +65,86 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define solveBVP_debug
 
 // #define use_CG
-#define use_gmres
-// #define use_lapack
+// #define use_gmres
+#define use_lapack
 
 struct calculateFluidInteraction {
    const Network *PasObj;
-   std::vector<networkFace *> actingFaces;
-   Tddd force, torque, simplified_drag, simplified_drag_torque;
+   std::unordered_set<networkFace *> actingFaces;
+   Tddd simplified_drag, simplified_drag_torque;
    double area;
-   T6d acceleration;
-   std::vector<std::tuple<std::array<networkPoint *, 3>, Tddd, T3Tddd>> PressureVeticies;
-   calculateFluidInteraction(const auto &faces /*waterfaces*/, const Network *PasObjIN)
-       : PasObj(PasObjIN), force({0., 0., 0.}), torque({0., 0., 0.}), area(0.), PressureVeticies({}), acceleration({0., 0., 0., 0., 0., 0.}) {
+   calculateFluidInteraction(const auto &faces /*waterfaces*/, const Network *PasObjIN) : PasObj(PasObjIN) {
       // PasObjと接したfaceの頂点にpressureが設定されている前提
       int count = 0;
-      // set PressureVeticies
-
       for (const auto &f : faces)
          if (f->Neumann) {
-            if (std::ranges::all_of(f->getPoints(),
-                                    [&](const auto &p) { return std::ranges::any_of(
-
-                                                             p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
+            if (std::ranges::all_of(f->getPoints(), [&](const auto &p) { return std::ranges::any_of(p->getContactFaces(), [&](const auto &F) { return F->getNetwork() == PasObj; }); })) {
                auto [p0, p1, p2] = f->getPoints();
-               this->PressureVeticies.push_back({{p0, p1, p2}, {p0->pressure, p1->pressure, p2->pressure}, ToX(f)});
-               this->actingFaces.emplace_back(f);
-               count++;
+               auto result = this->actingFaces.emplace(f);
+               if (result.second)
+                  count++;
             }
          }
 
       // calculate area
-      for (const auto &[p012, P012, X012] : this->PressureVeticies) {
+      std::array<double, 3> P012;
+      std::array<std::array<double, 3>, 3> X012;
+      area = 0.;
+      for (const auto &f : this->actingFaces) {
+         auto [p0, p1, p2] = f->getPoints();
+         P012 = {p0->pressure, p1->pressure, p2->pressure};
+         X012 = {p0->X, p1->X, p2->X};
          auto intpX = interpolationTriangleLinear0101(X012);
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
             area += intpX.J(x0, x1) * w0w1;
       }
-      // std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
+      std::cout << "接触している面の数:" << count << " 表面積:" << area << std::endl;
    };
 
    // \label{BEM:surfaceIntegralOfPressure}
    std::array<Tddd, 2> surfaceIntegralOfPressure() {
-      this->force.fill(0.);
-      this->torque.fill(0.);
-      for (const auto &[_, P012, X012] : this->PressureVeticies) {
-         // auto [pre0, pre1, pre2] = P012;
+      Tddd force = {0., 0., 0.}, torque = {0., 0., 0.};
+      std::array<double, 3> P012;
+      std::array<std::array<double, 3>, 3> X012;
+      for (const auto &f : this->actingFaces) {
+         auto [p0, p1, p2] = f->getPoints();
+         P012 = {p0->pressure, p1->pressure, p2->pressure};
+         X012 = {p0->X, p1->X, p2->X};  // auto [pre0, pre1, pre2] = P012;
          // auto [X0, X1, X2] = X012;
          // this->force += (p0 + p1 + p2) / 3. * Cross(X1 - X0, X2 - X0) / 2.;
-
          auto intpP = interpolationTriangleLinear0101(P012);
          auto intpX = interpolationTriangleLinear0101(X012);
          auto n = TriangleNormal(X012);
-         double f;
-         Tddd force = {0., 0., 0.};
-         Tddd torque = {0., 0., 0.};
+         Tddd F_tmp = {0., 0., 0.}, T_tmp = {0., 0., 0.};
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple) {
-            f = intpP(x0, x1) * intpX.J(x0, x1) * w0w1;
-            force += f;
-            torque += f * Cross(intpX(x0, x1) - this->PasObj->COM, n);
+            auto f = intpP(x0, x1) * intpX.J(x0, x1) * w0w1 * n;
+            F_tmp += f;
+            T_tmp += Cross(intpX(x0, x1) - this->PasObj->COM, f);
          }
-         this->force += force * n;
-         this->torque += torque;
+         force += F_tmp;
+         torque += T_tmp;
       }
-      return {this->force, this->torque};
+      return {force, torque};
    };
 
    std::array<Tddd, 2> surfaceIntegralOfVerySimplifiedDrag() {
       this->simplified_drag.fill(0.);
       this->simplified_drag_torque.fill(0.);
-      for (const auto &[p012, _, X012] : this->PressureVeticies) {
-         auto [p0, p1, p2] = p012;
-         auto [X0, X1, X2] = X012;
+      std::array<std::array<double, 3>, 3> X012;
+      for (const auto &f : this->actingFaces) {
+         auto [p0, p1, p2] = f->getPoints();
+         std::array<double, 3> P012 = {p0->pressure, p1->pressure, p2->pressure};
+         auto X0 = p0->X;
+         auto X1 = p1->X;
+         auto X2 = p2->X;
+         X012 = {X0, X1, X2};
          const Tddd relative_U0 = p0->U_BEM - PasObj->velocityRigidBody(X0);
          const Tddd relative_U1 = p1->U_BEM - PasObj->velocityRigidBody(X1);
          const Tddd relative_U2 = p2->U_BEM - PasObj->velocityRigidBody(X2);
          // this->force += (p0 + p1 + p2) / 3. * Cross(X1 - X0, X2 - X0) / 2.;
          auto intpRelativeVelocity = interpolationTriangleLinear0101(T3Tddd{relative_U0, relative_U1, relative_U2});
          auto intpX = interpolationTriangleLinear0101(X012);
-         const double nu = 1000 * 1000 * 1.004 * 10E-6;  // m2 /s
+         const double nu = 10 * 1000 * 1000 * 1.004 * 10E-6;  // m2 /s
          Tddd drag_f;
          for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple) {
             drag_f = nu * intpRelativeVelocity(x0, x1) * intpX.J(x0, x1) * w0w1;
@@ -318,7 +321,8 @@ struct BEM_BVP {
    std::vector<std::vector<std::array<double, 2>>> IGIGn;
    BEM_BVP(std::vector<Network *> WATERS) : WATERS(WATERS) {};
    ~BEM_BVP() {
-      if (this->lu) delete this->lu;
+      if (this->lu)
+         delete this->lu;
    };
 
    // int pf2Index(const networkPoint *p, const networkFace *f) const {
@@ -336,11 +340,17 @@ struct BEM_BVP {
 
       for (const auto &water : WATERS)
 #pragma omp parallel
-         for (const auto &integ_f : water->getFaces())
+         for (const auto &integ_f : water->getSurfaces())
 #pragma omp single nowait
             integ_f->setIntegrationInfo();
 
-      IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
+      // IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
+      this->IGIGn.resize(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
+#pragma omp parallel
+      for (auto &IGIGn_i : this->IGIGn)
+#pragma omp single nowait
+         for (auto &IGIGn_ij : IGIGn_i)
+            IGIGn_ij = {0., 0.};
 
 #define use_rigid_mode
       TimeWatch timer;
@@ -422,9 +432,9 @@ struct BEM_BVP {
 
       ### `linear_triangle_integration_info`
       | 引数名  | 説明                                                              |
-      |---------|-------------------------------------------------------------------|
+      |---------|-----------------------------------------------------------------|
       | `Tdd`   | 2D パラメータ {[0,1], [0,1]}：積分変数                             |
-      | `double`| ガウス重み（積分重み）                                               |
+      | `double`| ガウス重み（積分重み）                                             |
       | `Tddd`  | 3D パラメータ {xi0=[0,1], xi1=[0,1-xi0]}：2Dパラメータと関連        |
       | `Tddd`  | 3D 位置ベクトル（{xi0, xi1, xi2}を使用）                           |
       | `Tddd`  | 外積（dX/dxi0 × dX/dxi1）                                        |
@@ -432,11 +442,11 @@ struct BEM_BVP {
 
       ### `pseudo_quadratic_triangle_integration_info`
       | 引数名              | 説明                                                              |
-      |---------------------|-------------------------------------------------------------------|
+      |---------------------|-----------------------------------------------------------------|
       | `Tdd`               | 2D パラメータ {[0,1], [0,1]}：積分変数                             |
-      | `double`            | ガウス重み（積分重み）                                               |
+      | `double`            | ガウス重み（積分重み）                                             |
       | `Tddd`              | 3D パラメータ {xi0=[0,1], xi1=[0,1-xi0]}：2Dパラメータと関連        |
-      | `std::array<T6d, 4>`| 二次要素の形状関数                                                  |
+      | `std::array<T6d, 4>`| 二次要素の形状関数                                                |
       | `Tddd`              | 3D 位置ベクトル（{xi0, xi1, xi2}を使用）                           |
       | `Tddd`              | 外積（dX/dxi0 × dX/dxi1）                                        |
       | `double`            | 外積のノルム                                                     |
@@ -444,7 +454,7 @@ struct BEM_BVP {
 
       int count_pseudo_quadratic_element = 0, count_linear_element = 0, total = 0;
       for (const auto &water : WATERS)
-         for (const auto &integ_f : water->getFaces()) {
+         for (const auto &integ_f : water->getSurfaces()) {
             if (integ_f->isLinearElement)
                count_linear_element++;
             else if (integ_f->isPseudoQuadraticElement)
@@ -460,48 +470,43 @@ struct BEM_BVP {
       else
          std::cout << "線形要素を使ってBIEを離散化" << std::endl;
 
-      for (const auto water : WATERS)
+      for (const auto water : WATERS) {
+         double scale = water->getScale();
+         auto surfacePoints = water->getSurfacePoints();
+         auto surfaces = water->getSurfaces();
 #pragma omp parallel
-         for (const auto &origin : water->getPoints())
+         for (const auto &origin : surfacePoints)
 #pragma omp single nowait
          {
             //@ this loop is for the multiple nodes
             for (const auto &[f, index] : origin->f2Index) {
-               double origin_ign_rigid_mode = 0., dist_base = 0;
-               for (auto f : origin->getFaces())
-                  dist_base += f->area;
-               dist_base = std::sqrt(dist_base);
+               double origin_ign_rigid_mode = 0.;
                auto &IGIGn_Row = IGIGn[index];
-               double nr, ig, ign;
+               double nr, ig, ign, ww_nr;
                Tdd ig_ign0, ig_ign1, ig_ign2;
-               bool is_near;
                Tddd R;
                networkPoint *closest_p_to_origin = nullptr;
-               std::tuple<networkPoint *, networkFace *, double, double> key_ig_ign0, key_ig_ign1, key_ig_ign2;
                std::vector<std::tuple<networkPoint *, networkFace *, double, double>> key_ig_ign;
 
                //@ for all water faces
                for (const auto &water : WATERS) {
                   // b@ integrate over all faces
-                  for (const auto &integ_f : water->getFacesVector()) {
+                  for (const auto &integ_f : surfaces) {
 
                      auto [p0, p1, p2] = integ_f->getPoints(origin);
-                     if (p0 != origin) {
-                        auto q0 = p0, q1 = p1, q2 = p2;
-                        if (Norm(p0->X - origin->X) >= Norm(p1->X - origin->X) && Norm(p2->X - origin->X) >= Norm(p1->X - origin->X)) {
-                           p0 = q1;
-                           p1 = q2;
-                           p2 = q0;
-                        } else if (Norm(p0->X - origin->X) >= Norm(p2->X - origin->X) && Norm(p1->X - origin->X) >= Norm(p2->X - origin->X)) {
-                           p0 = q2;
-                           p1 = q0;
-                           p2 = q1;
-                        }
-                     }
+                     // if (p0 != origin) {
+                     //    auto q0 = p0, q1 = p1, q2 = p2;
+                     //    if (Norm(p0->X - origin->X) >= Norm(p1->X - origin->X) && Norm(p2->X - origin->X) >= Norm(p1->X - origin->X)) {
+                     //       p0 = q1;
+                     //       p1 = q2;
+                     //       p2 = q0;
+                     //    } else if (Norm(p0->X - origin->X) >= Norm(p2->X - origin->X) && Norm(p1->X - origin->X) >= Norm(p2->X - origin->X)) {
+                     //       p0 = q2;
+                     //       p1 = q0;
+                     //       p2 = q1;
+                     //    }
+                     // }
                      closest_p_to_origin = p0;
-
-                     //! 遠い近いの判定基準がないので，とりあえず基準はorginのfaceのsqrt(面積)としておく
-                     is_near = dist_base > 5 * Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
 
                      /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
@@ -511,21 +516,27 @@ struct BEM_BVP {
                      2. fill IGIGn_Row
 
                      */
+                     auto dist = Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
+                     int how_far;
+                     if (dist > scale / 30.)
+                        how_far = 0;
+                     else
+                        how_far = 2;
 
                      if (integ_f->isLinearElement) {
                         ig_ign0 = ig_ign1 = ig_ign2 = {0., 0.};
                         if (p0 == origin) {
                            ign = 0.;
-                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
                               std::get<0>(ig_ign0) += ig * std::get<0>(shape3);
                               std::get<0>(ig_ign1) += ig * std::get<1>(shape3);
                               std::get<0>(ig_ign2) += ig * std::get<2>(shape3);
                            }
                         } else {
-                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : (is_near ? integ_f->map_Point_LinearIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin))) {
-                              ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                              ign = Dot(R / (nr * nr * nr), cross) * ww;
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo_vector[how_far].at(closest_p_to_origin)) {
+                              ig = norm_cross * (ww_nr = ww / (nr = Norm(R = (X - origin->X))));
+                              ign = Dot(R, cross) * ww_nr / (nr * nr);
                               std::get<0>(ig_ign0) += ig * std::get<0>(shape3);
                               std::get<1>(ig_ign0) -= ign * std::get<0>(shape3);
                               std::get<0>(ig_ign1) += ig * std::get<1>(shape3);
@@ -539,11 +550,10 @@ struct BEM_BVP {
                         IGIGn_Row[pf2Index(p1, integ_f)] += ig_ign1;
                         IGIGn_Row[pf2Index(p2, integ_f)] += ig_ign2;
                      } else if (integ_f->isPseudoQuadraticElement) {
-
                         key_ig_ign = integ_f->map_Point_BEM_IGIGn_info_init.at(closest_p_to_origin);
-                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : (is_near ? integ_f->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution.at(closest_p_to_origin) : integ_f->map_Point_PseudoQuadraticIntegrationInfo.at(closest_p_to_origin))) {
-                           ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
-                           ign = Dot(R, cross) * (ww / (nr * nr * nr));
+                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : integ_f->map_Point_PseudoQuadraticIntegrationInfo_vector[how_far].at(closest_p_to_origin)) {
+                           ig = norm_cross * (ww_nr = ww / (nr = Norm(R = (X - origin->X))));
+                           ign = Dot(R, cross) * ww_nr / (nr * nr);
                            for (auto i = 0; i < 6; ++i) {
                               FusedMultiplyIncrement(ig, std::get<0>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i]));
                               FusedMultiplyIncrement(-ign, std::get<0>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i]));
@@ -573,31 +583,31 @@ struct BEM_BVP {
                   }
                }
 
-            /* -------------------------------------------------------------------------- */
-            /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
+               /* -------------------------------------------------------------------------- */
+               /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
-            ### リジッドモードテクニック（係数行列の対角成分の計算）
+               ### リジッドモードテクニック（係数行列の対角成分の計算）
 
-            BIEの対角成分の計算で注意が必要なのは，原点$`i_\circ`$の頂点の立体角と，係数の特異性である．
+               BIEの対角成分の計算で注意が必要なのは，原点$`i_\circ`$の頂点の立体角と，係数の特異性である．
 
-            * 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
-            * 係数の計算には，$`\frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
+               * 係数行列の対角成分には，立体角$`\alpha`$が含まれており，この計算は面倒である．
+               * 係数の計算には，$`\frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}`$が含まれており，分母が0付近で強い特異性を持つ．
 
-            そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi_n`$が消える．結局，対角成分，つまり，原点$`i_\circ`$を頂点上の変数に掛かる係数は，次のようになる．
+               そこで，素直に幾何学的な観点から立体角を計算するのではなく，BIEの式を使って積分で計算する方法がある．BIEの式に，$`\phi=1`$を代入すると，$`\phi_n`$が消える．結局，対角成分，つまり，原点$`i_\circ`$を頂点上の変数に掛かる係数は，次のようになる．
 
-            ```math
-            \sum\limits_{k_\vartriangle} 2 A_{k_\vartriangle} \, \mathbf{n}_{k_\vartriangle} \cdot \sum\limits_{\xi_1, w_1} \sum\limits_{\xi_0, w_0} \left( w_0 w_1 \left( \sum\limits_{j=0}^2 \bar\delta_{(k_\vartriangle, j),i_\circ} N_j({\pmb{\xi}}) \right) \frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}(1 - \xi_0)\right)
-            ```
+               ```math
+               \sum\limits_{k_\vartriangle} 2 A_{k_\vartriangle} \, \mathbf{n}_{k_\vartriangle} \cdot \sum\limits_{\xi_1, w_1} \sum\limits_{\xi_0, w_0} \left( w_0 w_1 \left( \sum\limits_{j=0}^2 \bar\delta_{(k_\vartriangle, j),i_\circ} N_j({\pmb{\xi}}) \right) \frac{{\mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ}}}{{\| \mathbf{x}_{k_\vartriangle}({\pmb{\xi}}) - \mathbf{x}_{i_\circ} \|}^3}(1 - \xi_0)\right)
+               ```
 
-            $`\bar\delta_{(k_\vartriangle, j),i_\circ}`$は，$`k_\vartriangle`$の$j$番目の頂点が$i_\circ$である場合に0，それ以外は1となる関数である．
+               $`\bar\delta_{(k_\vartriangle, j),i_\circ}`$は，$`k_\vartriangle`$の$j$番目の頂点が$i_\circ$である場合に0，それ以外は1となる関数である．
 
-            数値計算上は，$`\delta_{(k_\vartriangle, j),i_\circ}`$がゼロの場合は，そもそも係数をインクリメントせず，スキップする．
-            これはリジッドモードテクニックと呼ばれていて，分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
+               数値計算上は，$`\delta_{(k_\vartriangle, j),i_\circ}`$がゼロの場合は，そもそも係数をインクリメントせず，スキップする．
+               これはリジッドモードテクニックと呼ばれていて，分子が小さくなる特異的な計算を省き，立体角の計算もまとめて対角成分を計算することができる方法である．
 
-            ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
-            よって，そもそも線形要素の場合は，特異的な計算は含まれない．
+               ただし，線形要素の場合，原点$`i_\circ`$を頂点とする三角形$`k_{\vartriangle}`$に対する計算，$`{\bf n}_{k_\vartriangle}\cdot ({{\bf x}_{k_\vartriangle}}(\pmb{\xi})-{{\bf x}_{i_\circ}})=0`$となるため，和をとる必要はない．
+               よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-            */
+               */
 
 #if defined(use_rigid_mode)
                std::get<1>(IGIGn_Row[index]) = origin_ign_rigid_mode;
@@ -606,12 +616,16 @@ struct BEM_BVP {
 #endif
             }
          }
+      }
       std::cout << Green << "離散化にかかった時間" << timer() << colorReset << std::endl;
    };
 
    /* -------------------------------------------------------------------------- */
 
    void generateBIEMatrix() {
+
+      TimeWatch timer;
+      std::cout << "generateBIEMatrix()" << std::endl;
 
       /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
@@ -644,20 +658,24 @@ struct BEM_BVP {
             max_value = std::abs(std::get<0>(IGIGn[i][i]));
       }
 
-      mat_kn = mat_ukn = VV_d(this->matrix_size, V_d(this->matrix_size, 0.));
+      this->mat_kn.resize(this->matrix_size, V_d(this->matrix_size, 0.));
+      this->mat_ukn.resize(this->matrix_size, V_d(this->matrix_size, 0.));
       knowns.resize(this->matrix_size);
-      for (const auto water : WATERS)
+
+      for (const auto water : WATERS) {
+         auto surfacePoints = water->getSurfacePoints();
 #pragma omp parallel
-         for (const auto &a : water->getPoints())
+         for (const auto &a : surfacePoints)
 #pragma omp single nowait
             for (const auto &[a_face, i] : a->f2Index) {
                /* -------------------------------------------------------------------------- */
                //^ 左辺と右辺の係数行列を作成する．
+               auto &IGIGn_i = IGIGn[i];
                for (const auto water : WATERS)
-                  for (const auto &x : water->getPoints())
+                  for (const auto &x : surfacePoints)
                      for (const auto &[x_face, j] : x->f2Index) {
-                        mat_ukn[i][j] = IGIGn[i][j][0];
-                        mat_kn[i][j] = IGIGn[i][j][1];
+                        mat_ukn[i][j] = IGIGn_i[j][0];
+                        mat_kn[i][j] = IGIGn_i[j][1];
                         if (isNeumannID_BEM(x, x_face)) {
                            // 未知変数の係数行列は左，既知変数の係数行列は右
                            std::swap(mat_ukn[i][j], mat_kn[i][j]);
@@ -665,39 +683,34 @@ struct BEM_BVP {
                            mat_kn[i][j] *= -1;
                         }
                      }
+
+               auto isNeumanID = isNeumannID_BEM(a, a_face);
+               auto isDirichletID = isDirichletID_BEM(a, a_face);
                /* -------------------------------------------------------------------------- */
                //^ 多重節点の場合，Neumann面上のphiの値は，同じ場所のDirichlet面のphiと一致する
-               if (a->CORNER && isNeumannID_BEM(a, a_face) /*行の変更*/) {
+               if (a->CORNER && isNeumanID /*行の変更*/) {
                   std::ranges::fill(mat_ukn[i], 0.);
                   std::ranges::fill(mat_kn[i], 0.);
                   mat_ukn[i][i] = max_value;  // φの系数
-
                   //! nullptrと指定するのは，全てNeumannのコーナに対して使えないのではないかということでこうした．
                   mat_kn[i][pf2Index(a, nullptr)] = max_value;  // φの系数移行したからマイナス？　いいえ，移項を考慮した上でこれでいい．
-                  // auto it = a->f2Index.find(a_face);
-                  // if (it == a->f2Index.end())
-                  //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "f2Index.find(currentFace) == f2Index.end()");
-                  // else {
-                  //    ++it;
-                  //    if (it == a->f2Index.end())
-                  //       it = a->f2Index.begin();
-                  //    mat_kn[i][it->second] = max_value;
-                  // }
                }
                /* -------------------------------------------------------------------------- */
                //^ 既知変数のベクトルを作成する．
-               if (isDirichletID_BEM(a, a_face) && isNeumannID_BEM(a, a_face))
+               if (isDirichletID && isNeumanID)
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Inconsistent BEM condition: isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F) == true");
-               else if (isDirichletID_BEM(a, a_face))
+               else if (isDirichletID)
                   knowns[i] = a->phi_Dirichlet = std::get<0>(a->phiphin);
-               else if (isNeumannID_BEM(a, a_face))
+               else if (isNeumanID)
                   knowns[i] = a->phinOnFace.at(a_face);  // はいってない？はいってた．
                else
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Undefined BEM condition.");
                /* -------------------------------------------------------------------------- */
             }
+      }
+      b_RHS = Dot(mat_kn, knowns);
 
-      b_RHS = ParallelDot(mat_kn, knowns);
+      std::cout << Green << "generateBIEMatrix()" << timer() << colorReset << std::endl;
    };
 
    /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
@@ -713,7 +726,7 @@ struct BEM_BVP {
    \sum\limits_{j=0}^{N-1} A_{i_\circ,j}x_j &= b_{i_\circ} \\
    \end{align*}t
    ```
-　　
+   　　
    $`\sum\limits_{j=0}^{N-1} A_{{i_\circ},j}x_j = b_{i_\circ}`$は，節点$`{i_\circ}`$を原点節点としてBIEを離散化したものである．
 
    $`A_{i,j}({\bf a}_i)`$は，$`{\bf a}_i`$に依存しており，$`{\bf a}_i`$が変わると$`A_{i,j}({\bf a}_i)`$も変わる．
@@ -728,7 +741,7 @@ struct BEM_BVP {
    /* -------------------------------------------------------------------------- */
 
    void isSolutionFinite(const auto &water) const {
-      for (const auto &p : water.getPoints()) {
+      for (const auto &p : water.getSurfacePoints()) {
          if (!isFinite(p->phiphin)) {
             std::stringstream ss;
             ss << p->phiphin;
@@ -760,10 +773,6 @@ struct BEM_BVP {
    int matrix_size = 0;
 
    void solve(const Buckets<networkPoint *> &FMM_BucketsPoints, const Buckets<networkFace *> &FMM_BucketsFaces) {
-      if (this->lu != nullptr) {
-         delete this->lu;
-         this->lu = nullptr;
-      }
 
       TimeWatch watch;
 
@@ -778,7 +787,11 @@ struct BEM_BVP {
       ans.resize(knowns.size(), 0.);
       std::cout << "lapack lu decomposition" << std::endl;
       //! A.x = b
-      this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, b_RHS /*既知のベクトル（右辺）*/);
+      if (this->lu != nullptr) {
+         this->lu->init(mat_ukn);
+         this->lu->solve(b_RHS /*既知のベクトル（右辺）*/, ans /*解*/);
+      } else
+         this->lu = new lapack_lu(mat_ukn /*未知の行列係数（左辺）*/, ans /*解*/, b_RHS /*既知のベクトル（右辺）*/);
 
       std::cout << colorReset << "update p->phiphin and p->phinOnFace for Dirichlet boundary" << colorReset << std::endl;
       storePhiPhin(WATERS, ans);
@@ -794,7 +807,7 @@ struct BEM_BVP {
          net->setGeometricProperties();
       for (const auto &water : WATERS)
    #pragma omp parallel
-         for (const auto &integ_f : water->getFaces())
+         for (const auto &integ_f : water->getSurfaces())
    #pragma omp single nowait
             integ_f->setIntegrationInfo();
       //@ -------------------------------------------------------------------------- */
@@ -813,7 +826,7 @@ struct BEM_BVP {
 
       TimeWatch tw;
 
-      for (auto &F : obj->getFaces()) {
+      for (auto &F : obj->getSurfaces()) {
          auto [p0, p1, p2] = F->getPoints();
          auto closest_p_to_origin = p0;
          auto X012 = ToX(F->getPoints());
@@ -874,7 +887,7 @@ struct BEM_BVP {
       /* -------------------------------------------------------------------------- */
 
       double area = 0.;
-      for (auto &F : obj->getFaces())
+      for (auto &F : obj->getSurfaces())
          area += F->area;
 
       //@ -------------------------------------------------------------------------- */
@@ -901,7 +914,7 @@ struct BEM_BVP {
             - {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{0, phin, 0, 0} + {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi, 0, phi, phi}
          */
          std::size_t count = 0;
-         for (const auto &p : obj->getPoints())
+         for (const auto &p : obj->getSurfacePoints())
             count += p->f2Index.size();
          std::vector<double> V(count, 0.);
          // std::vector<double> V_RHS(count, 0.);
@@ -913,11 +926,11 @@ struct BEM_BVP {
          TimeWatch tw;
 
    #pragma omp parallel
-         for (const auto &p : obj->getPoints())
+         for (const auto &p : obj->getSurfacePoints())
    #pragma omp single nowait
          {
             double A = 0, n = 0, eps = 0;
-            for (auto &f : p->getFaces())
+            for (auto &f : p->getSurfaces())
                A += f->area;
             eps = std::sqrt(A / M_PI) * 0.01;
             for (const auto &[f, i] : p->f2Index) {
@@ -939,7 +952,7 @@ struct BEM_BVP {
       /* ----------------------------- almost solid angleの計算 ----------------------------- */
 
       TimeWatch tw_solid_angle;
-      for (const auto &p : obj->getPoints()) {
+      for (const auto &p : obj->getSurfacePoints()) {
          p->phiOnFace_copy = p->phiOnFace;
          p->phinOnFace_copy = p->phinOnFace;
          for (const auto &[f, i] : p->f2Index) {
@@ -960,7 +973,7 @@ struct BEM_BVP {
    #pragma omp single nowait
       {
          double A = 0, n = 0;
-         for (auto &f : p->getFaces()) A += f->area;
+         for (auto &f : p->getSurfaces()) A += f->area;
          double eps = std::sqrt(A / M_PI) * 0.01;
          for (const auto &[f, i] : p->f2Index) {
             auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
@@ -979,13 +992,13 @@ struct BEM_BVP {
 
       for (auto &origin : obj->getPoints()) {
          origin->diagIgIgn.fill(0.);
-         for (auto &integ_f : origin->getFaces()) {
+         for (auto &integ_f : origin->getSurfaces()) {
             for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(origin)) {
                auto R = (X - origin->X);
                double nr = Norm(R);
 
                double A = 0, eps = 0;
-               for (auto &f : origin->getFaces())
+               for (auto &f : origin->getSurfaces())
                   A += f->area;
                eps = std::sqrt(A / M_PI) * 0.01;
 
@@ -1199,9 +1212,8 @@ struct BEM_BVP {
 
    #### Dalena and Tanizawa's method
 
-   Dalena and Tanizawa's methodは，$`\phi`$に関するBVPと全く違うBVPを解く必要があり，
-   係数行列も違うので，新たに行列を構成する必要がある．
-   この行列に関してはあまり研究されていないので，あまり使われない理由だと考えられる．
+   Dalena and Tanizawa's methodは，$`\phi`$に関するBVPと全く違うBVPを解く必要があり，係数行列も違うので，新たに行列を構成する必要がある．
+   \cite{Feng2017}によると，この方法は境界面の局所的な曲率を用いる必要があるため，３次元解析に利用することがとても難しい．
 
    #### 反復法
 
@@ -1211,8 +1223,6 @@ struct BEM_BVP {
 
    #### Maの反復法
 
-
-
    | Method |  |
    |:---:|:---:|
    | Indirect method | 浮体１つに対して６つ，新しいBIEを立てる．新たに解く必要があり遅い |
@@ -1220,8 +1230,6 @@ struct BEM_BVP {
    | Dalena and Tanizawa's method | ? |
    | Cao's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
    | Ma's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
-
-
 
    ### $`\phi_t`$と$`\phi_{nt}`$に関するBIEの解き方（と$`\phi_{nt}`$の与え方）
 
@@ -1382,27 +1390,6 @@ struct BEM_BVP {
 
    */
 
-   // \label{BEM:setPhiPhin_t}
-   void setPhiPhin_t() const {
-      for (const auto water : WATERS)
-#pragma omp parallel
-         for (const auto &p : water->getPoints())
-#pragma omp single nowait
-            for (const auto &[F, i] : p->f2Index) {
-               // auto [p, F] = PBF;
-               //!!ノイマンの場合はこれでDphiDtは計算できませんよ
-               if (isDirichletID_BEM(p, F))
-                  p->phitOnFace.at(F) = std::get<0>(p->phiphin_t) = p->aphiat(0.);
-               else if (isNeumannID_BEM(p, F)) {
-                  for (auto &[f, phin_t] : p->phintOnFace) {
-                     // phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(f) : phint_Neumann(p);  // \label{BEM:setphint}
-
-                     phin_t = std::get<1>(p->phiphin_t) = (f != nullptr) ? phint_Neumann(p, f) : phint_Neumann(p);  // \label{BEM:setphint}
-                  }
-               }
-            }
-   };
-
    /* ------------------------------------------------------ */
 
    V_d initializeAcceleration(const std::vector<Network *> &rigidbodies) {
@@ -1444,45 +1431,42 @@ struct BEM_BVP {
       //* --------------------------------------------------- */
       //*                  加速度 --> phiphin_t                */
       //* --------------------------------------------------- */
-      setPhiPhin_t();
+      setPhiPhin_t(WATERS);
       knowns.resize(this->matrix_size);
       for (const auto water : WATERS)
-#pragma omp parallel
-         for (const auto &p : water->getPoints())
-#pragma omp single nowait
+         for (const auto &p : water->getSurfacePoints())
             for (const auto &[f, i] : p->f2Index) {
-               // auto [p, f] = PBF;
                if (isDirichletID_BEM(p, f))
                   knowns[i] = p->phitOnFace.at(f);
                else if (isNeumannID_BEM(p, f))
                   knowns[i] = p->phintOnFace.at(f);
             }
-      // std::cout << Green << "set knowns" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+
       ans.resize(knowns.size(), 0);
       if (this->lu != nullptr)
          this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
-      // std::cout << Green << "solve by LU" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
 
       storePhiPhin_t(WATERS, ans);
-      // std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+      std::cout << Green << "storePhiPhin_t" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       //* --------------------------------------------------- */
       //*                 phiphin_t --> 圧力                   */
       //* --------------------------------------------------- */
 
       for (const auto water : WATERS)
-#pragma omp parallel
-         for (const auto &p : water->getPoints())
-#pragma omp single nowait
+         for (const auto &p : water->getSurfacePoints())
             for (const auto &[f, i] : p->f2Index) {
                if (isDirichletID_BEM(p, f))
                   p->pressure = p->pressure_BEM = 0;
                else
                   p->pressure = p->pressure_BEM = -_WATER_DENSITY_ * (std::get<0>(p->phiphin_t) + 0.5 * Dot(p->U_BEM, p->U_BEM) + _GRAVITY_ * p->height());
             }
+
+      std::cout << Green << "pressure" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
       //* --------------------------------------------------- */
       //*              圧力 ---> 力 --> 加速度                  */
@@ -1524,8 +1508,10 @@ struct BEM_BVP {
       */
       int i = 0;
       std::vector<networkFace *> all_faces;
-      for (auto &water : WATERS)
-         all_faces.insert(all_faces.end(), water->getFaces().begin(), water->getFaces().end());
+      for (auto &water : WATERS) {
+         auto surfaces = water->getSurfaces();
+         all_faces.insert(all_faces.end(), surfaces.begin(), surfaces.end());
+      }
       for (const auto &body : rigidbodies)
          if (body->isFloatingBody) {
             //$ ------------------------------ 係留索から受ける力とトルク ----------------------------- */
@@ -1546,12 +1532,42 @@ struct BEM_BVP {
             T_GLOBAL += T_mooring;
             //% ---------------------- 重心の並進移動によって伸びる線形バネによる係留 --------------- */
             //% simple spring mooring
-            if (body->inputJSON.find("spring")) {
-               const auto X_k = stod(body->inputJSON.at("spring"));
-               std::array<double, 3> origin = {X_k[0], X_k[1], X_k[2]};
-               std::array<double, 3> k = {X_k[3], X_k[4], X_k[5]};
-               F += k * (origin - body->COM);
-            }
+            body->inputJSON.for_each(
+                [&](auto key, auto vec_string) {
+                   if (key.contains("spring")) {
+                      auto X_k = stod(vec_string);
+                      std::array<double, 3> init_fairleader_position = {X_k[0], X_k[1], X_k[2]};
+                      std::array<double, 3> current_fairleader_position = body->rigidTransformation(init_fairleader_position);
+                      std::array<double, 3> anchor = {X_k[3], X_k[4], X_k[5]};
+                      double kx, ky, kz;
+                      if (X_k.size() >= 9) {
+                         kx = X_k[6];
+                         ky = X_k[7];
+                         kz = X_k[8];
+                      } else if (X_k.size() == 7)
+                         kz = ky = kx = X_k[6];
+
+                      double diff = Norm(current_fairleader_position - anchor) - Norm(init_fairleader_position - anchor);
+                      std::array<double, 3> f = Tddd{kx, ky, kz} * diff * Normalize(anchor - current_fairleader_position);
+                      if (X_k.size() > 9) {
+                         double default_tention = X_k[10];
+                         f += default_tention * Normalize(anchor - current_fairleader_position);
+                      }
+                      F += f;
+                      //  std::cout << "init_fairleader_position = " << init_fairleader_position << std::endl;
+                      //  std::cout << "current_fairleader_position = " << current_fairleader_position << std::endl;
+                      //  std::cout << "anchor = " << anchor << std::endl;
+                      //  std::cout << "diff = " << diff << std::endl;
+                      //  std::cout << "f = " << f << std::endl;
+                   }
+                });
+
+            // if (body->inputJSON.find("spring")) {
+            //    const auto X_k = stod(body->inputJSON.at("spring"));
+            //    std::array<double, 3> origin = {X_k[0], X_k[1], X_k[2]};
+            //    std::array<double, 3> k = {X_k[3], X_k[4], X_k[5]};
+            //    F += k * (origin - body->COM);
+            // }
             //^ ---------------------- ダンピング --------------- */
             if (body->inputJSON.find("damping")) {
                const auto c = stod(body->inputJSON.at("damping"));
@@ -1571,26 +1587,12 @@ struct BEM_BVP {
             }
             //% -------------------------------------------------------------------------- */
             const auto [mx, my, mz, IG, inv_IG] = body->getInertiaGC();
-            // auto [Drag_F_hydro, Drag_T_hydro] = tmp.surfaceIntegralOfVerySimplifiedDrag();
-            // F += Drag_F_hydro;
-            // T += Drag_T_hydro;
-
-            auto [a0, a1, a2] = F / Tddd{mx, my, mz};
-            // auto R = body->quaternion.Rv();
-            // auto RT = Transpose(R);
-            // T3Tddd IG = Dot(R,Dot(T3Tddd{{{Ix, 0., 0.},{0., Iy, 0.},{0., 0., Iz}}}, RT));
-            // IG = I;
-            // Tddd A_rotaton;
-            // Solve(IG, A_rotaton, T_GLOBAL);
-
-            // T3Tddd IG_inv = Dot(Transpose(R), Dot(T3Tddd{{{1. / Ix, 0., 0.}, {0., 1. / Iy, 0.}, {0., 0., 1. / Iz}}}, R));
+            double a0 = F[0] / mx;
+            double a1 = F[1] / my;
+            double a2 = F[2] / mz;
             Tddd A_rotaton = Dot(inv_IG, T_GLOBAL);
             auto [a3, a4, a5] = A_rotaton;
-
             std::ranges::for_each(T6d{a0, a1, a2, a3, a4, a5}, [&](const auto &a_w) { ACCELS[i++] = a_w; });  // 複数浮体がある場合があるので．
-            // write out details of the body
-            // std::cout << Green << "mass = " << body->mass << std::endl;
-            // std::cout << Green << "inertia = " << body->getInertiaGC() << std::endl;
          } else
             i += 6;
       // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
@@ -1609,7 +1611,7 @@ struct BEM_BVP {
       auto ACCELS_init = initializeAcceleration(rigidbodies);
 
       if (ACCELS_init.empty()) {
-         setPhiPhin_t();
+         setPhiPhin_t(WATERS);
          return convergence;
       }
 
@@ -1631,7 +1633,7 @@ struct BEM_BVP {
 
          std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(BM.dX) = " << Norm(BM.dX) << colorReset << std::endl;
 
-         if (Norm(BM.dX) < 1E-9 && Norm(func) < 1E-9 && count++ > 4)
+         if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10 && count++ > 4)
             break;
          else if (Norm(BM.dX) < 1E-10 && Norm(func) < 1E-10)
             break;

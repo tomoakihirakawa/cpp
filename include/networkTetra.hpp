@@ -1,7 +1,4 @@
-#ifndef networkTetra_H
-#define networkTetra_H
-
-#include "Network.hpp"
+#pragma once
 
 inline networkTetra::networkTetra(Network *network_IN,
                                   const T_4P &points,
@@ -14,7 +11,14 @@ inline networkTetra::networkTetra(Network *network_IN,
       Faces(faces) {
    this->network->add(this);
    // 面に四面体を格納
-   std::ranges::for_each(faces, [&](const auto &f) { f->Tetras = {this, std::get<0>(f->Tetras)}; });
+   std::ranges::for_each(faces, [&](const auto &f) {
+      if (std::get<0>(f->Tetras) == nullptr)
+         std::get<0>(f->Tetras) = this;
+      else if (std::get<1>(f->Tetras) == nullptr)
+         std::get<1>(f->Tetras) = this;
+      else
+         throw std::runtime_error("networkTetra::networkTetra: faces are full");
+   });
+   std::ranges::for_each(lines, [&](const auto &l) { l->Tetras.emplace_back(this); });
+   std::ranges::for_each(points, [&](const auto &p) { p->Tetras.emplace_back(this); });
 };
-
-#endif

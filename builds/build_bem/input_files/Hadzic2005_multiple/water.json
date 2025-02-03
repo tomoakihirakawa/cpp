@@ -1,0 +1,7 @@
+{
+    "name": "water",
+    "type": "Fluid",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Hadzic2005_24floats/water1000meshlab.obj",
+    "vertices": 6798,
+    "triangles": 13592
+}
