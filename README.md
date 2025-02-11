@@ -168,6 +168,7 @@
     - [⛵ For Mac OS X](./builds/build_bem/README.md#⛵-For-Mac-OS-X)
     - [⛵ Horikawa2024](./builds/build_bem/README.md#⛵-Horikawa2024)
     - [⛵ Tonegawa2024](./builds/build_bem/README.md#⛵-Tonegawa2024)
+    - [⛵ Tonegawa2024 Akita](./builds/build_bem/README.md#⛵-Tonegawa2024-Akita)
     - [⛵ Fredriksen2015](./builds/build_bem/README.md#⛵-Fredriksen2015)
     - [⛵ Hadzic2005](./builds/build_bem/README.md#⛵-Hadzic2005)
     - [⛵ Liang2022](./builds/build_bem/README.md#⛵-Liang2022)

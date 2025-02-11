@@ -72,6 +72,7 @@
         - [🪼 水槽](#🪼-水槽)
         - [🪼 使用するobjファイル](#🪼-使用するobjファイル)
         - [🪼 造波装置の運動](#🪼-造波装置の運動)
+    - [⛵ Tonegawa2024 Akita](#⛵-Tonegawa2024-Akita)
     - [⛵ Fredriksen2015](#⛵-Fredriksen2015)
     - [⛵ Hadzic2005](#⛵-Hadzic2005)
     - [⛵ Liang2022](#⛵-Liang2022)
@@ -456,7 +457,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 ただし，線形要素の場合，原点$`i _\circ`$を頂点とする三角形$`k _{\vartriangle}`$に対する計算，$`{\bf n} _{k _\vartriangle}\cdot ({{\bf x} _{k _\vartriangle}}(\pmb{\xi})-{{\bf x} _{i _\circ}})=0`$となるため，和をとる必要はない．
 よって，そもそも線形要素の場合は，特異的な計算は含まれない．
 
-[./BEM_solveBVP.hpp#L587](./BEM_solveBVP.hpp#L587)
+[./BEM_solveBVP.hpp#L585](./BEM_solveBVP.hpp#L585)
 
 ### 🪼 左辺と右辺の入れ替え 
 
@@ -478,7 +479,7 @@ $`\bar\delta _{(k _\vartriangle, j),i _\circ}`$は，$`k _\vartriangle`$の$j$�
 1の多重節点の場合，BIEの連立一次方程式の係数行列の行を，Dirchlet面上の$`\phi`$とNeumann面上の$`\phi`$の値が一致する，という式に変更する．
 2の場合は，特に変更しない．BIEを解くことで，それぞれの面に対して，$`\phi`$が得られるが，それらの平均値，または重み付け平均値を$`\phi`$として採用する．
 
-[./BEM_solveBVP.hpp#L630](./BEM_solveBVP.hpp#L630)
+[./BEM_solveBVP.hpp#L628](./BEM_solveBVP.hpp#L628)
 
 ### 🪼 高速多重極展開との関係 
 
@@ -499,7 +500,7 @@ $`A _{i,j}({\bf a} _i)`$は，$`{\bf a} _i`$に依存しており，$`{\bf a} _i
 また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
 ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
 
-[./BEM_solveBVP.hpp#L716](./BEM_solveBVP.hpp#L716)
+[./BEM_solveBVP.hpp#L714](./BEM_solveBVP.hpp#L714)
 
 ---
 ## ⛵ 初期値問題 
@@ -630,7 +631,7 @@ $`\frac{\partial \phi}{\partial t}`$を$`\phi _t`$と書くことにする．こ
 \quad\text{on}\quad{\bf x} \in \Gamma(t).
 ```
 
-[./BEM_solveBVP.hpp#L1149](./BEM_solveBVP.hpp#L1149)
+[./BEM_solveBVP.hpp#L1147](./BEM_solveBVP.hpp#L1147)
 
 ---
 実際の実験では，浮体のある基本的な姿勢における主慣性モーメントが与えられる．$`{\boldsymbol I}`$を主慣性モーメントテンソルとする．
@@ -665,7 +666,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \frac{d{\bf \Omega} _{\rm G}}{dt} = {\rm R} _{g2l}^{-1}{\boldsymbol I}^{-1}{\rm R} _{g2l} {\bf T} _{\rm G}
 ```
 
-[./BEM_solveBVP.hpp#L1477](./BEM_solveBVP.hpp#L1477)
+[./BEM_solveBVP.hpp#L1472](./BEM_solveBVP.hpp#L1472)
 
 ---
 #### 🪸 $`\phi`$のヘッセ行列の計算 
@@ -752,7 +753,6 @@ Caoの反復法は，新たなBVPを解く必要がないので，上の問題�
 
 #### 🪸 Maの反復法 
 
-
 | Method |  |
 |:---:|:---:|
 | Indirect method | 浮体１つに対して６つ，新しいBIEを立てる．新たに解く必要があり遅い |
@@ -760,8 +760,6 @@ Caoの反復法は，新たなBVPを解く必要がないので，上の問題�
 | Dalena and Tanizawa's method | ? |
 | Cao's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
 | Ma's iterative method | 直接法で解くなら同じBIE係数行列を使えるので，速い．反復法なら，反復法の内部で反復法をするので遅い．|
-
-
 
 ### 🪼 $`\phi _t`$と$`\phi _{nt}`$に関するBIEの解き方（と$`\phi _{nt}`$の与え方） 
 
@@ -848,7 +846,7 @@ $`\phi _{nt}`$は，[ここ](../../builds/build_bem/BEM_setBoundaryTypes.hpp#L45
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
-[./BEM_solveBVP.hpp#L1194](./BEM_solveBVP.hpp#L1194)
+[./BEM_solveBVP.hpp#L1192](./BEM_solveBVP.hpp#L1192)
 
 ---
 ### 🪼 流体の$`\phi`$時間発展，$`\phi _n`$の時間発展はない 
@@ -933,7 +931,7 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 この方法は，Wu and {Eatock Taylor} (1996)，[Kashiwagi (2000)](http://journals.sagepub.com/doi/10.1243/0954406001523821)，[Wu and Taylor (2003)](www.elsevier.com/locate/oceaneng)で使用されている．
 この方法は，複数の浮体を考えていないが，[Feng and Bai (2017)](https://linkinghub.elsevier.com/retrieve/pii/S0889974616300482)はこれを基にして２浮体の場合でも動揺解析を行っている．
 
-[./BEM_solveBVP.hpp#L1324](./BEM_solveBVP.hpp#L1324)
+[./BEM_solveBVP.hpp#L1319](./BEM_solveBVP.hpp#L1319)
 
 ---
 ## ⛵ 陽に与えられる境界条件に対して（造波装置など） 
@@ -1058,7 +1056,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L913](./main.cpp#L913)
+[./main.cpp#L914](./main.cpp#L914)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -1165,7 +1163,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L691](./main.cpp#L691)
+[./main.cpp#L692](./main.cpp#L692)
 
 ---
 # 🐋 実行方法 
@@ -1204,7 +1202,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L960](./main.cpp#L960)
+[./main.cpp#L961](./main.cpp#L961)
 
 ---
 # 🐋 Input Generator 
@@ -1295,7 +1293,7 @@ make
 ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
 ```
 
-[./input_generator.py#L2028](./input_generator.py#L2028)
+[./input_generator.py#L2024](./input_generator.py#L2024)
 
 ## ⛵ Tonegawa2024 
 
@@ -1329,12 +1327,33 @@ make
 
 - (x, z) = (-0.31, 0)を通るy軸を中心として，wavemakerの運動をflap型造波で行う．
 
-[./input_generator.py#L2190](./input_generator.py#L2190)
+[./input_generator.py#L2107](./input_generator.py#L2107)
+
+## ⛵ Tonegawa2024 Akita 
+
+```sh
+python3.11 input_generator.py Tonegawa2024Akita -dt 0.2 -T 5 -H 2 -o /Volumes/home/BEM/Tonegawa2024Akita/ -s 3MW_MP30
+```
+
+| 項目               | 重量 (ton)   | 主慣性モーメント(Ixx,Iyy,Izz) (kg-m²) |
+|-------------------|--------------|---------------------|
+|3MW_MP30x30        | 8437.5    | (0.67, 0.67, 0.995) x 1e10 |
+|3MW_MP15x15        | 13500     | (0.974, 0.974, 1.65) x 1e10 |
+|3MW_MP9x9          | 14580     | (1.04, 1.04, 1.75) x 1e10 |
+
+|10MW_MP30x30       | 13500     | (1.11,1.11,1.59) x 1e10 | 
+|10MW_MP15x15       | 21600     | (1.67,1.67,2.64) x 1e10 |
+|10MW_MP9x9         | 23328     | (1.77,1.77,2.83) x 1e10 |
+
+3MWの浮体のサイズは全て，WxLxH = 45x45x10 mで，喫水は7.5 m．
+10MWの浮体のサイズは全て，WxLxH = 60x60x17 mで，喫水は12 m．
+
+[./input_generator.py#L2607](./input_generator.py#L2607)
 
 ---
 ## ⛵ Fredriksen2015
 
-[./input_generator.py#L2319](./input_generator.py#L2319)
+[./input_generator.py#L2292](./input_generator.py#L2292)
 
 ---
 ## ⛵ Hadzic2005 
@@ -1352,7 +1371,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L703](./input_generator.py#L703)
+[./input_generator.py#L702](./input_generator.py#L702)
 
 ---
 ## ⛵ Liang2022 
@@ -1394,7 +1413,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L1055](./input_generator.py#L1055)
+[./input_generator.py#L1054](./input_generator.py#L1054)
 
 ---
 ## ⛵ Palm2016 
@@ -1408,7 +1427,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L877](./input_generator.py#L877)
+[./input_generator.py#L876](./input_generator.py#L876)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1422,7 +1441,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L537](./input_generator.py#L537)
+[./input_generator.py#L536](./input_generator.py#L536)
 
 ---
 <img src="schematic_float_Tanizawa1996.png" width="400px" />
@@ -1455,7 +1474,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 | Natural period of roll | 1.775 s | 6.46 |
 | Spring constant of mooning | 51.07 N/m | 0.00704 |
 
-[./input_generator.py#L234](./input_generator.py#L234)
+[./input_generator.py#L233](./input_generator.py#L233)
 
 ---
 ## ⛵ Kramer2021 
@@ -1470,13 +1489,13 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L800](./input_generator.py#L800)
+[./input_generator.py#L799](./input_generator.py#L799)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L1000](./main.cpp#L1000)
+[./main.cpp#L1001](./main.cpp#L1001)
 
 ---

@@ -101,77 +101,87 @@ struct BeamVibration {
 
    std::vector<std::vector<double>> M, K, C;
 
-   double E = 205 * 1e9;  // ヤング率 205GPa
+   const double E = 205 * 1e9;  // ヤング率 205GPa
    // double h = 0.02;
    // double b = 0.035;
-   double b = 0.01;
-   double h = 0.005;
-   double rho = 7.668 / 1e3 / std::pow(0.01, 3);  // 密度 7.8g/cm^3
-   double A = b * h;                              // 断面積
-   double L = 0.9;                                // 長さ
-   double I = b * std::pow(h, 3) / 12;            // 断面二次モーメント
-   double k = E * I / L / L / L;
-   double zeta = 0.01;  // 減衰比
+   const double b = 0.01;
+   const double h = 0.005;
+   const double rho = 7.668 / 1e3 / std::pow(0.01, 3);  // 密度 7.8g/cm^3
+   const double A = b * h;                              // 断面積
+   const double L = 0.9;                                // 長さ
+   double dx;
+   const double I = b * std::pow(h, 3) / 12;  // 断面二次モーメント
+   const double k = E * I / L / L / L;
+   double zeta = 0.;  // 減衰比
    double mass_of_a_node;
-   double c = 2.0 * zeta * std::sqrt(mass_of_a_node * k);
+   double c;
+   // double c = 2.0 * zeta * std::sqrt(mass_of_a_node * k);
 
-   BeamVibration(int numNodes) { update(numNodes); }
+   BeamVibration(int numNodes) : dx(L / numNodes) { update(numNodes); }
 
    // オイラーベルヌーイ梁の質量マトリクス，剛性マトリクス，減衰マトリクスの更新
    // ただし，固定の始めに二点は式に含めず常に変異ゼロとする
    void update(int numNodes) {
-      int dof = numNodes;        // 下端固定なので自由度は numNodes - 1
-      double dx = L / numNodes;  // ノード間隔
       double EI_dx4 = E * I / pow(dx, 4);
-      this->mass_of_a_node = rho * A * dx;
+      double total_mass = rho * A * L;
+      this->mass_of_a_node = total_mass / numNodes;
       c = 2.0 * zeta * std::sqrt(mass_of_a_node * k);
 
-      massMatrix.resize(dof, std::vector<double>(dof, 0.0));
-      stiffnessMatrix.resize(dof, std::vector<double>(dof, 0.0));
-      dampingMatrix.resize(dof, std::vector<double>(dof, 0.0));
-      massMatrix.assign(dof, std::vector<double>(dof, 0.0));
-      stiffnessMatrix.assign(dof, std::vector<double>(dof, 0.0));
-      dampingMatrix.assign(dof, std::vector<double>(dof, 0.0));
+      massMatrix.resize(numNodes, std::vector<double>(numNodes, 0.0));
+      stiffnessMatrix.resize(numNodes, std::vector<double>(numNodes, 0.0));
+      dampingMatrix.resize(numNodes, std::vector<double>(numNodes, 0.0));
+      massMatrix.assign(numNodes, std::vector<double>(numNodes, 0.0));
+      stiffnessMatrix.assign(numNodes, std::vector<double>(numNodes, 0.0));
+      dampingMatrix.assign(numNodes, std::vector<double>(numNodes, 0.0));
 
       // 剛性マトリクスの内部ノード (4階中心差分)
-      for (int i = 0; i < dof - 2; ++i) {
+      for (int i = 0; i < numNodes - 2; ++i) {
          if (i == 0) {
-            stiffnessMatrix[i][i] = 6 * EI_dx4;
-            stiffnessMatrix[i][i + 1] = -4 * EI_dx4;
-            stiffnessMatrix[i][i + 2] = EI_dx4;
+            // do nothing
          } else if (i == 1) {
             stiffnessMatrix[i][i - 1] = -4 * EI_dx4;
-            stiffnessMatrix[i][i] = 6 * EI_dx4;
-            stiffnessMatrix[i][i + 1] = -4 * EI_dx4;
-            stiffnessMatrix[i][i + 2] = EI_dx4;
          } else {
             stiffnessMatrix[i][i - 2] = EI_dx4;
             stiffnessMatrix[i][i - 1] = -4 * EI_dx4;
-            stiffnessMatrix[i][i] = 6 * EI_dx4;
-            stiffnessMatrix[i][i + 1] = -4 * EI_dx4;
-            stiffnessMatrix[i][i + 2] = EI_dx4;
          }
+         stiffnessMatrix[i][i] = 6 * EI_dx4;
+         stiffnessMatrix[i][i + 1] = -4 * EI_dx4;
+         stiffnessMatrix[i][i + 2] = EI_dx4;
       }
 
-      // 自由端（せん断力ゼロ）
-      stiffnessMatrix[dof - 2][dof - 4] = EI_dx4;
-      stiffnessMatrix[dof - 2][dof - 3] = -3 * EI_dx4;
-      stiffnessMatrix[dof - 2][dof - 2] = 3 * EI_dx4;
-      stiffnessMatrix[dof - 2][dof - 1] = -EI_dx4;
-
-      // 自由端（曲げモーメントゼロ）
-      stiffnessMatrix[dof - 1][dof - 3] = EI_dx4 / 2;
-      stiffnessMatrix[dof - 1][dof - 2] = -2 * EI_dx4 / 2;
-      stiffnessMatrix[dof - 1][dof - 1] = EI_dx4 / 2;
-
-      // 一貫質量マトリクス
-      for (int i = 0; i < dof; ++i)
+      for (int i = 0; i < numNodes; ++i)
          massMatrix[i][i] = rho * A;
 
-      massMatrix[dof - 1][dof - 1] = rho * A;
+      bool based_on_the_reference = false;
 
-      massMatrix[dof - 2][dof - 2] = rho * A;
-      massMatrix[dof - 2][dof - 1] = rho * A;
+      if (based_on_the_reference) {
+         // 自由端（せん断力ゼロ）
+         stiffnessMatrix[numNodes - 2][numNodes - 4] = EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 3] = -3 * EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 2] = 3 * EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 1] = -EI_dx4;
+
+         // 自由端（曲げモーメントゼロ）
+         stiffnessMatrix[numNodes - 1][numNodes - 3] = EI_dx4 / 2;
+         stiffnessMatrix[numNodes - 1][numNodes - 2] = -2 * EI_dx4 / 2;
+         stiffnessMatrix[numNodes - 1][numNodes - 1] = EI_dx4 / 2;
+
+         // 2 (wi - 2 wm1 + wm2)
+         massMatrix[numNodes - 1][numNodes - 1] = rho * A;
+         massMatrix[numNodes - 2][numNodes - 2] = rho * A;
+         massMatrix[numNodes - 2][numNodes - 1] = rho * A;
+      } else {
+         stiffnessMatrix[numNodes - 2][numNodes - 4] = EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 3] = -4 * EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 2] = 5 * EI_dx4;
+         stiffnessMatrix[numNodes - 2][numNodes - 1] = -2 * EI_dx4;
+
+         stiffnessMatrix[numNodes - 1][numNodes - 3] = 2 * EI_dx4;
+         stiffnessMatrix[numNodes - 1][numNodes - 2] = -4 * EI_dx4;
+         stiffnessMatrix[numNodes - 1][numNodes - 1] = 2 * EI_dx4;
+      }
+
+      massMatrix[numNodes - 1][numNodes - 1] /= 2;
 
       auto eigen = Eigensystem(stiffnessMatrix, massMatrix);
       this->freq = eigen.first;
@@ -186,8 +196,11 @@ struct BeamVibration {
       double alpha = 0.05;  // 質量比例減衰
       double beta = 0.001;  // 剛性比例減衰
 
-      for (int i = 0; i < dof; ++i) {
-         for (int j = 0; j < dof; ++j) {
+      // double alpha = 0.;  // 質量比例減衰
+      // double beta = 0.;   // 剛性比例減衰
+
+      for (int i = 0; i < numNodes; ++i) {
+         for (int j = 0; j < numNodes; ++j) {
             dampingMatrix[i][j] = alpha * massMatrix[i][j] + beta * stiffnessMatrix[i][j];
          }
       }
@@ -218,9 +231,9 @@ struct BeamVibration {
 std::vector<double> modalAcceleration(const std::vector<double>& q,
                                       const std::vector<double>& q_dot,
                                       const BeamVibration& beam,
-                                      const std::vector<double>& f_q) {
+                                      const std::vector<double>& f_q /*[N]*/) {
    std::vector<double> ans(q.size(), 0.0), accel(q.size(), 0.0);
-   lapack_svd lu(beam.M);
+   lapack_lu lu(beam.M);
    lu.solve(Dot(beam.C, q_dot), ans);
    accel -= ans;
    lu.solve(Dot(beam.K, q), ans);
@@ -235,9 +248,9 @@ std::vector<double> modalAcceleration(const std::vector<double>& q,
 std::vector<double> acceleration(const std::vector<double>& x,
                                  const std::vector<double>& v,
                                  const BeamVibration& beam,
-                                 const std::vector<double>& externalForceVector) {
+                                 const std::vector<double>& externalForceVector /*[N]*/) {
    std::vector<double> ans(x.size(), 0.0), accel(x.size(), 0.0);
-   lapack_svd lu(beam.massMatrix);
+   lapack_lu lu(beam.massMatrix);
    lu.solve(Dot(beam.dampingMatrix, v), ans);
    accel -= ans;
    lu.solve(Dot(beam.stiffnessMatrix, x), ans);
@@ -250,23 +263,24 @@ std::vector<double> acceleration(const std::vector<double>& x,
 // get numNode fron argument
 int main(int argc, char* argv[]) {
 
-   if (argc < 2) {
-      std::cerr << "Usage: " << argv[0] << " <numNodes>" << " <EB or SM>" << std::endl;
+   if (argc < 3) {
+      std::cerr << "Usage: " << argv[0] << " <numNodes>" << " <index the force is applied>" << std::endl;
       return 1;
    }
 
    const int numNodes = std::stoi(argv[1]);
+   const int index_force_exerted = std::stoi(argv[2]);
 
    // int numNodes = 10;  // 節点の数
 
    const double end_time = 5.0;  // 終了時間
-   const double dt = 0.00001;    // 時間ステップ
+   double dt = 0.00001;          // 時間ステップ
    const double t0 = 0.0;        // 初期時間
 
    std::vector<std::vector<double>> massMatrix, stiffnessMatrix, dampingMatrix;
 
    auto beam = BeamVibration(numNodes);
-   beam.zeta = 1.;
+   // beam.zeta = 1.;
    beam.update(numNodes);
 
    std::cout << Red;
@@ -296,9 +310,13 @@ int main(int argc, char* argv[]) {
    /* -------------------------------------------------------------------------- */
 
    //% 外力の定義（例：節点2に対して時間tに依存する外力を与える）
-   auto externalForce = [&numNodes](int node_index, double t) -> double {
-      if (node_index == numNodes - 1 && 0. < t)
-         return 0.1;  // 10.0 * sin(t);  // 例として正弦波の外力
+
+   auto externalForce = [&numNodes, &index_force_exerted](int node_index, double t) -> double {
+      // if (node_index == numNodes - 2 && 0. < t)
+      //    return 1;  // 10.0 * sin(t);  // 例として正弦波の外力
+      if (node_index == index_force_exerted)
+         return 1;  // 10.0 * sin(t);  // 例として正弦波の外力
+
       // if (node_index == int((double)numNodes / 2.) - 1 && 0.5 < t)
       //    return 0.1;  // 10.0 * sin(t);  // 例として正弦波の外力
       return 0.0;
@@ -329,7 +347,12 @@ int main(int argc, char* argv[]) {
 
    std::cout << Red << "実際の空間座標系での動的解析 ... numNodes = " << numNodes << colorReset << std::endl;
    /* ---------------------------------- 実際の空間座標系での動的解析 ---------------------------------- */
+   double dt_tmp = dt;
    for (auto j = 0; j < 1000000000; ++j) {
+      if (j < 100)
+         dt = 1E-7;
+      else
+         dt = dt_tmp;
       RungeKutta<std::vector<double>> RK_x(dt, t, x, 4), RK_v(dt, t, v, 4);
       do {
          x = RK_x.get_x();
@@ -401,6 +424,8 @@ int main(int argc, char* argv[]) {
    json.set("time", time);
    json.set("displacement", displacement);
    json.set("velocity", velocity);
+   json.set("index_force_exerted", std::vector<int>{index_force_exerted});
+   json.set("x_force_exerted", std::vector<double>{(index_force_exerted + 1.) * beam.L / numNodes});
    json.set("time_modal", time_modal);
    json.set("displacement_modal", displacement_modal);
    json.set("velocity_modal", velocity_modal);
@@ -409,7 +434,7 @@ int main(int argc, char* argv[]) {
    json.set("M", beam.massMatrix);           // モード座標系の質量マトリクスを追加
    json.set("K", beam.stiffnessMatrix);      // モード座標系の剛性マトリクスを追加
 
-   std::string output_filename = "./output/result_" + std::to_string(numNodes) + ".json";
+   std::string output_filename = "./output/result_" + std::to_string(numNodes) + "_" + std::to_string(index_force_exerted) + ".json";
    std::ofstream os(output_filename);
    json.output(os);
    os.close();

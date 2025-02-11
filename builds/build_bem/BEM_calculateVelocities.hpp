@@ -237,7 +237,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          };
 
          //! 面p_fが干渉する，最も近い構造物面を抽出
-         const double angle = 50 * M_PI / 180.;
+         const double angle = 60 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
          for (const auto &f : faces /*p->getFacesNeumann()*/) {
             for (const auto &struct_vertex : next_Vrtx) {
                if (isInContact(X_not_shifted /*シフトなし*/, f->normal, struct_vertex, p)) {
@@ -245,9 +245,9 @@ Tddd vectorToNextSurface(const networkPoint *p) {
                   Tddd X_nearest = Nearest(X_shifted, struct_vertex), n = TriangleNormal(struct_vertex);
                   Tddd To_nearest = X_nearest - X_shifted;
                   double distance = Norm(To_nearest);
-                  if ((isFlat(n, To_nearest, angle) || isFlat(n, -To_nearest, angle)) && (0.3 * radius >= distance))
+                  if ((isFlat(n, To_nearest, angle) || isFlat(n, -To_nearest, angle)) && (0.5 * radius >= distance))
                      add_vector(To_nearest, n);
-                  else if ((0.03 * radius >= distance))
+                  else if ((0.05 * radius >= distance))
                      add_vector(To_nearest, n);
                }
             }
@@ -328,7 +328,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
       for (int i = 0; i <= max_sum_depth; ++i)
          if (i == p0->minDepthFromMultipleNode + p1->minDepthFromMultipleNode + p2->minDepthFromMultipleNode) {
-            W *= std::pow(1.1, max_sum_depth - i);
+            W *= std::pow(1.25, max_sum_depth - i);
             break;
          }
       //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
@@ -398,7 +398,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       if (coef == 0.)
          return;
 
-      double scale = coef * ((steps + 0.1) / (double)(loop));
+      double scale = coef * ((steps + 1.) / (double)(loop));
 
       Tddd V;
       for (const auto &p : points) {
@@ -410,7 +410,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       }
 
       for (const auto &p : points) {
-         p->vecToSurface_BUFFER = 0.3 * p->vecToSurface_BUFFER_BUFFER + 0.7 * std::min(Norm(p->vecToSurface_BUFFER), approxRadius(p) * 0.3) * Normalize(p->vecToSurface_BUFFER);
+         p->vecToSurface_BUFFER = 0.2 * p->vecToSurface_BUFFER_BUFFER + 0.8 * std::min(Norm(p->vecToSurface_BUFFER), approxRadius(p) * 0.4) * Normalize(p->vecToSurface_BUFFER);
          p->vecToSurface_BUFFER_BUFFER = p->vecToSurface_BUFFER;
          add_vecToSurface_BUFFER_to_vecToSurface(p);
          p->vecToSurface_BUFFER.fill(0.);

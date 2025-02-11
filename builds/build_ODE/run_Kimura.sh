@@ -1,5 +1,5 @@
 #!/bin/bash
 
-for i in {2..40}; do
-    ./MDOF_beam_vibration $i
+for i in {0..14}; do
+    ./MDOF_beam_vibration 15 $i
 done

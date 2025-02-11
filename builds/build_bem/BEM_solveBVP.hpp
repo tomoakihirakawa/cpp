@@ -517,10 +517,8 @@ struct BEM_BVP {
 
                      */
                      auto dist = Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
-                     int how_far;
-                     if (dist > scale / 30.)
-                        how_far = 0;
-                     else
+                     int how_far = 0;
+                     if (dist < scale / 10.)
                         how_far = 2;
 
                      if (integ_f->isLinearElement) {

@@ -1,0 +1,17 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "velocity": "floating",
+    "mass": 13500000.0,
+    "MOI": [
+        11100000000.000002,
+        11100000000.000002,
+        15900000000.0
+    ],
+    "COM": [
+        0,
+        0,
+        80
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tonegawa2024Akita/float10MW_MP30.obj"
+}

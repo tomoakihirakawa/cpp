@@ -3330,8 +3330,12 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
    std::function<Tddd(const networkPoint *)> absorb_velocity = [](const networkPoint *p) -> Tddd { return {0., 0., 0.}; };
    std::function<Tddd(const networkPoint *)> absorb_gradPhi_t = [](const networkPoint *p) -> Tddd { return {0., 0., 0.}; };
-
+   std::function<double(const Tddd &X, const double t)> absorb_phi = [](const Tddd &X, const double t) -> double { return 0.; };
+   std::function<double(const Tddd &X, const double t)> absorb_eta = [](const Tddd &X, const double t) -> double { return 0.; };
+   std::function<double(const networkPoint *)> absorb_gamma = [](const networkPoint *p) -> double { return 0.; };
    WaterWaveTheory water_wave_theory;
+   RandomWaterWaveTheory random_water_wave_theory;
+
 #ifdef BEM
   public:
    double _current_time_;

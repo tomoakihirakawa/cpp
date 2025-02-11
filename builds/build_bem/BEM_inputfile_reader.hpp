@@ -260,9 +260,26 @@ struct SimulationSettings {
             net->water_wave_theory.bottom_z = vec[3];
             if (vec.size() > 4)
                net->water_wave_theory.theta = vec[4] / 180. * M_PI;
-            net->absorb_velocity = [net](const networkPoint *p) {
-               return net->water_wave_theory.gradPhi(p->X, p->RK_X.gett());
-            };
+            net->absorb_velocity = [net](const networkPoint *p) { return net->water_wave_theory.gradPhi(p->X, p->RK_X.gett()); };
+            net->absorb_gradPhi_t = [net](const networkPoint *p) { return net->water_wave_theory.gradPhi_t(p->X, p->RK_X.gett()); };
+            net->absorb_phi = [net](const Tddd &X, const double t) { return net->water_wave_theory.phi(X, t); };
+            net->absorb_eta = [net](const Tddd &X, const double t) { return net->water_wave_theory.eta(X, t); };
+            net->absorb_gamma = [net](const networkPoint *p) { return std::clamp(p->signed_distance / (2 * net->water_wave_theory.L), 0., 1.); };
+         });
+         net->inputJSON.find("random_wave_theory", [&](auto STR_VEC) {
+            if (STR_VEC.size() > 4)
+               throw std::runtime_error("random_wave_theory must have 4 elements");
+            auto vec = stod(STR_VEC);
+            double H13 = vec[0];
+            double T13 = vec[1];
+            double h = vec[2];
+            double bottom_z = vec[3];
+            net->random_water_wave_theory = RandomWaterWaveTheory(H13, T13, h, bottom_z);
+            net->absorb_velocity = [net](const networkPoint *p) { return net->random_water_wave_theory.gradPhi(p->X, p->RK_X.gett()); };
+            net->absorb_gradPhi_t = [net](const networkPoint *p) { return net->random_water_wave_theory.gradPhi_t(p->X, p->RK_X.gett()); };
+            net->absorb_phi = [net](const Tddd &X, const double t) { return net->random_water_wave_theory.phi(X, t); };
+            net->absorb_eta = [net](const Tddd &X, const double t) { return net->random_water_wave_theory.eta(X, t); };
+            net->absorb_gamma = [net](const networkPoint *p) { return std::clamp(p->signed_distance / (2 * net->random_water_wave_theory.L13), 0., 1.); };
          });
          net->inputJSON.find("wave_theory_L", [&](auto STR_VEC) {
             net->water_wave_theory = WaterWaveTheory();
@@ -272,9 +289,11 @@ struct SimulationSettings {
             net->water_wave_theory.bottom_z = vec[3];
             if (vec.size() > 4)
                net->water_wave_theory.theta = vec[4] / 180. * M_PI;
-            net->absorb_velocity = [net](const networkPoint *p) {
-               return net->water_wave_theory.gradPhi(p->X, p->RK_X.gett());
-            };
+            net->absorb_velocity = [net](const networkPoint *p) { return net->water_wave_theory.gradPhi(p->X, p->RK_X.gett()); };
+            net->absorb_gradPhi_t = [net](const networkPoint *p) { return net->water_wave_theory.gradPhi_t(p->X, p->RK_X.gett()); };
+            net->absorb_phi = [net](const Tddd &X, const double t) { return net->water_wave_theory.phi(X, t); };
+            net->absorb_eta = [net](const Tddd &X, const double t) { return net->water_wave_theory.eta(X, t); };
+            net->absorb_gamma = [net](const networkPoint *p) { return std::clamp(p->signed_distance / (2 * net->water_wave_theory.L), 0., 1.); };
          });
       }
 

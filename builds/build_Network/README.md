@@ -64,7 +64,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3437)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](../../include/Network.hpp#L3441)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成する．
 
 ```cpp
@@ -603,5 +603,12 @@ make
 ```
 
 [./example1_generate_tetra_using_CGAL_refining.cpp#L1](./example1_generate_tetra_using_CGAL_refining.cpp#L1)
+
+---
+点が，楕円の内部にあるかどうかを判定する．
+
+<img src="example5_is_in_an_ellipsoid.png" width="500px">
+
+[./example5_is_in_an_ellipsoid.cpp#L11](./example5_is_in_an_ellipsoid.cpp#L11)
 
 ---

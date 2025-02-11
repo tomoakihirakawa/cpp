@@ -476,6 +476,7 @@ struct DispersionRelation {
 };
 
 struct WaterWaveTheory {
+
    double h;
    double L;
    double T;
@@ -483,7 +484,9 @@ struct WaterWaveTheory {
    double k;
    double c;
 
-   double theta = 0.;  //[rad]
+   double phase_shift = 0.;  //[rad]
+
+   double theta = 0.;  //[rad]波の向き
 
    WaterWaveTheory() : h(0), L(0), T(0), w(0), k(0), c(0) {};
 
@@ -534,7 +537,7 @@ struct WaterWaveTheory {
       // return A * _GRAVITY_ / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(k * x - w * t);
       double kx = k * std::cos(theta);
       double ky = k * std::sin(theta);
-      return A * _GRAVITY_ / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t);
+      return A * _GRAVITY_ / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t + phase_shift);
    };
 
    double phi(const std::array<double, 3> &X, const double t) const {
@@ -542,49 +545,129 @@ struct WaterWaveTheory {
    };
 
    double A;
-   double bottom_z;
+   double bottom_z = 0;
 
-   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t) const {
       auto [x, y, z] = X;
       double kx = k * std::cos(theta);
       double ky = k * std::sin(theta);
       z = z - h - bottom_z;  //! distance from the bottom
-      return {A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t),
-              A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t),
-              A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t)};
+      return {A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t + phase_shift),
+              A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t + phase_shift),
+              A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t + phase_shift)};
       // return {-A * w * std::cosh(k * (z + h)) / std::sinh(k * h) * std::cos(k * x - w * t),
       //         0.,
       //         A * w * std::sinh(k * (z + h)) / std::sinh(k * h) * std::sin(k * x - w * t)};
    };
 
-   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t) const {
-      return this->gradPhi(X, t, A, bottom_z);
-   };
-
-   std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+   std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t, const double A) const {
       auto [x, y, z] = X;
       double kx = k * std::cos(theta);
       double ky = k * std::sin(theta);
       z = z - h - bottom_z;  //! distance from the bottom
-      return {w * A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t),
-              w * A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t),
-              -w * A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t)};
+      return {w * A * _GRAVITY_ * kx / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t + phase_shift),
+              w * A * _GRAVITY_ * ky / w * std::cosh(k * (z + h)) / std::cosh(k * h) * std::sin(kx * x + ky * y - w * t + phase_shift),
+              -w * A * _GRAVITY_ * k / w * std::sinh(k * (z + h)) / std::cosh(k * h) * std::cos(kx * x + ky * y - w * t + phase_shift)};
    };
 
    std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t) const {
-      return this->gradPhi_t(X, t, A, bottom_z);
+      return this->gradPhi_t(X, t, A);
    };
 
-   double eta(const std::array<double, 3> &X, const double t, const double A, const double bottom_z) const {
+   double eta(const std::array<double, 3> &X, const double t, const double A) const {
       auto [x, y, z] = X;
       double kx = k * std::cos(theta);
       double ky = k * std::sin(theta);
-      return A * std::cos(kx * x + ky * y - w * t) + h + bottom_z;
+      return A * std::cos(kx * x + ky * y - w * t + phase_shift) + h + bottom_z;
    };
 
    double eta(const std::array<double, 3> &X, const double t) const {
-      return this->eta(X, t, A, bottom_z);
+      return this->eta(X, t, A);
    };
+};
+
+struct RandomWaterWaveTheory {
+   double H13;  // 有義波高
+   double T13;  // 有義周期
+   double L13;
+   double h;         // 水深
+   double bottom_z;  // 底面のz座標
+
+   int N = 1000;  // 分割数
+   double f_min, f_max, df;
+   std::vector<std::shared_ptr<WaterWaveTheory>> waves;
+   std::mt19937 gen;
+   std::uniform_real_distribution<double> random_phase;
+
+   // 修正ブレットシュナイダー・光易型スペクトル
+   double spectrum(double f) const {
+      return 0.205 * std::pow(H13, 2) * std::pow(T13, -4) * std::pow(f, -5) * std::exp(-0.75 * std::pow(T13 * f, -4));
+   }
+
+   RandomWaterWaveTheory() : H13(0), T13(0), h(0), bottom_z(0), gen(std::random_device()()), random_phase(0.0, 2.0 * M_PI) {};
+   RandomWaterWaveTheory(double H13, double T13, double h, double bottom_z)
+       : H13(H13),
+         T13(T13),
+         h(h),
+         bottom_z(bottom_z),
+         gen(std::random_device{}()),
+         random_phase(0.0, 2.0 * M_PI) {
+      DispersionRelation disp;
+      disp.set_T_h(T13, h);
+      this->L13 = disp.L;
+      f_min = 1.0 / (2.0 * T13);
+      f_max = 3.0 / T13;
+      df = (f_max - f_min) / N;
+      waves.reserve(N);
+      for (int i = 0; i < N; i++) {
+         auto a_wave = std::make_shared<WaterWaveTheory>();
+         double f = f_min + i * df;
+         double T_wave = 1.0 / f;
+         a_wave->A = std::sqrt(2 * spectrum(f) * df);
+         a_wave->bottom_z = bottom_z;
+         a_wave->set_T_h(T_wave, h);
+         a_wave->phase_shift = random_phase(gen);  // ランダムな位相シフトを設定
+         if (!isFinite(a_wave->eta({0, 0, 0}, 0)))
+            throw std::runtime_error("eta is not finite");
+         waves.emplace_back(a_wave);
+      }
+   }
+
+   std::array<double, 3> gradPhi(const std::array<double, 3> &X, const double t) const {
+      std::array<double, 3> ret{0., 0., 0.};
+      for (const auto &wave : waves) {
+         auto grad = wave->gradPhi(X, t);
+         ret[0] += grad[0];
+         ret[1] += grad[1];
+         ret[2] += grad[2];
+      }
+      return ret;
+   };
+
+   std::array<double, 3> gradPhi_t(const std::array<double, 3> &X, const double t) const {
+      std::array<double, 3> ret{0., 0., 0.};
+      for (const auto &wave : waves) {
+         auto grad = wave->gradPhi_t(X, t);
+         ret[0] += grad[0];
+         ret[1] += grad[1];
+         ret[2] += grad[2];
+      }
+      return ret;
+   };
+
+   double phi(const std::array<double, 3> &X, const double t) const {
+      double sum = 0.0;
+      for (const auto &wave : waves)
+         sum += wave->phi(X, t);
+      return sum;
+   }
+
+   double eta(const std::array<double, 3> &X, const double t) const {
+      double sum = 0.0;
+      for (const auto &wave : waves)
+         sum += wave->eta(X, t) - (wave->h + wave->bottom_z);
+      return sum + h + bottom_z;
+   }
 };
 
 /* -------------------------------------------------------------------------- */

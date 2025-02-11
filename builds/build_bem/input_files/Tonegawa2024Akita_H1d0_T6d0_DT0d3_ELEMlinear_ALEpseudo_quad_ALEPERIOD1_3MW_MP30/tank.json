@@ -1,0 +1,6 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tonegawa2024Akita/tank.obj"
+}

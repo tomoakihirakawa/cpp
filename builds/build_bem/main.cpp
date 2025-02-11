@@ -317,7 +317,7 @@ int main(int argc, char **argv) {
                // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
                bool do_ALE = (RK_step == 4 && (time_step % ALEPERIOD == 0));
                if (do_ALE)
-                  calculateCurrentUpdateVelocities(*water, 10, do_ALE ? (time_step <= 10 ? 0.1 * time_step : 1.) : 0.);
+                  calculateCurrentUpdateVelocities(*water, 20, do_ALE ? (time_step <= 10 ? 0.1 * time_step : 1.) : 0.);
                else
                   std::cout << "ALE is not applied" << std::endl;
                // calculateCurrentUpdateVelocities(*water, 20);
@@ -600,13 +600,14 @@ int main(int argc, char **argv) {
                if (p->RK_X.finished) {
                   if (dt > 0.00001)
                      if (p->absorbedBy != nullptr) {
-                        double L = p->absorbedBy->water_wave_theory.L;
+                        // double L = p->absorbedBy->water_wave_theory.L;
                         //! (2 * L)とは，つまり，2波長の距離で，gammaが1になる．
-                        gamma = std::clamp(p->signed_distance / (2 * L), 0., 1.);                          //! gammaが大きいと，計算が不安定になることがある．
-                        ref_phi = p->absorbedBy->water_wave_theory.phi(p->X, simulation_time) + mean_phi;  //@@@@CHANGED TO
+                        // gamma = std::clamp(p->signed_distance / (2 * 10. /*L*/), 0., 1.);  //! gammaが大きいと，計算が不安定になることがある．
+                        gamma = p->absorbedBy->absorb_gamma(p);
+                        ref_phi = p->absorbedBy->absorb_phi(p->X, simulation_time) + mean_phi;  //@@@@CHANGED TO
                         if (std::ranges::any_of(p->getSurfaces(), [](auto f) { return f->Dirichlet; })) {
                            auto nextX = p->RK_X.getX(p->U_update_BEM);
-                           auto to_eta_in_z = p->absorbedBy->water_wave_theory.eta(nextX, simulation_time) - nextX[2];
+                           auto to_eta_in_z = p->absorbedBy->absorb_eta(nextX, simulation_time) - nextX[2];
                            p->U_update_BEM[2] += gamma * to_eta_in_z / p->RK_X.getdt();
                         }
                      }
