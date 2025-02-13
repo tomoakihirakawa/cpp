@@ -9,9 +9,8 @@
             - [🪸 点の出力](#🪸-点の出力)
             - [🪸 四面体の出力](#🪸-四面体の出力)
             - [🪸 実行方法](#🪸-実行方法)
-- [🐋 `Network`](#🐋-`Network`)
-            - [🪸 実行方法](#🪸-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
+    - [⛵ 四面体の操作](#⛵-四面体の操作)
     - [⛵ ２次補間](#⛵-２次補間)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
@@ -141,19 +140,6 @@ make
 
 [./example0_load_3d_file.cpp#L1](./example0_load_3d_file.cpp#L1)
 
-# 🐋 `Network` 
-
-#### 🪸 実行方法 
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron.cpp
-make
-./example0_manipulation_tetrahedron
-```
-
-[./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
-
 ---
 ### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
 
@@ -176,6 +162,18 @@ ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map 
 ```
 
 [./example0_load_3d_file.cpp#L155](./example0_load_3d_file.cpp#L155)
+
+---
+## ⛵ 四面体の操作 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron.cpp
+make
+./example0_manipulation_tetrahedron
+```
+
+[./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
 
 ---
 ## ⛵ ２次補間 

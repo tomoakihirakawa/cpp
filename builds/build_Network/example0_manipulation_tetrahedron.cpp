@@ -1,8 +1,6 @@
-/*DOC_EXTRACT 0_0_load_output_3d_model
+/*DOC_EXTRACT 0_1_manipulation_tetrahedron
 
-# `Network`
-
-#### 実行方法
+## 四面体の操作
 
 ```shell
 sh clean
