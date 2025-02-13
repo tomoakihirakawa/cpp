@@ -41,8 +41,6 @@ vtkPolygonWrite(ofs, obj->getFaces());
 ofs.close();
 ```
 
-<img src="sample.png" width="500px">
-
 #### 線の出力
 
 ```cpp
@@ -61,6 +59,16 @@ vtkPolygonWrite(ofs, obj->getPoints());
 ofs.close();
 ```
 
+#### 四面体の出力
+
+```cpp
+auto obj = new Network("./bunny.off");
+obj->tetrahedralize();
+std::ofstream ofs("./bunny_tetra.vtu");
+vtkUnstructuredGridWrite(ofs, obj->getTetras());
+ofs.close();
+```
+
 \ref{add_data_default_name}{このようにして}，点に値を付与し，vtpとして出力することもできる．
 また，\ref{add_data_custom_name}{カスタム名}を付けることもできる．
 
@@ -73,10 +81,10 @@ make
 ./example0_load_3d_file
 ```
 
+<img src="sample.png" width="500px">
+
 */
 
-// #include "pch.hpp"
-//
 #include "tetgen1.6.0/tetgen.h"
 //
 #include "Network.hpp"

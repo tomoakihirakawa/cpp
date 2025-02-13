@@ -83,8 +83,6 @@ vtkPolygonWrite(ofs, obj->getFaces());
 ofs.close();
 ```
 
-<img src="sample.png" width="500px">
-
 #### 🪸 線の出力 
 
 ```cpp
@@ -103,8 +101,8 @@ vtkPolygonWrite(ofs, obj->getPoints());
 ofs.close();
 ```
 
-[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L220)，点に値を付与し，vtpとして出力することもできる．
-また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L251)を付けることもできる．
+[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L218)，点に値を付与し，vtpとして出力することもできる．
+また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L249)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -114,6 +112,8 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
 make
 ./example0_load_3d_file
 ```
+
+<img src="sample.png" width="500px">
 
 [./example0_load_3d_file.cpp#L1](./example0_load_3d_file.cpp#L1)
 
@@ -138,7 +138,7 @@ pvd.output();//最後にpvdファイルを出力
 ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map "[v]" sample_line.gif
 ```
 
-[./example0_load_3d_file.cpp#L136](./example0_load_3d_file.cpp#L136)
+[./example0_load_3d_file.cpp#L134](./example0_load_3d_file.cpp#L134)
 
 ---
 ## ⛵ ２次補間 
