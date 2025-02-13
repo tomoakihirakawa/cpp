@@ -84,6 +84,7 @@
 - [🐋 `Network`](./builds/build_Network/README.md#🐋-`Network`)
     - [⛵ 点・線・面の接続関係とその整理](./builds/build_Network/README.md#⛵-点・線・面の接続関係とその整理)
     - [⛵ 3Dファイルの読み込みと出力](./builds/build_Network/README.md#⛵-3Dファイルの読み込みと出力)
+- [🐋 `Network`](./builds/build_Network/README.md#🐋-`Network`)
     - [⛵ ２次補間](./builds/build_Network/README.md#⛵-２次補間)
 - [🐋 空間分割（space_partitioning）](./builds/build_Network/README.md#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](./builds/build_Network/README.md#⛵-等間隔のシンプルな空間分割)

@@ -25,7 +25,7 @@
 auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェクトを作成
 ```
 
-### 出力 `vtkPolygonWrite`
+### 出力 `vtkPolygonWrite`，`vtkUnstructuredGridWrite`
 
 `Network`クラスは，`getFaces`メンバ関数を使って簡単に面の情報を取得できる．
 
@@ -33,6 +33,8 @@ auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェク
 `vtkPolygonWrite`には，`ofstream`と，`std::vector<networkFace*>`や`std::vector<networkLine*>`などを渡し，出力できる．
 
 #### 面の出力
+
+面や線や点の情報を出力する場合は，`vtkPolygonWrite`を使う．
 
 ```cpp
 auto obj = new Network("./bunny.obj");
@@ -61,11 +63,22 @@ ofs.close();
 
 #### 四面体の出力
 
+四面体のような内部構造を持つデータを出力する場合は，`vtkUnstructuredGridWrite`を使う．
+
 ```cpp
-auto obj = new Network("./bunny.off");
+auto obj = new Network("./input/bunny.off");
 obj->tetrahedralize();
-std::ofstream ofs("./bunny_tetra.vtu");
-vtkUnstructuredGridWrite(ofs, obj->getTetras());
+auto data1 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+auto data2 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+auto data3 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+for (const auto& p : obj->getPoints()) {
+   data1[p] = p->X[0];
+   data2[p] = p->X;
+   data3[p] = (double)p->Tetras.size();
+}
+std::vector<std::tuple<std::string, DataMap>> data = {{"x", data1}, {"xyz", data2}, {"tetra_size", data3}};
+std::ofstream ofs("./outptut/tetras.vtu");
+vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
 ofs.close();
 ```
 
@@ -80,8 +93,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_load_3d_file.cpp
 make
 ./example0_load_3d_file
 ```
-
-<img src="sample.png" width="500px">
 
 */
 
@@ -247,7 +258,6 @@ int main() {
          vtkPolygonWrite(ofs, obj->getPoints(), data);
          ofs.close();
       }
-      //
    }
 
    /* -------------------------------------------------------------------- */
@@ -266,139 +276,9 @@ int main() {
          data3[p] = (double)p->Tetras.size();
       }
       std::vector<std::tuple<std::string, DataMap>> data = {{"x", data1}, {"xyz", data2}, {"tetra_size", data3}};
-      {
-         std::ofstream ofs("./outptut/tetras.vtu");
-         vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
-         ofs.close();
-         std::cout << "Wrote tetras.vtu" << std::endl;
-      }
-      {
-         std::ofstream ofs("./output/tetras_surface.vtu");
-         vtkPolygonWrite(ofs, obj->getSurfaces());
-         ofs.close();
-         std::cout << "Wrote tetras_surface.vtu" << std::endl;
-      }
-      {
-         std::vector<networkTetra*> tetras;
-         for (const auto& t : obj->getTetras())
-            if (std::ranges::none_of(t->Faces, [&](const auto& f) { return f->SurfaceQ(); }))
-               tetras.push_back(t);
-         std::ofstream ofs("./output/tetras_without_surface.vtu");
-         vtkUnstructuredGridWrite(ofs, tetras, data);
-         ofs.close();
-         std::cout << "Wrote tetras_without_surface.vtu" << std::endl;
-      }
-
-      /*
-
-      表面の辺をフリップすると，それに応じて，四面体が変化する．
-      もし，四面体が生成できない場合，tetgenから投げられる例外をキャッチして，flipを中止している．
-
-      */
-      if (false) {
-         //@ 一部の辺をflipしたあと，四面体を出力
-         std::vector<networkTetra*> tetras;
-         int count = 0;
-         for (auto i = 0; i < 100; ++i) {
-            bool found = false;
-            for (const auto& f : RandomSample(obj->getSurfaces())) {
-               for (const auto& l : f->getLines()) {
-                  // if (l->canFlip(50 * M_PI / 180.))
-                  {
-                     std::cout << "Flipping..." << std::endl;
-                     // わかりやすいように色をつけるフリップ前-10000，フリップ後10000
-                     auto [p, q] = l->getPoints();
-                     data1[p] = -10000.;
-                     data1[q] = -10000.;
-                     if (l->flip()) {
-                        auto [p, q] = l->getPoints();
-                        data1[p] = 10000.;
-                        data1[q] = 10000.;
-                        std::cout << Green << "Flipped!" << colorReset << std::endl;
-                        // std::cout << Yellow << obj->validateConectivity() << colorReset << std::endl;
-                        found = true;
-                        break;
-                     }
-                  }
-               }
-               if (found)
-                  break;
-            }
-         }
-         std::vector<std::tuple<std::string, DataMap>> data = {{"fliped", data1}, {"xyz", data2}, {"tetra_size", data3}};
-
-         std::ofstream ofs("./output/tetras_after_flip.vtu");
-         vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
-         ofs.close();
-         std::cout << "Wrote tetras_after_flip.vtu" << std::endl;
-      }
-      if (false) {
-         /*
-         点が四面体内部か外部かの判定テスト
-         */
-
-         PVDWriter pvd("./output/tetras_InsideQ.pvd");
-
-         auto bounds = obj->scaledBounds(0.7);
-         auto [xyz0, xyz1] = Transpose(bounds);
-
-         int N = 1000;
-         for (auto i = 0; i < N; ++i) {
-            std::vector<networkTetra*> tetras;
-            auto a = (double)i / N;
-            auto X = a * xyz1 + (1 - a) * xyz0;
-            for (auto tet : obj->getTetras())
-               if (tet->InsideQ(X))
-                  tetras.emplace_back(tet);
-            std::cout << i << " " << tetras.size() << std::endl;
-            if (tetras.size() > 0) {
-               auto filename = "tetras_InsideQ" + std::to_string(i) + ".vtu";
-               std::ofstream ofs("./output/" + filename);
-               vtkUnstructuredGridWrite(ofs, tetras, data);
-               pvd.push(filename, i);
-               ofs.close();
-               if (i == 0)
-                  std::cout << "Wrote " << filename << std::endl;
-            }
-         }
-         pvd.output();
-      }
-
-      {
-         /*
-            表面の点を移動させて，四面体を調整していくことができるかのテスト
-         */
-         PVDWriter pvd("./output/tetras_surface_move_points.pvd");
-         auto normal = [&](const networkPoint* p) {
-            Tddd N = {0., 0., 0.};
-            for (const auto& f : p->getSurfaces())
-               N += f->normal;
-            return Normalize(N);
-         };
-
-         double a = 0.1;
-         for (auto i = 0; i < 100; ++i) {
-            //@ 表面の点を移動
-            for (auto p : obj->getSurfacePoints())
-               p->setXSingle(p->X + normal(p) * 0.001);
-
-            //@ 四面体の節点の調整
-            for (auto j = 0; j < 5; ++j)
-               for (auto p : obj->getPoints()) {
-                  if (!p->SurfaceQ()) {
-                     p->setXSingle(p->X + a * DistorsionMeasureWeightedSmoothingVector_modified(p, [&](const networkPoint* p) { return p->X; }));
-                  }
-               }
-
-            obj->setGeometricProperties();
-
-            auto filename = "tetras_surface_move_points" + std::to_string(i) + ".vtu";
-            std::ofstream ofs("./output/" + filename);
-            vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
-            pvd.push(filename, i);
-            ofs.close();
-            std::cout << "Wrote " << "./output/" + filename << std::endl;
-         }
-      }
+      std::ofstream ofs("./outptut/tetras.vtu");
+      vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
+      ofs.close();
+      std::cout << "Wrote tetras.vtu" << std::endl;
    }
 }

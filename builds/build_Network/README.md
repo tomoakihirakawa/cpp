@@ -3,10 +3,13 @@
     - [⛵ 点・線・面の接続関係とその整理](#⛵-点・線・面の接続関係とその整理)
     - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
         - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
-        - [🪼 出力 `vtkPolygonWrite`](#🪼-出力-`vtkPolygonWrite`)
+        - [🪼 出力 `vtkPolygonWrite`，`vtkUnstructuredGridWrite`](#🪼-出力-`vtkPolygonWrite`，`vtkUnstructuredGridWrite`)
             - [🪸 面の出力](#🪸-面の出力)
             - [🪸 線の出力](#🪸-線の出力)
             - [🪸 点の出力](#🪸-点の出力)
+            - [🪸 四面体の出力](#🪸-四面体の出力)
+            - [🪸 実行方法](#🪸-実行方法)
+- [🐋 `Network`](#🐋-`Network`)
             - [🪸 実行方法](#🪸-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
     - [⛵ ２次補間](#⛵-２次補間)
@@ -67,7 +70,7 @@
 auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェクトを作成
 ```
 
-### 🪼 出力 `vtkPolygonWrite` 
+### 🪼 出力 `vtkPolygonWrite`，`vtkUnstructuredGridWrite` 
 
 `Network`クラスは，`getFaces`メンバ関数を使って簡単に面の情報を取得できる．
 
@@ -75,6 +78,8 @@ auto obj = new Network("./bunny.obj");//ファイルからNetworkオブジェク
 `vtkPolygonWrite`には，`ofstream`と，`std::vector<networkFace*>`や`std::vector<networkLine*>`などを渡し，出力できる．
 
 #### 🪸 面の出力 
+
+面や線や点の情報を出力する場合は，`vtkPolygonWrite`を使う．
 
 ```cpp
 auto obj = new Network("./bunny.obj");
@@ -101,8 +106,29 @@ vtkPolygonWrite(ofs, obj->getPoints());
 ofs.close();
 ```
 
-[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L218)，点に値を付与し，vtpとして出力することもできる．
-また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L249)を付けることもできる．
+#### 🪸 四面体の出力 
+
+四面体のような内部構造を持つデータを出力する場合は，`vtkUnstructuredGridWrite`を使う．
+
+```cpp
+auto obj = new Network("./input/bunny.off");
+obj->tetrahedralize();
+auto data1 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+auto data2 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+auto data3 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+for (const auto& p : obj->getPoints()) {
+data1[p] = p->X[0];
+data2[p] = p->X;
+data3[p] = (double)p->Tetras.size();
+}
+std::vector<std::tuple<std::string, DataMap>> data = {{"x", data1}, {"xyz", data2}, {"tetra_size", data3}};
+std::ofstream ofs("./outptut/tetras.vtu");
+vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
+ofs.close();
+```
+
+[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
+また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L269)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -113,9 +139,20 @@ make
 ./example0_load_3d_file
 ```
 
-<img src="sample.png" width="500px">
-
 [./example0_load_3d_file.cpp#L1](./example0_load_3d_file.cpp#L1)
+
+# 🐋 `Network` 
+
+#### 🪸 実行方法 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron.cpp
+make
+./example0_manipulation_tetrahedron
+```
+
+[./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
 
 ---
 ### 🪼 `PVDWriter`を使ったpvdファイルの作成方法 
@@ -138,7 +175,7 @@ pvd.output();//最後にpvdファイルを出力
 ffmpeg -i line.mov -filter_complex "[0:v] fps=30, scale=iw*0.5:ih*0.5 [v]" -map "[v]" sample_line.gif
 ```
 
-[./example0_load_3d_file.cpp#L134](./example0_load_3d_file.cpp#L134)
+[./example0_load_3d_file.cpp#L155](./example0_load_3d_file.cpp#L155)
 
 ---
 ## ⛵ ２次補間 
