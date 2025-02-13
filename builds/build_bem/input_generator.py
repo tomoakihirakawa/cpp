@@ -2250,7 +2250,19 @@ elif "Tonegawa2024Experiment" in SimulationCase:
              "mass": mass,
              "COM": COM,
              "MOI": MOI,
+            #  "isFixed": [True,True,False,False,False,False],
              "objfile": float_obj}
+
+    if "linear_cable" in suffix:
+        Wf = 0.375
+        k = 10*0.5/85*9.81
+        x = float["COM"][0]
+        y = float["COM"][1]
+        z = float["COM"][2]
+        float["linear_cable1"] = [x + Wf/2, y + Wf/2, z, x + Wf/2 + 2, y + Wf/2, 0, k]
+        float["linear_cable2"] = [x - Wf/2, y + Wf/2, z, x - Wf/2 - 2, y + Wf/2, 0, k]
+        float["linear_cable3"] = [x + Wf/2, y - Wf/2, z, x + Wf/2 + 2, y - Wf/2, 0, k]
+        float["linear_cable4"] = [x - Wf/2, y - Wf/2, z, x - Wf/2 - 2, y - Wf/2, 0, k]
 
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True, "objfile": objfolder + "/tank.obj"}
 
@@ -2725,10 +2737,12 @@ elif "Tonegawa2024Akita" in SimulationCase:
     absorber = {"name": "absorber",
                 "type": "Absorber",
                 "isFixed": True,
-                "objfile": objfolder+"/absorber.obj",
-                "wave_theory" : wave_theory
-                # "random_wave_theory" : random_wave_theory
-                }
+                "objfile": objfolder+"/absorber.obj"}
+    
+    if "random_wave" in suffix:
+        absorber["random_wave_theory"] = random_wave_theory
+    else:
+        absorber["wave_theory"] = wave_theory
 
     inputfiles = [tank, water, float, absorber]
 
@@ -2736,7 +2750,7 @@ elif "Tonegawa2024Akita" in SimulationCase:
 
     setting = {"max_dt": dt,
                "end_time_step": 10000000,
-               "end_time": 60,
+               "end_time": 100,
                "element": element,
                 "ALE": ALE,
                 "ALEPERIOD": ALEPERIOD}

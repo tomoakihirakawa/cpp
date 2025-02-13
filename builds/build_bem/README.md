@@ -567,7 +567,7 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L309)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[`calculateVecToSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L297)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 1. まず，[`vectorTangentialShift`](../../builds/build_bem/BEM_calculateVelocities.hpp#L155)で接線方向にシフトし，
 2. [`vectorToNextSurface`](../../builds/build_bem/BEM_calculateVelocities.hpp#L166)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
@@ -582,7 +582,7 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 * よりディリクレ面の歪みを緩和するように重みを大きくしている
 * より喫水線の歪みを緩和するように重みを大きくしている
 
-[./BEM_calculateVelocities.hpp#L271](./BEM_calculateVelocities.hpp#L271)
+[./BEM_calculateVelocities.hpp#L259](./BEM_calculateVelocities.hpp#L259)
 
 ---
 ## ⛵ 多重節点を考慮したIDの設定方法
@@ -1110,7 +1110,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L499](./BEM_calculateVelocities.hpp#L499)
+[./BEM_calculateVelocities.hpp#L487](./BEM_calculateVelocities.hpp#L487)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1125,7 +1125,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L586](./BEM_calculateVelocities.hpp#L586)
+[./BEM_calculateVelocities.hpp#L574](./BEM_calculateVelocities.hpp#L574)
 
 ---
 ### 🪼 JSONファイルの出力 
@@ -1348,12 +1348,12 @@ python3.11 input_generator.py Tonegawa2024Akita -dt 0.2 -T 5 -H 2 -o /Volumes/ho
 3MWの浮体のサイズは全て，WxLxH = 45x45x10 mで，喫水は7.5 m．
 10MWの浮体のサイズは全て，WxLxH = 60x60x17 mで，喫水は12 m．
 
-[./input_generator.py#L2607](./input_generator.py#L2607)
+[./input_generator.py#L2619](./input_generator.py#L2619)
 
 ---
 ## ⛵ Fredriksen2015
 
-[./input_generator.py#L2292](./input_generator.py#L2292)
+[./input_generator.py#L2304](./input_generator.py#L2304)
 
 ---
 ## ⛵ Hadzic2005 

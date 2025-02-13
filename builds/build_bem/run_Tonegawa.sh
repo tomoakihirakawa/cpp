@@ -5,51 +5,26 @@ T_list=(0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75)
 
 for t in ${T_list[@]}; do
     # python3 input_generator.py Tonegawa2024 -ALEPERIOD 1 -dt 0.025 -suffix B10d25 -outputdir /Volumes/home/BEM/Tonegawa2024_new
-    python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.05 -s 0d25 -o /Volumes/home/BEM/Tonegawa2024Experiment
+    python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.06 -s 0d25_linear_cable -o /Volumes/home/BEM/Tonegawa2024Experiment
 done
 
-for t in ${T_list[@]}; do
-    # python3 input_generator.py Tonegawa2024 -ALEPERIOD 1 -dt 0.025  -suffix B10d125 -outputdir /Volumes/home/BEM/Tonegawa2024_new
-    python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.05 -s 0d125 -o /Volumes/home/BEM/Tonegawa2024Experiment
-done
+# for t in ${T_list[@]}; do
+#     # python3 input_generator.py Tonegawa2024 -ALEPERIOD 1 -dt 0.025  -suffix B10d125 -outputdir /Volumes/home/BEM/Tonegawa2024_new
+#     python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.05 -s 0d125_linear_cable -o /Volumes/home/BEM/Tonegawa2024Experiment
+# done
 
-for t in ${T_list[@]}; do
-    # python3 input_generator.py Tonegawa2024 -ALEPERIOD 1 -dt 0.025 -suffix B10d075 -outputdir /Volumes/home/BEM/Tonegawa2024_new
-    python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.05 -s 0d075 -o /Volumes/home/BEM/Tonegawa2024Experiment
-done
+# for t in ${T_list[@]}; do
+#     # python3 input_generator.py Tonegawa2024 -ALEPERIOD 1 -dt 0.025 -suffix B10d075 -outputdir /Volumes/home/BEM/Tonegawa2024_new
+#     python3.11 ./input_generator.py Tonegawa2024Experiment -T ${t} -dt 0.05 -s 0d075_linear_cable -o /Volumes/home/BEM/Tonegawa2024Experiment
+# done
 
-# ./fast ./input_files/Tonegawa2024Experiment_T0d30_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d35_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d40_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d45_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d50_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-
-# ./fast ./input_files/Tonegawa2024Experiment_T0d55_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d60_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d65_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d70_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-# ./fast ./input_files/Tonegawa2024Experiment_T0d75_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d075
-
-# ./fast ./input_files/Tonegawa2024Experiment_T0d30_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d35_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d40_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d45_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d50_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-
-# ./fast ./input_files/Tonegawa2024Experiment_T0d55_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d60_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d65_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d70_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d75_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-
-# ./fast ./input_files/Tonegawa2024Experiment_T0d30_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d35_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d40_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d45_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-# ./fast ./input_files/Tonegawa2024Experiment_T0d50_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d125
-
-# ./fast ./input_files/Tonegawa2024Experiment_T0d55_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25
-# ./fast ./input_files/Tonegawa2024Experiment_T0d60_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25
-# ./fast ./input_files/Tonegawa2024Experiment_T0d65_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25
-# ./fast ./input_files/Tonegawa2024Experiment_T0d70_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25
-# ./fast ./input_files/Tonegawa2024Experiment_T0d75_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25
+# ./fast ./input_files/Tonegawa2024Experiment_T0d30_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d35_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d40_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d45_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d50_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d55_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d60_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d65_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d70_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable
+# ./fast ./input_files/Tonegawa2024Experiment_T0d75_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_0d25_linear_cable

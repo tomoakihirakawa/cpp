@@ -220,20 +220,8 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          std::vector<Tddd> directions;
 
          auto add_vector = [&](const Tddd &V, const Tddd &n) {
-            // const double small_angle = 5. * M_PI / 180.;
-            // bool found = false;
-            // for (auto i = 0; i < directions.size(); ++i)
-            //    if (Dot(V, n) < distances[i] && (isFlat(n, directions[i], small_angle) || isFlat(n, -directions[i], small_angle))) {
-            //       distances[i] = Dot(V, n);
-            //       directions[i] = n;
-            //       found = true;
-            //       break;
-            //    }
-            // if (!found)
-            {
-               distances.push_back(Dot(V, n));
-               directions.emplace_back(n);
-            }
+            distances.push_back(Dot(V, n));
+            directions.emplace_back(n);
          };
 
          //! 面p_fが干渉する，最も近い構造物面を抽出

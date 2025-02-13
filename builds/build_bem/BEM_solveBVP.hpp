@@ -518,7 +518,7 @@ struct BEM_BVP {
                      */
                      auto dist = Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
                      int how_far = 0;
-                     if (dist < scale / 10.)
+                     if (dist < scale / 20.)
                         how_far = 2;
 
                      if (integ_f->isLinearElement) {
@@ -1528,11 +1528,11 @@ struct BEM_BVP {
             auto T_GLOBAL = T_hydro;
             F += F_mooring;
             T_GLOBAL += T_mooring;
-            //% ---------------------- 重心の並進移動によって伸びる線形バネによる係留 --------------- */
-            //% simple spring mooring
             body->inputJSON.for_each(
                 [&](auto key, auto vec_string) {
                    if (key.contains("spring")) {
+                      //% ---------------------- 重心の並進移動によって伸びる線形バネによる係留 --------------- */
+                      //% simple spring mooring
                       auto X_k = stod(vec_string);
                       std::array<double, 3> init_fairleader_position = {X_k[0], X_k[1], X_k[2]};
                       std::array<double, 3> current_fairleader_position = body->rigidTransformation(init_fairleader_position);
@@ -1557,6 +1557,35 @@ struct BEM_BVP {
                       //  std::cout << "anchor = " << anchor << std::endl;
                       //  std::cout << "diff = " << diff << std::endl;
                       //  std::cout << "f = " << f << std::endl;
+                   } else if (key.contains("linear_cable")) {
+                      auto X_k = stod(vec_string);
+                      std::array<double, 3> init_fairleader_position = {X_k[0], X_k[1], X_k[2]};
+                      std::array<double, 3> current_fairleader_position = body->rigidTransformation(init_fairleader_position);
+                      std::array<double, 3> anchor = {X_k[3], X_k[4], X_k[5]};
+                      double kx, ky, kz;
+                      if (X_k.size() >= 9) {
+                         kx = X_k[6];
+                         ky = X_k[7];
+                         kz = X_k[8];
+                      } else if (X_k.size() == 7)
+                         kz = ky = kx = X_k[6];
+
+                      double diff = Norm(current_fairleader_position - anchor) - Norm(init_fairleader_position - anchor);
+                      Tddd direction = Normalize(anchor - current_fairleader_position);
+                      //  std::array<double, 3> f = Tddd{kx, ky, kz} * diff * direction;
+                      std::array<double, 3> f = Tddd{kx, ky, kz} * (anchor - current_fairleader_position);
+
+                      //  if (X_k.size() > 9) {
+                      //     double default_tention = X_k[10];
+                      //     f += default_tention * direction;
+                      //  }
+
+                      //  //  fairleader方向に向かう力はゼロにする．
+                      //  if (Dot(f, direction) < 0)
+                      //     f.fill(0);
+
+                      T_GLOBAL += Cross(current_fairleader_position - body->COM, f);
+                      F += f;
                    }
                 });
 
