@@ -1,49 +1,49 @@
 # Contents
-- [🐋 `Network`](#🐋-`Network`)
-    - [⛵ 点・線・面の接続関係とその整理](#⛵-点・線・面の接続関係とその整理)
-    - [⛵ 3Dファイルの読み込みと出力](#⛵-3Dファイルの読み込みと出力)
-        - [🪼 読み込み `Network`](#🪼-読み込み-`Network`)
-        - [🪼 出力 `vtkPolygonWrite`，`vtkUnstructuredGridWrite`](#🪼-出力-`vtkPolygonWrite`，`vtkUnstructuredGridWrite`)
-            - [🪸 面の出力](#🪸-面の出力)
-            - [🪸 線の出力](#🪸-線の出力)
-            - [🪸 点の出力](#🪸-点の出力)
-            - [🪸 四面体の出力](#🪸-四面体の出力)
-            - [🪸 実行方法](#🪸-実行方法)
-        - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
-    - [⛵ 四面体の操作](#⛵-四面体の操作)
-    - [⛵ 四面体の操作](#⛵-四面体の操作)
-    - [⛵ ２次補間](#⛵-２次補間)
-- [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
-    - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
-        - [🪼 例](#🪼-例)
-    - [⛵ ⛵ `Bucket`クラス](#⛵-⛵-`Bucket`クラス)
-        - [🪼 🪼 メンバ変数](#🪼-🪼-メンバ変数)
-        - [🪼 🪼 メソッド](#🪼-🪼-メソッド)
-            - [🪸 🪸 初期化関連](#🪸-🪸-初期化関連)
-            - [🪸 🪸 インデックス変換](#🪸-🪸-インデックス変換)
-            - [🪸 🪸 データ追加・削除](#🪸-🪸-データ追加・削除)
-            - [🪸 🪸 データ取得](#🪸-🪸-データ取得)
-            - [🪸 🪸 範囲指定検索](#🪸-🪸-範囲指定検索)
-        - [🪼 🪼 TODO](#🪼-🪼-TODO)
-    - [⛵ 階層のある空間分割（木構造）](#⛵-階層のある空間分割（木構造）)
-    - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#⛵-空間分割の応用例：オブジェクトの接触や交差の判定)
-        - [🪼 線分と面の交差判定](#🪼-線分と面の交差判定)
-        - [🪼 面と面の接触判定](#🪼-面と面の接触判定)
-            - [🪸 ２面の最短距離](#🪸-２面の最短距離)
-- [🐋 vtk, vtp, vtu](#🐋-vtk,-vtp,-vtu)
-- [🐋 四面体の生成](#🐋-四面体の生成)
-    - [⛵ TetGenを使った四面体を生成](#⛵-TetGenを使った四面体を生成)
-- [🐋 Set  the minimum  required version  of cmake  for a  project.](#🐋-Set--the-minimum--required-version--of-cmake--for-a--project.)
-- [🐋 Find C++ compiler](#🐋-Find-C++-compiler)
-- [🐋 Add an executable to the project using the specified source files.](#🐋-Add-an-executable-to-the-project-using-the-specified-source-files.)
-- [🐋 In Linux/Unix, it will creates the libtet.a](#🐋-In-Linux/Unix,-it-will-creates-the-libtet.a)
-        - [🪼 `tetgenbehavior`クラス](#🪼-`tetgenbehavior`クラス)
-    - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#⛵-四面体の生成（制約付き四面分割-constrained-tetrahedralization）)
-    - [⛵ スコアリングと選択](#⛵-スコアリングと選択)
-- [🐋 CGALを使って四面体を生成する 9_9_CGAL](#🐋-CGALを使って四面体を生成する-9_9_CGAL)
-    - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
-    - [⛵ CGALを使って四面体を生成する](#⛵-CGALを使って四面体を生成する)
-    - [⛵ CGALを使って四面体を生成し，さらに細分化する](#⛵-CGALを使って四面体を生成し，さらに細分化する)
+- [🐋 `Network`](#-network)
+    - [⛵ 点・線・面の接続関係とその整理](#-点線面の接続関係とその整理)
+    - [⛵ 3Dファイルの読み込みと出力](#-3dファイルの読み込みと出力)
+        - [🪼 読み込み `Network`](#-読み込み-network)
+        - [🪼 出力 `vtkPolygonWrite`，`vtkUnstructuredGridWrite`](#-出力-vtkpolygonwritevtkunstructuredgridwrite)
+            - [🪸 面の出力](#-面の出力)
+            - [🪸 線の出力](#-線の出力)
+            - [🪸 点の出力](#-点の出力)
+            - [🪸 四面体の出力](#-四面体の出力)
+            - [🪸 実行方法](#-実行方法)
+        - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#-pvdwriterを使ったpvdファイルの作成方法)
+    - [⛵ 四面体の操作](#-四面体の操作)
+    - [⛵ 四面体の操作](#-四面体の操作)
+    - [⛵ ２次補間](#-２次補間)
+- [🐋 空間分割（space_partitioning）](#-空間分割space_partitioning)
+    - [⛵ 等間隔のシンプルな空間分割](#-等間隔のシンプルな空間分割)
+        - [🪼 例](#-例)
+    - [⛵ ⛵ `Bucket`クラス](#--bucketクラス)
+        - [🪼 🪼 メンバ変数](#--メンバ変数)
+        - [🪼 🪼 メソッド](#--メソッド)
+            - [🪸 🪸 初期化関連](#--初期化関連)
+            - [🪸 🪸 インデックス変換](#--インデックス変換)
+            - [🪸 🪸 データ追加・削除](#--データ追加削除)
+            - [🪸 🪸 データ取得](#--データ取得)
+            - [🪸 🪸 範囲指定検索](#--範囲指定検索)
+        - [🪼 🪼 TODO](#--todo)
+    - [⛵ 階層のある空間分割（木構造）](#-階層のある空間分割木構造)
+    - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#-空間分割の応用例オブジェクトの接触や交差の判定)
+        - [🪼 線分と面の交差判定](#-線分と面の交差判定)
+        - [🪼 面と面の接触判定](#-面と面の接触判定)
+            - [🪸 ２面の最短距離](#-２面の最短距離)
+- [🐋 vtk, vtp, vtu](#-vtk-vtp-vtu)
+- [🐋 四面体の生成](#-四面体の生成)
+    - [⛵ TetGenを使った四面体を生成](#-tetgenを使った四面体を生成)
+- [🐋 Set  the minimum  required version  of cmake  for a  project.](#-set--the-minimum--required-version--of-cmake--for-a--project)
+- [🐋 Find C++ compiler](#-find-c-compiler)
+- [🐋 Add an executable to the project using the specified source files.](#-add-an-executable-to-the-project-using-the-specified-source-files)
+- [🐋 In Linux/Unix, it will creates the libtet.a](#-in-linuxunix-it-will-creates-the-libteta)
+        - [🪼 `tetgenbehavior`クラス](#-tetgenbehaviorクラス)
+    - [⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization）](#-四面体の生成制約付き四面分割-constrained-tetrahedralization)
+    - [⛵ スコアリングと選択](#-スコアリングと選択)
+- [🐋 CGALを使って四面体を生成する 9_9_CGAL](#-cgalを使って四面体を生成する-9_9_cgal)
+    - [⛵ CGALを使って四面体を生成する](#-cgalを使って四面体を生成する)
+    - [⛵ CGALを使って四面体を生成する](#-cgalを使って四面体を生成する)
+    - [⛵ CGALを使って四面体を生成し，さらに細分化する](#-cgalを使って四面体を生成しさらに細分化する)
 
 
 ---
@@ -186,9 +186,9 @@ make
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron_simple_simulation.cpp
 make
-./example0_manipulation_tetrahedron
+./example0_manipulation_tetrahedron_simple_simulation
 ```
 
 [./example0_manipulation_tetrahedron_simple_simulation.cpp#L1](./example0_manipulation_tetrahedron_simple_simulation.cpp#L1)
@@ -239,21 +239,20 @@ make
 
 ### 🪼 🪼 メンバ変数  
 
-| 変数名                | 説明                                              |
-|:---------------------:|:-------------------------------------------------:|
-| `xbounds`, `ybounds`, `zbounds` | X,Y,Z 座標の境界値．`Tdd` 型                   |
-| `xsize`, `ysize`, `zsize` | 各座標のサイズ．`ST` 型                          |
-| `bounds`              | 全体のバウンド．`T3Tdd` 型                        |
-| `center`              | 空間の中心座標．`Tddd` 型                          |
-| `dn`                  | 各座標のサイズ（ST3 型）                           |
-| `data`             | バケツ（3D配列）                                  |
-| `data_vector`      | バケツのベクター版                                 |
-| `data_bool`        | バケツが空であるかどうかを示すbool値の3D配列       |
-| `vector_is_set`       | ベクター版が設定されているか                       |
-| `all_stored_objects`  | 保存されている全てのオブジェクト                   |
-| `map_to_ijk`          | オブジェクトからインデックスへのマッピング         |
-| `dL`                  | バケツの１辺の長さ                                 |
-
+| 変数名                           | 説明                                          |
+|:-------------------------------:|:--------------------------------------------:|
+| `xbounds`, `ybounds`, `zbounds` | X,Y,Z 座標の境界値．`Tdd` 型                    |
+| `xsize`, `ysize`, `zsize`       | 各座標のサイズ．`ST` 型                         |
+| `bounds`                        | 全体のバウンド．`T3Tdd` 型                      |
+| `center`                        | 空間の中心座標．`Tddd` 型                       |
+| `dn`                            | 各座標のサイズ（ST3 型）                        |
+| `data`                          | バケツ（3D配列）                               |
+| `data_vector`                   | バケツのベクター版                              |
+| `data_bool`                     | バケツが空であるかどうかを示すbool値の3D配列       |
+| `vector_is_set`                 | ベクター版が設定されているか                     |
+| `all_stored_objects`            | 保存されている全てのオブジェクト                  |
+| `map_to_ijk`                    | オブジェクトからインデックスへのマッピング          |
+| `dL`                            | バケツの１辺の長さ                              |
 
 ### 🪼 🪼 メソッド  
 

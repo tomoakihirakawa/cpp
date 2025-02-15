@@ -432,6 +432,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    //
    // 今のところSoft bodyのためのもの
    RungeKutta<Tddd> RK_velocity, RK_velocity_sub;
+   RungeKutta<T6d> RK_generalized_velocity;
    RungeKutta<Tddd> RK_force;
    //
    // 今のところSPHのためのもの
@@ -4278,14 +4279,14 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       std::cout << Green << "Total Tetra : " << this->Tetras.size() << colorReset << std::endl;
    }
 
-   bool tetrahedralize() {
+   bool tetrahedralize(const std::string command = "pq2a10Y") {
 
       tetgenio in = generate_tetgenio_input(this->getSurfaces());
       printf("Loaded %d vertices and %d faces from Network.\n", in.numberofpoints, in.numberoffacets);
 
       tetgenbehavior b;
       // b.parse_commandline(const_cast<char *>("pq2.a10"));
-      b.parse_commandline(const_cast<char *>("pq2a10Y"));
+      b.parse_commandline(const_cast<char *>(command.c_str()));
       tetgenio out;
       ::tetrahedralize(&b, &in, &out);
 
