@@ -129,6 +129,7 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
             if (net->isFixed[i + 3])
                rotation[i] = 0;
          }
+
          auto next_COM = net->RK_COM.getX(velocity);
          auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->RK_Q.getX())));
          auto X_next = [&](const auto &p) { return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX); };
@@ -164,7 +165,7 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 // やはりこの辺りなのだろう
 
 // \label{BEM:vectorToNextSurface}
-const double dxi = 0.4;
+const double dxi = 0.3;
 const T3Tdd t0t1_vertices = {{{1., 0.}, {1. - dxi, dxi}, {1. - dxi, 0.}}};
 const auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 3);
 const auto t0t1_high = SymmetricSubdivisionOfTriangle(t0t1_vertices, 10);
@@ -398,7 +399,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       }
 
       for (const auto &p : points) {
-         p->vecToSurface_BUFFER = 0.2 * p->vecToSurface_BUFFER_BUFFER + 0.8 * std::min(Norm(p->vecToSurface_BUFFER), approxRadius(p) * 0.4) * Normalize(p->vecToSurface_BUFFER);
+         p->vecToSurface_BUFFER = 0.5 * p->vecToSurface_BUFFER_BUFFER + 0.5 * std::min(Norm(p->vecToSurface_BUFFER), approxRadius(p) * 0.5) * Normalize(p->vecToSurface_BUFFER);
          p->vecToSurface_BUFFER_BUFFER = p->vecToSurface_BUFFER;
          add_vecToSurface_BUFFER_to_vecToSurface(p);
          p->vecToSurface_BUFFER.fill(0.);

@@ -338,7 +338,8 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}
    //@ ------------------------------------------ */
 
    for (const auto &f : faces) {
-      f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
+      // f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
+      f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_;
       f->isLinearElement = !f->isPseudoQuadraticElement;
    }
 

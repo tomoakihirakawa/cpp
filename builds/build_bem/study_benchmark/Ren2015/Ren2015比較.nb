@@ -1,3 +1,51 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d246fa1df386958df509293f9b4dab732751fc4675bc67e8a0eb6190cff700a5
-size 2236
+In[462]:=
+Clear["Global`*"]
+NotebookEvaluate[FileNameJoin[{NotebookDirectory[],"../../../../../mathematica_plot_options.nb"}]]
+filename="/Users/tomoaki/BEM/Ren2015_H0d04_T1d2_piston_DT0d02_ELEMlinear_ALElinear_ALEPERIOD1/result.json";
+jsonInfo[filename]
+data=Import[filename];
+
+d=0.4;
+T=1.2;
+k=getkFromTandDepth[T,d];
+shift=5.5;
+
+dataHeave=Import[FileNameJoin[{NotebookDirectory[],"Ren2015_Fig11_H0d04_T1d2_heave.csv"}]];
+ListPlot[{{#1,d*#2}&@@@dataHeave,Transpose[{("simulation_time"/.data)-shift,("float_COM"/.data)[[;;,3]]-0.4}]},Joined->True,PlotMarkers->Automatic,Evaluate[plot2Doption]]
+dataPitch=Import[FileNameJoin[{NotebookDirectory[],"Ren2015_Fig11_H0d04_T1d2_pitch.csv"}]];
+ListPlot[{{#1,k*d*#2}&@@@dataPitch,Transpose[{("simulation_time"/.data)-shift,("float_pitch"/.data)}]},Joined->True,PlotMarkers->Automatic,Evaluate[plot2Doption]]
+dataSurge=Import[FileNameJoin[{NotebookDirectory[],"Ren2015_Fig11_H0d04_T1d2_surge.csv"}]];
+ListPlot[{{#1,#2*d}&@@@dataSurge,Transpose[{("simulation_time"/.data)-shift,("float_COM"/.data)[[;;,1]]-5}]},Joined->True,PlotMarkers->Automatic,Evaluate[plot2Doption]]
+Out[463]= {plot2Doption,plot3Doption,framelabel[xlabel_String,ylabel_String,size_:20],axeslabel2D[xlabel_String,ylabel_String,size_:20],axeslabel3D[xlabel_String,ylabel_String,zlabel_String,size_:20],axeslabel[labels_List,size_: 20],importData,jsonInfo,interpolateAndFourier,interpolateAndFourierTr,MyFourier[list_,n_],MyInverseFourier[list_,n_],MyDiscreteConvolve[f_,g_],MyDiscreteConvolveUsingCn[FourierGF_],Rv[q_],Rs[q_],W2dQdt[q_,w_],Q2Roll[{a_,b_,c_,d_}],Q2Pitch[{a_,b_,c_,d_}],Q2Yaw[{a_,b_,c_,d_}],getOmegaFromKandDepth,getTFromLandDepth}
+Out[465]= no.	title	length
+1	cpu_time	274
+2	eq_of_motion	274
+3	float_COM	274
+4	float_EK	274
+5	float_EP	274
+6	float_accel	274
+7	float_area	274
+8	float_drag_force	274
+9	float_drag_torque	274
+10	float_force	274
+11	float_pitch	274
+12	float_roll	274
+13	float_torque	274
+14	float_velocity	274
+15	float_yaw	274
+16	gradPhi_worst_grad	274
+17	gradPhi_worst_iteration	274
+18	gradPhi_worst_value	274
+19	simulation_time	274
+20	wall_clock_time	274
+21	water_E	274
+22	water_EK	274
+23	water_EP	274
+24	water_face_size	274
+25	water_point_size	274
+26	water_volume	274
+
+
+Out[474]= 
+Out[476]= 
+Out[478]= 

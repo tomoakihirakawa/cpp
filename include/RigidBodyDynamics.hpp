@@ -1,5 +1,4 @@
-#ifndef RigidBodyDynamics_H
-#define RigidBodyDynamics_H
+#pragma once
 
 #include "basic.hpp"
 #include "interpolations.hpp"
@@ -107,4 +106,32 @@ struct RigidBodyDynamics {
    };
 };
 
-#endif
+// @ ============================================================== */
+// @                        弾性体の力学に関する                         */
+// @ ============================================================== */
+//@ メッシュが関わらない弾性体の運動を表すクラス
+struct ElasticBodyDynamics {
+
+   ElasticBodyDynamics() = default;
+   virtual ~ElasticBodyDynamics() = default;
+
+   //* ------------------------------------------------------ */
+   //*                     運動を表す量                         */
+   //* ------------------------------------------------------ */
+   T6d force = {0., 0., 0., 0., 0., 0.};
+   T6d velocity = {0., 0., 0., 0., 0., 0.};  // = {velocity, angular velocity}
+   T6d acceleration = {0., 0., 0., 0., 0., 0.};
+
+   //* ------------------------------------------------------ */
+   //*                   位置や変形を表す量                      */
+   //* ------------------------------------------------------ */
+   Tddd center_of_mass = {0., 0., 0.};  // 現在の重心座標
+   Quaternion quaternion;               // 回転（必要なら）
+
+   //* ------------------------------------------------------ */
+   //*                   　　 材料特性                          */
+   //* ------------------------------------------------------ */
+   double mass = 1.0;
+   double youngs_modulus = 1.0e+9;  // ヤング率
+   double poisson_ratio = 0.3;      // ポアソン比
+};

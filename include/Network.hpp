@@ -85,11 +85,11 @@ V_netLp extractLines(const std::vector<T *> &points) {
 };
 
 /* ------------------------------------------------------ */
-/*     *     */
-/*    / \    */
-/*   *===*   */
-/*    \ /    */
-/*     *     */
+/*     *                                                  */
+/*    / \                                                 */
+/*   *===*                                                */
+/*    \ /                                                 */
+/*     *                                                  */
 /* ------------------------------------------------------ */
 
 class networkLine : public CoordinateBounds {
@@ -301,9 +301,9 @@ class networkLine : public CoordinateBounds {
 };
 
 /* ------------------------------------------------------ */
-/*    \ /    */
-/*   --@--   */
-/*    / \    */
+/*    \ /                                                 */
+/*   --@--                                                */
+/*    / \                                                 */
 /* ------------------------------------------------------- */
 
 #include "integrationOfODE.hpp"
@@ -368,6 +368,22 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    std::array<double, 3> getForce() {
       return getTension() + getDragForce() + getGravitationalForce();
+   }
+
+   /* -------------------------------------------------------------------------- */
+
+   std::array<std::array<double, 3>, 3> deformationGradient() {
+      std::array<std::array<double, 3>, 3> F;
+      F.fill({0., 0., 0.});
+      for (const auto &l : this->getLines()) {
+         auto [p, q] = l->getPoints();
+         auto X = p->RK_X_sub.getX() - this->RK_X_sub.getX();
+         auto Y = q->RK_X_sub.getX() - this->RK_X_sub.getX();
+         F[0] += X;
+         F[1] += Y;
+         F[2] += Cross(X, Y);
+      }
+      return F;
    }
 
    /* -------------------------------------------------------------------------- */
@@ -1408,11 +1424,12 @@ class pathInfo {
 
 struct DodecaPoints;
 
-//^ =====================================================
-//^     @
-//^    / \
-//^   @-->@
-//^ =====================================================
+/* =====================================================*/
+/*     @       */
+/*    / \      */
+/*   @-->@     */
+/* =====================================================*/
+
 class networkFace : public Triangle {
   public:
    int index;
@@ -2520,22 +2537,25 @@ std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine *> &l
 };
 /* -------------------------------------------------------------------------- */
 #include "searcher.hpp"
+
 /* -------------------------------------------------------------------------- */
 /*      @     */
 /*     /|\    */
 /*    / | \   */
 /*   /  |  \  */
 /*  @---@---@ */
+/* -------------------------------------------------------------------------- */
 
-class networkTetra : public Tetrahedron {
+class networkTetra : public Tetrahedron, public ElasticBodyDynamics {
   public:
    Network *network;
    // Network connectivities
    T_4P Points;
    T_6L Lines;
    T_4F Faces;
-   networkTetra(Network *const network_IN, const T_4P &points, const T_6L &lines, const T_4F &faces);
 
+   double mass = 0;
+   networkTetra(Network *const network_IN, const T_4P &points, const T_6L &lines, const T_4F &faces);
    ~networkTetra();
 };
 
@@ -2802,14 +2822,14 @@ tetgenio generate_tetgenio_input(const std::vector<networkFace *> &surfaces) {
 
 #endif
 
-//% ========================================================================== */
-//%  Networkは持っているPointsから情報を取り出すメソッドを提供する*/
-//%  @-@-@
-//%  |\|/|
-//%  @-@-@
-//%  |/|\|
-//%  @-@-@
-//% ========================================================================== */
+/* ========================================================================== */
+/*   Networkは持っているPointsから情報を取り出すメソッドを提供する                    */
+/*   @-@-@                                                                    */
+/*   |\|/|                                                                    */
+/*   @-@-@                                                                    */
+/*   |/|\|                                                                    */
+/*   @-@-@                                                                    */
+/*  ========================================================================= */
 
 class MooringLine;
 class Network : public CoordinateBounds, public RigidBodyDynamics {
@@ -3097,6 +3117,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    Buckets<networkFace *> BucketFaces;
    Buckets<networkPoint *> BucketParametricPoints;
    Buckets<networkPoint *> BucketPoints;
+   Buckets<networkTetra *> BucketTetras;
 
    const Buckets<networkFace *> &getBucketFaces() const { return BucketFaces; };
    const Buckets<networkPoint *> &getBucketPoints() const { return BucketPoints; };
@@ -3104,9 +3125,45 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
    const double expand_bounds = 1.5;
 
+   void makeBucketTetras(double spacing = 1E+20) {
+      if (spacing > 1E+10)
+         spacing = this->getScale() / 10.;
+      std::cout << this->getName() << " makeBucketTetras(" << spacing << ")" << std::endl;
+      this->setGeometricProperties();
+      this->BucketTetras.clear();
+      this->BucketTetras.initialize(this->scaledBounds(expand_bounds), spacing);
+      double particlize_spacing;
+      for (const auto &t : this->getTetras()) {
+         //! add extra points to make sure that the face is included in the bucket
+         bool fully_inside_a_cell_found = false;
+         for (const auto p : t->Points) {
+            auto X = p->X;
+            auto [inserted, ijk] = this->BucketTetras.addAndGetIndices(X, t);
+            if (inserted && ::InsideQ(t->bounds, this->BucketTetras.getBounds(ijk).bounds)) {
+               fully_inside_a_cell_found = true;
+               break;
+            }
+         }
+         if (!fully_inside_a_cell_found) {
+            auto [p0, p1, p2, p3] = t->Points;
+            std::array<double, 3> mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
+            this->BucketTetras.add(mean, t);
+            for (auto &f : t->Faces) {
+               double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 20.;
+               for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
+                  this->BucketTetras.add(xyz, t);
+            }
+         }
+      }
+      this->BucketTetras.setVector();
+      std::cout << this->getName() << " makeBucketTetras done" << std::endl;
+   };
+
    /*面は点と違って，複数のバケツ（セル）と接することがある*/
 
-   void makeBucketFaces(const double spacing = 1E+20) {
+   void makeBucketFaces(double spacing = 1E+20) {
+      if (spacing > 1E+10)
+         spacing = this->getScale() / 10.;
       std::cout << this->getName() << " makeBucketFaces(" << spacing << ")" << std::endl;
       this->setGeometricProperties();
       this->BucketFaces.clear();  // こうしたら良くなった
@@ -3135,7 +3192,9 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
    double last_makeBucketPoints_spacing = 0.;
 
-   void makeBucketPoints(const double spacing) {
+   void makeBucketPoints(double spacing = 1E+20) {
+      if (spacing > 1E+10)
+         spacing = this->getScale() / 10.;
       std::cout << this->getName() << " makeBucketPoints(" << spacing << ")" << std::endl;
       this->last_makeBucketPoints_spacing = spacing;
       this->setGeometricProperties();
@@ -4289,38 +4348,10 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    }
 };
 
-inline networkTetra::~networkTetra() {
-   // FacesからのTetraの削除
-   for (auto &f : this->Faces) {
-      if (f != nullptr) {
-         if (f->Tetras[0] == this)
-            f->Tetras[0] = nullptr;
-         else if (f->Tetras[1] == this)
-            f->Tetras[1] = nullptr;
-      }
-      f = nullptr;
-   }
-
-   // LinesからのTetraの削除
-   for (auto &l : this->Lines) {
-      erase_element(l->Tetras, this);  // l->Tetrasがvector/unordered_setかに応じて動作
-      l = nullptr;
-   }
-
-   // PointsからのTetraの削除
-   for (auto &p : this->Points) {
-      erase_element(p->Tetras, this);  // p->Tetrasがvector/unordered_setかに応じて動作
-      p = nullptr;
-   }
-
-   // ネットワークからのTetra削除
-   network->erase_element(this);  // unordered_set対応版erase_element
-   network = nullptr;
-}
-
 //% ========================================================================== */
 //% ========================================================================== */
 //% ========================================================================== */
+
 networkFace *isFace(const networkPoint *const a, const networkPoint *const b, const networkPoint *const c) {
    for (const auto &p : {a, b, c})
       for (const auto &f : p->Faces)

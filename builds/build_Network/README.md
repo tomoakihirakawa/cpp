@@ -11,6 +11,7 @@
             - [🪸 実行方法](#🪸-実行方法)
         - [🪼 `PVDWriter`を使ったpvdファイルの作成方法](#🪼-`PVDWriter`を使ったpvdファイルの作成方法)
     - [⛵ 四面体の操作](#⛵-四面体の操作)
+    - [⛵ 四面体の操作](#⛵-四面体の操作)
     - [⛵ ２次補間](#⛵-２次補間)
 - [🐋 空間分割（space_partitioning）](#🐋-空間分割（space_partitioning）)
     - [⛵ 等間隔のシンプルな空間分割](#⛵-等間隔のシンプルな空間分割)
@@ -62,7 +63,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](../../include/Network.hpp#L3441)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Networkのコンストラクタ](not found)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp
@@ -126,8 +127,8 @@ vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
 ofs.close();
 ```
 
-[このようにして](../../builds/build_Network/example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
-また，[カスタム名](../../builds/build_Network/example0_load_3d_file.cpp#L269)を付けることもできる．
+[このようにして](./example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
+また，[カスタム名](./example0_load_3d_file.cpp#L269)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -173,7 +174,22 @@ make
 ./example0_manipulation_tetrahedron
 ```
 
+* [これは](./example0_manipulation_tetrahedron.cpp#L83)，空間分割のためのバケットを作成し，四面体をバケットに登録する例
+* [これは](./example0_manipulation_tetrahedron.cpp#L104)，四面体を持つ表面のエッジフリップテストの例
+* [これは](./example0_manipulation_tetrahedron.cpp#L139)，座標が四面体の内部か外部かの判定テストの例
+
 [./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
+
+## ⛵ 四面体の操作 
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron.cpp
+make
+./example0_manipulation_tetrahedron
+```
+
+[./example0_manipulation_tetrahedron_simple_simulation.cpp#L1](./example0_manipulation_tetrahedron_simple_simulation.cpp#L1)
 
 ---
 ## ⛵ ２次補間 
@@ -284,7 +300,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](../../include/lib_spatial_partitioning.hpp#L121)は，
+[このツリー生成方法](not found)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -307,7 +323,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](../../include/basic_geometry.hpp#L1787)関数を使う．
+要素の接触や交差の判定には，[`IntersectQ`](not found)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -323,7 +339,7 @@ make
 ---
 ### 🪼 面と面の接触判定 
 
-[`IntersectQ`](../../include/basic_geometry.hpp#L1787)関数は，交差判定には使えるが，接触判定には使えない．
+[`IntersectQ`](not found)関数は，交差判定には使えるが，接触判定には使えない．
 
 **オブジェクト同士の接触**をプログラム上で定義するなら，
 ２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
@@ -333,7 +349,7 @@ make
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
 これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest](../../include/basic_geometry.hpp#L1727)のような計算を行う．
+また，この一つひとつの計算において，[Nearest](not found)のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
 

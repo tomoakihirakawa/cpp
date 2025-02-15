@@ -22,3 +22,32 @@ inline networkTetra::networkTetra(Network *network_IN,
    std::ranges::for_each(lines, [&](const auto &l) { l->Tetras.emplace_back(this); });
    std::ranges::for_each(points, [&](const auto &p) { p->Tetras.emplace_back(this); });
 };
+
+inline networkTetra::~networkTetra() {
+   // FacesからのTetraの削除
+   for (auto &f : this->Faces) {
+      if (f != nullptr) {
+         if (f->Tetras[0] == this)
+            f->Tetras[0] = nullptr;
+         else if (f->Tetras[1] == this)
+            f->Tetras[1] = nullptr;
+      }
+      f = nullptr;
+   }
+
+   // LinesからのTetraの削除
+   for (auto &l : this->Lines) {
+      erase_element(l->Tetras, this);  // l->Tetrasがvector/unordered_setかに応じて動作
+      l = nullptr;
+   }
+
+   // PointsからのTetraの削除
+   for (auto &p : this->Points) {
+      erase_element(p->Tetras, this);  // p->Tetrasがvector/unordered_setかに応じて動作
+      p = nullptr;
+   }
+
+   // ネットワークからのTetra削除
+   network->erase_element(this);  // unordered_set対応版erase_element
+   network = nullptr;
+}

@@ -26,7 +26,7 @@ make
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
-[プログラム中で宣言](../../builds/build_ODE/example_DampedHarmonicOscillator.cpp#L51)し，
+[プログラム中で宣言](./example_DampedHarmonicOscillator.cpp#L51)し，
 
 ```math
 \begin{align*}
@@ -49,9 +49,9 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](../../include/integrationOfODE.hpp#L491)）．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](not found)）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](../../include/integrationOfODE.hpp#L491)
+[LeapFrogのクラス](not found)
 [../../include/integrationOfODE.hpp#L481](../../include/integrationOfODE.hpp#L481)
 
 
@@ -75,7 +75,7 @@ x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 \end{align*}
 ```
 
-[RungeKuttaのクラス](../../include/integrationOfODE.hpp#L34)
+[RungeKuttaのクラス](not found)
 [../../include/integrationOfODE.hpp#L8](../../include/integrationOfODE.hpp#L8)
 
 [./example_DampedHarmonicOscillator.cpp#L5](./example_DampedHarmonicOscillator.cpp#L5)
