@@ -46,6 +46,12 @@ WARNING: テンプレート型`T`のオブジェクトは，予め`getX()`を使
 - `add(const Tddd &x, const T p)`: オブジェクトを追加．
 - `erase(T const p)`: オブジェクトを削除．
 
+#### データ取得
+
+
+- `getData(const std::array<double,3> &x)`: 座標`x`を含むバケツのデータを取得．
+- `getData(const std::array<double,3> &x, const double d)`: 座標`x`を中心とする半径`d`の球状の範囲に含まれるバケツのデータを取得．
+
 #### その他
 
 `apply(const Tddd &x, const double d, const std::function<bool(const T &)> &func)`は，バケツの範囲を指定して，その範囲内のオブジェクトに対して関数を適用する．

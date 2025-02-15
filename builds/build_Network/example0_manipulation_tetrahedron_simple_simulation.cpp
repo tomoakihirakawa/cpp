@@ -54,6 +54,10 @@ int main() {
 
    /* -------------------------------------------------------------------------- */
 
+   //% 1. 衝突を検知したいオブジェクトのバケツを取得
+   //% 2. 衝突を探査する距離を設定．表面からその距離までの範囲で衝突を探査する
+   //% 3. 互いの表面節点をトラバースし，衝突を検知する
+
    std::vector<std::tuple<std::string, DataMap>> data = {{"fliped", data1}, {"xyz", data2}, {"tetra_size", data3}};
 
    // time stel
@@ -86,6 +90,12 @@ int main() {
             vtkUnstructuredGridWrite(ofs, coil->getTetras(), data);
             ofs.close();
             pvd.push(name, step);
+         }
+
+         // collision detection
+         for(auto p : points)
+         {
+
          }
 
       } while (std::any_of(points, [](const networkPoint* p) { return p->RK_X.finished; }));
