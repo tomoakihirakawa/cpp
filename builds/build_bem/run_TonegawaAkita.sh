@@ -5,13 +5,13 @@ T_list=$(seq 4.5 0.5 9.5)
 # python3.11 input_generator.py Tonegawa2024Akita -dt 0.2 -T 5 -H 2 -o /Volumes/home/BEM/Tonegawa2024Akita/ -s 3MW_MP30
 
 for t in ${T_list[@]}; do
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP30_new -o /Volumes/home/BEM/Tonegawa2024Akita/
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP15_new -o /Volumes/home/BEM/Tonegawa2024Akita/
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP9_new -o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP30 #-o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP15 #-o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 3MW_MP9 #-o /Volumes/home/BEM/Tonegawa2024Akita/
 
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP30_new -o /Volumes/home/BEM/Tonegawa2024Akita/
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP15_new -o /Volumes/home/BEM/Tonegawa2024Akita/
-   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP9_new -o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP30 # -o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP15 # -o /Volumes/home/BEM/Tonegawa2024Akita/
+   python3.11 input_generator.py Tonegawa2024Akita -dt 0.4 -T ${t} -H 1 -s 10MW_MP9 #-o /Volumes/home/BEM/Tonegawa2024Akita/
 done
 
 # ./fast ./input_files/Tonegawa2024Akita_H1d0_T4d5_DT0d4_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_10MW_MP30_random_wave

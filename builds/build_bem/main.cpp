@@ -522,37 +522,8 @@ int main(int argc, char **argv) {
             for (const auto &p : FMM_BucketsPoints.all_stored_objects)
 #pragma omp single nowait
             {
-               //! ------------------ Signed Distance Function (SDF)を計算する． ------------------ */
-               bool too_close = false;
-               p->signed_distance = 0.;
-               if (p->absorbedBy != nullptr) {
-                  const int P = 15;
-                  Tddd R;
-                  double nr;
-                  for (const auto &target_face : p->absorbedBy->getSurfaces()) {
-                     auto X012 = ToX(target_face->getPoints(p));
-                     auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
-                     for (int i = 0; const auto &[t0, t1, ww] : __array_GW14xGW14__) {
-                        R = Dot(ModTriShape<3>(t0, t1), X012) - p->X;
-                        nr = Norm(R);
-                        auto tmp = Dot((R / nr) / (nr * nr * std::pow(nr, P)), cross) * ww * (1. - t0);
-                        if (std::abs(tmp) < 1E+40 && tmp == tmp) {
-                           p->signed_distance += tmp;
-                           too_close = true;
-                        }
-                     }
-                  }
-                  if (too_close) {
-                     p->signed_distance = 1E+10;
-                     for (const auto &f : p->absorbedBy->getSurfaces()) {
-                        auto d = Norm(Nearest(p->X, ToX(f)) - p->X);
-                        if (d < p->signed_distance)
-                           p->signed_distance = d;
-                     }
-                  } else
-                     p->signed_distance = std::pow(p->signed_distance, -1. / P);
-               }
-               //! ------------------------------------------------------------------------------- */
+               if (p->absorbedBy != nullptr)
+                  p->signed_distance = Norm(p->absorbedBy->siginedDistance(p->X));
             }
 
             std::unordered_map<Network *, std::array<double, 2>> reference_phi;

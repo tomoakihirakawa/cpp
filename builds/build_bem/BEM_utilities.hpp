@@ -607,13 +607,25 @@ V_netFp takeFaces(const V_Netp &nets) {
 //@ ------------------------------------------------------ */
 
 Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
+   /*
+   以下が参考になりそうだ．
+   Mancinelli, C., Livesu, M., & Puppo, E. (2019). A comparison of methods for gradient field estimation on simplicial meshes. Computers and Graphics (Pergamon), 80, 37–50. https://doi.org/10.1016/j.cag.2019.03.005
+   */
    // これは{x,y,z}座標系での結果
+
    auto [X0, X1, X2] = X012;
    auto [phi0, phi1, phi2] = phi012;
    auto n = TriangleNormal(X012);
-   // return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
    return Cross(n, Dot(phi012, T3Tddd{X2 - X1, X0 - X2, X1 - X0})) / (2. * TriangleArea(X012));
+
+   // return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
+   // return Cross(n, (phi1 - phi2) * X0 + (phi2 - phi0) * X1 + (phi0 - phi1) * X2) / (2 * TriangleArea(X012));
    // return (Cross(n, Dot(phi012, T3Tddd{X2, X0, X1})) - Cross(n, Dot(phi012, T3Tddd{X1, X2, X0}))) / (2. * TriangleArea(X012));
+
+   // Tddd ans;
+   // lapack_svd_solve(X012, ans, phi012);
+   // auto n = TriangleNormal(X012);
+   // return ans - Dot(ans, n) * n;
 };
 
 T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
@@ -760,6 +772,7 @@ Tddd gradPhi(const networkFace *const f) {
 
 //! use simple gradient method but Newton method
 Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_info) {
+
    Tddd u;
    const Tddd ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
    auto s = p->getSurfaces().size();
@@ -769,7 +782,8 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    W.reserve(s);
    Vsample.reserve(3 * s);
    for (const auto &f : p->getSurfaces()) {
-      u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
+      // u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
+      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
 
       Vsample.emplace_back(Dot(u, ex));
       Directions.emplace_back(ex);

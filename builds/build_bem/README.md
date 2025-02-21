@@ -77,7 +77,9 @@
     - [⛵ Hadzic2005](#-hadzic2005)
     - [⛵ Liang2022](#-liang2022)
     - [⛵ Palm2016](#-palm2016)
+    - [⛵ Tanizawa1996](#-tanizawa1996)
     - [⛵ Kramer2021](#-kramer2021)
+    - [⛵ Goring1979](#-goring1979)
 - [🐋 Examples](#-examples)
 
 
@@ -191,7 +193,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L939](../../include/Network.hpp#L939)
+[../../include/Network.hpp#L949](../../include/Network.hpp#L949)
 
 
 これらは，`contactNormalVelocity()`や`accelNeumann()`で利用される．
@@ -545,7 +547,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L741](./BEM_utilities.hpp#L741)
+[./BEM_utilities.hpp#L753](./BEM_utilities.hpp#L753)
 
 ---
 ### 🪼 Arbitrary Lagrangian–Eulerian Methods (ALE) 
@@ -679,13 +681,13 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](./BEM_utilities.hpp#L844)を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[`HessianOfPhi`](./BEM_utilities.hpp#L858)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L856](./BEM_utilities.hpp#L856)
+[./BEM_utilities.hpp#L870](./BEM_utilities.hpp#L870)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -713,7 +715,7 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L907](./BEM_utilities.hpp#L907)
+[./BEM_utilities.hpp#L921](./BEM_utilities.hpp#L921)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
@@ -811,7 +813,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[`velocityRigidBody`](not found)
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[`accelRigidBody`](not found)で計算する．
 
-[`phin_Neuamnn`](./BEM_utilities.hpp#L904)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](./BEM_setBoundaryTypes.hpp#L444)で使っている．
+[`phin_Neuamnn`](./BEM_utilities.hpp#L918)で$`\phi _{nt}`$を計算する．これは[`setPhiPhin_t`](./BEM_setBoundaryTypes.hpp#L444)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -1056,7 +1058,7 @@ $`S = \frac{H}{F}= \frac{2A}{F} = \frac{1}{F(f,h)}`$となり，
 ---
 ### 🪼 係留索の出力
 
-[./main.cpp#L914](./main.cpp#L914)
+[./main.cpp#L885](./main.cpp#L885)
 
 ---
 ### 🪼 エネルギー保存則（計算精度のチェックに利用できる） 
@@ -1163,7 +1165,7 @@ JSONファイルには，計算結果を出力する．
 | `***_EK` | 浮体の運動エネルギー |
 | `***_EP` | 浮体の位置エネルギー |
 
-[./main.cpp#L692](./main.cpp#L692)
+[./main.cpp#L663](./main.cpp#L663)
 
 ---
 # 🐋 実行方法 
@@ -1202,7 +1204,7 @@ make
 ./main ./input_files/Hadzic2005
 ```
 
-[./main.cpp#L961](./main.cpp#L961)
+[./main.cpp#L932](./main.cpp#L932)
 
 ---
 # 🐋 Input Generator 
@@ -1293,7 +1295,7 @@ make
 ./horikawa ./input_files/Horikawa2024_a0d003_T0d625_DT0d05_ELEMlinear_ALElinear_ALEPERIOD1
 ```
 
-[./input_generator.py#L2024](./input_generator.py#L2024)
+[./input_generator.py#L2138](./input_generator.py#L2138)
 
 ## ⛵ Tonegawa2024 
 
@@ -1327,7 +1329,7 @@ make
 
 - (x, z) = (-0.31, 0)を通るy軸を中心として，wavemakerの運動をflap型造波で行う．
 
-[./input_generator.py#L2107](./input_generator.py#L2107)
+[./input_generator.py#L2221](./input_generator.py#L2221)
 
 ## ⛵ Tonegawa2024 Akita 
 
@@ -1348,12 +1350,12 @@ python3.11 input_generator.py Tonegawa2024Akita -dt 0.2 -T 5 -H 2 -o /Volumes/ho
 3MWの浮体のサイズは全て，WxLxH = 45x45x10 mで，喫水は7.5 m．
 10MWの浮体のサイズは全て，WxLxH = 60x60x17 mで，喫水は12 m．
 
-[./input_generator.py#L2619](./input_generator.py#L2619)
+[./input_generator.py#L2736](./input_generator.py#L2736)
 
 ---
 ## ⛵ Fredriksen2015
 
-[./input_generator.py#L2304](./input_generator.py#L2304)
+[./input_generator.py#L2423](./input_generator.py#L2423)
 
 ---
 ## ⛵ Hadzic2005 
@@ -1371,7 +1373,7 @@ The moment of inertia of the floating body is 14 kg cm^2.
 
 [Youtube Nextflow](https://www.youtube.com/watch?v=H92xupH9508)
 
-[./input_generator.py#L702](./input_generator.py#L702)
+[./input_generator.py#L754](./input_generator.py#L754)
 
 ---
 ## ⛵ Liang2022 
@@ -1413,7 +1415,7 @@ The mooring line was made of  stainless steel with a line density of 0.177 kg/m.
 The wave gauges were WG1: 3.5 m from the front of the float, WG2: 3.0 m from the front of the float, 
 WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float.
 
-[./input_generator.py#L1054](./input_generator.py#L1054)
+[./input_generator.py#L1112](./input_generator.py#L1112)
 
 ---
 ## ⛵ Palm2016 
@@ -1427,7 +1429,7 @@ WG3: 3.0 m from the rear of the float, and WG4: 3.5 m from the rear of the float
 | 0.08   | 1.2   |
 | 0.08   | 1.4   |
 
-[./input_generator.py#L876](./input_generator.py#L876)
+[./input_generator.py#L928](./input_generator.py#L928)
 
 ---
 <img src="schematic_Ren2015.png" width="400px" />
@@ -1441,18 +1443,18 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 
 [Youtube DualSPHysics](https://www.youtube.com/watch?v=VDa4zcMDjJA)
 
-[./input_generator.py#L536](./input_generator.py#L536)
+[./input_generator.py#L588](./input_generator.py#L588)
 
 ---
+## ⛵ Tanizawa1996 
+
 <img src="schematic_float_Tanizawa1996.png" width="400px" />
 
-[Tanizawa (1996)](https://www.jstage.jst.go.jp/article/jjasnaoe1968/1996/180/1996_180_311/_pdf/-char/ja)には，BEM-MELを使う際の消波方法が紹介されている．
+\cite{Tanizawa1997}と [Tanizawa (1996)](https://www.jstage.jst.go.jp/article/jjasnaoe1968/1996/180/1996_180_311/_pdf/-char/ja)には，BEM-MELを使う際の消波方法が紹介されている．
 この理論は簡単で，$`\frac{D\phi}{Dt}`$と$`\frac{D\bf x}{Dt}`$に減衰項を追加するだけである．
 興味深いのは，この項は，単なる消波だけでなく，ある領域の表面変位と速度ポテンシャルを理想的な値へと保つことができるため，造波装置側に設置するのも有効であることである．
 
-浮体の左右には整流板が設置されている．
-
-水深は4.5mで一定．
+浮体の左右には整流板が設置されている．水深は4.5mで一定．
 
 | wave length | water height (m) | wave period from the linear dispersion relation (s) |
 |:-------|:------|:------|
@@ -1474,7 +1476,7 @@ You can find numerical results compared with this case from Cheng and Lin (2018)
 | Natural period of roll | 1.775 s | 6.46 |
 | Spring constant of mooning | 51.07 N/m | 0.00704 |
 
-[./input_generator.py#L233](./input_generator.py#L233)
+[./input_generator.py#L250](./input_generator.py#L250)
 
 ---
 ## ⛵ Kramer2021 
@@ -1489,13 +1491,52 @@ The moment of inertia of the floating body is set to be almost infinite to ignor
 
 The sphere is dropped from the height of 0.03 m above the water surface.
 
-[./input_generator.py#L799](./input_generator.py#L799)
+[./input_generator.py#L851](./input_generator.py#L851)
+
+---
+## ⛵ Goring1979 
+
+The case is based on Goring's thsis Goring (1979).
+We simulated the case to see the efficiency of the pseudo-quad elements against the linear elements.
+Different element types can be used for BIE and ALE separately.
+
+The cases are as follows:
+
+| the upstream length | the downstream length | the upstream depth $`h _1`$ | the height of the shelf | Gauge1 | Gauge2 | Gauge3 |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 13 m | 19.84 m | 25 cm | 15.54 cm | 23 $`h _1`$ (5.75 m) | at the step | 60 $`h _1`$ (5.68 m) |
+
+<p align="center">
+<img src="./img/Goring1979Fig5.1p122.png" height="400">
+<img src="./img/Goring1979Fig5.2p123.png" height="400">
+</p>
+
+The downstream length of the shelf is too long, 19.84 m, therefore, in this simulation case, the length is reduced to 10 m.
+
+[CAD data](https://a360.co/3EZSCBN)
+
+inputファイルの生成
+
+```sh
+python3.11 input_generator.py Goring1979 -m water0d1.obj -dt 0.05 -e pseudo_quad -o /Volumes/home/BEM/Goring1979/
+python3.11 input_generator.py Goring1979 -m water0d1.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+python3.11 input_generator.py Goring1979 -m water0d09.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+python3.11 input_generator.py Goring1979 -m water0d09.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+```
+
+実行ファイルが`fast`の場合，以下のように実行する．
+
+```sh
+./fast ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+```
+
+[./input_generator.py#L2047](./input_generator.py#L2047)
 
 ---
 # 🐋 Examples 
 
 **[See the Examples here!](EXAMPLES.md)**
 
-[./main.cpp#L1001](./main.cpp#L1001)
+[./main.cpp#L972](./main.cpp#L972)
 
 ---

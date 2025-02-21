@@ -232,22 +232,25 @@ struct SimulationSettings {
 
    void setTypes(Network *net) {
       std::cout << "setTypes" << std::endl;
-
       //$ set type
       auto type = net->inputJSON.at("type")[0];
       if (type.contains("RigidBody")) {
+         std::cout << "RigidBody" << std::endl;
          RigidBodyObject.emplace_back(net);
          net->isRigidBody = true;
          net->isSoftBody = net->isFluid = false;
       } else if (type.contains("SoftBody") || type.contains("FixedBody")) {
+         std::cout << "SoftBody" << std::endl;
          SoftBodyObject.emplace_back(net);
          net->isSoftBody = true;
          net->isRigidBody = net->isFluid = false;
       } else if (type.contains("Fluid")) {
+         std::cout << "Fluid" << std::endl;
          FluidObject.emplace_back(net);
          net->isFluid = true;
          net->isRigidBody = net->isSoftBody = false;
       } else if (type.contains("Absorber") || type.contains("absorb") || type.contains("damping")) {
+         std::cout << "Absorber" << std::endl;
          AbsorberObject.emplace_back(net);
          net->isAbsorber = true;
          net->isRigidBody = net->isSoftBody = net->isFluid = false;
@@ -310,14 +313,17 @@ struct SimulationSettings {
       // for (auto i = 0; i < 10; ++i)
       //    AreaWeightedSmoothingPreserveShape(net->getPoints(), 0.1);
       //$ set velocity
+      std::cout << "set velocity" << std::endl;
       net->isFloatingBody = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating");
       // velocityにfileが指定されている場合は，そのファイルを読み込み，
       // interpolationBsplineであるnet->intpMotionRigidBodyをsetする．
       net->inputJSON.find("velocity", [&](auto STR_VEC) {
          if (STR_VEC[0].contains("file")) {
-            if (STR_VEC.size() == 1) throw std::runtime_error("Failed to open the input file.");
+            if (STR_VEC.size() == 1)
+               throw std::runtime_error("Failed to open the input file.");
             std::ifstream file(STR_VEC[1]);
-            if (!file.is_open()) throw std::runtime_error("Failed to open the input file.");
+            if (!file.is_open())
+               throw std::runtime_error("Failed to open the input file.");
             std::vector<double> T;
             std::vector<std::array<double, 6>> XYZ_Angles;
             std::string line;

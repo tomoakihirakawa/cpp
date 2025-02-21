@@ -226,7 +226,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          };
 
          //! 面p_fが干渉する，最も近い構造物面を抽出
-         const double angle = 60 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
+         const double angle = 70 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
          for (const auto &f : faces /*p->getFacesNeumann()*/) {
             for (const auto &struct_vertex : next_Vrtx) {
                if (isInContact(X_not_shifted /*シフトなし*/, f->normal, struct_vertex, p)) {
