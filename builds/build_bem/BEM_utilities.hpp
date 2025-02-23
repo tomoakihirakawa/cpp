@@ -122,19 +122,36 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
    try {
 
       if (name.contains("Goring1979")) {
-         if (strings.size() == 2) {
-            double start = std::stod(strings[1] /*start*/);
-            // if (t < start)
-            //    return {0., 0., 0., 0., 0., 0.};
-            double h = 0.25;
-            double H = 0.1 * h;  // 造波する初期入射波の波高
-            double x = 0;
-            double c = std::sqrt(g * (H + h));
-            double kappa = std::sqrt(3. * H / (4. * h * h * h));
-            double eta = H * std::pow(std::cosh(kappa * (-c * (t - start))), -2);
-            return {c * eta / (h + eta), 0., 0., 0, 0, 0};
-         } else
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 2");
+         /*DOC_EXTRACT 0_5_WAVE_GENERATION
+
+         ### 孤立波の造波方法 (Goring,1979)
+
+         水深方向に流速の平均を計算すると
+
+         ```math
+         \bar{u} &= \frac{c \eta}{h + \eta}
+         ```
+
+         となる\cite{Svendsen1974}．造波板の位置を制御して波を生成する場合はこの式を時間積分する．
+         ただし，数値計算に置いては，壁面の法線方向の速度が境界条件として必要な情報で，それは$`\bar{u}`$と造波板法線ベクトルの内積である．
+
+         孤立波を生成するための一つの方法は，$`\eta`$に孤立波の表面変位を与える．
+
+         */
+
+         if (strings.size() < 4)
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "string must be == 4");
+
+         const double start = std::stod(strings[1] /*start*/);
+         const double H = std::abs(std::stod(strings[2] /*H*/));
+         const double h = std::abs(std::stod(strings[3] /*h*/));
+         // double h = 0.25;
+         // double H = 0.1 * h;  // 造波する初期入射波の波高
+         const double c = std::sqrt(g * (H + h));
+         const double k = std::sqrt(3. * H / (4. * h * h * h));
+         double eta = H * std::pow(std::cosh(k * (-c * (t - start))), -2);
+         return {c * eta / (h + eta), 0., 0., 0, 0, 0};
+
       } else if (name.contains("Retzler2000")) {
          const std::vector<Tdd> sample = {
              {-0.15000000000000002, 0.},

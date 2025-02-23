@@ -78,7 +78,7 @@ struct SimulationSettings {
          else if (settingJSON.find("ALE") && (toLowerCase(settingJSON.at("ALE")[0]).contains("quad") || toLowerCase(settingJSON.at("ALE")[0]).contains("pseudo")))
             _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
          else
-            _ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ = true;
+            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ALE must be linear or pseudo");
 
          if (_ALE_ON_LINEAR_ELEMENT_)
             std::cout << "ALE_ON_LINEAR_ELEMENT" << std::endl;

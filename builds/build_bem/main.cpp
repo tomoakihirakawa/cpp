@@ -6,12 +6,6 @@
 
 <img src="./sample_Goring1979.gif">
 
-[README_FOR_STUDENTS.md](README_FOR_STUDENTS.md)
-
-[REVIEW_NOTE0.md](REVIEW_NOTE0.md)
-
-[REVIEW_NOTE1.md](REVIEW_NOTE1.md)
-
 */
 
 // #define _debugging_

@@ -2107,9 +2107,11 @@ elif "Goring1979" in SimulationCase:
             "isFixed": True,
             "objfile": objfolder + "/tank.obj"}
 
+
+    h = 0.25
     wavemaker = {"name": "wavemaker",
                  "type": "RigidBody",
-                 "velocity": ["Goring1979", 3.],
+                 "velocity": ["Goring1979", 3., 0.1*h, h],
                  "objfile": f"{objfolder}/wavemaker.obj"}
 
     gauges = []
