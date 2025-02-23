@@ -129,7 +129,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          水深方向に流速の平均を計算すると
 
          ```math
-         \bar{u} &= \frac{c \eta}{h + \eta}
+         \bar{u} = \frac{c \eta}{h + \eta}
          ```
 
          となる\cite{Svendsen1974}．造波板の位置を制御して波を生成する場合はこの式を時間積分する．
