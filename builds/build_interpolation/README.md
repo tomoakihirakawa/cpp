@@ -386,6 +386,9 @@ V _{\rm {\ell}01in}
 * [pseudo_quad要素の精度peaks_function積分.nb](pseudo_quad要素の精度peaks_function積分.nb)
 * [説明.key](説明.key)
 
+> [!NOTE]
+> 擬２次補間は，端部では線形補間を使うため，端部の精度は線形補間と同程度である．端部の精度を上げるには分割数を増やす他ない．
+
 [./TriShapeExample_improved_test1.cpp#L1](./TriShapeExample_improved_test1.cpp#L1)
 
 ---
