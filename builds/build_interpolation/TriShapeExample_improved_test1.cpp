@@ -153,6 +153,12 @@ V_{\rm {\ell}01in}
 
 <img src="peak_function_interpolations.png">
 
+積分結果を比較すると，線形補間よりも擬2次補間の方が精度が向上していることがわかる．
+規則的なメッシュでは，２次補間と擬2次補間の結果は同程度であるが，
+不規則なメッシュでは，擬2次補間の精度は２次補間により悪いが，線形補間よりも良い．
+
+<img src="peak_function_interpolation_integration.png">
+
 */
 
 #include <array>
