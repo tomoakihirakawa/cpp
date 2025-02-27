@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
                // calculateCurrentUpdateVelocities(*water, 20, (RK_step == 4) ? 0.5 : 0.);
                bool do_ALE = (RK_step == 4 && (time_step % ALEPERIOD == 0));
                if (do_ALE)
-                  calculateCurrentUpdateVelocities(*water, 20, do_ALE ? (time_step <= 10 ? 0.1 * time_step : 1.) : 0.);
+                  calculateCurrentUpdateVelocities(*water, 30, do_ALE ? (time_step <= 10 ? 0.1 * time_step : 1.) : 0.);
                else
                   std::cout << "ALE is not applied" << std::endl;
                // calculateCurrentUpdateVelocities(*water, 20);

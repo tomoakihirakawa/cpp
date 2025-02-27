@@ -193,7 +193,7 @@ Out[3]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
 ```
 
 となり，この線上では，節点0の影響を受けず，補間値はそれ以外の（内部）の情報からのみ決まる．
-[../../include/basic_arithmetic_array_operations.hpp#L1263](../../include/basic_arithmetic_array_operations.hpp#L1263)
+[../../include/basic_arithmetic_array_operations.hpp#L1261](../../include/basic_arithmetic_array_operations.hpp#L1261)
 
 
 ### 🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]  
@@ -207,7 +207,7 @@ $`(\xi _0,\eta)`$をそれぞれ$`[0,1]`$の範囲で変化させることで，
 このプログムでは，
 `N(x,y)=TriShape<3>(x,y)`と定義し，
 `N(x,y(1-x))=ModTriShape<3>(x,y)`と定義している．
-[../../include/basic_arithmetic_array_operations.hpp#L1492](../../include/basic_arithmetic_array_operations.hpp#L1492)
+[../../include/basic_arithmetic_array_operations.hpp#L1490](../../include/basic_arithmetic_array_operations.hpp#L1490)
 
 
 ### 🪼 例：補間によって，頂点座標から平面を作成する 
@@ -277,7 +277,7 @@ v _0\\v _1\\v _2\\v _3\\v _4\\v _5
 \right)
 ```
 
-Fig. \ref{fig:pseudo_quad_schematic}に示すように，
+Fig. [fig:pseudo_quad_schematic](not found)に示すように，
 この形状関数の係数を，対応する節点の値に掛けて足し合わせることで，
 三角形要素の内部の任意の点における値を補間することができる．
 
@@ -301,7 +301,7 @@ v _0\\v _1\\v _2\\
 \end{aligned}
 ```
 
-この式を\eqref{eq:general_usage_of_shape_function}の形に書き直すために．
+この式を(Eq. [?](not found))の形に書き直すために．
 次のような関係を使う：
 
 ```math
@@ -345,11 +345,11 @@ V _{\rm {\ell}01in}
 \label{eq:pseudo _quadratic _interpolation}
 ```
 
-このように，\eqref{eq:general_usage_of_shape_function}の形の式を４つ足し合わせることで，擬2次補間を実装することができる．
+このように，(Eq. [?](not found))の形の式を４つ足し合わせることで，擬2次補間を実装することができる．
 
 ただし，辺が角を成している場合，この補間では，角にはならず，滑らかに補間されてしまう．
 そのため，角を成している辺上の節点は，線形補間を使って近似することにする．つまり，辺が繋ぐ２節点の平均で近似する．
-例えば，辺01が角となっている場合，\eqref{eq:pseudo_quadratic_interpolation}は次のように書き換える．
+例えば，辺01が角となっている場合，(Eq. [121](#eq:pseudo_quadratic_interpolation))は次のように書き換える．
 
 ```math
 \begin{aligned}
@@ -373,7 +373,9 @@ V _{\rm {\ell}01in}
 \end{aligned}
 ```
 
-0,1節点は，$V _{\rm {\ell}01in}$における4,5節点であるため，$2\xi _0\xi _1(0,0,0,1,1)^{\intercal}$の項に
+0,1節点は，$`V _{\rm {\ell}01in}`$における4,5節点であるため，$`2\xi _0\xi _1(0,0,0,1,1)^{\intercal}`$の項に
+
+<img src="peak_function_interpolations.png">
 
 [./TriShapeExample_improved_test1.cpp#L1](./TriShapeExample_improved_test1.cpp#L1)
 
@@ -422,7 +424,7 @@ $ gnuplot bspline_plot.gnu
 
 ### 🪼 コード 
 
-[Bspline基底関数](not found)を用いて，B-spline補間を行う．
+[interpolation:Bspline](not found){Bspline基底関数}を用いて，B-spline補間を行う．
 
 `InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
 

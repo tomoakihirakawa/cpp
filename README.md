@@ -175,7 +175,9 @@
     - [⛵ Hadzic2005](./builds/build_bem/README.md#⛵-Hadzic2005)
     - [⛵ Liang2022](./builds/build_bem/README.md#⛵-Liang2022)
     - [⛵ Palm2016](./builds/build_bem/README.md#⛵-Palm2016)
+    - [⛵ Tanizawa1996](./builds/build_bem/README.md#⛵-Tanizawa1996)
     - [⛵ Kramer2021](./builds/build_bem/README.md#⛵-Kramer2021)
+    - [⛵ Goring1979](./builds/build_bem/README.md#⛵-Goring1979)
 - [🐋 Examples](./builds/build_bem/README.md#🐋-Examples)
 ## [build_remesh](./builds/build_remesh/README.md)
 

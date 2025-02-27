@@ -22,17 +22,13 @@ inline void networkFace::setDodecaPoints() {
 inline void networkFace::setIntegrationInfo() {
    // set linear integration info
    this->map_Point_BEM_IGIGn_info_init.clear();
-   this->map_Point_LinearIntegrationInfo.clear();
-   this->map_Point_PseudoQuadraticIntegrationInfo.clear();
-   this->map_Point_LinearIntegrationInfo_HigherResolution.clear();
-   this->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution.clear();
    this->map_Point_LinearIntegrationInfo_vector.clear();
-   this->map_Point_LinearIntegrationInfo_vector.resize(5);
+   this->map_Point_LinearIntegrationInfo_vector.resize(2);
    this->map_Point_PseudoQuadraticIntegrationInfo_vector.clear();
-   this->map_Point_PseudoQuadraticIntegrationInfo_vector.resize(5);
+   this->map_Point_PseudoQuadraticIntegrationInfo_vector.resize(2);
    //@ -------------------------------------------------------------------------- */
    auto addIntegrationInfo = [&](networkPoint *const p) {
-      DodecaPoints dodecapoint(this, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+      DodecaPoints dodecapoint(this, p, [](const networkLine *line) -> bool { return useOppositeFace(line, M_PI / 3); });
       //% -------------------------------------------------------------------------- */
       std::vector<BEM_IGIGn_info_type> temp;
       for (const auto &[p, f] : dodecapoint.quadpoint.points_faces) temp.push_back({p, f, 0., 0.});
@@ -41,11 +37,8 @@ inline void networkFace::setIntegrationInfo() {
       for (const auto &[p, f] : dodecapoint.quadpoint_l2.points_faces) temp.push_back({p, f, 0., 0.});
       this->map_Point_BEM_IGIGn_info_init[p] = temp;
       //% -------------------------------------------------------------------------- */
-
-      /* -------------------------------------------------------------------------- */
       auto X012 = ToX(this->getPoints(p));
-
-      auto add = [&](const auto &GWGW, const int i) {
+      auto add = [&](const int i, const auto &GWGW) {
          std::vector<linear_triangle_integration_info> info_linears;
          std::vector<pseudo_quadratic_triangle_integration_info> info_quadratics;
          for (const auto &[t0, t1, ww] : GWGW) {
@@ -63,61 +56,8 @@ inline void networkFace::setIntegrationInfo() {
          this->map_Point_LinearIntegrationInfo_vector[i][p] = info_linears;
          this->map_Point_PseudoQuadraticIntegrationInfo_vector[i][p] = info_quadratics;
       };
-
-      add(__array_GW1xGW1__, 0);
-      add(__array_GW3xGW3__, 1);
-      add(__array_GW5xGW5__, 2);
-
-      /* -------------------------------------------------------------------------- */
-
-      std::vector<linear_triangle_integration_info> info_linears;
-      std::vector<pseudo_quadratic_triangle_integration_info> info_quadratics;
-
-      // for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-         auto N012_geometry = ModTriShape<3>(t0, t1);
-         auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
-         auto X = Dot(N012_geometry, X012);
-         {
-            linear_triangle_integration_info info = {Tdd{t0, t1}, ww * (1. - t0), N012_geometry, X, cross, Norm(cross)};
-            info_linears.emplace_back(info);
-         }
-         //$ ------------------------------------ */
-         auto [xi0, xi1, xi2] = N012_geometry;
-         X = dodecapoint.X(xi0, xi1);
-         cross = dodecapoint.cross(xi0, xi1);
-         auto Nc_N0_N1_N2 = dodecapoint.N6_new(xi0, xi1);
-         {
-            pseudo_quadratic_triangle_integration_info info = {Tdd{t0, t1}, ww * (1. - t0), N012_geometry, Nc_N0_N1_N2, X, cross, Norm(cross)};
-            info_quadratics.emplace_back(info);
-         }
-      }
-      this->map_Point_LinearIntegrationInfo[p] = info_linears;
-      this->map_Point_PseudoQuadraticIntegrationInfo[p] = info_quadratics;
-
-      //! -------------------------------------------------------------------------- */
-
-      for (int i = 0; const auto &[t0, t1, ww] : __array_GW11xGW11__) {
-         auto N012_geometry = ModTriShape<3>(t0, t1);
-         auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
-         auto X = Dot(N012_geometry, X012);
-         {
-            linear_triangle_integration_info info = {Tdd{t0, t1}, ww * (1. - t0), N012_geometry, X, cross, Norm(cross)};
-            info_linears.emplace_back(info);
-         }
-         //$ ------------------------------------ */
-         auto [xi0, xi1, xi2] = N012_geometry;
-         X = dodecapoint.X(xi0, xi1);
-         cross = dodecapoint.cross(xi0, xi1);
-         auto Nc_N0_N1_N2 = dodecapoint.N6_new(xi0, xi1);
-         {
-            pseudo_quadratic_triangle_integration_info info = {Tdd{t0, t1}, ww * (1. - t0), N012_geometry, Nc_N0_N1_N2, X, cross, Norm(cross)};
-            info_quadratics.emplace_back(info);
-         }
-      }
-
-      this->map_Point_LinearIntegrationInfo_HigherResolution[p] = info_linears;
-      this->map_Point_PseudoQuadraticIntegrationInfo_HigherResolution[p] = info_quadratics;
+      add(0, __array_GW1xGW1__);
+      add(1, __array_GW7xGW7__);
    };
    //@ -------------------------------------------------------------------------- */
 

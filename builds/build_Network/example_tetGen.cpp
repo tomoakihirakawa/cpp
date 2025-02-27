@@ -1,6 +1,7 @@
 #include <iostream>
-#include "Network.hpp"
 #include "tetgen1.6.0/tetgen.h"  // Make sure TetGen path is correctly set in your project settings
+//
+#include "Network.hpp"
 
 /*DOC_EXTRACT 1_0_tetGen
 
@@ -108,7 +109,7 @@ b.parse_commandline("pq2.a50.");
 | オプション | 意味 |
 |:---:|:---:|
 | p | PLC（Piecewise Linear Complex）を四面体メッシュ化する．その他に，再メッシュ用のrや，境界ポイントの保持を行うyなどのオプションもある．|
-| q2 | 最小radius-edge比を2に設定し，品質の高い四面体を生成する．例えば，q1.4なら比率を1.4に設定する．|
+| q2 | 最小circum radius-the min edge比を2に設定する．$`\frac{circum R}{L_{\rm min}} > 2`$
 | a50. | 四面体の最大体積を50に制限します．例えば，a100.とすると最大体積が100に制限される．|
 
 
@@ -121,91 +122,27 @@ b.parse_commandline("pq2.a50.");
 
 int main(int argc, char* argv[]) {
 
-   char *name, *parse_command, *out_file;
+   std::string filename, out_file, parse_command;
    std::cout << "argc: " << argc << std::endl;
    if (argc == 4) {
       for (int i = 0; i < argc; i++)
          std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
-      parse_command = argv[1];
-      name = argv[2];
+      filename = argv[1];
+      parse_command = argv[2];
       out_file = argv[3];
    } else
       throw std::invalid_argument("Invalid argument");
 
-   /* -------------------------------------------------------------------------- */
-   /*                        tetGenを使って四面体を生成する                          */
-   /* -------------------------------------------------------------------------- */
-
-   tetgenio in, out;
-   tetgenbehavior b;
-
-   // Load a .off file. Replace "socket.off" with your actual file path.
-
-   // if file name incldeu ".off", load_off is used
-   // if file name incldeu ".stl", load_stl is used
-   std::string filename(name);
-   if (filename.contains(".off")) {
-      if (!in.load_off(name)) {
-         std::cerr << "Error loading .off file" << std::endl;
-         return 1;
-      }
-   } else if (filename.contains(".stl")) {
-      if (!in.load_stl(name)) {
-         std::cerr << "Error loading .stl file" << std::endl;
-         return 1;
-      }
-   } else if (filename.contains(".obj")) {
-      if (!in.load_obj(name)) {
-         std::cerr << "Error loading .obj file" << std::endl;
-         return 1;
-      }
-   } else {
-      std::cerr << "Error loading file" << std::endl;
-      return 1;
-   }
-   b.parse_commandline(parse_command);
-
-   try {
-      tetrahedralize(&b, &in, &out);
-   } catch (int e) {
-      std::cerr << "TetGen error: " << e << std::endl;
-      return 1;
-   }
-
-   // From here, you can use the 'out' object which contains the generated tetrahedra.
-   std::cout << "Generated " << out.numberoftetrahedra << " tetrahedra." << std::endl;
-
-   /* -------------------------------------------------------------------------- */
-   /*                         Networkの四面体へと置き換える                          */
-   /* -------------------------------------------------------------------------- */
-
    auto object = new Network(filename);
    object->makeBucketPoints(object->getScale() / 50.);
-
-   for (int i = 0; i < out.numberofpoints; i++) {
-      std::array<double, 3> X = {out.pointlist[i * 3], out.pointlist[i * 3 + 1], out.pointlist[i * 3 + 2]};
-      // getDataとgetBucketの使い分けは？
-      if (std::ranges::none_of(object->BucketPoints.getData(X), [&](auto& p) { return Norm(p->X - X) < 1E-10; })) {
-         std::cout << "X: " << X[0] << " " << X[1] << " " << X[2] << std::endl;
-         object->BucketPoints.add(X, new networkPoint(object, X));
-      }
-   }
-
    object->setGeometricProperties();
-
-   int count = 0;
-   PVDWriter pvd(_HOME_DIR_ + "/output/" + std::string(out_file) + ".pvd");
-   PVDWriter pvd_surface(_HOME_DIR_ + "/output/" + std::string(out_file) + "_surface.pvd");
+   object->tetrahedralize(parse_command);
 
    /* ----------------------------------- 出力用関数 ----------------------------------- */
 
-   /*
-   四面体と表面のFaceを出力している
-   */
-
-   auto output = [&]() {
-      auto filename = _HOME_DIR_ + "/output/" + std::string(out_file) + "_" + std::to_string(count) + ".vtu";
-      auto filename_surface = _HOME_DIR_ + "/output/" + std::string(out_file) + "_surface_" + std::to_string(count) + ".vtu";
+   {
+      auto filename = "./output/" + std::string(out_file) + ".vtu";
+      auto filename_surface = "./output/" + std::string(out_file) + "_surface.vtu";
       std::ofstream ofs(filename);
       std::ofstream ofs_surface(filename_surface);
       std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, std::variant<double, std::array<double, 3>>>>> data;
@@ -232,42 +169,8 @@ int main(int argc, char* argv[]) {
       vtkUnstructuredGridWrite(ofs, object->getTetras(), data);
       std::cout << "Wrote " << filename << std::endl;
       ofs.close();
-      pvd.push(filename, count);
       vtkPolygonWrite(ofs_surface, object->getSurfaces(), data);
       std::cout << "Wrote " << filename_surface << std::endl;
       ofs_surface.close();
-      pvd_surface.push(filename_surface, count);
-      count++;
-   };
-
-   /* --------------------------------- 置き換えループ -------------------------------- */
-
-   std::cout << "Replacing tetrahedra..." << std::endl;
-
-   for (int i = 0; i < out.numberoftetrahedra; i++) {
-
-      std::array<networkPoint*, 4> points = {nullptr, nullptr, nullptr, nullptr};
-
-      for (int j = 0; j < 4; j++) {
-         auto index = out.tetrahedronlist[i * 4 + j];
-         Tddd X = {out.pointlist[index * 3], out.pointlist[index * 3 + 1], out.pointlist[index * 3 + 2]};
-         //! バケツから点を取得
-         for (auto& p : object->BucketPoints.getData(X)) {
-            if (Norm(p->X - X) < 1E-10) {
-               points[j] = p;
-               break;
-            }
-         }
-      }
-
-      genTetra(object, points);
-
-      if (i % (int)(out.numberoftetrahedra / 10.) == 0)
-         output();
    }
-   output();
-   pvd.output();
-   pvd_surface.output();
-
-   return 0;
 }

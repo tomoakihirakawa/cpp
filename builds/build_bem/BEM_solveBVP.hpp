@@ -302,11 +302,7 @@ struct BEM_BVP {
    const bool Dirichlet = true;
    std::vector<Network *> WATERS;
    lapack_lu *lu = nullptr;
-   // #if defined(use_lapack)
-   // #else
-   //    ludcmp_parallel *lu;
-   // #endif
-
+   //
    using T_PBF = std::tuple<netP *, netF *>;
    using mapTPBF_Tdd = std::map<T_PBF, Tdd>;
    using mapTPBF_mapTPBF_Tdd = std::map<T_PBF /*タプル*/, mapTPBF_Tdd>;
@@ -325,45 +321,38 @@ struct BEM_BVP {
          delete this->lu;
    };
 
-   // int pf2Index(const networkPoint *p, const networkFace *f) const {
-   //    return p->f2Index.at(std::get<1>(pf2ID(p, f)));
-   // };
-
    /**
    isNeumannID_BEMとisDirichletID_BEMの両方を満たす{p,f}は存在しない．
    */
 
    void setIGIGn() {
 
-      for (auto &net : this->WATERS)
-         net->setGeometricProperties();
+#define use_rigid_mode
 
-      for (const auto &water : WATERS)
+      for (const auto &water : WATERS) {
+         water->setGeometricProperties();
 #pragma omp parallel
          for (const auto &integ_f : water->getSurfaces())
 #pragma omp single nowait
             integ_f->setIntegrationInfo();
+      }
 
-      // IGIGn = std::vector<std::vector<std::array<double, 2>>>(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
-      this->IGIGn.resize(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size, {0., 0.}));
+      this->IGIGn.resize(this->matrix_size, std::vector<std::array<double, 2>>(this->matrix_size));
 #pragma omp parallel
       for (auto &IGIGn_i : this->IGIGn)
 #pragma omp single nowait
          for (auto &IGIGn_ij : IGIGn_i)
             IGIGn_ij = {0., 0.};
 
-#define use_rigid_mode
       TimeWatch timer;
       std::cout << "原点を節点にとり，方程式を作成．並列化" << std::endl;
-      std::cout << Magenta << timer() << colorReset << std::endl;
+
       /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
 
       #### 係数行列の作成
 
       数値シミュレーションでは，境界値問題を$`{\bf A}{\bf x}={\bf b}`$のような線形連立方程式になるよう近似，変形し（離散化），$`{\bf x}`$を求めることが多い．
-      BEMでもBIEを離散化してこのような形にする．
-
-      その際，境界条件に応じて，方程式（$`{\bf A}{\bf x}={\bf b}`$の行）の右辺と左辺が入れ替える必要があるので注意する．
+      BEMでもBIEを離散化してこのような形にする．その際，境界条件に応じて，方程式（$`{\bf A}{\bf x}={\bf b}`$の行）の右辺と左辺が入れ替える必要があるので注意する．
       これは，$`{\bf A}{\bf x}={\bf b}`$の未知変数$`{\bf x}`$と既知変数$`{\bf b}`$がポテンシャル$`\phi`$か法線方向のポテンシャル$`\phi_n`$か，境界条件によって違うからである．
       プログラム上では，係数行列$`\bf A`$やベクトル$`\bf b`$を境界条件に応じて適切に作成すれば，求まる$`\bf x`$が適切なものになる．
 
@@ -408,13 +397,6 @@ struct BEM_BVP {
 
       constexpr std::array<double, 2> ZEROS2 = {0., 0.};
       constexpr std::array<double, 3> ZEROS3 = {0., 0., 0.};
-      //@ Q：quadratic elementの不安定は，積分点を奇数にするか偶数にするかに依存するか？
-      // std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_LOWRESOLUTION;
-      // std::vector<std::tuple<double, double, double, Tddd>> t0_t1_ww_N012_HIGHRESOLUTION;
-      // for (int i = 0; const auto &[t0, t1, ww] : __array_GW5xGW5__) {
-      //    auto t0t1t2 = ModTriShape<3>(t0, t1);
-      //    t0_t1_ww_N012_LOWRESOLUTION.push_back({t0, t1, ww, t0t1t2});
-      // }
 
       // // auto t0_t1_ww_N012_HIGHRESOLUTION = t0_t1_ww_N012_LOWRESOLUTION;
 
@@ -519,13 +501,13 @@ struct BEM_BVP {
                      auto dist = Norm((p0->X + p1->X + p2->X) / 3. - origin->X);
                      int how_far = 0;
                      if (dist < scale / 20.)
-                        how_far = 2;
+                        how_far = 1;
 
                      if (integ_f->isLinearElement) {
                         ig_ign0 = ig_ign1 = ig_ign2 = {0., 0.};
                         if (p0 == origin) {
                            ign = 0.;
-                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
+                           for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo_vector[1].at(closest_p_to_origin)) {
                               ig = norm_cross * (ww / (nr = Norm(R = (X - origin->X))));
                               std::get<0>(ig_ign0) += ig * std::get<0>(shape3);
                               std::get<0>(ig_ign1) += ig * std::get<1>(shape3);
@@ -553,23 +535,23 @@ struct BEM_BVP {
                            ig = norm_cross * (ww_nr = ww / (nr = Norm(R = (X - origin->X))));
                            ign = Dot(R, cross) * ww_nr / (nr * nr);
                            for (auto i = 0; i < 6; ++i) {
-                              FusedMultiplyIncrement(ig, std::get<0>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i]));
-                              FusedMultiplyIncrement(-ign, std::get<0>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i]));
+                              std::get<2>(key_ig_ign[i]) += ig * std::get<0>(Nc_N0_N1_N2)[i];
+                              std::get<3>(key_ig_ign[i]) -= ign * std::get<0>(Nc_N0_N1_N2)[i];
                               if (std::get<0>(key_ig_ign[i]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<0>(Nc_N0_N1_N2)[i];
 
-                              FusedMultiplyIncrement(ig, std::get<1>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 6]));
-                              FusedMultiplyIncrement(-ign, std::get<1>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 6]));
+                              std::get<2>(key_ig_ign[i + 6]) += ig * std::get<1>(Nc_N0_N1_N2)[i];
+                              std::get<3>(key_ig_ign[i + 6]) -= ign * std::get<1>(Nc_N0_N1_N2)[i];
                               if (std::get<0>(key_ig_ign[i + 6]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<1>(Nc_N0_N1_N2)[i];
 
-                              FusedMultiplyIncrement(ig, std::get<2>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 12]));
-                              FusedMultiplyIncrement(-ign, std::get<2>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 12]));
+                              std::get<2>(key_ig_ign[i + 12]) += ig * std::get<2>(Nc_N0_N1_N2)[i];
+                              std::get<3>(key_ig_ign[i + 12]) -= ign * std::get<2>(Nc_N0_N1_N2)[i];
                               if (std::get<0>(key_ig_ign[i + 12]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<2>(Nc_N0_N1_N2)[i];
 
-                              FusedMultiplyIncrement(ig, std::get<3>(Nc_N0_N1_N2)[i], std::get<2>(key_ig_ign[i + 18]));
-                              FusedMultiplyIncrement(-ign, std::get<3>(Nc_N0_N1_N2)[i], std::get<3>(key_ig_ign[i + 18]));
+                              std::get<2>(key_ig_ign[i + 18]) += ig * std::get<3>(Nc_N0_N1_N2)[i];
+                              std::get<3>(key_ig_ign[i + 18]) -= ign * std::get<3>(Nc_N0_N1_N2)[i];
                               if (std::get<0>(key_ig_ign[i + 18]) != origin)
                                  origin_ign_rigid_mode += ign * std::get<3>(Nc_N0_N1_N2)[i];
                            }

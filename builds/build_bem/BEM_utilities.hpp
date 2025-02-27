@@ -702,17 +702,27 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 
 Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
    //* p will be set as node 4
-   DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+
+   // DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+
+   int index = -1;
+   for (auto i = 0; i < 3; ++i)
+      if (f->Points[i] == p) {
+         index = i;
+         break;
+      }
+   if (index == -1)
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
 
    auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
    auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
 
-   const double phi_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
-   const double phi_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
+   const double phi_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
+   const double phi_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
    const double phi_n = getPhin(p, f);
 
-   const Tddd dX_t0 = dodecapoint.D_interpolate<1, 0>(1., 0., ToX);  //! at 4
-   const Tddd dX_t1 = dodecapoint.D_interpolate<0, 1>(1., 0., ToX);  //! at 4
+   const Tddd dX_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToX);  //! at 4
+   const Tddd dX_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToX);  //! at 4
    const auto Nxyz = Normalize(Cross(dX_t0, dX_t1));
 
    Tddd grad_phi;
@@ -799,8 +809,8 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    W.reserve(s);
    Vsample.reserve(3 * s);
    for (const auto &f : p->getSurfaces()) {
-      // u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
-      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+      u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
+      // u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
 
       Vsample.emplace_back(Dot(u, ex));
       Directions.emplace_back(ex);

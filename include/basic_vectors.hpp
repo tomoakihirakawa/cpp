@@ -1819,8 +1819,12 @@ double VectorAngle(const Tddd &a, const Tddd &b) {
 };
 double VectorAngle(const Tddd &X1, const Tddd &X2, const Tddd &axis) {
    // r = RotationMatrix[VectorAngle[A, {1, 0, 0}] * If[Dot[cross, axis] >= 0, 1, -1], axis];
-   return VectorAngle(X1, X2) * (Dot(Cross(X1, X2), axis) >= 0. ? 1. : -1.);
+   // return VectorAngle(X1, X2) * (Dot(Cross(X1, X2), axis) >= 0. ? 1. : -1.);
    // return std::atan2(Norm(Cross(X1 - axis, X2 - axis)), Dot(X1 - axis, X2 - axis));
+
+   Tddd cross = Cross(X1, X2);
+   double angle = std::atan2(Norm(cross), Dot(X1, X2));
+   return (Dot(cross, axis) >= 0.0) ? angle : -angle;
 };
 
 double MyVectorAngle(const Tddd &v0, const Tddd &v1, const Tddd &frontdir /*右手系のzとなる*/) {

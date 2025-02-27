@@ -20,7 +20,7 @@
 
 ### 🪼 🪼 `flip`可能かどうかの判定  
 
-[`canFlip`](not found)でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
+[canFlip](not found){`canFlip`}でフリップ可能かどうかを判定する．直感的に次のような条件の場合，境界面が崩れるため，フリップさせたくない．
 
 * フリップ前後で，辺に隣接する面の面積の和が大きく変化する場合，フリップさせない
 * フリップ前後で，辺に隣接する面の法線ベクトルが大きく変換する場合，フリップさせない
@@ -32,7 +32,7 @@
 * 三角形の内角が小さすぎる，または大きすぎる場合
 * 内角の和が$`\pi`$にならない場合
 
-信頼できる三角形の判定には，[`isValidTriangle`](not found)を用いる．
+信頼できる三角形の判定には，[isValidTriangle](not found){`isValidTriangle`}を用いる．
 [../../include/networkLine.hpp#L1483](../../include/networkLine.hpp#L1483)
 
 
@@ -48,7 +48,7 @@
 | Distorsion measure weighted smoothing   | 隣接面の歪みに関する係数を重みとして掛けて，面の中心に移動させる．|
 
 共通点は，許されない移動を防止する移動前に，移動後の形状をチェックすることである．
-`canFlip`と同様，[`isValidTriangle`](not found)を用いる．
+`canFlip`と同様，[isValidTriangle](not found){`isValidTriangle`}を用いる．
 
 徐々に移動させる場合，誤差の蓄積，条件の変化を把握するのが難しい．
 大きな変化は防げても，小さな変化には対応できない場合が考えられる．

@@ -80,13 +80,10 @@ parser = argparse.ArgumentParser(description='コマンドライン引数を受�
 parser.add_argument('case', type=str, help='シミュレーションケース')
 parser.add_argument('-m', '--mesh', type=str, help='メッシュの名前')
 parser.add_argument('-wavemaker', type=str, help='波を作る方法')
-parser.add_argument('-e', '--element', default='linear',
-                    type=str, help='要素の種類 (default: linear)')
+parser.add_argument('-e', '--element', default='linear', type=str, help='要素の種類 (default: linear)')
 parser.add_argument('-dt', '--max_dt', type=float, required=True, help='時間刻み幅')
-parser.add_argument('-ALE', type=str, default='pseudo_quad',
-                    help='シフトさせる面の補間方法 (default: pseudo_quad)')
-parser.add_argument('-ALEPERIOD', type=str, default='1',
-                    help='ALEの周期 (default: 1)')
+parser.add_argument('-ALE', type=str, default='pseudo_quad', help='シフトさせる面の補間方法 (default: pseudo_quad)')
+parser.add_argument('-ALEPERIOD', type=str, default='1', help='ALEの周期 (default: 1)')
 parser.add_argument('-H', '--wave_height', type=float, help='波の高さ')
 parser.add_argument('-o', '--outputdir', type=str, help='出力ディレクトリ')
 parser.add_argument('-T', '--wave_period', type=float, help='波の周期')

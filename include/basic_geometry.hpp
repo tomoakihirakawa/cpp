@@ -959,6 +959,19 @@ struct Tetrahedron : public CoordinateBounds {
          normals(TetrahedronNormals(XIN)),
          solidangles(TetrahedronSolidAngle_UsingVectorAngle(XIN)) {};
 
+   void setProperties(const T4Tddd &vertices_IN) {
+      this->vertices = vertices_IN;
+      CoordinateBounds::setBounds(this->vertices);
+      this->volume = TetrahedronVolume(this->vertices);
+      this->centroid = Centroid(this->vertices);
+      this->circumcenter = Circumcenter(this->vertices);
+      this->circumradius = Circumradius(this->vertices);
+      this->incenter = Incenter(this->vertices);
+      this->inradius = Inradius(this->vertices);
+      this->normals = TetrahedronNormals(this->vertices);
+      this->solidangles = TetrahedronSolidAngle_UsingVectorAngle(this->vertices);
+   };
+
    Tetrahedron scaled(const auto &s = 0.9) {
       return Tetrahedron({(std::get<0>(this->vertices) - centroid) * s + centroid,
                           (std::get<1>(this->vertices) - centroid) * s + centroid,
@@ -1638,7 +1651,7 @@ Tddd NearestXOnPlane(const Tddd &X, const T3Tddd &abc) {
 std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    /* ----------------------------------- 修正前 ---------------------------------- */
    // double T0, T1;
-   // const auto [t0, t1, XOnPlane] = DistanceToPlane_(X, abc);
+   // const auto [t0, t1, XOnPlane] = NearestXOnPlane_(X, abc);
    // //! a*t0 + b*t1 + c*(1-t0-t1)
    // const auto is_inside_of_triangle_cylinder = Between(t0, array_0_1) && Between(t1, array_0_1) && Between(t0 + t1, array_0_1);
    // const auto [a, b, c] = abc;
@@ -1684,13 +1697,27 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
          |      |        t1<=0
    t0<=0 |      | 1<=t0
        t0=0    t0=1
-
    */
+
    //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
-   const auto [a, b, c] = abc;
-   Tddd ans;
-   lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-   auto [t0, t1, alpah] = ans;
+   auto [a, b, c] = abc;
+   double t0, t1, alpah;
+   const double eps = 1E-5;
+   if (std::abs(a[2] - b[2]) < eps && std::abs(c[2] - b[2]) < eps) {
+      // alpha = a[2];
+      Tdd ans;
+      lapack_svd_solve(ans, T2Tdd{Tdd{a[0] - c[0], a[1] - c[1]}, Tdd{b[0] - c[0], b[1] - c[1]}}, Tdd{X[0] - c[0], X[1] - c[1]});
+      t0 = ans[0];
+      t1 = ans[1];
+   } else {
+      Tddd ans;
+      // lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+      lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+      t0 = ans[0];
+      t1 = ans[1];
+      alpah = ans[2];
+   }
+   // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
    if (0 >= t0 && 0 >= t1)
       return {0., 0., c};
    else if (0 >= t0 && 1 <= t1)

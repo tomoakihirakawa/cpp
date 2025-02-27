@@ -149,7 +149,9 @@ V_{\rm {\ell}01in}
 \end{aligned}
 ```
 
-0,1節点は，$V_{\rm {\ell}01in}$における4,5節点であるため，$2\xi_0\xi_1(0,0,0,1,1)^{\intercal}$の項に
+0,1節点は，$`V_{\rm {\ell}01in}`$における4,5節点であるため，$`2\xi_0\xi_1(0,0,0,1,1)^{\intercal}`$の項に
+
+<img src="peak_function_interpolations.png">
 
 */
 
@@ -163,6 +165,8 @@ V_{\rm {\ell}01in}
 #include "basic_IO.hpp"
 #include "basic_arithmetic_array_operations.hpp"
 #include "kernelFunctions.hpp"
+
+bool checker(const networkLine *line) { return useOppositeFace(line, 0.7); };
 
 double peaksFunction(double x, double y) {
    return 3 * (1 - x) * (1 - x) * std::exp(-x * x - (y + 1) * (y + 1)) -
@@ -246,8 +250,12 @@ int main() {
       //@                             peaksFunctionを使った例                          */
       //@ -------------------------------------------------------------------------- */
       for (auto divide : {10, 20, 30}) {
-         std::ofstream file_peaks_linear(_HOME_DIR_ + "/output/peaksFunction_linear" + id + std::to_string(divide) + ".dat");
-         std::ofstream file_peaks_pseudo_quad(_HOME_DIR_ + "/output/peaksFunction_pseudo_quad" + id + std::to_string(divide) + ".dat");
+         auto name = _HOME_DIR_ + "/output/peaksFunction_linear" + id + std::to_string(divide) + ".dat";
+         std::ofstream file_peaks_linear(name);
+         std::cout << "file_peaks_linear : " << name << std::endl;
+         name = _HOME_DIR_ + "/output/peaksFunction_pseudo_quad" + id + std::to_string(divide) + ".dat";
+         std::ofstream file_peaks_pseudo_quad(name);
+         std::cout << "file_peaks_pseudo_quad : " << name << std::endl;
          /* ------------------------------------------------- */
          auto net_peaks = new Network();
          net_peaks->setFaces(get_triangle_verticies(divide));
@@ -286,7 +294,7 @@ int main() {
       // b%                                積分のチェック                                 */
       // b% -------------------------------------------------------------------------- */
 
-      int end_divide = 100, divide = 5;
+      int end_divide = 50, divide = 5;
       std::vector<std::tuple<int, double>> results_quad(end_divide - divide + 1), results_linear(end_divide - divide + 1), result_original(end_divide - divide + 1);
       std::vector<std::tuple<int, double>> error_quad(end_divide - divide + 1), error_linear(end_divide - divide + 1);
 #pragma omp parallel
@@ -313,6 +321,7 @@ int main() {
 
          for (const auto &f : net_peaks->getFaces()) {
             auto X012 = ToX(f->getPoints());
+            // auto quadpoints = DodecaPoints(f, f->getPoints()[0], [&](const networkLine *l) { return l->getFaces().size() >= 2; });
             auto quadpoints = DodecaPoints(f, f->getPoints()[0], [&](const networkLine *l) { return l->getFaces().size() >= 2; });
             for (const auto &[t0, t1, ww] : __array_GW10xGW10__) {
 
@@ -355,6 +364,7 @@ int main() {
          error_quad[divide - 5] = {divide, error_integrate_pseudo};
          error_linear[divide - 5] = {divide, error_integrate_linear};
          delete net_peaks;
+         std::cout << "id : " << id << "divide : " << divide << " is done." << std::endl;
       }
 
       std::ofstream file_peaks_integral_linear(_HOME_DIR_ + "/output/peaks_integral_linear" + id + ".dat");

@@ -1,10 +1,10 @@
 #pragma once
 
-inline V_netFp networkLine::getSurfaces() const {
+inline V_netFp networkLine::getSurfaces(networkFace *const f_excluded) const {
    V_netFp surfaces;
    surfaces.reserve(this->Faces.size());
    for (const auto &f : this->Faces)
-      if (f->SurfaceQ())
+      if (f != f_excluded && f->SurfaceQ())
          surfaces.emplace_back(f);
    return surfaces;
 };
@@ -1351,8 +1351,8 @@ inline bool networkLine::flip() {
       this->set(p2, q2);  // setBoundsされないので注意
 
       // b% 線と点の接続関係については入れ替え終了
-      std::cout << "線と点の接続関係については入れ替え終了" << std::endl;
-      std::cout << "p0,p1 = {" << p0 << "," << p1 << "} -> l->getPoints() = " << this->getPoints() << std::endl;
+      // std::cout << "線と点の接続関係については入れ替え終了" << std::endl;
+      // std::cout << "p0,p1 = {" << p0 << "," << p1 << "} -> l->getPoints() = " << this->getPoints() << std::endl;
 
       // #線の面の入れ替え
       l1->replace(fA, fB);
@@ -1363,7 +1363,7 @@ inline bool networkLine::flip() {
       fB->setPoints(p2, this, q2, e2, q0, l1);
 
       // b% 面と線の接続関係については入れ替え終了
-      std::cout << "面と線の接続関係については入れ替え終了" << std::endl;
+      // std::cout << "面と線の接続関係については入れ替え終了" << std::endl;
 
       // #面の持つ点の入れ替え
       fA->setGeometricProperties(std::array<std::array<double, 3>, 3>{q2->X, p2->X, p0->X});
@@ -1376,7 +1376,7 @@ inline bool networkLine::flip() {
       q2->add(fA);
 
       // b% 点と面の接続関係については入れ替え終了
-      std::cout << "点と面の接続関係については入れ替え終了" << std::endl;
+      // std::cout << "点と面の接続関係については入れ替え終了" << std::endl;
 
       if (adjust_tetra) {
          std::cout << "delete this->Tetras " << fA << std::endl;

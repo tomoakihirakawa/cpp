@@ -26,7 +26,7 @@ make
 
 減衰調和振動子の式から，
 次のような加速度$`a(x,v)=\frac{d^2x}{dt^2}`$を
-[プログラム中で宣言](./example_DampedHarmonicOscillator.cpp#L51)し，
+[DampedHrmonicOscillator:declOfAccel](./example_DampedHarmonicOscillator.cpp#L51){プログラム中で宣言}し，
 
 ```math
 \begin{align*}
@@ -49,9 +49,9 @@ $`\gamma = 1, \omega = 10`$として，初期値問題をといてみる．
 ### 🪼 🪼 LeapFrog  
 
 リープフロッグの１回の計算で溜まる誤差は$`O({\Delta t}^3)`$となる．
-時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[LeapFrogのクラス](not found)）．
+時間間隔$`\Delta t`$が変化する場合でも使える形でプログラムしている（[ODE:LeapFrog](not found){LeapFrogのクラス}）．
 $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"半分蹴って-移動-半分蹴って"の手順を繰り返す．
-[LeapFrogのクラス](not found)
+[ODE:LeapFrog](not found){LeapFrogのクラス}
 [../../include/integrationOfODE.hpp#L481](../../include/integrationOfODE.hpp#L481)
 
 
@@ -63,7 +63,7 @@ $\Delta t$が変化する場合，"半分蹴って-移動-半分蹴って"，"�
 ２階微分方程式を２つの1階微分方程式にわけて考え，互いに独立した２つのルンゲクッタを用意し，それぞれ現時刻の微分を使って更新する．
 後退オイラーのように次時刻の流速を使って位置を更新するということはできない．
 
-[4次のRunge-Kutta](not found)の場合，次のようになる．
+[ODE:RungeKutta4](not found){4次のRunge-Kutta}の場合，次のようになる．
 
 ```math
 \begin{align*}
@@ -75,7 +75,7 @@ x _{n+1} &= x _n + \frac{\Delta t}{6} (k _1 + 2 k _2 + 2 k _3 + k _4)
 \end{align*}
 ```
 
-[RungeKuttaのクラス](not found)
+[ODE:RungeKutta](not found){RungeKuttaのクラス}
 [../../include/integrationOfODE.hpp#L8](../../include/integrationOfODE.hpp#L8)
 
 [./example_DampedHarmonicOscillator.cpp#L5](./example_DampedHarmonicOscillator.cpp#L5)

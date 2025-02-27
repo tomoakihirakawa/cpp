@@ -2,6 +2,20 @@
 
 ## 四面体の操作
 
+To check if the tetrahedra are correctly generated and can be accessed, we will manipulate the tetrahedra in this example.
+The example models a simple simulation of a free falling elastic object eventually colliding with a rigid cube.
+we can see collision detection and simple tetrahedra element usage.
+
+The code first computes
+
+1. Initialize deformation gradient, velocity
+2. Green-Lagrange strain $`\boldsymbol{E}`$
+3. The second Piola-Kirchhoff stress $`\boldsymbol{S}`$
+
+S = C : E
+
+where $`C`$ is the right Cauchy-Green deformation tensor.
+
 ```shell
 sh clean
 cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron_simple_simulation.cpp
@@ -24,6 +38,7 @@ int main(const int argc, const char** argv) {
 
    std::string name0 = argc > 1 ? argv[1] : "./input/coil.obj";
    std::string name1 = argc > 2 ? argv[2] : "./input/box.obj";
+   double k = argc > 3 ? std::stod(argv[3]) : 1.;
 
    /* -------------------------------------------------------------------- */
    /*                           四面体の生成と出力                            */
@@ -32,12 +47,18 @@ int main(const int argc, const char** argv) {
    auto coil = new Network(name0);
    auto box = new Network(name1);
 
-   if (argc > 3) {
-      coil->tetrahedralize(argv[3]);
-      box->tetrahedralize(argv[3]);
+   if (argc > 4) {
+      // argv[3] to sting
+      auto command = std::string(argv[4]);
+      coil->tetrahedralize(command);
+      std::cout << "tetrahedralize coil" << std::endl;
+      box->tetrahedralize(command);
+      std::cout << "tetrahedralize box" << std::endl;
    } else {
       coil->tetrahedralize();
+      std::cout << "tetrahedralize coil" << std::endl;
       box->tetrahedralize();
+      std::cout << "tetrahedralize box" << std::endl;
    }
 
    {
@@ -54,15 +75,9 @@ int main(const int argc, const char** argv) {
 
    /* -------------------------------------------------------------------------- */
 
-   coil->makeBucketPoints();
-   coil->makeBucketFaces();
-   coil->makeBucketTetras();
-   box->makeBucketPoints();
-   box->makeBucketFaces();
-   box->makeBucketTetras();
-
    std::cout << "tetras.size() : " << coil->getTetras().size() << std::endl;
    std::cout << "tetras.size() : " << box->getTetras().size() << std::endl;
+
    /* -------------------------------------------------------------------------- */
 
    //% 1. 衝突を検知したいオブジェクトのバケツを取得
@@ -72,29 +87,92 @@ int main(const int argc, const char** argv) {
    // std::vector<std::tuple<std::string, DataMap>> data = {{"fliped", data1}, {"xyz", data2}, {"tetra_size", data3}};
 
    // time stel
-   const double dt = 0.01;
+   const double dt = 0.001;
    double simulation_time = 0;
-
-   std::ofstream ofs("./output/simu_box.vtu");
-   vtkUnstructuredGridWrite(ofs, coil->getTetras());
-   ofs.close();
-
-   std::array<double, 6> acceleration = {0., 0., 9.8, 0., 0., 0.};
 
    PVDWriter pvd("./output/simu_coil.pvd");
    PVDWriter pvd_collision("./output/collision.pvd");
 
-   for (auto step = 0; step < 100; ++step) {
+   box->makeBucketPoints();
+   box->makeBucketFaces();
+   box->makeBucketTetras();
+   /* -------------------------------------------------------------------------- */
+   auto data1 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+   auto data2 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+   auto data3 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
+   for (const auto& p : coil->getPoints()) {
+      data1[p] = 0.;
+      data2[p] = Tddd{0., 0., 0.};
+      data3[p] = 0.;
+   }
+   /* -------------------------------------------------------------------------- */
+
+   for (auto step = 0; step < 3000; ++step) {
       for (const auto& p : coil->getPoints()) {
          p->RK_X.initialize(dt, simulation_time, p->X, 4);
          p->RK_generalized_velocity.initialize(dt, simulation_time, p->velocity, 4);
       }
-      std::cout << "step : " << step << std::endl;
-      do {
-         for (auto p : coil->getPoints()) {
-            p->RK_X.push(p->velocityTranslational());
-            p->RK_generalized_velocity.push(acceleration);
 
+      std::cout << "step : " << step << std::endl;
+
+      do {
+
+#pragma omp parallel
+         for (auto p : coil->getPoints())
+#pragma omp single nowait
+         {
+            p->RK_X.push(p->velocityTranslational());
+
+            p->acceleration = {0., 0., -9.8, 0., 0., 0.};
+            p->stress = {0., 0., 0.};
+
+            /* --------------------------------------------------- */
+            for (auto t : p->Tetras) {
+               auto [p0, p1, p2, p3] = t->getPoints(p);
+               // 初期の相対的位置を確認する．
+               // 法線方向
+               auto n_init = TriangleNormal(p0->initialX, p1->initialX, p2->initialX);
+               auto V_init = p0->initialX - (p1->initialX + p2->initialX + p3->initialX) / 3;
+               auto d_N_init = Dot(V_init, n_init);
+               if (d_N_init < 0) {
+                  n_init = -n_init;
+                  d_N_init = -d_N_init;
+               }
+               auto d_H_init = Norm(V_init - d_N_init * n_init);
+               //
+               auto n = TriangleNormal(p0->X, p1->X, p2->X);
+               auto V = p0->X - (p1->X + p2->X + p3->X) / 3;
+               auto d_N = Dot(V, n);
+               if (d_N < 0) {
+                  n = -n;
+                  d_N = -d_N;
+               }
+               auto d_H = Norm(V - d_N * n);
+               //
+               p->stress += k * std::pow(Norm(d_N_init - d_N), 2) * n;
+               p->stress += k * std::pow(Norm(d_H_init - d_H), 2) * Normalize(V - d_N * n);
+            }
+            p->acceleration[0] += p->stress[0];
+            p->acceleration[1] += p->stress[1];
+            p->acceleration[2] += p->stress[2];
+            /* --------------------------------------------------- */
+
+            // 衝突を模擬
+            if (p->X[2] < 0.55 && p->velocity[2] < 0)
+               p->acceleration[2] -= p->velocity[2] / dt * 0.2;
+
+            // damping
+            p->acceleration[0] -= p->velocity[0] / dt * 0.05;
+            p->acceleration[1] -= p->velocity[1] / dt * 0.05;
+            p->acceleration[2] -= p->velocity[2] / dt * 0.05;
+
+            p->RK_generalized_velocity.push(p->acceleration);
+         }
+
+#pragma omp parallel
+         for (auto p : coil->getPoints())
+#pragma omp single nowait
+         {
             auto tmp = p->RK_generalized_velocity.getX();
             p->velocity[0] = tmp[0];
             p->velocity[1] = tmp[1];
@@ -102,35 +180,30 @@ int main(const int argc, const char** argv) {
             p->setXSingle(p->RK_X.getX());
          }
 
-         {
-            std::string name = "./output/simu_coil" + std::to_string(step) + ".vtu";
-            std::ofstream ofs(name);
-            vtkUnstructuredGridWrite(ofs, coil->getTetras());
-            ofs.close();
-            pvd.push(name, step);
-         }
-
-         // collision detection
-         double range = 0.1;
-         std::unordered_set<networkFace*> faces;
-         for (auto p : coil->getSurfacePoints()) {
-            auto tmp = box->BucketFaces.getData(p->X, range);
-            faces.insert(tmp.begin(), tmp.end());
-         }
-         for (auto p : box->getSurfacePoints()) {
-            auto tmp = coil->BucketFaces.getData(p->X, range);
-            faces.insert(tmp.begin(), tmp.end());
-         }
-
-         std::string name = "collision" + std::to_string(step) + ".vtu";
-         std::ofstream ofs("./output/" + name);
-         vtkUnstructuredGridWrite(ofs, faces);
-         ofs.close();
-         pvd_collision.push(name, step);
-
+         coil->setGeometricProperties();
       } while (std::ranges::any_of(coil->getPoints(), [](const networkPoint* p) { return p->RK_X.finished; }));
       simulation_time = (*(coil->getPoints().begin()))->RK_X.gett();
+
+      /* ---------------------------------------------------------- */
+      std::cout << "output" << std::endl;
+#pragma omp parallel
+      for (const auto& p : coil->getPoints())
+#pragma omp single nowait
+      {
+         data1[p] = p->X[0];
+         data2[p] = Tddd{p->acceleration[0], p->acceleration[1], p->acceleration[2]};
+         data3[p] = p->stress;
+      }
+      std::vector<std::tuple<std::string, DataMap>> data = {{"x", data1}, {"accel", data2}, {"stress", data3}};
+      std::string name = "simu_coil" + std::to_string(step) + ".vtu";
+      std::ofstream ofs("./output/" + name);
+      /* ---------------------------------------------------------- */
+      vtkUnstructuredGridWrite(ofs, coil->getTetras(), data);
+      ofs.close();
+      pvd.push(name, step);
+      /* ---------------------------------------------------------- */
+
+      pvd.output();
+      pvd_collision.output();
    }
-   pvd.output();
-   pvd_collision.output();
 }

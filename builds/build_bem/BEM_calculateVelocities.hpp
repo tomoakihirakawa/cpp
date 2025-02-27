@@ -167,13 +167,14 @@ std::vector<T3Tddd> nextBodyVertices(const std::unordered_set<networkFace *> &Fs
 // \label{BEM:vectorToNextSurface}
 const double dxi = 0.3;
 const T3Tdd t0t1_vertices = {{{1., 0.}, {1. - dxi, dxi}, {1. - dxi, 0.}}};
-const auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 3);
-const auto t0t1_high = SymmetricSubdivisionOfTriangle(t0t1_vertices, 10);
+const auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 5);
+const auto t0t1_high = SymmetricSubdivisionOfTriangle(t0t1_vertices, 15);
 
 Tddd vectorToNextSurface(const networkPoint *p) {
    Tddd X_shifted = RK_with_Ubuff(p);
    Tddd X_not_shifted = RK_without_Ubuff(p);
    Tddd X, ret = {1E+20, 1E+20, 1E+20};
+
    if (p->Dirichlet) {
 
       auto Nearest_pseudo = [&](const auto X_shifted, const networkFace *f, const auto &t0t1) {
@@ -191,20 +192,19 @@ Tddd vectorToNextSurface(const networkPoint *p) {
       networkFace *closest_face = nullptr;
 
       for (const auto &f : p->getSurfaces()) {
-         if ((p->Dirichlet && f->Dirichlet) || (p->Neumann && f->Neumann)) {
-
+         if (f->Dirichlet) {
             if (_ALE_ON_LINEAR_ELEMENT_)
                X = Nearest(X_shifted, RK_without_Ubuff(f));
             else
                X = Nearest_pseudo(X_shifted, f, t0t1);
-
             if (Norm(ret) >= Norm(X - X_shifted)) {
                ret = X - X_shifted;
                closest_face = f;
             }
          }
       }
-      if (closest_face != nullptr)
+
+      if (_ALE_ON_PSEUDO_QUADRATIC_ELEMENT_ && closest_face != nullptr)
          ret = Nearest_pseudo(X_shifted, closest_face, t0t1_high) - X_shifted;
 
       return ret;
@@ -226,7 +226,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          };
 
          //! 面p_fが干渉する，最も近い構造物面を抽出
-         const double angle = 70 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
+         const double angle = 0 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
          for (const auto &f : faces /*p->getFacesNeumann()*/) {
             for (const auto &struct_vertex : next_Vrtx) {
                if (isInContact(X_not_shifted /*シフトなし*/, f->normal, struct_vertex, p)) {
@@ -375,61 +375,41 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       p->vecToSurface_BUFFER_BUFFER.fill(0.);
    }
 
+   points = RandomSample(points);
    /* ------------------------------ 要素を整えるためのベクトル ----------------------------- */
    auto addVectorTangentialShift = [&](const int steps = 0) {
       auto approxRadius = [&](const networkPoint *p) {
-         double area = 0;
-         for (const auto &f : p->getSurfaces())
-            area += f->area;
-         return std::sqrt(area / M_PI);
+         double radius = 0;
+         auto faces = p->getSurfaces();
+         for (const auto &f : faces)
+            radius += std::sqrt(f->area / M_PI);
+         return radius / faces.size();
       };
 
       if (coef == 0.)
          return;
 
-      double scale = coef * ((steps + 1.) / (double)(loop));
-
-      Tddd V;
-      for (const auto &p : points) {
-         auto current_pX = RK_with_Ubuff(p);
-         V = scale * DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-         if (!isFinite(V))
-            V.fill(0.);
-         p->vecToSurface_BUFFER = V;
-      }
-
-      for (const auto &p : points) {
-         p->vecToSurface_BUFFER = 0.5 * p->vecToSurface_BUFFER_BUFFER + 0.5 * std::min(Norm(p->vecToSurface_BUFFER), approxRadius(p) * 0.5) * Normalize(p->vecToSurface_BUFFER);
-         p->vecToSurface_BUFFER_BUFFER = p->vecToSurface_BUFFER;
-         add_vecToSurface_BUFFER_to_vecToSurface(p);
-         p->vecToSurface_BUFFER.fill(0.);
-      }
-   };
-
-   /* ---------------------------- 構造物に貼り付けるためのベクトル ---------------------------- */
-
-   auto addVectorToNextSurface = [&]() {
+//! do not use parallel here
 #pragma omp parallel
       for (const auto &p : points)
 #pragma omp single nowait
-         p->vecToSurface_BUFFER = p->clungSurface = vectorToNextSurface(p);
+      {
+         auto current_pX = RK_with_Ubuff(p);
+         Tddd V = DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+         if (isFinite(V))
+            p->vecToSurface += std::min(Norm(V), 0.025 * approxRadius(p)) * Normalize(V);
 
-      for (const auto &p : points) {
-         add_vecToSurface_BUFFER_to_vecToSurface(p);
-         p->vecToSurface_BUFFER.fill(0.);
+         V = p->clungSurface = vectorToNextSurface(p);
+         if (isFinite(V))
+            p->vecToSurface += V;
       }
    };
 
    TimeWatch watch;
    for (auto steps = 0; steps < loop; ++steps) {
-      addVectorToNextSurface();
-      addVectorToNextSurface();
-      std::cout << "Elapsed time for 1. addVectorToNextSurface: " << watch() << " [s]" << std::endl;
-      addVectorTangentialShift(steps);  // repeating this may led surface detaching
-      std::cout << "Elapsed time for 2. addVectorTangentialShift : " << watch() << " [s]" << std::endl;
+      addVectorTangentialShift(steps);
+      std::cout << "Elapsed time for shift : " << watch() << " [s]" << std::endl;
    }
-   addVectorToNextSurface();
-   addVectorToNextSurface();
 };
 
 // b! -------------------------------------------------------------------------- */

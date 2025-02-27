@@ -1,4 +1,719 @@
 ----------
+Execution time: Thu Feb 27 23:50:06 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08refined.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 23:09:47 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 22:43:04 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08refined.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 20:51:03 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 20:42:21 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08refined.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 18:53:35 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 18:53:22 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 12:04:23 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 10:36:25 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 10:28:59 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 10:19:21 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 09:47:37 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 09:45:26 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 06:16:58 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Thu Feb 27 01:48:33 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 23:02:29 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 21:29:12 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 21:12:17 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 19:50:56 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 18:35:18 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 18:35:17 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 18:35:17 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 15:33:02 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 15:16:23 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 11:46:54 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 05:36:07 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 03:53:35 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Wed Feb 26 02:42:18 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 23:33:40 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 22:02:25 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 20:38:16 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 19:18:11 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 18:02:36 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 18:02:17 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 18:02:12 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 18:01:43 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 17:35:57 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 16:50:46 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 15:52:53 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 15:43:03 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 15:13:42 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 15:00:21 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 14:55:27 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 14:01:47 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:56:29 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:53:50 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:44:00 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:33:07 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:25:56 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:06:17 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 13:02:12 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 12:35:02 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 12:30:39 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 12:26:10 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 11:33:07 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Tue Feb 25 11:29:11 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1_20250225
+----------
+Execution time: Mon Feb 24 10:40:44 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+----------
+Execution time: Mon Feb 24 05:58:29 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+----------
+Execution time: Mon Feb 24 02:34:22 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 23:12:06 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d07.obj_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 21:45:44 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 20:20:21 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMpseudo_quad_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 19:17:19 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 18:14:43 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d08.obj_ELEMlinear_ALElinear_ALEPERIOD1
+----------
+Execution time: Sun Feb 23 16:44:38 2025
+
+Machine Information:
+  Hostname: hirakawatomoakinoMac-Studio.local
+  Operating System: Darwin 24.3.0
+  Working Directory: "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem"
+
+Command line arguments:
+  arg0: ./fast
+  arg1: ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1
+----------
 Execution time: Sun Feb 23 15:17:26 2025
 
 Machine Information:
@@ -52347,6 +53062,71 @@ Command line arguments:
   arg0: ./main
   arg1: ./input_files/Hadzic2005
   arg2: ----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
 ----------
 ----------
 ----------

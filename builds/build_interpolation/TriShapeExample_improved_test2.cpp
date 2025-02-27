@@ -39,13 +39,16 @@ std::array<double, N> ToColor(const std::array<networkPoint *, N> &points) {
    return colors;
 }
 
-bool checker(const networkLine *line) {
-   // return false;
-   auto faces = line->getFaces();
-   if (faces.size() != 2)
-      return false;
-   return isFlat(faces[0]->normal, faces[1]->normal, M_PI / 4.);
-};
+// bool checker(const networkLine *line) {
+//    // return false;
+//    auto faces = line->getFaces();
+//    if (faces.size() != 2)
+//       return false;
+//    return isFlat(faces[0]->normal, faces[1]->normal, M_PI / 4.);
+// };
+
+bool checker(const networkLine *line) { return useOppositeFace(line, M_PI / 3.); };
+
 
 constexpr std::array<std::array<double, 2>, 3> M_sub{{{0., 0.5}, {0.5, 0.}, {0.5, 0.5}}};
 
@@ -85,7 +88,7 @@ int main() {
                }
                {
                   auto [p0, p1, p2] = f->getPoints();
-                  DodecaPoints dodecapoints(f, p0);
+                  DodecaPoints dodecapoints(f, p0, [](const networkLine *line) { return true; });
                   auto [x, y, z] = dodecapoints.interpolate(t0, t1, [&](networkPoint *p) { return p->X; });
                   file_pseudo_quadratic << x << " " << y << " " << z << " ";
                }

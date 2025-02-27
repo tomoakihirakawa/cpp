@@ -491,18 +491,26 @@ double RMS(const V_d &v) {
 //    // }
 // };
 
-template <typename T>
-std::vector<T> RandomSample(std::vector<T> ret) {
-   // Use the current time as a seed for the random number generator
-   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
-   return ret;
-}
+// template <typename T>
+// std::vector<T> RandomSample(std::vector<T> ret) {
+//    // Use the current time as a seed for the random number generator
+//    auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+//    std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
+//    return ret;
+// }
 
-template <typename T>
-std::vector<T *> RandomSample(std::vector<T *> ret) {
-   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-   std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
+// template <typename T>
+// std::vector<T *> RandomSample(std::vector<T *> ret) {
+//    auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+//    std::shuffle(std::begin(ret), std::end(ret), std::default_random_engine(seed));
+//    return ret;
+// }
+
+template <typename V>
+V RandomSample(V ret) {
+   std::random_device rd;
+   std::mt19937 gen(rd());
+   std::shuffle(std::begin(ret), std::end(ret), gen);
    return ret;
 }
 
@@ -2766,9 +2774,7 @@ triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
    |-o--o--o--o-| n = 4
    x,yはパラメタ
    */
-   auto intp = [&X0X1X2](double t0, double t1) {
-      return Dot(Tddd{t0, t1, 1 - t0 - t1}, X0X1X2);
-   };
+   auto intp = [&X0X1X2](double t0, double t1) { return Dot(Tddd{t0, t1, 1 - t0 - t1}, X0X1X2); };
    auto y_list = [&intp, &dx](const double x) {
       int n = std::round(Norm(intp(x, 0.) - intp(x, 1. - x)) /*このxでのyの長さ[0,1]*/ / dx);
       // int n = std::ceil(Norm(intp(x, 0.) - intp(x, 1. - x)) /*このxでのyの長さ[0,1]*/ / dx);
@@ -2781,7 +2787,6 @@ triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
    Tddd v = intp(0., 1.) - intp(0., 0.);
    Tddd u = intp(1., 0.) - intp(0., 0.);
    double height = Norm(u - Dot(Normalize(v), u) * Normalize(v));
-
    int n = std::round(height / dx);
    // int n = std::ceil(height / dx);
    // std::cout << Grid({"n", n, "height", height}) << std::endl;

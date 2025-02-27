@@ -65,7 +65,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Networkのコンストラクタ](not found)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Network::constructor](not found){Networkのコンストラクタ}では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp
@@ -129,8 +129,8 @@ vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
 ofs.close();
 ```
 
-[このようにして](./example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
-また，[カスタム名](./example0_load_3d_file.cpp#L269)を付けることもできる．
+[add_data_default_name](./example0_load_3d_file.cpp#L239){このようにして}，点に値を付与し，vtpとして出力することもできる．
+また，[add_data_custom_name](./example0_load_3d_file.cpp#L269){カスタム名}を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -176,13 +176,27 @@ make
 ./example0_manipulation_tetrahedron
 ```
 
-* [これは](./example0_manipulation_tetrahedron.cpp#L83)，空間分割のためのバケットを作成し，四面体をバケットに登録する例
-* [これは](./example0_manipulation_tetrahedron.cpp#L104)，四面体を持つ表面のエッジフリップテストの例
-* [これは](./example0_manipulation_tetrahedron.cpp#L139)，座標が四面体の内部か外部かの判定テストの例
+* [make_bucket_tetras](./example0_manipulation_tetrahedron.cpp#L83){これは}，空間分割のためのバケットを作成し，四面体をバケットに登録する例
+* [edge_flip](./example0_manipulation_tetrahedron.cpp#L104){これは}，四面体を持つ表面のエッジフリップテストの例
+* [test_insideQ](./example0_manipulation_tetrahedron.cpp#L139){これは}，座標が四面体の内部か外部かの判定テストの例
 
 [./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
 
 ## ⛵ 四面体の操作 
+
+To check if the tetrahedra are correctly generated and can be accessed, we will manipulate the tetrahedra in this example.
+The example models a simple simulation of a free falling elastic object eventually colliding with a rigid cube.
+we can see collision detection and simple tetrahedra element usage.
+
+The code first computes
+
+1. Initialize deformation gradient, velocity
+2. Green-Lagrange strain $`\boldsymbol{E}`$
+3. The second Piola-Kirchhoff stress $`\boldsymbol{S}`$
+
+S = C : E
+
+where $`C`$ is the right Cauchy-Green deformation tensor.
 
 ```shell
 sh clean
@@ -315,7 +329,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[このツリー生成方法](not found)は，
+[buckets_generateTree](not found){このツリー生成方法}は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -338,7 +352,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[`IntersectQ`](not found)関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](not found){`IntersectQ`}関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -354,7 +368,7 @@ make
 ---
 ### 🪼 面と面の接触判定 
 
-[`IntersectQ`](not found)関数は，交差判定には使えるが，接触判定には使えない．
+[basic_geometry:IntersectQ](not found){`IntersectQ`}関数は，交差判定には使えるが，接触判定には使えない．
 
 **オブジェクト同士の接触**をプログラム上で定義するなら，
 ２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
@@ -364,7 +378,7 @@ make
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
 これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest](not found)のような計算を行う．
+また，この一つひとつの計算において，[Nearest(const Tddd &X, const T3Tddd &abc)](not found){Nearest}のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
 
@@ -570,7 +584,7 @@ b.parse_commandline("pq2.a50.");
 | オプション | 意味 |
 |:---:|:---:|
 | p | PLC（Piecewise Linear Complex）を四面体メッシュ化する．その他に，再メッシュ用のrや，境界ポイントの保持を行うyなどのオプションもある．|
-| q2 | 最小radius-edge比を2に設定し，品質の高い四面体を生成する．例えば，q1.4なら比率を1.4に設定する．|
+| q2 | 最小circum radius-the min edge比を2に設定する．$`\frac{circum R}{L _{\rm min}} > 2`$
 | a50. | 四面体の最大体積を50に制限します．例えば，a100.とすると最大体積が100に制限される．|
 
 
@@ -579,7 +593,7 @@ b.parse_commandline("pq2.a50.");
 <figcaption>pq2.a50, pq1.a50, pq1.a0.00005の比較</figcaption>
 </figure>
 
-[./example_tetGen.cpp#L5](./example_tetGen.cpp#L5)
+[./example_tetGen.cpp#L6](./example_tetGen.cpp#L6)
 
 ---
 ## ⛵ 四面体の生成（制約付き四面分割 constrained tetrahedralization） 
@@ -587,7 +601,7 @@ b.parse_commandline("pq2.a50.");
 * PLC: piecewise linear complex
 * CDT: constrained Delaunay triangulation
 
-CDTの生成法には，主に２つの方法がある\ref{Schewchuk2002}：
+CDTの生成法には，主に２つの方法がある[Schewchuk2002](not found)：
 
 * naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
 * sweep algorithm

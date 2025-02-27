@@ -139,7 +139,6 @@ class MainWindow(QWidget):
         self.fileViewerSummary.setText(summary)
 
 
-
     def setupFileSystemView(self, mainLayout):
         """Sets up the file system view and adds it to the main layout."""
         self.fileSystemModel = QFileSystemModel()
@@ -223,7 +222,6 @@ class MainWindow(QWidget):
         self.switchViewButton.clicked.connect(self.switchTreeViewOrientation)
         self.switchViewButton.setMaximumWidth(100)
         self.buttonArrayLayout.addWidget(self.switchViewButton)
-
 
     def onSettingTreeClicked(self, index):
         itemData = index.data(Qt.DisplayRole)  # The visible text of the item

@@ -1043,9 +1043,7 @@ double Det(const T3Tddd& M) {
    //                 std::fma(b, std::fma(f, g, -d * i),
    //                          std::fma(c, std::fma(d, h, -e * g), 0.)));
 
-   return M[0][0] * (std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1])) -
-          M[0][1] * (std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0])) +
-          M[0][2] * (std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0]));
+   return M[0][0] * (std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1])) - M[0][1] * (std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0])) + M[0][2] * (std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0]));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1754,5 +1752,24 @@ void IdentityMatrix(T& M) {
       i++;
    }
 };
+
+/* -------------------------------------------------------------------------- */
+
+template <typename T, std::size_t N>
+constexpr T Trace(const std::array<std::array<T, N>, N>& M) {
+   T sum = 0;
+   for (std::size_t i = 0; i < N; i++)
+      sum += M[i][i];
+   return sum;
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<std::array<T, N>, N> Transpose(const std::array<std::array<T, N>, N>& M) {
+   std::array<std::array<T, N>, N> result;
+   for (std::size_t i = 0; i < N; i++)
+      for (std::size_t j = 0; j < N; j++)
+         result[i][j] = M[j][i];
+   return result;
+}
 
 #endif

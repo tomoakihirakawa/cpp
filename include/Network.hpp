@@ -1,7 +1,8 @@
 #pragma once
 
 #define BEM  // BEMのメンバー変数関数を有効化する
-
+#include "tetgen1.6.0/tetgen.h"
+//
 #include <functional>
 #include <typeinfo>
 #include <unordered_set>
@@ -270,7 +271,7 @@ class networkLine : public CoordinateBounds {
    T_PP getPoints() const noexcept { return {this->Point_A, this->Point_B}; };
    T_PP getPointsTuple() const noexcept { return {this->Point_A, this->Point_B}; };
    const V_netFp &getFaces() const noexcept { return this->Faces; };
-   V_netFp getSurfaces() const;
+   V_netFp getSurfaces(networkFace *const f_excluded = nullptr) const;
 
    V_netFp getFacesExcept(const netFp f) const noexcept { return TakeExcept(this->Faces, f); };
    V_netFp getFacesExcept(const V_netFp &fs) const noexcept { return TakeExcept(this->Faces, fs); };
@@ -429,6 +430,16 @@ class networkPoint : public CoordinateBounds, public CRS {
    // 今のところBEMのためのもの
    RungeKutta<double> RK_phi;
    RungeKutta<Tddd> RK_X, RK_X_sub;
+   RungeKutta<T3Tddd> RK_defGrad;
+   T3Tddd defGrad = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}};
+   T3Tddd RightCauchyGreen = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   T3Tddd GreenLagrangeStrain = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   T3Tddd SecondPiolaKirchhoffStress = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   T3Tddd FirstPiolaKirchhoffStress = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   T3Tddd CauchyStress = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   T3Tddd velocityGrad = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+   Tddd stressDiv = {0., 0., 0.};
+
    //
    // 今のところSoft bodyのためのもの
    RungeKutta<Tddd> RK_velocity, RK_velocity_sub;
@@ -503,6 +514,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    T6d inertia = {0., 0., 0., 0., 0., 0.};
    T6d velocity = {0., 0., 0., 0., 0., 0.};
    T6d acceleration = {0., 0., 0., 0., 0., 0.};
+   // 応力
+   Tddd stress = {0., 0., 0.};
    double mass = 0.;
    Tddd forceTranslational() const noexcept { return {force[0], force[1], force[2]}; };
    Tddd forceRotational() const noexcept { return {force[3], force[4], force[5]}; };
@@ -1498,12 +1511,6 @@ class networkFace : public Triangle {
 
    std::vector<std::unordered_map<networkPoint *, std::vector<linear_triangle_integration_info>>> map_Point_LinearIntegrationInfo_vector;
    std::vector<std::unordered_map<networkPoint *, std::vector<pseudo_quadratic_triangle_integration_info>>> map_Point_PseudoQuadraticIntegrationInfo_vector;
-
-   std::unordered_map<networkPoint *, std::vector<linear_triangle_integration_info>> map_Point_LinearIntegrationInfo;
-   std::unordered_map<networkPoint *, std::vector<pseudo_quadratic_triangle_integration_info>> map_Point_PseudoQuadraticIntegrationInfo;
-
-   std::unordered_map<networkPoint *, std::vector<linear_triangle_integration_info>> map_Point_LinearIntegrationInfo_HigherResolution;
-   std::unordered_map<networkPoint *, std::vector<pseudo_quadratic_triangle_integration_info>> map_Point_PseudoQuadraticIntegrationInfo_HigherResolution;
 
    using BEM_IGIGn_info_type = std::tuple<networkPoint *, networkFace *, double, double>;
    std::unordered_map<networkPoint *, std::vector<BEM_IGIGn_info_type>> map_Point_BEM_IGIGn_info_init;
@@ -2558,6 +2565,62 @@ class networkTetra : public Tetrahedron, public ElasticBodyDynamics {
    double mass = 0;
    networkTetra(Network *const network_IN, const T_4P &points, const T_6L &lines, const T_4F &faces);
    ~networkTetra();
+
+   std::array<double, 3> grad(const std::function<double(networkPoint *)> &func) {
+      auto [p0, p1, p2, p3] = Points;
+      std::array<double, 4> values = {func(p0), func(p1), func(p2), func(p3)}, ans;
+      std::array<std::array<double, 4>, 4> positions = {{{1., p0->X[0], p0->X[1], p0->X[2]},
+                                                         {1., p1->X[0], p1->X[1], p1->X[2]},
+                                                         {1., p2->X[0], p2->X[1], p2->X[2]},
+                                                         {1., p3->X[0], p3->X[1], p3->X[2]}}};
+      lapack_svd_solve(positions, ans, values);
+      return {ans[1], ans[2], ans[3]};
+   };
+
+   std::array<std::array<double, 3>, 3> grad(const std::function<std::array<double, 3>(networkPoint *)> &func) {
+      auto [p0, p1, p2, p3] = Points;
+      std::array<std::array<double, 4>, 4> positions = {{{1., p0->X[0], p0->X[1], p0->X[2]},
+                                                         {1., p1->X[0], p1->X[1], p1->X[2]},
+                                                         {1., p2->X[0], p2->X[1], p2->X[2]},
+                                                         {1., p3->X[0], p3->X[1], p3->X[2]}}};
+      lapack_lu lu(positions);
+      auto inv = lu.inverse();
+
+      std::array<std::array<double, 4>, 4> inv_array;
+      for (int i = 0; i < 4; i++)
+         for (int j = 0; j < 4; j++)
+            inv_array[i][j] = inv[i][j];
+
+      auto ans = Dot(inv_array, std::array<std::array<double, 3>, 4>{{func(p0), func(p1), func(p2), func(p3)}});
+      return {ans[1], ans[2], ans[3]};
+   };
+
+   double div(const std::function<std::array<double, 3>(networkPoint *)> &func) {
+      //@ func returns {f0,f1,f2}
+      //@ div . {f0,f1,f2} = f0x + f1y + f2z
+      //@ which is tr(grad(func))
+      return Trace(this->grad(func));
+   };
+
+   std::array<double, 3> div(const std::function<std::array<std::array<double, 3>, 3>(networkPoint *)> &func) {
+      //@ func returns {f0,f1,f2}
+      //@ div . {f0,f1,f2} = f0x + f1y + f2z
+      //@ which is tr(grad(func))
+      return {this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[0]; }),
+              this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[1]; }),
+              this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[2]; })};
+   };
+
+   std::array<networkPoint *, 4> getPoints(networkPoint *p) const {
+      if (p == std::get<1>(this->Points))
+         return {Points[1], Points[2], Points[3], Points[0]};
+      else if (p == std::get<2>(this->Points))
+         return {Points[2], Points[3], Points[0], Points[1]};
+      else if (p == std::get<3>(this->Points))
+         return {Points[3], Points[0], Points[1], Points[2]};
+      else
+         return this->Points;
+   };
 };
 
 /* -------------------------------------------------------------------------- */
@@ -3111,11 +3174,11 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    //% ------------------------------------------------------ */
 
    // b$ =================================================================== */
-   // b$       ３次元空間分割に関する．　バケツ．Faces,Points,ParametricPoints       */
+   // b$       ３次元空間分割に関する．　バケツ．Faces,Points,ParametricPoints       　　　　　　*/
    // b$ =================================================================== */
 
   public:
-   Buckets<networkFace *> BucketFaces;
+   Buckets<networkFace *> BucketFaces, BucketSurfaces;
    Buckets<networkPoint *> BucketParametricPoints;
    Buckets<networkPoint *> BucketPoints;
    Buckets<networkTetra *> BucketTetras;
@@ -3123,7 +3186,6 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    const Buckets<networkFace *> &getBucketFaces() const { return BucketFaces; };
    const Buckets<networkPoint *> &getBucketPoints() const { return BucketPoints; };
    const Buckets<networkPoint *> &getBucketParametricPoints() const { return BucketParametricPoints; };
-
    const double expand_bounds = 1.5;
 
    void makeBucketTetras(double spacing = 1E+20) {
@@ -3137,18 +3199,15 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       for (const auto &t : this->getTetras()) {
          //! add extra points to make sure that the face is included in the bucket
          bool fully_inside_a_cell_found = false;
-         for (const auto p : t->Points) {
-            auto X = p->X;
-            auto [inserted, ijk] = this->BucketTetras.addAndGetIndices(X, t);
-            if (inserted && ::InsideQ(t->bounds, this->BucketTetras.getBounds(ijk).bounds)) {
-               fully_inside_a_cell_found = true;
-               break;
-            }
+         auto [p0, p1, p2, p3] = t->Points;
+         std::array<double, 3> mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
+         auto [inserted, ijk] = this->BucketTetras.addAndGetIndices(mean, t);
+         if (inserted && ::InsideQ(t->bounds, this->BucketTetras.getBounds(ijk).bounds)) {
+            fully_inside_a_cell_found = true;
+            break;
          }
+
          if (!fully_inside_a_cell_found) {
-            auto [p0, p1, p2, p3] = t->Points;
-            std::array<double, 3> mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
-            this->BucketTetras.add(mean, t);
             for (auto &f : t->Faces) {
                double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 20.;
                for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
@@ -3167,27 +3226,29 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          spacing = this->getScale() / 10.;
       std::cout << this->getName() << " makeBucketFaces(" << spacing << ")" << std::endl;
       this->setGeometricProperties();
-      this->BucketFaces.clear();  // こうしたら良くなった
+      this->BucketFaces.clear();
+      this->BucketSurfaces.clear();
       this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
-      double particlize_spacing;
-      for (const auto &f : this->getFaces()) {
+      this->BucketSurfaces.initialize(this->scaledBounds(expand_bounds), spacing);
+
+      auto insert = [&spacing](networkFace *f, Buckets<networkFace *> &bucket) {
          //! add extra points to make sure that the face is included in the bucket
-         bool fully_inside_a_cell_found = false;
-         for (const auto X : f->getXVertices()) {
-            auto [inserted, ijk] = this->BucketFaces.addAndGetIndices(X, f);
-            if (inserted && ::InsideQ(f->bounds, this->BucketFaces.getBounds(ijk).bounds)) {
-               fully_inside_a_cell_found = true;
-               break;
-            }
-         }
-         if (!fully_inside_a_cell_found) {
-            this->BucketFaces.add(Mean(f->getXVertices()), f);
-            particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 40.;
-            for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
-               this->BucketFaces.add(xyz, f);
-         }
+         auto [inserted, ijk] = bucket.addAndGetIndices(Mean(f->getXVertices()), f);
+         if (inserted && ::InsideQ(f->bounds, bucket.getBounds(ijk).bounds))
+            return;
+
+         double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 20.;
+         for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
+            bucket.add(xyz, f);
+      };
+
+      for (auto f : this->getFaces()) {
+         insert(f, this->BucketFaces);
+         if (f->SurfaceQ())
+            insert(f, this->BucketSurfaces);
       }
       this->BucketFaces.setVector();
+      this->BucketSurfaces.setVector();
       std::cout << this->getName() << " makeBucketFaces done" << std::endl;
    };
 
@@ -3257,6 +3318,84 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    };
 
    // b$ ------------------------------------------------------ */
+
+   std::array<double, 3> siginedDistance(const std::array<double, 3> &X) {
+      /*
+      This function is based on the following paper.
+      Belyaev, A., Fayolle, P., & Pasko, A. (2013). Signed Lp-distance fields. Computer-Aided Design, 45(2), 523–528. https://doi.org/10.1016/j.cad.2012.10.035
+      */
+      const int P = 15;
+
+      auto surface = this->getSurfaces();
+      double accum = 0.;
+      std::array<double, 3> direction = {0., 0., 0.};
+      Tddd R;
+      double nr;
+      const double eps = 1E-3;
+      const double too_small_distance = std::pow(nr, -(P + 2));
+      std::array<std::array<double, 3>, 3> X012;
+      std::array<double, 3> cross;
+      bool too_close = false;
+      double min_distance = 1E+10;
+      std::array<double, 3> v, v_tmp;
+      double d;
+      bool is_inside = false;
+      for (const auto &target_face : surface) {
+         auto [p0, p1, p2] = target_face->getPoints();
+         X012 = {p0->X, p1->X, p2->X};
+         cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
+
+         if (!too_close) {
+            for (int i = 0; const auto &[t0, t1, ww] : __array_GW14xGW14__) {
+               R = Dot(ModTriShape<3>(t0, t1), X012) - X;
+               nr = Norm(R);
+               auto tmp = Dot((R / nr) / std::pow(nr, P + 2), cross) * ww * (1. - t0);
+               if (tmp == tmp && eps < nr) {
+                  accum += tmp;
+                  direction += R * tmp;
+               } else {
+                  too_close = true;
+                  v_tmp = Nearest(X, X012) - X;
+                  d = Norm(v_tmp);
+                  min_distance = d;
+                  v = v_tmp;
+                  is_inside = Dot(target_face->normal, v) >= 0.;
+                  break;
+               }
+            }
+         } else {
+            v_tmp = Nearest(X, X012) - X;
+            d = Norm(v_tmp);
+            if (d < min_distance) {
+               min_distance = d;
+               v = v_tmp;
+               is_inside = Dot(target_face->normal, v) >= 0.;
+            }
+         }
+      }
+
+      if (too_close) {
+         if (is_inside)
+            return v;
+         else
+            return -v;
+      }
+
+      auto coeff = [&P]() -> std::array<double, P + 1> {
+         std::array<double, P + 1> c;
+         c[0] = 4. * M_PI / 2.;
+         c[1] = M_PI;
+         for (auto k = 0; k < P - 1; ++k)
+            c[k + 2] = (k + 1.) / (k + 3.) * c[k];
+         return c;
+      };
+      std::array<double, P + 1> c = coeff();
+
+      if (accum >= 0.)
+         return std::pow(accum / c[P], -1. / P) * Normalize(direction);
+      else
+         return -std::pow(-accum / c[P], -1. / P) * Normalize(direction);
+   }
 
    // @ ============================================================== */
    // @                 RigidBodyDynamicsを使ったメソッド                 */
@@ -3904,6 +4043,8 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
             f->setGeometricProperties(ToX(f->getPoints()));  // @ face->Lines must have been determined
          for (const auto &f : this->getSurfaces())
             f->setDodecaPoints();
+         for (const auto &t : this->getTetras())
+            t->setProperties(ToX(t->Points));
          CoordinateBounds::setBounds(ToX(this->getPoints()));
       } else {
          CoordinateBounds::setBounds(Tddd{{0., 0., 0.}});
@@ -4090,8 +4231,10 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          vecTddd[n] = *x;
          map_Tddd_Int[x] = n++;
       }
-      CoordinateBounds bound(MinMaxColumns(vecTddd));
-      Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 100.);
+      CoordinateBounds tmp(MinMaxColumns(vecTddd));
+      CoordinateBounds bound(tmp.scaledBounds(1.11111111111));
+
+      Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 20.);
       std::vector<networkPoint *> ret(v_IN.size());
       int overlap_index = 0, overlaps = 0;
       for (const auto &[x, n] : map_Tddd_Int) {
@@ -4124,8 +4267,10 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          vecTddd[n] = *x;
          map_Tddd_Int[x] = n++;
       }
-      CoordinateBounds bound(MinMaxColumns(vecTddd));
-      Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 100.);
+      CoordinateBounds tmp(MinMaxColumns(vecTddd));
+      CoordinateBounds bound(tmp.scaledBounds(1.111111111111));
+
+      Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 20.);
       std::vector<networkPoint *> ret(v_IN.size());
       int overlap_index = 0, overlaps = 0;
       for (const auto &[x, n] : map_Tddd_Int) {
@@ -4153,7 +4298,9 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    void setFaces(const std::vector<T3Tddd> &v_IN, const double resolution = 1E-10) {
       std::vector<std::array<networkPoint *, 3>> v_Points(v_IN.size());
 
-      CoordinateBounds bound(v_IN);
+      CoordinateBounds tmp(v_IN);
+      CoordinateBounds bound(tmp.scaledBounds(1.11111111111));
+
       Buckets<networkPoint *> bucket;
       bucket.initialize(bound, bound.getScale() / 20.);
 
@@ -4279,7 +4426,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       std::cout << Green << "Total Tetra : " << this->Tetras.size() << colorReset << std::endl;
    }
 
-   bool tetrahedralize(const std::string command = "pq2a10Y") {
+   bool tetrahedralize(const std::string command = "pq1.5") {
 
       tetgenio in = generate_tetgenio_input(this->getSurfaces());
       printf("Loaded %d vertices and %d faces from Network.\n", in.numberofpoints, in.numberoffacets);
@@ -4296,7 +4443,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       int count = 0;
       for (int i = 0; i < out.numberofpoints; i++) {
          std::array<double, 3> X = {out.pointlist[i * 3], out.pointlist[i * 3 + 1], out.pointlist[i * 3 + 2]};
-         if (std::ranges::none_of(this->BucketPoints.getData(X), [&](auto &p) { return Norm(p->X - X) < 1E-10; })) {
+         if (std::ranges::none_of(this->BucketPoints.getData(X), [&](auto &p) { return Norm(p->X - X) < 1E-15; })) {
             this->BucketPoints.add(X, new networkPoint(this, X));
             count++;
          }
@@ -4563,30 +4710,34 @@ inline Network::~Network() {
       delete this->octreeOfFaces;
    //
    try {
-      std::cout << this->getName() << "->Points.size() = " << this->Points.size() << std::endl;
-      std::cout << this->getName() << "->Faces.size() = " << this->Faces.size() << std::endl;
-      std::cout << this->getName() << "->Lines.size() = " << this->Lines.size() << std::endl;
-      std::cout << "destroying Points in " << Red << this->getName() << colorReset << std::endl;
+      // std::cout << Red << this->getName() << colorReset << std::endl;
+      // std::cout << "destroying Points" << std::endl;
       {
          auto tmp = this->Points;
          for (const auto &p : tmp)
             delete p;
       }
-      std::cout << "destroying Faces in " << Red << this->getName() << colorReset << std::endl;
+      // std::cout << "destroying Faces" << std::endl;
       {
          auto tmp = this->Faces;
          for (const auto &f : tmp)
             delete f;
       }
-      std::cout << "destroying Lines in " << Red << this->getName() << colorReset << std::endl;
+      // std::cout << "destroying Lines" << std::endl;
       {
          auto tmp = this->Lines;
          for (const auto &l : tmp)
             delete l;
       }
-      std::cout << this->getName() << "->Points.size() = " << this->Points.size() << std::endl;
-      std::cout << this->getName() << "->Faces.size() = " << this->Faces.size() << std::endl;
-      std::cout << this->getName() << "->Lines.size() = " << this->Lines.size() << std::endl;
+      if (this->Points.size() == 0 && this->Faces.size() == 0 && this->Lines.size() == 0) {
+         std::cout << this->getName() << " is deleted successfully" << std::endl;
+      } else {
+         std::stringstream message;
+         message << "Points.size() = " << this->Points.size() << std::endl;
+         message << "Faces.size() = " << this->Faces.size() << std::endl;
+         message << "Lines.size() = " << this->Lines.size() << std::endl;
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, message.str());
+      }
       // try {
       //    int maxloop = 100000 + this->Faces.size();
       //    int counter = 0;
@@ -4938,6 +5089,38 @@ N * t0*(1-t0-t1)は，p4の重みであるが，p4は存在しないので，こ
 N * t1*(1-t0-t1)は，p5の重みであるが，p5は存在しないので，これはさらに分配され，f_l2とfの節点に分配される．
 
 */
+
+bool useOppositeFace(const networkLine *line, const double alpha = M_PI / 3.) {
+   auto faecs = line->getSurfaces();
+   if (faecs.size() != 2)
+      return false;
+   auto [p0, p1] = line->getPoints();
+   auto f0 = faecs[0];
+   auto f1 = faecs[1];
+
+   double signed_angle = VectorAngle(f0->normal, f1->normal, p1->X - p0->X);
+   return std::abs(signed_angle) < alpha;
+   // auto [a0, a1, f0_oppositeX] = f0->getPoints(p0);
+   // if (f0_oppositeX == p1)
+   //    std::swap(a1, f0_oppositeX);
+   // auto [b0, b1, f1_oppositeX] = f1->getPoints(p0);
+   // if (f1_oppositeX == p1)
+   //    std::swap(b1, f1_oppositeX);
+   // double base_length = Norm(p0->X - p1->X);
+
+   // std::array<double, 3> Nmid = {5. / 4., 3 / 4., 1 - 2 * 3 / 4.};
+   // std::array<double, 3> Nopposite = {-1., 1., 1 - (-1. + 1.)};
+   // Norm(f0_oppositeX->X - (-f1_oppositeX->X + p0->X + p1->X));
+
+   // auto f0_ideal_X = (-f1_oppositeX->X + p0->X + p1->X);
+   // auto f1_ideal_X = (-f0_oppositeX->X + p0->X + p1->X);
+
+   // Norm(f0_oppositeX->X - RotationMatrix(signed_angle, f0_ideal_X - p0->X) + p0->X);
+   // Norm(f1_oppositeX->X - RotationMatrix(signed_angle, f1_ideal_X - p0->X) + p0->X);
+
+   // return (Norm(f0_oppositeX->X - (-f1_oppositeX->X + p0->X + p1->X)) / base_length < alpha) &&
+   //        (Norm(f1_oppositeX->X - (-f0_oppositeX->X + p0->X + p1->X)) / base_length < alpha);
+};
 
 struct DodecaPoints {
 
