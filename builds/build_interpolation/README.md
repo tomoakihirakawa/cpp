@@ -383,6 +383,9 @@ V _{\rm {\ell}01in}
 
 <img src="peak_function_interpolation_integration.png">
 
+* [pseudo_quad要素の精度peaks_function積分.nb](pseudo_quad要素の精度peaks_function積分.nb)
+* [説明.key](説明.key)
+
 [./TriShapeExample_improved_test1.cpp#L1](./TriShapeExample_improved_test1.cpp#L1)
 
 ---
