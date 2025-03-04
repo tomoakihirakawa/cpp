@@ -66,7 +66,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Network::constructor](not found){Networkのコンストラクタ}では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Network::constructor](../../include/Network.hpp#L3617)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp
@@ -130,8 +130,8 @@ vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
 ofs.close();
 ```
 
-[add_data_default_name](./example0_load_3d_file.cpp#L239){このようにして}，点に値を付与し，vtpとして出力することもできる．
-また，[add_data_custom_name](./example0_load_3d_file.cpp#L269){カスタム名}を付けることもできる．
+[add_data_default_name](../../builds/build_Network/example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
+また，[add_data_custom_name](../../builds/build_Network/example0_load_3d_file.cpp#L269)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -177,9 +177,9 @@ make
 ./example0_manipulation_tetrahedron
 ```
 
-* [make_bucket_tetras](./example0_manipulation_tetrahedron.cpp#L83){これは}，空間分割のためのバケットを作成し，四面体をバケットに登録する例
-* [edge_flip](./example0_manipulation_tetrahedron.cpp#L104){これは}，四面体を持つ表面のエッジフリップテストの例
-* [test_insideQ](./example0_manipulation_tetrahedron.cpp#L139){これは}，座標が四面体の内部か外部かの判定テストの例
+* [make_bucket_tetras](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L83)，空間分割のためのバケットを作成し，四面体をバケットに登録する例
+* [edge_flip](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L104)，四面体を持つ表面のエッジフリップテストの例
+* [test_insideQ](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L139)，座標が四面体の内部か外部かの判定テストの例
 
 [./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
 
@@ -330,7 +330,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[buckets_generateTree](not found){このツリー生成方法}は，
+[buckets_generateTree](../../include/lib_spatial_partitioning.hpp#L134)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -353,7 +353,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[basic_geometry:IntersectQ](not found){`IntersectQ`}関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1856)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -369,11 +369,21 @@ make
 ---
 ### 🪼 点から面までの最短ベクトル `Nearest` 
 
+[Nearest_](../../include/basic_geometry.hpp#L1651)関数は，点から面までの最短ベクトルを求める関数である．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
+make
+./example4_point2face
+```
+
 <img src="example4.png" style="display: block; margin: 0 auto; height: 300px;">
+
 
 ### 🪼 面と面の接触判定 
 
-[basic_geometry:IntersectQ](not found){`IntersectQ`}関数は，交差判定には使えるが，接触判定には使えない．
+[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1856)関数は，交差判定には使えるが，接触判定には使えない．
 
 **オブジェクト同士の接触**をプログラム上で定義するなら，
 ２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
@@ -383,18 +393,11 @@ make
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
 これには，$`N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}`$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest(const Tddd &X, const T3Tddd &abc)](not found){Nearest}のような計算を行う．
+また，この一つひとつの計算において，[Nearest(const Tddd &X, const T3Tddd &abc)](not found)のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
 
 もう一つの方法は，よりナイーブな方法で，
-
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
-make
-./example4_point2face
-```
 
 [./example4_point2face.cpp#L4](./example4_point2face.cpp#L4)
 
@@ -604,7 +607,7 @@ b.parse_commandline("pq2.a50.");
 * PLC: piecewise linear complex
 * CDT: constrained Delaunay triangulation
 
-CDTの生成法には，主に２つの方法がある[Schewchuk2002](not found)：
+CDTの生成法には，主に２つの方法がある\ref{Schewchuk2002}：
 
 * naive gift wrapping algorithm (これはadvancing front algorithmとも呼ばれるものと同じだろう)
 * sweep algorithm

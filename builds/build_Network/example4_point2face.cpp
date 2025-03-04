@@ -5,7 +5,17 @@
 
 ### 点から面までの最短ベクトル `Nearest`
 
+\ref{Nearest_}{`Nearest`}関数は，点から面までの最短ベクトルを求める関数である．
+
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
+make
+./example4_point2face
+```
+
 <img src="example4.png" style="display: block; margin: 0 auto; height: 300px;">
+
 
 ### 面と面の接触判定
 
@@ -25,12 +35,6 @@
 
 もう一つの方法は，よりナイーブな方法で，
 
-```shell
-sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
-make
-./example4_point2face
-```
 
 */
 
