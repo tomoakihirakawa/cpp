@@ -5,7 +5,7 @@
 
 ### 点から面までの最短ベクトル `Nearest`
 
-<img src="example4.png" style="display: block; margin: 0 auto;" />
+<img src="example4.png" style="display: block; margin: 0 auto; height: 300px;">
 
 ### 面と面の接触判定
 
