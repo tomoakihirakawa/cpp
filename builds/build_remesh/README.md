@@ -33,7 +33,7 @@
 * 内角の和が$`\pi`$にならない場合
 
 信頼できる三角形の判定には，[isValidTriangle](not found){`isValidTriangle`}を用いる．
-[../../include/networkLine.hpp#L1483](../../include/networkLine.hpp#L1483)
+[../../include/networkLine.hpp#L1482](../../include/networkLine.hpp#L1482)
 
 
 ### 🪼 🪼 格子の平滑化  

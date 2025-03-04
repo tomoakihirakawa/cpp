@@ -57,7 +57,7 @@ inline void networkFace::setIntegrationInfo() {
          this->map_Point_PseudoQuadraticIntegrationInfo_vector[i][p] = info_quadratics;
       };
       add(0, __array_GW1xGW1__);
-      add(1, __array_GW7xGW7__);
+      add(1, __array_GW5xGW5__);
    };
    //@ -------------------------------------------------------------------------- */
 
@@ -113,7 +113,6 @@ inline networkFace::networkFace(Network *network_IN, networkPoint *p0, networkPo
 inline networkFace::networkFace(const netFp f)
     : Triangle(extractXtuple(f)),
       network(f->network),
-      status(f->status),
       Lines(f->Lines),
       Points(f->Points),
       PLPLPL(f->PLPLPL) {

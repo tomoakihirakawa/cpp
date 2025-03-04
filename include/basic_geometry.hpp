@@ -1602,9 +1602,9 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
    // lapack_lu lu(ans,
    //              T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
    //              Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
-   lapack_svd_solve(ans,
-                    T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
-                    Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
+   lapack_lu lu(ans,
+                T2Tdd{{{Dot(a_b, a_b), -Dot(A_B, a_b)}, {Dot(a_b, A_B), -Dot(A_B, A_B)}}},
+                Tdd{-Dot(b, a_b) + Dot(B, a_b), -Dot(b, A_B) + Dot(B, A_B)});
    const auto [t, tau] = ans;
 
    if (Between(t, array_0_1) && Between(tau, array_0_1))
@@ -1683,41 +1683,29 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    //    T1 = 0;  //! a*(1-w) + b*0 + c * w
    // }
    // return {T0, T1, ret};
-   /* ----------------------------------- 修正後 ---------------------------------- */
 
+   /* ----------------------------------- 修正その２ ---------------------------------- */
    /*
-         t1
-         A
-         |      |        t1>= 1
-      -- b -----+------  t1 = 1
-         | \    |
-         |   \  |
-         |     \|
-      -- c ---- a -----  t1 = 0
-         |      |        t1<=0
-   t0<=0 |      | 1<=t0
-       t0=0    t0=1
+   ２次元に置き換える方法
    */
 
-   //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
-   auto [a, b, c] = abc;
-   double t0, t1, alpah;
-   const double eps = 1E-5;
-   if (std::abs(a[2] - b[2]) < eps && std::abs(c[2] - b[2]) < eps) {
-      // alpha = a[2];
-      Tdd ans;
-      lapack_svd_solve(ans, T2Tdd{Tdd{a[0] - c[0], a[1] - c[1]}, Tdd{b[0] - c[0], b[1] - c[1]}}, Tdd{X[0] - c[0], X[1] - c[1]});
-      t0 = ans[0];
-      t1 = ans[1];
-   } else {
-      Tddd ans;
-      // lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-      lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-      t0 = ans[0];
-      t1 = ans[1];
-      alpah = ans[2];
-   }
-   // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   const auto [a, b, c] = abc;
+   const auto X_a = X - a;
+   const auto b_a = b - a;
+   const auto c_a = c - a;
+   const auto x = Normalize(b_a);
+   const auto z = Normalize(Cross(b_a, c_a));
+   const auto y = Cross(z, x);
+   const double Xx = Dot(X_a, x);
+   const double Xy = Dot(X_a, y);
+   const double Bx = Dot(b_a, x);
+   const double By = Dot(b_a, y);
+   const double Cx = Dot(c_a, x);
+   const double Cy = Dot(c_a, y);
+   const double den = By * Cx - Bx * Cy;
+   const double t0 = (By * Cx - Bx * Cy + (-By + Cy) * Xx + (Bx - Cx) * Xy) / den;
+   const double t1 = -(Cy * Xx - Cx * Xy) / den;
+
    if (0 >= t0 && 0 >= t1)
       return {0., 0., c};
    else if (0 >= t0 && 1 <= t1)
@@ -1736,6 +1724,60 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
       auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
       return {t, 1. - t, closestX};
    }
+
+   /* ----------------------------------- 修正後 ---------------------------------- */
+
+   /*
+         t1
+         A
+         |      |        t1>= 1
+      -- b -----+------  t1 = 1
+         | \    |
+         |   \  |
+         |     \|
+      -- c ---- a -----  t1 = 0
+         |      |        t1<=0
+   t0<=0 |      | 1<=t0
+       t0=0    t0=1
+   */
+
+   //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
+   // auto [a, b, c] = abc;
+   // double t0, t1, alpah;
+   // const double eps = 1E-5;
+   // if (std::abs(a[2] - b[2]) < eps && std::abs(c[2] - b[2]) < eps) {
+   //    // alpha = a[2];
+   //    Tdd ans;
+   //    lapack_svd_solve(ans, T2Tdd{Tdd{a[0] - c[0], a[1] - c[1]}, Tdd{b[0] - c[0], b[1] - c[1]}}, Tdd{X[0] - c[0], X[1] - c[1]});
+   //    t0 = ans[0];
+   //    t1 = ans[1];
+   // } else {
+   //    Tddd ans;
+   //    // lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   //    lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   //    t0 = ans[0];
+   //    t1 = ans[1];
+   //    alpah = ans[2];
+   // }
+   // // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+   // if (0 >= t0 && 0 >= t1)
+   //    return {0., 0., c};
+   // else if (0 >= t0 && 1 <= t1)
+   //    return {0., 1., b};
+   // else if (1 <= t0 && 0 >= t1)
+   //    return {1., 0., a};
+   // else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
+   //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
+   // else if (0 >= t0) {
+   //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+   //    return {0., t1, closestX};
+   // } else if (0 >= t1) {
+   //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+   //    return {t0, 0., closestX};
+   // } else {
+   //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+   //    return {t, 1. - t, closestX};
+   // }
 
    // if (0 >= t0) {
    //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});

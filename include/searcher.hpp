@@ -528,4 +528,37 @@ std::unordered_set<networkFace *> bfs(const std::unordered_set<networkFace *> &F
    // return accum;
 };
 
+std::unordered_set<networkFace *> bfs(const std::vector<networkFace *> &FACES, const short unsigned int s) {
+   // if s=0 ->  do nothing
+   std::unordered_set<networkFace *> tmp(FACES.begin(), FACES.end()), ret(FACES.begin(), FACES.end());
+   for (auto i = 0; i < s; i++) {
+      for (const auto &F : tmp) {
+         std::ranges::for_each(F->getPoints(), [&](const auto &p) {
+            for (const auto &f : p->getFaces())
+               ret.emplace(f);
+         });
+      }
+      tmp = ret;
+   }
+   return ret;
+
+   // 段階をわければ，全てを改めて使ってfor_eachしなくていいので，早く終わるのでは？
+
+   // std::unordered_set<networkFace *> accum = FACES;
+   // std::vector<networkFace *> newfaces, loopwith(FACES.begin(), FACES.end());
+   // for (auto i = 0; i < s; i++) {
+   //    newfaces.clear();
+   //    for (const auto &F : loopwith) {
+   //       for_each(F->getPoints(), [&](const auto &p) {
+   //          for (const auto &f : p->getFaces()) {
+   //             if (*((accum.emplace(f)).first))
+   //                newfaces.emplace_back(f);  // 新たに追加された
+   //          }
+   //       });
+   //    }
+   //    loopwith = newfaces;
+   // }
+   // return accum;
+};
+
 #endif

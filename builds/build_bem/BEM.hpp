@@ -268,6 +268,8 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_pressure = p_d0;
       uomap_P_d P_DphiDt = p_d0;
       uomap_P_d P_ContactFaces = p_d0;
+      uomap_P_d P_ContactFaces_maxdist = p_d0;
+      uomap_P_d P_ContactRange = p_d0;
       uomap_P_d P_facesNeuamnn = p_d0;
       uomap_P_d P_BC = p_d0;
       uomap_P_d P_isAbsorbed = p_d0;
@@ -295,7 +297,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             // push vectors to the Nearest P_V2ContactFaces
             int i = 0;
             for (const auto &[f, FX] : p->getNearestContactFaces()) {
-               auto [_, X] = FX;
+               auto [_, X, __] = FX;
                if (i == 0) P_V2ContactFaces0[p] = X - p->X;
                if (i == 1) P_V2ContactFaces1[p] = X - p->X;
                if (i == 2) P_V2ContactFaces2[p] = X - p->X;
@@ -320,6 +322,11 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_phin_t_from_Hessian[p] = phint_Neumann(p);
             P_normal_BEM[p] = p->getNormal_BEM();
             P_ContactFaces[p] = (double)p->getContactFaces().size();
+            double maxdist = 0;
+            if (p->ContactFaces.size() > 0)
+               maxdist = std::get<2>((*p->ContactFaces.rbegin()));
+            P_ContactFaces_maxdist[p] = maxdist;
+            P_ContactRange[p] = p->contact_range;
             P_facesNeuamnn[p] = (double)p->getFacesNeumann().size();
             P_BC[p] = p->isMultipleNode ? 3 : (p->Dirichlet ? 0. : (p->Neumann ? 1. : (p->CORNER ? 2. : 1 / 0.)));
             P_position[p] = ToX(p);
@@ -354,6 +361,8 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              //  {"U_absorbed", P_U_absorbed},
              {"U_shift_BEM", P_U_shift_BEM},
              {"ContactFaces", P_ContactFaces},
+             {"ContactFaces_maxdist", P_ContactFaces_maxdist},
+             {"ContactRange", P_ContactRange},
              //  {"faces Neuamnn", P_facesNeuamnn},
              {"grad_phi", P_gradPhi},
              {"velocity_convergence", P_velocity_convergence},

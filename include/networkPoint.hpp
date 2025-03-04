@@ -39,17 +39,18 @@ inline std::unordered_set<networkLine *> networkPoint::getLinesOppsoite() const 
    return TakeExcept(getLinesAround(), this->Lines);
 };
 
-inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFacesX() const {
-   // radiusで衝突をチェック
-   std::vector<std::tuple<networkFace *, Tddd>> ret;
-   Tddd x;
-   for (const auto &f : this->getContactFaces()) {
-      x = Nearest(this->X, ToX(f));
-      if (this->detection_range > Norm(this->X - x))
-         ret.push_back({f, x});
-   }
-   return ret;
-};
+// inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFacesX() const {
+//    // radiusで衝突をチェック
+//    std::vector<std::tuple<networkFace *, Tddd>> ret;
+//    Tddd x;
+//    for (const auto &f : this->getContactFaces()) {
+//       x = Nearest(this->X, ToX(f));
+//       if (this->contact_range > Norm(this->X - x))
+//          ret.push_back({f, x});
+//    }
+//    return ret;
+// };
+
 inline std::vector<std::tuple<networkFace *, Tddd>> networkPoint::getContactFacesXCloser() const {
    auto c_faces_sorted = this->getContactFacesX();
    if (!c_faces_sorted.empty())
@@ -148,8 +149,6 @@ inline void networkPoint::makeMirroredPoints(const Buckets<networkFace *> &B_fac
 
 ![接触の概念図](./contact.png)
 
-
-
 */
 
 // \label{contact_angle}
@@ -161,7 +160,7 @@ bool isFacing(const Tddd &n2, const T3Tddd &n1) { return isFacing(n1, n2, contac
 bool isFacing(const T3Tddd &n1, const Tddd &n2) { return isFacing(n1, n2, contact_angle); };
 bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, contact_angle); };
 
-// double detection_range(const networkPoint *p) {
+// double contact_range(const networkPoint *p) {
 //    double mean_d = 0;
 //    int count = 0;
 //    std::ranges::for_each(p->getNeighbors(), [&](const auto &q) { mean_d += Norm(p->X - q->X); count++; });
@@ -169,6 +168,17 @@ bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, cont
 // };
 
 // \label{isInContact}
+
+std::pair<bool, Tddd> isInContact_(const networkPoint *p, const T3Tddd &f_target) {
+   const auto Y = Nearest(p->X, f_target);
+   const auto toNearstX = Y - p->X;
+   if (p->contact_range < Norm(toNearstX))
+      return {false, toNearstX};  // not in range!
+   bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
+   bool any_close_normal = std::ranges::any_of(p->Faces, [&](const auto &F) { return isFacing(ToX(F), ToX(f_target)); });
+   return {is_close_normal || any_close_normal, Y};
+};
+
 bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    const auto toNearstX = Nearest(p->X, f_target) - p->X;
    // const double angle = 60 * M_PI / 180.;
@@ -179,7 +189,8 @@ bool isInContact(const networkPoint *p, const T3Tddd &f_target) {
    // if (!rough_check)
    //    return false;
    //
-   if (p->detection_range < Norm(toNearstX))
+
+   if (p->contact_range < Norm(toNearstX))
       return false;  // not in range!
 
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
@@ -197,7 +208,7 @@ bool isInContact(const networkPoint *p, const Tddd &pX, const T3Tddd &f_target) 
    // if (!rough_check)
    //    return false;
    //
-   if (p->detection_range < Norm(toNearstX))
+   if (p->contact_range < Norm(toNearstX))
       return false;  // not in range!
 
    bool is_close_normal = isFacing(p->getNormal_BEM(), ToX(f_target));
@@ -218,7 +229,7 @@ bool isInContact(const Tddd &X /*base*/, const Tddd &n /*base*/, const T3Tddd &f
    //    return false;
    //
    //!
-   if (p->detection_range < Norm(toNearstX))
+   if (p->contact_range < Norm(toNearstX))
       return false;  // not in range!
    return true;
 };
@@ -237,11 +248,73 @@ bool isInContact(const networkPoint *p, const networkFace *f_normal, const std::
    return std::ranges::any_of(faces_target, [&](const auto &f_target) { return isInContact(p, f_normal, f_target); });
 };
 
-// \label{addContactFaces}
-inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool include_self_network = true) {
-   /* ----------------------------- for mesh method ---------------------------- */
+inline void networkPoint::setContactRange(const std::vector<Network *> &objects) {
 
+   double tmp = 0, count = 0;
+   std::unordered_set<networkFace *> processedFaces;
+   for (const auto &p : this->getNeighbors()) {
+      for (const auto &face : p->getSurfaces()) {
+         if (processedFaces.insert(face).second) {
+            tmp += 2.0 * face->area;
+            ++count;
+         }
+      }
+   }
+
+   this->contact_range = std::sqrt(tmp / count) / 2;
+
+   /* -------------------------------------------------------------------------- */
+   // double tmp = 0, count = 0;
+   // for (const auto &f : this->network->getFaces())
+   //    if (isInContact(this, f)) {
+   //       tmp += 2. * f->area;
+   //       count += 1.;
+   //    }
+   // this->contact_range = std::sqrt(tmp / count) / 2;
+   /* -------------------------------------------------------------------------- */
+   // this->contact_range = 0;
+   // double tmp = 0, count = 0;
+   // for (const auto &f : this->Faces) {
+   //    this->contact_range += 2. * f->area;
+   //    tmp += 2 * f->area;
+   //    count += 1.;
+   // }
+   // this->contact_range = std::sqrt(this->contact_range / this->Faces.size());
+   // /*
+   // この段階で，this->contact_rangeは，比較的広く設定されている．
+   // 次に，this->contact_rangeに基づき，接触判定isInContactを行う．
+   // */
+   // for (const auto &object : objects)
+   //    if (object != this->getNetwork()) {
+   //       object->BucketSurfaces.apply(this->X, 2 * this->contact_range /*広め*/, [&](const auto &f) {
+   //          if (isInContact(this, f)) {
+   //             tmp += 2 * f->area;
+   //             count += 1.;
+   //          }
+   //       });
+   //    }
+   // this->contact_range = std::sqrt(tmp / count) / 2;
+};
+
+// \label{addContactFaces}
+
+// * contact_rangeをなくす
+// * バケツを自動で更新，する
+// * 衝突をデフォルトで入手できるようにする．
+
+inline void networkPoint::addContactFaces(const std::vector<Network *> &objects, bool include_self_network = true) {
+
+   /* ----------------------------- for mesh method ---------------------------- */
    /*DOC_EXTRACT networkPoint::addContactFaces()
+
+   このような，追加系の関数は，スレッドセーフであることが重要である．同時に使用した場合，競合が発生する可能性があるためである．
+   そのようなことが起こらないように，できるだけ多くの情報を引数に渡し，関数内部で処理を閉じ込めることが望ましい．
+   そのため，ここでは，`const std::vector<Network *> &objects`というまとめた情報を引数に渡している．
+
+   1. ContactFacesを引き継ぎ，新たに接触した面を追加する．ただし，同じ面は保存しない．
+   2. 近い接触面を優先し，ほぼ同方向の接触面のフラグをfalseにする．
+   3. フラグが立っているものだけを保存する．ContactFacesには，最も近い接触位置が順番に格納され，同方向の面は存在しない．
+   4. f_nearestContactFacesには，隣接面毎に最も近い接触面と接触位置が格納される．
 
    | `networkPoint`のメンバー関数/変数      | 説明                                                                |
    |-------------------------|--------------------------------------------------------------------------------|
@@ -252,65 +325,59 @@ inline void networkPoint::addContactFaces(const Buckets<networkFace *> &B, bool 
 
    */
 
-   DebugPrint("! まずは，衝突があり得そうな面を多めに保存する．");
+   /* ------------------------------------------------------ */
 
-   std::vector<std::tuple<networkFace *, double>> f_dist_sort;
-   auto add = [&](const auto &f) {
-      if (std::ranges::none_of(f_dist_sort, [&](const auto &F) { return f == std::get<0>(F); })) {
-         auto d = Norm(this->X - Nearest(this->X, ToX(f)));
-         if (this->detection_range >= d)
-            f_dist_sort.emplace_back(f, d);
-      }
-   };
+   // b! 1. これは安全のため，ContactFacesは完全に消し初期化する．接触した面を追加する．
 
-   std::ranges::for_each(this->ContactFaces, [&](const auto &f) { add(f); });
-
-   B.apply(this->X, 2. * this->detection_range /*広め*/, [&](const auto &f) {
-      if (include_self_network || f->getNetwork() != this->getNetwork())
-         if (isInContact(this, f))
-            add(f);
-   });
-
-   std::sort(f_dist_sort.begin(), f_dist_sort.end(), [](const auto &a, const auto &b) { return std::get<1>(a) < (std::get<1>(b) - 1E-15); });
-
-   if (!f_dist_sort.empty()) {
-      DebugPrint("! ContactFacesに面を登録する．異なる方向を向く面の情報だけが欲しいので，同方向の面は無視する");
-      for (const auto &[F, D] : f_dist_sort) {
-         if (std::none_of(this->ContactFaces.begin(), this->ContactFaces.end(), [&](const auto &f) { return isFlat(F->normal, -f->normal, M_PI / 180) || isFlat(F->normal, f->normal, M_PI / 180); }))
-            this->ContactFaces.emplace(F);
-         if (this->ContactFaces.size() > 7)
-            break;
-      };
-   } else
-      DebugPrint("faces is empty");
-
-   double distance = 1E+20, tmp;
-   Tddd X_near;
-   std::get<0>(this->nearestContactFace) = nullptr;
-   std::get<1>(this->nearestContactFace) = {1E+20, 1E+20, 1E+20};
-   for (const auto &f : this->getContactFaces())
-      if (distance > (tmp = Norm(this->X - (X_near = Nearest(this->X, f))))) {
-         distance = tmp;
-         std::get<1>(this->nearestContactFace) = X_near;
-         std::get<0>(this->nearestContactFace) = f;
-      }
-
-   auto NearestContactFace_of_f = [&](const networkFace *const f_normal) -> std::tuple<networkFace *, Tddd> {
-      Tddd r = {1E+100, 1E+100, 1E+100};
-      networkFace *ret = nullptr;
-      for (const auto &f_target : bfs(this->getContactFaces(), 2))
-         if (isInContact(this, f_normal, f_target)) {
-            X_near = Nearest(this->X, ToX(f_target));
-            if (Norm(r - this->X) >= Norm(X_near - this->X)) {
-               r = X_near;
-               ret = f_target;
+   std::vector<std::tuple<networkFace *, Tddd, double>> F_cX;
+   for (const auto &object : objects) {
+      object->BucketSurfaces.apply(this->X, contact_range, [&](const auto &f) {
+         if (include_self_network || f->getNetwork() != this->getNetwork())
+            if (std::ranges::none_of(F_cX, [&](const auto &F) { return f == std::get<0>(F); })) {
+               auto [iscontact, nearest] = isInContact_(this, ToX(f));
+               if (iscontact)
+                  F_cX.emplace_back(f, nearest, Norm(nearest - this->X));
             }
-         }
-      return {ret, r};
-   };
+      });
+   }
 
-   for (const auto &f : this->getFaces())
-      this->f_nearestContactFaces[f] = NearestContactFace_of_f(f);
+   std::sort(F_cX.begin(), F_cX.end(), [&](const auto &a, const auto &b) { return std::get<2>(a) < (std::get<2>(b) + 1E-20); });
+
+   std::vector<bool> F_cX_flag(F_cX.size(), true);
+
+   // b! 2. 近い接触面を優先し，ほぼ同方向の接触面のフラグをfalseにする．
+   for (auto i = 0; i < F_cX.size(); ++i) {
+      auto [fi, _, __] = F_cX[i];
+      if (F_cX_flag[i] == true)
+         for (auto j = i + 1; j < F_cX.size(); ++j)
+            if (F_cX_flag[j] == true) {
+               auto [fj, _, __] = F_cX[j];
+               if (isFlat(fi->normal, fj->normal, M_PI / 180) || isFlat(fi->normal, -fj->normal, M_PI / 180))
+                  F_cX_flag[j] = false;
+            }
+   }
+
+   //! b 3. フラグが立っているものだけを保存する．ContactFacesには，最も近い接触位置が順番に格納され，同方向の面は存在しない．
+   std::vector<std::tuple<networkFace *, Tddd, double>> F_cX_sorted;
+   for (auto i = 0; i < F_cX.size(); ++i) {
+      if (F_cX_flag[i])
+         F_cX_sorted.emplace_back(F_cX[i]);
+      if (F_cX_sorted.size() > 7)
+         break;
+   }
+   this->ContactFaces = F_cX_sorted;
+
+   //! b 4. f_nearestContactFacesには，隣接面毎に最も近い接触面と接触位置が格納される．
+   const double angle = 60 * M_PI / 180;
+   this->f_nearestContactFaces.clear();
+   for (const auto &f : this->getSurfaces())
+      for (const auto &F_X : this->ContactFaces) {
+         if (isFlat(f->normal, std::get<0>(F_X)->normal, angle) ||
+             isFlat(f->normal, -std::get<0>(F_X)->normal, angle)) {
+            f_nearestContactFaces[f] = F_X;
+            break;
+         }
+      }
 };
 
 /* -------------------------------------------------------------------------- */

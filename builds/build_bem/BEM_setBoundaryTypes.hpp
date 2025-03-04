@@ -136,7 +136,7 @@ std::size_t setNodeFaceIndices(const Network *objects) {
 
 を使って接触判定を行っている．
 
- \ref{BEM:detection_range}{流体が構造物との接触を感知する半径}の設置も重要．
+ \ref{BEM:contact_range}{流体が構造物との接触を感知する半径}の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -276,37 +276,10 @@ void setIsMultipleNode(const auto &p) {
 /*                             f,l,pの境界条件を決定                             */
 /* -------------------------------------------------------------------------- */
 
-void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}) {
+void setBoundaryTypes(Network *water, const std::vector<Network *> &objects) {
    std::cout << water->getName() << "の境界条件を決定 setBoundaryTypes" << std::endl;
 
-   water->setGeometricProperties();
-
-   std::cout << "step1 点の衝突の判定" << std::endl;
-   for (const auto &p : water->getPoints())
-      p->clearContactFaces();
-   //!! 衝突の判定がよくエラーが出る箇所
-   for (const auto &net : objects) {
-#pragma omp parallel
-      for (const auto &p : water->getPoints())
-#pragma omp single nowait
-      {
-         //! ここも重要：点と面の衝突をどのようにすれば矛盾なく判定できるか．
-         // \label{BEM:detection_range}
-         double r = 0., s = 0.;
-         for (auto &Q : p->getNeighbors())
-            for (auto &q : Q->getNeighbors()) {
-               r += Norm(q->X - p->X);
-               s += 1.;
-            }
-         // p->detection_range = r / s / 2.;
-         p->detection_range = r / s;
-         p->addContactFaces(net->getBucketFaces(), false);
-      }
-   }
-
-   // 接触判定の問題がか
-   // nextvectorの問題？
-   // tankを変えてやってみる
+   water->setContactFaces(objects);
 
    std::cout << "step2 面の境界条件を判定" << std::endl;
    auto faces = water->getSurfaces();
@@ -338,8 +311,8 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects = {}
    //@ ------------------------------------------ */
 
    for (const auto &f : faces) {
-      // f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
-      f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_;
+      f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_ && f->Dirichlet;
+      // f->isPseudoQuadraticElement = _PSEUDO_QUADRATIC_ELEMENT_;
       f->isLinearElement = !f->isPseudoQuadraticElement;
    }
 

@@ -74,7 +74,6 @@ inline networkLine::networkLine(Network *network_IN,
                                 netP *sPoint_IN,
                                 netP *ePoint_IN)
     : CoordinateBounds(Tddd{{0., 0., 0.}}),
-      status(false),
       Faces(0),
       network(network_IN),
       Point_A(nullptr),

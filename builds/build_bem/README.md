@@ -104,7 +104,7 @@
 
 を使って接触判定を行っている．
 
-[BEM:detection_range](./BEM_setBoundaryTypes.hpp#L294){流体が構造物との接触を感知する半径}の設置も重要．
+[BEM:contact_range](not found){流体が構造物との接触を感知する半径}の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -169,10 +169,19 @@
 #### 🪸 🪸 接触の概念図  
 
 ![接触の概念図](../../include/contact.png)
-[../../include/networkPoint.hpp#L127](../../include/networkPoint.hpp#L127)
+[../../include/networkPoint.hpp#L128](../../include/networkPoint.hpp#L128)
 
 
 #### 🪸 `addContactFaces()` 
+
+このような，追加系の関数は，スレッドセーフであることが重要である．同時に使用した場合，競合が発生する可能性があるためである．
+そのようなことが起こらないように，できるだけ多くの情報を引数に渡し，関数内部で処理を閉じ込めることが望ましい．
+そのため，ここでは，`const std::vector<Network *> &objects`というまとめた情報を引数に渡している．
+
+1. ContactFacesを引き継ぎ，新たに接触した面を追加する．ただし，同じ面は保存しない．
+2. 近い接触面を優先し，ほぼ同方向の接触面のフラグをfalseにする．
+3. フラグが立っているものだけを保存する．ContactFacesには，最も近い接触位置が順番に格納され，同方向の面は存在しない．
+4. f_nearestContactFacesには，隣接面毎に最も近い接触面と接触位置が格納される．
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
@@ -180,7 +189,7 @@
 | `std::unordered_set<networkFace *> ContactFaces`          | 節点が接触した面が登録されている．   |
 | `std::tuple<networkFace *, Tddd> nearestContactFace`    | 節点にとって最も近い面とその座標を登録されている．       |
 | `std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces` | この節点に隣接する各面にとって，最も近い面とその座標をこの変数に登録する．           |
-[../../include/networkPoint.hpp#L244](../../include/networkPoint.hpp#L244)
+[../../include/networkPoint.hpp#L308](../../include/networkPoint.hpp#L308)
 
 
 #### 🪸 呼び出し方法 
@@ -188,7 +197,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L952](../../include/Network.hpp#L952)
+[../../include/Network.hpp#L938](../../include/Network.hpp#L938)
 
 
 これらは，`contactNormalVelocity()`や`accelNeumann()`で利用される．
@@ -238,7 +247,7 @@
 `phitOnFace`は，各節点`p`における各面`f`に対するポテンシャルの時間微分`dphi/dt`を設定するために使用される．
 他も同様である．
 
-[./BEM_setBoundaryTypes.hpp#L353](./BEM_setBoundaryTypes.hpp#L353)
+[./BEM_setBoundaryTypes.hpp#L326](./BEM_setBoundaryTypes.hpp#L326)
 
 ## ⛵ 境界値問題 
 
@@ -540,7 +549,7 @@ $`\phi=\phi(t,{\bf x})`$のように書き表し，位置と空間を独立さ�
 
 ここの$`\frac{\partial \phi}{\partial t}`$の計算は簡単ではない．そこで，ベルヌーイの式（大気圧と接する水面におけるベルヌーイの式は圧力を含まず簡単）を使って，$`\frac{\partial \phi}{\partial t}`$を消去する．
 
-[./BEM_utilities.hpp#L780](./BEM_utilities.hpp#L780)
+[./BEM_utilities.hpp#L789](./BEM_utilities.hpp#L789)
 
 ---
 ### 🪼 Arbitrary Lagrangian–Eulerian Methods (ALE) 
@@ -680,7 +689,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
 ただし，これは位置座標の基底を変えた後で使用する．
 
-[./BEM_utilities.hpp#L897](./BEM_utilities.hpp#L897)
+[./BEM_utilities.hpp#L906](./BEM_utilities.hpp#L906)
 
 ### 🪼 $`\phi _{nt}`$の計算で必要となる$`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}\right)`$について． 
 
@@ -708,7 +717,7 @@ $`{\bf n}\cdot \left({\frac{d\boldsymbol r}{dt}  \cdot \nabla\otimes\nabla \phi}
 
 $`\phi _{nn}`$は，直接計算できないが，ラプラス方程式から$`\phi _{nn}=- \phi _{t _0t _0}- \phi _{t _1t _1}`$となるので，水平方向の勾配の計算から求められる．
 
-[./BEM_utilities.hpp#L948](./BEM_utilities.hpp#L948)
+[./BEM_utilities.hpp#L957](./BEM_utilities.hpp#L957)
 
 ### 🪼 浮体の重心位置・姿勢・速度の更新 
 
@@ -806,7 +815,7 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 $`\frac{d \boldsymbol r}{dt}`$は[velocityRigidBody](not found){`velocityRigidBody`}
 $`\frac{d^2 \boldsymbol r}{dt^2}`$は[accelRigidBody](not found){`accelRigidBody`}で計算する．
 
-[BEM:phint_Neumann](./BEM_utilities.hpp#L945){`phin_Neuamnn`}で$`\phi _{nt}`$を計算する．これは[BEM:setPhiPhin_t](./BEM_setBoundaryTypes.hpp#L444){`setPhiPhin_t`}で使っている．
+[BEM:phint_Neumann](./BEM_utilities.hpp#L945){`phin_Neuamnn`}で$`\phi _{nt}`$を計算する．これは[BEM:setPhiPhin_t](./BEM_setBoundaryTypes.hpp#L417){`setPhiPhin_t`}で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -837,7 +846,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[BEM:setphint](./BEM_setBoundaryTypes.hpp#L458){ここ}で与えている．
+$`\phi _{nt}`$は，[BEM:setphint](./BEM_setBoundaryTypes.hpp#L431){ここ}で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
@@ -1120,7 +1129,7 @@ E _P = \rho g \iiint _\Omega (z - z _0) d\Omega
 
 </details>
 
-[./BEM_calculateVelocities.hpp#L468](./BEM_calculateVelocities.hpp#L468)
+[./BEM_calculateVelocities.hpp#L456](./BEM_calculateVelocities.hpp#L456)
 
 ### 🪼 内部流速の計算方法（使わなくてもいい） 
 
@@ -1135,7 +1144,7 @@ u({\bf a}) = \nabla\phi({\bf a}) = \int _{\partial \Omega} \frac{\partial Q}{\pa
 Q({\bf x},{\bf a}) = \frac{{\bf r}}{4\pi r^3}, \quad \frac{\partial Q}{\partial n} ({\bf x},{\bf a}) = \frac{1}{4\pi r^3} (3 \mathbf{n} - (\mathbf{r} \cdot \mathbf{n}) \frac{\mathbf{r}}{r^2})
 ```
 
-[./BEM_calculateVelocities.hpp#L555](./BEM_calculateVelocities.hpp#L555)
+[./BEM_calculateVelocities.hpp#L543](./BEM_calculateVelocities.hpp#L543)
 
 ---
 ### 🪼 JSONファイルの出力 

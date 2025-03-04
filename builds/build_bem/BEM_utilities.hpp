@@ -527,7 +527,7 @@ Tddd propertyNeumann(const networkPoint *const p, std::function<Tddd(const netwo
    Tddd Vinit = {0., 0., 0.};
    Tddd V;
    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
-      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      auto [contact_face_of_body, X, _] = contact_face_of_body_X;
       if (contact_face_of_body) {
          V = propertyFunc(contact_face_of_body, X);
          Vsample.emplace_back(Dot(V, f->normal));
@@ -550,7 +550,7 @@ Tddd contactNormalVelocity(const networkPoint *const p) { return propertyNeumann
 Tddd accelNeumann(const networkPoint *const p) { return propertyNeumann(p, accel_of_Body); };
 
 Tddd propertyNeumann(const networkPoint *const p, const networkFace *const adjacent_f, std::function<Tddd(const networkFace *, const Tddd &)> propertyFunc) {
-   auto [contact_face_of_body, X_contact] = p->getNearestContactFace_(adjacent_f);
+   auto [contact_face_of_body, X_contact, _] = p->getNearestContactFace_(adjacent_f);
    return contact_face_of_body ? propertyFunc(contact_face_of_body, X_contact) : Tddd{0., 0., 0.};
 };
 
@@ -562,7 +562,7 @@ Tddd contactPureVelocity(const networkPoint *const p) {
    std::vector<Tddd> Directions;
    Tddd Vinit = {0., 0., 0.}, u, ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
-      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      auto [contact_face_of_body, X, _] = contact_face_of_body_X;
       if (contact_face_of_body) {
          u = velocity_of_Body(contact_face_of_body, X);
          Vsample.emplace_back(Dot(u, ex));
@@ -584,7 +584,7 @@ Tddd contactPureAccel(const networkPoint *const p) {
    std::vector<Tddd> Directions;
    Tddd Vinit = {0., 0., 0.}, u, ex = {1., 0., 0.}, ey = {0., 1., 0.}, ez = {0., 0., 1.};
    for (const auto &[f, contact_face_of_body_X] : p->getNearestContactFaces()) {
-      auto [contact_face_of_body, X] = contact_face_of_body_X;
+      auto [contact_face_of_body, X, __] = contact_face_of_body_X;
       if (contact_face_of_body) {
          u = accel_of_Body(contact_face_of_body, X);
          Vsample.emplace_back(Dot(u, ex));
@@ -809,8 +809,8 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    W.reserve(s);
    Vsample.reserve(3 * s);
    for (const auto &f : p->getSurfaces()) {
-      u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
-      // u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+      // u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
+      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
 
       Vsample.emplace_back(Dot(u, ex));
       Directions.emplace_back(ex);

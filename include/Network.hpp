@@ -111,7 +111,7 @@ class networkLine : public CoordinateBounds {
 
    /* ------------------------------------------------ */
   public:
-   bool public_status = false;
+   // bool temporary_bool = false;
 #ifdef DEM
   public:
    double tension;
@@ -130,11 +130,11 @@ class networkLine : public CoordinateBounds {
    Network *network;
    Network *getNetwork() const { return this->network; };
 
-   bool status;
+   // bool status;
 
-   bool getStatus() const noexcept { return this->status; };
-   void setStatus(const bool TorF) { this->status = TorF; };
-   bool isStatus(const bool TorF) const noexcept { return this->status == TorF; };
+   // bool getStatus() const noexcept { return this->status; };
+   // void setStatus(const bool TorF) { this->status = TorF; };
+   // bool isStatus(const bool TorF) const noexcept { return this->status == TorF; };
 
    std::vector<networkTetra *> Tetras;
 
@@ -152,7 +152,6 @@ class networkLine : public CoordinateBounds {
    // コピーコンストラクタ
    networkLine(const networkLine *l)
        : CoordinateBounds(l->getBounds()),
-         status(false),
          Point_A(nullptr),
          Point_B(nullptr) {
       std::cout << "copying networkLine ...";
@@ -320,6 +319,8 @@ class networkPoint : public CoordinateBounds, public CRS {
 
   public:
    int index;
+   double contact_range = 0.;
+   void setContactRange(const std::vector<Network *> &nets);
 
    std::array<double, 3> getGravitationalForce() { return this->mass * _GRAVITY3_; }
 
@@ -388,8 +389,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    }
 
    /* -------------------------------------------------------------------------- */
-  protected:
-   bool status;
+
+   bool temporary_bool = false;
 
   public:
    std::array<double, 3> X_last;
@@ -406,25 +407,12 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    const V_netLp &getLines() const noexcept { return this->Lines; };
 
-   V_netLp getLines_toggle(const bool TorF) const noexcept {
-      V_netLp ret(0);
-      for (const auto &line : this->Lines)
-         if (line->getStatus() == TorF) {
-            line->setStatus(!TorF);
-            ret.emplace_back(line);
-         }
-      return ret;
-   };
    int Find(netL *l_IN) { return network::find(this->Lines, l_IN); };
 
    bool erase(networkLine *l) { return ::erase_element(this->Lines, l); };
    bool add(networkLine *l) { return ::add_element(this->Lines, l); };
    bool erase(networkFace *f) { return ::erase_element(this->Faces, f); };
    bool add(networkFace *f) { return ::add_element(this->Faces, f); };
-
-   bool getStatus() const noexcept { return this->status; };
-   void setStatus(bool TorF) { this->status = TorF; };
-   bool isStatus(bool TorF) const noexcept { return this->status == TorF; };
 
   public:
    // 今のところBEMのためのもの
@@ -534,7 +522,6 @@ class networkPoint : public CoordinateBounds, public CRS {
    double &rho_ = this->density_;
    double volume = 0., volume_ = 0.;
    double radius = 0.;
-   double detection_range = 0.;
    double pressure = 0.;
    /* ------------------------------------------------------ */
    Tddd Fxyz() const noexcept { return {force[0], force[1], force[2]}; };
@@ -937,15 +924,14 @@ class networkPoint : public CoordinateBounds, public CRS {
    //%                      接触の判別用　                      */
    //% ------------------------------------------------------ */
 
-  private:
-   std::tuple<networkFace *, Tddd> nearestContactFace;
-   std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> f_nearestContactFaces;
-   std::unordered_set<networkFace *> ContactFaces;
-
+  public:
+   // std::tuple<networkFace *, Tddd> nearestContactFace;
+   // std::unordered_set<networkFace *> ContactFaces;
+   std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd, double>> f_nearestContactFaces;
+   std::vector<std::tuple<networkFace *, Tddd, double>> ContactFaces;
    std::unordered_set<networkPoint *> ContactPoints;
    std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
 
-  public:
    //% ------------------------------------------------------ */
    //%                          接触の判別                      */
    //% ------------------------------------------------------ */
@@ -957,18 +943,32 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    */
 
-   const std::unordered_set<networkFace *> &getContactFaces() const noexcept { return this->ContactFaces; };
-   const std::tuple<networkFace *, Tddd> &getNearestContactFace() const noexcept { return this->nearestContactFace; };
-   const std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd>> &getNearestContactFaces() const noexcept { return this->f_nearestContactFaces; };
+   std::vector<networkFace *> getContactFaces() const noexcept {
+      std::vector<networkFace *> ret;
+      ret.reserve(this->ContactFaces.size());
+      for (const auto &f : this->ContactFaces)
+         ret.emplace_back(std::get<0>(f));
+      return ret;
+   };
+   const std::tuple<networkFace *, Tddd, double> getNearestContactFace() const noexcept {
+      if (this->ContactFaces.size() > 0)
+         return this->ContactFaces[0];
+      else
+         return {nullptr, Tddd{0., 0., 0.}, 0.};
+   };
+   const std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd, double>> &getNearestContactFaces() const noexcept { return this->f_nearestContactFaces; };
 
-   const std::tuple<networkFace *, Tddd> getNearestContactFace_(const networkFace *const f) const noexcept {
+   const std::tuple<networkFace *, Tddd, double> getNearestContactFace_(const networkFace *const f) const noexcept {
       auto it = this->f_nearestContactFaces.find(const_cast<networkFace *>(f));
-      return (it != this->f_nearestContactFaces.end()) ? it->second : std::tuple<networkFace *, Tddd>{nullptr, {0., 0., 0.}};
+      if (it != this->f_nearestContactFaces.end())
+         return it->second;
+      else
+         return std::tuple<networkFace *, Tddd, double>{nullptr, {0., 0., 0.}, 0.};
    };
    networkFace *getNearestContactFace(const networkFace *const f) const noexcept { return std::get<0>(getNearestContactFace_(f)); };
 
    void clearContactFaces() {
-      this->nearestContactFace = {nullptr, {0., 0., 0.}};
+      // this->nearestContactFace = {nullptr, {0., 0., 0.}};
       this->f_nearestContactFaces.clear();
       this->ContactFaces.clear();
    };
@@ -977,7 +977,7 @@ class networkPoint : public CoordinateBounds, public CRS {
 
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesX() const;
    std::vector<std::tuple<networkFace *, Tddd>> getContactFacesXCloser() const;
-   void addContactFaces(const Buckets<networkFace *> &B, bool);  // 自身と同じfaceを含まない
+   void addContactFaces(const std::vector<Network *> &objects, bool);  // 自身と同じfaceを含まない
 
    const std::unordered_set<networkPoint *> &getContactPoints() const noexcept { return this->ContactPoints; };
    const std::unordered_set<networkPoint *> &getContactPoints(Network *const net) const noexcept {
@@ -1023,10 +1023,6 @@ class networkPoint : public CoordinateBounds, public CRS {
    };
    // bool setXcarefully(const V_d &xyz_IN);
    // void resetXinfo();
-   void setLinesStatus(const bool TorF) {
-      for (const auto &l : Lines)
-         l->setStatus(TorF);
-   };
    // void setBounds();
    void setBoundsSingle() { CoordinateBounds::setBounds(this->X); };
    // V_netPp getXNeighbors() const;
@@ -1447,10 +1443,6 @@ struct DodecaPoints;
 class networkFace : public Triangle {
   public:
    int index;
-   bool public_status;
-
-  protected:
-   bool status = false;
 
   public:
    T_LLL Lines = {nullptr, nullptr, nullptr};  // 2月28日(月)導入
@@ -1460,9 +1452,6 @@ class networkFace : public Triangle {
    Network *getNetwork() const noexcept { return this->network; };
 
    void setLines(const T_LLL &ls) { this->Lines = ls; };
-   bool getStatus() const noexcept { return this->status; };
-   void setStatus(bool TorF) { this->status = TorF; };
-   bool isStatus(bool TorF) const noexcept { return this->status == TorF; };
 
   public:
    bool MemberQ(const networkLine *const l) const noexcept { return MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l); };
@@ -3179,14 +3168,18 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
   public:
    Buckets<networkFace *> BucketFaces, BucketSurfaces;
-   Buckets<networkPoint *> BucketParametricPoints;
    Buckets<networkPoint *> BucketPoints;
    Buckets<networkTetra *> BucketTetras;
 
-   const Buckets<networkFace *> &getBucketFaces() const { return BucketFaces; };
-   const Buckets<networkPoint *> &getBucketPoints() const { return BucketPoints; };
-   const Buckets<networkPoint *> &getBucketParametricPoints() const { return BucketParametricPoints; };
    const double expand_bounds = 1.5;
+
+   /* -------------------------------------------------------------------------- */
+
+   void makeBuckets(const double spacing = 1E+20) {
+      this->makeBucketPoints(spacing);
+      this->makeBucketFaces(spacing);
+      this->makeBucketTetras(spacing);
+   };
 
    void makeBucketTetras(double spacing = 1E+20) {
       if (spacing > 1E+10)
@@ -3196,11 +3189,12 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       this->BucketTetras.clear();
       this->BucketTetras.initialize(this->scaledBounds(expand_bounds), spacing);
       double particlize_spacing;
+      std::array<double, 3> mean;
       for (const auto &t : this->getTetras()) {
          //! add extra points to make sure that the face is included in the bucket
          bool fully_inside_a_cell_found = false;
          auto [p0, p1, p2, p3] = t->Points;
-         std::array<double, 3> mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
+         mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
          auto [inserted, ijk] = this->BucketTetras.addAndGetIndices(mean, t);
          if (inserted && ::InsideQ(t->bounds, this->BucketTetras.getBounds(ijk).bounds)) {
             fully_inside_a_cell_found = true;
@@ -3220,7 +3214,6 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    };
 
    /*面は点と違って，複数のバケツ（セル）と接することがある*/
-
    void makeBucketFaces(double spacing = 1E+20) {
       if (spacing > 1E+10)
          spacing = this->getScale() / 10.;
@@ -3264,60 +3257,44 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
       this->BucketPoints.initialize(this->scaledBounds(expand_bounds), spacing);
       if (!this->BucketPoints.add(this->getPoints()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "points are not added");
-      else {
-         std::cout << green << this->getName() << ", all points are added" << colorReset << std::endl;
+      else
          std::cout << green << "BucketPoints.all_stored_objects.size() = " << this->BucketPoints.all_stored_objects.size() << colorReset << std::endl;
-      }
       this->BucketPoints.setVector();
       std::cout << this->getName() << " makeBucketPoints done" << std::endl;
    };
 
-   void remakeBucketPoints() {
-      this->makeBucketPoints(this->last_makeBucketPoints_spacing);
-   };
+   /* -------------------------------------------------------------------------- */
 
-   void makeBucketParametricPoints(const double spacing) {
-      // this->BucketPoints.hashing_done = false;
+   std::vector<networkFace *> ContactFaces;
+
+   void setContactFaces(const std::vector<Network *> &nets) {
+      /*
+       *  p->contact_range
+       *  p->ContactFaces
+       *  this->ContactFaces
+       を設定する．
+       */
+
       this->setGeometricProperties();
-      this->BucketParametricPoints.initialize(this->scaledBounds(expand_bounds), spacing);
-      this->BucketParametricPoints.add(this->getParametricPoints());
-      std::cout << "this->getParametricPoints().size()=" << this->getParametricPoints().size() << std::endl;
-   };
-   void makeBucketParametricPoints(const T3Tdd &bounds, const double spacing) {
-      // this->BucketPoints.hashing_done = false;
-      this->BucketParametricPoints.initialize(this->scaledBounds(expand_bounds), spacing);
-      this->BucketParametricPoints.add(this->getParametricPoints());
-   };
-   void clearBucketParametricPoints() {
-      // this->BucketPoints.hashing_done = false;
-      this->BucketParametricPoints.clear();
+
+      for (const auto &p : this->Points) {
+         p->setContactRange(nets);
+         p->clearContactFaces();
+      }
+
+      std::unordered_set<networkFace *> faces;
+#pragma omp parallel
+      for (const auto &p : this->Points)
+#pragma omp single nowait
+         p->addContactFaces(nets, false);
+
+      for (const auto &p : this->Points)
+         for (auto &[f, _, __] : p->ContactFaces)
+            faces.emplace(f);
+      this->ContactFaces = std::vector(begin(faces), end(faces));
    };
 
-   //! セルに含まれるかどうかではなく，ポリゴンの内部にあるかどうかで判定するための関数
-
-   bool isInside_MethodBucket(const Tddd &X) const {
-      networkFace *closest_face = nullptr;
-      Tddd V_to_closest = {1E+20, 1E+20, 1E+20}, V = {0., 0., 0.};
-      double min_d = 1E+20, d;
-      this->BucketFaces.apply_to_the_nearest_bound(X, [&](const int i, const int j, const int k) {
-         if (closest_face == nullptr)
-            for (const auto &f : this->BucketFaces.data[i][j][k]) {
-               V = Nearest(X, f) - X;
-               d = Norm(V);
-               if (d < min_d) {
-                  min_d = d;
-                  closest_face = f;
-                  V_to_closest = V;
-               }
-            }
-      });
-      if (closest_face == nullptr)
-         return false;
-      else
-         return Dot(closest_face->normal, V_to_closest) >= 0.;
-   };
-
-   // b$ ------------------------------------------------------ */
+   // b$ ----------------------------------------------------------------------------------------- */
 
    std::array<double, 3> siginedDistance(const std::array<double, 3> &X) {
       /*
@@ -3645,8 +3622,9 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          name(name_IN),
          filename(filename),
          BucketFaces(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
+         BucketSurfaces(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
          BucketPoints(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
-         BucketParametricPoints(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
+         BucketTetras(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.),
          IGNORE(false),
          grid_pull_depth(0),
          velocity_name_start({"fixed", 0.}),
@@ -3982,10 +3960,6 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    // };
    //-------------------------
    // get lines
-   void setLinesStatus(bool TorF) {
-      for (const auto &p : Points)
-         p->setLinesStatus(TorF);
-   };
 
    std::unordered_set<networkLine *> getLines() const {
       std::unordered_set<networkLine *> ret;
@@ -4584,13 +4558,13 @@ inline V_d networkPoint::nabla_phi() const { return this->getNetwork()->nabla_ph
 // BEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEM
 
 ////////////////////////////////////////////////////////////////////////
-inline V_netFp networkLine::getFaces(const bool TorF) const {
-   V_netFp ret;
-   for (const auto &f : this->getFaces())
-      if (f->isStatus(TorF))
-         ret.emplace_back(f);
-   return ret;
-};
+// inline V_netFp networkLine::getFaces(const bool TorF) const {
+//    V_netFp ret;
+//    for (const auto &f : this->getFaces())
+//       if (f->isStatus(TorF))
+//          ret.emplace_back(f);
+//    return ret;
+// };
 
 //@ ------------------------------------------------------ */
 //@                          外部関数                       */

@@ -5,7 +5,7 @@
             <cpp_standard>gnu++2a</cpp_standard>
             <cross_compilation>
                 <target>
-                    <abi>gnu</abi>
+                    <abi>unknown</abi>
                     <arch>arm</arch>
                     <sys>macosx</sys>
                     <vendor>apple</vendor>
@@ -22,6 +22,7 @@
             <source_extensions>
                 <source_extension>.cpp</source_extension>
                 <source_extension>.hpp</source_extension>
+                <source_extension>.sh</source_extension>
             </source_extensions>
             <source_paths>
                 <source_path>BEM_calculateVelocities.hpp</source_path>
@@ -58,6 +59,7 @@
                 <source_path>../../include/vtkWriter.hpp</source_path>
                 <source_path>../../include/XML.hpp</source_path>
                 <source_path>../../include/networkTetra.hpp</source_path>
+                <source_path>../../include/precompile.sh</source_path>
             </source_paths>
             <status>enabled</status>
             <type>C++ Source Group</type>

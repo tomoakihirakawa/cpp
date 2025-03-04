@@ -226,7 +226,7 @@ Tddd vectorToNextSurface(const networkPoint *p) {
          };
 
          //! 面p_fが干渉する，最も近い構造物面を抽出
-         const double angle = 0 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
+         const double angle = 60 * M_PI / 180.;  //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
          for (const auto &f : faces /*p->getFacesNeumann()*/) {
             for (const auto &struct_vertex : next_Vrtx) {
                if (isInContact(X_not_shifted /*シフトなし*/, f->normal, struct_vertex, p)) {
@@ -296,7 +296,6 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 */
 
 // \label{BEM:calculateVecToSurface}
-
 Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
                                                        const std::array<double, 3> &current_pX,
                                                        std::function<Tddd(const networkPoint *)> position) {
@@ -314,12 +313,12 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       X1 = position(p1);
       X2 = position(p2);
       //! 重みの計算
-      W = CircumradiusToInradius(X0, X1, X2);  // CircumradiusToInradius(X0, X1, X2)は最小で2
-      for (int i = 0; i <= max_sum_depth; ++i)
-         if (i == p0->minDepthFromMultipleNode + p1->minDepthFromMultipleNode + p2->minDepthFromMultipleNode) {
-            W *= std::pow(1.25, max_sum_depth - i);
-            break;
-         }
+      W = CircumradiusToInradius(X0, X1, X2) - 2.;  // CircumradiusToInradius(X0, X1, X2)は最小で2
+      // for (int i = 0; i <= max_sum_depth; ++i)
+      //    if (i == p0->minDepthFromMultipleNode + p1->minDepthFromMultipleNode + p2->minDepthFromMultipleNode) {
+      //       W *= std::pow(1.1, max_sum_depth - i);
+      //       break;
+      //    }
       //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
       Xmid = (X2 + X1) * 0.5;
       vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
@@ -328,7 +327,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
       To_ideal = X_ideal - current_pX;
       normalized_discrepancy = Norm(To_ideal) / height;
       //! 重みと位置を保存
-      weights.push_back(normalized_discrepancy * W);
+      weights.push_back(normalized_discrepancy + W);
       positions.emplace_back(To_ideal);
    }
 
@@ -339,75 +338,64 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
    return V;
 };
 
-Tddd ArithmeticWeightedSmoothingVector_modified(const networkPoint *p, const std::array<double, 3> &current_pX,
-                                                std::function<Tddd(const networkPoint *)> position,
-                                                const double power = 1.) {
-   Tddd V = {0., 0, 0.}, qX;
-   double Wtot = 0, norm;
-   if (!isEdgePoint(p)) {
-      if (p->CORNER) {
-         for (const auto &l : p->getLines())
-            if (l->CORNER) {
-               auto q = (*l)(p);
-               qX = position(q);
-               V += std::pow(Norm(qX - current_pX), power - 1.) * (qX - current_pX);
-               Wtot += 1.;
-            }
-      } else {
-         for (const auto &q : p->getNeighbors()) {
-            qX = position(q);
-            V += std::pow(Norm(qX - current_pX), power - 1.) * (qX - current_pX);
-            Wtot += 1.;
-         }
-      }
-      return V / Wtot;
-   } else
-      return V;
-};
-
 void calculateVecToSurface(const Network &net, const int loop, const double coef) {
    auto points = ToVector(net.getPoints());
 
    //! 初期化
    for (const auto &p : points) {
+      p->temporary_bool = true;
       p->vecToSurface.fill(0.);
       p->vecToSurface_BUFFER.fill(0.);
       p->vecToSurface_BUFFER_BUFFER.fill(0.);
    }
 
-   points = RandomSample(points);
-   /* ------------------------------ 要素を整えるためのベクトル ----------------------------- */
-   auto addVectorTangentialShift = [&](const int steps = 0) {
-      auto approxRadius = [&](const networkPoint *p) {
-         double radius = 0;
-         auto faces = p->getSurfaces();
-         for (const auto &f : faces)
-            radius += std::sqrt(f->area / M_PI);
-         return radius / faces.size();
-      };
-
-      if (coef == 0.)
-         return;
-
-//! do not use parallel here
-#pragma omp parallel
-      for (const auto &p : points)
-#pragma omp single nowait
-      {
-         auto current_pX = RK_with_Ubuff(p);
-         Tddd V = DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-         if (isFinite(V))
-            p->vecToSurface += std::min(Norm(V), 0.025 * approxRadius(p)) * Normalize(V);
-
-         V = p->clungSurface = vectorToNextSurface(p);
-         if (isFinite(V))
-            p->vecToSurface += V;
-      }
+   auto approxRadius = [](const networkPoint *p) {
+      double radius = 0;
+      auto faces = p->getSurfaces();
+      for (const auto &f : faces)
+         radius += std::sqrt(f->area / M_PI);
+      return radius / faces.size();
    };
+
+   points = RandomSample(points);
+   std::vector<networkPoint *> points_multiple_node, points_inner;
+   points_multiple_node.reserve(points.size());
+   points_inner.reserve(points.size());
+   for (const auto &p : points) {
+      if (p->isMultipleNode)
+         points_multiple_node.push_back(p);
+      else
+         points_inner.push_back(p);
+   }
+   /* ------------------------------ 要素を整えるためのベクトル ----------------------------- */
 
    TimeWatch watch;
    for (auto steps = 0; steps < loop; ++steps) {
-      addVectorTangentialShift(steps);
+
+      for (auto &points : {points_multiple_node, points_inner}) {
+#pragma omp parallel
+         for (const auto &p : points)
+#pragma omp single nowait
+         {
+            auto current_pX = RK_with_Ubuff(p);
+            Tddd V = DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
+            if (isFinite(V))
+               p->vecToSurface_BUFFER = std::min(Norm(V), 0.03 * approxRadius(p)) * Normalize(V);
+         }
+         for (const auto &p : points) {
+            p->vecToSurface += p->vecToSurface_BUFFER;
+            p->vecToSurface_BUFFER.fill(0.);
+         }
+
+#pragma omp parallel
+         for (const auto &p : points)
+#pragma omp single nowait
+         {
+            Tddd V = p->clungSurface = vectorToNextSurface(p);
+            if (isFinite(V))
+               p->vecToSurface += V;
+         }
+      }
       std::cout << "Elapsed time for shift : " << watch() << " [s]" << std::endl;
    }
 };

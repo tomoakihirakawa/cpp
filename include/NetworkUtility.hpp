@@ -1159,9 +1159,9 @@ void display(Network *net) {
    std::cout << colorReset << std::endl;
 
    V_i connection(3);
-   net->setLinesStatus(true);
+   // net->setLinesStatus(true);
    for (const auto &p : net->getPoints())
-      for (const auto &line : p->getLines_toggle(true)) {
+      for (const auto &line : p->getLines()) {
          if ((line->getFaces()).size() == 0)
             connection[0]++;
          else if ((line->getFaces()).size() == 1)

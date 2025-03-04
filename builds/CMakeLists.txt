@@ -150,6 +150,21 @@ target_include_directories(${BASE_NAME} PUBLIC
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
+###########################################################################
+set(PCH_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../include/pch.hpp")
+set(PCH_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/../include/pch.hpp.gch")
+add_custom_command(
+  OUTPUT ${PCH_OUTPUT}
+  COMMAND ${CMAKE_CXX_COMPILER} -std=c++${CMAKE_CXX_STANDARD} -x c++-header -o ${PCH_OUTPUT} ${PCH_HEADER} -Ofast
+  DEPENDS ${PCH_HEADER}
+  COMMENT "Compiling Precompiled Header: ${PCH_HEADER}"
+)
+add_custom_target(pch DEPENDS ${PCH_OUTPUT})
+add_dependencies(${BASE_NAME} pch)
+###########################################################################
+
+
 message(STATUS "====================================================")
 
 message(STATUS "${Green}CMAKE_CXX_COMPILER is ${Magenta}" ${CMAKE_CXX_COMPILER} "${ColourReset}")

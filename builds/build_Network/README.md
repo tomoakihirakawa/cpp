@@ -28,6 +28,7 @@
     - [⛵ 階層のある空間分割（木構造）](#-階層のある空間分割木構造)
     - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#-空間分割の応用例オブジェクトの接触や交差の判定)
         - [🪼 線分と面の交差判定](#-線分と面の交差判定)
+        - [🪼 点から面への最短距離 `Nearest`](#-点から面への最短距離-nearest)
         - [🪼 面と面の接触判定](#-面と面の接触判定)
             - [🪸 ２面の最短距離](#-２面の最短距離)
 - [🐋 vtk, vtp, vtu](#-vtk-vtp-vtu)
@@ -366,6 +367,10 @@ make
 [./example3_line_face_interaction.cpp#L4](./example3_line_face_interaction.cpp#L4)
 
 ---
+### 🪼 点から面への最短距離 `Nearest` 
+
+<img src="example4.png" style="display: block; margin: 0 auto;" />
+
 ### 🪼 面と面の接触判定 
 
 [basic_geometry:IntersectQ](not found){`IntersectQ`}関数は，交差判定には使えるが，接触判定には使えない．
@@ -377,7 +382,7 @@ make
 
 ２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
 ただし，三角形が曲面を成している場合は違う．
-これには，$N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}$の計算量がかかり，
+これには，$`N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}`$の計算量がかかり，
 また，この一つひとつの計算において，[Nearest(const Tddd &X, const T3Tddd &abc)](not found){Nearest}のような計算を行う．
 この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
 
@@ -390,8 +395,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
 make
 ./example4_point2face
 ```
-
-![./example4/anim.gif](example4/anim.gif)
 
 [./example4_point2face.cpp#L4](./example4_point2face.cpp#L4)
 

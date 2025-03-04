@@ -208,17 +208,17 @@ int main(int argc, char **argv) {
          FMM_BucketsPoints.initialize(bounds, bounds.getScale() / 10.);
          std::vector<Network *> AllObjects = Join(FluidObject, RigidBodyObject, SoftBodyObject);
 
+         // b# ------------------------------------------------------ */
+         // b#                       刻み時間の決定                     */
+         // b# ------------------------------------------------------ */
          for (auto &water : FluidObject) {
             show_info(*water);
-            // b# ------------------------------------------------------ */
-            // b#                       刻み時間の決定                     */
-            // b# ------------------------------------------------------ */
-            auto dt_cfl = dt_CFL(*water, max_dt, .3);
 
+            auto dt_cfl = dt_CFL(*water, max_dt, .3);
             if (dt > dt_cfl)
                dt = dt_cfl;
-            if (time_step == 0 && dt > 0.00001)
-               dt = 0.00001;
+            if (time_step <= 2)
+               dt = dt / 10.;
          }
          if (dt < 1E-13)
             dt = 1E-13;
@@ -277,8 +277,8 @@ int main(int argc, char **argv) {
 #pragma omp parallel
                for (const auto &net : AllObjects)
 #pragma omp single nowait
-                  net->makeBucketFaces(net->getScale() / 10.);
-               std::cout << Green << "makeBucketFaces" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+                  net->makeBuckets(net->getScale() / 11.);
+               std::cout << Green << "makeBuckets" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
 
                //! 体積を保存するようにリメッシュする必要があるだろう．
                for (auto &water : FluidObject) {
