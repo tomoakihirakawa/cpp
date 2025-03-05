@@ -1853,6 +1853,8 @@ T4d approximateNearest(const T3Tddd &ABC, const T3Tddd &XYZ) {
 
    auto t0t1s0s1_init = std::array<double, 4>{1 / 3., 1 / 3., 1 / 3., 1 / 3.};
    BroydenMethod<std::array<double, 4>> Broyden(t0t1s0s1_init, t0t1s0s1_init + 1E-10);
+   double min_distance = 1E+20;
+   T4d ret;
    for (auto i = 0; i < 20; ++i) {
       auto t0t1s0s1_pre = Broyden.X;
       Broyden.updateBFGS(gradF(XYZ, ABC, Broyden.X), gradF(XYZ, ABC, Broyden.X - Broyden.dX), 0.1);
@@ -1870,18 +1872,18 @@ T4d approximateNearest(const T3Tddd &ABC, const T3Tddd &XYZ) {
       Broyden.dX = Broyden.X - t0t1s0s1_pre;
    }
 
-   return Broyden.X;
+   return ret;
 };
 
 //\label{Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)}
 T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
    const int N = 2;
    Tddd X0, X1;
-   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min, t0_max, T0_min, T0_max, T1_min, T1_max, distance, w;
+   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min, t0_max, t1_min, t1_max, T0_min, T0_max, T1_min, T1_max, distance, w = 1;
    auto [nearest_t0, nearest_t1, nearest_T0, nearest_T1] = approximateNearest(ABC, XYZ);
-
+   int i, j, I, J;
    for (int step = 0; step < 8; ++step) {
-      w = std::pow(1.1 / (step == 0 ? 5 : N), step);
+      w /= (step == 0 ? 5 : N);
       t0_min = std::clamp(nearest_t0 - w, 0., 1.);
       t0_max = std::clamp(nearest_t0 + w, 0., 1.);
       t0_min = std::clamp(nearest_t1 - w, 0., 1.);
@@ -1892,14 +1894,14 @@ T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
       T1_min = std::clamp(nearest_T1 - w, 0., 1.);
       T1_max = std::clamp(nearest_T1 + w, 0., 1.);
 
-      for (int i = 0; i <= N; ++i) {
+      for (i = 0; i <= N; ++i) {
          t0 = i * (t0_max - t0_min) / N + t0_min;
-         for (int j = 0; j <= N; ++j) {
+         for (j = 0; j <= N; ++j) {
             t1 = std::clamp(j * (t0_max - t0_min) / N + t0_min, 0., 1. - t0);
             X0 = XYZ[0] * t0 + XYZ[1] * t1 + XYZ[2] * (1. - t0 - t1);
-            for (int I = 0; I <= N; ++I) {
+            for (I = 0; I <= N; ++I) {
                T0 = I * (T0_max - T0_min) / N + T0_min;
-               for (int J = 0; J <= N; ++J) {
+               for (J = 0; J <= N; ++J) {
                   T1 = std::clamp(J * (T1_max - T1_min) / N + T1_min, 0., 1. - T0);
                   X1 = ABC[0] * T0 + ABC[1] * T1 + ABC[2] * (1. - T0 - T1);
                   distance = Norm(X0 - X1);

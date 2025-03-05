@@ -193,7 +193,7 @@ Out[3]= {a N0 + c N1 + e N2, b N0 + d N1 + f N2}
 ```
 
 となり，この線上では，節点0の影響を受けず，補間値はそれ以外の（内部）の情報からのみ決まる．
-[../../include/basic_arithmetic_array_operations.hpp#L1261](../../include/basic_arithmetic_array_operations.hpp#L1261)
+[../../include/basic_arithmetic_array_operations.hpp#L1281](../../include/basic_arithmetic_array_operations.hpp#L1281)
 
 
 ### 🪼 🪼 範囲 {t_0,t_1} = {[0,1],[0,1]} -> [t0,t1]=[0,1],[0,1-t0]  
@@ -207,7 +207,7 @@ $`(\xi _0,\eta)`$をそれぞれ$`[0,1]`$の範囲で変化させることで，
 このプログムでは，
 `N(x,y)=TriShape<3>(x,y)`と定義し，
 `N(x,y(1-x))=ModTriShape<3>(x,y)`と定義している．
-[../../include/basic_arithmetic_array_operations.hpp#L1490](../../include/basic_arithmetic_array_operations.hpp#L1490)
+[../../include/basic_arithmetic_array_operations.hpp#L1510](../../include/basic_arithmetic_array_operations.hpp#L1510)
 
 
 ### 🪼 例：補間によって，頂点座標から平面を作成する 

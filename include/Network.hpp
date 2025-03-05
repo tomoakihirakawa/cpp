@@ -5719,6 +5719,25 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *>
    vtp.write(ofs);
 };
 
+void vtkPolygonWrite(std::ofstream &ofs,
+                     const std::vector<networkFace *> &uoF,
+                     const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, double>>> &name_uo_data) {
+   vtkPolygonWriter<networkPoint *> vtp;
+   vtp.reserve(uoF.size());
+
+   for (const auto &f : uoF) {
+      auto abc = f->getPoints();
+      vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
+      vtp.addPolygon(abc);
+   }
+
+   for (const auto &[name, data] : name_uo_data) {
+      vtp.addPointData(name, data);
+   }
+
+   vtp.write(ofs);
+}
+
 void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
    // vtuがいいならそうなるように修正しなければならない．
    vtkPolygonWriter<networkPoint *> vtp;

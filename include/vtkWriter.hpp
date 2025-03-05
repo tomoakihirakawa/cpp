@@ -844,4 +844,17 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<T> &V,
    vtp.write(ofs);
 };
 
+template <typename T, typename U>
+void vtkPolygonWrite(std::ofstream &ofs,
+                     const std::unordered_set<T> &V,
+                     const std::vector<std::pair<std::string, std::unordered_map<T, U>>> &name_uo_data = {}) {
+   vtkPolygonWriter<T> vtp;
+   for (const auto &X : V)
+      vtp.add(X);
+
+   for (const auto &[name, data] : name_uo_data)
+      vtp.addPointData(name, data);
+   vtp.write(ofs);
+};
+
 #endif

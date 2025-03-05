@@ -352,7 +352,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1948)関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1950)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -391,20 +391,24 @@ make
 ./example5_face2face_contact
 ```
 
-[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1948)関数は，交差判定には使えるが，接触判定には使えない．
+[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1950)関数は，交差判定には使えるが，接触判定には使えない．
 オブジェクト同士の**接触**をプログラム上で定義するなら，互いの面において最も近くにある面同士の最短距離を計算が，ある閾値以下にあるときに接触しているとみなす方法が自然である．
 
-[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1876)関数は，面と面の最短距離を求める関数であり，次の流れで計算される．
+[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1878)関数は，面と面の最短距離を求める関数であり，次の流れで計算される．
 
 1. 準ニュートン法を使って，凡その最短距離となる２面の重心座標（計4変数）を求める．
 2. その重心座標付近を細かく探索して，より正確な最短距離を求める．探査範囲を狭めながらこれを繰り返す．
 
 始めの，準ニュートン法で`1/5`の精度で重心座標が求まると仮定している．分割探査だけを使うと見落としが生じる**気がするので**含めている．
-これ以降は，`N=2`，３x3点点で最短となる重心座標を求める．8回繰り返すと，焼く1E-10の精度で最短距離が求まる．
+これ以降は，`N=2`，3x3点で最短となる重心座標を求める．8回繰り返すと，`1E-10`程度の精度で最短距離が求まる．
 
 <img src="example5_face2face_contact.png" style="display: block; margin: 0 auto; height: 300px;">
 
-[./example5_face2face_contact.cpp#L4](./example5_face2face_contact.cpp#L4)
+> [!NOTE]
+> 捕捉下側を1，捕捉された側を-1として出力している．結果側らかるように，捕捉される側の点が-1ではないからといって，接触していないことにはならない．
+> つまり，接触判定は，２つ同時に行うことは難しい
+
+[./example5_face2face_contact.cpp#L3](./example5_face2face_contact.cpp#L3)
 
 ---
 # 🐋 vtk, vtp, vtu 

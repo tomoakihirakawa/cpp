@@ -57,19 +57,39 @@ constexpr std::enable_if_t<!is_std_array<TT>::value, std::array<T, N>&> operator
    for (auto& a : arr) a += d;
    return arr;
 }
-// 1d array + 1d array
-template <size_t N, typename T, typename TT>
-constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
-   if constexpr (N > 0)
-      [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
-   return arr;
-}
+// // 1d array + 1d array
+// template <size_t N, typename T, typename TT>
+// constexpr std::array<T, N>& operator+=(std::array<T, N>& arr /*ref*/, const std::array<TT, N>& ARR) noexcept {
+//    if constexpr (N > 0)
+//       [&]<size_t... Is>(std::index_sequence<Is...>) { ((std::get<Is>(arr) += (std::get<Is>(ARR))), ...); }(std::make_index_sequence<N>());
+//    return arr;
+// }
 
-template <typename T>
-constexpr std::array<T, 3>& operator+=(std::array<T, 3>& arr /*ref*/, const std::array<T, 3>& ARR) noexcept {
-   std::get<0>(arr) += std::get<0>(ARR);
-   std::get<1>(arr) += std::get<1>(ARR);
-   std::get<2>(arr) += std::get<2>(ARR);
+// template <typename T>
+// constexpr std::array<T, 3>& operator+=(std::array<T, 3>& arr /*ref*/, const std::array<T, 3>& ARR) noexcept {
+//    std::get<0>(arr) += std::get<0>(ARR);
+//    std::get<1>(arr) += std::get<1>(ARR);
+//    std::get<2>(arr) += std::get<2>(ARR);
+//    return arr;
+// }
+
+// Unified operator+= for std::array
+template <size_t N, typename T, typename TT>
+constexpr std::array<std::conditional_t<
+                         std::is_same_v<double, std::decay_t<T>> || std::is_same_v<double, std::decay_t<TT>>, double,
+                         std::common_type_t<T, TT>>,
+                     N>&
+operator+=(std::array<T, N>& arr, const std::array<TT, N>& ARR) noexcept {
+   using CommonType = std::conditional_t<
+       std::is_same_v<double, std::decay_t<T>> || std::is_same_v<double, std::decay_t<TT>>,
+       double,
+       std::common_type_t<T, TT>>;
+
+   if constexpr (N > 0) {
+      [&]<size_t... Is>(std::index_sequence<Is...>) {
+         ((std::get<Is>(arr) = static_cast<CommonType>(std::get<Is>(arr)) + static_cast<CommonType>(std::get<Is>(ARR))), ...);
+      }(std::make_index_sequence<N>());
+   }
    return arr;
 }
 
