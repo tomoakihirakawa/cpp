@@ -24,7 +24,10 @@ make
 
 <img src="example5_face2face_contact.png" style="display: block; margin: 0 auto; height: 300px;">
 
-> [!NOTE]
+
+<img src="example5_face2face_contact.gif" style="display: block; margin: 0 auto; height: 300px;">
+
+> [!WARNING]
 > 捕捉下側を1，捕捉された側を-1として出力している．結果側らかるように，捕捉される側の点が-1ではないからといって，接触していないことにはならない．
 > つまり，接触判定は，２つ同時に行うことは難しい
 
