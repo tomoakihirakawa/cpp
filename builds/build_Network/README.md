@@ -408,8 +408,8 @@ make
 <img src="example5_face2face_contact.gif" style="display: block; margin: 0 auto; height: 300px;">
 
 > [!WARNING]
-> 捕捉下側を1，捕捉された側を-1として出力している．結果側らかるように，捕捉される側の点が-1ではないからといって，接触していないことにはならない．
-> つまり，接触判定は，２つ同時に行うことは難しい
+> 捕捉した側の三角形の節点に1を，捕捉された側の三角形の節点には-1の値を与えて出力している．捕捉される側の点が-1ではないからといって，接触していないわけではない．
+> 接触判定は，２つ同時に行うことは難しい．オブジェクト毎に接触判定を行う必要がある．
 
 [./example5_face2face_contact.cpp#L3](./example5_face2face_contact.cpp#L3)
 
