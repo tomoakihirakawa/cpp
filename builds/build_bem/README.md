@@ -98,13 +98,13 @@
 
 0. 流体と物体の衝突を判定し，流体節点が接触する物体面を保存しておく．
 
-* [contact_angle](not found){`networkPoint::contact_angle`}
-* [isInContact](not found){`networkPoint::isInContact`}
-* [addContactFaces](not found){`networkPoint::addContactFaces`}
+* [contact_angle](../../include/networkPoint.hpp#L154)
+* [isInContact](../../include/networkPoint.hpp#L170)
+* [addContactFaces](../../include/networkPoint.hpp#L299)
 
 を使って接触判定を行っている．
 
-[BEM:contact_range](not found){流体が構造物との接触を感知する半径}の設置も重要．
+[BEM:contact_range](not found)の設置も重要．
 
 つぎに，その情報を使って，境界のタイプを次の順で決める．（物理量を与えるわけではない）
 
@@ -150,10 +150,10 @@
 
 | `networkPoint`のメンバー関数/変数      | 説明                                                                |
 |-------------------------|--------------------------------------------------------------------------------|
-| [contact_angle](not found){`contact_angle`}         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
-| [isFacing](not found){`isFacing()`}       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
-| [isInContact](not found){`isInContact()`}         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
-| [addContactFaces](not found){`addContactFaces()`}     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
+| [contact_angle](../../include/networkPoint.hpp#L154)         | ２面の法線ベクトルがこの`contact_angle`大きい場合，接触判定から除外される |
+| [isFacing](../../include/networkPoint.hpp#L157)       | ２面の法線ベクトルが`contact_angle`よりも小さいか判定する．ただし，角度は，向かい合う面がなす最小の角度と考える |
+| [isInContact](../../include/networkPoint.hpp#L170)         | 点の隣接面のいずれかが，与えられた面と接触しているか判定する．範囲内で接触しており，かつ`isFacing`が真である場合`true`を返す． |
+| [addContactFaces](../../include/networkPoint.hpp#L299)     | バケツに保存された面を基に，節点が接触した面を`networkPoint::ContactFaces`に登録する．   |
 
 現在の実装方法では，接触判定は`networkPoint::addContactFaces`が起点となる．
 
@@ -571,10 +571,10 @@ $`\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d\boldsymbol\chi}{dt} \
 ノイマン節点も修正流速を加え時間発展させる．
 ただし，ノイマン節点の修正流速に対しては，節点が水槽の角から離れないように，工夫を施している．
 
-[BEM:calculateVecToSurface](./BEM_calculateVelocities.hpp#L298){`calculateVecToSurface`}で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+[BEM:calculateVecToSurface](./BEM_calculateVelocities.hpp#L298)で$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
-1. まず，[BEM:vectorTangentialShift](./BEM_calculateVelocities.hpp#L156){`vectorTangentialShift`}で接線方向にシフトし，
-2. [BEM:vectorToNextSurface](./BEM_calculateVelocities.hpp#L167){`vectorToNextSurface`}で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
+1. まず，[BEM:vectorTangentialShift](./BEM_calculateVelocities.hpp#L156)で接線方向にシフトし，
+2. [BEM:vectorToNextSurface](./BEM_calculateVelocities.hpp#L167)で近くの$`\Omega(t+\Delta t)`$上へのベクトルを計算する．
 
 #### 🪸 使っているALEの手法 
 
@@ -618,8 +618,8 @@ $`\boldsymbol{F} _{\text {ext }}`$は重力などの外力，$`\boldsymbol{F} _{
 浮体が流体から受ける力$`\boldsymbol{F} _{\text {hydro }}`$は，浮体表面の圧力$`p`$を積分することで得られ，
 また圧力$`p`$は速度ポテンシャル$`\phi`$を用いて，以下のように書ける．
 
-[BEM:surfaceIntegralOfPressure](./BEM_solveBVP.hpp#L104){圧力積分}と
-[BEM:surfaceIntegralOfTorque](not found){トルクの積分}：
+[BEM:surfaceIntegralOfPressure](./BEM_solveBVP.hpp#L104)と
+[BEM:surfaceIntegralOfTorque](not found)：
 
 ```math
 \boldsymbol{F} _{\text {hydro }}=\iint _{\Gamma _{\rm float}} p\boldsymbol{n}  d S, \quad
@@ -683,7 +683,7 @@ global座標における浮体の慣性モーメントテンソルを求める�
 \end{bmatrix}
 ```
 
-ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[BEM:HessianOfPhi](./BEM_utilities.hpp#L885){`HessianOfPhi`}を用いる．
+ヘッセ行列の計算には，要素における変数の勾配の接線成分を計算する[BEM:HessianOfPhi](./BEM_utilities.hpp#L885)を用いる．
 節点における変数を$`v`$とすると，$`\nabla v-{\bf n}({\bf n}\cdot\nabla v)`$が計算できる．
 要素の法線方向$`{\bf n}`$が$`x`$軸方向$`{(1,0,0)}`$である場合，$`\nabla v - (\frac{\partial}{\partial x},0,0)v`$なので，
 $`(0,\frac{\partial v}{\partial y},\frac{\partial v}{\partial z})`$が得られる．
@@ -812,10 +812,10 @@ $`\phi _t`$と$`\phi _{nt}`$に関するBIEを解くためには，ディリク�
 ,\quad \frac{d{\bf n}}{dt} = {\boldsymbol \Omega} _{\rm c}\times{\bf n}
 ```
 
-$`\frac{d \boldsymbol r}{dt}`$は[velocityRigidBody](not found){`velocityRigidBody`}
-$`\frac{d^2 \boldsymbol r}{dt^2}`$は[accelRigidBody](not found){`accelRigidBody`}で計算する．
+$`\frac{d \boldsymbol r}{dt}`$は[velocityRigidBody](../../include/RigidBodyDynamics.hpp#L94)
+$`\frac{d^2 \boldsymbol r}{dt^2}`$は[accelRigidBody](../../include/RigidBodyDynamics.hpp#L97)で計算する．
 
-[BEM:phint_Neumann](./BEM_utilities.hpp#L945){`phin_Neuamnn`}で$`\phi _{nt}`$を計算する．これは[BEM:setPhiPhin_t](./BEM_setBoundaryTypes.hpp#L417){`setPhiPhin_t`}で使っている．
+[BEM:phint_Neumann](./BEM_utilities.hpp#L945)で$`\phi _{nt}`$を計算する．これは[BEM:setPhiPhin_t](./BEM_setBoundaryTypes.hpp#L417)で使っている．
 
 $`\frac{d^2\boldsymbol r}{dt^2}`$を上の式に代入し，$`\phi _{nt}`$を求め，
 次にBIEから$`\phi _t`$を求め，次に圧力$p$を求める．
@@ -835,7 +835,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 ```
 
 これを満たすように，$`\Phi _{nt}`$を求める．これは次のように書き換えて，根探し問題として解く．
-このプログラムでは，[quasi_newton:broyden](not found){Broyden法}を使って，根探している．
+このプログラムでは，[quasi_newton:broyden](not found)を使って，根探している．
 
 ```math
 \boldsymbol{0} = m \frac{d\boldsymbol U _{\rm c}}{dt} - \boldsymbol{F} _{\text {ext }} - F _{\text {hydro}}\left(\Phi _{nt}\left(\frac{d\boldsymbol U _{\rm c}}{dt},\frac{d {\boldsymbol \Omega} _{\rm c}}{d t}\right)\right),\quad
@@ -846,7 +846,7 @@ m \frac{d\boldsymbol U _{\rm c}}{dt} = \boldsymbol{F} _{\text {ext }}+ F _{\text
 として，これを満たすような$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を求める．
 $`\phi _{nt}`$はこれを満たした$`\dfrac{d {\boldsymbol U} _{\rm c}}{d t}`$と$`\dfrac{d {\boldsymbol \Omega} _{\rm c}}{d t}`$を用いて求める．
 
-$`\phi _{nt}`$は，[BEM:setphint](./BEM_setBoundaryTypes.hpp#L431){ここ}で与えている．
+$`\phi _{nt}`$は，[BEM:setphint](./BEM_setBoundaryTypes.hpp#L431)で与えている．
 
 この方法は，基本的には[Cao et al. (1994)](http://www.iwwwfb.org/abstracts/iwwwfb09/iwwwfb09_07.pdf)と同じ方法である．
 
@@ -943,12 +943,12 @@ $`\iint _{\Gamma _{🚢}+\Gamma _{🚤}+\Gamma _{\rm wall}} {\boldsymbol{\varphi
 造波理論については，[Dean et al. (1991)](http://books.google.co.uk/books/about/Water_Wave_Mechanics_for_Engineers_and_S.html?id=9-M4U_sfin8C&pgis=1)のp.170に書いてある．
 
 造波板となるobjectに速度を与えることで，造波装置などを模擬することができる．
-[BEM:impose_velocity](./main.cpp#L406){強制運動を課す}
+[BEM:impose_velocity](./main.cpp#L406)
 
-[BEM:Hadzic2005](./BEM_utilities.hpp#L442){ここ}では，Hadzic et al. 2005の造波板の動きを模擬している．
+[BEM:Hadzic2005](./BEM_utilities.hpp#L442)では，Hadzic et al. 2005の造波板の動きを模擬している．
 角速度の原点は，板の`COM`としている．
 
-[BEM:setNeumannVelocity](./BEM_setBoundaryTypes.hpp#L235){`setNeumannVelocity`}で利用され，$\phi _{n}$を計算する．
+[BEM:setNeumannVelocity](./BEM_setBoundaryTypes.hpp#L235)で利用され，$\phi _{n}$を計算する．
 
 [./BEM_utilities.hpp#L16](./BEM_utilities.hpp#L16)
 

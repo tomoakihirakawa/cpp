@@ -228,7 +228,6 @@ struct GradientMethod {
 {\bf J}_{k} \cdot \Delta {\bf x}_k = \Delta {\bf f}_k
 ```
 
-
 ```math
 {\bf J}_{k} = {\bf J}_{k-1} + \frac{(\Delta {\bf f}_k - {\bf J}_{k-1} \cdot \Delta {\bf x}_k) \otimes \Delta  {\bf x}_k}{\Delta  {\bf x}_k \cdot \Delta {\bf x}_k},\quad \Delta {\bf f}_k = {\bf f}_{k} - {\bf f}_{k-1}
 ```
@@ -294,8 +293,8 @@ struct BroydenMethod<T> {
          J += TensorProduct(y, y) / Dot(y, s) - Dot(TensorProduct(Dot(J, s), s), Transpose(J)) / Dot(s, Dot(J, s));
       // X += (dX = -alpha * Dot(Inv_J, F));
       // Solve(J, dX, -alpha * F);
-      // lapack_lu(J, dX, -alpha * F);
-      lapack_svd(J, dX, -alpha * F);
+      lapack_lu(J, dX, -alpha * F);
+      // lapack_svd_solve(J, dX, -alpha * F);
 
       X += dX;
    }

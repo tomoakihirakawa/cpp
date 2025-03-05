@@ -40,7 +40,7 @@ py::class_<LighthillRobot>(m, "LighthillRobot")
 ---
 ## ⛵ pybind11で共有ライブラリを作成 
 
-この例は，c++のNewton法を利用して作った[newton:LighthillRobot](not found){Lighthill Robot}をpythonで使うためのもの.
+この例は，c++のNewton法を利用して作った[newton:LighthillRobot](../../include/rootFinding.hpp#L675)をpythonで使うためのもの.
 
 このディレクトリにCMakelists.txtを用意しているので，
 それを使って，以下のようにターミナル上で実行・`make`すると，
@@ -74,8 +74,8 @@ make
 
 ### 🪼 アニメーションgifファイルを作成しロボットの動きを可視化する 
 
-[PYBIND11:HOW_TO_IMPORT](./demo_runLightHillRobot_all.py#L21){このように}`import`して利用できる．
-cppと同じように[PYBIND11:GENERATE_OBJECT](./demo_runLightHillRobot_all.py#L34){`robot`オブジェクトを作成}．
+[PYBIND11:HOW_TO_IMPORT](./demo_runLightHillRobot_all.py#L21)`import`して利用できる．
+cppと同じように[PYBIND11:GENERATE_OBJECT](./demo_runLightHillRobot_all.py#L34)．
 
 出力結果
 

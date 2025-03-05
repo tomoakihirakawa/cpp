@@ -132,7 +132,7 @@ int nodes = 10;
 int steps = 20;
 ```
 
-そのような場合，[LighthillRobot:scale](not found){ここ}のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
+そのような場合，[LighthillRobot:scale](../../include/rootFinding.hpp#L713)のニュートン法のステップ幅を小さくすることで，正しい角度が得られる場合がある．
 
 
 | `scale` | n=5 | n=10 | n=50 |
@@ -141,7 +141,7 @@ int steps = 20;
 | `scale=0.1` | ![sample_5_bad_mod.gif](sample_5_bad_mod.gif) | ![sample_10_bad_mod.gif](sample_10_bad_mod.gif) | ![sample_50_bad_mod.gif](sample_50_bad_mod.gif) |
 
 
-LighthillRobotのクラスは，[newton:LighthillRobot](not found){ここ}で宣言している．
+LighthillRobotのクラスは，[newton:LighthillRobot](../../include/rootFinding.hpp#L675)で宣言している．
 
 ### 🪼 ロボットのエネルギー効率について 
 
@@ -168,7 +168,6 @@ LighthillRobotのクラスは，[newton:LighthillRobot](not found){ここ}で宣
 ```math
 {\bf J} _{k} \cdot \Delta {\bf x} _k = \Delta {\bf f} _k
 ```
-
 
 ```math
 {\bf J} _{k} = {\bf J} _{k-1} + \frac{(\Delta {\bf f} _k - {\bf J} _{k-1} \cdot \Delta {\bf x} _k) \otimes \Delta  {\bf x} _k}{\Delta  {\bf x} _k \cdot \Delta {\bf x} _k},\quad \Delta {\bf f} _k = {\bf f} _{k} - {\bf f} _{k-1}

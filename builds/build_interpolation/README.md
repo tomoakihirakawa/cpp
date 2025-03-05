@@ -277,7 +277,7 @@ v _0\\v _1\\v _2\\v _3\\v _4\\v _5
 \right)
 ```
 
-Fig. [fig:pseudo_quad_schematic](not found)に示すように，
+Fig. \ref{fig:pseudo_quad_schematic}に示すように，
 この形状関数の係数を，対応する節点の値に掛けて足し合わせることで，
 三角形要素の内部の任意の点における値を補間することができる．
 
@@ -438,7 +438,7 @@ $ gnuplot bspline_plot.gnu
 
 ### 🪼 コード 
 
-[interpolation:Bspline](not found){Bspline基底関数}を用いて，B-spline補間を行う．
+[interpolation:Bspline](../../include/basic.hpp#L845)を用いて，B-spline補間を行う．
 
 `InterpolationBspline`は，`std::vector<double>`または`std::vector<std::array<double,N>>`を引数に取ることができる．
 

@@ -377,7 +377,6 @@ struct vtkPolygonWriter : XMLElement {
 
    template <std::size_t N>
    void addPolygon(const std::array<T, N> &conns) {
-      static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
       if constexpr (N == 3) {
          this->connectivity3.push_back({{{std::get<0>(conns), 0}, {std::get<1>(conns), 0}, {std::get<2>(conns), 0}}});
       } else if constexpr (N == 4) {
@@ -402,12 +401,18 @@ struct vtkPolygonWriter : XMLElement {
          this->connectivity4.push_back({{{std::get<1>(conns), 0}, {std::get<5>(conns), 0}, {std::get<6>(conns), 0}, {std::get<2>(conns), 0}}});  // 1-5-6-2
          this->connectivity4.push_back({{{std::get<0>(conns), 0}, {std::get<4>(conns), 0}, {std::get<5>(conns), 0}, {std::get<1>(conns), 0}}});  // 0-4-5-1
          this->connectivity4.push_back({{{std::get<3>(conns), 0}, {std::get<2>(conns), 0}, {std::get<6>(conns), 0}, {std::get<7>(conns), 0}}});  // 3-2-6-7
+      } else {
+         std::vector<VertexId> tmp(conns.size());
+         for (auto i = 0; i < conns.size(); ++i)
+            tmp[i] = {conns[i], 0};
+         this->connectivity_lines.emplace_back(tmp);
+         // static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
       }
    }
 
    template <std::size_t N>
    void addPolygon(const std::vector<std::array<T, N>> &conns) {
-      static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
+      // static_assert(N == 3 || N == 4 || N == 8, "addPolygon supports only 3, 4 and 8 element arrays");
       for (const auto &c : conns) this->addPolygon(c);
    }
 

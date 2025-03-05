@@ -5,6 +5,7 @@
 #include "basic_linear_systems.hpp"
 #include "basic_statistics.hpp"
 #include "basic_vectors.hpp"
+#include "minMaxOfFunctions.hpp"
 #include "rootFinding.hpp"
 // 面と面の干渉？？？
 // 球と面の干渉チェックか．
@@ -1648,6 +1649,7 @@ Tddd NearestXOnPlane(const Tddd &X, const T3Tddd &abc) {
    return std::get<2>(NearestXOnPlane_(X, abc));
 };
 
+// \label{Nearest_}
 std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    /* ----------------------------------- 修正前 ---------------------------------- */
    // double T0, T1;
@@ -1793,7 +1795,6 @@ std::tuple<double, double, Tddd> Nearest_(const Tddd &X, const T3Tddd &abc) {
    // }
 };
 
-// \label{Nearest(const Tddd &X, const T3Tddd &abc)}
 Tddd Nearest(const Tddd &X, const T3Tddd &abc) {
    return std::get<2>(Nearest_(X, abc));
 };
@@ -1832,6 +1833,97 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
 };
 
 Tddd Nearest(const Tddd &X, const Tddd &Y) { return Y; };
+
+T4d approximateNearest(const T3Tddd &ABC, const T3Tddd &XYZ) {
+   auto f = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> Tddd {
+      auto [t0, t1, s0, s1] = t0t1s0s1;
+      Tddd XonA = (A[0] - A[2]) * t0 + (A[1] - A[2]) * t1 + A[2];
+      Tddd XonB = (B[0] - B[2]) * s0 + (B[1] - B[2]) * s1 + B[2];
+      return XonA - XonB;
+   };
+
+   auto gradF = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> std::array<double, 4> {
+      auto f_t0 = (A[0] - A[2]);
+      auto f_t1 = (A[1] - A[2]);
+      auto f_s0 = (B[0] - B[2]);
+      auto f_s1 = (B[1] - B[2]);
+      auto value = f(A, B, t0t1s0s1);
+      return {Dot(value, f_t0), Dot(value, f_t1), Dot(value, f_s0), Dot(value, f_s1)};
+   };
+
+   auto t0t1s0s1_init = std::array<double, 4>{1 / 3., 1 / 3., 1 / 3., 1 / 3.};
+   BroydenMethod<std::array<double, 4>> Broyden(t0t1s0s1_init, t0t1s0s1_init + 1E-10);
+   for (auto i = 0; i < 20; ++i) {
+      auto t0t1s0s1_pre = Broyden.X;
+      Broyden.updateBFGS(gradF(XYZ, ABC, Broyden.X), gradF(XYZ, ABC, Broyden.X - Broyden.dX), 0.1);
+      if (i % 2 == 0) {
+         Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1.);
+         Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1. - Broyden.X[0]);
+         Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1.);
+         Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1. - Broyden.X[2]);
+      } else {
+         Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1.);
+         Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1. - Broyden.X[1]);
+         Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1.);
+         Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1. - Broyden.X[3]);
+      }
+      Broyden.dX = Broyden.X - t0t1s0s1_pre;
+   }
+
+   return Broyden.X;
+};
+
+//\label{Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)}
+T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
+   const int N = 2;
+   Tddd X0, X1;
+   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min, t0_max, T0_min, T0_max, T1_min, T1_max, distance, w;
+   auto [nearest_t0, nearest_t1, nearest_T0, nearest_T1] = approximateNearest(ABC, XYZ);
+
+   for (int step = 0; step < 8; ++step) {
+      w = std::pow(1.1 / (step == 0 ? 5 : N), step);
+      t0_min = std::clamp(nearest_t0 - w, 0., 1.);
+      t0_max = std::clamp(nearest_t0 + w, 0., 1.);
+      t0_min = std::clamp(nearest_t1 - w, 0., 1.);
+      t0_max = std::clamp(nearest_t1 + w, 0., 1.);
+
+      T0_min = std::clamp(nearest_T0 - w, 0., 1.);
+      T0_max = std::clamp(nearest_T0 + w, 0., 1.);
+      T1_min = std::clamp(nearest_T1 - w, 0., 1.);
+      T1_max = std::clamp(nearest_T1 + w, 0., 1.);
+
+      for (int i = 0; i <= N; ++i) {
+         t0 = i * (t0_max - t0_min) / N + t0_min;
+         for (int j = 0; j <= N; ++j) {
+            t1 = std::clamp(j * (t0_max - t0_min) / N + t0_min, 0., 1. - t0);
+            X0 = XYZ[0] * t0 + XYZ[1] * t1 + XYZ[2] * (1. - t0 - t1);
+            for (int I = 0; I <= N; ++I) {
+               T0 = I * (T0_max - T0_min) / N + T0_min;
+               for (int J = 0; J <= N; ++J) {
+                  T1 = std::clamp(J * (T1_max - T1_min) / N + T1_min, 0., 1. - T0);
+                  X1 = ABC[0] * T0 + ABC[1] * T1 + ABC[2] * (1. - T0 - T1);
+                  distance = Norm(X0 - X1);
+                  if (nearest_distance > distance) {
+                     nearest_distance = distance;
+                     nearest_t0 = t0;
+                     nearest_t1 = t1;
+                     nearest_T0 = T0;
+                     nearest_T1 = T1;
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   return {XYZ[0] * nearest_t0 + XYZ[1] * nearest_t1 + XYZ[2] * (1. - nearest_t0 - nearest_t1),
+           ABC[0] * nearest_T0 + ABC[1] * nearest_T1 + ABC[2] * (1. - nearest_T0 - nearest_T1)};
+};
+
+// // ２つの三角形の最短ベクトルを求める
+// T2Tddd Nearest(const T3Tddd &A, const T3Tddd &B) {
+
+// };
 
 double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
    auto [a, b] = line;
