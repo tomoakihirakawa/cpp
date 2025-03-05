@@ -29,8 +29,7 @@
     - [⛵ 空間分割の応用例：オブジェクトの接触や交差の判定](#-空間分割の応用例オブジェクトの接触や交差の判定)
         - [🪼 線分と面の交差判定](#-線分と面の交差判定)
         - [🪼 点から面までの最短ベクトル `Nearest`](#-点から面までの最短ベクトル-nearest)
-        - [🪼 面と面の接触判定](#-面と面の接触判定)
-            - [🪸 ２面の最短距離](#-２面の最短距離)
+        - [🪼 面と面の接触判定（面と面の最短距離の計算）](#-面と面の接触判定面と面の最短距離の計算)
 - [🐋 vtk, vtp, vtu](#-vtk-vtp-vtu)
 - [🐋 四面体の生成](#-四面体の生成)
     - [⛵ TetGenを使った四面体を生成](#-tetgenを使った四面体を生成)
@@ -130,8 +129,8 @@ vtkUnstructuredGridWrite(ofs, obj->getTetras(), data);
 ofs.close();
 ```
 
-[add_data_default_name](../../builds/build_Network/example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
-また，[add_data_custom_name](../../builds/build_Network/example0_load_3d_file.cpp#L269)を付けることもできる．
+[add_data_default_name](./example0_load_3d_file.cpp#L239)，点に値を付与し，vtpとして出力することもできる．
+また，[add_data_custom_name](./example0_load_3d_file.cpp#L269)を付けることもできる．
 
 #### 🪸 実行方法 
 
@@ -177,9 +176,9 @@ make
 ./example0_manipulation_tetrahedron
 ```
 
-* [make_bucket_tetras](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L83)，空間分割のためのバケットを作成し，四面体をバケットに登録する例
-* [edge_flip](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L104)，四面体を持つ表面のエッジフリップテストの例
-* [test_insideQ](../../builds/build_Network/example0_manipulation_tetrahedron.cpp#L139)，座標が四面体の内部か外部かの判定テストの例
+* [make_bucket_tetras](./example0_manipulation_tetrahedron.cpp#L83)，空間分割のためのバケットを作成し，四面体をバケットに登録する例
+* [edge_flip](./example0_manipulation_tetrahedron.cpp#L104)，四面体を持つ表面のエッジフリップテストの例
+* [test_insideQ](./example0_manipulation_tetrahedron.cpp#L139)，座標が四面体の内部か外部かの判定テストの例
 
 [./example0_manipulation_tetrahedron.cpp#L1](./example0_manipulation_tetrahedron.cpp#L1)
 
@@ -353,7 +352,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1856)関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1948)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -364,42 +363,48 @@ make
 
 <gif src="./example3/anim_faster.gif" width="500px">
 
-[./example3_line_face_interaction.cpp#L4](./example3_line_face_interaction.cpp#L4)
+[./example5_line_face_interaction.cpp#L4](./example5_line_face_interaction.cpp#L4)
 
 ---
 ### 🪼 点から面までの最短ベクトル `Nearest` 
 
-[Nearest_](../../include/basic_geometry.hpp#L1651)関数は，点から面までの最短ベクトルを求める関数である．
+[Nearest_](../../include/basic_geometry.hpp#L1652)関数は，点から面までの最短ベクトルを求める関数である．
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example4_point2face_Nearest.cpp
 make
-./example4_point2face
+./example4_point2face_Nearest
 ```
 
 <img src="example4.png" style="display: block; margin: 0 auto; height: 300px;">
 
+[./example4_point2face_Nearest.cpp#L4](./example4_point2face_Nearest.cpp#L4)
 
-### 🪼 面と面の接触判定 
+---
+### 🪼 面と面の接触判定（面と面の最短距離の計算） 
 
-[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1856)関数は，交差判定には使えるが，接触判定には使えない．
+```shell
+sh clean
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example5_face2face_contact.cpp
+make
+./example5_face2face_contact
+```
 
-**オブジェクト同士の接触**をプログラム上で定義するなら，
-２面の最短距離が，ある閾値以下にある，とするのが自然な定義だろう．
+[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1948)関数は，交差判定には使えるが，接触判定には使えない．
+オブジェクト同士の**接触**をプログラム上で定義するなら，互いの面において最も近くにある面同士の最短距離を計算が，ある閾値以下にあるときに接触しているとみなす方法が自然である．
 
-#### 🪸 ２面の最短距離 
+[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1876)関数は，面と面の最短距離を求める関数であり，次の流れで計算される．
 
-２つのポリゴン面上において最短距離にある２点の片方はある三角形の頂点である．
-ただし，三角形が曲面を成している場合は違う．
-これには，$`N _{vertex}*M _{triangle} + M _{vertex}*N _{triangle}`$の計算量がかかり，
-また，この一つひとつの計算において，[Nearest(const Tddd &X, const T3Tddd &abc)](not found)のような計算を行う．
-この計算は，空間分割を使って，調べる面の数を減らせば，多くの場合，実用上問題とはならない時間内で終わる．
+1. 準ニュートン法を使って，凡その最短距離となる２面の重心座標（計4変数）を求める．
+2. その重心座標付近を細かく探索して，より正確な最短距離を求める．探査範囲を狭めながらこれを繰り返す．
 
+始めの，準ニュートン法で`1/5`の精度で重心座標が求まると仮定している．分割探査だけを使うと見落としが生じる**気がするので**含めている．
+これ以降は，`N=2`，３x3点点で最短となる重心座標を求める．8回繰り返すと，焼く1E-10の精度で最短距離が求まる．
 
-もう一つの方法は，よりナイーブな方法で，
+<img src="example5_face2face_contact.png" style="display: block; margin: 0 auto; height: 300px;">
 
-[./example4_point2face.cpp#L4](./example4_point2face.cpp#L4)
+[./example5_face2face_contact.cpp#L4](./example5_face2face_contact.cpp#L4)
 
 ---
 # 🐋 vtk, vtp, vtu 
