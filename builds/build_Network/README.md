@@ -30,6 +30,7 @@
         - [🪼 線分と面の交差判定](#-線分と面の交差判定)
         - [🪼 点から面までの最短ベクトル `Nearest`](#-点から面までの最短ベクトル-nearest)
         - [🪼 面と面の接触判定（面と面の最短距離の計算）](#-面と面の接触判定面と面の最短距離の計算)
+            - [🪸 接触判定の条件の制限](#-接触判定の条件の制限)
 - [🐋 vtk, vtp, vtu](#-vtk-vtp-vtu)
 - [🐋 四面体の生成](#-四面体の生成)
     - [⛵ TetGenを使った四面体を生成](#-tetgenを使った四面体を生成)
@@ -352,7 +353,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1950)関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2117)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -391,25 +392,29 @@ make
 ./example5_face2face_contact
 ```
 
-[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L1950)関数は，交差判定には使えるが，接触判定には使えない．
+[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2117)関数は，交差判定には使えるが，接触判定には使えない．
 オブジェクト同士の**接触**をプログラム上で定義するなら，互いの面において最も近くにある面同士の最短距離を計算が，ある閾値以下にあるときに接触しているとみなす方法が自然である．
 
-[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1878)関数は，面と面の最短距離を求める関数であり，次の流れで計算される．
-
-1. 準ニュートン法を使って，凡その最短距離となる２面の重心座標（計4変数）を求める．
-2. その重心座標付近を細かく探索して，より正確な最短距離を求める．探査範囲を狭めながらこれを繰り返す．
-
-始めの，準ニュートン法で`1/5`の精度で重心座標が求まると仮定している．分割探査だけを使うと見落としが生じる**気がするので**含めている．
-これ以降は，`N=2`，3x3点で最短となる重心座標を求める．8回繰り返すと，`1E-10`程度の精度で最短距離が求まる．
+[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1958)関数は，面と面の最短距離を求める関数．
+重心座標付近を徐々に細かく探索して，より正確な最短距離を求める．探査範囲を狭めながらこれを繰り返す．
+`N=3`，4x4点で最短となる重心座標を求める．次に範囲を0.7倍に狭め，これを数十回繰り返す．
 
 <img src="example5_face2face_contact.png" style="display: block; margin: 0 auto; height: 300px;">
 
-
 <img src="example5_face2face_contact.gif" style="display: block; margin: 0 auto; height: 300px;">
+
+<img src="example5_face2face_contact2.gif" style="display: block; margin: 0 auto; height: 300px;">
 
 > [!WARNING]
 > 捕捉した側の三角形の節点に1を，捕捉された側の三角形の節点には-1の値を与えて出力している．捕捉される側の点が-1ではないからといって，接触していないわけではない．
 > 接触判定は，２つ同時に行うことは難しい．オブジェクト毎に接触判定を行う必要がある．
+
+#### 🪸 接触判定の条件の制限 
+
+場合によっては，面同士が向き合っている場合にのみ接触したとみなしたい場合もある．例えば次の２つが考えられる．
+
+- `isFlat(X1nearest - X0nearest, F->normal, 10. * M_PI / 180.)`
+- `isFlat(f->normal, F->normal, 10. * M_PI / 180.)`
 
 [./example5_face2face_contact.cpp#L3](./example5_face2face_contact.cpp#L3)
 

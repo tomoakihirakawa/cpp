@@ -1834,92 +1834,259 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
 
 Tddd Nearest(const Tddd &X, const Tddd &Y) { return Y; };
 
-T4d approximateNearest(const T3Tddd &ABC, const T3Tddd &XYZ) {
-   auto f = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> Tddd {
-      auto [t0, t1, s0, s1] = t0t1s0s1;
-      Tddd XonA = (A[0] - A[2]) * t0 + (A[1] - A[2]) * t1 + A[2];
-      Tddd XonB = (B[0] - B[2]) * s0 + (B[1] - B[2]) * s1 + B[2];
-      return XonA - XonB;
+T4d approximateNearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
+
+   auto t0t1_init = std::array<double, 2>{1 / 3., 1 / 3.};
+
+   auto gradF = [&](const std::array<double, 2> &t0t1) -> std::array<double, 2> {
+      auto [t0, t1] = t0t1;
+      auto f_t0 = (XYZ[0] - XYZ[2]);
+      auto f_t1 = (XYZ[1] - XYZ[2]);
+      Tddd XonA = (XYZ[0] - XYZ[2]) * t0 + (XYZ[1] - XYZ[2]) * t1 + XYZ[2];
+      auto [s0, s1, X] = Nearest_(XonA, ABC);
+      auto f = XonA - X;
+      return {Dot(f, f_t0), Dot(f, f_t1)};
    };
 
-   auto gradF = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> std::array<double, 4> {
-      auto f_t0 = (A[0] - A[2]);
-      auto f_t1 = (A[1] - A[2]);
-      auto f_s0 = (B[0] - B[2]);
-      auto f_s1 = (B[1] - B[2]);
-      auto value = f(A, B, t0t1s0s1);
-      return {Dot(value, f_t0), Dot(value, f_t1), Dot(value, f_s0), Dot(value, f_s1)};
+   auto s0s1 = [&](double t0, double t1) -> std::array<double, 2> {
+      Tddd XonA = (XYZ[0] - XYZ[2]) * t0 + (XYZ[1] - XYZ[2]) * t1 + XYZ[2];
+      auto [s0, s1, X] = Nearest_(XonA, ABC);
+      return {s0, s1};
    };
 
-   auto t0t1s0s1_init = std::array<double, 4>{1 / 3., 1 / 3., 1 / 3., 1 / 3.};
-   BroydenMethod<std::array<double, 4>> Broyden(t0t1s0s1_init, t0t1s0s1_init + 1E-10);
+   BroydenMethod<std::array<double, 2>> Broyden(t0t1_init, t0t1_init + 1E-10);
    double min_distance = 1E+20;
-   T4d ret;
-   for (auto i = 0; i < 20; ++i) {
-      auto t0t1s0s1_pre = Broyden.X;
-      Broyden.updateBFGS(gradF(XYZ, ABC, Broyden.X), gradF(XYZ, ABC, Broyden.X - Broyden.dX), 0.1);
+   for (auto i = 0; i < 30; ++i) {
+      auto t0t1_pre = Broyden.X;
+      Broyden.updateBFGS(gradF(Broyden.X), gradF(Broyden.X - Broyden.dX), 0.1);
       if (i % 2 == 0) {
          Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1.);
          Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1. - Broyden.X[0]);
-         Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1.);
-         Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1. - Broyden.X[2]);
       } else {
          Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1.);
          Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1. - Broyden.X[1]);
-         Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1.);
-         Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1. - Broyden.X[3]);
       }
-      Broyden.dX = Broyden.X - t0t1s0s1_pre;
+      Broyden.dX = Broyden.X - t0t1_pre;
    }
+   auto [s0, s1] = s0s1(Broyden.X[0], Broyden.X[1]);
+   return {Broyden.X[0], Broyden.X[1], s0, s1};
+   /* -------------------------------------------------------------------------- */
+   // auto t0t1s0s1_init = std::array<double, 4>{1 / 3., 1 / 3., 1 / 3., 1 / 3.};
 
-   return ret;
+   // auto f = [&](const std::array<double, 4> &t0t1s0s1) -> Tddd {
+   //    auto [t0, t1, s0, s1] = t0t1s0s1;
+   //    Tddd XonA = (XYZ[0] - XYZ[2]) * t0 + (XYZ[1] - XYZ[2]) * t1 + XYZ[2];
+   //    Tddd XonB = (ABC[0] - ABC[2]) * s0 + (ABC[1] - ABC[2]) * s1 + ABC[2];
+   //    return XonA - XonB;
+   // };
+   // auto gradF = [&](const std::array<double, 4> &t0t1s0s1) -> std::array<double, 4> {
+   //    auto f_t0 = (XYZ[0] - XYZ[2]);
+   //    auto f_t1 = (XYZ[1] - XYZ[2]);
+   //    auto f_s0 = (ABC[0] - ABC[2]);
+   //    auto f_s1 = (ABC[1] - ABC[2]);
+   //    auto value = f(t0t1s0s1);
+   //    return {Dot(value, f_t0), Dot(value, f_t1), Dot(value, f_s0), Dot(value, f_s1)};
+   // };
+
+   // if (Norm(f(t0t1s0s1_init)) == 0.)
+   //    return t0t1s0s1_init;
+
+   // BroydenMethod<std::array<double, 4>> Broyden(t0t1s0s1_init, t0t1s0s1_init + 1E-10);
+   // double min_distance = 1E+20;
+   // T4d ret;
+   // for (auto i = 0; i < 30; ++i) {
+   //    auto t0t1s0s1_pre = Broyden.X;
+   //    Broyden.updateBFGS(gradF(Broyden.X), gradF(Broyden.X - Broyden.dX), 0.1);
+   //    if (i % 2 == 0) {
+   //       Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1.);
+   //       Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1. - Broyden.X[0]);
+   //       Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1.);
+   //       Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1. - Broyden.X[2]);
+   //    } else {
+   //       Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1.);
+   //       Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1. - Broyden.X[1]);
+   //       Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1.);
+   //       Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1. - Broyden.X[3]);
+   //    }
+   //    Broyden.dX = Broyden.X - t0t1s0s1_pre;
+   // }
+
+   // return Broyden.X;
+
+   /* -------------------------------------------------------------------------- */
+
+   // auto t0t1s0s1_init = std::array<double, 4>{1 / 3., 1 / 3., 1 / 3., 1 / 3.};
+
+   // auto f = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> Tddd {
+   //    auto [t0, t1, s0, s1] = t0t1s0s1;
+   //    Tddd XonA = A[0] * t0 + A[1] * t1 * (1 - t0) + A[2] * (1 - t0 - t1 * (1 - t0));
+   //    Tddd XonB = B[0] * s0 + B[1] * s1 * (1 - s0) + B[2] * (1 - s0 - s1 * (1 - s0));
+   //    return XonA - XonB;
+   // };
+   // auto gradF = [&](const T3Tddd &A, const T3Tddd &B, const std::array<double, 4> &t0t1s0s1) -> std::array<double, 4> {
+   //    auto [t0, t1, s0, s1] = t0t1s0s1;
+   //    auto f_t0 = A[0] - A[1] * t1 + A[2] * (-1 + t1);
+   //    auto f_t1 = A[1] * (1 - t0) + A[2] * (-(1 - t0));
+   //    auto f_s0 = B[0] - B[1] * s1 + B[2] * (-1 + s1);
+   //    auto f_s1 = B[1] * (1 - s0) + B[2] * (-(1 - s0));
+   //    auto value = f(A, B, t0t1s0s1);
+   //    return {Dot(value, f_t0), Dot(value, f_t1), Dot(value, f_s0), Dot(value, f_s1)};
+   // };
+
+   // if (Norm(f(ABC, XYZ, t0t1s0s1_init)) == 0.)
+   //    return t0t1s0s1_init;
+
+   // BroydenMethod<std::array<double, 4>> Broyden(t0t1s0s1_init, t0t1s0s1_init + 1E-10);
+   // double min_distance = 1E+20;
+   // for (auto i = 0; i < 30; ++i) {
+   //    auto t0t1s0s1_pre = Broyden.X;
+   //    Broyden.updateBFGS(gradF(XYZ, ABC, Broyden.X), gradF(XYZ, ABC, Broyden.X - Broyden.dX), 0.1);
+   //    Broyden.X[0] = std::clamp(Broyden.X[0], 0., 1.);
+   //    Broyden.X[1] = std::clamp(Broyden.X[1], 0., 1.);
+   //    Broyden.X[2] = std::clamp(Broyden.X[2], 0., 1.);
+   //    Broyden.X[3] = std::clamp(Broyden.X[3], 0., 1.);
+   //    Broyden.dX = Broyden.X - t0t1s0s1_pre;
+   //    if (i > 3 && Norm(Broyden.X - t0t1s0s1_pre) == 0.)
+   //       break;
+   // }
+
+   // return Broyden.X;
+
+   /* -------------------------------------------------------------------------- */
 };
 
 //\label{Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)}
 T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
-   const int N = 2;
-   Tddd X0, X1;
-   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min, t0_max, t1_min, t1_max, T0_min, T0_max, T1_min, T1_max, distance, w = 1;
-   auto [nearest_t0, nearest_t1, nearest_T0, nearest_T1] = approximateNearest(ABC, XYZ);
+   Tddd X0, X1, X0_near, X1_near;
+   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min = 0, t0_max = 1, t1_min = 0, t1_max = 1, distance, w = 1;
+   double nearest_t0, nearest_t1;
+   double div_init;
    int i, j, I, J;
-   for (int step = 0; step < 8; ++step) {
-      w /= (step == 0 ? 5 : N);
-      t0_min = std::clamp(nearest_t0 - w, 0., 1.);
-      t0_max = std::clamp(nearest_t0 + w, 0., 1.);
-      t0_min = std::clamp(nearest_t1 - w, 0., 1.);
-      t0_max = std::clamp(nearest_t1 + w, 0., 1.);
-
-      T0_min = std::clamp(nearest_T0 - w, 0., 1.);
-      T0_max = std::clamp(nearest_T0 + w, 0., 1.);
-      T1_min = std::clamp(nearest_T1 - w, 0., 1.);
-      T1_max = std::clamp(nearest_T1 + w, 0., 1.);
-
+   nearest_t0 = 1. / 3.;
+   nearest_t1 = 1. / 3.;
+   const double N = 3.;
+   /* -------------------------------------------------------------------------- */
+   for (int step = 0; step < 30; ++step) {
       for (i = 0; i <= N; ++i) {
          t0 = i * (t0_max - t0_min) / N + t0_min;
          for (j = 0; j <= N; ++j) {
-            t1 = std::clamp(j * (t0_max - t0_min) / N + t0_min, 0., 1. - t0);
-            X0 = XYZ[0] * t0 + XYZ[1] * t1 + XYZ[2] * (1. - t0 - t1);
-            for (I = 0; I <= N; ++I) {
-               T0 = I * (T0_max - T0_min) / N + T0_min;
-               for (J = 0; J <= N; ++J) {
-                  T1 = std::clamp(J * (T1_max - T1_min) / N + T1_min, 0., 1. - T0);
-                  X1 = ABC[0] * T0 + ABC[1] * T1 + ABC[2] * (1. - T0 - T1);
-                  distance = Norm(X0 - X1);
-                  if (nearest_distance > distance) {
-                     nearest_distance = distance;
-                     nearest_t0 = t0;
-                     nearest_t1 = t1;
-                     nearest_T0 = T0;
-                     nearest_T1 = T1;
-                  }
-               }
+            t1 = j * (t1_max - t1_min) / N + t1_min;
+            X0 = XYZ[0] * t0 + XYZ[1] * t1 * (1. - t0) + XYZ[2] * (1. - t0 - t1 * (1. - t0));
+            auto [_, __, X1] = Nearest_(X0, ABC);
+            if (nearest_distance > (distance = Norm(X0 - X1))) {
+               nearest_distance = distance;
+               nearest_t0 = t0;
+               nearest_t1 = t1;
+               X0_near = X0;
+               X1_near = X1;
             }
          }
       }
+      w *= 0.7;
+      t0_min = std::clamp(nearest_t0 - w, 0., 1.);
+      t0_max = std::clamp(nearest_t0 + w, 0., 1.);
+      t1_min = std::clamp(nearest_t1 - w, 0., 1.);
+      t1_max = std::clamp(nearest_t1 + w, 0., 1.);
    }
+   return {X0_near, X1_near};
+   /* -------------------------------------------------------------------------- */
+   // Tddd X0, X1;
+   // double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min, t0_max, t1_min, t1_max, T0_min, T0_max, T1_min, T1_max, distance, w = 1;
+   // double nearest_t0, nearest_t1, nearest_T0, nearest_T1;
+   // double div_init;
+   // int i, j, I, J;
+   // auto tmp = approximateNearest(XYZ, ABC);
+   // nearest_t0 = tmp[0];
+   // nearest_t1 = tmp[1];
+   // nearest_T0 = tmp[2];
+   // nearest_T1 = tmp[3];
+   // double N;
+   // /* -------------------------------------------------------------------------- */
+   // for (int step = 0; step < 10; ++step) {
+   //    if (step == 0) {
+   //       N = 5.;
+   //       w = 1.;
+   //    } else {
+   //       N = 2.;
+   //       w *= 0.75;
+   //    }
+   //    t0_min = std::clamp(nearest_t0 - w, 0., 1.);
+   //    t0_max = std::clamp(nearest_t0 + w, 0., 1.);
+   //    t1_min = std::clamp(nearest_t1 - w, 0., 1.);
+   //    t1_max = std::clamp(nearest_t1 + w, 0., 1.);
 
-   return {XYZ[0] * nearest_t0 + XYZ[1] * nearest_t1 + XYZ[2] * (1. - nearest_t0 - nearest_t1),
-           ABC[0] * nearest_T0 + ABC[1] * nearest_T1 + ABC[2] * (1. - nearest_T0 - nearest_T1)};
+   //    T0_min = std::clamp(nearest_T0 - w, 0., 1.);
+   //    T0_max = std::clamp(nearest_T0 + w, 0., 1.);
+   //    T1_min = std::clamp(nearest_T1 - w, 0., 1.);
+   //    T1_max = std::clamp(nearest_T1 + w, 0., 1.);
+
+   //    for (i = 0; i <= N; ++i) {
+   //       t0 = i * (t0_max - t0_min) / N + t0_min;
+   //       for (j = 0; j <= N; ++j) {
+   //          t1 = std::clamp(j * (t1_max - t1_min) / N + t1_min, 0., 1. - t0);
+   //          X0 = XYZ[0] * t0 + XYZ[1] * t1 + XYZ[2] * (1. - t0 - t1);
+   //          for (I = 0; I <= N; ++I) {
+   //             T0 = I * (T0_max - T0_min) / N + T0_min;
+   //             for (J = 0; J <= N; ++J) {
+   //                T1 = std::clamp(J * (T1_max - T1_min) / N + T1_min, 0., 1. - T0);
+   //                X1 = ABC[0] * T0 + ABC[1] * T1 + ABC[2] * (1. - T0 - T1);
+   //                if (nearest_distance > (distance = Norm(X0 - X1))) {
+   //                   nearest_distance = distance;
+   //                   nearest_t0 = t0;
+   //                   nearest_t1 = t1;
+   //                   nearest_T0 = T0;
+   //                   nearest_T1 = T1;
+   //                }
+   //             }
+   //          }
+   //       }
+   //    }
+   // }
+   // return {XYZ[0] * nearest_t0 + XYZ[1] * nearest_t1 + XYZ[2] * (1. - nearest_t0 - nearest_t1),
+   //         ABC[0] * nearest_T0 + ABC[1] * nearest_T1 + ABC[2] * (1. - nearest_T0 - nearest_T1)};
+   /* -------------------------------------------------------------------------- */
+   // for (int step = 0; step < 10; ++step) {
+   //    if (step == 0) {
+   //       N = 5;
+   //       w *= 0.75;
+   //    } else {
+   //       N = 2;
+   //       w *= 0.75;
+   //    }
+   //    t0_min = std::clamp(nearest_t0 - w, 0., 1.);
+   //    t0_max = std::clamp(nearest_t0 + w, 0., 1.);
+   //    t1_min = std::clamp(nearest_t1 - w, 0., 1.);
+   //    t1_max = std::clamp(nearest_t1 + w, 0., 1.);
+
+   //    T0_min = std::clamp(nearest_T0 - w, 0., 1.);
+   //    T0_max = std::clamp(nearest_T0 + w, 0., 1.);
+   //    T1_min = std::clamp(nearest_T1 - w, 0., 1.);
+   //    T1_max = std::clamp(nearest_T1 + w, 0., 1.);
+
+   //    for (i = 0; i <= N; ++i) {
+   //       t0 = i * (t0_max - t0_min) / N + t0_min;
+   //       for (j = 0; j <= N; ++j) {
+   //          t1 = j * (t1_max - t1_min) / N + t1_min;
+   //          X0 = XYZ[0] * t0 + XYZ[1] * t1 * (1 - t0) + XYZ[2] * (1. - t0 - t1 * (1 - t0));
+   //          for (I = 0; I <= N; ++I) {
+   //             T0 = I * (T0_max - T0_min) / N + T0_min;
+   //             for (J = 0; J <= N; ++J) {
+   //                T1 = J * (T1_max - T1_min) / N + T1_min;
+   //                X1 = ABC[0] * T0 + ABC[1] * T1 * (1 - T0) + ABC[2] * (1. - T0 - T1 * (1 - T0));
+   //                if (nearest_distance > (distance = Norm(X0 - X1))) {
+   //                   nearest_distance = distance;
+   //                   nearest_t0 = t0;
+   //                   nearest_t1 = t1;
+   //                   nearest_T0 = T0;
+   //                   nearest_T1 = T1;
+   //                }
+   //             }
+   //          }
+   //       }
+   //    }
+   // }
+   // return {XYZ[0] * nearest_t0 + XYZ[1] * nearest_t1 * (1 - nearest_t0) + XYZ[2] * (1. - nearest_t0 - nearest_t1 * (1 - nearest_t0)),
+   //         ABC[0] * nearest_T0 + ABC[1] * nearest_T1 * (1 - nearest_T0) + ABC[2] * (1. - nearest_T0 - nearest_T1 * (1 - nearest_T0))};
 };
 
 // // ２つの三角形の最短ベクトルを求める

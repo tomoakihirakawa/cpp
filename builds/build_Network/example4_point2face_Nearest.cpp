@@ -19,15 +19,12 @@ make
 */
 
 std::string outdir = "./example4/";
-PVDWriter pvd(outdir + "line_face_intersection.pvd");
-
-// use filesystem
 
 int main() {
 
-   PVDWriter pvd(pvdfile);
    std::filesystem::path outdir = "example4";
    std::filesystem::path pvdfile = outdir / "point2face.pvd";
+   PVDWriter pvd(pvdfile);
    auto obj = new Network("./input/sphere.obj");
    //! 平均を原点に移動
    obj->translate(-Mean(ToX(obj->getPoints())));
