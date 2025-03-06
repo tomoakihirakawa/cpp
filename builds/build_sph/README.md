@@ -396,7 +396,7 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 - [SPH:capture_condition_1st](./SPH0_setWall_Freesurface.hpp#L455)/[SPH:capture_condition_2nd](not found)
 - [SPH:map_fluid_pressure_to_wall](not found)
 - [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L850)
-- [SPH:reflection](./SPH_Functions.hpp#L460)
+- [SPH:reflection](./SPH_Functions.hpp#L461)
 
 **水面粒子**
 
@@ -405,14 +405,14 @@ $`\dfrac{D{\bf u}^n}{Dt} = - \frac{1}{\rho} \nabla p^{n+1} + \nu \nabla^2 {\bf u
 
 **その他**
 
-- [SPH:update_density](./SPH_Functions.hpp#L532)
+- [SPH:update_density](./SPH_Functions.hpp#L533)
 - [SPH:pressure_stabilization](not found)
 - [SPH:RK_order](./from os.py#L145)
 
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L548](./SPH_Functions.hpp#L548)
+[./SPH_Functions.hpp#L549](./SPH_Functions.hpp#L549)
 
 ## ⛵ 出力
 

@@ -442,8 +442,9 @@ void updateParticles(const auto &net,
                      const double &particle_spacing) {
    try {
       DebugPrint("粒子の時間発展", Green);
+      auto points = net->getPoints();
 #pragma omp parallel
-      for (const auto &p : net->getPoints())
+      for (const auto &p : points)
 #pragma omp single nowait
       {
          auto U = p->U_SPH;
@@ -501,7 +502,7 @@ void updateParticles(const auto &net,
       }
 
 #pragma omp parallel
-      for (const auto &p : net->getPoints())
+      for (const auto &p : points)
 #pragma omp single nowait
       {
          double SML = p->SML();
@@ -515,7 +516,7 @@ void updateParticles(const auto &net,
       // % div_U の計算
       setCorrectionMatrix(std::unordered_set<Network *>{net});
 #pragma omp parallel
-      for (const auto &A : net->getPoints())
+      for (const auto &A : points)
 #pragma omp single nowait
       {
          A->div_U = 0.;
@@ -531,7 +532,7 @@ void updateParticles(const auto &net,
       //% 密度の更新
       // \label{SPH:update_density}
       const double a = 0.5;
-      for (const auto &A : net->getPoints()) {
+      for (const auto &A : points) {
          //! 要らなそうだ
          A->RK_rho.push(A->DrhoDt_SPH);  // 密度
          A->setDensity(0.98 * (a * A->RK_rho.get_x() + (1 - a) * _WATER_DENSITY_) + 0.02 * A->intp_density);

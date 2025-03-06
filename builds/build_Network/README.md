@@ -431,7 +431,8 @@ VTPは，表面のみの表示や表面の特性に焦点を当てる場合に�
 
 以下は，どちらも四面体を表現している．
 
-VTUフォーマット：
+<details>
+<summary>VTUフォーマット</summary>
 
 ```xml
 <?xml version="1.0"?>
@@ -461,7 +462,11 @@ VTUフォーマット：
 
 ```
 
-VTPフォーマット：
+</details>
+
+
+<details>
+<summary>VTPフォーマット</summary>
 
 ```xml
 <?xml version="1.0"?>
@@ -499,6 +504,8 @@ NumberOfVerts="0">
 </PolyData>
 </VTKFile>
 ```
+
+</details>
 
 [./example2_generate_tetra_constrained2.cpp#L354](./example2_generate_tetra_constrained2.cpp#L354)
 

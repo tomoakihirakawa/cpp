@@ -2708,20 +2708,38 @@ std::array<double, N> Eigenvalues(const std::array<std::array<double, N>, N> &A,
 }
 
 template <std::size_t N>
-std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-9, const std::size_t maxIter = 1000) {
+std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensystem(const std::array<std::array<double, N>, N> &A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
    std::array<std::array<double, N>, N> Ak = A, I = A, Qk = A;
    IdentityMatrix(Qk);
    IdentityMatrix(I);
    std::array<double, N> eigenvalues;
    QR qr(Ak);
+   // for (std::size_t i = 0; i < maxIter; ++i) {
+   //    qr.Initialize(Ak);
+   //    Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
+   //    eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
+   //    Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
+   //    if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
+   //       return {eigenvalues, Qk};
+   //    }
+   // }
+   // return {eigenvalues, Qk};  // Return both eigenvalues and eigenvectors
+
    for (std::size_t i = 0; i < maxIter; ++i) {
       qr.Initialize(Ak);
       Ak = Dot(qr.R, qr.Q);        // A(k+1) = R * Q
       eigenvalues = Diagonal(Ak);  // Extract diagonal as eigenvalues
-      Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
-      if (std::ranges::all_of(eigenvalues, [&](const auto lambda) { return std::abs(Det(A - lambda * I)) < tol; })) {
-         return {eigenvalues, Qk};
-      }
+      // Qk = Dot(Qk, qr.Q);          // Update the transformation matrix
+      Qk = Dot(Qk, qr.Q);  // Update the transformation matrix
+      if (i > 5)
+         if (std::ranges::all_of(eigenvalues, [&](const auto lambda) {
+                double error = std::abs(Det(A - lambda * I));
+                //  std::cout << "error: " << error << std::endl;
+                return error < tol;
+             })) {
+            return {eigenvalues, Qk};
+            //! 注意: ここでのQkの**列ベクトル**が，固有ベクトルである．
+         }
    }
    return {eigenvalues, Qk};  // Return both eigenvalues and eigenvectors
 }

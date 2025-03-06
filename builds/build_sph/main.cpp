@@ -680,7 +680,7 @@ int main(int argc, char **argv) {
       auto bound = CoordinateBounds(WaveTank->scaledBounds(1.5));  // + CoordinateBounds(Fluid->bounds);
       auto points = Fluid->getPoints();
       for (const auto &p : points) {
-         if (!bound.isInside(p->X)) {
+         if (!bound.InsideQ(p->X)) {
             std::cout << Blue << "delete" << std::endl;
             showParticleInfo(p);
             // std::cin.ignore();

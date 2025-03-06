@@ -365,7 +365,8 @@ int main(int arg, char **argv) {
 
 以下は，どちらも四面体を表現している．
 
-VTUフォーマット：
+<details>
+<summary>VTUフォーマット</summary>
 
 ```xml
 <?xml version="1.0"?>
@@ -395,7 +396,11 @@ VTUフォーマット：
 
 ```
 
-VTPフォーマット：
+</details>
+
+
+<details>
+<summary>VTPフォーマット</summary>
 
 ```xml
 <?xml version="1.0"?>
@@ -433,4 +438,7 @@ VTPフォーマット：
     </PolyData>
 </VTKFile>
 ```
+
+</details>
+
 */
