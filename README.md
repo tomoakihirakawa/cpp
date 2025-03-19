@@ -34,8 +34,6 @@
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ N.S.方程式を解く前の準備](./builds/build_sph/README.md#⛵-N.S.方程式を解く前の準備)
     - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
-    - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
-    - [⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`）](./builds/build_sph/README.md#⛵-粘性項$`\nabla^2-{\bf-u}-_i`$の計算（`calcLaplacianU`）)
     - [⛵ ポアソン方程式 $`\nabla ^{n+1} \cdot \left(\frac{1}{\rho ^n} \nabla ^{n} p \right)=b`$](./builds/build_sph/README.md#⛵-ポアソン方程式-$`\nabla-^{n+1}-\cdot-\left(\frac{1}{\rho-^n}-\nabla-^{n}-p-\right)=b`$)
     - [⛵ ポアソン方程式の解法](./builds/build_sph/README.md#⛵-ポアソン方程式の解法)
     - [⛵ 圧力勾配$`\nabla p^{n+1}`$の計算](./builds/build_sph/README.md#⛵-圧力勾配$`\nabla-p^{n+1}`$の計算)
@@ -78,6 +76,11 @@
     - [⛵ ツリー構造を使った多重極展開の移動](./builds/build_spherical_harmonic/README.md#⛵-ツリー構造を使った多重極展開の移動)
     - [⛵ ベッセル関数](./builds/build_spherical_harmonic/README.md#⛵-ベッセル関数)
     - [⛵ 境界要素法への応用](./builds/build_spherical_harmonic/README.md#⛵-境界要素法への応用)
+## [build_tensors](./builds/build_tensors/README.md)
+
+- [Contents](./builds/build_tensors/README.md#Contents)
+    - [⛵ テンソル積 `TensorProduct`](./builds/build_tensors/README.md#⛵-テンソル積-`TensorProduct`)
+    - [⛵ テンソルの縮約 `TensorContract`](./builds/build_tensors/README.md#⛵-テンソルの縮約-`TensorContract`)
 ## [build_Network](./builds/build_Network/README.md)
 
 - [Contents](./builds/build_Network/README.md#Contents)

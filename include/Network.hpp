@@ -567,8 +567,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    bool isSurface = false, isSurface_next = false;
    bool isSurface_tmp = false, isSurface_next_tmp = false;
    bool isSurface_last_tmp = true;
-   const int isSurface_count_init = 3;
-   int isSurface_count = isSurface_count_init;
+   int isSurface_count = 0;
    bool isNearSurface = false;
    bool isNeumannSurface = false;
    bool isInsideOfBody = false;
@@ -580,27 +579,13 @@ class networkPoint : public CoordinateBounds, public CRS {
    bool isFreeFalling = false;
    // double radius_SPH;
    double particle_spacing;
+   double min_particle_spacing = 0;
+   double min_particle_spacing_next = 0;
 
-   double SML() const {
-      return C_SML * particle_spacing;
-   };
-   double SML_next() const {
-      return C_SML_next * particle_spacing;
-   };
-
-   double SML_lap() const {
-      return C_SML * particle_spacing;
-   };
-   double SML_lap_next() const {
-      return C_SML_next * particle_spacing;
-   };
-
-   double SML_grad() const {
-      return 1.2 * C_SML * particle_spacing;
-   };
-   double SML_grad_next() const {
-      return 1.2 * C_SML_next * particle_spacing;
-   };
+   double SML() const { return C_SML * this->particle_spacing; };
+   double SML_next() const { return C_SML_next * this->particle_spacing; };
+   double SML_grad() const { return 1.2 * C_SML * this->particle_spacing; };
+   double SML_grad_next() const { return 1.2 * C_SML_next * this->particle_spacing; };
 
    networkPoint *nearest_wall_p_next = nullptr;
    networkPoint *nearest_wall_p = nullptr;
@@ -672,18 +657,19 @@ class networkPoint : public CoordinateBounds, public CRS {
       this->density = this->mass / this->volume;
       this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
    };
-   double div_U, div_tmpU, div_tmpU_, PoissonRHS, div_U_next, DrhoDt_SPH_next;
-   Tddd grad_div_U, grad_div_U_;
-   Tddd gradP_SPH, gradP_SPH_;
+   double div_U = 0, div_tmpU = 0, div_tmpU_ = 0, PoissonRHS = 0, div_U_next = 0, DrhoDt_SPH_next = 0;
+   Tddd grad_div_U = {0., 0., 0.}, grad_div_U_ = {0., 0., 0.};
+   Tddd gradP_SPH = {0., 0., 0.}, gradP_SPH_ = {0., 0., 0.};
+   Tddd gradP_W_SPH = {0., 0., 0.}, Integral_gradP_W_SPH = {0., 0., 0.};
    std::unordered_map<networkPoint *, Tddd> grad_coeff;
    std::unordered_map<networkPoint *, Tddd> grad_coeff_next;
    //////////////////////////
    netFp face_org;
    double a_viscosity;
    Tddd viscosity_term;  // nu*laplacian(U)
-   Tddd U_SPH, U_SPH_, marker_X, marker_U;
+   Tddd U_SPH = {0., 0., 0.}, U_SPH_ = {0., 0., 0.}, marker_X = {0., 0., 0.}, marker_U = {0., 0., 0.};
    T3Tddd nabla_otimes_U;
-   Tddd U_XSPH, U_XSPH_next, U_next;
+   Tddd U_XSPH = {0., 0., 0.}, U_XSPH_next = {0., 0., 0.}, U_next = {0., 0., 0.};
    InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
    InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
    std::vector<double> vec_time_SPH;
@@ -698,7 +684,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd X_next;
    double volume_next, mass_next;
    Tddd COM_SPH, vec2COM, vec2COM_next;
-   double intp_density, intp_density_next, ddr_intp_density;
+   double intp_density = _WATER_DENSITY_, intp_density_next = _WATER_DENSITY_, ddr_intp_density = _WATER_DENSITY_;
    double totalMass_SPH;
    Tddd interp_normal_next, interp_normal_original_next;
    std::vector<Tddd> vector_to_polygon;
@@ -706,22 +692,22 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd cg_neighboring_particles_SPH;
    Tddd b_vector;
    //
-   bool is_grad_corr_M_singular = false;
-   bool is_grad_corr_M_next_singular = false;
    std::array<std::array<double, 3>, 3> grad_corr_M = _I3_, grad_corr_M_next = _I3_;
    std::array<std::array<double, 3>, 3> laplacian_corr_M = _I3_, laplacian_corr_M_next = _I3_;
    std::array<std::array<double, 3>, 3> inv_grad_corr_M = _I3_, inv_grad_corr_M_next = _I3_;
-   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = _I3_, Eigenvectors_of_M1 = _I3_, Eigenvectors_of_M_next = _I3_, Eigenvectors_of_M1_next = _I3_;
+   std::array<std::array<double, 3>, 3> Eigenvectors_of_M = _I3_, Eigenvectors_of_M1 = _I3_, Eigenvectors_of_M_next = _I3_;
    std::array<double, 3> Eigenvalues_of_M, Eigenvalues_of_M1, Eigenvalues_of_M_next, Eigenvalues_of_M1_next;
    //
    double var_Eigenvalues_of_M = 0.;
    double min_Eigenvalues_of_M = 0.;
+   double min_Eigenvalues_of_M_next = 0.;
+   Tddd min_Eigenvector_of_M = {0., 0., 0.};
+   Tddd min_Eigenvector_of_M_next = {0., 0., 0.};
    double max_Eigenvalues_of_M = 0.;
    double var_Eigenvalues_of_M1 = 0.;
    double min_Eigenvalues_of_M1 = 0.;
    double max_Eigenvalues_of_M1 = 0.;
    double var_Eigenvalues_of_M_next = 0.;
-   double var_Eigenvalues_of_M1_next = 0.;
    // ダミー粒子としての情報
 
    std::array<std::array<std::array<std::array<double, 3>, 3>, 3>, 3> v_reeDW, v_reeDW_next;
@@ -2572,17 +2558,15 @@ class networkTetra : public Tetrahedron, public ElasticBodyDynamics {
                                                          {1., p1->X[0], p1->X[1], p1->X[2]},
                                                          {1., p2->X[0], p2->X[1], p2->X[2]},
                                                          {1., p3->X[0], p3->X[1], p3->X[2]}}};
-      lapack_lu lu(positions);
-      auto inv = lu.inverse();
-
-      std::array<std::array<double, 4>, 4> inv_array;
-      for (int i = 0; i < 4; i++)
-         for (int j = 0; j < 4; j++)
-            inv_array[i][j] = inv[i][j];
-
-      auto ans = Dot(inv_array, std::array<std::array<double, 3>, 4>{{func(p0), func(p1), func(p2), func(p3)}});
+      auto ans = Dot(Inverse(positions), std::array<std::array<double, 3>, 4>{{func(p0), func(p1), func(p2), func(p3)}});
       return {ans[1], ans[2], ans[3]};
    };
+
+   // std::array<std::array<double, 3>, 3> grad(const std::function<std::array<double, 3>(networkPoint *)> &func) {
+   //    return {grad([&func](networkPoint *p) -> double { return func(p)[0]; }),
+   //            grad([&func](networkPoint *p) -> double { return func(p)[1]; }),
+   //            grad([&func](networkPoint *p) -> double { return func(p)[2]; })};
+   // };
 
    double div(const std::function<std::array<double, 3>(networkPoint *)> &func) {
       //@ func returns {f0,f1,f2}
@@ -2638,43 +2622,50 @@ netF *genFace(Network *const net, netL *const l0, netL *const l1, netL *const l2
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
    };
 };
+
 std::tuple<bool, networkTetra *> genTetra(Network *const net,
                                           netP *const p0,
                                           netP *const p1,
                                           netP *p2,
                                           netP *p3) {
-   // 0          3          0
-   // *--- 2 ----*---- 2 ---*
-   //  \       /   \       /
-   //   1  2  4     5  3  0
-   //    \   /   0   \   /
-   //     \ /         \ /
-   //     2*---- 3 ----*1
-   //       \         /
-   //        1   1   0
-   //         \     /
-   //          \   /
-   //            * 0
-
-   /*
-    *このような四面体は作ってはならない
-    *      *   *
-    *     / \ /  \
-    *    /  /\    \
-    *   / /   \ ---*
-    *  *-------*
-    */
-   // if (Dot(Cross(ToX(p2) - ToX(p1), ToX(p3) - ToX(p1)), (ToX(p1) + ToX(p2) + ToX(p3)) / 3. - ToX(p0)) < 0)
-   //    std::swap(p2, p3);
-
    if (!p0 || !p1 || !p2 || !p3)
       return {false, nullptr};
 
    if (!DuplicateFreeQ(T_4P{p0, p1, p2, p3}))
       return {false, nullptr};
 
-   if (Dot(TriangleNormal(p1->X, p2->X, p3->X), Mean(p1->X, p2->X, p3->X) - p0->X) < 0)
+   /*
+   p1, p2, p3 are always directed in the outward normal direction
+   //      p0
+   //     /|\
+   //    / | \
+   //   /  |  \
+   //  p1--|---p2
+   //   \  |  /
+   //    \ | /
+   //     \|/
+   //      p3
+   */
+
+   auto should_be_outward_normal = TriangleNormal(p1->X, p2->X, p3->X);
+   auto inward_direction = p0->X - Mean(p1->X, p2->X, p3->X);
+   if (Dot(should_be_outward_normal, inward_direction) > 0 /* contradiction : outward normal and inward direction are not opposite */) {
       std::swap(p2, p3);
+      /* now p0,p1,p2 are directed in the outward normal direction */
+   }
+
+   /*
+   p1, p2, p3 are always directed in the outward normal direction
+   //       p0
+   //     / | \
+   //   l0  |  l1
+   //   /   l2   \
+   //  p1---|-l3-p2
+   //   \   |    /
+   //   l5  |  l4
+   //     \ | /
+   //      p3
+   */
 
    auto [l3, l4, l5] = link(p1, p2, p3, net);
    auto f0 = genFace(net, l3, l4, l5);
@@ -2692,7 +2683,6 @@ std::tuple<bool, networkTetra *> genTetra(Network *const net,
          return {false, t1};
       else {
          auto tet = new networkTetra(net, T_4P{p0, p1, p2, p3}, T_6L{l0, l1, l2, l3, l4, l5}, T_4F{f0, f1, f2, f3});
-         // check if p, l, and f are correctly stored the tetra in their Tetras vector
          for (const auto &p : {p0, p1, p2, p3})
             if (!MemberQ(p->Tetras, tet))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
@@ -2702,9 +2692,6 @@ std::tuple<bool, networkTetra *> genTetra(Network *const net,
          for (const auto &f : {f0, f1, f2, f3})
             if (!MemberQ(f->Tetras, tet))
                throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
-         // std::cout << "Total(tet->solidangles/M_PI) = " << Total(tet->solidangles) / (4. * M_PI) << std::endl;
-         // std::cout << "Mean(tet->solidangles/M_PI) = " << Mean(tet->solidangles) / (4. * M_PI) << std::endl;
-         // std::cout << "tet->solidangles = " << tet->solidangles / (4. * M_PI) << std::endl;
          return {true, tet};
       }
    } else

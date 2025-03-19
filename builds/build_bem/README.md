@@ -197,7 +197,7 @@
 * `getContactFaces()`で`ContactFaces`呼び出せる．
 * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
 * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-[../../include/Network.hpp#L938](../../include/Network.hpp#L938)
+[../../include/Network.hpp#L924](../../include/Network.hpp#L924)
 
 
 これらは，`contactNormalVelocity()`や`accelNeumann()`で利用される．

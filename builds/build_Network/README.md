@@ -66,7 +66,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Network::constructor](../../include/Network.hpp#L3617)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Network::constructor](../../include/Network.hpp#L3604)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp
@@ -185,19 +185,6 @@ make
 
 ## ⛵ 四面体の操作 
 
-To check if the tetrahedra are correctly generated and can be accessed, we will manipulate the tetrahedra in this example.
-The example models a simple simulation of a free falling elastic object eventually colliding with a rigid cube.
-we can see collision detection and simple tetrahedra element usage.
-
-The code first computes
-
-1. Initialize deformation gradient, velocity
-2. Green-Lagrange strain $`\boldsymbol{E}`$
-3. The second Piola-Kirchhoff stress $`\boldsymbol{S}`$
-
-S = C : E
-
-where $`C`$ is the right Cauchy-Green deformation tensor.
 
 ```shell
 sh clean

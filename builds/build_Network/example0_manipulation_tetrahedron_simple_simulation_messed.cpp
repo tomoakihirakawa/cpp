@@ -3,24 +3,12 @@
 ## 四面体の操作
 
 To check if the tetrahedra are correctly generated and can be accessed, we will manipulate the tetrahedra in this example.
-The example models a simple simulation of a free falling elastic object eventually colliding with a rigid cube.
-we can see collision detection and simple tetrahedra element usage.
-
-The code first computes
-
-1. Initialize deformation gradient, velocity
-2. Green-Lagrange strain $`\boldsymbol{E}`$
-3. The second Piola-Kirchhoff stress $`\boldsymbol{S}`$
-
-S = C : E
-
-where $`C`$ is the right Cauchy-Green deformation tensor.
 
 ```shell
 sh clean
-cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron_simple_simulation.cpp
+cmake -DCMAKE_BUILD_TYPE=Release ../ -DSOURCE_FILE=example0_manipulation_tetrahedron_simple_simulation_messed.cpp
 make
-./example0_manipulation_tetrahedron_simple_simulation
+./example0_manipulation_tetrahedron_simple_simulation_messed
 ```
 
 */
@@ -38,6 +26,8 @@ int main(const int argc, const char** argv) {
 
    std::string name0 = argc > 1 ? argv[1] : "./input/coil.obj";
    std::string name1 = argc > 2 ? argv[2] : "./input/box.obj";
+   double k = argc > 3 ? std::stod(argv[3]) : 1.;
+   double dt = argc > 4 ? std::stod(argv[4]) : 0.001;
 
    /* -------------------------------------------------------------------- */
    /*                           四面体の生成と出力                            */
@@ -46,10 +36,12 @@ int main(const int argc, const char** argv) {
    auto coil = new Network(name0);
    auto box = new Network(name1);
 
-   if (argc > 3) {
-      coil->tetrahedralize(argv[3]);
+   if (argc > 5) {
+      // argv[3] to sting
+      auto command = std::string(argv[5]);
+      coil->tetrahedralize(command);
       std::cout << "tetrahedralize coil" << std::endl;
-      box->tetrahedralize(argv[3]);
+      box->tetrahedralize(command);
       std::cout << "tetrahedralize box" << std::endl;
    } else {
       coil->tetrahedralize();
@@ -84,15 +76,12 @@ int main(const int argc, const char** argv) {
    // std::vector<std::tuple<std::string, DataMap>> data = {{"fliped", data1}, {"xyz", data2}, {"tetra_size", data3}};
 
    // time stel
-   const double dt = 0.001;
    double simulation_time = 0;
 
    PVDWriter pvd("./output/simu_coil.pvd");
    PVDWriter pvd_collision("./output/collision.pvd");
 
-   box->makeBucketPoints();
-   box->makeBucketFaces();
-   box->makeBucketTetras();
+   box->makeBuckets();
    /* -------------------------------------------------------------------------- */
    auto data1 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
    auto data2 = std::unordered_map<networkPoint*, std::variant<double, Tddd>>();
@@ -105,41 +94,36 @@ int main(const int argc, const char** argv) {
    /* -------------------------------------------------------------------------- */
 
    for (auto step = 0; step < 3000; ++step) {
+
       for (const auto& p : coil->getPoints()) {
          p->RK_X.initialize(dt, simulation_time, p->X, 4);
          p->RK_defGrad.initialize(dt, simulation_time, p->defGrad, 4);
          p->RK_generalized_velocity.initialize(dt, simulation_time, p->velocity, 4);
       }
-      // coil->makeBucketPoints();
-      // coil->makeBucketFaces();
-      // coil->makeBucketTetras();
 
       std::cout << "step : " << step << std::endl;
       do {
 
          /* ------------------------------ velocityGrad ------------------------------ */
-#pragma omp parallel
-         for (auto p : coil->getPoints())
-#pragma omp single nowait
-         {
+         for (auto p : coil->getPoints()) {
             p->velocityGrad.fill({0., 0., 0.});
-            for (auto tet : p->Tetras)
-               p->velocityGrad += tet->grad([](const networkPoint* p) { return p->velocityTranslational(); });
+            double volume = 0.;
+            for (auto tet : p->Tetras) {
+               p->velocityGrad += tet->volume * tet->grad([](const networkPoint* p) { return p->velocityTranslational(); });
+               volume += tet->volume;
+            }
+            p->velocityGrad /= volume;
          }
-
          /* ------------------------------ CauchyStress ------------------------------ */
 
-#pragma omp parallel
-         for (auto p : coil->getPoints())
-#pragma omp single nowait
-         {
+         for (auto p : coil->getPoints()) {
 
             p->RightCauchyGreen = Dot(Transpose(p->defGrad), p->defGrad);
             std::array<std::array<double, 3>, 3> I = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}};
             p->GreenLagrangeStrain = 0.5 * (p->RightCauchyGreen - I);
             // ２階Piola-Kirchhoff応力
-            double lambda = 10;
-            double mu = 10;
+            double lambda = 100;
+            double mu = 0;
             // S = lambda * tr(E) * I + 2 * mu * E
             std::array<std::array<std::array<std::array<double, 3>, 3>, 3>, 3> C;
             p->SecondPiolaKirchhoffStress.fill({0., 0., 0.});
@@ -165,13 +149,14 @@ int main(const int argc, const char** argv) {
 
          /* ------------------------------ stressDiv ------------------------------ */
 
-#pragma omp parallel
-         for (auto p : coil->getPoints())
-#pragma omp single nowait
-         {
+         for (auto p : coil->getPoints()) {
             p->stressDiv.fill(0.);
-            for (auto tet : p->Tetras)
-               p->stressDiv += tet->div([](networkPoint* p) -> std::array<std::array<double, 3>, 3> { return p->CauchyStress; });
+            double volume = 0.;
+            for (auto tet : p->Tetras) {
+               p->stressDiv += tet->volume * tet->div([](networkPoint* p) -> std::array<std::array<double, 3>, 3> { return p->CauchyStress; });
+               volume += tet->volume;
+            }
+            p->stressDiv /= volume;
          }
 
 #pragma omp parallel
@@ -187,28 +172,37 @@ int main(const int argc, const char** argv) {
             p->RK_X.push(p->velocityTranslational());
             p->RK_defGrad.push(Dot(p->velocityGrad, p->defGrad));
 
-            std::array<double, 6> acceleration = {0., 0., -9.8, 0., 0., 0.};
-            if (p->X[2] < 0.55 && p->velocity[2] < 0)
-               acceleration[2] -= p->velocity[2] / dt * 0.2;
+            p->acceleration = {0., 0., -9.8, 0., 0., 0.};
 
-            acceleration[0] += p->stressDiv[0];
-            acceleration[1] += p->stressDiv[1];
-            acceleration[2] += p->stressDiv[2];
+            // 衝突を模擬
+            // if (p->X[2] < 0.55 && p->velocity[2] < 0) {
+            //    double dist = 0.55 - p->X[2];
+            //    p->acceleration[2] += 10000 * std::pow(dist, 2);
+            // }
+
+            p->acceleration[0] += p->stressDiv[0];
+            p->acceleration[1] += p->stressDiv[1];
+            p->acceleration[2] += p->stressDiv[2];
 
             // damping
-            double total_w = 0;
-            std::array<double, 3> v = {0., 0., 0.};
-            for (auto q : p->getNeighbors()) {
-               auto w = 1. / Norm(q->X - p->X);
-               v += w * q->velocityTranslational();
-               total_w += w;
-            }
-            v /= total_w;
-            v -= p->velocityTranslational();
+            // double total_w = 0;
+            // std::array<double, 3> v = {0., 0., 0.};
+            // for (auto q : p->getNeighbors()) {
+            //    auto w = 1. / Norm(q->X - p->X);
+            //    v += w * q->velocityTranslational();
+            //    total_w += w;
+            // }
+            // v /= total_w;
+            // v -= p->velocityTranslational();
 
-            acceleration[0] += 0.1 * v[0];
-            acceleration[1] += 0.1 * v[1];
-            acceleration[2] += 0.1 * v[2];
+            // p->acceleration[0] += 0.1 * v[0];
+            // p->acceleration[1] += 0.1 * v[1];
+            // p->acceleration[2] += 0.1 * v[2];
+
+            // damping
+            p->acceleration[0] -= p->velocity[0] / dt * 0.5;
+            p->acceleration[1] -= p->velocity[1] / dt * 0.5;
+            p->acceleration[2] -= p->velocity[2] / dt * 0.5;
 
             // auto r = box->siginedDistance(p->X);
             // double k = 1. / std::pow(Norm(r), 2);
@@ -216,7 +210,7 @@ int main(const int argc, const char** argv) {
             // acceleration[0] -= k * r_normalize[0];
             // acceleration[1] -= k * r_normalize[1];
             // acceleration[2] -= k * r_normalize[2];
-            p->RK_generalized_velocity.push(acceleration);
+            p->RK_generalized_velocity.push(p->acceleration);
          }
 
 #pragma omp parallel
@@ -253,6 +247,11 @@ int main(const int argc, const char** argv) {
          auto a = 0.8;
          std::array<std::array<double, 3>, 3> I = {{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}};
          p->defGrad = a * p->RK_defGrad.getX() + (1. - a) * I;
+
+         double restitution = 0.5;
+         if (p->X[2] < 0.55 && p->velocity[2] < 0) {
+            p->velocity[2] *= -restitution;
+         }
       }
 
       /* ---------------------------------------------------------- */

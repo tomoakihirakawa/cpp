@@ -328,7 +328,6 @@ inline void networkPoint::addContactFaces(const std::vector<Network *> &objects,
    /* ------------------------------------------------------ */
 
    // b! 1. これは安全のため，ContactFacesは完全に消し初期化する．接触した面を追加する．
-
    std::vector<std::tuple<networkFace *, Tddd, double>> F_cX;
    for (const auto &object : objects) {
       object->BucketSurfaces.apply(this->X, contact_range, [&](const auto &f) {

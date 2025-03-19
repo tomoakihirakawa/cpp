@@ -487,21 +487,6 @@ double Det(const VV_d &M) {
    return det * pivotSign;
 }
 
-template <std::size_t N>
-std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double, N>, N> &A) {
-   lapack_lu lu(A);
-   std::array<std::array<double, N>, N> inv_array;
-
-   lu.inverse_helper(inv_array);
-   return inv_array;
-
-   // auto inv = lu.inverse();
-   // for (std::size_t i = 0; i < N; ++i)
-   //    for (std::size_t j = 0; j < N; ++j)
-   //       inv_array[i][j] = inv[i][j];
-   // return inv_array;
-}
-
 // for three dimensional array
 // template <>
 // std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
@@ -511,39 +496,34 @@ std::array<std::array<double, N>, N> Inverse(const std::array<std::array<double,
 //             {std::fma(-a[1][1], a[2][0], a[1][0] * a[2][1]) * inv_det, std::fma(a[0][1], a[2][0], -a[0][0] * a[2][1]) * inv_det, std::fma(-a[0][1], a[1][0], a[0][0] * a[1][1]) * inv_det}}};
 // }
 
-template <>
-std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
-   // lapack_lu lu(a);
-   // auto ret = lu.inverse();
-   // return {{{ret[0][0], ret[0][1], ret[0][2]}, {ret[1][0], ret[1][1], ret[1][2]}, {ret[2][0], ret[2][1], ret[2][2]}}};
+// template <>
+// std::array<std::array<double, 3>, 3> Inverse(const std::array<std::array<double, 3>, 3> &a) {
+//    // lapack_lu lu(a);
+//    // auto ret = lu.inverse();
+//    // return {{{ret[0][0], ret[0][1], ret[0][2]}, {ret[1][0], ret[1][1], ret[1][2]}, {ret[2][0], ret[2][1], ret[2][2]}}};
 
-   const double inv_det = 1.0 / std::fma(
-                                    -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-                                    std::fma(
-                                        std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
-                                        std::fma(
-                                            std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-                                            std::fma(
-                                                -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
-                                                std::fma(
-                                                    -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
-                                                    std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
+//    const double inv_det = 1.0 / std::fma(
+//                                     -std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+//                                     std::fma(
+//                                         std::get<1>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
+//                                         std::fma(
+//                                             std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+//                                             std::fma(
+//                                                 -std::get<0>(std::get<0>(a)), std::get<2>(std::get<1>(a)) * std::get<1>(std::get<2>(a)),
+//                                                 std::fma(
+//                                                     -std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a)),
+//                                                     std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a)))))));
 
-   return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-            {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
-            {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-             std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
-             std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
-}
-
-VV_d Inverse(const VV_d &mat) {
-   lapack_lu lu(mat);
-   return lu.inverse();
-};
+//    return {{{std::fma(-std::get<2>(std::get<1>(a)), std::get<1>(std::get<2>(a)), std::get<1>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<2>(std::get<0>(a)), std::get<1>(std::get<2>(a)), -std::get<1>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)), std::get<1>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+//             {std::fma(std::get<2>(std::get<1>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<1>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<2>(std::get<0>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<0>(a)) * std::get<2>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<2>(std::get<0>(a)), std::get<0>(std::get<1>(a)), -std::get<0>(std::get<0>(a)) * std::get<2>(std::get<1>(a))) * inv_det},
+//             {std::fma(-std::get<1>(std::get<1>(a)), std::get<0>(std::get<2>(a)), std::get<0>(std::get<1>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+//              std::fma(std::get<1>(std::get<0>(a)), std::get<0>(std::get<2>(a)), -std::get<0>(std::get<0>(a)) * std::get<1>(std::get<2>(a))) * inv_det,
+//              std::fma(-std::get<1>(std::get<0>(a)), std::get<0>(std::get<1>(a)), std::get<0>(std::get<0>(a)) * std::get<1>(std::get<1>(a))) * inv_det}}};
+// }
 
 // Solve Ax = b using lapack
 // vector case
@@ -719,101 +699,103 @@ struct lapack_svd {
       std::vector<double> vt(n * n);
       S.resize(std::min(m, n));
 
-      // Flatten A into a 1D array
-      for (int i = 0; i < m; ++i) {
-         for (int j = 0; j < n; ++j) {
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < n; ++j)
             a[i + j * m] = A[i][j];
-         }
-      }
 
-      // Workspace query
       double work_query;
       lwork = -1;
 
       dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
 
-      if (info < 0) {
+      if (info < 0)
          throw std::runtime_error("Illegal value in argument during workspace query.");
-      }
 
-      // Allocate workspace
       lwork = static_cast<int>(work_query);
       std::vector<double> work(lwork);
 
-      // Perform SVD
       dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
 
-      if (info < 0) {
+      if (info < 0)
          throw std::runtime_error("Illegal value in argument during SVD computation.");
-      } else if (info > 0) {
+      else if (info > 0)
          throw std::runtime_error("SVD did not converge.");
-      }
 
-      // Reshape U and VT into 2D arrays
       U.resize(m, std::vector<double>(m));
       VT.resize(n, std::vector<double>(n));
 
-      for (int i = 0; i < m; ++i) {
-         for (int j = 0; j < m; ++j) {
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < m; ++j)
             U[i][j] = u[i + j * m];
-         }
-      }
 
-      for (int i = 0; i < n; ++i) {
-         for (int j = 0; j < n; ++j) {
+      for (int i = 0; i < n; ++i)
+         for (int j = 0; j < n; ++j)
             VT[i][j] = vt[i + j * n];
-         }
-      }
    }
 
-   // std::vector<std::vector<double>> inverse() {
-   //    std::vector<std::vector<double>> inv_mat(n, std::vector<double>(m, 0.0));
-   //    for (int i = 0; i < n; ++i) {
-   //       for (int j = 0; j < m; ++j) {
-   //          for (int k = 0; k < S.size(); ++k) {
-   //             inv_mat[i][j] += VT[i][k] * U[j][k] / S[k];
-   //          }
-   //       }
-   //    }
-   //    return inv_mat;
-   // }
+   template <std::size_t M, std::size_t N>
+   explicit lapack_svd(const std::array<std::array<double, N>, M> &arrA) {
 
-   std::vector<std::vector<double>> inverse(double threshold = 1e-9) {
-      std::vector<std::vector<double>> inv_mat(n, std::vector<double>(m, 0.0));
-      for (int i = 0; i < n; ++i) {
-         for (int j = 0; j < m; ++j) {
-            for (int k = 0; k < S.size(); ++k) {
-               if (S[k] > threshold) {  // 特異値が小さすぎる場合は無視
-                  inv_mat[i][j] += VT[i][k] * U[j][k] / S[k];
-               }
-            }
-         }
-      }
-      return inv_mat;
+      m = M;
+      n = N;
+
+      A.resize(M, std::vector<double>(N));
+      for (std::size_t i = 0; i < M; ++i)
+         for (std::size_t j = 0; j < N; ++j)
+            A[i][j] = arrA[i][j];
+
+      int lda = m;
+      int ldu = m;
+      int ldvt = n;
+
+      std::vector<double> a(m * n);
+      std::vector<double> u(m * m);
+      std::vector<double> vt(n * n);
+      S.resize(std::min(m, n));
+
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < n; ++j)
+            a[i + j * m] = A[i][j];
+
+      double work_query;
+      lwork = -1;
+
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, &work_query, &lwork, &info);
+
+      if (info < 0)
+         throw std::runtime_error("Illegal value in argument during workspace query.");
+
+      lwork = static_cast<int>(work_query);
+      std::vector<double> work(lwork);
+
+      dgesvd_("A", "A", &m, &n, a.data(), &lda, S.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, &info);
+
+      if (info < 0)
+         throw std::runtime_error("Illegal value in argument during SVD computation.");
+      else if (info > 0)
+         throw std::runtime_error("SVD did not converge.");
+
+      U.resize(m, std::vector<double>(m));
+      VT.resize(n, std::vector<double>(n));
+
+      for (int i = 0; i < m; ++i)
+         for (int j = 0; j < m; ++j)
+            U[i][j] = u[i + j * m];
+
+      for (int i = 0; i < n; ++i)
+         for (int j = 0; j < n; ++j)
+            VT[i][j] = vt[i + j * n];
    }
-   std::vector<std::vector<double>> inverse_dot(const std::vector<std::vector<double>> &Mat, double threshold = 1e-9) const {
-      if (Mat.size() != n) {
-         throw std::runtime_error("Dimension mismatch: The input matrix Mat must have the same number of rows as A.");
-      }
 
-      std::vector<std::vector<double>> result(n, std::vector<double>(Mat[0].size(), 0.0));
+   /*
 
-      // **(1) 直接 inv(A) * Mat を計算**
-      for (int i = 0; i < n; ++i) {
-         for (int j = 0; j < Mat[0].size(); ++j) {
-            for (int k = 0; k < S.size(); ++k) {
-               // if (S[k] > threshold)
-               {  // 小さすぎる特異値は無視
-                  for (int l = 0; l < m; ++l) {
-                     result[i][j] += (VT[i][k] * U[l][k] * Mat[l][j] / S[k]);
-                  }
-               }
-            }
-         }
-      }
+   A = U \Sigma V^T
+   Aik = Uij * Sj * VTjk
 
-      return result;
-   }
+   A^+ = V \Sigma^+ U^T
+   A^+ik = Vij * Sj^+ * Ujk = V^Tji * Sj^+ * U^Tkj
+
+   */
    /* -------------------------------------------------------------------------- */
 
    explicit lapack_svd(const std::vector<std::vector<double>> &A, std::vector<double> &x, const std::vector<double> &b)
@@ -1043,6 +1025,20 @@ struct lapack_svd {
       }
 
       return x;
+   }
+
+   std::vector<std::vector<double>> inverse(double threshold = 1e-9) {
+      std::vector<std::vector<double>> inv(n, std::vector<double>(m, 0.0));
+      for (int i = 0; i < std::min(m, n); ++i) {
+         if (S[i] > threshold) {
+            for (int j = 0; j < m; ++j) {
+               for (int k = 0; k < n; ++k) {
+                  inv[k][j] += VT[i][k] * U[j][i] / S[i];
+               }
+            }
+         }
+      }
+      return inv;
    }
 };
 
@@ -2693,7 +2689,7 @@ std::pair<V_d, VV_d> Eigensystem(VV_d A, const double tol = 1e-13, const std::si
 
 std::pair<V_d, VV_d> Eigensystem(VV_d A, VV_d B, const double tol = 1e-13, const std::size_t maxIter = 1000) {
    // lapack_svd svd(B);
-   lapack_lu svd(B);
+   lapack_svd svd(B);
    // return Eigensystem(Dot(svd.inverse(), A), tol, maxIter);
    return Eigensystem(Dot(svd.inverse(), A), tol, maxIter);
 }
@@ -2770,3 +2766,86 @@ std::pair<std::array<double, N>, std::array<std::array<double, N>, N>> Eigensyst
 
 //    return {eigenvalues, Q};
 // }
+
+template <std::size_t N>
+std::array<std::array<double, N>, N> Inverse(std::array<std::array<double, N>, N> A) {
+   lapack_svd svd(A);
+   auto inv = svd.inverse();
+   for (auto i = 0; i < N; ++i)
+      for (auto j = 0; j < N; ++j)
+         A[i][j] = inv[i][j];
+   return A;
+}
+
+VV_d Inverse(const VV_d &mat) {
+   lapack_svd svd(mat);
+   return svd.inverse();
+}
+
+template <std::size_t N>
+std::array<std::array<double, N>, N> SymmetricInverse(const std::array<std::array<double, N>, N> &A) {
+   // 固有値分解 (対称行列なので固有ベクトルは直交行列)
+   auto [eigenvalues, Q] = Eigensystem(A);
+
+   // Lambda_inv をゼロで初期化 (対角行列)
+   std::array<std::array<double, N>, N> Lambda_inv = {};
+
+   for (size_t i = 0; i < N; ++i) {
+      Lambda_inv[i].fill(0.);
+      if (std::abs(eigenvalues[i]) > 1e-12)
+         Lambda_inv[i][i] = 1.0 / eigenvalues[i];  // 逆数を設定
+      else
+         Lambda_inv[i][i] = 0.0;  // 特異行列の処理 (擬似逆行列)
+   }
+
+   // A⁻¹ = Q * Lambda⁻¹ * Q^T
+   return Dot(Q, Dot(Lambda_inv, Transpose(Q)));
+}
+
+template <std::size_t N>
+std::tuple<std::array<std::array<double, N>, N>, std::array<double, N>, std::array<std::array<double, N>, N>>
+SymmetricInverse_(const std::array<std::array<double, N>, N> &A,
+                  const double ignore_eigenvalue = 1e-12,
+                  const double tol = 1e-13, const std::size_t maxIter = 1000) {
+   // 固有値分解 (対称行列なので固有ベクトルは直交行列)
+   auto [eigenvalues, Q] = Eigensystem(A, tol, maxIter);
+
+   // Lambda_inv をゼロで初期化 (対角行列)
+   std::array<std::array<double, N>, N> Lambda_inv = {};
+
+   for (size_t i = 0; i < N; ++i) {
+      Lambda_inv[i].fill(0.);
+      if (std::abs(eigenvalues[i]) > ignore_eigenvalue)
+         Lambda_inv[i][i] = 1.0 / eigenvalues[i];  // 逆数を設定
+      else
+         Lambda_inv[i][i] = 0.0;  // 特異行列の処理 (擬似逆行列)
+   }
+
+   // A⁻¹ = Q * Lambda⁻¹ * Q^T
+   return {Dot(Q, Dot(Lambda_inv, Transpose(Q))), eigenvalues, Q};
+}
+
+template <std::size_t N>
+std::tuple<std::array<std::array<double, N>, N>, std::array<double, N>, std::array<std::array<double, N>, N>>
+SymmetricInverseClamped_(const std::array<std::array<double, N>, N> &A,
+                         double clamp_value,
+                         const double tol = 1e-13, const std::size_t maxIter = 1000) {
+   // 固有値分解 (対称行列なので固有ベクトルは直交行列)
+   auto [eigenvalues, Q] = Eigensystem(A, tol, maxIter);
+
+   // Lambda_inv をゼロで初期化 (対角行列)
+   std::array<std::array<double, N>, N> Lambda_inv = {};
+
+   clamp_value = std::abs(clamp_value);
+
+   for (size_t i = 0; i < N; ++i) {
+      Lambda_inv[i].fill(0.);
+      if (std::abs(eigenvalues[i]) < clamp_value)
+         Lambda_inv[i][i] = std::clamp(1. / eigenvalues[i], -clamp_value, clamp_value);  // 特異行列の処理 (擬似逆行列)
+      else
+         Lambda_inv[i][i] = 1.0 / eigenvalues[i];  // 逆数を設定
+   }
+
+   // A⁻¹ = Q * Lambda⁻¹ * Q^T
+   return {Dot(Q, Dot(Lambda_inv, Transpose(Q))), eigenvalues, Q};
+}

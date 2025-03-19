@@ -92,7 +92,7 @@ F _1^{-1} &= F _1^{T}\\
 $`A`$がヘッセンベルグ行列の場合，
 ゼロとする必要がある成分は，$`A _{i+1,i}`$のみである．
 そのため，普通のQR分解の計算量が$`O(n^2)`$であるのに対し，ヘッセンベルグ行列の場合は$`O(n)`$である．
-[../../include/basic_linear_systems.hpp#L1591](../../include/basic_linear_systems.hpp#L1591)
+[../../include/basic_linear_systems.hpp#L1587](../../include/basic_linear_systems.hpp#L1587)
 
 
 ![QR.png](QR.png)

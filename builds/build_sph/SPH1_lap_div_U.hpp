@@ -16,13 +16,13 @@ SELECTED: \ref{SPH:divU}{流速の発散の計算方法}: $`\nabla\cdot{\bf u}_i
 
 #define USE_PRE_CALC_tensorproduct_grad_Uij
 
-auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &target_nets) {
+auto calcLaplacianU(const auto& points, const std::unordered_set<Network*>& target_nets) {
 
-   std::vector<Network *> RigidBodyObject, FluidObject;
-   for (const auto &net : target_nets)
+   std::vector<Network*> RigidBodyObject, FluidObject;
+   for (const auto& net : target_nets)
       if (net->isRigidBody)
          RigidBodyObject.push_back(net);
-   for (const auto &net : target_nets)
+   for (const auto& net : target_nets)
       if (net->isFluid)
          FluidObject.push_back(net);
 
@@ -30,10 +30,10 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       // b! ----------------------------- 基本的な粘性項と重力項の計算 ----------------------------- */
       {
 #pragma omp parallel
-         for (const auto &A : points)
+         for (const auto& A : points)
 #pragma omp single nowait
          {
-            const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
+            const double dt = A->RK_X.getdt();
 
             A->div_U = 0.;
             A->lap_U.fill(0.);
@@ -53,56 +53,52 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
             const auto center = A->X;
 
             if (A->isFluid) {
-               for (const auto &Q : A->points_in_SML) {
+               for (const auto& Q : A->points_in_SML) {
                   A->tensorproduct_grad_Uij += TensorProduct(Q->volume * grad_w_Bspline(A, Q), Q->U_SPH - A->U_SPH);
                   A->tensorproduct_grad_Uij_next += TensorProduct(V_next(Q) * grad_w_Bspline_next(A, Q), U_next(Q) - U_next(A));
                }
-            } else
-               for (const auto &net : target_nets) {
-                  net->BucketPoints.applyVec1D(center, 1.1 * r, [&](const auto &vecQ) {
-                     for (const auto &Q : vecQ)
+            }
+            else
+               for (const auto& net : target_nets) {
+                  net->BucketPoints.applyVec1D(center, 1.1 * r, [&](const auto& vecQ) {
+                     for (const auto& Q : vecQ)
                         if (canInteract(A, Q) && A != Q) {
                            A->tensorproduct_grad_Uij += TensorProduct(Q->volume * grad_w_Bspline(A, Q), Q->U_SPH - A->U_SPH);
                            A->tensorproduct_grad_Uij_next += TensorProduct(V_next(Q) * grad_w_Bspline_next(A, Q), U_next(Q) - U_next(A));
                         }
-                  });
+                     });
                }
 
-            double c_xsph = 0.02;
+            double c_xsph = 0.015;
             // if (A->isFluid) {
             //    // c_xsph = std::clamp(0., 0.03, std::pow(A->var_Eigenvalues_of_M, 2));
             //    c_xsph = std::clamp(0.03, 0.06, 0.1 * A->var_Eigenvalues_of_M);
             // }
             const double csml_factor = 1.;
             double total_w = 0, w, vol_w, total_w_U_next = 0;
-            Tddd Uij = {0., 0., 0.}, DelX, vec_A2B, A_no_oikoshi_velocity;
-            auto add = [&](const std::vector<networkPoint *> &vecB) {
-               for (const auto &B : vecB)
+            Tddd Uij = { 0., 0., 0. }, DelX, vec_A2B, A_no_oikoshi_velocity;
+            auto add = [&](const std::vector<networkPoint*>& vecB) {
+               for (const auto& B : vecB)
                   if (canInteract(A, B) && A != B) {
 
                      vec_A2B = B->X - A->X;
                      A_no_oikoshi_velocity = A->RK_U.getX() - (B->isFluid ? B->RK_U.getX() : std::array<double, 3>{0., 0., 0.});
 
                      Uij = A->U_SPH - B->U_SPH;
-                     if (A->isFluid && B->isFluid && !B->isAuxiliary && A != B && !B->is_grad_corr_M_singular) {
-                        // if (((A->isFluid && B->isFluid) || (A->isFluid && B->isFirstWallLayer)) && !B->isAuxiliary && A != B) {
-                        vol_w = B->volume * w_Bspline(Norm(A->X - B->X), A->SML());
-                        // if (B->isSurface)
-                        //    A->U_XSPH += 2 * c_xsph * (-Uij) * vol_w;  //\label{SPH:U_XSPH}
-                        // else
+                     if (A->isFluid && B->isFluid && !B->isAuxiliary && A != B) {
+                        // vol_w = B->volume * w_Bspline(Norm(A->X - B->X), A->SML());
+                        vol_w = 2 * B->mass / (A->density + B->density) * w_Bspline(Norm(A->X - B->X), A->SML());
                         A->U_XSPH -= c_xsph * Uij * vol_w;  //\label{SPH:U_XSPH}
                         total_w += vol_w;
                      }
 
                      // A->div_U += B->volume * Dot(-Uij, grad_w_Bspline(A, B));       //\label{SPH:divU}
-                     FusedMultiplyIncrement(-B->volume, Dot(Uij, grad_w_Bspline(A, B)), A->div_U);
+                     FusedMultiplyIncrement(-B->volume, Dot(Uij, grad_w_Bspline_for_dot_grad(A, B)), A->div_U);
                      const double Aij = 2. * B->volume * Dot_grad_w_Bspline(A, B);  //\label{SPH:lapP1}
-                     // const double Aij = 2. * B->volume * Dot_grad_w_Bspline(A->X, B->X, A->SML());
 
                      //! 修正
                      DelX = (A->X - B->X);
-                     if (!A->is_grad_corr_M_singular)
-                        FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
+                     FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
 
                      //\label{SPH:lapU}
                      FusedMultiplyIncrement(Aij, Uij, A->lap_U);
@@ -116,20 +112,17 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                      //    A->DUDt_modify_SPH_2 -= tmp;
                      // }
                   }
-            };
+               };
 
             // applyOverPoints(add);
             if (A->isFluid)
                add(A->points_in_SML);
             else
-               for (const auto &net : target_nets) {
-                  net->BucketPoints.applyVec1D(center, 1.1 * r, [&](const auto &vecQ) {
-                     add(vecQ);
-                  });
-               }
+               for (const auto& net : target_nets)
+                  net->BucketPoints.applyVec1D(center, 1.1 * r, [&](const auto& vecQ) {add(vecQ);});
 
             // if (A->isSurface && A->isFluid) {
-            //    // A->DUDt_modify_SPH = 0.0001 * Dot(A->inv_grad_corr_M, A->interp_normal_original) / dt;
+            //    A->DUDt_modify_SPH = 0.0001 * Dot(A->inv_grad_corr_M, A->interp_normal_original) / dt;
             //    A->DUDt_modify_SPH_2 = Chop(A->DUDt_modify_SPH_2, Dot(A->inv_grad_corr_M, A->interp_normal_original));
             // }
 
@@ -137,18 +130,19 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
                A->U_next /= total_w_U_next;
          }
 
-         for (const auto &A : points) {
+         for (const auto& A : points) {
             /* ----------------------- calculate DUDt and b_vector ---------------------- */
             // \label{SPH:lapU_for_wall}
             // \label{SPH:Poisson_b_vector}
             // \label{SPH:how_to_set_fluid_b_vector}
-            const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
+            const double dt = A->RK_X.getdt();
             if (A->getNetwork()->isRigidBody) {
                A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt;
                A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
                A->DUDt_SPH += _GRAVITY3_;
                A->DrhoDt_SPH = -A->rho * A->div_U;
-            } else {
+            }
+            else {
                A->DUDt_SPH = A->mu_SPH / A->rho * A->lap_U + A->U_XSPH / dt + A->DUDt_modify_SPH_2;
                A->b_vector = A->rho * (A->U_SPH / dt + A->DUDt_SPH);
                A->DUDt_SPH += _GRAVITY3_;
@@ -285,27 +279,29 @@ auto calcLaplacianU(const auto &points, const std::unordered_set<Network *> &tar
       /* -------------------------------------------------------------------------- */
 
 #pragma omp parallel
-      for (const auto &A : points)
+      for (const auto& A : points)
 #pragma omp single nowait
       {
-         const double dt = A->RK_X.getTimeAtNextStep() - A->RK_X.getTimeAtCurrentStep();
+         const double dt = A->RK_X.getdt();
          A->div_U_next = 0.;
          const auto U_A = U_next(A);
          if (A->isFluid) {
             // add(A->points_in_SML);
-            for (const auto &B : A->points_in_SML)
+            for (const auto& B : A->points_in_SML)
                FusedMultiplyIncrement(-V_next(B), Dot(U_A - U_next(B), grad_w_Bspline_next(A, B)), A->div_U_next);
-         } else
-            for (const auto &net : target_nets) {
-               net->BucketPoints.apply(X_next(A), A->SML_grad(), [&](const auto &B) {
+         }
+         else
+            for (const auto& net : target_nets) {
+               net->BucketPoints.apply(X_next(A), A->SML_grad(), [&](const auto& B) {
                   if (canInteract(A, B))
                      FusedMultiplyIncrement(-V_next(B), Dot(U_A - U_next(B), grad_w_Bspline_next(A, B)), A->div_U_next);
-               });
+                  });
             }
          A->DrhoDt_SPH_next = -A->rho * A->div_U_next;
       }
 
-   } catch (std::exception &e) {
+   }
+   catch (std::exception& e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in calcLaplacianU");
    };
 };

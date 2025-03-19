@@ -115,8 +115,8 @@ $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} +
 
 // #define USE_NEXT_POSITION true
 
-void setPressure(const std::unordered_set<networkPoint *> &points) {
-   for (const auto &p : points)
+void setPressure(const std::unordered_set<networkPoint*>& points) {
+   for (const auto& p : points)
       p->p_SPH = p->p_SPH_;
 }
 
@@ -124,18 +124,19 @@ void setPressure(const std::unordered_set<networkPoint *> &points) {
 /*                     setPoissonEquation A x = b                             */
 /* -------------------------------------------------------------------------- */
 // \label{SPH:setPoissonEquation}
-void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
-                        const std::unordered_set<Network *> &target_nets,
-                        const double &particle_spacing) {
+void setPoissonEquation(const std::unordered_set<networkPoint*>& pointsIN,
+   const std::unordered_set<Network*>& target_nets,
+   const double& particle_spacing) {
+   std::vector<networkPoint*> points(pointsIN.begin(), pointsIN.end());
    try {
       auto net = (*points.begin())->getNetwork();
-      std::unordered_set<Network *> fluid_nets;
-      for (const auto &n : target_nets)
+      std::unordered_set<Network*> fluid_nets;
+      for (const auto& n : target_nets)
          if (n->isFluid)
             fluid_nets.emplace(n);
 
 #pragma omp parallel
-      for (const auto &ROW : points)
+      for (const auto& ROW : points)
 #pragma omp single nowait
       {
 
@@ -173,18 +174,18 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
          /* -------------------------------------------------------------------------- */
 
          const double r = pO->SML_grad_next();
-         auto applyOverPoints = [&r, &pO, &pO_center](const auto &equation, const std::unordered_set<Network *> NETS) {
-            for (const auto &net : NETS) {
-               net->BucketPoints.apply(pO_center, 1.1 * r, [&](const auto &B) {
+         auto applyOverPoints = [&r, &pO, &pO_center](const auto& equation, const std::unordered_set<Network*> NETS) {
+            for (const auto& net : NETS) {
+               net->BucketPoints.apply(pO_center, 1.1 * r, [&](const auto& B) {
                   if (canInteract(pO, B))
                      equation(B);
-               });
+                  });
             }
-         };
+            };
 
          //! -------------------------------------------------------------------------- */
 
-         auto average_surrounding_pressure = [&ROW, &pO, &pO_center, &total_volume_w, &total_w](const auto &B /*column id*/) {
+         auto average_surrounding_pressure = [&ROW, &pO, &pO_center, &total_volume_w, &total_w](const auto& B /*column id*/) {
             const auto r = pO->SML();
             // const auto r = 2. * pO->particle_spacing;
             const auto BX = X_next(B);
@@ -198,11 +199,11 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   ROW->increment(B, vol_w);
                   ROW->PoissonRHS = 0.;
                }
-         };
+            };
 
          //% ------------------- 壁粒子の圧力の方程式 ------------------- */
 
-         auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
+         auto EISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto& B /*column id*/) {
             const auto r = pO->SML_next();
             // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
@@ -215,9 +216,9 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                // ROW->p_EISPH += (B->p_SPH_last + dP) * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
                FusedMultiplyIncrement(vol_w, B->p_SPH_last + dP, ROW->p_EISPH);
             }
-         };
+            };
 
-         auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto &B /*column id*/) {
+         auto ISPH_wall_pressure = [&ROW, &pO, &pO_center, &pO_center_mirror, &total_volume_w, &total_w](const auto& B /*column id*/) {
             const auto r = pO->SML_next();
             // const auto r = 1.9999999999 * pO->particle_spacing;
             const auto BX = X_next(B);
@@ -231,43 +232,38 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                // ROW->PoissonRHS -= dP * vol_w;  // auto dir = Projection(X_next(ROW) - BX, Normalize(ROW->v_to_surface_SPH));
                FusedMultiplyIncrement(vol_w, -dP, ROW->PoissonRHS);
             }
-         };
+            };
 
          //% ------------------ 流体粒子の圧力の方程式 ------------------ */
          // \label{SPH:PoissonEquation}
 
-         std::vector<std::tuple<networkPoint *, std::array<double, 3>>> near_particles_and_V_GradW;
+         std::vector<std::tuple<networkPoint*, std::array<double, 3>>> near_particles_and_V_GradW;
+         near_particles_and_V_GradW.reserve(1000);
 
-         auto make_near_particles_and_V_GradW = [&pO, &pO_center, &near_particles_and_V_GradW](const auto &Q) {
+         auto make_near_particles_and_V_GradW = [&pO, &pO_center, &near_particles_and_V_GradW](const auto& Q) {
             if (Distance(pO_center, X_next(Q)) <= pO->SML_grad_next() && pO != Q)
-               near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_next(pO, pO_center, Q));
-         };
+               near_particles_and_V_GradW.emplace_back(Q, V_next(Q) * grad_w_Bspline_for_dot_grad(pO, pO_center, Q));
+            };
 
-         auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto &B /*column id*/) {
+         auto PoissonEquation = [&ROW, &pO, &sum_Aij_Pj, &sum_Aij, &pO_center, &applyOverPoints, &target_nets, &near_particles_and_V_GradW](const auto& B /*column id*/) {
             if (pO != B) {
                const auto BX = X_next(B);
                const auto r = pO->SML_grad_next();
                if (Distance(pO_center, BX) <= r) {
-                  // const double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //\label{SPH:lapP1}
-                  double Aij;
-                  // if (pO->isNearSurface) {
-                  // Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_next());  //! 水面付近は修正によってエラーが起きやすいのでそのままにする．
-                  // } else
-                  Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);  //! 内部は比較的安定しているようなので修正する
-                  // Aij /= 2.;
-                  // var_Eifen_が大きすぎる内部の点は，計算がこんなんだろうから，EISPHの近似で計算する
+                  //! 
+                  double Aij = 2. * V_next(B) * Dot_grad_w_Bspline(pO_center, X_next(B), pO->SML_grad_next());
+                  // double Aij = 2. * V_next(B) * Dot_grad_w_Bspline_next(pO, pO_center, B);
                   /* -------------------------------------------------------------------------- */
-                  //! 修正
+                  //! 1次の誤差を除くための修正
                   const auto DelX = (pO_center - BX);
-                  double c, total_c = 0;  //! 毎回すると遅いので
-                  if (!pO->is_grad_corr_M_next_singular)
-                     for (const auto &[Q, vol_grad] : near_particles_and_V_GradW) {
-                        total_c += (c = Dot(Aij * DelX, vol_grad));
-                        ROW->increment(Q, -c);
-                     }
+                  double c, total_c = 0;
+                  for (const auto& [Q, vol_grad] : near_particles_and_V_GradW) {
+                     total_c += (c = Dot(Aij * DelX, vol_grad));
+                     ROW->increment(Q, -c);
+                  }
+                  /* -------------------------------------------------------------------------- */
                   ROW->increment(pO, Aij + total_c);
                   ROW->increment(B, -Aij);
-                  /* --------------------------------------------------------------------------- */
 
                   // ROW->PoissonRHS += V_next(B) * Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B));
                   FusedMultiplyIncrement(V_next(B), Dot(B->b_vector - pO->b_vector, grad_w_Bspline_next(pO, pO_center, B)), ROW->PoissonRHS);
@@ -280,7 +276,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                }
                // PoissonEquationWithX(B, B->X);
             }
-         };
+            };
 
          // b$ -------------------------------------------------------------------------- */
          // b$                         粒子の種類によって，圧力の方程式を変える．                    */
@@ -297,7 +293,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             /* -------------------------------------------------------------------------- */
             applyOverPoints(average_surrounding_pressure, target_nets);
             if (total_volume_w != 0.)
-               for (auto &[_, v] : ROW->column_value)
+               for (auto& [_, v] : ROW->column_value)
                   v /= total_volume_w;
             ROW->increment(ROW, -1.);
             /* -------------------------------------------------------------------------- */
@@ -309,7 +305,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             /* -------------------------------------------------------------------------- */
             // ROW->CRS::set(ROW, 1.);
             // ROW->PoissonRHS = 0;
-         } else if (ROW->isSurface_next) {
+         }
+         else if (ROW->isSurface_next) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && !ROW->isAuxiliary && ROW->auxPoint != nullptr) || (ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
             // if ((ROW->isSurface && ROW->isAuxiliary && ROW->surfacePoint != nullptr)) {
@@ -320,7 +317,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             ROW->clearColumnValue();
             ROW->CRS::set(ROW, 1.);
             ROW->PoissonRHS = 0;
-         } else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
+         }
+         else if (ROW->getNetwork()->isRigidBody /*&& !ROW->isFirstWallLayer*/) {
             //! 壁面の圧力はPoissonを解かない方が計算が安定するようだ
             //! 　流体に近く内部の壁面粒子だけにPoisson方程式を解かせたとしても安定しない
             // } else if (false) {
@@ -382,7 +380,7 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                pO_center = pO_center_mirror + 2 * pO->v_to_surface_SPH;
                applyOverPoints(ISPH_wall_pressure, fluid_nets);
                if (total_volume_w != 0.) {
-                  for (auto &[_, v] : ROW->column_value)
+                  for (auto& [_, v] : ROW->column_value)
                      v /= total_volume_w;
                   ROW->PoissonRHS /= total_volume_w;
                }
@@ -394,7 +392,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
                   ROW->PoissonRHS = 0;
                }
             }
-         } else {
+         }
+         else {
             // b@ ISPH
             ROW->pressure_equation_index = 3;
             pO = ROW;
@@ -497,7 +496,8 @@ void setPoissonEquation(const std::unordered_set<networkPoint *> &points,
             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "empty column_value");
          }
       };
-   } catch (std::exception &e) {
+   }
+   catch (std::exception& e) {
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in setPoissonEquation");
    };
 };
@@ -518,26 +518,26 @@ ISPHのポアソン方程式を解く場合，\ref{SPH:gmres}{ここではGMRES�
 #define USE_GMRES
 
 #if defined(USE_GMRES)
-gmres *GMRES = nullptr;
+gmres* GMRES = nullptr;
 #endif
 
 int gmres_size = 50;
 
-void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
+void solvePoisson(const std::unordered_set<networkPoint*>& all_particle) {
    DebugPrint(Blue, "solvePoisson", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-   std::vector<networkPoint *> points;
+   std::vector<networkPoint*> points;
    points.reserve(all_particle.size());
 
-   for (const auto &p : all_particle)
+   for (const auto& p : all_particle)
       points.emplace_back(p);
 
    //@ 行列のサイズが計算毎に変わる可能性があるのでインデックスを再設定する
-   for (auto i = 0; const auto &p : points)
+   for (auto i = 0; const auto & p : points)
       p->setIndexCRS(i++);
 
    V_d b(points.size()), x0(points.size(), 0);
 
-   for (const auto &p : points) {
+   for (const auto& p : points) {
       int index = p->getIndexCRS();
       if (p->column_value.empty())
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "empty column_value");
@@ -561,8 +561,8 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
          p->p_SPH = 0.;
       }
       b[index] = p->PoissonRHS;
-      // x0[index] = p->p_SPH;
-      x0[index] = p->p_SPH_smoothed;
+      x0[index] = p->p_SPH;
+      // x0[index] = p->p_SPH_smoothed;
    }
 
    DebugPrint(Blue, "preconditioning using diagonal value", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
@@ -591,18 +591,18 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    /* -------------------------------------------------------------------------- */
 
 #pragma omp parallel
-   for (const auto &p : points)
+   for (const auto& p : points)
 #pragma omp single nowait
    {
       double diag_value = 0;
-      for (const auto &[q, v] : p->column_value)
+      for (const auto& [q, v] : p->column_value)
          if (p == q)
             diag_value = v;
 
       if (diag_value != 0) {
          double value = 1.0 / diag_value;
          b[p->getIndexCRS()] *= value;
-         for (auto &[_, v] : p->column_value)
+         for (auto& [_, v] : p->column_value)
             v *= value;
       }
 
@@ -616,22 +616,22 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
 
    gmres_size -= 1;
 
-   auto return_A_dot_v = [&points](const V_d &V) -> V_d {
+   auto return_A_dot_v = [&points](const V_d& V) -> V_d {
       // Vの値を取得し、各ポイントに設定（両方の範囲が一致する場合に有効）
       std::transform(std::execution::unseq, points.begin(), points.end(), V.begin(), points.begin(),
-                     [](auto &point, const auto &v_val) {
-                        point->tmp_value = v_val;
-                        return point;
-                     });
+         [](auto& point, const auto& v_val) {
+            point->tmp_value = v_val;
+            return point;
+         });
 
       // 結果を並列・ベクトル化で直接ansに格納
       V_d ans(points.size());
-      std::transform(std::execution::par_unseq, points.begin(), points.end(), ans.begin(), [](auto &point) {
+      std::transform(std::execution::par_unseq, points.begin(), points.end(), ans.begin(), [](auto& point) {
          return point->selfDotTmpValue();
-      });
+         });
 
       return ans;
-   };
+      };
 
    if (GMRES == nullptr)
       // GMRES = new gmres(points, b, x0, gmres_size);  //\label{SPH:gmres}
@@ -646,7 +646,7 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    std::cout << "gmres_size : " << gmres_size << std::endl;
    x0 = GMRES->x;
    // double torr = 1E-13;
-   double torr = 1E-9 * points.size();
+   double torr = 1E-13 * points.size();
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b - PreparedDot(points, x0))) << std::endl;
@@ -666,38 +666,38 @@ void solvePoisson(const std::unordered_set<networkPoint *> &all_particle) {
    DebugPrint(Blue, "set pressure", __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
 
    const double a = 0.8;
-   for (const auto &p : points) {
+   for (const auto& p : points) {
       p->p_SPH = p->p_SPH_last = GMRES->x[p->getIndexCRS()];
       p->p_SPH_smoothed = a * p->p_SPH + (1. - a) * p->p_SPH_smoothed;
    }
 
 #elif defined(USE_LAPACK)
    VV_d A(b.size(), V_d(b.size(), 0.));
-   for (const auto &p : points) {
+   for (const auto& p : points) {
       auto i = p->getIndexCRS();
       if (p->column_value.empty())
          throw std::runtime_error("empty column_value");
-      for (const auto &[q, v] : p->column_value) {
+      for (const auto& [q, v] : p->column_value) {
          auto j = q->getIndexCRS();
          A[i][j] = v;
       }
    }
    lapack_lu lu(A);
    lu.solve(b, x0);
-   for (const auto &p : points)
+   for (const auto& p : points)
       p->p_SPH = x0[p->getIndexCRS()];
 #elif defined(USE_LAPACK_SVD)
    VV_d A(b.size(), V_d(b.size(), 0.));
-   for (const auto &p : points) {
+   for (const auto& p : points) {
       auto i = p->getIndexCRS();
-      for (const auto &[q, v] : p->column_value) {
+      for (const auto& [q, v] : p->column_value) {
          auto j = q->getIndexCRS();
          A[i][j] = v;
       }
    }
    lapack_svd svd(A);
    svd.solve(b, x0);
-   for (const auto &p : points)
+   for (const auto& p : points)
       p->p_SPH = x0[p->getIndexCRS()];
 #endif
 

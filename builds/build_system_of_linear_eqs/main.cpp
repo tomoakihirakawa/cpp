@@ -49,7 +49,7 @@ int main() {
    //
 
    V_d x0(b.size(), 0.);
-   Timer timer;
+   TimeWatch timer;
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    // while (!finished) {
@@ -75,7 +75,7 @@ int main() {
          Print(error, Green);
          x0 = gm.x;
       }
-      std::cout << Red << "--------------------------------" << colorOff << std::endl;
+      std::cout << Red << "--------------------------------" << colorReset << std::endl;
    }
    // }
    std::cout << "time:" << timer() << std::endl;
