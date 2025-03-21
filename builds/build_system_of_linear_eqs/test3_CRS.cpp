@@ -19,7 +19,7 @@ make
 
 #### CRSは，ある行ベクトルを格納するクラスと考える
 
-![CRS](./CRS.png)
+<img src="./CRS.png" width="400" style="display:block;margin-left:auto;margin-right:auto;">
 
 私のプログラムでは，Row-major orderで行列を格納しており，次のように行列を定義している．
 
