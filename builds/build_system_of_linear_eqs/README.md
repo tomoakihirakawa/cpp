@@ -104,6 +104,8 @@ make
 ---
 #### 🪸 CRSは，ある行ベクトルを格納するクラスと考える 
 
+![CRS](CRS.png)
+
 私のプログラムでは，Row-major orderで行列を格納しており，次のように行列を定義している．
 
 ```cpp
@@ -136,7 +138,7 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 
 **掛け算`Dot(A,V)`において，CRS（これは行ベクトルと考える）は，自分に保存されている{row index,value}のセットを元に，`V[row index]*value`のようにして足し合わせていく．**
 
-[./test3_CRS.cpp#L108](./test3_CRS.cpp#L108)
+[./test3_CRS.cpp#L110](./test3_CRS.cpp#L110)
 
 ---
 #### 🪸 値を格納：`set`と`increment` 
@@ -147,13 +149,13 @@ CRSは，`CRS->setIndexCRS(i)`のようにして，自身の行番号を保持�
 
 値を設定する，`set`と`increment`の第一引数は，CRSのポインタである．
 
-[./test3_CRS.cpp#L119](./test3_CRS.cpp#L119)
+[./test3_CRS.cpp#L121](./test3_CRS.cpp#L121)
 
 #### 🪸 `selfDot` 
 
 `selfDot`は，CRSに保存した`A`と`V`を掛け合わせる関数である．
 
-[./test3_CRS.cpp#L131](./test3_CRS.cpp#L131)
+[./test3_CRS.cpp#L133](./test3_CRS.cpp#L133)
 
 ---
 # 🐋 連立一次方程式の解法 
