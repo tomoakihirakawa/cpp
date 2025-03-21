@@ -70,7 +70,7 @@ int main() {
                    {0., 0., 2., 3., 4., 3., 9., 6., 3., 10.}};
 
    const V_d b = {1., 7., 2., 2., 7., 8., 10., 0., 6., 5.};
-   V_d x0(b.size(), 1. /*initial value*/);
+   V_d x0(b.size(), 0. /*initial value*/);
    const V_d ans = {6.41725, -0.576444, 1.52755, 1.5933, -0.436665, -7.40106, 4.20872, 0.458307, -0.723366, -1.73434};
 
    /* ------------------------------------------------------------ */
@@ -80,7 +80,6 @@ int main() {
    std::cout << "make CRS" << std::endl;
 
    std::vector<CRS*> A_CRS(A.size(), nullptr);
-
    for (size_t i = 0; i < A.size(); ++i) {
       A_CRS[i] = new CRS();
       A_CRS[i]->setIndexCRS(i);
@@ -94,41 +93,32 @@ int main() {
    for (auto& crs : A_CRS)
       crs->setVectorCRS();
 
-      /* ---------------------------------------------------------- */
+   auto A_operator = [&](const V_d& v) -> V_d {
+      return Dot(A_CRS, v);
+   };
+
+   /* ---------------------------------------------------------- */
 
 #endif
-   // auto v = diagonal_scaling_vector(A);
-   // for (auto i = 0; i < v.size(); ++i) {
-   //    A[i] *= v[i];
-   //    b[i] *= v[i];
-   // }
 
    TimeWatch timer;
    std::cout << "time:" << timer() << std::endl;
    bool finished = false;
    double error;
    int n_max = 15;
-   int n_begin = 10;
+   int n_begin = 5;
    auto x0_for_iterate = x0;
-   gmres gm_full(A_CRS, b, x0, n_max);
-   gmres gm_iterate(A_CRS, b, x0, n_begin);
-   for (auto restart = 0; restart < 5; ++restart) {
-      gm_iterate.Restart(A_CRS, b, n_begin);
-      // for (auto i = n_begin + 1; i <= n_max; i++)
-      {
-         // std::cout << "restart " << restart << ", " << Green << "terms in an expansion :" << i << colorReset << std::endl;
-         std::cout << "     gm_iterate.V.size() : " << gm_iterate.V.size() << std::endl;
-         std::cout << "                    time : " << timer() << std::endl;
-         // std::cout << "               iteration : " << i << std::endl;
-         std::cout << "estimate error (iterate/full) : " << gm_iterate.err << " / " << gm_full.err << std::endl;
-         std::cout << "gm_iterate.x : " << gm_iterate.x << std::endl;
-         std::cout << "   gm_full.x : " << gm_full.x << std::endl;
-         std::cout << "         ans : " << ans << std::endl;
-         auto error = Norm(Dot(A, gm_iterate.x) - b);
-         std::cout << "  actual error (iterate/full) : " << (error < 1E-10 ? Green : Red) << error << colorReset << " / " << Norm(Dot(A, gm_full.x) - b) << std::endl;
-         std::cout << Red << "--------------------------------" << colorReset << std::endl;
-         // gm_iterate.Iterate(A_CRS);
-      }
+   gmres gm_full(A_operator, b, x0, n_max);
+   gmres gm_iterate(A_operator, b, x0, n_begin);
+   for (auto i = 0; i < 5; ++i) {
+      gm_iterate.Iterate(A_operator);
+      // std::cout << "restart " << restart << ", " << Green << "terms in an expansion :" << i << colorReset << std::endl;
+      std::cout << "     gm_iterate.V.size() : " << gm_iterate.V.size() << std::endl;
+      std::cout << "                    time : " << timer() << std::endl;
+      std::cout << "estimate error (iterate/full) : " << gm_iterate.err << " / " << gm_full.err << std::endl;
+      auto error = Norm(Dot(A, gm_iterate.x) - b);
+      std::cout << "  actual error (iterate/full) : " << (error < 1E-10 ? Green : Red) << error << colorReset << " / " << Norm(Dot(A, gm_full.x) - b) << std::endl;
+      std::cout << Red << "--------------------------------" << colorReset << std::endl;
    }
    std::cout << "time:" << timer() << std::endl;
 };
