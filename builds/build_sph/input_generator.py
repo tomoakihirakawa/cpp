@@ -236,7 +236,7 @@ elif "Lobovsky2013" in SimulationCase:
                 "max_dt": dt,
                 "end_time_step": 3000*5,
                 "end_time": 2,
-                "CSML": 2.4,
+                "CSML": 2.5,
                 "initial_surface_z_position": 0.3,
                 "particle_spacing": 0.018}
 
@@ -277,13 +277,13 @@ elif "Kamra2019" in SimulationCase:
 
     input_files = [wavetank, water, sensor1, sensor2]
 
-    setting = {"RK_order": 2,  # \label{SPH:RK_order}
+    setting = {"RK_order": 1,  # \label{SPH:RK_order}
                 "max_dt": 0.0005,
                 "end_time_step": 100000,
                 "end_time": 10.,
                 "CSML": 2.5,
                 "initial_surface_z_position": 0.2,
-                "particle_spacing": 0.007}
+                "particle_spacing": 0.0125}
 
     id = SimulationCase + id \
                         + "_PS" + str(setting["particle_spacing"]).replace(".", "d") \

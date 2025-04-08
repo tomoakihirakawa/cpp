@@ -1,38 +1,62 @@
 
 
-## pole class
+三角要素の頂点情報を使って，３次元の補間をする方法．
 
-pole class has the following attributes:
+１次多項式で次のように補間する．
 
-- position
-- weights
-- normal vector
-- updater function (to update the intensity, that is the potential, of the pole)
+$$
+f(x,y,z)=ax+by+cz+d
+$$
 
-## Buckets class
+しかし，
+３頂点の情報は，よりも未知変数が１つ多く，解くことができない．
+そこで，以下の形で解くことにする．
 
-Buckets class stores specified objects as `Buckets<T>`, and generates tree structure until the number of objects in a bucket is less than or equal to the specified number of objects per bucket.
+$$
+f(x,y)=ax+by+f_0
+$$
 
-The step to generate the tree structure should be as follows:
+$$
+\begin{bmatrix}
+a\\
+b\\
+f_0
+\end{bmatrix}
+=
+\begin{bmatrix}
+-(1/x_1) & 1/x_1 & 0\\
+(-x_1 + x_2)/(x_1 y_2) & -(x_2/(x_1 y_2)) & 1/y_2\\
+1 & 0 & 0
+\end{bmatrix}
+\begin{bmatrix}
+f_0\\
+f_1\\
+f_2
+\end{bmatrix}
+$$
 
-1. add objects to the bucket
-2. set the maximum level of the tree using `setLevel`
-3. generate the tree structure using `generateTree` while specifying the condition to stop the generation of the tree structure
+$$
+\left({\begin{gathered}
+{{f}_{1}}\\
+{{f}_{2}}\\
+{{f}_{3}}
+\end{gathered}}\right)=\left({\begin{gathered}
+{\left({{x}_{1},{y}_{1},{z}_{1}}\right)}\\
+{\left({{x}_{2},{y}_{2},{z}_{2}}\right)}\\
+{\left({{x}_{3},{y}_{3},{z}_{3}}\right)}
+\end{gathered}}\right)\left({\begin{gathered}
+{a}\\
+{b}\\
+{c}
+\end{gathered}}\right)
+$$
 
 
-# Fast Multipole Method
+$I_{Gil}={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}$は（g2lを省略），
+$R^{-1}$が$R^{\top}$であることと，$I^{-1}$が対角成分のみの行列であることを利用すれば，次のように書ける．
 
-The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of the integration of the pole/potential using the tree structure, the multipole expansion, shifting expansion, and the local expansion. Since FMM calculates integration/summation, such as BIE and does not make the coefficient matrix, solver for the simultaneous linear equations should be iterative methods. GMRES is commonly used for the solver with FMM.
-
-| First steps | GRMES iterative step | description | | |
-| --- | --- | --- | --- | --- |
-| 1 | | add poles to the root bucket | | |
-| 2 | | generate the tree structure from the root bucket | | |
-| 3 (before M2M) | | expansion of the poles | | |
-| 4 | 1 | **update the intensity of the poles** | | |
-| 5 | 2 | Multipole to Multipole (M2M): shift the multipole expansion at each center, from the deeper level to the upper level | about 8 🪣 -> 1 parent 🪣 | use pre-computed SPH |
-| 6 | 3 |  Multipole to Local (M2L)| every 🪣 -> (only same level) -> many local 🪣 | use pre-computed SPH |
-| 7 | 4 | Local to Local (L2L) | 1 🪣 -> about 8 children 🪣 | use pre-computed SPH |
-| 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
-
-Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
+\begin{align*}
+I_{Gil}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}\\
+&={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}\\
+&=\frac{{R}_{0i}{R}_{0l}}{{I}_{x}}+\frac{{R}_{1i}{R}_{1l}}{{I}_{y}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{z}}
+\end{align*}

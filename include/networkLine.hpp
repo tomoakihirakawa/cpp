@@ -1553,52 +1553,6 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
       else if (this->isAdjacentFacesFlat(n_diff_tagert_face /*ここで引っかかってしまいフリップされないことがよくある*/) && !islegal()) {
          auto [p0, p1] = this->getPoints();
 
-         // for (auto &p : {p0, p1}) {
-         //    if (!isFlat(p, 1E-2 * M_PI / 180.)) {
-         //       auto line_faces = this->getFaces();
-         //       if (line_faces.size() != 2)
-         //          return false;
-         //       //
-         //       auto faces = p->getFaces();
-         //       auto line_normal = this->getNormal();
-         //       for (auto it = faces.begin(); it != faces.end();) {
-         //          if (!isFlat((*it)->normal, line_normal, acceptable_n_diff_before_after))
-         //             it = faces.erase(it);
-         //          else
-         //             ++it;
-         //       }
-         //       if (faces.size() >= 2) {
-
-         //          double total_angle = 0.;
-         //          double largest_angle = 0., angle;
-         //          networkFace *largestfaces = nullptr;
-         //          for (const auto &f : faces) {
-         //             angle = f->getAngle(p);
-         //             total_angle += angle;
-         //             if (angle > largest_angle) {
-         //                largest_angle = angle;
-         //                largestfaces = f;
-         //             }
-         //          }
-         //          // pi/3 is good
-         //          // if flip this line, the angle will be incresead
-         //          double average_angle = total_angle / faces.size();
-         //          if (average_angle < 45. * M_PI / 180) {
-         //             //! average angle should be larger than 45 degree
-         //             this->flip();
-         //             return true;
-         //          } else if (average_angle > 75. * M_PI / 180) {
-         //             //! average angle should be larger than 45 degree
-         //             if (largestfaces) {
-         //                auto l = largestfaces->getLineOpposite(p);
-         //                if (!l->canFlip(acceptable_n_diff_before_after))
-         //                   l->flip();
-         //             }
-         //          }
-         //       }
-         //    }
-         // }
-
          auto f0f1_ = this->getFaces();
          int s0 = p0->getLines().size();
          int s1 = p1->getLines().size();
@@ -1627,35 +1581,6 @@ inline bool networkLine::flipIfBetter(const double n_diff_tagert_face,
 
          double min_init = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f0pf->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f1pf->X, f1po->X})));
          double min_later = std::min(Min(TriangleAngles(T3Tddd{f0pb->X, f1po->X, f0po->X})), Min(TriangleAngles(T3Tddd{f1pb->X, f0po->X, f1po->X})));
-
-         // とても大きな面積差が生まれてしまう場合はフリップしない
-         // double area0 = TriangleArea(T3Tddd{f0pb->X, f0pf->X, f0po->X});
-         // double area1 = TriangleArea(T3Tddd{f1pb->X, f1pf->X, f1po->X});
-         // double area_next0 = TriangleArea(T3Tddd{f0pb->X, f1po->X, f0po->X});
-         // double area_next1 = TriangleArea(T3Tddd{f1pb->X, f0po->X, f1po->X});
-
-         // double original_area_diff_ratio = std::abs(area0 - area1) / (area0 + area1);
-         // double next_area_diff_ratio = std::abs(area_next0 - area_next1) / (area_next0 + area_next1);
-         // // if the area difference is too large, comapring to the original area, then do not flip
-         // if (original_area_diff_ratio < next_area_diff_ratio && next_area_diff_ratio > 0.8)
-         //    return false;
-
-         //
-         // int s0 = f0pb->getLines().size();
-         // int s1 = f0pf->getLines().size();
-         // int s2 = f0po->getLines().size();
-         // int s3 = f1po->getLines().size();
-         // double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
-         // double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-         // double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
-         // double c = 0.;
-         // int s0 = f0pb->getLines().size();
-         // int s1 = f0pf->getLines().size();
-         // int s2 = f0po->getLines().size();
-         // int s3 = f1po->getLines().size();
-         // double s_mean = 6; //(s0 + s1 + s2 + s3) / 4.;
-         // double v_init = std::pow(s0 - s_mean, 2) + std::pow(s1 - s_mean, 2) + std::pow(s2 - s_mean, 2) + std::pow(s3 - s_mean, 2);
-         // double v_next = std::pow(s0 - 1 - s_mean, 2) + std::pow(s1 - 1 - s_mean, 2) + std::pow(s2 + 1 - s_mean, 2) + std::pow(s3 + 1 - s_mean, 2);
 
          int next_s0 = s0 - 1;
          int next_s1 = s1 - 1;

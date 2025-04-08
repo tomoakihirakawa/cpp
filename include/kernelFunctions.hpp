@@ -549,12 +549,13 @@ inline std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, con
    // if (Norm(xj - xi) == 0.)
    //    return _ZEROS3_;
    // else
-   //    return grad_w_Bspline4(xi, xj + 0.0001 * h * Normalize(xj - xi), h);
-   return grad_w_Bspline4(xi, xj, h);
+   return grad_w_Bspline4(xi, xj + 1E-4 * h * Normalize(xj - xi), h);
+   // return grad_w_Bspline4(xi, xj, h);
 }
 
 inline std::array<double, 3> grad_w_Bspline_for_dot_grad(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h) {
-   return grad_w_Bspline4(xi, xj, h);
+   // return grad_w_Bspline4(xi, xj, h);
+   return grad_w_Bspline4(xi, xj + 1E-4 * h * Normalize(xj - xi), h);
 }
 
 // std::array<double, 3> grad_w_Bspline(const std::array<double, 3> &xi, const std::array<double, 3> &xj, const double h, const std::array<Tddd, 3> &M) {

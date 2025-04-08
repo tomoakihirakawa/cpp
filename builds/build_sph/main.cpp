@@ -251,7 +251,6 @@ int main(int argc, char** argv) {
                   p->setDensityVolume(_WATER_DENSITY_, volume);  // 質量(mass)は関数内部で自動で決められる
                   p->min_particle_spacing_next = p->min_particle_spacing = p->particle_spacing = particle_spacing;
                   p->C_SML_next = p->C_SML = CSML;
-                  p->lap_U.fill(0.);
                   p->pressure_SPH = _WATER_DENSITY_ * _GRAVITY_ * (initial_surface_z_position - std::get<2>(p->X));
                   p->isFluid = object->isFluid;
                   p->isNeumannSurface = false;
@@ -388,7 +387,7 @@ int main(int argc, char** argv) {
       // if (time_step == N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())
-      //          p->mu_SPH = _WATER_MU_10deg_;
+      // p->mu_SPH = _WATER_MU_10deg_;
       // } else if (time_step < N) {
       //    for (const auto &[object, _, __] : all_objects)
       //       for (const auto &p : object->getPoints())

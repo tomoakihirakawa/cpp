@@ -2,6 +2,8 @@
 
 \insert{compressed_row_storage}
 
+<img src="./CRS.png" width="500" style="display:block;margin-left:auto;margin-right:auto;">
+
 ### CRSの使用例
 
 ```shell
@@ -18,8 +20,6 @@ make
 /*DOC_EXTRACT 0_0_1_CRS
 
 #### CRSは，ある行ベクトルを格納するクラスと考える
-
-<img src="./CRS.png" width="400" style="display:block;margin-left:auto;margin-right:auto;">
 
 私のプログラムでは，Row-major orderで行列を格納しており，次のように行列を定義している．
 
@@ -168,7 +168,7 @@ int main() {
       std::cout << "Total(selfDot(A_CRS))" << std::endl;
       std::cout << Yellow << " CRS" << Blue << "\nElapsed time: " << Red << (time_crsseldot = watch()) << colorReset << " s\n";
 
-      n_dot_pardot_crsdot_crsseldot.push_back({n, time_dot[0], time_pardot[0], time_crsdot[0], time_crsseldot[0]});
+      n_dot_pardot_crsdot_crsseldot.push_back({(double)n, time_dot[0], time_pardot[0], time_crsdot[0], time_crsseldot[0]});
    }
 
    for (size_t i = 0; i < A.size(); ++i)

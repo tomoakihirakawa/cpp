@@ -413,6 +413,7 @@ struct pole4FMM {
    void update() {
       updater(this);
       this->values_x_weight = {values[1] * weights[0], values[0] * weights[1]};
+      // this->values_x_weight = {values[0] * weights[0], values[1] * weights[1]};
    }
 };
 
@@ -559,6 +560,7 @@ struct ExpCoeffs {
          for (size_t ind = 0; ind < nm_set.size(); ++ind) {
             auto [n, m] = nm_set[ind];
             W = R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal);
+            //! Wは{R, grad_Rnm1_dot_normal}
             tuple_vector[ind] = {W,
                                  &(coeffs[ind] += V1 * std::get<0>(W)),
                                  &(coeffs_[ind] += V0 * std::get<1>(W))};

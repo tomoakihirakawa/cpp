@@ -188,14 +188,14 @@ int main(int argc, char **argv) {
          double rad = M_PI / 180;
 
          for (auto &water : FluidObject) {
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, false);
-            if (time_step < 10 && time_step % 1 == 1) {
-               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-               flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-               // flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
-            }
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
+            // if (time_step < 10 && time_step % 1 == 1) {
+            //    flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+            //    // flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+            //    // flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
+            // }
          }
          //
          CoordinateBounds bounds_org(FluidObject[0]->bounds);
@@ -279,20 +279,12 @@ int main(int argc, char **argv) {
 #pragma omp single nowait
                   net->makeBuckets(net->getScale() / 11.);
                std::cout << Green << "makeBuckets" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-
                //! 体積を保存するようにリメッシュする必要があるだろう．
                for (auto &water : FluidObject) {
                   setBoundaryTypes(water, Join(RigidBodyObject, SoftBodyObject));
                   water->setMinDepthFromCORNER();
                }
                std::cout << Green << "setBoundaryTypes" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
-               /* ----------------------- */
-               for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-                  p->absorbedBy = nullptr;
-                  for (const auto &net : AbsorberObject)
-                     if (net->InsideQ(p->X))
-                        p->absorbedBy = net;
-               }
             }
             /* --------------------------------------------------- */
 
@@ -489,6 +481,8 @@ int main(int argc, char **argv) {
             }
 
             // b$ -------------------------------------------------------------------------- */
+            // b$                                波の吸収（ダンピング領域）
+            // b$ -------------------------------------------------------------------------- */
 
             /*DOC_EXTRACT 0_4_1_UPDATE_POSITION
 
@@ -502,29 +496,29 @@ int main(int argc, char **argv) {
             \phi_{\rm ref} &= \frac{\sum \phi \cdot \text{area}}{\sum \text{area}}
             \end{aligned}
             ```
-
             */
-            // initialize reference_phi and set absorbedBy
-            std::unordered_set<Network *> absorbers;
 
+            std::unordered_set<Network *> absorbers;
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
-               if (p->absorbedBy != nullptr)
-                  absorbers.insert(p->absorbedBy);
+               p->absorbedBy = nullptr;
+               for (const auto &net : AbsorberObject)
+                  if (net->InsideQ(p->X))
+                     absorbers.insert(p->absorbedBy = net);
             }
 
 #pragma omp parallel
             for (const auto &p : FMM_BucketsPoints.all_stored_objects)
 #pragma omp single nowait
             {
-               if (p->absorbedBy != nullptr)
-                  p->signed_distance = Norm(p->absorbedBy->siginedDistance(p->X));
+               if (p->absorbedBy != nullptr) {
+                  double min_distance = 1E+20;
+                  p->signed_distance = Norm(p->X - p->absorbedBy->NearestSurfacePoint(p->X));
+               } else
+                  p->signed_distance = 0;
             }
-
             std::unordered_map<Network *, std::array<double, 2>> reference_phi;
             for (const auto &absorber : absorbers)
                reference_phi[absorber] = {0, 0};
-
-            // calculate reference_phi and weight
             for (const auto &f : FMM_BucketsFaces.all_stored_objects) {
                auto [p0, p1, p2] = f->getPoints();
                auto absorber = p0->absorbedBy;
@@ -533,21 +527,6 @@ int main(int argc, char **argv) {
                   reference_phi[absorber] += Tdd{mean_phi * f->area, f->area};
                }
             }
-
-            // auto PHI_U_eta = [t = simulation_time, g = _GRAVITY_](auto p) -> std::array<double, 5> {
-            //    auto [x, y, z] = p->X;
-            //    double h = 1.;    //! [m]
-            //    double L = 1.;    //! [m]
-            //    double a = 0.05;  //! [m]
-            //    double k = 2. * M_PI / L;
-            //    double omega = std::sqrt(g * k * std::tanh(k * h));
-            //    return {a * g / omega * std::cosh(k * (z - h)) / std::cosh(k * h) * std::sin(k * x - omega * t),
-            //            a * g * k / omega * std::cosh(k * (z - h)) / std::cosh(k * h) * std::cos(k * x - omega * t),
-            //            0.,
-            //            a * g * k / omega * std::sinh(k * (z - h)) / std::cosh(k * h) * std::sin(k * x - omega * t),
-            //            a * std::cos(k * x - omega * t)};
-            // };
-
             double mean_phi = 0., total_area = 0;
             for (const auto &f : FMM_BucketsFaces.all_stored_objects) {
                auto [p0, p1, p2] = f->getPoints();
@@ -555,21 +534,20 @@ int main(int argc, char **argv) {
                total_area += f->area;
             }
             mean_phi /= total_area;
-
             int count = 0;
             for (const auto &p : FMM_BucketsPoints.all_stored_objects) {
                p->U_absorbed.fill(0.);
                double gamma = 0, ref_phi = 0;
                Tddd ref_U = {0, 0, 0};
-
                if (p->RK_X.finished) {
                   if (dt > 0.00001)
                      if (p->absorbedBy != nullptr) {
                         // double L = p->absorbedBy->water_wave_theory.L;
+                        // gamma = std::clamp(p->signed_distance / (2 * 10. /*L*/), 0., 1.);
                         //! (2 * L)とは，つまり，2波長の距離で，gammaが1になる．
-                        // gamma = std::clamp(p->signed_distance / (2 * 10. /*L*/), 0., 1.);  //! gammaが大きいと，計算が不安定になることがある．
+                        //! gammaが大きいと，計算が不安定になることがある．
                         gamma = p->absorbedBy->absorb_gamma(p);
-                        ref_phi = p->absorbedBy->absorb_phi(p->X, simulation_time) + mean_phi;  //@@@@CHANGED TO
+                        ref_phi = p->absorbedBy->absorb_phi(p->X, simulation_time) + mean_phi;
                         if (std::ranges::any_of(p->getSurfaces(), [](auto f) { return f->Dirichlet; })) {
                            auto nextX = p->RK_X.getX(p->U_update_BEM);
                            auto to_eta_in_z = p->absorbedBy->absorb_eta(nextX, simulation_time) - nextX[2];

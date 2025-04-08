@@ -2,8 +2,8 @@
 
 # ---------------------------------------------------------------------------- #
 
-outputdir=/Volumes/home/BEM/benchmark20250220
-# outputdir=${HOME}/BEM
+# outputdir=/Volumes/home/BEM/benchmark20250220
+outputdir=${HOME}/BEM
 case=Tanizawa1996
 mesh_array=(water_no_float0d08 water_no_float0d07 water_no_float0d06)
 dt_array=(0.1 0.05)
@@ -43,35 +43,35 @@ done
 # exit this shell
 exit
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD3_no_float
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMlinear_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMlinear_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d08_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMlinear_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d05_MESHwater_no_float0d06_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALElinear_ALEPERIOD1_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD1_no_float
 
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALElinear_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALEpseudo_quad_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALElinear_ALEPERIOD3_no_float
-./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALElinear_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALEpseudo_quad_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALElinear_ALEPERIOD3_no_float
+# ./fast ./input_files/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMpseudo_quad_ALEpseudo_quad_ALEPERIOD3_no_float
 
 # ------------------------------- Palm2016 ------------------------------- #
 # ./main ./input_files/Palm2016_H0d04_T1d0_MESHwater_mod_DT0d1_ELEMlinear_ALElinear_ALEPERIOD1_without_mooring

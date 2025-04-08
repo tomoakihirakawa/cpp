@@ -58,7 +58,7 @@ int main() {
    // solver.diagonal_scaling();
 
    // Measure the time and solve the system using the Conjugate Gradient method
-   Timer timer;
+   TimeWatch timer;
    std::cout << "CG method:" << std::endl;
    std::cout << "Start time:" << timer() << std::endl;
    V_d x_CG = solver.solveCG(b, x);

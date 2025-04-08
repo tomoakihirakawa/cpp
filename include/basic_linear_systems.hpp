@@ -365,7 +365,9 @@ struct lapack_lu {
    void solve(const std::vector<double> &rhd, std::vector<double> &x) {
       if ((dim != rhd.size()) || (dim != x.size()) || (rhd.size() != x.size()))
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "dim != rhd.size() || dim != x.size() || rhd.size() != x.size() ");
-      x = rhd;
+      if (x.size() != static_cast<std::size_t>(dim))
+         x.resize(dim);  // 不要なら再確保しない
+      std::copy(rhd.begin(), rhd.end(), x.begin());
       dgetrs_(&TRANS, &dim, &nrhs, a.data(), &LDA, ipiv.data(), x.data(), &LDB, &info);
       if (info) {
          std::stringstream ss;
@@ -1990,14 +1992,17 @@ struct CRS {
    std::vector<std::tuple<CRS *, float, std::size_t>> column_value_vector;
 #else
    std::vector<std::tuple<CRS *, double, std::size_t>> column_value_vector;
+   std::vector<std::tuple<double *, double, std::size_t>> columntmpvalue_value_vector;
 #endif
 
    void setVectorCRS() {
       column_value_vector.resize(column_value.size());
+      columntmpvalue_value_vector.resize(column_value.size());
       std::size_t i = 0;
       for (const auto &[crs, value] : column_value) {
          // column_value_vector.push_back({crs, value, crs->__index__});
-         column_value_vector[i++] = {crs, value, crs->__index__};
+         column_value_vector[i] = {crs, value, crs->__index__};
+         columntmpvalue_value_vector[i++] = {&crs->tmp_value, value, crs->__index__};
       }
       this->canUseVector = true;
    };
@@ -2046,12 +2051,12 @@ struct CRS {
    void selfDotTmpValue_Save() {
       if (this->canUseVector) {
          this->tmp_tmp_value = std::transform_reduce(std::execution::unseq,
-                                                     this->column_value_vector.cbegin(),
-                                                     this->column_value_vector.cend(),
+                                                     this->columntmpvalue_value_vector.cbegin(),
+                                                     this->columntmpvalue_value_vector.cend(),
                                                      0.0,
                                                      std::plus<>(),
                                                      [](const auto &c_v) {
-                                                        return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                                        return std::get<1>(c_v) * *std::get<0>(c_v);
                                                      });
       } else {
          this->tmp_tmp_value = std::transform_reduce(std::execution::unseq,
@@ -2068,12 +2073,12 @@ struct CRS {
    double selfDotTmpValue() const {
       if (this->canUseVector) {
          return std::transform_reduce(std::execution::unseq,
-                                      this->column_value_vector.cbegin(),
-                                      this->column_value_vector.cend(),
+                                      this->columntmpvalue_value_vector.cbegin(),
+                                      this->columntmpvalue_value_vector.cend(),
                                       0.0,
                                       std::plus<>(),
                                       [](const auto &c_v) {
-                                         return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value;
+                                         return std::get<1>(c_v) * *std::get<0>(c_v);
                                       });
       } else {
          return std::transform_reduce(std::execution::unseq,
@@ -2567,8 +2572,7 @@ struct gmres : public ArnoldiProcess {
    */
    // int n;  // th number of interation
 
-   V_d x;
-   V_d y;
+   V_d x, y;
    QR<VV_d, true> qr;
    V_d g;
    double err;
@@ -2592,8 +2596,9 @@ struct gmres : public ArnoldiProcess {
       this->err = std::abs(this->g.back());  // 予想される誤差
       this->g.pop_back();
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
-      for (auto i = 0; i < this->n; ++i)
+      for (auto i = 0; i < this->n; ++i) {
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+      }
    };
 
    // std::vector<double>からstd::vector<float>への変換コンストラクタ
@@ -2614,8 +2619,8 @@ struct gmres : public ArnoldiProcess {
       std::cout << "QR done" << std::endl;
       if (this->beta /*initial error*/ == static_cast<double>(0.)) return;
       this->g = this->qr.Q[0] * this->beta;
-      err = std::abs(this->g.back());  // 予想される誤差
-      this->g.pop_back();
+      err = std::abs(g.back());  //! 予想される誤差（g の末尾は QR の影響で残差に対応）
+      g.pop_back();              //! R のサイズに合わせるために末尾を削除
       this->y = back_substitution(this->qr.R, this->g, this->g.size());
       for (auto i = 0; i < this->n; ++i)
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
@@ -2628,20 +2633,14 @@ struct gmres : public ArnoldiProcess {
       this->AddBasisVector(return_A_dot_v);
       this->qr = QR<VV_d, true>(this->H);
       err = 0.;
-      if (this->beta /*initial error*/ == static_cast<double>(0.))
-         return;
-      std::size_t i = 0;
-      this->g = this->qr.Q[0] * this->beta;
-      err = std::abs(g.back());  // 予想される誤差
-      g.pop_back();
       std::fill(this->x.begin(), this->x.end(), 0);
+      if (this->beta /*initial error*/ == static_cast<double>(0.)) return;
+      this->g = this->qr.Q[0] * this->beta;
+      err = std::abs(g.back());  //! 予想される誤差（g の末尾は QR の影響で残差に対応）
+      g.pop_back();              //! R のサイズに合わせるために末尾を削除
       this->y = back_substitution(this->qr.R, g, g.size());
-      for (i = 0; i < this->n; ++i) {
-         // this->x += this->y[i] * this->V[i];
-         //! use std::fma
+      for (auto i = 0; i < this->n; ++i)
          FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
-      }
-      // std::cout << "done" << std::endl;
    };
 };
 

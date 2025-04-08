@@ -1,0 +1,26 @@
+{
+    "max_dt": 0.01,
+    "WATER_DENSITY": 998.2,
+    "GRAVITY": 9.82,
+    "end_time_step": 1000000,
+    "end_time": 15,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Kramer2021_DT0d01_ELEMlinear_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "float.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json"
+    ]
+}

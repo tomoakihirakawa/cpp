@@ -749,6 +749,7 @@ struct BEM_BVP {
    // b! -------------------------------------------------------------------------- */
 
    V_d ans;
+   V_d tmp_b_RHS;
 
    int matrix_size = 0;
 
@@ -795,44 +796,33 @@ struct BEM_BVP {
       //@ -------------------------------------------------------------------------- */
 
       auto obj = WATERS[0];
-
       Buckets<sp_pole4FMM> B_poles(obj->scaledBounds(1.1), obj->getScale() / 6.);
-
       std::cout << "バケットの作成．極の追加" << std::endl;
-
-      /*
-         phiOnFaceやphinOnFaceを更新することで，getValuesの結果は自動的に更新される．
-      */
-
+      /* phiOnFaceやphinOnFaceを更新することで，getValuesの結果は自動的に更新される． */
       TimeWatch tw;
-
       for (auto &F : obj->getSurfaces()) {
          auto [p0, p1, p2] = F->getPoints();
          auto closest_p_to_origin = p0;
          auto X012 = ToX(F->getPoints());
          auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
-
-         for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo.at(closest_p_to_origin)) {
+         for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo_vector[1].at(closest_p_to_origin)) {
             auto [xi0, xi1] = t0t1;
             auto weights = Tdd{norm_cross * ww, norm_cross * ww};
+            std::function<void(pole4FMM *)> updater = [p0, p1, p2, F,
+                                                       key0 = std::get<1>(pf2ID(p0, F)),
+                                                       key1 = std::get<1>(pf2ID(p1, F)),
+                                                       key2 = std::get<1>(pf2ID(p2, F)),
+                                                       shape3](pole4FMM *self) -> void {
+               auto phi = [](auto *p) {
+                  double sum = 0.;
+                  for (const auto &[f, phi] : p->phiOnFace) sum += phi;
+                  return sum / p->phiOnFace.size();
+               };
+               std::get<0>(self->values) = Dot(shape3, Tddd{phi(p0), phi(p1), phi(p2)});                                                  //! phi
+               std::get<1>(self->values) = Dot(shape3, Tddd{p0->phinOnFace.at(key0), p1->phinOnFace.at(key1), p2->phinOnFace.at(key2)});  //! phin
+            };
             //$ 極の追加
-            auto pole = std::make_shared<pole4FMM>(X,
-                                                   weights,
-                                                   F->normal,
-                                                   [p0, p1, p2, F,
-                                                    key0 = std::get<1>(pf2ID(p0, F)),
-                                                    key1 = std::get<1>(pf2ID(p1, F)),
-                                                    key2 = std::get<1>(pf2ID(p2, F)),
-                                                    shape3](pole4FMM *self) -> void {
-                                                      auto phi = [](auto *p) {
-                                                         double sum = 0.;
-                                                         for (const auto &[f, phi] : p->phiOnFace)
-                                                            sum += phi;
-                                                         return sum / p->phiOnFace.size();
-                                                      };
-                                                      std::get<0>(self->values) = Dot(shape3, Tddd{phi(p0), phi(p1), phi(p2)});
-                                                      std::get<1>(self->values) = Dot(shape3, Tddd{p0->phinOnFace.at(key0), p1->phinOnFace.at(key1), p2->phinOnFace.at(key2)});
-                                                   });
+            auto pole = std::make_shared<pole4FMM>(X, weights, F->normal, updater);
             B_poles.add(X, pole);
             pole->update();
          }
@@ -973,7 +963,7 @@ struct BEM_BVP {
       for (auto &origin : obj->getPoints()) {
          origin->diagIgIgn.fill(0.);
          for (auto &integ_f : origin->getSurfaces()) {
-            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo.at(origin)) {
+            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo_vector[1].at(origin)) {
                auto R = (X - origin->X);
                double nr = Norm(R);
 
@@ -1021,18 +1011,9 @@ struct BEM_BVP {
             p->phinOnFace = p->phinOnFace_copy;
          }
 
-         for (const auto &p : obj->getPoints()) {
-            for (const auto &[f, i] : p->f2Index) {
-               // if (isDirichletID_BEM(p, f))
-               //    ret[i] /= std::get<0>(p->diagIgIgn);
-               // else if (isNeumannID_BEM(p, f))
-               //    ret[i] /= std::get<1>(p->diagIgIgn);
-               // else
-               //    throw std::runtime_error("Error: Boundary type is not defined.");
-
+         for (const auto &p : obj->getPoints())
+            for (const auto &[f, i] : p->f2Index)
                ret[i] /= std::get<1>(p->diagIgIgn);
-            }
-         }
          return ret;
       };
 
@@ -1063,16 +1044,8 @@ struct BEM_BVP {
       }
 
       for (const auto &p : obj->getPoints())
-         for (const auto &[f, i] : p->f2Index) {
-            // if (isDirichletID_BEM(p, f))
-            //    b[i] /= std::get<0>(p->diagIgIgn);
-            // else if (isNeumannID_BEM(p, f))
-            //    b[i] /= std::get<1>(p->diagIgIgn);
-            // else
-            //    throw std::runtime_error("Error: Boundary type is not defined.");
-
+         for (const auto &[f, i] : p->f2Index)
             b[i] /= std::get<1>(p->diagIgIgn);
-         }
 
       /* -------------------------------------------------------------------------- */
 
@@ -1131,7 +1104,7 @@ struct BEM_BVP {
    ## 浮体動揺解析
 
    BEM-MELで浮体動揺解析ができるようにするのは簡単ではない．
-   浮体に掛かる圧力の計算に必要な$`\phi_t`$が簡単には求まらないためである．
+   浮体に掛かる圧力の計算に必要な$\phi_t$が簡単には求まらないためである．
    これに関しては，\cite{Wu2003}や\cite{Ma2009a}が参考になる．
 
    ### 浮体の運動方程式
@@ -1405,7 +1378,7 @@ struct BEM_BVP {
    /* -------------------------------------------------------------------------- */
    /* -------------------------------------------------------------------------- */
    /* -------------------------------------------------------------------------- */
-   V_d Func(const auto &ACCELS_IN, const std::vector<Network *> WATERS, const std::vector<Network *> &rigidbodies) {
+   V_d Func(V_d ACCELS_IN, const std::vector<Network *> WATERS, const std::vector<Network *> &rigidbodies, V_d &ACCELS_OUT) {
       TimeWatch watch;
       auto ACCELS = ACCELS_IN;
       //* --------------------------------------------------- */
@@ -1414,7 +1387,9 @@ struct BEM_BVP {
       setPhiPhin_t(WATERS);
       knowns.resize(this->matrix_size);
       for (const auto water : WATERS)
+#pragma omp parallel
          for (const auto &p : water->getSurfacePoints())
+#pragma omp single nowait
             for (const auto &[f, i] : p->f2Index) {
                if (isDirichletID_BEM(p, f))
                   knowns[i] = p->phitOnFace.at(f);
@@ -1422,10 +1397,18 @@ struct BEM_BVP {
                   knowns[i] = p->phintOnFace.at(f);
             }
 
+      std::cout << "knowns" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       ans.resize(knowns.size(), 0);
-      if (this->lu != nullptr)
-         this->lu->solve(ParallelDot(mat_kn, knowns) /*既知のベクトル（右辺）*/, ans /*解*/);
+      tmp_b_RHS.resize(knowns.size(), 0);
+#pragma omp parallel for
+      for (size_t i = 0; i < mat_kn.size(); ++i)
+         tmp_b_RHS[i] = Dot(mat_kn[i], knowns);
 
+      std::cout << "tmp_b_RHS" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+      if (this->lu != nullptr)
+         this->lu->solve(tmp_b_RHS /*既知のベクトル（右辺）*/, ans /*解*/);
+
+      std::cout << "solved" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
       //@ -------------------------------------------------------------------------- */
       //@                    update p->phiphin_t and p->phinOnFace                   */
       //@ -------------------------------------------------------------------------- */
@@ -1477,6 +1460,17 @@ struct BEM_BVP {
 
       ```math
       {\boldsymbol I}_{\rm G} = {\rm R}_{g2l}^{-1}{\boldsymbol I}{\rm R}_{g2l}
+      ```
+
+      $I_{Gil}={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}$は（g2lを省略），
+      $R^{-1}$が$R^{\top}$であることと，$I^{-1}$が対角成分のみの行列であることを利用すれば，次のように書ける．
+
+      ```math
+      \begin{align*}
+      I_{Gil}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}\\
+      &={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}\\
+      &=\frac{{R}_{0i}{R}_{0l}}{{I}_{x}}+\frac{{R}_{1i}{R}_{1l}}{{I}_{y}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{z}}
+      \end{align*}
       ```
 
       この運動方程式から，求めたいのは$`\frac{d{\bf \Omega}_{\rm G}}{dt}`$である．これはとても簡単で，次のように求めることができる．
@@ -1551,32 +1545,14 @@ struct BEM_BVP {
                          kz = X_k[8];
                       } else if (X_k.size() == 7)
                          kz = ky = kx = X_k[6];
-
                       double diff = Norm(current_fairleader_position - anchor) - Norm(init_fairleader_position - anchor);
                       Tddd direction = Normalize(anchor - current_fairleader_position);
-                      //  std::array<double, 3> f = Tddd{kx, ky, kz} * diff * direction;
                       std::array<double, 3> f = Tddd{kx, ky, kz} * (anchor - current_fairleader_position);
-
-                      //  if (X_k.size() > 9) {
-                      //     double default_tention = X_k[10];
-                      //     f += default_tention * direction;
-                      //  }
-
-                      //  //  fairleader方向に向かう力はゼロにする．
-                      //  if (Dot(f, direction) < 0)
-                      //     f.fill(0);
-
                       T_GLOBAL += Cross(current_fairleader_position - body->COM, f);
                       F += f;
                    }
                 });
 
-            // if (body->inputJSON.find("spring")) {
-            //    const auto X_k = stod(body->inputJSON.at("spring"));
-            //    std::array<double, 3> origin = {X_k[0], X_k[1], X_k[2]};
-            //    std::array<double, 3> k = {X_k[3], X_k[4], X_k[5]};
-            //    F += k * (origin - body->COM);
-            // }
             //^ ---------------------- ダンピング --------------- */
             if (body->inputJSON.find("damping")) {
                const auto c = stod(body->inputJSON.at("damping"));
@@ -1605,6 +1581,7 @@ struct BEM_BVP {
          } else
             i += 6;
       // std::cout << Green << "other" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
+      ACCELS_OUT = ACCELS;
       return ACCELS - ACCELS_IN;
    };
 
@@ -1629,12 +1606,30 @@ struct BEM_BVP {
 
       BroydenMethod BM(ACCELS_init, ACCELS_init);
 
+      V_d ACCELS_OUT = ACCELS_init;
+
       insertAcceleration(rigidbodies, BM.X - BM.dX);
-      auto func_ = Func(BM.X - BM.dX, WATERS, rigidbodies);
-
+      auto func_ = Func(BM.X - BM.dX, WATERS, rigidbodies, ACCELS_OUT);
+#define method_Cao1994
       for (auto j = 0; j < 100; ++j) {
+#ifdef method_Cao1994
+         V_d ACCELS_IN = ACCELS_OUT;
+         std::cout << ACCELS_OUT << std::endl;
+         auto func = Func(ACCELS_IN, WATERS, rigidbodies, ACCELS_OUT);
+         func = ACCELS_IN - ACCELS_OUT;
+         std::cout << ACCELS_OUT << std::endl;
+         insertAcceleration(rigidbodies, ACCELS_OUT);
+         convergence.push_back(Norm(func));
 
-         auto func = Func(BM.X, WATERS, rigidbodies);
+         auto dX = ACCELS_OUT - ACCELS_IN;
+         std::cout << "j = " << j << ", alpha = " << alpha << ", Norm(func) = " << Norm(func) << ", " << Red << "Norm(dX) = " << Norm(dX) << colorReset << std::endl;
+
+         if (Norm(dX) < 1E-10 && Norm(func) < 1E-10 && count++ > 4)
+            break;
+         else
+            count = 0;
+#else
+         auto func = Func(BM.X, WATERS, rigidbodies, ACCELS_OUT);
          convergence.push_back(Norm(func));
          BM.update(func, func_, j == 0 ? 0.1 : alpha);
          func_ = func;
@@ -1648,6 +1643,7 @@ struct BEM_BVP {
             break;
          else
             count = 0;
+#endif
       }
       return convergence;
    };

@@ -265,11 +265,11 @@ void setNeumannVelocity(const std::vector<Network *> &objects) {
 void setIsMultipleNode(const auto &p) {
    if (p->CORNER)
       p->isMultipleNode = true;
-   else if (p->Neumann) {
-      auto neumann_N = p->getNormalNeumann_BEM();
-      p->isMultipleNode = std::ranges::any_of(p->getFacesNeumann(), [&](const auto &f) { return !isFlat(neumann_N, f->normal, M_PI / 180. * 20); });
-   } else
-      p->isMultipleNode = false;
+   else {
+      auto n = p->getNormal_BEM();
+      p->isMultipleNode = std::ranges::any_of(p->getSurfaces(),
+                                              [&](const auto &f) { return !isFlat(n, f->normal, M_PI / 180.); });
+   }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -501,7 +501,9 @@ template <typename T1, typename T2, typename T3>
 void storePhiPhinCommon(const std::vector<Network *> &WATERS, const V_d &ans, T1 phiphinProperty, T2 phiOnFaceProperty, T3 phinOnFaceProperty) {
 
    for (const auto water : WATERS)
+#pragma omp parallel
       for (const auto &p : water->getPoints())
+#pragma omp single nowait
          for (const auto &[f, i] : p->f2Index) {
             if (isDirichletID_BEM(p, f)) {
                (p->*phinOnFaceProperty).at(f) = std::get<1>(p->*phiphinProperty) = ans[i];
@@ -513,7 +515,9 @@ void storePhiPhinCommon(const std::vector<Network *> &WATERS, const V_d &ans, T1
 
    //^ 隣接フェイスの面積で重み付けした phi 値の寄与を計算し，結果を phiphinProperty に格納
    for (const auto water : WATERS)
+#pragma omp parallel
       for (const auto &p : water->getPoints())
+#pragma omp single nowait
          if (p->Neumann) {
             double total = 0;
             std::get<0>(p->*phiphinProperty) = 0;

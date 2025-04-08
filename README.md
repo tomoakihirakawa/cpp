@@ -81,6 +81,7 @@
 - [Contents](./builds/build_tensors/README.md#Contents)
     - [⛵ テンソル積 `TensorProduct`](./builds/build_tensors/README.md#⛵-テンソル積-`TensorProduct`)
     - [⛵ テンソルの縮約 `TensorContract`](./builds/build_tensors/README.md#⛵-テンソルの縮約-`TensorContract`)
+    - [⛵ プログラムにおけるloopとの関係](./builds/build_tensors/README.md#⛵-プログラムにおけるloopとの関係)
 ## [build_Network](./builds/build_Network/README.md)
 
 - [Contents](./builds/build_Network/README.md#Contents)

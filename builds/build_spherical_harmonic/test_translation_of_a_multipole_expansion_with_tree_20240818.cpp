@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
    obj->setGeometricProperties();
    for (const auto& f : obj->getFaces())
       f->setIntegrationInfo();
-   setBoundaryTypes(obj.get());
+   setBoundaryTypes(obj.get(), {});
    setPhiPhinOnFace(obj.get());
    auto size = setNodeFaceIndices(obj.get());
    std::cout << "size = " << size << std::endl;

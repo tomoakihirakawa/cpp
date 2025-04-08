@@ -2389,4 +2389,112 @@ std::vector<std::vector<T>> SubdivideExclude(const std::vector<std::vector<T>> &
    return SubdivideByStepExclude(x, di);
 };
 
+/* -------------------------------------------------------------------------- */
+
+//@　3次元の四面体要素の線形補間関数の勾配
+
+std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 4> &X0123, const std::array<double, 4> &V0123) {
+   const auto [X0, X1, X2, X3] = X0123;
+   const auto [v0, v1, v2, v3] = V0123;
+
+   std::array<double, 3> X = Normalize(X1 - X0);
+   std::array<double, 3> Z = Normalize(Cross(X1 - X0, X2 - X0));
+   std::array<double, 3> Y = Normalize(Cross(Z, X));
+
+   double x1 = Norm(X1 - X0);
+
+   double x2 = Dot(X2 - X0, X);
+   double y2 = Dot(X2 - X0, Y);
+
+   double x3 = Dot(X3 - X0, X);
+   double y3 = Dot(X3 - X0, Y);
+   double z3 = Dot(X3 - X0, Z);
+
+   std::array<double, 3> ret = (-v0 + v1) / x1 * X;
+   ret += (v2 * x1 - v1 * x2 + v0 * (-x1 + x2)) / (x1 * y2) * Y;
+   ret += (v3 * x1 * y2 - v1 * x3 * y2 - v2 * x1 * y3 + v1 * x2 * y3 + v0 * (x3 * y2 - x2 * y3 + x1 * (-y2 + y3))) / (x1 * y2 * z3) * Z;
+   return ret;
+};
+
+template <size_t N>
+std::array<std::array<double, 3>, N> gradP1(const std::array<std::array<double, 3>, 4> &X0123, const std::array<std::array<double, N>, 4> &V0123) {
+   std::array<std::array<double, 3>, N> ret;
+   for (size_t i = 0; i < N; i++)
+      ret[i] = gradP1(X0123, std::array<double, 4>{V0123[0][i], V0123[1][i], V0123[2][i], V0123[3][i]} /*0,1,2,3節点のi成分*/);
+   return ret; /*成分ごとのgrad*/
+};
+
+//@ ３次元の三角要素の線形補間関数の勾配
+
+std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 3> &X012, const std::array<double, 3> &V012) {
+   const auto [X0, X1, X2] = X012;
+   const auto [v0, v1, v2] = V012;
+
+   std::array<double, 3> X = Normalize(X1 - X0);
+   std::array<double, 3> Z = Normalize(Cross(X1 - X0, X2 - X0));
+   std::array<double, 3> Y = Normalize(Cross(Z, X));
+
+   double x1 = Norm(X1 - X0);
+
+   double x2 = Dot(X2 - X0, X);
+   double y2 = Dot(X2 - X0, Y);
+
+   std::array<double, 3> ret = (-v0 + v1) / x1 * X;
+   ret += (v2 * x1 - v1 * x2 + v0 * (-x1 + x2)) / (x1 * y2) * Y;
+   return ret;
+};
+
+std::array<std::array<double, 3>, 3> gradCoefficientsP1(const std::array<double, 3> &X0, const std::array<double, 3> &X1, const std::array<double, 3> &X2) {
+   const std::array<double, 3> X = Normalize(X1 - X0), Z = Normalize(Cross(X1 - X0, X2 - X0)), Y = Normalize(Cross(Z, X));
+   const double x1 = Norm(X1 - X0), x2 = Dot(X2 - X0, X), y2 = Dot(X2 - X0, Y);
+   return {(-1. / x1) * X + ((-x1 + x2) / (x1 * y2)) * Y,
+           (1. / x1) * X - (x2 / (x1 * y2)) * Y,
+           (x1 / (x1 * y2)) * Y};
+};
+
+std::array<double, 3> gradP1(const std::array<std::pair<std::array<double, 3>, double>, 3> &X012_values) {
+   const auto [X0_V0, X1_V1, X2_V2] = X012_values;
+   const auto [X0, v0] = X0_V0;
+   const auto [X1, v1] = X1_V1;
+   const auto [X2, v2] = X2_V2;
+
+   std::array<double, 3> X01 = X1 - X0;
+   std::array<double, 3> X02 = X2 - X0;
+   std::array<double, 3> X = Normalize(X01);
+   std::array<double, 3> Z = Normalize(Cross(X01, X02));
+   std::array<double, 3> Y = Cross(Z, X);
+   double x1 = Norm(X01);
+   double x2 = Dot(X02, X);
+   double y2 = Dot(X02, Y);
+
+   std::array<double, 3> ret = (-v0 + v1) / x1 * X;
+   ret += (v2 * x1 - v1 * x2 + v0 * (-x1 + x2)) / (x1 * y2) * Y;
+   return ret;
+};
+
+template <size_t N>
+std::array<std::array<double, 3>, N> gradP1(const std::array<std::array<double, 3>, 3> &X012, const std::array<std::array<double, N>, 3> &V012) {
+   std::array<std::array<double, 3>, N> ret;
+   for (size_t i = 0; i < N; i++) {
+      ret[i] = gradP1(X012, std::array<double, 3>{V012[0][i], V012[1][i], V012[2][i]} /*0,1,2節点のi成分*/);
+      /*
+      例えば，N=3の場合で，V012として，
+      各節点のU0=(u0,v0,w0),U1=(u1,v1,w1),U2=(u2,v2,w2)が与えられたとき，
+      gradP1(X012,{u0, u1, u2}) -> grad(u) = (d/dx u, d/dy u, d/dz u)
+      gradP1(X012,{v0, v1, v2}) -> grad(v) = (d/dx v, d/dy v, d/dz v)
+      gradP1(X012,{w0, w1, w2}) -> grad(w) = (d/dx w, d/dy w, d/dz w)
+
+      {{d/dx u, d/dy u, d/dz u},
+       {d/dx v, d/dy v, d/dz v},
+       {d/dx w, d/dy w, d/dz w}} = d/dx_j u_i
+
+       これは，速度勾配テンソルである．
+
+      */
+   }
+   return ret; /*成分ごとのgrad*/
+};
+
+/* -------------------------------------------------------------------------- */
+
 #endif

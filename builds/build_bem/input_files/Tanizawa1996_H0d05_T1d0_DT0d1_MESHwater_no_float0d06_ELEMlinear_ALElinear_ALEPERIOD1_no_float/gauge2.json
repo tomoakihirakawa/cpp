@@ -1,0 +1,12 @@
+{
+    "name": "gauge2",
+    "type": "wave gauge",
+    "position": [
+        -1.5,
+        0,
+        7,
+        1.2,
+        0,
+        3
+    ]
+}

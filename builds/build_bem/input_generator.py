@@ -99,6 +99,7 @@ wavemaker_type = ""
 suffix = ""
 default_output_dir = None
 L = None
+T = None
 padding = 20
 
 SimulationCase = args.case
@@ -179,7 +180,6 @@ def add_id(id):
         id += "_" + suffix
     return id
 # ---------------------------------------------------------------------------- #
-
 
 if "looping" in SimulationCase:
     # objfolder = code_home_dir + "/cpp/obj/WaveGeneration"
@@ -287,6 +287,7 @@ elif "Tanizawa1996" in SimulationCase:
 
     id = SimulationCase
     id += "_H" + str(H).replace(".", "d")
+
     if T is not None:
         id += "_T" + str(T).replace(".", "d")
     if L is not None:
@@ -297,8 +298,8 @@ elif "Tanizawa1996" in SimulationCase:
         wavemaker_type = "potential"
         # wavemaker_type = "flap"
 
-    if meshname == "":
-        meshname = "water_no_float0d1"
+    # if meshname == "":
+    #     meshname = "water_no_float0d1"
 
     id = add_id(id)
 
@@ -895,6 +896,10 @@ elif "Kramer2021" in SimulationCase:
         water["objfile"] = objfolder + "/water.obj"
         tank["objfile"] = objfolder + "/tank.obj"
         float["objfile"] = objfolder + "/sphere.obj"
+    else:
+        # throw error
+        print("Error: SimulationCase is not defined")
+        exit()
 
     id = add_id(id)
 
@@ -2575,19 +2580,58 @@ elif "OC6DeepCwind" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "DeepCWind" in SimulationCase:
 
+    r'''DOC_EXTRACT_2_1_0_validation_DeepCWind
+
+    ## DeepCWind
+
+    このケースは，\cite{Wang2022}に基づいてる．
+    Wang(2022)のTable1によると，
+
+    | 項目 | 値 |
+    |:---:|:---:|
+    | 全体質量 | 1.4196E+7 kg |
+    | 排水量 | 14053 m3 |
+    | （水面が原点）重心位置 z | -7.32 m |
+    | ピッチ慣性モーメント(Iyy) | 1.2979E+10 kg m2 |
+            
+    このケースでは，
+
+    | 項目 | 値 |
+    |:---:|:---:|
+    | 全体質量	1.3958E+7 kg |
+    | 喫水 (Draft)	20 m |
+    | 排水量	1.3917E+4 m3 |
+    | （水面が原点）重心位置 z | -8.07 m |
+    | ロール慣性モーメント	1.3947E+10 kg-m2 |
+    | ピッチ慣性モーメント	1.5552E+10 kg-m2 |
+    | ヨー慣性モーメント	1.3692E+10 kg-m2 |
+
+    水深
+    波高 H = 7.4 m
+    波長 L = 150 m
+    波周期
+
+    ```sh
+    python3.11 input_generator.py Goring1979 -m water0d1.obj -dt 0.05 -e pseudo_quad -o /Volumes/home/BEM/Goring1979/
+    python3.11 input_generator.py Goring1979 -m water0d1.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+    python3.11 input_generator.py Goring1979 -m water0d09.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+    python3.11 input_generator.py Goring1979 -m water0d09.obj -dt 0.05 -o /Volumes/home/BEM/Goring1979/
+    ```
+
+    実行ファイルが`fast`の場合，以下のように実行する．
+
+    ```sh
+    ./fast ./input_files/Goring1979_DT0d05_MESHwater0d09.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
+    ```    
+
+    '''
+
     start = 0.0
-
-    # Water depth
-    h = 180.0  # [m]
-
-    # 項目	値
-    # 全体質量	1.3958E+7 kg
-    # 喫水 (Draft)	20 m
-    # 排水量	1.3917E+4 m³
-    # 重心位置 (CM)（SWLからの距離）	8.07 m
-    # ロール慣性モーメント	1.3947E+10 kg-m²
-    # ピッチ慣性モーメント	1.5552E+10 kg-m²
-    # ヨー慣性モーメント	1.3692E+10 kg-m²
+    bottom_in_z = 0
+    h = 180.0 # 水深
+    L = 150.0 # 波長
+    theta = 180.0
+    wave_theory_L = [H / 2, L, h, bottom_in_z, theta]
 
     # Mass properties
     displacement_volume = (4297.7 * 3 + 663.661)
@@ -2627,13 +2671,6 @@ elif "DeepCWind" in SimulationCase:
     # and inclrease the number of floats to 9 (-300,300), (-300,0), (-300,-300), (0,300), (0,0), (0,-300), (300,300), (300,0), (300,-300)
     # (0,0) is the original float position
 
-    # Wave theory (JONSWAP parameters)
-    bottom_in_z = 0
-    h = 180.0
-    L = 150.0
-    theta = 180.0
-    wave_theory_L = [H / 2, L, h, bottom_in_z, theta]
-
     absorber = {"name": "absorber",
                 "type": "Absorber",
                 "isFixed": True,
@@ -2642,68 +2679,193 @@ elif "DeepCWind" in SimulationCase:
 
     if "9floats" in suffix:
 
-        water["objfile"] = objfolder + "/water9floats.obj"
+        '''
+        y
+        |--> x          
 
-        shift_in_m = 300
+        00 <--250-> 01 <--250-> 02   
+
+        03 <--250-> 04 <--250-> 05
+
+        06 <--250-> 07 <--250-> 08
+        
+        '''
+
+        water["objfile"] = objfolder + "/water9floats.obj"
+        
+        shift_x = 250
+        shift_y = 300
 
         float00 = copy.copy(float)
         float00["name"] = "float00"
-        float00["COM"] = [-shift_in_m, shift_in_m, COM[2]]
-        float00["translation"] = [-shift_in_m, shift_in_m, 0]
+        float00["translation"] = s = [-shift_x, shift_y, 0]
+        float00["COM"] = [s[0], s[1], COM[2]]
 
         float01 = copy.copy(float)
         float01["name"] = "float01"
-        float01["COM"] = [0, shift_in_m, COM[2]]
-        float01["translation"] = [0, shift_in_m, 0]
+        float01["translation"] = s = [0, shift_y, 0]
+        float01["COM"] = [s[0], s[1], COM[2]]
 
         float02 = copy.copy(float)
         float02["name"] = "float02"
-        float02["COM"] = [shift_in_m, shift_in_m, COM[2]]
-        float02["translation"] = [shift_in_m, shift_in_m, 0]
+        float02["translation"] = s = [shift_x, shift_y, 0]
+        float02["COM"] = [s[0], s[1], COM[2]]
 
         float03 = copy.copy(float)
         float03["name"] = "float03"
-        float03["COM"] = [-shift_in_m, 0, COM[2]]
-        float03["translation"] = [-shift_in_m, 0, 0]
+        float03["translation"] = s = [-shift_x, 0, 0]
+        float03["COM"] = [s[0], s[1], COM[2]]
 
         float04 = copy.copy(float)
         float04["name"] = "float04"
-        float04["COM"] = [0, 0, COM[2]]
-        float04["translation"] = [0, 0, 0]
+        float04["translation"] = s = [0, 0, 0]
+        float04["COM"] = [s[0], s[1], COM[2]]
 
         float05 = copy.copy(float)
         float05["name"] = "float05"
-        float05["COM"] = [shift_in_m, 0, COM[2]]
-        float05["translation"] = [shift_in_m, 0, 0]
+        float05["translation"] = s = [shift_x, 0, 0]
+        float05["COM"] = [s[0], s[1], COM[2]]
 
         float06 = copy.copy(float)
         float06["name"] = "float06"
-        float06["COM"] = [-shift_in_m, -shift_in_m, COM[2]]
-        float06["translation"] = [-shift_in_m, -shift_in_m, 0]
+        float06["translation"] = s = [-shift_x, -shift_y, 0]
+        float06["COM"] = [s[0], s[1], COM[2]]
 
         float07 = copy.copy(float)
         float07["name"] = "float07"
-        float07["COM"] = [0, -shift_in_m, COM[2]]
-        float07["translation"] = [0, -shift_in_m, 0]
+        float07["translation"] = s = [0, -shift_y, 0]
+        float07["COM"] = [s[0], s[1], COM[2]]
 
         float08 = copy.copy(float)
         float08["name"] = "float08"
-        float08["COM"] = [shift_in_m, -shift_in_m, COM[2]]
-        float08["translation"] = [shift_in_m, -shift_in_m, 0]
+        float08["translation"] = s = [shift_x, -shift_y, 0]
+        float08["COM"] = [s[0], s[1], COM[2]]
 
-        inputfiles = [tank, water, float00, float01, float02, float03,
-                      float04, float05, float06, float07, float08, absorber]
+        inputfiles = [tank, water, 
+                      float00, float01, float02, 
+                      float03,float04, float05, 
+                      float06, float07, float08, 
+                      absorber]
 
-    elif "3floats" in suffix:
+    if "6floats" in suffix:
 
-        water["objfile"] = objfolder + "/water3floats.obj"
+        '''
+        y
+        |--> x          
 
-        shift_in_m = 300
+        00 <--250-> 01
+
+        02 <--250-> 03
+
+        04 <--250-> 05
+        
+        '''
+
+        water["objfile"] = objfolder + "/water6floats.obj"
+        
+        shift_x = 250
+        shift_y = 300
 
         float00 = copy.copy(float)
         float00["name"] = "float00"
-        float00["COM"] = [0, -shift_in_m, COM[2]]
-        float00["translation"] = [0, -shift_in_m, 0]
+        float00["translation"] = s = [shift_x, shift_y, 0]
+        float00["COM"] = [s[0], s[1], COM[2]]
+
+        float01 = copy.copy(float)
+        float01["name"] = "float01"
+        float01["translation"] = s = [0, shift_y, 0]
+        float01["COM"] = [s[0], s[1], COM[2]]
+
+        float02 = copy.copy(float)
+        float02["name"] = "float02"  # 修正点
+        float02["translation"] = s = [shift_x, 0, 0]
+        float02["COM"] = [s[0], s[1], COM[2]]
+
+        float03 = copy.copy(float)
+        float03["name"] = "float03"  # 修正点
+        float03["translation"] = s = [0, 0, 0]
+        float03["COM"] = [s[0], s[1], COM[2]]
+
+        float04 = copy.copy(float)
+        float04["name"] = "float04"  # 修正点
+        float04["translation"] = s = [shift_x, -shift_y, 0]
+        float04["COM"] = [s[0], s[1], COM[2]]
+
+        float05 = copy.copy(float)
+        float05["name"] = "float05"  # 修正点
+        float05["translation"] = s = [0, -shift_y, 0]
+        float05["COM"] = [s[0], s[1], COM[2]]
+
+        inputfiles = [tank, water, 
+                      float00, float01, float02, 
+                      float03, float04, float05, 
+                      absorber]
+        
+
+    elif "4floats" in suffix:
+
+        '''
+        y
+        |--> x          
+
+        00
+
+        01
+
+        02
+        
+        03
+
+        '''
+
+        water["objfile"] = objfolder + "/water4floats.obj"
+
+        shift_y = 300
+
+        float00 = copy.copy(float)
+        float00["name"] = "float00"
+        float00["translation"] = s = [0, shift_y, 0]
+        float00["COM"] = [s[0], s[1], COM[2]]
+
+        float01 = copy.copy(float)
+        float01["name"] = "float01"
+        float01["translation"] = s = [0, shift_y/2., 0]
+        float01["COM"] = [s[0], s[1], COM[2]]
+
+        float02 = copy.copy(float)
+        float02["name"] = "float02"
+        float02["translation"] = s = [0, 0, 0]
+        float02["COM"] = [s[0], s[1], COM[2]]
+
+        float03 = copy.copy(float)
+        float03["name"] = "float03"
+        float03["translation"] = s = [0, -shift_y/2., 0]
+        float03["COM"] = [s[0], s[1], COM[2]]
+
+        inputfiles = [tank, water, float00, float01, float02, float03, absorber]
+
+    elif "3floats" in suffix:
+
+        '''
+        y
+        |--> x          
+
+        00
+
+        01
+
+        02
+        
+        '''
+
+        water["objfile"] = objfolder + "/water3floats.obj"
+
+        shift_y = 300
+
+        float00 = copy.copy(float)
+        float00["name"] = "float00"
+        float00["COM"] = [0, -shift_y, COM[2]]
+        float00["translation"] = [0, -shift_y, 0]
 
         float01 = copy.copy(float)
         float01["name"] = "float01"
@@ -2711,10 +2873,39 @@ elif "DeepCWind" in SimulationCase:
 
         float02 = copy.copy(float)
         float02["name"] = "float02"
-        float02["COM"] = [0, shift_in_m, COM[2]]
-        float02["translation"] = [0, shift_in_m, 0]
+        float02["COM"] = [0, shift_y, COM[2]]
+        float02["translation"] = [0, shift_y, 0]
 
         inputfiles = [tank, water, float00, float01, float02, absorber]
+
+
+    elif "2floats" in suffix:
+
+        '''
+        y
+        |--> x          
+
+        00
+
+        01
+        
+        '''
+
+        water["objfile"] = objfolder + "/water2floats.obj"
+
+        shift_y = 300
+
+        float00 = copy.copy(float)
+        float00["name"] = "float00"
+        float00["translation"] = s = [0, shift_y, 0]
+        float00["COM"] = [s[0], s[1], COM[2]]
+
+        float01 = copy.copy(float)
+        float01["name"] = "float01"
+        float01["COM"] = [0, 0, COM[2]]
+
+        inputfiles = [tank, water, float00, float01, absorber]
+
 
     else:
         water["objfile"] = objfolder + "/water1float.obj"
@@ -2722,7 +2913,7 @@ elif "DeepCWind" in SimulationCase:
 
     setting = {"max_dt": dt,
                "end_time_step": 10000000,
-               "end_time": 600,
+               "end_time": 100,
                "element": element,
                "ALE": ALE,
                "ALEPERIOD": ALEPERIOD}
@@ -2872,7 +3063,12 @@ elif "Tonegawa2024Akita" in SimulationCase:
                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
-
+else :
+    # シミュレーションケースの指定がない場合はエラー
+    # SimulationCase is
+    print("SimulationCase", SimulationCase)
+    print("Error: please specify the simulation case")
+    sys.exit()
 # シミュレーションケースのモジュールを動的にインポート
 # case_module = importlib.import_module(f"cases.{args.case}")
 # case_module.generate_input_files(args)

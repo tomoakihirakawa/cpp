@@ -69,7 +69,7 @@ auto calcLaplacianU(const auto& points, const std::unordered_set<Network*>& targ
                      });
                }
 
-            double c_xsph = 0.015;
+            double c_xsph = 0.02;
             // if (A->isFluid) {
             //    // c_xsph = std::clamp(0., 0.03, std::pow(A->var_Eigenvalues_of_M, 2));
             //    c_xsph = std::clamp(0.03, 0.06, 0.1 * A->var_Eigenvalues_of_M);
@@ -98,10 +98,12 @@ auto calcLaplacianU(const auto& points, const std::unordered_set<Network*>& targ
 
                      //! 修正
                      DelX = (A->X - B->X);
-                     FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
+                     // FusedMultiplyIncrement(-Aij, Dot(DelX, A->tensorproduct_grad_Uij), A->lap_U);
+                     A->lap_U -= Aij * Dot(DelX, A_no_oikoshi_velocity);
 
                      //\label{SPH:lapU}
-                     FusedMultiplyIncrement(Aij, Uij, A->lap_U);
+                     // FusedMultiplyIncrement(Aij, Uij, A->lap_U);
+                     A->lap_U += Aij * Uij;
 
                      /* -------------------------------------------------------------------------- */
                      // if (Dot(A_no_oikoshi_velocity, vec_A2B) > 0 /*まずは，被るかどうかのチェック*/) {

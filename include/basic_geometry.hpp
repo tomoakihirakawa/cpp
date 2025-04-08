@@ -20,6 +20,24 @@
 
 /* -------------------------------------------------------------------------- */
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
+   // A -= p;
+   // B -= p;
+   // C -= p;
+
+   // const double a = Norm(A);
+   // const double b = Norm(B);
+   // const double c = Norm(C);
+
+   // const auto crossBC = Cross(B, C);
+   // const double numerator = std::abs(Dot(A, crossBC));
+
+   // const double denominator = a * b * c +
+   //                            Dot(A, B) * c +
+   //                            Dot(A, C) * b +
+   //                            Dot(B, C) * a;
+
+   // return 2.0 * std::atan2(numerator, denominator);
+   /* -------------------------------------------------------------- */
    // The solid angle of a plane triangle
    // Van Oosterom, A. and Strackee, J. (1983)
    const auto [a0, a1, a2] = (A -= p);
@@ -33,10 +51,10 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Td
    // * c1 - a1 * b0 * c2 + a0 * b1 * c2), 				  (nB * (a0 * c0 + a1 * c1 + a2 * c2) +
    // nA * (b0 * c0 + b1 * c1 + b2 * c2) + (a0 * b0 + a1 * b1 + a2 * b2) * nC +
    // nA * nB * nC));
-
    return 2. * std::atan2(-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2 * c1 - a1 * b0 * c2 + a0 * b1 * c2,
                           b0 * c0 * nA + b1 * c1 * nA + b2 * c2 * nA + a0 * c0 * nB + a1 * c1 * nB + a2 * c2 * nB + (a0 * b0 + a1 * b1 + a2 * b2 + nA * nB) * Norm(C));
 };
+
 double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const T3Tddd &ABC) {
    return SolidAngle_VanOosteromAandStrackeeJ1983(p, std::get<0>(ABC), std::get<1>(ABC), std::get<2>(ABC));
 };
@@ -861,7 +879,7 @@ Sphere CircumSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &
 };
 
 struct Triangle : public CoordinateBounds {
-   T3Tddd vertices;
+   std::array<std::array<double, 3>, 3> vertices;
    Tddd normal;
    Tddd angles;
    double area;
@@ -875,7 +893,7 @@ struct Triangle : public CoordinateBounds {
    Tddd incenter /*内心*/;
    double inradius /*内接*/;
    //
-   Triangle(const T3Tddd &XIN)
+   Triangle(const std::array<std::array<double, 3>, 3> &XIN)
        : CoordinateBounds(XIN),
          vertices(XIN),
          normal(TriangleNormal(XIN)),
@@ -898,7 +916,7 @@ struct Triangle : public CoordinateBounds {
          incenter(Incenter(vertices)),
          inradius(Inradius(vertices)) {};
 
-   void setProperties(const T3Tddd &vertices_IN) {
+   void setProperties(const std::array<std::array<double, 3>, 3> &vertices_IN) {
       this->vertices = vertices_IN;
       this->normal = TriangleNormal(vertices_IN);
       this->area = TriangleArea(vertices_IN);
@@ -909,7 +927,7 @@ struct Triangle : public CoordinateBounds {
       this->incenter = Incenter(vertices_IN);
       this->inradius = Inradius(vertices_IN);
    };
-   operator T3Tddd() const { return this->vertices; };
+   operator const std::array<std::array<double, 3>, 3> &() const { return vertices; };
    Tddd normal_to_be_preserved;
 };
 

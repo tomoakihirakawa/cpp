@@ -168,7 +168,6 @@ bool isFacing(const T3Tddd &n1, const T3Tddd &n2) { return isFacing(n1, n2, cont
 // };
 
 // \label{isInContact}
-
 std::pair<bool, Tddd> isInContact_(const networkPoint *p, const T3Tddd &f_target) {
    const auto Y = Nearest(p->X, f_target);
    const auto toNearstX = Y - p->X;
@@ -344,6 +343,7 @@ inline void networkPoint::addContactFaces(const std::vector<Network *> &objects,
 
    std::vector<bool> F_cX_flag(F_cX.size(), true);
 
+   auto surfaces = this->getSurfaces();
    // b! 2. 近い接触面を優先し，ほぼ同方向の接触面のフラグをfalseにする．
    for (auto i = 0; i < F_cX.size(); ++i) {
       auto [fi, _, __] = F_cX[i];
@@ -353,6 +353,10 @@ inline void networkPoint::addContactFaces(const std::vector<Network *> &objects,
                auto [fj, _, __] = F_cX[j];
                if (isFlat(fi->normal, fj->normal, M_PI / 180) || isFlat(fi->normal, -fj->normal, M_PI / 180))
                   F_cX_flag[j] = false;
+
+               // !向かい合っているものだけを残す場合
+               if (std::ranges::none_of(surfaces, [&](const auto &f) { return isFlat(fi->normal, -f->normal, 60 * M_PI / 180); }))
+                  F_cX_flag[i] = false;
             }
    }
 
@@ -369,7 +373,7 @@ inline void networkPoint::addContactFaces(const std::vector<Network *> &objects,
    //! b 4. f_nearestContactFacesには，隣接面毎に最も近い接触面と接触位置が格納される．
    const double angle = 60 * M_PI / 180;
    this->f_nearestContactFaces.clear();
-   for (const auto &f : this->getSurfaces())
+   for (const auto &f : surfaces)
       for (const auto &F_X : this->ContactFaces) {
          if (isFlat(f->normal, std::get<0>(F_X)->normal, angle) ||
              isFlat(f->normal, -std::get<0>(F_X)->normal, angle)) {
@@ -589,46 +593,11 @@ inline std::vector<double> networkPoint::getFaceAreas() const {
    return ret;
 };
 
-#define linear_area_averaged
 inline Tddd networkPoint::getNormalAreaAveraged() const {
-#ifdef linear_area_averaged
-   // 角度の重みを掛けた法線ベクトルを足し合わせる
    Tddd normal = {0., 0., 0.};
    for (const auto &f : this->Faces)
-      normal += f->area * f->normal;
-#elif defined(quad_area_averaged)
-
-   Tddd normal = {0., 0., 0.};
-   for (const auto &f : this->Faces) {
-      auto [p0, p1, p2] = f->getPointsTuple(this);
-      auto l0 = p0->getLineBetween(p1);
-      auto l1 = p1->getLineBetween(p2);
-      auto l2 = p2->getLineBetween(p0);
-      //
-      auto fs0 = l0->getFaces();
-      auto ps6_l0_f00 = fs0[0]->get6PointsTuple(l0);
-      auto ps6_l0_f01 = fs0[1]->get6PointsTuple(l0);
-      interpolationTriangleQuadByFixedRange3D intp_l0_0(ToX(ps6_l0_f00));
-      interpolationTriangleQuadByFixedRange3D intp_l0_1(ToX(ps6_l0_f01));
-      //
-      auto fs1 = l1->getFaces();
-      auto ps6_l1_f10 = fs1[0]->get6PointsTuple(l1);
-      auto ps6_l1_f11 = fs1[1]->get6PointsTuple(l1);
-      interpolationTriangleQuadByFixedRange3D intp_l1_0(ToX(ps6_l1_f10));
-      interpolationTriangleQuadByFixedRange3D intp_l1_1(ToX(ps6_l1_f11));
-      //
-      auto fs2 = l2->getFaces();
-      auto ps6_l2_f20 = fs2[0]->get6PointsTuple(l2);
-      auto ps6_l2_f21 = fs2[1]->get6PointsTuple(l2);
-      interpolationTriangleQuadByFixedRange3D intp_l2_0(ToX(ps6_l2_f20));
-      interpolationTriangleQuadByFixedRange3D intp_l2_1(ToX(ps6_l2_f21));
-      //
-      auto [f0p0, f0p1, f0p2] = (*l0)(f)->getPoints();
-      auto [f1p0, f1p1, f1p2] = (*l1)(f)->getPoints();
-      auto [f2p0, f2p1, f2p2] = (*l2)(f)->getPoints();
-      normal += f->area * f->normal;
-   }
-#endif
+      if (f->SurfaceQ())
+         normal += f->area * f->normal;
    return Normalize(normal);
 };
 

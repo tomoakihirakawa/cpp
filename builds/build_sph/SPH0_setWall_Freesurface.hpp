@@ -142,6 +142,12 @@ void setCorrectionMatrix(const auto& all_nets) {
          // 逆行列の計算時に無視する固有値の値
          const double clamp_value = 0.01;
          auto [inv_grad_corr_M, Evalue, Evector] = SymmetricInverseClamped_(A->grad_corr_M, clamp_value, 1E-10, 100);
+         if (A->intp_density < 700) {
+            for (auto i = 0; i < 3; i++)
+               if (std::abs(Evalue[i]) < 0.1)
+                  inv_grad_corr_M[i] = { i == 0 ? 1. : 0., i == 1 ? 1. : 0., i == 2 ? 1. : 0. };
+
+         }
          // matrix_unchanged(inv_grad_corr_M);
          A->inv_grad_corr_M = inv_grad_corr_M;
          A->Eigenvalues_of_M = Evalue;
@@ -158,6 +164,11 @@ void setCorrectionMatrix(const auto& all_nets) {
          A->var_Eigenvalues_of_M1 = std::sqrt(A->var_Eigenvalues_of_M1) / 3.;
 
          auto [inv_grad_corr_M_next, Evalue_next, Evector_next] = SymmetricInverseClamped_(A->grad_corr_M_next, clamp_value, 1E-10, 100);
+         if (A->intp_density_next < 700) {
+            for (auto i = 0; i < 3; i++)
+               if (std::abs(Evalue_next[i]) < 0.1)
+                  inv_grad_corr_M_next[i] = { i == 0 ? 1. : 0., i == 1 ? 1. : 0., i == 2 ? 1. : 0. };
+         }
          // matrix_unchanged(inv_grad_corr_M_next);
          A->inv_grad_corr_M_next = inv_grad_corr_M_next;
          A->Eigenvalues_of_M_next = Evalue_next;
@@ -817,11 +828,11 @@ void setFreeSurface(auto& net, const auto& RigidBodyObject) {
             */
 
             //! 流体粒子に対してはr=2.5*ps，\theta=30度
-            double ratio_flud = 2.3;
+            double ratio_flud = 2.5;
             if (A->intp_density < 0.9 * _WATER_DENSITY_ && A->min_Eigenvalues_of_M < 0.7)
                ratio_flud = 2;
             // 2.2OK
-            // 2.4OUT
+         // 2.4OUT
             const double min_ratio_flud = 2.25;
             const double surface_check_r_for_fluid_ = A->particle_spacing * ratio_flud;
             const double surface_check_r_for_fluid_surface = A->particle_spacing * min_ratio_flud;
@@ -922,19 +933,19 @@ void setFreeSurface(auto& net, const auto& RigidBodyObject) {
             A->isSurface_next_tmp = A->isSurface_next;
             A->isSurface = A->isSurface_next || A->isSurface_next_tmp;
 
-            if (A->intp_density < _WATER_DENSITY_ * 0.9 && A->min_Eigenvalues_of_M < 0.5)
+
+            if (A->intp_density < _WATER_DENSITY_ * (1.3 - 0.5 * A->min_Eigenvalues_of_M))
                A->isSurface = true;
 
+            // if (total_volume_w > 0.)
+            //    p->intp_density = p->intp_density / total_volume_w;
+            // else
+            //    p->intp_density = _WATER_DENSITY_;
 
-            if (total_volume_w > 0.)
-               p->intp_density = p->intp_density / total_volume_w;
-            else
-               p->intp_density = _WATER_DENSITY_;
-
-            if (total_volume_w_next > 0.)
-               p->intp_density_next = p->intp_density_next / total_volume_w_next;
-            else
-               p->intp_density_next = _WATER_DENSITY_;
+            // if (total_volume_w_next > 0.)
+            //    p->intp_density_next = p->intp_density_next / total_volume_w_next;
+            // else
+            //    p->intp_density_next = _WATER_DENSITY_;
 
             // if (A->intp_density_next > _WATER_DENSITY_ * 1.02)
          //    A->isSurface_next = false;

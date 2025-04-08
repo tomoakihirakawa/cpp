@@ -18,16 +18,19 @@ make
 
 ## テンソル積 `TensorProduct`
 
-テンソル積は，
-例えば，$a_i b_j$のようなもので，
-$\boldsymbol{a} \otimes \boldsymbol{b}$とも書かれる．
-または，例えば，$a_i b_j c_k$もテンソル積で，この場合，
-$\boldsymbol{a} \otimes \boldsymbol{b} \otimes \boldsymbol{c}$とも書かれる．
-テンソルの積によって次元が増えることになる．
+テンソル積$(a_i b_j)$は，記号$\otimes$を使って$\boldsymbol{a} \otimes \boldsymbol{b}$と表される(p.16)．
+$a_i b_j c_k$は，$\boldsymbol{a} \otimes \boldsymbol{b} \otimes \boldsymbol{c}$．
+かけるテンソルの階数が異なってもよい．積の結果，階数は添字の種類の数になる．
 
-方程式には，$a_i b_j c_j$のようなものが現れることがある．
-これをベクトルを使って表現すると，$(\boldsymbol{a} \otimes \boldsymbol{b}) \cdot \boldsymbol{c}$となる．
-行列計算でもそうであるように，$\otimes$と$\cdot$の順番は変えると結果が変わる．
+テンソル積$(a_i b_j)$と$(b_j a_i)$は同じものであるが，$(a_j b_i)$は異なるものである．
+$i$と$j$を入れ替えても，
+総和を取る場合は結果は同じになるかもしれないが，
+他のテンソルとの計算結果が変わってしまう可能性がある．
+なので，計算に関わるテンソル間で，添字は一貫していなければならない．
+
+$k$が$ｊ$との場合，$a_i b_j c_j$の場合，
+これはベクトルを使って，$(\boldsymbol{a} \otimes \boldsymbol{b}) \cdot \boldsymbol{c}$と表せる．
+$a_i b_j c_i$なら，$\boldsymbol{c} \cdot (\boldsymbol{a} \otimes \boldsymbol{b})$と表せる．
 
 ```Mathematica
 a = {1, 2, 3};
@@ -75,6 +78,11 @@ TensorContract[TensorProduct[a, b, c], {{1, 3}}]
 ちなみに，２番目の計算からわかるように，
 始めに計算した`Dot[c, TensorProduct[a, b]]`
 は，`TensorContract[TensorProduct[a, b, c], {{1, 3}}]`と同じ結果であり，つまり，$a_ib_jc_i$の計算をしていたことになる．
+
+## プログラムにおけるloopとの関係
+
+テンソルを使った計算は，loopを使った計算と同じようなものだが，
+違う点は，
 
 */
 

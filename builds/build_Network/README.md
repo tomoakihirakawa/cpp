@@ -66,7 +66,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Network::constructor](../../include/Network.hpp#L3604)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Network::constructor](../../include/Network.hpp#L3606)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp

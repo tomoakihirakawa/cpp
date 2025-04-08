@@ -1,0 +1,26 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 20000,
+    "end_time": 30,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Tanizawa1996_H0d05_L1d8_DT0d05_ELEMlinear_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "absorber1.json",
+        "absorber2.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json",
+        "float.json"
+    ]
+}

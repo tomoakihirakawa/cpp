@@ -317,7 +317,12 @@ double rho_next(const networkPoint* p) {
       // return 0.01 * p->RK_rho.getX(p->DrhoDt_SPH) + 0.99 * _WATER_DENSITY_;
 
    auto tmp = -p->rho * p->div_U;
-   return p->RK_rho.getX(tmp / std::sqrt(1. + 0.01 * std::abs(tmp)));
+   // return p->RK_rho.getX(tmp / std::sqrt(1. + 0.01 * std::abs(tmp)));
+   // 
+   auto rho = p->RK_rho.getX(tmp / std::sqrt(1. + 0.01 * std::abs(tmp)));
+
+   auto a = 0.7;
+   return 0.02 * p->intp_density + 0.98 * (a * rho + (1. - a) * _WATER_DENSITY_);
 
    // if (tmp > 0)
    //    return p->RK_rho.getX(std::log(tmp + 1.));
@@ -497,8 +502,8 @@ void updateParticles(const auto& net,
             for (const auto& [closest_p, f2w] : { findClosest(p, vector_points) /* , closest_next(p, RigidBodyObject)*/ }) {
                if (closest_p != nullptr) {
                   auto dist_f2w = Norm(f2w);
-                  // auto n = closest_p->interp_normal;
-                  auto n = closest_p->normal_SPH;
+                  auto n = closest_p->interp_normal;
+                  // auto n = closest_p->normal_SPH;
                   // auto n = Normalize(closest_p->interp_normal_original);
                   auto normal_dist_f2w = Norm(Projection(f2w, n));  //! nomal distance from the fluid particle to the wall particle
                   auto ratio = 1. - normal_dist_f2w / d0;
@@ -579,8 +584,9 @@ void updateParticles(const auto& net,
       }
 
       for (const auto& A : points) {
-         const double a = 0.9;
-         A->setDensity(0.01 * A->intp_density + 0.99 * (a * rho_next(A) + (1. - a) * _WATER_DENSITY_));
+         // const double a = 0.5;
+         // A->setDensity(0.01 * A->intp_density + 0.99 * (a * rho_next(A) + (1. - a) * _WATER_DENSITY_));
+         A->setDensity(rho_next(A));
          A->RK_rho.push(A->DrhoDt_SPH);
       }
       /* -------------------------------------------------------------------------- */

@@ -555,7 +555,7 @@ class networkPoint : public CoordinateBounds, public CRS {
    double W;
    /////////////////////////
    // 物性
-   double mu_SPH; /*粘性係数：水は約0.001016 Pa.s*/
+   double mu_SPH = _WATER_MU_10deg_; /*粘性係数：水は約0.001016 Pa.s*/
    //
    double dt_CFL;
    double total_weight, total_weight_, total_weight__, total_N;
@@ -623,8 +623,10 @@ class networkPoint : public CoordinateBounds, public CRS {
    };
    /////////////////////////
    T3Tddd tensorproduct_grad_Uij, tensorproduct_grad_Uij_next;
-   Tddd lap_U;
-   T3Tddd grad_U;
+   Tddd lap_U = {0., 0., 0.};
+   T3Tddd grad_U = {{ {0., 0., 0.},
+                      {0., 0., 0.},
+                      {0., 0., 0.} }};
    T3Tddd Mat1, Mat2, Mat3, Mat_B;
    std::unordered_map<networkPoint *, double> map_p_grad;
    std::vector<std::tuple<networkPoint *, double>> vector_p_grad;
@@ -724,6 +726,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    Tddd repulsive_force_SPH;
    double DrhoDt_SPH = 0.;
 #endif
+
+   std::array<double, 3> U_FVM = {0., 0., 0.};
 
    /* -------------------------------------------------------------------------- */
    std::tuple<networkFace * /*補間に使った三角形の頂点*/,
@@ -842,16 +846,13 @@ class networkPoint : public CoordinateBounds, public CRS {
    double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
       // 重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
       // return Dot(this->X - offset, Normalize(this->X - g_center));
-
       if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
          return std::get<2>(this->X);
       else
          return Dot(this->X - offset, Normalize(this->X - g_center));
    };
 
-   double aphiat(const double pressure /*zero if on atmosfere*/,
-                 const Tddd &offset = {0., 0., 0.},
-                 const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
+   double aphiat(const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
       // double g = 9.81;	// [m/s2]
       // double rho = 1000.; // [kg/m3]
       if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
@@ -860,10 +861,7 @@ class networkPoint : public CoordinateBounds, public CRS {
          return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
    };
 
-   double DphiDt(const Tddd &U_modified,
-                 const double pressure /*zero if on atmosfere*/,
-                 const Tddd &offset = {0., 0., 0.},
-                 const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
+   double DphiDt(const Tddd &U_modified, const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
       // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D BIM simulation with an application to underwater explosion bubble dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003. equaiton (11)
       // return this->DphiDt(pressure, offset, g_center) + Dot(U_modified - this->U_BEM, this->U_BEM);
       return aphiat(pressure, offset, g_center) + Dot(U_modified, this->U_BEM);  // 以下はと同じ：
@@ -1429,6 +1427,16 @@ struct DodecaPoints;
 class networkFace : public Triangle {
   public:
    int index;
+
+   /* -------------------------------------------------------------------------- */
+
+   std::array<double, 3> gradP1(const std::function<double(networkPoint *)> &func) {
+      std::array<double, 3> V012 = {func(this->Points[0]), func(this->Points[1]), func(this->Points[2])};
+      std::array<std::array<double, 3>, 3> X012 = {this->Points[0]->X, this->Points[1]->X, this->Points[2]->X};
+      return ::gradP1(X012, V012);
+   };
+
+   /* -------------------------------------------------------------------------- */
 
   public:
    T_LLL Lines = {nullptr, nullptr, nullptr};  // 2月28日(月)導入
@@ -3043,15 +3051,6 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
    };
 
    double GaussIntegral(const Tddd &X) const {
-      /*
-      integrate(r.n/|r^3|)
-
-       ^^^^
-       ||||
-      +----+
-      | 4pi|-->   outside:0
-      +----+
-      */
       double ret = 0;
       Tddd r;
       for (const auto &f : this->getSurfaces()) {
@@ -3066,10 +3065,8 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
    double windingNumber(const Tddd &X) const {
       double ret = 0;
-      for (const auto &f : this->getSurfaces()) {
+      for (const auto &f : this->getSurfaces())
          ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, f->getXVertices());
-         // ret += SolidAngle(X, f->getXVertices());
-      }
       return ret / (4. * M_PI);
    };
 
@@ -3283,82 +3280,16 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 
    // b$ ----------------------------------------------------------------------------------------- */
 
-   std::array<double, 3> siginedDistance(const std::array<double, 3> &X) {
-      /*
-      This function is based on the following paper.
-      Belyaev, A., Fayolle, P., & Pasko, A. (2013). Signed Lp-distance fields. Computer-Aided Design, 45(2), 523–528. https://doi.org/10.1016/j.cad.2012.10.035
-      */
-      const int P = 15;
-
-      auto surface = this->getSurfaces();
-      double accum = 0.;
-      std::array<double, 3> direction = {0., 0., 0.};
-      Tddd R;
-      double nr;
-      const double eps = 1E-3;
-      const double too_small_distance = std::pow(nr, -(P + 2));
-      std::array<std::array<double, 3>, 3> X012;
-      std::array<double, 3> cross;
-      bool too_close = false;
-      double min_distance = 1E+10;
-      std::array<double, 3> v, v_tmp;
-      double d;
-      bool is_inside = false;
-      for (const auto &target_face : surface) {
-         auto [p0, p1, p2] = target_face->getPoints();
-         X012 = {p0->X, p1->X, p2->X};
-         cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);  // constant value for the linear integration
-
-         if (!too_close) {
-            for (int i = 0; const auto &[t0, t1, ww] : __array_GW14xGW14__) {
-               R = Dot(ModTriShape<3>(t0, t1), X012) - X;
-               nr = Norm(R);
-               auto tmp = Dot((R / nr) / std::pow(nr, P + 2), cross) * ww * (1. - t0);
-               if (tmp == tmp && eps < nr) {
-                  accum += tmp;
-                  direction += R * tmp;
-               } else {
-                  too_close = true;
-                  v_tmp = Nearest(X, X012) - X;
-                  d = Norm(v_tmp);
-                  min_distance = d;
-                  v = v_tmp;
-                  is_inside = Dot(target_face->normal, v) >= 0.;
-                  break;
-               }
-            }
-         } else {
-            v_tmp = Nearest(X, X012) - X;
-            d = Norm(v_tmp);
-            if (d < min_distance) {
-               min_distance = d;
-               v = v_tmp;
-               is_inside = Dot(target_face->normal, v) >= 0.;
-            }
+   std::array<double, 3> NearestSurfacePoint(const std::array<double, 3> &X) const {
+      double min_distance = 1E+20, r;
+      std::array<double, 3> v, ret = {1E+20, 1E+20, 1E+20};
+      for (const auto &f : this->getSurfaces()) {
+         if (min_distance > (r = (Norm((v = Nearest(X, f)) - X)))) {
+            min_distance = r;
+            ret = v;
          }
       }
-
-      if (too_close) {
-         if (is_inside)
-            return v;
-         else
-            return -v;
-      }
-
-      auto coeff = [&P]() -> std::array<double, P + 1> {
-         std::array<double, P + 1> c;
-         c[0] = 4. * M_PI / 2.;
-         c[1] = M_PI;
-         for (auto k = 0; k < P - 1; ++k)
-            c[k + 2] = (k + 1.) / (k + 3.) * c[k];
-         return c;
-      };
-      std::array<double, P + 1> c = coeff();
-
-      if (accum >= 0.)
-         return std::pow(accum / c[P], -1. / P) * Normalize(direction);
-      else
-         return -std::pow(-accum / c[P], -1. / P) * Normalize(direction);
+      return ret;
    }
 
    // @ ============================================================== */
@@ -5770,15 +5701,24 @@ vtkUnstructuredGridWrite(std::ofstream &ofs, const T &uoTet) {
    vtu.write(ofs);
 };
 
+// Correctly define the `DataVariant`
+using DataVariant3 = std::variant<
+    std::unordered_map<networkPoint *, double>,
+    std::unordered_map<networkPoint *, Tddd>,
+    std::unordered_map<networkPoint *, std::variant<double, Tddd>>>;
+
+// Function Definition
 template <typename T>
 typename std::enable_if<std::is_same<T, std::vector<networkTetra *>>::value ||
                         std::is_same<T, std::unordered_set<networkTetra *>>::value>::type
 vtkUnstructuredGridWrite(std::ofstream &ofs,
                          const T &uoTet,
-                         const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, std::variant<double, std::array<double, 3>>>>> &name_uo_data) {
+                         const std::vector<std::tuple<std::string, DataVariant3>> &name_uo_data) {
    if (uoTet.empty()) return;
+
    vtkUnstructuredGridWriter<networkPoint *> vtu;
    vtu.reserve(uoTet.size());
+
    for (const auto &tet : uoTet) {
       auto abcd = tet->Points;
       vtu.add(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd));
@@ -5787,17 +5727,29 @@ vtkUnstructuredGridWrite(std::ofstream &ofs,
 
    for (const auto &[name, data] : name_uo_data) {
       std::unordered_map<networkPoint *, double> double_map;
-      std::unordered_map<networkPoint *, std::array<double, 3>> array_map;
-      for (const auto &[key, value] : data) {
-         std::visit([&](auto &&arg) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, double>) {
-               double_map[key] = arg;
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::array<double, 3>>) {
-               array_map[key] = arg;
+      std::unordered_map<networkPoint *, Tddd> array_map;
+
+      std::visit([&](auto &&arg) {
+         using VType = std::decay_t<decltype(arg)>;
+
+         if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, double>>) {
+            double_map = arg;
+         } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, Tddd>>) {
+            array_map = arg;
+         } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, std::variant<double, Tddd>>>) {
+            for (const auto &[key, value] : arg) {
+               std::visit([&](auto &&val) {
+                  if constexpr (std::is_same_v<std::decay_t<decltype(val)>, double>) {
+                     double_map[key] = val;
+                  } else if constexpr (std::is_same_v<std::decay_t<decltype(val)>, Tddd>) {
+                     array_map[key] = val;
+                  }
+               },
+                          value);
             }
-         },
-                    value);
-      }
+         }
+      },
+                 data);
 
       if (!double_map.empty()) {
          vtu.addPointData(name, double_map);
@@ -5806,8 +5758,9 @@ vtkUnstructuredGridWrite(std::ofstream &ofs,
          vtu.addPointData(name, array_map);
       }
    }
+
    vtu.write(ofs);
-};
+}
 
 /* -------------------------------------------------------------------------- */
 

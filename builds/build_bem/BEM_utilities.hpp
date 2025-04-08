@@ -623,57 +623,76 @@ V_netFp takeFaces(const V_Netp &nets) {
 
 //@ ------------------------------------------------------ */
 
-Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
-   /*
-   以下が参考になりそうだ．
-   Mancinelli, C., Livesu, M., & Puppo, E. (2019). A comparison of methods for gradient field estimation on simplicial meshes. Computers and Graphics (Pergamon), 80, 37–50. https://doi.org/10.1016/j.cag.2019.03.005
-   */
-   // これは{x,y,z}座標系での結果
+// Tddd gradTangential_LinearElement(const Tddd &phi012, const T3Tddd &X012) {
+//    /*
+//    以下が参考になりそうだ．
+//    Mancinelli, C., Livesu, M., & Puppo, E. (2019). A comparison of methods for gradient field estimation on simplicial meshes. Computers and Graphics (Pergamon), 80, 37–50. https://doi.org/10.1016/j.cag.2019.03.005
+//    */
+//    // これは{x,y,z}座標系での結果
+//    auto [X0, X1, X2] = X012;
+//    auto [phi0, phi1, phi2] = phi012;
 
-   auto [X0, X1, X2] = X012;
-   auto [phi0, phi1, phi2] = phi012;
-   auto n = TriangleNormal(X012);
-   return Cross(n, Dot(phi012, T3Tddd{X2 - X1, X0 - X2, X1 - X0})) / (2. * TriangleArea(X012));
+//    /* --------------------------------------------- */
+//    // auto n = TriangleNormal(X012);
+//    // return Cross(n, Dot(phi012, T3Tddd{X2 - X1, X0 - X2, X1 - X0})) / (2. * TriangleArea(X012));
 
-   // return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
-   // return Cross(n, (phi1 - phi2) * X0 + (phi2 - phi0) * X1 + (phi0 - phi1) * X2) / (2 * TriangleArea(X012));
-   // return (Cross(n, Dot(phi012, T3Tddd{X2, X0, X1})) - Cross(n, Dot(phi012, T3Tddd{X1, X2, X0}))) / (2. * TriangleArea(X012));
+//    /* -------------------------------------------- */
 
-   // Tddd ans;
-   // lapack_svd_solve(X012, ans, phi012);
-   // auto n = TriangleNormal(X012);
-   // return ans - Dot(ans, n) * n;
-};
+//    double x1 = Norm(X1 - X0);
+//    auto X01 = Normalize(X1 - X0);
+//    double x2 = Norm(Dot(X2 - X0, X01));
+//    double y2 = Norm(Chop(X2 - X0, X01));
 
-T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
-   auto [Vx012, Vy012, Vz012] = Transpose(V012);
-   return {gradTangential_LinearElement(Vx012, X012),
-           gradTangential_LinearElement(Vy012, X012),
-           gradTangential_LinearElement(Vz012, X012)};
-};
+//    // Tdd ans;
+//    // lapack_svd_solve(T2Tdd{{{x1, 0.}, {x2, y2}}}, ans, Tdd{{phi1 - phi0, phi2 - phi0}});
+//    // lapack_lu(T2Tdd{{{x1, 0.}, {x2, y2}}}, ans, Tdd{{phi1 - phi0, phi2 - phi0}});
+//    // return std::get<0>(ans) * Normalize(X1 - X0) + std::get<1>(ans) * Normalize(Chop(X2 - X0, X1 - X0));
 
-T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
-   auto [p0, p1, p2] = f->getPoints();
-   return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
-};
+//    double phi10 = phi1 - phi0;
+//    double phi20 = phi2 - phi0;
+//    return phi10 / x1 * Normalize(X1 - X0) + (std::fma(phi20, x1, -phi10 * x2)) / (x1 * y2) * Normalize(Chop(X2 - X0, X01));
 
-Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
-   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
-   return gradTangential_LinearElement(F012, X012) + F_n;
-};
+//    // return Cross(n, phi0 * (X2 - X1) + phi1 * (X0 - X2) + phi2 * (X1 - X0)) / (2 * TriangleArea(X012));
+//    // return Cross(n, (phi1 - phi2) * X0 + (phi2 - phi0) * X1 + (phi0 - phi1) * X2) / (2 * TriangleArea(X012));
+//    // return (Cross(n, Dot(phi012, T3Tddd{X2, X0, X1})) - Cross(n, Dot(phi012, T3Tddd{X1, X2, X0}))) / (2. * TriangleArea(X012));
+
+//    // Tddd ans;
+//    // lapack_svd_solve(X012, ans, phi012);
+//    // auto n = TriangleNormal(X012);
+//    // return ans - Dot(ans, n) * n;
+// };
+
+// T3Tddd gradTangential_LinearElement(const T3Tddd &V012, const T3Tddd &X012) {
+//    // auto [Vx012, Vy012, Vz012] = Transpose(V012);
+//    // return {gradP1(X012, Vx012),
+//    //         gradP1(X012, Vy012),
+//    //         gradP1(X012, Vz012)};
+
+//    return gradP1(X012, V012);
+// };
+
+// T3Tddd grad_U_tangential_LinearElement(const networkFace *const f) {
+//    auto [p0, p1, p2] = f->getPoints();
+//    return gradTangential_LinearElement({p0->U_BEM, p1->U_BEM, p2->U_BEM}, ToX(f));
+// };
+
+// Tddd grad_LinearElement(const Tddd &F012, const T3Tddd &X012, const Tddd &F_n) {
+//    //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
+//    return gradP1(X012, F012) + F_n;
+// };
 
 Tddd grad_phi_tangential(const networkFace *const f) {
    auto [p0, p1, p2] = f->getPoints();
-   return gradTangential_LinearElement(Tddd{{std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)}},
-                                       T3Tddd{{ToX(p0), ToX(p1), ToX(p2)}});
+   Tddd PHI = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
+   return gradP1(T3Tddd{{p0->X, p1->X, p2->X}}, PHI);
 };
 
-T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
-   //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
-   return {grad_LinearElement(std::get<0>(F012), X012, std::get<0>(F_n)),
-           grad_LinearElement(std::get<1>(F012), X012, std::get<1>(F_n)),
-           grad_LinearElement(std::get<2>(F012), X012, std::get<2>(F_n))};
-};
+// T3Tddd grad_LinearElement(const T3Tddd &F012, const T3Tddd &X012, const T3Tddd &F_n) {
+//    //! 三角要素の節点の情報変数F0,F1,F2から，三角要素上でのgrad(F)を計算する．
+//    return {grad_LinearElement(std::get<0>(F012), X012, std::get<0>(F_n)),
+//            grad_LinearElement(std::get<1>(F012), X012, std::get<1>(F_n)),
+//            grad_LinearElement(std::get<2>(F012), X012, std::get<2>(F_n))};
+// };
 
 T3Tddd OrthogonalBasis(const Tddd &n_IN) {
    auto n = Normalize(n_IN);
@@ -794,8 +813,10 @@ Tddd gradPhi(const networkFace *const f) {
    double phi_n = 0;
    for (const auto &p : f->getPoints())
       phi_n += getPhin(p, f);
-   return grad_phi_tangential(f) + phi_n / 3. * f->normal;
-};
+   auto [p0, p1, p2] = f->getPoints();
+   Tddd PHI = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
+   return phi_n / 3. * f->normal + gradP1(T3Tddd{p0->X, p1->X, p2->X}, PHI);
+}
 
 //! use simple gradient method but Newton method
 Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_info) {
@@ -810,7 +831,9 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    Vsample.reserve(3 * s);
    for (const auto &f : p->getSurfaces()) {
       // u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
-      u = grad_phi_tangential(f) + getPhin(p, f) * f->normal;
+      auto [p0, p1, p2] = f->getPoints();
+      Tddd PHI = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
+      u = gradP1(T3Tddd{{p0->X, p1->X, p2->X}}, PHI) + getPhin(p, f) * f->normal;
 
       Vsample.emplace_back(Dot(u, ex));
       Directions.emplace_back(ex);
@@ -887,26 +910,20 @@ T3Tddd HessianOfPhi(auto F, const T3Tddd &basis) {
    //! 位置座標変換
    auto [P0, P1, P2] = F->getPoints();
    auto X012_for_s0s1s2 = T3Tddd{Dot(basis, P0->X), Dot(basis, P1->X), Dot(basis, P2->X)};
-
    //! 速度ポテンシャルの勾配の座標変換
    auto [g0_s0, g0_s1, g0_s2] = Dot(basis, P0->U_BEM);
    auto [g1_s0, g1_s1, g1_s2] = Dot(basis, P1->U_BEM);
    auto [g2_s0, g2_s1, g2_s2] = Dot(basis, P2->U_BEM);
-
    // auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{getPhin(P0, F), getPhin(P1, F), getPhin(P2, F)}, X012);
-
-   auto [g_s0s0, g_s0s1, g_s0s2] = gradTangential_LinearElement(Tddd{g0_s0, g1_s0, g2_s0}, X012_for_s0s1s2);
-   auto [g_s1s0, g_s1s1, g_s1s2] = gradTangential_LinearElement(Tddd{g0_s1, g1_s1, g2_s1}, X012_for_s0s1s2);
-   auto [g_s2s0, g_s2s1, g_s2s2] = gradTangential_LinearElement(Tddd{g0_s2, g1_s2, g2_s2}, X012_for_s0s1s2);
-
+   auto [g_s0s0, g_s0s1, g_s0s2] = gradP1(X012_for_s0s1s2, Tddd{g0_s0, g1_s0, g2_s0});  // 速度勾配テンソル　\nabla \otimes u or \nabla u or d/dx_j u_i
+   auto [g_s1s0, g_s1s1, g_s1s2] = gradP1(X012_for_s0s1s2, Tddd{g0_s1, g1_s1, g2_s1});  // 速度勾配テンソル
+   auto [g_s2s0, g_s2s1, g_s2s2] = gradP1(X012_for_s0s1s2, Tddd{g0_s2, g1_s2, g2_s2});  // 速度勾配テンソル
    // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
    //                {g_s1s0, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
    //                {g_s2s0, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};
-
    return T3Tddd{{{-g_s1s1 - g_s2s2, (g_s0s1 + g_s1s0) * 0.5 /*wont be used*/, (g_s0s2 + g_s2s0) * 0.5 /*wont be used*/},
                   {(g_s0s1 + g_s1s0) * 0.5, g_s1s1 /*wont be used*/, (g_s2s1 + g_s1s2) * 0.5 /*wont be used*/},
                   {(g_s0s2 + g_s2s0) * 0.5, (g_s2s1 + g_s1s2) * 0.5 /*wont be used*/, g_s2s2 /*wont be used*/}}};
-
    // return T3Tddd{{{-g_s1s1 - g_s2s2, g_s0s1 /*wont be used*/, g_s0s2 /*wont be used*/},
    //                {g_s0s1, g_s1s1 /*wont be used*/, g_s1s2 /*wont be used*/},
    //                {g_s0s2, g_s2s1 /*wont be used*/, g_s2s2 /*wont be used*/}}};

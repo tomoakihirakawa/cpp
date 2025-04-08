@@ -338,9 +338,10 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p,
    return V;
 };
 
+/* -------------------------------------------------------------------------- */
+
 void calculateVecToSurface(const Network &net, const int loop, const double coef) {
    auto points = ToVector(net.getPoints());
-
    //! 初期化
    for (const auto &p : points) {
       p->temporary_bool = true;
@@ -367,6 +368,7 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
       else
          points_inner.push_back(p);
    }
+
    /* ------------------------------ 要素を整えるためのベクトル ----------------------------- */
 
    TimeWatch watch;
@@ -429,7 +431,6 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
       }
    }
-
    calculateVecToSurface(net, loop, coef);
    // const double too_fast = 1E+13;
 

@@ -260,7 +260,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
       uomap_P_d P_solidAngle = p_d0;
-      uomap_P_d P_solidAngle_steepness = p_d0;
+      uomap_P_d P_winding = p_d0;
       uomap_P_d P_phin = p_d0;
       uomap_P_d P_phi_t = p_d0;
       uomap_P_d P_phin_t = p_d0;
@@ -338,8 +338,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_velocity_convergence[p] = convergence_info;
             P_vecToSurface[p] = p->vecToSurface;
             P_solidAngle[p] = p->getSolidAngle();
-            P_solidAngle_steepness[p] = p->getMinimalSolidAngle() / (2 * M_PI);
-            P_U_absorbed[p] = p->U_absorbed;
+            // P_winding[p] = p->absorbedBy != nullptr ? p->absorbedBy->windingNumber(p->X) : 0.;
             P_minDepthFromCORNER[p] = p->minDepthFromCORNER;
             P_minDepthFromMultipleNode[p] = p->minDepthFromMultipleNode;
             P_almost_solid_angle[p] = p->almost_solid_angle;
@@ -354,7 +353,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              //  {"body velocity", P_velocity_body},
              //  {"accelNeumann", P_accelNeumann},
              //  {"uNeumann", P_uNeumann},
-             //  {"isMultipleNode", P_isMultipleNode},
+             {"isMultipleNode", P_isMultipleNode},
              {"isAbsorbed", P_isAbsorbed},
              {"isAbsorbed_SDF", P_isAbsorbed_SDF},
              //  {"U_BEM", P_U_BEM},
@@ -368,7 +367,7 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"velocity_convergence", P_velocity_convergence},
              //  {"vecToSurface", P_vecToSurface},
              //  {"solidAngle", P_solidAngle},
-             //  {"solidAngle_steepness", P_solidAngle_steepness},
+            //  {"winding", P_winding},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},

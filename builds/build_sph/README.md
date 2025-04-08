@@ -55,7 +55,7 @@ $`c _v=0.1,c _a=0.1`$としている．
 
 壁粒子の法線ベクトル`p->v_to_surface_SPH`を計算する．
 
-[./main.cpp#L273](./main.cpp#L273)
+[./main.cpp#L272](./main.cpp#L272)
 
 ---
 ## ⛵ N.S.方程式を解く前の準備
@@ -170,7 +170,7 @@ q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
 
-✅ [SPH:lapU](./SPH1_lap_div_U.hpp#L103): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
+✅ [SPH:lapU](./SPH1_lap_div_U.hpp#L104): $`\nabla^2 {\bf u} _i=\sum _{j} A _{ij}({\bf u} _i - {\bf u} _j),\quad A _{ij} = \frac{2m _j}{\rho _i}\frac{{{\bf x} _{ij}}\cdot\nabla W _{ij}}{{\bf x} _{ij}^2}`$
 
 ✅ [SPH:divU](./SPH1_lap_div_U.hpp#L95): $`\nabla\cdot{\bf u} _i=\sum _{j}\frac{m _j}{\rho _j}({{\bf u} _j-{\bf u} _i}) \cdot\nabla W _{ij}`$
 
@@ -228,7 +228,7 @@ $`\nabla p`$は，次時刻の流速の発散をゼロにするためだけの�
 ### 🪼 右辺，$`b`$，`PoissonRHS`について 
 
 この$`b`$を`PoissonRHS`とする．（仮流速は$`{\bf u}^\ast = \frac{\Delta t}{\rho}{\bf b}^n`$と同じ）．
-$`{\bf b}^n`$ （[SPH:Poisson_b_vector](./SPH1_lap_div_U.hpp#L263)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
+$`{\bf b}^n`$ （[SPH:Poisson_b_vector](./SPH1_lap_div_U.hpp#L265)）が計算できるように，$`{\bf u}^n`$と$`\nabla^2 {\bf u}^n`$を計算しておく．
 
 ✅ [SPH:div_b_vector](not found): $`b=\nabla\cdot{\bf b}^n=\sum _{j}\frac{m _j}{\rho _j}({\bf b} _j^n-{\bf b} _i^n)\cdot\nabla W _{ij}`$
 
@@ -277,9 +277,9 @@ p _i^{\rm new} = \frac{b + \sum _j A _{ij} p _j^{\rm old}}{\sum _j A _{ij}}
 
 $`\nabla^{n+1}`$の計算には，$`\rho^{n+1}`$, $`{\bf x}^{n+1}= {\bf x}^{n} + {\bf u}^{n+1} \Delta t`$が必要である．
 
-* [SPH:volume_next](./SPH_Functions.hpp#L332)
+* [SPH:volume_next](./SPH_Functions.hpp#L337)
 * [SPH:rho_next](./SPH_Functions.hpp#L310)
-* [SPH:position_next](./SPH_Functions.hpp#L337)
+* [SPH:position_next](./SPH_Functions.hpp#L342)
 
 [./SPH2_FindPressure.hpp#L104](./SPH2_FindPressure.hpp#L104)
 
@@ -363,17 +363,17 @@ ISPHのポアソン方程式を解く場合，[SPH:gmres](./SPH2_FindPressure.hp
 - [SPH:wall_particle_velocity](./SPH0_setWall_Freesurface.hpp#L622)
 - [SPH:how_to_use_b_vector_in_Poisson0](not found)
 - [SPH:how_to_use_b_vector_in_Poisson1](not found)
-- どのように[SPH:how_to_set_wall_b_vector](not found)/[SPH:how_to_set_fluid_b_vector](./SPH1_lap_div_U.hpp#L264)を作るか
+- どのように[SPH:how_to_set_wall_b_vector](not found)/[SPH:how_to_set_fluid_b_vector](./SPH1_lap_div_U.hpp#L266)を作るか
 
 **壁粒子**
 
-- [SPH:lapU_for_wall](./SPH1_lap_div_U.hpp#L262)
+- [SPH:lapU_for_wall](./SPH1_lap_div_U.hpp#L264)
 - [SPH:setPoissonEquation](./SPH2_FindPressure.hpp#L126)
 - [SPH:whereToMakeTheEquation](./SPH2_FindPressure.hpp#L285)
 - [SPH:capture_condition_1st](./SPH0_setWall_Freesurface.hpp#L380)/[SPH:capture_condition_2nd](not found)
 - [SPH:map_fluid_pressure_to_wall](not found)
 - [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L780)
-- [SPH:reflection](./SPH_Functions.hpp#L484)
+- [SPH:reflection](./SPH_Functions.hpp#L489)
 
 **水面粒子**
 
@@ -382,22 +382,22 @@ ISPHのポアソン方程式を解く場合，[SPH:gmres](./SPH2_FindPressure.hp
 
 **その他**
 
-- [SPH:update_density](./SPH_Functions.hpp#L564)
+- [SPH:update_density](./SPH_Functions.hpp#L569)
 - [SPH:pressure_stabilization](not found)
 - [SPH:RK_order](./from os.py#L145)
 
 
 壁のwall_as_fluidは繰り返しで計算するのはどうか？
 
-[./SPH_Functions.hpp#L594](./SPH_Functions.hpp#L594)
+[./SPH_Functions.hpp#L600](./SPH_Functions.hpp#L600)
 
 ## ⛵ 出力
 
-[./main.cpp#L415](./main.cpp#L415)
+[./main.cpp#L414](./main.cpp#L414)
 
 ## ⛵ 出力（ポリゴン）
 
-[./main.cpp#L632](./main.cpp#L632)
+[./main.cpp#L631](./main.cpp#L631)
 
 ---
 # 🐋 実行方法 

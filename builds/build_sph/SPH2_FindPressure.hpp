@@ -646,7 +646,7 @@ void solvePoisson(const std::unordered_set<networkPoint*>& all_particle) {
    std::cout << "gmres_size : " << gmres_size << std::endl;
    x0 = GMRES->x;
    // double torr = 1E-13;
-   double torr = 1E-13 * points.size();
+   double torr = 1E-14 * points.size();
    double error = GMRES->err;
    std::cout << Red << "       GMRES->err : " << GMRES->err << std::endl;
    std::cout << red << " actual error : " << (error = Norm(b - PreparedDot(points, x0))) << std::endl;
