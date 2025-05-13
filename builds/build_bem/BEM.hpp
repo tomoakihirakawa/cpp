@@ -260,7 +260,9 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
       uomap_P_d P_isMultipleNode = p_d0;
       uomap_P_d P_phi = p_d0;
       uomap_P_d P_solidAngle = p_d0;
-      uomap_P_d P_winding = p_d0;
+      uomap_P_d P_b_diff_RHS_FMM = p_d0;
+      uomap_P_d P_b_RHS_FMM = p_d0;
+      uomap_P_d P_b_RHS_Direct = p_d0;
       uomap_P_d P_phin = p_d0;
       uomap_P_d P_phi_t = p_d0;
       uomap_P_d P_phin_t = p_d0;
@@ -338,7 +340,9 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
             P_velocity_convergence[p] = convergence_info;
             P_vecToSurface[p] = p->vecToSurface;
             P_solidAngle[p] = p->getSolidAngle();
-            // P_winding[p] = p->absorbedBy != nullptr ? p->absorbedBy->windingNumber(p->X) : 0.;
+            P_b_diff_RHS_FMM[p] = p->b_diff_RHS_FMM;
+            P_b_RHS_FMM[p] = p->b_RHS_FMM;
+            P_b_RHS_Direct[p] = p->b_RHS_Direct;
             P_minDepthFromCORNER[p] = p->minDepthFromCORNER;
             P_minDepthFromMultipleNode[p] = p->minDepthFromMultipleNode;
             P_almost_solid_angle[p] = p->almost_solid_angle;
@@ -367,7 +371,9 @@ VV_VarForOutput dataForOutput(const Network *water, const double dt) {
              {"velocity_convergence", P_velocity_convergence},
              //  {"vecToSurface", P_vecToSurface},
              //  {"solidAngle", P_solidAngle},
-            //  {"winding", P_winding},
+             {"b_diff_RHS_FMM", P_b_diff_RHS_FMM},
+             {"b_RHS_FMM", P_b_RHS_FMM},
+             {"b_RHS_Direct", P_b_RHS_Direct},
              {"position", P_position},
              {"φ", P_phi},
              {"φn", P_phin},

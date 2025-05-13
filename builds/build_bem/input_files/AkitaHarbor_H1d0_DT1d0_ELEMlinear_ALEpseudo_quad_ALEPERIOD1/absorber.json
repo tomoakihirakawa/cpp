@@ -1,0 +1,12 @@
+{
+    "name": "absorber",
+    "type": "Absorber",
+    "isFixed": true,
+    "wave_theory": [
+        0,
+        null,
+        10,
+        0
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/AkitaHarbor/absorber.obj"
+}

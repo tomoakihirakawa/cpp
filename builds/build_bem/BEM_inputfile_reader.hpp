@@ -316,24 +316,50 @@ struct SimulationSettings {
       net->isFloatingBody = (net->inputJSON.find("velocity") && net->inputJSON.at("velocity")[0] == "floating");
       // velocityにfileが指定されている場合は，そのファイルを読み込み，
       // interpolationBsplineであるnet->intpMotionRigidBodyをsetする．
+      /*
+
+      ##　物体の動きを値として与える場合
+
+      以下は魚の体の動き{t,x,y,z,q0,q1,q2}をファイルに保存し，それを読み込む例
+
+      ```python
+      bodyA = {"name": "bodyA",
+         "type": "RigidBody",
+         "COM": [0., 0, 0.25],
+         "mass": 10**10,
+         "MOI": [10**10, 10**10, 10**10],
+         "output": "json",
+         #  "velocity": ["sin", 0, 0.1, 5, 0, 0, 0, 0, 0, 1],
+         "velocity": ["file", "./study_fish/bodyA.dat"],
+         "objfile": objfolder + "/bodyA20.obj"}
+      ```
+
+      この方法で，関数で与えられない複雑な動きも与えることができる．
+      また，境界条件は，速度として与える必要があるが，ここでは位置を与えている．
+
+      */
+
       net->inputJSON.find("velocity", [&](auto STR_VEC) {
          if (STR_VEC[0].contains("file")) {
             if (STR_VEC.size() == 1)
                throw std::runtime_error("Failed to open the input file.");
             std::ifstream file(STR_VEC[1]);
+            std::cout << "displacement file : " << STR_VEC[1] << std::endl;
             if (!file.is_open())
                throw std::runtime_error("Failed to open the input file.");
             std::vector<double> T;
             std::vector<std::array<double, 6>> XYZ_Angles;
             std::string line;
-            double t, x, y, z, q0, q1, q2;
             while (std::getline(file, line)) {
                if (line[0] == '#') continue;
-               replace(line.begin(), line.end(), ',', ' ');
+               std::replace(line.begin(), line.end(), ',', ' ');
+               line = std::regex_replace(line, std::regex("\\s+"), " ");
                std::istringstream iss(line);
+               double t = 0.0, x = 0.0, y = 0.0, z = 0.0, q0 = 0.0, q1 = 0.0, q2 = 0.0;
                iss >> t >> x >> y >> z >> q0 >> q1 >> q2;
                T.push_back(t);
                XYZ_Angles.push_back({x, y, z, q0, q1, q2});
+               std::cout << t << " " << x << " " << y << " " << z << " " << q0 << " " << q1 << " " << q2 << std::endl;
             }
             file.close();
             net->intpMotionRigidBody.set(3, T, XYZ_Angles);

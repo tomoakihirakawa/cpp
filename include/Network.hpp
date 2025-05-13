@@ -300,6 +300,17 @@ class networkLine : public CoordinateBounds {
    void Delete();
 };
 
+/* -------------------------------------------------------------------------- */
+
+// struct target4FMM_Element : public target4FMM {
+//    using linear_triangle_integration_info = std::tuple<Tddd, Tddd>;
+//    target4FMM_Element(const std::array<double, 3> &X) : target4FMM(X) {};
+//    // void setDirectIntegration(const auto &Bucket_sources);
+//    // std::array<double, 2> integrateRigidMode() const;
+// };
+
+/* -------------------------------------------------------------------------- */
+
 /* ------------------------------------------------------ */
 /*    \ /                                                 */
 /*   --@--                                                */
@@ -307,7 +318,10 @@ class networkLine : public CoordinateBounds {
 /* ------------------------------------------------------- */
 
 #include "integrationOfODE.hpp"
-class networkPoint : public CoordinateBounds, public CRS {
+
+class networkPoint : public target4FMM,
+                     public CoordinateBounds,
+                     public CRS {
 
    /* ------------------------------ MOORING LINE ------------------------------ */
    /*
@@ -738,6 +752,9 @@ class networkPoint : public CoordinateBounds, public CRS {
        particlize_info;
    /* ------------------------ 境界条件 ------------------------ */
   public:
+   double b_diff_RHS_FMM = 0;  //! FMMのため
+   double b_RHS_Direct = 0;    //! FMMのため
+   double b_RHS_FMM = 0;       //! FMMのため
    bool isMultipleNode = false;
    bool CORNER = false;
    bool Dirichlet = false;
@@ -781,8 +798,8 @@ class networkPoint : public CoordinateBounds, public CRS {
 
 #ifdef BEM
   public:
-   std::array<double, 2> igign = {0., 0.}, IgPhi_IgnPhin_FMM = {0., 0.};  // spherical harmonics のチェックに利用2024/07/03
-   std::array<double, 2> IgPhi_IgnPhin_near = {0., 0.}, IgPhi_IgnPhin_far = {0., 0.};
+   std::array<double, 2> igign = {0., 0.}, wGPhin_wGnPhi_FMM = {0., 0.};  // spherical harmonics のチェックに利用2024/07/03
+   std::array<double, 2> wGPhin_wGnPhi_near = {0., 0.}, wGPhin_wGnPhi_far = {0., 0.};
    // double phi_n();
    using T_PBF = std::tuple<netP *, bool, netF *>;
    std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
@@ -1003,7 +1020,8 @@ class networkPoint : public CoordinateBounds, public CRS {
    void setX(const Tddd &xyz_IN);
    void setXSingle(const Tddd &xyz_IN) {
       // this->pre_X = this->X;
-      CoordinateBounds::setBounds(xyz_IN);
+      this->CoordinateBounds::setBounds(xyz_IN);
+      this->Xtarget = xyz_IN;
    };
    // bool setXcarefully(const V_d &xyz_IN);
    // void resetXinfo();
@@ -1486,7 +1504,6 @@ class networkFace : public Triangle {
 
    using pseudo_quadratic_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/,
                                                                  double /*1: gaussian weight (integration weight)*/,
-                                                                 Tddd /*2: 3D parameter {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/,
                                                                  std::array<T6d, 4> /*3: shape function for the quadratic element*/,
                                                                  Tddd /*4: 3d position vector using {xi0,xi1,xi2}*/,
                                                                  Tddd /*5: cross product dX/dxi0 x dX/dxi1 at the point*/,
@@ -3214,7 +3231,7 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
          if (inserted && ::InsideQ(f->bounds, bucket.getBounds(ijk).bounds))
             return;
 
-         double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 20.;
+         double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 40.;
          for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
             bucket.add(xyz, f);
       };
@@ -5034,6 +5051,17 @@ struct DodecaPoints {
    const T3Tdd shape_map_l1_face = {{{0., 0.} /*0*/, {0.5, 0.} /*1*/, {0., 0.5} /*2*/}};
    const T3Tdd shape_map_l2_face = {{{0., 0.5} /*0*/, {0., 0.} /*1*/, {0.5, 0.} /*2*/}};
 
+   const QuadPoints *getQuadPoints(const int i) {
+      if (i == 0)
+         return &this->quadpoint_l0;
+      else if (i == 1)
+         return &this->quadpoint_l1;
+      else if (i == 2)
+         return &this->quadpoint_l2;
+      else
+         return &this->quadpoint;
+   };
+
    DodecaPoints(
        networkFace *f,
        const networkPoint *origin_point = nullptr,
@@ -5064,51 +5092,6 @@ struct DodecaPoints {
    N * t0*(1-t0-t1)は，p4の重みであるが，p4は存在しないので，これはさらに分配され，f_l1とfの節点に分配される．
    N * t1*(1-t0-t1)は，p5の重みであるが，p5は存在しないので，これはさらに分配され，f_l2とfの節点に分配される．
    */
-
-   /* -------------------------------------------------------------------------- */
-
-   // template <typename T>
-   // std::tuple<Tdd, T> findMinimumCommon(const std::function<T(networkPoint *)> &conversion) {
-
-   //    Tdd first_guess = {0.25, 0.25};
-   //    T first_point = this->interpolate(first_guess, conversion), tmp;
-
-   //    if (first_point > (tmp = this->interpolate(0., 1., conversion))) {
-   //       first_guess = {0., 1.};
-   //       first_point = tmp;
-   //    }
-   //    if (first_point > (tmp = this->interpolate(1., 0., conversion))) {
-   //       first_guess = {1., 0.};
-   //       first_point = tmp;
-   //    }
-   //    if (first_point > (tmp = this->interpolate(0., 0., conversion))) {
-   //       first_guess = {0., 0.};
-   //       first_point = tmp;
-   //    }
-
-   //    const Tdd dt0t1 = {0., 1E-5};
-
-   //    BroydenMethod<Tdd> BM(first_guess, first_guess + dt0t1);
-
-   //    Tddd F, dFdt0, dFdt1;
-   //    auto grad_FF = [&](const double t0, const double t1) -> Tdd {
-   //       F = this->interpolate(t0, t1, conversion);
-   //       dFdt0 = this->D_interpolate<1, 0>(t0, t1, conversion);
-   //       dFdt1 = this->D_interpolate<0, 1>(t0, t1, conversion);
-   //       return Tdd{Dot(dFdt0, F), Dot(dFdt1, F)};
-   //    };
-
-   //    for (auto i = 0; i < 50; i++) {
-   //       BM.updateGoodBroyden(grad_FF(BM.X[0], BM.X[1]), grad_FF(BM.X[0] - BM.dX[0], BM.X[1] - BM.dX[1]));
-   //       BM.X[0] = std::clamp(BM.X[0], 0., 1.);
-   //       BM.X[1] = std::clamp(BM.X[1], 0., 1. - BM.X[0]);
-   //       if (Norm(BM.dX) < 1e-13 && i > 3) {
-   //          std::cout << "iteration : " << i << "\n";
-   //          break;
-   //       }
-   //    }
-   //    return {BM.X, this->interpolate(BM.X[0], BM.X[1], conversion)};
-   // };
 
    /* -------------------------------------------------------------------------- */
 
@@ -5237,70 +5220,31 @@ struct DodecaPoints {
 #endif
    };
 
-   // std::tuple<Tdd, Tddd> Nearest(const Tddd &A, const Tdd &t0_range = {0., 1.}) {
-
-   //    Tdd first_guess = {0.25, 0.25};
-   //    Tddd first_point = this->X(first_guess), tmp;
-   //    Tddd F, dFdt0, dFdt1, dFdt0t0, dFdt0t1, dFdt1t1;
-
-   //    NewtonRaphson<Tdd> NR(first_guess);
-   //    for (auto i = 0; i < 50; i++) {
-   //       auto [t0, t1] = NR.X;
-   //       F = this->X(t0, t1) - A;
-   //       dFdt0 = this->D_X<1, 0>(t0, t1);
-   //       dFdt1 = this->D_X<0, 1>(t0, t1);
-   //       Tdd grad = {Dot(dFdt0, F), Dot(dFdt1, F)};
-
-   //       dFdt0t1 = this->D_X<1, 1>(t0, t1);
-   //       dFdt0t0 = this->D_X<2, 0>(t0, t1);
-   //       dFdt1t1 = this->D_X<0, 2>(t0, t1);
-   //       T2Tdd Hessian = {Tdd{Dot(dFdt0t0, F) + Dot(dFdt0, dFdt0), Dot(dFdt0t1, F) + Dot(dFdt1, dFdt0)},
-   //                        Tdd{Dot(dFdt0t1, F) + Dot(dFdt0, dFdt1), Dot(dFdt1t1, F) + Dot(dFdt1, dFdt1)}};
-
-   //       NR.update(grad, Hessian);
-
-   //       NR.X[0] = std::clamp(NR.X[0], t0_range[0], t0_range[1]);
-   //       NR.X[1] = std::clamp(NR.X[1], 0., 1. - NR.X[0]);
-   //       if (Norm(NR.dX) < 1e-13 && i > 2)
-   //          // std::cout << "iteration : " << i << "\n";
-   //          break;
-   //    }
-   //    return {NR.X, this->X(NR.X[0], NR.X[1])};
-   // };
-
    /* -------------------------------------------------------------------------- */
 
    std::array<T6d, 4> N6_new(const double t0, const double t1) const {
-      // auto N3 = TriShape<3>(t0, t1);
-      auto N6_interface = TriShape<6>(t0, t1);
-
-      T6d Nc = {0., 0., 0., N6_interface[2], N6_interface[0], N6_interface[1]};
-      T6d Nl0, Nl1, Nl2;
+      const auto [N0, N1, N2, N3, N4, N5] = TriShape<6>(t0, t1);
+      T6d Nc = {0., 0., 0., N2, N0, N1};
+      T6d Nl0 = {0., 0., 0., 0., 0., 0.};
+      T6d Nl1 = {0., 0., 0., 0., 0., 0.};
+      T6d Nl2 = {0., 0., 0., 0., 0., 0.};
       if (this->conditionChecker(this->l0)) {
-         Nc += 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint.available) * N6_interface[3];
-         Nl0 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l0.available) * N6_interface[3];
-      } else {
-         Nc += 0.5 * T6d{0., 0., 0., 0., 1., 1.} * N6_interface[3];
-         Nl0.fill(0.);
-      }
+         Nc += 0.5 * N3 * TriShape<6>(0.25, 0.25, this->quadpoint.available);
+         Nl0 = 0.5 * N3 * TriShape<6>(0.25, 0.25, this->quadpoint_l0.available);
+      } else
+         Nc += T6d{0., 0., 0., 0., 0.5 * N3, 0.5 * N3};
 
       if (this->conditionChecker(this->l1)) {
-         Nc += 0.5 * TriShape<6>(0.5, 0.25, this->quadpoint.available) * N6_interface[4];
-         Nl1 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l1.available) * N6_interface[4];
-      } else {
-         Nc += 0.5 * T6d{0., 0., 0., 1., 0., 1.} * N6_interface[4];
-         Nl1.fill(0.);
-      }
+         Nc += 0.5 * N4 * TriShape<6>(0.5, 0.25, this->quadpoint.available);
+         Nl1 = 0.5 * N4 * TriShape<6>(0.25, 0.25, this->quadpoint_l1.available);
+      } else
+         Nc += T6d{0., 0., 0., 0.5 * N4, 0., 0.5 * N4};
 
       if (this->conditionChecker(this->l2)) {
-         Nc += 0.5 * TriShape<6>(0.25, 0.5, this->quadpoint.available) * N6_interface[5];
-         Nl2 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l2.available) * N6_interface[5];
-      } else {
-         Nc += 0.5 * T6d{0., 0., 0., 1., 1., 0.} * N6_interface[5];
-         Nl2.fill(0.);
-      }
-
-      // falseの倍は線形にしてはどうか？
+         Nc += 0.5 * N5 * TriShape<6>(0.25, 0.5, this->quadpoint.available);
+         Nl2 = 0.5 * N5 * TriShape<6>(0.25, 0.25, this->quadpoint_l2.available);
+      } else
+         Nc += T6d{0., 0., 0., 0.5 * N5, 0.5 * N5, 0.};
 
       return {Nc, Nl0, Nl1, Nl2};
    };
@@ -5312,34 +5256,26 @@ struct DodecaPoints {
 
    template <int i, int j>
    std::array<T6d, 4> D_N6_new(const double t0, const double t1) const {
-      // auto N3 = TriShape<3>(t0, t1);
-      auto N6_interface = D_TriShape_Quadratic<i, j>(t0, t1);
-
-      T6d Nc = {0., 0., 0., N6_interface[2], N6_interface[0], N6_interface[1]};
-      T6d Nl0, Nl1, Nl2;
+      const auto [DN0, DN1, DN2, DN3, DN4, DN5] = D_TriShape_Quadratic<i, j>(t0, t1);
+      T6d Nc = {0., 0., 0., DN2, DN0, DN1};
+      T6d Nl0 = {0., 0., 0., 0., 0., 0.}, Nl1 = {0., 0., 0., 0., 0., 0.}, Nl2 = {0., 0., 0., 0., 0., 0.};
       if (this->conditionChecker(this->l0)) {
-         Nc += 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint.available) * N6_interface[3];
-         Nl0 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l0.available) * N6_interface[3];
-      } else {
-         Nc += T6d{0., 0., 0., 0., 0.5, 0.5} * N6_interface[3];
-         Nl0.fill(0.);
-      }
+         Nc += 0.5 * DN3 * TriShape<6>(0.25, 0.25, this->quadpoint.available);
+         Nl0 = 0.5 * DN3 * TriShape<6>(0.25, 0.25, this->quadpoint_l0.available);
+      } else
+         Nc += T6d{0., 0., 0., 0., 0.5 * DN3, 0.5 * DN3};
 
       if (this->conditionChecker(this->l1)) {
-         Nc += 0.5 * TriShape<6>(0.5, 0.25, this->quadpoint.available) * N6_interface[4];
-         Nl1 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l1.available) * N6_interface[4];
-      } else {
-         Nc += T6d{0., 0., 0., 0.5, 0., 0.5} * N6_interface[4];
-         Nl1.fill(0.);
-      }
+         Nc += 0.5 * DN4 * TriShape<6>(0.5, 0.25, this->quadpoint.available);
+         Nl1 = 0.5 * DN4 * TriShape<6>(0.25, 0.25, this->quadpoint_l1.available);
+      } else
+         Nc += T6d{0., 0., 0., 0.5 * DN4, 0., 0.5 * DN4};
 
       if (this->conditionChecker(this->l2)) {
-         Nc += 0.5 * TriShape<6>(0.25, 0.5, this->quadpoint.available) * N6_interface[5];
-         Nl2 = 0.5 * TriShape<6>(0.25, 0.25, this->quadpoint_l2.available) * N6_interface[5];
-      } else {
-         Nc += T6d{0., 0., 0., 0.5, 0.5, 0.} * N6_interface[5];
-         Nl2.fill(0.);
-      }
+         Nc += 0.5 * DN5 * TriShape<6>(0.25, 0.5, this->quadpoint.available);
+         Nl2 = 0.5 * DN5 * TriShape<6>(0.25, 0.25, this->quadpoint_l2.available);
+      } else
+         Nc += T6d{0., 0., 0., 0.5 * DN5, 0.5 * DN5, 0.};
       return {Nc, Nl0, Nl1, Nl2};
    };
 
@@ -5761,6 +5697,51 @@ vtkUnstructuredGridWrite(std::ofstream &ofs,
 
    vtu.write(ofs);
 }
+
+//@ =========================================================================== */
+//@                             FMM using Nwtwork                               */
+//@ =========================================================================== */
+
+// inline void target4FMM_Element::setDirectIntegration(const auto &Bucket_sources) {
+//    auto b_deepest = Bucket_sources.getBucketAtDeepest(this->Xtarget);
+
+//    this->uo_phiphin_WGNWGnN.clear();
+//    this->uo_phiphin_WGNWGnN.reserve(b_deepest->all_stored_objects_vector.size() * 3);
+
+//    //! これはsorceがsource4FMM_Elementの場合のものになっている
+//    auto setNear = [&](const auto *B) {
+//       for (const auto &source : B->all_stored_objects_vector)
+//          for (const auto &[phiphin, WGN_WGnN] : source->use_this_soruce_when_set_direct_integration(this))  //$ このソース点の直接積分計算をどのように行うかを指定する関数
+//             uo_phiphin_WGNWGnN[phiphin] += WGN_WGnN;
+//    };
+
+//    setNear(b_deepest);
+//    for (const auto &b : b_deepest->buckets_near)
+//       setNear(b);
+
+//    auto set_parent = [&](auto b, auto &set_parent__) -> void {
+//       if (b != nullptr) {
+//          for (auto B : b->buckets_near)
+//             if (!B->has_child)
+//                setNear(B);
+//          set_parent__(b->parent, set_parent__);
+//       }
+//    };
+//    set_parent(b_deepest->parent, set_parent);
+
+//    this->vec_phiphin_WGNWGnN.assign(uo_phiphin_WGNWGnN.begin(), uo_phiphin_WGNWGnN.end());
+// }
+
+/* -------------------------------------------------- */
+
+// inline std::array<double, 2> target4FMM_Element::integrateRigidMode() const {
+//    std::array<double, 2> ret = {0., 0.};
+//    for (const auto &[phiphin, WGN_WGnN] : this->vec_phiphin_WGNWGnN) {
+//       ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
+//       ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
+//    }
+//    return ret;
+// }
 
 /* -------------------------------------------------------------------------- */
 

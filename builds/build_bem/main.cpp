@@ -97,6 +97,8 @@ int main(int argc, char **argv) {
             std::ofstream ofs1(output_directory / (network->getName() + "_lines_before.vtp"));
             vtkPolygonWrite(ofs0, network->getFaces());
             vtkPolygonWrite(ofs1, network->getLines());
+            ofs0.close();
+            ofs1.close();
          }
 
          network->tetrahedralize();
@@ -106,6 +108,8 @@ int main(int argc, char **argv) {
             std::ofstream ofs1(output_directory / (network->getName() + "_lines_after.vtp"));
             vtkPolygonWrite(ofs0, network->getFaces());
             vtkPolygonWrite(ofs1, network->getLines());
+            ofs0.close();
+            ofs1.close();
          }
 
          for (auto &t : network->getTetras())
@@ -188,9 +192,9 @@ int main(int argc, char **argv) {
          double rad = M_PI / 180;
 
          for (auto &water : FluidObject) {
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
-            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step < 10 ? true : false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step == 0 ? true : false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step == 0 ? true : false);
+            flipIf(*water, {10 * rad /*target n diff*/, 10 * rad /*change n diff*/}, {10 * rad, 10 * rad}, time_step == 0 ? true : false);
             // if (time_step < 10 && time_step % 1 == 1) {
             //    flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
             //    // flipIf(*water, {10 * rad, 10 * rad}, {10 * rad, 10 * rad}, true);
@@ -277,7 +281,7 @@ int main(int argc, char **argv) {
 #pragma omp parallel
                for (const auto &net : AllObjects)
 #pragma omp single nowait
-                  net->makeBuckets(net->getScale() / 11.);
+                  net->makeBuckets(net->getScale() / 10.);
                std::cout << Green << "makeBuckets" << Blue << "\nElapsed time: " << Red << watch() << colorReset << " s\n";
                //! 体積を保存するようにリメッシュする必要があるだろう．
                for (auto &water : FluidObject) {
@@ -741,6 +745,7 @@ int main(int argc, char **argv) {
          /* 計測 */
          for (const auto &json : MeasurementJSONs) {
             if (json.find("position")) {
+               auto name = json.at("name")[0] + "_intersection";
                const auto position = json.at("position");
                if (position.size() != 6)
                   throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "position must have 6 elements");
@@ -752,15 +757,29 @@ int main(int argc, char **argv) {
                const double z1 = std::stod(position[5]);
 
                Tddd nearest_intersection = {1E+20, 1E+20, 1E+20};
+               const Tddd X0 = {x0, y0, z0}, X1 = {x1, y1, z1};
+               std::vector<Tddd> intersections;
+               std::vector<networkFace *> inter_faces;
                for (const auto &water : FluidObject) {
-                  water->BucketFaces.apply(water->BucketFaces.line2indices({x0, y0, z0}, {x1, y1, z1}), [&](networkFace *f) {
-                     Tddd X0 = {x0, y0, z0}, X1 = {x1, y1, z1};
-                     auto [isintersect, X, t0t1T] = IntersectQ_(T2Tddd{X0, X1}, (T3Tddd)(*f));
-                     if (isintersect && (Norm(X - X0) < Norm(nearest_intersection - X0)))
+                  water->BucketFaces.apply(water->BucketFaces.line2indices(X0, X1), [&](networkFace *f) {
+                     auto [isintersect, X, _] = IntersectQ_(T2Tddd{X0, X1}, (T3Tddd)(*f));
+                     if (isintersect && (Norm(X - (X0 + X1) * 0.5) < Norm(nearest_intersection - (X0 + X1) * 0.5))) {
                         nearest_intersection = X;
+                        intersections.push_back(X);  // 交差点を保存
+                        inter_faces.push_back(f);    // 交差した面を保存
+                        std::cout << CoordinateBounds(T2Tddd{X0, X1}).bounds << std::endl;
+                        std::cout << CoordinateBounds((T3Tddd)(*f)).bounds << std::endl;
+                        std::cout << IntersectQ(CoordinateBounds(T2Tddd{X0, X1}).bounds, CoordinateBounds((T3Tddd)(*f)).bounds) << std::endl;
+                     }
                   });
                }
-               jsonout.push(json.at("name")[0] + "_intersection", nearest_intersection);
+
+               std::cout << "name : " << name << ", nearest_intersection = " << nearest_intersection << std::endl;
+               for (const auto &intersection : intersections)
+                  std::cout << intersection << std::endl;
+               for (const auto &inter_face : inter_faces)
+                  std::cout << (T3Tddd)(*inter_face) << std::endl;
+               jsonout.push(name, nearest_intersection);
             }
          }
 

@@ -530,15 +530,7 @@ double PotentialEnergy(const auto &faces) {
 };
 
 double TotalEnergy(const auto &faces) {
-   double EK = 0, EP = 0;
-   for (const auto &f : faces) {
-      auto [p0, p1, p2] = f->getPoints();
-      EK += Dot((p0->phiphin[0] + p1->phiphin[0] + p2->phiphin[0]) / 3. * gradPhi(f), f->normal);
-      auto intpX = interpolationTriangleLinear0101(T3Tddd{p0->X, p1->X, p2->X});
-      for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
-         EP += std::pow(intpX(x0, x1)[2], 2) * f->normal[2] * w0w1 * intpX.J(x0, x1);
-   }
-   return (EK + EP) * _WATER_DENSITY_ / 2.;
+   return KinematicEnergy(faces) + PotentialEnergy(faces);
 };
 
 /*DOC_EXTRACT 0_7_OTHERS

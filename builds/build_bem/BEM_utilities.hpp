@@ -29,6 +29,7 @@ using VV_netFp = std::vector<V_netFp>;
 */
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t) {
+   std::cout << "T6d velocity(const std::string &name, const std::vector<std::string> strings, networkPoint *p, double t)" << name << std::endl;
    if ((name.contains("velocity") || name.contains("flow"))) {
       if (strings.size() >= 6) {
          /*DOC_EXTRACT 0_5_WAVE_GENERATION
@@ -118,9 +119,9 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, ne
 };
 
 T6d velocity(const std::string &name, const std::vector<std::string> strings, double t) {
+   std::cout << "T6d velocity(const std::string &name, const std::vector<std::string> strings, double t)" << name << std::endl;
    auto g = _GRAVITY_;
    try {
-
       if (name.contains("Goring1979")) {
          /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
@@ -222,6 +223,9 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          /*DOC_EXTRACT 0_5_WAVE_GENERATION
 
          ### フラップ型造波装置
+
+         線形のストークス波理論に基づく造波理論は，\cite{Havelock1929},\cite{Biesel1951},\cite{Ursel1960}などが確立し，\cite{Svendsen1985}がレビューしている．
+         ここで実装するフラップ型造波装置は，\cite{Schaffer1996}に基づくものである．
 
          |   | name   |  description  |
          |:-:|:-------:|:-------------:|
@@ -406,9 +410,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          名前が$`\sin`$の場合、$`{\bf v}={\rm axis}\, A w \cos(w (t - \text{start}))`$ と計算されます．
 
          */
-         if (strings.size() != 7 &&
-             strings.size() != 10 &&
-             strings.size() != 13 /*with a center rotation*/) {
+         if (strings.size() != 7 && strings.size() != 10 && strings.size() != 13 /*with a center rotation*/) {
             std::stringstream ss;
             for (size_t i = 0; i < strings.size(); ++i)
                ss << i << ":" << strings[i] << std::endl;
@@ -444,6 +446,7 @@ T6d velocity(const std::string &name, const std::vector<std::string> strings, do
          Hadzic2005 hadzic2005(start);
          return hadzic2005.getVelocity(t);
       }
+      std::cout << "velocity: " << name << " does not exist" << std::endl;
       return {0., 0., 0., 0., 0., 0.};
    } catch (std::exception &e) {
       std::cerr << e.what() << std::endl;
@@ -720,45 +723,50 @@ double getPhin(const networkPoint *p, const networkFace *f) {
 };
 
 Tddd gradPhiQuadElement(const networkPoint *p, networkFace *f) {
-   //* p will be set as node 4
+   try {
+      //* p will be set as node 4
 
-   // DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
+      // DodecaPoints dodecapoint(f, p, [](const networkLine *line) -> bool { return !line->CORNER; });
 
-   int index = -1;
-   for (auto i = 0; i < 3; ++i)
-      if (f->Points[i] == p) {
-         index = i;
-         break;
-      }
-   if (index == -1)
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
+      int index = -1;
+      for (auto i = 0; i < 3; ++i)
+         if (f->Points[i] == p) {
+            index = i;
+            break;
+         }
+      if (index == -1)
+         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
 
-   auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
-   auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
+      auto ToPhi = [&](const networkPoint *p) -> double { return std::get<0>(p->phiphin); };
+      auto ToX = [&](const networkPoint *p) -> Tddd { return p->X; };
 
-   const double phi_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
-   const double phi_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
-   const double phi_n = getPhin(p, f);
+      const double phi_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToPhi);  //! at 4
+      const double phi_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToPhi);  //! at 4
+      const double phi_n = getPhin(p, f);
 
-   const Tddd dX_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToX);  //! at 4
-   const Tddd dX_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToX);  //! at 4
-   const auto Nxyz = Normalize(Cross(dX_t0, dX_t1));
+      const Tddd dX_t0 = f->dodecaPoints[index]->D_interpolate<1, 0>(1., 0., ToX);  //! at 4
+      const Tddd dX_t1 = f->dodecaPoints[index]->D_interpolate<0, 1>(1., 0., ToX);  //! at 4
+      const auto Nxyz = Normalize(Cross(dX_t0, dX_t1));
 
-   Tddd grad_phi;
-   lapack_svd_solve(T3Tddd{dX_t0, dX_t1, Nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
-   return grad_phi;
+      Tddd grad_phi;
+      lapack_svd_solve(T3Tddd{dX_t0, dX_t1, Nxyz}, grad_phi, Tddd{phi_t0, phi_t1, phi_n});
+      return grad_phi;
 
-   /*check!
+      /*check!
 
-   `Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]`この計算は，`{Sx, Sy, Sz}`などの成分を取り出す計算．
+      `Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]`この計算は，`{Sx, Sy, Sz}`などの成分を取り出す計算．
 
-   ```Mathematica
-   DPHI = {phix, phiy, phiz}
-   Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]
-   Dot[{Sx, Sy, Sz}, DPHI]
-   ```
+      ```Mathematica
+      DPHI = {phix, phiy, phiz}
+      Dot[{{Sx, Sy, Sz}, {T0, T1, T2}, {N0, N1, N2}}, DPHI]
+      Dot[{Sx, Sy, Sz}, DPHI]
+      ```
 
-   */
+      */
+   } catch (std::exception &e) {
+      std::cerr << e.what() << std::endl;
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error in gradPhiQuadElement");
+   }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -830,10 +838,13 @@ Tddd gradPhi(const networkPoint *const p, std::array<double, 3> &convergence_inf
    W.reserve(s);
    Vsample.reserve(3 * s);
    for (const auto &f : p->getSurfaces()) {
-      // u = f->isPseudoQuadraticElement ? gradPhiQuadElement(p, f) : (grad_phi_tangential(f) + getPhin(p, f) * f->normal);
       auto [p0, p1, p2] = f->getPoints();
       Tddd PHI = {std::get<0>(p0->phiphin), std::get<0>(p1->phiphin), std::get<0>(p2->phiphin)};
-      u = gradP1(T3Tddd{{p0->X, p1->X, p2->X}}, PHI) + getPhin(p, f) * f->normal;
+      Tddd u;
+      if (f->isPseudoQuadraticElement)
+         u = gradPhiQuadElement(p, f);
+      else
+         u = gradP1(T3Tddd{{p0->X, p1->X, p2->X}}, PHI) + getPhin(p, f) * f->normal;
 
       Vsample.emplace_back(Dot(u, ex));
       Directions.emplace_back(ex);

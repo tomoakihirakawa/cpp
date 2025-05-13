@@ -85,7 +85,7 @@ make　# コンパイル（ビルド）する．
 
 # 🐋 比較対象 
 
-[Lobovsk{\'{y}} et al. (2014)](http://dx.doi.org/10.1016/j.jfluidstructs.2014.03.009)と計算結果を比較しよう．
+\cite{Lobovsky2014}と計算結果を比較しよう．
 
 <img src="./img/README_FOR_STUDENTS_comparison_Lobovsky2014.png" width="500px">
 

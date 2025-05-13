@@ -243,14 +243,13 @@ if "looping" in SimulationCase:
     generate_input_files(inputfiles, setting, IO_dir, id)
 elif "Tanizawa1996" in SimulationCase:
 
-
     r'''DOC_EXTRACT 2_1_0_validation_Tanizawa1996
 
     ## Tanizawa1996
 
     <img src="schematic_float_Tanizawa1996.png" width="400px" />
 
-    \cite{Tanizawa1997}と \cite{Tanizawa1996}には，BEM-MELを使う際の消波方法が紹介されている．
+    \cite{Tanizawa1997}と\cite{Tanizawa1996}には，BEM-MELを使う際の消波方法が紹介されている．
     この理論は簡単で，$`\frac{D\phi}{Dt}`$と$`\frac{D\bf x}{Dt}`$に減衰項を追加するだけである．
     興味深いのは，この項は，単なる消波だけでなく，ある領域の表面変位と速度ポテンシャルを理想的な値へと保つことができるため，造波装置側に設置するのも有効であることである．
 
@@ -309,9 +308,7 @@ elif "Tanizawa1996" in SimulationCase:
 
     water = {"name": "water", "type": "Fluid"}
     tank = {"name": "tank", "type": "RigidBody", "isFixed": True}
-    absorber = {"name": "absorber",
-                "type": "Absorber",
-                "isFixed": True}
+    absorber = {"name": "absorber", "type": "Absorber", "isFixed": True}
 
     if T is not None:
         absorber["wave_theory"] = [0, T, h, 0]
@@ -379,10 +376,8 @@ elif "Tanizawa1996" in SimulationCase:
                 Ixx = 1./12.*m*(Ly*Ly+Lz*Lz)
                 Iyy = m*math.pow(0.266, 2)
                 Izz = 1./12.*m*(Lx*Lx+Ly*Ly)
-                float["COM"] = [
-                    12 - 1.5*(i-1), -2 + 2 * (j-1), z_surface - draft + 0.22]
-                float["spring"] = [float["COM"][0], float["COM"]
-                                   [1], float["COM"][2], 51., 1000., 0.]
+                float["COM"] = [12 - 1.5*(i-1), -2 + 2 * (j-1), z_surface - draft + 0.22]
+                float["spring"] = [float["COM"][0], float["COM"][1], float["COM"][2], 51., 1000., 0.]
                 float["MOI"] = [100.*Iyy, Iyy, 100.*Iyy]
                 float["objfile"] = objfolder+"/float"+str(i+8*(j-1))+".obj"
                 floats.append(float)
@@ -452,6 +447,60 @@ elif "Tanizawa1996" in SimulationCase:
     setting = {"max_dt": dt,
                "end_time_step": 20000,
                "end_time": 30,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+elif "AkitaHarbor" in SimulationCase:
+
+    r'''DOC_EXTRACT 2_1_0_AkitaHarbor
+    '''
+
+    start = 0.
+    # L = 1.8
+    a = 0.#H/2
+    h = 10.
+    T = 5.
+    z_surface = h
+    id = SimulationCase
+    id += "_H" + str(H).replace(".", "d")
+    if T is not None:
+        id += "_T" + str(T).replace(".", "d")
+    if L is not None:
+        id += "_L" + str(L).replace(".", "d")
+    wavemaker_type = "potential"
+    id = add_id(id)
+    water = {"name": "water", "type": "Fluid"}
+    tank = {"name": "wall", "type": "RigidBody", "isFixed": True}
+    absorber = {"name": "absorber",
+                "type": "Absorber",
+                "isFixed": True}
+
+    gauges = []
+    dx = 0.5
+    wavemaker = {"name": "wavemaker",
+                "type": "Absorber",
+                "isFixed": True}
+
+    bottom_in_z = 0
+    a = 2
+    wave_theory = [0, T, h, bottom_in_z, theta] if theta is not None else [0, T, h, bottom_in_z]
+    absorber["wave_theory"] = wave_theory    
+    wave_theory2 = [a, T, h, bottom_in_z, theta] if theta is not None else [a, T, h, bottom_in_z]
+    wavemaker["wave_theory"] = wave_theory2
+
+    objfolder = code_home_dir + "/cpp/obj/AkitaHarbor"
+    water["objfile"] = objfolder + "/water.obj"
+    wavemaker["objfile"] = objfolder + "/maker.obj"
+    tank["objfile"] = objfolder + "/wall.obj"
+    absorber["objfile"] = objfolder+"/absorber.obj"
+    # inputfiles = [tank, water, wavemaker, absorber]
+    inputfiles = [tank, water, wavemaker]
+
+    setting = {"max_dt": dt,
+               "end_time_step": 20000,
+               "end_time": 300,
                "element": element,
                "ALE": ALE,
                "ALEPERIOD": ALEPERIOD}
@@ -3063,6 +3112,121 @@ elif "Tonegawa2024Akita" in SimulationCase:
                "ALEPERIOD": ALEPERIOD}
 
     generate_input_files(inputfiles, setting, IO_dir, id)
+elif "Ruehl2016" in SimulationCase:
+
+    r'''DOC_EXTRACT 2_1_0_validation_FOSWEC
+
+    ## Ruehl et al. (2016)
+    
+    査読付き学術論文ではないが，公開研究データセットと技術報告書
+
+    Ruehl, K., Forbush, D., Lomonaco, P., Bosma, B., Simmons, A., Gunawan, B., Bacelli, G., & Michelen, C. (2016). Experimental Testing of a Floating Oscillating Surge Wave Energy Converter at Hinsdale Wave Research Laboratory. [Data set]. Marine and Hydrokinetic Data Repository. Sandia National Laboratories. https://doi.org/10.15473/1508364
+
+    https://mhkdr.openei.org/submissions/310
+    また，このデータセットは，Kelley Ruehl et al. (2020)のreferenceで引用されている．
+
+    ```Mathematica
+    n = 2000;
+    timeData = 24*60*60 (import["/Users/tomoaki/Downloads/310/FOSWEC/data/WECSIM/inter/RegularWaveTuning1/Trial13/time.txt"][[;; n]] - import["/Users/tomoaki/Downloads/310/FOSWEC/data/WECSIM/inter/RegularWaveTuning1/Trial13/time.txt"][[1]]);
+    dispData = import["/Users/tomoaki/Downloads/310/FOSWEC/data/WECSIM/inter/RegularWaveTuning1/Trial13/wmdisp15.txt"][[;; n]];
+    data = Transpose[{timeData, dispData}];(*小数点10桁、指数なしで表示形式に変換*)
+    cppList = StringJoin["{", StringRiffle[Map[StringJoin["{", StringRiffle[Map[ToString[NumberForm[#, {Infinity, 10}, ExponentFunction -> (Function[exp, Null])]] &, #], ","], "}"] &, data], ","], "}"];(*ファイルに書き出し*)
+    Export["/Users/tomoaki/Downloads/data_for_cpp.txt", cppList, "Text"]
+    ```
+    
+    Directional Wave Basisは
+    Length: 48.8 m
+    Width: 26.5 m
+    Max depth: 1.37 m
+
+    Wavemaker
+    Type: Piston-type
+    Waceboards: 29 boards, 2.0 m high
+    Period range: 0.5 to 10 s
+    
+    項目	内容
+    装置名	FOSWEC（Floating Oscillating Surge Wave Energy Converter）
+    目的	モーション制御可能な2-DOF型WEC（Wave Energy Converter）の応答特性・発電性能評価
+    試験場所	OSU Hinsdale Wave Research Laboratory
+    模型スケール	1:33 スケールモデル
+    自由動揺の自由度	Surge（前後）、Pitch（ピッチ）の2自由度
+    波の条件	単一周波数（monochromatic）および擬似ランダム（pseudo-random）波を使用
+    計測項目	本体動揺（surge, pitch）、アーム角、PTO（Power Take Off）からの出力電力、波高など
+    PTOの形式	モータと可変抵抗による受動的な減衰器（トルク制御可能）
+    主な結果	共振周波数において最大応答を示し、周波数応答関数（RAO）を明確に評価。動揺と発電出力の相関性を検証。RAOの実験値と数値モデルとの比較も可能。
+
+    <img src="./FOSWEC_testReport_table38.png" alt="FOSWEC_testReport_table38.png" width="600px">
+    <img src="./FOSWEC_testReport_table41.png" alt="FOSWEC_testReport_table41.png" width="600px">
+
+    FOSWEC/
+    ├── data/
+    │   ├── WECSIM/    ← Phase 1 データ
+    │   │   ├── logs/     ← 試験ログ（Appendix D）
+    │   │   └── inter/    ← 中間処理済みデータ（個別実験別フォルダ）
+    │   └── WECSIM2/   ← Phase 2 データ
+    │       ├── logs/     ← 試験ログ（Appendix E）
+    │       └── inter/    ← 中間処理済みデータ（個別実験別フォルダ）
+    ├── doc/            ← 説明資料
+    └── geom/           ← 幾何形状データ
+
+    ### 水槽における計測位置
+
+    wg3.txtなどにコメントとして書いてある
+
+    WG3: (x,y) = (9.480,0)
+    wg6: (x,y) = (16.778, -0.031)
+
+    水深: h = 1.36 m
+                            
+    '''
+
+    # IDの生成
+    id = SimulationCase
+    id = add_id(id)
+    max_dt = dt
+
+    objfolder = code_home_dir + "/cpp/obj/Ruehl2016/"
+
+    water = {"name": "water", "type": "Fluid", "objfile": objfolder + "/water.obj"}
+
+    if meshname != "":
+        water["objfile"] = objfolder + "/" + meshname
+
+    vertices, triangles = read_obj(water["objfile"])
+    water["vertices"] = vertices
+    water["triangles"] = triangles
+
+    tank = {"name": "tank", "type": "RigidBody", "isFixed": True, "objfile": objfolder + "/tank.obj"}
+
+    h = 1.36
+    # wavemaker = {"name": "wavemaker", "type": "RigidBody", "velocity": ["Goring1979", 3., 0.1*h, h], "objfile": f"{objfolder}/wavemaker.obj"}
+    trial = suffix
+    wavemaker = {"name": "wavemaker", "type": "RigidBody", "velocity": ["file", "./study_benchmark/Ruehl2016/"+ trial +".csv"], "objfile": f"{objfolder}/wavemaker.obj"}
+
+    absorber = {"name": "absorber", "type": "Absorber", "isFixed": True, "objfile": objfolder + "/absorber.obj"}
+
+    if T is not None:
+        absorber["wave_theory"] = [0, T, h, 0]
+    elif L is not None:
+        absorber["wave_theory_L"] = [0, L, h, 0]
+    else:
+        absorber["wave_theory_L"] = [0, 1., h, 0]
+
+    gauges = []
+    gauges.append({"name": "wg3", "type": "wave gauge", "position": [9.48, 0., 1.36+0.5, 9.48, 0., 1.36-0.5]})
+    gauges.append({"name": "wg6", "type": "wave gauge", "position": [16.778, -0.031, 2., 16.778, -0.031, 0.5]})
+
+    inputfiles = [tank, wavemaker, water] + gauges
+    
+    setting = {"max_dt": max_dt,
+               "end_time_step": 100000,
+               "end_time": 35,
+               "element": element,
+               "ALE": ALE,
+               "ALEPERIOD": ALEPERIOD}
+
+    generate_input_files(inputfiles, setting, IO_dir, id)
+
 else :
     # シミュレーションケースの指定がない場合はエラー
     # SimulationCase is

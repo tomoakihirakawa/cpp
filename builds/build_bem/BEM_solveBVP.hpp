@@ -67,7 +67,8 @@ $`G=1/\|{\bf x}-{\bf a}\|`$がラプラス方程式の基本解であり，$`\ph
 // #define use_CG
 // #define use_gmres
 #define use_lapack
-
+//
+//
 struct calculateFluidInteraction {
    const Network *PasObj;
    std::unordered_set<networkFace *> actingFaces;
@@ -263,8 +264,9 @@ std::array<double, 3> weight(double t0, double t1) {
       return {t0, t1, 1 - t0 - t1};
    };
 
-   constexpr std::array<std::array<double, 2>, 3>
-       vertex = {{{std::cos(M_PI / 2), std::sin(M_PI / 2)}, {std::cos(7 * M_PI / 6), std::sin(7 * M_PI / 6)}, {std::cos(11 * M_PI / 6), std::sin(11 * M_PI / 6)}}};
+   constexpr std::array<std::array<double, 2>, 3> vertex = {{{std::cos(M_PI / 2), std::sin(M_PI / 2)},
+                                                             {std::cos(7 * M_PI / 6), std::sin(7 * M_PI / 6)},
+                                                             {std::cos(11 * M_PI / 6), std::sin(11 * M_PI / 6)}}};
    auto s = shape(t0, t1);
    auto s_half_half = shape(2. / 3., 2. / 3.);
    auto s_minus_half_half = shape(-1. / 3., 2. / 3.);
@@ -302,11 +304,12 @@ struct BEM_BVP {
    const bool Dirichlet = true;
    std::vector<Network *> WATERS;
    lapack_lu *lu = nullptr;
-   //
+
    using T_PBF = std::tuple<netP *, netF *>;
    using mapTPBF_Tdd = std::map<T_PBF, Tdd>;
    using mapTPBF_mapTPBF_Tdd = std::map<T_PBF /*タプル*/, mapTPBF_Tdd>;
    using map_P_Vd = std::map<netP *, V_d>;
+
    //@ 各バケツでのモーメントを次数別に保存する．(ユニーク) p->{k,m,Yn,Y}ベクトル
    using uo_P_uoTiiTdd = std::unordered_map<networkPoint *, std::unordered_map<Tii /*k,m*/, Tdd /*YYn*/>>;
    using V_uo_P_uoTiiTdd = std::vector<uo_P_uoTiiTdd>;
@@ -476,18 +479,6 @@ struct BEM_BVP {
                   for (const auto &integ_f : surfaces) {
 
                      auto [p0, p1, p2] = integ_f->getPoints(origin);
-                     // if (p0 != origin) {
-                     //    auto q0 = p0, q1 = p1, q2 = p2;
-                     //    if (Norm(p0->X - origin->X) >= Norm(p1->X - origin->X) && Norm(p2->X - origin->X) >= Norm(p1->X - origin->X)) {
-                     //       p0 = q1;
-                     //       p1 = q2;
-                     //       p2 = q0;
-                     //    } else if (Norm(p0->X - origin->X) >= Norm(p2->X - origin->X) && Norm(p1->X - origin->X) >= Norm(p2->X - origin->X)) {
-                     //       p0 = q2;
-                     //       p1 = q0;
-                     //       p2 = q1;
-                     //    }
-                     // }
                      closest_p_to_origin = p0;
 
                      /*DOC_EXTRACT 0_2_BOUNDARY_VALUE_PROBLEM
@@ -531,7 +522,7 @@ struct BEM_BVP {
                         IGIGn_Row[pf2Index(p2, integ_f)] += ig_ign2;
                      } else if (integ_f->isPseudoQuadraticElement) {
                         key_ig_ign = integ_f->map_Point_BEM_IGIGn_info_init.at(closest_p_to_origin);
-                        for (const auto &[t0t1, ww, shape3, Nc_N0_N1_N2, X, cross, norm_cross] : integ_f->map_Point_PseudoQuadraticIntegrationInfo_vector[how_far].at(closest_p_to_origin)) {
+                        for (const auto &[t0t1, ww, Nc_N0_N1_N2, X, cross, norm_cross] : integ_f->map_Point_PseudoQuadraticIntegrationInfo_vector[how_far].at(closest_p_to_origin)) {
                            ig = norm_cross * (ww_nr = ww / (nr = Norm(R = (X - origin->X))));
                            ign = Dot(R, cross) * ww_nr / (nr * nr);
                            for (auto i = 0; i < 6; ++i) {
@@ -677,14 +668,20 @@ struct BEM_BVP {
                }
                /* -------------------------------------------------------------------------- */
                //^ 既知変数のベクトルを作成する．
-               if (isDirichletID && isNeumanID)
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Inconsistent BEM condition: isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F) == true");
-               else if (isDirichletID)
-                  knowns[i] = a->phi_Dirichlet = std::get<0>(a->phiphin);
-               else if (isNeumanID)
-                  knowns[i] = a->phinOnFace.at(a_face);  // はいってない？はいってた．
-               else
-                  throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Undefined BEM condition.");
+               // if (isDirichletID && isNeumanID)
+               //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Inconsistent BEM condition: isDirichletID_BEM(P,F) && isNeumannID_BEM(P,F) == true");
+               // else if (isDirichletID)
+               //    knowns[i] = a->phi_Dirichlet = std::get<0>(a->phiphin);
+               // else if (isNeumanID)
+               //    knowns[i] = a->phinOnFace.at(a_face);  // はいってない？はいってた．
+               // else
+               //    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Undefined BEM condition.");
+               if (isDirichletID) {
+                  knowns[i] = a->phiOnFace.at(a_face);
+               } else if (isNeumanID) {
+                  knowns[i] = a->phinOnFace.at(a_face);
+               } else
+                  throw std::runtime_error("Error: Boundary type is not defined.");
                /* -------------------------------------------------------------------------- */
             }
       }
@@ -713,8 +710,6 @@ struct BEM_BVP {
    しかし，これをソース点と観測点の関数の積と和の形に変形することできる．
    また，展開中心をソース点付近にとれば，ある変数が小さい場合限っては，その展開は早く収束する．
    ある変数とは具体的には，展開中心からソース点までの距離/展開中心から観測点までの距離である．
-
-
 
    */
 
@@ -784,48 +779,211 @@ struct BEM_BVP {
 
 #elif defined(use_gmres)
 
+      /* -------------------------------------------------------------------------- */
+      // std::cout << Red << "   unknown size : " << this->matrix_size << colorReset << std::endl;
+      // setIGIGn();
+      // std::cout << "2つの係数行列の情報を持つ　P_P_IGIGn　を境界条件に応じて入れ替える（移項）:" << std::endl;
+      // generateBIEMatrix();  //! generateBIEMatrix()内部でb_RHSも更新
+      // ans.resize(knowns.size(), 0.);
+      // std::cout << "lapack lu decomposition" << std::endl;
+      /* -------------------------------------------------------------------------- */
+
       for (auto &net : this->WATERS)
          net->setGeometricProperties();
+
       for (const auto &water : WATERS)
    #pragma omp parallel
          for (const auto &integ_f : water->getSurfaces())
    #pragma omp single nowait
             integ_f->setIntegrationInfo();
+
       //@ -------------------------------------------------------------------------- */
       //@                       バケットの作成．極の追加 add                             */
       //@ -------------------------------------------------------------------------- */
 
       auto obj = WATERS[0];
-      Buckets<sp_pole4FMM> B_poles(obj->scaledBounds(1.1), obj->getScale() / 6.);
+      auto Center = obj->getCenter();
+      auto scale = 1.1 * obj->getScale() / 2.;
+
+      CoordinateBounds bounds(Center[0] - scale, Center[0] + scale, Center[1] - scale, Center[1] + scale, Center[2] - scale, Center[2] + scale);
+      Buckets<std::shared_ptr<source4FMM<target4FMM>>> B_poles(bounds, obj->getScale() / 2.);
       std::cout << "バケットの作成．極の追加" << std::endl;
       /* phiOnFaceやphinOnFaceを更新することで，getValuesの結果は自動的に更新される． */
       TimeWatch tw;
       for (auto &F : obj->getSurfaces()) {
-         auto [p0, p1, p2] = F->getPoints();
-         auto closest_p_to_origin = p0;
-         auto X012 = ToX(F->getPoints());
-         auto cross = Cross(X012[1] - X012[0], X012[2] - X012[0]);
-         for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : F->map_Point_LinearIntegrationInfo_vector[1].at(closest_p_to_origin)) {
-            auto [xi0, xi1] = t0t1;
-            auto weights = Tdd{norm_cross * ww, norm_cross * ww};
-            std::function<void(pole4FMM *)> updater = [p0, p1, p2, F,
-                                                       key0 = std::get<1>(pf2ID(p0, F)),
-                                                       key1 = std::get<1>(pf2ID(p1, F)),
-                                                       key2 = std::get<1>(pf2ID(p2, F)),
-                                                       shape3](pole4FMM *self) -> void {
-               auto phi = [](auto *p) {
-                  double sum = 0.;
-                  for (const auto &[f, phi] : p->phiOnFace) sum += phi;
-                  return sum / p->phiOnFace.size();
-               };
-               std::get<0>(self->values) = Dot(shape3, Tddd{phi(p0), phi(p1), phi(p2)});                                                  //! phi
-               std::get<1>(self->values) = Dot(shape3, Tddd{p0->phinOnFace.at(key0), p1->phinOnFace.at(key1), p2->phinOnFace.at(key2)});  //! phin
+         const auto [p0, p1, p2] = F->getPoints();
+         const auto closest_p_to_origin = p0;
+         //! ソースとして重要なのは，G,Gnを作るための情報のみ. quadpointsには，points_facesが入っている
+         if (F->isPseudoQuadraticElement) {
+
+            /* -------------------------------------------------------------------------- */
+            /*
+            DodecaPointsのvertexは，quadpoint, quadpoint_l0, quadpoint_l1, quadpoint_l2
+            それに対応する形状関数は，Nc_N0_N1_N2
+            として保存されている．
+            */
+
+            auto insert = [](auto &insert_to, const auto &points_faces) {
+               int i = 0;
+               for (auto &[p, f] : points_faces) {
+                  auto key = std::get<1>(pf2ID(p, f));
+                  insert_to[i++] = {&p->phiOnFace.at(key), &p->phinOnFace.at(key)};  //! updateされる値へのポインタ かつ キー．
+               }
             };
-            //$ 極の追加
-            auto pole = std::make_shared<pole4FMM>(X, weights, F->normal, updater);
-            B_poles.add(X, pole);
-            pole->update();
+            std::array<std::array<std::array<double *, 2>, 6>, 4> pair_pointer_phiphin;
+            insert(pair_pointer_phiphin[0], F->dodecaPoints[0]->quadpoint.points_faces);
+            insert(pair_pointer_phiphin[1], F->dodecaPoints[0]->quadpoint_l0.points_faces);
+            insert(pair_pointer_phiphin[2], F->dodecaPoints[0]->quadpoint_l1.points_faces);
+            insert(pair_pointer_phiphin[3], F->dodecaPoints[0]->quadpoint_l2.points_faces);
+
+            // b% [1] ソース点の配置に関する積分
+            for (const auto &[t0t1, quadrature_weight, Nc_N0_N1_N2, X, cross, J_det] : F->map_Point_PseudoQuadraticIntegrationInfo_vector[0].at(closest_p_to_origin)) {
+
+               //^  ---------------------------- update values of sources ---------------------------------------------- */
+
+               auto get_weighted_source_densities = [W = (J_det * quadrature_weight), Nc_N0_N1_N2, pair_pointer_phiphin]() -> std::array<double, 2> {
+                  std::array<double, 2> phiphin = {0., 0.};
+                  for (int i = 0; i < 4; ++i) {
+                     for (int j = 0; j < 6; ++j) {
+                        phiphin[0] += W * Nc_N0_N1_N2[i][j] * (*pair_pointer_phiphin[i][j][0]);
+                        phiphin[1] += W * Nc_N0_N1_N2[i][j] * (*pair_pointer_phiphin[i][j][1]);
+                     }
+                  }
+                  return phiphin;
+               };
+
+               //^  ----------------------------- set up direct integration -------------------------------------------- */
+               //^ このソース点の直接積分計算をどのように行うかを指定する関数
+               //^ 今のところは，面には1ソース点のみが設置されている．そのため，直接積分は１つの面の積分と考えていい
+
+               auto use_this_soruce_when_set_direct_integration = [&obj, F, points = F->Points](const target4FMM *origin) -> std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> {
+                  const bool is_near = (Norm((points[0]->X + points[1]->X + points[2]->X) / 3. - origin->Xtarget) < obj->getScale() / 30.);
+                  const auto &array_to_use = is_near ? std::span(__array_GW1xGW1__.begin(), __array_GW1xGW1__.end()) : std::span(__array_GW5xGW5__.begin(), __array_GW5xGW5__.end());
+                  //! 観測点(target)を特定の番号に位置するようにする．
+                  auto dodecapoint = F->dodecaPoints[points[1] == origin ? 1 : (points[2] == origin ? 2 : 0)];
+
+                  // b% [2] ソース点を直接積分に置き換えたあとの，積分（複数点）
+                  std::vector<std::array<double, 2>> ij_WGN_WGnN(24, std::array<double, 2>{0., 0.});
+                  std::vector<std::array<double *, 2>> ij_phiphin(24, {nullptr, nullptr});
+                  std::array<std::array<double, 6>, 4> Nc_N0_N1_N2;
+                  double nr, tmp, WG, WGn_, WGn;
+                  std::array<double, 3> R, cross, X;
+                  for (const auto &[t0, t1, ww] : array_to_use) {
+                     auto [xi0, xi1, xi2] = ModTriShape<3>(t0, t1);
+                     cross = dodecapoint->cross(xi0, xi1);
+                     Nc_N0_N1_N2 = dodecapoint->N6_new(xi0, xi1);
+                     nr = Norm(R = (dodecapoint->X(xi0, xi1) - origin->Xtarget));
+                     tmp = (ww * (1. - t0) / nr);
+                     WG = (Norm(cross) * tmp);
+                     WGn_ = (-Dot(R / nr, cross) * tmp / nr);
+                     for (int i = 0; i < 4; ++i) {
+                        auto quadpoints = dodecapoint->getQuadPoints(i - 1);
+                        for (int j = 0; j < 6; ++j) {
+                           WGn = WGn_;
+                           auto [p, _] = quadpoints->points_faces[j];
+                           ij_WGN_WGnN[6 * i + j] += std::array<double, 2>{WG * Nc_N0_N1_N2[i][j], p == origin ? 0. : WGn * Nc_N0_N1_N2[i][j]};  //! リジッドモードテクニック
+                           if (i == 0) {
+                              auto [p, key] = pf2ID(quadpoints->points_faces[j]);
+                              ij_phiphin[6 * i + j] = {&p->phiOnFace.at(key), &p->phinOnFace.at(key)};
+                           }
+                        }
+                     }
+                  }
+
+                  // std::unordered_map<std::array<double *, 2>, std::array<double, 2>> uo_results;
+                  // uo_results.reserve(24);
+                  // for (int k = 0; k < 24; ++k)
+                  //    uo_results[ij_phiphin[k]] += ij_WGN_WGnN[k];
+                  // std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> results;
+                  // results.reserve(24);
+                  // for (const auto &[key, value] : uo_results)
+                  //    results.push_back({key, value});
+
+                  std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> phiphin_WGN_WGnN(24, {{nullptr, nullptr}, {0., 0.}});
+                  for (int k = 0; k < 24; ++k)
+                     phiphin_WGN_WGnN[k] = {ij_phiphin[k], ij_WGN_WGnN[k]};
+
+                  return phiphin_WGN_WGnN;
+               };
+
+               //^ -------------------------------------------------------------------------- */
+               auto pole = std::make_shared<source4FMM<target4FMM>>(X,
+                                                                    F->normal,
+                                                                    get_weighted_source_densities,
+                                                                    use_this_soruce_when_set_direct_integration);
+               B_poles.add(X, pole);
+            }
+
+         } else {  //@ ==================================================================================================
+
+            auto key0 = std::get<1>(pf2ID(p0, F));
+            auto key1 = std::get<1>(pf2ID(p1, F));
+            auto key2 = std::get<1>(pf2ID(p2, F));
+
+            std::array<double *, 2> pair_pointer_phiphin0 = {&p0->phiOnFace.at(key0), &p0->phinOnFace.at(key0)};
+            std::array<double *, 2> pair_pointer_phiphin1 = {&p1->phiOnFace.at(key1), &p1->phinOnFace.at(key1)};
+            std::array<double *, 2> pair_pointer_phiphin2 = {&p2->phiOnFace.at(key2), &p2->phinOnFace.at(key2)};
+
+            // b% [1] ソース点の配置に関する積分
+            for (const auto &[t0t1, quadrature_weight, shape3, X, cross, J_det] : F->map_Point_LinearIntegrationInfo_vector[0].at(closest_p_to_origin)) {
+
+               //!  ---------------------------- update values of sources ---------------------------------------------- */
+
+               auto get_weighted_source_densities = [W = (J_det * quadrature_weight),
+                                                     shape3,
+                                                     pair_pointer_phiphin0,
+                                                     pair_pointer_phiphin1,
+                                                     pair_pointer_phiphin2]() -> std::array<double, 2> {
+                  return {W * (shape3[0] * (*pair_pointer_phiphin0[0]) + shape3[1] * (*pair_pointer_phiphin1[0]) + shape3[2] * (*pair_pointer_phiphin2[0])),
+                          W * (shape3[0] * (*pair_pointer_phiphin0[1]) + shape3[1] * (*pair_pointer_phiphin1[1]) + shape3[2] * (*pair_pointer_phiphin2[1]))};
+               };
+
+               //!  ----------------------------- set up direct integration -------------------------------------------- */
+
+               //$ このソース点の直接積分計算をどのように行うかを指定する関数
+               auto use_this_soruce_when_set_direct_integration = [&obj,
+                                                                   F,
+                                                                   points = F->Points,
+                                                                   pair_pointer_phiphin0,
+                                                                   pair_pointer_phiphin1,
+                                                                   pair_pointer_phiphin2](const target4FMM *origin) -> std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> {
+                  const bool is_near = (Norm((points[0]->X + points[1]->X + points[2]->X) / 3. - origin->Xtarget) < obj->getScale() / 30.);
+                  const auto &array_to_use = is_near ? std::span(__array_GW1xGW1__.begin(), __array_GW1xGW1__.end()) : std::span(__array_GW5xGW5__.begin(), __array_GW5xGW5__.end());
+
+                  const int rotate = points[1] == origin ? 1 : (points[2] == origin ? 2 : 0);
+                  const auto [p0, p1, p2] = RotateLeft(points, rotate);  //! poleは面に１つのみ．だからこの積分はOK
+                  const std::array<std::array<double, 3>, 3> X012 = {p0->Xtarget, p1->Xtarget, p2->Xtarget};
+                  std::array<double, 3> cross = Cross(X012[1] - X012[0], X012[2] - X012[0]), WGN = {0., 0., 0.}, WGnN = {0., 0., 0.}, N012_geometry, R;
+                  double norm_cross = Norm(cross);
+                  double nr, tmp;
+                  // b% [2] ソース点を直接積分に置き換えたあとの，積分
+                  for (const auto &[t0, t1, ww] : array_to_use) {
+                     N012_geometry = ModTriShape<3>(t0, t1);
+                     nr = Norm(R = (Dot(N012_geometry, X012) - origin->Xtarget));
+                     tmp = (ww * (1. - t0) / nr);
+                     WGN += (norm_cross * tmp) * N012_geometry;
+                     WGnN += (-Dot(R / nr, cross) * tmp / nr) * N012_geometry;
+                  }
+                  if (p0 == origin)
+                     std::get<0>(WGnN) = 0.;  //! リジッドモードテクニック
+                  std::array<int, 3> idx = {0, 1, 2};
+                  if (rotate == 1)
+                     idx = {2, 0, 1};
+                  else if (rotate == 2)
+                     idx = {1, 2, 0};
+                  return {{pair_pointer_phiphin0, std::array<double, 2>{WGN[idx[0]], WGnN[idx[0]]}},
+                          {pair_pointer_phiphin1, std::array<double, 2>{WGN[idx[1]], WGnN[idx[1]]}},
+                          {pair_pointer_phiphin2, std::array<double, 2>{WGN[idx[2]], WGnN[idx[2]]}}};
+               };
+
+               auto pole = std::make_shared<source4FMM<target4FMM>>(X, F->normal,
+                                                                    get_weighted_source_densities,               //! FMMで使うソースの値を，GMRESの反復計算でアップデートするための関数
+                                                                    use_this_soruce_when_set_direct_integration  //! 　このソース点１点に対する直接積分計算をどのように行うかを指定する関数
+               );
+               B_poles.add(X, pole);
+            }
          }
+         /* -------------------------------------------------------------------------- */
       }
 
       std::cout << Magenta << "Add poles" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
@@ -835,249 +993,285 @@ struct BEM_BVP {
       //@ -------------------------------------------------------------------------- */
 
       std::cout << "ツリー構造を生成" << std::endl;
-      int max_level = 8;
+      int max_level = 10;
       B_poles.setLevel(0, max_level);
       B_poles.generateTree([](auto bucket) {
          if (bucket->all_stored_objects_vector.empty())
             return false;
          else
-            return bucket->all_stored_objects_vector.size() > 800 && bucket->level < bucket->max_level;
+            return bucket->all_stored_objects_vector.size() > 500 && bucket->level < bucket->max_level;
       });
       std::cout << Magenta << "Tree" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
 
-      // show info of tree
-      for (auto i = 0; i < B_poles.level_buckets.size(); ++i) {
-         int mean_M2L_size = 0;
-         for (auto m2l : B_poles.level_buckets[i])
-            mean_M2L_size += m2l->buckets_for_M2L.size();
-         mean_M2L_size /= B_poles.level_buckets[i].size();
-         std::cout << "level = " << i << ", size = " << B_poles.level_buckets[i].size() << ", mean M2L size = " << mean_M2L_size << std::endl;
-      }
-
       /* -------------------------------------------------------------------------- */
-
-      double area = 0.;
-      for (auto &F : obj->getSurfaces())
-         area += F->area;
-
-      //@ -------------------------------------------------------------------------- */
-      //@                                  FMM                                      */
-      //@ -------------------------------------------------------------------------- */
-
-      std::cout << "極の展開" << std::endl;
-      MultipoleExpansion(B_poles);
-      std::cout << Magenta << "Multipole Expansion" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
-
-      TimeWatch twFMM;
-
-      /* -------------------------------------------------------------------------- */
-
-      auto MatrixVectorProduct = [&obj, &B_poles](const bool solidangle = true) -> V_d {
-         /*
-            基本とする形，左辺
-            {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,phin,phin,phin}-{{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi,phi,phi,phi}
-
-            node1がNeumanの場合，他はDirichletの場合
-            左辺，未知変数側：
-            {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,0,phin,phin} - {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{0,phi,0,0}
-            右辺，既知変数側：
-            - {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{0, phin, 0, 0} + {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi, 0, phi, phi}
-         */
-         std::size_t count = 0;
-         for (const auto &p : obj->getSurfacePoints())
-            count += p->f2Index.size();
-         std::vector<double> V(count, 0.);
-         // std::vector<double> V_RHS(count, 0.);
-
-         updatePole_ME_M2M_M2L_L2L(B_poles);
-
-         std::cout << Red << "direct integration ..." << colorReset << std::endl;
-
-         TimeWatch tw;
-
-   #pragma omp parallel
-         for (const auto &p : obj->getSurfacePoints())
-   #pragma omp single nowait
+      if (false) {
          {
-            double A = 0, n = 0, eps = 0;
-            for (auto &f : p->getSurfaces())
-               A += f->area;
-            eps = std::sqrt(A / M_PI) * 0.01;
-            for (const auto &[f, i] : p->f2Index) {
-               auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
-               if (solidangle) {
-                  std::get<1>(IgPhin_IgnPhi_near) += p->solid_angle * p->phiOnFace.at(f);
-                  // std::get<1>(IgPhin_IgnPhi_near) += p->almost_solid_angle * p->phiOnFace.at(f);
-               }
-               auto [IgPhin, IgnPhi] = IgPhin_IgnPhi_near + IgPhin_IgnPhi_far;
-               V[i] = IgPhin - IgnPhi;  // known
-            }
+            T8Tddd t8tddd = (CoordinateBounds)(obj->bounds);
+            std::ofstream ofs("./obj_bounds.vtp");
+            vtkPolygonWrite(ofs, t8tddd);
+            ofs.close();
          }
 
-         std::cout << Red << "direct integration : " << Green << tw() << colorReset << std::endl;
+         std::vector<T8Tddd> cube_level_deepest;
+         B_poles.forEachAtDeepest([&](auto *B) {
+            T8Tddd t8tddd = (CoordinateBounds)(B->bounds);
+            cube_level_deepest.push_back(t8tddd);
+         });
+         std::ofstream ofs("./cube_level_deepest_points.vtp");
+         vtkPolygonWrite(ofs, cube_level_deepest);
+         ofs.close();
 
-         return V;
-      };
+         // レベルごとに出力したい場合
+         for (int i = 0; i <= B_poles.max_level; ++i) {
+            std::vector<T8Tddd> cube_level;
+            B_poles.forEachAtLevel(i, [&](auto *B) {
+               T8Tddd t8tddd = (CoordinateBounds)(B->bounds);
+               cube_level.push_back(t8tddd);
+            });
+            std::ofstream ofs("./cube_level_points_" + std::to_string(i) + ".vtp");
+            vtkPolygonWrite(ofs, cube_level);
+            ofs.close();
+         }
+      }
+      /* -------------------------------------------------------------------------- */
 
-      /* ----------------------------- almost solid angleの計算 ----------------------------- */
+      //@ -------------------------------------------------------------------------- */
+      //@                                  FMM                                       */
+      //@ -------------------------------------------------------------------------- */
+      auto points = obj->getSurfacePoints();
 
-      TimeWatch tw_solid_angle;
-      for (const auto &p : obj->getSurfacePoints()) {
+      initializeFMM(B_poles, points);
+
+      /*
+         基本とする形，左辺
+         {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,phin,phin,phin} - {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi,phi,phi,phi}
+         node1がNeumanの場合，他はDirichletの場合
+         左辺，未知変数側：
+         {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{phin,0,phin,phin} - {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{0,phi,0,0}
+         右辺，既知変数側：
+         - {{G0,G0,G0,G0},{G1,G1,G1,G1}}.{0, phin, 0, 0} + {{Gn0,Gn0,Gn0,Gn0},{Gn1,Gn1,Gn1,Gn1}}.{phi, 0, phi, phi}
+      */
+
+      std::vector<std::array<double *, 2>> copy_map;
+      copy_map.reserve(points.size() * 2 * 5);
+      for (const auto &p : points) {
          p->phiOnFace_copy = p->phiOnFace;
          p->phinOnFace_copy = p->phinOnFace;
          for (const auto &[f, i] : p->f2Index) {
-            p->phiOnFace.at(f) = 1.;   //! this is known value to calculate b
-            p->phinOnFace.at(f) = 0.;  //! this is known value to calculate b
-            p->almost_solid_angle = 0.;
-            p->solid_angle = p->getSolidAngle();
+            copy_map.push_back({&p->phiOnFace_copy[f], &p->phiOnFace[f]});
+            copy_map.push_back({&p->phinOnFace_copy[f], &p->phinOnFace[f]});
          }
       }
 
-      setM2M(B_poles);
-      setM2L(B_poles);
-      setL2L(B_poles);
-      updatePole_ME_M2M_M2L_L2L(B_poles);
+      auto copyPhiPhin = [&](Network *obj) -> void {
+         for (auto &[p_copy, value] : copy_map) {
+            *p_copy = *value;
+            *value = 0.;
+         }
+      };
 
-   #pragma omp parallel
-      for (const auto &p : obj->getPoints())
-   #pragma omp single nowait
+      auto restorePhiPhin = [&](Network *obj) -> void {
+         for (auto &[p_copy, value] : copy_map)
+            *value = *p_copy;
+      };
+
+      /* --------------------------------- 対角項を計算 --------------------------------- */
+
       {
-         double A = 0, n = 0;
-         for (auto &f : p->getSurfaces()) A += f->area;
-         double eps = std::sqrt(A / M_PI) * 0.01;
-         for (const auto &[f, i] : p->f2Index) {
-            auto [IgPhin_IgnPhi_near, IgPhin_IgnPhi_far] = integrate(B_poles, p->X, eps);
-            p->almost_solid_angle = -std::get<1>(IgPhin_IgnPhi_near + IgPhin_IgnPhi_far);
-         }
-      }
-
-      for (const auto &p : obj->getPoints()) {
-         p->phiOnFace = p->phiOnFace_copy;
-         p->phinOnFace = p->phinOnFace_copy;
-      }
-
-      std::cout << Magenta << "対角成分の計算" << Green << ", Elapsed time : " << tw_solid_angle() << colorReset << std::endl;
-
-      /* ------------ calculate diagonal elements for pre conditioners ------------ */
-
-      for (auto &origin : obj->getPoints()) {
-         origin->diagIgIgn.fill(0.);
-         for (auto &integ_f : origin->getSurfaces()) {
-            for (const auto &[t0t1, ww, shape3, X, cross, norm_cross] : integ_f->map_Point_LinearIntegrationInfo_vector[1].at(origin)) {
-               auto R = (X - origin->X);
-               double nr = Norm(R);
-
-               double A = 0, eps = 0;
-               for (auto &f : origin->getSurfaces())
-                  A += f->area;
-               eps = std::sqrt(A / M_PI) * 0.01;
-
-               if (nr > 0.) {
-                  double ig = norm_cross * (ww / nr);
-                  double ign = Dot(R / (nr * nr * nr), cross) * ww;
-                  std::get<0>(origin->diagIgIgn) += ig * std::get<0>(shape3);
-                  if (nr > eps)
-                     std::get<1>(origin->diagIgIgn) -= ign * std::get<0>(shape3);
-               }
-            }
-         }
-         std::get<1>(origin->diagIgIgn) += origin->solid_angle;
-      }
-
-      /* --------------------------- GMRESで利用する関数を定義する． --------------------------- */
-
-      //! 　未知変数側
-      auto return_A_dot_v = [&](const V_d &V) -> V_d {
-         //! 値を更新
-         for (const auto &p : obj->getPoints()) {
-            p->phiOnFace_copy = p->phiOnFace;
-            p->phinOnFace_copy = p->phinOnFace;
+         std::cout << "calculate diagonal coefficient" << std::endl;
+         copyPhiPhin(obj);
+   #pragma omp parallel
+         for (const auto &p : points) {
+   #pragma omp single nowait
             for (const auto &[f, i] : p->f2Index) {
                if (isDirichletID_BEM(p, f)) {
-                  p->phinOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
-                  p->phiOnFace.at(f) = 0.;
+                  p->phinOnFace[f] = 0.;
+                  p->phiOnFace[f] = 1.;
                } else if (isNeumannID_BEM(p, f)) {
-                  p->phinOnFace.at(f) = 0.;
-                  p->phiOnFace.at(f) = V[i];  //! this is unknown value that will be calculated
+                  p->phinOnFace[f] = 0.;
+                  p->phiOnFace[f] = 1.;
                } else
                   throw std::runtime_error("Error: Boundary type is not defined.");
             }
          }
-         auto ret = MatrixVectorProduct();
-
-         //! 値を戻す
-         for (const auto &p : obj->getPoints()) {
-            p->phiOnFace = p->phiOnFace_copy;
-            p->phinOnFace = p->phinOnFace_copy;
+         updateFMM(B_poles);
+         TimeWatch tw;
+   #pragma omp parallel
+         for (const auto &a : points)
+   #pragma omp single nowait
+         {
+            for (const auto &[f, i] : a->f2Index) {
+               auto GPhin_GnPhi_near = a->integrate();
+               auto GPhin_GnPhi_far = a->integrateFMM();
+               auto [GPhin, GnPhi] = GPhin_GnPhi_near + GPhin_GnPhi_far;
+               a->diagonal_coefficient = GPhin - GnPhi;
+               // std::cout << "diagonal coefficient: " << a->diagonal_coefficient << ", " << a->getSolidAngle() << std::endl;
+            }
          }
+         std::cout << Magenta << "integration (direct integration is dominant)" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
+         restorePhiPhin(obj);
+      }
 
-         for (const auto &p : obj->getPoints())
-            for (const auto &[f, i] : p->f2Index)
-               ret[i] /= std::get<1>(p->diagIgIgn);
-         return ret;
+      /* -------------------------------------------------------------------------- */
+
+      std::size_t C = 0;
+      for (const auto &p : points)
+         C += p->f2Index.size();
+      std::vector<double> GMRES_VECTOR(C, 0.);
+
+      /* ---------------------------------------------------------------------------- */
+
+      TimeWatch timewatch;
+      int counter = 0;
+      auto AdotV_FMM = [&counter, &timewatch, &obj, &B_poles, &GMRES_VECTOR, &points]() -> V_d {
+         updateFMM(B_poles);
+         auto elp = timewatch();
+   #pragma omp parallel
+         for (const auto &a : points)
+   #pragma omp single nowait
+         {
+            std::array<double, 2> GPhin_GnPhi;
+            for (const auto &[f, i] : a->f2Index) {
+               if (a->CORNER && isNeumannID_BEM(a, f)) {
+                  GMRES_VECTOR[i] = a->phiOnFace[f];
+               } else {
+                  GPhin_GnPhi = (a->integrate() + a->integrateFMM()) / a->diagonal_coefficient;
+                  GMRES_VECTOR[i] = std::get<0>(GPhin_GnPhi) - (std::get<1>(GPhin_GnPhi) + a->phiOnFace[f]);  //! 基本形
+               }
+            }
+         }
+         if (counter++ % 10 == 0)
+            std::cout << "Elapsed time : " << Magenta << "updateFMM" << elp << Green << "  integration" << timewatch() << " counter =" << counter << colorReset << std::endl;
+         return GMRES_VECTOR;
       };
 
-      /* ---------------------------------- bの計算 ---------------------------------- */
+      /* ---------------------- GMRESで利用する関数を定義する． ------------------------- */
 
-      //@ 既知変数側
-      for (const auto &p : obj->getPoints()) {
-         p->phiOnFace_copy = p->phiOnFace;
-         p->phinOnFace_copy = p->phinOnFace;
+      std::vector<double *> GMRES_input(C);
+      for (const auto &p : points) {
          for (const auto &[f, i] : p->f2Index) {
             if (isDirichletID_BEM(p, f)) {
-               p->phinOnFace.at(f) = 0.;
-               p->phiOnFace.at(f) = -p->phiOnFace.at(f);
+               GMRES_input[i] = &p->phinOnFace[f];
             } else if (isNeumannID_BEM(p, f)) {
-               p->phinOnFace.at(f) = -p->phinOnFace.at(f);
-               p->phiOnFace.at(f) = 0.;
+               GMRES_input[i] = &p->phiOnFace[f];
             } else
                throw std::runtime_error("Error: Boundary type is not defined.");
          }
       }
 
-      std::vector<double> b = MatrixVectorProduct();
+      /* ------------------------ GMRES用　return_A_dot_v　--------------------------- */
 
-      //! 値を戻す
-      for (const auto &p : obj->getPoints()) {
-         p->phiOnFace = p->phiOnFace_copy;
-         p->phinOnFace = p->phinOnFace_copy;
+      TimeWatch watch_;
+      auto return_A_dot_v = [&](const V_d &V) -> V_d {
+         copyPhiPhin(obj);
+         for (int i = 0; i < V.size(); ++i)
+            *GMRES_input[i] = V[i];
+         AdotV_FMM();  //% 代入した値を使ってFMMでA・Vを計算する
+         restorePhiPhin(obj);
+         return GMRES_VECTOR;
+      };
+
+      /* ---------------------------------- bの計算 ---------------------------------- */
+
+      // 早くする方法は，
+      // おそらく
+      // ＊　ガウス点の削減（近くは多く，遠くは少なく．がFMMではできない！なにか方法があるはず，数式から考える）
+      // ＊　展開工数の削減（遠くは少なく，近くは多く展開？）
+      // ＊　プログラムの最適化
+      // ＊　展開の収束性の向上（もっと早く収束する展開は存在するのか？）
+
+      //! 既知変数側
+      copyPhiPhin(obj);
+   #pragma omp parallel
+      for (const auto &p : points)
+   #pragma omp single nowait
+      {
+         for (const auto &[f, i] : p->f2Index) {
+            if (isDirichletID_BEM(p, f)) {
+               // p->phinOnFace[f] = 0.;
+               p->phiOnFace[f] = -p->phiOnFace_copy.at(f);
+            } else if (isNeumannID_BEM(p, f)) {
+               p->phinOnFace[f] = -p->phinOnFace_copy.at(f);
+               // p->phiOnFace[f] = 0.;
+            } else
+               throw std::runtime_error("Error: Boundary type is not defined.");
+         }
       }
+      //% 代入した値を使ってFMMでA・Vを計算する
+      auto b = AdotV_FMM();
 
-      for (const auto &p : obj->getPoints())
-         for (const auto &[f, i] : p->f2Index)
-            b[i] /= std::get<1>(p->diagIgIgn);
-
+      /* ------------------------- Compativility Condition ------------------------ */
+   #pragma omp parallel
+      for (const auto &p : points)
+   #pragma omp single nowait
+      {
+         if (p->CORNER)
+            for (const auto &[f, i] : p->f2Index)
+               if (isNeumannID_BEM(p, f))
+                  b[i] = p->phiphin[0];
+      }
       /* -------------------------------------------------------------------------- */
 
-      std::cout << Red << "Total Elapsed time : " << twFMM() << colorReset << std::endl;
+      //! compatibility condition for p on Gamma^N face and corner
+      //! p->CORNER && isNeumannID_BEM(p, f)
 
-      /* ------------------------------ GMRES ------------------------------------- */
+      restorePhiPhin(obj);
+
+      int count = 0, n = 0;
+      for (const auto &p : obj->getPoints())
+         p->b_diff_RHS_FMM = 0.;
+
+      for (const auto &p : obj->getPoints()) {
+         for (const auto &[f, i] : p->f2Index) {
+            // p->b_RHS_Direct = b_RHS[i];
+            p->b_RHS_FMM = b[i];
+            // auto diff = std::abs(b[i] - b_RHS[i]);
+            // if (p->b_diff_RHS_FMM < diff)
+            //    p->b_diff_RHS_FMM = b[i] - b_RHS[i];
+         }
+      }
+
+      /* --------------------------------- GMRES ------------------------------------- */
 
       // std::cout << "use gmres" << std::endl;
-      std::vector<int> list = {60};
+      std::vector<int> list = {20, 40, 60, 80, 100, 120, 150, 200};
       std::vector<double> error;
-      std::unordered_map<networkPoint *, double> data_gmres_ans, data_b;
       std::vector<double> x0(b.size(), 0.);
 
-      // for (auto &p : obj->getPoints())
-      //    for (const auto &[f, i] : p->f2Index) {
-      //       if (isDirichletID_BEM(p, f))
-      //          x0[i] = p->phinOnFace.at(f);  //! this is unknown value that will be calculated
-      //       else if (isNeumannID_BEM(p, f))
-      //          x0[i] = p->phiOnFace.at(f);  //! this is unknown value that will be calculated
-      //       else
-      //          throw std::runtime_error("Error: Boundary type is not defined.");
-      //    }
+      for (const auto &p : obj->getPoints())
+         for (const auto &[f, i] : p->f2Index) {
+            if (isDirichletID_BEM(p, f))
+               x0[i] = p->phinOnFace.at(f);
+            else if (isNeumannID_BEM(p, f)) {
+               x0[i] = p->phiOnFace.at(f);
+            }
+         }
 
-      const double torrelance = 1.e-9 * obj->getPoints().size();
+      const double torrelance = 1E-13 * obj->getPoints().size();
+      int c = 0;
       for (auto gmres_size : list) {
+         TimeWatch watch;
          gmres *GMRES = new gmres(return_A_dot_v, b, x0, gmres_size);
+         std::cout << "Elapsed time for GMRES: " << watch() << " s" << std::endl;
          std::cout << "gmres size = " << gmres_size << std::endl;
          std::cout << "gmres error = " << GMRES->err << std::endl;
          error.push_back(GMRES->err);
          x0 = GMRES->x;
+         //
+         auto ANS = [&]() -> V_d {
+            copyPhiPhin(obj);
+            for (int i = 0; i < x0.size(); ++i)
+               *GMRES_input[i] = x0[i];
+            auto ret = AdotV_FMM();
+            restorePhiPhin(obj);
+            return ret;
+         };
+         double E = Norm(ANS() - b);
+         //
+         std::cout << "GMRES true error = " << E << std::endl;
+         std::cout << "count = " << c++ << std::endl;
          delete GMRES;
-         if (GMRES->err < torrelance)
+         if (E < 1E-10)
             break;
       }
 
@@ -1368,10 +1562,8 @@ struct BEM_BVP {
                std::ranges::for_each(net->acceleration, [&](auto &a_w) { i++; });
             else
                std::ranges::for_each(net->acceleration, [&](auto &a_w) { a_w = BM_X[i++]; });
-         } else {
-            // if net is not floating, then acceleration is not updated.
+         } else
             std::ranges::for_each(net->acceleration, [&](auto &a_w) { i++;/*a_w = BM_X[i++];*/ });
-         }
       }
    }
 
@@ -1462,14 +1654,12 @@ struct BEM_BVP {
       {\boldsymbol I}_{\rm G} = {\rm R}_{g2l}^{-1}{\boldsymbol I}{\rm R}_{g2l}
       ```
 
-      $I_{Gil}={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}$は（g2lを省略），
       $R^{-1}$が$R^{\top}$であることと，$I^{-1}$が対角成分のみの行列であることを利用すれば，次のように書ける．
 
       ```math
       \begin{align*}
-      I_{Gil}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}\\
-      &={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}\\
-      &=\frac{{R}_{0i}{R}_{0l}}{{I}_{x}}+\frac{{R}_{1i}{R}_{1l}}{{I}_{y}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{z}}
+      {\left({{I}_{G}}\right)}_{il}&={\left({{R}^{-{1}}}\right)}_{ij}{I}_{jk}{R}_{kl}={R}_{ji}{I}_{jj}{R}_{jl}={R}_{1i}{R}_{1l}{I}_{x}+{R}_{2i}{R}_{2l}{I}_{y}+{R}_{3i}{R}_{3l}{I}_{z}\\
+      {\left({{I}_{G}^{-{1}}}\right)}_{il}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}=\frac{{R}_{1i}{R}_{1l}}{{I}_{x}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{y}}+\frac{{R}_{3i}{R}_{3l}}{{I}_{z}}
       \end{align*}
       ```
 
@@ -1553,7 +1743,8 @@ struct BEM_BVP {
                    }
                 });
 
-            //^ ---------------------- ダンピング --------------- */
+            //^ ---------------------- ダンピング --------------------- */
+
             if (body->inputJSON.find("damping")) {
                const auto c = stod(body->inputJSON.at("damping"));
                std::array<double, 3> c_xyz = {c[0], c[1], c[2]};
@@ -1570,7 +1761,9 @@ struct BEM_BVP {
                   T_GLOBAL -= c_abc * body->velocityRotational();
                }
             }
-            //% -------------------------------------------------------------------------- */
+
+            //^ ------------------------------------------------------ */
+
             const auto [mx, my, mz, IG, inv_IG] = body->getInertiaGC();
             double a0 = F[0] / mx;
             double a1 = F[1] / my;
@@ -1610,7 +1803,7 @@ struct BEM_BVP {
 
       insertAcceleration(rigidbodies, BM.X - BM.dX);
       auto func_ = Func(BM.X - BM.dX, WATERS, rigidbodies, ACCELS_OUT);
-#define method_Cao1994
+      // #define method_Cao1994
       for (auto j = 0; j < 100; ++j) {
 #ifdef method_Cao1994
          V_d ACCELS_IN = ACCELS_OUT;

@@ -245,6 +245,13 @@ std::vector<T> operator-(std::vector<T> v, const std::vector<T> &w) {
    return v -= w;
 };
 
+template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+std::vector<T> operator-(const std::vector<T *> &v, std::vector<T> w) {
+   for (auto i = 0; i < std::min(v.size(), w.size()); ++i)
+      w[i] = *v[i] - w[i];
+   return w;
+};
+
 //! matrix - matrix
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
 std::vector<std::vector<T>> operator-(std::vector<std::vector<T>> v, const std::vector<std::vector<T>> &w) {

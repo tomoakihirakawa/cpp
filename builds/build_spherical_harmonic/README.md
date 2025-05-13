@@ -15,6 +15,7 @@
     - [⛵ pole class](#-pole-class)
     - [⛵ Buckets class](#-buckets-class)
 - [🐋 Fast Multipole Method](#-fast-multipole-method)
+    - [⛵ 要素法特有の話](#-要素法特有の話)
 - [🐋 🐋 多重極展開](#--多重極展開)
     - [⛵ ⛵ Green関数の多重極展開](#--green関数の多重極展開)
         - [🪼 🪼 球面座標系への変換](#--球面座標系への変換)
@@ -87,7 +88,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -119,7 +120,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
+[../../include/lib_multipole_expansion.hpp#L192](../../include/lib_multipole_expansion.hpp#L192)
 
 
 ## ⛵ 精度の確認 
@@ -248,7 +249,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -280,7 +281,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
+[../../include/lib_multipole_expansion.hpp#L192](../../include/lib_multipole_expansion.hpp#L192)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -333,6 +334,13 @@ The Fast Multipole Method (FMM) is an algorithm for the efficient calculation of
 | 8 | 5 | Add direct integration for the near field and the integration using the local expansion for the far field | | |
 
 Many part of process are dependent on relative position of the poles and the buckets. Therefore, many part of the first steps are saved and reused in the following iterative steps. Remaining part for iterative steps are the update of the intensity of the poles, and simple incrementatation in four-fold for-loops. However, the number of incrementation is not negligible, and the direct integration for the near field also takes time. FMM is surely faster than the direct summation when the number of poles is more than about 10000, but the calculation time is already long when the number of poles is about 10000.
+
+## ⛵ 要素法特有の話 
+
+そもそものガウス点がすくなければツリーを伸ばしていけて，直接積分の量を減らせるため，早くなる
+直接積分の部分のガウス点は減らしたくない．これを両立することが大事だ．
+
+このような議論はされていない．
 
 [./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L113](./test_translation_of_a_multipole_expansion_with_tree_20240818.cpp#L113)
 
@@ -390,7 +398,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -422,7 +430,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
+[../../include/lib_multipole_expansion.hpp#L192](../../include/lib_multipole_expansion.hpp#L192)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 
@@ -491,7 +499,7 @@ $`(r,a,b)`$の$`(x,y,z)`$に関する勾配は次のようになる．
 \nabla a = \frac{1}{r^2r _\parallel} \left(xz,yz,-r _\parallel^2\right),\quad
 \nabla b = \frac{1}{r _\parallel^2} \left(-y,x,0\right)
 ```
-[../../include/lib_multipole_expansion_.hpp#L19](../../include/lib_multipole_expansion_.hpp#L19)
+[../../include/lib_multipole_expansion.hpp#L20](../../include/lib_multipole_expansion.hpp#L20)
 ## ⛵ ⛵ C++上での，Greengardの球面調和関数  
 
 `sph_harmonics_`
@@ -523,7 +531,7 @@ Y(n, m, \theta, \phi) &= \sqrt{\frac{(n-|m|)!}{(n+|m|)!}} P _n^{|m|}(\cos(\theta
 ```math
 Y(n, m, \theta, \phi) = \sqrt{\frac{4\pi}{2n+1}}{\mathrm{std::sph\ _legendre(n,|m|,\theta)}} e^{im\phi}
 ```
-[../../include/lib_multipole_expansion_.hpp#L219](../../include/lib_multipole_expansion_.hpp#L219)
+[../../include/lib_multipole_expansion.hpp#L192](../../include/lib_multipole_expansion.hpp#L192)
 
 
 ## ⛵ ツリー構造を使った多重極展開の移動 

@@ -52,11 +52,14 @@ $$
 $$
 
 
-$I_{Gil}={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}$は（g2lを省略），
 $R^{-1}$が$R^{\top}$であることと，$I^{-1}$が対角成分のみの行列であることを利用すれば，次のように書ける．
 
 \begin{align*}
-I_{Gil}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}\\
-&={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}\\
-&=\frac{{R}_{0i}{R}_{0l}}{{I}_{x}}+\frac{{R}_{1i}{R}_{1l}}{{I}_{y}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{z}}
+{\left({{I}_{G}}\right)}_{il}&={\left({{R}^{-{1}}}\right)}_{ij}{I}_{jk}{R}_{kl}={R}_{ji}{I}_{jj}{R}_{jl}={R}_{1i}{R}_{1l}{I}_{x}+{R}_{2i}{R}_{2l}{I}_{y}+{R}_{3i}{R}_{3l}{I}_{z}\\
+{\left({{I}_{G}^{-{1}}}\right)}_{il}&={\left({{R}^{-{1}}}\right)}_{ij}{\left({{I}^{-{1}}}\right)}_{jk}{R}_{kl}={R}_{ji}{\left({{I}^{-{1}}}\right)}_{jj}{R}_{jl}=\frac{{R}_{1i}{R}_{1l}}{{I}_{x}}+\frac{{R}_{2i}{R}_{2l}}{{I}_{y}}+\frac{{R}_{3i}{R}_{3l}}{{I}_{z}}
+\end{align*}
+
+
+\begin{align*}
+0=\sum\limits_{k_{\vartriangle}}^{}{\sum\limits_{\xi_{1}w_{1}}^{}{\sum\limits_{\xi_{0}w_{0}}^{}{\left\{{{{1}\over{\left\|{x_{k_{\vartriangle}}\left({{\rm \xi}}\right)-x_{i_{\circ}}}\right\|}}\left({\sum\limits_{j=0}^{2}{{\left({\phi_{n}}\right)}_{k_{\vartriangle}j}N_{j}\left({\xi}\right)}}\right)W_{k_{\vartriangle}}-\left\{{\alpha_{i_{\circ}}\phi_{i_{\circ}}+\left({-{{x_{k_{\vartriangle}}\left({\xi}\right)-x_{i_{\circ}}}\over{{\left\|{x_{k_{\vartriangle}}\left({\xi}\right)-x_{i_{\circ}}}\right\|}^{3}}}\cdot{{{{\partial x_{k_{\vartriangle}}}\over{\partial\xi_{0}}}\times{{\partial x_{k_{\vartriangle}}}\over{\partial\xi_{1}}}}\over{\left\|{{{\partial x_{k_{\vartriangle}}}\over{\partial\xi_{0}}}\times{{\partial x_{k_{\vartriangle}}}\over{\partial\xi_{1}}}}\right\|}}}\right)\left({\sum\limits_{j=0}^{2}{{\left({\phi}\right)}_{k_{\vartriangle}j}N_{j}\left({\xi}\right)}}\right)W_{k_{\vartriangle}}}\right\}}\right\}}}}
 \end{align*}

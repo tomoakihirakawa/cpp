@@ -51,6 +51,8 @@ std::tuple<networkPoint *, networkFace *> pf2ID(const networkPoint *p, const net
       return {const_cast<networkPoint *>(p), nullptr};
 }
 
+std::tuple<networkPoint *, networkFace *> pf2ID(const std::tuple<networkPoint *, networkFace *> &pf) { return pf2ID(std::get<0>(pf), std::get<1>(pf)); }
+
 std::vector<std::tuple<networkPoint *, networkFace *>> p2AllIDs(const networkPoint *p) {
    std::vector<std::tuple<networkPoint *, networkFace *>> ret;
    bool nullptr_found = false;
@@ -187,12 +189,16 @@ void setRigidBodyVelocityAndAccel_IfPredetermined(Network *net, const double &RK
          std::cout << "(RigidBodyObject) velocity is explicityly given as " << move_name_velocity << std::endl;
          double delta_t = 1E-5;
          if (move_name_velocity == "file") {
-            net->velocity = net->intpMotionRigidBody.D(RK_time);
+            double start_time = 0.;
+            if (net->inputJSON["velocity"].size() >= 3)
+               start_time = std::stod(net->inputJSON["velocity"][2]);
+            net->velocity = net->intpMotionRigidBody.D(RK_time + start_time);
             default_acceleration = net->intpMotionRigidBody(RK_time + delta_t / 2.) - net->intpMotionRigidBody(RK_time - delta_t / 2.);
          } else {
             net->velocity = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time);
             default_acceleration = velocity(move_name_velocity, net->inputJSON["velocity"], RK_time + delta_t / 2.) - velocity(move_name_velocity, net->inputJSON["velocity"], RK_time - delta_t / 2.);
          }
+         std::cout << "net->velocity = " << net->velocity << std::endl;
          default_acceleration /= delta_t;
       }
    } else {
@@ -298,8 +304,8 @@ void setBoundaryTypes(Network *water, const std::vector<Network *> &objects) {
       l->Dirichlet = std::ranges::all_of(l->getSurfaces(), [](const auto &f) { return f->Dirichlet; });
       l->CORNER = (!l->Neumann && !l->Dirichlet);
    }
-   std::cout << "step4 点の境界条件を決定" << std::endl;
 
+   std::cout << "step4 点の境界条件を決定" << std::endl;
    for (const auto &p : water->getPoints()) {
       p->Neumann = std::ranges::all_of(p->getSurfaces(), [](const auto &f) { return f->Neumann; });
       p->Dirichlet = std::ranges::all_of(p->getSurfaces(), [](const auto &f) { return f->Dirichlet; });

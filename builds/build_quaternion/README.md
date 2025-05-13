@@ -47,7 +47,7 @@ a^2 + b^2 - c^2 - d^2 & 2 \cdot b \cdot c + 2 \cdot a \cdot d & -2 \cdot a \cdot
 2 \cdot a \cdot c + 2 \cdot b \cdot d & -2 \cdot a \cdot b + 2 \cdot c \cdot d & a^2 - b^2 - c^2 + d^2 \\
 \end{bmatrix}
 ```
-[../../include/basic_vectors.hpp#L1348](../../include/basic_vectors.hpp#L1348)
+[../../include/basic_vectors.hpp#L1349](../../include/basic_vectors.hpp#L1349)
 
 
 ## ⛵ クォータニオンを使った物体の３次元回転の例 
@@ -155,7 +155,7 @@ w _2
 ```
 
 これを使えば，$`q _{\text next} = q + \frac{dq}{dt} dt`$という形で初期値問題を解くことができる．
-[../../include/basic_vectors.hpp#L1643](../../include/basic_vectors.hpp#L1643)
+[../../include/basic_vectors.hpp#L1644](../../include/basic_vectors.hpp#L1644)
 
 
 ## ⛵ クォータニオンの微分の数値的な時間積分の例 
@@ -196,7 +196,7 @@ R _{\rm new}\cdot (X-X _{\rm initial COM}) + X _{\rm new COM}
 
 ここの回転行列$`R _{\rm new}`$は，「初期姿勢からの更新された姿勢までの回転」を施すものである．
 初期姿勢に対する更新された姿勢を表すクォータニオン$`Q _{\rm new}`$から計算する．
-[../../include/basic_vectors.hpp#L1785](../../include/basic_vectors.hpp#L1785)
+[../../include/basic_vectors.hpp#L1786](../../include/basic_vectors.hpp#L1786)
 
 [./validateAngularVelocity.cpp#L5](./validateAngularVelocity.cpp#L5)
 

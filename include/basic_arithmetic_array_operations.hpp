@@ -495,9 +495,9 @@ constexpr auto MinMaxColumns(const std::vector<std::array<T, N>>& vec_arr) noexc
 }
 
 template <size_t N, typename T>
-constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+constexpr typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, std::complex<double>>::value, T>::type
 Total(const std::array<T, N>& arr) noexcept {
-   T ret = 0;
+   T ret = T{};  // works for both double and std::complex<double>
    for (const auto& a : arr) ret += a;
    return ret;
 }
@@ -594,7 +594,11 @@ Dot(const std::array<T, N>& arr, const std::array<T, N>& ARR) noexcept {
 }
 
 double Dot(const std::array<double, 3>& arr, const std::array<double, 3>& ARR) noexcept {
-   return {std::fma(std::get<0>(arr), std::get<0>(ARR), std::fma(std::get<1>(arr), std::get<1>(ARR), std::get<2>(arr) * std::get<2>(ARR)))};
+   return std::fma(std::get<0>(arr),
+                   std::get<0>(ARR),
+                   std::fma(std::get<1>(arr),
+                            std::get<1>(ARR),
+                            std::get<2>(arr) * std::get<2>(ARR)));
 }
 
 template <typename T, std::size_t N0, std::size_t N1, std::size_t N2>
@@ -1053,17 +1057,9 @@ void FusedMultiplyIncrement(const double arr, const double ARR, double& ret) noe
 // };
 
 double Det(const T3Tddd& M) {
-   // // Unpacking each row of the matrix
-   // auto [a, b, c] = std::get<0>(M);  // First row
-   // auto [d, e, f] = std::get<1>(M);  // Second row
-   // auto [g, h, i] = std::get<2>(M);  // Third row
-
-   // // Calculating the determinant using std::fma
-   // return std::fma(a, std::fma(e, i, -f * h),
-   //                 std::fma(b, std::fma(f, g, -d * i),
-   //                          std::fma(c, std::fma(d, h, -e * g), 0.)));
-
-   return M[0][0] * (std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1])) - M[0][1] * (std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0])) + M[0][2] * (std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0]));
+   return std::fma(M[0][0], std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1]),
+                   std::fma(-M[0][1], std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0]),
+                            M[0][2] * std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0])));
 }
 
 double Det(const T2Tdd& M) {
@@ -1077,8 +1073,10 @@ constexpr std::array<double, N + 1> Subdivide(const double xmin, const double xm
    static_assert(N > 0, "The number of divisions N must be a positive integer.");
    std::array<double, N + 1> ret;
    const double dx = (xmax - xmin) / N;
-   for (auto i = 0; i < N + 1; i++)
-      ret[i] = i * dx + xmin;
+   for (auto i = 0; i < N + 1; i++) {
+      ret[i] = std::fma(static_cast<double>(i), dx, xmin);
+      // ret[i] = i * dx + xmin;
+   }
    return ret;
 };
 
@@ -1265,9 +1263,13 @@ constexpr std::array<T, N0 + N1> Join(const std::array<T, N0>& a, const std::arr
 /* -------------------------------------------------------------------------- */
 
 template <typename T, std::size_t N>
-constexpr std::array<T, N> RotateLeft(const std::array<T, N>& arr, const int n = 1) {
+std::array<T, N> RotateLeft(const std::array<T, N>& arr, int n = 1) {
+   if (N == 0 || n == 0)
+      return arr;
+
+   n = (n % static_cast<int>(N) + N) % N;  // 正の回転数に補正
    std::array<T, N> result = arr;
-   std::ranges::rotate(result, result.begin() + (n % N));
+   std::ranges::rotate(result, result.begin() + n);
    return result;
 }
 
@@ -1279,7 +1281,7 @@ constexpr std::array<T, N> RotateRight(const std::array<T, N>& arr, const int n 
 }
 
 /* =========================================================================== */
-/*                                Interpolation                               */
+/*                                Interpolation                                */
 /* =========================================================================== */
 
 /*DOC_EXTRACT interpolation:TriShape

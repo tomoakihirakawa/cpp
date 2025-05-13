@@ -48,10 +48,10 @@ struct FMM {
       for (auto& p : obj->getPoints())
 #pragma omp single nowait
       {
-         auto [IgPhi_IgnPhin_near, IgPhi_IgnPhin_far] = L2P(B_poles, p->X);
-         p->IgPhi_IgnPhin_near = IgPhi_IgnPhin_near;
-         p->IgPhi_IgnPhin_far = IgPhi_IgnPhin_far;
-         p->IgPhi_IgnPhin_FMM = IgPhi_IgnPhin_near + IgPhi_IgnPhin_far;
+         auto [wGPhin_wGnPhi_near, wGPhin_wGnPhi_far] = L2P(B_poles, p->X);
+         p->wGPhin_wGnPhi_near = wGPhin_wGnPhi_near;
+         p->wGPhin_wGnPhi_far = wGPhin_wGnPhi_far;
+         p->wGPhin_wGnPhi_FMM = wGPhin_wGnPhi_near + wGPhin_wGnPhi_far;
       }
 #if defined(_DEBUG_FMM_)
       std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
@@ -81,7 +81,7 @@ struct FMM {
       // 結果を取得
       V_d result(x.size());
       for (const auto& p : obj->getPoints()) {
-         result[p->index] = p->IgPhi_IgnPhin_FMM[0];  // 適切な結果を設定
+         result[p->index] = p->wGPhin_wGnPhi_FMM[0];  // 適切な結果を設定
       }
 
       return result;

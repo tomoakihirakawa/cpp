@@ -1,0 +1,8 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "velocity": [
+        "Ruehl2016",
+        0.1
+    ]
+}

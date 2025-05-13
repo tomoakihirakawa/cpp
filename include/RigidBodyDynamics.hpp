@@ -69,16 +69,19 @@ struct RigidBodyDynamics {
    {
       auto [mx, my, mz, Ix, Iy, Iz] = this->inertia;
       auto R = this->quaternion.Rv();
-      auto RT = Transpose(R);
-      T3Tddd I = T3Tddd{{{Ix, 0., 0.}, {0., Iy, 0.}, {0., 0., Iz}}};
-      T3Tddd I_accounting_float_attitude = Dot(RT, Dot(I, R));
-      // T3Tddd IG_inv = Dot(Transpose(R), Dot(T3Tddd{{{1. / Ix, 0., 0.}, {0., 1. / Iy, 0.}, {0., 0., 1. / Iz}}}, R));
-
-      T3Tddd IG_inv = Dot(RT, T3Tddd{{{R[0][0] / Ix, R[0][1] / Ix, R[0][2] / Ix},
-                                      {R[1][0] / Iy, R[1][1] / Iy, R[1][2] / Iy},
-                                      {R[2][0] / Iz, R[2][1] / Iz, R[2][2] / Iz}}});
-      return {mx, my, mz, I_accounting_float_attitude, IG_inv};
-      // return {mx, my, mz, T3Tddd{{{Ix, 0., 0.}, {0., Iy, 0.}, {0., 0., Iz}}}};
+      T3Tddd IG = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+      T3Tddd IG_inv = {{{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}}};
+      for (auto i = 0; i < 3; ++i) {
+         for (auto j = 0; j < 3; ++j) {
+            IG[i][j] += R[0][i] * R[0][j] * Ix;
+            IG[i][j] += R[1][i] * R[1][j] * Iy;
+            IG[i][j] += R[2][i] * R[2][j] * Iz;
+            IG_inv[i][j] += R[0][i] * R[0][j] / Ix;
+            IG_inv[i][j] += R[1][i] * R[1][j] / Iy;
+            IG_inv[i][j] += R[2][i] * R[2][j] / Iz;
+         }
+      }
+      return {mx, my, mz, IG, IG_inv};
    };
 
    T6d getInertiaBC() {

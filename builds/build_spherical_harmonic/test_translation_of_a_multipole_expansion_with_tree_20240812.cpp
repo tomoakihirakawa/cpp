@@ -338,24 +338,24 @@ int main() {
    int count_origins = 0;
 
    for (auto& p : obj->getPoints()) {
-      p->IgPhi_IgnPhin_far.fill(0);
-      p->IgPhi_IgnPhin_near.fill(0);
+      p->wGPhin_wGnPhi_far.fill(0);
+      p->wGPhin_wGnPhi_near.fill(0);
       auto b = B_poles.getBucketAtDeepest(p->X);
 
-      p->IgPhi_IgnPhin_near += direct_integration(b, p->X);
+      p->wGPhin_wGnPhi_near += direct_integration(b, p->X);
       for (auto& B : b->buckets_near)
-         p->IgPhi_IgnPhin_near += direct_integration(B, p->X);
+         p->wGPhin_wGnPhi_near += direct_integration(B, p->X);
 
       auto IGIGn = b->local_expansion.L2P(p->X);
 
-      p->IgPhi_IgnPhin_far[0] = IGIGn[0];
-      p->IgPhi_IgnPhin_far[1] = IGIGn[1];
+      p->wGPhin_wGnPhi_far[0] = IGIGn[0];
+      p->wGPhin_wGnPhi_far[1] = IGIGn[1];
 
       count_origins++;
       if (count_origins % 1000 == 0)
          std::cout << "count_origins = " << count_origins << std::endl;
 
-      p->IgPhi_IgnPhin_FMM = p->IgPhi_IgnPhin_far + p->IgPhi_IgnPhin_near;
+      p->wGPhin_wGnPhi_FMM = p->wGPhin_wGnPhi_far + p->wGPhin_wGnPhi_near;
    }
 
    std::cout << "count_origins = " << count_origins << std::endl;
@@ -415,24 +415,24 @@ int main() {
          std::unordered_map<networkPoint*, double> data1, data2, data3, data4, data5, data6, data7, data8, data9, data10, data11, data12, data13;
          double max_abs_ign = 0;
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - p->IgPhi_IgnPhin_FMM;
+            auto d_igign = p->igign - p->wGPhin_wGnPhi_FMM;
             data1[p] = d_igign[0];
             data2[p] = d_igign[1];
             data3[p] = p->igign[0];
             data4[p] = p->igign[1];
             data5[p] = std::abs(d_igign[0] / p->igign[0]);
             data6[p] = std::abs(d_igign[1] / p->igign[1]);
-            data7[p] = p->IgPhi_IgnPhin_FMM[0];
-            data8[p] = p->IgPhi_IgnPhin_FMM[1];
-            data9[p] = p->IgPhi_IgnPhin_near[0];
-            data10[p] = p->IgPhi_IgnPhin_near[1];
-            data11[p] = p->IgPhi_IgnPhin_far[0];
-            data12[p] = p->IgPhi_IgnPhin_far[1];
+            data7[p] = p->wGPhin_wGnPhi_FMM[0];
+            data8[p] = p->wGPhin_wGnPhi_FMM[1];
+            data9[p] = p->wGPhin_wGnPhi_near[0];
+            data10[p] = p->wGPhin_wGnPhi_near[1];
+            data11[p] = p->wGPhin_wGnPhi_far[0];
+            data12[p] = p->wGPhin_wGnPhi_far[1];
             max_abs_ign = std::max(max_abs_ign, std::abs(p->igign[1]));
          }
 
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - p->IgPhi_IgnPhin_FMM;
+            auto d_igign = p->igign - p->wGPhin_wGnPhi_FMM;
             data13[p] = std::abs(d_igign[1] / max_abs_ign);
          }
 

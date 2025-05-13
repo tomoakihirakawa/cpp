@@ -139,55 +139,42 @@ std::array<std::complex<double>, 3> operator+(const std::array<double, 3>& A, co
    return a + A;
 };
 
+/* -------------------------------------------------------------------------- */
+
 struct SphericalCoordinates {
    std::array<double, 3> X;
    double r2D;
    double rho;
    double div_r2D;
-   double theta, phi;
    double x_r, y_r, z_r;
+   double phi;
+   double theta;
    SphericalCoordinates(const std::array<double, 3>& X)
        : X(X),
          r2D(std::hypot(std::get<0>(X), std::get<1>(X))),
          rho(std::hypot(std::get<0>(X), std::get<1>(X), std::get<2>(X))),
          div_r2D(1. / r2D),
-         theta(std::atan2(r2D, std::get<2>(X))),
-         phi(std::atan2(std::get<1>(X), std::get<0>(X))),
          x_r(std::get<0>(X) / rho),
          y_r(std::get<1>(X) / rho),
-         z_r(std::get<2>(X) / rho)
-   // Jacobian({{/*grad_sph x*/ {x_r, y_r, z_r},
-   //            /*grad_sph y*/ {x_r * z_r * div_r2D, y_r * z_r * div_r2D, -r2D * div_rho * div_rho},
-   //            /*grad_sph zr*/ {-std::get<1>(X) * div_r2D * div_r2D, std::get<0>(X) * div_r2D * div_r2D, 0.}}}),
-   {
-      // compute_precomputed_values();
-   }
+         z_r(std::get<2>(X) / rho),
+         phi(std::atan2(std::get<1>(X), std::get<0>(X))),
+         theta(x_r * std::cos(phi) >= 0 ? std::atan2(r2D, std::get<2>(X)) : std::atan2(-r2D, std::get<2>(X)))  //! これは元の定義z/r=cos(theta)を書き換えたもの
+   {}
 
-   // int pre_max = -1;  // 0,1,2,...,pre_max
    int pre_max = -1;  // 0,1,2,...,pre_max
-   // std::array<std::array<std::complex<double>, 2 * pre_max + 1>, pre_max + 1> pre_compute_sph_harmonics, pre_compute_sph_harmonics_rho_n;
    std::vector<std::vector<std::complex<double>>> pre_compute_sph_harmonics, pre_compute_sph_harmonics_rho_n, pre_compute_sph_harmonics_div_rhon1;
-   std::vector<std::vector<std::array<double, 2>>> pre_compute_sph_harmonics_polar_form;
-   std::vector<std::vector<std::array<double, 3>>> pre_compute_sph_harmonics_rho_n_polar_form;
    void precompute_sph(const int pre_max_IN) {
       this->pre_max = pre_max_IN;
       pre_compute_sph_harmonics.resize(pre_max + 1, std::vector<std::complex<double>>(2 * pre_max + 1, 0.));
       pre_compute_sph_harmonics_rho_n.resize(pre_max + 1, std::vector<std::complex<double>>(2 * pre_max + 1, 0.));
       pre_compute_sph_harmonics_div_rhon1.resize(pre_max + 1, std::vector<std::complex<double>>(2 * pre_max + 1, 0.));
-      pre_compute_sph_harmonics_polar_form.resize(pre_max + 1, std::vector<std::array<double, 2>>(2 * pre_max + 1, {0., 0.}));
-      pre_compute_sph_harmonics_rho_n_polar_form.resize(pre_max + 1, std::vector<std::array<double, 3>>(2 * pre_max + 1, {0., 0., 0.}));
       double rho_n;
       for (int n = 0; n <= pre_max; n++) {
          rho_n = std::pow(rho, n);  // runtime value, cannot be constexpr
          for (int m = -pre_max; m <= pre_max; m++) {
-            // sph = this->sph_harmonics_(n, m);  // runtime value, cannot be constexpr
-            // this->pre_compute_sph_harmonics[n][m + pre_max] = sph;
-            // this->pre_compute_sph_harmonics_rho_n[n][m + pre_max] = sph * rho_n;
             auto tmp = sph_harmonics_polar_form_(n, m);
-            this->pre_compute_sph_harmonics_polar_form[n][m + pre_max] = tmp;
             this->pre_compute_sph_harmonics_rho_n[n][m + pre_max] = (this->pre_compute_sph_harmonics[n][m + pre_max] = std::polar(std::get<0>(tmp), std::get<1>(tmp))) * rho_n;
             this->pre_compute_sph_harmonics_div_rhon1[n][m + pre_max] = this->pre_compute_sph_harmonics[n][m + pre_max] / (rho_n * rho);
-            this->pre_compute_sph_harmonics_rho_n_polar_form[n][m + pre_max] = {rho_n, std::get<0>(tmp), std::get<1>(tmp)};
          }
       }
    }
@@ -197,21 +184,6 @@ struct SphericalCoordinates {
                /*grad theta*/ {x_r * z_r * div_r2D, y_r * z_r * div_r2D, -r2D / rho / rho},
                /*grad phi*/ {-std::get<1>(X) * div_r2D * div_r2D, std::get<0>(X) * div_r2D * div_r2D, 0.}}};
    }
-
-   // void initialize(const std::array<double, 3>& X) {
-   //    this->X = X;
-   //    div_r2D = 1. / (r2D = std::hypot(std::get<0>(X), std::get<1>(X)));
-   //    div_rho = 1. / (rho = std::hypot(std::get<0>(X), std::get<1>(X), std::get<2>(X)));
-   //    theta = std::atan2(r2D, std::get<2>(X));
-   //    phi = std::atan2(std::get<1>(X), std::get<0>(X));
-   //    x_r = std::get<0>(X) * div_rho;
-   //    y_r = std::get<1>(X) * div_rho;
-   //    z_r = std::get<2>(X) * div_rho;
-   //    Jacobian_inv = {{{x_r, y_r, z_r},
-   //                     {x_r * z_r * div_r2D, y_r * z_r * div_r2D, -r2D * div_rho * div_rho},
-   //                     {-std::get<1>(X) * div_r2D * div_r2D, std::get<0>(X) * div_r2D * div_r2D, 0.}}};
-   //    compute_precomputed_values();
-   // }
 
    inline int negOnePower(const int p) const {
       return 1 - ((p & 1) << 1);
@@ -252,20 +224,23 @@ struct SphericalCoordinates {
    ```
 
    */
+
    inline std::complex<double> sph_harmonics_(const int l, const int m) const {
       constexpr double sqrt_MPI2 = std::sqrt(2.0 * M_PI);
-      if (std::abs(m) <= l) {
-         double s = sqrt_MPI2 / std::sqrt(l + 0.5);  // * negOnePower(m);
-         return std::polar(std::sph_legendre(l, (m > 0 ? m : -m), theta) * s, m * phi);
+      const double abs_m = std::abs(m);
+      if (abs_m <= l) {
+         double s = sqrt_MPI2 / std::sqrt(l + 0.5);
+         return std::polar(std::sph_legendre(l, abs_m, theta) * s, m * phi);
       } else
          return 0.0;
    }
 
    inline std::array<double, 2> sph_harmonics_polar_form_(const int l, const int m) const {
       constexpr double sqrt_MPI2 = std::sqrt(2.0 * M_PI);
-      if (std::abs(m) <= l) {
-         double s = sqrt_MPI2 / std::sqrt(l + 0.5);  // * negOnePower(m);
-         return {std::sph_legendre(l, (m > 0 ? m : -m), theta) * s, m * phi};
+      const double abs_m = std::abs(m);
+      if (abs_m <= l) {
+         double s = sqrt_MPI2 / std::sqrt(l + 0.5);
+         return {std::sph_legendre(l, abs_m, theta) * s, m * phi};
       } else
          return {0.0, 0.0};
    }
@@ -277,24 +252,11 @@ struct SphericalCoordinates {
          return this->sph_harmonics_(l, m);
    }
 
-   inline std::array<double, 2> sph_harmonics_polar_form(const int l, const int m) const {
-      if (l <= pre_max && std::abs(m) <= pre_max)
-         return this->pre_compute_sph_harmonics_polar_form[l][m + pre_max];
-      else
-         return this->sph_harmonics_polar_form_(l, m);
-   }
-
    inline std::complex<double> sph_harmonics_rho(const int l, const int m) const {
-
       if (l > pre_max || m > pre_max || m < -pre_max)
          return this->sph_harmonics_(l, m) * std::pow(rho, l);
       else
          return this->pre_compute_sph_harmonics_rho_n[l][m + pre_max];
-
-      // if (l <= pre_max && std::abs(m) <= pre_max)
-      //    return this->pre_compute_sph_harmonics_rho_n[l][m + pre_max];
-      // else
-      //    return this->sph_harmonics_(l, m) * std::pow(rho, l);
    }
 
    inline std::complex<double> sph_harmonics_div_rhon1(const int l, const int m) const {
@@ -304,121 +266,210 @@ struct SphericalCoordinates {
          return this->sph_harmonics_(l, m) / (std::pow(rho, l) * rho);
    }
 
-   inline std::array<double, 3> sph_harmonics_rho_n_polar_form(const int l, const int m) const {
-      if (l <= pre_max && std::abs(m) <= pre_max)
-         return this->pre_compute_sph_harmonics_rho_n_polar_form[l][m + pre_max];
-      else {
-         auto tmp = this->sph_harmonics_polar_form_(l, m);
-         return {std::pow(rho, l), std::get<0>(tmp), std::get<1>(tmp)};
-      }
-   }
-
    //$ one of two parts of the multipole expansion that is related to near field expansion
-   inline std::complex<double> SolidHarmonicR_ForNear(const int n, const int m) const { return sph_harmonics_rho(n, -m); }
+   // inline std::complex<double> SolidHarmonicR_ForNear(const int n, const int m) const {
+   //    return sph_harmonics_rho(n, m);
+   // }
 
    //$ one of two parts of the multipole expansion that is related to far field expansion
-   inline std::complex<double> SolidHarmonicS_ForFar(const int n, const int m) const { return std::pow(rho, -n - 1) * sph_harmonics(n, m); }
+   inline std::complex<double> SolidHarmonicS_ForFar(const int n, const int m) const {
+      return std::pow(rho, -n - 1) * sph_harmonics(n, m);
+   }
 
    inline double power_assoc_legendre(const int n, const int m, const double x) const {
       return negOnePower(m) * std::assoc_legendre(n, m, x);
    };
 
-   inline std::complex<double> dRdtheta(const int n, int m) const {
-      m = -m;
-      auto cos_theta = std::get<2>(X) / rho;
-      auto inv_tan_theta = std::get<2>(X) / r2D;
-      if (m > 0) {
-         if (std::sin(theta) > 0)
-            return std::polar(std::pow(rho, n) * sqrt_nm_nm[n][m] * (m * inv_tan_theta * power_assoc_legendre(n, m, cos_theta) + power_assoc_legendre(n, 1 + m, cos_theta)), m * phi);
-         else
-            return std::polar(std::pow(rho, n) * sqrt_nm_nm[n][m] * (m * inv_tan_theta * power_assoc_legendre(n, m, cos_theta) - power_assoc_legendre(n, 1 + m, cos_theta)), m * phi);
-      } else {
-         if (std::sin(theta) > 0)
-            return std::polar(std::pow(rho, n) * sqrt_nm_nm[n][-m] * (power_assoc_legendre(n, 1 - m, cos_theta) - m * inv_tan_theta * power_assoc_legendre(n, -m, cos_theta)), m * phi);
-         else
-            return -std::polar(std::pow(rho, n) * sqrt_nm_nm[n][-m] * (power_assoc_legendre(n, 1 - m, cos_theta) + m * inv_tan_theta * power_assoc_legendre(n, -m, cos_theta)), m * phi);
-      }
+   inline double assoc_legendre_GR1997(const int n, const int m, const double x) const {
+      //! Greengard and Rokhlin(1997) (3.16)の上をc++のstd::sph_legendreで定義しておく
+      return negOnePower(m) * std::assoc_legendre(n, m, x);
    };
 
    inline std::array<std::complex<double>, 2> SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(const int n, const int m, const std::array<double, 3>& normal) const {
-      std::complex<double> Rnm = SolidHarmonicR_ForNear(n, m);
+      std::complex<double> Rnm = sph_harmonics_rho(n, m);
       auto [J0, J1, J2] = Jacobian_inv();
-      //$ grad respect to r, theta, and phi
+      /*rについての微分*/
       std::complex<double> grad_Rnm1_dot_normal = (static_cast<double>(n) * (Rnm / rho)) * Dot(normal, J0);
-      grad_Rnm1_dot_normal += dRdtheta(n, m) * Dot(normal, J1);
-      grad_Rnm1_dot_normal += (/*phiについての微分*/ -std::complex<double>(0., m) * Rnm) * Dot(normal, J2);
+      /*thetaについての微分*/
+      const double cos_theta = std::get<2>(X) / rho;
+      const int abs_m = std::abs(m);
+      grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (std::assoc_legendre(n, abs_m + 1, cos_theta) / std::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1);
+      /*phiについての微分*/
+      grad_Rnm1_dot_normal += (std::complex<double>(0., m) * Rnm) * Dot(normal, J2);
       return {Rnm, grad_Rnm1_dot_normal};
    }
 
    inline std::array<std::complex<double>, 3> Grad_SolidHarmonicR_ForNear(const int n, const int m) const {
-      std::complex<double> Rnm = SolidHarmonicR_ForNear(n, m);
+      std::complex<double> Rnm = sph_harmonics_rho(n, m);
       auto J = Jacobian_inv();
-      auto grad_Rnm1_dot_normal = (/*rについての微分*/ (double)n / rho * Rnm) * J[0];
-      grad_Rnm1_dot_normal += dRdtheta(n, m) * J[1];
-      grad_Rnm1_dot_normal += (/*phiについての微分*/ -std::complex<double>(0., m) * Rnm) * J[2];
-      //
-      return grad_Rnm1_dot_normal;
+      /*rについての微分*/
+      auto grad_Rnm1_dot_normal = ((double)n / rho) * Rnm * J[0];
+      /*thetaについての微分*/
+      const double cos_theta = std::get<2>(X) / rho;
+      const int abs_m = std::abs(m);
+      grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (std::assoc_legendre(n, abs_m + 1, cos_theta) / std::assoc_legendre(n, abs_m, cos_theta))) * Rnm * J[1];
+      /*phiについての微分*/
+      grad_Rnm1_dot_normal += (std::complex<double>(0., m)) * Rnm * J[2];
+      return grad_Rnm1_dot_normal * Rnm;
    }
 };
 
-template <typename T>
-void complex_fused_multiply_increment(const std::complex<T>& a, const std::complex<T>& b, std::complex<T>& c) {
-   c.real(c.real() + a.real() * b.real() - a.imag() * b.imag());
-   c.imag(c.imag() + a.real() * b.imag() + a.imag() * b.real());
-}
-
-/* -------------------------------------------------------------------------- */
+// b% -------------------------------------------------------------------------- */
+// b%              target4FMM   |    source4FMM   |    Moments<N>                  */
+// b% -------------------------------------------------------------------------- */
 
 #include <functional>
 #include "basic_exception.hpp"
 
-// struct pole4FMM {
-//    /*DOC_EXTRACT
-//    境界要素法において，pole4FMMは，ある節点における変数値を表すわけではなく，
-//    数値的な面積分における和のある一項に相当する．
-//    この一項は，複数の節点における変数値の積に重みをかけたものである．
-//    */
-//    Tddd X;
-//    Tdd weights;
-//    Tddd normal;
-//    std::function<Tdd()> getValues;
-//    std::function<void()> update;
-//    pole4FMM(const Tddd& X, const Tdd& weights, const Tddd& normal, std::function<Tdd()> getValues)
-//        : X(X), weights(weights), normal(normal), getValues(getValues) {}
+using Complex = std::complex<double>;
 
-//    void setUpdateFunction(std::function<void()> update) { this->update = update; }
-// };
+struct target4FMM {
 
-struct pole4FMM {
-   /*DOC_EXTRACT
-   境界要素法において，pole4FMMは，ある節点における変数値を表すわけではなく，
-   数値的な面積分における和のある一項に相当する．
-   この一項は，複数の節点における変数値の積に重みをかけたものである．
+   target4FMM(const std::array<double, 3>& Xtarget) : Xtarget(Xtarget) {
+      list.reserve(2000);
+   };
+
+   std::vector<std::tuple<std::array<double*, 2>, std::array<double, 2>>> vec_phiphin_WGNWGnN;
+   std::unordered_map<std::array<double*, 2>, std::array<double, 2>> uo_phiphin_WGNWGnN;
+   std::array<double, 3> Xtarget;  //! 位置ベクトル
+   double diagonal_coefficient = 0.;
+   std::vector<std::tuple<std::array<double, 2>*, double, double>> list;
+   std::vector<std::tuple<Complex, std::array<Complex, 2>*>> list_Ynm_rhon1_MM_;  //! 大した計算量ではないのでこだわらない
+
+   /* ---------------------------------------- */
+
+   /*
+   this->list_Ynm_rhon1_MM_を準備
+   L2Pのために，localのmomentを取得し，和を取る準備をしておく
    */
-   Tddd X;
-   Tdd weights;
-   Tddd normal;
-   std::array<double, 2> values;
-   std::array<double, 2> values_x_weight;
-   std::function<void(pole4FMM*)> updater;
-   pole4FMM(const Tddd& X,
-            const Tdd& weights,
-            const Tddd& normal,
-            std::function<void(pole4FMM*)> updater)
-       : X(X),
-         weights(weights),
-         normal(normal),
-         updater(updater) {}
+   void setL2P(const auto& Bsources) {
+      auto b_deepest = Bsources.getBucketAtDeepest(Xtarget);
+      auto& Mlocal = b_deepest->MomentsLocalExpansion;
+      this->list_Ynm_rhon1_MM_.clear();
+      this->list_Ynm_rhon1_MM_.reserve(Mlocal.nm_set.size());
+      SphericalCoordinates S(Xtarget - Mlocal.X);
+      for (const auto& [n, m] : Mlocal.nm_set) {
+         this->list_Ynm_rhon1_MM_.emplace_back(S.sph_harmonics_rho(n, m), &Mlocal.MM_[Mlocal.index(n, m)]);
+      }
+   }
 
-   void update() {
-      updater(this);
-      this->values_x_weight = {values[1] * weights[0], values[0] * weights[1]};
-      // this->values_x_weight = {values[0] * weights[0], values[1] * weights[1]};
+   std::array<double, 2> integrateFMM() const {
+      Complex w_G_phin = 0., w_Gn_phi = 0.;
+      for (const auto& [Ynm_rhon1, MM_] : this->list_Ynm_rhon1_MM_) {
+         w_G_phin += Ynm_rhon1 * std::get<0>(*MM_);
+         w_Gn_phi += Ynm_rhon1 * std::get<1>(*MM_);
+      }
+      return {std::real(w_G_phin), std::real(w_Gn_phi)};
+   }
+
+   /* ---------------------------------------- */
+
+   /*
+   ８分木でツリー構造は成長していく．そのバケツの中で保存するソース点が少ない場合は，
+   それ以上，ツリーをさせると非効率になってしまうので，８分割しない．
+
+   この場合，処理に注意が必要である．
+
+   例えば，$d$層までツリーが成長したとする．
+   $d$層のバケツは，上層$<d$層それぞれの層において，M2Lでモーメントを受け取っているわけだが，
+   L2Lで$d$層までモーメントを運ぶことができない．
+
+   */
+
+   void setDirectIntegration(const auto& Bucket_sources) {
+      auto b_deepest = Bucket_sources.getBucketAtDeepest(this->Xtarget);
+      this->uo_phiphin_WGNWGnN.clear();
+      this->uo_phiphin_WGNWGnN.reserve(b_deepest->all_stored_objects_vector.size() * 3);
+      //! これはsorceがsource4FMM_Elementの場合のものになっている
+      auto setNear = [&](const auto* B) {
+         for (const auto& source : B->all_stored_objects_vector)
+            for (const auto& [phiphin, WGN_WGnN] : source->use_this_soruce_when_set_direct_integration(this))
+               uo_phiphin_WGNWGnN[phiphin] += WGN_WGnN;
+         //$ このソース点の直接積分計算をどのように行うかを指定する関数
+      };
+
+      setNear(b_deepest);
+      for (const auto& b : b_deepest->buckets_near)
+         setNear(b);
+
+      auto set_parent = [&](auto b, auto& set_parent__) -> void {
+         if (b != nullptr) {
+            for (auto B : b->buckets_near)
+               if (!B->has_child)
+                  setNear(B);
+            set_parent__(b->parent, set_parent__);
+         }
+      };
+      set_parent(b_deepest->parent, set_parent);
+
+      this->vec_phiphin_WGNWGnN.assign(uo_phiphin_WGNWGnN.begin(), uo_phiphin_WGNWGnN.end());
+   }
+
+   std::array<double, 2> integrate() const {
+      //! setDirectIntegrationは，FMMのツリー構造から，near fieldのバケツだけを選択肢，そのバケツ内のソース点に対して，vec_phiphin_WGNWGnNを作成しておく．
+      //! vec_phiphin_WGNWGnNのポインタと値は，GMRESの反復において変化させる必要がないため，高速に反復計算ができる．
+      std::array<double, 2> ret = {0., 0.};
+      for (const auto& [phiphin, WGN_WGnN] : this->vec_phiphin_WGNWGnN) {
+         ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
+         ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
+      }
+      return ret;
+   }
+
+   std::array<double, 2> integrate(const auto& Bsources) const {
+      //! この関数は，FMMのツリー構造を使うことはしない．
+      //! 引数として与えられたBsources内のソース点全てに対して，use_this_soruce_when_set_direct_integrationで指定された方法に従って，直接積分を行う．
+      std::array<double, 2> ret = {0., 0.};
+      for (const auto& source : Bsources.all_stored_objects_vector)
+         for (const auto& [phiphin, WGN_WGnN] : source->use_this_soruce_when_set_direct_integration(this)) {
+            ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
+            ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
+         }
+      return ret;
    }
 };
 
-using sp_pole4FMM = std::shared_ptr<pole4FMM>;
+/* -------------------------------------------------------------------------- */
 
+// source4FMM_Elementはつくらない
+template <typename T>
+struct source4FMM {
+
+   /*DOC_EXTRACT
+
+   `source4FMM`は，境界要素法における**節点上の値を表すわけではない**ことに注意する．
+   境界要素法において，面積分を離散化し，和に落とし込んだときのある１項分がソースと呼ばれるべきものであり，`source4FMM`はこのソースを表す．
+
+   しかし，BEMでは，ソースではなく，節点上の値に注目して扱うことが多い．
+   なので，`source4FMM`は，ソースとしての自身の値を，節点上の値から効率的に計算する関数`set_source_densities`を持っている．
+
+   ラプラス方程式を満たすポテンシャルは，グリーンの定理を使うと，
+   単層ポテンシャル(single layer potential) と２重層ポテンシャル(double layer potential)の和で表される．
+   (ただし，立体角にも影響される)
+
+   * 単層ポテンシャルは，極またはソース(monosource)の積分であり，
+   * ２重層ポテンシャルは，双極子または無限に近い２つの極(disource)の積分である．
+
+   単層ポテンシャルも２重層ポテンシャルも，
+   原点からの距離が近いところでは，影響が大きく，その影響度が，ラプラス方程式の基本解またはその法線微分となっている(カーネル関数)．
+
+   */
+
+   Tddd X;
+   Tddd normal;
+   std::function<std::array<double, 2>()> get_weighted_source_densities;
+   std::function<std::vector<std::tuple<std::array<double*, 2>, std::array<double, 2>>>(const T*)> use_this_soruce_when_set_direct_integration;  //! 汎用的な関数ポインタ
+   Tdd weighted_source_densities = {0., 0.};
+   //
+   source4FMM(Tddd X, Tddd normal,
+              std::function<std::array<double, 2>()> get_weighted_source_densities,
+              std::function<std::vector<std::tuple<std::array<double*, 2>, std::array<double, 2>>>(const T*)> use_this_soruce_when_set_direct_integration)
+       : X(X), normal(normal), get_weighted_source_densities(get_weighted_source_densities), use_this_soruce_when_set_direct_integration(use_this_soruce_when_set_direct_integration) { this->update(); }
+
+   void update() { this->weighted_source_densities = this->get_weighted_source_densities(); }
+};
+
+// using sp_source4FMM = std::shared_ptr<source4FMM>;
 // Helper function to compute the size of the array
 constexpr std::size_t computeSizeM2M(std::size_t N) {
    std::size_t count = 0;
@@ -426,202 +477,123 @@ constexpr std::size_t computeSizeM2M(std::size_t N) {
       for (int k = -static_cast<int>(j); k <= static_cast<int>(j); ++k)
          for (std::size_t n = 0; n <= j; ++n)
             for (int m = -static_cast<int>(n); m <= static_cast<int>(n); ++m)
-               if (AAA_M2M_FMM[j][k + N_AAA_M2M_FMM][n][m + N_AAA_M2M_FMM].real() != 0.0 ||
-                   AAA_M2M_FMM[j][k + N_AAA_M2M_FMM][n][m + N_AAA_M2M_FMM].imag() != 0.0)
+               if (AAA_M2M_FMM[j][k + N_AAA_M2M_FMM][n][m + N_AAA_M2M_FMM].real() != 0.0 || AAA_M2M_FMM[j][k + N_AAA_M2M_FMM][n][m + N_AAA_M2M_FMM].imag() != 0.0)
                   ++count;
    return count;
 }
 
+/* -------------------------------------------------------------------------- */
 template <int N>
-struct ExpCoeffs {
+constexpr std::array<std::array<int, 2>, (N + 1) * (N + 1)> make_nm_set() {
+   std::array<std::array<int, 2>, (N + 1) * (N + 1)> arr{};
+   int ind = 0;
+   for (int n = 0; n <= N; ++n)
+      for (int m = -n; m <= n; ++m)
+         arr[ind++] = {n, m};
+   return arr;
+}
 
+template <int N>
+constexpr auto make_zero_MM() {
+   std::array<std::array<Complex, 2>, (N + 1) * (N + 1)> result{};
+   for (auto& pair : result)
+      pair = {0.0, 0.0};
+   return result;
+}
+
+double fma(const double& a, const double& b, const double& c, const double& d, const double& e) {
+   return std::fma(a, b, std::fma(c, d, e));
+}
+
+template <int N>
+struct Moments {
    /*
-
    N = 0 [ 0,  ,  ,  ,  ] n=0   total 1 = (N+1)^2             center : 0, in 1D 0
    N = 1 [-1, 0, 1,  ,  ] n=1   total 1 + 3 = 4 = (N+1)^2     center : 1, in 1D 2
    N = 2 [-2,-1, 0, 1, 2] n=2=N total 4 + 5 = 9 = (N+1)^2     center : 2, in 1D 6
          <-- 2*N+1=5 -->
    */
-
-   /* -------------------------------------------------------------------------- */
-
    std::array<double, 3> X;
-   std::array<std::complex<double>, (N + 1) * (N + 1)> coeffs;
-   std::array<std::complex<double>, (N + 1) * (N + 1)> coeffs_;
+   std::array<std::array<Complex, 2>, (N + 1) * (N + 1)> MM_ = make_zero_MM<N>();
+   //! Mは，sum {q_i*\rho_i^n*Y_n^-m}
+   //! Greengard & Rokhlin(1997)の式(3.19)
+   constexpr static std::array<std::array<int, 2>, (N + 1) * (N + 1)> nm_set = make_nm_set<N>();
 
-   // std::array<std::array<int, 2>, (N + 1) * (N + 1)> index_map;
-   std::array<std::array<int, 2>, (N + 1) * (N + 1)> nm_set;
-   const std::complex<double> zero = {0., 0.};
+   Moments() : X{0.0, 0.0, 0.0} {}
+   Moments(const std::array<double, 3>& XIN) : X(XIN) {}
+
+   const Complex zero = {0., 0.};
+
    std::size_t index(int n, int m) const { return n * (n + 1) + m; }
-   const std::complex<double>& get_coeffs(const int n, const int m) const { return coeffs[index(n, m)]; }
-   const std::complex<double>& get_coeffs_(const int n, const int m) const { return coeffs_[index(n, m)]; }
-   const std::complex<double>& get_coeffs(const std::size_t index) const { return coeffs[index]; }
-   const std::complex<double>& get_coeffs_(const std::size_t index) const { return coeffs_[index]; }
-
-   // nのサイズはN+1
-   // mのサイズは2N+1
-   // 正しく離散畳み込みを行うには，二つの配列のサイズの合計プラス1が必要なのd，2*N+1+2*N+1+1となる
-   // それを，各nに対して，n+1個の配列を用意する
-   std::array<std::array<std::complex<double>, (2 * N + 1) + (2 * N + 1) + 1>, N + 1> DFT_Cn;
-
-   // std::vector<std::tuple<std::size_t, std::size_t, std::complex<double>&, std::complex<double>&, std::size_t, std::size_t, std::size_t, std::complex<double>>> index_map_for_M2L;  // i,j,index, n, m, index
-
-   void set_nm_set() {
-      int ind = 0;
-      for (int n = 0; n <= N; ++n)
-         for (int m = -n; m <= n; ++m)
-            this->nm_set[ind++] = {n, m};
-
-      // index_map_for_M2L.clear();
-      // index_map_for_M2L.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
-      // for (int j = 0; j <= N; ++j)
-      //    for (int k = -j; k <= j; ++k) {
-      //       auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
-      //       for (int n = 0; n <= N; ++n) {
-      //          for (int m = -n; m <= n; ++m) {
-      //             auto AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-      //             if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-      //                index_map_for_M2L.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
-      //             }
-      //          }
-      //       }
-      //    }
-   }
 
    /* -------------------------------------------------------------------------- */
 
-   void initialize() {
-      coeffs.fill(0.0);
-      coeffs_.fill(0.0);
-      set_nm_set();
-   }
+   void initialize() { this->MM_ = make_zero_MM<N>(); }
 
    void initialize(const std::array<double, 3>& XIN) {
       this->X = XIN;
-      coeffs.fill(0.0);
-      coeffs_.fill(0.0);
-      set_nm_set();
-   }
-
-   // Default constructor
-   ExpCoeffs() : X{0.0, 0.0, 0.0} {
-      coeffs.fill(0.0);
-      coeffs_.fill(0.0);
-      set_nm_set();
-   }
-
-   ExpCoeffs(const std::array<double, 3>& XIN) : X(XIN) {
-      coeffs.fill(0.0);
-      coeffs_.fill(0.0);
-      set_nm_set();
+      this->MM_ = make_zero_MM<N>();
    }
 
    /* -------------------------------------------------------------------------- */
 
-   // void increment(const Tddd& XIN, const std::array<double, 2> weights, const Tddd& normal) {
-   //    SphericalCoordinates R(XIN - this->X);
-   //    auto set_coeffs = [&](int n, int m) -> std::array<std::complex<double>, 2> {
-   //       return {R.SolidHarmonicR_ForNear(n, m) * std::get<0>(weights), Dot(normal, R.Grad_SolidHarmonicR_ForNear(n, m)) * std::get<1>(weights)};
-   //    };
-   //    this->increment_coeffs(set_coeffs);
-   // }
-
-   // template <typename T>
-   // void increment_moments(const T& poles) {
-   //    for (const auto& pole : poles) {
-   //       auto weights = pole->weights;
-   //       // SphericalCoordinates R(this->X - pole->X);
-   //       // SphericalCoordinates R(pole->X - this->X);
-   //       SphericalCoordinates R(pole->X - this->X);
-   //       if constexpr (std::is_pointer_v<typename T::value_type> || std::is_same_v<typename T::value_type, std::shared_ptr<pole4FMM>>) {
-   //          this->increment_coeffs([&](int n, int m) -> std::array<std::complex<double>, 2> {
-   //             // return {R.SolidHarmonicR_ForNear(n, m) * std::get<0>(pole->weights),
-   //             //         R.Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal) * std::get<1>(pole->weights)};
-   //             return R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal) * weights;
-   //          });
-   //       } else {
-   //          this->increment_coeffs([&](int n, int m) -> std::array<std::complex<double>, 2> {
-   //             // return {R.SolidHarmonicR_ForNear(n, m) * std::get<0>(pole.weights),
-   //             //         R.Grad_SolidHarmonicR_ForNear_normal(n, m, pole.normal) * std::get<1>(pole.weights)};
-   //             return R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal) * weights;
-   //          });
-   //       }
-   //    }
-   // }
+   using TupleType = std::tuple<std::array<Complex, 2>, std::array<Complex, 2>*>;
+   using ArrayType = std::array<TupleType, (N + 1) * (N + 1)>;
+   std::vector<std::tuple<Tdd*, ArrayType>> vector_weightedSourceDensities_RRn_MM_;
 
    template <typename T>
-   void increment_moments(const std::vector<T>& poles) {
-      std::array<std::complex<double>, 2> W;
-      value_weight4integration_accums.reserve(poles.size());
-      ArrayType tuple_vector;
-      for (const auto& pole : poles) {
-         auto [V0, V1] = pole->values_x_weight;
-         SphericalCoordinates R(pole->X - this->X);
-         for (size_t ind = 0; ind < nm_set.size(); ++ind) {
-            auto [n, m] = nm_set[ind];
-            W = R.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(n, m, pole->normal);
-            //! Wは{R, grad_Rnm1_dot_normal}
-            tuple_vector[ind] = {W,
-                                 &(coeffs[ind] += V1 * std::get<0>(W)),
-                                 &(coeffs_[ind] += V0 * std::get<1>(W))};
+   void increment_M(const std::vector<T>& sources) {
+      std::array<int, 2> n_m;
+      this->vector_weightedSourceDensities_RRn_MM_.clear();
+      this->vector_weightedSourceDensities_RRn_MM_.reserve(sources.size());
+      for (const auto& source : sources) {
+         auto [w_phi, w_phin] = source->weighted_source_densities;
+         // ! 重みとは，数値積分w0w1と変数変換ヤコビアンの積
+         // ! w_phiとw_phinは，q_iに相当する in G&R 1997 (3.19)
+         // ! BIEは，Rにはw_phinが，Rnにはw_phiがかかる形になっている
+         // ! R = {rho_i^n Y_n^-m}
+         SphericalCoordinates kernel(source->X - this->X);
+         ArrayType RRn_MM_;
+         std::array<Complex, 2> RRn;
+         for (std::size_t ind = 0; ind < nm_set.size(); ++ind) {
+            n_m = nm_set[ind];
+            RRn = kernel.SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(std::get<0>(n_m), -std::get<1>(n_m), source->normal);
+            std::get<0>(MM_[ind]) += w_phin * std::get<0>(RRn) /*３重和の１項 G&R 1997 (3.19)*/;
+            std::get<1>(MM_[ind]) += w_phi * std::get<1>(RRn) /*３重和の１項*/;
+            RRn_MM_[ind] = {RRn, &MM_[ind]};  //! {R, grad_Rnm1_dot_normal}
+         };  //! Wは{R, grad_Rnm1_dot_normal}
+         this->vector_weightedSourceDensities_RRn_MM_.emplace_back(&source->weighted_source_densities, RRn_MM_);
+      }
+   }
+
+   void increment_M_reuse() {
+      std::array<double, 2> w_phi_w_phin;
+      for (const auto& [weighted_source_densities, RRn_MM_] : this->vector_weightedSourceDensities_RRn_MM_) {
+         w_phi_w_phin = *weighted_source_densities;
+         for (auto& [RRn, mm_] : RRn_MM_) {
+            std::get<0>(*mm_) += std::get<1>(w_phi_w_phin) * std::get<0>(RRn);
+            std::get<1>(*mm_) += std::get<0>(w_phi_w_phin) * std::get<1>(RRn);
          }
-         value_weight4integration_accums.emplace_back(&pole->values_x_weight, tuple_vector);
       }
    }
-
-   using TupleType = std::tuple<std::array<std::complex<double>, 2>, std::complex<double>*, std::complex<double>*>;
-   using ArrayType = std::array<TupleType, (N + 1) * (N + 1)>;
-   std::vector<std::tuple<std::array<double, 2>*, ArrayType>> value_weight4integration_accums;
-
-   void increment_moments_reuse() {
-      for (const auto& [values, tuple_vector] : this->value_weight4integration_accums) {
-         auto [V0, V1] = *values;
-         for (auto& [W, c, c_] : tuple_vector) {
-            *c += V1 * std::get<0>(W);
-            *c_ += V0 * std::get<1>(W);
-         }
-      }
-   }
-
-   void increment_coeffs(const auto& func) {
-      for (size_t ind = 0; ind < nm_set.size(); ++ind) {
-         auto [n, m] = nm_set[ind];
-         auto coefficients = func(n, m);
-         coeffs[ind] += std::get<0>(coefficients);
-         coeffs_[ind] += std::get<1>(coefficients);
-      }
-   }
-
-   // make set_l2p
-   // void set_l2p(const std::vector<std::array<double, 3>>& X) {
-   //    l2p_cache.clear();
-   //    l2p_cache.reserve(X.size());
-   //    for (const auto& x : X) {
-   //       l2p_cache.push_back(x - this->X);
-   //    }
-   // }
 
    std::array<double, 2> L2P(const std::array<double, 3>& a) const {
-      // SphericalCoordinates Xc2O(this->X - a);
       SphericalCoordinates P(a - this->X);
-      std::array<std::complex<double>, 2> ret = {0, 0};
-      std::complex<double> R;
+      std::array<Complex, 2> ret = {0, 0};
+      Complex Ynm_rhon1;
       std::size_t index;
-
       for (const auto& [n, m] : this->nm_set) {
-         // auto R = P.SolidHarmonicR_ForNear(n, -m);
-         // auto R = std::pow(P.rho, n) * P.sph_harmonics(n, m);
-         R = P.sph_harmonics_rho(n, m);
+         Ynm_rhon1 = P.sph_harmonics_rho(n, m);
          index = this->index(n, m);
-         complex_fused_multiply_increment(R, this->get_coeffs(index) /*L*/, std::get<0>(ret));
-         complex_fused_multiply_increment(R, this->get_coeffs_(index) /*L*/, std::get<1>(ret));
+         std::get<0>(ret) += Ynm_rhon1 * std::get<0>(this->MM_[index]);
+         std::get<1>(ret) += Ynm_rhon1 * std::get<1>(this->MM_[index]);
       }
       return {std::get<0>(ret).real(), std::get<1>(ret).real()};
    }
 
    /* -------------------------------------------------------------------------- */
 
-   /*DOC_EXTRACT coeffs
+   /*DOC_EXTRACT M
 
    ### 定数の読み込み
 
@@ -631,144 +603,47 @@ struct ExpCoeffs {
 
    static constexpr std::size_t ARRAY_SIZE = computeSizeM2M(N);
 
-   using Type_IICCIIIC = std::tuple<int, int, std::complex<double>&, std::complex<double>&, int, int, int, std::complex<double>>;
+   using Type_IICCIIIC = std::tuple<int, int, std::array<Complex, 2>*, int, int, int, Complex>;
    std::vector<Type_IICCIIIC> index_map_for_M2M = index_map_for_M2M_();  // i,j,index, n, m, index
    constexpr std::vector<Type_IICCIIIC> index_map_for_M2M_() {
       std::vector<Type_IICCIIIC> index_map_for_M2M;
       index_map_for_M2M.reserve(ARRAY_SIZE);
       std::size_t index = 0;
-      for (int j = 0; j <= N; ++j)
-         for (int k = -j; k <= j; ++k) {
+      int j, k, n, m;
+      for (j = 0; j <= N; ++j)
+         for (k = -j; k <= j; ++k) {
             auto& AAA_M2M_FMM_j_k = AAA_M2M_FMM[j][k + N_AAA_M2M_FMM];
-            for (int n = 0; n <= j; ++n)
-               for (int m = -n; m <= n; ++m) {
+            for (n = 0; n <= j; ++n)
+               for (m = -n; m <= n; ++m) {
                   auto AAA = AAA_M2M_FMM_j_k[n][m + N_AAA_M2M_FMM];
                   if (AAA.real() != 0.0 || AAA.imag() != 0.0)
-                     index_map_for_M2M.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(j - n, k - m), AAA});
+                     index_map_for_M2M.emplace_back(j, k, &this->MM_[this->index(j, k)], n, m, this->index(j - n, k - m), AAA);
                }
          }
       return index_map_for_M2M;
    }
 
-   std::vector<std::tuple<std::unique_ptr<SphericalCoordinates>, ExpCoeffs<N>*>> m2m_cache;
+   std::vector<std::tuple<std::unique_ptr<SphericalCoordinates>, Moments<N>*>> m2m_cache;
 
    //! これは計算毎に変わる
    template <typename T>
    void set_m2m(const std::vector<T>& buckets) {
-      m2m_cache.clear();
-      m2m_cache.reserve(buckets.size());
+      this->m2m_cache.clear();
+      this->m2m_cache.reserve(buckets.size());
       for (const auto& b : buckets) {
          auto sph = std::make_unique<SphericalCoordinates>(b->X - this->X);
          sph->precompute_sph(2 * N);
-         m2m_cache.push_back({std::move(sph), &b->multipole_expansion});
+         this->m2m_cache.push_back({std::move(sph), &b->MomentsMultipoleExpansion});
       }
    }
 
    void m2m() {
-      std::complex<double> R;
-      for (const auto& [sph, M] : this->m2m_cache) {
-         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2M) {
+      Complex R;
+      for (const auto& [sph, moments_class] : this->m2m_cache) {
+         for (const auto& [j, k, MMjk, n, m, index, AAA] : this->index_map_for_M2M) {
             R = AAA * sph->sph_harmonics_rho(n, -m);
-            c += R * M->coeffs[index];
-            c_ += R * M->coeffs_[index];
-         }
-      }
-   }
-
-   // void M2M(const ExpCoeffs<N>& M) {
-   //    // SphericalCoordinates r(M_shifted.X - M.X);
-   //    SphericalCoordinates rab(M.X - this->X);
-   //    rab.precompute_sph(2 * N);
-   //    std::complex<double> R;
-   //    for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2M) {
-   //       R = AAA * rab.sph_harmonics_rho(n, -m);
-   //       c += R * M.get_coeffs(index);
-   //       c_ += R * M.get_coeffs_(index);
-   //    }
-
-   //    // this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
-   //    //    std::array<std::complex<double>, 2> ret = {0, 0};
-   //    //    auto& AAA_M2M_FMM_j_k = AAA_M2M_FMM[j][k + N_AAA_M2M_FMM];
-   //    //    for (int n = 0; n <= j; ++n) {
-   //    //       // rho = std::pow(rab.rho, n);
-   //    //       for (int m = -n; m <= n; ++m) {
-   //    //          AAA = AAA_M2M_FMM_j_k[n][m + N_AAA_M2M_FMM];
-   //    //          if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-   //    //             // R = AAA * rho * rab.sph_harmonics(n, -m);
-   //    //             R = AAA * rab.sph_harmonics_rho(n, -m);
-   //    //             index = M.index(j - n, k - m);
-   //    //             complex_fused_multiply_increment(R, M.get_coeffs(index), std::get<0>(ret));
-   //    //             complex_fused_multiply_increment(R, M.get_coeffs_(index), std::get<1>(ret));
-   //    //          }
-   //    //       }
-   //    //    }
-   //    //    return ret;
-   //    // });
-   // }
-
-   /*
-
-   for (int i = 0; i <= N; ++i)
-   for (int j = -n; j <= i; ++j)
-
-   for (int n = 0; n <= N; ++n)
-   for (int m = -n; m <= n; ++m)
-
-    */
-
-   // void M2L(const ExpCoeffs<N>& M) {
-   //    std::complex<double> S_, AAA;
-   //    // SphericalCoordinates r(LocalExp.X - M.X);
-   //    SphericalCoordinates rab(M.X - this->X);
-   //    rab.precompute_sph(2 * N);
-
-   //    this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
-   //       std::array<std::complex<double>, 2> ret = {0, 0};
-   //       auto& AAA_M2L_FMM_j_k = AAA_M2L_FMM[j][k + N_AAA_M2L_FMM];
-   //       double rho_inv;
-   //       std::size_t index;
-   //       for (int n = 0; n <= N; ++n) {
-   //          rho_inv = std::pow(rab.rho, -(j + n + 1));
-   //          for (int m = -n; m <= n; ++m) {
-   //             AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-   //             if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-   //                S_ = AAA * rab.sph_harmonics(j + n, m - k) * rho_inv;
-   //                index = M.index(n, m);
-   //                complex_fused_multiply_increment(S_, M.get_coeffs(index), std::get<0>(ret));
-   //                complex_fused_multiply_increment(S_, M.get_coeffs_(index), std::get<1>(ret));
-   //             }
-   //          }
-   //       }
-   //       return ret;
-   //    });
-   // }
-
-   void M2L(const ExpCoeffs<N>& M) {
-      std::complex<double> S_, AAA;
-      // SphericalCoordinates r(LocalExp.X - M.X);
-      SphericalCoordinates rab(M.X - this->X);
-      rab.precompute_sph(2 * N);
-
-      for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
-         S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
-         c += S_ * M->multipole_expansion.get_coeffs(index);
-         c_ += S_ * M->multipole_expansion.get_coeffs_(index);
-      }
-   }
-
-   template <typename T>
-   void M2L(const std::vector<T>& buckets) {
-      std::complex<double> S_, AAA;
-      // SphericalCoordinates r(LocalExp.X - M.X);
-      int count = 0;
-
-      for (const auto& b : buckets) {
-         SphericalCoordinates rab(b->multipole_expansion.X - this->X);
-         rab.precompute_sph(2 * N);
-         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
-            S_ = AAA * rab.sph_harmonics_div_rhon1(j + n, m - k);
-            c += S_ * b->multipole_expansion.get_coeffs(index);
-            c_ += S_ * b->multipole_expansion.get_coeffs_(index);
+            std::get<0>(*MMjk) += R * std::get<0>(moments_class->MM_[index]);
+            std::get<1>(*MMjk) += R * std::get<1>(moments_class->MM_[index]);
          }
       }
    }
@@ -776,18 +651,22 @@ struct ExpCoeffs {
    //% ----------------------------------- M2L ---------------------------------- */
 
    /*
-   以下のm2l関数を使うthisは，M->Lなので，LのExpCoeffsである．例えば，
-
-   A->local_expansion.m2l();
-
+   以下のm2l関数を使うthisは，M->Lなので，LのMomentsである．例えば，
+   A->MomentsLocalExpansion.m2l();
    のように利用されているはずだ．
    */
 
-   //! これは普遍的なもの
-   std::vector<Type_IICCIIIC> index_map_for_M2L = index_map_for_M2L_();  // i,j,index, n, m, index
+   std::vector<Type_IICCIIIC> index_map_for_M2L = index_map_for_M2L_();  //! これは，相手によらず，普遍的なもの
+   /*
+
+   相手となるlocalのモーメントと，自身のモーメント，どの係数同士を掛け合せるかは，展開長さNがわかれば，**indexは決定できる**．
+   ただ，相手のモーメントの係数へのポインターは，相手となるバケツが与えられて初めて決まる．
+
+   */
+
    constexpr std::vector<Type_IICCIIIC> index_map_for_M2L_() {
-      std::vector<Type_IICCIIIC> index_map_for_M2L;
-      index_map_for_M2L.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
+      std::vector<Type_IICCIIIC> ret;
+      ret.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
       int j, k, n, m;
       for (j = 0; j <= N; ++j)
          for (k = -j; k <= j; ++k) {
@@ -795,162 +674,85 @@ struct ExpCoeffs {
             for (n = 0; n <= N; ++n) {
                for (m = -n; m <= n; ++m) {
                   auto AAA = AAA_M2L_FMM_j_k[n][m + N_AAA_M2L_FMM];
-                  if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-                     index_map_for_M2L.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
-                  }
+                  if (AAA.real() != 0.0 || AAA.imag() != 0.0)
+                     ret.emplace_back(j, k, &this->MM_[this->index(j, k)], n, m, this->index(n, m), AAA);
                }
             }
          }
-      return index_map_for_M2L;
+      return ret;
    }
 
-   std::vector<std::tuple<std::unique_ptr<SphericalCoordinates>, ExpCoeffs<N>*>> m2l_cache;
+   std::unordered_map<std::array<Complex, 2>*, std::vector<std::tuple<Complex, std::array<Complex, 2>*>>> uo_m2l_cache;
+   std::vector<std::tuple<std::array<Complex, 2>*, std::vector<std::tuple<Complex, std::array<Complex, 2>*>>>> m2l_cache;
 
-   //! これは計算毎に変わる
+   //! これは計算毎に変わる 相手係数へのポインターをリンクさせる（indexは計算済み）
    template <typename T>
    void set_m2l(const std::vector<T>& buckets) {
-      m2l_cache.clear();
-      m2l_cache.reserve(buckets.size());
+      this->m2l_cache.clear();
+      this->uo_m2l_cache.clear();
       for (const auto& b : buckets) {
-         auto sph = std::make_unique<SphericalCoordinates>(b->multipole_expansion.X - this->X);
-         sph->precompute_sph(2 * N);
-         m2l_cache.emplace_back(std::move(sph), &b->multipole_expansion);  // 所有権を移動
+         auto sph = SphericalCoordinates(b->MomentsMultipoleExpansion.X - this->X);
+         sph.precompute_sph(2 * N);
+         for (const auto& [j, k, MMjk, n, m, index, AAA] : this->index_map_for_M2L)
+            this->uo_m2l_cache[MMjk].emplace_back(AAA * sph.sph_harmonics_div_rhon1(j + n, m - k), &b->MomentsMultipoleExpansion.MM_[index]);
       }
+      for (auto& [MMjk_local, AAAY_MM] : this->uo_m2l_cache)
+         this->m2l_cache.push_back({std::make_tuple(MMjk_local, std::move(AAAY_MM))});
    }
 
+   /* ------------------------------- */
+
    void m2l() {
-      std::complex<double> S_;
-      for (const auto& [sph, multipole_expansion] : m2l_cache) {
-         for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_M2L) {
-            c += (S_ = AAA * sph->pre_compute_sph_harmonics_div_rhon1[j + n][m - k + sph->pre_max]) * multipole_expansion->coeffs[index];
-            c_ += S_ * multipole_expansion->coeffs_[index];
+      std::complex<double> tmp0 = 0.0, tmp1 = 0.0;
+      for (const auto& [MMjk_local, AAAY_MM] : this->m2l_cache) {
+         tmp1 = tmp0 = 0.0;
+         for (const auto& [AAAY, MM] : AAAY_MM) {
+            tmp0 += AAAY * std::get<0>(*MM);
+            tmp1 += AAAY * std::get<1>(*MM);
          }
+         std::get<0>(*MMjk_local) += tmp0;
+         std::get<1>(*MMjk_local) += tmp1;
       }
    }
 
    /* -------------------------------------------------------------------------- */
 
-   // make set_l2l
-
    std::vector<Type_IICCIIIC> index_map_for_L2L = index_map_for_L2L_();  // i,j,index, n, m, index
+
    constexpr std::vector<Type_IICCIIIC> index_map_for_L2L_() {
       std::vector<Type_IICCIIIC> index_map_for_L2L;
       index_map_for_L2L.reserve((N + 1) * (2 * N + 1) * (N + 1) * (2 * N + 1));
-      for (int j = 0; j <= N; ++j)
-         for (int k = -j; k <= j; ++k) {
+      int j, k, n, m;
+      for (j = 0; j <= N; ++j)
+         for (k = -j; k <= j; ++k) {
             auto& AAA_L2L_FMM_j_k = AAA_L2L_FMM[j][k + N_AAA_L2L_FMM];
-            for (int n = j; n <= N; ++n) {
-               for (int m = -n; m <= n; ++m) {
+            for (n = j; n <= N; ++n)
+               for (m = -n; m <= n; ++m) {
                   auto AAA = AAA_L2L_FMM_j_k[n][m + N_AAA_L2L_FMM];
-                  if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-                     index_map_for_L2L.push_back({j, k, this->coeffs[this->index(j, k)], this->coeffs_[this->index(j, k)], n, m, this->index(n, m), AAA});
-                  }
+                  if (AAA.real() != 0.0 || AAA.imag() != 0.0)
+                     index_map_for_L2L.emplace_back(j, k, &this->MM_[this->index(j, k)], n, m, this->index(n, m), AAA);
                }
-            }
          }
       return index_map_for_L2L;
    }
 
-   std::tuple<std::unique_ptr<SphericalCoordinates>, ExpCoeffs<N>*> l2l_cache;
+   std::tuple<std::unique_ptr<SphericalCoordinates>, Moments<N>*> l2l_cache;
 
    //! これは計算毎に変わる
-
-   void set_l2l(ExpCoeffs<N>* local_expansion) {
-      auto sph = std::make_unique<SphericalCoordinates>(local_expansion->X - this->X);
+   void set_l2l(Moments<N>* MomentsLocalExpansion) {
+      auto sph = std::make_unique<SphericalCoordinates>(MomentsLocalExpansion->X - this->X);
       sph->precompute_sph(2 * N);
-      this->l2l_cache = {std::move(sph), local_expansion};
+      this->l2l_cache = {std::move(sph), MomentsLocalExpansion};
    }
 
    void l2l() {
-      std::complex<double> R;
-      for (const auto& [j, k, c, c_, n, m, index, AAA] : this->index_map_for_L2L) {
+      Complex R;
+      for (const auto& [j, k, MMjk, n, m, index, AAA] : this->index_map_for_L2L) {
          R = AAA * std::get<0>(l2l_cache)->sph_harmonics_rho(n - j, m - k);
-         c += R * std::get<1>(l2l_cache)->coeffs[index];
-         c_ += R * std::get<1>(l2l_cache)->coeffs_[index];
+         std::get<0>(*MMjk) += R * std::get<0>(std::get<1>(l2l_cache)->MM_[index]);
+         std::get<1>(*MMjk) += R * std::get<1>(std::get<1>(l2l_cache)->MM_[index]);
       }
    }
-
-   void L2L(const ExpCoeffs<N>& L) {
-      std::complex<double> R, AAA;
-      double rho;
-      // SphericalCoordinates r(LocalExp.X - L.X);
-      SphericalCoordinates rab(L.X - this->X);
-      rab.precompute_sph(2 * N);
-      for (auto [j, k, c, c_, n, m, index, AAA] : this->index_map_for_L2L) {
-         R = AAA * rab.sph_harmonics_rho(n - j, m - k);
-         c += R * L.get_coeffs(n, m);
-         c_ += R * L.get_coeffs_(n, m);
-      }
-
-      // this->increment_coeffs([&](int j, int k) -> std::array<std::complex<double>, 2> {
-      //    std::array<std::complex<double>, 2> ret = {0, 0};
-      //    auto& AAA_L2L_FMM_j_k = AAA_L2L_FMM[j][k + N_AAA_L2L_FMM];
-      //    for (int n = j; n <= N; ++n) {
-      //       // rho = std::pow(rab.rho, n - j);
-      //       for (int m = -n; m <= n; ++m) {
-      //          AAA = AAA_L2L_FMM_j_k[n][m + N_AAA_L2L_FMM];
-      //          if (AAA.real() != 0.0 || AAA.imag() != 0.0) {
-      //             // R = AAA * rab.sph_harmonics(n - j, m - k) * rho;
-      //             R = AAA * rab.sph_harmonics_rho(n - j, m - k);
-      //             std::get<0>(ret) += R * L.get_coeffs(n, m);
-      //             std::get<1>(ret) += R * L.get_coeffs_(n, m);
-      //             // complex_fused_multiply_increment(R, L.get_coeffs(n, m), std::get<0>(ret));
-      //             // complex_fused_multiply_increment(R, L.get_coeffs_(n, m), std::get<1>(ret));
-      //          }
-      //       }
-      //    }
-      //    return ret;
-      // });
-   }
-};
-
-/* -------------------------------------------------------------------------- */
-
-double G(const std::array<double, 3>& X_near, const std::array<double, 3>& X_far) { return 1 / Norm(X_near - X_far); }
-
-std::array<double, 3> gradG(const std::array<double, 3>& X_near, const std::array<double, 3>& X_far) {
-   return -(X_near - X_far) / std::pow(Norm(X_near - X_far), 3.);
-}
-
-double Gapx(unsigned p,
-            std::array<double, 3> X_near,
-            std::array<double, 3> X_far,
-            const std::array<double, 3>& center) {
-   SphericalCoordinates sph_near(X_near - center);
-   SphericalCoordinates sph_far(X_far - center);
-
-   std::complex<double> accum = 0;
-   int k, m;
-   for (k = 0; k <= p; ++k)
-      for (m = -k; m <= k; ++m)
-         accum += sph_near.SolidHarmonicR_ForNear(k, m) * sph_far.SolidHarmonicS_ForFar(k, m);
-   return accum.real();
-}
-
-std::array<double, 3> gradGapx(unsigned p,
-                               const std::array<double, 3>& X_near_IN,
-                               const std::array<double, 3>& X_far_IN,
-                               const std::array<double, 3>& center) {
-   SphericalCoordinates sph_near(X_near_IN - center);
-   SphericalCoordinates sph_far(X_far_IN - center);
-   int k, m;
-
-   std::array<std::complex<double>, 3> grad = {0., 0., 0.};
-
-   for (k = 0; k <= p; ++k)
-      for (m = -k; m <= k; ++m)
-         grad += sph_near.Grad_SolidHarmonicR_ForNear(k, m) * sph_far.SolidHarmonicS_ForFar(k, m);
-
-   return {grad[0].real(), grad[1].real(), grad[2].real()};
-}
-
-std::array<double, 3> ToSphericalCoordinates(const double x, const double y, const double z) {
-   return {std::hypot(x, y, z), std::atan2(std::hypot(x, y), z), std::atan2(y, x)};
-};
-
-// \label{ToSphericalCoordinates}
-std::array<double, 3> ToSphericalCoordinates(const std::array<double, 3>& X) {
-   return ToSphericalCoordinates(std::get<0>(X), std::get<1>(X), std::get<2>(X));
 };
 
 #endif

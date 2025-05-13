@@ -221,8 +221,8 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
    //! use solve instead of inverse
    Tdd CxCy = {0., 0.};
    // Solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
-   // lapack_lu lu(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
-   lapack_svd_solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   lapack_lu lu(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
+   // lapack_svd_solve(T2Tdd{bxy, cxy}, CxCy, Tdd{0.5 * Dot(bxy, bxy), 0.5 * Dot(cxy, cxy)});
    auto [Cx, Cy] = CxCy;
    return a + Cx * x + Cy * y;
 };
@@ -235,8 +235,8 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
    // return a + 0.5 * Dot(Inverse(T3Tddd{b_, c_, d_}), Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    //! use solve
    // Solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
-   // lapack_lu lu(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
-   lapack_svd_solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   lapack_lu lu(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
+   // lapack_svd_solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
    return a + 0.5 * CxCyCz;
 };
 Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
@@ -641,6 +641,18 @@ struct CoordinateBounds {
    Tdd ybounds() const { return std::get<1>(bounds); };
    Tdd zbounds() const { return std::get<2>(bounds); };
    /* ------------------------------------------------------ */
+   T3Tdd getUniformBounds(const double scale = 1.) const {
+      auto [x0, x1] = this->bounds[0];
+      auto [y0, y1] = this->bounds[1];
+      auto [z0, z1] = this->bounds[2];
+      double L = std::max(std::abs(x1 - x0), std::abs(y1 - y0));
+      L = std::max(L, std::abs(z1 - z0));
+      Tddd center = {(x0 + x1) / 2., (y0 + y1) / 2., (z0 + z1) / 2.};
+      return {{{center[0] - L * scale, center[0] + L * scale},
+               {center[1] - L * scale, center[1] + L * scale},
+               {center[2] - L * scale, center[2] + L * scale}}};
+   };
+
    T3Tdd scaledBounds(const double scale) const {
       auto [xrange, yrange, zrange] = this->bounds;
       auto [x0, x1] = xrange;
@@ -649,15 +661,12 @@ struct CoordinateBounds {
       auto cX = 0.5 * (x0 + x1);
       auto cY = 0.5 * (y0 + y1);
       auto cZ = 0.5 * (z0 + z1);
-
       // xrange = {cX + scale * (x0 - cX), cX + scale * (x1 - cX)};
       // yrange = {cY + scale * (y0 - cY), cY + scale * (y1 - cY)};
       // zrange = {cZ + scale * (z0 - cZ), cZ + scale * (z1 - cZ)};
-
       xrange = {std::fma(scale, x0, (1. - scale) * cX), std::fma(scale, x1, (1. - scale) * cX)};
       yrange = {std::fma(scale, y0, (1. - scale) * cY), std::fma(scale, y1, (1. - scale) * cY)};
       zrange = {std::fma(scale, z0, (1. - scale) * cZ), std::fma(scale, z1, (1. - scale) * cZ)};
-
       return {{xrange, yrange, zrange}};
    };
    /* -------------------------------------------------------------------------- */
@@ -2135,14 +2144,32 @@ double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
 // \label{basic_geometry:IntersectQ}
 //! cube - cube
 // 暗黙の変換は，予期しない変換を行なってしまう場合が多発するので，ここでは型変換が起きないよう，CoordinateBounds同士の干渉は行わないようにする．
+// bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
+//    return !((std::get<0>(std::get<0>(b0)) > std::get<0>(std::get<0>(b1)) && std::get<0>(std::get<0>(b0)) > std::get<1>(std::get<0>(b1)) /*1のxの最大最小が，0のxの最小よりも小さい*/) ||
+//             (std::get<0>(std::get<1>(b0)) > std::get<0>(std::get<1>(b1)) && std::get<0>(std::get<1>(b0)) > std::get<1>(std::get<1>(b1)) /*1のyの最大最小が，0のyの最小よりも小さい*/) ||
+//             (std::get<0>(std::get<2>(b0)) > std::get<0>(std::get<2>(b1)) && std::get<0>(std::get<2>(b0)) > std::get<1>(std::get<2>(b1)) /*1のzの最大最小が，0のzの最小よりも小さい*/) ||
+//             (std::get<1>(std::get<0>(b0)) < std::get<0>(std::get<0>(b1)) && std::get<1>(std::get<0>(b0)) < std::get<1>(std::get<0>(b1)) /*1のxの最大最小が，0のxの最大よりも大きい*/) ||
+//             (std::get<1>(std::get<1>(b0)) < std::get<0>(std::get<1>(b1)) && std::get<1>(std::get<1>(b0)) < std::get<1>(std::get<1>(b1)) /*1のyの最大最小が，0のyの最大よりも大きい*/) ||
+//             (std::get<1>(std::get<2>(b0)) < std::get<0>(std::get<2>(b1)) && std::get<1>(std::get<2>(b0)) < std::get<1>(std::get<2>(b1)) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
+// };
+
 bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
-   return !((std::get<0>(std::get<0>(b0)) > std::get<0>(std::get<0>(b1)) && std::get<0>(std::get<0>(b0)) > std::get<1>(std::get<0>(b1)) /*1のxの最大最小が，0のxの最小よりも小さい*/) ||
-            (std::get<0>(std::get<1>(b0)) > std::get<0>(std::get<1>(b1)) && std::get<0>(std::get<1>(b0)) > std::get<1>(std::get<1>(b1)) /*1のyの最大最小が，0のyの最小よりも小さい*/) ||
-            (std::get<0>(std::get<2>(b0)) > std::get<0>(std::get<2>(b1)) && std::get<0>(std::get<2>(b0)) > std::get<1>(std::get<2>(b1)) /*1のzの最大最小が，0のzの最小よりも小さい*/) ||
-            (std::get<1>(std::get<0>(b0)) < std::get<0>(std::get<0>(b1)) && std::get<1>(std::get<0>(b0)) < std::get<1>(std::get<0>(b1)) /*1のxの最大最小が，0のxの最大よりも大きい*/) ||
-            (std::get<1>(std::get<1>(b0)) < std::get<0>(std::get<1>(b1)) && std::get<1>(std::get<1>(b0)) < std::get<1>(std::get<1>(b1)) /*1のyの最大最小が，0のyの最大よりも大きい*/) ||
-            (std::get<1>(std::get<2>(b0)) < std::get<0>(std::get<2>(b1)) && std::get<1>(std::get<2>(b0)) < std::get<1>(std::get<2>(b1)) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
-};
+   auto [x0min, x0max] = b0[0];
+   auto [y0min, y0max] = b0[1];
+   auto [z0min, z0max] = b0[2];
+   auto [x1min, x1max] = b1[0];
+   auto [y1min, y1max] = b1[1];
+   auto [z1min, z1max] = b1[2];
+   if (x1max < x0min || y1max < y0min || z1max < z0min || x1min > x0max || y1min > y0max || z1min > z0max)
+      return false;
+   else
+      return true;
+
+   // return !(std::get<1>(b0[0]) < std::get<0>(b1[0]) || std::get<1>(b1[0]) < std::get<0>(b0[0]) ||  // x軸
+   //          std::get<1>(b0[1]) < std::get<0>(b1[1]) || std::get<1>(b1[1]) < std::get<0>(b0[1]) ||  // y軸
+   //          std::get<1>(b0[2]) < std::get<0>(b1[2]) || std::get<1>(b1[2]) < std::get<0>(b0[2]));   // z軸
+}
+
 //! cube - point
 bool IntersectQ(const Tddd &X, const T3Tdd &minmax3) {
    return !((std::get<0>(X) < std::get<0>(std::get<0>(minmax3)) || std::get<1>(std::get<0>(minmax3)) < std::get<0>(X)) ||
@@ -2196,9 +2223,27 @@ bool IntersectQ(const Tddd &X, const double r, const T3Tddd &abc) { return r >= 
 bool IntersectQ(const Sphere &sp, const T3Tddd &abc) { return sp.radius > Norm(Nearest(sp.center, abc) - sp.center); };
 //! line - triangle
 std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
-   const auto [a, b, c] = abc;
-   const auto [A, B] = AB;
-   // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
+
+   if (IntersectQ(CoordinateBounds(AB).bounds, CoordinateBounds(abc).bounds)) {
+      std::array<double, 3> x;
+      // Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+      // lapack_lu lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+      const auto [a, b, c] = abc;
+      const auto [A, B] = AB;
+      lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+      const auto [t0, t1, T] = x;
+      static const Tdd range = {0., 1.};
+      return {Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range),
+              (1. - T) * A + T * B,
+              {t0, t1, 1. - t0 - t1}};
+      /*
+      Hit = A + T * (B - A)
+      Hit = a * t0 + b * t1 + c * (1-t0-t1) = (a-c) * t0 + (b-c) * t1 + c
+      equalize the two equations
+      {t0,t1,T} . {a-c, b-c, A-B} = A-c
+      */
+   } else
+      return {false, {0., 0., 0.}, {0., 0., 0.}};
    /*
 
    $X$は，$A$と$B$を結ぶ直線上にあるとする．この$X$を頂点の重心座標で表す．
@@ -2211,15 +2256,21 @@ std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
    X = A + T\cdot(B-A)
    ```
    */
-   std::array<double, 3> x;
-   // Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
-   // lapack_lu lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
-   lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
-   const auto [t0, t1, T] = x;
-   static const Tdd range = array_0_1;
-   return {Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range),
-           (1. - T) * A + T * B,
-           {t0, t1, 1. - t0 - t1}};
+
+   /* -------------------------------------------------------------------------- */
+
+   /*
+
+   $X$は，$A$と$B$を結ぶ直線上にあるとする．この$X$を頂点の重心座標で表す．
+   この二つの表現を等しくするような$t_0,t_1,T$を求める．
+   結果から，$T$が$0$から$1$の間にあるかどうかで，$X$が線分上にあるかどうかがわかる．
+   また，$t_0,t_1,1-t_0-t_1$が$0$から$1$の間にあるかどうかで，$X$が三角形の内部にあるかどうかがわかる．
+
+   ```math
+   X = (t0,t1,1-t0-t1)\cdot(a-c,b-c,c)\\
+   X = A + T\cdot(B-A)
+   ```
+   */
 };
 
 bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
@@ -2227,8 +2278,8 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
    const auto [A, B] = AB;
    // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> x;
-   // lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
-   lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   lapack_lu(x, T3Tddd{a - c, b - c, A - B}, A - c);
+   // lapack_svd_solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    // Solve(x, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = x;
    static const Tdd range = array_0_1;
@@ -2256,10 +2307,10 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
    Tddd num, den;
    // Solve(num, adbdcd, d - B);
    // Solve(den, adbdcd, A - B);
-   // lapack_lu lu_num(num, adbdcd, d - B);
-   lapack_svd_solve(num, adbdcd, d - B);
-   // lapack_lu lu_den(den, adbdcd, A - B);
-   lapack_svd_solve(den, adbdcd, A - B);
+   lapack_lu lu_num(num, adbdcd, d - B);
+   // lapack_svd_solve(num, adbdcd, d - B);
+   lapack_lu lu_den(den, adbdcd, A - B);
+   // lapack_svd_solve(den, adbdcd, A - B);
    //
    auto [int0, int1, int2] = Transpose(T2Tddd{num / den, (1 + num) / den});
    //! --------------------------------- */
@@ -2327,8 +2378,8 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
    // auto [t0, t1, T] = Dot(Inverse(Transpose(T3Tddd{a - c, b - c, A - B})), A - c);
    // auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
    std::array<double, 3> ans;
-   // lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
-   lapack_svd_solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   lapack_lu(ans, T3Tddd{a - c, b - c, A - B}, A - c);
+   // lapack_svd_solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
    // Solve(ans, T3Tddd{a - c, b - c, A - B}, A - c);
    const auto [t0, t1, T] = ans;
    //

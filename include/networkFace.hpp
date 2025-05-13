@@ -1,22 +1,18 @@
 #pragma once
 
 inline void networkFace::setDodecaPoints() {
-   int i = 0;
-   for (const auto &p : this->Points) {
-      if (i < dodecaPoints.size()) {  // Ensure we do not exceed the array bounds
-         dodecaPoints[i++] = std::make_shared<DodecaPoints>(this, p, [](const networkLine *line) -> bool { return !line->CORNER && line->getSurfaces().size() >= 2; });
-      }
-   }
+   auto condition = [](const networkLine *line) -> bool { return !line->CORNER && line->getSurfaces().size() >= 2; };
+   std::get<0>(this->dodecaPoints) = std::make_shared<DodecaPoints>(this, std::get<0>(this->Points), condition);
+   std::get<1>(this->dodecaPoints) = std::make_shared<DodecaPoints>(this, std::get<1>(this->Points), condition);
+   std::get<2>(this->dodecaPoints) = std::make_shared<DodecaPoints>(this, std::get<2>(this->Points), condition);
 }
 
 /*
    原点を変えて積分する際に，積分のどこが，原点に依存し，どこが依存しないかを把握しておく．
    原点に依存しない部分は，事前に計算しておくことで，計算量を削減できる．
-
    また，積分で面をトラバースする際に，係数行列のどの行に（どの点に）重みをかけるかを把握しておく．
-
-   積分では，原点（行）・面・点（列）が重要である．
-
+   積分では，原点（行）・面・点（列）が重要である
+   `map_Point_BEM_IGIGn_info_init`とは，
 */
 
 inline void networkFace::setIntegrationInfo() {
@@ -31,6 +27,10 @@ inline void networkFace::setIntegrationInfo() {
       DodecaPoints dodecapoint(this, p, [](const networkLine *line) -> bool { return useOppositeFace(line, M_PI / 3); });
       //% -------------------------------------------------------------------------- */
       std::vector<BEM_IGIGn_info_type> temp;
+      /*
+      DodecaPointsは，4つのQuadPointsからなる．
+      `quadpoint`, `quadpoint_l0`, `quadpoint_l1`, `quadpoint_l2`として，保存されている．
+      */
       for (const auto &[p, f] : dodecapoint.quadpoint.points_faces) temp.push_back({p, f, 0., 0.});
       for (const auto &[p, f] : dodecapoint.quadpoint_l0.points_faces) temp.push_back({p, f, 0., 0.});
       for (const auto &[p, f] : dodecapoint.quadpoint_l1.points_faces) temp.push_back({p, f, 0., 0.});
@@ -51,7 +51,7 @@ inline void networkFace::setIntegrationInfo() {
             X = dodecapoint.X(xi0, xi1);
             cross = dodecapoint.cross(xi0, xi1);
             auto Nc_N0_N1_N2 = dodecapoint.N6_new(xi0, xi1);
-            info_quadratics.emplace_back(pseudo_quadratic_triangle_integration_info{Tdd{t0, t1}, ww * (1. - t0), N012_geometry, Nc_N0_N1_N2, X, cross, Norm(cross)});
+            info_quadratics.emplace_back(pseudo_quadratic_triangle_integration_info{Tdd{t0, t1}, ww * (1. - t0), Nc_N0_N1_N2, X, cross, Norm(cross)});
          }
          this->map_Point_LinearIntegrationInfo_vector[i][p] = info_linears;
          this->map_Point_PseudoQuadraticIntegrationInfo_vector[i][p] = info_quadratics;

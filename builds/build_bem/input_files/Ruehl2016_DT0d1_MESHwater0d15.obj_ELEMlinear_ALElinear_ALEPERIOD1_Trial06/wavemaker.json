@@ -1,0 +1,9 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "velocity": [
+        "file",
+        "./study_benchmark/Ruehl2016/Trial06.csv"
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Ruehl2016//wavemaker.obj"
+}

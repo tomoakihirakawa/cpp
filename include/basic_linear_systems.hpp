@@ -2577,10 +2577,7 @@ struct gmres : public ArnoldiProcess {
    V_d g;
    double err;
    ~gmres() { std::cout << "destructing gmres" << std::endl; };
-   gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v,
-         const V_d &b,
-         const V_d x0,
-         const std::size_t nIN)
+   gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const std::size_t nIN)
        : ArnoldiProcess(return_A_dot_v, b - return_A_dot_v(x0), nIN),
          x(x0),
          y(b.size()),

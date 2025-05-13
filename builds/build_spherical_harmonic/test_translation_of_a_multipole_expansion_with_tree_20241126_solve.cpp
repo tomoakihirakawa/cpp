@@ -78,8 +78,8 @@ int main(int argc, char* argv[]) {
       for (auto& p : points)
 #pragma omp single nowait
       {
-         auto [IgPhi_IgnPhin_near, IgPhi_IgnPhin_far] = integrate(B_poles, p->X, 1e-4);
-         p->almost_solid_angle = IgPhi_IgnPhin_near.first;
+         auto [wGPhin_wGnPhi_near, wGPhin_wGnPhi_far] = integrate(B_poles, p->X, 1e-4);
+         p->almost_solid_angle = wGPhin_wGnPhi_near.first;
       }
       std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
    };
@@ -110,10 +110,10 @@ int main(int argc, char* argv[]) {
       for (auto& p : points)
 #pragma omp single nowait
       {
-         auto [IgPhi_IgnPhin_near, IgPhi_IgnPhin_far] = integrate(B_poles, p->X, 1e-4);
-         p->IgPhi_IgnPhin_near = IgPhi_IgnPhin_near;
-         p->IgPhi_IgnPhin_far = IgPhi_IgnPhin_far;
-         p->IgPhi_IgnPhin_FMM = IgPhi_IgnPhin_near + IgPhi_IgnPhin_far;
+         auto [wGPhin_wGnPhi_near, wGPhin_wGnPhi_far] = integrate(B_poles, p->X, 1e-4);
+         p->wGPhin_wGnPhi_near = wGPhin_wGnPhi_near;
+         p->wGPhin_wGnPhi_far = wGPhin_wGnPhi_far;
+         p->wGPhin_wGnPhi_FMM = wGPhin_wGnPhi_near + wGPhin_wGnPhi_far;
       }
       std::cout << Magenta << "L2P" << Green << ", Elapsed time : " << tw() << colorReset << std::endl;
    };
@@ -323,24 +323,24 @@ int main(int argc, char* argv[]) {
          std::unordered_map<networkPoint*, double> data1, data2, data3, data4, data5, data6, data7, data8, data9, data10, data11, data12, data13;
          double max_abs_ign = 0;
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - p->IgPhi_IgnPhin_FMM;
+            auto d_igign = p->igign - p->wGPhin_wGnPhi_FMM;
             data1[p] = d_igign[0];
             data2[p] = d_igign[1];
             data3[p] = p->igign[0];
             data4[p] = p->igign[1];
             data5[p] = std::abs(d_igign[0] / p->igign[0]);
             data6[p] = std::abs(d_igign[1] / p->igign[1]);
-            data7[p] = p->IgPhi_IgnPhin_FMM[0];
-            data8[p] = p->IgPhi_IgnPhin_FMM[1];
-            data9[p] = p->IgPhi_IgnPhin_near[0];
-            data10[p] = p->IgPhi_IgnPhin_near[1];
-            data11[p] = p->IgPhi_IgnPhin_far[0];
-            data12[p] = p->IgPhi_IgnPhin_far[1];
+            data7[p] = p->wGPhin_wGnPhi_FMM[0];
+            data8[p] = p->wGPhin_wGnPhi_FMM[1];
+            data9[p] = p->wGPhin_wGnPhi_near[0];
+            data10[p] = p->wGPhin_wGnPhi_near[1];
+            data11[p] = p->wGPhin_wGnPhi_far[0];
+            data12[p] = p->wGPhin_wGnPhi_far[1];
             max_abs_ign = std::max(max_abs_ign, std::abs(p->igign[1]));
          }
 
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - p->IgPhi_IgnPhin_FMM;
+            auto d_igign = p->igign - p->wGPhin_wGnPhi_FMM;
             data13[p] = std::abs(d_igign[1] / max_abs_ign);
          }
 

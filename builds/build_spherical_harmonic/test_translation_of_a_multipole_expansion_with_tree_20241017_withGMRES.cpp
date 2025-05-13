@@ -178,14 +178,14 @@ int main() {
       - Ign.phi = - Ig.phin
       */
       auto& p = points[i];
-      auto [IgPhi_IgnPhin_near, IgPhi_IgnPhin_far] = L2P(B_poles, p->X);
-      p->IgPhi_IgnPhin_near = IgPhi_IgnPhin_near;
-      p->IgPhi_IgnPhin_far = IgPhi_IgnPhin_far;
+      auto [wGPhin_wGnPhi_near, wGPhin_wGnPhi_far] = L2P(B_poles, p->X);
+      p->wGPhin_wGnPhi_near = wGPhin_wGnPhi_near;
+      p->wGPhin_wGnPhi_far = wGPhin_wGnPhi_far;
       if (p->Dirichlet) {
-         b[i] = IgPhi_IgnPhin_near[0] + IgPhi_IgnPhin_far[0];
+         b[i] = wGPhin_wGnPhi_near[0] + wGPhin_wGnPhi_far[0];
          x0[i] = p->igign[0];
       } else {
-         b[i] = -(IgPhi_IgnPhin_near[1] + IgPhi_IgnPhin_far[1]);
+         b[i] = -(wGPhin_wGnPhi_near[1] + wGPhin_wGnPhi_far[1]);
          x0[i] = p->igign[1];
       }
    }
@@ -200,17 +200,17 @@ int main() {
       for (auto& p : points) {
          /* -------------------------------------------------------------------------- */
          auto bucket = B_poles.getBucketAtDeepest(p->X);
-         p->IgPhi_IgnPhin_near = direct_integration(bucket, p->X);
+         p->wGPhin_wGnPhi_near = direct_integration(bucket, p->X);
          //! Direct integration
          for (auto& B : bucket->buckets_near)
-            p->IgPhi_IgnPhin_near += direct_integration(B, p->X);
+            p->wGPhin_wGnPhi_near += direct_integration(B, p->X);
          //! Local expansion
-         p->IgPhi_IgnPhin_far = bucket->local_expansion.L2P(p->X);
+         p->wGPhin_wGnPhi_far = bucket->local_expansion.L2P(p->X);
          /* -------------------------------------------------------------------------- */
          if (p->Dirichlet)
-            ans.push_back(IgPhi_IgnPhin_near[0] + IgPhi_IgnPhin_far[0]);
+            ans.push_back(wGPhin_wGnPhi_near[0] + wGPhin_wGnPhi_far[0]);
          else
-            ans.push_back(-(IgPhi_IgnPhin_near[1] + IgPhi_IgnPhin_far[1]));
+            ans.push_back(-(wGPhin_wGnPhi_near[1] + wGPhin_wGnPhi_far[1]));
       }
       return ans;
    };
@@ -321,24 +321,24 @@ int main() {
          std::unordered_map<networkPoint*, double> data1, data2, data3, data4, data5, data6, data7, data8, data9, data10, data11, data12, data13;
          double max_abs_ign = 0;
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - (p->IgPhi_IgnPhin_near + p->IgPhi_IgnPhin_far);
+            auto d_igign = p->igign - (p->wGPhin_wGnPhi_near + p->wGPhin_wGnPhi_far);
             data1[p] = d_igign[0];
             data2[p] = d_igign[1];
             data3[p] = p->igign[0];
             data4[p] = p->igign[1];
             data5[p] = std::abs(d_igign[0] / p->igign[0]);
             data6[p] = std::abs(d_igign[1] / p->igign[1]);
-            data7[p] = p->IgPhi_IgnPhin_near[0] + p->IgPhi_IgnPhin_far[0];
-            data8[p] = p->IgPhi_IgnPhin_near[1] + p->IgPhi_IgnPhin_far[1];
-            data9[p] = p->IgPhi_IgnPhin_near[0];
-            data10[p] = p->IgPhi_IgnPhin_near[1];
-            data11[p] = p->IgPhi_IgnPhin_far[0];
-            data12[p] = p->IgPhi_IgnPhin_far[1];
+            data7[p] = p->wGPhin_wGnPhi_near[0] + p->wGPhin_wGnPhi_far[0];
+            data8[p] = p->wGPhin_wGnPhi_near[1] + p->wGPhin_wGnPhi_far[1];
+            data9[p] = p->wGPhin_wGnPhi_near[0];
+            data10[p] = p->wGPhin_wGnPhi_near[1];
+            data11[p] = p->wGPhin_wGnPhi_far[0];
+            data12[p] = p->wGPhin_wGnPhi_far[1];
             max_abs_ign = std::max(max_abs_ign, std::abs(p->igign[1]));
          }
 
          for (const auto& p : obj->getPoints()) {
-            auto d_igign = p->igign - (p->IgPhi_IgnPhin_near + p->IgPhi_IgnPhin_far);
+            auto d_igign = p->igign - (p->wGPhin_wGnPhi_near + p->wGPhin_wGnPhi_far);
             data13[p] = std::abs(d_igign[1] / max_abs_ign);
          }
 

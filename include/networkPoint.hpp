@@ -557,7 +557,8 @@ inline V_d networkPoint::getAngles(networkLine *const base_line) const {
 inline void networkPoint::setX(const Tddd &xyz_IN) {
    try {
       // this->pre_X = xyz_IN;
-      CoordinateBounds::setBounds(xyz_IN);
+      this->CoordinateBounds::setBounds(xyz_IN);
+      this->target4FMM::Xtarget = xyz_IN;
       for (const auto &l : this->getLines()) {
          // std::cout << "l = " << l << std::endl;
          l->setBoundsSingle();
@@ -661,6 +662,7 @@ inline V_netPp networkPoint::getNeighborsSort() const {
 // コンストラクタ
 inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, networkLine *xline_IN, networkFace *xface_IN)
     : network(network_IN),
+      target4FMM(xyz_IN),
       CoordinateBounds(xyz_IN /*CoordinateBoundsに暗黙に置換される*/),
       initialX(xyz_IN),
       signed_distance_vector({0., 0., 0.}),
@@ -670,7 +672,7 @@ inline networkPoint::networkPoint(Network *network_IN, const Tddd &xyz_IN, netwo
 };
 // 逆方向の立体角
 inline double networkPoint::getSolidAngle() const {
-   std::array<double, 3> normal;
+   std::array<double, 3> normal = {0., 0., 0.};
    double length = 0., count = 0.;
    for (const auto &f : this->Faces) {
       normal += f->normal;

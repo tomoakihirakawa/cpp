@@ -65,7 +65,7 @@ $`c _v=0.1,c _a=0.1`$としている．
 ---
 ### 🪼 `setCorrectionMatrix_gradient`について 
 
-[Morikawa et al. (2023)](https://doi.org/10.1016/j.jcpx.2023.100125)で紹介されていた，Randles and Libersky (1996)の勾配演算の精度を改善する行列を計算する．
+\cite{Morikawa2023}で紹介されていた，\cite{Randles1996}の勾配演算の精度を改善する行列を計算する．
 勾配の演算を修正する行列は，renormalization tensorと呼ばれ，
 よく$`i`$番目の粒子に対する修正行列は$`{\bf B} _i`$と書く．
 プログラム上では[SPH:grad_corr_M](./SPH0_setWall_Freesurface.hpp#L67)としている．
@@ -109,7 +109,7 @@ $`c _v=0.1,c _a=0.1`$としている．
 
 ⚠️ ラプラシアンの修正行列を計算するためには，先に`setCorrectionMatrix_gradient`を計算しておく必要がある．
 
-[./SPH0_setWall_Freesurface.hpp#L209](./SPH0_setWall_Freesurface.hpp#L209)
+[./SPH0_setWall_Freesurface.hpp#L220](./SPH0_setWall_Freesurface.hpp#L220)
 
 ---
 #### 🪸 `interp_normal_original`の計算 
@@ -118,17 +118,17 @@ $`c _v=0.1,c _a=0.1`$としている．
 そのため，流体粒子の影響半径よりも広い半径を使って，`q->interp_normal_original`の法線方向を計算することが，重要である．
 少し大きい半径を`captureRange`としている．
 
-[./SPH0_setWall_Freesurface.hpp#L393](./SPH0_setWall_Freesurface.hpp#L393)
+[./SPH0_setWall_Freesurface.hpp#L404](./SPH0_setWall_Freesurface.hpp#L404)
 
 #### 🪸 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算 
 
 `setCorrectionMatrix`で壁粒子の演算修正用行列を計算する．
 
-[./SPH0_setWall_Freesurface.hpp#L461](./SPH0_setWall_Freesurface.hpp#L461)
+[./SPH0_setWall_Freesurface.hpp#L472](./SPH0_setWall_Freesurface.hpp#L472)
 
 ### 🪼 壁面粒子の抽出と値の計算
 
-[./SPH0_setWall_Freesurface.hpp#L493](./SPH0_setWall_Freesurface.hpp#L493)
+[./SPH0_setWall_Freesurface.hpp#L504](./SPH0_setWall_Freesurface.hpp#L504)
 
 #### 🪸 `isCaptured`が`true`の壁面粒子の流速の計算 
 
@@ -138,7 +138,7 @@ $`c _v=0.1,c _a=0.1`$としている．
 q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 ```
 
-[./SPH0_setWall_Freesurface.hpp#L535](./SPH0_setWall_Freesurface.hpp#L535)
+[./SPH0_setWall_Freesurface.hpp#L546](./SPH0_setWall_Freesurface.hpp#L546)
 
 ---
 #### 🪸 `isCaptured`の決定 
@@ -146,26 +146,26 @@ q->U_SPH = Reflect(q->U_SPH, q->v_to_surface_SPH)
 法線方向`interp_normal_original`を使って，流体粒子に近くかつ向かい合う方向にある壁粒子を抽出する．
 計算に使用する壁粒子を決定し，使用する場合`isCaptured`を`true`にする．
 
-[./SPH0_setWall_Freesurface.hpp#L412](./SPH0_setWall_Freesurface.hpp#L412)
+[./SPH0_setWall_Freesurface.hpp#L423](./SPH0_setWall_Freesurface.hpp#L423)
 
 ---
 ### 🪼 流体の法線方向の計算と水面の判定
 
-[./SPH0_setWall_Freesurface.hpp#L634](./SPH0_setWall_Freesurface.hpp#L634)
+[./SPH0_setWall_Freesurface.hpp#L645](./SPH0_setWall_Freesurface.hpp#L645)
 
 #### 🪸 流体の法線方向の計算 
 
-✅ [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L780): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
+✅ [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L791): $`{\bf n} _i = {\rm Normalize}\left(-\sum _j {\frac{m _j}{\rho _j} \nabla W _{ij} }\right)`$
 
 単位法線ベクトルは，`interp_normal`としている．
 
-[./SPH0_setWall_Freesurface.hpp#L663](./SPH0_setWall_Freesurface.hpp#L663)
+[./SPH0_setWall_Freesurface.hpp#L674](./SPH0_setWall_Freesurface.hpp#L674)
 
 #### 🪸 水面の判定 
 
 水面の判定条件は，少し複雑である．
 
-[./SPH0_setWall_Freesurface.hpp#L972](./SPH0_setWall_Freesurface.hpp#L972)
+[./SPH0_setWall_Freesurface.hpp#L983](./SPH0_setWall_Freesurface.hpp#L983)
 
 ---
 ## ⛵ 粘性項$`\nabla^2 {\bf u} _i`$の計算（`calcLaplacianU`） 
@@ -267,7 +267,7 @@ p _i^{\rm new} = \frac{b + \sum _j A _{ij} p _j^{\rm old}}{\sum _j A _{ij}}
 
 水面においては，流速の発散ゼロ$`\nabla^{n+1} {\bf u}^{n+1}=0`$と$`p^{n+1}=0`$が満たされる必要がある．
 水面外部には，粒子がないので，求めた水面圧力は，ゼロであっても，圧力勾配は誤差を含み，$`\nabla^{n+1} {\bf u}^{n+1}=0`$は満足されない．
-そこで，[SPH:auxiliaryPoints](../../include/Network.hpp#L551)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
+そこで，[SPH:auxiliaryPoints](../../include/Network.hpp#L565)を水面外部に追加し，この点を適切計算することで，$`\nabla^{n+1} {\bf u}^{n+1}=0`$が満足されるように工夫する．
 --->
 
 [./SPH2_FindPressure.hpp#L7](./SPH2_FindPressure.hpp#L7)
@@ -360,7 +360,7 @@ ISPHのポアソン方程式を解く場合，[SPH:gmres](./SPH2_FindPressure.hp
 
 **NEW**
 
-- [SPH:wall_particle_velocity](./SPH0_setWall_Freesurface.hpp#L622)
+- [SPH:wall_particle_velocity](./SPH0_setWall_Freesurface.hpp#L633)
 - [SPH:how_to_use_b_vector_in_Poisson0](not found)
 - [SPH:how_to_use_b_vector_in_Poisson1](not found)
 - どのように[SPH:how_to_set_wall_b_vector](not found)/[SPH:how_to_set_fluid_b_vector](./SPH1_lap_div_U.hpp#L266)を作るか
@@ -370,15 +370,15 @@ ISPHのポアソン方程式を解く場合，[SPH:gmres](./SPH2_FindPressure.hp
 - [SPH:lapU_for_wall](./SPH1_lap_div_U.hpp#L264)
 - [SPH:setPoissonEquation](./SPH2_FindPressure.hpp#L126)
 - [SPH:whereToMakeTheEquation](./SPH2_FindPressure.hpp#L285)
-- [SPH:capture_condition_1st](./SPH0_setWall_Freesurface.hpp#L380)/[SPH:capture_condition_2nd](not found)
+- [SPH:capture_condition_1st](./SPH0_setWall_Freesurface.hpp#L391)/[SPH:capture_condition_2nd](not found)
 - [SPH:map_fluid_pressure_to_wall](not found)
-- [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L780)
+- [SPH:interp_normal](./SPH0_setWall_Freesurface.hpp#L791)
 - [SPH:reflection](./SPH_Functions.hpp#L489)
 
 **水面粒子**
 
 - [SPH:water_surface_pressure](not found)
-- [SPH:auxiliaryPoints](../../include/Network.hpp#L551)
+- [SPH:auxiliaryPoints](../../include/Network.hpp#L565)
 
 **その他**
 

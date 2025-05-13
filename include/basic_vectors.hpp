@@ -996,6 +996,7 @@ double Total(const std::vector<double> &V) {
       ret += v;
    return ret;
 };
+
 /* -------------------------------------------------------------------------- */
 
 double Mean(const Tdd &v) { return Total(v) / 2.; };

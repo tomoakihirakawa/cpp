@@ -5,6 +5,7 @@
     - [⛵ 逆離散フーリエ変換](#-逆離散フーリエ変換)
     - [⛵ 離散フーリエ変換によるデータの補間](#-離散フーリエ変換によるデータの補間)
     - [⛵ 畳み込み積分](#-畳み込み積分)
+        - [🪼 離散データの畳み込み積分](#-離散データの畳み込み積分)
 
 
 ---
@@ -44,20 +45,29 @@ $`c _n=\frac{a _n - i \mathrm{sgn}(n) b _n}{2}`$
 
 ## ⛵ 離散フーリエ変換（インデックス周期$`N`$のフーリエ変換） 
 
-次のような$`N`$個の離散データがあるとする．
-
-```cpp
-{1, 1, 2, 2, 1, 1, 0, 0}
-```
-
+$`N`$個の離散データ`{1, 1, 2, 2, 1, 1, 0, 0}`があるとする．
 これが，周期的に繰り返すとする．
 
 ```cpp
 {1, 1, 2, 2, 1, 1, 0, 0},{1, 1, 2, 2, 1, 1, 0, 0},{1, 1, 2, 2, 1, 1, 0, 0},...
 ```
-初めのデータを$`0`$番として数えると，$`N`$番目のデータは$`0`$番目のデータと等しいことになる．
-この無限に続く数字をフーリエ級数で表現するなら，$`0`$番目と$`N`$番目のデータは，級数を構成する三角関数の$`0`$と$`2\pi`$に対応させるのが自然だろう．
-つまり，dataとindex，angle，periodの対応は次のようになる．
+
+与えられたデータは離散的だが，
+これを連続で周期的な関数$`f(t)`$として表したい．
+また，データインデックス上では，対応する与えられたデータ値と一致させたい．
+つまり，$`i=2`$を関数に与えたら，2を返してほしい．これはいわば補間のようなものである．
+複素フーリエ級数展開によって，この願いを叶えるためには，
+$`c _0,...,c _{N-1}`$の$`N`$コの係数があればよい．
+
+```math
+f(t) = \sum _{n=0}^{N-1} c _n \exp(i n \omega^\ast t), \quad c _n = \int _{0}^{T^\ast} f(t) \exp(-i n \omega^\ast t) \, dt, \quad \omega^\ast = \frac{2\pi}{T^\ast}
+```
+
+ここでの添字の振り方は，初めのデータを$`0`$番として数えることにする．
+そう数えると周期性を仮定したので，$`N`$番目のデータは$`0`$番目のデータと等しいことになる．
+この無限に続く数字をフーリエ級数で表現すると，
+$`0`$番目と$`N`$番目のデータは，級数を構成する三角関数の$`0`$と$`2\pi`$に対応している．
+dataとindex，angle，periodの対応は次のようなイメージである．
 
 ```cpp
 data  : {1, 1, 2, ...,                               0, 0}, {1, 1, ...
@@ -88,11 +98,15 @@ $`T^\ast`$を$`N`$と置き換えた形になっている．
 時間軸ではなく，インデックス軸で積分しているようなものである．
 
 $`c _n`$は，$`c _n=c _{n+N}`$であり$`n`$に関して周期$`N`$の周期関数となっている．
-また$`\cos(\theta)=\cos(-\theta)`$であるため，$`\Re[c _n]=\Re[c _{-n}]`$で
-$`\sin(\theta)=-\sin(-\theta)`$であるため，$`\Im[c _n]=-\Im[c _{-n}]`$である．
+ただし，実部は偶関数で，虚部は奇関数である．
+なので，$`c _n=c _{-n}`$ではなく，$`c _n=\overline{c _{-n}}`$である．
+ただし，これは複素フーリエ変換の定義そのものの性質である．
 
-１周期分にあたる$`N`$コの係数ではなく，$`N/2`$コの係数さえわかれば元の関数を復元できる．
-後ろ半分の係数はプログラム中で保存する必要はない．
+```math
+c _n = \frac{a _0}{2}, \quad c _n = \frac{a _n - i b _n}{2}, \quad c _{-n} = \frac{a _n + i b _n}{2}, \quad c _{-n} = \overline{c _n}
+```
+
+なので，$`c _n`$を求めるさい，$`n=N/2`$より大きいインデックスの係数の計算は省略できる．
 
 ---
 
@@ -182,7 +196,56 @@ Frame -> All]
 (f \ast g)(t) = \int _{-\infty}^{\infty} dx f(x) g(t-x)
 ```
 
-の形の積分である．ここで，$`\ast`$は畳み込み積分を表す．離散データの畳み込み積分は，次のように計算できる．
+ここで，$`\ast`$は畳み込み積分を表す．
+畳み込み積分は，$`f`$と$`g`$のフーリエ変換を掛け合わせて逆フーリエ変換したものと等しい．
+畳み込み積分は，shiftに関する関数と捉えることができる．
+
+```Mathematica
+ClearAll["Global`*"];
+
+(*離散信号の定義*)
+f[x_] := Piecewise[{{1/2, 0 <= x}, {-1/2, True}}]
+g[x_] := Piecewise[{{1, -1 <= x <= 1}, {0, True}}]
+
+(*面白い例*)
+f[x_] := Sech[x]^2;
+g[x_] := HeavisideTheta[x] - 1/2;
+
+convolve[x_] = Integrate[f[T]*g[x - T], {T, -Infinity, Infinity}];
+
+(*convolve[x_]=Convolve[g[t],f[t],t,x];*)
+
+F[w_] = FourierTransform[f[x], x, w, FourierParameters -> {1, -1}];
+G[w_] = FourierTransform[g[x], x, w, FourierParameters -> {1, -1}];
+(*convolve[x_]=InverseFourierTransform[F[w]*G[w],w,x,\
+FourierParameters->{1,-1}];*)
+
+Manipulate[
+Plot[{f[x], g[shift - x], f[x]*g[shift - x], convolve[x]}, {x, -5,
+5}
+, AxesLabel -> {"x", ""}
+, PlotLegends -> {"f[x]", "g[shift-x]", "f[x]g[shift-x]",
+"convolve[x]"}
+, PlotLabel -> "shift=" <> ToString[shift]
+, PlotStyle -> {{Orange, Dashed}, {Orange, DotDashed}, Orange,
+Blue}
+, Filling -> {3 -> Axis}
+, FillingStyle -> Directive[Opacity[0.5], Blue]
+, PlotRange -> {{-5, 5}, {-1, 1}}
+, BaseStyle -> Black
+, Epilog -> {Black, Line[{{shift, -6}, {shift, 6}}]}]
+, {shift, -5, 5}]
+
+Export[FileNameJoin[{NotebookDirectory[],
+"sample_convolve.gif"}], %, "GIF", {"ImageSize" -> 700,
+"AnimationRepetitions" -> \[Infinity], "AnimationRate" -> 10}]
+```
+
+<img src="sample_convolve.gif" alt="sample_convolve.gif" width="700">
+
+### 🪼 離散データの畳み込み積分 
+
+離散データの畳み込み積分は，次のように計算できる．
 
 ```math
 (f \ast g) _j = \sum _{k=0}^{N-1} f _k g _{j-k}
@@ -228,7 +291,7 @@ Return[N@Table[len*MyInverseFourier[FourierGF, n], {n, 0, len - 1}]];
 ]
 ```
 
-![sample_conv.png](sample_conv.png)
+<img src="sample_descrete_convolve.gif" alt="sample_discrete_convolve.gif" width="700">
 
 (see `example0.nb`)
 

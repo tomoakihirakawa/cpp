@@ -66,7 +66,7 @@
 
 ### 🪼 読み込み `Network` 
 
-[Network::constructor](../../include/Network.hpp#L3606)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
+[Network::constructor](../../include/Network.hpp#L3552)では，引数として，**OFFファイル**または**OBJファイル**をあたえることができる．
 `Load3DFile`クラスを使ってデータを読み込み，`Network`クラスを作成している．
 
 ```cpp
@@ -317,7 +317,7 @@ make
 
 `data[0][0][0]`，`data[0][0][1]`，`data[0][1][0]`，`data[0][1][1]`，`data[1][0][0]`，`data[1][0][1]`，`data[1][1][0]`，`data[1][1][1]`．
 
-[buckets_generateTree](../../include/lib_spatial_partitioning.hpp#L134)は，
+[buckets_generateTree](../../include/lib_spatial_partitioning.hpp#L132)は，
 バウンディングボックスを範囲と，それを分割する幅を指定する．
 分割数を指定するよりも，この方法のように分割幅を指定する方が，自分はわかりやすい．
 
@@ -340,7 +340,7 @@ buckets[i][j][k] = std::make_shared<Buckets<T>>(bounds, this->dL * 0.5 + 1e-10);
 `Network`クラスは，`makeBucketPoints`でバケツ`BucketPoints`を準備し，内部に保存している点をバケツに保存する．
 同様に，`makeBucketFaces`でバケツを`BucketFaces`を準備し，内部に保存している面をバケツに保存する．
 
-要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2117)関数を使う．
+要素の接触や交差の判定には，[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2144)関数を使う．
 また，接触判定の高速化のために，空間分割を使う．
 
 ```shell
@@ -356,7 +356,7 @@ make
 ---
 ### 🪼 点から面までの最短ベクトル `Nearest` 
 
-[Nearest_](../../include/basic_geometry.hpp#L1652)関数は，点から面までの最短ベクトルを求める関数である．
+[Nearest_](../../include/basic_geometry.hpp#L1679)関数は，点から面までの最短ベクトルを求める関数である．
 
 ```shell
 sh clean
@@ -379,10 +379,10 @@ make
 ./example5_face2face_contact
 ```
 
-[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2117)関数は，交差判定には使えるが，接触判定には使えない．
+[basic_geometry:IntersectQ](../../include/basic_geometry.hpp#L2144)関数は，交差判定には使えるが，接触判定には使えない．
 オブジェクト同士の**接触**をプログラム上で定義するなら，互いの面において最も近くにある面同士の最短距離を計算が，ある閾値以下にあるときに接触しているとみなす方法が自然である．
 
-[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1958)関数は，面と面の最短距離を求める関数．
+[Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)](../../include/basic_geometry.hpp#L1985)関数は，面と面の最短距離を求める関数．
 重心座標付近を徐々に細かく探索して，より正確な最短距離を求める．探査範囲を狭めながらこれを繰り返す．
 `N=3`，4x4点で最短となる重心座標を求める．次に範囲を0.7倍に狭め，これを数十回繰り返す．
 

@@ -880,7 +880,8 @@ VV_d Bspline(const V_d &H, const V_d &q, const int K) {
 };
 
 double D_Bspline(const double h, const V_d &q, const int i, const int K) {
-   return (K - 1.) * (1. / (q[i + K - 1] - q[i]) * Bspline(h, q, i, K - 1) - 1. / (q[i + K] - q[i + 1]) * Bspline(h, q, i + 1, K - 1));
+   // return (K - 1.) * (1. / (q[i + K - 1] - q[i]) * Bspline(h, q, i, K - 1) - 1. / (q[i + K] - q[i + 1]) * Bspline(h, q, i + 1, K - 1));
+   return (K - 1.) * (Bspline(h, q, i, K - 1) / (q[i + K - 1] - q[i]) - Bspline(h, q, i + 1, K - 1) / (q[i + K] - q[i + 1]));
 };
 
 double D_Bspline(const double h, const V_d &q, const int i, const int K, const int n) {
@@ -891,7 +892,7 @@ double D_Bspline(const double h, const V_d &q, const int i, const int K, const i
          case 0:
             return Bspline(h, q, i, K);
          default:
-            return (K - 1) * (1. / (q[i + K - 1] - q[i]) * D_Bspline(h, q, i, K - 1, n - 1) - 1. / (q[i + K] - q[i + 1]) * D_Bspline(h, q, i + 1, K - 1, n - 1));
+            return (K - 1) * (D_Bspline(h, q, i, K - 1, n - 1) / (q[i + K - 1] - q[i]) - D_Bspline(h, q, i + 1, K - 1, n - 1) / (q[i + K] - q[i + 1]));
       };
    };
 };
@@ -930,15 +931,17 @@ V_d UniformKnots(const int size, const int K) {
 V_d OpenUniformKnots(V_d h, const int K) {
    int s(h.size());
    V_d q(s + K);
-   double EPS = 1E-15;
+   const double EPS = 1E-14;
    *h.begin() -= EPS;
    *h.rbegin() += EPS;
-   for (auto i = 0; i < K; i++) {
-      q[i] = h[0] - EPS * (i - K + 1.);
-      q[i + s] = h[s - 1] + EPS * i;
+   for (auto i = 0; i < K; ++i) {
+      // q[i] = h[0] - EPS * (i - K + 1.);
+      q[i] = std::fma(-EPS, static_cast<double>(i - K + 1.), h[0]);
+      // q[i + s] = h[s - 1] + EPS * i;
+      q[i + s] = std::fma(EPS, static_cast<double>(i), h[s - 1]);
    }
    for (auto i = 0; i < s - K; i++)
-      q[i + K] = (h[i] + h[(i + K)]) / 2.;
+      q[i + K] = (h[i] + h[(i + K)]) * 0.5;
 
    return q;
 };

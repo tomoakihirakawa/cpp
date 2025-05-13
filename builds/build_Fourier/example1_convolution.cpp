@@ -8,7 +8,56 @@
 (f \ast g)(t) = \int_{-\infty}^{\infty} dx f(x) g(t-x)
 ```
 
-の形の積分である．ここで，$`\ast`$は畳み込み積分を表す．離散データの畳み込み積分は，次のように計算できる．
+ここで，$`\ast`$は畳み込み積分を表す．
+畳み込み積分は，$`f`$と$`g`$のフーリエ変換を掛け合わせて逆フーリエ変換したものと等しい．
+畳み込み積分は，shiftに関する関数と捉えることができる．
+
+```Mathematica
+ClearAll["Global`*"];
+
+(*離散信号の定義*)
+f[x_] := Piecewise[{{1/2, 0 <= x}, {-1/2, True}}]
+g[x_] := Piecewise[{{1, -1 <= x <= 1}, {0, True}}]
+
+(*面白い例*)
+f[x_] := Sech[x]^2;
+g[x_] := HeavisideTheta[x] - 1/2;
+
+convolve[x_] = Integrate[f[T]*g[x - T], {T, -Infinity, Infinity}];
+
+(*convolve[x_]=Convolve[g[t],f[t],t,x];*)
+
+F[w_] = FourierTransform[f[x], x, w, FourierParameters -> {1, -1}];
+G[w_] = FourierTransform[g[x], x, w, FourierParameters -> {1, -1}];
+(*convolve[x_]=InverseFourierTransform[F[w]*G[w],w,x,\
+FourierParameters->{1,-1}];*)
+
+Manipulate[
+ Plot[{f[x], g[shift - x], f[x]*g[shift - x], convolve[x]}, {x, -5,
+   5}
+  , AxesLabel -> {"x", ""}
+  , PlotLegends -> {"f[x]", "g[shift-x]", "f[x]g[shift-x]",
+    "convolve[x]"}
+  , PlotLabel -> "shift=" <> ToString[shift]
+  , PlotStyle -> {{Orange, Dashed}, {Orange, DotDashed}, Orange,
+    Blue}
+  , Filling -> {3 -> Axis}
+  , FillingStyle -> Directive[Opacity[0.5], Blue]
+  , PlotRange -> {{-5, 5}, {-1, 1}}
+  , BaseStyle -> Black
+  , Epilog -> {Black, Line[{{shift, -6}, {shift, 6}}]}]
+ , {shift, -5, 5}]
+
+Export[FileNameJoin[{NotebookDirectory[],
+   "sample_convolve.gif"}], %, "GIF", {"ImageSize" -> 700,
+  "AnimationRepetitions" -> \[Infinity], "AnimationRate" -> 10}]
+```
+
+<img src="sample_convolve.gif" alt="sample_convolve.gif" width="700">
+
+### 離散データの畳み込み積分
+
+離散データの畳み込み積分は，次のように計算できる．
 
 ```math
 (f \ast g)_j = \sum_{k=0}^{N-1} f_k g_{j-k}
@@ -54,7 +103,7 @@ Return[N@Table[len*MyInverseFourier[FourierGF, n], {n, 0, len - 1}]];
 ]
 ```
 
-![sample_conv.png](sample_conv.png)
+<img src="sample_descrete_convolve.gif" alt="sample_discrete_convolve.gif" width="700">
 
 (see `example0.nb`)
 

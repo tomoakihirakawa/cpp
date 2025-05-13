@@ -335,35 +335,29 @@ int main() {
 
          for (const auto &f : net_peaks->getFaces()) {
             auto X012 = ToX(f->getPoints());
-            // auto quadpoints = DodecaPoints(f, f->getPoints()[0], [&](const networkLine *l) { return l->getFaces().size() >= 2; });
-            auto quadpoints = DodecaPoints(f, f->getPoints()[0], [&](const networkLine *l) { return l->getFaces().size() >= 2; });
-            for (const auto &[t0, t1, ww] : __array_GW10xGW10__) {
-
+            auto dodecapoints = DodecaPoints(f, f->getPoints()[0], [&](const networkLine *l) { return l->getFaces().size() >= 2; });
+            for (const auto &[t0, t1, ww] : __array_GW6xGW6__) {
                //@ 線形補間
                N = ModTriShape<3>(t0, t1);
-               tmp0 = ww * Norm(Cross(X012[1] - X012[0], X012[2] - X012[0])) * (1 - t0);
-
+               auto quadrature_weight = ww * (1 - t0);
+               tmp0 = quadrature_weight * Norm(Cross(X012[1] - X012[0], X012[2] - X012[0]));
                //@ 擬2次補間
                auto [xi0, xi1, xi2] = N;
-               tmp1 = ww * Norm(quadpoints.cross(xi0, xi1)) * (1 - t0);
-
+               tmp1 = quadrature_weight * Norm(dodecapoints.cross(xi0, xi1));
                //@ 厳密な外積を使って積分した場合
                {
                   auto [x, y, z] = Dot(N, X012);
                   auto DX0 = Dot(D_TriShape<3, 1, 0>(xi0, xi1), X012);
                   auto DX1 = Dot(D_TriShape<3, 0, 1>(xi0, xi1), X012);
-                  DX0[2] = 0.;
-                  DX1[2] = 0.;
-                  tmp2 = ww * exact_norm_cross(x, y) * Norm(Cross(DX0, DX1)) * (1 - t0);
+                  DX0[2] = DX1[2] = 0.;
+                  tmp2 = quadrature_weight * exact_norm_cross(x, y) * Norm(Cross(DX0, DX1));
                }
-               //
                {
-                  auto [x, y, z] = quadpoints.X(xi0, xi1);
-                  auto DX0 = quadpoints.D_X<1, 0>(xi0, xi1);
-                  auto DX1 = quadpoints.D_X<0, 1>(xi0, xi1);
-                  DX0[2] = 0.;
-                  DX1[2] = 0.;
-                  tmp3 = ww * exact_norm_cross(x, y) * Norm(Cross(DX0, DX1)) * (1 - t0);
+                  auto [x, y, z] = dodecapoints.X(xi0, xi1);
+                  auto DX0 = dodecapoints.D_X<1, 0>(xi0, xi1);
+                  auto DX1 = dodecapoints.D_X<0, 1>(xi0, xi1);
+                  DX0[2] = DX1[2] = 0.;
+                  tmp3 = quadrature_weight * exact_norm_cross(x, y) * Norm(Cross(DX0, DX1));
                }
                integrate_linear += tmp0;
                integrate_pseudo += tmp1;

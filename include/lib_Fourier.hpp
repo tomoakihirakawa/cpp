@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <complex>
+#include <execution>  // C++17以上
+#include <numeric>    // for std::transform_reduce
 #include <vector>
 
 /* -------------------------------------------------------------------------- */
@@ -151,13 +153,62 @@ std::vector<std::complex<double>> DFT(const std::vector<T>& sample) {
    std::complex<double> sum = 0;
    double c;
    for (int n = 0; n < s; ++n) {
-      sum = 0;
-      c = -n * 2 * M_PI / s;
-      for (int k = 0; k <= s - 1; ++k)
-         sum += sample[k] * std::polar(1.0, c * k);
+      c = -n * 2. * M_PI / s;
+
+      // sum = 0;
+      // for (int k = 0; k <= s - 1; ++k)
+      //    sum += sample[k] * std::polar(1.0, c * k);  //! sampleが複素数の場合に対応するためpolarの引数としてsampleは渡せない
+
+      std::complex<double> sum = std::transform_reduce(std::execution::par_unseq, sample.begin(), sample.end(), std::complex<double>{0},
+                                                       std::plus<>(),
+                                                       [&](const auto& val) {
+                                                          int k = &val - &sample[0];            //! これはポインタの差分でkを求める方法
+                                                          return val * std::polar(1.0, c * k);  //! sampleが複素数の場合に対応するためpolarの引数としてsampleは渡せない
+                                                       });
       result[n] = sum / static_cast<double>(s);
    }
    return result;
+}
+
+template <typename T>
+std::vector<std::vector<std::complex<double>>> DFT(const std::vector<std::vector<T>>& sample2D) {
+   //! sample can be real or complex
+   int N = sample2D.size();     //! 行
+   int M = sample2D[0].size();  //! 列
+   std::vector<std::vector<std::complex<double>>> result(N, std::vector<std::complex<double>>(M));
+   std::complex<double> sum = 0;
+   double cx, cy;
+   /*
+   for (int n = 0; n < N; ++n)
+      for (int m = 0; m < M; ++m) {
+         sum = 0;
+         cx = -n * 2 * M_PI / N;
+         cy = -m * 2 * M_PI / M;
+         for (int k = 0; k <= N - 1; ++k)
+            for (int j = 0; j <= M - 1; ++j)
+               sum += std::polar(sample2D[k][j], cx * k + cy * j);
+         result[n][m] = sum / static_cast<double>(N * M);
+      }
+   return result;
+   */
+   // 上のようにまとめてDFTを行うと，O(N^2M^2)の計算量になり，計算効率が悪い．
+   // このように2Dの場合は，行ごとにDFTを行い，次に列ごとにDFTを行うのが良い．
+   std::vector<std::vector<std::complex<double>>> cn2D(N, std::vector<std::complex<double>>(M));
+   std::vector<std::vector<std::complex<double>>> cn2Dtmp(N, std::vector<std::complex<double>>(M));
+   // ! x方向のフーリエ変換
+   for (int i = 0; i < N; ++i)
+      cn2D[i] = DFT(sample2D[i]);  //! 長さM
+   // ! y方向のフーリエ変換 cn2D[;;][j]
+   for (int j = 0; j < M; ++j) {
+      std::vector<std::complex<double>> cn_j(N);
+      for (int i = 0; i < N; ++i)
+         cn_j[i] = cn2D[i][j];  //! 長さN
+      cn_j = DFT(cn_j);         //! 長さN
+      for (int i = 0; i < N; ++i)
+         cn2Dtmp[i][j] = cn_j[i];
+   }
+   // ! cn2Dtmp[;;][j]をcn2D[;;][j]にコピー
+   return cn2Dtmp;
 }
 
 template <typename T, size_t N>
@@ -195,6 +246,32 @@ std::vector<std::complex<double>> InverseDFT(const std::vector<T>& sample) {
       result[n] = sum * (double)s;
    }
    return result;
+}
+
+template <typename T>
+std::vector<std::vector<std::complex<double>>> InverseDFT(const std::vector<std::vector<T>>& sample2D) {
+   //! sample can be real or complex
+   int N = sample2D.size();     //! 行
+   int M = sample2D[0].size();  //! 列
+   std::vector<std::vector<std::complex<double>>> result(N, std::vector<std::complex<double>>(M));
+   std::complex<double> sum = 0;
+   double cx, cy;
+   std::vector<std::vector<std::complex<double>>> cn2D(N, std::vector<std::complex<double>>(M));
+   std::vector<std::vector<std::complex<double>>> cn2Dtmp(N, std::vector<std::complex<double>>(M));
+   // ! x方向のフーリエ変換
+   for (int i = 0; i < N; ++i)
+      cn2D[i] = InverseDFT(sample2D[i]);  //! 長さM
+   // ! y方向のフーリエ変換 cn2D[;;][j]
+   for (int j = 0; j < M; ++j) {
+      std::vector<std::complex<double>> cn_j(N);
+      for (int i = 0; i < N; ++i)
+         cn_j[i] = cn2D[i][j];  //! 長さN
+      cn_j = InverseDFT(cn_j);  //! 長さN
+      for (int i = 0; i < N; ++i)
+         cn2Dtmp[i][j] = cn_j[i];
+   }
+   // ! cn2Dtmp[;;][j]をcn2D[;;][j]にコピー
+   return cn2Dtmp;
 }
 
 template <typename T, size_t N>

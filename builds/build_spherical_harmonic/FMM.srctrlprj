@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<config>
+    <source_groups>
+        <source_group_542ef5eb-38a6-42da-bdbb-11180c7e04ea>
+            <cpp_standard>c++17</cpp_standard>
+            <cross_compilation>
+                <target>
+                    <abi>unknown</abi>
+                    <arch>x86_64</arch>
+                    <sys>unknown</sys>
+                    <vendor>unknown</vendor>
+                </target>
+                <target_options_enabled>0</target_options_enabled>
+            </cross_compilation>
+            <header_search_paths>
+                <header_search_path>../../include</header_search_path>
+            </header_search_paths>
+            <name>C++ Source Group</name>
+            <pch_flags>
+                <use_compiler_flags>1</use_compiler_flags>
+            </pch_flags>
+            <source_extensions>
+                <source_extension>.cpp</source_extension>
+                <source_extension>.cxx</source_extension>
+                <source_extension>.cc</source_extension>
+                <source_extension>.hpp</source_extension>
+                <source_extension>.h</source_extension>
+            </source_extensions>
+            <source_paths>
+                <source_path>test_translation_of_a_multipole_expansion_with_tree_20240818.cpp</source_path>
+                <source_path>../../include/basic_alias.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_array_operations.hpp</source_path>
+                <source_path>../../include/basic_arithmetic_vector_operations.hpp</source_path>
+                <source_path>../../include/basic_constants.hpp</source_path>
+                <source_path>../../include/basic_exception.hpp</source_path>
+                <source_path>../../include/basic_geometry.hpp</source_path>
+                <source_path>../../include/basic_IO.hpp</source_path>
+                <source_path>../../include/basic_linear_systems.hpp</source_path>
+                <source_path>../../include/basic_mathematical_functions.hpp</source_path>
+                <source_path>../../include/basic_statistics.hpp</source_path>
+                <source_path>../../include/basic_vectors.hpp</source_path>
+                <source_path>../../include/basic.hpp</source_path>
+                <source_path>../../include/lib_Fourier.hpp</source_path>
+                <source_path>../../include/lib_measurement.hpp</source_path>
+                <source_path>../../include/lib_multipole_expansion_constants.hpp</source_path>
+                <source_path>../../include/lib_multipole_expansion.hpp</source_path>
+                <source_path>../../include/lib_spatial_partitioning.hpp</source_path>
+                <source_path>../../include/Network.hpp</source_path>
+                <source_path>../../include/NetworkCommon.hpp</source_path>
+                <source_path>../../include/networkFace.hpp</source_path>
+                <source_path>../../include/networkLine.hpp</source_path>
+                <source_path>../../include/networkPoint.hpp</source_path>
+                <source_path>../../include/networkTetra.hpp</source_path>
+            </source_paths>
+            <status>enabled</status>
+            <type>C++ Source Group</type>
+        </source_group_542ef5eb-38a6-42da-bdbb-11180c7e04ea>
+    </source_groups>
+    <version>8</version>
+</config>
