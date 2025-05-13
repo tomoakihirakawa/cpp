@@ -81,7 +81,7 @@ WARNING: テンプレート型`T`のオブジェクトは，予め`getX()`を使
 // Buckets is derived from CoordinateBounds
 // N <= 8, 10だと破綻することがあった．
 //! ./fast ./input_files/Goring1979_DT0d05_MESHwater0d04refined.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
-template <typename T, int N = 12>
+template <typename T, int N = 15>
 struct Buckets : public CoordinateBounds {
 
    Moments<N> MomentsMultipoleExpansion;
