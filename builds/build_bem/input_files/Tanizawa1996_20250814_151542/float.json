@@ -1,0 +1,29 @@
+{
+    "name": "float",
+    "type": "RigidBody",
+    "objfile": "/Users/tomoaki/Dropbox/code/cpp/obj/Tanizawa1996/float.obj",
+    "isFixed": false,
+    "velocity": "floating",
+    "mass": 184.3,
+    "COM": [
+        0.0,
+        0.0,
+        4.47
+    ],
+    "MOI": [
+        13040.330800000003,
+        13.040330800000003,
+        13040.330800000003
+    ],
+    "spring": [
+        0.0,
+        0.0,
+        4.47,
+        -2.0,
+        0.0,
+        4.47,
+        51.0,
+        0.0,
+        0.0
+    ]
+}

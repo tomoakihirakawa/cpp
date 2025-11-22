@@ -1,0 +1,9 @@
+# /bin/bash
+
+rm -r ./CMakeFiles
+rm -r ./CMakeCache.txt
+rm -r ./cmake*
+rm -r ./Makefile
+rm -r ./.ninja
+
+ccache -C

@@ -1,0 +1,7 @@
+{
+    "name": "tank",
+    "type": "RigidBody",
+    "objfile": "/Users/tomoaki/Dropbox/code/cpp/obj/Tanizawa1996/tank.obj",
+    "isFixed": true,
+    "velocity": "fixed"
+}

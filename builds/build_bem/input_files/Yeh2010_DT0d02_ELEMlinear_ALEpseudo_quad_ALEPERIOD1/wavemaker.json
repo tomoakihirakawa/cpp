@@ -1,0 +1,11 @@
+{
+    "name": "wavemaker",
+    "type": "RigidBody",
+    "velocity": [
+        "Goring1979",
+        1.0,
+        0.01696,
+        0.06
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Yeh2010//wavemaker.obj"
+}

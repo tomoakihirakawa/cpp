@@ -1,0 +1,6 @@
+{
+    "name": "wall",
+    "type": "RigidBody",
+    "isFixed": true,
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/AkitaHarbor/wall.obj"
+}

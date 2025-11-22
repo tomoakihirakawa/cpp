@@ -1,0 +1,15 @@
+{
+  "size": "medium",
+  "price": 15.67,
+  "toppings": ["mushrooms", "pepperoni", "basil"],
+  "extra_cheese": false,
+  "delivery": true,
+  // "name": "今の所オブジェクトリテラルに，オブジェクトリテラルを含めることは許していない",
+  "name": { "asda": 1 },
+  "phone": null,
+  "email": "janedoe@email.com",
+  "rotation": [0, 0, 0],
+  "scale": [0, 0, 0],
+  "mooring": ["simple_mooring",[10, 0.1, 0],[10, 0.1, 0]],
+  "translate": [10, 0.1, 0]
+}

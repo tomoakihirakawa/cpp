@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Buckets",
+  "command": "/opt/homebrew/bin/g++-14  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++2b -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -o CMakeFiles/example2_tree_rebin.dir/example2_tree_rebin.cpp.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Buckets/example2_tree_rebin.cpp",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Buckets/example2_tree_rebin.cpp",
+  "output": "CMakeFiles/example2_tree_rebin.dir/example2_tree_rebin.cpp.o"
+}
+]

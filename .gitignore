@@ -1,0 +1,105 @@
+# =========================
+# 1. OS & Editor (Environment)
+# =========================
+.DS_Store
+.vscode/
+*.code-workspace
+*~
+#*#
+.directory
+
+# =========================
+# 2. Build Artifacts (C++/CMake)
+# =========================
+# ビルドディレクトリ
+build/
+cmake-build-*/
+
+# コンパイル生成物
+*.o
+*.obj
+*.a
+*.lib
+*.dylib
+*.dll
+*.so
+*.exe
+*.out
+main
+main.dSYM/
+
+# CMakeの一時ファイル
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# プリコンパイル済みヘッダーなど
+*.gch
+include/-Wall
+include/pch.hpp.gch
+
+# =========================
+# 3. Python & Scripts
+# =========================
+__pycache__/
+*.pyc
+micropython/
+# ルートにある一時的なスクリプトを無視したい場合のみ有効化してください
+# /*.py
+# /*.sh
+rsync*.sh
+
+# =========================
+# 4. Simulation Outputs (Large Files)
+# =========================
+# ログ
+*.log
+
+# 可視化・解析データ (VTK, etc.)
+*.vtk
+*.vtu
+*.vtp
+*.csv
+*.nb
+
+# 動画・重いメディア
+*.mov
+*.avi
+*.key
+*.gif
+
+# outputフォルダは無視するが、画像(png/gif)は残す設定
+output*/
+!output*.png
+!output*.gif
+!sample*.gif
+!example*.gif
+!WATCHME.gif
+!schematic*.gif
+
+# =========================
+# 5. Specific Data Management (Allowlist)
+# =========================
+# objフォルダ内は基本無視するが、特定の過去データフォルダだけはGit管理する
+obj/*
+!obj/Kramer2021_*/
+!obj/2023Tanabe*/
+!obj/tsukada2022_*/
+
+# =========================
+# 6. Documentation & Temp
+# =========================
+temp/
+tmp/
+# ドキュメントの生成結果(HTML)は無視、ソースは管理
+docs/site/
+*.html
+
+# =========================
+# DANGEROUS - DO NOT UNCOMMENT
+# =========================
+# 以下はGitの管理システム自体を破壊するため削除しました
+# .git
+# .gitignore
+# .*

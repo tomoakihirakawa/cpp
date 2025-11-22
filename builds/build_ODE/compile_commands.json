@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_ODE",
+  "command": "/opt/homebrew/bin/g++-14  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++2b -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -o CMakeFiles/example_DampedHarmonicOscillator.dir/example_DampedHarmonicOscillator.cpp.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_ODE/example_DampedHarmonicOscillator.cpp",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_ODE/example_DampedHarmonicOscillator.cpp",
+  "output": "CMakeFiles/example_DampedHarmonicOscillator.dir/example_DampedHarmonicOscillator.cpp.o"
+}
+]

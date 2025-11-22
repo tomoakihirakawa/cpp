@@ -1,0 +1,16 @@
+{
+    "filename": "wavemaker.json",
+    "name": "wavemaker",
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../../../code/cpp/obj/Tanizawa1996/wavemaker.obj",
+    "type": "RigidBody",
+    "velocity": [
+        "piston_using_wave_length",
+        0.0,
+        0.025,
+        1.8,
+        4.5,
+        1,
+        0,
+        0
+    ]
+}

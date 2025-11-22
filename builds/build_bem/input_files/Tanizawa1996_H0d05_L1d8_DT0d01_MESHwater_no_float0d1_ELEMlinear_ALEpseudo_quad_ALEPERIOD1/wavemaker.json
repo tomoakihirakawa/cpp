@@ -1,0 +1,14 @@
+{
+    "name": "wavemaker",
+    "type": "SoftBody",
+    "isFixed": true,
+    "velocity": [
+        "velocity_using_wave_length",
+        0.0,
+        0.025,
+        1.8,
+        4.5,
+        4.5
+    ],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/../../..//cpp/obj/Tanizawa1996/wavemaker_no_float.obj"
+}

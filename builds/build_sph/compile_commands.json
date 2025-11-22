@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph",
+  "command": "/opt/homebrew/bin/g++-14  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++2b -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -o CMakeFiles/main.dir/main.cpp.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/main.cpp",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_sph/main.cpp",
+  "output": "CMakeFiles/main.dir/main.cpp.o"
+}
+]

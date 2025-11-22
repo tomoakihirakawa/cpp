@@ -1,0 +1,28 @@
+{
+    "max_dt": 0.01,
+    "end_time": 30,
+    "end_time_step": 20000,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": 1,
+    "WATER_DENSITY": 1000.0,
+    "GRAVITY": 9.81,
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "absorber1.json",
+        "absorber2.json",
+        "float.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json"
+    ],
+    "output_directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/python/GUI_for_simulation_inputfiles/input_files/Tanizawa1996_20250814_151542/output"
+}

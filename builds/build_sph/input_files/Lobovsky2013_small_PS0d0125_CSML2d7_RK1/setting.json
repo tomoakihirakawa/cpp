@@ -1,0 +1,20 @@
+{
+    "RK_order": 1,
+    "max_dt": 0.0004,
+    "end_time_step": 500000,
+    "end_time": 5,
+    "CSML": 2.7,
+    "initial_surface_z_position": 0.6,
+    "particle_spacing": 0.0125,
+    "output_directory": "/Users/tomoaki/SPH/Lobovsky2013_small_PS0d0125_CSML2d7_RK1",
+    "input_files": [
+        "wavetank.json",
+        "water.json",
+        "gate.json",
+        "sensor1.json",
+        "sensor2.json",
+        "sensor2L.json",
+        "sensor3.json",
+        "sensor4.json"
+    ]
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" ByteOrder="LittleEndian">
+  <Collection>
+    <DataSet file="./remesh_test_cases/randomA0.vtu" group="" part="0" timestep="0.000000"/>
+    <DataSet file="./remesh_test_cases/randomA1.vtu" group="" part="0" timestep="1.000000"/>
+    <DataSet file="./remesh_test_cases/randomA2.vtu" group="" part="0" timestep="2.000000"/>
+    <DataSet file="./remesh_test_cases/randomA3.vtu" group="" part="0" timestep="3.000000"/>
+    <DataSet file="./remesh_test_cases/randomA4.vtu" group="" part="0" timestep="4.000000"/>
+    <DataSet file="./remesh_test_cases/randomA5.vtu" group="" part="0" timestep="5.000000"/>
+    <DataSet file="./remesh_test_cases/randomA6.vtu" group="" part="0" timestep="6.000000"/>
+    <DataSet file="./remesh_test_cases/randomA7.vtu" group="" part="0" timestep="7.000000"/>
+    <DataSet file="./remesh_test_cases/randomA8.vtu" group="" part="0" timestep="8.000000"/>
+    <DataSet file="./remesh_test_cases/randomA9.vtu" group="" part="0" timestep="9.000000"/>
+    <DataSet file="./remesh_test_cases/randomA10.vtu" group="" part="0" timestep="10.000000"/>
+  </Collection>
+</VTKFile>

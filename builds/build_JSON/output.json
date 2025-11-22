@@ -1,0 +1,17 @@
+{
+    ",phone": "null",
+    "//name": "今の所オブジェクトリテラルに，オブジェクトリテラルを含めることは許していない",
+    "[10,0.1,0]],translate": ["10","0.1","0"],
+    "delivery": "true",
+    "email": "janedoe@email.com",
+    "extra_cheese": "false",
+    "mooring": ["simple_mooring","[10","0.1","0"],
+    "name": "{asda:1",
+    "phone": [],
+    "price": "10.",
+    "rotation": ["0","0","0"],
+    "scale": ["0","0","0"],
+    "size": "medium",
+    "toppings": ["mushrooms","pepperoni","basil"],
+    "translate": []
+}

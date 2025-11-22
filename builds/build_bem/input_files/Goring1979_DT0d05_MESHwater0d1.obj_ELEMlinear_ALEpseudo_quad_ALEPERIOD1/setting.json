@@ -1,0 +1,17 @@
+{
+    "max_dt": 0.05,
+    "end_time_step": 100000,
+    "end_time": 20,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Volumes/home/BEM/Goring1979//Goring1979_DT0d05_MESHwater0d1.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json"
+    ]
+}

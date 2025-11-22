@@ -1,0 +1,25 @@
+{
+    "max_dt": 0.1,
+    "end_time_step": 20000,
+    "end_time": 30,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Tanizawa1996_H0d05_T1d0_DT0d1_MESHwater_no_float0d07_ELEMlinear_ALElinear_ALEPERIOD1_no_float",
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "wavemaker.json",
+        "absorber.json",
+        "gauge0.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json",
+        "gauge4.json",
+        "gauge5.json",
+        "gauge6.json",
+        "gauge7.json",
+        "gauge8.json",
+        "gauge9.json"
+    ]
+}

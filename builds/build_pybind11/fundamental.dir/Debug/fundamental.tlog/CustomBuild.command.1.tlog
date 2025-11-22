@@ -1,0 +1,10 @@
+^\\MAC\DROPBOX\MARKDOWN\CPP\BUILDS\BUILD_PYBIND11\CMAKELISTS.TXT
+setlocal
+C:\Users\tomoaki\AppData\Local\Programs\Python\Python39\Lib\site-packages\cmake\data\bin\cmake.exe -S//mac/Dropbox/markdown/cpp/builds/build_pybind11 -B//mac/Dropbox/markdown/cpp/builds/build_pybind11 --check-stamp-file //mac/Dropbox/markdown/cpp/builds/build_pybind11/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

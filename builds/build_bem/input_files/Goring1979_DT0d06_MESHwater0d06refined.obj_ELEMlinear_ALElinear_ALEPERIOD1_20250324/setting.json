@@ -1,0 +1,17 @@
+{
+    "max_dt": 0.06,
+    "end_time_step": 100000,
+    "end_time": 20,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/Users/tomoaki/BEM/Goring1979_DT0d06_MESHwater0d06refined.obj_ELEMlinear_ALElinear_ALEPERIOD1_20250324",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json"
+    ]
+}

@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_opencl",
+  "command": "/opt/homebrew/bin/g++-14  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++23 -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -fopenmp -o CMakeFiles/simple_element_wise_add20250804.dir/simple_element_wise_add20250804.cpp.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_opencl/simple_element_wise_add20250804.cpp",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_opencl/simple_element_wise_add20250804.cpp",
+  "output": "CMakeFiles/simple_element_wise_add20250804.dir/simple_element_wise_add20250804.cpp.o"
+}
+]

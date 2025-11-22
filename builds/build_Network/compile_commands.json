@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Network",
+  "command": "/opt/homebrew/bin/g++-14  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++2b -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -o CMakeFiles/example0_manipulation_tetrahedron.dir/example0_manipulation_tetrahedron.cpp.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Network/example0_manipulation_tetrahedron.cpp",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_Network/example0_manipulation_tetrahedron.cpp",
+  "output": "CMakeFiles/example0_manipulation_tetrahedron.dir/example0_manipulation_tetrahedron.cpp.o"
+}
+]

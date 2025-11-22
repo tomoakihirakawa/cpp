@@ -1,0 +1,33 @@
+# /bin/bash
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/water300.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 water 300
+
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018/pole.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018/ pole 200
+./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/tank.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/ tank 100
+./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/water.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/ water 300
+./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/float.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_pos0d076/ float 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/float.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/ float 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/water.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/ water 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/tank.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Gu2018Float1_offset_neg0d074/ tank 100
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/wavemaker.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 wavemaker 100
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/tank.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 tank 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/floatingbodyA.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 floatingbodyA 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/floatingbodyB.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 floatingbodyB 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200/floatingbodyC.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d200 floatingbodyC 50
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/wavemaker.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 wavemaker 100
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/water.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 water 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/tank.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 tank 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/floatingbodyA.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 floatingbodyA 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/floatingbodyB.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 floatingbodyB 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100/floatingbodyC.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/three_d100 floatingbodyC 50
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100/water.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100 water 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100/floatingbodyB.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100 floatingbodyB 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100/floatingbodyC.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d100 floatingbodyC 50
+
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200/water.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200 water 300
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200/floatingbodyB.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200 floatingbodyB 50
+# ./main /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200/floatingbodyC.obj /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/2022Tonegawa/two_d200 floatingbodyC 50

@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem",
+  "command": "/opt/homebrew/bin/g++-15  -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../include -I/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/../../include -F/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -O3 -DNDEBUG -std=gnu++2b -arch arm64 -fopenmp -march=native -funroll-loops -fconcepts -pthread -O3 -o CMakeFiles/main.dir/Unity/unity_0_cxx.cxx.o -c /Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/CMakeFiles/main.dir/Unity/unity_0_cxx.cxx",
+  "file": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/builds/build_bem/CMakeFiles/main.dir/Unity/unity_0_cxx.cxx",
+  "output": "CMakeFiles/main.dir/Unity/unity_0_cxx.cxx.o"
+}
+]

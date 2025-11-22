@@ -1,0 +1,16 @@
+{
+    "max_dt": 0.1,
+    "end_time_step": 100000,
+    "end_time": 35,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": "1",
+    "output_directory": "/Volumes/home/BEM/benchmark20250501/Ruehl2016_DT0d1_MESHwater0d15.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1_Trial09",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "wg3.json",
+        "wg6.json"
+    ]
+}
