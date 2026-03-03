@@ -1,8 +1,0 @@
-# /bin/bash
-
-rm -r ./CMake*
-rm -r ./cmake*
-rm -r ./Makefile
-rm -r ./.ninja
-
-ccache -C

@@ -1,102 +1,68 @@
 # =========================
-# Executables (no extension)
+# Whitelist approach: ignore everything, then allow specific files
 # =========================
-main_time_domain
-main_time_domain_*
-main_freq_domain
-main_freq_domain*
-main_frequency_domain
-main_metal_test
-frequency_domain_test
-network_integrity_check
-FourierM2L_double
-SimpleM2L
-LapackLU
-fast
-middle
-horikawa
-tonegawa
-bench_*
-test_*
+
+# Ignore everything by default
+*
 
 # =========================
-# Build system
+# Allow: source code
 # =========================
-build.ninja
-.ninja_deps
-.ninja_log
-.cache/
-.ccache/
-compile_commands.json
+!*.hpp
+!*.cpp
 
 # =========================
-# Sourcetrail
+# Allow: documentation
 # =========================
-*.srctrldb
-*.srctrlbm
-*.srctrlprj
-
-# =========================
-# LaTeX
-# =========================
-*.dvi
-*.synctex.gz
-*.fls
-*.pdf
-
-# =========================
-# Metal (copied build artifacts)
-# =========================
-metal_m2l.metal
-libmetal_m2l.dylib
-metal_m2l/build/
-metal_nearfield/
-
-# =========================
-# Symlinks to parent dirs
-# =========================
-include
-src
-
-# =========================
-# AI tool files
-# =========================
-.gemini/
-.aiexclude
-AGENTS.md
-GEMINI.md
-
-# =========================
-# Jupyter / images / temp
-# =========================
-*.ipynb
-*.png
-debug/
-sandbox_inputs/
-
-# =========================
-# Backup / conflict copies
-# =========================
-*.modified
-*.patch
-*競合コピー*
-*from backup*
-
-# =========================
-# Misc
-# =========================
-histogram.json
-log.txt
-*.txt
+!CLAUDE.md
 !README.md
-build_bem_freq/
-build_bem_time/
-refference/
-refference_/
-refference_of_FMM
-refference_solitary_wave/
-oc6_psd_results/
-paper_digitize/
-BEM_FMM_recommended_papers/
-GUI_for_simulation_inputfiles
-plan.md
+!EXAMPLES.md
+
+# =========================
+# Allow: git config
+# =========================
+!.gitignore
+
+# =========================
+# Allow: input_files (simulation settings)
+# =========================
+!input_files/
+!input_files/*/
+!input_files/*/*.json
+!input_files/*/*.obj
+
+# =========================
+# Allow: metal_m2l source (GPU shaders)
+# =========================
+!metal_m2l/
+!metal_m2l/CMakeLists.txt
+!metal_m2l/*.metal
+!metal_m2l/*.mm
+!metal_m2l/*.h
+!metal_m2l/*.hpp
+
+# =========================
+# Exclude: metal_m2l build artifacts
+# =========================
+metal_m2l/build/
+
+# =========================
+# Re-exclude: patterns within allowed extensions
+# =========================
+# Backup / conflict copies (matched despite *.hpp/*.cpp allow)
+*from backup*
+*競合コピー*
+*.modified
+
+# Test files (auto-generated, experimental)
+test_*.cpp
+vec_check_clang.cpp
+
+# Frequency domain (separate build target, not main source)
+frequency_domain_main.cpp
+frequency_domain_test.cpp
+main_freq_domain.cpp
+network_integrity_check.cpp
+
+# Test input directories
+input_files/test_*/

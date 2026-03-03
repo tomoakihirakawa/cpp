@@ -1,3 +1,0 @@
-/* Wider layout central override */
-.md-grid { max-width: 1600px; }
-@media (min-width: 1800px) { .md-grid { max-width: 90vw; } }
