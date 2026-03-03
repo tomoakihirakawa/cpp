@@ -14,7 +14,6 @@
 # =========================
 # Allow: documentation
 # =========================
-!CLAUDE.md
 !README.md
 !EXAMPLES.md
 
